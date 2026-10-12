@@ -1,0 +1,28 @@
+# Docker build context
+.git
+.venv
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/*.egg-info
+data
+**/data
+models
+artifacts
+site
+node_modules
+**/.DS_Store
+.env
+*.parquet
+*.npy
+*.npz
+*.faiss
+.dvc/cache
+.dvc/tmp
+# Re-include the RAG index so /rag/chat works out of the box in the image
+# (parent dirs of an excluded directory must be re-included first).
+!projects/01-rag-agent/data
+!projects/01-rag-agent/data/index
+!projects/01-rag-agent/data/index/**
+

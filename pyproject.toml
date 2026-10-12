@@ -1,0 +1,62 @@
+[project]
+name = "amm-ds-portfolio"
+version = "0.1.0"
+description = "Architect-level ML/AI portfolio: reproducible monorepo platform with agentic AI, classical ML, deep learning, and open-data showcases."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = []
+
+[tool.uv.workspace]
+members = ["libs/*", "projects/*", "apps/showcase-api"]
+
+[dependency-groups]
+dev = [
+    "dvc>=3.55",
+    "hypothesis>=6.119",
+    "mkdocs-material>=9.5",
+    "mypy>=1.13",
+    "pre-commit>=4.0",
+    "pymdown-extensions>=10.12",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["site", "apps/showcase-web/node_modules", "apps/showcase-web/dist"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+warn_return_any = true
+warn_unused_configs = true
+# Test modules share basenames across packages (pytest importlib mode handles
+# it at runtime); type-check source only.
+exclude = ["tests/"]
+
+[[tool.mypy.overrides]]
+module = ["portfolio_core.*", "portfolio_eval.*"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["plotly.*", "sklearn.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+# --import-mode=importlib: test modules share basenames across packages.
+addopts = "-q --import-mode=importlib --cov=libs --cov-report=term-missing"
+testpaths = ["libs", "projects", "apps"]
+
+[tool.coverage.run]
+source = ["libs"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

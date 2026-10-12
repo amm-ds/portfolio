@@ -1,0 +1,6 @@
+# Keep DVC from tracking its own cache and local state
+.dvc/cache
+.dvc/tmp
+.dvc/config.local
+# Local env / secrets
+.env

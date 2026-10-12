@@ -1,0 +1,63 @@
+site_name: amm-ds — ML/AI Engineering Portfolio
+site_description: Architect-level data science & AI portfolio — reproducible pipelines, agentic AI, evaluation harnesses.
+site_url: https://amm-ds.github.io/portfolio/
+repo_url: https://github.com/amm-ds/portfolio
+repo_name: amm-ds/portfolio
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: teal
+    accent: cyan
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.action.view
+    - content.tabs.link
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.highlight
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Reference architecture: architecture/platform.md
+      - ADRs:
+          - ADR-0001 uv workspace: architecture/adr/0001-uv-workspace-monorepo.md
+          - ADR-0002 pydantic contracts: architecture/adr/0002-pydantic-contracts-everywhere.md
+          - ADR-0003 DVC pipelines: architecture/adr/0003-dvc-pipeline-reproducibility.md
+          - ADR-0004 LLM provider abstraction: architecture/adr/0004-llm-provider-abstraction.md
+          - ADR-0005 plotly-only viz: architecture/adr/0005-plotly-as-only-viz.md
+  - Engineering:
+      - Playbook: engineering-playbook.md
+      - Setup report: repository_setup_report_senior_data_scientist.md
+  - Projects:
+      - projects/index.md
+  - Data registry:
+      - data-registry/index.md
+  - Runbooks:
+      - Drift response: runbooks/drift-response.md
+      - LLM cost incident: runbooks/llm-cost-incident.md
+      - Pipeline restore: runbooks/pipeline-restore.md
+  - Services: site/services.md
+  - About: site/about.md
+
+watch:
+  - architecture
+  - data-registry
+  - docs
