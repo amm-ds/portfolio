@@ -1,0 +1,218 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: uv run python -m mobility.cli download
+    deps:
+    - path: src/mobility/config.py
+      hash: md5
+      md5: a93372aa04ed67e5ad5a7c3d10888a57
+      size: 4384
+    - path: src/mobility/download.py
+      hash: md5
+      md5: f89064849112995456dd71e4480dce81
+      size: 4495
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 438f66d2e09d9329bb3b75e0fe0de3f6.dir
+      size: 694840266
+      nfiles: 29
+  validate:
+    cmd: uv run python -m mobility.cli validate
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 438f66d2e09d9329bb3b75e0fe0de3f6.dir
+      size: 694840266
+      nfiles: 29
+    - path: src/mobility/schemas.py
+      hash: md5
+      md5: 6902bf15993e2ee3aa61bc4ad9bfafa8
+      size: 3844
+    - path: src/mobility/validate.py
+      hash: md5
+      md5: be72d25db662140a98c23dc070db017e
+      size: 8489
+    outs:
+    - path: data/validated
+      hash: md5
+      md5: 8716b7942f2a66e024931442fa1a28fe.dir
+      size: 637409771
+      nfiles: 12
+    - path: reports/dq
+      hash: md5
+      md5: 471ee204225a8ada42aa1695bf7565ee.dir
+      size: 30566
+      nfiles: 12
+    - path: reports/dq_validated.html
+      hash: md5
+      md5: 5d47eaab806cf12cffcd12ef2d56c0db
+      size: 22406
+    - path: reports/dq_validated.md
+      hash: md5
+      md5: 3a8adbdc763c4f59d5e5fc060e89eb50
+      size: 16001
+  join:
+    cmd: uv run python -m mobility.cli join
+    deps:
+    - path: data/validated
+      hash: md5
+      md5: 8716b7942f2a66e024931442fa1a28fe.dir
+      size: 637409771
+      nfiles: 12
+    - path: src/mobility/join.py
+      hash: md5
+      md5: 87287d8aca0c8f5bf35fe0ee437b55e0
+      size: 7113
+    outs:
+    - path: data/curated
+      hash: md5
+      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
+      size: 2574796
+      nfiles: 3
+  features:
+    cmd: uv run python -m mobility.cli features
+    deps:
+    - path: data/curated
+      hash: md5
+      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
+      size: 2574796
+      nfiles: 3
+    - path: src/mobility/features.py
+      hash: md5
+      md5: 277e07c11ec4924cfde689a962be1176
+      size: 3085
+    params:
+      params.yaml:
+        lags:
+        - 1
+        - 2
+        - 24
+        - 168
+        train_cutoff: '2024-10-01'
+    outs:
+    - path: data/features
+      hash: md5
+      md5: bf2d0d0c8044827bd0f552ceee3a4b24.dir
+      size: 6146952
+      nfiles: 2
+  train_baselines:
+    cmd: uv run python -m mobility.cli train-baselines
+    deps:
+    - path: data/features
+      hash: md5
+      md5: bf2d0d0c8044827bd0f552ceee3a4b24.dir
+      size: 6146952
+      nfiles: 2
+    - path: src/mobility/features.py
+      hash: md5
+      md5: 277e07c11ec4924cfde689a962be1176
+      size: 3085
+    - path: src/mobility/model.py
+      hash: md5
+      md5: 03eef93adc115fe7cd4060ca070ad0bc
+      size: 9377
+    params:
+      params.yaml:
+        gbm:
+          max_iter: 300
+          learning_rate: 0.08
+          max_leaf_nodes: 63
+          min_samples_leaf: 40
+          l2_regularization: 1.0
+          quantile_max_iter: 200
+        max_train_rows: 2000000
+        seed: 42
+    outs:
+    - path: reports/models/predictions_baseline.parquet
+      hash: md5
+      md5: d2f1b9be5f9993c3d2789adef139203b
+      size: 6071313
+  train_nn:
+    cmd: uv run python -m mobility.cli train-nn
+    deps:
+    - path: data/features
+      hash: md5
+      md5: bf2d0d0c8044827bd0f552ceee3a4b24.dir
+      size: 6146952
+      nfiles: 2
+    - path: reports/models/predictions_baseline.parquet
+      hash: md5
+      md5: d2f1b9be5f9993c3d2789adef139203b
+      size: 6071313
+    - path: src/mobility/model.py
+      hash: md5
+      md5: 03eef93adc115fe7cd4060ca070ad0bc
+      size: 9377
+    params:
+      params.yaml:
+        nn:
+          hidden_size: 64
+          second_hidden_size: 32
+          epochs: 8
+          batch_size: 1024
+          lr: 0.001
+          weight_decay: 1e-05
+          grad_clip: 5.0
+          early_stop_patience: 2
+        seed: 42
+    outs:
+    - path: reports/models/predictions.parquet
+      hash: md5
+      md5: 9f182f11ac2e175a890eb700edd2846e
+      size: 7571642
+    - path: reports/models/temporal_net.pt
+      hash: md5
+      md5: 3205b4f600adaa8bf37c1e797bd72829
+      size: 14673
+    - path: reports/models/temporal_net_norm.json
+      hash: md5
+      md5: a895370e2f59981f2d1853cc8abf7d5f
+      size: 514
+  dashboard:
+    cmd: uv run python -m mobility.cli dashboard
+    deps:
+    - path: data/curated
+      hash: md5
+      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
+      size: 2574796
+      nfiles: 3
+    - path: reports/models/predictions.parquet
+      hash: md5
+      md5: 9f182f11ac2e175a890eb700edd2846e
+      size: 7571642
+    - path: src/mobility/evaluate.py
+      hash: md5
+      md5: af19226507b9f7ac65272abf3ee91c2d
+      size: 16456
+    outs:
+    - path: reports/report.html
+      hash: md5
+      md5: 9366bdae51fd2be199250460aba7a255
+      size: 4102
+  evaluate:
+    cmd: uv run python -m mobility.cli evaluate
+    deps:
+    - path: data/curated
+      hash: md5
+      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
+      size: 2574796
+      nfiles: 3
+    - path: reports/models/predictions.parquet
+      hash: md5
+      md5: 9f182f11ac2e175a890eb700edd2846e
+      size: 7571642
+    - path: src/mobility/evaluate.py
+      hash: md5
+      md5: af19226507b9f7ac65272abf3ee91c2d
+      size: 16456
+    outs:
+    - path: reports/figures
+      hash: md5
+      md5: 76b76610c429321b3ff53faa0370e6b8.dir
+      size: 669140
+      nfiles: 14
+    - path: reports/metrics.json
+      hash: md5
+      md5: bbdf198c5f559b792b3d52587d028e20
+      size: 831

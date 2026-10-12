@@ -1,0 +1,12 @@
+id: 01-rag-agent
+title: Rag Agent
+domain: Agentic AI / LLM
+techniques:
+- pydantic-ai
+- RAG
+- sentence-transformers
+- faiss
+- structured outputs
+data: Wikipedia (HF, real)
+status: flagship
+order: 1

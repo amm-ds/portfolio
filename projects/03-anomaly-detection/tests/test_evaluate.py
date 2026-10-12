@@ -1,0 +1,128 @@
+"""Evaluator tests: perfect separation scores AUC 1.0, ranking helpers, artifacts."""
+
+import json
+
+import numpy as np
+import pytest
+from anomaly_detection.config import AnomalyConfig
+from anomaly_detection.evaluate import (
+    add_random_baseline,
+    best_model,
+    eda_signals_overview,
+    evaluate_scores,
+    predict_at_contamination,
+    random_scores,
+    roc_figure,
+    run_evaluation,
+)
+
+
+def test_perfectly_separable_scores_score_1() -> None:
+    """AUC must be exactly 1.0 when every anomaly outranks every normal point."""
+    y_true = np.array([0] * 50 + [1] * 10)
+    scores = np.array([0.01 * i for i in range(50)] + [10.0 + i for i in range(10)])
+    run = evaluate_scores("fixture", y_true, scores)
+    roc = run.get("roc_auc")
+    pr = run.get("pr_auc")
+    assert roc is not None and pr is not None
+    assert roc.value == pytest.approx(1.0)
+    assert pr.value == pytest.approx(1.0)
+    assert roc.split == "test"
+
+
+def test_inverted_scores_score_0() -> None:
+    y_true = np.array([0, 0, 1, 1])
+    scores = np.array([1.0, 0.9, 0.1, 0.0])
+    run = evaluate_scores("fixture", y_true, scores)
+    assert run.get("roc_auc").value == pytest.approx(0.0)  # type: ignore[union-attr]
+
+
+def test_predict_at_contamination_flags_top_fraction() -> None:
+    scores = np.arange(100, dtype=float)
+    flags = predict_at_contamination(scores, 0.1)
+    assert flags.sum() == 10
+    assert flags[-10:].all()
+    assert not flags[:90].any()
+
+
+def test_random_baseline_is_seeded_and_at_chance(small_config: AnomalyConfig) -> None:
+    """Seeded random scores: reproducible, AUC ≈ 0.5, PR-AUC ≈ prevalence."""
+    from anomaly_detection.data import generate
+
+    y_true = generate(small_config)["is_anomaly"].to_numpy().astype(int)
+    a = random_scores(len(y_true), small_config.seed)
+    b = random_scores(len(y_true), small_config.seed)
+    np.testing.assert_array_equal(a, b)
+    run = evaluate_scores("random", y_true, a)
+    roc = run.get("roc_auc")
+    pr = run.get("pr_auc")
+    assert roc is not None and pr is not None
+    assert roc.value == pytest.approx(0.5, abs=0.1)
+    assert pr.value == pytest.approx(y_true.mean(), abs=0.05)
+
+
+def test_random_baseline_appears_first_in_overlays(small_config: AnomalyConfig) -> None:
+    """The baseline run leads the run order and shows up in the ROC overlay."""
+    from anomaly_detection.data import generate
+
+    y_true = generate(small_config)["is_anomaly"].to_numpy().astype(int)
+    runs: list = []
+    scores_by_model: dict[str, np.ndarray] = {}
+    add_random_baseline(runs, scores_by_model, y_test=y_true, config=small_config)
+    assert runs[0].name == "random"
+    fig = roc_figure(runs, scores_by_model, y_true)
+    names = [t.name for t in fig.data]
+    assert any(n and n.startswith("random") for n in names)
+
+
+def test_eda_signals_overview_marks_injected_anomalies(
+    small_config: AnomalyConfig,
+) -> None:
+    from anomaly_detection.data import generate
+
+    fig = eda_signals_overview(generate(small_config))
+    names = [t.name for t in fig.data]
+    assert names[:3] == ["cpu", "mem", "latency_ms"]
+    assert "injected anomaly" in names
+    marker = next(t for t in fig.data if t.name == "injected anomaly")
+    assert len(marker.x) > 0
+
+
+def test_best_model_by_pr_auc() -> None:
+    good = evaluate_scores("good", np.array([0, 1]), np.array([0.0, 1.0]))
+    bad = evaluate_scores("bad", np.array([0, 1]), np.array([1.0, 0.0]))
+    assert best_model([good, bad]) == "good"
+    with pytest.raises(ValueError):
+        best_model([])
+
+
+def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig) -> None:
+    from anomaly_detection.data import prepare
+    from anomaly_detection.features import build_features, save_features
+    from anomaly_detection.model import (
+        feature_matrix,
+        fit_models,
+        save_models,
+        split_train_test,
+    )
+
+    df = prepare(small_config)
+    save_features(build_features(df, small_config.windows), small_config)
+    feat = build_features(df, small_config.windows)
+    train, _ = split_train_test(feat, small_config.train_frac)
+    save_models(fit_models(feature_matrix(train, small_config), small_config), small_config)
+
+    metrics, report_path = run_evaluation(small_config)
+    assert set(metrics) == {"random", "isolation_forest", "lof", "ocsvm"}
+    for values in metrics.values():
+        assert set(values) == {"roc_auc", "pr_auc"}
+        assert 0.0 <= values["roc_auc"] <= 1.0
+    # random reference sits at chance; detectors must beat it on AUC
+    assert metrics["random"]["roc_auc"] == pytest.approx(0.5, abs=0.1)
+    assert metrics["isolation_forest"]["roc_auc"] > metrics["random"]["roc_auc"]
+    assert report_path.exists()
+    assert (small_config.eval_dir / "metrics.json").exists()
+    assert json.loads((small_config.eval_dir / "metrics.json").read_text()) == metrics
+    for name in ("eda_signals_overview", "roc_curves", "pr_curves", "telemetry_flags"):
+        assert (small_config.figures_dir / f"{name}.html").exists()
+        assert (small_config.figures_dir / f"{name}.json").exists()

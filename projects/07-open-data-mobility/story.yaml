@@ -1,0 +1,128 @@
+project_id: 07-open-data-mobility
+sections:
+  - id: background
+    text_md: |
+      Taxi and ride-hail demand is the classic urban-mobility planning problem:
+      fleets must be staged before demand arrives, drivers shifted between
+      boroughs, and surge/pricing policies tuned hour by hour. Every one of
+      those decisions is a forecast — and a wrong one is either an idle fleet
+      or missed pickups.
+
+      This project builds that forecast from the ground up on **real, messy,
+      public data** — not a clean Kaggle extract — and quantifies how much
+      weather moves the numbers a planner would act on.
+    figures: [eda_trips_profile]
+    metrics_keys: []
+
+  - id: objectives
+    text_md: |
+      Predict **next-hour pickup demand for every NYC taxi zone** (265 zones)
+      with two model families plus an honest uncertainty band, and answer two
+      business questions: (1) how much better than "same hour last week" do
+      modern models get, and (2) what does rain do to curb demand?
+
+      Uncertainty is delivered as a calibrated **p90 upper band** per zone-hour
+      (usable for staffing/fleet buffers), and every claim about weather is
+      labelled directional, not causal.
+    figures: []
+    metrics_keys: [naive_lag24, gbm_mean, temporal_net]
+
+  - id: data
+    text_md: |
+      **NYC TLC yellow-taxi trip records**, 12 consecutive monthly Parquet
+      files (2024-01 … 2024-12): 41.2M trips, ~1.5 GB compressed, downloaded
+      anonymously under NYC TLC terms of use and checksum-pinned so any
+      upstream republication fails loudly. Joined with the TLC taxi-zone
+      lookup (LocationID → borough/zone).
+
+      Weather comes from **NOAA GHCN-Daily**, Central Park station
+      USW00094728 (public domain, US Government work): daily precipitation,
+      snowfall, and max/min temperature, quality-control flags honoured
+      (failed QC ⇒ treated as missing). The bounded slice — one vehicle class,
+      one city, one year — is the dataset card's declared laptop-friendly
+      boundary: large enough to be honest about scale, small enough to
+      re-run in minutes.
+    figures: []
+    metrics_keys: []
+
+  - id: eda
+    text_md: |
+      Demand is sharply structured: a twin-peaked weekday profile (morning
+      and evening rush) that flattens on weekends, and volume concentrated in
+      Manhattan while outer boroughs and airports (EWR, "Unknown" zones) run
+      sparse — many zone-hours have **zero** pickups.
+
+      That sparsity drove a key engineering decision: the curated table is
+      reindexed onto the **complete zone × hour grid** (265 × 8,784 =
+      2,327,760 rows) with explicit zeros. Without it, lag features would
+      silently misalign — "previous observed hour" is not t-1h for a sparse
+      zone. The hourly/borough profile and the zone × hour-of-week heatmap
+      below show this structure directly.
+    figures: [eda_trips_profile, zone_hour_heatmap]
+    metrics_keys: []
+
+  - id: training
+    text_md: |
+      The pipeline is lazy/streaming **Polars** end-to-end: raw trips are
+      never materialised — each month is scanned, gated by per-month **DQ
+      contracts** (null-rate ceilings, range checks, freshness, row-count
+      floor; failures halt the pipeline loudly), cleaned, and aggregated to
+      the zone-hour grain under a ~2 GB RAM peak.
+
+      Models: a gradient-boosting mean (sklearn `HistGradientBoosting`,
+      NaN-native) plus a **p90 quantile GBM** for uncertainty bands; and
+      **TemporalNet**, a small torch MLP trained with a fully hand-written
+      loop (DataLoader, Adam, gradient clipping, early stopping). The target
+      is trained in log1p space because demand is multiplicative. Split
+      discipline is purely temporal (train < 2024-10-01 ≤ test) with a 24-hour
+      embargoed expanding-window CV for early stopping — no random splits
+      anywhere.
+    figures: []
+    metrics_keys: []
+
+  - id: evaluation
+    text_md: |
+      Holdout: **October–December 2024** (584,855 zone-hours), a pure temporal
+      split so drift is priced in honestly. Every model is compared against a
+      **naive persistence baseline** (same hour last week, lag-24).
+
+      Metrics are MAE/RMSE/MAPE overall, MAE per borough, and calibration of
+      the p90 band (share of realised zone-hours at or below the upper band,
+      target 90%).
+    figures: [actual_vs_pred_top5, borough_mae]
+    metrics_keys: [naive_lag24, gbm_mean, temporal_net]
+
+  - id: results
+    text_md: |
+      On the Q4 holdout (pickups/hour): **GBM MAE 4.67 / MAPE 62.0%**,
+      **TemporalNet 5.51 / 54.5%**, naive lag-24 6.52 / 89.4%. Versus the naive
+      baseline the GBM cuts MAE by **28.4%** and MAPE by **30.6%**; the NN
+      cuts MAE by 15.5% and MAPE by **39.1%** (best relative error on busy
+      zones). The p90 band is well calibrated at **91.1% coverage**.
+
+      Per-borough GBM MAE peaks in Manhattan (14.2 pickups/h) simply because
+      volume peaks there. Weather elasticity (rain ≥ 1 mm vs dry): outer-borough
+      curb demand drops 7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan is
+      resilient (0.97×), while EWR rises (1.08×) — consistent with airport
+      substitution to taxis. These ratios are raw groupbys without
+      hour-of-week normalisation: directional, not causal.
+    figures: [gbm_vs_nn, weather_elasticity, p90_band]
+    metrics_keys: [naive_lag24, gbm_mean, temporal_net]
+
+  - id: conclusions
+    text_md: |
+      Three lessons a client can take away. **Scale is a discipline, not a
+      budget:** 41M rows processed month-by-month through streaming
+      aggregation with an observed peak under 3 GB — the pipeline runs on a
+      laptop. **Data contracts earn trust:** per-month DQ gates caught a 2002
+      trip inside a 2024 file and 5–13% null passenger counts before they
+      could poison the lags. **Baselines keep you honest:** the raw-count NN
+      initially scored *below* persistence until a log1p target transform
+      fixed the loss geometry — a one-line change visible only because the
+      naive baseline was always in the comparison.
+
+      For operations, the deliverables are the calibrated p90 bands (fleet
+      staging) and the directional weather elasticities (promo/staffing
+      triggers), both reproducible with a single command.
+    figures: []
+    metrics_keys: [naive_lag24, gbm_mean, temporal_net]

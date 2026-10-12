@@ -1,0 +1,84 @@
+schema: '2.0'
+stages:
+  download:
+    cmd: uv run python -m routing_optimization.cli download
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: ad6c1047fc476cffb1e07d77644a9c7d
+      size: 395
+    - path: src/routing_optimization
+      hash: md5
+      md5: 5d0fb585fd06b9a074ec8b0febf9b12e.dir
+      size: 127335
+      nfiles: 15
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: a7301c6b4727d677dc469497da1bf80b.dir
+      size: 159178
+      nfiles: 12
+  solve:
+    cmd: uv run python -m routing_optimization.cli solve
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: a7301c6b4727d677dc469497da1bf80b.dir
+      size: 159178
+      nfiles: 12
+    - path: params.yaml
+      hash: md5
+      md5: ad6c1047fc476cffb1e07d77644a9c7d
+      size: 395
+    - path: src/routing_optimization
+      hash: md5
+      md5: 5d0fb585fd06b9a074ec8b0febf9b12e.dir
+      size: 127335
+      nfiles: 15
+    outs:
+    - path: reports/dq.md
+      hash: md5
+      md5: c4c1ac55d47133d77b735a15ba0cdf91
+      size: 4983
+    - path: reports/solutions.json
+      hash: md5
+      md5: c5d88803a9ee02beb9e95a1a5bab6dc9
+      size: 28372
+  evaluate:
+    cmd: uv run python -m routing_optimization.cli evaluate
+    deps:
+    - path: ../../docs/data-registry/best_known/solomon100.csv
+      hash: md5
+      md5: 460548bd7fd21896cc45f33dc3e39210
+      size: 672
+    - path: params.yaml
+      hash: md5
+      md5: ad6c1047fc476cffb1e07d77644a9c7d
+      size: 395
+    - path: reports/solutions.json
+      hash: md5
+      md5: c5d88803a9ee02beb9e95a1a5bab6dc9
+      size: 28372
+    - path: src/routing_optimization
+      hash: md5
+      md5: 5d0fb585fd06b9a074ec8b0febf9b12e.dir
+      size: 127335
+      nfiles: 15
+    outs:
+    - path: reports/figures
+      hash: md5
+      md5: 76deb451815ad11b4e2e31552fbc8f37.dir
+      size: 86100
+      nfiles: 8
+    - path: reports/metrics.json
+      hash: md5
+      md5: fa55757409a3c675a5e736f312da6769
+      size: 8640
+    - path: reports/report.html
+      hash: md5
+      md5: 7e83102a6738d3c033c0aeb2d544b75e
+      size: 6448
+    - path: reports/results.md
+      hash: md5
+      md5: c1013ce1d8e3be3d0edaae68dce64f1c
+      size: 3124

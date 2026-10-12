@@ -1,0 +1,19 @@
+# Mirrors VRPConfig defaults (routing_optimization/config.py). DVC re-runs a
+# stage when the matching entry here changes.
+instances:
+- C101
+- C102
+- C103
+- C104
+- C105
+- RC102
+- RC103
+- RC104
+- RC105
+- RC108
+seed: 42
+max_two_opt_iterations: 200
+raw_dir: data/raw
+reports_dir: reports
+map_instance: C101
+download_url: https://www.sintef.no/globalassets/project/top/vrptw/solomon/solomon-100.zip

@@ -1,0 +1,46 @@
+stages:
+  prepare_corpus:
+    cmd: uv run python -m rag_agent.cli prepare-corpus
+    deps:
+      - src/rag_agent/corpus.py
+      - src/rag_agent/config.py
+      - src/rag_agent/chunking.py
+      - src/rag_agent/schemas.py
+      - params.yaml
+    params:
+      - topics
+      - articles_per_topic
+      - max_scan_rows
+    outs:
+      - data/raw
+
+  build_index:
+    cmd: uv run python -m rag_agent.cli build-index
+    deps:
+      - data/raw
+      - src/rag_agent/index.py
+      - src/rag_agent/chunking.py
+      - src/rag_agent/config.py
+      - params.yaml
+    params:
+      - chunk_sizes
+      - chunk_overlap
+      - embedding_model
+    outs:
+      - data/index
+
+  evaluate_retrieval:
+    cmd: uv run python -m rag_agent.cli evaluate
+    deps:
+      - data/index
+      - data/raw
+      - src
+      - params.yaml
+    params:
+      - chunk_sizes
+      - top_k
+      - reranker_model
+      - usd_per_mtok_input
+      - usd_per_mtok_output
+    outs:
+      - reports

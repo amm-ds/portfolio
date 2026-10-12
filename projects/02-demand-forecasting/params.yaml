@@ -1,0 +1,12 @@
+# Mirrors ForecastConfig defaults in src/demand_forecasting/config.py.
+# Change detection for dvc repro; the CLI uses the config model defaults.
+n_days: 730
+n_stores: 4
+n_products: 6
+lags:
+  - 1
+  - 7
+  - 14
+n_splits: 4
+gap: 7
+min_train_size: 60

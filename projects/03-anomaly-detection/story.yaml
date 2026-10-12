@@ -1,0 +1,129 @@
+project_id: 03-anomaly-detection
+sections:
+  - id: background
+    text_md: |
+      Operations teams watch CPU, memory, and latency telemetry to catch
+      incidents before users do. The expensive failures are the silent ones:
+      a latency creep that turns into an outage, a CPU saturation that burns
+      an autoscaling budget — each missed minute is paid for later, in
+      multiples.
+
+      Labeled incident history rarely exists, and anomalies are rare (order of
+      2% of minutes). That combination — unlabeled, imbalanced, streaming —
+      makes anomaly detection a genuinely hard, unsupervised problem. This
+      project shows how three standard detectors behave on it, and how to
+      evaluate them without fooling yourself.
+
+  - id: objectives
+    text_md: |
+      Compare three detector families — IsolationForest, Local Outlier Factor
+      (LOF), and One-Class SVM — on the same telemetry stream, honestly.
+
+      Honest means three things here. First, detectors train on the past only
+      and are scored on a later time window, so metrics reflect deployment
+      conditions rather than memorization. Second, the decision threshold is
+      fixed a priori from an assumed 2% contamination — never tuned against
+      ground truth. Third, every model is benchmarked against a seeded
+      random baseline: anything that cannot beat coin-flip has no business
+      alerting anyone at 3 a.m.
+    metrics_keys: [random, isolation_forest]
+
+  - id: data
+    text_md: |
+      The stream is synthetic and seeded (n = 20 000 one-minute rows, seed 42):
+      daily seasonality plus noise on three channels — `cpu`, `mem`, and
+      `latency_ms` — with 2% of minutes injected as anomalies (a CPU step of
+      +30–50 points and a 2–5× latency multiplier at random timestamps). The
+      generator lives in the shared platform (`portfolio_core.synthetic`), so
+      the dataset regenerates offline, bit-identical, in every CI run.
+
+      A versioned `DatasetContract` (checksum, source, license, snapshot date)
+      travels with the data, and the injected `is_anomaly` flag is used for
+      **evaluation only** — no detector ever sees it. The same contract shape
+      accepts a real-data track (node-exporter / NSL-KDD flow features) as a
+      future swap-in.
+
+  - id: eda
+    text_md: |
+      The raw signals (below, first two days) show clean daily seasonality:
+      CPU and memory trace smooth sinusoids, latency wanders around 120 ms.
+      Injected anomalies (pink markers) appear as sharp, simultaneous spikes
+      in CPU and latency while memory stays on its seasonal path — the
+      signature of a resource incident rather than sensor noise.
+
+      The EDA question that decides this project: are anomalies *spread out*
+      or *clustered* in feature space? k-nearest-neighbor distances answer it:
+      anomalies sit far from normal points (≈ 18.9 vs. ≈ 8.5) but at uniform
+      spacing *among themselves* — a compact, self-similar cluster. Keep that
+      fact in mind for the results.
+    figures: [eda_signals_overview]
+
+  - id: training
+    text_md: |
+      Feature engineering is pure polars ETL: the three raw signals plus a
+      rolling mean and rolling standard deviation per signal over 10-minute
+      and 60-minute windows (12 engineered columns). The first `window − 1`
+      rows, which lack a full window, are dropped so detectors train on a
+      complete-case matrix.
+
+      All three detectors fit on the **first 70% of the timeline only** —
+      13 958 rows — with hyperparameters taken from the assumed contamination
+      (IsolationForest and LOF via their `contamination` argument, One-Class
+      SVM via `nu`). No shuffle, no leakage: the final 30% of the stream is a
+      true future window. Data-quality gates (null rate ≤ 1% per column, CPU
+      and memory within [0, 100], latency > 0) run before anything trains and
+      halt the pipeline loudly on violation.
+    figures: [telemetry_flags]
+
+  - id: evaluation
+    text_md: |
+      Each detector scores the 5 983 test-window rows; a seeded random
+      baseline (uniform scores, same seed) anchors the comparison. Ranking
+      quality is measured by ROC-AUC and PR-AUC — PR-AUC matters more at this
+      prevalence (1.89%), where a naive "everything is normal" classifier
+      already scores 0.019.
+
+      Binary alert flags use one fixed operating point per model: the top 2%
+      of its scores (the assumed contamination quantile). No threshold was
+      tuned against the ground-truth labels at any point.
+
+  - id: results
+    text_md: |
+      IsolationForest wins decisively — and the losers are the real lesson.
+      Against the random baseline (ROC-AUC 0.509), IsolationForest scores
+      **0.916** (+0.41) with PR-AUC 0.124, a 6.5× lift over the prevalence
+      floor. LOF (0.527) and One-Class SVM (0.337) are at or below
+      coin-flip.
+
+      The mechanism, verified with k-NN distances: injected anomalies form a
+      compact, self-similar cluster. LOF only compares each point to its
+      *local* neighborhood — inside the blob every point looks normal (median
+      LOF ≈ 1.11 on test anomalies vs. ≈ 1.09 on normals), so isolation from
+      the bulk never registers. The RBF One-Class SVM folds the dense blob
+      into its normal region. Only IsolationForest, which isolates points by
+      random partitioning, treats "far away" as "anomalous" regardless of
+      local density.
+    figures: [roc_curves, pr_curves]
+    metrics_keys: [random, isolation_forest, lof, ocsvm]
+
+  - id: conclusions
+    text_md: |
+      Three takeaways. **(1) Detector families make different bets.**
+      Density- and boundary-based methods assume anomalies are sparse and
+      dissimilar to everything; when incidents arrive as a repeated,
+      self-similar signature, only partitioning methods (IsolationForest) or
+      residual/context-aware features still see them. Choosing a detector
+      without checking that assumption is how silent incidents ship to
+      production.
+
+      **(2) A random baseline keeps everyone honest.** At 2% prevalence,
+      near-chance models can look plausible on accuracy; the seeded random
+      row in every metrics table makes "beating chance" the admission fee.
+
+      **(3) Guardrails make results trustworthy.** DQ gates that halt the
+      pipeline, a time-ordered split, and a fixed (untuned) threshold mean the
+      reported 0.92 ROC-AUC is a number a client can plan an alerting budget
+      around. Next steps on the roadmap: Optuna HPO over detector
+      hyperparameters, residual features to de-cluster the anomaly signature,
+      and a real-telemetry track behind the same dataset contract.
+    metrics_keys: [isolation_forest, random]

@@ -1,0 +1,99 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run python -m demand_forecasting.cli prepare
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
+      size: 246
+    - path: src/demand_forecasting
+      hash: md5
+      md5: c06f521bec29c6360a026eb7ed424eb5.dir
+      size: 75036
+      nfiles: 15
+    outs:
+    - path: data/dataset.json
+      hash: md5
+      md5: 51077fc1bd2170645a1d489a8c9c328d
+      size: 273
+    - path: data/panel.parquet
+      hash: md5
+      md5: 51da0495e7b0b853bce3178a92465b76
+      size: 21882
+  features:
+    cmd: uv run python -m demand_forecasting.cli features
+    deps:
+    - path: data/panel.parquet
+      hash: md5
+      md5: 51da0495e7b0b853bce3178a92465b76
+      size: 21882
+    - path: params.yaml
+      hash: md5
+      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
+      size: 246
+    - path: src/demand_forecasting
+      hash: md5
+      md5: c06f521bec29c6360a026eb7ed424eb5.dir
+      size: 75036
+      nfiles: 15
+    outs:
+    - path: data/features.parquet
+      hash: md5
+      md5: 33251b91a47c0ea85816fde2441d9a72
+      size: 112084
+  train:
+    cmd: uv run python -m demand_forecasting.cli train
+    deps:
+    - path: data/features.parquet
+      hash: md5
+      md5: 33251b91a47c0ea85816fde2441d9a72
+      size: 112084
+    - path: params.yaml
+      hash: md5
+      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
+      size: 246
+    - path: src/demand_forecasting
+      hash: md5
+      md5: c06f521bec29c6360a026eb7ed424eb5.dir
+      size: 75036
+      nfiles: 15
+    outs:
+    - path: data/models.pkl
+      hash: md5
+      md5: daf58b56007c9b816b5693e66eb7adbf
+      size: 227858
+  evaluate:
+    cmd: uv run python -m demand_forecasting.cli evaluate
+    deps:
+    - path: data/features.parquet
+      hash: md5
+      md5: 33251b91a47c0ea85816fde2441d9a72
+      size: 112084
+    - path: data/panel.parquet
+      hash: md5
+      md5: 51da0495e7b0b853bce3178a92465b76
+      size: 21882
+    - path: params.yaml
+      hash: md5
+      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
+      size: 246
+    - path: src/demand_forecasting
+      hash: md5
+      md5: c06f521bec29c6360a026eb7ed424eb5.dir
+      size: 75036
+      nfiles: 15
+    outs:
+    - path: reports/figures
+      hash: md5
+      md5: 947945a44189d76e24991dcdd7257466.dir
+      size: 370197
+      nfiles: 10
+    - path: reports/metrics.json
+      hash: md5
+      md5: 9fbbcfaf870cf7d81e1ed522a1376f7e
+      size: 468
+    - path: reports/report.html
+      hash: md5
+      md5: bd6ffb28bc87e7e69e28167cc893af02
+      size: 1752

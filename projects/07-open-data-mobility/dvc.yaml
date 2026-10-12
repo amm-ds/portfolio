@@ -1,0 +1,85 @@
+stages:
+  download:
+    cmd: uv run python -m mobility.cli download
+    deps:
+      - src/mobility/download.py
+      - src/mobility/config.py
+    outs:
+      - data/raw
+
+  validate:
+    cmd: uv run python -m mobility.cli validate
+    deps:
+      - src/mobility/validate.py
+      - src/mobility/schemas.py
+      - data/raw
+    outs:
+      - data/validated
+      - reports/dq
+      - reports/dq_validated.md
+      - reports/dq_validated.html
+
+  join:
+    cmd: uv run python -m mobility.cli join
+    deps:
+      - src/mobility/join.py
+      - data/validated
+    outs:
+      - data/curated
+
+  features:
+    cmd: uv run python -m mobility.cli features
+    deps:
+      - src/mobility/features.py
+      - data/curated
+    params:
+      - lags
+      - train_cutoff
+    outs:
+      - data/features
+
+  train_baselines:
+    cmd: uv run python -m mobility.cli train-baselines
+    deps:
+      - src/mobility/model.py
+      - src/mobility/features.py
+      - data/features
+    params:
+      - max_train_rows
+      - gbm
+      - seed
+    outs:
+      - reports/models/predictions_baseline.parquet
+
+  train_nn:
+    cmd: uv run python -m mobility.cli train-nn
+    deps:
+      - src/mobility/model.py
+      - data/features
+      - reports/models/predictions_baseline.parquet
+    params:
+      - nn
+      - seed
+    outs:
+      - reports/models/temporal_net.pt
+      - reports/models/temporal_net_norm.json
+      - reports/models/predictions.parquet
+
+  evaluate:
+    cmd: uv run python -m mobility.cli evaluate
+    deps:
+      - src/mobility/evaluate.py
+      - reports/models/predictions.parquet
+      - data/curated
+    outs:
+      - reports/metrics.json
+      - reports/figures
+
+  dashboard:
+    cmd: uv run python -m mobility.cli dashboard
+    deps:
+      - src/mobility/evaluate.py
+      - reports/models/predictions.parquet
+      - data/curated
+    outs:
+      - reports/report.html

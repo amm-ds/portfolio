@@ -1,0 +1,11 @@
+id: 06-routing-optimization
+title: Routing Optimization
+domain: Combinatorial optimization
+techniques:
+- pydantic problem models
+- savings
+- 2-opt
+- VRPTW heuristics
+data: CVRPLIB Solomon VRPTW (real benchmark)
+status: working
+order: 6

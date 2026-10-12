@@ -1,0 +1,137 @@
+project_id: 01-rag-agent
+sections:
+  - id: background
+    text_md: |
+      LLM assistants fail silently in the way that matters most to a business:
+      they sound confident while inventing facts. Retrieval-grounded design
+      removes that failure mode by construction — the model can only speak from
+      evidence it was shown, and every claim carries a citation a human can
+      audit.
+
+      This project builds such an assistant as a fully reproducible pipeline:
+      a bounded, checksum-pinned slice of Wikipedia, a local embeddings index,
+      and an agent whose only window into the corpus is two retrieval tools.
+      No demo shortcuts: every quality claim below is measured on a graded
+      question set.
+
+  - id: objectives
+    text_md: |
+      Deliver a question-answering agent with three hard properties. First,
+      **typed, validated output**: the model must return a structured
+      `AnalysisResult` — summary, citations, confidence — and a schema-invalid
+      response fails the run loudly instead of reaching a user. Second,
+      **evidence grounding**: the agent's only corpus access is
+      `search_documents` / `read_excerpt`; the system prompt forbids outside
+      knowledge. Third, **operational SLOs**: retrieval recall@5 ≥ 0.60 on the
+      graded set, p95 latency ≤ 5 s end-to-end, and an estimated cost per query
+      that a client can budget against (target ≤ $0.01).
+
+      Everything must run CPU-only and fully offline — a deterministic mock
+      provider keeps the entire pipeline, evaluation included, runnable in CI
+      without credentials.
+
+  - id: data
+    text_md: |
+      The corpus is a topical slice of the English Wikipedia dump
+      `20231101.en`, streamed from Hugging Face and bounded by construction:
+      five diverse topics (Climate, Renewable energy, Aviation, Machine
+      learning, Photosynthesis), at most 120 articles per topic, plus a small
+      set of exact-title anchor articles collected outside the pattern quota.
+      The result is 593 articles (≈3.5 MB of text).
+
+      Text is Wikipedia content, licensed CC BY-SA 3.0 / GFDL; attribution ships
+      in `data/raw/dataset_contract.json` together with a sha256 checksum,
+      row count and snapshot date. Data-quality gates (null rates, length
+      ranges) halt the pipeline loudly on violation, and DVC tracks every
+      artifact for reproducibility.
+
+  - id: eda
+    text_md: |
+      The corpus composition figure shows what the bounded scan actually
+      collected: near-symmetric topic coverage (≈102–125 articles each) and a
+      right-skewed article-length distribution — most articles run 500–2,000
+      words, with a long tail of large articles truncated at 12,000 characters
+      to keep embedding cost predictable.
+
+      One finding shaped the pipeline: the Wikipedia dump order is not topical,
+      so naive pattern quotas fill on peripheral articles (journals, albums,
+      lists) long before flagship pages appear in the stream — several famous
+      titles (e.g. "Photosynthesis", "Renewable energy") are entirely absent
+      from this dump. Exact-title anchors and eval questions were verified
+      against the real corpus, not assumed.
+    figures:
+      - eda_corpus_composition
+
+  - id: training
+    text_md: |
+      "Training" here is index construction, deliberately classical. Articles
+      are split with a paragraph-aware recursive chunker (whole paragraphs
+      first, then sentence boundaries, then word windows with overlap;
+      max-chunk-size and exact-overlap guarantees are unit-tested) at three
+      budgets — 200, 400 and 800 tokens — so the size trade-off can be measured
+      rather than guessed.
+
+      Each chunk is embedded with `all-MiniLM-L6-v2` (L2-normalized, CPU) into
+      a FAISS `IndexFlatIP` per chunk size; at query time the top 5×k embedding
+      hits are re-scored by the `ms-marco-MiniLM-L-6-v2` cross-encoder. The
+      agent layer is provider-agnostic per ADR-0004: a live OpenAI-compatible
+      endpoint when configured, a deterministic mock otherwise — one code path.
+
+  - id: evaluation
+    text_md: |
+      Quality is measured, not demoed. A graded set of 26 handcrafted questions
+      (5–6 per topic) carries known relevant article ids; retrieval is scored
+      with recall@5, recall@10 and MRR@5 per chunk size, and a **seeded
+      uniform-random baseline** (`retrieval_random_chunks_{size}`) marks the
+      floor any embedding system must beat.
+
+      The RAG layer is scored with a judge (keyword judge by default): answer
+      faithfulness, answer relevance, and context recall, plus a retrieved-
+      relevance flag per question. Operations are measured too — per-query
+      latency (p50/p95) and a cost-per-query estimate built from recorded token
+      usage. The same harness runs in mock mode (CI, offline) and live mode
+      (real provider) with no code changes.
+    figures:
+      - chunk_size_sweep
+    metrics_keys:
+      - retrieval_chunks_200
+      - retrieval_random_chunks_200
+      - rag_agent
+
+  - id: results
+    text_md: |
+      Retrieval, graded set of 26 questions, CPU-only: **recall@5 0.962,
+      recall@10 1.000** at every chunk size; **MRR@5 0.936 / 0.904 / 0.869** for
+      200/400/800-token chunks. The seeded uniform-random baseline scores
+      recall@5 = 0.038 (200-token chunks) and 0.000 (400/800) — the embedding
+      pipeline beats random ranking by **+0.92 recall@5** (0.962 vs 0.038) and
+      **+0.90/+0.90/+0.87 MRR@5** across sizes, and smaller chunks dominate the
+      cost-vs-quality frontier (half the context tokens of 400 at equal
+      recall).
+
+      RAG quality (mock-mode answers): context_recall 0.962, answer_relevance
+      0.436, faithfulness 0.245 — the floor expected when the model returns a
+      canned answer; the harness re-scores real grounded answers unchanged when
+      a provider is configured. Operations: p50 3.0 ms / p95 4.1 ms local
+      floor, estimated live cost ≈ $0.0004 per query.
+    metrics_keys:
+      - retrieval_chunks_200
+      - retrieval_random_chunks_200
+      - rag_agent
+
+  - id: conclusions
+    text_md: |
+      Three honest limits. First, mock-mode faithfulness (0.245) is a floor,
+      not a product metric: it reflects a canned answer, and the live-mode
+      harness exists precisely to score real grounding. Second, the judge is a
+      deterministic keyword rubric — directionally useful, cheap and
+      reproducible, but no substitute for a provider-model judge on a client
+      engagement. Third, corpus coverage is bounded by the dump itself: famous
+      anchor titles verified absent from `20231101.en`, and per-topic quotas
+      saturate with peripheral articles, which caps how polished the demo
+      answers can look regardless of retrieval quality.
+
+      The engineering take-aways transfer directly: typed outputs that fail
+      loudly, evidence-only tool access, seeded baselines in every sweep, and a
+      single provider-abstraction seam (ADR-0004) that keeps the whole system
+      testable offline and deployable live without code changes.

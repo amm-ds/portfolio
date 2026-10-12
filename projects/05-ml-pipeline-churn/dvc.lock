@@ -1,0 +1,165 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run python -m churn_pipeline.cli prepare --params-file params.yaml
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 2c880a3546219f0e3df66ddc11f53b4e
+      size: 654
+    - path: src/churn_pipeline/
+      hash: md5
+      md5: 159f879edde4433ba2c865fb51e59605.dir
+      size: 73851
+      nfiles: 15
+    params:
+      params.yaml:
+        c_grid:
+        - 0.01
+        - 0.1
+        - 1.0
+        - 10.0
+        calibration_bins: 10
+        cap_quantile_high: 0.99
+        cap_quantile_low: 0.01
+        cv_folds: 3
+        fn_cost: 5.0
+        fp_cost: 1.0
+        n_samples: 5000
+        seed: 42
+        test_frac: 0.2
+    outs:
+    - path: data/churn.parquet
+      hash: md5
+      md5: 50e001758127fc0d3c31a4f96e213993
+      size: 45694
+    - path: data/dataset_contract.json
+      hash: md5
+      md5: 33b2db5bd6c3e96ab8c4b72d784697a1
+      size: 271
+    - path: reports/dq_report.md
+      hash: md5
+      md5: 9bca8a1e72b5838b78c5e35783cb9752
+      size: 611
+  train:
+    cmd: uv run python -m churn_pipeline.cli train --params-file params.yaml
+    deps:
+    - path: data/churn.parquet
+      hash: md5
+      md5: 50e001758127fc0d3c31a4f96e213993
+      size: 45694
+    - path: params.yaml
+      hash: md5
+      md5: 2c880a3546219f0e3df66ddc11f53b4e
+      size: 654
+    - path: src/churn_pipeline/
+      hash: md5
+      md5: 159f879edde4433ba2c865fb51e59605.dir
+      size: 73851
+      nfiles: 15
+    params:
+      params.yaml:
+        c_grid:
+        - 0.01
+        - 0.1
+        - 1.0
+        - 10.0
+        cv_folds: 3
+        seed: 42
+        test_frac: 0.2
+    outs:
+    - path: data/holdout.parquet
+      hash: md5
+      md5: b77e4d444dfac9dbe4e535da6c85efc4
+      size: 23017
+    - path: data/model.pkl
+      hash: md5
+      md5: b82f5731135ac794775cc21b54766802
+      size: 3645
+    - path: data/model_meta.json
+      hash: md5
+      md5: 9febbfc1b038f9bc49bd155928fc5deb
+      size: 147
+  evaluate:
+    cmd: uv run python -m churn_pipeline.cli evaluate --params-file params.yaml
+    deps:
+    - path: data/holdout.parquet
+      hash: md5
+      md5: b77e4d444dfac9dbe4e535da6c85efc4
+      size: 23017
+    - path: data/model.pkl
+      hash: md5
+      md5: b82f5731135ac794775cc21b54766802
+      size: 3645
+    - path: params.yaml
+      hash: md5
+      md5: 2c880a3546219f0e3df66ddc11f53b4e
+      size: 654
+    - path: src/churn_pipeline/
+      hash: md5
+      md5: 159f879edde4433ba2c865fb51e59605.dir
+      size: 73851
+      nfiles: 15
+    params:
+      params.yaml:
+        calibration_bins: 10
+        fn_cost: 5.0
+        fp_cost: 1.0
+        seed: 42
+        test_frac: 0.2
+        threshold_grid:
+        - 0.0
+        - 0.025
+        - 0.05
+        - 0.075
+        - 0.1
+        - 0.125
+        - 0.15
+        - 0.175
+        - 0.2
+        - 0.225
+        - 0.25
+        - 0.275
+        - 0.3
+        - 0.325
+        - 0.35
+        - 0.375
+        - 0.4
+        - 0.425
+        - 0.45
+        - 0.475
+        - 0.5
+        - 0.525
+        - 0.55
+        - 0.575
+        - 0.6
+        - 0.625
+        - 0.65
+        - 0.675
+        - 0.7
+        - 0.725
+        - 0.75
+        - 0.775
+        - 0.8
+        - 0.825
+        - 0.85
+        - 0.875
+        - 0.9
+        - 0.925
+        - 0.95
+        - 0.975
+        - 1.0
+    outs:
+    - path: reports/figures/
+      hash: md5
+      md5: db6bb9bb162d0cb1f9fe7155f0d4882b.dir
+      size: 177266
+      nfiles: 8
+    - path: reports/metrics.json
+      hash: md5
+      md5: 5b50a7c3ec6c2e7b47efd52aa4424a04
+      size: 660
+    - path: reports/report.html
+      hash: md5
+      md5: c98a94c31a1c8b7c13958d9967485944
+      size: 1656

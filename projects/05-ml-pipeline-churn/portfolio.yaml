@@ -1,0 +1,11 @@
+id: 05-ml-pipeline-churn
+title: Ml Pipeline Churn
+domain: Classical ML
+techniques:
+- sklearn Pipeline
+- ColumnTransformer
+- calibration
+- threshold tuning
+data: Synthetic churn (messy)
+status: working
+order: 5

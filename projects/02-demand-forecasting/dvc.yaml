@@ -1,0 +1,36 @@
+stages:
+  prepare:
+    cmd: uv run python -m demand_forecasting.cli prepare
+    deps:
+      - src/demand_forecasting
+      - params.yaml
+    outs:
+      - data/panel.parquet
+      - data/dataset.json
+  features:
+    cmd: uv run python -m demand_forecasting.cli features
+    deps:
+      - src/demand_forecasting
+      - params.yaml
+      - data/panel.parquet
+    outs:
+      - data/features.parquet
+  train:
+    cmd: uv run python -m demand_forecasting.cli train
+    deps:
+      - src/demand_forecasting
+      - params.yaml
+      - data/features.parquet
+    outs:
+      - data/models.pkl
+  evaluate:
+    cmd: uv run python -m demand_forecasting.cli evaluate
+    deps:
+      - src/demand_forecasting
+      - params.yaml
+      - data/panel.parquet
+      - data/features.parquet
+    outs:
+      - reports/metrics.json
+      - reports/report.html
+      - reports/figures
