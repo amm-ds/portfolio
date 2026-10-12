@@ -1,0 +1,106 @@
+project_id: 04-nlp-classification
+sections:
+  - id: background
+    text_md: |
+      Newsrooms, aggregators, and compliance teams all face the same mundane
+      problem at scale: thousands of short news items arrive continuously and
+      someone has to route each one to the right desk. Manual triage does not
+      scale, and rule-based keyword systems break the first time a headline
+      uses unfamiliar wording.
+
+      Text classification is the canonical NLP solution, but the real decision
+      is not "classical ML or deep learning" — it is what each approach costs
+      and what each delivers on a fixed, auditable budget. This showcase makes
+      that trade-off concrete on a real, widely used benchmark.
+
+  - id: objectives
+    text_md: |
+      Target: strong macro-F1 across four news categories on the AG News
+      benchmark, produced by a pipeline that is fully reproducible on a laptop
+      CPU in under 15 minutes — no GPU, no proprietary data, no black boxes.
+
+      Objectives: (1) score a fine-tuned DistilBERT against an honest
+      TF-IDF + logistic-regression baseline and two naive floors; (2) train
+      the transformer with a hand-written PyTorch loop whose every detail
+      (optimizer, LR schedule, early stopping) is visible and unit-tested;
+      (3) enforce the platform's data contracts — bounded stratified sampling,
+      DQ gates, sha256-pinned snapshot metadata.
+    metrics_keys: [naive_majority, baseline_tfidf_logreg, distilbert_finetuned]
+
+  - id: data
+    text_md: |
+      Real dataset: AG News (`fancyzhx/ag_news`, HuggingFace), 127,600
+      historical news items with headlines + descriptions across four classes
+      (World, Sports, Business, Sci/Tech); license recorded as `unknown` on the
+      HF dataset card. The full corpus is far beyond a CPU showcase, so the
+      pipeline downloads it once and draws a seeded, per-class stratified
+      subsample with `numpy.random.RandomState`: 4,000 train (3,600 train /
+      400 validation after a stratified carve-out) and 1,000 test.
+
+      The bound is deliberate and documented: it keeps the whole pipeline
+      reproducible in minutes while the perfectly balanced 250-per-class test
+      split keeps every run's macro-F1 directly comparable.
+    figures: [eda_class_balance]
+
+  - id: eda
+    text_md: |
+      The subsample preserves the source's class balance exactly — each split
+      is uniformly 25% World / Sports / Business / Sci/Tech, so no class can
+      win by prior alone. Text lengths (headline + description) cluster around
+      20–50 words, well inside the 128-token truncation budget: the
+      `max_length` cap discards almost nothing, which keeps the comparison
+      between models fair.
+
+  - id: training
+    text_md: |
+      Two approaches train on the identical 3,600-row train split. The
+      baseline is TF-IDF (word 1–2 grams, 8,000 features) + LogisticRegression.
+      The transformer is `distilbert-base-uncased` with a fresh classification
+      head, fine-tuned by a hand-written PyTorch loop: HF tokenizer with
+      truncation + padding to 128 tokens, AdamW, a linear warmup + decay LR
+      schedule implemented by hand (`lr_at_step`), per-epoch validation
+      macro-F1, and early stopping with patience 1 that restores the best
+      weights. Everything is seeded; nothing hides inside a framework Trainer.
+    figures: [training_curve]
+
+  - id: evaluation
+    text_md: |
+      Every run — the two naive floors (`naive_majority`, `random_uniform`),
+      the TF-IDF baseline, and the fine-tuned DistilBERT — is scored on the
+      same 1,000-row stratified test split with the platform's standard
+      classification metrics (accuracy, macro precision/recall/F1) plus
+      weighted F1. Macro-F1 is the headline metric: on a balanced test set it
+      exposes the majority-class failure mode that accuracy alone would mask.
+    figures: [confusion_matrix_distilbert, per_class_f1_distilbert]
+
+  - id: results
+    text_md: |
+      Measured on this machine (CPU only, seed 42), from `reports/metrics.json`:
+
+      | run | accuracy | f1_macro |
+      |---|---|---|
+      | naive_majority | 0.2500 | 0.1000 |
+      | random_uniform | 0.2540 | 0.2533 |
+      | baseline_tfidf_logreg | 0.8720 | 0.8714 |
+      | distilbert_finetuned | 0.9020 | 0.9021 |
+
+      DistilBERT leads the TF-IDF baseline by +3.1 pp macro-F1 and both
+      trained models clear the naive floors by roughly 62–65 points. The loop
+      early-stopped after epoch 2 (best val F1 0.8880 from epoch 1). Residual
+      errors concentrate on the genuinely ambiguous Business ↔ Sci/Tech
+      boundary (see the confusion matrix).
+
+  - id: conclusions
+    text_md: |
+      Why fine-tuning wins here: bag-of-words captures which words predict a
+      topic, not how they compose — DistilBERT's pre-trained attention layers
+      already encode syntax and topical semantics, so ~3.6k labeled rows are
+      enough to re-point them at four classes. Honest limits: this is a
+      deliberately bounded lower bound of the scaling curve — 4k/1k stratified
+      subsample, 2 epochs, max_length 128, one seed, CPU budget. The classical
+      baseline is within 3 points and would remain the right choice where
+      compute, latency, or interpretability dominates; with the full 120k rows
+      and a GPU the transformer's advantage widens (published full-data results
+      reach ~0.93–0.94 macro-F1). Roadmap: Optuna HPO, a GPU-scale real-data
+      track, and misclassification error analysis.
+    metrics_keys: [baseline_tfidf_logreg, distilbert_finetuned]

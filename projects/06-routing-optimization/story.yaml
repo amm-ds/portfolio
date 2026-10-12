@@ -1,0 +1,133 @@
+project_id: 06-routing-optimization
+sections:
+- id: background
+  text_md: |
+    Last-mile and field-service routing is one of the few places where a few
+    percent of travel distance translates directly into fuel, driver hours and
+    CO₂ — every day, on every route. The vehicle routing problem with time
+    windows (VRPTW) is its canonical form: a fleet leaves a depot, must serve
+    every customer inside a promised time window, respects vehicle capacity,
+    and comes home. It is also one of the hardest combinatorial problems in
+    practice — 100 customers already have more candidate solutions than any
+    computer can enumerate.
+
+    Clients usually ask two questions: *how good is a quick, transparent
+    heuristic, and what would a heavier optimizer buy us?* This project answers
+    the first question honestly and gives the second a measurable baseline.
+  figures: []
+  metrics_keys: []
+- id: objectives
+  text_md: |
+    Serve all customers exactly once, within capacity and every time window,
+    while minimizing total distance — and prove it. Every solution is
+    machine-validated (exactly-once service, capacity, time windows) before it
+    is reported.
+
+    Quality is measured as the optimality gap against published best-known
+    solutions on standard Solomon benchmark instances, not against our own
+    yesterday's run. The engineering targets: deterministic, seeded solvers a
+    client can audit line by line; total benchmark runtime in seconds; and a
+    randomized-feasible reference that makes the value of constraint-aware
+    construction visible rather than assumed.
+  figures: []
+  metrics_keys: [randomized, clarke_wright, two_opt]
+- id: data
+  text_md: |
+    Real benchmark data: the Solomon VRPTW 100-customer instances (CVRPLIB),
+    the standard reference this literature has used since 1987. We run a
+    curated 10-instance subset spanning the three problem families —
+    clustered (C1), random (RC1) and mixed — each with 100 customers whose
+    coordinates, demand, time window and service time are pinned by the
+    instance file.
+
+    The archive is downloaded once from the SINTEF TOP mirror with a
+    sha256-pinned dataset card (`data/raw/dataset_card.json`), and best-known
+    reference distances come from the curated registry table
+    `docs/data-registry/best_known/solomon100.csv`. Data-quality gates (null
+    rates, ranges vs fleet capacity) halt the pipeline loudly on any anomaly.
+  figures: []
+  metrics_keys: []
+- id: eda
+  text_md: |
+    Geography only tells half the story. On C101 the customers form tight
+    spatial clusters — but the color scale below shows how narrow their time
+    windows are (width = due − ready). Narrow windows constrain the *order* in
+    which nearby customers may be visited, which is why this instance is easy
+    to serve with few vehicles yet hard to keep short: the routing is dictated
+    by the clock more than by the map.
+
+    The depot (star) sits inside the cluster, and the tightest windows are
+    scattered across it — no simple geographic sweep can respect them.
+  figures: [eda_instance_map]
+  metrics_keys: []
+- id: training
+  text_md: |
+    There is no model fitting here — "training" is construction plus
+    improvement. The problem is specified as pydantic models (`Customer`,
+    `Problem`, `RoutePlan`) so every solver speaks the same contract. Four
+    deterministic, hand-written solvers, Euclidean distances, all seeded:
+
+    1. **randomized** — shuffle customers with the run seed, pack them in that
+       order into capacity/time-window-feasible routes, repair any route whose
+       return-to-depot leg breaks the horizon. No local search; the flat
+       reference that answers "what would blind feasibility cost?"
+    2. **nearest_neighbor** — greedy nearest-feasible insertion, seeded by the
+       earliest-due customer.
+    3. **clarke_wright** — Clarke–Wright savings with capacity and full-route
+       time-window feasibility checks on every merge.
+    4. **two_opt** — first-improvement 2-opt (intra-route reversals + 2-opt*
+       tail exchanges) applied to the better construction plan, accepting only
+       moves that keep every route feasible.
+  figures: []
+  metrics_keys: [randomized, clarke_wright, two_opt]
+- id: evaluation
+  text_md: |
+    Each solver runs on every instance; distances are compared against the
+    published best-known values and reported as gap %. Every route plan passes
+    the hard validator (all customers exactly once, capacity respected) plus a
+    full time-window simulation before it reaches the table.
+
+    Runtimes are per-instance wall time (mean ≈ 3 ms per solver per instance;
+    the whole 10-instance benchmark solves in ~0.1 s). The route map shows the
+    best C101 plan — 15 vehicles, each a feasibility-checked chain — and the
+    gap figure shows all four solvers side by side.
+  figures: [route_map_C101, runtime]
+  metrics_keys: [randomized, clarke_wright, two_opt]
+- id: results
+  text_md: |
+    Real run, seed 42 (means over the 10-instance subset): **randomized**
+    4055.76 distance / **302.86 %** gap with 24.6 vehicles; **clarke_wright**
+    1339.13 / **24.62 %** with 15.7 vehicles; **two_opt** 1289.91 /
+    **19.55 %** with 15.7 vehicles, best on 10/10 instances. Best per-instance
+    gap: 8.94 % (RC104); worst: 30.41 % (C102).
+
+    The deltas tell the story: constraint-aware construction (savings) is
+    2765.85 distance units (−68 %) ahead of merely-feasible random routing
+    before any local search, because it builds routes around shared depot legs
+    and joint time windows instead of a random permutation. The 2-opt stage
+    then closes a further 49.2 units (−5.1 gap points, e.g. C101 36.0 % →
+    26.2 %) with feasibility-preserving moves only. Caveat, reported not
+    hidden: on RC105 the naive baselines exceed the stated 25-vehicle fleet
+    (randomized 30, nearest-neighbor 26) — distance stays valid, the vehicle
+    count is the honest signal of a hard instance.
+  figures: [gap_pct]
+  metrics_keys: [randomized, clarke_wright, two_opt]
+- id: conclusions
+  text_md: |
+    Feasibility is cheap; constraint-aware construction is where the value
+    is. A ~300-line, fully auditable heuristic stack reaches a mean gap of
+    19.55 % to solutions published by tuned ALNS/tabu metaheuristics,
+    in milliseconds, with every route machine-validated. That is the
+    speed-to-value story: a baseline this cheap and this honest gives any
+    heavier optimizer a concrete bar it must clear to justify its complexity.
+
+    Lessons: (1) validate feasibility in code, never by inspection — the
+    validator caught real construction bugs during development; (2) always
+    benchmark against published optima, or "improvements" are unverifiable;
+    (3) keep a randomized feasible baseline in the chart — without it, the
+    68 % improvement of construction heuristics is invisible. Roadmap: an
+    ALNS/tabu track behind the same contracts, Optuna-driven operator HPO,
+    and the SINTEF hierarchical objective (fewest vehicles first, then
+    distance).
+  figures: []
+  metrics_keys: [randomized, clarke_wright, two_opt]

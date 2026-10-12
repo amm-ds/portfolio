@@ -1,0 +1,40 @@
+# Mirrors mobility.config.MobilityConfig — DVC tracks these as pipeline params.
+# Change a value here, then `dvc repro` rebuilds the affected stages.
+
+months:
+  - "2024-01"
+  - "2024-02"
+  - "2024-03"
+  - "2024-04"
+  - "2024-05"
+  - "2024-06"
+  - "2024-07"
+  - "2024-08"
+  - "2024-09"
+  - "2024-10"
+  - "2024-11"
+  - "2024-12"
+max_rows_per_month: null
+min_rows_per_month: 500000
+min_duration_min: 1.0
+max_duration_min: 240.0
+lags: [1, 2, 24, 168]
+train_cutoff: "2024-10-01"
+max_train_rows: 2000000
+gbm:
+  max_iter: 300
+  learning_rate: 0.08
+  max_leaf_nodes: 63
+  min_samples_leaf: 40
+  l2_regularization: 1.0
+  quantile_max_iter: 200
+nn:
+  hidden_size: 64
+  second_hidden_size: 32
+  epochs: 8
+  batch_size: 1024
+  lr: 0.001
+  weight_decay: 0.00001
+  grad_clip: 5.0
+  early_stop_patience: 2
+seed: 42

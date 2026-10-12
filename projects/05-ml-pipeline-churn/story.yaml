@@ -1,0 +1,111 @@
+project_id: 05-ml-pipeline-churn
+sections:
+  - id: background
+    text_md: |
+      Churn is asymmetric economics: a missed churner (false negative) costs
+      the business roughly five times a false alarm (false positive) — a lost
+      customer versus one retention voucher. With a base churn rate of only
+      ~9%, the cheapest "model" is to never ring the alarm, and it is still
+      wrong in the way that costs money.
+
+      This project shows how to take churn from a spreadsheet of scores to an
+      operating decision: a production-grade sklearn pipeline whose artifact
+      can be handed raw CRM rows, and a threshold chosen on a business-cost
+      curve rather than accepted as a library default.
+  - id: objectives
+    text_md: |
+      1. Rank customers by churn risk on deliberately messy tabular data,
+         with all preprocessing embedded in the fitted model (no train/serve
+         skew, deployable as-is).
+      2. Quantify value honestly: every metric is reported against a naive
+         majority baseline on the same holdout and the same cost model.
+      3. Choose the operating threshold by minimizing FP·1 + FN·5, and show
+         how much of the win comes from modeling versus from threshold
+         tuning alone.
+      4. Enforce data quality as a gate: null rates and ranges are checked
+         before training, and a failure halts the pipeline loudly.
+  - id: data
+    text_md: |
+      5,000 rows from the platform's seeded synthetic churn generator
+      (`portfolio_core.synthetic.churn`), versioned by a DatasetContract with
+      a SHA-256 checksum. The generator injects the messiness a real CRM
+      export shows up with: ~2% NaN in `age`, ~3% NaN in `support_calls`,
+      and a single 9,999 monthly-charge outlier — so robustness handling is
+      exercised for real, not simulated in a notebook.
+
+      Features: `age`, `tenure_months`, `monthly_charges`, `support_calls`
+      (numeric) and `contract` (month-to-month / one-year / two-year,
+      categorical). Target: `churned` (8.8% base rate). Split: stratified
+      80/20 → 4,000 train / 1,000 holdout; no time axis exists, so random
+      stratification is the correct protocol.
+  - id: eda
+    text_md: |
+      Churn is concentrated where contracts are short: month-to-month
+      customers churn at 13.6%, one-year at 3.8%, two-year at 1.9% — the
+      single strongest visual split in the data. Churners also pay more
+      (~111 vs ~68 mean monthly charges, overlapping distributions) and have
+      shorter tenure (~15 vs ~25 months), and a long low-tenure tail is
+      visible in the distribution panels.
+
+      The outlier charge sits far outside the bulk of both distributions —
+      exactly the row that would distort an unguarded scaler or a naive
+      correlation. Missingness is scattered (2% of ages, 3% of support-call
+      counts), invisible to a casual `head()` but visible to the DQ gates.
+    figures: [eda_churn_profile]
+  - id: training
+    text_md: |
+      One fitted sklearn Pipeline from raw DataFrame to probability. Numeric
+      branch: `OutlierCapper` clips at train-time 1%/99% quantiles, a
+      `MissingValueIndicator` appends `<col>_was_missing` flags before
+      imputation, then median imputation and standard scaling. Categorical
+      branch: most-frequent imputation + one-hot with `handle_unknown=
+      'ignore'`. Classifier: `LogisticRegression(class_weight='balanced',
+      max_iter=1000)`.
+
+      Model selection: `GridSearchCV` over C ∈ {0.01, 0.1, 1, 10} with 3-fold
+      stratified CV scored by F1 → best C = 1.0 (CV F1 0.3433). All
+      preprocessing lives inside the estimator, so the persisted artifact's
+      deployment contract is simply "hand us the raw row".
+  - id: evaluation
+    text_md: |
+      Holdout: 1,000 stratified rows. Metrics via `portfolio_eval`:
+      ROC-AUC, macro precision/recall/F1, plus a business cost (FP·1 + FN·5)
+      at each run's operating point. Three runs are reported: a naive
+      majority baseline (constant probability = training churn rate, placed
+      at its cheaper operating regime), the model at the default threshold
+      0.5, and the model at the cost-optimal threshold over a 41-point grid.
+
+      Diagnostics: 10-bin calibration curve, permutation importance on
+      holdout F1 (5 repeats, error bars), and a business-cost curve showing
+      both the model's and the naive optimum.
+    figures: [calibration_curve]
+  - id: results
+    text_md: |
+      Holdout ROC-AUC **0.8344**. Business cost (FP=1, FN=5): naive majority
+      **440** → model at default 0.5: 350 → model at tuned 0.725: **282**
+      (−35.9% vs naive; −19.4% from threshold tuning alone, same model).
+      Macro F1: naive **0.477** → 0.580 → **0.683** (+43% vs naive). The
+      naive run posts the *best accuracy* (0.912) — on an 8.8% churn rate,
+      never alarming is accurate and useless, which is why the deliverable is
+      cost and F1, not accuracy.
+
+      Permutation importance (holdout-F1 decrease): `monthly_charges` (0.118)
+      and `contract` (0.076) dominate, matching the generator's ground truth;
+      `age` is uninformative (−0.0005), as designed.
+    figures: [business_cost_curve, permutation_importance]
+    metrics_keys: [naive_majority, logreg_threshold_0.5, logreg_threshold_0.725]
+  - id: conclusions
+    text_md: |
+      Pipeline-embedded preprocessing is the deployment contract: because
+      capping, flags, imputation, and scaling ship inside the artifact, the
+      serving layer needs one line of code and cannot drift from training
+      behavior — a data bug either passes the DQ gate or stops the pipeline,
+      it never silently degrades the model.
+
+      Threshold choice is a business decision, not a library default: tuning
+      to the cost curve cut cost by a fifth with zero retraining. The model
+      is mildly over-forecasting at high probabilities (calibration curve) —
+      acceptable for ranking and thresholding, and the first candidate for an
+      isotonic/Platt stage (roadmap). Roadmap also includes Optuna HPO over C
+      and cap quantiles, a gradient-boosted comparator, and a real-data track
+      behind the same contract.

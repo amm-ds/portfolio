@@ -1,0 +1,147 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run python -m nlp_classification.cli prepare
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 26c91f4fd19c7c62917808c195164b03
+      size: 422
+    - path: src/nlp_classification
+      hash: md5
+      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
+      size: 90422
+      nfiles: 13
+    outs:
+    - path: data/dataset_contract.json
+      hash: md5
+      md5: 05f6ab708169846e18892fa35d3d737c
+      size: 281
+    - path: data/label_names.json
+      hash: md5
+      md5: 7eea068586088c3bb50b948dc46cbb6f
+      size: 43
+    - path: data/test
+      hash: md5
+      md5: 587345e4df494fa111929205c084e853.dir
+      size: 1145172
+      nfiles: 4
+    - path: data/train
+      hash: md5
+      md5: 3e1e628df08807ee6ab05ba6728a9b08.dir
+      size: 901541
+      nfiles: 3
+    - path: data/val
+      hash: md5
+      md5: bb43c29966072d444ace2ceab7aab77f.dir
+      size: 98389
+      nfiles: 3
+  train-baseline:
+    cmd: uv run python -m nlp_classification.cli train-baseline
+    deps:
+    - path: data/train
+      hash: md5
+      md5: 3e1e628df08807ee6ab05ba6728a9b08.dir
+      size: 901541
+      nfiles: 3
+    - path: data/val
+      hash: md5
+      md5: bb43c29966072d444ace2ceab7aab77f.dir
+      size: 98389
+      nfiles: 3
+    - path: params.yaml
+      hash: md5
+      md5: 26c91f4fd19c7c62917808c195164b03
+      size: 422
+    - path: src/nlp_classification
+      hash: md5
+      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
+      size: 90422
+      nfiles: 13
+    outs:
+    - path: reports/models/baseline.joblib
+      hash: md5
+      md5: e6c54ba1c00cc7bc324bf66a6fd9fc3b
+      size: 559932
+  train-nn:
+    cmd: uv run python -m nlp_classification.cli train-nn
+    deps:
+    - path: data/label_names.json
+      hash: md5
+      md5: 7eea068586088c3bb50b948dc46cbb6f
+      size: 43
+    - path: data/train
+      hash: md5
+      md5: 3e1e628df08807ee6ab05ba6728a9b08.dir
+      size: 901541
+      nfiles: 3
+    - path: data/val
+      hash: md5
+      md5: bb43c29966072d444ace2ceab7aab77f.dir
+      size: 98389
+      nfiles: 3
+    - path: params.yaml
+      hash: md5
+      md5: 26c91f4fd19c7c62917808c195164b03
+      size: 422
+    - path: src/nlp_classification
+      hash: md5
+      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
+      size: 90422
+      nfiles: 13
+    outs:
+    - path: reports/history.json
+      hash: md5
+      md5: 90927fd7a3dea3e654d1fbafe4c9700d
+      size: 350
+    - path: reports/models/distilbert.pt
+      hash: md5
+      md5: 1a6531167249afbb729032db39508e18
+      size: 267866937
+  evaluate:
+    cmd: uv run python -m nlp_classification.cli evaluate
+    deps:
+    - path: data/label_names.json
+      hash: md5
+      md5: 7eea068586088c3bb50b948dc46cbb6f
+      size: 43
+    - path: data/test
+      hash: md5
+      md5: 587345e4df494fa111929205c084e853.dir
+      size: 1145172
+      nfiles: 4
+    - path: params.yaml
+      hash: md5
+      md5: 26c91f4fd19c7c62917808c195164b03
+      size: 422
+    - path: reports/history.json
+      hash: md5
+      md5: 90927fd7a3dea3e654d1fbafe4c9700d
+      size: 350
+    - path: reports/models/baseline.joblib
+      hash: md5
+      md5: e6c54ba1c00cc7bc324bf66a6fd9fc3b
+      size: 559932
+    - path: reports/models/distilbert.pt
+      hash: md5
+      md5: 1a6531167249afbb729032db39508e18
+      size: 267866937
+    - path: src/nlp_classification
+      hash: md5
+      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
+      size: 90422
+      nfiles: 13
+    outs:
+    - path: reports/figures
+      hash: md5
+      md5: 0f77d1301ca43586d3368dcb8d9caa8a.dir
+      size: 87870
+      nfiles: 8
+    - path: reports/metrics.json
+      hash: md5
+      md5: 455673c274896fcdcbae06ca4b02db62
+      size: 774
+    - path: reports/report.html
+      hash: md5
+      md5: 1c2cc24ea6edd97244acd7fa9328975c
+      size: 1864

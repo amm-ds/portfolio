@@ -1,0 +1,12 @@
+id: 03-anomaly-detection
+title: Anomaly Detection
+domain: Unsupervised ML / telemetry
+techniques:
+- polars ETL
+- IsolationForest
+- LOF
+- One-Class SVM
+- DQ gates
+data: Synthetic (NSL-KDD optional)
+status: working
+order: 3

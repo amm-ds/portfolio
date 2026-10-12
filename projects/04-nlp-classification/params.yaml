@@ -1,0 +1,16 @@
+# Mirrors nlp_classification.config.NLPConfig defaults (playbook §Config).
+seed: 42
+dataset_name: fancyzhx/ag_news
+dataset_source: https://huggingface.co/datasets/fancyzhx/ag_news
+train_samples: 4000
+test_samples: 1000
+val_fraction: 0.1
+model_name: distilbert-base-uncased
+max_length: 128
+batch_size: 32
+epochs: 2
+learning_rate: 2.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.1
+early_stop_patience: 1
+tfidf_max_features: 8000

@@ -1,0 +1,29 @@
+stages:
+  download:
+    cmd: uv run python -m routing_optimization.cli download
+    deps:
+    - src/routing_optimization
+    - params.yaml
+    outs:
+    - data/raw
+  solve:
+    cmd: uv run python -m routing_optimization.cli solve
+    deps:
+    - src/routing_optimization
+    - params.yaml
+    - data/raw
+    outs:
+    - reports/solutions.json
+    - reports/dq.md
+  evaluate:
+    cmd: uv run python -m routing_optimization.cli evaluate
+    deps:
+    - src/routing_optimization
+    - params.yaml
+    - reports/solutions.json
+    - ../../docs/data-registry/best_known/solomon100.csv
+    outs:
+    - reports/results.md
+    - reports/metrics.json
+    - reports/report.html
+    - reports/figures

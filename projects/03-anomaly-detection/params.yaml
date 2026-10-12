@@ -1,0 +1,16 @@
+# Mirrors AnomalyConfig defaults — the CLI builds its config from this file.
+seed: 42
+n: 20000
+anomaly_rate: 0.02
+contamination: 0.02
+models:
+  - isolation_forest
+  - lof
+  - ocsvm
+windows:
+  - 10
+  - 60
+train_frac: 0.7
+max_null_rate: 0.01
+n_estimators: 300
+lof_neighbors: 20

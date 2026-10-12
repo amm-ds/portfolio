@@ -1,0 +1,45 @@
+stages:
+  prepare:
+    cmd: uv run python -m anomaly_detection.cli prepare
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+    outs:
+      - data/raw.parquet
+      - data/dataset_contract.json
+  validate:
+    cmd: uv run python -m anomaly_detection.cli validate
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+      - data/raw.parquet
+    outs:
+      - reports/dq_report.html
+  features:
+    cmd: uv run python -m anomaly_detection.cli features
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+      - data/raw.parquet
+    outs:
+      - data/features.parquet
+  train:
+    cmd: uv run python -m anomaly_detection.cli train
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+      - data/features.parquet
+    outs:
+      - data/models
+  evaluate:
+    cmd: uv run python -m anomaly_detection.cli evaluate
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+      - data/raw.parquet
+      - data/features.parquet
+      - data/models
+    outs:
+      - reports/metrics.json
+      - reports/report.html
+      - reports/figures

@@ -1,0 +1,56 @@
+stages:
+  prepare:
+    cmd: uv run python -m churn_pipeline.cli prepare --params-file params.yaml
+    deps:
+      - src/churn_pipeline/
+      - params.yaml
+    params:
+      - n_samples
+      - seed
+      - test_frac
+      - c_grid
+      - cv_folds
+      - fp_cost
+      - fn_cost
+      - calibration_bins
+      - cap_quantile_low
+      - cap_quantile_high
+    outs:
+      - data/churn.parquet
+      - data/dataset_contract.json
+      - reports/dq_report.md
+
+  train:
+    cmd: uv run python -m churn_pipeline.cli train --params-file params.yaml
+    deps:
+      - src/churn_pipeline/
+      - params.yaml
+      - data/churn.parquet
+    params:
+      - seed
+      - test_frac
+      - c_grid
+      - cv_folds
+    outs:
+      - data/model.pkl
+      - data/model_meta.json
+      - data/holdout.parquet
+
+  evaluate:
+    cmd: uv run python -m churn_pipeline.cli evaluate --params-file params.yaml
+    deps:
+      - src/churn_pipeline/
+      - params.yaml
+      - data/model.pkl
+      - data/holdout.parquet
+    params:
+      - seed
+      - test_frac
+      - threshold_grid
+      - fp_cost
+      - fn_cost
+      - calibration_bins
+    outs:
+      - reports/metrics.json
+      - reports/report.html
+      - reports/figures/

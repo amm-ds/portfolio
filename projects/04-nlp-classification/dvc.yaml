@@ -1,0 +1,46 @@
+stages:
+  prepare:
+    cmd: uv run python -m nlp_classification.cli prepare
+    deps:
+      - src/nlp_classification
+      - params.yaml
+    outs:
+      - data/train
+      - data/val
+      - data/test
+      - data/label_names.json
+      - data/dataset_contract.json
+  train-baseline:
+    cmd: uv run python -m nlp_classification.cli train-baseline
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/train
+      - data/val
+    outs:
+      - reports/models/baseline.joblib
+  train-nn:
+    cmd: uv run python -m nlp_classification.cli train-nn
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/train
+      - data/val
+      - data/label_names.json
+    outs:
+      - reports/models/distilbert.pt
+      - reports/history.json
+  evaluate:
+    cmd: uv run python -m nlp_classification.cli evaluate
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/test
+      - data/label_names.json
+      - reports/models/baseline.joblib
+      - reports/models/distilbert.pt
+      - reports/history.json
+    outs:
+      - reports/metrics.json
+      - reports/report.html
+      - reports/figures

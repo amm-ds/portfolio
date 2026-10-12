@@ -1,0 +1,145 @@
+# Project 01 — RAG & Agentic AI Assistant
+
+Agentic-AI flagship of the portfolio: a grounded question-answering assistant
+over a curated slice of English Wikipedia, built on `pydantic-ai` with
+structured, cited outputs. Retrieval is embeddings + FAISS with cross-encoder
+reranking; everything runs CPU-only and works fully offline (deterministic
+mock LLM) when no provider is configured.
+
+- Design record: [DESIGN.md](DESIGN.md)
+- Live artifacts: `reports/report.html`, `reports/metrics.json`, `reports/figures/`
+- Data contract: `data/raw/dataset_contract.json` (sha256-pinned)
+
+## Problem
+
+Give a user (or downstream system) answers that are **traceable to evidence**:
+every claim cites the exact Wikipedia passage it came from, the assistant
+refuses to answer beyond the retrieved context, and the quality of both
+retrieval and generation is measured on a graded question set — not demoed
+anecdotally.
+
+## Design summary
+
+Bounded stream of `wikimedia/wikipedia` (`20231101.en`) → topic-filtered
+corpus (5 topics, ≤120 articles each) with DQ gates and a checksum-pinned
+dataset contract → paragraph-aware chunking at 200/400/800 tokens →
+MiniLM-L6-v2 embeddings in a FAISS `IndexFlatIP` per chunk size →
+cross-encoder (`ms-marco-MiniLM-L-6-v2`) rerank of the top 5×k →
+`pydantic-ai` agent whose only corpus access is two tools
+(`search_documents`, `read_excerpt`) and whose output is the structured
+`AnalysisResult(summary, citations, confidence)`. Provider behaviour follows
+ADR-0004: live OpenAI-compatible endpoint when env-configured, deterministic
+mock otherwise. See [DESIGN.md](DESIGN.md) for options considered and SLOs.
+
+## Results
+
+Measured on this machine (CPU-only, offline mock LLM mode), over a graded set
+of questions with known relevant articles. Full detail in
+`reports/metrics.json`; interactive figures in `reports/figures/`.
+
+<!-- RESULTS:START -->
+Measured on this machine (Apple Silicon, CPU-only) in offline mock-LLM mode,
+2026-10-12. Corpus: **593 articles** (5 topics, ≤120 each plus exact-title
+anchors), **26 graded questions**, 0 skipped. Machine-readable:
+`reports/metrics.json`.
+
+**Retrieval quality vs chunk size** (embed → FAISS top-25 → cross-encoder rerank → top-10),
+against a seeded uniform-random ranking baseline (`config.seed`):
+
+| Chunk size | recall@5 | recall@10 | MRR@5 | random recall@5 | Δ MRR@5 vs random |
+|---|---|---|---|---|---|
+| 200 | **0.962** | 1.000 | **0.936** | 0.038 | **+0.897** |
+| 400 | **0.962** | 1.000 | 0.904 | 0.000 | **+0.904** |
+| 800 | **0.962** | 1.000 | 0.869 | 0.000 | **+0.869** |
+
+The random baseline marks the floor any ranker must beat: embeddings + rerank
+lift recall@5 from ≤0.04 to 0.962 (+0.92). Smaller chunks win on ranking
+sharpness (MRR@5) while recall@5 is saturated — see the
+[chunk-size sweep figure](reports/figures/chunk_size_sweep.html), where the
+baseline is drawn as flat dashed reference series, and the
+[cost-vs-quality frontier](reports/figures/cost_quality_frontier.html):
+200-token chunks dominate (same recall, best MRR, ~½ the context cost of 400).
+
+**RAG quality** (`RAGEvaluator`, keyword judge, mock-mode answers):
+
+| Metric | Value | Note |
+|---|---|---|
+| context_recall | 0.962 | retrieval-side recall@5, matches the sweep |
+| answer_relevance | 0.436 | scored against the fixed mock answer text |
+| faithfulness | 0.245 | mock answer is canned, so grounding is intentionally weak offline |
+
+Faithfulness/relevance here measure the deterministic offline answer; with
+`LLM_BASE_URL`/`LLM_API_KEY` configured the agent retrieves and cites real
+evidence, and the same harness scores its outputs. context_recall shows the
+retrieval layer delivers the right article 25/26 times at top-5.
+
+**Operations:**
+
+| Metric | Value |
+|---|---|
+| p50 agent latency (mock, local floor) | 3.0 ms |
+| p95 agent latency (mock, local floor) | 4.1 ms |
+| Est. live cost per query (context-sized, 400-token chunks) | ≈ $0.00037 |
+| Mock-mode cost floor per query | ≈ $0.00006 |
+| Latency distribution | [histogram](reports/figures/latency_histogram.html) |
+
+Latency in mock mode measures the local pipeline floor (retrieval + schema
+validation without a provider round-trip); a live provider adds its network
+and generation latency on top. Cost uses the rate card in `params.yaml`
+($0.15/M input, $0.60/M output tokens) over the measured prompt+context size.
+<!-- RESULTS:END -->
+
+## Figures
+
+| Figure | File |
+|---|---|
+| Corpus composition (EDA) | [reports/figures/eda_corpus_composition.html](reports/figures/eda_corpus_composition.html) |
+| Retrieval quality vs chunk size (with random baseline) | [reports/figures/chunk_size_sweep.html](reports/figures/chunk_size_sweep.html) |
+| Cost vs quality frontier | [reports/figures/cost_quality_frontier.html](reports/figures/cost_quality_frontier.html) |
+| Per-query latency histogram | [reports/figures/latency_histogram.html](reports/figures/latency_histogram.html) |
+| Full HTML report | [reports/report.html](reports/report.html) |
+
+## Reproduce
+
+```bash
+cd projects/01-rag-agent
+uv run python -m rag_agent.cli prepare-corpus   # streams Wikipedia (bounded scan)
+uv run python -m rag_agent.cli build-index      # 3 FAISS indexes (chunk-size sweep)
+uv run python -m rag_agent.cli evaluate         # retrieval + RAG + ops, writes reports/
+uv run python -m rag_agent.cli chat             # interactive demo (offline mock)
+```
+
+or, with DVC: `dvc repro` (stages in `dvc.yaml`, knobs in `params.yaml`).
+
+To run with a live LLM instead of the mock, copy `.env.example` to `.env` and
+fill in `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` — no code changes.
+
+Quality gates (from the repo root):
+
+```bash
+uv run ruff check projects/01-rag-agent
+uv run ruff format --check projects/01-rag-agent
+uv run mypy projects/01-rag-agent
+uv run pytest projects/01-rag-agent -q
+```
+
+## What this demonstrates for a client
+
+- **Grounded agents, not chat demos**: tool-restricted evidence access,
+  structured citations, output-schema validation that fails loudly.
+- **Measured quality**: graded retrieval metrics (recall@k, MRR) and LLM-judged
+  faithfulness/relevance, plus a chunk-size sweep showing the
+  quality/latency/cost trade-off with real numbers.
+- **Production hygiene**: dataset contracts with checksums, DQ gates, DVC
+  reproducibility, CPU-only footprint, offline capability, and an explicit
+  cost-per-query estimate.
+- **Provider portability**: one code path runs against any OpenAI-compatible
+  endpoint or fully offline (ADR-0004).
+
+## Data attribution
+
+Corpus text is from Wikipedia (`wikimedia/wikipedia`, dump `20231101.en`),
+licensed under [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)
+and [GFDL](https://www.gnu.org/licenses/fdl-1.3.html). Article titles and
+content remain the property of their respective authors; see the dataset
+contract in `data/raw/dataset_contract.json`.
