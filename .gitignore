@@ -45,4 +45,4 @@ apps/showcase-web/dist/
 .vscode/
 
 # mkdocs output
-site/
+/site/
