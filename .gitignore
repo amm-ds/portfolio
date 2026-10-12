@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Data & artifacts (DVC-tracked, never committed raw)
+data/
+*.parquet
+*.csv
+*.npy
+*.npz
+*.faiss
+*.db
+*.sqlite
+models/
+artifacts/
+reports/figures/*.html
+!**/data/.gitkeep
+
+# DVC
+/.dvc/cache
+/.dvc/tmp
+/.dvc/config.local
+
+# Secrets
+.env
+*.pem
+*.key
+
+# Node / web
+node_modules/
+apps/showcase-web/dist/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# mkdocs output
+site/
