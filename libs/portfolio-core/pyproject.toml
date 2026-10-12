@@ -1,0 +1,24 @@
+[project]
+name = "portfolio-core"
+version = "0.1.0"
+description = "Shared contracts, config, plotting, synthetic data, and LLM provider factory for the portfolio platform."
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.1",
+    "plotly>=5.24",
+    "polars>=1.9",
+    "pydantic>=2.9",
+    "pydantic-ai>=1.0",
+    "pydantic-settings>=2.5",
+    "pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = ["src/**/*.py", "src/**/py.typed"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/portfolio_core"]
