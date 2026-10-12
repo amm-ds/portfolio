@@ -1,0 +1,45 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  LLM_BASE_URL: "" # force mock provider: no key in CI
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --all-packages --dev
+      - name: Ruff
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Mypy (strict on libs)
+        run: uv run mypy libs
+      - name: Tests with coverage gates
+        run: uv run pytest --cov=libs --cov-report=term-missing
+      - name: Docs build (strict)
+        run: uv run mkdocs build --strict
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: gate
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build showcase image
+        run: docker build -t amm-ds-portfolio .
+      - name: Smoke test
+        run: |
+          docker run -d --name showcase -p 8000:8000 amm-ds-portfolio
+          sleep 15
+          curl -fsS http://localhost:8000/health
+          docker rm -f showcase

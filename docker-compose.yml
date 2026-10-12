@@ -1,0 +1,30 @@
+# Showcase app: FastAPI serves the API + the built React web app.
+# Optional dev setup (Vite dev server with hot reload + API):
+#   docker compose --profile dev up
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      # Optional live LLM provider (mock provider is the default):
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+
+  web-dev:
+    profiles: ["dev"]
+    image: node:22-alpine
+    working_dir: /web
+    command: sh -c "npm ci --no-audit --no-fund && npm run dev -- --host"
+    volumes:
+      - ./apps/showcase-web:/web
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
