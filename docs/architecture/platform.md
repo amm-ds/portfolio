@@ -42,6 +42,12 @@ flowchart LR
 
 Dependency direction is strictly: projects → libs; apps → libs; nothing → projects.
 
+Pragmatic exception (documented, not accidental): `apps/showcase-api` lazily imports two
+project packages at runtime to *serve* them — `rag_agent` for `/rag/chat` and `mobility`
+for `/projects/07-*/forecast`. Both degrade to a clear 503 when the project artifacts are
+absent, so the API never hard-depends on project state; the imports are runtime-only and
+never in `libs/`.
+
 ## Key contracts (extension points)
 
 - **`portfolio_core.schemas.DatasetContract`** — every dataset (real or synthetic)
