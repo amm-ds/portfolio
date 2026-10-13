@@ -15,34 +15,50 @@ embedding+MLP, all through the identical embargoed expanding-window
 checkpointed), MinT-lite hierarchical reconciliation with a tested coherence
 guarantee, and takeaway-annotated figures.
 
-## Key results (seed 42, pooled out-of-fold over 24 series × 4 folds)
+## Key results (seed 42, pooled out-of-fold)
 
-| run | MAE (units) | RMSE (units) | MAPE (%) | Δ MAE vs naive_last |
-|---|---|---|---|---|
-| naive_mean (floor) | 31.762 | 42.543 | 49.02 | — |
-| naive_last (persistence) | 14.476 | 19.881 | 19.28 | — |
-| ridge (baseline) | 9.116 | 12.705 | 12.44 | -37.0% |
-| hgb (default) | 8.619 | 12.178 | 11.43 | -40.5% |
-| **hgb_tuned (Optuna, 56 trials)** | **8.529** | **12.071** | **11.34** | **-41.1%** |
-| temporal_net (PyTorch) | 9.341 | 12.756 | 13.41 | -35.5% |
+Synthetic track (24 series × 4 folds):
 
-- HPO improved on hgb in **every** fold (e.g. fold 1: 7.860 → 7.728); the NN
-  trails even the linear baseline — reported honestly.
-- Reconciliation (last fold, store level): w=0.05, store MAE 23.892 → 23.837,
-  incoherence 24.125 → 22.919 (exactly ×(1−w), property-tested).
-- 6/6 DQ gates (`DQReport`) pass before any model trains; dataset carries a
-  versioned `DatasetContract` with SHA-256.
-- Full pipeline (`cli all`) ≈ 1 min unloaded; 39 offline tests.
+| run | MAE | RMSE | MAPE |
+|---|---|---|---|
+| naive_mean (floor) | 31.762 | 42.543 | 49.02% |
+| naive_last | 14.476 | 19.881 | 19.28% |
+| ridge | 9.116 | 12.705 | 12.44% |
+| hgb | 8.619 | 12.178 | 11.43% |
+| **hgb_tuned (Optuna, 56 trials)** | **8.529** | **12.071** | **11.34%** |
+| temporal_net (PyTorch) | 9.341 | 12.756 | 13.41% |
+
+Real-data track (UCI Online Retail II, 1,084 series × 4 folds, 89% zero share):
+
+| run | MAE | RMSE | MAPE |
+|---|---|---|---|
+| naive_mean | 10.838 | 97.607 | 91.3% |
+| naive_last | 10.288 | 135.674 | 356.2% |
+| ridge (collapses) | 16.734 | 98.531 | 236.2% |
+| hgb | 9.085 | 97.256 | 245.9% |
+| **hgb_tuned** | **8.989** | **96.688** | 228.6% |
+| temporal_net | 12.704 | 96.813 | 215.8% |
+
+- HPO improved on hgb in **every** fold on synthetic; the NN trails the linear
+  baseline on both tracks — reported honestly.
+- Probabilistic 80% band coverage: synthetic 0.727 (quantile) / 0.757
+  (conformal); UCI 0.919 / 0.858 with a degenerate q80 = 0 calibration —
+  per-series conformal is the roadmap fix.
+- UCI reconciliation: w=0.65, incoherence 400.4 → 140.2 (coherence property
+  exact); store MAE 748.2 → 726.4.
+- 6/6 DQ gates on both tracks; synthetic pipeline ≈ 2.5 min, UCI ≈ 5.5 min;
+  46 offline tests.
 
 ## Artifacts
 
-- Figures: `eda_series_overview`, `eda_units_distribution`,
-  `forecast_vs_actual`, `metrics_bars`, `fold_stability`, `hpo_history`,
-  `hpo_importance`, `reconciliation_coherence` (`.html` + `.json`)
-- Metrics: `reports/metrics.json` · Report: `reports/report.html` ·
-  Reconciliation: `reports/reconciliation.json`
-- Dataset identity card: `data/dataset.json` · Fitted models: `data/models.pkl`
-  · HPO: `data/hpo_best.json` (+ `hpo_study.db`) · Story: `story.yaml`
+- Figures per track: `reports/figures/` and `reports_uci/figures/` —
+  `eda_series_overview`, `eda_units_distribution`, `forecast_vs_actual`,
+  `metrics_bars`, `fold_stability`, `hpo_history`, `hpo_importance`,
+  `reconciliation_coherence`, `probabilistic_band` (`.html` + `.json`)
+- Metrics: `reports/metrics.json` (+ `_uci`) · Report: `report.html` ·
+  Reconciliation: `reconciliation.json` · Probabilistic: `probabilistic.json`
+- Dataset cards: `data/dataset.json`, `data_uci/dataset.json` · HPO:
+  `data/hpo_best.json` (+ `hpo_study.db`) · Story: `story.yaml`
 
 ## Links
 
