@@ -1,7 +1,21 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Home } from "../pages/Home";
+
+function mockReducedMotion() {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: true,
+      media: "",
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  );
+}
+
+beforeEach(mockReducedMotion);
 
 afterEach(() => {
   cleanup();
@@ -16,7 +30,7 @@ function renderHome() {
   );
 }
 
-describe("Home presentation page", () => {
+describe("Home (lean, wave 6)", () => {
   it("uses the exact title wording without 'Senior'", () => {
     renderHome();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
@@ -25,54 +39,55 @@ describe("Home presentation page", () => {
     expect(screen.queryByText(/senior/i)).toBeNull();
   });
 
-  it("renders the terminal hero with the typed script", () => {
+  it("types the wave-6 script: whoami, focus, stack, principles", () => {
     renderHome();
     expect(screen.getByText("alejandro@amm-ds: ~")).toBeInTheDocument();
-    // reduced-motion guard is not active in jsdom → starts untyped; the cursor renders
-    expect(document.querySelector(".cursor")).not.toBeNull();
+    expect(screen.getByText("data scientist & ml engineer")).toBeInTheDocument();
+    expect(
+      screen.getByText("agentic ai · forecasting · anomaly · optimization · open data"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("reproducible pipelines · honest baselines · production-grade code"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/dvc repro/i)).toBeNull();
   });
 
-  it("renders three capability cards linking to /services", () => {
+  it("CTA points to /contact", () => {
     renderHome();
-    expect(screen.getByText("ML/AI systems")).toBeInTheDocument();
-    expect(screen.getByText("Agentic AI & LLM applications")).toBeInTheDocument();
-    expect(screen.getByText("Data engineering & forecasting")).toBeInTheDocument();
-    const links = screen.getAllByRole("link", { name: "services →" });
-    expect(links.length).toBeGreaterThanOrEqual(3);
-    links.forEach((l) => expect(l.getAttribute("href")).toBe("/services"));
+    const cta = screen.getByRole("link", { name: "/contact" });
+    expect(cta.getAttribute("href")).toBe("/contact");
   });
 
-  it("renders the three featured case studies with links to their pages", () => {
+  it("renders the where-to-go trio", () => {
     renderHome();
-    for (const id of ["01-rag-agent", "07-open-data-mobility", "03-anomaly-detection"]) {
-      const link = screen.getByRole("link", { name: new RegExp(id) });
-      expect(link.getAttribute("href")).toBe(`/projects/${id}`);
+    for (const to of ["/projects", "/services", "/contact"]) {
+      const link = screen.getByRole("link", { name: new RegExp(`\\$ ${to.slice(1)}`, "i") });
+      expect(link).toHaveAttribute("href", to);
     }
-    expect(screen.getByRole("link", { name: "all 7 projects →" })).toHaveAttribute(
-      "href",
-      "/projects",
-    );
   });
 
-  it("renders the frameworks strip linking to /services#frameworks", () => {
+  it("is lean: no duplicated services/case-study/frameworks content", () => {
     renderHome();
-    expect(screen.getByRole("link", { name: "all →" })).toHaveAttribute(
-      "href",
-      "/services#frameworks",
-    );
-    expect(screen.getByText("FastAPI")).toBeInTheDocument();
-    expect(screen.getByText("Polars")).toBeInTheDocument();
+    // services capability cards gone
+    expect(screen.queryByText("ML/AI systems")).toBeNull();
+    expect(screen.queryByText("Agentic AI & LLM applications")).toBeNull();
+    expect(screen.queryByText("Data engineering & forecasting")).toBeNull();
+    // featured case studies gone
+    expect(screen.queryByText(/all 7 projects/i)).toBeNull();
+    expect(screen.queryByRole("link", { name: /01-rag-agent/ })).toBeNull();
+    // frameworks strip gone
+    expect(screen.queryByText("FastAPI")).toBeNull();
+    expect(screen.queryByRole("link", { name: "all →" })).toBeNull();
+    // no project grid, no metrics fetching
+    expect(document.querySelector(".project-grid")).toBeNull();
   });
 
-  it("renders the CTA band with services and GitHub links", () => {
+  it("keeps a positioning paragraph and the availability line", () => {
     renderHome();
-    expect(screen.getByText(/Available now/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "/services" })).toBeInTheDocument();
-  });
-
-  it("no longer renders the full project grid", () => {
-    renderHome();
-    expect(screen.queryByText(/loading projects/i)).toBeNull();
-    expect(document.querySelector(".project-grid .project-card .badge")).toBeNull();
+    expect(screen.getByText(/I build ML\/AI systems end to end/i)).toBeInTheDocument();
+    expect(screen.getByText(/Available for freelance work/i)).toBeInTheDocument();
   });
 });

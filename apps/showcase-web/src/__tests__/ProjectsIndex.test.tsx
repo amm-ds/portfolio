@@ -53,6 +53,9 @@ describe("ProjectsIndex", () => {
     );
     expect(titles).toEqual(["RAG Agent", "Demand Forecasting"]);
     expect(screen.getByText("[flagship]")).toBeInTheDocument();
+    // live-demo banner links to the RAG chat
+    const demo = screen.getByRole("link", { name: /RAG demo/i });
+    expect(demo.getAttribute("href")).toBe("/chat");
   });
 
   it("shows an error state when the API is unreachable", async () => {
