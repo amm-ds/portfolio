@@ -40,7 +40,10 @@ affected?* A PR that cannot answer them is draft.
 
 ## Adding a new showcase project
 
-1. `projects/08-name/` with the standard layout (see any existing project).
+0. `make new-project ARGS="08-name Title"` scaffolds the standard layout
+   (workspace pyproject, portfolio.yaml, 8-section story.yaml skeleton,
+   params/dvc templates, typed config/schemas/cli stubs, tests dir).
+1. Add project-specific deps to its `pyproject.toml`, then `uv sync --all-packages`.
 2. New workspace member pyproject declaring only its own deps.
 3. Reuse `portfolio-core`/`portfolio-eval`; extend them in `libs/` if genuinely
    shared — never copy contracts into a project.

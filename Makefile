@@ -1,4 +1,4 @@
-.PHONY: setup lint typecheck test test-fast demo docs docs-serve dvc-repro docker-build docker-up clean
+.PHONY: setup lint typecheck test test-fast demo docs docs-serve dvc-repro docker-build docker-up new-project clean
 
 PYTEST := uv run pytest
 
@@ -34,6 +34,9 @@ docker-build: ## Build the showcase image
 
 docker-up: ## Run API + web via compose
 	docker compose up --build
+
+new-project: ## Scaffold a new project: make new-project ARGS="08-name Title"
+	uv run python scripts/new_project.py $(ARGS)
 
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov dist build

@@ -3,40 +3,46 @@
 **Domain:** Deep learning NLP · **Data:** AG News (real, HuggingFace `fancyzhx/ag_news`) ·
 **Status:** Working showcase
 
-Fine-tuned DistilBERT vs. a TF-IDF + LogisticRegression baseline on news topic
-classification — trained with a **hand-written PyTorch loop** (manual
-warmup/decay LR schedule, per-epoch validation macro-F1, patience-1 early
-stopping) on a bounded, stratified, seeded CPU-feasible subsample.
+Fine-tuned transformers vs. a TF-IDF + LogisticRegression baseline on news topic
+classification — with a hand-written PyTorch training loop, an Optuna HPO stage
+(seeded TPE, median pruning), a second encoder candidate, and honest model
+selection, all on a bounded, stratified, seeded CPU-feasible subsample.
 
 ## Key results
 
-Bounded test split: 1000 rows, stratified 250/class, seed 42.
+All six runs on the same untouched 1,000-row stratified test split (CPU, seed 42):
 
-| Run | Accuracy | F1 macro | F1 weighted |
-|---|---|---|---|
-| `baseline_tfidf_logreg` | 0.8720 | 0.8714 | 0.8714 |
-| `distilbert_finetuned` | **0.9020** | **0.9021** | **0.9021** |
+| Run | Accuracy | F1 macro |
+|---|---|---|
+| `naive_majority` | 0.2500 | 0.1000 |
+| `random_uniform` | 0.2540 | 0.2533 |
+| `baseline_tfidf_logreg` | 0.8720 | 0.8714 |
+| `encoder_b` (roberta-base) | 0.8980 | 0.8982 |
+| `distilbert` | **0.9020** | **0.9021** |
+| `distilbert_tuned` | **0.9020** | **0.9021** |
 
-Fine-tuning beats the strong classical baseline by **+3.0 pp macro-F1** after 1
-effective epoch (3600 train rows); the loop early-stopped at epoch 2 with
-best val F1 0.8880. Full numbers: `projects/04-nlp-classification/reports/metrics.json`;
-interactive figures: `reports/figures/` (confusion heatmap, per-class F1,
-training curve — HTML + showcase-API JSON).
+Encoders beat the strong classical baseline by ~+3 pp macro-F1. HPO improved
+validation macro-F1 (0.8880 → 0.8953) but the retrained model did not transfer
+(+0.7 pp val gain → −0.1 pp test); the honesty rule kept the wave-2 artifact as
+the reported `distilbert_tuned` run. Full ladder: `projects/04-nlp-classification/reports/metrics.json`;
+decision record: `reports/selection.json`; interactive figures in `reports/figures/`.
 
 ## Artifacts
 
-- `projects/04-nlp-classification/README.md` — problem, results, reproduce
-  commands, client takeaways
+- `projects/04-nlp-classification/README.md` — problem, run ladder, HPO and
+  selection narrative, reproduce commands, client takeaways
 - `projects/04-nlp-classification/DESIGN.md` — requirements, options
-  considered, bounded-data contract, pipeline diagram
+  considered, bounded-data contract, pipeline diagram, changelog
+- `projects/04-nlp-classification/story.yaml` — 8-section case study served by
+  the showcase API
 - `projects/04-nlp-classification/reports/report.html` — standalone themed
-  evaluation report (metrics JSON + interactive figures under `reports/`)
+  evaluation report
 
 ## Reproduce
 
 ```bash
-uv run python -m nlp_classification.cli all   # ~4 min on CPU
+uv run python -m nlp_classification.cli all   # prepare → baseline → train-nn → hpo → tuned → encoder-b → evaluate
 ```
 
-Data bound: 4000 train / 1000 test, stratified, seeded — documented in
+Data bound: 4,000 train / 1,000 test, stratified, seeded — documented in
 DESIGN.md; the full AG News corpus (120k rows) is intentionally not used.

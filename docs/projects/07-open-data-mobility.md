@@ -8,21 +8,27 @@ temporal splits.
 
 ## Key results (temporal holdout Oct–Dec 2024, 584,855 zone-hours)
 
-| model | MAE | RMSE | MAPE |
-|---|---|---|---|
-| GBM mean | **4.67** | **15.10** | 62.0% |
-| TemporalNet (torch, log1p target) | 5.51 | 19.69 | **54.5%** |
-| naive lag-24 | 6.52 | 23.37 | 89.4% |
+| run | MAE | RMSE | MAPE | ΔMAE vs naive |
+|---|---|---|---|---|
+| naive lag-24 | 6.52 | 23.37 | 89.4% | — |
+| GBM mean | **4.67** | **15.10** | 62.0% | −28.4% |
+| GBM tuned (30-trial Optuna, median pruning) | 4.68 | 15.19 | 61.6% | −28.3% |
+| TemporalNet (torch, log1p target) | 5.51 | 19.69 | **54.5%** | −15.5% |
+| TemporalNet tuned (10-trial Optuna) | **5.18** | 21.58 | 57.5% | −20.5% |
 
-p90 quantile band calibration: **91.1%** coverage. Per-borough GBM MAE peaks
-in Manhattan (14.2 pickups/h) where volume peaks. Weather elasticity:
+HPO ran against an embargoed train-side validation window only. GBM tuning
+matched the defaults within noise (honest flat result); NN tuning bought
+−6% MAE. p90 band calibration **90.8%** overall (target 90%; sparse N/A
+zones under-cover at 84.7%, flagged). Per-borough GBM MAE peaks in Manhattan
+(14.2 pickups/h) where volume peaks. Permutation importance: weekly/daily lag
+features dominate, weather ≈ 0 for point MAE. Weather elasticity:
 outer-borough curb demand drops 7–10% in rain (Queens 0.92×, Staten Island
 0.93×) while Manhattan holds (0.97×) and EWR rises (1.08×) — directional,
-with documented caveats.
+with documented non-causal caveats.
 
 ## Where things live
 
-- Code + design: [projects/07-open-data-mobility](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility) — pipeline `mobility download|validate|join|features|train-baselines|train-nn|evaluate|dashboard|dq-report|all`, DVC stages in `dvc.yaml`
+- Code + design: [projects/07-open-data-mobility](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility) — pipeline `mobility download|validate|join|features|tune|train-baselines|train-nn|evaluate|dashboard|dq-report|all`, DVC stages in `dvc.yaml`
 - Dataset cards: [NYC TLC](../data-registry/nyc-tlc.md) · [NOAA GHCN](../data-registry/noaa-ghcn.md)
 
 ## Data attribution

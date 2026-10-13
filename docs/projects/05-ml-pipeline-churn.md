@@ -8,35 +8,43 @@ showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-ope
 
 A single self-contained `sklearn.Pipeline` — custom `OutlierCapper` and
 `MissingValueIndicator` transformers, median imputation, scaling, one-hot
-encoding, and a balanced `LogisticRegression` — selected by `GridSearchCV`
-over C, then evaluated with a business lens: calibration curve, permutation
-importance, and a cost curve (FP=1, FN=5) that chooses the operating
-threshold. Preprocessing lives inside the fitted artifact, so the model is
-deployable on equally messy raw data with no leakage.
+encoding — followed by **Optuna model selection** (logistic vs histogram
+gradient boosting, seeded TPE with median pruning) whose winning config is
+written back to `params.yaml` as the production config. Evaluation is a
+five-run ladder on one holdout: naive majority → wave-2 logistic (default and
+cost-tuned thresholds) → selected model raw and isotonic-calibrated — with
+calibration (ECE), permutation importance, PR curves, decision-curve analysis,
+and a business-cost curve (FP=1, FN=5) that chooses the operating threshold.
 
 ## Key results (seed 42, n=5,000 → 1,000-row holdout)
 
-| run | threshold | ROC-AUC | accuracy | precision (macro) | recall (macro) | F1 (macro) | business cost |
-|---|---|---|---|---|---|---|---|
-| default | 0.500 | 0.8344 | 0.722 | 0.5926 | 0.7552 | 0.5796 | 350 |
-| tuned | **0.725** | 0.8344 | **0.874** | **0.6576** | 0.7307 | **0.6833** | **282** |
+| run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
+|---|---|---|---|---|---|
+| naive majority | cost-optimal | 0.5000 | 0.4770 | – | 440 |
+| logistic, default 0.5 | 0.500 | 0.8344 | 0.5796 | – | 350 |
+| logistic, tuned | 0.725 | 0.8344 | **0.6833** | – | **282** |
+| selected (HistGB) | 0.700 | 0.8125 | 0.6593 | 0.157 | 321 |
+| selected + isotonic | 0.225 | 0.8008 | 0.6642 | **0.017** | 328 |
 
-- Grid search picked **C=1.0** (3-fold CV, F1); holdout ROC-AUC **0.8344**.
-- Cost-optimal threshold tuning: **−19.4% business cost** and +0.10 F1 on the
-  *same* model — the operating point, not retraining, is the lever.
-- Permutation importance (holdout F1, 5 repeats): `monthly_charges` (0.118) >
-  `contract` (0.076) > `tenure_months` (0.020) — matching the generator's
-  ground truth; the 9,999 charge outlier never reaches the scaler.
-- 6/6 data-quality gates (`DQReport`) enforce null-rate and range contracts
-  before training; full run takes ~2 s.
+- Optuna (25 trials) selected **HistGradientBoostingClassifier** on CV F1
+  (0.3648 vs 0.3433 for the logistic grid) — but on the business cost the
+  tuned logistic still wins (282 vs 321): selection objective ≠ deployment
+  objective, so both are reported.
+- Best deliverable vs naive: **cost −35.9%, F1 +43%**; threshold tuning alone
+  −19.4% of cost.
+- Isotonic calibration cuts ECE **−89%** (0.157 → 0.017) without improving
+  the cost optimum — a probability-quality upgrade, not a decision upgrade.
+- 6/6 data-quality gates; full pipeline (incl. HPO) ~15 s, deterministic.
 
 ## Artifacts
 
-- Figures: `reports/figures/calibration_curve`, `permutation_importance`,
-  `business_cost_curve` (`.html` + `.json` for the showcase app)
-- Metrics: `reports/metrics.json` · Report: `reports/report.html` ·
-  DQ: `reports/dq_report.md`
-- Dataset identity card: `data/dataset_contract.json` (SHA-256, seeded source)
+- Figures: `eda_churn_profile`, `calibration_curve`, `permutation_importance`,
+  `precision_recall_curve`, `decision_curve`, `business_cost_curve`
+  (`.html` + `.json` for the showcase app)
+- Metrics: `reports/metrics.json` (5-run ladder) · Report:
+  `reports/report.html` · DQ: `reports/dq_report.md`
+- Selection record: `data/model_selection.json` · Dataset identity card:
+  `data/dataset_contract.json` (SHA-256, seeded source)
 
 ## Links
 
@@ -44,4 +52,6 @@ deployable on equally messy raw data with no leakage.
   results, reproduce commands, client takeaways
 - [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn/DESIGN.md) — requirements,
   options considered, pipeline diagram, changelog
+- Story: `projects/05-ml-pipeline-churn/story.yaml` (8 canonical sections,
+  served by the showcase API)
 - Source: `projects/05-ml-pipeline-churn/src/churn_pipeline/`
