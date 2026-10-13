@@ -585,7 +585,7 @@ code {
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
-  background: #fff;
+  background: var(--surface);
 }
 
 .figure-frame iframe {
@@ -1165,14 +1165,16 @@ button:disabled {
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
-  background: #fff;
+  /* Figures carry the dark portfolio theme (transparent re-skin in
+     PlotlyFigure) — the wrapper must stay dark too. */
+  background: var(--surface);
 }
 
 .plotly-host {
   width: 100%;
 }
 
-/* --- Case study two-column layout (desktop) --- */
+/* --- Case study layout: constrained prose, full-width figures (desktop) --- */
 
 .story-cols {
   display: block;
@@ -1180,13 +1182,17 @@ button:disabled {
 
 @media (min-width: 1024px) {
   .story-cols {
-    display: grid;
-    grid-template-columns: 45fr 55fr;
-    gap: 2rem;
-    align-items: start;
+    display: block;
+  }
+  /* prose reads best at article width; figures breathe at full width */
+  .story-main {
+    max-width: 70ch;
+  }
+  .story-figs {
+    margin-top: 1.5rem;
   }
   .story-figs .figure-frame {
-    margin-bottom: 1.25rem;
+    margin-bottom: 1.5rem;
   }
 }
 
