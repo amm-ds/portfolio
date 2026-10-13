@@ -13,6 +13,10 @@ sections:
       can be handed raw CRM rows, an honest naive baseline on the same cost
       curve, model selection with Optuna, and a threshold chosen on a
       business-cost curve rather than accepted as a library default.
+
+      **Business implication:** retention budget is a cost-minimization
+      problem (FP=1, FN=5), so every artifact below is judged in money saved,
+      not in accuracy or leaderboard rank.
   - id: objectives
     text_md: |
       1. Rank customers by churn risk on deliberately messy tabular data,
@@ -27,21 +31,34 @@ sections:
          whether isotonic calibration improves that optimum.
       5. Enforce data quality as a gate: null rates and ranges are checked
          before training, and a failure halts the pipeline loudly.
+
+      **Business implication:** the deliverable is an operating decision — a
+      threshold and an expected cost — with the model selection metric held
+      accountable to the business metric it will be judged by.
   - id: data
     text_md: |
-      5,000 rows from the platform's seeded synthetic churn generator
-      (`portfolio_core.synthetic.churn`), versioned by a DatasetContract with
-      a SHA-256 checksum. The generator injects the messiness a real CRM
-      export shows up with: ~2% NaN in `age`, ~3% NaN in `support_calls`,
-      and a single 9,999 monthly-charge outlier — so robustness handling is
-      exercised for real, not simulated in a notebook.
+      The dataset is the platform's seedable synthetic churn generator
+      (`portfolio_core.synthetic.churn`) — 5,000 rows with deliberate
+      production pathologies: ~2% NaN in `age`, ~3% NaN in `support_calls`
+      (NaN-encoded gaps, the way CRM exports often leak them), a single 9,999
+      monthly-charge outlier, and a boolean churn flag at an 8.8% base rate.
+      It lives in the platform's synthetic generator library
+      ([libs/portfolio-core](https://github.com/amm-ds/portfolio/tree/main/libs/portfolio-core)),
+      is fully seeded, and is versioned here by a DatasetContract with a
+      SHA-256 checksum.
 
-      Features: `age`, `tenure_months`, `monthly_charges`, `support_calls`
-      (numeric) and `contract` (month-to-month / one-year / two-year,
-      categorical). Target: `churned` (8.8% base rate). Split: stratified
-      80/20 → 4,000 train / 1,000 holdout; a further 20% of train is reserved
-      for calibration only. No time axis exists, so random stratification is
-      the correct protocol.
+      No external dataset card exists for it — that is the point: the
+      synthetic track mirrors production pathologies (missingness, outliers,
+      drift) in a compact, reproducible frame, and the pipeline contract
+      (DQ gates → embedded preprocessing → cost-tuned decision) transfers to
+      a client's CRM extract unchanged. Split: stratified 80/20 → 4,000
+      train / 1,000 holdout; a further 20% of train is reserved for
+      calibration only. No time axis exists, so random stratification is the
+      correct protocol.
+
+      **Business implication:** a client demo runs on data with the same
+      failure modes as their CRM export, and swapping in their real extract
+      requires no code change — only a new DatasetContract row.
   - id: eda
     text_md: |
       Churn is concentrated where contracts are short: month-to-month
@@ -51,10 +68,15 @@ sections:
       shorter tenure (~15 vs ~25 months), and a long low-tenure tail is
       visible in the distribution panels.
 
-      **So what:** contract type and bill size are where a retention budget
-      buys the most — the model should be judged on whether it exploits
-      exactly these splits, and the outlier charge row is the one an unguarded
-      pipeline would let distort everything downstream.
+      The outlier charge sits far outside the bulk of both distributions —
+      exactly the row that would distort an unguarded scaler — and the
+      NaN-encoded gaps are invisible to a casual `head()` but visible to the
+      DQ gates.
+
+      **Business implication:** contract type and bill size are where a
+      retention budget buys the most — and the outlier/missingness handling
+      is what keeps that budget aimed at real customers instead of data
+      artifacts.
     figures: [eda_churn_profile]
   - id: training
     text_md: |
@@ -74,6 +96,10 @@ sections:
       min_samples_leaf 41; CV F1 0.3648 vs 0.3433) — is written back to
       `params.yaml` as the production config. An isotonic-calibrated twin is
       fitted on the calibration split only.
+
+      **Business implication:** the artifact handed to engineering scores raw
+      CRM rows as-is — no ETL rewrite, no train/serve skew — and the winning
+      config is recorded in versioned config, not in someone's notebook.
   - id: evaluation
     text_md: |
       Holdout: 1,000 stratified rows, never seen by HPO, fitting, or
@@ -84,28 +110,46 @@ sections:
       wave-2 logistic at 0.5 and at its cost optimum, and the selected model
       raw and isotonic-calibrated at their cost optima.
 
-      Diagnostics: reliability diagram (raw vs calibrated, ECE in the legend),
-      permutation importance (holdout F1, 5 repeats, error bars), PR curves
-      with the naive base-rate floor, decision-curve analysis (net benefit vs
-      treat-all / treat-none), and the business-cost curve with every optimum
-      marked.
+      Diagnostics: reliability diagram (raw vs calibrated, ECE in the
+      legend), permutation importance (holdout F1, 5 repeats, error bars),
+      PR curves with the naive base-rate floor, decision-curve analysis (net
+      benefit vs treat-all / treat-none), and the business-cost curve with
+      every optimum marked.
+
+      **Business implication:** calibration improved probabilities 10×
+      (ECE 0.157 → 0.017) without moving the cost optimum — know which metric
+      pays: ECE matters when probabilities themselves are consumed, the cost
+      curve is what settles the alarm threshold.
     figures: [calibration_curve, precision_recall_curve, decision_curve]
   - id: results
     text_md: |
-      Run ladder (holdout, FP=1/FN=5): naive majority cost **440**, F1 0.477 →
-      logistic at 0.5: 350 → logistic tuned (t=0.725): **282**, F1 **0.683**,
-      ROC-AUC 0.8344 → selected HistGB (t=0.700): 321, F1 0.659, ECE 0.157 →
-      HistGB + isotonic (t=0.225): 328, F1 0.664, **ECE 0.017**.
+      Run ladder (holdout, FP=1/FN=5):
 
-      **Best deliverable vs naive: cost −35.9% (440 → 282), F1 +43%.** Two
-      honest twists: (1) HPO picked HistGB on CV F1, yet the simpler tuned
-      logistic still wins the business cost on holdout — selection objectives
-      and deployment objectives can diverge, so both are reported side by
-      side; (2) isotonic calibration slashes ECE (−89%) but does **not**
-      improve the cost optimum — worth deploying when probabilities themselves
-      are consumed, not for this thresholded alarm. The naive run posts the
-      best accuracy (0.912): on an 8.8% churn rate, never alarming is
-      accurate and useless.
+      | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
+      |---|---|---|---|---|---|
+      | naive majority | cost-optimal | 0.5000 | 0.4770 | – | 440 |
+      | logistic, default 0.5 | 0.500 | 0.8344 | 0.5796 | – | 350 |
+      | logistic, tuned | 0.725 | 0.8344 | **0.6833** | – | **282** |
+      | selected (HistGB) | 0.700 | 0.8125 | 0.6593 | 0.157 | 321 |
+      | selected + isotonic | 0.225 | 0.8008 | 0.6642 | **0.017** | 328 |
+
+      Key findings:
+
+      - **Cost vs naive: −35.9% (440 → 282), macro F1 +43% (0.477 → 0.683).**
+      - **Threshold tuning alone: −19.4%** of the cost win (350 → 282), same
+        model, no retraining — the operating point is a business decision.
+      - **Isotonic calibration: ECE 0.157 → 0.017 (−89%)**, F1 up slightly,
+        but the cost optimum does not improve (328 vs 321).
+      - **Selection-objective lesson:** HPO picked HistGB on CV F1 (0.3648 vs
+        0.3433), yet the simpler tuned logistic wins the business cost on
+        holdout (282 vs 321).
+      - The naive run posts the best accuracy (0.912): on an 8.8% churn
+        rate, never alarming is accurate and useless.
+
+      **Business implication:** the HPO-selected GBM loses on business cost
+      to the simpler logistic — the deployment objective, not the leaderboard
+      metric, chose the production model; report both and the choice is
+      defensible.
     figures: [business_cost_curve, permutation_importance]
     metrics_keys: [naive_majority, logreg_threshold_0.725, selected_model, selected_model_calibrated]
   - id: conclusions
@@ -121,4 +165,9 @@ sections:
       model that lost on the business metric — scoring trials by business
       cost (roadmap) closes that gap. **Third**, calibration is a product
       decision: it made probabilities trustworthy (ECE 0.157 → 0.017) without
-      moving the alarm's cost — report both, let the use case choose.
+      moving the alarm's cost — the decision-curve and business-cost figures
+      are the arbiters, not the reliability diagram alone.
+
+      **Business implication:** the framework transfers to a client's CRM
+      extract unchanged — same gates, same artifact contract, same cost
+      curve — only the DatasetContract and the FP/FN costs change.
