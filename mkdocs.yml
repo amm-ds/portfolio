@@ -55,6 +55,7 @@ nav:
       - LLM cost incident: runbooks/llm-cost-incident.md
       - Pipeline restore: runbooks/pipeline-restore.md
   - Services: site/services.md
+  - Contact: site/contact.md
   - About: site/about.md
 
 watch:
