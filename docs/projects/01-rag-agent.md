@@ -28,16 +28,23 @@ offline).
 
 | Metric | Value |
 |---|---|
-| Retrieval recall@5 / recall@10 | 0.962 / 1.000 (all chunk sizes) |
+| Retrieval recall@5 / recall@10 (all chunk sizes) | 0.962 / 1.000 |
 | MRR@5 — chunk 200 / 400 / 800 | 0.936 / 0.904 / 0.869 |
-| RAG context_recall | 0.962 |
-| RAG faithfulness / answer_relevance (mock answer) | 0.245 / 0.436 |
-| p50 / p95 agent latency (local floor) | 3.0 ms / 4.1 ms |
-| Estimated live cost per query | ≈ $0.00037 |
+| Random baseline recall@5 (seeded) | 0.038 / 0.000 / 0.000 → **+0.92** vs embeddings |
+| Embedding model comparison (BGE-small vs MiniLM) | exact tie → cheaper model kept |
+| Rerank ablation (off vs on): recall@5 / MRR@5 | 1.000 / 0.833 vs 0.962 / 0.936 |
+| **Production config** (`retrieval_best`) | MiniLM, chunks=200, top_k=3, rerank ON |
+| Context cost vs wave-2 default | ≈804 vs ≈2,279 input tokens/query (−65%) |
+| RAG context_recall / faithfulness / relevance (mock) | 0.962 / 0.273 / 0.442 |
+| p50 / p95 agent latency (local floor) | 4.2 ms / 5.0 ms |
+| Estimated live cost per query | ≈ $0.00015 |
 
-Takeaway: 200-token chunks dominate the frontier — saturated recall, best MRR,
-roughly half the context cost of 400. Figures: chunk-size sweep, cost-vs-quality
-frontier, latency histogram (all in `reports/figures/`).
+Takeaway: retrieval quality is bought with chunking discipline, not model
+size — the cheapest configuration (MiniLM, 200-token chunks, top-3, rerank on)
+is the best one, at roughly a third of the context cost of the wave-2 default.
+Figures: corpus composition, chunk-size sweep with random baseline, embedding
+model comparison, retrieval funnel, HPO frontier (chosen config starred),
+latency histogram (all in `reports/figures/`).
 
 ## Links
 
