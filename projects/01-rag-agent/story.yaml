@@ -22,7 +22,7 @@ sections:
       response fails the run loudly instead of reaching a user. Second,
       **evidence grounding**: the agent's only corpus access is
       `search_documents` / `read_excerpt`; the system prompt forbids outside
-      knowledge. Third, **operational SLOs**: retrieval recall@5 ≥ 0.60 on the
+      knowledge. Third, **operational SLOs**: retrieval recall ≥ 0.60 on the
       graded set, p95 latency ≤ 5 s end-to-end, and an estimated cost per query
       that a client can budget against (target ≤ $0.01).
 
@@ -72,66 +72,104 @@ sections:
       rather than guessed.
 
       Each chunk is embedded with `all-MiniLM-L6-v2` (L2-normalized, CPU) into
-      a FAISS `IndexFlatIP` per chunk size; at query time the top 5×k embedding
-      hits are re-scored by the `ms-marco-MiniLM-L-6-v2` cross-encoder. The
+      a FAISS `IndexFlatIP` per chunk size; at query time the top 5x k embedding
+      hits are re-scored by the `ms-marco-MiniLM-L-6-v2` cross-encoder. A
+      wave-3 ablation shows what the reranker is for: without it recall@5 rises
+      to 1.000 but MRR@5 falls to 0.833 — it puts the *right* passage at the
+      top of the list, which is what a reading LLM actually consumes. The
       agent layer is provider-agnostic per ADR-0004: a live OpenAI-compatible
       endpoint when configured, a deterministic mock otherwise — one code path.
+    figures:
+      - retrieval_funnel
 
   - id: evaluation
     text_md: |
       Quality is measured, not demoed. A graded set of 26 handcrafted questions
       (5–6 per topic) carries known relevant article ids; retrieval is scored
-      with recall@5, recall@10 and MRR@5 per chunk size, and a **seeded
-      uniform-random baseline** (`retrieval_random_chunks_{size}`) marks the
-      floor any embedding system must beat.
+      with recall@k and MRR@5 over a **bounded HPO grid**: 3 chunk sizes x
+      top_k in {3, 5, 8, 10}, an embedding-model arm (MiniLM vs BGE-small on
+      the same chunk-200 structure), a rerank on/off ablation, and a **seeded
+      uniform-random baseline** (`retrieval_random_chunks_{size}`) marking the
+      floor any ranker must beat.
 
       The RAG layer is scored with a judge (keyword judge by default): answer
-      faithfulness, answer relevance, and context recall, plus a retrieved-
-      relevance flag per question. Operations are measured too — per-query
-      latency (p50/p95) and a cost-per-query estimate built from recorded token
-      usage. The same harness runs in mock mode (CI, offline) and live mode
-      (real provider) with no code changes.
+      faithfulness, answer relevance, and context recall. Operations are
+      measured too — per-query latency (p50/p95) and a cost-per-query estimate
+      built from recorded token usage at each grid point. The same harness runs
+      in mock mode (CI, offline) and live mode (real provider) with no code
+      changes; the chosen production config is persisted in `params.yaml` as
+      `retrieval_best`.
     figures:
       - chunk_size_sweep
+      - retrieval_hpo_frontier
     metrics_keys:
       - retrieval_chunks_200
       - retrieval_random_chunks_200
+      - retrieval_model_minilm_chunks_200
+      - retrieval_model_bge_small_chunks_200
+      - retrieval_rerank_on_chunks_200
+      - retrieval_rerank_off_chunks_200
       - rag_agent
 
   - id: results
     text_md: |
-      Retrieval, graded set of 26 questions, CPU-only: **recall@5 0.962,
-      recall@10 1.000** at every chunk size; **MRR@5 0.936 / 0.904 / 0.869** for
-      200/400/800-token chunks. The seeded uniform-random baseline scores
-      recall@5 = 0.038 (200-token chunks) and 0.000 (400/800) — the embedding
-      pipeline beats random ranking by **+0.92 recall@5** (0.962 vs 0.038) and
-      **+0.90/+0.90/+0.87 MRR@5** across sizes, and smaller chunks dominate the
-      cost-vs-quality frontier (half the context tokens of 400 at equal
-      recall).
+      **Retrieval configuration comparison** (26 graded questions, CPU-only;
+      random baseline seeded):
 
-      RAG quality (mock-mode answers): context_recall 0.962, answer_relevance
-      0.436, faithfulness 0.245 — the floor expected when the model returns a
-      canned answer; the harness re-scores real grounded answers unchanged when
-      a provider is configured. Operations: p50 3.0 ms / p95 4.1 ms local
-      floor, estimated live cost ≈ $0.0004 per query.
+      | Configuration | recall@5 | recall@10 | MRR@5 |
+      |---|---|---|---|
+      | chunks=200, top_k=10 | 0.962 | 1.000 | 0.936 |
+      | chunks=400, top_k=10 | 0.962 | 1.000 | 0.904 |
+      | chunks=800, top_k=10 | 0.962 | 1.000 | 0.869 |
+      | chunks=200 + BGE-small (vs MiniLM) | 0.962 | 1.000 | 0.936 |
+      | chunks=200, rerank OFF | 1.000 | 1.000 | 0.833 |
+      | random baseline (seeded) | 0.038 | 0.385 | 0.038 |
+      | **chosen: MiniLM, chunks=200, top_k=3, rerank ON** | **0.962** | — | **0.936** |
+
+      Key findings:
+
+      - Embeddings beat random ranking by **+0.92 recall@5** — the system
+        retrieves, it does not luck out.
+      - The stronger encoder (BGE-small) **ties MiniLM exactly** at this scale;
+        no reason to pay for it here.
+      - Rerank off trades ranking quality for coverage (MRR 0.833 vs 0.936) —
+        rerank stays on because the top of the list is what the LLM reads.
+      - top_k=3 saturates recall at chunks=200, so the chosen config matches
+        the wave-2 default quality at **≈804 input tokens/query instead of
+        ≈2,279 (−65% context cost)**; estimated live cost drops to ≈ $0.00015.
+
+      **So what:** retrieval quality here is bought with chunking discipline,
+      not model size — the cheapest configuration is the best one. RAG quality
+      in mock mode (context_recall 0.962, faithfulness 0.273) reflects the
+      canned offline answer; the harness re-scores real grounded answers
+      unchanged with a live provider.
+    figures:
+      - model_comparison
+      - retrieval_hpo_frontier
     metrics_keys:
       - retrieval_chunks_200
       - retrieval_random_chunks_200
+      - retrieval_model_minilm_chunks_200
+      - retrieval_rerank_on_chunks_200
       - rag_agent
 
   - id: conclusions
     text_md: |
-      Three honest limits. First, mock-mode faithfulness (0.245) is a floor,
-      not a product metric: it reflects a canned answer, and the live-mode
-      harness exists precisely to score real grounding. Second, the judge is a
+      Honest limits. First, mock-mode faithfulness (0.273) is a floor, not a
+      product metric: it reflects a canned answer, and the live-mode harness
+      exists precisely to score real grounding. Second, the judge is a
       deterministic keyword rubric — directionally useful, cheap and
       reproducible, but no substitute for a provider-model judge on a client
-      engagement. Third, corpus coverage is bounded by the dump itself: famous
-      anchor titles verified absent from `20231101.en`, and per-topic quotas
-      saturate with peripheral articles, which caps how polished the demo
-      answers can look regardless of retrieval quality.
+      engagement. Third, the HPO grid is small and the corpus is homogeneous:
+      BGE-small tying MiniLM is evidence about *this* scale, not a universal
+      claim — on noisier or larger corpora the stronger encoder may pay off,
+      and the same harness will show it. Fourth, corpus coverage is bounded by
+      the dump itself: famous anchor titles verified absent from `20231101.en`,
+      and per-topic quotas saturate with peripheral articles.
 
       The engineering take-aways transfer directly: typed outputs that fail
-      loudly, evidence-only tool access, seeded baselines in every sweep, and a
-      single provider-abstraction seam (ADR-0004) that keeps the whole system
-      testable offline and deployable live without code changes.
+      loudly, evidence-only tool access, a seeded random floor and ablations in
+      every sweep (so "better" is always quantified), configuration chosen by
+      measurement and persisted as code (`retrieval_best`), and a single
+      provider-abstraction seam (ADR-0004) that keeps the whole system testable
+      offline and deployable live without code changes.

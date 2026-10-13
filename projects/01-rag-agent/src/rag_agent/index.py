@@ -189,12 +189,16 @@ class Retriever:
         chunks: Sequence[ChunkRecord],
         embed_fn: EmbedFn,
         rerank_fn: RerankFn | None = None,
+        query_embed_fn: EmbedFn | None = None,
     ) -> None:
         self.config = config
         self.index = index
         self.chunks = list(chunks)
         self.embed_fn = embed_fn
         self.rerank_fn = rerank_fn
+        # Some encoders (e.g. BGE) require an instruction prefix on queries
+        # but not on indexed passages — hence a separate query encoder.
+        self.query_embed_fn = query_embed_fn or embed_fn
         self._by_id = {c.chunk_id: c for c in self.chunks}
 
     @classmethod
@@ -204,16 +208,17 @@ class Retriever:
         index_dir: Path,
         embed_fn: EmbedFn,
         rerank_fn: RerankFn | None = None,
+        query_embed_fn: EmbedFn | None = None,
     ) -> "Retriever":
         index, chunks = load_index(index_dir)
-        return cls(config, index, chunks, embed_fn, rerank_fn)
+        return cls(config, index, chunks, embed_fn, rerank_fn, query_embed_fn)
 
     def get_chunk(self, chunk_id: str) -> ChunkRecord | None:
         return self._by_id.get(chunk_id)
 
     def _embed_query(self, query: str) -> np.ndarray:
         try:
-            vector = np.asarray(self.embed_fn([query]), dtype=np.float32)
+            vector = np.asarray(self.query_embed_fn([query]), dtype=np.float32)
         except EmbeddingModelError:
             raise
         except Exception as exc:

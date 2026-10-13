@@ -93,3 +93,13 @@ flowchart LR
   (−3.7 % further) legible. Added `eda_instance_map` figure (C101 scatter
   colored by time-window width). Authored `story.yaml` (8 canonical sections)
   served via `portfolio_core.story`.
+- **2026-10-12** — Wave 3: `two_opt` gained `acceptance` (first/best) and
+  `tail_exchange` knobs plus a convergence `trace`; new `tuning.py` runs a
+  seeded 24-trial random search (budget 50–500, acceptance, tail exchange,
+  best-of-k restarts; objective = mean distance) and persists the winner to
+  `params.yaml` as `solver_best`. Result: `two_opt_tuned` at 19.08 % mean gap
+  (−0.45 pts vs untuned); negative results — restarts don't pay, budgets
+  saturate — kept in README/story. New figures: `solver_profile`,
+  `convergence_C101`, `convergence_RC105` using `add_takeaway`/`style_runs`.
+  Note: `style_runs` sets `line=` which bar traces reject; grouped-bar figures
+  fall back to marker-color styling via the public `is_baseline_run` hint.

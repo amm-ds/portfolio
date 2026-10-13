@@ -5,8 +5,11 @@ scaling, one-hot encoding) lives inside the fitted estimator, so the trained
 artifact is self-contained and safe to score on equally messy raw data.
 """
 
+from typing import Any
+
 import pandas as pd  # type: ignore[import-untyped]
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_split
@@ -45,15 +48,37 @@ def build_preprocessor(cfg: ChurnConfig) -> ColumnTransformer:
     )
 
 
-def build_pipeline(cfg: ChurnConfig) -> Pipeline:
-    """End-to-end Pipeline: preprocessor + balanced LogisticRegression."""
+def _build_classifier(
+    cfg: ChurnConfig, family: str, params: dict[str, float] | None
+) -> LogisticRegression | HistGradientBoostingClassifier:
+    """Classifier step for the pipeline: wave-2 logistic default or HPO params."""
+    if family == "logreg":
+        kw: dict[str, object] = {
+            "class_weight": "balanced",
+            "max_iter": 1000,
+            "random_state": cfg.seed,
+        }
+        if params:
+            kw.update(params)
+        return LogisticRegression(**kw)
+    if family == "histgb":
+        kw = {"random_state": cfg.seed, "class_weight": "balanced"}
+        if params:
+            kw.update(params)
+        return HistGradientBoostingClassifier(**kw)
+    raise ValueError(f"unknown model family: {family!r}")
+
+
+def build_pipeline(
+    cfg: ChurnConfig,
+    family: str = "logreg",
+    params: dict[str, Any] | None = None,
+) -> Pipeline:
+    """End-to-end Pipeline: preprocessor + classifier (both families supported)."""
     return Pipeline(
         steps=[
             ("prep", build_preprocessor(cfg)),
-            (
-                "clf",
-                LogisticRegression(class_weight="balanced", max_iter=1000, random_state=cfg.seed),
-            ),
+            ("clf", _build_classifier(cfg, family, params)),
         ]
     )
 

@@ -99,23 +99,26 @@ class ModelSpec:
             # lag_1 sits directly after the numeric block
             return NaiveLast(lag1_index=len(self.numeric))
         encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
-        if self.name == "ridge":
-            pre = ColumnTransformer(
-                [("num", StandardScaler(), numeric_idx), ("cat", encoder, cat_idx)]
-            )
-            model: Pipeline = Pipeline(
-                [("prep", pre), ("reg", Ridge(alpha=1.0, random_state=None))]
-            )
-        elif self.name == "hgb":
+        if self.name in ("hgb", "hgb_tuned"):
             pre = ColumnTransformer(
                 [("num", "passthrough", numeric_idx), ("cat", encoder, cat_idx)]
             )
-            model = Pipeline(
-                [
-                    ("prep", pre),
-                    ("reg", HistGradientBoostingRegressor(max_iter=120, random_state=42)),
-                ]
+            kwargs: dict[str, Any] = {"random_state": 42, "max_iter": 120}
+            if self.name == "hgb_tuned":
+                kwargs = config.hgb_tuned.estimator_kwargs()
+                kwargs["random_state"] = config.seed
+            model: Pipeline = Pipeline(
+                [("prep", pre), ("reg", HistGradientBoostingRegressor(**kwargs))]
             )
+        elif self.name == "ridge":
+            pre = ColumnTransformer(
+                [("num", StandardScaler(), numeric_idx), ("cat", encoder, cat_idx)]
+            )
+            model = Pipeline([("prep", pre), ("reg", Ridge(alpha=1.0, random_state=None))])
+        elif self.name == "temporal_net":
+            from demand_forecasting.temporal import TemporalNet
+
+            return TemporalNet(config, seed=config.seed)
         else:  # pragma: no cover - guarded by model_specs()
             raise ValueError(f"unknown model: {self.name}")
         logger.info("built model %s on %d features", self.name, n_num + len(cat_idx))
@@ -123,12 +126,14 @@ class ModelSpec:
 
 
 def model_specs() -> list[ModelSpec]:
-    """All models, floor first: naives, linear baseline, then the tree ensemble."""
+    """All models, floor first: naives, linear, default + tuned HGB, then the NN."""
     return [
         ModelSpec(name="naive_mean", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="naive_last", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="ridge", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="hgb", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
+        ModelSpec(name="hgb_tuned", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
+        ModelSpec(name="temporal_net", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
     ]
 
 

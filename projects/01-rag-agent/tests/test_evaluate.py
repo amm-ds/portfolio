@@ -14,6 +14,7 @@ from rag_agent.evaluate import (
     RAGRun,
     RetrievalScores,
     _write_reports,
+    choose_retrieval_config,
     corpus_eda_figure,
     estimate_input_tokens,
     first_relevant_rank,
@@ -21,10 +22,12 @@ from rag_agent.evaluate import (
     latency_figure,
     load_questions,
     mrr_at_5,
+    query_prefixed,
     random_ranks,
     recall_at_k,
     run_rag_eval,
     sweep_figure,
+    topk_run_for_size,
 )
 from rag_agent.index import EmbedFn, Retriever
 from rag_agent.schemas import Article, Citation, EvalQuestion
@@ -112,6 +115,50 @@ def test_corpus_eda_figure_renders(articles: list[Article]) -> None:
     fig = corpus_eda_figure(articles)
     assert len(fig.data) == 2  # bar + histogram
     assert sum(fig.data[0].y) == len(articles)
+
+
+def test_query_prefixed_wraps_texts(embed_fn: EmbedFn) -> None:
+    plain = query_prefixed(embed_fn, "")
+    assert plain is embed_fn  # no prefix → same callable
+    prefixed = query_prefixed(embed_fn, "Q: ")
+    out = prefixed(["hello world"])
+    assert out.shape == (1, 32)  # hashing embedder dim, prefix applied internally
+
+
+def test_choose_retrieval_config_picks_best() -> None:
+    config = RAGConfig()
+    model_scores = {
+        "minilm": RetrievalScores(
+            chunk_size=200, recall_at_5=0.9, recall_at_10=1.0, mrr_at_5=0.8, n_questions=10
+        ),
+        "bge_small": RetrievalScores(
+            chunk_size=200, recall_at_5=0.9, recall_at_10=1.0, mrr_at_5=0.7, n_questions=10
+        ),
+    }
+    sweep_scores = [
+        RetrievalScores(
+            chunk_size=size, recall_at_5=0.9, recall_at_10=1.0, mrr_at_5=mrr, n_questions=10
+        )
+        for size, mrr in ((200, 0.8), (400, 0.6), (800, 0.5))
+    ]
+    topk = {
+        200: {"ranks": [1, 2, 3, 4] * 6 + [1, 2], "token_sums": [[10] * 10] * 26, "n_chunks": 100},
+        400: {"ranks": [1, 2, 3, 4] * 6 + [1, 2], "token_sums": [[10] * 10] * 26, "n_chunks": 50},
+        800: {"ranks": [1, 2, 3, 4] * 6 + [1, 2], "token_sums": [[10] * 10] * 26, "n_chunks": 25},
+    }
+    chosen = choose_retrieval_config(config, model_scores, sweep_scores, topk)
+    assert chosen.embedding_slug == "minilm"  # higher MRR
+    assert chosen.chunk_size == 200  # best MRR
+    assert chosen.top_k == 5  # recall@5 saturates (1.0) → smallest sufficient k
+    assert chosen.rerank
+
+
+def test_topk_run_for_size() -> None:
+    data = {"ranks": [1, None, 3, 10], "token_sums": [[5] * 10] * 4, "n_chunks": 50}
+    run = topk_run_for_size(200, data)
+    assert run.name == "retrieval_topk_sweep_chunks_200"
+    assert run.get("recall@3") is not None
+    assert run.get("recall@10") is not None
 
 
 @pytest.fixture

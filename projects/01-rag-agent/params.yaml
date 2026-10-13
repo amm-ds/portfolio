@@ -58,3 +58,11 @@ reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
 top_k: 5
 usd_per_mtok_input: 0.15
 usd_per_mtok_output: 0.60
+# Production retrieval config chosen by the wave-3 HPO sweep
+# (see reports/metrics.json detail.hpo.chosen — the two must agree).
+retrieval_best:
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
+  embedding_slug: minilm
+  chunk_size: 200
+  top_k: 3
+  rerank: true

@@ -5,17 +5,17 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: ad6c1047fc476cffb1e07d77644a9c7d
-      size: 395
+      md5: 68f1fffa3ad5685ecf4edefe944ced44
+      size: 766
     - path: src/routing_optimization
       hash: md5
-      md5: 5d0fb585fd06b9a074ec8b0febf9b12e.dir
-      size: 127335
-      nfiles: 15
+      md5: b9e3472463431a4b3cfed6698f26f68f.dir
+      size: 166326
+      nfiles: 17
     outs:
     - path: data/raw
       hash: md5
-      md5: a7301c6b4727d677dc469497da1bf80b.dir
+      md5: d89b640212a8e2b12f9312e910edd83d.dir
       size: 159178
       nfiles: 12
   solve:
@@ -23,18 +23,18 @@ stages:
     deps:
     - path: data/raw
       hash: md5
-      md5: a7301c6b4727d677dc469497da1bf80b.dir
+      md5: d89b640212a8e2b12f9312e910edd83d.dir
       size: 159178
       nfiles: 12
     - path: params.yaml
       hash: md5
-      md5: ad6c1047fc476cffb1e07d77644a9c7d
-      size: 395
+      md5: 68f1fffa3ad5685ecf4edefe944ced44
+      size: 766
     - path: src/routing_optimization
       hash: md5
-      md5: 5d0fb585fd06b9a074ec8b0febf9b12e.dir
-      size: 127335
-      nfiles: 15
+      md5: b9e3472463431a4b3cfed6698f26f68f.dir
+      size: 166326
+      nfiles: 17
     outs:
     - path: reports/dq.md
       hash: md5
@@ -42,8 +42,8 @@ stages:
       size: 4983
     - path: reports/solutions.json
       hash: md5
-      md5: c5d88803a9ee02beb9e95a1a5bab6dc9
-      size: 28372
+      md5: 9e014897985174c56766055d9a3f988c
+      size: 32341
   evaluate:
     cmd: uv run python -m routing_optimization.cli evaluate
     deps:
@@ -53,32 +53,32 @@ stages:
       size: 672
     - path: params.yaml
       hash: md5
-      md5: ad6c1047fc476cffb1e07d77644a9c7d
-      size: 395
+      md5: 68f1fffa3ad5685ecf4edefe944ced44
+      size: 766
     - path: reports/solutions.json
       hash: md5
-      md5: c5d88803a9ee02beb9e95a1a5bab6dc9
-      size: 28372
+      md5: 9e014897985174c56766055d9a3f988c
+      size: 32341
     - path: src/routing_optimization
       hash: md5
-      md5: 5d0fb585fd06b9a074ec8b0febf9b12e.dir
-      size: 127335
-      nfiles: 15
+      md5: b9e3472463431a4b3cfed6698f26f68f.dir
+      size: 166326
+      nfiles: 17
     outs:
     - path: reports/figures
       hash: md5
-      md5: 76deb451815ad11b4e2e31552fbc8f37.dir
-      size: 86100
-      nfiles: 8
+      md5: 2d6748290562b000337d4a09a8c294ba.dir
+      size: 147635
+      nfiles: 14
     - path: reports/metrics.json
       hash: md5
-      md5: fa55757409a3c675a5e736f312da6769
-      size: 8640
+      md5: 7a858699c5085c1f26c7901beaf9e9d4
+      size: 10627
     - path: reports/report.html
       hash: md5
-      md5: 7e83102a6738d3c033c0aeb2d544b75e
-      size: 6448
+      md5: 58b1f212a037792e64edb4c608098a59
+      size: 8082
     - path: reports/results.md
       hash: md5
-      md5: c1013ce1d8e3be3d0edaae68dce64f1c
-      size: 3124
+      md5: 12042d3b468d0044ccee80e8580484ac
+      size: 3814

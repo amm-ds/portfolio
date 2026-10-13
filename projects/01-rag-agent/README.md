@@ -43,43 +43,57 @@ Measured on this machine (Apple Silicon, CPU-only) in offline mock-LLM mode,
 anchors), **26 graded questions**, 0 skipped. Machine-readable:
 `reports/metrics.json`.
 
-**Retrieval quality vs chunk size** (embed → FAISS top-25 → cross-encoder rerank → top-10),
-against a seeded uniform-random ranking baseline (`config.seed`):
+**Retrieval HPO** — chunk-size sweep against a seeded uniform-random baseline,
+plus embedding-model comparison, rerank ablation and a top_k sweep; the
+production config (`retrieval_best` in `params.yaml`, mirrored in
+`metrics.json → detail.hpo.chosen`) is selected from these measurements:
 
-| Chunk size | recall@5 | recall@10 | MRR@5 | random recall@5 | Δ MRR@5 vs random |
+| Configuration | recall@5 | recall@10 | MRR@5 | random recall@5 | Δ MRR@5 vs random |
 |---|---|---|---|---|---|
-| 200 | **0.962** | 1.000 | **0.936** | 0.038 | **+0.897** |
-| 400 | **0.962** | 1.000 | 0.904 | 0.000 | **+0.904** |
-| 800 | **0.962** | 1.000 | 0.869 | 0.000 | **+0.869** |
+| chunks=200, top_k=10 (wave-2 default arm) | **0.962** | 1.000 | **0.936** | 0.038 | +0.897 |
+| chunks=400, top_k=10 | **0.962** | 1.000 | 0.904 | 0.000 | +0.904 |
+| chunks=800, top_k=10 | **0.962** | 1.000 | 0.869 | 0.000 | +0.869 |
+| + model = BGE-small (vs MiniLM, chunks 200) | 0.962 | 1.000 | 0.936 | — | 0.000 (tie) |
+| + rerank OFF (chunks 200) | 1.000 | 1.000 | 0.833 | — | −0.103 |
+| **chosen: MiniLM, chunks=200, top_k=3, rerank ON** | **0.962** | — | **0.936** | 0.038 | +0.897 |
 
-The random baseline marks the floor any ranker must beat: embeddings + rerank
-lift recall@5 from ≤0.04 to 0.962 (+0.92). Smaller chunks win on ranking
-sharpness (MRR@5) while recall@5 is saturated — see the
-[chunk-size sweep figure](reports/figures/chunk_size_sweep.html), where the
-baseline is drawn as flat dashed reference series, and the
-[cost-vs-quality frontier](reports/figures/cost_quality_frontier.html):
-200-token chunks dominate (same recall, best MRR, ~½ the context cost of 400).
+Key findings:
 
-**RAG quality** (`RAGEvaluator`, keyword judge, mock-mode answers):
+- **Embeddings beat random by +0.92 recall@5** (0.962 vs 0.038) — the random
+  baseline is the flat dashed series in the
+  [chunk-size sweep figure](reports/figures/chunk_size_sweep.html).
+- **The stronger encoder (BGE-small) ties MiniLM exactly** at this corpus scale —
+  both saturate recall, so the cheaper/smaller model stays.
+- **Rerank trade-off is real**: with rerank off, recall@5 rises to 1.000 but
+  MRR@5 drops to 0.833 — the cross-encoder puts the *right* passage at the top,
+  which is what a reading LLM needs. Rerank stays on.
+- **top_k=3 already saturates recall at chunks=200** (recall@3 = 0.962): the
+  chosen config matches the wave-2 default quality (Δ MRR@5 +0.032 vs the
+  400/k=5 default) at **≈804 input tokens/query instead of ≈2,279 (−65%)** —
+  see the [HPO frontier](reports/figures/retrieval_hpo_frontier.html) with the
+  chosen point starred, the [model comparison](reports/figures/model_comparison.html),
+  and the [retrieval funnel](reports/figures/retrieval_funnel.html)
+  (25/26 questions keep a relevant article after rerank).
+
+**RAG quality** (`RAGEvaluator`, keyword judge, mock-mode answers, chosen config):
 
 | Metric | Value | Note |
 |---|---|---|
-| context_recall | 0.962 | retrieval-side recall@5, matches the sweep |
-| answer_relevance | 0.436 | scored against the fixed mock answer text |
-| faithfulness | 0.245 | mock answer is canned, so grounding is intentionally weak offline |
+| context_recall | 0.962 | retrieval-side recall@3, matches the HPO |
+| answer_relevance | 0.442 | scored against the fixed mock answer text |
+| faithfulness | 0.273 | mock answer is canned, so grounding is intentionally weak offline |
 
 Faithfulness/relevance here measure the deterministic offline answer; with
 `LLM_BASE_URL`/`LLM_API_KEY` configured the agent retrieves and cites real
-evidence, and the same harness scores its outputs. context_recall shows the
-retrieval layer delivers the right article 25/26 times at top-5.
+evidence, and the same harness scores its outputs.
 
-**Operations:**
+**Operations (chosen config):**
 
 | Metric | Value |
 |---|---|
-| p50 agent latency (mock, local floor) | 3.0 ms |
-| p95 agent latency (mock, local floor) | 4.1 ms |
-| Est. live cost per query (context-sized, 400-token chunks) | ≈ $0.00037 |
+| p50 agent latency (mock, local floor) | 4.2 ms |
+| p95 agent latency (mock, local floor) | 5.0 ms |
+| Est. live cost per query (chosen config) | ≈ $0.00015 |
 | Mock-mode cost floor per query | ≈ $0.00006 |
 | Latency distribution | [histogram](reports/figures/latency_histogram.html) |
 
@@ -95,7 +109,9 @@ and generation latency on top. Cost uses the rate card in `params.yaml`
 |---|---|
 | Corpus composition (EDA) | [reports/figures/eda_corpus_composition.html](reports/figures/eda_corpus_composition.html) |
 | Retrieval quality vs chunk size (with random baseline) | [reports/figures/chunk_size_sweep.html](reports/figures/chunk_size_sweep.html) |
-| Cost vs quality frontier | [reports/figures/cost_quality_frontier.html](reports/figures/cost_quality_frontier.html) |
+| Embedding model comparison | [reports/figures/model_comparison.html](reports/figures/model_comparison.html) |
+| Retrieval funnel (aggregate) | [reports/figures/retrieval_funnel.html](reports/figures/retrieval_funnel.html) |
+| Retrieval HPO frontier (chosen config starred) | [reports/figures/retrieval_hpo_frontier.html](reports/figures/retrieval_hpo_frontier.html) |
 | Per-query latency histogram | [reports/figures/latency_histogram.html](reports/figures/latency_histogram.html) |
 | Full HTML report | [reports/report.html](reports/report.html) |
 

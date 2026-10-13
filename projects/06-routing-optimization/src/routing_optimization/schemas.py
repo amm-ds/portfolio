@@ -6,11 +6,14 @@ once and per-route capacity respected.
 """
 
 from collections import Counter
+from typing import Literal
 
 from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field, field_validator, model_validator
 
 _EPS = 1e-9
+
+Acceptance = Literal["first", "best"]
 
 
 class Customer(PortfolioBaseModel):
@@ -125,3 +128,26 @@ class RoutePlan(PortfolioBaseModel):
 
         if errors:
             raise ValueError(f"invalid route plan for {self.instance}: {'; '.join(errors)}")
+
+
+class TwoOptTuning(PortfolioBaseModel):
+    """Configuration of the improvement stage, chosen by the HPO search.
+
+    ``restarts`` is the k of a best-of-k seeded randomized-restart portfolio:
+    the improved plan starts from the cheapest among the better construction
+    heuristic and ``restarts`` randomized constructions (run seeds
+    ``seed .. seed + restarts - 1``).
+    """
+
+    max_iterations: int = Field(default=200, ge=1, le=5000)
+    acceptance: Acceptance = "first"
+    tail_exchange: bool = True
+    restarts: int = Field(default=1, ge=1, le=16)
+
+    def summary(self) -> str:
+        """One-line human description used in reports and figures."""
+        tail = "2opt+2opt*" if self.tail_exchange else "2opt only"
+        return (
+            f"budget={self.max_iterations}, {self.acceptance}-improvement, "
+            f"{tail}, restarts best-of-{self.restarts}"
+        )

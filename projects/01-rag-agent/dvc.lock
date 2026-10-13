@@ -5,16 +5,16 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: a6b97100f80c32d69444f15b178b0cd3
-      size: 1327
+      md5: 436de384cf3c12a8cd26552c10563277
+      size: 1602
     - path: src/rag_agent/chunking.py
       hash: md5
       md5: ac1fc4061f917bd2e78cf0d3427a82ef
       size: 4805
     - path: src/rag_agent/config.py
       hash: md5
-      md5: 532d6fb5f88bbbd843f2671d6e067129
-      size: 5567
+      md5: decabb8503c2106ae1e565f9afa66ae4
+      size: 6211
     - path: src/rag_agent/corpus.py
       hash: md5
       md5: 1726604da795d5e33eb4818dc1d3a66a
@@ -49,20 +49,20 @@ stages:
       nfiles: 2
     - path: params.yaml
       hash: md5
-      md5: a6b97100f80c32d69444f15b178b0cd3
-      size: 1327
+      md5: 436de384cf3c12a8cd26552c10563277
+      size: 1602
     - path: src/rag_agent/chunking.py
       hash: md5
       md5: ac1fc4061f917bd2e78cf0d3427a82ef
       size: 4805
     - path: src/rag_agent/config.py
       hash: md5
-      md5: 532d6fb5f88bbbd843f2671d6e067129
-      size: 5567
+      md5: decabb8503c2106ae1e565f9afa66ae4
+      size: 6211
     - path: src/rag_agent/index.py
       hash: md5
-      md5: d3afbae9678f5d09205ce1e280c2854d
-      size: 9521
+      md5: 98e1e5267317cd46ba7d5bd0d57d7974
+      size: 9844
     params:
       params.yaml:
         chunk_overlap: 40
@@ -74,17 +74,17 @@ stages:
     outs:
     - path: data/index
       hash: md5
-      md5: 72f88521823a22dd76d19dbf53a9f166.dir
-      size: 21078081
-      nfiles: 6
+      md5: aa9f5dc667f5c6a3317efc1f2ab9f321.dir
+      size: 30576156
+      nfiles: 8
   evaluate_retrieval:
     cmd: uv run python -m rag_agent.cli evaluate
     deps:
     - path: data/index
       hash: md5
-      md5: 72f88521823a22dd76d19dbf53a9f166.dir
-      size: 21078081
-      nfiles: 6
+      md5: aa9f5dc667f5c6a3317efc1f2ab9f321.dir
+      size: 30576156
+      nfiles: 8
     - path: data/raw
       hash: md5
       md5: d09f058e2b81753758915eb2f833d616.dir
@@ -92,13 +92,13 @@ stages:
       nfiles: 2
     - path: params.yaml
       hash: md5
-      md5: a6b97100f80c32d69444f15b178b0cd3
-      size: 1327
+      md5: 436de384cf3c12a8cd26552c10563277
+      size: 1602
     - path: src
       hash: md5
-      md5: 40bb97cb1d878256aec1185cb51c0c22.dir
-      size: 150371
-      nfiles: 21
+      md5: a514953c29225742f8384fd481497d35.dir
+      size: 178041
+      nfiles: 20
     params:
       params.yaml:
         chunk_sizes:
@@ -106,12 +106,18 @@ stages:
         - 400
         - 800
         reranker_model: cross-encoder/ms-marco-MiniLM-L-6-v2
+        retrieval_best:
+          embedding_model: sentence-transformers/all-MiniLM-L6-v2
+          embedding_slug: minilm
+          chunk_size: 200
+          top_k: 3
+          rerank: true
         top_k: 5
         usd_per_mtok_input: 0.15
         usd_per_mtok_output: 0.6
     outs:
     - path: reports
       hash: md5
-      md5: b8d79d104350a5516fc2a468c76bcb53.dir
-      size: 76826
-      nfiles: 10
+      md5: 6a918effa4d966a50c679a864e984618.dir
+      size: 117970
+      nfiles: 14

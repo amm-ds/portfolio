@@ -42,5 +42,6 @@ stages:
       - reranker_model
       - usd_per_mtok_input
       - usd_per_mtok_output
+      - retrieval_best
     outs:
       - reports

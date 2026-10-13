@@ -5,13 +5,13 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 26c91f4fd19c7c62917808c195164b03
-      size: 422
+      md5: 05bf61777a3aa71f8d15bbd281b06932
+      size: 726
     - path: src/nlp_classification
       hash: md5
-      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
-      size: 90422
-      nfiles: 13
+      md5: 334b446de19b89f646e0fd0ad71e7000.dir
+      size: 140642
+      nfiles: 15
     outs:
     - path: data/dataset_contract.json
       hash: md5
@@ -23,41 +23,41 @@ stages:
       size: 43
     - path: data/test
       hash: md5
-      md5: 587345e4df494fa111929205c084e853.dir
-      size: 1145172
-      nfiles: 4
+      md5: df4fd99f20135b89b05f7e54603c9f80.dir
+      size: 2041508
+      nfiles: 5
     - path: data/train
       hash: md5
-      md5: 3e1e628df08807ee6ab05ba6728a9b08.dir
-      size: 901541
-      nfiles: 3
+      md5: d9c895b03f27d14182c2768746d44fd7.dir
+      size: 10604933
+      nfiles: 6
     - path: data/val
       hash: md5
-      md5: bb43c29966072d444ace2ceab7aab77f.dir
-      size: 98389
-      nfiles: 3
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
   train-baseline:
     cmd: uv run python -m nlp_classification.cli train-baseline
     deps:
     - path: data/train
       hash: md5
-      md5: 3e1e628df08807ee6ab05ba6728a9b08.dir
-      size: 901541
-      nfiles: 3
+      md5: d9c895b03f27d14182c2768746d44fd7.dir
+      size: 10604933
+      nfiles: 6
     - path: data/val
       hash: md5
-      md5: bb43c29966072d444ace2ceab7aab77f.dir
-      size: 98389
-      nfiles: 3
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 26c91f4fd19c7c62917808c195164b03
-      size: 422
+      md5: 05bf61777a3aa71f8d15bbd281b06932
+      size: 726
     - path: src/nlp_classification
       hash: md5
-      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
-      size: 90422
-      nfiles: 13
+      md5: 334b446de19b89f646e0fd0ad71e7000.dir
+      size: 140642
+      nfiles: 15
     outs:
     - path: reports/models/baseline.joblib
       hash: md5
@@ -72,23 +72,23 @@ stages:
       size: 43
     - path: data/train
       hash: md5
-      md5: 3e1e628df08807ee6ab05ba6728a9b08.dir
-      size: 901541
-      nfiles: 3
+      md5: d9c895b03f27d14182c2768746d44fd7.dir
+      size: 10604933
+      nfiles: 6
     - path: data/val
       hash: md5
-      md5: bb43c29966072d444ace2ceab7aab77f.dir
-      size: 98389
-      nfiles: 3
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 26c91f4fd19c7c62917808c195164b03
-      size: 422
+      md5: 05bf61777a3aa71f8d15bbd281b06932
+      size: 726
     - path: src/nlp_classification
       hash: md5
-      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
-      size: 90422
-      nfiles: 13
+      md5: 334b446de19b89f646e0fd0ad71e7000.dir
+      size: 140642
+      nfiles: 15
     outs:
     - path: reports/history.json
       hash: md5
@@ -107,17 +107,31 @@ stages:
       size: 43
     - path: data/test
       hash: md5
-      md5: 587345e4df494fa111929205c084e853.dir
-      size: 1145172
-      nfiles: 4
+      md5: df4fd99f20135b89b05f7e54603c9f80.dir
+      size: 2041508
+      nfiles: 5
+    - path: data/train
+      hash: md5
+      md5: d9c895b03f27d14182c2768746d44fd7.dir
+      size: 10604933
+      nfiles: 6
+    - path: data/val
+      hash: md5
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 26c91f4fd19c7c62917808c195164b03
-      size: 422
+      md5: 05bf61777a3aa71f8d15bbd281b06932
+      size: 726
     - path: reports/history.json
       hash: md5
       md5: 90927fd7a3dea3e654d1fbafe4c9700d
       size: 350
+    - path: reports/hpo_study.json
+      hash: md5
+      md5: f2664f12ac37dde3b055c61570f804f5
+      size: 3588
     - path: reports/models/baseline.joblib
       hash: md5
       md5: e6c54ba1c00cc7bc324bf66a6fd9fc3b
@@ -126,22 +140,163 @@ stages:
       hash: md5
       md5: 1a6531167249afbb729032db39508e18
       size: 267866937
+    - path: reports/models/distilbert_tuned.pt
+      hash: md5
+      md5: 28bb8bda08c5aa7dde5a60256fe19ab3
+      size: 267867597
+    - path: reports/models/encoder_b.pt
+      hash: md5
+      md5: d7ec82b4f102cb6748eceec363384ae9
+      size: 498675723
     - path: src/nlp_classification
       hash: md5
-      md5: 64e9fd5ef1b0f07be33b8ed9d1230cfd.dir
-      size: 90422
-      nfiles: 13
+      md5: 334b446de19b89f646e0fd0ad71e7000.dir
+      size: 140642
+      nfiles: 15
     outs:
+    - path: reports/error_analysis.md
+      hash: md5
+      md5: f34df25c99b40370968bbc1b50eb257b
+      size: 690
     - path: reports/figures
       hash: md5
-      md5: 0f77d1301ca43586d3368dcb8d9caa8a.dir
-      size: 87870
-      nfiles: 8
+      md5: bc36870ca5cde9e8c6d11475492326eb.dir
+      size: 122104
+      nfiles: 12
     - path: reports/metrics.json
       hash: md5
-      md5: 455673c274896fcdcbae06ca4b02db62
-      size: 774
+      md5: b2c7a4bb9fa9bb6a18ca92d1c0d21c01
+      size: 1174
     - path: reports/report.html
       hash: md5
-      md5: 1c2cc24ea6edd97244acd7fa9328975c
-      size: 1864
+      md5: 181dfb1d8a749ac0354e322129692530
+      size: 2302
+    - path: reports/selection.json
+      hash: md5
+      md5: 7d632994bac3b1fe7aa79a10c5bb840f
+      size: 591
+  hpo:
+    cmd: uv run python -m nlp_classification.cli hpo
+    deps:
+    - path: data/label_names.json
+      hash: md5
+      md5: 7eea068586088c3bb50b948dc46cbb6f
+      size: 43
+    - path: data/train
+      hash: md5
+      md5: d9c895b03f27d14182c2768746d44fd7.dir
+      size: 10604933
+      nfiles: 6
+    - path: data/val
+      hash: md5
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
+    - path: params.yaml
+      hash: md5
+      md5: 05bf61777a3aa71f8d15bbd281b06932
+      size: 726
+    - path: src/nlp_classification
+      hash: md5
+      md5: 334b446de19b89f646e0fd0ad71e7000.dir
+      size: 140642
+      nfiles: 15
+    outs:
+    - path: reports/figures/hpo_history.html
+      hash: md5
+      md5: b2ae21f0e9e463f34c5019a1c6579a49
+      size: 8949
+    - path: reports/figures/hpo_history.json
+      hash: md5
+      md5: bb5abcd6f40645e8d7488f58149b7b3e
+      size: 7952
+    - path: reports/figures/hpo_importance.html
+      hash: md5
+      md5: c1780f76df6769e1054ef592da5c5170
+      size: 8407
+    - path: reports/figures/hpo_importance.json
+      hash: md5
+      md5: 473f29f8c28281737835051cba543362
+      size: 7410
+    - path: reports/hpo_best.json
+      hash: md5
+      md5: a3b3e0ae23f5be448d6fd22c7891be48
+      size: 182
+    - path: reports/hpo_study.json
+      hash: md5
+      md5: f2664f12ac37dde3b055c61570f804f5
+      size: 3588
+  train-tuned:
+    cmd: uv run python -m nlp_classification.cli train-tuned
+    deps:
+    - path: data/label_names.json
+      hash: md5
+      md5: 7eea068586088c3bb50b948dc46cbb6f
+      size: 43
+    - path: data/train
+      hash: md5
+      md5: d9c895b03f27d14182c2768746d44fd7.dir
+      size: 10604933
+      nfiles: 6
+    - path: data/val
+      hash: md5
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
+    - path: params.yaml
+      hash: md5
+      md5: 05bf61777a3aa71f8d15bbd281b06932
+      size: 726
+    - path: reports/hpo_best.json
+      hash: md5
+      md5: a3b3e0ae23f5be448d6fd22c7891be48
+      size: 182
+    - path: src/nlp_classification
+      hash: md5
+      md5: 334b446de19b89f646e0fd0ad71e7000.dir
+      size: 140642
+      nfiles: 15
+    outs:
+    - path: reports/history_tuned.json
+      hash: md5
+      md5: badaf2de7b1e832c4252bc53a9f9a9a8
+      size: 350
+    - path: reports/models/distilbert_tuned.pt
+      hash: md5
+      md5: 28bb8bda08c5aa7dde5a60256fe19ab3
+      size: 267867597
+  train-encoder-b:
+    cmd: uv run python -m nlp_classification.cli train-encoder-b
+    deps:
+    - path: data/label_names.json
+      hash: md5
+      md5: 7eea068586088c3bb50b948dc46cbb6f
+      size: 43
+    - path: data/train
+      hash: md5
+      md5: d9c895b03f27d14182c2768746d44fd7.dir
+      size: 10604933
+      nfiles: 6
+    - path: data/val
+      hash: md5
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
+    - path: params.yaml
+      hash: md5
+      md5: 05bf61777a3aa71f8d15bbd281b06932
+      size: 726
+    - path: src/nlp_classification
+      hash: md5
+      md5: 334b446de19b89f646e0fd0ad71e7000.dir
+      size: 140642
+      nfiles: 15
+    outs:
+    - path: reports/history_encoder_b.json
+      hash: md5
+      md5: 0cabd7339f0f77dd438b7deeb553de8f
+      size: 351
+    - path: reports/models/encoder_b.pt
+      hash: md5
+      md5: d7ec82b4f102cb6748eceec363384ae9
+      size: 498675723

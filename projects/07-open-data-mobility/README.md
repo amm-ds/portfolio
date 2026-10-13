@@ -14,21 +14,38 @@ lazy/streaming Polars and honest temporal validation.
 
 ## Results (temporal holdout: October–December 2024, 584,855 zone-hours)
 
-Overall test metrics (pickups/hour; lower is better):
+Run ladder on the temporal holdout (pickups/hour; lower is better), tuned
+variants configured by Optuna HPO on an embargoed train-side validation
+window (DESIGN.md §Hyperparameter optimisation):
 
-| model | MAE | RMSE | MAPE |
-|---|---|---|---|
-| GBM mean (HistGradientBoosting) | **4.667** | **15.096** | 62.0% |
-| TemporalNet (torch MLP, log1p target) | 5.510 | 19.686 | **54.5%** |
-| naive persistence (lag-24) | 6.517 | 23.367 | 89.4% |
+| run | MAE | RMSE | MAPE | ΔMAE vs naive |
+|---|---|---|---|---|
+| naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | — |
+| gbm_mean (defaults) | 4.667 | **15.096** | 62.0% | −28.4% |
+| gbm_tuned (30 Optuna trials) | 4.676 | 15.189 | 61.6% | −28.3% |
+| temporal_net (64-32 MLP) | 5.510 | 19.686 | **54.5%** | −15.5% |
+| temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | −20.5% |
 
-- The GBM wins on MAE/RMSE; the NN wins on MAPE (relative error on busy
-  zones) after a log1p target transform — documented in DESIGN.md.
-- **p90 uncertainty band calibration: 91.1%** of realised zone-hours fall at
-  or below the quantile-GBM upper band (target 90%) — usable for fleet and
-  staffing buffers.
+- **So what (technical):** GBM HPO was honest but flat — the tuned GBM matches
+  the hand-picked defaults within noise (−0.2% MAE, +0.6% MAPE), i.e. the
+  validation window (Apr–May 2024) did not transfer extra signal to Q4; the
+  default config was already near the achievable frontier. NN tuning bought a
+  real −6.0% MAE (smaller 32-16 net, higher LR) at a −5.6% MAPE cost — the
+  tuned NN is the reported NN on MAE, the untuned one remains best on MAPE.
+- **So what (client):** against "same hour last week", the production GBM
+  removes ~28% of forecast error city-wide; per-borough buffers can be sized
+  from the calibrated p90 band.
+- **p90 uncertainty band calibration: 90.8%** overall (target 90%). By borough:
+  Manhattan 91.4%, Queens 89.6%, Brooklyn 88.6%, Bronx 91.4% — tight; the
+  sparse N/A zones under-cover at 84.7% (bands too tight where data is thin)
+  and Staten Island over-covers at 98.5%. Flag N/A-zone bands before using
+  them for staffing there.
+- **Permutation importance (tuned GBM):** recent-hour momentum dominates —
+  lag_168 (0.80) > lag_24 (0.64) > lag_1 (0.55) > hour (0.32); weather
+  features ≈ 0 for point MAE (their value is the elasticity analysis, not
+  point accuracy).
 
-Per-borough test MAE (GBM): Manhattan 14.2, Unknown 4.5, Queens 2.2,
+Per-borough test MAE (gbm_mean): Manhattan 14.2, Unknown 4.5, Queens 2.2,
 Brooklyn 1.2, N/A 0.9, Bronx 0.5, EWR 0.3, Staten Island 0.2 pickups/hour.
 Manhattan dominates absolute error because it dominates volume (≈60 pickups/h
 per zone at peak); relative error there is comparable to other boroughs.
@@ -44,8 +61,10 @@ Weather elasticity (mean hourly pickups, rain ≥1 mm vs dry, test window):
   not causal.
 
 Figures (interactive HTML + showcase JSON) in `reports/figures/`:
-`zone_hour_heatmap` (top-30 zones × hour-of-week), `actual_vs_pred_top5`,
-`borough_mae`, `weather_elasticity`, `p90_band`, `gbm_vs_nn`. Full report:
+`eda_trips_profile` (hour-of-day × borough profile), `zone_hour_heatmap`
+(borough-grouped top-30 zones × hour-of-week), `actual_vs_pred_top5`,
+`borough_mae`, `weather_elasticity`, `p90_band`, `p90_calibration`
+(coverage vs 90% target), `gbm_feature_importance`, `gbm_vs_nn`. Full report:
 `reports/report.html`; metrics: `reports/metrics.json`.
 
 ## Design
@@ -62,7 +81,7 @@ pipeline diagram.
 cd projects/07-open-data-mobility
 uv run python -m mobility.cli all      # download → validate → join → features → train → evaluate
 # or stage by stage:
-uv run python -m mobility.cli download|validate|join|features|train-baselines|train-nn|evaluate
+uv run python -m mobility.cli download|validate|join|features|tune|train-baselines|train-nn|evaluate
 uv run python -m mobility.cli dq-report   # print/persist the latest DQ digest
 ```
 

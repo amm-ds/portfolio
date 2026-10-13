@@ -7,6 +7,7 @@
 """
 
 import json
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -29,6 +30,8 @@ logger = get_logger(__name__)
 
 BASELINE_PATH = "baseline.joblib"
 NN_MODEL_PATH = "distilbert.pt"
+TUNED_MODEL_PATH = "distilbert_tuned.pt"
+ENCODER_B_MODEL_PATH = "encoder_b.pt"
 
 
 # ---------------------------------------------------------------------------
@@ -147,14 +150,21 @@ def lr_at_step(step: int, total_steps: int, warmup_steps: int, base_lr: float) -
 
 
 def _collate(batch: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
-    """Stack numeric columns of dataset rows into long tensors.
+    """Stack rows into tensors, padding only to the batch's longest true sequence.
 
-    Non-numeric columns (``text``) are dropped — the loop only needs ids/mask/label.
+    ``tokenize_dataset`` pre-pads every row to ``max_length``; slicing each
+    batch down to its real token count (from the attention mask) keeps the
+    fixed 128-token cap contract while cutting transformer compute ~3x on
+    short news texts. Non-numeric columns (``text``) are dropped.
     """
+    masks = [row["attention_mask"] for row in batch]
+    ids = [row["input_ids"] for row in batch]
+    labels = [row["label"] for row in batch]
+    batch_len = max(sum(m) for m in masks)
     return {
-        key: torch.tensor([row[key] for row in batch], dtype=torch.long)
-        for key in batch[0]
-        if key != "text"
+        "input_ids": torch.tensor([i[:batch_len] for i in ids], dtype=torch.long),
+        "attention_mask": torch.tensor([m[:batch_len] for m in masks], dtype=torch.long),
+        "label": torch.tensor(labels, dtype=torch.long),
     }
 
 
@@ -230,12 +240,15 @@ def train_nn(
     n_labels: int,
     device: torch.device,
     model: nn.Module | None = None,
+    on_epoch: Callable[[int, float], None] | None = None,
 ) -> tuple[nn.Module, TrainingHistory]:
     """Fine-tune with a hand-written loop: AdamW + manual warmup/decay, early stop.
 
     Returns the best-state model (restored after early stopping) and the logged
     history. ``model`` is injectable so tests can exercise the loop on a tiny
-    random module without downloading any weights.
+    random module without downloading any weights. ``on_epoch`` (if given) is
+    called as ``on_epoch(epoch, val_f1_macro)`` after each epoch — Optuna HPO
+    uses it to report and prune trials between epochs.
     """
     torch.manual_seed(cfg.seed)
     np.random.seed(cfg.seed)
@@ -294,6 +307,8 @@ def train_nn(
             val_loss,
             val_f1,
         )
+        if on_epoch is not None:
+            on_epoch(epoch, val_f1)
 
         if val_f1 > best_f1:
             best_f1 = val_f1

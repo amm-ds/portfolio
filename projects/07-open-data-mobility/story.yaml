@@ -86,28 +86,45 @@ sections:
       split so drift is priced in honestly. Every model is compared against a
       **naive persistence baseline** (same hour last week, lag-24).
 
-      Metrics are MAE/RMSE/MAPE overall, MAE per borough, and calibration of
-      the p90 band (share of realised zone-hours at or below the upper band,
-      target 90%).
+      Metrics are MAE/RMSE/MAPE overall, MAE per borough, permutation
+      importance of the tuned GBM, and calibration of the p90 band — empirical
+      coverage per borough and overall against the 90% target.
     figures: [actual_vs_pred_top5, borough_mae]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
   - id: results
     text_md: |
-      On the Q4 holdout (pickups/hour): **GBM MAE 4.67 / MAPE 62.0%**,
-      **TemporalNet 5.51 / 54.5%**, naive lag-24 6.52 / 89.4%. Versus the naive
-      baseline the GBM cuts MAE by **28.4%** and MAPE by **30.6%**; the NN
-      cuts MAE by 15.5% and MAPE by **39.1%** (best relative error on busy
-      zones). The p90 band is well calibrated at **91.1% coverage**.
+      Run ladder on the Q4 holdout (pickups/hour):
 
-      Per-borough GBM MAE peaks in Manhattan (14.2 pickups/h) simply because
-      volume peaks there. Weather elasticity (rain ≥ 1 mm vs dry): outer-borough
-      curb demand drops 7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan is
-      resilient (0.97×), while EWR rises (1.08×) — consistent with airport
-      substitution to taxis. These ratios are raw groupbys without
-      hour-of-week normalisation: directional, not causal.
-    figures: [gbm_vs_nn, weather_elasticity, p90_band]
-    metrics_keys: [naive_lag24, gbm_mean, temporal_net]
+      | run | MAE | RMSE | MAPE | ΔMAE vs naive |
+      |---|---|---|---|---|
+      | naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | — |
+      | gbm_mean | 4.667 | **15.096** | 62.0% | −28.4% |
+      | gbm_tuned (30 trials) | 4.676 | 15.189 | 61.6% | −28.3% |
+      | temporal_net | 5.510 | 19.686 | **54.5%** | −15.5% |
+      | temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | −20.5% |
+
+      - **GBM HPO was honest but flat**: the tuned GBM matches the hand-picked
+        defaults within noise — the Apr–May validation window did not transfer
+        extra signal to Q4. *So what:* the defaults were already near the
+        achievable frontier; clients should not expect tuning to rescue a weak
+        feature set.
+      - **NN tuning bought −6.0% MAE** (smaller 32-16 net, higher LR) at a
+        MAPE cost — the tuned NN is the reported NN on MAE; the untuned one
+        stays best on MAPE.
+      - **p90 calibration: 90.8% overall** (target 90%). Manhattan 91.4% and
+        Queens 89.6% are tight; sparse N/A zones under-cover at 84.7% (bands
+        too thin where data is thin — flag before staffing on them), Staten
+        Island over-covers at 98.5%.
+      - **Permutation importance:** lag_168 (0.80) > lag_24 (0.64) > lag_1
+        (0.55) > hour (0.32); weather ≈ 0 for point MAE — its value is the
+        elasticity signal, not point accuracy.
+      - Weather elasticity (rain ≥1 mm vs dry): outer-borough curb demand drops
+        7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan is resilient
+        (0.97×), EWR rises (1.08×). Raw groupbys, hour-of-week mix not
+        normalised — **directional, not causal**.
+    figures: [gbm_vs_nn, p90_calibration, weather_elasticity, gbm_feature_importance, p90_band]
+    metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
   - id: conclusions
     text_md: |

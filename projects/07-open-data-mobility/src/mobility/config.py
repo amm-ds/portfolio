@@ -52,6 +52,18 @@ class NNConfig(PortfolioBaseModel):
     early_stop_patience: int = 2
 
 
+class HPOConfig(PortfolioBaseModel):
+    """Optuna studies: bounded trials, seeded, validation = embargoed fold."""
+
+    gbm_trials: int = 30
+    nn_trials: int = 10
+    #: Fit-row budget per trial (most-recent slice of the train window only;
+    #: the Oct-Dec test window is never touched). None = all train rows.
+    max_fit_rows: int | None = 500_000
+    #: Row budget for permutation-importance scoring at evaluate time.
+    perm_importance_rows: int = 200_000
+
+
 class MobilityConfig(PortfolioBaseModel):
     """Everything the pipeline needs, in one validated document."""
 
@@ -101,6 +113,7 @@ class MobilityConfig(PortfolioBaseModel):
     max_train_rows: int = 2_000_000
     gbm: GBMConfig = Field(default_factory=GBMConfig)
     nn: NNConfig = Field(default_factory=NNConfig)
+    hpo: HPOConfig = Field(default_factory=HPOConfig)
     seed: int = 42
 
     @property

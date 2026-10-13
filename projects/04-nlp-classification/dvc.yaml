@@ -30,17 +30,62 @@ stages:
     outs:
       - reports/models/distilbert.pt
       - reports/history.json
+  hpo:
+    cmd: uv run python -m nlp_classification.cli hpo
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/train
+      - data/val
+      - data/label_names.json
+    outs:
+      - reports/hpo_study.json
+      - reports/hpo_best.json
+      - reports/figures/hpo_history.html
+      - reports/figures/hpo_history.json
+      - reports/figures/hpo_importance.html
+      - reports/figures/hpo_importance.json
+  train-tuned:
+    cmd: uv run python -m nlp_classification.cli train-tuned
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - reports/hpo_best.json
+      - data/train
+      - data/val
+      - data/label_names.json
+    outs:
+      - reports/models/distilbert_tuned.pt
+      - reports/history_tuned.json
+  train-encoder-b:
+    cmd: uv run python -m nlp_classification.cli train-encoder-b
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/train
+      - data/val
+      - data/label_names.json
+    outs:
+      - reports/models/encoder_b.pt
+      - reports/history_encoder_b.json
   evaluate:
     cmd: uv run python -m nlp_classification.cli evaluate
     deps:
       - src/nlp_classification
       - params.yaml
       - data/test
+      - data/train
+      - data/val
       - data/label_names.json
       - reports/models/baseline.joblib
       - reports/models/distilbert.pt
+      - reports/models/distilbert_tuned.pt
+      - reports/models/encoder_b.pt
       - reports/history.json
+      - reports/hpo_study.json
     outs:
       - reports/metrics.json
       - reports/report.html
+      - reports/error_analysis.md
+      - reports/selection.json
       - reports/figures

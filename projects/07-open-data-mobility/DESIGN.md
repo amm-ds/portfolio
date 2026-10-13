@@ -80,6 +80,35 @@ from tenths of mm, TMAX/TMIN from tenths of °C, SNOW is whole mm
   lag-24 baseline (MAE 7.10); after the log transform it beats it (5.51) and
   takes the best MAPE (54.5%). GBM still wins MAE/RMSE.
 
+## Hyperparameter optimisation (wave 3)
+
+Both models are tuned with **Optuna** (seeded TPE) against a validation
+window that is the last fold of `TimeSeriesCV(n_splits=4, gap=24)` computed
+on the **train side only** — the Oct–Dec test window is never touched during
+tuning.
+
+- **GBM study** (30 trials): `learning_rate`, `max_iter`, `max_leaf_nodes`,
+  `min_samples_leaf`, `l2_regularization`, `max_features`; **median pruning**
+  at a 100-iteration checkpoint (trials worse than the running median at that
+  budget stop before paying for the full fit). Objective: MAE on the embargoed
+  validation fold.
+- **NN study** (10 trials): `hidden_size` (32–128), `lr` (log), `epochs` ≤ 8,
+  `weight_decay` (log) — driven through the same hand-written `_fit_net` loop
+  as production training; objective: raw-scale val MAE.
+- **Row budget**: the HPO window is capped to the most-recent
+  `hpo.max_fit_rows` (500k) of the train slice per trial — a temporal slice,
+  never a random subsample. Chosen so 30 GBM trials with full fits finish in
+  minutes, not an hour; the final tuned models are refit on the full train
+  window by the train stages.
+- Best params persist to `reports/models/hpo_{gbm,nn}.json` (runtime source
+  of truth for the train stages) and are mirrored into `params.yaml` under
+  `gbm_tuned` / `nn_tuned` as the production config.
+
+The evaluate stage additionally reports **p90 band calibration** (empirical
+coverage per borough + overall vs the 90% target) and **permutation
+importance** of the tuned GBM on a bounded test slice
+(`hpo.perm_importance_rows`, chronological head).
+
 ## Pipeline
 
 ```mermaid
@@ -87,8 +116,9 @@ flowchart LR
     A[download<br/>checksum-pinned] --> B[validate<br/>per-month DQ gates]
     B --> C[join<br/>zone x hour grid + weather]
     C --> D[features<br/>lags + calendar, temporal split]
-    D --> E[train-baselines<br/>GBM mean + p90]
-    D --> F[train-nn<br/>TemporalNet, hand-written loop]
+    D --> T[tune<br/>Optuna, embargoed val only]
+    T --> E[train-baselines<br/>GBM + p90, untuned & tuned]
+    T --> F[train-nn<br/>TemporalNet, untuned & tuned]
     E --> G[predictions.parquet]
     F --> G
     G --> H[evaluate<br/>metrics + figures + report]
@@ -97,6 +127,11 @@ flowchart LR
 
 ## Changelog
 
+- 2026-10-12 (wave 3) — Optuna HPO for GBM (30 trials, median pruning) and
+  TemporalNet (10 trials) on an embargoed train-side validation window;
+  `gbm_tuned` / `temporal_net_tuned` runs added to the run ladder; p90
+  calibration-by-borough and GBM permutation-importance figures; heatmap
+  y-axis grouped by borough.
 - 2026-10-12 — initial build: full pipeline green on 2024 data; DQ gates
   tightened after observing 5–13% `passenger_count` nulls and out-of-month
   pickup dates; grid reindex added after detecting lag misalignment on

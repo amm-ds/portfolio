@@ -99,6 +99,20 @@ DEFAULT_ANCHOR_TITLES: dict[str, list[str]] = {
 }
 
 
+class RetrievalBest(PortfolioBaseModel):
+    """Production retrieval configuration chosen by the HPO sweep.
+
+    Persisted in ``params.yaml`` as ``retrieval_best`` and mirrored in
+    ``reports/metrics.json`` (``detail.hpo.chosen``) — the two must agree.
+    """
+
+    embedding_model: str = Field(min_length=1)
+    embedding_slug: str = Field(min_length=1, description="Short id used in run/figure names.")
+    chunk_size: int = Field(ge=1)
+    top_k: int = Field(ge=1)
+    rerank: bool = True
+
+
 class RAGConfig(PortfolioBaseModel):
     """Tunables for corpus preparation, indexing, retrieval and evaluation."""
 
@@ -131,6 +145,10 @@ class RAGConfig(PortfolioBaseModel):
 
     usd_per_mtok_input: float = Field(default=0.15, gt=0)
     usd_per_mtok_output: float = Field(default=0.60, gt=0)
+
+    retrieval_best: RetrievalBest | None = Field(
+        default=None, description="Production config chosen by the retrieval HPO sweep."
+    )
 
     @model_validator(mode="after")
     def _validate_overlap(self) -> "RAGConfig":

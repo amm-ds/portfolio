@@ -45,6 +45,10 @@ See [DESIGN.md](DESIGN.md) for the full requirements/options/decision record.
   4. `two_opt` — first-improvement 2-opt on the better construction plan:
      intra-route segment reversals **and** inter-route 2-opt* tail exchanges;
      every move preserves capacity and time-window feasibility.
+- `tuning.py` — seeded random-search HPO over the improvement stage (move
+  budget, acceptance rule, tail-exchange on/off, best-of-k randomized-restart
+  portfolio); the winner is persisted to `params.yaml` as `solver_best` and
+  reported as the `two_opt_tuned` run.
 - `evaluate.py` — per-instance runs, gap vs `docs/data-registry/best_known/
   solomon100.csv` (name normalization `C1_01 → C101`), DQ gates, markdown +
   plotly artifacts.
@@ -56,30 +60,52 @@ Full pipeline: `uv run python -m routing_optimization.cli all`.
 Artifacts in `reports/` (see `reports/results.md`, `reports/report.html`,
 `reports/metrics.json`).
 
-Mean over the 10-instance subset (`reports/metrics.json`):
+Mean over the 10-instance subset (`reports/metrics.json`) — the solver ladder:
 
 | solver | mean gap to best-known | mean distance | mean vehicles | mean runtime |
 |---|---|---|---|---|
-| randomized (feasible baseline) | 302.86 % | 4055.76 | 24.6 | 0.7 ms |
-| nearest_neighbor | 69.16 % | 1805.55 | 18.2 | 2.9 ms |
-| clarke_wright | 24.62 % | 1339.13 | 15.7 | 2.9 ms |
-| **two_opt (best base + 2-opt)** | **19.55 %** | **1289.91** | 15.7 | 3.5 ms |
+| randomized (feasible floor) | 302.86 % | 4055.76 | 24.6 | 0.9 ms |
+| nearest_neighbor | 69.16 % | 1805.55 | 18.2 | 1.4 ms |
+| clarke_wright | 24.62 % | 1339.13 | 15.7 | 3.7 ms |
+| two_opt (untuned) | 19.55 % | 1289.91 | 15.7 | 5.9 ms |
+| **two_opt_tuned (HPO)** | **19.08 %** | **1284.15** | 15.7 | 12.9 ms |
 
-`two_opt` wins on **10/10 instances**. Per-instance best (distance / gap /
-vehicles):
+Key findings:
+
+- **Constraint-aware construction is the big lever**: randomized → savings is
+  −2765.85 mean distance (−68.2 %); everything after is refinement.
+- **2-opt\* tail exchanges matter most within the improvement stage**: trials
+  without them plateau at ≈ 1328 mean distance vs 1289.9 with them (−3 %).
+- **Seeded HPO** (24 seeded random-search trials over move budget 50–500,
+  first- vs best-improvement acceptance, tail-exchange on/off, best-of-k
+  randomized-restart portfolio k=1..8; objective = mean distance across the 10
+  instances) chose: **budget 50, best-improvement, 2-opt + 2-opt\*, restarts
+  best-of-1** — written to `params.yaml` as `solver_best`. Tuned vs untuned:
+  −5.76 mean distance (−0.45 % gap points), winning on 5/10 instances (up to
+  −19.10 on RC105); vs the randomized floor: −2771.61 (−68.3 %).
+- **Two honest negatives**: randomized restarts never help (randomized starts
+  are ~3× worse than savings starts, so 2-opt from them never catches up —
+  the search itself chose k=1), and the move budget saturates fast (local
+  optimum in ≤ ~20 accepted moves, so 200 was already generous).
+- `two_opt_tuned` wins on **10/10 instances** (ties included where curves
+  coincide). Convergence curves (`convergence_C101`, `convergence_RC105`)
+  show the construction start, and on RC105 the tuned run escaping the
+  untuned local optimum (1984.8 → 1901.2 vs untuned 1920.3).
+
+Per-instance best over all five solvers (distance / gap / vehicles):
 
 | instance | best known | distance | gap % | vehicles |
 |---|---|---|---|---|
 | C101 | 828.94 | 1046.53 | 26.25 | 15 |
-| C102 | 828.94 | 1080.99 | 30.41 | 15 |
-| C103 | 828.06 | 1001.99 | 21.01 | 14 |
+| C102 | 828.94 | 1071.35 | 29.24 | 15 |
+| C103 | 828.06 | 994.25 | 20.07 | 14 |
 | C104 | 824.78 | 963.30 | 16.79 | 13 |
 | C105 | 828.94 | 1047.54 | 26.37 | 15 |
-| RC102 | 1554.75 | 1847.91 | 18.86 | 21 |
+| RC102 | 1554.75 | 1831.04 | 17.77 | 21 |
 | RC103 | 1261.67 | 1480.20 | 17.32 | 15 |
 | RC104 | 1135.48 | 1236.99 | 8.94 | 13 |
-| RC105 | 1629.44 | 1920.27 | 17.85 | 23 |
-| RC108 | 1139.82 | 1273.37 | 11.72 | 13 |
+| RC105 | 1629.44 | 1901.18 | 16.69 | 23 |
+| RC108 | 1139.82 | 1269.10 | 11.34 | 13 |
 
 Why the improvement happens, in measured deltas:
 
@@ -93,6 +119,11 @@ Why the improvement happens, in measured deltas:
   (e.g. C101 36.02 % → 26.25 %, RC108 12.26 % → 11.72 %). Only
   feasibility-preserving 2-opt / 2-opt* moves are accepted, so the gain is
   pure: no re-validation debt, no broken windows.
+- **two_opt → two_opt_tuned (seeded HPO): −5.76 mean distance (−0.45 %)** —
+  small but real, and bought for milliseconds of search. The search's most
+  useful output is arguably the two negatives above (restarts don't pay,
+  budget saturates), which is what a client should demand from any HPO:
+  evidence about what *not* to spend complexity on.
 
 Honest caveats: `nearest_neighbor` and `randomized` are deliberately naive
 baselines — on RC105 both exceed the stated 25-vehicle fleet (26 and 30
@@ -109,6 +140,13 @@ Figures (`reports/figures/`, HTML + JSON for the showcase API):
 - `gap_pct` — grouped bar, gap-% per instance per solver; the `randomized`
   bar is the flat feasible reference that makes the construction/improvement
   delta legible.
+- `solver_profile` — per-instance grouped distance bars (log scale) with
+  baselines greyed and `two_opt_tuned` promoted — the solver ladder in one
+  glance, with a takeaway subtitle.
+- `convergence_C101` / `convergence_RC105` — best-found distance vs accepted
+  moves; construction start starred, tuned vs untuned overlaid. C101 shows
+  coincident local optima; RC105 shows the tuned run escaping the untuned
+  one (−19.1).
 - `route_map_C101` — depot + customer scatter with route polylines colored per
   vehicle for the best C101 plan (15 vehicles, 1046.53).
 - `runtime` — grouped bar, solver runtime per instance (log scale).
@@ -151,8 +189,11 @@ uv run pytest projects/06-routing-optimization -q
 Planned deepening, in rough priority order:
 
 - **Metaheuristic track:** ALNS or tabu search behind the same `RoutePlan`
-  contract to close the gap from ~20 % toward single digits (Optuna-driven
-  operator-weight HPO as a separate experiment).
+  contract to close the gap from ~19 % toward single digits — the remaining
+  gap lives in time-window-aware sequencing (insertion/relocation moves and
+  escape mechanisms), which 2-opt neighborhoods cannot express. The wave-3
+  HPO framework (`tuning.py`) carries over directly for operator-weight
+  tuning.
 - **Real-data track:** re-target the pipeline at a client-style delivery
   dataset (open mobility data) with the same contracts.
 - **Hierarchical objective:** match the SINTEF convention (minimize vehicles

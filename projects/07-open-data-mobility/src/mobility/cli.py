@@ -10,6 +10,7 @@ from mobility.evaluate import build_report
 from mobility.features import build_features
 from mobility.join import join_all
 from mobility.model import train_baselines, train_nn
+from mobility.tune import tune_all
 from mobility.validate import load_dq_reports, persist_dq_summary, validate_all
 
 logger = get_logger(__name__)
@@ -46,6 +47,14 @@ def features_cmd() -> None:
     """Build lag/calendar/weather features with a temporal train/test split."""
     train, test = build_features(_cfg())
     typer.echo(f"train {train.height} rows, test {test.height} rows")
+
+
+@app.command("tune")
+def tune_cmd() -> None:
+    """Optuna HPO for GBM + TemporalNet (embargoed train-side validation only)."""
+    results = tune_all(_cfg())
+    for kind, res in results.items():
+        typer.echo(f"{kind}: best val MAE {res['best_val_mae']:.4f} <- {res['best_params']}")
 
 
 @app.command("train-baselines")
@@ -89,11 +98,12 @@ def dq_report_cmd() -> None:
 
 @app.command("all")
 def all_cmd() -> None:
-    """Run the full pipeline end to end."""
+    """Run the full pipeline end to end (including HPO tuning)."""
     download_cmd()
     validate_cmd()
     join_cmd()
     features_cmd()
+    tune_cmd()
     train_baselines_cmd()
     train_nn_cmd()
     evaluate_cmd()

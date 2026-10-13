@@ -21,7 +21,7 @@ from portfolio_eval.ml import RunComparison, regression_metrics
 from portfolio_eval.report import ReportBuilder
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
-from demand_forecasting.model import model_specs, to_xy
+from demand_forecasting.model import ModelSpec, model_specs, to_xy
 
 logger = get_logger(__name__)
 
@@ -33,6 +33,29 @@ def _date_positions(features: pl.DataFrame) -> np.ndarray:
     dates = features["date"].to_numpy()
     uniq = np.unique(dates)
     return np.searchsorted(uniq, dates)
+
+
+def cv_row_folds(
+    features: pl.DataFrame, config: ForecastConfig
+) -> list[tuple[np.ndarray, np.ndarray]]:
+    """Date-aligned (train_rows, val_rows) index arrays for each CV fold.
+
+    Shared by the backtest and HPO so both optimise and evaluate on exactly
+    the same expanding windows and embargo gap.
+    """
+    date_pos = _date_positions(features)
+    n_dates = int(date_pos.max()) + 1
+    cv = TimeSeriesCV(
+        n_splits=config.n_splits, gap=config.gap, min_train_size=config.min_train_size
+    )
+    folds = []
+    for fold in cv.split(n_dates):
+        train_rows = np.flatnonzero(date_pos < fold.train_end)
+        val_rows = np.flatnonzero(
+            (date_pos >= fold.val_start) & (date_pos < fold.val_start + fold.val_idx.size)
+        )
+        folds.append((train_rows, val_rows))
+    return folds
 
 
 @dataclass
@@ -69,31 +92,24 @@ class BacktestResult:
         return out
 
 
-def backtest(features: pl.DataFrame, config: ForecastConfig) -> BacktestResult:
-    """Run every model through the expanding-window backtest.
+def backtest(
+    features: pl.DataFrame, config: ForecastConfig, specs: list[ModelSpec] | None = None
+) -> BacktestResult:
+    """Run every model (or a chosen subset) through the expanding-window backtest.
 
     Splits are computed on *dates* (one expanding window shared by all series)
     and then mapped to row indices, so no date block is ever split across
     train/validation and the embargo ``gap`` holds at day granularity.
     """
     result = BacktestResult()
-    date_pos = _date_positions(features)
-    n_dates = int(date_pos.max()) + 1
-    cv = TimeSeriesCV(
-        n_splits=config.n_splits, gap=config.gap, min_train_size=config.min_train_size
-    )
-    folds = list(cv.split(n_dates))
-    logger.info("backtest: %d folds over %d dates (gap=%d)", len(folds), n_dates, config.gap)
+    folds = cv_row_folds(features, config)
+    logger.info("backtest: %d folds over the shared date grid (gap=%d)", len(folds), config.gap)
 
-    for spec in model_specs():
+    for spec in specs if specs is not None else model_specs():
         x, y, dates, series = to_xy(features, config, spec)
         pooled_true: list[np.ndarray] = []
         pooled_pred: list[np.ndarray] = []
-        for k, fold in enumerate(folds):
-            train_rows = np.flatnonzero(date_pos < fold.train_end)
-            val_rows = np.flatnonzero(
-                (date_pos >= fold.val_start) & (date_pos < fold.val_start + fold.val_idx.size)
-            )
+        for k, (train_rows, val_rows) in enumerate(folds):
             model = spec.build(config)
             model.fit(x[train_rows], y[train_rows])
             y_pred = model.predict(x[val_rows])
@@ -151,6 +167,7 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
     naive = strongest_naive(result)
     rec = result.last_fold(model)
     rec_n = result.last_fold(naive)
+    reduction = 1.0 - rec.mae / max(rec_n.mae, 1e-12)
     fig = go.Figure()
     for sid in EXAMPLE_SERIES:
         mask = rec.series == sid
@@ -169,7 +186,17 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
             mode="lines",
             line={"dash": "dot"},
         )
-    fig.update_layout(title=f"Actual vs forecast — last CV fold ({model} vs {naive})")
+    fig.update_layout(
+        title={
+            "text": f"Actual vs forecast — last CV fold ({model} vs {naive})",
+            "subtitle": {
+                "text": (
+                    f"takeaway: {model} beats the {naive} floor by {reduction:.0%} MAE "
+                    "on this fold; the residual gap is day-over-day noise"
+                )
+            },
+        }
+    )
     return apply_theme(fig)
 
 
