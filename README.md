@@ -43,13 +43,13 @@ on the same platform, designed for deepening.
 
 | Project | Result |
 |---|---|
-| 01 RAG agent | Retrieval recall@5 **0.962 vs 0.038 random** (+0.92) on a 593-article Wikipedia corpus; chunk-size sweep; p95 3.6 ms offline floor; est. live cost ≈ $0.0004/query |
-| 02 Forecasting | Gradient boosting MAE 8.62 — **−40.5% vs persistence naive** (Ridge 9.12, −37.0%), leakage-proof time-CV, stable 38.8–41.1% gain every fold |
-| 03 Anomaly detection | IsolationForest ROC-AUC **0.916 vs 0.509 random** (+0.41; PR 6.5× prevalence floor); honest analysis of why LOF/OneClassSVM fail on clustered anomalies |
-| 04 NLP | DistilBERT macro-F1 **0.902 vs 0.253 random / 0.100 majority** (+64.9 pp; TF-IDF 0.871), hand-written PyTorch loop, bounded reproducible split |
-| 05 Churn | Threshold-tuned pipeline: business cost **−35.9% vs naive majority** (threshold tuning alone −19.4%), ROC-AUC 0.834, calibration + permutation-importance reports |
-| 06 VRPTW | 2-opt **19.6% mean gap vs published Solomon optima** — from 303% (randomized) → 24.6% (savings) → 19.6%; 10 real benchmark instances, honest fleet-cap caveats |
-| 07 Mobility | Zone-hour demand over 41.2M real trips: GBM MAE 4.67 (**−28.4% vs naive lag-24**), p90 band 91.1% coverage, per-borough weather elasticity |
+| 01 RAG agent | Retrieval config by measurement: recall@5 **0.962 vs 0.038 random**; chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; embedding-model + rerank ablations with honest ties |
+| 02 Forecasting | Optuna HPO (56 trials) → production GBM: MAE **8.53, −41.1% vs persistence**; hand-written PyTorch temporal_net trails ridge (reported honestly); MinT-lite reconciliation verified coherence |
+| 03 Anomaly detection | Detector HPO: OCSVM rescued **0.34 → 0.91 ROC-AUC** (gamma tuning); IsolationForest stays best (0.917); LOF structurally blind (honest); score distributions + threshold-sweep decision visuals |
+| 04 NLP | Six-run ladder to macro-F1 **0.902** (naive 0.10 → random 0.25 → TF-IDF 0.87 → roberta 0.898 → DistilBERT 0.902); 12-trial fine-tuning HPO with bit-exact determinism; val→test non-transfer documented |
+| 05 Churn | Model selection twist documented: HPO-selected GBM loses on **business cost** to the tuned logistic — production pick stays logistic (−35.9% cost vs naive); isotonic calibration −89% ECE; decision-curve analysis |
+| 06 VRPTW | Solver HPO + restarts: mean gap **19.08% vs published optima** (randomized floor: 303%); convergence traces; honest negatives — restarts never pay, move budget saturates |
+| 07 Mobility | Zone-hour demand over 41.2M trips: GBM MAE 4.67 (−28.4% vs naive); **p90 band 90.8% coverage** (N/A zones flagged); permutation importance shows weather ≈ 0 for point MAE — its value is the elasticity signal |
 
 ## Engineering practices
 
