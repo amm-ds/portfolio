@@ -86,6 +86,88 @@ def figure(pid: str, name: str) -> str:
     return f.read_text()
 
 
+@app.get("/projects/{pid}/report", response_class=HTMLResponse)
+def report(pid: str) -> str:
+    """The project's full evaluation report (reports/report.html)."""
+    f = _project_dir(pid) / "reports" / "report.html"
+    if not f.exists():
+        raise HTTPException(status_code=404, detail=f"no report yet for {pid} — run its pipeline")
+    return f.read_text()
+
+
+# --- Served forecasts (Project 07) -----------------------------------------
+# Loads the compact serving artifact built by `mobility.cli build-serving-artifact`;
+# see projects/07-open-data-mobility/SERVING.md for the contract.
+
+_MOBILITY_ID = "07-open-data-mobility"
+_SERVING_DIR = _project_dir(_MOBILITY_ID) / "reports" / "models" / "serving"
+
+
+class ForecastRequest(BaseModel):
+    zone_id: int = Field(ge=1)
+    features: dict[str, float] = Field(min_length=1)
+
+
+class ForecastResponse(BaseModel):
+    zone_id: int
+    borough: str
+    zone: str
+    prediction: float
+    p90: float
+
+
+def _serving_artifacts() -> tuple[Any, dict[str, Any], list[dict[str, Any]]] | None:
+    model_path, meta_path, zones_path = (
+        _SERVING_DIR / "model.joblib",
+        _SERVING_DIR / "meta.json",
+        _SERVING_DIR / "zones.json",
+    )
+    if not (model_path.exists() and meta_path.exists() and zones_path.exists()):
+        return None
+    import joblib
+
+    bundle = joblib.load(model_path)
+    meta = json.loads(meta_path.read_text())
+    zones = json.loads(zones_path.read_text())
+    return bundle, meta, zones
+
+
+@app.post(f"/projects/{_MOBILITY_ID}/forecast", response_model=ForecastResponse)
+def forecast_mobility(request: ForecastRequest) -> ForecastResponse:
+    """Zone-hour demand forecast from the persisted tuned GBM (+p90 band)."""
+    artifacts = _serving_artifacts()
+    if artifacts is None:
+        raise HTTPException(
+            status_code=503,
+            detail="serving artifacts not built — run `uv run python -m mobility.cli "
+            "build-serving-artifact` in projects/07-open-data-mobility first",
+        )
+    bundle, meta, zones = artifacts
+    feature_names: list[str] = list(meta.get("feature_names") or bundle.get("feature_names") or [])
+    missing = [f for f in feature_names if f not in request.features]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"missing features: {', '.join(missing)}")
+    import numpy as np
+
+    row = np.array([[float(request.features[f]) for f in feature_names]])
+    pred = float(bundle["gbm"].predict(row)[0])
+    p90 = float(bundle["p90"].predict(row)[0])
+    tt = bundle.get("target_transform")
+    if tt == "log1p":
+        pred = float(np.expm1(pred))
+        p90 = float(np.expm1(p90))
+    zone_row = next((z for z in zones if z.get("location_id") == request.zone_id), None)
+    if zone_row is None:
+        raise HTTPException(status_code=422, detail=f"unknown zone_id {request.zone_id}")
+    return ForecastResponse(
+        zone_id=request.zone_id,
+        borough=str(zone_row.get("borough", "?")),
+        zone=str(zone_row.get("zone", "?")),
+        prediction=round(max(0.0, pred), 3),
+        p90=round(max(0.0, p90), 3),
+    )
+
+
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1)
 

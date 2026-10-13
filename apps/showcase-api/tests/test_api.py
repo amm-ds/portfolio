@@ -85,3 +85,27 @@ def test_story_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no
     assert [s["id"] for s in body["sections"]] == ["background", "results"]
     assert body["sections"][0]["title"] == "Background"
     assert body["sections"][1]["figures"] == ["bars"]
+
+
+def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    (tmp_path / "01-demo").mkdir(parents=True)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+    r = client.get("/projects/01-demo/report")
+    assert r.status_code == 404
+    (tmp_path / "01-demo" / "reports").mkdir()
+    (tmp_path / "01-demo" / "reports" / "report.html").write_text("<html>report</html>")
+    r = client.get("/projects/01-demo/report")
+    assert r.status_code == 200 and "report" in r.text
+
+
+def test_forecast_503_without_artifacts(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    monkeypatch.setattr(main, "_SERVING_DIR", tmp_path / "no-such-dir")
+    r = client.post(
+        "/projects/07-open-data-mobility/forecast",
+        json={"zone_id": 132, "features": {"lag_24": 5.0}},
+    )
+    assert r.status_code == 503
