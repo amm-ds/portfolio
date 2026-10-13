@@ -12,7 +12,12 @@ sections:
       is not "classical ML or deep learning" — it is what each approach costs,
       what each delivers on a fixed budget, and whether a tuning win on
       validation data actually survives contact with untouched test data.
-      This showcase makes all three questions concrete on a real benchmark.
+
+      - **The pain:** continuous news volume that manual desks cannot triage.
+      - **The trap:** keyword/rule systems that shatter on unseen wording.
+      - **The real question:** cost vs. delivered quality vs. auditability —
+        not which technology sounds newer.
+      - **The benchmark:** AG News, a real, public, widely studied corpus.
 
       **Business implication:** framing the problem as a cost-vs-delivery
       trade-off — not a technology contest — is what makes the results below
@@ -24,13 +29,15 @@ sections:
       benchmark from a pipeline that is fully reproducible on a laptop CPU —
       no GPU, no proprietary data, no black boxes.
 
-      Objectives: (1) score encoders against a strong TF-IDF baseline and two
-      naive floors on one identical test split; (2) search the fine-tuning
-      hyperparameters with Optuna (seeded, pruned, CPU-bounded) and persist
-      the winner; (3) select the reported model honestly — if the HPO model
-      does not beat the existing artifact on test, the artifact wins; (4) keep
-      every platform contract: bounded stratified sampling, DQ gates, sha256
-      snapshot metadata, standard metric rows.
+      | Criterion | Target | How it is verified |
+      |---|---|---|
+      | Ranking honesty | every run on one identical untouched test split | `reports/metrics.json` six-run ladder |
+      | Classical anchor | TF-IDF + LogisticRegression baseline always reported | `baseline_tfidf_logreg` row |
+      | Naive floors | majority + seeded random runs included | macro-F1 exposes what accuracy hides |
+      | HPO discipline | seeded Optuna study, pruned, best params persisted | `reports/hpo_study.json`, `params.yaml` |
+      | Selection honesty | HPO model must beat artifact on test or lose | `reports/selection.json` |
+      | Reproducibility | CPU-only, minutes, seeded end-to-end | re-run `cli all`, bit-identical validation scores |
+      | Contracts | DQ gates, bounded stratified data, sha256 snapshot | `data/dataset_contract.json`, `data/dq_*.md` |
 
       **Business implication:** a small, reproducible, honestly-selected model
       beats a larger undocumented one — you can audit every number here in an
@@ -61,6 +68,7 @@ sections:
       license posture, pinned seeds, reproducible bounds) is exactly the
       artifact a compliance review asks for before any model touches
       production data.
+    figures: [eda_class_balance]
 
   - id: eda
     text_md: |
@@ -70,6 +78,13 @@ sections:
       truncation budget, so the cap discards almost nothing and the
       model-to-model comparison stays fair. **So what:** the benchmark is
       balanced enough that macro-F1 differences reflect modeling, not priors.
+
+      - **Balance:** every split is exactly 25% World / Sports / Business /
+        Sci/Tech — the stratified subsampling contract holds.
+      - **Length:** train texts cluster at 20–50 words; the 128-token cap
+        truncates almost nothing.
+      - **Consequence:** metric differences between runs are model effects,
+        not artifacts of class priors or truncation.
 
       **Business implication:** because the classes are balanced, a macro-F1
       claim here will not collapse the moment the real class mix shifts —
@@ -86,9 +101,23 @@ sections:
       Each encoder is tokenized with its own tokenizer, padded per batch to
       the real sequence length (~3x epoch speedup at the fixed 128 cap).
 
+      ```mermaid
+      flowchart LR
+          A[Tokenized batch] --> B[AdamW step]
+          B --> C[Manual linear warmup + decay LR]
+          C --> D[Epoch end: val macro-F1]
+          D --> E{Improved?}
+          E -- yes --> F[Save best state dict]
+          E -- no --> G[Patience minus 1]
+          G -- zero --> H[Early stop, restore best]
+          F --> I[Next epoch / done]
+          H --> I
+      ```
+
       **Business implication:** every training detail a buyer would audit —
       optimizer, schedule, stopping rule, seeds — is hand-written, visible,
       and unit-tested rather than hidden inside a framework `Trainer`.
+    figures: [training_curve, hpo_history, hpo_importance]
 
   - id: evaluation
     text_md: |
@@ -100,9 +129,19 @@ sections:
       HPO-retrained model and the wave-2 artifact scores higher on this split
       (decision persisted in `reports/selection.json`).
 
+      ```mermaid
+      flowchart TD
+          A[Untouched 1000-row test split] --> B[Predict with all 6 runs]
+          B --> C[Platform metrics + macro-F1]
+          C --> D{HPO model vs wave-2 artifact}
+          D -- higher test F1 --> E[Reported as distilbert_tuned]
+          D -- lower test F1 --> F[Artifact kept, decision persisted]
+      ```
+
       **Business implication:** one untouched test split for every run is an
       anti-marketing device — no cherry-picked comparison, no test-set leakage
       through tuning; the numbers survive a skeptical re-run.
+    figures: [confusion_matrix_selected]
 
   - id: results
     text_md: |
@@ -159,8 +198,19 @@ sections:
       published results reach ~0.93–0.94 macro-F1, so these numbers are the
       cheap lower bound of the scaling curve.
 
+      **Roadmap:**
+
+      - Full-dataset fine-tune of the winning encoder on the 120k AG News
+        corpus behind a GPU flag.
+      - Multi-label extension for hybrid Business/Sci-Tech articles — the
+        observed dominant error mode.
+      - Multi-seed HPO with nested validation so tuning gains transfer at
+        small sample sizes.
+      - Calibration and per-class threshold tuning for imbalanced production
+        class mixes.
+
       **Business implication:** treat this as the auditable lower bound of a
       scaling decision — the classical baseline remains the right answer where
       latency or interpretability dominates, and the documented gap-plus-
-      headroom gives a concrete basis for funding a full-data GPU track.
+      headroom gives a concrete basis for funding the roadmap above.
     metrics_keys: [distilbert_tuned]

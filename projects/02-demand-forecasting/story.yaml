@@ -3,22 +3,25 @@ sections:
   - id: background
     text_md: |
       A retailer sells six products across four stores and needs a trustworthy
-      daily unit forecast for every store-product combination — 24 series in
-      total. These forecasts drive replenishment: systematically under-forecast
-      a trending product and shelves go empty; over-forecast and cash sits in
-      unsold stock.
+      daily unit forecast for every store-product combination. These forecasts
+      drive replenishment, and the demand they describe is anything but flat:
 
-      Demand here is not flat: every series carries a slow upward trend and a
-      pronounced weekly rhythm, and the level differs widely between stores and
-      products. That structure is exactly what makes forecasting interesting —
-      and what makes a careless evaluation lie to you, because a random
-      train/test split lets the model memorise adjacent days and masks drift.
+      - every series carries a **slow upward trend** — demand grows over the two
+        years of history, faster in some stores than others;
+      - every series has a **pronounced weekly rhythm** — weekdays and weekends
+        differ systematically, so yesterday's number is routinely the wrong
+        answer;
+      - **levels differ widely** across the 24 store-product series, so one
+        global average fits none of them.
 
-      This case study builds the full path from raw panel to validated model:
-      data contracts and quality gates, leakage-safe features, naive reference
-      baselines, hyperparameter search, a neural candidate, hierarchical
-      reconciliation, and an embargoed expanding-window backtest that reports
-      stability alongside accuracy.
+      That structure is exactly what makes forecasting interesting — and what
+      makes a careless evaluation lie to you: a random train/test split lets a
+      model memorise adjacent days and masks drift. This case study therefore
+      builds the full path from raw panel to validated model: data contracts
+      and quality gates, leakage-safe features, naive reference baselines,
+      hyperparameter search, a neural candidate, hierarchical reconciliation,
+      and an embargoed expanding-window backtest that reports stability
+      alongside accuracy.
 
       **Business implication:** stockouts and overstock are directly
       forecast-shaped decisions — every point of forecast error is working
@@ -26,18 +29,17 @@ sections:
 
   - id: objectives
     text_md: |
-      Deliver per-series, one-day-ahead unit forecasts that measurably beat
-      naive baselines, with an evaluation a client can trust rather than a
-      single lucky holdout number.
+      The engagement succeeds when all of the following hold — each one is
+      checked by a concrete artefact in the repo:
 
-      Concrete goals: (1) a global model that handles all 24 series as one
-      deployable artefact; (2) features built exclusively from information
-      available before the forecast day — no leakage; (3) an honest backtest —
-      expanding training windows, a 7-day embargo between train and validation,
-      metrics pooled over out-of-fold predictions only; (4) every accuracy claim
-      anchored against naive floors so "better" is quantified, not asserted;
-      (5) production depth — tuned hyperparameters, an honest neural comparison,
-      and forecasts that cohere across the hierarchy.
+      | success criterion | how it is demonstrated |
+      |---|---|
+      | Beats naive baselines by a wide, quantified margin | 6-run ladder in `reports/metrics.json`, anchored on `naive_mean` / `naive_last` |
+      | No feature leakage | lag features built with `shift` only; exact-value unit tests on hand-built series |
+      | Evaluation survives drift | embargoed expanding-window `TimeSeriesCV` (4 folds, 7-day gap), per-fold stability figure |
+      | One deployable artefact for the hierarchy | global models with one-hot series identity; unknown series handled gracefully |
+      | Production-grade model choice | seeded Optuna HPO on the same folds; un-tuned run kept for comparison |
+      | Hierarchy-consistent forecasts | MinT-lite reconciliation with a property-tested coherence guarantee |
 
       **Business implication:** the deliverable is a defensible number, not a
       model file — "we beat yesterday's number by 41%, and here is the protocol
@@ -63,6 +65,17 @@ sections:
         product, `Country` → store, sum `Quantity` per day) — documented in
         DESIGN.md, not implemented, so the default track stays hermetic.
 
+      The hierarchy the models forecast over:
+
+      ```mermaid
+      graph TD
+          T[Total demand] --> S0[store_0] & S1[store_1] & S2[store_2] & S3[store_3]
+          S0 --> S0P[6 products]
+          S1 --> S1P[6 products]
+          S2 --> S2P[6 products]
+          S3 --> S3P[6 products]
+      ```
+
       **Business implication:** every result is regenerable from a clean clone
       in about a minute with no downloads — and the documented real-data swap
       means the same pipeline can be pointed at live transactions without a
@@ -84,11 +97,21 @@ sections:
       — trend and weekly rhythm — are visible in the raw data before any model
       is trained, so the business case for better-than-naive forecasting can be
       made from a chart, not a promise.
+    figures: [eda_series_overview, eda_units_distribution]
 
   - id: training
     text_md: |
       Six runs, one per algorithmic rung — all through the identical embargoed
       expanding-window backtest:
+
+      ```mermaid
+      graph LR
+          N1[naive_mean<br/>global train mean] --> N2[naive_last<br/>persistence]
+          N2 --> R[ridge<br/>linear + one-hot id]
+          R --> H[hgb<br/>default boosting]
+          H --> HT[hgb_tuned<br/>Optuna 56 trials]
+          HT --> TN[temporal_net<br/>PyTorch emb+MLP]
+      ```
 
       - `naive_mean` / `naive_last` — global train mean and per-series
         persistence (the floors every other run must beat).
@@ -117,14 +140,23 @@ sections:
     text_md: |
       Validation uses the platform's `TimeSeriesCV`: four expanding-window
       folds over the 716 dated feature rows with a 7-day embargo between each
-      training window and its validation block, folds mapped to rows so no date
-      straddles the split. Every model — including the naives — runs through the
-      identical backtest, and HPO optimises on these same folds.
+      training window and its validation block. Metrics are the platform
+      standard for regression (MAE, RMSE, MAPE), pooled over all out-of-fold
+      predictions across folds and all 24 series; nothing is reported
+      in-sample. Per-fold MAE is tracked alongside the pooled numbers so
+      instability and drift stay visible.
 
-      Metrics are the platform standard for regression (MAE, RMSE, MAPE), pooled
-      over all out-of-fold predictions across folds and all 24 series; nothing
-      is reported in-sample. Per-fold MAE is tracked alongside the pooled
-      numbers so instability and drift stay visible.
+      The backtest flow every model — including the naives — passes through:
+
+      ```mermaid
+      flowchart LR
+          F[features.parquet<br/>17,184 rows] --> C[date-aligned folds<br/>4 expanding windows]
+          C --> T[train on window k]
+          T --> G[7-day embargo gap]
+          G --> V[predict validation block k]
+          V --> M[pooled out-of-fold<br/>MAE / RMSE / MAPE]
+          M --> P[per-fold stability check]
+      ```
 
       **Business implication:** the embargoed backtest answers whether the
       model survives next quarter, not just last week — it prices in drift
@@ -184,10 +216,14 @@ sections:
       model can be trusted. Later folds drift upward for every model — that
       drift is a feature of the evaluation, not a bug.
 
-      Roadmap: a raw-window sequence model (the honest next answer to
-      temporal_net's loss), the UCI Online Retail II real-data track, full MinT
-      covariance reconciliation, and probabilistic forecasts for safety-stock
-      sizing.
+      Forward roadmap:
+
+      - **UCI Online Retail II production track** — activate the documented
+        real-data swap behind `data.py::build_panel` with checksum pinning.
+      - **Probabilistic forecasts** — quantile GBM plus conformal intervals on
+        backtest residuals, sized for inventory safety stock.
+      - **Full MinT reconciliation** — covariance projection across the whole
+        hierarchy once the real-data track provides a deeper tree.
 
       **Business implication:** the value delivered is not a magic model — it is
       knowing precisely which model wins, by how much, where it stops winning,

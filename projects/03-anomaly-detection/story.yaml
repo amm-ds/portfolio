@@ -14,6 +14,14 @@ sections:
       project shows how three standard detectors behave on it, and how to
       evaluate them without fooling yourself.
 
+      The economics that frame every design choice below:
+
+      | event | typical cost shape |
+      |---|---|
+      | missed incident | outage minutes × user impact + recovery, paid in multiples of the warning window |
+      | false page | engineer minutes × alert fatigue, erodes trust until real pages get ignored |
+      | detector retraining | cheap here — the full pipeline with 90 HPO trials runs in ~75 s |
+
       **Business implication:** every missed incident has a cost, and every
       false page has one too — the question is which detector minimises the
       total at a fixed alert budget.
@@ -23,15 +31,19 @@ sections:
       Compare three detector families — IsolationForest, Local Outlier Factor
       (LOF), and One-Class SVM — on the same telemetry stream, honestly.
 
-      Honest means three things here. First, detectors train on the past only
-      and are scored on a later time window, so metrics reflect deployment
-      conditions rather than memorization. Second, the decision threshold is
-      fixed a priori from an assumed 2% contamination — never tuned against
-      ground truth. Third, every model is benchmarked against a seeded
-      random baseline: anything that cannot beat coin-flip has no business
-      alerting anyone at 3 a.m.
+      What "honest" means concretely:
 
-      **Business implication:** these three rules are what make the comparison
+      - **Time-ordered split:** detectors train on the past only (first 70% of
+        the timeline) and are scored on a later window, so metrics reflect
+        deployment conditions rather than memorization.
+      - **Fixed a-priori threshold:** the alert threshold is the assumed 2%
+        contamination quantile — never tuned against ground truth.
+      - **Seeded random baseline:** anything that cannot beat coin-flip has no
+        business alerting anyone at 3 a.m.
+      - **Untuned vs. tuned rows:** every family is reported with and without
+        HPO, so tuning gains (or lack of them) are visible per family.
+
+      **Business implication:** these rules are what make the comparison
       shoppable — a client can re-run the same harness on their own telemetry
       and get numbers that mean the same thing.
     metrics_keys: [random, isolation_forest]
@@ -106,10 +118,23 @@ sections:
       ≤ 1% per column, CPU and memory within [0, 100], latency > 0) run before
       anything trains and halt the pipeline loudly on violation.
 
+      ```mermaid
+      flowchart LR
+          A[raw telemetry<br/>n = 20 000] --> B[DQ gates<br/>nulls, ranges, freshness]
+          B --> C[rolling features<br/>mean/std, windows 10 + 60]
+          C --> D[train window<br/>first 70% = 13 958 rows]
+          D --> E[fit window 80%<br/>untuned detectors]
+          D --> F[validation 20%<br/>30 seeded TPE trials]
+          F --> G[best params<br/>per family]
+          E --> H[tuned refit<br/>full train window]
+          G --> H
+      ```
+
       **Business implication:** tuning and validation run entirely on past
       data with leakage-proof splits — so the detector you deploy is the
       detector you measured, and retraining on a client's own history does
       not silently change the guarantees.
+    figures: [telemetry_flags, hpo_importance]
 
   - id: evaluation
     text_md: |
@@ -124,6 +149,16 @@ sections:
       tuned against the ground-truth labels at any point. The threshold-sweep
       figure shows what the champion's precision/recall curve looks like
       across alert budgets, with the 2% budget marked.
+
+      ```mermaid
+      flowchart TD
+          A[anomaly score<br/>test-window minute] --> B{score >= threshold?<br/>top 2% quantile, fixed a priori}
+          B -->|yes| C[page on-call<br/>flagged minute]
+          B -->|no| D[stay silent]
+          C --> E[count TP / FP<br/>vs. injected ground truth]
+          D --> E
+          E --> F[ROC-AUC + PR-AUC<br/>vs. random baseline]
+      ```
 
       **Business implication:** reporting AUC *and* the precision/recall at a
       stated alert budget is what makes these numbers negotiable with a
@@ -178,32 +213,37 @@ sections:
 
   - id: conclusions
     text_md: |
-      Four takeaways. **(1) Detector families make different bets.**
-      Density- and boundary-based methods assume anomalies are sparse and
-      dissimilar to everything; when incidents arrive as a repeated,
-      self-similar signature, partitioning methods (IsolationForest) or
-      residual/context-aware features still see them. Choosing a detector
-      without checking that assumption is how silent incidents ship to
-      production.
+      The takeaways, in short:
 
-      **(2) Tuning is verdict-changing — but only sometimes.** One-Class SVM
-      went from below-chance (0.337) to PR-AUC champion (0.136) because one
-      scale-sensitive knob (`gamma`) was wrong by default; LOF stayed at
-      chance because its failure is structural, not hyperparametric. HPO is
-      cheap here (90 seeded trials in about a minute), so the honest move is
-      to run it and report both outcomes.
+      - **Detector families make different bets.** Density- and boundary-based
+        methods assume anomalies are sparse and dissimilar to everything; when
+        incidents arrive as a repeated, self-similar signature, partitioning
+        methods (IsolationForest) or residual/context-aware features still see
+        them. Choosing a detector without checking that assumption is how
+        silent incidents ship to production.
+      - **Tuning is verdict-changing — but only sometimes.** One-Class SVM
+        went from below-chance (0.337) to PR-AUC champion (0.136) because one
+        scale-sensitive knob (`gamma`) was wrong by default; LOF stayed at
+        chance because its failure is structural, not hyperparametric. HPO is
+        cheap here (90 seeded trials in about a minute), so the honest move is
+        to run it and report both outcomes.
+      - **A random baseline keeps everyone honest.** At 2% prevalence,
+        near-chance models can look plausible on accuracy; the seeded random
+        row in every metrics table makes "beating chance" the admission fee.
+      - **Guardrails make results trustworthy.** DQ gates that halt the
+        pipeline, a time-ordered split, validation inside the train window
+        only, and a fixed (untuned) threshold mean the reported numbers are
+        ones a client can plan an alerting budget around.
 
-      **(3) A random baseline keeps everyone honest.** At 2% prevalence,
-      near-chance models can look plausible on accuracy; the seeded random
-      row in every metrics table makes "beating chance" the admission fee.
+      Roadmap:
 
-      **(4) Guardrails make results trustworthy.** DQ gates that halt the
-      pipeline, a time-ordered split, validation inside the train window
-      only, and a fixed (untuned) threshold mean the reported numbers are
-      ones a client can plan an alerting budget around. Next steps: residual
-      features to de-cluster the anomaly signature, cost-aware threshold
-      selection on the sweep curve, and a real-telemetry track (NSL-KDD)
-      behind the same dataset contract.
+      - Streaming detection with adaptive thresholds (score-drift monitoring,
+        budget-aware operating-point updates between scheduled retrains).
+      - Residual/contextual features (rolling-median baselines, seasonal
+        adjustment) that de-cluster repeated incident signatures.
+      - NSL-KDD production track: real network-flow telemetry behind the same
+        dataset contract, replacing the synthetic default for graded
+        evaluation on live-shaped data.
 
       **Business implication:** the deliverable is not "a model with 0.92
       AUC" — it is an evaluation harness that tells you *when to distrust the
