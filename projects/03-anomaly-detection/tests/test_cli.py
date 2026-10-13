@@ -77,6 +77,33 @@ def test_tune_command(tiny_config: AnomalyConfig) -> None:
         assert (tiny_config.tuned_models_dir / f"{name}_hpo.json").exists()
 
 
+def test_detect_command(tiny_config: AnomalyConfig) -> None:
+    assert runner.invoke(cli.app, ["prepare"]).exit_code == 0
+    assert runner.invoke(cli.app, ["features"]).exit_code == 0
+    assert runner.invoke(cli.app, ["train"]).exit_code == 0
+    result = runner.invoke(cli.app, ["detect"])
+    assert result.exit_code == 0, result.output
+    assert (tiny_config.reports_path / "detect.json").exists()
+    assert (tiny_config.figures_dir / "adaptive_stream.json").exists()
+
+
+def test_residuals_command(tiny_config: AnomalyConfig) -> None:
+    assert runner.invoke(cli.app, ["prepare"]).exit_code == 0
+    result = runner.invoke(cli.app, ["residuals"])
+    assert result.exit_code == 0, result.output
+    assert (tiny_config.reports_path / "residual_probe.json").exists()
+
+
+def test_nsl_command(tiny_config: AnomalyConfig, monkeypatch: pytest.MonkeyPatch) -> None:
+    def stub(config: AnomalyConfig) -> dict:
+        return {"roc_auc": 0.9, "pr_auc": 0.8, "test_anomaly_rate": 0.5}
+
+    monkeypatch.setattr("anomaly_detection.cli.run_nsl_probe", stub)
+    result = runner.invoke(cli.app, ["nsl"])
+    assert result.exit_code == 0, result.output
+    assert "0.9000" in result.output
+
+
 def test_evaluate_command(tiny_config: AnomalyConfig) -> None:
     assert runner.invoke(cli.app, ["prepare"]).exit_code == 0
     assert runner.invoke(cli.app, ["features"]).exit_code == 0
@@ -88,7 +115,14 @@ def test_evaluate_command(tiny_config: AnomalyConfig) -> None:
     assert (tiny_config.eval_dir / "report.html").exists()
 
 
-def test_all_command_runs_full_pipeline(tiny_config: AnomalyConfig) -> None:
+def test_all_command_runs_full_pipeline(
+    tiny_config: AnomalyConfig, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # `all` includes the NSL track, which needs network — stub it offline.
+    def stub_nsl(config: AnomalyConfig) -> dict:
+        return {"roc_auc": 0.9, "pr_auc": 0.8, "test_anomaly_rate": 0.5}
+
+    monkeypatch.setattr("anomaly_detection.cli.run_nsl_probe", stub_nsl)
     result = runner.invoke(cli.app, ["all"])
     assert result.exit_code == 0, result.output
     assert tiny_config.raw_path.exists()
@@ -96,6 +130,8 @@ def test_all_command_runs_full_pipeline(tiny_config: AnomalyConfig) -> None:
     assert (tiny_config.models_dir / "ocsvm.joblib").exists()
     assert (tiny_config.tuned_models_dir / "isolation_forest_tuned.joblib").exists()
     assert (tiny_config.eval_dir / "metrics.json").exists()
+    assert (tiny_config.reports_path / "detect.json").exists()
+    assert (tiny_config.reports_path / "residual_probe.json").exists()
     assert "roc_auc" in result.output
 
 

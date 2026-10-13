@@ -1,0 +1,5 @@
+# UCI real-data track: large, regenerable artifacts (raw snapshot re-fetches via
+# the checksum-pinned fetch in uci.py; everything downstream is reproducible).
+data/raw/
+data_uci/
+reports_uci/

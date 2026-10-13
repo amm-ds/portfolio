@@ -22,3 +22,9 @@ hgb_tuned:
   min_samples_leaf: 48
   l2_regularization: 0.0014656689866341544
   max_features: 0.5260286352147595
+# UCI Online Retail II real-data track (synthetic stays the default).
+data_source: synthetic
+uci_n_stores: 8
+uci_n_products: 200
+uci_checksum_sha256: 572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb
+uci_min_newest_date: "2010-12-01"

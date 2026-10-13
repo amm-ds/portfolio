@@ -155,31 +155,43 @@ sections:
       | 4 | encoder_b (roberta-base) | 0.8980 | 0.8982 |
       | 5 | distilbert | 0.9020 | 0.9021 |
       | 6 | distilbert_tuned | 0.9020 | 0.9021 |
+      | 7 | distilbert_fulldata_20k | 0.9270 | 0.9270 |
 
       Key findings:
 
       - Encoders beat the TF-IDF baseline by ~+2.7–3.1 pp macro-F1 and the
         naive floors by ~65 pp; DistilBERT and roberta-base are tied within
         test noise (±1.9 pp).
+      - **Data scaling (full-data path):** a 20k-row subset through the
+        GPU-gated `--full-data` machinery scored **0.9270** test macro-F1 —
+        +2.5 pp over the 3.6k-row models, approaching published full-corpus
+        numbers; the step to 120k is compute, not engineering.
       - **HPO:** best trial lr 3.82e-5, warmup 0.042, weight decay 0.018,
         epochs 2 → validation macro-F1 **0.8953** vs 0.8880 defaults (2/12
         trials pruned). The retrained model reproduces its trial's validation
-        score **bit-for-bit** (0.8952711591867994) — the pipeline is
-        deterministic end-to-end.
-      - **Val → test non-transfer, handled honestly:** the HPO model scored
-        0.9011 on the untouched test split vs the wave-2 artifact's 0.9021, so
-        the artifact kept the `distilbert_tuned` title (margin +0.0010 ≈
-        noise; persisted in `reports/selection.json`).
+        score **bit-for-bit** (0.8952711591867994).
+      - **Seed variance exceeds the HPO gain:** re-running the study under
+        seeds 42/43/44 gives best val F1 0.8953 / 0.8852 / 0.8926 —
+        **mean 0.8910 ± 0.0042** — so the ~+0.3 pp mean gain over defaults is
+        inside seed noise at 400 validation rows. And the val→test regression
+        still holds: the HPO model scored 0.9011 on test vs the wave-2
+        artifact's 0.9021, so the artifact kept the `distilbert_tuned` title
+        (decision persisted in `reports/selection.json`).
+      - **Calibration is real and free:** temperature scaling fitted on the
+        validation split (T = 0.843, the model is mildly under-confident) cuts
+        test ECE from **0.0467 to 0.0133** (−71 %) with zero change to
+        predictions — a reliability upgrade for any confidence-thresholded
+        routing.
       - **Error analysis:** dominant confusion Business → Sci/Tech (24/250),
         e.g. *"Amazon Snaps Up China's Largest Web Retailer…"* and
         *"PeopleSoft customers reassured…"* — technology-business hybrids a
         human desk editor would also pause on.
 
       **Business implication:** the fine-tuned model beats a strong classical
-      baseline by ~3 pp macro-F1 at tiny scale, and the documented headroom is
-      larger — full-data published results reach ~0.93–0.94 — while the HPO
-      episode shows the process catching a "better-on-validation" model that
-      was actually worse on test.
+      baseline by ~3 pp macro-F1 at tiny scale, the 20k evidence run shows the
+      documented headroom is real (+2.5 pp more), and the HPO/seed episodes
+      show the process catching wins that are noise — so the numbers you can
+      trust are exactly the ones that survive all three checks.
     figures: [per_class_f1_comparison]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned]
 
@@ -192,22 +204,19 @@ sections:
       actually worse on test.
 
       **Honest limits:** 4k/1k stratified subsample, ≤4 epochs, max_length
-      128, single seed, CPU budget; the 12-trial study is a small-budget
-      demonstration and its hyperparameter rankings carry more noise than
-      signal at 400 validation rows. On full data (120k rows) with a GPU,
-      published results reach ~0.93–0.94 macro-F1, so these numbers are the
-      cheap lower bound of the scaling curve.
+      128, CPU budget; the HPO studies (12-trial main + 3×6 seed variance) are
+      small-budget demonstrations whose gains sit inside seed noise at 400
+      validation rows. What survives the noise: the 20k-row scaling evidence
+      (+2.5 pp test macro-F1) and the calibration result (−71 % ECE).
 
       **Roadmap:**
 
-      - Full-dataset fine-tune of the winning encoder on the 120k AG News
-        corpus behind a GPU flag.
-      - Multi-label extension for hybrid Business/Sci-Tech articles — the
-        observed dominant error mode.
-      - Multi-seed HPO with nested validation so tuning gains transfer at
-        small sample sizes.
-      - Calibration and per-class threshold tuning for imbalanced production
-        class mixes.
+      - Full-dataset fine-tune on the 120k AG News corpus via the proven
+        `--full-data` path (GPU-gated; engineering already done).
+      - Cost-sensitive routing on the calibrated probabilities — per-class
+        thresholds for imbalanced production mixes.
+      - Multi-label extension for hybrid Business/Sci-Tech articles — deferred
+        as a different problem contract, not a tuning knob.
 
       **Business implication:** treat this as the auditable lower bound of a
       scaling decision — the classical baseline remains the right answer where

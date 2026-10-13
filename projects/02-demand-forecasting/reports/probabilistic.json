@@ -1,0 +1,33 @@
+{
+  "target_coverage": 0.8,
+  "quantile_band": {
+    "coverage_pooled": 0.7273936170212766,
+    "per_fold": [
+      {
+        "fold": 1.0,
+        "quantile_band_coverage": 0.6687352245862884,
+        "mae_p50": 7.768772852073705
+      },
+      {
+        "fold": 2.0,
+        "quantile_band_coverage": 0.733451536643026,
+        "mae_p50": 8.26959921083982
+      },
+      {
+        "fold": 3.0,
+        "quantile_band_coverage": 0.7476359338061466,
+        "mae_p50": 9.106897817692058
+      },
+      {
+        "fold": 4.0,
+        "quantile_band_coverage": 0.7597517730496454,
+        "mae_p50": 9.679589575156225
+      }
+    ]
+  },
+  "split_conformal": {
+    "q80": 13.245742869546909,
+    "coverage_last_fold": 0.7573877068557919
+  },
+  "mae_p50_pooled": 8.706214863940453
+}

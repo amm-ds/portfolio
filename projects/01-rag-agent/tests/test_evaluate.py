@@ -16,6 +16,7 @@ from rag_agent.evaluate import (
     _write_reports,
     choose_retrieval_config,
     corpus_eda_figure,
+    cost_telemetry,
     estimate_input_tokens,
     first_relevant_rank,
     frontier_figure,
@@ -28,6 +29,7 @@ from rag_agent.evaluate import (
     run_rag_eval,
     sweep_figure,
     topk_run_for_size,
+    write_cost_telemetry,
 )
 from rag_agent.index import EmbedFn, Retriever
 from rag_agent.schemas import Article, Citation, EvalQuestion
@@ -240,3 +242,22 @@ def test_write_reports_produces_all_artifacts(
     assert (config.reports_dir / "figures" / "chunk_size_sweep.json").exists()
     html = (config.reports_dir / "report.html").read_text(encoding="utf-8")
     assert "figures/chunk_size_sweep.html" in html
+
+
+def test_cost_telemetry_shape_and_write(config: RAGConfig) -> None:
+    rag_run = _synthetic_rag_run()  # 2 queries: in [100, 120], out [50, 60]
+    payload = cost_telemetry(config, rag_run, mode="mock")
+    assert payload["mode"] == "mock"
+    assert payload["n_queries"] == 2
+    assert payload["total_input_tokens"] == 220
+    assert payload["total_output_tokens"] == 110
+    assert len(payload["per_query"]) == 2
+    expected = 100 / 1e6 * 0.15 + 50 / 1e6 * 0.60
+    assert payload["per_query"][0]["est_cost_usd"] == round(expected, 8)
+    assert payload["cost_per_query_usd"]["mean"] > 0
+    assert payload["cost_per_query_usd"]["p50"] > 0
+
+    path = write_cost_telemetry(config, rag_run)  # no credentials in CI → mock floor entry
+    written = json.loads(path.read_text(encoding="utf-8"))
+    assert written["mode"] == "mock"
+    assert written["n_queries"] == 2

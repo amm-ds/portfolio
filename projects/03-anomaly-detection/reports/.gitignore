@@ -2,3 +2,6 @@
 /metrics.json
 /report.html
 /figures
+/detect.json
+/residual_probe.json
+/nsl_probe.json

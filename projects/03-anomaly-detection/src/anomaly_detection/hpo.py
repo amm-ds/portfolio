@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-import joblib  # type: ignore[import-untyped]
+import joblib
 import numpy as np
 import optuna
 from portfolio_core.logging import get_logger

@@ -30,14 +30,15 @@ from portfolio_eval.report import EvalReport
 
 from routing_optimization.config import VRPConfig
 from routing_optimization.parser import parse_solomon_file
-from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
+from routing_optimization.schemas import AlnsTuning, Problem, RoutePlan, TwoOptTuning
 from routing_optimization.solver import (
+    alns,
     clarke_wright_savings,
     nearest_neighbor,
     randomized,
     two_opt,
 )
-from routing_optimization.tuning import best_start, restart_plans, run_hpo
+from routing_optimization.tuning import best_start, restart_plans, run_alns_hpo, run_hpo
 
 logger = get_logger(__name__)
 
@@ -77,19 +78,36 @@ def canonical_instance_name(raw: str) -> str:
     return stem.upper().replace("_", "")
 
 
-def load_best_known(path: Path) -> dict[str, float]:
-    """Load the curated best-known table, skipping ``#`` comment lines."""
+def load_best_known(path: Path, supplement_path: Path | None = None) -> dict[str, float]:
+    """Load the curated best-known table, skipping ``#`` comment lines.
+
+    When ``supplement_path`` is given, project-local values fill the instances
+    the registry table does not list (registry wins on any conflict).
+    """
     table: dict[str, float] = {}
-    with path.open(newline="", encoding="utf-8") as fh:
-        rows = (ln for ln in csv.reader(fh) if ln and not ln[0].strip().startswith("#"))
-        for row in rows:
-            if len(row) < 2 or not row[0].strip():
-                continue
-            try:
-                table[canonical_instance_name(row[0])] = float(row[1])
-            except ValueError:
-                continue  # header row or non-numeric reference value
+
+    def _merge(source: Path) -> None:
+        with source.open(newline="", encoding="utf-8") as fh:
+            rows = (ln for ln in csv.reader(fh) if ln and not ln[0].strip().startswith("#"))
+            for row in rows:
+                if len(row) < 2 or not row[0].strip():
+                    continue
+                try:
+                    table.setdefault(canonical_instance_name(row[0]), float(row[1]))
+                except ValueError:
+                    continue  # header row or non-numeric reference value
+
+    _merge(path)
+    if supplement_path is not None and supplement_path.exists():
+        _merge(supplement_path)
     return table
+
+
+def family_of(instance: str) -> str:
+    """Solomon family of an instance: C101 -> C1, RC208 -> RC2, R112 -> R1."""
+    letters = instance.rstrip("0123456789")
+    digits = instance[len(letters) :]
+    return f"{letters}{digits[0]}" if digits else letters
 
 
 def gap_pct(distance: float, best_known: float) -> float:
@@ -389,6 +407,26 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
     return apply_theme(fig)
 
 
+def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
+    """Mean optimality gap per Solomon family (C1/C2/R1/R2/RC1/RC2) per solver."""
+    fig = px.bar(
+        rows,
+        x="family",
+        y="gap_pct",
+        color="solver",
+        barmode="group",
+        title="Mean gap to best-known by Solomon family",
+        labels={"gap_pct": "mean gap %", "family": "family", "solver": "solver"},
+    )
+    _style_runs_safe(fig, best="alns")
+    add_takeaway(
+        fig,
+        "ALNS closes the gap on every family, single digits on C1/RC1; "
+        "baselines stay orders of magnitude behind",
+    )
+    return apply_theme(fig)
+
+
 # ---------------------------------------------------------------------------
 # Pipeline stages (used by the CLI and dvc.yaml)
 
@@ -433,8 +471,9 @@ def run_solve(cfg: VRPConfig) -> Path:
         for inst, plans in plans_by_inst.items()
     }
     hpo = run_hpo(problems, bases, cfg)
-    convergence: dict[str, dict[str, list[float]]] = {}
 
+    # Tuned 2-opt runs (also the ALNS starting points).
+    convergence: dict[str, dict[str, list[float]]] = {}
     for problem in problems:
         inst = problem.name
         runs = runs_by_inst[inst]
@@ -472,6 +511,38 @@ def run_solve(cfg: VRPConfig) -> Path:
             )
             convergence[inst] = {"untuned": untuned_trace, "tuned": trace}
 
+    # ALNS knob search on the representative subset, then ALNS on every instance.
+    problem_by_name = {p.name: p for p in problems}
+    tuned_starts = {inst: plans["two_opt_tuned"] for inst, plans in plans_by_inst.items()}
+    alns_hpo = run_alns_hpo(problem_by_name, tuned_starts, cfg)
+
+    for problem in problems:
+        inst = problem.name
+        runs = runs_by_inst[inst]
+        plans = plans_by_inst[inst]
+        t0 = time.perf_counter()
+        plan = alns(
+            problem,
+            start=tuned_starts[inst],
+            seed=cfg.seed,
+            max_iterations=cfg.alns_max_iterations,
+            segment_length=alns_hpo.tuning.segment_length,
+            reaction_factor=alns_hpo.tuning.reaction_factor,
+            init_weights=alns_hpo.tuning.init_weights,
+            destroy_q=cfg.alns_destroy_q,
+        )
+        alns_runtime = time.perf_counter() - t0
+        runs.append(
+            SolverRun(
+                "alns",
+                plan.total_distance,
+                plan.n_vehicles,
+                alns_runtime,
+                base_solver="two_opt_tuned",
+            )
+        )
+        plans["alns"] = plan
+
         best = min(runs, key=lambda r: r.total_distance)
         instances_payload[inst] = {
             "n_customers": problem.n_customers,
@@ -507,32 +578,47 @@ def run_solve(cfg: VRPConfig) -> Path:
         "trials": len(hpo.trials),
         "best_mean_distance": round(hpo.best.mean_distance, 4),
     }
+    payload["alns_best"] = alns_hpo.tuning.model_dump()
+    payload["alns_hpo"] = {
+        "trials": len(alns_hpo.trials),
+        "subset": [n for n in cfg.alns_hpo_instances if n in tuned_starts],
+        "best_mean_distance": round(alns_hpo.best.mean_distance, 4),
+    }
     payload["convergence"] = convergence
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     solutions_path = cfg.reports_dir / "solutions.json"
     solutions_path.write_text(json.dumps(payload, indent=2))
     (cfg.reports_dir / "dq.md").write_text("\n".join(dq_doc))
-    persist_solver_best(cfg, hpo.tuning)
+    persist_solver_best(cfg, hpo.tuning, alns_hpo.tuning)
     return solutions_path
 
 
-def persist_solver_best(cfg: VRPConfig, tuning: TwoOptTuning) -> Path:
-    """Write the chosen improvement-stage config to ``params.yaml`` (idempotent).
+def persist_solver_best(cfg: VRPConfig, tuning: TwoOptTuning, alns_tuning: AlnsTuning) -> Path:
+    """Write the chosen configs to ``params.yaml`` (idempotent).
 
-    Replaces only the ``solver_best:`` block (or appends it), preserving the
-    rest of the file — including comments — byte for byte. Tests override the
-    target via ``cfg.params_path``.
+    Replaces only the ``solver_best:`` / ``alns_best:`` blocks (or appends
+    them), preserving the rest of the file — including comments — byte for
+    byte. Tests override the target via ``cfg.params_path``.
     """
     params_path = cfg.params_path or Path(__file__).resolve().parents[2] / "params.yaml"
-    block = "solver_best:\n" + yaml.safe_dump(tuning.model_dump(), sort_keys=False)
     text = params_path.read_text() if params_path.exists() else ""
-    head, sep, _tail = text.partition("solver_best:\n")
-    new_text = (
-        head + block if sep else text + ("\n" if text and not text.endswith("\n") else "") + block
+
+    def replace_block(source: str, key: str, block: str) -> str:
+        head, sep, _tail = source.partition(f"{key}:\n")
+        if sep:
+            return head + block
+        return source + ("\n" if source and not source.endswith("\n") else "") + block
+
+    text = replace_block(
+        text, "solver_best", "solver_best:\n" + yaml.safe_dump(tuning.model_dump(), sort_keys=False)
     )
-    if new_text != text:
-        params_path.write_text(new_text)
-    logger.info("solver_best persisted to %s: %s", params_path, tuning.summary())
+    text = replace_block(
+        text,
+        "alns_best",
+        "alns_best:\n" + yaml.safe_dump(alns_tuning.model_dump(), sort_keys=False),
+    )
+    params_path.write_text(text)
+    logger.info("persisted to %s: %s | %s", params_path, tuning.summary(), alns_tuning.summary())
     return params_path
 
 
@@ -593,6 +679,27 @@ def summary_markdown(evaluations: list[InstanceEvaluation]) -> str:
     return "\n".join(lines)
 
 
+def family_markdown(evaluations: list[InstanceEvaluation]) -> str:
+    """Mean gap per Solomon family per solver (instances with a reference)."""
+    lines = [
+        "| family | instances | solver | mean gap % |",
+        "|---|---|---|---|",
+    ]
+    families = sorted({family_of(ev.instance) for ev in evaluations})
+    for fam in families:
+        members = [ev for ev in evaluations if family_of(ev.instance) == fam and ev.best_known]
+        for solver in sorted({r.solver for ev in members for r in ev.runs}):
+            gaps = [
+                gap_pct(r.total_distance, ev.best_known)
+                for ev in members
+                for r in ev.runs
+                if r.solver == solver and ev.best_known is not None
+            ]
+            if gaps:
+                lines.append(f"| {fam} | {len(members)} | {solver} | {sum(gaps) / len(gaps):.2f} |")
+    return "\n".join(lines)
+
+
 def run_evaluate(cfg: VRPConfig) -> Path:
     """Compute gaps, build figures and write all evaluation artifacts."""
     solutions_path = cfg.reports_dir / "solutions.json"
@@ -601,7 +708,7 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             f"{solutions_path} missing — run `routing_optimization solve` first"
         )
     solutions = json.loads(solutions_path.read_text())
-    best_known_table = load_best_known(cfg.best_known_path)
+    best_known_table = load_best_known(cfg.best_known_path, cfg.best_known_supplement_path)
 
     evaluations: list[InstanceEvaluation] = []
     for inst, data in solutions["instances"].items():
@@ -675,6 +782,18 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             ),
         )
 
+    family_rows = pl.DataFrame(
+        {
+            "family": family_of(ev.instance),
+            "solver": r.solver,
+            "gap_pct": round(gap_pct(r.total_distance, ev.best_known), 4),
+        }
+        for ev in evaluations
+        if ev.best_known is not None
+        for r in ev.runs
+    )
+    figures["family_gap"] = family_gap_figure(family_rows)
+
     figures_dir = cfg.reports_dir / "figures"
     figures_dir.mkdir(parents=True, exist_ok=True)
     # drop stale figure payloads from previous runs (e.g. changed instance lists)
@@ -687,9 +806,11 @@ def run_evaluate(cfg: VRPConfig) -> Path:
 
     detail_md = results_markdown(evaluations)
     summary_md = summary_markdown(evaluations)
+    family_md = family_markdown(evaluations)
     (cfg.reports_dir / "results.md").write_text(
         f"# Routing optimization — evaluation results\n\n## Summary (mean over instances)\n\n"
-        f"{summary_md}\n\n## Per-instance results\n\n{detail_md}\n"
+        f"{summary_md}\n\n## Per-family results\n\n{family_md}\n\n"
+        f"## Per-instance results\n\n{detail_md}\n"
     )
 
     metrics = {
@@ -755,13 +876,42 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         "tuning": {
             "solver_best": solutions.get("solver_best"),
             "hpo": solutions.get("hpo"),
+            "alns_best": solutions.get("alns_best"),
+            "alns_hpo": solutions.get("alns_hpo"),
+        },
+        "families": {
+            fam: {
+                solver: round(
+                    sum(
+                        gap_pct(r.total_distance, ev.best_known)
+                        for ev in evaluations
+                        if family_of(ev.instance) == fam and ev.best_known is not None
+                        for r in ev.runs
+                        if r.solver == solver
+                    )
+                    / max(
+                        sum(
+                            1
+                            for ev in evaluations
+                            if family_of(ev.instance) == fam and ev.best_known is not None
+                            for r in ev.runs
+                            if r.solver == solver
+                        ),
+                        1,
+                    ),
+                    4,
+                )
+                for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
+            }
+            for fam in sorted({family_of(ev.instance) for ev in evaluations})
         },
     }
     metrics_path = cfg.reports_dir / "metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2))
 
-    report = EvalReport(title="Routing Optimization — Solomon VRPTW subset")
+    report = EvalReport(title="Routing Optimization — Solomon VRPTW benchmark")
     report.add_markdown_table("Summary (mean over instances)", summary_md)
+    report.add_markdown_table("Per-family results", family_md)
     report.add_markdown_table("Per-instance results", detail_md)
     for name in figures:
         report.add_html(
@@ -780,6 +930,9 @@ __all__ = [
     "convergence_figure",
     "eda_instance_map_figure",
     "evaluate_instance",
+    "family_gap_figure",
+    "family_markdown",
+    "family_of",
     "gap_figure",
     "gap_pct",
     "load_best_known",

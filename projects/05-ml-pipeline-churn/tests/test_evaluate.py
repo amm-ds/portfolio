@@ -14,6 +14,7 @@ from churn_pipeline.evaluate import (
     expected_calibration_error,
     naive_majority_run,
     net_benefit,
+    paired_bootstrap_cost_delta,
 )
 
 
@@ -53,6 +54,24 @@ def test_net_benefit_matches_treat_all_formula() -> None:
     for pt in (0.1, 0.3, 0.5, 0.7):
         expect = 0.5 - 0.5 * pt / (1 - pt)
         assert net_benefit(y_true, proba, pt) == pytest.approx(expect)
+
+
+def test_paired_bootstrap_delta(small_cfg: ChurnConfig) -> None:
+    """Seeded paired bootstrap: CI brackets the point delta; sign logic holds."""
+    y_true = np.array([0, 0, 0, 1, 1, 1, 0, 1])
+    good = np.array([0.1, 0.2, 0.1, 0.8, 0.9, 0.7, 0.3, 0.6])
+    naive = np.full(8, 0.5)
+    d1 = paired_bootstrap_cost_delta(
+        small_cfg, y_true, good, naive, thr_a=0.5, thr_b=0.5, n_boot=500
+    )
+    d2 = paired_bootstrap_cost_delta(
+        small_cfg, y_true, good, naive, thr_a=0.5, thr_b=0.5, n_boot=500
+    )
+    assert d1 == d2, "seeded bootstrap must be deterministic"
+    assert d1["lo"] <= d1["point"] <= d1["hi"]
+    assert d1["n_boot"] == 500
+    # good model costs strictly less here, so the delta should be negative throughout
+    assert d1["hi"] < 0 and d1["significant_95"]
 
 
 def test_naive_majority_degenerates_to_constant_costs(small_cfg: ChurnConfig) -> None:
@@ -107,10 +126,15 @@ def test_end_to_end_cli_cores(small_cfg: ChurnConfig, params_file: Path) -> None
         k for k in metrics if k.startswith("logreg_threshold_") and k != "logreg_threshold_0.5"
     ]
     assert len(tuned) == 1, "exactly one tuned logreg row"
-    for run in metrics.values():
+    for name, run in metrics.items():
+        if name.startswith("_"):
+            continue  # metadata block, not a run
         assert {"roc_auc", "f1_macro", "business_cost"} <= set(run)
     for run in ("selected_model", "selected_model_calibrated"):
         assert "ece" in metrics[run], "ECE reported for selected runs"
+    ci = metrics["_meta"]["cost_delta_ci"]
+    assert ci["n_boot"] == 2000 and ci["lo"] <= ci["point"] <= ci["hi"]
+    assert (small_cfg.reports_dir / "figures" / "bootstrap_ci.json").exists()
     selected_cost = metrics["selected_model"]["business_cost"]
     naive_cost = metrics["naive_majority"]["business_cost"]
     assert selected_cost <= naive_cost, "selected model should not lose to naive"

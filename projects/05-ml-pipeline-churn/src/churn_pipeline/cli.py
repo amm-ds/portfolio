@@ -94,24 +94,52 @@ def run_dq_gates(df: pl.DataFrame) -> DQReport:
     report.check_range("age", *minmax("age"), 18.0, 90.0)
     report.check_range("tenure_months", *minmax("tenure_months"), 0.0, 240.0)
     report.check_range("monthly_charges", *minmax("monthly_charges"), 0.0, 10_000.0)
-    report.check_range("churned", *minmax("churned"), 0.0, 1.0)
+    if TARGET_COL in df.columns:  # unlabeled client extracts skip the target gate
+        report.check_range("churned", *minmax("churned"), 0.0, 1.0)
     report.raise_if_failed()
     return report
 
 
-def prepare_core(cfg: ChurnConfig) -> Path:
-    """Generate messy synthetic churn, gate it with DQ checks, persist artifacts."""
+REQUIRED_CLIENT_COLS = ["age", "tenure_months", "monthly_charges", "support_calls", "contract"]
+
+
+def _load_client_extract(input_csv: Path) -> pl.DataFrame:
+    """Load a client CRM extract; same columns as the synthetic generator.
+
+    `churned` is optional at ingest (inference-only extracts have no labels);
+    DQ/EDA adapt, and training requires it downstream.
+    """
+    df = pl.read_csv(input_csv)
+    missing = [c for c in REQUIRED_CLIENT_COLS if c not in df.columns]
+    if missing:
+        raise ValueError(f"client extract is missing required columns: {', '.join(missing)}")
+    df = df.with_columns(pl.col("contract").cast(pl.Utf8))
+    if TARGET_COL in df.columns:
+        df = df.with_columns(pl.col(TARGET_COL).cast(pl.Boolean))
+    return df
+
+
+def prepare_core(cfg: ChurnConfig, input_csv: Path | None = None) -> Path:
+    """Generate messy synthetic churn (or ingest a client extract), gate, persist."""
     cfg.data_dir.mkdir(parents=True, exist_ok=True)
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
 
-    df = synthetic.churn(seed=cfg.seed, n=cfg.n_samples)
+    if input_csv is not None:
+        df = _load_client_extract(input_csv)
+        source = f"client://{input_csv.name}"
+        name = "churn_client_extract"
+        log.info("prepare: ingested client extract %s (%d rows)", input_csv, df.height)
+    else:
+        df = synthetic.churn(seed=cfg.seed, n=cfg.n_samples)
+        source = "synthetic://portfolio_core.synthetic.churn"
+        name = "churn_synthetic"
     report = run_dq_gates(df)
 
     (cfg.reports_dir / "dq_report.md").write_text(report.to_markdown())
     contract = DatasetContract(
-        name="churn_synthetic",
-        source="synthetic://portfolio_core.synthetic.churn",
-        license="MIT",
+        name=name,
+        source=source,
+        license="MIT" if input_csv is None else "LicenseRef-Client-Contract",
         snapshot_date=date.today(),
         checksum_sha256=synthetic.checksum_of_frame(df),
         n_rows=df.height,
@@ -120,18 +148,24 @@ def prepare_core(cfg: ChurnConfig) -> Path:
 
     out = cfg.data_dir / "churn.parquet"
     df.write_parquet(out)
+    churn_rate = "n/a (no labels)"
+    if TARGET_COL in df.columns:
+        churn_rate = f"{float(cast(float, df['churned'].mean())):.3f}"
     log.info(
-        "prepare: %d rows, churn rate %.3f, %d/%d DQ checks passed",
+        "prepare: %d rows, churn rate %s, %d/%d DQ checks passed",
         df.height,
-        df["churned"].mean(),
+        churn_rate,
         len(report.checks) - report.n_failed,
         len(report.checks),
     )
 
-    eda_fig = eda_churn_profile_figure(df)
-    save_html(eda_fig, cfg.reports_dir / "figures" / "eda_churn_profile.html")
-    save_json(eda_fig, cfg.reports_dir / "figures" / "eda_churn_profile.json")
-    log.info("prepare: EDA figure → reports/figures/eda_churn_profile.{html,json}")
+    if TARGET_COL in df.columns:
+        eda_fig = eda_churn_profile_figure(df)
+        save_html(eda_fig, cfg.reports_dir / "figures" / "eda_churn_profile.html")
+        save_json(eda_fig, cfg.reports_dir / "figures" / "eda_churn_profile.json")
+        log.info("prepare: EDA figure -> reports/figures/eda_churn_profile.{html,json}")
+    else:
+        log.info("prepare: no churned column - EDA figure skipped (inference-only extract)")
     return out
 
 
@@ -165,7 +199,8 @@ def train_core(cfg: ChurnConfig, params_file: Path = Path("params.yaml")) -> Pat
         selection = ModelSelection(
             family=cfg.model_family,
             params=dict(cfg.model_params),
-            best_cv_f1=float("nan"),
+            best_score=float("nan"),
+            objective=cfg.hpo_objective,
             n_trials=0,
         )
         log.info("train: using production config from %s", params_file)
@@ -204,7 +239,8 @@ def train_core(cfg: ChurnConfig, params_file: Path = Path("params.yaml")) -> Pat
             {
                 "family": selection.family,
                 "params": {k: float(v) for k, v in selection.params.items()},
-                "best_cv_f1": selection.best_cv_f1,
+                "objective": selection.objective,
+                "best_score": selection.best_score,
                 "n_trials": selection.n_trials,
                 "family_scores": selection.family_scores,
             },
@@ -247,6 +283,16 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     for name, fig in figures.items():
         save_json(fig, cfg.reports_dir / "figures" / f"{name}.json")
 
+    # Annotate metrics.json with run-level metadata (bootstrap CI etc.).
+    metrics_path = cfg.reports_dir / "metrics.json"
+    metrics = json.loads(metrics_path.read_text())
+    metrics["_meta"] = {
+        "cost_delta_ci": summary["cost_delta_ci"],
+        "selected_opt": summary["selected_opt"],
+        "naive_opt": summary["naive_opt"],
+    }
+    metrics_path.write_text(json.dumps(metrics, indent=2))
+
     log.info(
         "evaluate: selected t=%.3f cost=%.0f (ece %.3f) | isotonic t=%.3f cost=%.0f (ece %.3f) "
         "| naive %.0f | calibration_helps=%s",
@@ -262,14 +308,23 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     return cfg.reports_dir / "report.html"
 
 
+OptInput = Annotated[
+    Path | None,
+    typer.Option(
+        "--input", help="Optional client CRM extract CSV (same columns as the synthetic data)."
+    ),
+]
+
+
 @app.command()
 def prepare(
     n: OptN = None,
     seed: OptSeed = None,
     params_file: OptParams = Path("params.yaml"),
+    input_csv: OptInput = None,
 ) -> None:
-    """Generate synthetic churn data and run DQ gates."""
-    prepare_core(load_config(params_file, n, seed))
+    """Generate synthetic churn (or ingest a client extract) and run DQ gates."""
+    prepare_core(load_config(params_file, n, seed), input_csv=input_csv)
 
 
 @app.command()

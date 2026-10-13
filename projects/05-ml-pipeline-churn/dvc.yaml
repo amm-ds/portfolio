@@ -34,6 +34,7 @@ stages:
       - model_family
       - model_params
       - hpo_trials
+      - hpo_objective
       - calib_frac
     outs:
       - data/model.pkl

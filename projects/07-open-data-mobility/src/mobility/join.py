@@ -110,6 +110,39 @@ def build_zone_hour_demand(cfg: MobilityConfig | None = None) -> pl.DataFrame:
     monthly_paths = sorted(cfg.validated_dir.glob("*.parquet"))
     if not monthly_paths:
         raise FileNotFoundError(f"no validated months in {cfg.validated_dir}")
+    demand = _assemble_demand(monthly_paths, cfg, zones, weather, cfg.months)
+    demand.write_parquet(cfg.zone_hour_demand_path, compression="zstd")
+    logger.info(
+        "zone_hour_demand: %d rows, %d zones, %s -> %s",
+        demand.height,
+        demand["zone_id"].n_unique(),
+        demand["ts"].min(),
+        cfg.zone_hour_demand_path,
+    )
+
+    green_paths = sorted((cfg.validated_dir / "green").glob("*.parquet"))
+    if green_paths:
+        green = _assemble_demand(green_paths, cfg, zones, weather, cfg.green_months)
+        green.write_parquet(cfg.green_zone_hour_demand_path, compression="zstd")
+        logger.info(
+            "green_zone_hour_demand: %d rows, %d zones -> %s",
+            green.height,
+            green["zone_id"].n_unique(),
+            cfg.green_zone_hour_demand_path,
+        )
+    else:
+        logger.info("no validated green months — skipping green demand table")
+    return demand
+
+
+def _assemble_demand(
+    monthly_paths: list[Path],
+    cfg: MobilityConfig,
+    zones: pl.DataFrame,
+    weather: pl.DataFrame,
+    months: list[str],
+) -> pl.DataFrame:
+    """Aggregate validated months onto the full zone x hour grid + weather."""
     frames = [_monthly_zone_hours(p, cfg) for p in monthly_paths]
     pickups = (
         pl.concat(frames, how="vertical")
@@ -120,7 +153,7 @@ def build_zone_hour_demand(cfg: MobilityConfig | None = None) -> pl.DataFrame:
     # Reindex onto the complete zone x hour grid. Sparse zones (airports,
     # suburbs) have hours with zero pickups; without explicit zero rows the
     # feature stage's shift() would treat "previous observed hour" as t-1h
-    # and misalign the lags. 263 zones x 8 784 hours ≈ 2.3M rows — trivial.
+    # and misalign the lags.
     if pickups.height > 0:
         ts_min, ts_max = pickups.select(
             pl.min("ts").alias("ts_min"), pl.max("ts").alias("ts_max")
@@ -128,8 +161,8 @@ def build_zone_hour_demand(cfg: MobilityConfig | None = None) -> pl.DataFrame:
     else:  # no surviving trips: keep the configured months' full hour range
         from datetime import datetime, timedelta
 
-        first = cfg.months[0].split("-")
-        last = cfg.months[-1].split("-")
+        first = months[0].split("-")
+        last = months[-1].split("-")
         ts_min = datetime(int(first[0]), int(first[1]), 1)
         end_month = 1 if last[1] == "12" else int(last[1]) + 1
         end_year = int(last[0]) + (1 if last[1] == "12" else 0)
@@ -158,16 +191,7 @@ def build_zone_hour_demand(cfg: MobilityConfig | None = None) -> pl.DataFrame:
     )
     for row in demand.head(200).iter_rows(named=True):
         _ = ZoneHourDemand(**row)
-
     cfg.curated_dir.mkdir(parents=True, exist_ok=True)
-    demand.write_parquet(cfg.zone_hour_demand_path, compression="zstd")
-    logger.info(
-        "zone_hour_demand: %d rows, %d zones, %s -> %s",
-        demand.height,
-        demand["zone_id"].n_unique(),
-        demand["ts"].min(),
-        cfg.zone_hour_demand_path,
-    )
     return demand
 
 

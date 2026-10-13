@@ -193,12 +193,20 @@ sections:
         7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan is resilient
         (0.97×), EWR rises (1.08×). Raw groupbys, hour-of-week mix not
         normalised — **directional, not causal**.
+      - **Cross-service transfer (green taxi, March 2024):** yellow-trained
+        GBMs lose MAE to green persistence (0.296 vs 0.212 — green demand is
+        an order of magnitude sparser) but win RMSE (−17%) and MAPE (−19%);
+        direct transfer is insufficient, per-service retraining is the honest
+        recommendation. Figure: `green_transfer`.
+      - **Serving is live:** `build-serving-artifact` persists the tuned GBM
+        pair per SERVING.md; the showcase API's forecast endpoint was verified
+        end-to-end (JFK zone 132 → prediction 223.8, p90 251.8).
 
       **Business implication:** against "same hour last week", the production
       GBM removes ~28% of forecast error city-wide, and the 90.8%-calibrated
       p90 band gives a defensible number of extra vehicles to hold each hour —
       except in the sparse N/A zones, where the bands are flagged as too tight.
-    figures: [gbm_vs_nn, p90_calibration, weather_elasticity, gbm_feature_importance, p90_band]
+    figures: [gbm_vs_nn, p90_calibration, weather_elasticity, gbm_feature_importance, p90_band, green_transfer]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
   - id: conclusions
@@ -221,14 +229,15 @@ sections:
 
       **Roadmap (what's next):**
 
-      - Production serving of the zone-hour forecasts with drift monitoring
-        and retraining on each new TLC monthly snapshot.
-      - Expansion to FHV/green taxi and shared-bike data for a full
-        curb-demand picture across vehicle classes.
-      - A geo view of demand (zone choropleth) for operator dashboards, built
-        on the existing zone x hour grain.
+      - Drift monitoring and scheduled retraining on each new TLC monthly
+        snapshot for the served endpoint.
+      - Per-service (green/FHV) model retraining — the transfer study showed
+        yellow-trained weights do not carry over on sparse services.
+      - Zone choropleth geo view for operator dashboards — deferred: requires
+        geospatial boundaries (geopandas), not yet in the dependency set.
       - Causal weather-impact estimates (hour-of-week normalised) to upgrade
-        the directional elasticity findings into pricing triggers.
+        the directional elasticity findings into pricing triggers — deferred:
+        requires a causal design, not achievable from observational groupbys.
 
       **Business implication:** 41.2M rows, a strict temporal holdout, and a
       sub-3 GB memory footprint mean this quality of analysis runs on a laptop

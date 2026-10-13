@@ -105,9 +105,29 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 | Index/chunk metadata mismatch | `ValueError` on load (ntotal vs rows) |
 | Eval question references missing article | Skipped with warning; run continues on the resolvable subset |
 | Provider returns schema-invalid JSON | pydantic-ai retries, then raises `UnexpectedModelBehavior` |
+| `JUDGE=llm` without credentials | Silent fallback to the deterministic keyword judge |
+| LLM judge call fails mid-run | That verdict falls back to the keyword judge; the run continues |
+| Client corpus has no usable records | `ValueError`/`FileNotFoundError` at intake, before any indexing |
+
+## 5b. Operations artifacts
+
+- **Cost telemetry** — `evaluate` writes `reports/cost_telemetry.json`:
+  per-query input/output tokens, per-query estimated cost against the rate
+  card, and aggregates (n queries, totals, mean/p50/p95 cost per answer).
+  Mode is `"live"` when provider credentials are configured, `"mock"` for the
+  deterministic offline floor. This is the data source for the roadmap's
+  cost-drift alerting.
+- **Client-corpus onboarding** — `prepare-corpus --source client <dir>
+  --license <spdx>` maps client JSONL (`{title, text, topic?}`) onto the same
+  Article schema and dataset contract (`source: client://<dir>`); chunking,
+  indexing and evaluation run unchanged. See the runbook-style usage in the
+  README.
 
 ## 6. Changelog
 
+- 0.2.0 (2026-10-13) — client-corpus onboarding path (`--source client`),
+  cost telemetry (`reports/cost_telemetry.json`), LLM rubric judge behind
+  `JUDGE=llm` with keyword fallback.
 - 0.1.0 (2026-10-12) — initial implementation: corpus prep, chunking, FAISS
   indexes (3 chunk sizes), cross-encoder rerank, pydantic-ai agent with
   structured citations, retrieval + RAG + ops evaluation, offline mock mode,

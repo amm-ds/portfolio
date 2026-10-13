@@ -102,10 +102,51 @@ with figures in `reports/figures/`:
 See DESIGN.md for the full analysis (including why feature scaling was
 evaluated and rejected) and what we would do about it in production.
 
-Runtime of the full pipeline on this machine: **~75 s** including 90 HPO
-trials (well within budget; the wave-1 pipeline without tuning runs in ~2 s).
-All 8 DQ gates pass; the persisted report is
+Runtime of the full pipeline on this machine: **~80 s** including 90 HPO
+trials, the streaming simulation, the residual probe, and the NSL-KDD
+download + transfer probe. All 8 DQ gates pass; the persisted report is
 [`reports/dq_report.html`](reports/dq_report.html).
+
+## Wave-7 additions: streaming, residuals, real data
+
+Three roadmap items from earlier waves are now delivered, with real numbers.
+
+**Adaptive-threshold streaming** (`detect --adaptive`, artifact
+[`reports/detect.json`](reports/detect.json), figure `adaptive_stream`).
+The champion (`isolation_forest_tuned`) scores the test window as a simulated
+stream of 5 × 1 440-minute (24 h) chunks. Drift is monitored per chunk with a
+robust statistic — the chunk-median shift in units of the train-window score
+IQR; when it exceeds `drift_z = 1.0` the threshold is re-anchored to the
+drifting chunk's 2% quantile to hold the alert budget:
+
+- Measured per-chunk drift z: 0.027–0.089 — far under the 1.0 trigger, so
+  **0 drift events** and the threshold never moved on this stable stream.
+- Fixed threshold (test-quantile, wave-2 convention): 120 flags, recall
+  15.9%, precision 15.0%. Adaptive (train-anchored threshold): 113 flags,
+  recall 15.0%, precision 15.0% — on a non-drifting stream the two agree,
+  which is exactly what should happen.
+
+**Rolling-median residual features** (artifact
+[`reports/residual_probe.json`](reports/residual_probe.json)). The wave-3
+hypothesis — residuals would de-cluster the self-similar anomaly blob — is
+**confirmed decisively**: IsolationForest ROC-AUC goes **0.9158 → 0.9999**
+(PR-AUC 0.1239 → 0.9960) when six `signal − rolling_median` columns are added.
+Why: a rolling median over a 10–60 min window barely moves at an isolated
+anomaly minute, so the residual ≈ the full spike magnitude, while normal
+minutes keep small residuals — the k-NN evidence shows anomaly k-distance
+jumping 20.5 → 59.9 against normal 9.5 → 17.0. Residuals are the right
+default feature for this failure mode.
+
+**NSL-KDD production track** (artifacts `data/nsl/` + [`reports/nsl_probe.json`](reports/nsl_probe.json)).
+The official UNB page no longer serves the files, so checksum-pinned mirrors
+of KDDTrain+.TXT / KDDTest+.TXT are fetched via `portfolio_core.io.fetch`
+(43 columns → 41 mapped features, categoricals factorized) behind the same
+`DatasetContract`. The champion family (IsolationForest) fits the labeled
+125 973-row train split and scores the 22 544-row test split:
+**ROC-AUC 0.8817, PR-AUC 0.8916** at 56.9% test prevalence. Honest caveats:
+labeled transfer probe (not a leaderboard), unseen attack categories in test,
+flow statistics rather than telemetry semantics, ~57% prevalence vs. the 2%
+operating point, factorized (not one-hot) categoricals.
 
 ## Reproduce
 
@@ -146,14 +187,15 @@ uv run pytest projects/03-anomaly-detection -q
 
 ## Roadmap
 
-- **Optuna HPO** for detector hyperparameters (e.g. LOF `n_neighbors`, OCSVM
-  `gamma`/`nu`) with the time-ordered split as the objective — cheap here
-  because the pipeline runs in ~2 s.
-- **Real-data track**: swap the generator for node-exporter / Google Borg /
-  Azure VM traces behind the same `DatasetContract`, keeping the synthetic
-  fallback for CI.
-- **Temporal-residual features** (`x - rolling_median`, seasonality-adjusted
-  z-scores) designed specifically to break up self-similar anomaly clusters,
-  plus an ensemble vote across detector families.
-- **Alert-volume simulation**: cost-aware thresholding (precision at fixed
-  alerts/day) instead of a fixed contamination quantile.
+Delivered so far: Optuna HPO, seeded random baseline, adaptive-threshold
+streaming simulation, rolling-median residual features (0.9999 ROC-AUC), and
+the NSL-KDD transfer probe. What remains:
+
+- **Make residuals the default feature set** for this failure mode and
+  re-run the full run ladder (LOF/OCSVM included) on residual features.
+- **Streaming ingest**: replace the chunked simulation with a real
+  event source (e.g. message-queue or file-tail) so `detect --adaptive`
+  runs against live-shaped traffic with true distribution drift.
+- **NSL-KDD hardening**: one-hot categorical encoding, per-attack-category
+  breakdown, and comparison against the labeled train split under the
+  protocol the benchmark literature uses.

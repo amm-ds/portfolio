@@ -44,7 +44,11 @@ semantics as `portfolio_core.io.fetch` (which cannot set headers).
 | Return-leg pruning | reject customers that break depot return during selection; trim after | **trim after** | Up-front pruning strands customers and inflates fleet size; post-hoc trimming re-offers them to the next route. |
 | Construction (b) | sequential vs parallel savings; with/without TW feasibility on merges | **parallel savings, TW-checked merges** | Feasibility-checked merges are the standard VRPTW adaptation; sequential application is deterministic and fast enough (ms). |
 | Improvement (c) | intra-route 2-opt only; + inter-route 2-opt* tail exchange | **both, first-improvement, feasibility-checked** | On C101 the CW plan is genuinely intra-2-opt-optimal (1 improving move, infeasible) — tail exchanges are required to make the 2-opt stage meaningful and stay within "2-opt moves that preserve feasibility". |
-| Fleet cap (`max_vehicles`) | hard fail; soft (warn + report) | **soft** | The instance fleet (25) is an upper bound, not the optimum; a baseline heuristic exceeding it on RC105 is a finding, reported with the vehicle count — never hidden. |
+| Metaheuristic (d) | tabu search; genetic algorithm; ALNS | **ALNS (Ropke-Pisinger)** | Destroy (random/worst/Shaw) + regret-2 repair directly attacks cross-route re-sequencing — the neighborhood 2-opt cannot express and where the measured gap lived; one seeded RNG drives every decision, keeping it deterministic. |
+| ALNS acceptance | hill-climb; SA with reheating | **SA, geometric cooling** | Escaping the tuned-2-opt local optimum requires accepting temporarily worse plans; temperature 5 % → 0.1 % of start distance over the iteration cap. |
+| ALNS tuning | hand-picked; seeded search | **seeded search on 6-instance subset** (segment/reaction/init) | Full-benchmark evaluation per trial would cost minutes; a representative subset (C101/C104/R104/R108/RC104/RC105) keeps the search ~30 s and transfers (winner: segment 100, reaction 0.5, uniform). |
+| Full benchmark | 10-instance subset; all 56 | **all 56 + per-family reporting** | Per-family gaps (C1…RC2) expose where each solver actually stands; subset hid C2's wide-horizon difficulty. Best-known references for the 42 instances missing from the registry CSV ship as a clearly-sourced project-local supplement (`best_known_supplement.csv`, SINTEF TOP values; registry wins conflicts). |
+| Fleet cap (`max_vehicles`) | hard fail; soft (warn + report) | **soft** | The instance fleet (25) is an upper bound, not the optimum; a baseline heuristic exceeding it (CW needs 31 on R101) is a finding, reported with the vehicle count — never hidden. |
 | Distance | rounded vs full-precision Euclidean | **full precision, Euclidean** | Matches the double-precision convention the best-known table is published under. |
 
 ## Flow
@@ -103,3 +107,15 @@ flowchart LR
   `convergence_C101`, `convergence_RC105` using `add_takeaway`/`style_runs`.
   Note: `style_runs` sets `line=` which bar traces reject; grouped-bar figures
   fall back to marker-color styling via the public `is_baseline_run` hint.
+- **2026-10-13** — Wave 7: ALNS behind the same `RoutePlan` contract (random /
+  worst / Shaw destroy + regret-2 repair, segment-wise operator-weight
+  adaptation, SA acceptance, iteration-capped from config) started from the
+  tuned 2-opt plan; second seeded search tunes ALNS knobs on a 6-instance
+  subset (winner: segment 100, reaction 0.5, uniform init → `alns_best`).
+  Benchmark extended to all 56 Solomon instances with per-family gap table and
+  `family_gap` figure; registry best-known table supplemented by a
+  project-local CSV (`best_known_supplement.csv`) for the 42 missing
+  instances (SINTEF TOP values). Results: ALNS mean gap 4.23 % (vs 13.63 %
+  tuned 2-opt), wins 56/56, negative gaps on 8 instances (convention-mixed
+  references); per-family: C1 4.48, C2 6.50, R1 4.10, R2 3.04, RC1 4.75,
+  RC2 3.00. Roadmap down to one item: hierarchical objective.

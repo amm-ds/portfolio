@@ -94,6 +94,28 @@ stages:
       - reports/metrics.json
       - reports/figures
 
+  transfer:
+    cmd: uv run python -m mobility.cli transfer
+    deps:
+      - src/mobility/transfer.py
+      - data/curated
+      - reports/models/gbm_tuned.joblib
+    outs:
+      - reports/green_transfer.json
+      - reports/figures/green_transfer.html
+      - reports/figures/green_transfer.json
+
+  serving:
+    cmd: uv run python -m mobility.cli build-serving-artifact
+    deps:
+      - src/mobility/serving.py
+      - reports/models/gbm_tuned.joblib
+      - reports/models/gbm_p90_tuned.joblib
+      - data/curated/zones.parquet
+      - data/features/test.parquet
+    outs:
+      - reports/models/serving
+
   dashboard:
     cmd: uv run python -m mobility.cli dashboard
     deps:

@@ -16,6 +16,9 @@ _EPS = 1e-9
 Acceptance = Literal["first", "best"]
 
 
+AlnsInit = Literal["uniform", "biased"]
+
+
 class Customer(PortfolioBaseModel):
     """One VRPTW customer; customer 0 is the depot with zero demand."""
 
@@ -150,4 +153,19 @@ class TwoOptTuning(PortfolioBaseModel):
         return (
             f"budget={self.max_iterations}, {self.acceptance}-improvement, "
             f"{tail}, restarts best-of-{self.restarts}"
+        )
+
+
+class AlnsTuning(PortfolioBaseModel):
+    """Configuration of the ALNS stage, chosen by the seeded HPO search."""
+
+    segment_length: int = Field(default=50, ge=5, le=1000)
+    reaction_factor: float = Field(default=0.3, gt=0.0, lt=1.0)
+    init_weights: AlnsInit = "uniform"
+
+    def summary(self) -> str:
+        """One-line human description used in reports and figures."""
+        return (
+            f"segment={self.segment_length}, reaction={self.reaction_factor:.2f}, "
+            f"init={self.init_weights}"
         )

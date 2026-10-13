@@ -8,7 +8,7 @@ evaluate stage scores the held-out test window without refitting.
 from pathlib import Path
 from typing import Any
 
-import joblib  # type: ignore[import-untyped]
+import joblib
 import numpy as np
 import polars as pl
 from portfolio_core.logging import get_logger
@@ -30,9 +30,9 @@ def split_train_test(df: pl.DataFrame, train_frac: float) -> tuple[pl.DataFrame,
     return df.head(n_train), df.tail(df.height - n_train)
 
 
-def feature_matrix(df: pl.DataFrame, config: AnomalyConfig) -> np.ndarray:
+def feature_matrix(df: pl.DataFrame, config: AnomalyConfig, residuals: bool = False) -> np.ndarray:
     """Numeric feature matrix (raw signals + rolling aggregates), row-ordered."""
-    cols = list(feature_columns(config.windows))
+    cols = list(feature_columns(config.windows, residuals))
     return df.select(cols).to_numpy()
 
 

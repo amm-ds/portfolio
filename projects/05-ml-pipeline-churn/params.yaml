@@ -7,13 +7,12 @@ c_grid:
 - 1.0
 - 10.0
 cv_folds: 3
-model_family: histgb
+model_family: logreg
 model_params:
-  learning_rate: 0.07949502872202294
-  max_iter: 116
-  max_leaf_nodes: 20
-  min_samples_leaf: 41
+  C: 0.23647688546406256
+  l1_ratio: 0.13881283755258783
 hpo_trials: 25
+hpo_objective: cost
 calib_frac: 0.2
 threshold_grid:
 - 0.0

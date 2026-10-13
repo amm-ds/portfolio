@@ -83,4 +83,5 @@ def test_selection_deterministic_on_toy_study(small_cfg: ChurnConfig) -> None:
     assert s1.family == s2.family
     assert s1.params == s2.params
     assert s1.n_trials == 6
+    assert s1.objective == small_cfg.hpo_objective == "cost"
     assert set(s1.family_scores) == set(MODEL_FAMILIES)

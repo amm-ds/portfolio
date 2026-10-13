@@ -47,6 +47,12 @@ class ChurnConfig(PortfolioBaseModel):
         description="Selected classifier hyperparameters (production config, written by train).",
     )
     hpo_trials: int = Field(default=25, ge=5, description="Optuna trials for model selection.")
+    hpo_objective: str = Field(
+        default="cost",
+        pattern="^(cost|f1)$",
+        description="'cost' = CV business cost at fp_cost/fn_cost with per-trial threshold "
+        "tuning; 'f1' = CV F1.",
+    )
     calib_frac: float = Field(
         default=0.2,
         gt=0.0,

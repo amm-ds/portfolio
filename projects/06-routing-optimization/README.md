@@ -34,7 +34,7 @@ See [DESIGN.md](DESIGN.md) for the full requirements/options/decision record.
   `RoutePlan.validate_against` hard-gates exactly-once service and capacity.
 - `parser.py` — Solomon `.txt` parser (4 header lines + `id x y demand ready
   due service` rows), tolerant of blank lines and split headers.
-- `solver.py` — four deterministic solvers, Euclidean distances:
+- `solver.py` — five deterministic solvers, Euclidean distances:
   1. `randomized` — seeded shuffle of customers packed into feasible routes
      with a return-leg repair pass; no local search. The flat feasible
      reference that makes the other solvers' improvement legible.
@@ -42,113 +42,105 @@ See [DESIGN.md](DESIGN.md) for the full requirements/options/decision record.
      feasibility checks; routes seeded by earliest due time.
   3. `clarke_wright_savings` — parallel savings with capacity and full-route
      time-window feasibility checks on every merge.
-  4. `two_opt` — first-improvement 2-opt on the better construction plan:
-     intra-route segment reversals **and** inter-route 2-opt* tail exchanges;
-     every move preserves capacity and time-window feasibility.
-- `tuning.py` — seeded random-search HPO over the improvement stage (move
-  budget, acceptance rule, tail-exchange on/off, best-of-k randomized-restart
-  portfolio); the winner is persisted to `params.yaml` as `solver_best` and
-  reported as the `two_opt_tuned` run.
-- `evaluate.py` — per-instance runs, gap vs `docs/data-registry/best_known/
-  solomon100.csv` (name normalization `C1_01 → C101`), DQ gates, markdown +
-  plotly artifacts.
+  4. `two_opt` — 2-opt on the better construction plan: intra-route segment
+     reversals **and** inter-route 2-opt* tail exchanges (acceptance and
+     tail-exchange parameterized); every move preserves feasibility.
+  5. `alns` — adaptive large-neighborhood search (Ropke–Pisinger): destroy by
+     random / worst / Shaw time-window-relatedness removal, repair by greedy
+     regret-2 insertion, operator weights adapted per segment, simulated-
+     annealing acceptance; starts from the tuned 2-opt plan, iteration-capped
+     from config.
+- `tuning.py` — seeded random-search HPO, run twice: over the 2-opt stage
+  (budget, acceptance, tail exchange, restarts; all instances) and over the
+  ALNS knobs (segment length, reaction factor, init weights; 6-instance
+  subset); winners persisted to `params.yaml` as `solver_best` / `alns_best`.
+- `evaluate.py` — per-instance runs on all 56 Solomon instances, gap vs the
+  registry table + project supplement, per-family aggregation, DQ gates,
+  markdown + plotly artifacts.
 - `cli.py` — typer: `download`, `solve`, `evaluate`, `all`.
 
-## Results (real run, seed 42)
+## Results (real run, seed 42, all 56 Solomon instances)
 
-Full pipeline: `uv run python -m routing_optimization.cli all`.
+Full pipeline: `uv run python -m routing_optimization.cli all` (benchmark +
+both HPO searches + ALNS ≈ 90 s).
 Artifacts in `reports/` (see `reports/results.md`, `reports/report.html`,
 `reports/metrics.json`).
 
-Mean over the 10-instance subset (`reports/metrics.json`) — the solver ladder:
+Mean over all 56 instances (`reports/metrics.json`) — the solver ladder:
 
 | solver | mean gap to best-known | mean distance | mean vehicles | mean runtime |
 |---|---|---|---|---|
-| randomized (feasible floor) | 302.86 % | 4055.76 | 24.6 | 0.9 ms |
-| nearest_neighbor | 69.16 % | 1805.55 | 18.2 | 1.4 ms |
-| clarke_wright | 24.62 % | 1339.13 | 15.7 | 3.7 ms |
-| two_opt (untuned) | 19.55 % | 1289.91 | 15.7 | 5.9 ms |
-| **two_opt_tuned (HPO)** | **19.08 %** | **1284.15** | 15.7 | 12.9 ms |
+| randomized (feasible floor) | 316.95 % | 3868.55 | 18.3 | 0.6 ms |
+| nearest_neighbor | 71.64 % | 1694.18 | 14.0 | 1.1 ms |
+| clarke_wright | 18.31 % | 1200.06 | 13.0 | 3.0 ms |
+| two_opt (untuned) | 13.75 % | 1158.34 | 13.0 | 4.2 ms |
+| two_opt_tuned (HPO) | 13.63 % | 1156.92 | 13.0 | 9.6 ms |
+| **alns (HPO-tuned)** | **4.23 %** | **1062.02** | **11.0** | 801 ms |
+
+Per-family mean gap (`reports/metrics.json` → `families`, figure
+`family_gap`):
+
+| family | instances | clarke_wright | two_opt_tuned | alns |
+|---|---|---|---|---|
+| C1 | 9 | 25.76 % | 18.62 % | 4.48 % |
+| C2 | 8 | 31.62 % | 21.48 % | 6.50 % |
+| R1 | 12 | 18.17 % | 14.95 % | 4.10 % |
+| R2 | 11 | 10.29 % | 7.28 % | 3.04 % |
+| RC1 | 8 | 16.59 % | 13.29 % | 4.75 % |
+| RC2 | 8 | 9.60 % | 7.23 % | 3.00 % |
 
 Key findings:
 
-- **Constraint-aware construction is the big lever**: randomized → savings is
-  −2765.85 mean distance (−68.2 %); everything after is refinement.
-- **2-opt\* tail exchanges matter most within the improvement stage**: trials
-  without them plateau at ≈ 1328 mean distance vs 1289.9 with them (−3 %).
-- **Seeded HPO** (24 seeded random-search trials over move budget 50–500,
-  first- vs best-improvement acceptance, tail-exchange on/off, best-of-k
-  randomized-restart portfolio k=1..8; objective = mean distance across the 10
-  instances) chose: **budget 50, best-improvement, 2-opt + 2-opt\*, restarts
-  best-of-1** — written to `params.yaml` as `solver_best`. Tuned vs untuned:
-  −5.76 mean distance (−0.45 % gap points), winning on 5/10 instances (up to
-  −19.10 on RC105); vs the randomized floor: −2771.61 (−68.3 %).
-- **Two honest negatives**: randomized restarts never help (randomized starts
-  are ~3× worse than savings starts, so 2-opt from them never catches up —
-  the search itself chose k=1), and the move budget saturates fast (local
-  optimum in ≤ ~20 accepted moves, so 200 was already generous).
-- `two_opt_tuned` wins on **10/10 instances** (ties included where curves
-  coincide). Convergence curves (`convergence_C101`, `convergence_RC105`)
-  show the construction start, and on RC105 the tuned run escaping the
-  untuned local optimum (1984.8 → 1901.2 vs untuned 1920.3).
-
-Per-instance best over all five solvers (distance / gap / vehicles):
-
-| instance | best known | distance | gap % | vehicles |
-|---|---|---|---|---|
-| C101 | 828.94 | 1046.53 | 26.25 | 15 |
-| C102 | 828.94 | 1071.35 | 29.24 | 15 |
-| C103 | 828.06 | 994.25 | 20.07 | 14 |
-| C104 | 824.78 | 963.30 | 16.79 | 13 |
-| C105 | 828.94 | 1047.54 | 26.37 | 15 |
-| RC102 | 1554.75 | 1831.04 | 17.77 | 21 |
-| RC103 | 1261.67 | 1480.20 | 17.32 | 15 |
-| RC104 | 1135.48 | 1236.99 | 8.94 | 13 |
-| RC105 | 1629.44 | 1901.18 | 16.69 | 23 |
-| RC108 | 1139.82 | 1269.10 | 11.34 | 13 |
+- **ALNS closes the gap**: 13.63 % → **4.23 %** mean gap (−9.4 points, −69 %
+  of the remaining tuned-2-opt distance-to-optimum), winning on **56/56**
+  instances, in ~0.8 s/instance. Chosen by the seeded knob search (12 trials
+  on a 6-instance subset): segment 100, reaction 0.5, uniform init weights —
+  persisted to `params.yaml` as `alns_best`.
+- **Constraint-aware construction remains the first big lever** (randomized →
+  savings −68 % of baseline distance); the metaheuristic is the second.
+- **Single digits on every family**; best on wide-window R2/RC2 (~3 %).
+  Honest residuals: C2 6.50 % (wide horizon, few-vehicle optimum — destroy
+  size 10 under-diversifies there), C103 11.67 % / C203 19.48 % (tight chains
+  that resist q-customer destroy/repair).
+- **Negative gaps are real and reported**: ALNS lands *below* the published
+  reference on 8 instances (best RC202 −3.85 %, RC105 −2.78 %). The SINTEF
+  table mixes conventions (hierarchical vehicle-first objective, double
+  precision, some values flagged as rounding artifacts) — our plain-distance,
+  full-precision solutions legitimately undercut a few references.
+- Earlier honest negatives stand: randomized restarts never pay (two-opt HPO
+  chose k=1), and 2-opt budgets saturate (≤ ~20 accepted moves).
 
 Why the improvement happens, in measured deltas:
 
-- **randomized → clarke_wright: −2765.85 mean distance (−68.2 %), −278 gap
-  points.** Merely *finding* feasible routes is easy; the savings heuristic
-  wins because it constructs routes around shared depot legs and joint
-  time-window feasibility (`s(i,j) = d(0,i) + d(0,j) − d(i,j)` merges), instead
-  of a random permutation that zig-zags across the map and burns ~25 of the 25
-  vehicles. Constraint-aware construction is where the value is.
-- **clarke_wright → two_opt: −49.22 mean distance (−3.7 %), −5.07 gap points**
-  (e.g. C101 36.02 % → 26.25 %, RC108 12.26 % → 11.72 %). Only
-  feasibility-preserving 2-opt / 2-opt* moves are accepted, so the gain is
-  pure: no re-validation debt, no broken windows.
-- **two_opt → two_opt_tuned (seeded HPO): −5.76 mean distance (−0.45 %)** —
-  small but real, and bought for milliseconds of search. The search's most
-  useful output is arguably the two negatives above (restarts don't pay,
-  budget saturates), which is what a client should demand from any HPO:
-  evidence about what *not* to spend complexity on.
+- **randomized → clarke_wright: −68 % of baseline distance.** Feasible routes
+  are easy; savings builds them around shared depot legs and joint time-window
+  feasibility instead of a random permutation.
+- **clarke_wright → two_opt (−3.7 %) → two_opt_tuned (−0.45 %)** — local
+  polish inside one route topology.
+- **→ alns: another −69 % of the remaining distance-to-optimum.** 2-opt only
+  reorders or swaps pieces of existing routes; it cannot move a customer to a
+  different route. ALNS's destroy (random / worst / Shaw time-window
+  relatedness removal) + regret-2 repair re-sequences customers *across*
+  routes — exactly the neighborhood the gap lived in.
 
-Honest caveats: `nearest_neighbor` and `randomized` are deliberately naive
-baselines — on RC105 both exceed the stated 25-vehicle fleet (26 and 30
-vehicles respectively) because greedy feasible packing fragments on that
-instance's tight windows; this is reported, not hidden. These are hand-written
-heuristics in ~330 lines, not a metaheuristic; the published best-known values
-come from tuned ALNS / tabu / hybrid genetic search.
+Honest caveats: `nearest_neighbor`, `randomized` and occasionally
+`clarke_wright` exceed the stated 25-vehicle fleet on tight R1/RC1 instances
+(e.g. CW needs 31 on R101) — reported, not hidden; distance stays valid and
+the vehicle count flags where a construction heuristic fragments. The
+remaining roadmap item is the hierarchical objective (fewest vehicles first,
+then distance).
 
 Figures (`reports/figures/`, HTML + JSON for the showcase API):
 
 - `eda_instance_map` — C101 customer scatter colored by time-window tightness
-  (window width = due − ready); the depot is the star marker. Complements the
-  route map with the raw instance structure.
-- `gap_pct` — grouped bar, gap-% per instance per solver; the `randomized`
-  bar is the flat feasible reference that makes the construction/improvement
-  delta legible.
+  (window width = due − ready); the depot is the star marker.
+- `gap_pct` — grouped bar, gap-% per instance per solver.
+- `family_gap` — mean gap per Solomon family per solver; baselines greyed,
+  ALNS promoted.
 - `solver_profile` — per-instance grouped distance bars (log scale) with
-  baselines greyed and `two_opt_tuned` promoted — the solver ladder in one
-  glance, with a takeaway subtitle.
-- `convergence_C101` / `convergence_RC105` — best-found distance vs accepted
-  moves; construction start starred, tuned vs untuned overlaid. C101 shows
-  coincident local optima; RC105 shows the tuned run escaping the untuned
-  one (−19.1).
-- `route_map_C101` — depot + customer scatter with route polylines colored per
-  vehicle for the best C101 plan (15 vehicles, 1046.53).
+  baselines greyed.
+- `convergence_C101` / `convergence_RC105` — 2-opt descent, tuned vs untuned.
+- `route_map_C101` — best C101 plan (ALNS: 11 vehicles, 860.21, gap 3.77 %).
 - `runtime` — grouped bar, solver runtime per instance (log scale).
 
 ## Reproduce
@@ -186,15 +178,11 @@ uv run pytest projects/06-routing-optimization -q
 
 ## Roadmap
 
-Planned deepening, in rough priority order:
+Delivered this cycle: ALNS behind the same `RoutePlan` contract (mean gap
+13.63 % → 4.23 %, single digits on every family) and the full 56-instance
+benchmark with per-family reporting. One item remains:
 
-- **Metaheuristic track:** ALNS or tabu search behind the same `RoutePlan`
-  contract to close the gap from ~19 % toward single digits — the remaining
-  gap lives in time-window-aware sequencing (insertion/relocation moves and
-  escape mechanisms), which 2-opt neighborhoods cannot express. The wave-3
-  HPO framework (`tuning.py`) carries over directly for operator-weight
-  tuning.
-- **Real-data track:** re-target the pipeline at a client-style delivery
-  dataset (open mobility data) with the same contracts.
-- **Hierarchical objective:** match the SINTEF convention (minimize vehicles
-  first, then distance) and report the two-dimensional comparison.
+- **Hierarchical objective** (deferred): match the SINTEF convention —
+  minimize vehicle count first, distance second — and report the
+  two-dimensional comparison. The fleet counts above (e.g. ALNS's 11.0 mean
+  vehicles vs the 10-vehicle C1 optima) show where this matters.

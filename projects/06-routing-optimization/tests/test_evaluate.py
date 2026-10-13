@@ -151,6 +151,10 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         convergence_instances=["TINY"],
         params_path=tmp_path / "params.yaml",
         hpo_trials=6,
+        alns_max_iterations=30,
+        alns_destroy_q=2,
+        alns_hpo_trials=3,
+        alns_hpo_instances=["TINY"],
     )
     run_solve(cfg)
     assert (cfg.reports_dir / "solutions.json").exists()
@@ -164,6 +168,7 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "randomized",
         "two_opt",
         "two_opt_tuned",
+        "alns",
     }
     assert set(data["instances"]["TINY"]["solvers"]) == {
         "nearest_neighbor",
@@ -171,14 +176,19 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "randomized",
         "two_opt",
         "two_opt_tuned",
+        "alns",
     }
-    # the tuned run is never worse than the randomized floor, and the HPO
-    # winner is persisted to the (overridden) params.yaml
+    # the tuned runs are never worse than the randomized floor, and the HPO
+    # winners are persisted to the (overridden) params.yaml
     solvers = data["instances"]["TINY"]["solvers"]
     assert solvers["two_opt_tuned"]["distance"] <= solvers["randomized"]["distance"]
+    assert solvers["alns"]["distance"] <= solvers["randomized"]["distance"]
     assert data["tuning"]["solver_best"]["restarts"] >= 1
+    assert data["tuning"]["alns_best"]["segment_length"] >= 5
+    assert "families" in data
     params = (tmp_path / "params.yaml").read_text()
     assert "solver_best:" in params
+    assert "alns_best:" in params
     for artifact in (
         "results.md",
         "report.html",
@@ -194,5 +204,7 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "figures/solver_profile.json",
         "figures/convergence_TINY.html",
         "figures/convergence_TINY.json",
+        "figures/family_gap.html",
+        "figures/family_gap.json",
     ):
         assert (cfg.reports_dir / artifact).exists(), artifact

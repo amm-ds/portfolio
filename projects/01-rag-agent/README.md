@@ -121,7 +121,7 @@ and generation latency on top. Cost uses the rate card in `params.yaml`
 cd projects/01-rag-agent
 uv run python -m rag_agent.cli prepare-corpus   # streams Wikipedia (bounded scan)
 uv run python -m rag_agent.cli build-index      # 3 FAISS indexes (chunk-size sweep)
-uv run python -m rag_agent.cli evaluate         # retrieval + RAG + ops, writes reports/
+uv run python -m rag_agent.cli evaluate         # retrieval HPO + RAG + ops + cost telemetry
 uv run python -m rag_agent.cli chat             # interactive demo (offline mock)
 ```
 
@@ -129,6 +129,33 @@ or, with DVC: `dvc repro` (stages in `dvc.yaml`, knobs in `params.yaml`).
 
 To run with a live LLM instead of the mock, copy `.env.example` to `.env` and
 fill in `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` — no code changes.
+
+### Client-corpus onboarding
+
+Point the same pipeline at a client knowledge base (JSONL files with
+`{title, text, topic?}` records):
+
+```bash
+uv run python -m rag_agent.cli prepare-corpus --source client /path/to/jsonl --license "MIT"
+uv run python -m rag_agent.cli build-index && uv run python -m rag_agent.cli evaluate
+```
+
+The intake reuses the Article schema, DQ gates, chunking, indexing and eval
+unchanged; the dataset contract records `source: client://<dir>` and the given
+license. `write_example_client_corpus(dest)` (in `rag_agent.corpus`) generates
+a 3-document synthetic client corpus used by the onboarding tests.
+
+### Cost telemetry & judge selection
+
+- `evaluate` always writes `reports/cost_telemetry.json`: per-query
+  input/output tokens and estimated cost against the `params.yaml` rate card,
+  plus aggregates (n, totals, mean/p50/p95 cost per answer). With a live
+  provider the mode is `"live"`; offline runs record the deterministic
+  `"mock"` floor entry.
+- `JUDGE=llm` (with provider credentials) switches the RAG evaluator to a
+  pydantic-ai rubric judge returning structured `JudgeVerdict`s; without
+  credentials it falls back gracefully to the keyword judge — the CI default
+  stays deterministic.
 
 Quality gates (from the repo root):
 

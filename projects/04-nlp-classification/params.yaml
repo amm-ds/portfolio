@@ -24,6 +24,13 @@ hpo:
   epochs_max: 4
   startup_trials: 5
   pruner_warmup_epochs: 1
+# Seed-variance study (hpo-seeds stage): one small study per seed.
+hpo_seeds:
+  seeds: [42, 43, 44]
+  n_trials: 6
+  epochs_max: 3
+  startup_trials: 2
+# Filled by the hpo stage (see reports/hpo_best.json and reports/hpo_study.json).
 hpo_best:
   learning_rate: 3.818145165896875e-05
   warmup_ratio: 0.04246782213565523

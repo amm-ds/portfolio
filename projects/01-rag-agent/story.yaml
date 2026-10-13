@@ -164,13 +164,15 @@ sections:
           J --> M
       ```
 
-      The RAG layer is scored with a judge (keyword judge by default): answer
-      faithfulness, answer relevance, and context recall. Operations are
+      The RAG layer is scored with a judge: the deterministic keyword judge by
+      default (CI-safe, no credentials), or a pydantic-ai LLM rubric judge
+      returning structured verdicts when `JUDGE=llm` is set with provider
+      credentials — with graceful fallback when unavailable. Operations are
       measured too — per-query latency (p50/p95) and a cost-per-query estimate
-      built from recorded token usage at each grid point. The same harness runs
-      in mock mode (CI, offline) and live mode (real provider) with no code
-      changes; the chosen production config is persisted in `params.yaml` as
-      `retrieval_best`.
+      built from recorded token usage at each grid point, persisted to
+      `reports/cost_telemetry.json`. The same harness runs in mock mode (CI,
+      offline) and live mode (real provider) with no code changes; the chosen
+      production config is persisted in `params.yaml` as `retrieval_best`.
 
       **Business implication:** the mock/live provider split means this eval
       runs in CI without secrets — quality gates survive procurement and keep
@@ -223,10 +225,20 @@ sections:
       canned offline answer; the harness re-scores real grounded answers
       unchanged with a live provider.
 
+      Delivered with this evaluation: a **client-corpus onboarding path**
+      (`prepare-corpus --source client <jsonl-dir> --license <spdx>` reuses the
+      whole pipeline on client documents), **cost telemetry**
+      (`reports/cost_telemetry.json` — per-query tokens and estimated cost
+      against the rate card, mock floor recorded offline), and an **LLM rubric
+      judge behind `JUDGE=llm`** with graceful fallback to the deterministic
+      keyword judge.
+
       **Business implication:** "better" was quantified against a random floor
       and two ablations before money was spent on a bigger model — the tuning
       budget went to the knob that actually mattered, cutting per-query cost
-      by two-thirds at equal quality.
+      by two-thirds at equal quality; and the onboarding + telemetry pieces
+      mean this system can be pointed at a client dataset and budgeted on day
+      one.
     figures:
       - model_comparison
       - retrieval_hpo_frontier
@@ -266,15 +278,11 @@ sections:
 
       **Roadmap**
 
-      - **Client-corpus onboarding path** — parameterized corpus prep + eval
-        harness so a client dataset gets the same graded measurement within
-        days.
-      - **Provider cost telemetry** — record per-query token usage in live
-        mode against the rate card, with drift alerts on cost per answer.
-      - **Provider-model judge upgrade** — swap the keyword judge for an LLM
-        rubric judge when credentials are available, reusing the same rows.
-      - **Interactive deployment** — serve the agent behind the showcase API
-        so eval questions can be rerun on demand.
+      - **Interactive deployment** — serve the agent behind the showcase API so
+        eval questions and ad-hoc client questions can be rerun on demand.
+      - **Live-mode telemetry accumulation** — run the evaluation with provider
+        credentials to populate `cost_telemetry.json` in `"live"` mode and
+        validate the cost model against a real bill.
 
       **Business implication:** the same discipline ports to a client dataset
       in days, not months — bounded scope, measured baselines, and an honest

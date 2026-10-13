@@ -147,14 +147,137 @@ def prepare_corpus(config: RAGConfig) -> DatasetContract:
     if anchors_missing:
         logger.warning("anchor titles not present in the dump: %s", sorted(anchors_missing))
 
-    _run_gates(articles, config)
-    contract = _write_artifacts(articles, config)
+    _run_gates(articles, config, dataset="wikipedia-topical-corpus", min_text_len=200)
+    contract = _write_artifacts(
+        articles,
+        config,
+        name="wikipedia-topical-corpus",
+        source=DATASET_SOURCE,
+        license=WIKIPEDIA_LICENSE,
+        snapshot_date=SNAPSHOT_DATE,
+    )
     logger.info("corpus written: %s (%d articles)", config.corpus_path, contract.n_rows)
     return contract
 
 
-def _run_gates(articles: list[Article], config: RAGConfig) -> None:
-    dq = DQReport(dataset="wikipedia-topical-corpus", n_rows=len(articles))
+def load_client_records(client_dir: Path) -> list[dict[str, Any]]:
+    """Read ``*.jsonl`` client files; each record needs ``title`` and ``text``."""
+    files = sorted(Path(client_dir).glob("*.jsonl"))
+    if not files:
+        raise FileNotFoundError(f"no .jsonl files found in client directory {client_dir}")
+    records: list[dict[str, Any]] = []
+    for path in files:
+        with path.open(encoding="utf-8") as fh:
+            for line_no, line in enumerate(fh, start=1):
+                if not line.strip():
+                    continue
+                try:
+                    records.append(json.loads(line))
+                except json.JSONDecodeError as exc:
+                    raise ValueError(f"invalid JSON in {path}:{line_no}: {exc}") from exc
+    return records
+
+
+def prepare_client_corpus(
+    config: RAGConfig, client_dir: Path, license_name: str
+) -> DatasetContract:
+    """Onboard a client-provided JSONL corpus onto the standard pipeline.
+
+    Records carry ``{title, text, topic?}``; ``topic`` defaults to ``Client``.
+    The same Article schema, DQ gates, chunking, indexing and evaluation
+    machinery apply unchanged — only the dataset contract differs
+    (``source: client://<dir>``, license from ``--license``).
+    """
+    records = load_client_records(client_dir)
+    seen_titles: set[str] = set()
+    counts: dict[str, int] = {}
+    articles: list[Article] = []
+    for rec in records:
+        title = str(rec.get("title") or "").strip()
+        text = str(rec.get("text") or "").strip()[: config.max_article_chars]
+        topic = str(rec.get("topic") or "Client").strip() or "Client"
+        if not title or title in seen_titles:
+            continue
+        if len(text) < 50:
+            logger.warning("skipping client record %r: text shorter than 50 chars", title)
+            continue
+        seen_titles.add(title)
+        article = Article(
+            article_id=f"{slugify(topic)}-{counts.get(topic, 0):03d}",
+            title=title,
+            topic=topic,
+            text=text,
+        )
+        articles.append(article)
+        counts[topic] = counts.get(topic, 0) + 1
+    if not articles:
+        raise ValueError(f"no usable client records found in {client_dir}")
+
+    _run_gates(articles, config, dataset="client-corpus", min_text_len=50)
+    contract = _write_artifacts(
+        articles,
+        config,
+        name="client-corpus",
+        source=f"client://{client_dir}",
+        license=license_name,
+        snapshot_date=date.today(),
+    )
+    logger.info(
+        "client corpus written: %s (%d articles, topics=%s)",
+        config.corpus_path,
+        contract.n_rows,
+        counts,
+    )
+    return contract
+
+
+def write_example_client_corpus(dest_dir: Path) -> Path:
+    """Write a tiny 3-document synthetic client corpus (JSONL) for onboarding tests."""
+    docs = [
+        {
+            "title": "Acme Cloud — Getting started",
+            "topic": "Onboarding",
+            "text": (
+                "Acme Cloud is a managed platform for deploying containerized services. "
+                "To get started, create a project, connect a Git repository, and push your "
+                "first image. Builds run in isolated workers and deploy to the region selected "
+                "in your project settings. Free tier projects include one always-on service "
+                "and 100 build minutes per month. This guide walks through the first deploy."
+            ),
+        },
+        {
+            "title": "Acme Cloud — Refund policy",
+            "topic": "Billing",
+            "text": (
+                "Paid Acme Cloud plans can be cancelled at any time. Refunds are issued for "
+                "the unused full months of an annual plan when cancellation happens within "
+                "the first 60 days. Monthly plans are not refundable, but usage-based charges "
+                "stop at cancellation. Enterprise agreements follow the terms in the signed "
+                "order form. To request a refund, contact billing with your project id."
+            ),
+        },
+        {
+            "title": "Acme Cloud — API rate limits",
+            "topic": "API",
+            "text": (
+                "The Acme Cloud API enforces per-token rate limits. Free tier tokens allow "
+                "60 requests per minute; team tokens 600; enterprise tokens 6000. Limits "
+                "apply per region and reset each minute. Responses include X-RateLimit-"
+                "Remaining and X-RateLimit-Reset headers. When the limit is exceeded the API "
+                "returns HTTP 429 and the client should back off exponentially."
+            ),
+        },
+    ]
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    path = dest_dir / "acme_cloud_docs.jsonl"
+    with path.open("w", encoding="utf-8") as fh:
+        for doc in docs:
+            fh.write(json.dumps(doc) + "\n")
+    return path
+
+
+def _run_gates(articles: list[Article], config: RAGConfig, dataset: str, min_text_len: int) -> None:
+    dq = DQReport(dataset=dataset, n_rows=len(articles))
     n = max(len(articles), 1)
     null_title = sum(1 for a in articles if not a.title) / n
     null_text = sum(1 for a in articles if not a.text) / n
@@ -162,21 +285,30 @@ def _run_gates(articles: list[Article], config: RAGConfig) -> None:
     dq.check_null_rate("text", null_text, 0.0)
     if articles:
         lengths = [len(a.text) for a in articles]
-        dq.check_range("text_len", min(lengths), max(lengths), 200, config.max_article_chars)
+        dq.check_range(
+            "text_len", min(lengths), max(lengths), min_text_len, config.max_article_chars
+        )
     dq.check_range("articles_total", len(articles), len(articles), 1, 10_000)
     dq.raise_if_failed()
 
 
-def _write_artifacts(articles: list[Article], config: RAGConfig) -> DatasetContract:
+def _write_artifacts(
+    articles: list[Article],
+    config: RAGConfig,
+    name: str,
+    source: str,
+    license: str,
+    snapshot_date: date,
+) -> DatasetContract:
     config.corpus_path.parent.mkdir(parents=True, exist_ok=True)
     with config.corpus_path.open("w", encoding="utf-8") as fh:
         for article in articles:
             fh.write(article.model_dump_json() + "\n")
     contract = DatasetContract(
-        name="wikipedia-topical-corpus",
-        source=DATASET_SOURCE,
-        license=WIKIPEDIA_LICENSE,
-        snapshot_date=SNAPSHOT_DATE,
+        name=name,
+        source=source,
+        license=license,
+        snapshot_date=snapshot_date,
         checksum_sha256=sha256_of(config.corpus_path),
         n_rows=len(articles),
     )

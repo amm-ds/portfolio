@@ -5,12 +5,12 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 4196b164768b54d195c75e8826015727
-      size: 655
+      md5: 7694b974aa31b38cdea4ecc995be5b38
+      size: 635
     - path: src/churn_pipeline/
       hash: md5
-      md5: 69b02db9d1222662909c76031e93014a.dir
-      size: 115491
+      md5: 2bc60bd9e45f357342876abfccdec6ca.dir
+      size: 132783
       nfiles: 17
     params:
       params.yaml:
@@ -35,7 +35,7 @@ stages:
       size: 45694
     - path: data/dataset_contract.json
       hash: md5
-      md5: 33b2db5bd6c3e96ab8c4b72d784697a1
+      md5: b626e9b5a813ad6b7d765e1ddbf4495c
       size: 271
     - path: reports/dq_report.md
       hash: md5
@@ -50,12 +50,12 @@ stages:
       size: 45694
     - path: params.yaml
       hash: md5
-      md5: 4196b164768b54d195c75e8826015727
-      size: 655
+      md5: 7694b974aa31b38cdea4ecc995be5b38
+      size: 635
     - path: src/churn_pipeline/
       hash: md5
-      md5: 69b02db9d1222662909c76031e93014a.dir
-      size: 115491
+      md5: 2bc60bd9e45f357342876abfccdec6ca.dir
+      size: 132783
       nfiles: 17
     params:
       params.yaml:
@@ -66,13 +66,12 @@ stages:
         - 10.0
         calib_frac: 0.2
         cv_folds: 3
+        hpo_objective: cost
         hpo_trials: 25
-        model_family: histgb
+        model_family: logreg
         model_params:
-          learning_rate: 0.07949502872202294
-          max_iter: 116
-          max_leaf_nodes: 20
-          min_samples_leaf: 41
+          C: 0.23647688546406256
+          l1_ratio: 0.13881283755258783
         seed: 42
         test_frac: 0.2
     outs:
@@ -90,16 +89,16 @@ stages:
       size: 147
     - path: data/model_selection.json
       hash: md5
-      md5: daf861acf654d1bd64a23ceb0145865d
-      size: 226
+      md5: 4e526f6f949548d1a3c6f0f46e3ec442
+      size: 193
     - path: data/selected_model.pkl
       hash: md5
-      md5: 07db178491382d0b8be5915ea1ca3f17
-      size: 281588
+      md5: 985dbfd5c44fb7884bef5670762f6456
+      size: 3644
     - path: data/selected_model_calibrated.pkl
       hash: md5
-      md5: 5c8baa868edecb4cd2109855d07da99a
-      size: 234796
+      md5: 375e80905fc3cd7f979eac3894393e57
+      size: 7522
   evaluate:
     cmd: uv run python -m churn_pipeline.cli evaluate --params-file params.yaml
     deps:
@@ -113,12 +112,12 @@ stages:
       size: 3645
     - path: params.yaml
       hash: md5
-      md5: 4196b164768b54d195c75e8826015727
-      size: 655
+      md5: 7694b974aa31b38cdea4ecc995be5b38
+      size: 635
     - path: src/churn_pipeline/
       hash: md5
-      md5: 69b02db9d1222662909c76031e93014a.dir
-      size: 115491
+      md5: 2bc60bd9e45f357342876abfccdec6ca.dir
+      size: 132783
       nfiles: 17
     params:
       params.yaml:
@@ -172,14 +171,14 @@ stages:
     outs:
     - path: reports/figures/
       hash: md5
-      md5: 22600205f39abe97d1199683aed1c341.dir
-      size: 350374
-      nfiles: 12
+      md5: 3164f33e2027c0af9dbfa057f8df60a3.dir
+      size: 367567
+      nfiles: 14
     - path: reports/metrics.json
       hash: md5
-      md5: 07b04623d867038f9b8373d938c794d8
-      size: 1195
+      md5: e791e9525feb0e485635bdacd5e26a81
+      size: 1458
     - path: reports/report.html
       hash: md5
-      md5: 86d129593b12c93e12550985b8175e3c
-      size: 2263
+      md5: 7907e5f6044f4103e32d5ca9ceb0e9e3
+      size: 2383

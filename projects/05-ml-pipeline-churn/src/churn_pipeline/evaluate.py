@@ -97,6 +97,77 @@ def net_benefit(y_true: NDArray[np.int64], proba: NDArray[np.float64], pt: float
     return tp / n - (fp / n) * (pt / (1.0 - pt))
 
 
+def paired_bootstrap_cost_delta(
+    cfg: ChurnConfig,
+    y_true: NDArray[np.int64],
+    proba_a: NDArray[np.float64],
+    proba_b: NDArray[np.float64],
+    thr_a: float,
+    thr_b: float,
+    n_boot: int = 2000,
+) -> dict[str, Any]:
+    """Paired bootstrap CI for cost(A) - cost(B) at fixed operating thresholds.
+
+    Resamples holdout rows with replacement (seeded); thresholds stay fixed at
+    the chosen operating points, so the CI isolates sampling uncertainty of
+    the cost difference, not threshold instability.
+    """
+    rng = np.random.default_rng(cfg.seed)
+    n = len(y_true)
+    point = business_cost(y_true, proba_a, thr_a, cfg.fp_cost, cfg.fn_cost) - business_cost(
+        y_true, proba_b, thr_b, cfg.fp_cost, cfg.fn_cost
+    )
+    deltas = np.empty(n_boot, dtype=float)
+    for i in range(n_boot):
+        idx = rng.integers(0, n, size=n)
+        deltas[i] = business_cost(
+            y_true[idx], proba_a[idx], thr_a, cfg.fp_cost, cfg.fn_cost
+        ) - business_cost(y_true[idx], proba_b[idx], thr_b, cfg.fp_cost, cfg.fn_cost)
+    lo, hi = np.percentile(deltas, [2.5, 97.5])
+    return {
+        "point": float(point),
+        "lo": float(lo),
+        "hi": float(hi),
+        "n_boot": n_boot,
+        "significant_95": bool(lo > 0 or hi < 0),
+        "note": "negative delta = A costs less than B",
+    }
+
+
+def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.Figure:
+    """Interval plot of the paired bootstrap cost delta (A minus B)."""
+    label = f"{name_a} - {name_b}"
+    fig = go.Figure()
+    fig.add_scatter(
+        x=[delta["point"]],
+        y=[label],
+        mode="markers",
+        name="point delta",
+        marker={"size": 12, "symbol": "star", "color": "#fbbf24"},
+    )
+    fig.add_scatter(
+        x=[delta["lo"], delta["hi"]],
+        y=[label] * 2,
+        mode="lines",
+        name="95% CI",
+        line={"color": "#2dd4bf", "width": 4},
+    )
+    fig.add_scatter(
+        x=[0],
+        y=[label],
+        mode="markers",
+        name="no effect",
+        marker={"size": 10, "symbol": "line-ns", "color": "#64748b"},
+    )
+    verdict = "significant" if delta["significant_95"] else "not significant"
+    fig.update_layout(
+        title=f"Paired bootstrap cost delta ({delta['n_boot']} resamples)",
+        xaxis_title="cost delta (negative = saves money)",
+    )
+    add_takeaway(fig, f"95% CI [{delta['lo']:.1f}, {delta['hi']:.1f}] - {verdict} at alpha 0.05")
+    return apply_theme(fig)
+
+
 def naive_majority_run(
     cfg: ChurnConfig, y_true: NDArray[np.int64], base_rate: float
 ) -> tuple[RunResult, NDArray[np.float64], float]:
@@ -360,6 +431,7 @@ def evaluate_holdout(
 
     summary: dict[str, Any] = {
         "naive_cost": _cost(naive_run),
+        "naive_opt": naive_opt,
         "logreg_default_cost": _cost(runs[1]),
         "logreg_tuned_cost": _cost(runs[2]),
         "logreg_opt": logreg_opt,
@@ -371,6 +443,14 @@ def evaluate_holdout(
         "calibrated_ece": _ece(calib_run),
         "calibration_helps": _cost(calib_run) < _cost(selected_run),
         "base_rate": train_base_rate,
+        "cost_delta_ci": paired_bootstrap_cost_delta(
+            cfg,
+            y_true,
+            proba["selected"],
+            np.full(len(y_true), train_base_rate),
+            selected_opt,
+            naive_opt,
+        ),
     }
     naive_total = _cost(naive_run)
     savings = naive_total - _cost(selected_run)
@@ -422,6 +502,7 @@ def evaluate_holdout(
             },
             takeaway,
         ),
+        "bootstrap_ci": bootstrap_ci_figure(summary["cost_delta_ci"], "selected model", "naive"),
     }
     return runs, figures, summary
 

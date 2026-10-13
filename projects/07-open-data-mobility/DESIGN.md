@@ -113,7 +113,7 @@ importance** of the tuned GBM on a bounded test slice
 
 ```mermaid
 flowchart LR
-    A[download<br/>checksum-pinned] --> B[validate<br/>per-month DQ gates]
+    A[download<br/>checksum-pinned, yellow + green] --> B[validate<br/>per-month DQ gates]
     B --> C[join<br/>zone x hour grid + weather]
     C --> D[features<br/>lags + calendar, temporal split]
     D --> T[tune<br/>Optuna, embargoed val only]
@@ -122,11 +122,18 @@ flowchart LR
     E --> G[predictions.parquet]
     F --> G
     G --> H[evaluate<br/>metrics + figures + report]
+    H --> X[transfer<br/>yellow → green study]
+    E --> S[serving artifact<br/>showcase API]
     H --> I[dashboard<br/>report.html assembly]
 ```
 
 ## Changelog
 
+- 2026-10-13 (wave 7) — green-taxi expansion (bounded 2024-01..03 slice):
+  transfer study shows yellow-trained GBMs lose MAE to green persistence
+  (0.296 vs 0.212) but win RMSE/MAPE — per-service retraining recommended.
+  Serving artifact per SERVING.md (tuned GBM + p90 + zones) with the showcase
+  API forecast endpoint verified live (JFK zone 132 → 223.8 / p90 251.8).
 - 2026-10-12 (wave 3) — Optuna HPO for GBM (30 trials, median pruning) and
   TemporalNet (10 trials) on an embargoed train-side validation window;
   `gbm_tuned` / `temporal_net_tuned` runs added to the run ladder; p90

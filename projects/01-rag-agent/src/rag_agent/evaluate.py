@@ -17,14 +17,15 @@ import random
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any
+from pathlib import Path
+from typing import Any, cast
 
 import numpy as np
 import plotly.graph_objects as go
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json, style_runs
 from portfolio_eval.metrics import MetricResult, RunResult
-from portfolio_eval.rag import RAGEvalResult, RAGEvalRow, RAGEvaluator
+from portfolio_eval.rag import KeywordJudge, RAGEvalResult, RAGEvalRow, RAGEvaluator
 from portfolio_eval.report import ReportBuilder
 from pydantic_ai import Agent
 
@@ -41,6 +42,7 @@ from rag_agent.index import (
     build_index,
     chunk_articles,
 )
+from rag_agent.judge import RubricJudge, build_judge
 from rag_agent.schemas import AnalysisResult, Article, Citation, EvalQuestion
 
 logger = get_logger(__name__)
@@ -320,6 +322,7 @@ def run_rag_eval(
     agent: Agent[Retriever, AnalysisResult],
     retriever: Retriever,
     questions: list[EvalQuestion],
+    judge: RubricJudge | None = None,
 ) -> RAGRun:
     """Run the agent over the question set and score outputs with the judge."""
     rows: list[RAGEvalRow] = []
@@ -344,7 +347,11 @@ def run_rag_eval(
                 retrieved_relevant=any(c.article_id in relevant for c in evidence),
             )
         )
-    evaluator = RAGEvaluator()
+    selected = judge if judge is not None else build_judge()
+    logger.info("RAG judge: %s", getattr(selected, "name", type(selected).__name__))
+    # RAGEvaluator types the slot as KeywordJudge; the rubric judges share the
+    # same .judge(question, context, answer) -> JudgeVerdict protocol.
+    evaluator = RAGEvaluator(judge=cast("KeywordJudge", selected))
     rag_result = evaluator.run(rows)
     logger.info("RAG eval: %s", rag_result.to_dict())
     return RAGRun(
@@ -776,6 +783,54 @@ def topk_run_for_size(size: int, topk_data: dict[str, Any]) -> RunResult:
     return RunResult(name=f"retrieval_topk_sweep_chunks_{size}", metrics=metrics)
 
 
+def cost_telemetry(config: RAGConfig, rag_run: RAGRun, mode: str) -> dict[str, Any]:
+    """Aggregate per-query token usage and estimated cost (rate card from config)."""
+    per_query = [
+        {
+            "input_tokens": in_tok,
+            "output_tokens": out_tok,
+            "est_cost_usd": round(
+                in_tok / 1e6 * config.usd_per_mtok_input
+                + out_tok / 1e6 * config.usd_per_mtok_output,
+                8,
+            ),
+        }
+        for in_tok, out_tok in zip(rag_run.input_tokens, rag_run.output_tokens, strict=False)
+    ]
+    costs = [p["est_cost_usd"] for p in per_query]
+    return {
+        "mode": mode,  # "live" when a provider answered, "mock" = deterministic floor
+        "rate_card": {
+            "usd_per_mtok_input": config.usd_per_mtok_input,
+            "usd_per_mtok_output": config.usd_per_mtok_output,
+        },
+        "n_queries": len(per_query),
+        "total_input_tokens": sum(rag_run.input_tokens),
+        "total_output_tokens": sum(rag_run.output_tokens),
+        "total_est_cost_usd": round(sum(costs), 8),
+        "cost_per_query_usd": {
+            "mean": round(sum(costs) / max(len(costs), 1), 8),
+            "p50": round(_percentile(costs, 0.50), 8),
+            "p95": round(_percentile(costs, 0.95), 8),
+        },
+        "per_query": per_query,
+    }
+
+
+def write_cost_telemetry(config: RAGConfig, rag_run: RAGRun) -> Path:
+    """Write ``reports/cost_telemetry.json``; mode from provider credentials."""
+    from portfolio_core.config import get_settings
+
+    settings = get_settings()
+    mode = "live" if (settings.llm_api_key and settings.llm_base_url) else "mock"
+    payload = cost_telemetry(config, rag_run, mode)
+    path = config.reports_dir / "cost_telemetry.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    logger.info("cost telemetry written: %s (mode=%s)", path, mode)
+    return path
+
+
 def run(config: RAGConfig) -> None:
     """Full evaluation: retrieval HPO + RAG eval + ops, then reports."""
     articles = load_corpus(config)
@@ -913,3 +968,4 @@ def run(config: RAGConfig) -> None:
         rerank_scores=rerank_scores,
         topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
     )
+    write_cost_telemetry(config, rag_run)

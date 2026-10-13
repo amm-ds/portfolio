@@ -84,7 +84,10 @@ class MobilityConfig(PortfolioBaseModel):
             "2024-12",
         ]
     )
+    #: Bounded green-taxi slice for the cross-service transfer study.
+    green_months: list[str] = Field(default_factory=lambda: ["2024-01", "2024-02", "2024-03"])
     tlc_base_url: str = TLC_BASE_URL
+    tlc_green_base_url: str = TLC_BASE_URL.replace("yellow_tripdata", "green_tripdata")
     zone_lookup_url: str = ZONE_LOOKUP_URL
     noaa_url: str = NOAA_URL
 
@@ -98,6 +101,8 @@ class MobilityConfig(PortfolioBaseModel):
     # Bounded slice & DQ gates
     max_rows_per_month: int | None = Field(default=None, description="None = all rows")
     min_rows_per_month: int = 500_000
+    #: Green taxi runs an order of magnitude fewer trips — relaxed floor.
+    green_min_rows_per_month: int = 30_000
     #: Freshness gate: newest pickup must be within this many days of month end.
     freshness_slack_days: int = 1
 
@@ -131,6 +136,10 @@ class MobilityConfig(PortfolioBaseModel):
     @property
     def zone_hour_demand_path(self) -> Path:
         return self.curated_dir / "zone_hour_demand.parquet"
+
+    @property
+    def green_zone_hour_demand_path(self) -> Path:
+        return self.curated_dir / "green_zone_hour_demand.parquet"
 
     @property
     def zones_path(self) -> Path:

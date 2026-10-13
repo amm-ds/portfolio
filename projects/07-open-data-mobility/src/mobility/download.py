@@ -104,6 +104,30 @@ def download_all(cfg: MobilityConfig | None = None) -> list[DatasetContract]:
             )
         )
 
+    green_dir = cfg.raw_dir / "green"
+    green_dir.mkdir(parents=True, exist_ok=True)
+    for month in cfg.green_months:
+        url = cfg.tlc_green_base_url.format(month=month)
+        name = f"green_tripdata_{month}"
+        dest = green_dir / f"{name}.parquet"
+        fetch(url, dest, pins.get(dest.name))
+        checksum = sha256_of(dest)
+        if dest.name not in pins:
+            _record_pin(cfg.checksum_registry, dest.name, checksum)
+            logger.info("pinned %s sha256=%s", dest.name, checksum)
+        else:
+            logger.info("checksum verified %s", dest.name)
+        contracts.append(
+            _write_contract(
+                cfg,
+                name=name,
+                source=url,
+                license_=TLC_LICENSE,
+                path=dest,
+                n_rows=_parquet_rows(dest),
+            )
+        )
+
     for name, url, license_ in [
         ("taxi_zone_lookup", cfg.zone_lookup_url, TLC_LICENSE),
         ("noaa_usw00094728_ghcn_daily", cfg.noaa_url, NOAA_LICENSE),

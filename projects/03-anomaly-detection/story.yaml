@@ -197,17 +197,36 @@ sections:
         precision. AUC/PR-AUC measure ranking quality; a production deployment
         would pick the operating point from the sweep curve against an
         alerting budget, not from AUC alone.
+      - **Rolling-median residuals de-cluster the blob (0.9158 → 0.9999
+        ROC-AUC):** adding six `signal − rolling_median` features lifts the
+        untuned IsolationForest to near-perfect ranking (PR-AUC 0.996); the
+        k-NN distance of anomalies jumps 20.5 → 59.9 while normals stay at
+        9.5 → 17.0 — exactly the isolation signature local-density methods
+        could not see.
+      - **Adaptive-threshold streaming agrees with fixed on a stable stream:**
+        the champion simulated over 5 × 24 h chunks shows per-chunk drift
+        z of 0.027–0.089 (trigger 1.0) — zero drift events, and the
+        train-anchored adaptive threshold emits 113 flags vs. the fixed 120
+        at the same ~15% precision. The drift-response machinery is in place
+        and unit-tested for when drift persists.
+      - **NSL-KDD transfer probe holds up (0.8817 ROC-AUC / 0.8916 PR-AUC):**
+        the champion family fit on 125 973 real network-flow records scores
+        0.88+ on the labeled test split despite completely different feature
+        semantics and a 57% prevalence — a strong transfer signal with the
+        caveats stated in the data section.
 
       The engineering guardrails behind these numbers: fixed contamination for
       every run (untuned and tuned), HPO validated on a slice of the train
-      window only, and sklearn-1.9-safe score replication so train-time and
-      test-time scoring stay consistent.
+      window only, sklearn-1.9-safe score replication, and checksum-pinned
+      fetches for the real-data track.
 
       **Business implication:** One-Class SVM went from worst to contender
       after tuning — the lesson is that defaults, not algorithms, are often
-      the problem; a cheap, disciplined HPO pass should precede any "this
-      model doesn't work" verdict.
-    figures: [roc_curves, pr_curves, score_distribution, threshold_sweep]
+      the problem; a cheap, disciplined HPO pass (plus residual features that
+      cost one polars expression) should precede any "this model doesn't
+      work" verdict.
+    figures:
+      [roc_curves, pr_curves, score_distribution, threshold_sweep, adaptive_stream]
     metrics_keys:
       [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 
@@ -235,19 +254,19 @@ sections:
         only, and a fixed (untuned) threshold mean the reported numbers are
         ones a client can plan an alerting budget around.
 
-      Roadmap:
+      Roadmap (what remains):
 
-      - Streaming detection with adaptive thresholds (score-drift monitoring,
-        budget-aware operating-point updates between scheduled retrains).
-      - Residual/contextual features (rolling-median baselines, seasonal
-        adjustment) that de-cluster repeated incident signatures.
-      - NSL-KDD production track: real network-flow telemetry behind the same
-        dataset contract, replacing the synthetic default for graded
-        evaluation on live-shaped data.
+      - Make rolling-median residual features the default feature set and
+        re-run the full run ladder — including LOF and One-Class SVM — on the
+        de-clustered space.
+      - Streaming ingest: replace the chunked simulation with a real event
+        source so the adaptive threshold runs against live-shaped traffic.
+      - NSL-KDD hardening: one-hot categoricals, per-attack-category
+        breakdown, literature-protocol comparison.
 
       **Business implication:** the deliverable is not "a model with 0.92
       AUC" — it is an evaluation harness that tells you *when to distrust the
-      model*, what tuning changed and why, and what a given alert budget buys;
-      that is what de-risks putting anomaly detection on a client's critical
-      path.
+      model*, what tuning and features changed and why, and what a given
+      alert budget buys; that is what de-risks putting anomaly detection on a
+      client's critical path.
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]

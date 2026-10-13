@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Any, NamedTuple
 
-import joblib  # type: ignore[import-untyped]
+import joblib
 import numpy as np
 import polars as pl
 import torch

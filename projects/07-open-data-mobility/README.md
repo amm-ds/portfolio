@@ -45,6 +45,31 @@ window (DESIGN.md §Hyperparameter optimisation):
   features ≈ 0 for point MAE (their value is the elasticity analysis, not
   point accuracy).
 
+Cross-service transfer (green taxi, March 2024, yellow-trained models,
+197,160 zone-hours — features from green's own Jan–Feb history):
+
+| run | MAE | RMSE | MAPE |
+|---|---|---|---|
+| naive lag-24 (green persistence) | **0.212** | 1.100 | 81.8% |
+| gbm_mean (yellow-trained) | 0.294 | 0.911 | **66.6%** |
+| gbm_tuned (yellow-trained) | 0.296 | **0.908** | 66.7% |
+
+- **Honest finding: transfer is mixed.** Yellow-trained GBMs *lose* MAE to
+  green persistence (green demand is an order of magnitude sparser and
+  burst-light, so yellow's burst-tuned patterns add noise) but *win* RMSE
+  (−17%) and MAPE (−19%) — they trim the big errors. Per-service retraining
+  on green history is advised before production use. Figure:
+  `reports/figures/green_transfer`.
+
+Serving (showcase API): `uv run python -m mobility.cli build-serving-artifact`
+persists the tuned GBM pair + zone reference to `reports/models/serving/`
+(contract: SERVING.md). Live endpoint verified:
+
+```
+POST /projects/07-open-data-mobility/forecast {"zone_id": 132, "features": {...}}
+→ {"zone_id":132,"borough":"Queens","zone":"JFK Airport","prediction":223.827,"p90":251.811}
+```
+
 Per-borough test MAE (gbm_mean): Manhattan 14.2, Unknown 4.5, Queens 2.2,
 Brooklyn 1.2, N/A 0.9, Bronx 0.5, EWR 0.3, Staten Island 0.2 pickups/hour.
 Manhattan dominates absolute error because it dominates volume (≈60 pickups/h
@@ -81,7 +106,7 @@ pipeline diagram.
 cd projects/07-open-data-mobility
 uv run python -m mobility.cli all      # download → validate → join → features → train → evaluate
 # or stage by stage:
-uv run python -m mobility.cli download|validate|join|features|tune|train-baselines|train-nn|evaluate
+uv run python -m mobility.cli download|validate|join|features|tune|train-baselines|train-nn|transfer|build-serving-artifact|evaluate
 uv run python -m mobility.cli dq-report   # print/persist the latest DQ digest
 ```
 

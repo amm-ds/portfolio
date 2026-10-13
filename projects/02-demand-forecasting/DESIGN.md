@@ -71,11 +71,14 @@ an imputed lag would teach the model that history is sometimes fake).
 - Synthetic: seeded, byte-identical across machines, exercises the full
   contract/DQ machinery via `synthetic://` source identity.
 
-**Decision: synthetic only, implemented; real track documented, not
-implemented.** The swap point is `data.py::build_panel` — a real
-implementation would `portfolio_core.io.fetch` the UCI snapshot (checksum
-pinned), map `StockCode → product`, `Country → store`, sum `Quantity` per day,
-and keep every downstream module unchanged.
+**Decision: both tracks.** Synthetic remains the default (CI offline, seedable);
+the UCI track is implemented behind `--data-source uci` (`uci.py`): checksum-
+pinned download, dependency-free XLSX streaming (stdlib zipfile/iterparse —
+no openpyxl in the venv), top-8 countries × top-200 products, sales lines only
+(returns excluded, documented), zero-filled daily reindex. Swapping tracks
+changes nothing downstream. Full MinT covariance projection stays deferred —
+the UCI panel has a flat product key, so the hierarchy is still only
+store → product.
 
 ### E. Hyperparameter optimisation (wave 3)
 
@@ -110,6 +113,9 @@ small tabular lag problems; a sequence model is the roadmap answer).
 
 - Full MinT (covariance-based projection) is statistically heavier and needs
   residual covariance estimation across 24 series — overkill for a showcase.
+  After wave 7 this stands: the UCI track's product key is flat (no category
+  tree), so the hierarchy remains store → product; full covariance projection
+  moves to the roadmap, gated on introducing a product-category hierarchy.
 - **MinT-lite**: bottom-up store aggregation, direct store-level model, then a
   scalar shrinkage `w` distributing the parent-child discrepancy across
   children. `w` is grid-estimated on the embargoed previous fold by
@@ -147,6 +153,18 @@ flowchart LR
 
 ## Changelog
 
+- **0.4.0 (2026-10-13)** — wave 7 (roadmap delivery): UCI Online Retail II
+  real-data track implemented (`uci.py`, `--data-source uci`, checksum-pinned,
+  stdlib XLSX parser; 525,461 transactions → 405,416-row daily panel, 8
+  countries × 200 products, 374 days, 89% zero share); probabilistic forecasts
+  (`probabilistic.py`: quantile HGB p10/p50/p90 + split-conformal, empirical
+  coverage vs 80% target, band figure). Real run — synthetic ladder topped by
+  hgb_tuned (MAE 8.529, coverage 0.727 quantile / 0.757 conformal); UCI ladder
+  topped by hgb_tuned (MAE 8.989) with ridge collapsing behind the naives
+  (16.734) and persistence MAPE exploding (356%); UCI reconciliation w=0.65
+  (incoherence 400.4 → 140.2); UCI conformal degenerate (q80 = 0, coverage
+  0.858). Full MinT deferred (flat product key). Roadmap: per-series conformal
+  / zero-inflated intervals, returns-aware demand, category hierarchy.
 - **0.3.0 (2026-10-12)** — wave 3 (production depth): seeded Optuna HPO
   (`hpo.py`, TPESampler seed 42 + MedianPruner, resumable SQLite storage,
   per-trial checkpointing; 56 complete trials) over 6 HGB hyperparameters with

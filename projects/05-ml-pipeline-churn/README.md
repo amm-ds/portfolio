@@ -42,55 +42,64 @@ raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSear
   imputation, so "missing" itself can be learned as signal.
 - Model selection (`model.py` + `hpo.py`): `GridSearchCV` over
   C ∈ {0.01, 0.1, 1, 10} keeps the wave-2 logistic row; **Optuna** (seeded TPE,
-  ~25 trials, median pruning, 3-fold stratified F1) then chooses between
-  LogisticRegression (C log 1e-3..1e2, l1_ratio 0..1) and
-  HistGradientBoostingClassifier (learning_rate, max_iter, max_leaf_nodes,
-  min_samples_leaf). The winning config is written back to
-  [`params.yaml`](params.yaml) as the production config.
+  ~25 trials, median pruning) then chooses between LogisticRegression
+  (C log 1e-3..1e2, l1_ratio 0..1) and HistGradientBoostingClassifier
+  (learning_rate, max_iter, max_leaf_nodes, min_samples_leaf) on a
+  **cost-aware objective**: stratified CV with out-of-fold probabilities,
+  each trial scored by the business cost (FP=1/FN=5) at its own cost-optimal
+  threshold — the same threshold-tuning view used at evaluation. The winning
+  config is written back to [`params.yaml`](params.yaml) as the production
+  config.
 - Calibration: the selected model is compared raw vs **isotonic-calibrated**
   (calibration split carved from training only, disjoint from the fit data and
   the holdout) via ECE and the same business-cost curve.
 - Evaluation (`evaluate.py`): five `RunResult` rows — naive majority, wave-2
   logreg at 0.5 and at its cost-optimum, selected model and its calibrated
-  variant at their cost-optima — plus EDA profile, calibration, permutation
-  importance, precision–recall, decision-curve, and business-cost figures
-  (takeaway subtitles via `portfolio_core.plotting.add_takeaway`).
+  variant at their cost-optima — plus a seeded paired bootstrap (2,000
+  resamples) of the cost delta vs naive with a 95% CI, and EDA profile,
+  calibration, permutation importance, precision–recall, decision-curve, and
+  business-cost figures (takeaway subtitles via
+  `portfolio_core.plotting.add_takeaway`).
+- Client onboarding (`cli.py`): `prepare --input client.csv` ingests a client
+  CRM extract with the same columns (`churned` optional) through the same DQ
+  gates and DatasetContract — no downstream pipeline changes.
 
 Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 
 ## Results (real run, seed 42, n=5,000)
 
 Holdout: 1,000 rows (churn rate 8.8%). Wave-2 grid search: **C=1.0** (CV F1
-0.3433). **Optuna selected HistGradientBoostingClassifier** (25 trials:
-learning_rate 0.0795, max_iter 116, max_leaf_nodes 20, min_samples_leaf 41;
-CV F1 0.3648).
+0.3433). **Cost-aware Optuna selected LogisticRegression (C=0.2365,
+l1_ratio=0.1388)** — 25 trials, CV business cost 1,217; mean trial cost by
+family: logreg 934 vs HistGB 1,215. (An F1-objective run instead picked
+HistGB — see the selection lesson below.)
 
 | run | threshold | ROC-AUC | accuracy | P (macro) | R (macro) | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|---|---|---|
 | naive majority | cost-optimal | 0.5000 | **0.912** ⚠️ | 0.4560 | 0.5000 | 0.4770 | – | 440 |
 | logreg, default | 0.500 | 0.8344 | 0.722 | 0.5926 | 0.7552 | 0.5796 | – | 350 |
 | logreg, tuned | 0.725 | 0.8344 | 0.874 | 0.6576 | 0.7307 | **0.6833** | – | **282** |
-| selected (HistGB) | 0.700 | 0.8125 | 0.879 | 0.6463 | 0.6770 | 0.6593 | 0.157 | 321 |
-| selected + isotonic | 0.225 | 0.8008 | 0.900 | 0.6787 | 0.6526 | 0.6642 | **0.017** | 328 |
+| selected (cost-HPO logreg) | 0.700 | 0.8318 | 0.862 | 0.6476 | 0.7395 | 0.6756 | 0.281 | **282** |
+| selected + isotonic | 0.175 | 0.8298 | 0.821 | 0.6162 | 0.7325 | 0.6380 | **0.014** | 311 |
 
 Key findings:
 
 - **Against the naive floor, the deliverable cuts business cost 440 → 282
-  (−35.9%) and lifts macro F1 0.477 → 0.683 (+43%).** Threshold tuning alone
-  contributes −19.4% of the cost win — the operating point is a business
-  decision made on a cost curve (FP=1, FN=5), not a library default.
-- **Selection objective ≠ deployment objective.** HPO picked HistGB on CV F1
-  (0.3648 vs 0.3433), but on the holdout cost model the simpler tuned logistic
-  still wins (282 vs 321): F1-optimal ranking does not guarantee cost-optimal
-  decisions at FN/FP = 5. The report shows both, and the recommendation
-  stays with the logistic — selection metrics are reported next to the
-  business metric precisely so this cannot hide.
-- **Calibration verdict:** isotonic calibration cuts ECE **0.157 → 0.017
-  (−89%)** and slightly improves F1 (0.659 → 0.664), but does **not** improve
-  the business-cost optimum (328 vs 321) — at these cost weights the raw
-  ranking already decides well. Calibration is worth deploying when the
-  *probabilities themselves* are consumed (budget forecasting, CLV math), not
-  for this thresholded alarm.
+  (−35.9%) and lifts macro F1 0.477 → 0.683 (+43%).** The paired bootstrap
+  makes the delta defensible: **−158, 95% CI [−237, −87] — significant**
+  (2,000 seeded resamples, fixed operating thresholds).
+- **Winner changed with the objective.** F1-based selection picked HistGB,
+  which loses on holdout business cost (321); cost-aware selection picked a
+  lightly-regularized logistic that lands exactly at the cost optimum (282
+  at t=0.700) — optimize what you deploy.
+- **Threshold tuning alone: −19.4%** of the cost win (350 → 282), same model,
+  no retraining — the operating point is a business decision made on a cost
+  curve (FP=1, FN=5), not a library default.
+- **Calibration verdict:** isotonic calibration cuts ECE **0.281 → 0.014
+  (−95%)** but does **not** improve the business-cost optimum (311 vs 282) —
+  at these cost weights the raw ranking already decides well. Calibration is
+  worth deploying when the *probabilities themselves* are consumed (budget
+  forecasting, CLV math), not for this thresholded alarm.
 - Permutation importance of the selected model keeps `monthly_charges` and
   `contract` on top, matching the generator's ground truth.
 
@@ -100,7 +109,7 @@ the deliverable is cost and F1, not accuracy.
 
 Artifacts (regenerated by every run):
 
-- `reports/metrics.json` — 5-run ladder incl. ECE for selected runs
+- `reports/metrics.json` — 5-run ladder + `_meta.cost_delta_ci` (bootstrap CI)
 - `reports/report.html` — rendered evaluation report
 - `reports/figures/eda_churn_profile.{html,json}` — churn rate by contract +
   monthly_charges / tenure distributions
@@ -109,6 +118,7 @@ Artifacts (regenerated by every run):
 - `reports/figures/precision_recall_curve.{html,json}` — naive base-rate floor
 - `reports/figures/decision_curve.{html,json}` — net benefit vs treat-all/none
 - `reports/figures/business_cost_curve.{html,json}` — all candidates + takeaway
+- `reports/figures/bootstrap_ci.{html,json}` — paired bootstrap interval
 - `reports/dq_report.md` — 6/6 data-quality gates passed
 - `data/model.pkl`, `data/selected_model*.pkl`, `data/model_selection.json`,
   `data/holdout.parquet`, `data/model_meta.json`, `data/dataset_contract.json`
@@ -117,7 +127,9 @@ Artifacts (regenerated by every run):
 
 ```bash
 cd projects/05-ml-pipeline-churn
-uv run python -m churn_pipeline.cli all   # prepare → train (HPO) → evaluate, ~15 s
+uv run python -m churn_pipeline.cli all   # prepare → train (cost-aware HPO) → evaluate, ~10 s
+# client extract onboarding:
+uv run python -m churn_pipeline.cli prepare --input client.csv
 # or stage-wise via DVC:
 dvc repro projects/05-ml-pipeline-churn
 ```
@@ -142,26 +154,26 @@ uv run pytest projects/05-ml-pipeline-churn -q
 - **DQ as a gate, not a hope**: the pipeline halts loudly
   (`DQGateError`) if null rates or ranges drift out of contract.
 - **Models are products, not Kaggle scores**: every claim is relative to a
-  visible naive floor (cost 440 → 282, −35.9%), classification metrics are
-  paired with calibration and a business-cost curve, and the deliverable
-  includes the *operating threshold* (0.725), not just AUC.
-- **Honest uncertainty**: permutation importance carries error bars; the
-  `age_was_missing`-style flags are evaluated rather than assumed useful.
-- **Full reproducibility**: seeded end-to-end run in seconds, with DVC stages,
-  a dataset contract (SHA-256), and CI-friendly tests.
+  visible naive floor (cost 440 → 282, −35.9%, bootstrap 95% CI [−237, −87]),
+  classification metrics are paired with calibration and a business-cost
+  curve, and the deliverable includes the *operating threshold* (0.700), not
+  just AUC.
+- **Honest uncertainty**: permutation importance carries error bars; cost
+  deltas carry paired bootstrap CIs; the `age_was_missing`-style flags are
+  evaluated rather than assumed useful.
+- **Full reproducibility**: seeded end-to-end run in ~10 s (including HPO),
+  with DVC stages, a dataset contract (SHA-256), and CI-friendly tests.
 
 ## Roadmap
 
-Done in wave 3: Optuna model selection (logreg vs HistGB) with the selection
-persisted to `params.yaml`, and raw-vs-isotonic calibration compared on ECE
-and business cost.
+Delivered in wave 7: cost-aware HPO objective (winner changed, see results),
+`prepare --input client.csv` onboarding through the same DQ gates and
+contract, and paired bootstrap CIs on the business-cost delta.
 
-Planned deepening (not yet implemented):
+Remaining:
 
-- **Cost-aware selection objective**: score HPO trials by CV business cost
-  (FP=1/FN=5) instead of F1, so the selection metric matches the deployment
-  objective — the wave-3 run showed they can disagree.
 - **Real-data track**: swap the synthetic generator for a public telco churn
-  export (e.g. IBM HR/telco datasets) behind the same `DatasetContract`.
+  export (e.g. IBM HR/telco datasets) behind the same `DatasetContract`, or
+  onboard a client extract directly via `prepare --input`.
 - **Model comparison**: gradient-boosted comparator vs. logistic via
   `portfolio_eval.compare_runs` with paired bootstrap CIs on business cost.

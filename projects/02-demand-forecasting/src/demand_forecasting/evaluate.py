@@ -14,7 +14,7 @@ import numpy as np
 import plotly.graph_objects as go
 import polars as pl
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_json
+from portfolio_core.plotting import add_takeaway, apply_theme, save_json, style_runs
 from portfolio_core.timecv import TimeSeriesCV
 from portfolio_eval.metrics import RunResult
 from portfolio_eval.ml import RunComparison, regression_metrics
@@ -186,16 +186,13 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
             mode="lines",
             line={"dash": "dot"},
         )
-    fig.update_layout(
-        title={
-            "text": f"Actual vs forecast — last CV fold ({model} vs {naive})",
-            "subtitle": {
-                "text": (
-                    f"takeaway: {model} beats the {naive} floor by {reduction:.0%} MAE "
-                    "on this fold; the residual gap is day-over-day noise"
-                )
-            },
-        }
+    fig.update_layout(title=f"Actual vs forecast — last CV fold ({model} vs {naive})")
+    # platform storytelling convention: naive floor demoted, best run promoted
+    style_runs(fig, best=model)
+    add_takeaway(
+        fig,
+        f"takeaway: {model} beats the {naive} floor by {reduction:.0%} MAE "
+        "on this fold; the residual gap is day-over-day noise",
     )
     return apply_theme(fig)
 
@@ -216,6 +213,7 @@ def figure_fold_stability(result: BacktestResult) -> go.Figure:
             x=list(range(1, len(values) + 1)), y=values, name=model, mode="lines+markers"
         )
     fig.update_layout(title="Fold stability (MAE per fold)", xaxis_title="fold")
+    style_runs(fig, best=best_model(result))
     return apply_theme(fig)
 
 
