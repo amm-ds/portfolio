@@ -122,6 +122,13 @@ export function ProjectDetail() {
             ))}
           </div>
           <div className="meta-links">
+            <a
+              href={`https://github.com/amm-ds/portfolio/tree/main/projects/${id}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              [code]
+            </a>
             <a href={docsUrl(id)} target="_blank" rel="noreferrer">
               [docs]
             </a>

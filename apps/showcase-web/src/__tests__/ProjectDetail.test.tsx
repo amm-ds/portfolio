@@ -105,6 +105,11 @@ describe("ProjectDetail story handling", () => {
     // fallback metrics table rendered, no case-study rail
     expect(screen.queryByRole("navigation", { name: "Case study sections" })).toBeNull();
     expect(screen.getByText("0.5000")).toBeInTheDocument();
+    // code chip links to the project's directory in the repo (fallback branch too)
+    expect(screen.getByRole("link", { name: "[code]" })).toHaveAttribute(
+      "href",
+      "https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent",
+    );
   });
 
   it("shows the run-pipeline hint when both story and metrics are missing", async () => {

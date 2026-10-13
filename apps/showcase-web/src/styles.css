@@ -16,6 +16,10 @@
   color-scheme: dark;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -477,6 +481,46 @@ code {
   margin: 0 0 1rem;
 }
 
+/* --- Markdown tables (GFM pipe tables rendered by lib/markdown) --- */
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0 0 1rem;
+  font-size: 0.92rem;
+}
+
+.prose table th,
+.prose table td {
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose table th {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.prose table td {
+  color: var(--text);
+  opacity: 0.92;
+}
+
+@media (max-width: 640px) {
+  .prose table {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
 .callouts {
   display: flex;
   flex-wrap: wrap;
@@ -651,6 +695,15 @@ code {
 .figure-caption::before {
   content: "$ ";
   color: var(--accent);
+}
+
+a.figure-caption {
+  display: block;
+}
+
+a.figure-caption:hover {
+  color: var(--accent);
+  text-decoration: none;
 }
 
 .figure-grid {
@@ -1162,12 +1215,12 @@ button:disabled {
 .plotly-wrap {
   position: relative;
   width: 100%;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(148, 163, 184, 0.25);
   border-radius: 6px;
   overflow: hidden;
-  /* Figures carry the dark portfolio theme (transparent re-skin in
-     PlotlyFigure) — the wrapper must stay dark too. */
-  background: var(--surface);
+  /* Transparent re-skin (PlotlyFigure): the chart floats on the page. */
+  background: transparent;
+  padding: 0.5rem;
 }
 
 .plotly-host {
@@ -1178,6 +1231,12 @@ button:disabled {
 
 .story-cols {
   display: block;
+}
+
+.story-figs {
+  /* figures may grow wide but stay centered on large screens */
+  max-width: 1200px;
+  margin-inline: auto;
 }
 
 @media (min-width: 1024px) {
@@ -1363,6 +1422,9 @@ button:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
   .cursor {
     animation: none;
   }
