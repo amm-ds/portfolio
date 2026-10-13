@@ -214,10 +214,11 @@ def package_name(slug: str) -> str:
 
 
 def main() -> None:
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 2:
         print(__doc__)
         sys.exit(1)
-    dirname, title = sys.argv[1], sys.argv[2]
+    dirname = sys.argv[1]
+    title = " ".join(sys.argv[2:]) or dirname
     if not re.match(r"^\d{2}-[a-z0-9-]+$", dirname):
         sys.exit(f"dir name must match NN-slug (e.g. 08-recommendation), got: {dirname}")
     root = PROJECTS_ROOT / dirname
