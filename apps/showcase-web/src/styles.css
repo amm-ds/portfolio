@@ -578,13 +578,6 @@ code {
   margin: 0 0 1.25rem;
 }
 
-.figure-frame h3 {
-  margin: 0 0 0.75rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-  font-weight: 500;
-}
-
 .figure-frame .frame-wrap {
   position: relative;
   width: 100%;
@@ -601,6 +594,95 @@ code {
   width: 100%;
   height: 100%;
   border: 0;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.figure-frame .frame-wrap.loaded iframe {
+  opacity: 1;
+}
+
+.figure-frame .frame-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-left: none;
+  border-radius: 0 0 6px 0;
+  padding: 0.15rem 0.55rem;
+}
+
+.frame-skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.frame-skeleton span {
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.figure-caption {
+  margin-top: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.figure-caption::before {
+  content: "$ ";
+  color: var(--accent);
+}
+
+.figure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.figure-grid .figure-frame {
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .figure-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .figure-frame .frame-wrap {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-skeleton span {
+    animation: none;
+  }
+  .figure-frame iframe {
+    transition: none;
+  }
 }
 
 /* --- States --- */
