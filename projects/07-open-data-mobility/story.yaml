@@ -12,6 +12,13 @@ sections:
       public data** — not a clean Kaggle extract — and quantifies how much
       weather moves the numbers a planner would act on.
 
+      ```mermaid
+      flowchart LR
+          A[raw trip events<br/>41.2M rows] --> B[zone x hour demand<br/>2.33M rows]
+          B --> C[next-hour forecast<br/>+ p90 band]
+          C --> D[staffing & fleet<br/>decisions]
+      ```
+
       **Business implication:** an hour-ahead, zone-level demand signal turns
       fleet staging and driver shifts from guesswork into a scheduled
       decision.
@@ -28,6 +35,15 @@ sections:
       Uncertainty is delivered as a calibrated **p90 upper band** per zone-hour
       (usable for staffing/fleet buffers), and every claim about weather is
       labelled directional, not causal.
+
+      Success criteria:
+
+      | criterion | target | why it matters |
+      |---|---|---|
+      | MAE vs naive lag-24 | ≥ 20% reduction | clearly beats "same hour last week" |
+      | p90 band coverage | ≈ 90% (±2 pp) | buffers a client can staff against |
+      | Peak RAM | < 8 GB | runs on a laptop, not a cluster |
+      | Reproduction | one command, minutes of compute | auditable inside the client's environment |
 
       **Business implication:** the deliverable is not just a forecast but a
       buffer size — how many drivers/vehicles to hold above the expected
@@ -104,6 +120,17 @@ sections:
       median pruning, 10 NN trials) against the last embargoed validation
       fold of the *train* side only — the test window is never touched.
 
+      ```mermaid
+      flowchart LR
+          A[validate<br/>per-month DQ gates] --> B[join<br/>zone x hour grid]
+          B --> C[features<br/>lags + calendar]
+          C --> T[tune<br/>Optuna, embargoed val]
+          T --> G[GBM mean + p90<br/>default & tuned]
+          T --> N[TemporalNet<br/>hand-written loop]
+          G --> P[predictions.parquet]
+          N --> P
+      ```
+
       **Business implication:** the method section is the audit trail — a
       client can verify that no leakage inflates the numbers before trusting
       the headline error rates.
@@ -119,6 +146,15 @@ sections:
       Metrics are MAE/RMSE/MAPE overall, MAE per borough, permutation
       importance of the tuned GBM, and calibration of the p90 band — empirical
       coverage per borough and overall against the 90% target.
+
+      Evaluation protocol:
+
+      | aspect | choice | rationale |
+      |---|---|---|
+      | holdout | Oct–Dec 2024 (584,855 zone-hours) | closest analogue to deploying forward |
+      | reference floor | naive lag-24 persistence | beats "same hour last week" or it does not ship |
+      | HPO validation | last expanding-window fold, 24 h embargo, train side only | tuning never sees the test window |
+      | uncertainty check | p90 coverage per borough + overall | buffer sizing must hold zone by zone |
 
       **Business implication:** the holdout answers "would this still work
       next quarter?" — scoring on the most recent three months, not a random
@@ -167,19 +203,32 @@ sections:
 
   - id: conclusions
     text_md: |
-      Three lessons a client can take away. **Scale is a discipline, not a
-      budget:** 41M rows processed month-by-month through streaming
-      aggregation with an observed peak under 3 GB — the pipeline runs on a
-      laptop. **Data contracts earn trust:** per-month DQ gates caught a 2002
-      trip inside a 2024 file and 5–13% null passenger counts before they
-      could poison the lags. **Baselines keep you honest:** the raw-count NN
-      initially scored *below* persistence until a log1p target transform
-      fixed the loss geometry — a one-line change visible only because the
-      naive baseline was always in the comparison.
+      Lessons that transfer to the next engagement:
 
-      For operations, the deliverables are the calibrated p90 bands (fleet
-      staging) and the directional weather elasticities (promo/staffing
-      triggers), both reproducible with a single command.
+      - **Scale is a discipline, not a budget:** 41.2M rows processed
+        month-by-month through streaming aggregation, observed peak under
+        3 GB — the pipeline runs on a laptop.
+      - **Data contracts earn trust:** per-month DQ gates caught a 2002 trip
+        inside a 2024 file and 5–13% null passenger counts before they could
+        poison the lag features.
+      - **Baselines keep you honest:** the raw-count NN scored *below*
+        persistence until a log1p target transform fixed the loss geometry —
+        a one-line change visible only because the naive baseline was always
+        in the comparison.
+      - **Calibration is a deliverable:** the p90 band at 90.8% coverage is
+        what turns a forecast into a staffing number; the flagged N/A-zone
+        under-coverage shows where not to trust it.
+
+      **Roadmap (what's next):**
+
+      - Production serving of the zone-hour forecasts with drift monitoring
+        and retraining on each new TLC monthly snapshot.
+      - Expansion to FHV/green taxi and shared-bike data for a full
+        curb-demand picture across vehicle classes.
+      - A geo view of demand (zone choropleth) for operator dashboards, built
+        on the existing zone x hour grain.
+      - Causal weather-impact estimates (hour-of-week normalised) to upgrade
+        the directional elasticity findings into pricing triggers.
 
       **Business implication:** 41.2M rows, a strict temporal holdout, and a
       sub-3 GB memory footprint mean this quality of analysis runs on a laptop

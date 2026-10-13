@@ -8,6 +8,15 @@ sections:
       evidence it was shown, and every claim carries a citation a human can
       audit.
 
+      The problems this design eliminates:
+
+      - **Hallucination by omission** — the model answers from memory because
+        nothing forces it to look anything up.
+      - **Unverifiable confidence** — fluent answers with no way to check where
+        they came from.
+      - **Untestable quality** — demos that impress once, with no measurement
+        behind the claim.
+
       This project builds such an assistant as a fully reproducible pipeline:
       a bounded, checksum-pinned slice of Wikipedia, a local embeddings index,
       and an agent whose only window into the corpus is two retrieval tools.
@@ -29,6 +38,17 @@ sections:
       knowledge. Third, **operational SLOs**: retrieval recall ≥ 0.60 on the
       graded set, p95 latency ≤ 5 s end-to-end, and an estimated cost per query
       that a client can budget against (target ≤ $0.01).
+
+      The provider fallback chain makes "works everywhere" explicit:
+
+      ```mermaid
+      flowchart LR
+          Q[User question] --> A[Agent]
+          A -->|LLM_BASE_URL + LLM_API_KEY set| L[Live OpenAI-compatible provider]
+          A -->|no credentials| M[Deterministic mock model]
+          L --> R[Structured AnalysisResult]
+          M --> R
+      ```
 
       Everything must run CPU-only and fully offline — a deterministic mock
       provider keeps the entire pipeline, evaluation included, runnable in CI
@@ -97,10 +117,20 @@ sections:
       budgets — 200, 400 and 800 tokens — so the size trade-off can be measured
       rather than guessed.
 
+      The retrieval pipeline the agent sees at query time:
+
+      ```mermaid
+      flowchart LR
+          Q[Question] --> E[MiniLM embedding]
+          E --> F[FAISS IndexFlatIP<br/>top 5 x k candidates]
+          F --> C[Cross-encoder rerank<br/>ms-marco-MiniLM]
+          C --> T[Top-k citations<br/>to the agent]
+      ```
+
       Each chunk is embedded with `all-MiniLM-L6-v2` (L2-normalized, CPU) into
       a FAISS `IndexFlatIP` per chunk size; at query time the top 5x k embedding
       hits are re-scored by the `ms-marco-MiniLM-L-6-v2` cross-encoder. A
-      wave-3 ablation shows what the reranker is for: without it recall@5 rises
+      rerank ablation shows what the reranker is for: without it recall@5 rises
       to 1.000 but MRR@5 falls to 0.833 — it puts the *right* passage at the
       top of the list, which is what a reading LLM actually consumes. The
       agent layer is provider-agnostic per ADR-0004: a live OpenAI-compatible
@@ -121,6 +151,18 @@ sections:
       the same chunk-200 structure), a rerank on/off ablation, and a **seeded
       uniform-random baseline** (`retrieval_random_chunks_{size}`) marking the
       floor any ranker must beat.
+
+      The evaluation harness, end to end:
+
+      ```mermaid
+      flowchart LR
+          Q[26 graded questions] --> R[Retrieval grid<br/>recall@k, MRR@5]
+          Q --> A[Agent run<br/>mock or live]
+          R --> B[Random baseline<br/>delta]
+          A --> J[Keyword judge<br/>faithfulness, relevance, recall]
+          R --> M[reports/metrics.json<br/>+ figures]
+          J --> M
+      ```
 
       The RAG layer is scored with a judge (keyword judge by default): answer
       faithfulness, answer relevance, and context recall. Operations are
@@ -164,7 +206,7 @@ sections:
 
       - Embeddings beat random ranking by **+0.92 recall@5** — the system
         retrieves, it does not luck out.
-      - The chosen config matches the wave-2 default quality at **−65%
+      - The chosen config matches the earlier default quality at **−65%
         context cost** (≈804 vs ≈2,279 input tokens/query): recall is equal,
         MRR@5 is +0.032 better, and the estimated live cost per query drops
         to ≈ $0.00015.
@@ -197,24 +239,42 @@ sections:
 
   - id: conclusions
     text_md: |
-      Honest limits. First, mock-mode faithfulness (0.273) is a floor, not a
-      product metric: it reflects a canned answer, and the live-mode harness
-      exists precisely to score real grounding. Second, the judge is a
-      deterministic keyword rubric — directionally useful, cheap and
-      reproducible, but no substitute for a provider-model judge on a client
-      engagement. Third, the HPO grid is small and the corpus is homogeneous:
-      BGE-small tying MiniLM is evidence about *this* scale, not a universal
-      claim — on noisier or larger corpora the stronger encoder may pay off,
-      and the same harness will show it. Fourth, corpus coverage is bounded by
-      the dump itself: famous anchor titles verified absent from `20231101.en`,
-      and per-topic quotas saturate with peripheral articles.
+      Honest limits:
 
-      The engineering take-aways transfer directly: typed outputs that fail
-      loudly, evidence-only tool access, a seeded random floor and ablations in
-      every sweep (so "better" is always quantified), configuration chosen by
-      measurement and persisted as code (`retrieval_best`), and a single
-      provider-abstraction seam (ADR-0004) that keeps the whole system testable
-      offline and deployable live without code changes.
+      - Mock-mode faithfulness (0.273) is a floor, not a product metric: it
+        reflects a canned answer, and the live-mode harness exists precisely
+        to score real grounding.
+      - The judge is a deterministic keyword rubric — directionally useful,
+        cheap and reproducible, but no substitute for a provider-model judge
+        on a client engagement.
+      - The HPO grid is small and the corpus homogeneous: BGE-small tying
+        MiniLM is evidence about *this* scale, not a universal claim — on
+        noisier or larger corpora the stronger encoder may pay off, and the
+        same harness will show it.
+      - Corpus coverage is bounded by the dump itself: famous anchor titles
+        verified absent from `20231101.en`, and per-topic quotas saturate with
+        peripheral articles.
+
+      Lessons that transfer:
+
+      - Typed outputs that fail loudly beat prompt promises.
+      - Evidence-only tool access makes grounding enforceable, not hopeful.
+      - A seeded random floor plus ablations in every sweep means "better" is
+        always quantified before spend.
+      - Configuration chosen by measurement and persisted as code
+        (`retrieval_best`) keeps decisions reviewable.
+
+      **Roadmap**
+
+      - **Client-corpus onboarding path** — parameterized corpus prep + eval
+        harness so a client dataset gets the same graded measurement within
+        days.
+      - **Provider cost telemetry** — record per-query token usage in live
+        mode against the rate card, with drift alerts on cost per answer.
+      - **Provider-model judge upgrade** — swap the keyword judge for an LLM
+        rubric judge when credentials are available, reusing the same rows.
+      - **Interactive deployment** — serve the agent behind the showcase API
+        so eval questions can be rerun on demand.
 
       **Business implication:** the same discipline ports to a client dataset
       in days, not months — bounded scope, measured baselines, and an honest

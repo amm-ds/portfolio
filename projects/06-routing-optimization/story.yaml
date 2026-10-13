@@ -11,6 +11,13 @@ sections:
     practice — 100 customers already have more candidate solutions than any
     computer can enumerate.
 
+    Cost levers a routing solution moves:
+
+    - fuel and vehicle-hours per route, daily and fleet-wide
+    - overtime and missed delivery-window penalties
+    - fleet size — better consolidation defers vehicle purchases
+    - CO₂ reporting, increasingly a compliance line item
+
     Clients usually ask two questions: *how good is a quick, transparent
     heuristic, and what would a heavier optimizer buy us?* This project answers
     the first question honestly and gives the second a measurable baseline.
@@ -23,17 +30,19 @@ sections:
 - id: objectives
   text_md: |
     Serve all customers exactly once, within capacity and every time window,
-    while minimizing total distance — and prove it. Every solution is
-    machine-validated (exactly-once service, capacity, time windows) before it
-    is reported.
+    while minimizing total distance — and prove it. Success criteria:
 
-    Quality is measured as the optimality gap against published best-known
-    solutions on standard Solomon benchmark instances, not against our own
-    yesterday's run. The engineering targets: deterministic, seeded solvers a
-    client can audit line by line; total benchmark runtime in seconds; a
-    randomized-feasible reference that makes the value of constraint-aware
-    construction visible; and a small, reproducible HPO loop that tunes the
-    improvement stage without hiding what the search actually found.
+    | criterion | target | how it is verified |
+    |---|---|---|
+    | feasibility | every customer served exactly once, capacity and time windows respected | `RoutePlan` validator + per-route time simulation |
+    | quality | optimality gap vs published best-known values | curated `solomon100.csv` reference table |
+    | transparency | seeded, deterministic, auditable solvers | fixed seed, stdlib-only search, no hidden state |
+    | speed | full 10-instance benchmark including HPO in seconds | per-solver wall time |
+    | legibility | a feasible randomized floor in every chart | makes construction/improvement deltas readable |
+
+    Quality is measured against standard Solomon benchmark instances, not
+    against our own yesterday's run — and the HPO loop must report what it
+    actually found, including negative results.
 
     **Business implication:** the deliverable is not a route plan, it is a
     *verifiable quality number* — a stated optimality gap that procurement can
@@ -92,23 +101,35 @@ sections:
     solver speaks the same contract. Four deterministic, hand-written solvers,
     Euclidean distances, all seeded:
 
-    1. **randomized** — shuffle customers with the run seed, pack them in that
-       order into capacity/time-window-feasible routes, repair any route whose
-       return-to-depot leg breaks the horizon. No local search; the flat
-       reference that answers "what would blind feasibility cost?"
-    2. **nearest_neighbor** — greedy nearest-feasible insertion, seeded by the
-       earliest-due customer.
-    3. **clarke_wright** — Clarke–Wright savings with capacity and full-route
-       time-window feasibility checks on every merge.
-    4. **two_opt** — first-improvement 2-opt (intra-route reversals + 2-opt*
-       tail exchanges) applied to the better construction plan, accepting only
-       moves that keep every route feasible.
+    - **randomized** — shuffle customers with the run seed, pack them in that
+      order into capacity/time-window-feasible routes, repair any route whose
+      return-to-depot leg breaks the horizon. No local search; the flat
+      reference that answers "what would blind feasibility cost?"
+    - **nearest_neighbor** — greedy nearest-feasible insertion, seeded by the
+      earliest-due customer.
+    - **clarke_wright** — Clarke–Wright savings with capacity and full-route
+      time-window feasibility checks on every merge.
+    - **two_opt** — first-improvement 2-opt (intra-route reversals + 2-opt*
+      tail exchanges) applied to the better construction plan, accepting only
+      moves that keep every route feasible.
 
-    On top of that, a seeded random search (24 trials) tunes the improvement
-    stage: move budget 50–500, first- vs best-improvement acceptance,
-    tail-exchange on/off, and a best-of-k randomized-restart portfolio
-    (k = 1..8). Objective: mean distance across the 10 instances. The winner
-    is persisted to `params.yaml` and reported as **two_opt_tuned**.
+    The solver ladder each instance climbs:
+
+    ```mermaid
+    flowchart LR
+        A[randomized feasible floor] --> B[nearest_neighbor]
+        B --> C[clarke_wright savings]
+        C --> D[two_opt improvement]
+        D --> E[two_opt_tuned via seeded HPO]
+        E --> F[validated route plan]
+    ```
+
+    On top of the ladder, a seeded random search (24 trials) tunes the
+    improvement stage: move budget 50–500, first- vs best-improvement
+    acceptance, tail-exchange on/off, and a best-of-k randomized-restart
+    portfolio (k = 1..8). Objective: mean distance across the 10 instances.
+    The winner is persisted to `params.yaml` and reported as
+    **two_opt_tuned**.
 
     **Business implication:** the search itself taught that randomized
     restarts don't pay — measurement beats intuition, and a 24-trial,
@@ -117,17 +138,26 @@ sections:
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned]
 - id: evaluation
   text_md: |
-    Each solver runs on every instance; distances are compared against the
-    published best-known values and reported as gap %. Every route plan passes
-    the hard validator (all customers exactly once, capacity respected) plus a
-    full time-window simulation before it reaches the table.
+    Every candidate solution passes through the same improvement-and-audit
+    loop before it reaches any table or figure:
 
-    Runtimes are per-instance wall time (mean ≤ 13 ms even for the tuned run;
-    the whole benchmark including HPO finishes in ≈ 3 s). The route map shows
-    the best C101 plan, the solver profile shows the full ladder per instance,
-    and the convergence curves show the 2-opt descent move by move — where the
-    tuned and untuned runs coincide (C101) and where best-improvement
-    acceptance escapes the untuned local optimum (RC105).
+    ```mermaid
+    flowchart LR
+        S[solver output] --> V[hard validator: once-only, capacity]
+        V --> T[time-window simulation]
+        T -->|infeasible| X[pipeline halts loudly]
+        T -->|feasible| G[gap % vs published best-known]
+        G --> R[metrics.json, figures, report.html]
+    ```
+
+    Each solver runs on every instance; distances are compared against the
+    published best-known values and reported as gap %. Runtimes are
+    per-instance wall time (mean ≤ 13 ms even for the tuned run; the whole
+    benchmark including HPO finishes in ≈ 3 s). The route map shows the best
+    C101 plan, the solver profile shows the full ladder per instance, and the
+    convergence curves show the 2-opt descent move by move — where the tuned
+    and untuned runs coincide (C101) and where best-improvement acceptance
+    escapes the untuned local optimum (RC105).
 
     **Business implication:** because evaluation is cheap and fully
     reproducible, it can run inside CI on every change — optimization quality
@@ -177,24 +207,27 @@ sections:
     is. A fully auditable, seeded heuristic stack — construction + 2-opt + a
     24-trial HPO — reaches a mean gap of 19.08 % to solutions published by
     tuned ALNS/tabu metaheuristics, in milliseconds, with every route
-    machine-validated. That is the speed-to-value story: a baseline this cheap
-    and this honest gives any heavier optimizer a concrete bar it must clear
-    to justify its complexity.
+    machine-validated. Lessons that transfer: validate feasibility in code,
+    never by inspection; benchmark against published optima, or "improvements"
+    are unverifiable; keep a randomized feasible baseline in the chart —
+    without it the 68 % construction win is invisible; and demand negative
+    results from any tuning loop.
 
     Where the remaining gap lives: the ~19 % left on the table is mostly
     time-window-aware *sequencing* — deciding which customer joins which
     route and in what order. 2-opt neighborhoods only reverse or swap pieces
     of existing routes; they cannot re-sequence across routes the way
-    insertion, relocation, or ALNS destroy-and-repair moves can. Closing
-    toward single digits needs that richer neighborhood (roadmap), and the
-    HPO framework from this wave carries over directly to tune its operator
-    weights.
+    insertion, relocation, or destroy-and-repair moves can.
 
-    Lessons: (1) validate feasibility in code, never by inspection; (2)
-    benchmark against published optima, or "improvements" are unverifiable;
-    (3) keep a randomized feasible baseline in the chart — without it the 68 %
-    construction win is invisible; (4) demand negative results from HPO: here
-    it proved restarts and bigger budgets are not where the value is.
+    Roadmap — where this goes next:
+
+    - **Adaptive large-neighborhood search** behind the same `RoutePlan`
+      contract, closing toward single-digit gaps on tight-window instances;
+      the existing HPO harness tunes its operator weights.
+    - **Full 56-instance Solomon benchmark** to replace the 10-instance
+      subset, with per-family (C1/C2/R1/R2/RC1/RC2) gap reporting.
+    - **Hierarchical objective** matching the SINTEF convention — fewest
+      vehicles first, then distance — for dispatch-driven operations.
 
     **Business implication:** the roadmap is now evidence-priced — a
     metaheuristic track is justified only against a measured 19.08 % bar, and

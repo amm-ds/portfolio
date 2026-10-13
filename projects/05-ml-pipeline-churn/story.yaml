@@ -14,23 +14,30 @@ sections:
       curve, model selection with Optuna, and a threshold chosen on a
       business-cost curve rather than accepted as a library default.
 
+      | cost parameter | value | meaning |
+      |---|---|---|
+      | FP cost | 1 | one retention voucher / false alarm |
+      | FN cost | 5 | one lost customer |
+      | base churn rate | 8.8% | never-alarm accuracy: 0.912 |
+      | threshold grid | 41 points (0.00–1.00) | where the optimum is searched |
+
       **Business implication:** retention budget is a cost-minimization
       problem (FP=1, FN=5), so every artifact below is judged in money saved,
       not in accuracy or leaderboard rank.
   - id: objectives
     text_md: |
-      1. Rank customers by churn risk on deliberately messy tabular data,
-         with all preprocessing embedded in the fitted model (no train/serve
-         skew, deployable as-is).
-      2. Quantify value honestly: every metric is reported against a naive
-         majority baseline on the same holdout and the same cost model.
-      3. Select the classifier with Optuna (logistic vs gradient boosting,
-         seeded) — and check whether the selection objective (CV F1) actually
-         transfers to the business metric.
-      4. Decide the operating threshold by minimizing FP·1 + FN·5, and verify
-         whether isotonic calibration improves that optimum.
-      5. Enforce data quality as a gate: null rates and ranges are checked
-         before training, and a failure halts the pipeline loudly.
+      - Rank customers by churn risk on deliberately messy tabular data, with
+        all preprocessing embedded in the fitted model (no train/serve skew,
+        deployable as-is).
+      - Quantify value honestly: every metric is reported against a naive
+        majority baseline on the same holdout and the same cost model.
+      - Select the classifier with Optuna (logistic vs gradient boosting,
+        seeded) — and check whether the selection objective (CV F1) actually
+        transfers to the business metric.
+      - Decide the operating threshold by minimizing FP·1 + FN·5, and verify
+        whether isotonic calibration improves that optimum.
+      - Enforce data quality as a gate: null rates and ranges are checked
+        before training, and a failure halts the pipeline loudly.
 
       **Business implication:** the deliverable is an operating decision — a
       threshold and an expected cost — with the model selection metric held
@@ -51,13 +58,24 @@ sections:
       synthetic track mirrors production pathologies (missingness, outliers,
       drift) in a compact, reproducible frame, and the pipeline contract
       (DQ gates → embedded preprocessing → cost-tuned decision) transfers to
-      a client's CRM extract unchanged. Split: stratified 80/20 → 4,000
-      train / 1,000 holdout; a further 20% of train is reserved for
-      calibration only. No time axis exists, so random stratification is the
-      correct protocol.
+      a client's CRM extract unchanged. No time axis exists, so random
+      stratification is the correct protocol.
+
+      | column | type | role | pathology injected |
+      |---|---|---|---|
+      | age | float | numeric feature | ~2% NaN |
+      | tenure_months | float | numeric feature | long low-tenure tail |
+      | monthly_charges | float | numeric feature | one 9,999 outlier |
+      | support_calls | float | numeric feature | ~3% NaN |
+      | contract | str | categorical feature | 3 levels, unbalanced |
+      | churned | bool | target | 8.8% base rate |
+
+      - Split: stratified 80/20 → 4,000 train / 1,000 holdout.
+      - Calibration carve-out: a further 20% of train, disjoint from fitting
+        and from the holdout.
 
       **Business implication:** a client demo runs on data with the same
-      failure modes as their CRM export, and swapping in their real extract
+      failure modes as their CRM extract, and swapping in their real extract
       requires no code change — only a new DatasetContract row.
   - id: eda
     text_md: |
@@ -67,6 +85,12 @@ sections:
       (~111 vs ~68 mean monthly charges, overlapping distributions) and have
       shorter tenure (~15 vs ~25 months), and a long low-tenure tail is
       visible in the distribution panels.
+
+      | contract | rows | churn rate |
+      |---|---|---|
+      | month-to-month | 2,714 | 13.6% |
+      | one-year | 1,536 | 3.8% |
+      | two-year | 750 | 1.9% |
 
       The outlier charge sits far outside the bulk of both distributions —
       exactly the row that would distort an unguarded scaler — and the
@@ -80,13 +104,20 @@ sections:
     figures: [eda_churn_profile]
   - id: training
     text_md: |
-      One fitted sklearn Pipeline from raw DataFrame to probability. Numeric
-      branch: `OutlierCapper` clips at train-time 1%/99% quantiles, a
-      `MissingValueIndicator` appends `<col>_was_missing` flags before
-      imputation, then median imputation and standard scaling. Categorical
-      branch: most-frequent imputation + one-hot with `handle_unknown=
-      'ignore'`. All preprocessing lives inside the estimator, so the
-      artifact's deployment contract is "hand us the raw row".
+      All preprocessing lives inside one fitted sklearn Pipeline, so the
+      artifact's deployment contract is "hand us the raw row":
+
+      ```mermaid
+      flowchart LR
+          A[raw CRM row<br/>NaNs, outlier, strings] --> B[OutlierCapper<br/>train-time 1%/99% caps]
+          B --> C[MissingValueIndicator<br/>was_missing flags]
+          C --> D[SimpleImputer median<br/>+ StandardScaler]
+          E[contract] --> F[most_frequent impute<br/>+ OneHot ignore-unknown]
+          D --> G[ColumnTransformer]
+          F --> G
+          G --> H[classifier<br/>logreg or HistGB]
+          H --> I[predict_proba]
+      ```
 
       **Selection:** a wave-2 `GridSearchCV` over C keeps the logistic
       baseline; Optuna (seeded TPE, 25 trials, median pruning, stratified-CV
@@ -102,19 +133,28 @@ sections:
       config is recorded in versioned config, not in someone's notebook.
   - id: evaluation
     text_md: |
-      Holdout: 1,000 stratified rows, never seen by HPO, fitting, or
-      calibration. Metrics via `portfolio_eval`: ROC-AUC, macro
-      precision/recall/F1, business cost (FP·1 + FN·5) at each run's operating
-      point, and ECE (expected calibration error, 10 bins) for the selected
-      runs. Five runs: naive majority (constant probability = base rate), the
-      wave-2 logistic at 0.5 and at its cost optimum, and the selected model
-      raw and isotonic-calibrated at their cost optima.
+      Every candidate is scored through the same decision procedure, so
+      thresholds and models compare like-for-like on money:
 
-      Diagnostics: reliability diagram (raw vs calibrated, ECE in the
-      legend), permutation importance (holdout F1, 5 repeats, error bars),
-      PR curves with the naive base-rate floor, decision-curve analysis (net
-      benefit vs treat-all / treat-none), and the business-cost curve with
-      every optimum marked.
+      ```mermaid
+      flowchart LR
+          A[predict_proba on<br/>1,000-row holdout] --> B[41-point threshold grid]
+          B --> C[FP·1 + FN·5<br/>cost per threshold]
+          C --> D[cost-optimal threshold]
+          D --> E[RunResult<br/>F1, ROC-AUC, ECE, cost]
+          E --> F{calibration<br/>helps cost?}
+          F -->|yes| G[ship calibrated]
+          F -->|no| H[ship raw, keep ECE noted]
+      ```
+
+      Holdout rows are never seen by HPO, fitting, or calibration. Metrics
+      via `portfolio_eval`: ROC-AUC, macro precision/recall/F1, business cost
+      (FP·1 + FN·5) at each run's operating point, and ECE (10 bins) for the
+      selected runs. Five runs: naive majority (constant probability = base
+      rate), the wave-2 logistic at 0.5 and at its cost optimum, and the
+      selected model raw and isotonic-calibrated at their cost optima.
+      Diagnostics add permutation importance (5 repeats, error bars), PR
+      curves with the naive base-rate floor, and decision-curve analysis.
 
       **Business implication:** calibration improved probabilities 10×
       (ECE 0.157 → 0.017) without moving the cost optimum — know which metric
@@ -157,16 +197,24 @@ sections:
       Pipeline-embedded preprocessing is the deployment contract: capping,
       flags, imputation, and scaling ship inside the artifact, so serving is
       one line of code and cannot drift from training — a data bug either
-      passes the DQ gate or stops the pipeline.
+      passes the DQ gate or stops the pipeline. Three lessons generalize:
 
-      Three lessons generalize. **First**, threshold choice is a business
-      decision: tuning to the cost curve cut cost by a fifth with zero
-      retraining. **Second**, optimize what you deploy: CV F1 selected a
-      model that lost on the business metric — scoring trials by business
-      cost (roadmap) closes that gap. **Third**, calibration is a product
-      decision: it made probabilities trustworthy (ECE 0.157 → 0.017) without
-      moving the alarm's cost — the decision-curve and business-cost figures
-      are the arbiters, not the reliability diagram alone.
+      - Threshold choice is a business decision: tuning to the cost curve cut
+        cost by a fifth with zero retraining.
+      - Optimize what you deploy: selection metrics must be scored against
+        the business metric, not a proxy.
+      - Calibration is a product decision: trustworthy probabilities and
+        cost-optimal decisions are different deliverables — ship both
+        evaluations.
+
+      Roadmap:
+
+      - **Cost-aware HPO objectives** — score Optuna trials by CV business
+        cost (FP=1/FN=5) so selection and deployment optimize the same thing.
+      - **CRM-extract onboarding path** — swap the synthetic generator for a
+        client's extract behind the same DatasetContract, no pipeline changes.
+      - **Paired bootstrap CIs on business cost** — confidence intervals on
+        the cost deltas that decide the operating point.
 
       **Business implication:** the framework transfers to a client's CRM
       extract unchanged — same gates, same artifact contract, same cost
