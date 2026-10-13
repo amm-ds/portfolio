@@ -68,6 +68,16 @@ def figures(pid: str) -> list[str]:
     return [f.stem for f in figs]
 
 
+@app.get("/projects/{pid}/figures/{name}.json")
+def figure_json(pid: str, name: str) -> Any:
+    """Plotly JSON payload (same content the React app could render natively)."""
+    f = _project_dir(pid) / "reports" / "figures" / f"{name}.json"
+    if not f.exists():
+        raise HTTPException(status_code=404, detail=f"no figure JSON {name!r} for {pid}")
+    data: Any = json.loads(f.read_text())
+    return data
+
+
 @app.get("/projects/{pid}/figures/{name}", response_class=HTMLResponse)
 def figure(pid: str, name: str) -> str:
     f = _project_dir(pid) / "reports" / "figures" / f"{name}.html"
