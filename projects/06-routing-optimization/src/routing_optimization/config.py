@@ -10,6 +10,8 @@ from pathlib import Path
 from portfolio_core.config import Settings
 from pydantic import Field
 
+from routing_optimization.schemas import Acceptance
+
 
 def default_instances() -> list[str]:
     """The curated Solomon 100-customer subset used by this showcase."""
@@ -25,6 +27,11 @@ def default_best_known_path() -> Path:
         / "best_known"
         / "solomon100.csv"
     )
+
+
+def default_acceptance_choices() -> list[Acceptance]:
+    """Candidate acceptance rules sampled by the HPO search."""
+    return ["first", "best"]
 
 
 class VRPConfig(Settings):
@@ -47,6 +54,32 @@ class VRPConfig(Settings):
     solver_names: list[str] = Field(
         default_factory=lambda: ["nearest_neighbor", "clarke_wright", "two_opt"],
         description="Base solvers benchmarked per instance; two_opt polishes the better base plan.",
+    )
+    hpo_trials: int = Field(default=24, ge=1, description="Seeded random-search trials for HPO.")
+    hpo_budget_choices: list[int] = Field(
+        default_factory=lambda: [50, 100, 200, 500],
+        description="Candidate 2-opt move budgets sampled by the HPO search.",
+    )
+    hpo_acceptance_choices: list[Acceptance] = Field(
+        default_factory=default_acceptance_choices,
+        description="Candidate acceptance rules sampled by the HPO search.",
+    )
+    hpo_tail_exchange_choices: list[bool] = Field(
+        default_factory=lambda: [True, False],
+        description="Candidate tail-exchange (2-opt*) on/off sampled by the HPO search.",
+    )
+    hpo_restart_choices: list[int] = Field(
+        default_factory=lambda: [1, 2, 3, 4, 6, 8],
+        description="Candidate best-of-k randomized-restart portfolio sizes.",
+    )
+    convergence_instances: list[str] = Field(
+        default_factory=lambda: ["C101", "RC105"],
+        description="Instances drawn in the convergence figures.",
+    )
+    params_path: Path | None = Field(
+        default=None,
+        description="Override for the params.yaml the solve stage writes "
+        "(tests point this at a tmp file; default: the project params.yaml).",
     )
 
 

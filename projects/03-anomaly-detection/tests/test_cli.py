@@ -13,7 +13,10 @@ runner = CliRunner()
 @pytest.fixture()
 def tiny_config(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> AnomalyConfig:
     config = AnomalyConfig(
-        n=1_500, data_dir=str(tmp_path / "data"), reports_dir=str(tmp_path / "reports")
+        n=1_500,
+        hpo_trials=4,
+        data_dir=str(tmp_path / "data"),
+        reports_dir=str(tmp_path / "reports"),
     )
     monkeypatch.setattr(cli, "get_config", lambda: config)
     return config
@@ -63,6 +66,17 @@ def test_features_and_train_commands(tiny_config: AnomalyConfig) -> None:
         assert (tiny_config.models_dir / f"{name}.joblib").exists()
 
 
+def test_tune_command(tiny_config: AnomalyConfig) -> None:
+    assert runner.invoke(cli.app, ["prepare"]).exit_code == 0
+    assert runner.invoke(cli.app, ["features"]).exit_code == 0
+    assert runner.invoke(cli.app, ["train"]).exit_code == 0
+    result = runner.invoke(cli.app, ["tune"])
+    assert result.exit_code == 0, result.output
+    for name in tiny_config.models:
+        assert (tiny_config.tuned_models_dir / f"{name}_tuned.joblib").exists()
+        assert (tiny_config.tuned_models_dir / f"{name}_hpo.json").exists()
+
+
 def test_evaluate_command(tiny_config: AnomalyConfig) -> None:
     assert runner.invoke(cli.app, ["prepare"]).exit_code == 0
     assert runner.invoke(cli.app, ["features"]).exit_code == 0
@@ -80,6 +94,7 @@ def test_all_command_runs_full_pipeline(tiny_config: AnomalyConfig) -> None:
     assert tiny_config.raw_path.exists()
     assert tiny_config.features_path.exists()
     assert (tiny_config.models_dir / "ocsvm.joblib").exists()
+    assert (tiny_config.tuned_models_dir / "isolation_forest_tuned.joblib").exists()
     assert (tiny_config.eval_dir / "metrics.json").exists()
     assert "roc_auc" in result.output
 

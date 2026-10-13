@@ -1,0 +1,168 @@
+"""Optuna model selection: logistic regression vs histogram gradient boosting.
+
+Fully seeded (TPE sampler + stratified folds), so a study is a deterministic
+function of (X, y, seed, trials). The objective scores stratified-CV F1 of the
+*full pipeline* — preprocessing stays inside the estimator for every trial —
+with per-fold intermediate values reported for median pruning.
+"""
+
+from dataclasses import dataclass, field
+from typing import Any, cast
+
+import numpy as np
+import optuna
+import pandas as pd  # type: ignore[import-untyped]
+from optuna.pruners import MedianPruner
+from optuna.samplers import TPESampler
+from optuna.trial import Trial
+from portfolio_core.logging import get_logger
+from sklearn.metrics import f1_score
+from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]
+
+from churn_pipeline.config import ChurnConfig
+from churn_pipeline.model import build_pipeline
+
+log = get_logger(__name__)
+
+MODEL_FAMILIES = ("logreg", "histgb")
+
+
+@dataclass(frozen=True)
+class ModelSelection:
+    """Outcome of one HPO study: the production classifier config."""
+
+    family: str
+    params: dict[str, Any]
+    best_cv_f1: float
+    n_trials: int
+    family_scores: dict[str, float] = field(default_factory=dict)
+
+
+def suggest_params(trial: Trial) -> tuple[str, dict[str, Any]]:
+    """Sample one candidate from the joint search space.
+
+    LogisticRegression: C (log 1e-3..1e2), l1_ratio (0..1; 0 = l2, 1 = l1,
+    in-between = elasticnet — sklearn ≥ 1.9 unified API, solver resolved for
+    speed: lbfgs for pure l2, saga otherwise).
+    HistGradientBoostingClassifier: learning_rate (log 0.05..0.3),
+    max_iter (50..150), max_leaf_nodes (15..31), min_samples_leaf (20..60) —
+    ranges capped to keep the full selection pass under a minute.
+    """
+    family = trial.suggest_categorical("model", MODEL_FAMILIES)
+    if family == "logreg":
+        # sklearn >= 1.9 unified API: no `penalty` kwarg; l1_ratio=0 is l2,
+        # l1_ratio=1 is l1, in-between is elasticnet (solver resolved later).
+        params = {
+            "C": trial.suggest_float("C", 1e-3, 1e2, log=True),
+            "l1_ratio": trial.suggest_float("l1_ratio", 0.0, 1.0),
+        }
+    else:
+        params = {
+            "learning_rate": trial.suggest_float("learning_rate", 0.05, 0.3, log=True),
+            "max_iter": trial.suggest_int("max_iter", 50, 150),
+            "max_leaf_nodes": trial.suggest_int("max_leaf_nodes", 15, 31),
+            "min_samples_leaf": trial.suggest_int("min_samples_leaf", 20, 60),
+        }
+    return family, params
+
+
+def _resolve_logreg(params: dict[str, Any]) -> dict[str, Any]:
+    """Resolve solver from l1_ratio: lbfgs for pure l2, saga otherwise."""
+    resolved: dict[str, Any] = {"C": float(params["C"]), "l1_ratio": float(params["l1_ratio"])}
+    if resolved["l1_ratio"] == 0.0:
+        resolved["solver"] = "lbfgs"
+        resolved["max_iter"] = 1000
+    else:
+        resolved["solver"] = "saga"
+        resolved["max_iter"] = 500
+    return resolved
+
+
+def build_estimator(cfg: ChurnConfig, family: str, params: dict[str, Any]) -> Any:
+    """Instantiate the full pipeline for a family with resolved params."""
+    resolved = _resolve_logreg(params) if family == "logreg" else dict(params)
+    return build_pipeline(cfg, family=family, params=resolved)
+
+
+def _objective(cfg: ChurnConfig, X: pd.DataFrame, y: pd.Series) -> Any:
+    """Stratified-CV F1 with per-fold intermediates for median pruning."""
+
+    def fn(trial: Trial) -> float:
+        family, params = suggest_params(trial)
+        pipe = build_estimator(cfg, family, params)
+        folds = StratifiedKFold(n_splits=cfg.cv_folds, shuffle=True, random_state=cfg.seed)
+        f1s = []
+        for step, (tr, va) in enumerate(folds.split(X, y)):
+            pipe.fit(X.iloc[tr], y.iloc[tr])
+            pred = pipe.predict(X.iloc[va])
+            fold_f1 = float(f1_score(y.iloc[va], pred))
+            f1s.append(fold_f1)
+            trial.report(fold_f1, step=step)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
+        return float(np.mean(f1s))
+
+    return fn
+
+
+def run_study(
+    cfg: ChurnConfig,
+    X_train: pd.DataFrame,
+    y_train: pd.Series,
+    n_trials: int | None = None,
+) -> ModelSelection:
+    """Seeded TPE study over the joint space with median pruning.
+
+    Fits run single-threaded: OpenMP oversubscription makes HistGB ~200x
+    slower than sequential on this machine (measured), and 75 sequential fits
+    still take only a few seconds.
+    """
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    study = optuna.create_study(
+        direction="maximize",
+        sampler=TPESampler(seed=cfg.seed),
+        pruner=MedianPruner(n_startup_trials=6, n_min_trials=3),
+    )
+    with threadpool_limits(limits=1):
+        study.optimize(
+            _objective(cfg, X_train, y_train),
+            n_trials=n_trials or cfg.hpo_trials,
+            show_progress_bar=False,
+        )
+    best = study.best_trial
+    best_value = cast(float, best.value)
+    family = str(best.params["model"])
+    params = {k: v for k, v in best.params.items() if k != "model"}
+    family_scores = {
+        fam: float(np.mean([t.value for t in study.trials if t.value is not None]))
+        for fam in MODEL_FAMILIES
+    }
+    log.info(
+        "hpo: selected %s %s (cv f1=%.4f over %d trials)",
+        family,
+        {k: round(v, 4) for k, v in params.items()},
+        best_value,
+        len(study.trials),
+    )
+    return ModelSelection(
+        family=family,
+        params=params,
+        best_cv_f1=best_value,
+        n_trials=len(study.trials),
+        family_scores=family_scores,
+    )
+
+
+def cv_f1_of_selected(
+    cfg: ChurnConfig, selection: ModelSelection, X: pd.DataFrame, y: pd.Series
+) -> float:
+    """Out-of-fold F1 of the selected pipeline (used by tests, not the CLI)."""
+    pipe = build_estimator(cfg, selection.family, selection.params)
+    pred = cross_val_predict(
+        pipe,
+        X,
+        y,
+        cv=StratifiedKFold(n_splits=cfg.cv_folds, shuffle=True, random_state=cfg.seed),
+    )
+    return float(f1_score(y, pred))

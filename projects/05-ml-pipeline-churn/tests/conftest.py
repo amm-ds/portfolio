@@ -17,10 +17,20 @@ def small_cfg(tmp_path: Path) -> ChurnConfig:
         seed=7,
         c_grid=[0.1, 1.0],
         cv_folds=2,
+        hpo_trials=6,
+        calib_frac=0.25,
         threshold_grid=[0.2, 0.4, 0.6, 0.8],
         data_dir=tmp_path / "data",
         reports_dir=tmp_path / "reports",
     )
+
+
+@pytest.fixture()
+def params_file(tmp_path: Path) -> Path:
+    """Isolated params.yaml so HPO never rewrites the repo's production config."""
+    path = tmp_path / "params.yaml"
+    path.write_text("model_family: auto\nhpo_trials: 6\n")
+    return path
 
 
 @pytest.fixture()

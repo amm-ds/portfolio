@@ -20,10 +20,14 @@ from portfolio_core.logging import get_logger
 from portfolio_core.plotting import save_html, save_json
 from portfolio_core.schemas import DatasetContract
 from portfolio_eval.report import ReportBuilder
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.model_selection import train_test_split
+from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]
 
 from churn_pipeline.config import ChurnConfig
 from churn_pipeline.eda import eda_churn_profile_figure
 from churn_pipeline.evaluate import artifact_paths, evaluate_holdout
+from churn_pipeline.hpo import ModelSelection, build_estimator, run_study
 from churn_pipeline.model import (
     CATEGORICAL_COLS,
     NUMERIC_COLS,
@@ -131,22 +135,82 @@ def prepare_core(cfg: ChurnConfig) -> Path:
     return out
 
 
-def train_core(cfg: ChurnConfig) -> Path:
-    """Stratified 80/20 split + GridSearchCV over C; persist model + holdout."""
+def _write_production_config(params_file: Path, family: str, params: dict[str, Any]) -> None:
+    """Record the selected config in params.yaml (idempotent on reruns)."""
+
+    def _clean(value: float) -> float | int:
+        return int(value) if float(value).is_integer() else float(value)
+
+    data: dict[str, Any] = yaml.safe_load(params_file.read_text()) or {}
+    data["model_family"] = family
+    data["model_params"] = {k: _clean(v) for k, v in sorted(params.items())}
+    params_file.write_text(yaml.safe_dump(data, sort_keys=False, default_flow_style=False))
+
+
+def train_core(cfg: ChurnConfig, params_file: Path = Path("params.yaml")) -> Path:
+    """Split + wave-2 grid search + Optuna selection + calibration; persist artifacts."""
     df = pl.read_parquet(cfg.data_dir / "churn.parquet").to_pandas()
     X_train, X_test, y_train, y_test = split_holdout(cfg, df)
 
     grid = train_model(cfg, X_train, y_train)
     best = float(grid.best_score_)
-    log.info("train: best C=%s (cv f1=%.4f)", grid.best_params_["clf__C"], best)
+    log.info("train: wave-2 logreg best C=%s (cv f1=%.4f)", grid.best_params_["clf__C"], best)
 
-    model_path, holdout_path = artifact_paths(cfg)
-    with model_path.open("wb") as fh:
+    # Model selection: HPO only when the config says 'auto'; else use the
+    # production config already recorded in params.yaml.
+    if cfg.model_family == "auto":
+        selection = run_study(cfg, X_train, y_train)
+        _write_production_config(params_file, selection.family, selection.params)
+    else:
+        selection = ModelSelection(
+            family=cfg.model_family,
+            params=dict(cfg.model_params),
+            best_cv_f1=float("nan"),
+            n_trials=0,
+        )
+        log.info("train: using production config from %s", params_file)
+
+    X_fit, X_calib, y_fit, y_calib = train_test_split(
+        X_train,
+        y_train,
+        test_size=cfg.calib_frac,
+        stratify=y_train,
+        random_state=cfg.seed,
+    )
+    # Single-threaded fits: OpenMP oversubscription slows HistGB ~200x here.
+    with threadpool_limits(limits=1):
+        selected = build_estimator(cfg, selection.family, selection.params)
+        selected.fit(X_fit, y_fit)
+        calibrated = CalibratedClassifierCV(
+            estimator=build_estimator(cfg, selection.family, selection.params),
+            method="isotonic",
+            cv=2,
+        )
+        calibrated.fit(X_calib, y_calib)
+
+    paths = artifact_paths(cfg)
+    with paths["logreg"].open("wb") as fh:
         pickle.dump(grid.best_estimator_, fh)
+    with paths["selected"].open("wb") as fh:
+        pickle.dump(selected, fh)
+    with paths["selected_calibrated"].open("wb") as fh:
+        pickle.dump(calibrated, fh)
     holdout = X_test.copy()
     holdout[TARGET_COL] = y_test.to_numpy()
-    pd.DataFrame(holdout).to_parquet(holdout_path)
+    pd.DataFrame(holdout).to_parquet(paths["holdout"])
 
+    (cfg.data_dir / "model_selection.json").write_text(
+        json.dumps(
+            {
+                "family": selection.family,
+                "params": {k: float(v) for k, v in selection.params.items()},
+                "best_cv_f1": selection.best_cv_f1,
+                "n_trials": selection.n_trials,
+                "family_scores": selection.family_scores,
+            },
+            indent=2,
+        )
+    )
     meta = {
         "best_params": {k: float(v) for k, v in grid.best_params_.items()},
         "cv_f1": best,
@@ -155,21 +219,23 @@ def train_core(cfg: ChurnConfig) -> Path:
         "train_churn_rate": float(y_train.mean()),
     }
     (cfg.data_dir / "model_meta.json").write_text(json.dumps(meta, indent=2))
-    return model_path
+    return paths["logreg"]
 
 
 def evaluate_core(cfg: ChurnConfig) -> Path:
     """Holdout metrics + figures + HTML report; JSON figures for the showcase API."""
-    model_path, holdout_path = artifact_paths(cfg)
-    with model_path.open("rb") as fh:
-        model = pickle.load(fh)
-    holdout = pd.read_parquet(holdout_path)
+    paths = artifact_paths(cfg)
+    models = {}
+    for key in ("logreg", "selected", "selected_calibrated"):
+        with paths[key].open("rb") as fh:
+            models[key] = pickle.load(fh)
+    holdout = pd.read_parquet(paths["holdout"])
     X_test = holdout[NUMERIC_COLS + CATEGORICAL_COLS]
     y_test = holdout[TARGET_COL].astype(int)
     meta = json.loads((cfg.data_dir / "model_meta.json").read_text())
 
-    runs, figures, optimal = evaluate_holdout(
-        cfg, model, X_test, y_test, train_base_rate=float(meta["train_churn_rate"])
+    runs, figures, summary = evaluate_holdout(
+        cfg, models, X_test, y_test, train_base_rate=float(meta["train_churn_rate"])
     )
 
     builder = ReportBuilder(
@@ -181,13 +247,17 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     for name, fig in figures.items():
         save_json(fig, cfg.reports_dir / "figures" / f"{name}.json")
 
-    naive = runs[0].get("business_cost")
-    tuned = runs[2].get("business_cost")
     log.info(
-        "evaluate: optimal threshold %.3f, business cost %.0f (naive %.0f) vs t=0.5",
-        optimal,
-        tuned.value if tuned else float("nan"),
-        naive.value if naive else float("nan"),
+        "evaluate: selected t=%.3f cost=%.0f (ece %.3f) | isotonic t=%.3f cost=%.0f (ece %.3f) "
+        "| naive %.0f | calibration_helps=%s",
+        summary["selected_opt"],
+        summary["selected_cost"],
+        summary["selected_ece"],
+        summary["calibrated_opt"],
+        summary["calibrated_cost"],
+        summary["calibrated_ece"],
+        summary["naive_cost"],
+        summary["calibration_helps"],
     )
     return cfg.reports_dir / "report.html"
 
@@ -209,7 +279,7 @@ def train(
     params_file: OptParams = Path("params.yaml"),
 ) -> None:
     """Train the pipeline with grid-searched C on a stratified split."""
-    train_core(load_config(params_file, n, seed))
+    train_core(load_config(params_file, n, seed), params_file=params_file)
 
 
 @app.command()
@@ -231,7 +301,7 @@ def run_all(
     """Run the full pipeline: prepare → train → evaluate."""
     cfg = load_config(params_file, n, seed)
     prepare_core(cfg)
-    train_core(cfg)
+    train_core(cfg, params_file=params_file)
     evaluate_core(cfg)
 
 

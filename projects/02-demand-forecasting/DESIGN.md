@@ -77,6 +77,46 @@ implementation would `portfolio_core.io.fetch` the UCI snapshot (checksum
 pinned), map `StockCode → product`, `Country → store`, sum `Quantity` per day,
 and keep every downstream module unchanged.
 
+### E. Hyperparameter optimisation (wave 3)
+
+- **Grid search**: simple and reproducible, but scales poorly beyond 2–3
+  dimensions and cannot prune bad regions early.
+- **Optuna TPE with median pruning**: Bayesian search over the 6-dimensional
+  HGB space, with per-fold intermediate reports so unpromising trials stop
+  after ~2 of 4 folds. Seeded sampler → deterministic search trajectory.
+
+**Decision: Optuna (TPESampler seed=42, MedianPruner, ~50 trials)** with the
+objective = mean MAE over the *same* date-aligned folds as the backtest
+(shared `cv_row_folds`), so selection and final judgement use one protocol.
+Best params are persisted to `data/hpo_best.json` and mirrored into
+`ForecastConfig.hgb_tuned` defaults + `params.yaml` (production config). The
+`hpo` stage is deliberately **not** part of `cli all` (minutes, not seconds).
+
+### F. Neural model: what architecture, and what for
+
+- Per-series embeddings + MLP over the same lag/calendar features: reuses the
+  leakage-safe feature frame, trains in seconds on CPU, and plugs into the
+  identical backtest via a sklearn-style `fit/predict` wrapper.
+- A sequence model (LSTM/Transformer over raw windows) would need a different
+  data pipeline and longer training; deferred until the simple NN justifies it.
+
+**Decision: embedding + MLP (temporal.py)** with a hand-written loop (Adam,
+grad clip 1.0, early stop on a time-ordered inner validation slice, full
+seeded determinism). Honest verdict from the backtest: it lands near the
+linear baseline and behind HGB — reported as-is (tree ensembles dominate on
+small tabular lag problems; a sequence model is the roadmap answer).
+
+### G. Hierarchical reconciliation
+
+- Full MinT (covariance-based projection) is statistically heavier and needs
+  residual covariance estimation across 24 series — overkill for a showcase.
+- **MinT-lite**: bottom-up store aggregation, direct store-level model, then a
+  scalar shrinkage `w` distributing the parent-child discrepancy across
+  children. `w` is grid-estimated on the embargoed previous fold by
+  minimizing reconciled store-level MAE (a precision-ratio variant is kept
+  for comparison). Coherence after reconciliation is exactly `(1-w)` times
+  the incoherence before (property-tested).
+
 ## Pipeline
 
 ```mermaid
@@ -85,10 +125,15 @@ flowchart LR
     B --> C[panel.parquet<br/>17,520 rows]
     C --> D[features<br/>shift lags 1/7/14 + calendar]
     D --> E[features.parquet<br/>17,184 rows]
-    E --> F[train<br/>ridge + hgb, global one-hot]
+    E --> HPO[Optuna HPO<br/>50 trials, seeded] --> CFG[hgb_tuned<br/>production params]
+    E --> F[train<br/>6 models incl. temporal_net]
+    CFG --> F
     F --> G[models.pkl]
     E --> H[evaluate<br/>TimeSeriesCV 4 folds, gap 7]
+    G --> H
     H --> I[metrics.json<br/>report.html<br/>figures html+json]
+    H --> REC[reconcile<br/>MinT-lite store level]
+    REC --> I
 ```
 
 ## Leakage-control invariants (tested)
@@ -102,6 +147,24 @@ flowchart LR
 
 ## Changelog
 
+- **0.3.0 (2026-10-12)** — wave 3 (production depth): seeded Optuna HPO
+  (`hpo.py`, TPESampler seed 42 + MedianPruner, resumable SQLite storage,
+  per-trial checkpointing; 56 complete trials) over 6 HGB hyperparameters with
+  the backtest's own CV folds as objective; production config `hgb_tuned`
+  persisted to `data/hpo_best.json` + `params.yaml` + `HGBTunedConfig`
+  defaults. Hand-written PyTorch `temporal_net` (`temporal.py`: series
+  embeddings + MLP, Adam/grad-clip/early-stop loop, fully seeded) through the
+  identical backtest. MinT-lite hierarchical reconciliation (`reconcile.py`:
+  store-level aggregation, grid-estimated scalar shrinkage on the embargoed
+  previous fold, exact coherence property). Custom figures: `hpo_history`,
+  `hpo_importance`, `reconciliation_coherence`, takeaway subtitle on
+  `forecast_vs_actual`. Real run (seed 42): ladder naive_mean 31.762 /
+  naive_last 14.476 / ridge 9.116 / hgb 8.619 / **hgb_tuned 8.529** /
+  temporal_net 9.341 MAE; hgb_tuned improves on hgb in every fold;
+  reconciliation w=0.05, store MAE 23.892 → 23.837, incoherence 24.125 →
+  22.919. Known platform note: HGB's OpenMP reductions make results bitwise
+  stable only within fixed thread conditions; quoted numbers come from one
+  canonical run.
 - **0.2.0 (2026-10-12)** — wave 2: added `naive_mean` (global train mean) and
   `naive_last` (per-series persistence) baselines through the same backtest;
   `forecast_vs_actual` now overlays the best model vs the strongest naive;

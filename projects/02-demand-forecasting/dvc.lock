@@ -5,13 +5,13 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
-      size: 246
+      md5: d9ca5094aac8f88b1cd81b9c24157429
+      size: 625
     - path: src/demand_forecasting
       hash: md5
-      md5: c06f521bec29c6360a026eb7ed424eb5.dir
-      size: 75036
-      nfiles: 15
+      md5: 20100b00aa044fd770cc5776085de914.dir
+      size: 145290
+      nfiles: 21
     outs:
     - path: data/dataset.json
       hash: md5
@@ -30,13 +30,13 @@ stages:
       size: 21882
     - path: params.yaml
       hash: md5
-      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
-      size: 246
+      md5: d9ca5094aac8f88b1cd81b9c24157429
+      size: 625
     - path: src/demand_forecasting
       hash: md5
-      md5: c06f521bec29c6360a026eb7ed424eb5.dir
-      size: 75036
-      nfiles: 15
+      md5: 20100b00aa044fd770cc5776085de914.dir
+      size: 145290
+      nfiles: 21
     outs:
     - path: data/features.parquet
       hash: md5
@@ -51,18 +51,18 @@ stages:
       size: 112084
     - path: params.yaml
       hash: md5
-      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
-      size: 246
+      md5: d9ca5094aac8f88b1cd81b9c24157429
+      size: 625
     - path: src/demand_forecasting
       hash: md5
-      md5: c06f521bec29c6360a026eb7ed424eb5.dir
-      size: 75036
-      nfiles: 15
+      md5: 20100b00aa044fd770cc5776085de914.dir
+      size: 145290
+      nfiles: 21
     outs:
     - path: data/models.pkl
       hash: md5
-      md5: daf58b56007c9b816b5693e66eb7adbf
-      size: 227858
+      md5: 5da66b9d8a1cdfcd392715e35860b61c
+      size: 568637
   evaluate:
     cmd: uv run python -m demand_forecasting.cli evaluate
     deps:
@@ -76,24 +76,65 @@ stages:
       size: 21882
     - path: params.yaml
       hash: md5
-      md5: 2846fa8f8ad46a6b3907ba399abfdcfc
-      size: 246
+      md5: d9ca5094aac8f88b1cd81b9c24157429
+      size: 625
     - path: src/demand_forecasting
       hash: md5
-      md5: c06f521bec29c6360a026eb7ed424eb5.dir
-      size: 75036
-      nfiles: 15
+      md5: 20100b00aa044fd770cc5776085de914.dir
+      size: 145290
+      nfiles: 21
     outs:
     - path: reports/figures
       hash: md5
-      md5: 947945a44189d76e24991dcdd7257466.dir
-      size: 370197
-      nfiles: 10
+      md5: fc98debf8f2b8a9fff852748cb64df4a.dir
+      size: 519174
+      nfiles: 16
     - path: reports/metrics.json
       hash: md5
-      md5: 9fbbcfaf870cf7d81e1ed522a1376f7e
-      size: 468
+      md5: 6b1569f3af50cd446cbc941f6436c581
+      size: 708
     - path: reports/report.html
       hash: md5
-      md5: bd6ffb28bc87e7e69e28167cc893af02
-      size: 1752
+      md5: f4f044fa8893fde58e47d2380ced8a0c
+      size: 1903
+  hpo:
+    cmd: uv run python -m demand_forecasting.cli hpo
+    deps:
+    - path: data/features.parquet
+      hash: md5
+      md5: 33251b91a47c0ea85816fde2441d9a72
+      size: 112084
+    - path: params.yaml
+      hash: md5
+      md5: d9ca5094aac8f88b1cd81b9c24157429
+      size: 625
+    - path: src/demand_forecasting
+      hash: md5
+      md5: 20100b00aa044fd770cc5776085de914.dir
+      size: 145290
+      nfiles: 21
+    outs:
+    - path: data/hpo_best.json
+      hash: md5
+      md5: 0dc00f2f73e3240845b7d7ee116062dc
+      size: 322
+    - path: data/hpo_study.db
+      hash: md5
+      md5: 367ec59cfb723549ab44b03e43444e25
+      size: 196608
+    - path: reports/figures/hpo_history.html
+      hash: md5
+      md5: 67685321d7d55bb9771fc0fac9244546
+      size: 10690
+    - path: reports/figures/hpo_history.json
+      hash: md5
+      md5: 5434f3b1753bed29f041c41a92b01706
+      size: 9693
+    - path: reports/figures/hpo_importance.html
+      hash: md5
+      md5: 6011bcb6093fa772852ff34a6dde78bc
+      size: 8471
+    - path: reports/figures/hpo_importance.json
+      hash: md5
+      md5: d03748d997540ca1760b423348a34f50
+      size: 7474

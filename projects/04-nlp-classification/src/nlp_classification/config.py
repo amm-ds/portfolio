@@ -10,6 +10,32 @@ from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field
 
 
+class HPOConfig(PortfolioBaseModel):
+    """Search space + budget for the Optuna study over the fine-tuning loop."""
+
+    n_trials: int = Field(default=12, ge=2)
+    lr_min: float = Field(default=1e-5, gt=0.0)
+    lr_max: float = Field(default=5e-5, gt=0.0)
+    warmup_max: float = Field(default=0.2, ge=0.0, lt=1.0)
+    weight_decay_max: float = Field(default=0.1, ge=0.0)
+    epochs_min: int = Field(default=2, ge=1)
+    epochs_max: int = Field(default=4, ge=2)
+    startup_trials: int = Field(default=5, ge=1, description="MedianPruner n_startup_trials.")
+    pruner_warmup_epochs: int = Field(
+        default=1, ge=0, description="Epochs reported before the pruner may fire."
+    )
+
+
+class HPOBest(PortfolioBaseModel):
+    """Winning hyperparameters, written back into params.yaml by the hpo stage."""
+
+    learning_rate: float = Field(gt=0.0)
+    warmup_ratio: float = Field(ge=0.0, lt=1.0)
+    weight_decay: float = Field(ge=0.0)
+    epochs: int = Field(ge=1)
+    best_val_f1_macro: float = Field(description="Validation macro-F1 of the best trial.")
+
+
 class NLPConfig(PortfolioBaseModel):
     """Bounded run configuration for AG News text classification."""
 
@@ -33,6 +59,10 @@ class NLPConfig(PortfolioBaseModel):
 
     # Tokenization / model
     model_name: str = Field(default="distilbert-base-uncased")
+    encoder_b_name: str = Field(
+        default="roberta-base",
+        description="Second candidate encoder (WordPiece/BPE, no sentencepiece).",
+    )
     max_length: int = Field(default=128, ge=8, le=512)
 
     # Hand-written training loop
@@ -47,6 +77,10 @@ class NLPConfig(PortfolioBaseModel):
 
     # Baseline (same bounded subsample — apples-to-apples comparison)
     tfidf_max_features: int = Field(default=8000, ge=100)
+
+    # HPO (search space defaults; ``hpo_best`` is filled by the hpo stage)
+    hpo: HPOConfig = Field(default_factory=HPOConfig)
+    hpo_best: HPOBest | None = None
 
     # Locations (relative to the project working directory)
     data_dir: Path = Path("data")
@@ -76,3 +110,13 @@ class NLPConfig(PortfolioBaseModel):
     def history_path(self) -> Path:
         """JSON training history of the fine-tuned model."""
         return self.reports_dir / "history.json"
+
+    @property
+    def study_path(self) -> Path:
+        """JSON summary of the Optuna study."""
+        return self.reports_dir / "hpo_study.json"
+
+    @property
+    def selection_path(self) -> Path:
+        """JSON record of the tuned-vs-wave2 model selection decision."""
+        return self.reports_dir / "selection.json"

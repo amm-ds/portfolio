@@ -17,3 +17,31 @@ raw_dir: data/raw
 reports_dir: reports
 map_instance: C101
 download_url: https://www.sintef.no/globalassets/project/top/vrptw/solomon/solomon-100.zip
+hpo_trials: 24
+hpo_budget_choices:
+- 50
+- 100
+- 200
+- 500
+hpo_acceptance_choices:
+- first
+- best
+hpo_tail_exchange_choices:
+- true
+- false
+hpo_restart_choices:
+- 1
+- 2
+- 3
+- 4
+- 6
+- 8
+convergence_instances:
+- C101
+- RC105
+# Written by the solve stage (seeded HPO winner); do not hand-edit.
+solver_best:
+max_iterations: 50
+acceptance: best
+tail_exchange: true
+restarts: 1

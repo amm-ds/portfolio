@@ -20,7 +20,7 @@ import random
 
 from portfolio_core.logging import get_logger
 
-from routing_optimization.schemas import Customer, Problem, RoutePlan
+from routing_optimization.schemas import Acceptance, Customer, Problem, RoutePlan
 
 logger = get_logger(__name__)
 
@@ -304,92 +304,144 @@ def clarke_wright_savings(problem: Problem) -> RoutePlan:
     return _finish(problem, "clarke_wright", plan_routes, dist)
 
 
-def two_opt(problem: Problem, plan: RoutePlan, max_iterations: int = 200) -> RoutePlan:
-    """First-improvement 2-opt improvement of ``plan``.
+def _intra_candidate(
+    problem: Problem, dist: list[list[float]], route: list[int], i: int, j: int
+) -> tuple[float, list[int]] | None:
+    """2-opt segment reversal of ``route[i..j]``; (delta, candidate) or None."""
+    n = len(route)
+    left = route[i - 1] if i > 0 else 0
+    right = route[j + 1] if j < n - 1 else 0
+    delta = (
+        dist[left][route[j]] + dist[route[i]][right] - dist[left][route[i]] - dist[route[j]][right]
+    )
+    if delta >= -_EPS:
+        return None
+    candidate = route[:i] + route[i : j + 1][::-1] + route[j + 1 :]
+    if not route_feasible(problem, dist, candidate):
+        return None
+    return delta, candidate
 
-    Two feasibility-checked move types, scanned in deterministic order and
-    restarted after every accepted move:
 
-    - intra-route: reverse a segment (classic 2-opt on the open path);
-    - inter-route: 2-opt* tail exchange between two routes (swap the tails
-      after cut ``i`` in route A and cut ``j`` in route B).
+def _inter_candidate(
+    problem: Problem,
+    dist: list[list[float]],
+    routes: list[list[int]],
+    a: int,
+    b: int,
+    i: int,
+    j: int,
+    capacity: float,
+) -> tuple[float, list[int], list[int]] | None:
+    """2-opt* tail exchange between routes a and b; (delta, new_a, new_b) or None."""
+    ra, rb = routes[a], routes[b]
+    next_a = ra[i + 1] if i + 1 < len(ra) else 0
+    next_b = rb[j + 1] if j + 1 < len(rb) else 0
+    delta = dist[ra[i]][next_b] + dist[rb[j]][next_a] - dist[ra[i]][next_a] - dist[rb[j]][next_b]
+    if delta >= -_EPS:
+        return None
+    new_a = ra[: i + 1] + rb[j + 1 :]
+    new_b = rb[: j + 1] + ra[i + 1 :]
+    if not new_a or not new_b:  # never leave an empty route
+        return None
+    load_a = sum(problem.customers[cid].demand for cid in new_a)
+    load_b = sum(problem.customers[cid].demand for cid in new_b)
+    if load_a > capacity + _EPS or load_b > capacity + _EPS:
+        return None
+    if not route_feasible(problem, dist, new_a):
+        return None
+    if not route_feasible(problem, dist, new_b):
+        return None
+    return delta, new_a, new_b
 
-    The first move with negative distance delta whose resulting routes stay
-    within capacity and time-window feasible is applied. Stops when no move
-    improves or ``max_iterations`` moves have been accepted.
+
+def two_opt(
+    problem: Problem,
+    plan: RoutePlan,
+    max_iterations: int = 200,
+    acceptance: Acceptance = "first",
+    tail_exchange: bool = True,
+    trace: list[float] | None = None,
+) -> RoutePlan:
+    """Feasibility-checked 2-opt improvement of ``plan``.
+
+    Move types: intra-route segment reversals, plus (unless ``tail_exchange``
+    is False) inter-route 2-opt* tail exchanges. With ``acceptance="first"``
+    the first improving move in scan order is applied; with ``"best"`` the
+    feasible move with the most negative delta in the whole neighborhood is
+    applied. Scanning is deterministic; the loop stops at a local optimum or
+    after ``max_iterations`` accepted moves. When ``trace`` is given, the total
+    distance is appended for the construction start and after every accepted
+    move (convergence curves for figures).
     """
     dist = distance_matrix(problem)
     routes = [list(r) for r in plan.routes]
     loads = [sum(problem.customers[cid].demand for cid in r) for r in routes]
     capacity = problem.vehicle_capacity
     iterations = 0
+    if trace is not None:
+        trace.append(sum(route_distance(dist, r) for r in routes))
 
-    def try_intra() -> bool:
+    Move = tuple[float, int, list[int], int, list[int]]
+
+    def find_first() -> Move | None:
+        """First improving move; shape (delta, x, new_x, y, new_y) with y < 0
+        marking an intra-route move on route x, otherwise an inter-route move
+        rewriting routes x and y."""
         for k in range(len(routes)):
             route = routes[k]
-            n = len(route)
-            for i in range(n - 1):
-                for j in range(i + 1, n):
-                    left = route[i - 1] if i > 0 else 0
-                    right = route[j + 1] if j < n - 1 else 0
-                    delta = (
-                        dist[left][route[j]]
-                        + dist[route[i]][right]
-                        - dist[left][route[i]]
-                        - dist[route[j]][right]
-                    )
-                    if delta >= -_EPS:
-                        continue
-                    candidate = route[:i] + route[i : j + 1][::-1] + route[j + 1 :]
-                    if not route_feasible(problem, dist, candidate):
-                        continue
-                    routes[k] = candidate
-                    return True
-        return False
+            for i in range(len(route) - 1):
+                for j in range(i + 1, len(route)):
+                    cand = _intra_candidate(problem, dist, route, i, j)
+                    if cand is not None:
+                        return cand[0], k, cand[1], -1, []
+        if tail_exchange:
+            for a in range(len(routes)):
+                for b in range(a + 1, len(routes)):
+                    for i in range(len(routes[a])):
+                        for j in range(len(routes[b])):
+                            icand = _inter_candidate(problem, dist, routes, a, b, i, j, capacity)
+                            if icand is not None:
+                                return icand[0], a, icand[1], b, icand[2]
+        return None
 
-    def try_inter() -> bool:
-        for a in range(len(routes)):
-            for b in range(a + 1, len(routes)):
-                ra, rb = routes[a], routes[b]
-                for i in range(len(ra)):
-                    for j in range(len(rb)):
-                        next_a = ra[i + 1] if i + 1 < len(ra) else 0
-                        next_b = rb[j + 1] if j + 1 < len(rb) else 0
-                        delta = (
-                            dist[ra[i]][next_b]
-                            + dist[rb[j]][next_a]
-                            - dist[ra[i]][next_a]
-                            - dist[rb[j]][next_b]
-                        )
-                        if delta >= -_EPS:
-                            continue
-                        new_a = ra[: i + 1] + rb[j + 1 :]
-                        new_b = rb[: j + 1] + ra[i + 1 :]
-                        if not new_a or not new_b:  # never leave an empty route
-                            continue
-                        load_a = sum(problem.customers[cid].demand for cid in new_a)
-                        load_b = sum(problem.customers[cid].demand for cid in new_b)
-                        if load_a > capacity + _EPS or load_b > capacity + _EPS:
-                            continue
-                        if not route_feasible(problem, dist, new_a):
-                            continue
-                        if not route_feasible(problem, dist, new_b):
-                            continue
-                        routes[a], routes[b] = new_a, new_b
-                        loads[a], loads[b] = load_a, load_b
-                        return True
-        return False
+    def find_best() -> Move | None:
+        """Best (most negative delta) improving move over the full neighborhood."""
+        best: Move | None = None
+        for k in range(len(routes)):
+            route = routes[k]
+            for i in range(len(route) - 1):
+                for j in range(i + 1, len(route)):
+                    cand = _intra_candidate(problem, dist, route, i, j)
+                    if cand is not None and (best is None or cand[0] < best[0]):
+                        best = (cand[0], k, cand[1], -1, [])
+        if tail_exchange:
+            for a in range(len(routes)):
+                for b in range(a + 1, len(routes)):
+                    for i in range(len(routes[a])):
+                        for j in range(len(routes[b])):
+                            icand = _inter_candidate(problem, dist, routes, a, b, i, j, capacity)
+                            if icand is not None and (best is None or icand[0] < best[0]):
+                                best = (icand[0], a, icand[1], b, icand[2])
+        return best
 
-    improved = True
-    while improved and iterations < max_iterations:
-        if try_intra():
-            iterations += 1
-            continue
-        if try_inter():
-            iterations += 1
-            continue
-        improved = False
+    find_move = find_first if acceptance == "first" else find_best
+    while iterations < max_iterations:
+        move = find_move()
+        if move is None:
+            break
+        _delta, x, new_x, y, new_y = move
+        if y < 0:
+            routes[x] = new_x
+            loads[x] = sum(problem.customers[cid].demand for cid in new_x)
+        else:
+            routes[x], routes[y] = new_x, new_y
+            loads[x] = sum(problem.customers[cid].demand for cid in new_x)
+            loads[y] = sum(problem.customers[cid].demand for cid in new_y)
+        iterations += 1
+        if trace is not None:
+            trace.append(sum(route_distance(dist, r) for r in routes))
 
     if iterations >= max_iterations:
         logger.info("two_opt stopped at iteration cap %d", max_iterations)
-    return _finish(problem, f"{plan.solver}+two_opt", routes, dist)
+    suffix = "+two_opt" if acceptance == "first" and tail_exchange else "+two_opt_best"
+    return _finish(problem, f"{plan.solver}{suffix}", routes, dist)

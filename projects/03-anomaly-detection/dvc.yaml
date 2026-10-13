@@ -31,6 +31,14 @@ stages:
       - data/features.parquet
     outs:
       - data/models
+  tune:
+    cmd: uv run python -m anomaly_detection.cli tune
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+      - data/features.parquet
+    outs:
+      - data/models_tuned
   evaluate:
     cmd: uv run python -m anomaly_detection.cli evaluate
     deps:
@@ -39,6 +47,7 @@ stages:
       - data/raw.parquet
       - data/features.parquet
       - data/models
+      - data/models_tuned
     outs:
       - reports/metrics.json
       - reports/report.html

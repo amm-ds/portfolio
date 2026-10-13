@@ -10,3 +10,15 @@ lags:
 n_splits: 4
 gap: 7
 min_train_size: 60
+hpo_n_trials: 50
+temporal_epochs: 60
+temporal_patience: 8
+# Production HGB config — best params of the seeded Optuna study
+# (56 complete trials, CV mean MAE 8.5291; see data/hpo_best.json).
+hgb_tuned:
+  learning_rate: 0.08258768319962584
+  max_iter: 190
+  max_leaf_nodes: 25
+  min_samples_leaf: 48
+  l2_regularization: 0.0014656689866341544
+  max_features: 0.5260286352147595

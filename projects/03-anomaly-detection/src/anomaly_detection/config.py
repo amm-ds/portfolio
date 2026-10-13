@@ -43,6 +43,7 @@ class AnomalyConfig(RunConfig):
     max_null_rate: float = Field(default=0.01, ge=0, lt=1, description="DQ gate per column.")
     n_estimators: int = Field(default=300, gt=0, description="IsolationForest trees.")
     lof_neighbors: int = Field(default=20, gt=0, description="LOF neighborhood size.")
+    hpo_trials: int = Field(default=30, gt=0, description="Optuna trials per detector family.")
     ocsvm_nu: float | None = Field(
         default=None,
         gt=0,
@@ -90,6 +91,10 @@ class AnomalyConfig(RunConfig):
     @property
     def models_dir(self) -> Path:
         return self.data_path / "models"
+
+    @property
+    def tuned_models_dir(self) -> Path:
+        return self.data_path / "models_tuned"
 
     @property
     def dq_report_path(self) -> Path:

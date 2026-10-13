@@ -9,6 +9,7 @@ from routing_optimization.cli import download_instances
 from routing_optimization.config import VRPConfig
 from routing_optimization.evaluate import (
     canonical_instance_name,
+    convergence_figure,
     eda_instance_map_figure,
     evaluate_instance,
     gap_figure,
@@ -18,8 +19,10 @@ from routing_optimization.evaluate import (
     run_dq,
     runtime_figure,
     solve_with_timing,
+    solver_profile_figure,
 )
 from routing_optimization.schemas import Problem
+from routing_optimization.solver import two_opt
 
 
 def test_canonical_instance_name() -> None:
@@ -82,11 +85,21 @@ def test_figures_build_on_tiny_data(tiny_problem: Problem) -> None:
     rt_rows = pl.DataFrame(
         {"instance": "TINY", "solver": r.solver, "runtime_s": r.runtime_s} for r in runs
     )
+    dist_rows = pl.DataFrame(
+        {"instance": "TINY", "solver": r.solver, "distance": r.total_distance} for r in runs
+    )
+    trace: list[float] = []
+    improved = two_opt(tiny_problem, plans["nearest_neighbor"], max_iterations=200, trace=trace)
     fig_gap = gap_figure(gap_rows)
     fig_rt = runtime_figure(rt_rows)
     fig_map = route_map_figure(tiny_problem, plans["two_opt"].routes, title="TINY map")
     fig_eda = eda_instance_map_figure(tiny_problem)
-    for fig in (fig_gap, fig_rt, fig_map, fig_eda):
+    fig_profile = solver_profile_figure(dist_rows)
+    fig_conv = convergence_figure(
+        {"untuned": trace, "tuned": [*trace, improved.total_distance]},
+        "TINY",
+    )
+    for fig in (fig_gap, fig_rt, fig_map, fig_eda, fig_profile, fig_conv):
         assert fig.data, "figure has traces"
 
 
@@ -135,6 +148,9 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         best_known_path=tmp_path / "best_known.csv",
         reports_dir=tmp_path / "reports",
         map_instance="TINY",
+        convergence_instances=["TINY"],
+        params_path=tmp_path / "params.yaml",
+        hpo_trials=6,
     )
     run_solve(cfg)
     assert (cfg.reports_dir / "solutions.json").exists()
@@ -147,13 +163,22 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "clarke_wright",
         "randomized",
         "two_opt",
+        "two_opt_tuned",
     }
     assert set(data["instances"]["TINY"]["solvers"]) == {
         "nearest_neighbor",
         "clarke_wright",
         "randomized",
         "two_opt",
+        "two_opt_tuned",
     }
+    # the tuned run is never worse than the randomized floor, and the HPO
+    # winner is persisted to the (overridden) params.yaml
+    solvers = data["instances"]["TINY"]["solvers"]
+    assert solvers["two_opt_tuned"]["distance"] <= solvers["randomized"]["distance"]
+    assert data["tuning"]["solver_best"]["restarts"] >= 1
+    params = (tmp_path / "params.yaml").read_text()
+    assert "solver_best:" in params
     for artifact in (
         "results.md",
         "report.html",
@@ -165,5 +190,9 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "figures/route_map_TINY.json",
         "figures/runtime.html",
         "figures/runtime.json",
+        "figures/solver_profile.html",
+        "figures/solver_profile.json",
+        "figures/convergence_TINY.html",
+        "figures/convergence_TINY.json",
     ):
         assert (cfg.reports_dir / artifact).exists(), artifact

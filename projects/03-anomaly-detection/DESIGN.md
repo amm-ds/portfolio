@@ -89,6 +89,15 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.3.0 (2026-10-12): per-family Optuna HPO (`tune` stage: ~30 seeded TPE
+  trials, median pruning, validation = last 20% of the train window) with
+  tuned detectors persisted to `data/models_tuned/` alongside per-study
+  JSON artifacts (best params, importances, trial history). New figures:
+  `score_distribution` (normal vs. anomaly score histograms, log y),
+  `threshold_sweep` (precision/recall vs. alert budget), `hpo_importance`;
+  ROC/PR overlays restyled with `plotting.style_runs`. Real results: tuned
+  OCSVM rescued (0.337 → 0.906 ROC-AUC / 0.136 PR-AUC via gamma=0.013),
+  IF already near-optimal (+0.001), LOF not rescued (0.527 → 0.505).
 - 0.2.0 (2026-10-12): seeded random baseline (uniform scores, `config.seed`)
   added to every evaluation — ROC-AUC 0.5091 / PR-AUC 0.0194 on the real run —
   plotted as an explicit curve in the ROC/PR overlays; `eda_signals_overview`

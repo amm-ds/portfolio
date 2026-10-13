@@ -105,12 +105,13 @@ def test_baseline_deltas_vs_naive(cfg: MobilityConfig) -> None:
         y_naive=pl.lit(12.0),
     )
     deltas = baseline_deltas(overall_metrics(preds))
-    assert set(deltas) == {"gbm_mean", "temporal_net"}
+    assert deltas["baseline"] == "naive_lag24"
+    assert set(deltas) == {"baseline", "gbm_mean", "temporal_net"}
     assert deltas["gbm_mean"]["mae_reduction_pct"] == 75.0
     assert deltas["temporal_net"]["mae_reduction_pct"] == 50.0
     # zero-baseline guard: a perfect naive produces no deltas, no ZeroDivisionError
     perfect = preds.with_columns(y_naive=pl.col("y_true"))
-    assert baseline_deltas(overall_metrics(perfect)) == {}
+    assert baseline_deltas(overall_metrics(perfect)) == {"baseline": "naive_lag24"}
 
 
 def test_build_report_writes_artifacts(cfg: MobilityConfig, curated: pl.DataFrame) -> None:

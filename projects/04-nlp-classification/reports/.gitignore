@@ -2,3 +2,9 @@
 /metrics.json
 /report.html
 /figures
+/hpo_study.json
+/hpo_best.json
+/history_tuned.json
+/history_encoder_b.json
+/error_analysis.md
+/selection.json

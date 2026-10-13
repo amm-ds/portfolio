@@ -1,25 +1,26 @@
-# Mirrors mobility.config.MobilityConfig — DVC tracks these as pipeline params.
-# Change a value here, then `dvc repro` rebuilds the affected stages.
-
 months:
-  - "2024-01"
-  - "2024-02"
-  - "2024-03"
-  - "2024-04"
-  - "2024-05"
-  - "2024-06"
-  - "2024-07"
-  - "2024-08"
-  - "2024-09"
-  - "2024-10"
-  - "2024-11"
-  - "2024-12"
+- 2024-01
+- 2024-02
+- 2024-03
+- 2024-04
+- 2024-05
+- 2024-06
+- 2024-07
+- 2024-08
+- 2024-09
+- 2024-10
+- 2024-11
+- 2024-12
 max_rows_per_month: null
 min_rows_per_month: 500000
 min_duration_min: 1.0
 max_duration_min: 240.0
-lags: [1, 2, 24, 168]
-train_cutoff: "2024-10-01"
+lags:
+- 1
+- 2
+- 24
+- 168
+train_cutoff: '2024-10-01'
 max_train_rows: 2000000
 gbm:
   max_iter: 300
@@ -34,7 +35,34 @@ nn:
   epochs: 8
   batch_size: 1024
   lr: 0.001
-  weight_decay: 0.00001
+  weight_decay: 1.0e-05
   grad_clip: 5.0
   early_stop_patience: 2
 seed: 42
+hpo:
+  gbm_trials: 30
+  nn_trials: 10
+  max_fit_rows: 500000
+  perm_importance_rows: 200000
+gbm_tuned:
+  best_params:
+    learning_rate: 0.073761
+    max_iter: 299
+    max_leaf_nodes: 120
+    min_samples_leaf: 30
+    l2_regularization: 0.001281
+    max_features: 0.577878
+  best_val_mae: 3.165204
+  n_trials: 30
+nn_tuned:
+  best_params:
+    hidden_size: 32
+    lr: 0.002708
+    epochs: 8
+    weight_decay: 4.0e-06
+    second_hidden_size: 16
+    batch_size: 1024
+    grad_clip: 5.0
+    early_stop_patience: 2
+  best_val_mae: 0.33023
+  n_trials: 10

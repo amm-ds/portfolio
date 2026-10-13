@@ -10,6 +10,7 @@ from demand_forecasting.data import build_panel, dataset_contract, prepare, vali
 from demand_forecasting.evaluate import evaluate
 from demand_forecasting.features import build_features
 from demand_forecasting.model import fit_all, load_models, save_models
+from demand_forecasting.reconcile import reconcile_and_plot
 from portfolio_core.dq import DQGateError
 
 
@@ -54,20 +55,30 @@ def test_evaluate_writes_report_and_figures(
 
     save_features(frame, settings)
     result = evaluate(settings, config)
+    reconcile_and_plot(settings, config, result)
 
     metrics = json.loads((settings.reports_dir / "metrics.json").read_text())
-    assert set(metrics) == {"naive_mean", "naive_last", "ridge", "hgb"}
+    assert set(metrics) == {
+        "naive_mean",
+        "naive_last",
+        "ridge",
+        "hgb",
+        "hgb_tuned",
+        "temporal_net",
+    }
     for run in result.runs:
         for m in run.metrics:
             assert metrics[run.name][m.name] == pytest.approx(m.value)
 
     assert (settings.reports_dir / "report.html").exists()
+    assert (settings.reports_dir / "reconciliation.json").exists()
     for name in (
         "eda_series_overview",
         "eda_units_distribution",
         "forecast_vs_actual",
         "metrics_bars",
         "fold_stability",
+        "reconciliation_coherence",
     ):
         assert (settings.reports_dir / "figures" / f"{name}.html").exists()
         assert (settings.reports_dir / "figures" / f"{name}.json").exists()
@@ -81,7 +92,7 @@ def test_model_persistence_roundtrip(
     models = fit_all(features, config)
     path = save_models(models, tmp_path / "models.pkl")
     loaded = load_models(path)
-    assert set(loaded) == {"naive_mean", "naive_last", "ridge", "hgb"}
+    assert set(loaded) == {"naive_mean", "naive_last", "ridge", "hgb", "hgb_tuned", "temporal_net"}
     spec = next(s for s in model_specs() if s.name == "ridge")
     x, _, _, _ = to_xy(features, config, spec)
     pred = loaded["ridge"].predict(x)

@@ -6,6 +6,7 @@ data preparation, model training and evaluation.
 """
 
 from pathlib import Path
+from typing import Any
 
 from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field, field_validator
@@ -33,9 +34,25 @@ class ChurnConfig(PortfolioBaseModel):
     c_grid: list[float] = Field(
         default=[0.01, 0.1, 1.0, 10.0],
         min_length=1,
-        description="LogisticRegression C values swept by GridSearchCV.",
+        description="LogisticRegression C values swept by GridSearchCV (wave-2 baseline row).",
     )
     cv_folds: int = Field(default=3, ge=2, description="StratifiedKFold folds for grid search.")
+    model_family: str = Field(
+        default="auto",
+        pattern="^(auto|logreg|histgb)$",
+        description="'auto' runs Optuna selection; otherwise the production config to train.",
+    )
+    model_params: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Selected classifier hyperparameters (production config, written by train).",
+    )
+    hpo_trials: int = Field(default=25, ge=5, description="Optuna trials for model selection.")
+    calib_frac: float = Field(
+        default=0.2,
+        gt=0.0,
+        lt=0.5,
+        description="Fraction of training carved out for isotonic calibration only.",
+    )
 
     # Evaluation / business layer
     threshold_grid: list[float] = Field(

@@ -9,11 +9,13 @@ test scores, so the operating point is fixed a priori rather than tuned.
 import json
 from pathlib import Path
 
+import joblib  # type: ignore[import-untyped]
 import numpy as np
 import plotly.graph_objects as go
 import polars as pl
+from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_json
+from portfolio_core.plotting import add_takeaway, apply_theme, save_json, style_runs
 from portfolio_eval.metrics import MetricResult, RunResult
 from portfolio_eval.report import ReportBuilder
 from sklearn import metrics as skm
@@ -21,12 +23,7 @@ from sklearn import metrics as skm
 from anomaly_detection.config import SIGNALS, AnomalyConfig
 from anomaly_detection.data import load_raw
 from anomaly_detection.features import load_features
-from anomaly_detection.model import (
-    anomaly_scores,
-    feature_matrix,
-    load_model,
-    split_train_test,
-)
+from anomaly_detection.model import anomaly_scores, feature_matrix, split_train_test
 
 logger = get_logger(__name__)
 
@@ -73,10 +70,18 @@ def add_random_baseline(
     logger.info("random baseline roc_auc=%.4f pr_auc=%.4f", roc.value, pr.value)
 
 
+def _model_runs(config: AnomalyConfig) -> list[str]:
+    """Run names to score: untuned configured models, then tuned variants."""
+    names: list[str] = list(config.models)
+    if config.tuned_models_dir.exists():
+        names.extend(p.stem for p in sorted(config.tuned_models_dir.glob("*.joblib")))
+    return names
+
+
 def score_all(
     config: AnomalyConfig,
 ) -> tuple[list[RunResult], dict[str, np.ndarray], np.ndarray, np.ndarray]:
-    """Score every persisted detector on the test window.
+    """Score every persisted detector (untuned + tuned) on the test window.
 
     Returns the per-model runs, the raw test scores per model, the ground
     truth labels, and the test timestamps (all aligned row-wise).
@@ -86,12 +91,19 @@ def score_all(
     x_test = feature_matrix(test, config)
     y_test = test["is_anomaly"].to_numpy().astype(int)
     ts = test["ts"].to_numpy()
-    logger.info("scoring %d detectors on %d test rows", len(config.models), x_test.shape[0])
+    names = _model_runs(config)
+    logger.info("scoring %d runs on %d test rows", len(names), x_test.shape[0])
 
     runs: list[RunResult] = []
     scores_by_model: dict[str, np.ndarray] = {}
-    for name in config.models:
-        scores = anomaly_scores(load_model(name, config), name, x_test)
+    for name in names:
+        if name.endswith("_tuned"):
+            path = config.tuned_models_dir / f"{name}.joblib"
+        else:
+            path = config.models_dir / f"{name}.joblib"
+        if not path.exists():
+            raise FileNotFoundError(f"model artifact missing: {path}; run train/tune first")
+        scores = anomaly_scores(joblib.load(path), name.removesuffix("_tuned"), x_test)
         run = evaluate_scores(name, y_test, scores)
         runs.append(run)
         scores_by_model[name] = scores
@@ -228,6 +240,133 @@ def eda_signals_overview(raw: pl.DataFrame, max_rows: int = 2_880) -> go.Figure:
     return apply_theme(fig, height=620)
 
 
+def threshold_sweep_figure(
+    scores: np.ndarray, y_true: np.ndarray, config: AnomalyConfig, name: str
+) -> go.Figure:
+    """Precision and recall of ``name`` across alert budgets (contamination).
+
+    The vertical line marks the fixed 2% operating point: the alert volume a
+    client would actually sign off on.
+    """
+    rates = np.geomspace(0.005, 0.10, 30)
+    precisions, recalls = [], []
+    for rate in rates:
+        flags = predict_at_contamination(scores, float(rate)) == 1
+        tp = int((flags & (y_true == 1)).sum())
+        fp = int((flags & (y_true == 0)).sum())
+        fn = int(((~flags) & (y_true == 1)).sum())
+        precisions.append(tp / (tp + fp) if tp + fp else 0.0)
+        recalls.append(tp / (tp + fn) if tp + fn else 0.0)
+    op_flags = predict_at_contamination(scores, config.contamination) == 1
+    op_tp = int((op_flags & (y_true == 1)).sum())
+    op_fp = int((op_flags & (y_true == 0)).sum())
+    op_fn = int(((~op_flags) & (y_true == 1)).sum())
+    op_prec = op_tp / (op_tp + op_fp) if op_tp + op_fp else 0.0
+    op_rec = op_tp / (op_tp + op_fn) if op_tp + op_fn else 0.0
+
+    fig = go.Figure()
+    fig.add_scatter(x=rates, y=recalls, mode="lines", name="recall (TPR)")
+    fig.add_scatter(x=rates, y=precisions, mode="lines", name="precision")
+    fig.add_vline(x=config.contamination, line={"dash": "dash", "color": "#fbbf24"})
+    fig.update_xaxes(type="log", title="alert budget (flagged fraction of test window)")
+    fig.update_yaxes(title="rate", range=[0, 1.05])
+    fig.update_layout(title=f"{name} — precision/recall vs. alert budget")
+    add_takeaway(
+        fig,
+        f"At the fixed {config.contamination:.0%} alert budget: recall {op_rec:.0%}, "
+        f"precision {op_prec:.0%} ({op_tp} of {op_tp + op_fp} flags are real incidents).",
+    )
+    return apply_theme(fig)
+
+
+def score_distribution_figure(
+    scores: np.ndarray, y_true: np.ndarray, config: AnomalyConfig, name: str
+) -> go.Figure:
+    """Score histograms, normal vs. injected anomaly (log-scale y).
+
+    The single most explanatory anomaly figure: if the two distributions
+    overlap, no threshold can save the detector.
+    """
+    normal, anomaly = scores[y_true == 0], scores[y_true == 1]
+    lo, hi = float(scores.min()), float(scores.max())
+    fig = go.Figure()
+    fig.add_histogram(
+        x=normal, xbins={"start": lo, "end": hi, "size": (hi - lo) / 60}, name="normal"
+    )
+    fig.add_histogram(
+        x=anomaly, xbins={"start": lo, "end": hi, "size": (hi - lo) / 60}, name="anomaly (injected)"
+    )
+    threshold = float(np.quantile(scores, 1.0 - config.contamination))
+    fig.add_vline(x=threshold, line={"dash": "dash", "color": "#fbbf24"})
+    fig.update_yaxes(type="log", title="count (log scale)")
+    fig.update_xaxes(title=f"{name} anomaly score (higher = more anomalous)")
+    fig.update_layout(title=f"{name} — score distribution", barmode="overlay")
+    fig.update_traces(opacity=0.65)
+    add_takeaway(
+        fig,
+        f"Median anomaly score {np.median(anomaly):.2f} vs. {np.median(normal):.2f} for normal "
+        f"minutes — the operating threshold (amber) keeps the masses apart.",
+    )
+    return apply_theme(fig)
+
+
+def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | None:
+    """Parameter-importance and trial-convergence panels for one family study."""
+    path = config.tuned_models_dir / f"{family}_hpo.json"
+    if not path.exists():
+        logger.warning("HPO artifact missing: %s; skipping importance figure", path)
+        return None
+    payload = json.loads(path.read_text())
+    importances = payload["importances"]
+    trials = payload["trials"]
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("parameter importance (val PR-AUC)", "trial history (val PR-AUC)"),
+    )
+    fig.add_bar(
+        x=list(importances),
+        y=list(importances.values()),
+        row=1,
+        col=1,
+        showlegend=False,
+    )
+    complete = [t for t in trials if t["value"] is not None]
+    pruned = [t for t in trials if t["pruned"]]
+    fig.add_scatter(
+        x=[t["number"] for t in complete],
+        y=[t["value"] for t in complete],
+        mode="markers",
+        name="completed",
+        row=1,
+        col=2,
+    )
+    if pruned:
+        fig.add_scatter(
+            x=[t["number"] for t in pruned],
+            y=[0.0] * len(pruned),
+            mode="markers",
+            name="pruned",
+            marker={"symbol": "x", "color": "#64748b"},
+            row=1,
+            col=2,
+        )
+    best = payload["best_params"]
+    best_txt = ", ".join(
+        f"{k}={v:.3g}" if isinstance(v, float) else f"{k}={v}" for k, v in best.items()
+    )
+    fig.update_layout(
+        title=f"{family} — HPO ({payload['n_trials']} trials, seeded TPE + median prune)"
+    )
+    add_takeaway(
+        fig,
+        f"Best val PR-AUC {payload['best_value']:.3f} at {best_txt}. "
+        f"Most influential knob: {max(importances, key=importances.get)}.",
+    )
+    return apply_theme(fig)
+
+
 def run_evaluation(config: AnomalyConfig) -> tuple[dict[str, dict[str, float]], Path]:
     """Full evaluate stage: runs, figures, HTML report, metrics.json, figure JSON."""
     runs, scores_by_model, y_test, _ = score_all(config)
@@ -235,12 +374,21 @@ def run_evaluation(config: AnomalyConfig) -> tuple[dict[str, dict[str, float]], 
     champion = best_model(runs)
     logger.info("best model by PR-AUC: %s", champion)
 
-    figures = {
+    figures: dict[str, go.Figure] = {
         "eda_signals_overview": eda_signals_overview(load_raw(config)),
-        "roc_curves": roc_figure(runs, scores_by_model, y_test),
-        "pr_curves": pr_figure(runs, scores_by_model, y_test),
+        "roc_curves": style_runs(roc_figure(runs, scores_by_model, y_test), best=champion),
+        "pr_curves": style_runs(pr_figure(runs, scores_by_model, y_test), best=champion),
         "telemetry_flags": telemetry_figure(config, scores_by_model[champion]),
+        "threshold_sweep": threshold_sweep_figure(
+            scores_by_model[champion], y_test, config, champion
+        ),
+        "score_distribution": score_distribution_figure(
+            scores_by_model[champion], y_test, config, champion
+        ),
     }
+    importance_fig = hpo_importance_figure(config, champion.removesuffix("_tuned"))
+    if importance_fig is not None:
+        figures["hpo_importance"] = importance_fig
     builder = ReportBuilder(
         title="Evaluation — 03-anomaly-detection", figures_dir=config.figures_dir
     )

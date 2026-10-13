@@ -12,21 +12,38 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, cast
 
+import numpy as np
 import plotly.graph_objects as go
 import polars as pl
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_html, save_json
+from portfolio_core.plotting import add_takeaway, apply_theme, save_html, save_json
 from portfolio_eval.metrics import MetricResult, RunResult, compare_runs
 from portfolio_eval.ml import RunComparison, regression_metrics
 from portfolio_eval.report import EvalReport
 
 from mobility.config import MobilityConfig, get_config
+from mobility.features import FEATURE_COLUMNS
 
 logger = get_logger(__name__)
 
-MODEL_PREDS = [("naive_lag24", "y_naive"), ("gbm_mean", "y_gbm"), ("temporal_net", "y_nn")]
+#: All candidate (run name, predictions column) pairs, in run-ladder order.
+MODEL_PREDS = [
+    ("naive_lag24", "y_naive"),
+    ("gbm_mean", "y_gbm"),
+    ("gbm_tuned", "y_gbm_tuned"),
+    ("temporal_net", "y_nn"),
+    ("temporal_net_tuned", "y_nn_tuned"),
+]
+#: Tuned variants improve on their untuned predecessor (HPO validates on the
+#: same embargoed window); deltas are also reported pairwise.
+TUNED_PAIRS = [("gbm_tuned", "gbm_mean"), ("temporal_net_tuned", "temporal_net")]
 WEEK_START = datetime(2024, 10, 7)  # first full Monday of the test window
+
+
+def available_runs(preds: pl.DataFrame) -> list[tuple[str, str]]:
+    """(run name, column) pairs whose prediction column actually exists."""
+    return [(n, c) for n, c in MODEL_PREDS if c in preds.columns]
 
 
 def _run_metrics(preds: pl.DataFrame, name: str, col: str) -> RunResult:
@@ -41,19 +58,17 @@ def _run_metrics(preds: pl.DataFrame, name: str, col: str) -> RunResult:
 
 def overall_metrics(preds: pl.DataFrame) -> list[RunResult]:
     """MAE/RMSE/MAPE per model on the temporal test window."""
-    return [_run_metrics(preds, name, col) for name, col in MODEL_PREDS]
+    return [_run_metrics(preds, name, col) for name, col in available_runs(preds)]
 
 
-def baseline_deltas(
-    runs: list[RunResult], baseline: str = "naive_lag24"
-) -> dict[str, dict[str, float]]:
-    """Relative MAE/MAPE reduction of each run vs the persistence baseline.
+def baseline_deltas(runs: list[RunResult], baseline: str = "naive_lag24") -> dict[str, Any]:
+    """Relative MAE/MAPE reduction vs the persistence baseline, plus tuned-vs-untuned.
 
     A zero baseline metric (possible on degenerate fixtures) yields no delta
     for that metric rather than a ZeroDivisionError.
     """
     base = next(r for r in runs if r.name == baseline)
-    out: dict[str, dict[str, float]] = {}
+    out: dict[str, Any] = {"baseline": baseline}
     for metric in ("mae", "mape_pct"):
         base_val = base.get(metric)
         assert base_val is not None
@@ -67,6 +82,19 @@ def baseline_deltas(
             out.setdefault(r.name, {})[f"{metric}_reduction_pct"] = round(
                 (base_val.value - m.value) / base_val.value * 100, 2
             )
+    by_name = {r.name: r for r in runs}
+    for tuned, untuned in TUNED_PAIRS:
+        if tuned in by_name and untuned in by_name:
+            pair: dict[str, float] = {}
+            for metric in ("mae", "mape_pct"):
+                t, u = by_name[tuned].get(metric), by_name[untuned].get(metric)
+                assert t is not None and u is not None
+                if u.value != 0:
+                    pair[f"{metric}_reduction_pct_vs_{untuned}"] = round(
+                        (u.value - t.value) / u.value * 100, 2
+                    )
+            if pair:
+                out.setdefault(tuned, {}).update(pair)
     return out
 
 
@@ -108,38 +136,49 @@ def fig_eda_trips_profile(demand: pl.DataFrame) -> go.Figure:
         yaxis_title="mean pickups per zone-hour",
         xaxis={"dtick": 1},
     )
-    return apply_theme(fig)
+    return add_takeaway(
+        apply_theme(fig),
+        "Twin weekday peaks (08h, 18h) flatten on weekends; Manhattan dominates volume "
+        "while outer boroughs run sparse — hence the zero-filled zone x hour grid.",
+    )
 
 
 def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
-    """(a) Demand heatmap: top-N zones x hour-of-week for the selected week.
+    """Demand heatmap: top-N zones x hour-of-week for the selected test week.
 
-    ``demand`` must carry a ``zone`` label column (joined from zones.parquet).
+    ``demand`` must carry ``zone`` and ``borough`` labels (joined from
+    zones.parquet). Y-axis is grouped by borough and ordered by volume so the
+    two dominant patterns (Midtown peaks vs airport flatness) read clearly.
     """
     week = demand.filter(
         pl.col("ts").is_between(WEEK_START, WEEK_START + pl.duration(days=7), closed="left")
     )
     top_zones = (
-        week.group_by(["zone_id", "zone"])
-        .agg(pl.col("pickup_count").sum())
-        .sort("pickup_count", descending=True)
+        week.group_by(["zone_id", "zone", "borough"])
+        .agg(pl.col("pickup_count").sum().alias("volume"))
+        .sort(["borough", "volume"], descending=[False, True])
         .head(top_n)
     )
     grid = (
-        week.join(top_zones.select(["zone_id", "zone"]), on="zone_id")
+        week.join(top_zones.select(["zone_id", "zone", "borough"]), on="zone_id")
         .with_columns(hour_of_week=(pl.col("ts").dt.weekday() - 1) * 24 + pl.col("ts").dt.hour())
-        .group_by(["zone", "hour_of_week"])
+        .group_by(["zone", "borough", "hour_of_week"])
         .agg(pl.col("pickup_count").mean())
-        .pivot(on="hour_of_week", index="zone", values="pickup_count")
-        .sort("zone")
+        .pivot(on="hour_of_week", index=["borough", "zone"], values="pickup_count")
+        .join(top_zones.select(["borough", "zone", "volume"]), on=["borough", "zone"])
+        .sort(["borough", "volume"], descending=[False, True])
+        .drop("volume")
     )
-    zones = grid["zone"].to_list()
-    hours = sorted(int(c) for c in grid.columns if c != "zone")
+    labels = [
+        f"{b} / {z}"
+        for b, z in zip(grid["borough"].to_list(), grid["zone"].to_list(), strict=False)
+    ]
+    hours = sorted(int(c) for c in grid.columns if c not in ("borough", "zone"))
     fig = go.Figure(
         data=go.Heatmap(
             z=grid.select([str(h) for h in hours]).to_numpy(),
             x=[f"D{h // 24 + 1} {h % 24:02d}h" for h in hours],
-            y=zones,
+            y=labels,
             colorscale="Teal",
             colorbar={"title": "pickups/h"},
         )
@@ -147,13 +186,23 @@ def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
     fig.update_layout(
         title=f"Zone x hour-of-week demand — week of {WEEK_START.date()} (top {top_n} zones)",
         xaxis_title="hour of week (Mon → Sun)",
-        yaxis_title="zone",
+        yaxis_title="zone (grouped by borough)",
+    )
+    fig.update_xaxes(
+        tickmode="array",
+        tickvals=[f"D{h // 24 + 1} {h % 24:02d}h" for h in hours][::6],
+        tickangle=-45,
     )
     return apply_theme(fig, height=760)
 
 
 def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> go.Figure:
-    """(b) Actual vs predicted for the top-N busiest zones (test window slice)."""
+    """(b) Actual vs predicted for the top-N busiest zones (test window slice).
+
+    Headline predictions prefer the tuned variants when present.
+    """
+    gbm_col = "y_gbm_tuned" if "y_gbm_tuned" in preds.columns else "y_gbm"
+    nn_col = "y_nn_tuned" if "y_nn_tuned" in preds.columns else "y_nn"
     top_zones = (
         preds.group_by(["zone_id", "borough"])
         .agg(pl.col("y_true").sum())
@@ -180,12 +229,12 @@ def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> g
             col=1,
         )
         fig.add_trace(
-            go.Scatter(x=zdf["ts"].to_list(), y=zdf["y_gbm"].to_list(), name="gbm"),
+            go.Scatter(x=zdf["ts"].to_list(), y=zdf[gbm_col].to_list(), name="gbm"),
             row=i,
             col=1,
         )
         fig.add_trace(
-            go.Scatter(x=zdf["ts"].to_list(), y=zdf["y_nn"].to_list(), name="temporal_net"),
+            go.Scatter(x=zdf["ts"].to_list(), y=zdf[nn_col].to_list(), name="temporal_net"),
             row=i,
             col=1,
         )
@@ -199,9 +248,9 @@ def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> g
 
 
 def fig_borough_mae(preds: pl.DataFrame) -> go.Figure:
-    """(c) Per-borough MAE for each model."""
+    """(c) Per-borough MAE for every available run (naive included as reference)."""
     fig = go.Figure()
-    for name, col in MODEL_PREDS:
+    for name, col in available_runs(preds):
         mae = (
             preds.with_columns(abs_err=(pl.col(col) - pl.col("y_true")).abs())
             .group_by("borough")
@@ -257,24 +306,38 @@ def fig_weather_elasticity(by_borough: pl.DataFrame) -> go.Figure:
         title="Weather elasticity: mean hourly pickups, rain (≥1 mm) vs dry, by borough",
         yaxis_title="rain / dry ratio",
     )
-    return apply_theme(fig)
+    obs = by_borough.drop_nulls("rain_vs_dry_ratio")
+    if obs.height > 0:
+        wettest = obs.sort("rain_vs_dry_ratio").row(0, named=True)
+        takeaway = (
+            f"{wettest['borough']} drops to {wettest['rain_vs_dry_ratio']:.2f}x of dry-hour "
+            "demand in rain — directional, not causal (hour-of-week mix unnormalised)."
+        )
+    else:
+        takeaway = "No rainy hours in the window — elasticity not applicable."
+    return add_takeaway(apply_theme(fig), takeaway)
 
 
 def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
-    """Uncertainty band: actual vs GBM mean + p90 upper band, city-wide."""
+    """Uncertainty band: actual vs GBM mean + p90 upper band, city-wide.
+
+    Prefers the tuned predictions when the tuned models are present.
+    """
+    gbm_col = "y_gbm_tuned" if "y_gbm_tuned" in preds.columns else "y_gbm"
+    p90_col = "y_p90_tuned" if "y_p90_tuned" in preds.columns else "y_p90"
     window = preds.filter(
         pl.col("ts").is_between(WEEK_START, WEEK_START + pl.duration(days=days), closed="left")
     )
     city = (
         window.group_by("ts")
-        .agg([pl.col(c).sum() for c in ["y_true", "y_gbm", "y_p90"]] + [pl.len().alias("n_zones")])
+        .agg([pl.col(c).sum() for c in ["y_true", gbm_col, p90_col]] + [pl.len().alias("n_zones")])
         .sort("ts")
     )
     fig = go.Figure()
     fig.add_trace(
         go.Scatter(
             x=city["ts"].to_list(),
-            y=city["y_p90"].to_list(),
+            y=city[p90_col].to_list(),
             name="p90 band (upper)",
             line={"dash": "dot", "color": "#fbbf24"},
         )
@@ -282,7 +345,7 @@ def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
     fig.add_trace(
         go.Scatter(
             x=city["ts"].to_list(),
-            y=city["y_gbm"].to_list(),
+            y=city[gbm_col].to_list(),
             name="gbm mean",
             line={"color": "#2dd4bf"},
         )
@@ -301,9 +364,100 @@ def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
     return apply_theme(fig)
 
 
-def p90_coverage(preds: pl.DataFrame) -> float:
+def p90_coverage(preds: pl.DataFrame, col: str = "y_p90") -> float:
     """Fraction of actuals at or below the p90 prediction (~0.9 = calibrated)."""
-    return cast(float, (preds["y_true"] <= preds["y_p90"]).mean())
+    return cast(float, (preds["y_true"] <= preds[col]).mean())
+
+
+def p90_coverage_by_borough(preds: pl.DataFrame, col: str = "y_p90") -> pl.DataFrame:
+    """Empirical p90-band coverage per borough plus overall (target 0.90)."""
+    per_borough = (
+        preds.with_columns(covered=pl.col("y_true") <= pl.col(col))
+        .group_by("borough")
+        .agg(
+            pl.col("covered").mean().alias("coverage"),
+            pl.len().cast(pl.Int64).alias("n_hours"),
+        )
+        .sort("coverage")
+    )
+    overall = pl.DataFrame(
+        {"borough": ["OVERALL"], "coverage": [p90_coverage(preds, col)], "n_hours": [preds.height]}
+    )
+    return pl.concat([per_borough, overall])
+
+
+def fig_p90_calibration(coverage: pl.DataFrame) -> go.Figure:
+    """Themed coverage bar chart with a 90% reference line."""
+    fig = go.Figure(
+        data=go.Bar(
+            x=coverage["borough"].to_list(),
+            y=coverage["coverage"].to_list(),
+            marker_color=[
+                "#f472b6" if b == "OVERALL" else "#2dd4bf" for b in coverage["borough"].to_list()
+            ],
+            text=[f"{v:.1%}" for v in coverage["coverage"].to_list()],
+            textposition="outside",
+        )
+    )
+    fig.add_hline(y=0.9, line_dash="dash", line_color="#fbbf24")
+    fig.add_annotation(x=0, y=0.905, text="target 90%", showarrow=False, yref="y")
+    fig.update_layout(
+        title="p90 uncertainty band: empirical coverage by borough (target 90%)",
+        yaxis_title="share of zone-hours at or below the p90 band",
+        yaxis={"range": [0, 1]},
+    )
+    overall = coverage.filter(pl.col("borough") == "OVERALL")["coverage"].to_list()[0]
+    worst = coverage.filter(pl.col("borough") != "OVERALL").sort("coverage").row(0, named=True)
+    return add_takeaway(
+        apply_theme(fig),
+        f"Overall {overall:.1%} vs 90% target; tightest borough {worst['borough']} at "
+        f"{worst['coverage']:.1%} — bands usable for staffing buffers.",
+    )
+
+
+def fig_gbm_feature_importance(
+    cfg: MobilityConfig, test: pl.DataFrame, model_name: str = "gbm_tuned.joblib"
+) -> go.Figure | None:
+    """Permutation importance of the tuned GBM on a bounded test slice.
+
+    Uses the persisted model (no retraining); the scoring slice is the first
+    ``hpo.perm_importance_rows`` of the chronological test window.
+    """
+    import joblib  # type: ignore[import-untyped]
+    from sklearn.inspection import permutation_importance
+
+    model_path = cfg.models_dir / model_name
+    if not model_path.exists():
+        model_path = cfg.models_dir / "gbm_mean.joblib"
+        if not model_path.exists():
+            return None
+    model = joblib.load(model_path)
+    n = min(cfg.hpo.perm_importance_rows, test.height)
+    sample = test.head(n)
+    X = sample.select(FEATURE_COLUMNS).to_numpy().astype(np.float32)
+    y = sample["target"].to_numpy().astype(np.float32)
+    result = permutation_importance(
+        model, X, y, scoring="neg_mean_absolute_error", n_repeats=3, random_state=cfg.seed
+    )
+    order = np.argsort(result.importances_mean)
+    fig = go.Figure(
+        data=go.Bar(
+            x=result.importances_mean[order],
+            y=[FEATURE_COLUMNS[i] for i in order],
+            orientation="h",
+            marker_color="#38bdf8",
+        )
+    )
+    fig.update_layout(
+        title=f"Permutation importance (MAE increase, {model_path.stem}, test slice n={n:,})",
+        xaxis_title="mean MAE increase when shuffled",
+        yaxis_title="feature",
+    )
+    top = FEATURE_COLUMNS[int(np.argmax(result.importances_mean))]
+    return add_takeaway(
+        apply_theme(fig),
+        f"{top} is the dominant driver — recent-hour momentum matters more than weather.",
+    )
 
 
 # --------------------------------------------------------------------------
@@ -343,11 +497,21 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     ranking = compare_runs(runs, "mae")
     borough_mae = per_borough_mae(preds)
     weather = weather_elasticity(preds, demand)
-    coverage = p90_coverage(preds)
     demand_zoned = demand.join(
         zones.select(["location_id", "zone"]), left_on="zone_id", right_on="location_id"
     )
 
+    p90_col = "y_p90_tuned" if "y_p90_tuned" in preds.columns else "y_p90"
+    coverage = p90_coverage(preds, p90_col)
+    coverage_borough = p90_coverage_by_borough(preds, p90_col)
+    best_mae = float(min(m.value for r in runs if (m := r.get("mae")) is not None))
+    importance_fig = None
+    has_gbm_model = (cfg.models_dir / "gbm_tuned.joblib").exists() or (
+        cfg.models_dir / "gbm_mean.joblib"
+    ).exists()
+    test_path = cfg.features_dir / "test.parquet"
+    if has_gbm_model and test_path.exists():
+        importance_fig = fig_gbm_feature_importance(cfg, pl.read_parquet(test_path))
     figures = {
         "eda_trips_profile": fig_eda_trips_profile(demand),
         "zone_hour_heatmap": fig_zone_hour_heatmap(demand_zoned),
@@ -355,8 +519,15 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "borough_mae": fig_borough_mae(preds),
         "weather_elasticity": fig_weather_elasticity(weather),
         "p90_band": fig_p90_band(preds),
-        "gbm_vs_nn": RunComparison(runs).figure(metric_names=["mae", "rmse", "mape_pct"]),
+        "p90_calibration": fig_p90_calibration(coverage_borough),
+        "gbm_vs_nn": add_takeaway(
+            RunComparison(runs).figure(metric_names=["mae", "rmse", "mape_pct"]),
+            f"Best run: {ranking['ranking'][0]} "
+            f"(MAE {best_mae:.2f}); naive_lag24 is the grey persistence reference.",
+        ),
     }
+    if importance_fig is not None:
+        figures["gbm_feature_importance"] = importance_fig
 
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = cfg.reports_dir / "figures"
@@ -368,13 +539,14 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     metrics["_meta"] = {
         "split": f"temporal holdout from {cfg.train_cutoff.isoformat()}",
         "p90_coverage": coverage,
+        "p90_coverage_by_borough": {
+            r["borough"]: round(cast(float, r["coverage"]), 4)
+            for r in coverage_borough.iter_rows(named=True)
+        },
         "n_test_rows": preds.height,
         "mae_ranking": ranking["ranking"],
     }
-    metrics["deltas"] = {
-        "baseline": "naive_lag24",
-        **baseline_deltas(runs),
-    }
+    metrics["deltas"] = baseline_deltas(runs)
     (cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
 
     report = EvalReport(title="Project 07 — Urban Mobility Demand Intelligence")
@@ -383,6 +555,10 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     report.add_markdown_table(
         "Weather elasticity: rain vs dry by borough",
         _markdown(weather),
+    )
+    report.add_markdown_table(
+        "p90 band empirical coverage by borough (target 0.90)",
+        _markdown(coverage_borough, floatfmt="{:.4f}"),
     )
     weather_obs = weather.drop_nulls("rain_vs_dry_ratio")  # boroughs without rain hours
     if weather_obs.height > 0:

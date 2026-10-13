@@ -67,63 +67,90 @@ sections:
       complete-case matrix.
 
       All three detectors fit on the **first 70% of the timeline only** —
-      13 958 rows — with hyperparameters taken from the assumed contamination
-      (IsolationForest and LOF via their `contamination` argument, One-Class
-      SVM via `nu`). No shuffle, no leakage: the final 30% of the stream is a
-      true future window. Data-quality gates (null rate ≤ 1% per column, CPU
-      and memory within [0, 100], latency > 0) run before anything trains and
-      halt the pipeline loudly on violation.
-    figures: [telemetry_flags]
+      13 958 rows — and each family then gets its own hyperparameter study:
+      ~30 trials of seeded TPE with median pruning, maximizing PR-AUC on the
+      last 20% of the train window as validation. IsolationForest searches
+      tree count and row/feature subsampling; LOF searches neighborhood size;
+      One-Class SVM searches `nu` and the RBF `gamma` on log scales. The
+      test window is never touched during search, and tuned detectors refit
+      on the full train window before scoring. Data-quality gates (null rate
+      ≤ 1% per column, CPU and memory within [0, 100], latency > 0) run before
+      anything trains and halt the pipeline loudly on violation.
+    figures: [telemetry_flags, hpo_importance]
 
   - id: evaluation
     text_md: |
-      Each detector scores the 5 983 test-window rows; a seeded random
-      baseline (uniform scores, same seed) anchors the comparison. Ranking
-      quality is measured by ROC-AUC and PR-AUC — PR-AUC matters more at this
-      prevalence (1.89%), where a naive "everything is normal" classifier
-      already scores 0.019.
+      Each detector — untuned and tuned — scores the 5 983 test-window rows;
+      a seeded random baseline (uniform scores, same seed) anchors the
+      comparison. Ranking quality is measured by ROC-AUC and PR-AUC — PR-AUC
+      matters more at this prevalence (1.89%), where a naive "everything is
+      normal" classifier already scores 0.019.
 
       Binary alert flags use one fixed operating point per model: the top 2%
       of its scores (the assumed contamination quantile). No threshold was
-      tuned against the ground-truth labels at any point.
+      tuned against the ground-truth labels at any point. The threshold-sweep
+      figure shows what the champion's precision/recall curve looks like
+      across alert budgets, with the 2% budget marked.
 
   - id: results
     text_md: |
-      IsolationForest wins decisively — and the losers are the real lesson.
-      Against the random baseline (ROC-AUC 0.509), IsolationForest scores
-      **0.916** (+0.41) with PR-AUC 0.124, a 6.5× lift over the prevalence
-      floor. LOF (0.527) and One-Class SVM (0.337) are at or below
-      coin-flip.
+      The full run ladder on the held-out window (ROC-AUC / PR-AUC): random
+      baseline 0.509 / 0.019; untuned LOF 0.527 / 0.019 and untuned One-Class
+      SVM 0.337 / 0.024; tuned LOF 0.505 / 0.025 and **tuned One-Class SVM
+      0.906 / 0.136**; untuned IsolationForest 0.916 / 0.124 and tuned
+      0.917 / 0.121.
 
-      The mechanism, verified with k-NN distances: injected anomalies form a
-      compact, self-similar cluster. LOF only compares each point to its
-      *local* neighborhood — inside the blob every point looks normal (median
-      LOF ≈ 1.11 on test anomalies vs. ≈ 1.09 on normals), so isolation from
-      the bulk never registers. The RBF One-Class SVM folds the dense blob
-      into its normal region. Only IsolationForest, which isolates points by
-      random partitioning, treats "far away" as "anomalous" regardless of
-      local density.
-    figures: [roc_curves, pr_curves]
-    metrics_keys: [random, isolation_forest, lof, ocsvm]
+      **Honest winner:** by ROC-AUC, `isolation_forest_tuned` (0.917); by
+      PR-AUC — the metric that matters at 1.9% prevalence — `ocsvm_tuned`
+      (0.136), +0.40 over random and +0.57 over its own untuned version.
+      IsolationForest was already near-optimal untuned (tuning moved ROC-AUC
+      by +0.001).
+
+      Tuning rescued One-Class SVM: the default `gamma="scale"` failed
+      (0.337), but the study found `gamma=0.013` (parameter importance 0.99) —
+      a ~6× tighter kernel whose boundary carves the anomaly blob out instead
+      of folding it in. Tuning did **not** rescue LOF: its best neighborhood
+      size saturated at the search cap (200) and test ROC-AUC went down.
+      The failure is structural — LOF compares each point only to its local
+      neighborhood, so inside a self-similar anomaly cluster every point
+      looks normal (median LOF ≈ 1.11 on test anomalies vs ≈ 1.09 on
+      normals). No neighborhood size fixes a method that never looks outward.
+
+      One operational caveat: at the fixed 2% alert budget the three top
+      detectors tie — each flags 120 test minutes at ~15% recall / ~14%
+      precision. AUC/PR-AUC measure ranking quality; a production deployment
+      would pick the operating point from the sweep curve against an
+      alerting budget, not from AUC alone.
+    figures: [roc_curves, pr_curves, score_distribution, threshold_sweep]
+    metrics_keys:
+      [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 
   - id: conclusions
     text_md: |
-      Three takeaways. **(1) Detector families make different bets.**
+      Four takeaways. **(1) Detector families make different bets.**
       Density- and boundary-based methods assume anomalies are sparse and
       dissimilar to everything; when incidents arrive as a repeated,
-      self-similar signature, only partitioning methods (IsolationForest) or
+      self-similar signature, partitioning methods (IsolationForest) or
       residual/context-aware features still see them. Choosing a detector
       without checking that assumption is how silent incidents ship to
       production.
 
-      **(2) A random baseline keeps everyone honest.** At 2% prevalence,
+      **(2) Tuning is verdict-changing — but only sometimes.** One-Class SVM
+      went from below-chance (0.337) to PR-AUC champion (0.136) because one
+      scale-sensitive knob (`gamma`) was wrong by default; LOF stayed at
+      chance because its failure is structural, not hyperparametric. HPO is
+      cheap here (90 seeded trials in about a minute), so the honest move is
+      to run it and report both outcomes.
+
+      **(3) A random baseline keeps everyone honest.** At 2% prevalence,
       near-chance models can look plausible on accuracy; the seeded random
       row in every metrics table makes "beating chance" the admission fee.
 
-      **(3) Guardrails make results trustworthy.** DQ gates that halt the
-      pipeline, a time-ordered split, and a fixed (untuned) threshold mean the
-      reported 0.92 ROC-AUC is a number a client can plan an alerting budget
-      around. Next steps on the roadmap: Optuna HPO over detector
-      hyperparameters, residual features to de-cluster the anomaly signature,
-      and a real-telemetry track behind the same dataset contract.
-    metrics_keys: [isolation_forest, random]
+      **(4) Guardrails make results trustworthy.** DQ gates that halt the
+      pipeline, a time-ordered split, validation inside the train window
+      only, and a fixed (untuned) threshold mean the reported numbers are
+      ones a client can plan an alerting budget around. Next steps: residual
+      features to de-cluster the anomaly signature, cost-aware threshold
+      selection on the sweep curve, and a real-telemetry track behind the
+      same dataset contract.
+    metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]

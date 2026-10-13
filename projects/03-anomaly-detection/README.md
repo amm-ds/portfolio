@@ -33,19 +33,54 @@ Full rationale, the options considered, and the detector-failure analysis:
    windows [10, 60]; warm-up rows dropped so the matrix is complete.
 4. **train** — IsolationForest, LOF (`novelty=False`, `fit_predict`), and
    One-Class SVM (`nu=contamination`) fit on the first 70% of the timeline only.
-5. **evaluate** — detectors scored on the held-out final 30%; ROC-AUC and PR-AUC
-   per model; binary flags at a fixed contamination-quantile threshold; HTML
-   report + interactive figures (ROC overlay, PR overlay, telemetry with the
-   best model's flags vs. ground truth).
+5. **tune** — per-family Optuna HPO (~30 seeded TPE trials, median pruning)
+   maximizing validation PR-AUC on the last 20% of the train window; tuned
+   detectors refit on the full train window (test window untouched).
+6. **evaluate** — untuned + tuned detectors scored on the held-out final 30%;
+   ROC-AUC and PR-AUC per run plus a seeded random baseline; binary flags at a
+   fixed contamination-quantile threshold; HTML report + interactive figures
+   (ROC/PR overlays, telemetry flags, score distributions, threshold sweep,
+   HPO importance).
 
 ## Results (real run: seed 42, n=20 000, test window = 5 983 rows, prevalence 1.89%)
 
-| model | ROC-AUC | PR-AUC |
+Run ladder — every row is one scoring run on the same held-out window, at the
+same fixed 2% alert budget. Detectors were tuned (30 seeded Optuna trials, TPE
++ median pruning) on a validation slice of the *train* window only.
+
+| run | ROC-AUC | PR-AUC |
 |---|---|---|
-| isolation_forest | **0.9158** | **0.1239** |
-| lof | 0.5272 | 0.0195 |
-| ocsvm | 0.3368 | 0.0241 |
 | random (seeded baseline) | 0.5091 | 0.0194 |
+| lof (untuned) | 0.5272 | 0.0195 |
+| ocsvm (untuned) | 0.3368 | 0.0241 |
+| lof_tuned | 0.5054 | 0.0254 |
+| ocsvm_tuned | 0.9056 | **0.1355** |
+| isolation_forest (untuned) | 0.9158 | 0.1239 |
+| isolation_forest_tuned | **0.9171** | 0.1208 |
+
+**Honest winner:** by ROC-AUC, `isolation_forest_tuned` (0.9171); by PR-AUC —
+the metric that matters at 1.9% prevalence — `ocsvm_tuned` (0.1355). Deltas for
+the PR-AUC champion: **+0.40 ROC-AUC vs. random** (0.9056 vs. 0.5091) and
+**+0.57 vs. its own untuned version** (0.3368 → 0.9056). IsolationForest was
+already near-optimal untuned (tuning: +0.001 ROC-AUC).
+
+Key findings:
+
+- **Tuning rescued One-Class SVM.** The wave-1/2 default `gamma="scale"`
+  failed (0.337); HPO found `gamma=0.013` (param importance 0.99 — a ~6×
+  tighter kernel): tight boundaries carve the anomaly blob out instead of
+  folding it in. A detector family that looks hopeless by default can be the
+  strongest after honest search.
+- **Tuning did not rescue LOF.** Best `n_neighbors` saturated at the search
+  cap (200) and test ROC-AUC went *down* (0.527 → 0.505). The failure is
+  structural: LOF compares each point only to its local neighbourhood, so
+  inside a self-similar anomaly cluster every point looks normal (median LOF
+  ≈ 1.11 on test anomalies vs ≈ 1.09 on normals). No neighbourhood size fixes
+  a method that never looks outward.
+- **At the fixed 2% alert budget the top three detectors tie operationally**:
+  each flags 120 test minutes with ~15% recall / ~14% precision. AUC/PR-AUC
+  measure ranking quality; the operating point is where an alerting budget
+  lives or dies.
 
 Exact values in [`reports/metrics.json`](reports/metrics.json); the
 full evaluation report is [`reports/report.html`](reports/report.html)
@@ -53,30 +88,23 @@ with figures in `reports/figures/`:
 
 - `eda_signals_overview.html` / `.json` — first 2 days of raw telemetry with
   injected anomalies marked
-- `roc_curves.html` / `.json` — ROC overlay with the random baseline and the
-  chance diagonal
-- `pr_curves.html` / `.json` — PR overlay with the random baseline and the
-  prevalence baseline
+- `roc_curves.html` / `.json` — ROC overlay (random greyed, champion accented)
+- `pr_curves.html` / `.json` — PR overlay with prevalence baseline
 - `telemetry_flags.html` / `.json` — test-window telemetry with the best
   model's flags (pink ✗) vs. ground-truth anomalies (amber strip)
+- `score_distribution.html` / `.json` — champion score histograms, normal vs.
+  anomaly, log-scale y (the most explanatory anomaly figure we have)
+- `threshold_sweep.html` / `.json` — champion precision/recall vs. alert
+  budget, with the fixed 2% operating point marked
+- `hpo_importance.html` / `.json` — parameter importance + trial history for
+  the champion family
 
-**IsolationForest wins decisively**: ROC-AUC 0.9158 vs. 0.5091 for the seeded
-random baseline (**+0.41**), and PR-AUC 0.124 vs. the 0.019 prevalence floor
-(**6.5×**). LOF and One-Class SVM are at or below the random reference — and
-that is the finding, not a bug: the injected anomalies form a compact,
-self-similar cluster (mean k-NN distance ≈ 18.9 inside the blob, ≈ 8.5 for
-normal points, but *within* the blob spacing is uniform). LOF only compares a
-point to its local neighbourhood, so inside the blob every point looks normal
-(median LOF ≈ 1.11 on test anomalies, indistinguishable from normals at
-≈ 1.09) — its ROC-AUC of 0.527 is not better than coin-flip (0.509). The RBF
-One-Class SVM folds the dense blob into its normal region (0.337). Only
-IsolationForest — which isolates points by random partitioning — treats "far
-away" as "anomalous" regardless of local density.
-See DESIGN.md for the full analysis and what we would do about it in
-production.
+See DESIGN.md for the full analysis (including why feature scaling was
+evaluated and rejected) and what we would do about it in production.
 
-Runtime of the full pipeline on this machine: **~2 s** (well under the 1-minute
-budget). All 8 DQ gates pass; the persisted report is
+Runtime of the full pipeline on this machine: **~75 s** including 90 HPO
+trials (well within budget; the wave-1 pipeline without tuning runs in ~2 s).
+All 8 DQ gates pass; the persisted report is
 [`reports/dq_report.html`](reports/dq_report.html).
 
 ## Reproduce
@@ -89,6 +117,7 @@ uv run python -m anomaly_detection.cli prepare
 uv run python -m anomaly_detection.cli validate
 uv run python -m anomaly_detection.cli features
 uv run python -m anomaly_detection.cli train
+uv run python -m anomaly_detection.cli tune
 uv run python -m anomaly_detection.cli evaluate
 # or via DVC:
 dvc repro projects/03-anomaly-detection

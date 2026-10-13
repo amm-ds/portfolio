@@ -67,3 +67,14 @@ flowchart LR
   coverage), real run: ROC-AUC 0.8344, cost 350 → 282 at t*=0.725.
 - 2026-10-12 · Fixed mislabeled permutation-importance bars (input-space vs
   transformed-space names); fixed `check_range` crash on all-null columns.
+- 2026-10-12 · Wave 2: naive-majority baseline row on the same cost curve,
+  `eda_churn_profile` figure, `story.yaml` (8 canonical sections), NaN-aware
+  DQ null-rate gates, `dvc commit` lockfile.
+- 2026-10-12 · Wave 3: Optuna model selection (logreg vs HistGB, seeded TPE,
+  median pruning) with the selection persisted to `params.yaml` as the
+  production config; isotonic calibration on a train-only calibration split
+  (raw vs calibrated compared via ECE + business cost); PR-curve and
+  decision-curve figures; `add_takeaway`/`style_runs` storytelling on all new
+  figures. Search-space ranges capped (HistGB max_iter ≤ 150, fast solvers for
+  l1/l2) after the first HPO pass blew the runtime budget — saga+elasticnet
+  and large boosting grids were the cost drivers.

@@ -31,8 +31,15 @@ stages:
       - test_frac
       - c_grid
       - cv_folds
+      - model_family
+      - model_params
+      - hpo_trials
+      - calib_frac
     outs:
       - data/model.pkl
+      - data/selected_model.pkl
+      - data/selected_model_calibrated.pkl
+      - data/model_selection.json
       - data/model_meta.json
       - data/holdout.parquet
 

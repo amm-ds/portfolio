@@ -5,13 +5,13 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 2c880a3546219f0e3df66ddc11f53b4e
-      size: 654
+      md5: 4196b164768b54d195c75e8826015727
+      size: 655
     - path: src/churn_pipeline/
       hash: md5
-      md5: 159f879edde4433ba2c865fb51e59605.dir
-      size: 73851
-      nfiles: 15
+      md5: 69b02db9d1222662909c76031e93014a.dir
+      size: 115491
+      nfiles: 17
     params:
       params.yaml:
         c_grid:
@@ -50,13 +50,13 @@ stages:
       size: 45694
     - path: params.yaml
       hash: md5
-      md5: 2c880a3546219f0e3df66ddc11f53b4e
-      size: 654
+      md5: 4196b164768b54d195c75e8826015727
+      size: 655
     - path: src/churn_pipeline/
       hash: md5
-      md5: 159f879edde4433ba2c865fb51e59605.dir
-      size: 73851
-      nfiles: 15
+      md5: 69b02db9d1222662909c76031e93014a.dir
+      size: 115491
+      nfiles: 17
     params:
       params.yaml:
         c_grid:
@@ -64,7 +64,15 @@ stages:
         - 0.1
         - 1.0
         - 10.0
+        calib_frac: 0.2
         cv_folds: 3
+        hpo_trials: 25
+        model_family: histgb
+        model_params:
+          learning_rate: 0.07949502872202294
+          max_iter: 116
+          max_leaf_nodes: 20
+          min_samples_leaf: 41
         seed: 42
         test_frac: 0.2
     outs:
@@ -80,6 +88,18 @@ stages:
       hash: md5
       md5: 9febbfc1b038f9bc49bd155928fc5deb
       size: 147
+    - path: data/model_selection.json
+      hash: md5
+      md5: daf861acf654d1bd64a23ceb0145865d
+      size: 226
+    - path: data/selected_model.pkl
+      hash: md5
+      md5: 07db178491382d0b8be5915ea1ca3f17
+      size: 281588
+    - path: data/selected_model_calibrated.pkl
+      hash: md5
+      md5: 5c8baa868edecb4cd2109855d07da99a
+      size: 234796
   evaluate:
     cmd: uv run python -m churn_pipeline.cli evaluate --params-file params.yaml
     deps:
@@ -93,13 +113,13 @@ stages:
       size: 3645
     - path: params.yaml
       hash: md5
-      md5: 2c880a3546219f0e3df66ddc11f53b4e
-      size: 654
+      md5: 4196b164768b54d195c75e8826015727
+      size: 655
     - path: src/churn_pipeline/
       hash: md5
-      md5: 159f879edde4433ba2c865fb51e59605.dir
-      size: 73851
-      nfiles: 15
+      md5: 69b02db9d1222662909c76031e93014a.dir
+      size: 115491
+      nfiles: 17
     params:
       params.yaml:
         calibration_bins: 10
@@ -152,14 +172,14 @@ stages:
     outs:
     - path: reports/figures/
       hash: md5
-      md5: db6bb9bb162d0cb1f9fe7155f0d4882b.dir
-      size: 177266
-      nfiles: 8
+      md5: 22600205f39abe97d1199683aed1c341.dir
+      size: 350374
+      nfiles: 12
     - path: reports/metrics.json
       hash: md5
-      md5: 5b50a7c3ec6c2e7b47efd52aa4424a04
-      size: 660
+      md5: 07b04623d867038f9b8373d938c794d8
+      size: 1195
     - path: reports/report.html
       hash: md5
-      md5: c98a94c31a1c8b7c13958d9967485944
-      size: 1656
+      md5: 86d129593b12c93e12550985b8175e3c
+      size: 2263

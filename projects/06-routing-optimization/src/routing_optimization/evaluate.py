@@ -15,20 +15,29 @@ from pathlib import Path
 import plotly.express as px
 import plotly.graph_objects as go
 import polars as pl
+import yaml  # type: ignore[import-untyped]
 from portfolio_core.dq import DQReport
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_html, save_json
+from portfolio_core.plotting import (
+    add_takeaway,
+    apply_theme,
+    is_baseline_run,
+    save_html,
+    save_json,
+    style_runs,
+)
 from portfolio_eval.report import EvalReport
 
 from routing_optimization.config import VRPConfig
 from routing_optimization.parser import parse_solomon_file
-from routing_optimization.schemas import Problem, RoutePlan
+from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
 from routing_optimization.solver import (
     clarke_wright_savings,
     nearest_neighbor,
     randomized,
     two_opt,
 )
+from routing_optimization.tuning import best_start, restart_plans, run_hpo
 
 logger = get_logger(__name__)
 
@@ -290,12 +299,108 @@ def eda_instance_map_figure(problem: Problem) -> go.Figure:
     return apply_theme(fig, width=900, height=760)
 
 
+def convergence_figure(history: dict[str, list[float]], instance: str) -> go.Figure:
+    """Best-found distance vs accepted-move count, tuned vs untuned overlay.
+
+    ``history`` maps a solver label to its trace (index 0 is the construction
+    start). The construction start is explicitly marked, and the tuned curve
+    is promoted via :func:`portfolio_core.plotting.style_runs`.
+    """
+    fig = go.Figure()
+    for label in ("untuned", "tuned"):
+        values = history[label]
+        fig.add_trace(
+            go.Scatter(
+                x=list(range(len(values))),
+                y=values,
+                mode="lines+markers",
+                name="two_opt_tuned" if label == "tuned" else "two_opt",
+            )
+        )
+    tuned = history["tuned"]
+    fig.add_trace(
+        go.Scatter(
+            x=[0],
+            y=[tuned[0]],
+            mode="markers",
+            name="construction start",
+            marker_symbol="star",
+            marker_size=14,
+            marker_color="#fbbf24",
+        )
+    )
+    reduction = (tuned[0] - tuned[-1]) / tuned[0] * 100.0
+    style_runs(fig, best="two_opt_tuned")
+    add_takeaway(
+        fig,
+        f"construction {tuned[0]:.1f} -> tuned {tuned[-1]:.1f} "
+        f"(-{reduction:.1f}%) in {len(tuned) - 1} accepted moves",
+    )
+    fig.update_layout(
+        title=f"{instance} — 2-opt convergence",
+        xaxis_title="accepted moves",
+        yaxis_title="total distance",
+        showlegend=True,
+    )
+    return apply_theme(fig)
+
+
+def _style_runs_safe(fig: go.Figure, best: str) -> go.Figure:
+    """Apply the platform run-styling; fall back to marker colors for bar traces.
+
+    ``style_runs`` sets ``line=`` which scatter traces accept but bar traces
+    reject, so grouped-bar figures get the equivalent marker-color treatment
+    (grey baselines, accent best) via the public ``is_baseline_run`` hint.
+    """
+    try:
+        return style_runs(fig, best=best)
+    except ValueError:
+        for trace in fig.data:
+            name = str(getattr(trace, "name", "") or "")
+            if best.lower() in name.lower():
+                trace.update(marker={"color": "#2dd4bf"})
+            elif is_baseline_run(name):
+                trace.update(marker={"color": "#64748b"})
+        return fig
+
+
+def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
+    """Per-instance solver profile: grouped distance bars on a log scale.
+
+    Baselines are visually demoted (grey) and the tuned run promoted, so the
+    solver ladder reads instantly.
+    """
+    fig = px.bar(
+        rows,
+        x="instance",
+        y="distance",
+        color="solver",
+        barmode="group",
+        log_y=True,
+        title="Solver profile per instance (total distance, log scale)",
+        labels={"distance": "total distance", "instance": "instance", "solver": "solver"},
+    )
+    _style_runs_safe(fig, best="two_opt_tuned")
+    add_takeaway(
+        fig,
+        "constraint-aware construction (savings) removes most of the randomized floor; "
+        "tuned 2-opt closes a further few percent",
+    )
+    return apply_theme(fig)
+
+
 # ---------------------------------------------------------------------------
 # Pipeline stages (used by the CLI and dvc.yaml)
 
 
 def run_solve(cfg: VRPConfig) -> Path:
-    """Solve every configured instance and persist ``reports/solutions.json``."""
+    """Solve every configured instance and persist ``reports/solutions.json``.
+
+    Runs the four base solvers, then the seeded HPO over the improvement
+    stage, then one ``two_opt_tuned`` run per instance with the chosen
+    configuration. The chosen config is persisted to ``params.yaml`` under
+    ``solver_best`` (idempotent: identical across runs for a fixed seed).
+    """
     payload: dict[str, object] = {
         "seed": cfg.seed,
         "max_two_opt_iterations": cfg.max_two_opt_iterations,
@@ -303,6 +408,9 @@ def run_solve(cfg: VRPConfig) -> Path:
     }
     dq_doc = ["# Data-quality gates — Solomon VRPTW subset", ""]
     instances_payload: dict[str, object] = {}
+    problems: list[Problem] = []
+    runs_by_inst: dict[str, list[SolverRun]] = {}
+    plans_by_inst: dict[str, dict[str, RoutePlan]] = {}
 
     for inst in cfg.instances:
         path = cfg.raw_dir / f"{inst}.txt"
@@ -312,7 +420,58 @@ def run_solve(cfg: VRPConfig) -> Path:
         dq = run_dq(problem)
         dq.raise_if_failed()
         dq_doc += [f"## {inst}", "", dq.to_markdown(), ""]
+        problems.append(problem)
         runs, plans = solve_with_timing(problem, cfg.max_two_opt_iterations, seed=cfg.seed)
+        runs_by_inst[inst] = runs
+        plans_by_inst[inst] = plans
+
+    bases = {
+        inst: min(
+            (plans["nearest_neighbor"], plans["clarke_wright"]),
+            key=lambda p: p.total_distance,
+        )
+        for inst, plans in plans_by_inst.items()
+    }
+    hpo = run_hpo(problems, bases, cfg)
+    convergence: dict[str, dict[str, list[float]]] = {}
+
+    for problem in problems:
+        inst = problem.name
+        runs = runs_by_inst[inst]
+        plans = plans_by_inst[inst]
+        restarts = restart_plans(problem, seed=cfg.seed, restarts=hpo.tuning.restarts)
+        start = best_start(bases[inst], restarts)
+        trace: list[float] | None = [] if inst in cfg.convergence_instances else None
+        t0 = time.perf_counter()
+        tuned = two_opt(
+            problem,
+            start,
+            max_iterations=hpo.tuning.max_iterations,
+            acceptance=hpo.tuning.acceptance,
+            tail_exchange=hpo.tuning.tail_exchange,
+            trace=trace,
+        )
+        tuned_runtime = time.perf_counter() - t0
+        runs.append(
+            SolverRun(
+                "two_opt_tuned",
+                tuned.total_distance,
+                tuned.n_vehicles,
+                tuned_runtime,
+                base_solver=f"{start.solver} best-of-{hpo.tuning.restarts}",
+            )
+        )
+        plans["two_opt_tuned"] = tuned
+        if trace is not None:
+            untuned_trace: list[float] = []
+            two_opt(
+                problem,
+                bases[inst],
+                max_iterations=cfg.max_two_opt_iterations,
+                trace=untuned_trace,
+            )
+            convergence[inst] = {"untuned": untuned_trace, "tuned": trace}
+
         best = min(runs, key=lambda r: r.total_distance)
         instances_payload[inst] = {
             "n_customers": problem.n_customers,
@@ -343,11 +502,38 @@ def run_solve(cfg: VRPConfig) -> Path:
         )
 
     payload["instances"] = instances_payload
+    payload["solver_best"] = hpo.tuning.model_dump()
+    payload["hpo"] = {
+        "trials": len(hpo.trials),
+        "best_mean_distance": round(hpo.best.mean_distance, 4),
+    }
+    payload["convergence"] = convergence
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     solutions_path = cfg.reports_dir / "solutions.json"
     solutions_path.write_text(json.dumps(payload, indent=2))
     (cfg.reports_dir / "dq.md").write_text("\n".join(dq_doc))
+    persist_solver_best(cfg, hpo.tuning)
     return solutions_path
+
+
+def persist_solver_best(cfg: VRPConfig, tuning: TwoOptTuning) -> Path:
+    """Write the chosen improvement-stage config to ``params.yaml`` (idempotent).
+
+    Replaces only the ``solver_best:`` block (or appends it), preserving the
+    rest of the file — including comments — byte for byte. Tests override the
+    target via ``cfg.params_path``.
+    """
+    params_path = cfg.params_path or Path(__file__).resolve().parents[2] / "params.yaml"
+    block = "solver_best:\n" + yaml.safe_dump(tuning.model_dump(), sort_keys=False)
+    text = params_path.read_text() if params_path.exists() else ""
+    head, sep, _tail = text.partition("solver_best:\n")
+    new_text = (
+        head + block if sep else text + ("\n" if text and not text.endswith("\n") else "") + block
+    )
+    if new_text != text:
+        params_path.write_text(new_text)
+    logger.info("solver_best persisted to %s: %s", params_path, tuning.summary())
+    return params_path
 
 
 def _solver_gaps(evaln: InstanceEvaluation) -> dict[str, float | None]:
@@ -455,11 +641,19 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         for ev in evaluations
         for r in ev.runs
     )
+    distance_rows = pl.DataFrame(
+        {"instance": ev.instance, "solver": r.solver, "distance": r.total_distance}
+        for ev in evaluations
+        for r in ev.runs
+    )
 
     figures: dict[str, go.Figure] = {
         "gap_pct": gap_figure(gap_rows),
         "runtime": runtime_figure(runtime_rows),
+        "solver_profile": solver_profile_figure(distance_rows),
     }
+    for inst, history in solutions.get("convergence", {}).items():
+        figures[f"convergence_{inst}"] = convergence_figure(history, inst)
     map_eval = next((ev for ev in evaluations if ev.instance == cfg.map_instance), evaluations[0])
     map_problem = parse_solomon_file(
         cfg.raw_dir / f"{map_eval.instance}.txt", name=map_eval.instance
@@ -482,6 +676,11 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         )
 
     figures_dir = cfg.reports_dir / "figures"
+    figures_dir.mkdir(parents=True, exist_ok=True)
+    # drop stale figure payloads from previous runs (e.g. changed instance lists)
+    for stale in figures_dir.iterdir():
+        if stale.suffix in {".html", ".json"} and stale.stem not in figures:
+            stale.unlink()
     for name, fig in figures.items():
         save_html(fig, figures_dir / f"{name}.html")
         save_json(fig, figures_dir / f"{name}.json")
@@ -553,6 +752,10 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             }
             for ev in evaluations
         },
+        "tuning": {
+            "solver_best": solutions.get("solver_best"),
+            "hpo": solutions.get("hpo"),
+        },
     }
     metrics_path = cfg.reports_dir / "metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2))
@@ -574,11 +777,13 @@ __all__ = [
     "InstanceEvaluation",
     "SolverRun",
     "canonical_instance_name",
+    "convergence_figure",
     "eda_instance_map_figure",
     "evaluate_instance",
     "gap_figure",
     "gap_pct",
     "load_best_known",
+    "persist_solver_best",
     "results_markdown",
     "route_map_figure",
     "run_dq",
@@ -587,5 +792,6 @@ __all__ = [
     "runtime_figure",
     "solve_instance",
     "solve_with_timing",
+    "solver_profile_figure",
     "summary_markdown",
 ]

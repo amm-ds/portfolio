@@ -1,7 +1,7 @@
 """Typer CLI for the anomaly-detection pipeline.
 
 Commands mirror the DVC stages: prepare → validate → features → train →
-evaluate, plus ``dq-report`` (re-render the DQ report) and ``all``.
+tune → evaluate, plus ``dq-report`` (re-render the DQ report) and ``all``.
 """
 
 import polars as pl
@@ -12,6 +12,7 @@ from anomaly_detection.config import PROJECT_ROOT, AnomalyConfig
 from anomaly_detection.data import load_raw, prepare
 from anomaly_detection.evaluate import run_evaluation
 from anomaly_detection.features import build_features, load_features, save_features
+from anomaly_detection.hpo import tune_all
 from anomaly_detection.model import feature_matrix, fit_models, save_models, split_train_test
 from anomaly_detection.validate import validate as run_validation
 
@@ -84,6 +85,18 @@ def train() -> None:
 
 
 @app.command()
+def tune() -> None:
+    """HPO (Optuna, seeded TPE) per family on a validation slice of the train window."""
+    config = get_config()
+    df = load_features(config)
+    train_df, _ = split_train_test(df, config.train_frac)
+    x_train = feature_matrix(train_df, config)
+    y_train = train_df["is_anomaly"].to_numpy().astype(int)
+    tuned = tune_all(config, x_train, y_train)
+    typer.echo(f"tuned {len(tuned)} detectors -> {config.tuned_models_dir}")
+
+
+@app.command()
 def evaluate() -> None:
     """Score detectors on the test window; write metrics, report, and figures."""
     config = get_config()
@@ -95,7 +108,7 @@ def evaluate() -> None:
 
 @app.command()
 def all() -> None:
-    """Run the full pipeline: prepare → validate → features → train → evaluate."""
+    """Run the full pipeline: prepare → validate → features → train → tune → evaluate."""
     config = get_config()
     df = prepare(config)
     report = run_validation(df, config)
@@ -103,7 +116,9 @@ def all() -> None:
     feat = build_features(df, config.windows)
     save_features(feat, config)
     train_df, _ = split_train_test(feat, config.train_frac)
-    save_models(fit_models(feature_matrix(train_df, config), config), config)
+    x_train = feature_matrix(train_df, config)
+    save_models(fit_models(x_train, config), config)
+    tune_all(config, x_train, train_df["is_anomaly"].to_numpy().astype(int))
     metrics, report_path = run_evaluation(config)
     for name, values in metrics.items():
         typer.echo(f"{name}: " + ", ".join(f"{k}={v:.4f}" for k, v in values.items()))

@@ -1,6 +1,7 @@
 """Evaluator tests: perfect separation scores AUC 1.0, ranking helpers, artifacts."""
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -88,6 +89,22 @@ def test_eda_signals_overview_marks_injected_anomalies(
     assert len(marker.x) > 0
 
 
+def test_score_distribution_figure_separates_masses(small_config: AnomalyConfig) -> None:
+    """Histogram shows normal vs. anomaly masses with a log-y axis."""
+    from anomaly_detection.evaluate import score_distribution_figure, threshold_sweep_figure
+
+    rng = np.random.default_rng(0)
+    y_true = np.array([0] * 200 + [1] * 40)
+    scores = np.concatenate([rng.normal(0.0, 0.3, 200), rng.normal(3.0, 0.5, 40)])
+    fig = score_distribution_figure(scores, y_true, small_config, "fixture")
+    names = [t.name for t in fig.data]
+    assert "normal" in names and "anomaly (injected)" in names
+    assert fig.layout.yaxis.type == "log"
+    sweep = threshold_sweep_figure(scores, y_true, small_config, "fixture")
+    sweep_names = [t.name for t in sweep.data]
+    assert "recall (TPR)" in sweep_names and "precision" in sweep_names
+
+
 def test_best_model_by_pr_auc() -> None:
     good = evaluate_scores("good", np.array([0, 1]), np.array([0.0, 1.0]))
     bad = evaluate_scores("bad", np.array([0, 1]), np.array([1.0, 0.0]))
@@ -96,9 +113,10 @@ def test_best_model_by_pr_auc() -> None:
         best_model([])
 
 
-def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig) -> None:
+def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig, tmp_path: Path) -> None:
     from anomaly_detection.data import prepare
     from anomaly_detection.features import build_features, save_features
+    from anomaly_detection.hpo import tune_all
     from anomaly_detection.model import (
         feature_matrix,
         fit_models,
@@ -106,14 +124,30 @@ def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig) -> None:
         split_train_test,
     )
 
-    df = prepare(small_config)
-    save_features(build_features(df, small_config.windows), small_config)
-    feat = build_features(df, small_config.windows)
-    train, _ = split_train_test(feat, small_config.train_frac)
-    save_models(fit_models(feature_matrix(train, small_config), small_config), small_config)
+    config = AnomalyConfig(
+        n=2_000,
+        hpo_trials=5,
+        data_dir=str(tmp_path / "d"),
+        reports_dir=str(tmp_path / "r"),
+    )
+    df = prepare(config)
+    save_features(build_features(df, config.windows), config)
+    feat = build_features(df, config.windows)
+    train, _ = split_train_test(feat, config.train_frac)
+    x_train = feature_matrix(train, config)
+    save_models(fit_models(x_train, config), config)
+    tune_all(config, x_train, train["is_anomaly"].to_numpy().astype(int))
 
-    metrics, report_path = run_evaluation(small_config)
-    assert set(metrics) == {"random", "isolation_forest", "lof", "ocsvm"}
+    metrics, report_path = run_evaluation(config)
+    assert set(metrics) == {
+        "random",
+        "isolation_forest",
+        "lof",
+        "ocsvm",
+        "isolation_forest_tuned",
+        "lof_tuned",
+        "ocsvm_tuned",
+    }
     for values in metrics.values():
         assert set(values) == {"roc_auc", "pr_auc"}
         assert 0.0 <= values["roc_auc"] <= 1.0
@@ -121,8 +155,16 @@ def test_run_evaluation_writes_artifacts(small_config: AnomalyConfig) -> None:
     assert metrics["random"]["roc_auc"] == pytest.approx(0.5, abs=0.1)
     assert metrics["isolation_forest"]["roc_auc"] > metrics["random"]["roc_auc"]
     assert report_path.exists()
-    assert (small_config.eval_dir / "metrics.json").exists()
-    assert json.loads((small_config.eval_dir / "metrics.json").read_text()) == metrics
-    for name in ("eda_signals_overview", "roc_curves", "pr_curves", "telemetry_flags"):
-        assert (small_config.figures_dir / f"{name}.html").exists()
-        assert (small_config.figures_dir / f"{name}.json").exists()
+    assert (config.eval_dir / "metrics.json").exists()
+    assert json.loads((config.eval_dir / "metrics.json").read_text()) == metrics
+    for name in (
+        "eda_signals_overview",
+        "roc_curves",
+        "pr_curves",
+        "telemetry_flags",
+        "threshold_sweep",
+        "score_distribution",
+        "hpo_importance",
+    ):
+        assert (config.figures_dir / f"{name}.html").exists()
+        assert (config.figures_dir / f"{name}.json").exists()

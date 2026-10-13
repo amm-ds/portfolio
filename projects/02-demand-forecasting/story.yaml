@@ -5,7 +5,7 @@ sections:
       A retailer sells six products across four stores and needs a trustworthy
       daily unit forecast for every store-product combination — 24 series in
       total. These forecasts drive replenishment: systematically under-forecast
-      a trending product and shelves go empty, over-forecast and cash sits in
+      a trending product and shelves go empty; over-forecast and cash sits in
       unsold stock.
 
       Demand here is not flat: every series carries a slow upward trend and a
@@ -16,7 +16,8 @@ sections:
 
       This case study builds the full path from raw panel to validated model:
       data contracts and quality gates, leakage-safe features, naive reference
-      baselines, and an embargoed expanding-window backtest that reports
+      baselines, hyperparameter search, a neural candidate, hierarchical
+      reconciliation, and an embargoed expanding-window backtest that reports
       stability alongside accuracy.
 
   - id: objectives
@@ -27,11 +28,16 @@ sections:
 
       Concrete goals: (1) a global model that handles all 24 series as one
       deployable artefact; (2) features built exclusively from information
-      available before the forecast day — no shift, no leakage; (3) an honest
-      backtest — expanding training windows, a 7-day embargo between train and
-      validation, metrics pooled over out-of-fold predictions only; (4) every
-      accuracy claim anchored against naive floors so "better" is quantified,
-      not asserted.
+      available before the forecast day — no leakage; (3) an honest backtest —
+      expanding training windows, a 7-day embargo between train and validation,
+      metrics pooled over out-of-fold predictions only; (4) every accuracy claim
+      anchored against naive floors so "better" is quantified, not asserted;
+      (5) production depth — tuned hyperparameters, an honest neural comparison,
+      and forecasts that cohere across the hierarchy.
+
+      **So what:** the deliverable is not a model file, it is a defensible
+      number — "we beat yesterday's number by 41%, here is the protocol that
+      proves it".
 
   - id: data
     text_md: |
@@ -49,86 +55,127 @@ sections:
       in DESIGN.md; the swap point is a single function, `data.py::build_panel`,
       with every downstream module unchanged.
 
+      **So what:** every result you see is regenerable from a clean clone in
+      about a minute, with no downloads and no manual steps.
+
   - id: eda
     text_md: |
       The series overview shows the two structural components that any
-      competent model must capture: a slow upward trend (stronger in higher-
-      indexed stores) and a regular weekly wave, with weekends clearly
+      competent model must capture: a slow upward trend (stronger in
+      higher-indexed stores) and a regular weekly wave, with weekends clearly
       separated from weekdays.
 
       The units distribution is wide and right-skewed across the hierarchy —
       store-product levels differ by design — which is why a single global
-      mean is such a poor predictor and why the models receive a series
-      identity feature instead of being pooled blindly.
+      mean is such a poor predictor (MAE 31.8) and why the models receive a
+      series identity feature instead of being pooled blindly.
+
+      **So what:** the two things that make naive forecasting fail — trend and
+      weekly rhythm — are visible in the raw data before any model is trained.
     figures: [eda_series_overview, eda_units_distribution]
 
   - id: training
     text_md: |
-      Four models, one per algorithmic rung: `naive_mean` (a single global
-      train-mean number), `naive_last` (per-series persistence — yesterday's
-      units), `ridge` (a linear model in a scaled sklearn Pipeline with one-hot
-      series identity), and `hgb` (HistGradientBoostingRegressor on the same
-      features).
+      Six runs, one per algorithmic rung — all through the identical embargoed
+      expanding-window backtest:
+
+      - `naive_mean` / `naive_last` — global train mean and per-series
+        persistence (the floors every other run must beat).
+      - `ridge` — linear model in a scaled sklearn Pipeline with one-hot series
+        identity.
+      - `hgb` / `hgb_tuned` — gradient boosting; the tuned run is the production
+        config chosen by a seeded 56-trial Optuna study (learning rate, leaves,
+        regularisation; objective = CV MAE over the same folds).
+      - `temporal_net` — a hand-written PyTorch model (series embeddings + MLP,
+        own Adam, gradient clipping, early stopping). Verdict: behind ridge at
+        this data scale — reported, not hidden.
 
       All learners are global: one artefact covers the whole hierarchy, series
-      identity enters as a one-hot feature with `handle_unknown="ignore"`, and
-      shared seasonality/trend effects transfer across series. Features are lag
-      values (1, 7 and 14 days) built with `shift` — never the current row —
-      plus calendar encodings; rows with undefined lags are dropped, never
-      imputed. Training is validated inside a leakage-proof time-CV from
-      portfolio-core, not on random splits.
+      identity enters as a one-hot feature, and shared seasonality/trend effects
+      transfer across series. Hierarchical reconciliation (MinT-lite scalar
+      shrinkage, grid-estimated on the embargoed previous fold) adjusts the
+      store-product forecasts toward the store-level forecast by a data-chosen
+      weight w.
+
+      **So what:** model selection is an engineering step here, not a gamble —
+      every candidate faces the same leakage-proof protocol, and the answer is
+      chosen by the data.
 
   - id: evaluation
     text_md: |
       Validation uses the platform's `TimeSeriesCV`: four expanding-window
       folds over the 716 dated feature rows with a 7-day embargo between each
       training window and its validation block, folds mapped to rows so no date
-      straddles the split. Every model — including the naives — runs through
-      the identical backtest.
+      straddles the split. Every model — including the naives — runs through the
+      identical backtest, and HPO optimises on these same folds.
 
-      Metrics are the platform standard for regression (MAE, RMSE, MAPE),
-      pooled over all out-of-fold predictions across folds and all 24 series;
-      nothing is reported in-sample. Per-fold MAE is tracked alongside the
-      pooled numbers so instability and drift stay visible.
+      Metrics are the platform standard for regression (MAE, RMSE, MAPE), pooled
+      over all out-of-fold predictions across folds and all 24 series; nothing
+      is reported in-sample. Per-fold MAE is tracked alongside the pooled
+      numbers so instability and drift stay visible.
+
+      **So what:** the backtest is the contract — if a future model cannot win
+      under this protocol, it does not ship.
 
   - id: results
     text_md: |
-      Pooled out-of-fold results (seed 42, 4 folds × 24 series). Gradient
-      boosting wins with MAE 8.62 units (RMSE 12.18, MAPE 11.4%), the linear
-      ridge baseline is close behind (MAE 9.12), and both clear the naive
-      floors decisively: persistence (`naive_last`) sits at MAE 14.48 and the
-      global mean at 31.76.
+      Pooled out-of-fold results (seed 42, 4 folds × 24 series):
 
-      Quantified against the stronger naive: hgb cuts MAE by 40.5% and MAPE by
-      7.8 percentage points; ridge by 37.0%. Persistence fails because it
-      cannot see weekday structure or anticipate trend — a Monday forecast made
-      from Sunday's number starts with a built-in weekly error.
+      | run | MAE | RMSE | MAPE | Δ MAE vs naive_last |
+      |---|---|---|---|---|
+      | naive_mean | 31.76 | 42.54 | 49.0% | — (floor) |
+      | naive_last | 14.48 | 19.88 | 19.3% | — (strongest naive) |
+      | ridge | 9.12 | 12.71 | 12.4% | -37.0% |
+      | hgb | 8.62 | 12.18 | 11.4% | -40.5% |
+      | **hgb_tuned (HPO)** | **8.53** | **12.07** | **11.3%** | **-41.1%** |
+      | temporal_net | 9.34 | 12.76 | 13.4% | -35.5% |
 
-      The per-fold view shows all models degrading gently on the last fold as
-      the trend lifts demand, with the improvement ratio stable at 38.8–41.1%
-      in every fold — drift inflates naive and learned errors alike. The
-      residual ~8.6-unit MAE is mostly day-over-day noise: that is the plateau
-      a deeper model would have to beat, not the trend.
-    figures: [metrics_bars]
-    metrics_keys: [naive_mean, naive_last, ridge, hgb]
+      Key findings:
+
+      - The tuned GBM is the production model: -41.1% MAE vs persistence, with
+        the margin stable across folds (drift inflates all errors equally — a
+        random split would have hidden this).
+      - Optuna found a regularised, smaller-tree config (25 leaves, min 48
+        samples per leaf, learning rate 0.083, feature subsampling 0.53) that
+        edges out the defaults by ~1% MAE — modest, real, and reproducible from
+        `data/hpo_best.json`.
+      - The neural model trails even the linear baseline: at this history
+        length, day-over-day noise dominates and extra capacity adds variance,
+        not signal. That is a result, not a failure.
+      - Reconciliation on the last fold chose w=0.05 (the parent model suffers
+        the same drift as the children, so little trust is placed in it): store
+        MAE 23.892 → 23.837, incoherence 24.125 → 22.919 — structural coherence
+        improved with a tested exact guarantee.
+
+      **So what (plain language):** a tuned gradient-boosting model forecasts
+      demand two-fifths more accurately than "yesterday's number", and we can
+      show exactly when that stops being true.
+    figures: [metrics_bars, forecast_vs_actual, hpo_history, reconciliation_coherence]
+    metrics_keys: [naive_mean, naive_last, ridge, hgb, hgb_tuned, temporal_net]
 
   - id: conclusions
     text_md: |
-      What works: global models with series identity give one deployable
-      artefact for the whole hierarchy; shift-only lag features plus calendar
-      encodings are enough to beat persistence by two-fifths of its error; and
-      an embargoed expanding-window backtest with naive floors makes the
-      improvement auditable.
+      What works: global models with series identity (one deployable artefact
+      for the whole hierarchy); shift-only lag features plus calendar
+      encodings; embargoed time-CV with naive floors making every claim
+      auditable; seeded Optuna HPO as a repeatable production step (`cli hpo`,
+      resumable storage); reconciliation machinery that guarantees coherence
+      even when accuracy gains are bounded by parent-model drift.
 
-      The honest caveat: gains over persistence are stable across folds but
-      bounded by noise — later folds drift upward for every model, which is
-      exactly what a random split would have hidden. Watch the fold-stability
-      curve in production, not just the headline MAE.
+      Honest limits: gains over persistence are stable but bounded by
+      day-over-day noise (~8.5 units residual MAE); the neural model does not
+      pay off on small tabular lag features; reconciliation improves coherence
+      exactly by its shrinkage factor and accuracy only as far as the parent
+      model can be trusted. Later folds drift upward for every model — that
+      drift is a feature of the evaluation, not a bug.
 
-      Roadmap: Optuna hyperparameter search for the boosted model (dependency
-      already declared), a neural sequence model to test whether the noise
-      floor can actually be lowered, a real-data track on UCI Online Retail II,
-      and hierarchical reconciliation so store, product and total forecasts
-      agree arithmetically.
+      Roadmap: a raw-window sequence model (the honest next answer to
+      temporal_net's loss), the UCI Online Retail II real-data track, full MinT
+      covariance reconciliation, and probabilistic forecasts for safety-stock
+      sizing.
+
+      **So what (plain language):** the value is not a magic model — it is
+      knowing precisely which model wins, by how much, where it stops winning,
+      and being able to re-derive that answer from a clean clone.
     figures: [fold_stability, forecast_vs_actual]
-    metrics_keys: [naive_last, ridge, hgb]
+    metrics_keys: [naive_last, hgb, hgb_tuned]

@@ -38,15 +38,30 @@ stages:
     outs:
       - data/features
 
+  tune:
+    cmd: uv run python -m mobility.cli tune
+    deps:
+      - src/mobility/tune.py
+      - src/mobility/model.py
+      - data/features
+    params:
+      - hpo
+      - seed
+    outs:
+      - reports/models/hpo_gbm.json
+      - reports/models/hpo_nn.json
+
   train_baselines:
     cmd: uv run python -m mobility.cli train-baselines
     deps:
       - src/mobility/model.py
       - src/mobility/features.py
       - data/features
+      - reports/models/hpo_gbm.json
     params:
       - max_train_rows
       - gbm
+      - gbm_tuned
       - seed
     outs:
       - reports/models/predictions_baseline.parquet
@@ -57,12 +72,16 @@ stages:
       - src/mobility/model.py
       - data/features
       - reports/models/predictions_baseline.parquet
+      - reports/models/hpo_nn.json
     params:
       - nn
+      - nn_tuned
       - seed
     outs:
       - reports/models/temporal_net.pt
       - reports/models/temporal_net_norm.json
+      - reports/models/temporal_net_tuned.pt
+      - reports/models/temporal_net_tuned_norm.json
       - reports/models/predictions.parquet
 
   evaluate:
