@@ -1,6 +1,6 @@
 # amm-ds / portfolio
 
-**Senior Data Scientist & ML/AI Engineer — architect-level portfolio.**
+**Data Scientist & ML Engineer — architect-level portfolio.**
 End-to-end systems from data engineering and classical ML to agentic AI: every
 project ships with its design record, reproducible pipeline, and evaluation
 harness.

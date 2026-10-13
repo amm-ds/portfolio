@@ -1,48 +1,71 @@
 # Services
 
 Freelance ML/AI engineering for teams that need senior, end-to-end delivery —
-from problem framing to production systems with the engineering artifacts
+from problem framing to production systems, with the engineering artifacts
 (decision records, evaluation harnesses, runbooks) that keep them operable.
 
-Every engagement is backed by the public case studies in this repository —
-reproducible pipelines, honest baselines, and documented decisions. If it is
-worth saying, it is worth showing working code.
+The work is described generically below; public case studies in this repository
+demonstrate each capability end-to-end — reproducible pipelines, honest
+baselines, and documented decisions. If it is worth saying, it is worth showing
+working code.
 
 ## Offerings
 
 ### ML/AI systems delivery
 End-to-end design and build: data contracts, training pipelines, evaluation
 harnesses, deployment-ready services.
-Deliverables: working system, DVC/CI reproducibility, evaluation report with
-baselines, runbooks, handover documentation.
+Deliverables: working system, reproducible environments (uv/Docker), evaluation
+report with baselines, runbooks, handover documentation.
 
-### Agentic AI & RAG applications
+### Agentic AI & LLM applications
 Retrieval-augmented assistants with typed tool use, structured outputs,
 citation enforcement, and cost/latency SLOs — plus the evaluation harness to
-prove quality (Project 01 is the reference build).
-Deliverables: agent service (FastAPI), retrieval index pipeline, faithfulness/
-relevance eval harness, cost & latency budgets, fallback chains.
+prove quality and the fallback chains to keep the service up.
+Deliverables: agent service (FastAPI), retrieval index pipeline, faithfulness /
+relevance eval harness, cost & latency budgets.
 
 ### Data engineering
 Reproducible pipelines over large, messy open or commercial data — lazy,
 out-of-core processing, data-quality gates that fail loudly, checksum-pinned
-snapshots (Project 07 processed 41M real trips on a laptop budget).
-Deliverables: versioned pipeline (DVC), dataset registry with licenses and
-checksums, DQ dashboards, scale notes.
+snapshots, dataset registries with licenses.
+Deliverables: versioned pipelines (DVC), DQ dashboards, scale and memory notes.
 
 ### Forecasting & analytics
 Demand, churn, and behavioral modeling with honest backtests and
-decision-ready visualizations — including uncertainty bands and business-cost
-threshold tuning (Projects 02, 05, 07).
+decision-ready visualizations — uncertainty bands, business-cost threshold
+tuning, and decision-curve analysis.
 Deliverables: leakage-proof evaluation, calibrated models, business-cost
 analysis, interactive reports.
 
 ### MLOps & reproducibility audits
-Versioning, CI gates, review culture, drift response — an audit of what
-breaks first and the cheapest fixes, aligned with the engineering playbook
-published in this repository.
-Deliverables: gap report, prioritized remediation, CI/CD and DVC setup,
-team playbook.
+Versioning, CI gates, review culture, drift response — an audit of what breaks
+first and the cheapest fixes, aligned with the engineering playbook published
+in this repository.
+Deliverables: gap report, prioritized remediation, CI/CD and DVC setup, team
+playbook.
+
+## Frameworks
+
+The stack is deliberate and portable — each tool chosen for a written reason
+(see the architecture decision records):
+
+| Area | Framework |
+|---|---|
+| Typed contracts & config | [pydantic](https://docs.pydantic.dev/) · [pydantic-ai](https://ai.pydantic.dev/) |
+| Classical ML | [scikit-learn](https://scikit-learn.org/) |
+| Deep learning | [PyTorch](https://pytorch.org/) · [Hugging Face](https://huggingface.co/) |
+| Data processing | [Polars](https://pola.rs/) |
+| Visualization | [Plotly](https://plotly.com/) |
+| Experiment/HPO | [Optuna](https://optuna.org/) |
+| Versioning & pipelines | [DVC](https://dvc.org/) · [uv](https://docs.astral.sh/uv/) |
+| Services & UI | [FastAPI](https://fastapi.tiangolo.com/) · [React](https://react.dev/) · [TypeScript](https://www.typescriptlang.org/) |
+
+## Cloud-agnostic delivery
+
+Systems are built to run on **the client's platform of choice — AWS, Azure,
+GCP, or on-prem**. Pipelines are portable by construction (Docker + uv + DVC),
+data stays inside the client's boundary, and nothing in the deliverable depends
+on a specific vendor. No lock-in: everything runs from a clean clone.
 
 ## Process
 
@@ -53,8 +76,7 @@ team playbook.
    harness — with reproducible artifacts from day one.
 3. **Production build.** Iterative delivery against agreed SLOs; evaluation
    and DQ gates wired into CI; weekly written progress.
-4. **Handover.** Documentation, runbooks, and a walkthrough session. No
-   lock-in: everything runs from a clean clone.
+4. **Handover.** Documentation, runbooks, and a walkthrough session.
 
 ## Engagement models
 
@@ -78,12 +100,7 @@ commitments.
 
 ## Case studies
 
-| Project | What it demonstrates |
-|---|---|
-| [01 — RAG & Agentic AI Assistant](../projects/01-rag-agent.md) | Typed agentic AI with evaluation harness and cost SLOs |
-| [07 — Urban Mobility Demand Intelligence](../projects/07-open-data-mobility.md) | GB-scale open data, forecasting, weather insight |
-| [06 — Routing Optimization](../projects/06-routing-optimization.md) | Optimization against published benchmarks |
-| [04 — NLP Classification](../projects/04-nlp-classification.md) | Deep learning with hand-written training loops |
-| [05 — Churn Modeling](../projects/05-ml-pipeline-churn.md) | Deployment-grade sklearn pipelines, business-cost decisions |
-| [03 — Anomaly Detection](../projects/03-anomaly-detection.md) | Unsupervised detection with honest failure analysis |
-| [02 — Demand Forecasting](../projects/02-demand-forecasting.md) | Leakage-proof time-series evaluation |
+Live, reproducible demonstrations of the above capabilities:
+[project index](../projects/index.md) — each case study covers background,
+objectives, data (with dataset cards), EDA, training, evaluation, results,
+and conclusions, with honest naive-baseline deltas.
