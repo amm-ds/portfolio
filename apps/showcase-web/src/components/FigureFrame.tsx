@@ -10,14 +10,14 @@ export interface FigureCaption {
   sectionTitle: string;
 }
 
-function formatCaption(c: FigureCaption): string {
+export function formatFigureCaption(c: FigureCaption): string {
   return `fig :: ${c.sectionId} · ${c.index}/${c.total} — ${c.sectionTitle}`;
 }
 
 /**
- * A project figure embedded as a full HTML page in a responsive frame:
- * terminal-style border, mono corner label, dark loading skeleton until the
- * iframe's onLoad fires, and an optional caption bar derived from story context.
+ * HTML-iframe figure embed (fallback path): terminal-style border, mono
+ * corner label, dark loading skeleton until onLoad. `caption` may be a
+ * structured story caption or a preformatted string.
  */
 export function FigureFrame({
   projectId,
@@ -26,9 +26,11 @@ export function FigureFrame({
 }: {
   projectId: string;
   name: string;
-  caption?: FigureCaption;
+  caption?: FigureCaption | string | null;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const captionText =
+    caption == null ? null : typeof caption === "string" ? caption : formatFigureCaption(caption);
   return (
     <figure className="figure-frame">
       <div className={`frame-wrap${loaded ? " loaded" : ""}`}>
@@ -45,7 +47,7 @@ export function FigureFrame({
           onLoad={() => setLoaded(true)}
         />
       </div>
-      {caption && <figcaption className="figure-caption">{formatCaption(caption)}</figcaption>}
+      {captionText && <figcaption className="figure-caption">{captionText}</figcaption>}
     </figure>
   );
 }

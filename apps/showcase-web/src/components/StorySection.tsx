@@ -1,9 +1,9 @@
 import type { Metrics, StorySectionData } from "../api";
 import { renderMarkdown } from "../lib/markdown";
-import { FigureFrame } from "./FigureFrame";
 import { MetricCallouts } from "./MetricCallouts";
+import { PlotlyFigure } from "./PlotlyFigure";
 
-/** One case-study section: markdown prose, metric callouts, referenced figures. */
+/** One case-study section: markdown prose + metric callouts left, native plotly figures right. */
 export function StorySection({
   projectId,
   section,
@@ -15,23 +15,13 @@ export function StorySection({
   index: number;
   metrics: Metrics | null;
 }) {
-  const figures = section.figures;
-  const total = figures.length;
-  const frames = figures.map((name, i) => (
-    <FigureFrame
+  const total = section.figures.length;
+  const figures = section.figures.map((name, i) => (
+    <PlotlyFigure
       key={name}
-      projectId={projectId}
+      pid={projectId}
       name={name}
-      caption={
-        total > 0
-          ? {
-              sectionId: section.id,
-              index: i + 1,
-              total,
-              sectionTitle: section.title,
-            }
-          : undefined
-      }
+      caption={`fig :: ${section.id} · ${i + 1}/${total} — ${section.title}`}
     />
   ));
 
@@ -41,10 +31,13 @@ export function StorySection({
         <span className="rail-num">{String(index + 1).padStart(2, "0")} </span>
         {section.title}
       </h2>
-      <div className="prose">{renderMarkdown(section.text_md)}</div>
-      {metrics && <MetricCallouts metrics={metrics} metricsKeys={section.metrics_keys} />}
-      {total === 1 && frames[0]}
-      {total >= 2 && <div className="figure-grid">{frames}</div>}
+      <div className="story-cols">
+        <div className="story-main">
+          <div className="prose">{renderMarkdown(section.text_md)}</div>
+          {metrics && <MetricCallouts metrics={metrics} metricsKeys={section.metrics_keys} />}
+        </div>
+        {total > 0 && <div className="story-figs">{figures}</div>}
+      </div>
     </section>
   );
 }

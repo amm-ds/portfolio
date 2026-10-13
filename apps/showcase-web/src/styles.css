@@ -1157,6 +1157,205 @@ button:disabled {
   }
 }
 
+/* --- Native plotly figures --- */
+
+.plotly-wrap {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.plotly-host {
+  width: 100%;
+}
+
+/* --- Case study two-column layout (desktop) --- */
+
+.story-cols {
+  display: block;
+}
+
+@media (min-width: 1024px) {
+  .story-cols {
+    display: grid;
+    grid-template-columns: 45fr 55fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  .story-figs .figure-frame {
+    margin-bottom: 1.25rem;
+  }
+}
+
+/* --- Home presentation sections --- */
+
+.page-title {
+  font-size: 2rem;
+  margin: 0 0 1rem;
+  text-shadow: 0 0 18px rgba(45, 212, 191, 0.25);
+}
+
+.page-title::before {
+  content: "$ ";
+  color: var(--accent);
+  text-shadow: none;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  line-height: 1.2;
+  margin: 0 0 1rem;
+  text-shadow: 0 0 18px rgba(45, 212, 191, 0.3);
+}
+
+.card-link {
+  margin: 0.75rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+}
+
+.case-card .key-number {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+}
+
+.cta-band {
+  margin-top: 2.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+}
+
+.cta-band p {
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+}
+
+.cta-band p:last-child {
+  margin-bottom: 0;
+}
+
+.cta-band strong {
+  color: var(--text);
+}
+
+.cta-links {
+  font-family: var(--mono);
+  font-size: 0.92rem;
+}
+
+.cta-links a {
+  color: var(--accent);
+}
+
+/* --- Frameworks --- */
+
+.section-intro {
+  color: var(--muted);
+  margin: -0.5rem 0 1rem;
+  font-size: 0.95rem;
+}
+
+.framework-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.frameworks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.framework-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  min-height: 44px;
+}
+
+.framework-tile:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+
+.framework-tile img {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.framework-letters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 1px solid var(--secondary);
+  border-radius: 5px;
+  color: var(--secondary);
+  font-size: 0.68rem;
+}
+
+.framework-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.framework-more {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  padding: 0.55rem 0.8rem;
+}
+
+.cloud-block {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--secondary);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  max-width: 760px;
+}
+
+.cloud-block p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.cloud-block strong {
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .hero h1 {
+    font-size: 1.8rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cursor {
     animation: none;

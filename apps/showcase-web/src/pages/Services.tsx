@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
+import { FRAMEWORKS, FrameworkTile } from "../components/Frameworks";
 
 const OFFERINGS = [
   {
     title: "ML/AI systems delivery",
     blurb:
-      "End-to-end design and build: data contracts, training pipelines, evaluation harnesses, deployment-ready services.",
+      "End-to-end design and build of production ML systems — from data contracts and training pipelines to evaluation harnesses and deployment-ready services.",
     deliverables: [
       "working system",
       "DVC/CI reproducibility",
@@ -14,9 +15,9 @@ const OFFERINGS = [
     ],
   },
   {
-    title: "Agentic AI & RAG applications",
+    title: "Agentic AI & LLM applications",
     blurb:
-      "Retrieval-augmented assistants with typed tool use, structured outputs, citation enforcement, and cost/latency SLOs — plus the evaluation harness to prove quality (Project 01 is the reference build).",
+      "Retrieval-augmented assistants and agents with typed tool use, structured outputs and citation enforcement — delivered with the evaluation harness to prove quality and the budgets to run it.",
     deliverables: [
       "agent service (FastAPI)",
       "retrieval index pipeline",
@@ -28,7 +29,7 @@ const OFFERINGS = [
   {
     title: "Data engineering",
     blurb:
-      "Reproducible pipelines over large, messy open or commercial data — lazy, out-of-core processing, data-quality gates that fail loudly, checksum-pinned snapshots (Project 07 processed 41M real trips on a laptop budget).",
+      "Reproducible pipelines over large, messy open or commercial data — lazy, out-of-core processing, data-quality gates that fail loudly, checksum-pinned snapshots.",
     deliverables: [
       "versioned pipeline (DVC)",
       "dataset registry with licenses and checksums",
@@ -39,7 +40,7 @@ const OFFERINGS = [
   {
     title: "Forecasting & analytics",
     blurb:
-      "Demand, churn, and behavioral modeling with honest backtests and decision-ready visualizations — including uncertainty bands and business-cost threshold tuning (Projects 02, 05, 07).",
+      "Demand, churn and behavioral modeling with honest backtests and decision-ready visualizations — including uncertainty bands and business-cost threshold tuning.",
     deliverables: [
       "leakage-proof evaluation",
       "calibrated models",
@@ -50,7 +51,7 @@ const OFFERINGS = [
   {
     title: "MLOps & reproducibility audits",
     blurb:
-      "Versioning, CI gates, review culture, drift response — an audit of what breaks first and the cheapest fixes, aligned with the engineering playbook published in this repository.",
+      "Versioning, CI gates, review culture, drift response — an audit of what breaks first and the cheapest fixes, aligned with a published engineering playbook.",
     deliverables: [
       "gap report",
       "prioritized remediation",
@@ -101,16 +102,6 @@ const ENGAGEMENTS = [
   },
 ];
 
-const CASE_STUDIES = [
-  { id: "01-rag-agent", label: "01", demonstrates: "Typed agentic AI with evaluation harness and cost SLOs" },
-  { id: "07-open-data-mobility", label: "07", demonstrates: "GB-scale open data, forecasting, weather insight" },
-  { id: "06-routing-optimization", label: "06", demonstrates: "Optimization against published benchmarks" },
-  { id: "04-nlp-classification", label: "04", demonstrates: "Deep learning with hand-written training loops" },
-  { id: "05-ml-pipeline-churn", label: "05", demonstrates: "Deployment-grade sklearn pipelines, business-cost decisions" },
-  { id: "03-anomaly-detection", label: "03", demonstrates: "Unsupervised detection with honest failure analysis" },
-  { id: "02-demand-forecasting", label: "02", demonstrates: "Leakage-proof time-series evaluation" },
-];
-
 export function Services() {
   return (
     <>
@@ -123,9 +114,8 @@ export function Services() {
           records, evaluation harnesses, runbooks) that keep them operable.
         </p>
         <p>
-          Every engagement is backed by the public case studies in this repository —
-          reproducible pipelines, honest baselines, and documented decisions. If it is worth
-          saying, it is worth showing working code.
+          Every engagement is backed by public, reproducible case studies — honest baselines
+          and documented decisions. If it is worth saying, it is worth showing working code.
         </p>
       </section>
 
@@ -143,6 +133,28 @@ export function Services() {
             </ul>
           </div>
         ))}
+      </div>
+
+      <h2 className="section-title" id="frameworks">
+        frameworks
+      </h2>
+      <p className="section-intro">
+        The stack behind the work — chosen for reproducibility and longevity, not fashion.
+      </p>
+      <div className="frameworks-grid">
+        {FRAMEWORKS.map((f) => (
+          <FrameworkTile key={f.name} fw={f} />
+        ))}
+      </div>
+
+      <h2 className="section-title">cloud & deployment</h2>
+      <div className="cloud-block">
+        <p>
+          <strong>Cloud-agnostic by design.</strong> Delivery runs on the client's platform —
+          AWS, Azure, GCP, or on-premises. Pipelines are portable (Docker + uv + DVC), so
+          there is no vendor lock-in and everything runs from a clean clone. Data stays
+          inside the client's boundary; nothing phones home.
+        </p>
       </div>
 
       <h2 className="section-title">process</h2>
@@ -184,6 +196,13 @@ export function Services() {
         tested before larger commitments.
       </p>
 
+      <h2 className="section-title">proof</h2>
+      <div className="state-box">
+        Every offering above is backed by a public, reproducible case study — real pipelines,
+        real metrics, interactive figures.{" "}
+        <Link to="/projects">browse the case studies →</Link>
+      </div>
+
       <h2 className="section-title">contact & availability</h2>
       <div className="contact-block">
         <ul>
@@ -198,23 +217,6 @@ export function Services() {
           <li>Location/timezone: flexible overlap with EU and US hours.</li>
         </ul>
       </div>
-
-      <h2 className="section-title">case studies</h2>
-      <table className="case-study-table">
-        <tbody>
-          {CASE_STUDIES.map((c) => (
-            <tr key={c.id}>
-              <td>
-                <Link to={`/projects/${c.id}`}>{c.label} →</Link>
-              </td>
-              <td>{c.demonstrates}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="services-cta">
-        → browse the live case studies: <Link to="/">/projects</Link>
-      </p>
     </>
   );
 }
