@@ -1,48 +1,43 @@
 # Routing Optimization (VRPTW)
 
 **Domain:** combinatorial optimization ·
-**Data:** CVRPLIB Solomon VRPTW benchmark (100-customer instances) ·
+**Data:** CVRPLIB Solomon VRPTW benchmark (all 56 100-customer instances) ·
 [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization) ·
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization/DESIGN.md)
 
-Three hand-written, deterministic construction/improvement heuristics for the
-vehicle routing problem with time windows — nearest neighbor, Clarke–Wright
-savings, and a feasibility-checked 2-opt / 2-opt* improvement pass — plus a
-seeded 24-trial HPO of the improvement stage (budget, acceptance, tail
-exchange, randomized restarts), benchmarked against published best-known
-solutions on a 10-instance subset of the Solomon 100-customer set. Every
-solution is machine-validated (exactly-once service, capacity, time windows)
-before reporting.
+A deterministic, seeded solver ladder for the vehicle routing problem with time
+windows — randomized floor, nearest neighbor, Clarke–Wright savings, HPO-tuned
+2-opt/2-opt*, and adaptive large-neighborhood search (ALNS: random/worst/Shaw
+destroy + regret-2 repair, segment-adapted operator weights, SA acceptance) —
+benchmarked against published best-known solutions on the full Solomon
+benchmark. Every solution is machine-validated (exactly-once service, capacity,
+time windows) before reporting.
 
-## Key results (real run, seed 42)
+## Key results (real run, seed 42, 56 instances)
 
 | solver | mean gap to best-known | mean runtime |
 |---|---|---|
-| randomized (feasible floor) | 302.86 % | 0.9 ms/instance |
-| nearest_neighbor | 69.16 % | 1.4 ms/instance |
-| clarke_wright | 24.62 % | 3.7 ms/instance |
-| two_opt (untuned) | 19.55 % | 5.9 ms/instance |
-| **two_opt_tuned (HPO winner)** | **19.08 %** | 12.9 ms/instance |
+| randomized (feasible floor) | 316.95 % | 0.6 ms/instance |
+| nearest_neighbor | 71.64 % | 1.1 ms/instance |
+| clarke_wright | 18.31 % | 3.0 ms/instance |
+| two_opt_tuned (HPO) | 13.63 % | 9.6 ms/instance |
+| **alns (HPO-tuned)** | **4.23 %** | 801 ms/instance |
 
-Constraint-aware construction is worth −68.2 % distance vs merely-feasible
-random routing; the HPO-chosen tuned config (budget 50, best-improvement,
-2-opt + 2-opt\*, restarts best-of-1) closes a further −0.45 gap points,
-winning on 5/10 instances. Best tuned gap 8.94 % (RC104). The full benchmark
-including HPO finishes in ≈ 3 s. Artifacts in
-`projects/06-routing-optimization/reports/`:
+ALNS wins 56/56 and reaches single-digit gaps on every family (C1 4.48 %, C2
+6.50 %, R1 4.10 %, R2 3.04 %, RC1 4.75 %, RC2 3.00 %), with negative gaps on 8
+instances where full-precision solutions undercut convention-mixed published
+references. Remaining roadmap item: the SINTEF hierarchical objective (fewest
+vehicles first). Artifacts in `projects/06-routing-optimization/reports/`:
 
 - `figures/eda_instance_map.html` — C101 customers colored by time-window tightness
-- `figures/route_map_C101.html` — route map of the best C101 plan (15 vehicles)
+- `figures/route_map_C101.html` — best C101 plan (ALNS: 11 vehicles, 860.21)
+- `figures/family_gap.html` — mean gap per Solomon family per solver
 - `figures/solver_profile.html` — the solver ladder per instance
-- `figures/convergence_C101.html` / `convergence_RC105.html` — 2-opt descent, tuned vs untuned
-- `results.md` / `metrics.json` / `report.html` — full tables
+- `figures/convergence_C101.html` / `convergence_RC105.html` — 2-opt descent
+- `results.md` / `metrics.json` / `report.html` — full tables (per-instance + per-family)
 
 ## Reproduce
 
 ```bash
 uv run python -m routing_optimization.cli all   # from projects/06-routing-optimization
 ```
-
-Status: working showcase on the standard platform. Roadmap: metaheuristic
-(ALNS/tabu) track with Optuna HPO, hierarchical vehicle-then-distance
-objective, real-data track.

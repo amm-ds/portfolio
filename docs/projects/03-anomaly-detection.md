@@ -27,21 +27,29 @@ Champion by PR-AUC: `ocsvm_tuned` — tuning rescued One-Class SVM
 (`gamma=0.013` vs. the failing `scale` default); LOF was *not* rescued
 (structural local-density blindness). IsolationForest was near-optimal
 untuned. At the fixed 2% alert budget the three top detectors tie
-(~15% recall / ~14% precision). Full analysis in
+(~15% recall / ~14% precision). Wave 7 delivered: adaptive-threshold
+streaming (0 drift events on the stable test stream; 113 vs. 120 flags at
+equal ~15% precision), rolling-median residual features (IsolationForest
+ROC-AUC 0.9158 → 0.9999 — the anomaly blob de-clusters), and the NSL-KDD
+transfer probe (0.8817 ROC-AUC / 0.8916 PR-AUC on 22 544 real network-flow
+records). Full analysis in
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection/DESIGN.md).
 
 ## Artifacts
 
 - Metrics: `projects/03-anomaly-detection/reports/metrics.json` (7 runs)
+- Probes: `reports/detect.json` (adaptive stream), `reports/residual_probe.json`,
+  `reports/nsl_probe.json`
 - Evaluation report: `reports/report.html`
 - Figures (`reports/figures/`): `eda_signals_overview`, `roc_curves`,
   `pr_curves`, `telemetry_flags`, `score_distribution`, `threshold_sweep`,
-  `hpo_importance` (HTML + JSON for the showcase API)
+  `hpo_importance`, `adaptive_stream` (HTML + JSON for the showcase API)
 - DQ report: `reports/dq_report.html` — 8/8 gates passing
 
 ## Pipeline
 
-`prepare → validate → features → train → tune → evaluate`, each a Typer
-command (`uv run python -m anomaly_detection.cli all` runs everything,
-~75 s including 90 seeded HPO trials) and a DVC stage
+`prepare → validate → features → train → tune → evaluate → detect →
+residuals → nsl`, each a Typer command (`uv run python -m
+anomaly_detection.cli all` runs everything, ~80 s including 90 seeded HPO
+trials and the NSL-KDD download) and a DVC stage
 (`dvc repro projects/03-anomaly-detection`).
