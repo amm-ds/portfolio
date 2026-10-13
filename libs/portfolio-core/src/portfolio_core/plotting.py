@@ -55,3 +55,67 @@ def save_json(fig: go.Figure, path: str | Path) -> Path:
     p.parent.mkdir(parents=True, exist_ok=True)
     fig.write_json(str(p))
     return p
+
+
+# ---------------------------------------------------------------------------
+# Storytelling conventions (wave 3): every figure states its takeaway; baselines
+# are visually demoted so the improvement reads instantly (grey dashed), and the
+# best run is promoted (accent, thicker). Shared by all projects.
+# ---------------------------------------------------------------------------
+
+_BASELINE_HINTS: tuple[str, ...] = ("naive", "random", "lag", "majority", "persistence")
+
+
+def is_baseline_run(name: str) -> bool:
+    """True for run names that denote a naive/random baseline."""
+    lowered = name.lower()
+    return any(h in lowered for h in _BASELINE_HINTS)
+
+
+def add_takeaway(fig: go.Figure, takeaway: str) -> go.Figure:
+    """Render a one-line insight under the title (the figure's 'so what')."""
+    fig.add_annotation(
+        text=takeaway,
+        xref="paper",
+        yref="paper",
+        x=0.02,
+        y=1.045,
+        xanchor="left",
+        yanchor="bottom",
+        showarrow=False,
+        font={"size": 12, "color": "#94a3b8"},
+        align="left",
+    )
+    fig.update_layout(margin={"t": 90, "l": 60, "r": 30, "b": 50})
+    return fig
+
+
+def style_runs(
+    fig: go.Figure, best: str | None = None, baseline_hints: tuple[str, ...] = _BASELINE_HINTS
+) -> go.Figure:
+    """Restyle traces: baselines grey dashed, the best run accent and thicker.
+
+    Matches on trace name (case-insensitive substring against ``baseline_hints``).
+    Bar traces reject ``line`` styling, so they get marker-only treatment. Traces
+    without a name are left untouched.
+    """
+    for trace in fig.data:
+        name = getattr(trace, "name", None)
+        if not name:
+            continue
+        lowered = str(name).lower()
+        is_bar = getattr(trace, "type", None) in ("bar", "histogram")
+        if best is not None and best.lower() in lowered:
+            if is_bar:
+                trace.update(marker={"line": {"width": 1.5, "color": "#2dd4bf"}})
+            else:
+                trace.update(line={"width": 3.5}, marker={"size": 10})
+        elif any(h in lowered for h in baseline_hints):
+            if is_bar:
+                trace.update(marker={"color": "#64748b"})
+            else:
+                trace.update(
+                    line={"color": "#64748b", "dash": "dash", "width": 1.5},
+                    marker={"color": "#64748b"},
+                )
+    return fig
