@@ -1,5 +1,5 @@
-"""Typer CLI: prepare / train-baseline / train-nn / hpo / train-tuned /
-train-encoder-b / evaluate / all."""
+"""Typer CLI: prepare / train-baseline / train-nn [--full-data] / hpo /
+hpo-seeds / train-tuned / train-encoder-b / evaluate / all."""
 
 import json
 import time
@@ -12,17 +12,26 @@ from datasets import Dataset  # type: ignore[import-untyped]
 from portfolio_core.logging import get_logger
 
 from nlp_classification.config import HPOBest, NLPConfig
-from nlp_classification.data import label_names, tokenize_dataset
+from nlp_classification.data import label_names, load_full_train, tokenize_dataset
 from nlp_classification.data import prepare as run_prepare
 from nlp_classification.evaluate import evaluate as run_evaluate
 from nlp_classification.evaluate import load_tokenizer
-from nlp_classification.hpo import persist_hpo, run_hpo, tuned_config
+from nlp_classification.hpo import (
+    persist_hpo,
+    persist_seed_report,
+    run_hpo,
+    run_multi_seed_hpo,
+    tuned_config,
+)
 from nlp_classification.model import (
     BASELINE_PATH,
     ENCODER_B_MODEL_PATH,
+    FULLDATA_MODEL_PATH,
     NN_MODEL_PATH,
     TUNED_MODEL_PATH,
+    DeviceGateError,
     predict_baseline,
+    resolve_device,
     save_baseline,
     save_nn_state_dict,
     train_baseline,
@@ -84,16 +93,55 @@ def train_baseline_cmd() -> None:
 
 
 @app.command(name="train-nn")
-def train_nn_cmd() -> None:
-    """Fine-tune DistilBERT with default hyperparameters (wave-2 artifact)."""
+def train_nn_cmd(
+    full_data: bool = typer.Option(
+        False, "--full-data", help="Train on the full AG News train split (GPU-gated)."
+    ),
+    subset: int | None = typer.Option(
+        None,
+        "--subset",
+        help="Bounded per-class stratified subset of the full split (evidence runs).",
+    ),
+    force_cpu: bool = typer.Option(
+        False, "--force-cpu", help="Run the full-data path on CPU despite the wall-clock estimate."
+    ),
+) -> None:
+    """Fine-tune DistilBERT: bounded split by default; --full-data for the GPU track."""
     started = time.perf_counter()
     cfg = _cfg()
-    train_tok, val_tok, n_labels = _tokenized_splits(cfg, cfg.model_name)
+    if subset is not None and not full_data:
+        raise typer.BadParameter("--subset only makes sense with --full-data")
 
-    device = torch.device("cpu")
+    if full_data:
+        train_part, val_part = load_full_train(cfg, subset)
+        try:
+            device = resolve_device(force_cpu, full_data=True, train_rows=len(train_part))
+        except DeviceGateError as exc:
+            typer.echo(str(exc))
+            raise typer.Exit(code=2) from exc
+        if device.type == "cpu":
+            typer.echo(
+                f"WARNING: running the full-data path on CPU "
+                f"({len(train_part):,} rows) — this is a bounded evidence run, "
+                "not the full 120k GPU job."
+            )
+        model_path = cfg.models_dir / FULLDATA_MODEL_PATH
+        history_path = Path(cfg.reports_dir) / "history_fulldata.json"
+    else:
+        train_part = _load_split(cfg, "train")
+        val_part = _load_split(cfg, "val")
+        device = torch.device("cpu")
+        model_path = cfg.models_dir / NN_MODEL_PATH
+        history_path = cfg.history_path
+
+    tokenizer = load_tokenizer(cfg.model_name)
+    train_tok = tokenize_dataset(train_part, tokenizer, cfg.max_length)
+    val_tok = tokenize_dataset(val_part, tokenizer, cfg.max_length)
+    n_labels = len(label_names(train_part))
+
     model, history = train_nn(cfg, train_tok, val_tok, n_labels, device)
-    model_path = save_nn_state_dict(model, cfg.models_dir / NN_MODEL_PATH)
-    history.to_json(cfg.history_path)
+    save_nn_state_dict(model, model_path)
+    history.to_json(history_path)
     best = history.best_epoch()
     typer.echo(
         f"model saved to {model_path} "
@@ -114,6 +162,23 @@ def hpo() -> None:
     persist_hpo(cfg, best, study, PARAMS_PATH)
     typer.echo(
         f"best params: {json.dumps(best.model_dump())} in {time.perf_counter() - started:.1f}s"
+    )
+
+
+@app.command(name="hpo-seeds")
+def hpo_seeds_cmd() -> None:
+    """Seed-variance study: small independent HPO studies per fixed seed."""
+    started = time.perf_counter()
+    cfg = _cfg()
+    train_tok, val_tok, n_labels = _tokenized_splits(cfg, cfg.model_name)
+
+    device = torch.device("cpu")
+    report = run_multi_seed_hpo(cfg, train_tok, val_tok, n_labels, device)
+    path = persist_seed_report(cfg, report)
+    typer.echo(
+        f"seed variance: mean={report['mean']:.4f} std={report['std']:.4f} "
+        f"over seeds {cfg.hpo_seeds.seeds} -> {path} "
+        f"in {time.perf_counter() - started:.1f}s"
     )
 
 
@@ -171,12 +236,13 @@ def evaluate() -> None:
 
 @app.command(name="all")
 def run_all() -> None:
-    """Full pipeline: prepare → baseline → train-nn → hpo → tuned → encoder-b → evaluate."""
+    """Full pipeline: prepare → baseline → train-nn → hpo → seeds → tuned → encoder-b → evaluate."""
     started = time.perf_counter()
     prepare()
     train_baseline_cmd()
     train_nn_cmd()
     hpo()
+    hpo_seeds_cmd()
     train_tuned_cmd()
     train_encoder_b_cmd()
     evaluate()

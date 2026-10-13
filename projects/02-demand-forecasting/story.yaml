@@ -57,13 +57,15 @@ sections:
         and reproduce exactly, with zero downloads; it still exercises the full
         production machinery — `DatasetContract` identity card with SHA-256
         checksum and DQ gates for null rate, range and freshness.
-      - **Optional real-data track — UCI Online Retail II**
-        ([dataset card](https://amm-ds.github.io/portfolio/data-registry/uci-online-retail-ii/)):
-        real invoice-line transactions from a UK online retailer, free for
-        research (Chen, Gallino & Li 2012, *Management Science*). Designed as
-        the drop-in upgrade behind `data.py::build_panel` (map `StockCode` →
-        product, `Country` → store, sum `Quantity` per day) — documented in
-        DESIGN.md, not implemented, so the default track stays hermetic.
+      - **Real track — UCI Online Retail II** (implemented; run with
+        `--data-source uci`):
+        [dataset card](https://amm-ds.github.io/portfolio/data-registry/uci-online-retail-ii/),
+        free for research (Chen, Gallino & Li 2012, *Management Science*).
+        Checksum-pinned download (sha256 in `params.yaml`), parsed with a
+        dependency-free XLSX streamer: 525,461 sales lines from the 2009-2010
+        sheet aggregated to the top 8 countries × top 200 products over 374
+        days (405,416 rows, 89% zero share — genuinely intermittent demand).
+        Returns/cancellations excluded, documented.
 
       The hierarchy the models forecast over:
 
@@ -76,10 +78,8 @@ sections:
           S3 --> S3P[6 products]
       ```
 
-      **Business implication:** every result is regenerable from a clean clone
-      in about a minute with no downloads — and the documented real-data swap
-      means the same pipeline can be pointed at live transactions without a
-      rewrite.
+      **Business implication:** results regenerate from a clean clone in minutes —
+      synthetic offline by default, real transactions one flag away.
 
   - id: eda
     text_md: |
@@ -193,10 +193,20 @@ sections:
         as the children, so it is barely trusted): store MAE 23.892 → 23.837,
         incoherence 24.125 → 22.919 with an exact, property-tested coherence
         guarantee.
+      - **Real data stress test (UCI Online Retail II, same backtest)**: the
+        tuned GBM still wins (MAE 8.99), but the linear ridge collapses behind
+        both naives (16.7 vs ~10.3) under 89% zero share and bulk-order spikes,
+        MAPE stops being meaningful (persistence hits 356%), and
+        reconciliation finally pays off (w=0.65, incoherence 400 → 140).
+      - **Probabilistic bands (target 80%)**: quantile-HGB coverage 0.73
+        (synthetic, under-covers) vs 0.92 (real, over-covers); split-conformal
+        0.76 vs 0.86 — with the real-track calibration degenerating to q80 = 0
+        because most residuals are exact zeros. Honest, direction-giving numbers.
 
       **Business implication:** a tuned gradient-boosting model forecasts demand
-      two-fifths more accurately than "yesterday's number" — and we can show
-      exactly where that advantage holds and where it ends.
+      two-fifths more accurately than "yesterday's number" — on clean synthetic
+      and messy real retail data alike — and we can show exactly where that
+      advantage holds and where it ends.
     figures: [metrics_bars, forecast_vs_actual, hpo_history, reconciliation_coherence]
     metrics_keys: [naive_mean, naive_last, ridge, hgb, hgb_tuned, temporal_net]
 
@@ -218,12 +228,13 @@ sections:
 
       Forward roadmap:
 
-      - **UCI Online Retail II production track** — activate the documented
-        real-data swap behind `data.py::build_panel` with checksum pinning.
-      - **Probabilistic forecasts** — quantile GBM plus conformal intervals on
-        backtest residuals, sized for inventory safety stock.
-      - **Full MinT reconciliation** — covariance projection across the whole
-        hierarchy once the real-data track provides a deeper tree.
+      - **Calibrated intervals for intermittent demand** — per-series conformal
+        and zero-inflated band models; the current global bands under-cover on
+        synthetic data and degenerate on real data (q80 = 0).
+      - **Full MinT reconciliation** — covariance projection once the UCI track
+        is structured by product category into a deeper hierarchy.
+      - **Returns-aware demand** — model cancellations and returns as their own
+        flow instead of excluding them, for net-demand forecasting.
 
       **Business implication:** the value delivered is not a magic model — it is
       knowing precisely which model wins, by how much, where it stops winning,

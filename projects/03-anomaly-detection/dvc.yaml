@@ -52,3 +52,29 @@ stages:
       - reports/metrics.json
       - reports/report.html
       - reports/figures
+  detect:
+    cmd: uv run python -m anomaly_detection.cli detect --adaptive
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+      - data/features.parquet
+      - data/models
+      - data/models_tuned
+    outs:
+      - reports/detect.json
+  residuals:
+    cmd: uv run python -m anomaly_detection.cli residuals
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+      - data/raw.parquet
+    outs:
+      - reports/residual_probe.json
+  nsl:
+    cmd: uv run python -m anomaly_detection.cli nsl
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+    outs:
+      - data/nsl
+      - reports/nsl_probe.json

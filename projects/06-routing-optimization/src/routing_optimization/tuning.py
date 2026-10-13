@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 from portfolio_core.logging import get_logger
 
 from routing_optimization.config import VRPConfig
-from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
-from routing_optimization.solver import two_opt
+from routing_optimization.schemas import AlnsTuning, Problem, RoutePlan, TwoOptTuning
+from routing_optimization.solver import alns, two_opt
 
 logger = get_logger(__name__)
 
@@ -110,4 +110,73 @@ def run_hpo(
             result.best = trial
         logger.info("hpo trial: %-55s mean=%.2f", tuning.summary(), mean)
     logger.info("hpo chose: %s (mean %.2f)", result.tuning.summary(), result.best.mean_distance)
+    return result
+
+
+@dataclass(frozen=True)
+class AlnsHpoTrial:
+    """One evaluated configuration of the ALNS stage."""
+
+    tuning: AlnsTuning
+    mean_distance: float
+
+
+@dataclass
+class AlnsHpoResult:
+    """Outcome of the ALNS knob search."""
+
+    best: AlnsHpoTrial
+    trials: list[AlnsHpoTrial] = field(default_factory=list)
+
+    @property
+    def tuning(self) -> AlnsTuning:
+        """The chosen ALNS configuration."""
+        return self.best.tuning
+
+
+def run_alns_hpo(
+    problems: dict[str, Problem],
+    starts: dict[str, RoutePlan],
+    cfg: VRPConfig,
+) -> AlnsHpoResult:
+    """Seeded random search over the ALNS knobs, evaluated on the configured
+    representative subset (``cfg.alns_hpo_instances``) to bound runtime.
+
+    ALNS is started from the given (tuned) plans. A dedicated RNG stream
+    (seed offset) keeps the search reproducible and independent of the
+    two-opt HPO stream.
+    """
+    rng = random.Random(cfg.seed + 10_000)
+    names = [n for n in cfg.alns_hpo_instances if n in starts]
+    if not names:
+        names = list(starts)
+    result = AlnsHpoResult(best=AlnsHpoTrial(AlnsTuning(), float("inf")))
+    for _ in range(cfg.alns_hpo_trials):
+        tuning = AlnsTuning(
+            segment_length=rng.choice(cfg.alns_segment_choices),
+            reaction_factor=rng.choice(cfg.alns_reaction_choices),
+            init_weights=rng.choice(cfg.alns_init_choices),
+        )
+        total = 0.0
+        for name in names:
+            plan = alns(
+                problems[name],
+                start=starts[name],
+                seed=cfg.seed,
+                max_iterations=cfg.alns_max_iterations,
+                segment_length=tuning.segment_length,
+                reaction_factor=tuning.reaction_factor,
+                init_weights=tuning.init_weights,
+                destroy_q=cfg.alns_destroy_q,
+            )
+            total += plan.total_distance
+        mean = total / len(names)
+        trial = AlnsHpoTrial(tuning, mean)
+        result.trials.append(trial)
+        if mean < result.best.mean_distance:
+            result.best = trial
+        logger.info("alns hpo trial: %-55s mean=%.2f", tuning.summary(), mean)
+    logger.info(
+        "alns hpo chose: %s (mean %.2f)", result.tuning.summary(), result.best.mean_distance
+    )
     return result

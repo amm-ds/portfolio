@@ -57,6 +57,7 @@ platform's `classification_metrics` + weighted F1. Full numbers in
 | 4 | `encoder_b` | 0.8980 | 0.8982 | roberta-base, default hypers, 2 epochs |
 | 5 | `distilbert` | **0.9020** | **0.9021** | DistilBERT, wave-2 default hypers |
 | 6 | `distilbert_tuned` | **0.9020** | **0.9021** | selection winner (see below) |
+| 7 | `distilbert_fulldata_20k` | **0.9270** | **0.9270** | full-data path evidence: 20k-row subset |
 
 Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
 pp**, encoder_b **+64.5 pp**, DistilBERT family **+64.9 pp**. DistilBERT beats
@@ -65,6 +66,19 @@ pp** — inside test noise (±1.9 pp), so read the two encoders as tied at this
 data scale. `naive_majority` looks deceptively good on accuracy (0.25 =
 chance on a balanced test split) but collapses on macro-F1 (0.10) — exactly
 why the portfolio scores runs with macro-F1, not accuracy.
+
+### Full-data path (GPU-track roadmap item)
+
+`train-nn --full-data` implements the real scaling route: it loads the full
+120k AG News train split (or a `--subset N` seeded stratified slice), gates on
+GPU availability — on CPU it errors with an honest wall-clock estimate
+(measured ~50 s / 3.6k-row epoch → full 120k ≈ 45–50 min/epoch, ~1.5–2 h for
+2 epochs) unless `--force-cpu` is passed. **Evidence run** (same flag
+machinery, bounded): `train-nn --full-data --subset 20000 --force-cpu` —
+18k train / 2k val, 2 epochs, ~22 min on CPU — reached **val F1 0.9189** and
+**0.9270 test macro-F1**, +2.5 pp over the 3.6k-row models. Scaling to 18k
+rows already approaches published full-corpus numbers; the remaining step to
+120k is compute, not engineering.
 
 ### HPO — and the honest part
 
@@ -82,6 +96,22 @@ run is therefore the **wave-2 artifact** (decision persisted in
 [`reports/selection.json`](reports/selection.json), margin +0.0010 — i.e.
 noise). Lesson: at 1k test rows, a +0.7 pp validation improvement is inside
 sampling noise; HPO here is a *process* demonstration, not a guaranteed win.
+
+**Seed variance — is the HPO gain even real?** The `hpo-seeds` stage re-ran
+the study under 3 fixed sampler seeds (6 trials each, epochs 2–3 budget):
+best val macro-F1 0.8953 (seed 42), 0.8852 (seed 43), 0.8926 (seed 44) —
+**mean 0.8910 ± 0.0042**. Against 0.8880 for defaults, the mean HPO gain is
+~+0.3 pp, i.e. **smaller than the seed standard deviation**: at 400 validation
+rows, run-to-run HPO variance exceeds the effect being chased. (Seed 42's best
+matches the 12-trial study bit-for-bit — same RNG stream, determinism
+re-confirmed.) Full data in `reports/hpo_seeds.json` and
+`metrics.json → _meta.hpo_seeds`.
+
+**Calibration.** Temperature scaling fitted on the 400-row validation split
+(T = 0.843 — the fine-tuned model is mildly *under*-confident) cuts test ECE
+from **0.0467 to 0.0133** (−71 % relative). Predictions are unchanged (argmax
+is temperature-invariant), so calibration is a free reliability upgrade for any
+confidence-thresholded routing; numbers in `metrics.json → _meta.calibration`.
 
 Hand-written loop history for the default run (validation macro-F1 drives
 early stopping):
@@ -110,14 +140,15 @@ labeled rows are enough to learn discriminations an 8k-feature sparse vector
 cannot express.
 
 **Honest limits.** Deliberately bounded showcase: 4k train / 1k test stratified
-subsample, ≤4 epochs, max_length 128, single seed, CPU budget. The HPO study
-(12 trials) is a small-budget demonstration — with this little validation data,
-hyperparameter rankings carry more noise than signal, as the val→test
-regression above shows. Expect the TF-IDF baseline to plateau in the low 90s
-while encoders keep gaining: with the full 120k rows and a GPU, published
-full-data results reach ~0.93–0.94 macro-F1, so the +3.1 pp gap at 4k rows
-*understates* the asymptotic gap. Treat this project as the cheap,
-reproducible lower bound of the scaling curve, not the ceiling.
+subsample, ≤4 epochs, max_length 128, CPU budget. The HPO studies (12-trial
+main + 3×6 seed variance) are small-budget demonstrations — at 400 validation
+rows, hyperparameter rankings and seed-to-seed variance carry more noise than
+the gains being chased, as both the val→test regression and the seed study
+show. What is *not* noise: the 20k-row evidence run (+2.5 pp test macro-F1
+over 3.6k) shows data scaling works as published, and the TF-IDF baseline will
+plateau in the low 90s while encoders keep gaining toward ~0.93–0.94 at full
+data. Treat the bounded numbers as the cheap, reproducible lower bound of the
+scaling curve, not the ceiling.
 
 Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 
@@ -137,10 +168,14 @@ Human-readable report: [`reports/report.html`](reports/report.html).
 uv run python -m nlp_classification.cli prepare          # ~6s (downloads AG News once)
 uv run python -m nlp_classification.cli train-baseline   # ~1s
 uv run python -m nlp_classification.cli train-nn         # ~3 min on CPU
-uv run python -m nlp_classification.cli hpo              # ~12 trials, median pruning
+uv run python -m nlp_classification.cli hpo              # 12-trial study, median pruning
+uv run python -m nlp_classification.cli hpo-seeds          # 3-seed variance study (~1 h CPU)
 uv run python -m nlp_classification.cli train-tuned      # retrains with HPO best params
 uv run python -m nlp_classification.cli train-encoder-b  # roberta-base candidate
-uv run python -m nlp_classification.cli evaluate         # six-run ladder + selection
+uv run python -m nlp_classification.cli evaluate         # seven-run ladder + selection + calibration
+
+# full-data path (GPU-gated; bounded evidence run on CPU):
+uv run python -m nlp_classification.cli train-nn --full-data --subset 20000 --force-cpu
 
 # or everything at once
 uv run python -m nlp_classification.cli all
@@ -171,12 +206,15 @@ uv run pytest projects/04-nlp-classification -q
 
 ## Roadmap
 
-Planned deepening, in priority order:
+Final forward intent — everything below is ready to execute against the
+existing pipeline:
 
-- **Optuna HPO** (declared in `portfolio.yaml` techniques): search LR, warmup
-  ratio, and TF-IDF `min_df`/`max_features` with cross-validation, tracked as
-  first-class runs in the platform's `RunResult` comparison.
-- **Real-data track:** scale the bound from 4k → full 120k rows behind a GPU
-  flag, keeping the bounded CPU track as the default reproducible path.
-- **Error analysis slice:** per-class confidence calibration and a
-  misclassified-examples table fed into the report.
+- **Full-dataset fine-tune** on the 120k AG News corpus via the proven
+  `train-nn --full-data` path (GPU-gated; the 20k evidence run already
+  demonstrates +2.5 pp test macro-F1).
+- **Cost-sensitive routing** on top of the calibrated probabilities
+  (temperature scaling already cuts ECE by 71 %; per-class thresholds for
+  imbalanced production mixes remain to be tuned).
+- **Multi-label extension** for hybrid Business/Sci-Tech articles — the
+  dominant observed error mode — deferred deliberately: it is a different
+  problem contract (multi-hot labels, different metrics), not a tuning knob.

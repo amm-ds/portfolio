@@ -3,10 +3,14 @@
 Each command is a thin orchestration layer over the library modules; dvc.yaml
 stages mirror these entry points one-to-one. ``hpo`` is separate (minutes, not
 seconds) and feeds the production ``hgb_tuned`` config.
+
+``--data-source uci`` activates the real-data track; every artefact lands in
+``data_uci/`` / ``reports_uci/`` so both tracks stay side by side. The
+synthetic track remains the default (fully offline, CI-safe).
 """
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import polars as pl
 import typer
@@ -16,6 +20,7 @@ from demand_forecasting.data import prepare
 from demand_forecasting.evaluate import evaluate
 from demand_forecasting.features import build_features, save_features
 from demand_forecasting.model import fit_all, save_models
+from demand_forecasting.probabilistic import run_probabilistic
 from demand_forecasting.reconcile import reconcile_and_plot
 
 app = typer.Typer(
@@ -26,22 +31,31 @@ app = typer.Typer(
 def _settings_and_config(
     data_dir: Annotated[Path | None, typer.Option(help="Override data dir.")] = None,
     reports_dir: Annotated[Path | None, typer.Option(help="Override reports dir.")] = None,
+    data_source: Annotated[
+        Literal["synthetic", "uci"], typer.Option(help="Panel track (uci needs network once).")
+    ] = "synthetic",
 ) -> tuple[DemandSettings, ForecastConfig]:
     base = DemandSettings()
+    root = Path.cwd()
+    if data_source == "uci" and data_dir is None:
+        data_dir = root / "data_uci"
+    if data_source == "uci" and reports_dir is None:
+        reports_dir = root / "reports_uci"
     settings = DemandSettings(
         data_dir=data_dir or base.data_dir,
         reports_dir=reports_dir or base.reports_dir,
     )
-    return settings, ForecastConfig()
+    return settings, ForecastConfig(data_source=data_source)
 
 
 @app.command("prepare")
 def prepare_data(
     data_dir: Annotated[Path | None, typer.Option()] = None,
     reports_dir: Annotated[Path | None, typer.Option()] = None,
+    data_source: Annotated[Literal["synthetic", "uci"], typer.Option()] = "synthetic",
 ) -> Path:
-    """Generate the synthetic hierarchy and validate it through the DQ gates."""
-    settings, config = _settings_and_config(data_dir, reports_dir)
+    """Build the panel (synthetic or UCI) and validate it through the DQ gates."""
+    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     return prepare(settings, config)
 
 
@@ -49,9 +63,10 @@ def prepare_data(
 def features(
     data_dir: Annotated[Path | None, typer.Option()] = None,
     reports_dir: Annotated[Path | None, typer.Option()] = None,
+    data_source: Annotated[Literal["synthetic", "uci"], typer.Option()] = "synthetic",
 ) -> Path:
     """Build leakage-safe lag + calendar features from the prepared panel."""
-    settings, config = _settings_and_config(data_dir, reports_dir)
+    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     panel = pl.read_parquet(settings.data_dir / "panel.parquet")
     frame = build_features(panel, config)
     return save_features(frame, settings)
@@ -61,13 +76,14 @@ def features(
 def train(
     data_dir: Annotated[Path | None, typer.Option()] = None,
     reports_dir: Annotated[Path | None, typer.Option()] = None,
+    data_source: Annotated[Literal["synthetic", "uci"], typer.Option()] = "synthetic",
 ) -> Path:
-    """Fit both models on the full history and persist them (deployment artefacts).
+    """Fit every model on the full history and persist them (deployment artefacts).
 
     Model selection is the honest time-CV backtest in ``evaluate``; this stage
     refits the chosen configuration on all available rows.
     """
-    settings, config = _settings_and_config(data_dir, reports_dir)
+    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     frame = pl.read_parquet(settings.data_dir / "features.parquet")
     models = fit_all(frame, config)
     return save_models(models, settings.data_dir / "models.pkl")
@@ -90,20 +106,23 @@ def hpo(
 def evaluate_cmd(
     data_dir: Annotated[Path | None, typer.Option()] = None,
     reports_dir: Annotated[Path | None, typer.Option()] = None,
+    data_source: Annotated[Literal["synthetic", "uci"], typer.Option()] = "synthetic",
 ) -> None:
-    """Backtest all models with expanding-window time CV and write the report."""
-    settings, config = _settings_and_config(data_dir, reports_dir)
+    """Backtest all models, reconcile, and compute probabilistic coverage."""
+    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
+    run_probabilistic(settings, config)
 
 
 @app.command()
 def all(
     data_dir: Annotated[Path | None, typer.Option()] = None,
     reports_dir: Annotated[Path | None, typer.Option()] = None,
+    data_source: Annotated[Literal["synthetic", "uci"], typer.Option()] = "synthetic",
 ) -> None:
-    """Run the full pipeline: prepare → features → train → evaluate (+reconcile)."""
-    settings, config = _settings_and_config(data_dir, reports_dir)
+    """Run the full pipeline: prepare → features → train → evaluate (+extras)."""
+    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     prepare(settings, config)
     panel = pl.read_parquet(settings.data_dir / "panel.parquet")
     frame = build_features(panel, config)
@@ -111,6 +130,7 @@ def all(
     save_models(fit_all(frame, config), settings.data_dir / "models.pkl")
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
+    run_probabilistic(settings, config)
 
 
 if __name__ == "__main__":

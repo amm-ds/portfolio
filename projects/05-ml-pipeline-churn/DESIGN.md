@@ -78,3 +78,14 @@ flowchart LR
   figures. Search-space ranges capped (HistGB max_iter ≤ 150, fast solvers for
   l1/l2) after the first HPO pass blew the runtime budget — saga+elasticnet
   and large boosting grids were the cost drivers.
+- 2026-10-13 · Wave 7: cost-aware HPO objective — trials scored by CV
+  business cost (FP=1/FN=5) on out-of-fold probabilities at per-trial
+  cost-optimal thresholds (documented in `hpo.py`); winner changed from the
+  F1-selected HistGB to a lightly-regularized logistic (C=0.2365,
+  l1_ratio=0.1388) that lands at the holdout cost optimum. Added `prepare
+  --input client.csv` onboarding (same DQ gates + DatasetContract, churned
+  optional) and seeded paired bootstrap CIs (2,000 resamples) on the
+  holdout cost delta vs naive (−158, 95% CI [−237, −87], significant),
+  persisted as `_meta.cost_delta_ci` in metrics.json with a `bootstrap_ci`
+  figure. Also fixed: `family_scores` averaged across all trials regardless
+  of family; polars str-bytes mypy false positive on `mean()`.

@@ -423,7 +423,7 @@ def fig_gbm_feature_importance(
     Uses the persisted model (no retraining); the scoring slice is the first
     ``hpo.perm_importance_rows`` of the chronological test window.
     """
-    import joblib  # type: ignore[import-untyped]
+    import joblib
     from sklearn.inspection import permutation_importance
 
     model_path = cfg.models_dir / model_name

@@ -37,6 +37,30 @@ def load_ag_news() -> DatasetDict:
     return load_dataset("fancyzhx/ag_news")
 
 
+def load_full_train(
+    cfg: NLPConfig, subset: int | None, loader: Callable[[], DatasetDict] = load_ag_news
+) -> tuple[Dataset, Dataset]:
+    """Full-data path: full AG News train split, optionally bounded per class.
+
+    Used by ``train-nn --full-data`` (GPU-track roadmap item). ``subset``
+    draws a seeded per-class stratified slice for bounded evidence runs; the
+    same stratified carve-out yields a validation split for early stopping.
+    The test split is always the bounded persisted one — never touched here.
+    """
+    raw = loader()
+    full_train = raw["train"]
+    train_part = (
+        stratified_subsample(full_train, subset, seed=cfg.seed)
+        if subset is not None
+        else full_train
+    )
+    train_part, val_part = stratified_split(train_part, cfg.val_fraction, seed=cfg.seed + 2)
+    logger.info(
+        "full-data path: train=%d val=%d (subset=%s)", len(train_part), len(val_part), subset
+    )
+    return train_part, val_part
+
+
 def stratified_subsample[T: Dataset](dataset: T, n_samples: int, seed: int) -> T:
     """Draw exactly ``n_samples`` rows with per-class proportional sampling.
 

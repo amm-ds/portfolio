@@ -64,4 +64,4 @@ def test_validate_halls_on_excessive_nulls(cfg: MobilityConfig) -> None:
 
 def test_validate_report_is_persisted(cfg: MobilityConfig) -> None:
     validate_month("2024-01", cfg)
-    assert (cfg.reports_dir / "dq" / "2024-01.json").exists()
+    assert (cfg.reports_dir / "dq" / "yellow_2024-01.json").exists()

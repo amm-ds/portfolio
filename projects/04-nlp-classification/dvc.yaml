@@ -45,6 +45,16 @@ stages:
       - reports/figures/hpo_history.json
       - reports/figures/hpo_importance.html
       - reports/figures/hpo_importance.json
+  hpo-seeds:
+    cmd: uv run python -m nlp_classification.cli hpo-seeds
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/train
+      - data/val
+      - data/label_names.json
+    outs:
+      - reports/hpo_seeds.json
   train-tuned:
     cmd: uv run python -m nlp_classification.cli train-tuned
     deps:

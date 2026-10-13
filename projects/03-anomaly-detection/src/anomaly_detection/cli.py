@@ -14,6 +14,9 @@ from anomaly_detection.evaluate import run_evaluation
 from anomaly_detection.features import build_features, load_features, save_features
 from anomaly_detection.hpo import tune_all
 from anomaly_detection.model import feature_matrix, fit_models, save_models, split_train_test
+from anomaly_detection.nsl import run_nsl_probe
+from anomaly_detection.probes import run_residual_probe
+from anomaly_detection.stream import run_detection
 from anomaly_detection.validate import validate as run_validation
 
 logger = get_logger(__name__)
@@ -107,8 +110,55 @@ def evaluate() -> None:
 
 
 @app.command()
+def detect(
+    adaptive: bool = typer.Option(True, "--adaptive/--fixed", help="Adaptive vs. fixed threshold."),
+    chunk_rows: int = typer.Option(
+        1440, "--chunk-rows", help="Stream chunk size in rows (1440 = 24h)."
+    ),
+    drift_z: float = typer.Option(
+        1.0, "--drift-z", help="Drift z-score trigger (median shift in IQRs)."
+    ),
+) -> None:
+    """Simulate streaming detection over the test window; compare thresholds."""
+    config = get_config()
+    result = run_detection(config, adaptive=adaptive, chunk_rows=chunk_rows, drift_z_max=drift_z)
+    typer.echo(
+        f"stream: {result['n_chunks']} chunks, {len(result.get('drift_events', []))} drift events; "
+        f"fixed flags={result['fixed']['flags']} "
+        + (
+            f"adaptive flags={result['adaptive']['flags']}"
+            if "adaptive" in result
+            else "(fixed mode)"
+        )
+    )
+
+
+@app.command()
+def residuals() -> None:
+    """Probe: do rolling-median residual features de-cluster the anomalies?"""
+    config = get_config()
+    result = run_residual_probe(config)
+    typer.echo(
+        f"residual probe: base AUC={result['base']['roc_auc']:.4f} -> "
+        f"with residuals AUC={result['with_residuals']['roc_auc']:.4f} ({result['verdict']})"
+    )
+
+
+@app.command()
+def nsl() -> None:
+    """NSL-KDD production track: fetch, map, and run the transfer probe."""
+    config = get_config()
+    result = run_nsl_probe(config)
+    typer.echo(
+        f"NSL-KDD transfer probe: ROC-AUC={result['roc_auc']:.4f} "
+        f"PR-AUC={result['pr_auc']:.4f} (test prevalence {result['test_anomaly_rate']:.1%})"
+    )
+
+
+@app.command()
 def all() -> None:
-    """Run the full pipeline: prepare → validate → features → train → tune → evaluate."""
+    """Run the full pipeline incl. probes: prepare → validate → features →
+    train → tune → evaluate → detect → residuals → nsl."""
     config = get_config()
     df = prepare(config)
     report = run_validation(df, config)
@@ -123,6 +173,21 @@ def all() -> None:
     for name, values in metrics.items():
         typer.echo(f"{name}: " + ", ".join(f"{k}={v:.4f}" for k, v in values.items()))
     typer.echo(f"report -> {report_path}")
+    detection = run_detection(config)
+    typer.echo(
+        f"stream: {len(detection['drift_events'])} drift events; "
+        f"fixed flags={detection['fixed']['flags']} adaptive flags={detection['adaptive']['flags']}"
+    )
+    probe = run_residual_probe(config)
+    typer.echo(
+        f"residual probe: base AUC={probe['base']['roc_auc']:.4f} -> "
+        f"with residuals AUC={probe['with_residuals']['roc_auc']:.4f} ({probe['verdict']})"
+    )
+    nsl_result = run_nsl_probe(config)
+    typer.echo(
+        f"NSL-KDD transfer probe: ROC-AUC={nsl_result['roc_auc']:.4f} "
+        f"PR-AUC={nsl_result['pr_auc']:.4f}"
+    )
 
 
 if __name__ == "__main__":

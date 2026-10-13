@@ -36,6 +36,15 @@ class HPOBest(PortfolioBaseModel):
     best_val_f1_macro: float = Field(description="Validation macro-F1 of the best trial.")
 
 
+class HPOMultiSeed(PortfolioBaseModel):
+    """Budget for the seed-variance study (small trials per seed, CPU-bounded)."""
+
+    seeds: list[int] = Field(default_factory=lambda: [42, 43, 44], min_length=2)
+    n_trials: int = Field(default=6, ge=2)
+    epochs_max: int = Field(default=3, ge=2, description="Tighter epoch cap to fit the budget.")
+    startup_trials: int = Field(default=2, ge=1)
+
+
 class NLPConfig(PortfolioBaseModel):
     """Bounded run configuration for AG News text classification."""
 
@@ -81,6 +90,7 @@ class NLPConfig(PortfolioBaseModel):
     # HPO (search space defaults; ``hpo_best`` is filled by the hpo stage)
     hpo: HPOConfig = Field(default_factory=HPOConfig)
     hpo_best: HPOBest | None = None
+    hpo_seeds: HPOMultiSeed = Field(default_factory=HPOMultiSeed)
 
     # Locations (relative to the project working directory)
     data_dir: Path = Path("data")

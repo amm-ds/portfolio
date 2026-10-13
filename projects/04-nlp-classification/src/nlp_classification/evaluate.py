@@ -27,12 +27,14 @@ from portfolio_eval.ml import classification_metrics
 from portfolio_eval.report import ReportBuilder
 from sklearn import metrics as skm
 
+from nlp_classification.calibration import calibration_report
 from nlp_classification.config import NLPConfig
 from nlp_classification.data import LABEL_COLUMN, TEXT_COLUMN, tokenize_dataset
 from nlp_classification.hpo import hpo_history_figure, hpo_importance_figure
 from nlp_classification.model import (
     BASELINE_PATH,
     ENCODER_B_MODEL_PATH,
+    FULLDATA_MODEL_PATH,
     NN_MODEL_PATH,
     TUNED_MODEL_PATH,
     TrainingHistory,
@@ -288,8 +290,19 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     run_tuned, selection = select_tuned_run(y_true, y_pred_hpo, y_pred_wave2, cfg.selection_path)
     runs = [run_majority, run_random, run_base, run_wave2, run_encoder_b, run_tuned]
 
-    # the selected model drives the diagnostic figures
+    # full-data evidence run (only when the --full-data artifact exists)
+    fulldata_path = cfg.models_dir / FULLDATA_MODEL_PATH
+    if fulldata_path.exists():
+        y_pred_full = _predict_with(cfg, cfg.model_name, fulldata_path, test_ds, len(labels))
+        runs.append(run_result("distilbert_fulldata_20k", y_true, y_pred_full))
+
+    # the selected model drives the diagnostic figures and the calibration note
     y_pred_selected = y_pred_hpo if selection["winner"] == "hpo_retrained" else y_pred_wave2
+    selected_path = (
+        cfg.models_dir / TUNED_MODEL_PATH
+        if selection["winner"] == "hpo_retrained"
+        else cfg.models_dir / NN_MODEL_PATH
+    )
 
     history = TrainingHistory.from_json(cfg.history_path)
     val_ds = Dataset.load_from_disk(str(cfg.val_dir))
@@ -312,13 +325,35 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     analysis = error_analysis(y_true, y_pred_selected, texts, labels)
     (Path(cfg.reports_dir) / "error_analysis.md").write_text(error_analysis_markdown(analysis))
 
+    # calibration of the selected model: temperature fitted on val, ECE on test
+    device = torch.device("cpu")
+    tokenizer = load_tokenizer(cfg.model_name)
+    selected_model = build_nn_model(cfg, len(labels))
+    selected_model = load_nn_state_dict(selected_model, selected_path, device)
+    val_tok = tokenize_dataset(val_ds, tokenizer, cfg.max_length)
+    test_tok = tokenize_dataset(test_ds, tokenizer, cfg.max_length)
+    cal = calibration_report(selected_model, val_tok, test_tok, device, cfg.batch_size)
+
     builder = ReportBuilder(title="04 · NLP multi-class classification (AG News)")
     for run in runs:
         builder.add_run(run)
     builder.build(cfg.reports_dir, figures=figures)
     for name, fig in figures.items():
         save_json(fig, Path(cfg.reports_dir) / "figures" / f"{name}.json")
-    return {run.name: {m.name: m.value for m in run.metrics} for run in runs}
+
+    # meta block: seed-variance study + calibration verdict (not a "run")
+    meta: dict[str, Any] = {"calibration": cal}
+    seeds_file = Path(cfg.reports_dir) / "hpo_seeds.json"
+    if seeds_file.exists():
+        meta["hpo_seeds"] = json.loads(seeds_file.read_text())
+    metrics_path = Path(cfg.reports_dir) / "metrics.json"
+    metrics_data = json.loads(metrics_path.read_text())
+    metrics_data["_meta"] = meta
+    metrics_path.write_text(json.dumps(metrics_data, indent=2))
+
+    result = {run.name: {m.name: m.value for m in run.metrics} for run in runs}
+    result["_meta"] = meta
+    return result
 
 
 def _load_study_from_json(study_path: Path) -> Any | None:

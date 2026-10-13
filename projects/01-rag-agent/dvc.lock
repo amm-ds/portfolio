@@ -17,8 +17,8 @@ stages:
       size: 6211
     - path: src/rag_agent/corpus.py
       hash: md5
-      md5: 1726604da795d5e33eb4818dc1d3a66a
-      size: 7160
+      md5: 62def3c9f4f9c3ef19a576f6e303d212
+      size: 12365
     - path: src/rag_agent/schemas.py
       hash: md5
       md5: 7a06b42a1e2983a15726449919ad3122
@@ -96,9 +96,9 @@ stages:
       size: 1602
     - path: src
       hash: md5
-      md5: a514953c29225742f8384fd481497d35.dir
-      size: 178041
-      nfiles: 20
+      md5: 2febe85c786c36a71a4fce84b5c196ff.dir
+      size: 202555
+      nfiles: 22
     params:
       params.yaml:
         chunk_sizes:
@@ -118,6 +118,6 @@ stages:
     outs:
     - path: reports
       hash: md5
-      md5: 6a918effa4d966a50c679a864e984618.dir
-      size: 117970
-      nfiles: 14
+      md5: d9ecdb8cf723f9e0868c883071b038c2.dir
+      size: 120876
+      nfiles: 15

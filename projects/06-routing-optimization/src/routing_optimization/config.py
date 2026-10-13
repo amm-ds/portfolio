@@ -10,12 +10,24 @@ from pathlib import Path
 from portfolio_core.config import Settings
 from pydantic import Field
 
-from routing_optimization.schemas import Acceptance
+from routing_optimization.schemas import Acceptance, AlnsInit
 
 
 def default_instances() -> list[str]:
-    """The curated Solomon 100-customer subset used by this showcase."""
-    return ["C101", "C102", "C103", "C104", "C105", "RC102", "RC103", "RC104", "RC105", "RC108"]
+    """The full Solomon 100-customer benchmark (56 instances, all families)."""
+    return [
+        *(f"C1{i:02d}" for i in range(1, 10)),
+        *(f"C2{i:02d}" for i in range(1, 9)),
+        *(f"R1{i:02d}" for i in range(1, 13)),
+        *(f"R2{i:02d}" for i in range(1, 12)),
+        *(f"RC1{i:02d}" for i in range(1, 9)),
+        *(f"RC2{i:02d}" for i in range(1, 9)),
+    ]
+
+
+def default_alns_hpo_instances() -> list[str]:
+    """Representative subset used to tune ALNS knobs (one per family class)."""
+    return ["C101", "C104", "R104", "R108", "RC104", "RC105"]
 
 
 def default_best_known_path() -> Path:
@@ -29,9 +41,20 @@ def default_best_known_path() -> Path:
     )
 
 
+def default_supplement_path() -> Path:
+    """Project-local supplement covering the 43 instances the registry CSV
+    does not list (values from the published SINTEF TOP table)."""
+    return Path(__file__).resolve().parents[2] / "best_known_supplement.csv"
+
+
 def default_acceptance_choices() -> list[Acceptance]:
     """Candidate acceptance rules sampled by the HPO search."""
     return ["first", "best"]
+
+
+def default_alns_init_choices() -> list[AlnsInit]:
+    """Candidate ALNS initial operator-weight pools sampled by the HPO search."""
+    return ["uniform", "biased"]
 
 
 class VRPConfig(Settings):
@@ -47,6 +70,7 @@ class VRPConfig(Settings):
         description="Backup mirror of the Solomon 100-customer instance definitions (SINTEF TOP).",
     )
     best_known_path: Path = Field(default_factory=default_best_known_path)
+    best_known_supplement_path: Path = Field(default_factory=default_supplement_path)
     max_two_opt_iterations: int = Field(
         default=200, ge=1, description="Global cap on accepted 2-opt moves across all routes."
     )
@@ -75,6 +99,31 @@ class VRPConfig(Settings):
     convergence_instances: list[str] = Field(
         default_factory=lambda: ["C101", "RC105"],
         description="Instances drawn in the convergence figures.",
+    )
+    alns_max_iterations: int = Field(
+        default=120, ge=1, description="ALNS iteration cap (bounds runtime per instance)."
+    )
+    alns_destroy_q: int = Field(
+        default=10, ge=1, description="Customers removed per ALNS destroy operation."
+    )
+    alns_hpo_trials: int = Field(
+        default=12, ge=1, description="Seeded search trials for ALNS knobs."
+    )
+    alns_hpo_instances: list[str] = Field(
+        default_factory=default_alns_hpo_instances,
+        description="Instances the ALNS knob search is evaluated on (representative subset).",
+    )
+    alns_segment_choices: list[int] = Field(
+        default_factory=lambda: [25, 50, 100],
+        description="Candidate ALNS segment lengths sampled by the HPO search.",
+    )
+    alns_reaction_choices: list[float] = Field(
+        default_factory=lambda: [0.1, 0.3, 0.5],
+        description="Candidate ALNS reaction factors sampled by the HPO search.",
+    )
+    alns_init_choices: list[AlnsInit] = Field(
+        default_factory=default_alns_init_choices,
+        description="Candidate ALNS initial operator weights sampled by the HPO search.",
     )
     params_path: Path | None = Field(
         default=None,

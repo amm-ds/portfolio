@@ -49,8 +49,20 @@ Summary:
   a scalar MinT-lite shrinkage `w`, grid-estimated on the embargoed previous
   fold, redistributes the parent-child discrepancy. Coherence after adjustment
   is exactly `(1-w)` of the incoherence before (property-tested).
+- **Real-data track** (`uci.py`): UCI Online Retail II activated behind
+  `--data-source uci` — checksum-pinned download (sha256 in `params.yaml`),
+  dependency-free XLSX streaming parser (stdlib zipfile/iterparse), 2009-2010
+  sheet parsed to 525,461 transactions, aggregated to a bounded daily panel
+  (top 8 countries as stores × top 200 stock codes as products, 374 days,
+  405,416 rows, 89% zero share — genuinely intermittent demand). Sales lines
+  only (returns/cancellations excluded, documented). Synthetic stays the
+  default so CI runs offline.
+- **Probabilistic forecasts** (`probabilistic.py`): quantile HGB (p10/p50/p90)
+  on the tuned config plus a split-conformal band calibrated on the early
+  folds; empirical coverage reported against the 80% target, with a band
+  figure for the two highest-volume series.
 - **Validation** (`evaluate.py`): `TimeSeriesCV` (4 expanding-window folds,
-  7-day embargo gap) over the 716 dated feature rows, folds mapped to rows so
+  7-day embargo gap) over the dated feature rows, folds mapped to rows so
   no date block straddles train/validation. Metrics from
   `portfolio_eval.ml.regression_metrics` on pooled out-of-fold predictions.
 
@@ -111,7 +123,56 @@ Per-fold MAE (see the `fold_stability` figure for the full six-run view):
 hgb_tuned improves on hgb in **every** fold; temporal_net tracks ridge but
 never leads.
 
-Figures (HTML + JSON for the showcase app) in `reports/figures/`:
+## Real-data track (UCI Online Retail II, `cli all --data-source uci`)
+
+Same pipeline, same backtest, real transactions: 525,461 sales lines parsed
+from the 2009-2010 sheet → top 8 countries × top 200 products, 374 days
+(2009-12-01..2010-12-09), 405,416 panel rows, **89.2% zero share** — classical
+intermittent demand. Pooled out-of-fold ladder:
+
+| run | MAE | RMSE | MAPE |
+|---|---|---|---|
+| naive_mean | 10.838 | 97.607 | 91.3% |
+| naive_last | 10.288 | 135.674 | 356.2% |
+| ridge | 16.734 | 98.531 | 236.2% |
+| hgb | 9.085 | 97.256 | 245.9% |
+| **hgb_tuned** | **8.989** | **96.688** | 228.6% |
+| temporal_net | 12.704 | 96.813 | 215.8% |
+
+What transfers and what breaks — the honest synthetic-vs-real comparison:
+
+- **Transfers**: the rung ordering at the top (tuned HGB best, default HGB
+  close, NN behind) and the value of naive floors. `hgb_tuned` still wins.
+- **Breaks — ridge collapses**: the linear model (MAE 16.7) falls *behind both
+  naives* (~10.3). Squared-loss linear fitting cannot handle 89% zeros plus
+  bulk orders up to 19,152 units in a single day; tree ensembles' piecewise
+  structure and the tuned min_samples_leaf absorb it.
+- **Breaks — MAPE becomes meaningless**: persistence's MAPE explodes to 356%
+  (yesterday's zero actuals), and every model's MAPE is inflated by near-zero
+  denominators. On real intermittent data MAE is the decision metric; MAPE is
+  reported only for completeness.
+- **Breaks — RMSE ≫ MAE everywhere** (e.g. hgb_tuned 96.7 vs 9.0): rare
+  wholesale spikes dominate squared errors. Plan on quantile/robust objectives,
+  not RMSE targets.
+- **Reconciliation pays off on real data**: w=0.65 (vs 0.05 synthetic) —
+  store-level MAE 748.2 → 726.4, incoherence 400.4 → 140.2 (exactly ×(1−w)).
+  Real hierarchies carry more cross-series signal than the synthetic one.
+- **Probabilistic (both tracks, target 80% band)**:
+
+  | track | quantile band coverage | split-conformal coverage |
+  |---|---|---|
+  | synthetic | 0.727 (under-covers) | 0.757 (q80 = 13.25) |
+  | UCI real | 0.919 (over-covers) | 0.858 (q80 = 0.0 — degenerate) |
+
+  Honest reading: on synthetic data the bands are too narrow (heavy
+  day-over-day noise; HGB quantiles over-smooth). On real intermittent data
+  they over-cover, and the conformal calibration degenerates — 80% of early-fold
+  residuals are exactly 0 (the model nails zero-demand days), so q80 = 0 and
+  the band collapses onto the point forecast. Fix direction: per-series
+  conformal and zero-inflated intervals (roadmap).
+
+Figures (HTML + JSON for the showcase app) in `reports/figures/` (synthetic)
+and `reports_uci/figures/` (real):
 
 - `eda_series_overview` / `eda_units_distribution` — raw-panel EDA
 - `forecast_vs_actual` — actual vs **hgb_tuned** vs **naive_last** on the last
@@ -122,19 +183,25 @@ Figures (HTML + JSON for the showcase app) in `reports/figures/`:
   hyperparameter importance
 - `reconciliation_coherence` — per-store parent actual vs Σ children
   before/after the MinT-lite adjustment
+- `probabilistic_band` — actual vs p50 with p10-p90 band, two highest-volume
+  series, last fold
 
 Other artifacts: `reports/metrics.json`, `reports/report.html`,
-`reports/reconciliation.json`, `data/panel.parquet` (17,520 rows),
-`data/features.parquet` (17,184 rows × 17 cols), `data/models.pkl` (all six
-models refit on full history), `data/hpo_best.json` (+ `hpo_study.db`),
-`data/dataset.json` (dataset identity card). Full pipeline runtime ≈ **1 min**
-unloaded (≈ 6 min under heavy multi-agent load); 6/6 DQ gates pass.
+`reports/reconciliation.json`, `reports/probabilistic.json`,
+`data/panel.parquet` (17,520 rows), `data/features.parquet` (17,184 rows × 17
+cols), `data/models.pkl` (all six models refit on full history),
+`data/hpo_best.json` (+ `hpo_study.db`), `data/dataset.json` (dataset identity
+card). UCI track: `data_uci/` (panel 405,416 rows, contract, models) and
+`reports_uci/` (metrics, reconciliation, probabilistic, report, figures).
+Full synthetic pipeline ≈ **2.5 min** including probabilistic (≈ 6 min under
+heavy multi-agent load); UCI track ≈ **5.5 min**; 6/6 DQ gates pass on both.
 
 ## Reproduce
 
 ```bash
 # from the repo root, inside the workspace venv
-uv run python -m demand_forecasting.cli all            # full pipeline (~1 min)
+uv run python -m demand_forecasting.cli all            # synthetic pipeline (~2.5 min)
+uv run python -m demand_forecasting.cli all --data-source uci   # real-data track (~5.5 min, fetches once)
 uv run python -m demand_forecasting.cli hpo            # Optuna HPO (minutes; resumable)
 # or stage by stage (mirrors dvc.yaml)
 uv run python -m demand_forecasting.cli prepare
@@ -175,16 +242,15 @@ uv run pytest projects/02-demand-forecasting -q
 
 ## Roadmap
 
-Planned deepening, in priority order:
+Delivered in wave 7: the UCI real-data track, probabilistic forecasts
+(quantile HGB + split-conformal), both exercised with real numbers above.
+What remains, in priority order:
 
-1. **Sequence model**: temporal_net's honest loss to the tree ensemble is the
-   case for a raw-window model (small LSTM/TCN over the last k days) instead
-   of hand-built lag features — the clearest next experiment.
-2. **Real-data track**: UCI Online Retail II via `portfolio_core.io.fetch`
-   with checksum pinning (DESIGN.md documents the mapping from invoice lines
-   to this panel schema).
-3. **Deeper reconciliation**: full MinT covariance projection across the whole
-   hierarchy, and drift-robust parent models so the reconciled level is as
-   trustworthy as the children.
-4. **Probabilistic forecasts**: quantile regression or conformal intervals on
-   top of the backtest residuals for inventory safety-stock sizing.
+1. **Calibrated intervals for intermittent demand**: per-series (or
+   clustered) conformal calibration and zero-inflated interval models — the
+   current global bands under-cover on synthetic (73%) and degenerate on real
+   data (q80 = 0).
+2. **Full MinT reconciliation**: covariance projection across a deeper product
+   hierarchy once the UCI track is structured by product category.
+3. **Returns-aware demand**: model cancellations/returns as a separate flow
+   instead of excluding them, for net-demand forecasting.

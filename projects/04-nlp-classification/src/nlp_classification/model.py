@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, cast
 
-import joblib  # type: ignore[import-untyped]
+import joblib
 import numpy as np
 import torch
 from datasets import Dataset  # type: ignore[import-untyped]
@@ -32,6 +32,7 @@ BASELINE_PATH = "baseline.joblib"
 NN_MODEL_PATH = "distilbert.pt"
 TUNED_MODEL_PATH = "distilbert_tuned.pt"
 ENCODER_B_MODEL_PATH = "encoder_b.pt"
+FULLDATA_MODEL_PATH = "distilbert_fulldata.pt"
 
 
 # ---------------------------------------------------------------------------
@@ -342,6 +343,23 @@ def predict_nn(
     return np.asarray(preds, dtype=int)
 
 
+@torch.no_grad()
+def predict_proba_nn(
+    model: nn.Module, dataset: Dataset, device: torch.device, batch_size: int
+) -> np.ndarray:
+    """Softmax class probabilities for a tokenized dataset (for calibration)."""
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, collate_fn=_collate)
+    model.eval()
+    probs: list[np.ndarray] = []
+    for batch in loader:
+        input_ids = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits if hasattr(outputs, "logits") else outputs
+        probs.append(torch.softmax(logits, dim=-1).cpu().numpy())
+    return np.concatenate(probs, axis=0) if probs else np.zeros((0, 0))
+
+
 def save_nn_state_dict(model: nn.Module, path: str | Path) -> Path:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -354,3 +372,28 @@ def load_nn_state_dict(model: nn.Module, path: str | Path, device: torch.device)
     model.load_state_dict(state)
     model.to(device)
     return model
+
+
+class DeviceGateError(RuntimeError):
+    """Raised when the full-data path is requested without a GPU or --force-cpu."""
+
+
+def resolve_device(force_cpu: bool, full_data: bool, train_rows: int) -> torch.device:
+    """Pick the training device; gate the full-data path behind a GPU.
+
+    Full-data estimates scale from the measured CPU throughput of this
+    pipeline (~50 s per 3.6k-row epoch, max_length 128, batch 32): the full
+    120k train split runs ~45-50 min per epoch on this machine, so a 2-epoch
+    fine-tune is a 1.5-2 h CPU job — not a laptop default.
+    """
+    if torch.cuda.is_available() and not force_cpu:
+        return torch.device("cuda")
+    if full_data and not force_cpu:
+        epochs_hours = train_rows / 3600 * 50 / 3600
+        raise DeviceGateError(
+            f"--full-data needs a GPU (none available) or --force-cpu. Estimated "
+            f"wall-clock for {train_rows:,} rows on this CPU: ~{epochs_hours:.1f} h per "
+            "epoch at the measured ~50 s / 3.6k-row epoch (full 120k ~= 45-50 min/epoch, "
+            "2-epoch run ~= 1.5-2 h). Use --subset for bounded evidence runs."
+        )
+    return torch.device("cpu")

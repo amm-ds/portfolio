@@ -5,79 +5,79 @@ stages:
     deps:
     - path: src/mobility/config.py
       hash: md5
-      md5: 7f33a52732d188eadbe0d068dcba0bf4
-      size: 4906
+      md5: 41a975d0f23da46340db94d289fde849
+      size: 5411
     - path: src/mobility/download.py
       hash: md5
-      md5: f89064849112995456dd71e4480dce81
-      size: 4495
+      md5: 36f02c0619d4dbe55e75e8056b414d7a
+      size: 5349
     outs:
     - path: data/raw
       hash: md5
-      md5: 438f66d2e09d9329bb3b75e0fe0de3f6.dir
-      size: 694840266
-      nfiles: 29
+      md5: 7deb413465537c06b82de142e27ee344.dir
+      size: 698860209
+      nfiles: 35
   validate:
     cmd: uv run python -m mobility.cli validate
     deps:
     - path: data/raw
       hash: md5
-      md5: 438f66d2e09d9329bb3b75e0fe0de3f6.dir
-      size: 694840266
-      nfiles: 29
+      md5: 7deb413465537c06b82de142e27ee344.dir
+      size: 698860209
+      nfiles: 35
     - path: src/mobility/schemas.py
       hash: md5
       md5: 6902bf15993e2ee3aa61bc4ad9bfafa8
       size: 3844
     - path: src/mobility/validate.py
       hash: md5
-      md5: be72d25db662140a98c23dc070db017e
-      size: 8489
+      md5: 43da8a4b6b40e428302f32fa59b06b81
+      size: 9428
     outs:
     - path: data/validated
       hash: md5
-      md5: 8716b7942f2a66e024931442fa1a28fe.dir
-      size: 637409771
-      nfiles: 12
+      md5: c106f411eaba8910071840c427208ce3.dir
+      size: 640537773
+      nfiles: 15
     - path: reports/dq
       hash: md5
-      md5: 471ee204225a8ada42aa1695bf7565ee.dir
-      size: 30566
-      nfiles: 12
+      md5: 359b5f3621646b642e2421737711a863.dir
+      size: 68737
+      nfiles: 27
     - path: reports/dq_validated.html
       hash: md5
-      md5: 5d47eaab806cf12cffcd12ef2d56c0db
-      size: 22406
+      md5: 74f2a29aa6c01fd3f86380345add4557
+      size: 27806
     - path: reports/dq_validated.md
       hash: md5
-      md5: 3a8adbdc763c4f59d5e5fc060e89eb50
-      size: 16001
+      md5: a21fe700eb7c898d3f111a3bb41011f6
+      size: 19934
   join:
     cmd: uv run python -m mobility.cli join
     deps:
     - path: data/validated
       hash: md5
-      md5: 8716b7942f2a66e024931442fa1a28fe.dir
-      size: 637409771
-      nfiles: 12
+      md5: c106f411eaba8910071840c427208ce3.dir
+      size: 640537773
+      nfiles: 15
     - path: src/mobility/join.py
       hash: md5
-      md5: 87287d8aca0c8f5bf35fe0ee437b55e0
-      size: 7113
+      md5: 799a121fb0dc6c665683d4ab100c4780
+      size: 7960
     outs:
     - path: data/curated
       hash: md5
-      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
-      size: 2574796
-      nfiles: 3
+      md5: 3ff2bdbc74d7c3fc91f5e8d5acd54ee8.dir
+      size: 2746329
+      nfiles: 4
   features:
     cmd: uv run python -m mobility.cli features
     deps:
     - path: data/curated
       hash: md5
-      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
-      size: 2574796
-      nfiles: 3
+      md5: 3ff2bdbc74d7c3fc91f5e8d5acd54ee8.dir
+      size: 2746329
+      nfiles: 4
     - path: src/mobility/features.py
       hash: md5
       md5: 277e07c11ec4924cfde689a962be1176
@@ -114,8 +114,8 @@ stages:
       size: 3085
     - path: src/mobility/model.py
       hash: md5
-      md5: 5c178d558c0fe1ccb774fd092e9a89d1
-      size: 14001
+      md5: 88de10de4aabb7feecb8d34bb7ca4bfd
+      size: 13969
     params:
       params.yaml:
         gbm:
@@ -160,8 +160,8 @@ stages:
       size: 11628735
     - path: src/mobility/model.py
       hash: md5
-      md5: 5c178d558c0fe1ccb774fd092e9a89d1
-      size: 14001
+      md5: 88de10de4aabb7feecb8d34bb7ca4bfd
+      size: 13969
     params:
       params.yaml:
         nn:
@@ -212,17 +212,17 @@ stages:
     deps:
     - path: data/curated
       hash: md5
-      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
-      size: 2574796
-      nfiles: 3
+      md5: 3ff2bdbc74d7c3fc91f5e8d5acd54ee8.dir
+      size: 2746329
+      nfiles: 4
     - path: reports/models/predictions.parquet
       hash: md5
       md5: 00f734f8317d601cfde33333c6ada6e3
       size: 14657106
     - path: src/mobility/evaluate.py
       hash: md5
-      md5: 3f2889f692e09a9edaa413d5b997b0f9
-      size: 24432
+      md5: 67a9a3d9d852101bb57e39851b1f7002
+      size: 24400
     outs:
     - path: reports/report.html
       hash: md5
@@ -233,23 +233,23 @@ stages:
     deps:
     - path: data/curated
       hash: md5
-      md5: 24aaf46013da2ce7ca362b34dc9e9050.dir
-      size: 2574796
-      nfiles: 3
+      md5: 3ff2bdbc74d7c3fc91f5e8d5acd54ee8.dir
+      size: 2746329
+      nfiles: 4
     - path: reports/models/predictions.parquet
       hash: md5
       md5: 00f734f8317d601cfde33333c6ada6e3
       size: 14657106
     - path: src/mobility/evaluate.py
       hash: md5
-      md5: 3f2889f692e09a9edaa413d5b997b0f9
-      size: 24432
+      md5: 67a9a3d9d852101bb57e39851b1f7002
+      size: 24400
     outs:
     - path: reports/figures
       hash: md5
-      md5: 932d0d448113302c1cfe0b35e0fb56c9.dir
-      size: 711752
-      nfiles: 18
+      md5: 15daeeedb5cda80c747718119423e4ac.dir
+      size: 728649
+      nfiles: 20
     - path: reports/metrics.json
       hash: md5
       md5: 877027de43b4e4a61ca9033fd7fbfb48
@@ -264,8 +264,8 @@ stages:
       nfiles: 2
     - path: src/mobility/model.py
       hash: md5
-      md5: 5c178d558c0fe1ccb774fd092e9a89d1
-      size: 14001
+      md5: 88de10de4aabb7feecb8d34bb7ca4bfd
+      size: 13969
     - path: src/mobility/tune.py
       hash: md5
       md5: 8098139c80f432e8bcbed3c71f423bda
@@ -287,3 +287,61 @@ stages:
       hash: md5
       md5: ddd19053a9c8bc556d9264a6325f38e1
       size: 333
+  transfer:
+    cmd: uv run python -m mobility.cli transfer
+    deps:
+    - path: data/curated
+      hash: md5
+      md5: 3ff2bdbc74d7c3fc91f5e8d5acd54ee8.dir
+      size: 2746329
+      nfiles: 4
+    - path: reports/models/gbm_tuned.joblib
+      hash: md5
+      md5: 767ff51930cef61a2907029b90a1b1e2
+      size: 4068640
+    - path: src/mobility/transfer.py
+      hash: md5
+      md5: fcf4411892b25015c4fb67d451f31229
+      size: 5605
+    outs:
+    - path: reports/figures/green_transfer.html
+      hash: md5
+      md5: a8fb676b63f54a4de9f015a5c61e36c4
+      size: 8947
+    - path: reports/figures/green_transfer.json
+      hash: md5
+      md5: 4fae9cdca34503bbc883f511a92f7d4c
+      size: 7950
+    - path: reports/green_transfer.json
+      hash: md5
+      md5: 51e5182cd069dc8a7a98b5d8af456adb
+      size: 1135
+  serving:
+    cmd: uv run python -m mobility.cli build-serving-artifact
+    deps:
+    - path: data/curated/zones.parquet
+      hash: md5
+      md5: 67a5acda6ff58b34601d594e346dcd4b
+      size: 4532
+    - path: data/features/test.parquet
+      hash: md5
+      md5: d95326c1b254ff089417e3dac4de3b31
+      size: 1593198
+    - path: reports/models/gbm_p90_tuned.joblib
+      hash: md5
+      md5: 7938c800f247e13ac32d75091a53f636
+      size: 2723800
+    - path: reports/models/gbm_tuned.joblib
+      hash: md5
+      md5: 767ff51930cef61a2907029b90a1b1e2
+      size: 4068640
+    - path: src/mobility/serving.py
+      hash: md5
+      md5: a3c25c8b7fbcbbc156599d1eed0753dd
+      size: 4013
+    outs:
+    - path: reports/models/serving
+      hash: md5
+      md5: 74e822c142d18c0ef9fabb431b85d46e.dir
+      size: 6818947
+      nfiles: 3

@@ -6,11 +6,57 @@ instances:
 - C103
 - C104
 - C105
+- C106
+- C107
+- C108
+- C109
+- C201
+- C202
+- C203
+- C204
+- C205
+- C206
+- C207
+- C208
+- R101
+- R102
+- R103
+- R104
+- R105
+- R106
+- R107
+- R108
+- R109
+- R110
+- R111
+- R112
+- R201
+- R202
+- R203
+- R204
+- R205
+- R206
+- R207
+- R208
+- R209
+- R210
+- R211
+- RC101
 - RC102
 - RC103
 - RC104
 - RC105
+- RC106
+- RC107
 - RC108
+- RC201
+- RC202
+- RC203
+- RC204
+- RC205
+- RC206
+- RC207
+- RC208
 seed: 42
 max_two_opt_iterations: 200
 raw_dir: data/raw
@@ -39,9 +85,34 @@ hpo_restart_choices:
 convergence_instances:
 - C101
 - RC105
+alns_max_iterations: 120
+alns_destroy_q: 10
+alns_hpo_trials: 12
+alns_hpo_instances:
+- C101
+- C104
+- R104
+- R108
+- RC104
+- RC105
+alns_segment_choices:
+- 25
+- 50
+- 100
+alns_reaction_choices:
+- 0.1
+- 0.3
+- 0.5
+alns_init_choices:
+- uniform
+- biased
 # Written by the solve stage (seeded HPO winner); do not hand-edit.
 solver_best:
 max_iterations: 50
 acceptance: best
 tail_exchange: true
 restarts: 1
+alns_best:
+segment_length: 100
+reaction_factor: 0.5
+init_weights: uniform

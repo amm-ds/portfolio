@@ -9,7 +9,7 @@ test scores, so the operating point is fixed a priori rather than tuned.
 import json
 from pathlib import Path
 
-import joblib  # type: ignore[import-untyped]
+import joblib
 import numpy as np
 import plotly.graph_objects as go
 import polars as pl

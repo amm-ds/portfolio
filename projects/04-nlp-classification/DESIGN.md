@@ -71,6 +71,24 @@ Full run ladder:
 | encoder_b | 0.8980 | 0.8982 | roberta-base, defaults, 2 epochs (val F1 0.9106) |
 | distilbert | 0.9020 | 0.9021 | wave-2 defaults (val F1 0.8880) |
 | distilbert_tuned | 0.9020 | 0.9021 | selection winner = wave-2 artifact |
+| distilbert_fulldata_20k | 0.9270 | 0.9270 | full-data path evidence (20k subset: 18k train/2k val, 2 ep) |
+
+Full-data path: `train-nn --full-data` (GPU-gated; CPU requires `--force-cpu`
+with an honest wall-clock estimate — full 120k ≈ 45–50 min/epoch measured).
+Evidence run `--subset 20000 --force-cpu`: val F1 0.9189, test macro-F1 0.9270
+(+2.5 pp over the 3.6k-row models) — data scaling confirmed, remaining step to
+120k is compute, not engineering.
+
+Multi-seed HPO (3 seeds × 6 trials, epochs 2–3 budget): best val macro-F1 per
+seed 0.8953 / 0.8852 / 0.8926 → **mean 0.8910 ± 0.0042**. The mean gain over
+defaults (0.8880) is ~+0.3 pp — smaller than the seed std: at 400 validation
+rows, seed variance exceeds the HPO effect. Seed 42's best matches the 12-trial
+study bit-for-bit (same RNG stream → determinism re-confirmed across studies).
+
+Calibration (temperature scaling on the 400-row val split, ECE on test):
+T = 0.843 (mildly under-confident model), ECE **0.0467 → 0.0133** (−71 %
+relative). Argmax unchanged — a free reliability upgrade for
+confidence-thresholded routing. Stored in `metrics.json → _meta`.
 
 HPO (Optuna, 12 trials, seeded TPE + median pruning between epochs): best
 validation macro-F1 0.8953 (lr 3.82e-5, warmup 0.042, wd 0.018, epochs 2;
@@ -86,6 +104,13 @@ per-class comparison in `reports/error_analysis.md` and
 
 ## Changelog
 
+- 2026-10-13 · v0.4.0 — Roadmap implementation: full-data path behind a GPU
+  flag (`train-nn --full-data [--subset N] [--force-cpu]`, honest wall-clock
+  gate) with a 20k-row evidence run (val F1 0.9189, test macro-F1 0.9270);
+  multi-seed HPO stage (`hpo-seeds`, 3 seeds × 6 trials → mean 0.8910 ±
+  0.0042, gain within seed noise); temperature scaling + ECE before/after in
+  `metrics.json → _meta` (0.0467 → 0.0133); new CLI/dvc stages hpo-seeds;
+  calibration module with temperature recovery tests.
 - 2026-10-12 · v0.3.0 — Production depth: Optuna HPO stage over the
   fine-written loop (seeded TPE, median pruning, persisted to params.yaml and
   `reports/hpo_study.json`); honest model selection between HPO-retrained and

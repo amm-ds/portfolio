@@ -20,15 +20,27 @@ from mobility.schemas import Trip
 
 logger = get_logger(__name__)
 
-#: Columns carried downstream (narrow slice keeps RAM bounded).
+#: Columns carried downstream (narrow slice keeps RAM bounded). Green files
+#: timestamp with lpep_*; everything else shares the yellow schema.
 _TRIP_COLUMNS = {
-    "tpep_pickup_datetime": "pickup_ts",
-    "tpep_dropoff_datetime": "dropoff_ts",
-    "PULocationID": "pulocation_id",
-    "DOLocationID": "dolocation_id",
-    "passenger_count": "passenger_count",
-    "trip_distance": "trip_distance_mi",
-    "fare_amount": "fare_amount",
+    "yellow": {
+        "tpep_pickup_datetime": "pickup_ts",
+        "tpep_dropoff_datetime": "dropoff_ts",
+        "PULocationID": "pulocation_id",
+        "DOLocationID": "dolocation_id",
+        "passenger_count": "passenger_count",
+        "trip_distance": "trip_distance_mi",
+        "fare_amount": "fare_amount",
+    },
+    "green": {
+        "lpep_pickup_datetime": "pickup_ts",
+        "lpep_dropoff_datetime": "dropoff_ts",
+        "PULocationID": "pulocation_id",
+        "DOLocationID": "dolocation_id",
+        "passenger_count": "passenger_count",
+        "trip_distance": "trip_distance_mi",
+        "fare_amount": "fare_amount",
+    },
 }
 
 MI_TO_KM = 1.60934
@@ -57,8 +69,9 @@ def _freshness_floor(month: str, slack_days: int) -> str:
     return (date(int(year), int(mm), last_day) - timedelta(days=slack_days)).isoformat()
 
 
-def _raw_slice(raw_path: Path, cfg: MobilityConfig) -> pl.LazyFrame:
-    lf = pl.scan_parquet(raw_path).rename(_TRIP_COLUMNS).select(list(_TRIP_COLUMNS.values()))
+def _raw_slice(raw_path: Path, cfg: MobilityConfig, color: str) -> pl.LazyFrame:
+    mapping = _TRIP_COLUMNS[color]
+    lf = pl.scan_parquet(raw_path).rename(mapping).select(list(mapping.values()))
     if cfg.max_rows_per_month is not None:
         lf = lf.head(cfg.max_rows_per_month)
     return lf
@@ -99,13 +112,14 @@ def _clean(raw: pl.LazyFrame, month: str) -> pl.LazyFrame:
     )
 
 
-def validate_month(month: str, cfg: MobilityConfig) -> DQReport:
-    """Validate one month, persist cleaned parquet, return the DQ report."""
-    raw_path = cfg.tlc_raw_dir / f"yellow_tripdata_{month}.parquet"
+def validate_month(month: str, cfg: MobilityConfig, color: str = "yellow") -> DQReport:
+    """Validate one month of one service color; persist cleaned parquet."""
+    raw_dir = cfg.tlc_raw_dir if color == "yellow" else cfg.raw_dir / color
+    raw_path = raw_dir / f"{color}_tripdata_{month}.parquet"
     if not raw_path.exists():
         raise FileNotFoundError(f"missing raw file {raw_path} — run `mobility download`")
 
-    lf = _raw_slice(raw_path, cfg)
+    lf = _raw_slice(raw_path, cfg, color)
     raw = lf.collect(engine="streaming")
     n_raw = raw.height
     null_rates = _null_rates(raw)
@@ -113,8 +127,9 @@ def validate_month(month: str, cfg: MobilityConfig) -> DQReport:
     cleaned_lf = _clean(lf, month)
     cleaned = cleaned_lf.collect(engine="streaming")
     n_clean = cleaned.height
+    row_floor = cfg.min_rows_per_month if color == "yellow" else cfg.green_min_rows_per_month
 
-    report = DQReport(dataset=f"tlc_yellow_{month}", n_rows=n_clean)
+    report = DQReport(dataset=f"tlc_{color}_{month}", n_rows=n_clean)
     for col, ceiling in NULL_RATE_CEILINGS.items():
         report.check_null_rate(col, null_rates[col], ceiling)
     report.check_range(
@@ -144,10 +159,10 @@ def validate_month(month: str, cfg: MobilityConfig) -> DQReport:
         DQCheck(
             name="row_count_floor",
             column="*",
-            passed=n_clean >= cfg.min_rows_per_month,
+            passed=n_clean >= row_floor,
             metric=float(n_clean),
-            threshold=float(cfg.min_rows_per_month),
-            detail=f"cleaned rows {n_clean} >= floor {cfg.min_rows_per_month} "
+            threshold=float(row_floor),
+            detail=f"cleaned rows {n_clean} >= floor {row_floor} "
             f"(raw {n_raw}, kept {n_clean / max(1, n_raw):.3%})",
         )
     )
@@ -155,25 +170,34 @@ def validate_month(month: str, cfg: MobilityConfig) -> DQReport:
     # Contract spot-check: one validated row must satisfy the Trip schema.
     _ = Trip(**cleaned.row(0, named=True))
 
-    cfg.validated_dir.mkdir(parents=True, exist_ok=True)
-    cleaned.write_parquet(cfg.validated_dir / f"{month}.parquet", compression="zstd")
+    out_dir = cfg.validated_dir if color == "yellow" else cfg.validated_dir / color
+    out_dir.mkdir(parents=True, exist_ok=True)
+    cleaned.write_parquet(out_dir / f"{month}.parquet", compression="zstd")
     (cfg.reports_dir / "dq").mkdir(parents=True, exist_ok=True)
-    (cfg.reports_dir / "dq" / f"{month}.json").write_text(report.model_dump_json(indent=2))
+    (cfg.reports_dir / "dq" / f"{color}_{month}.json").write_text(report.model_dump_json(indent=2))
     logger.info(
-        "%s: %d rows cleaned (%.1f%% of raw)", month, n_clean, 100 * n_clean / max(1, n_raw)
+        "%s %s: %d rows cleaned (%.1f%% of raw)",
+        color,
+        month,
+        n_clean,
+        100 * n_clean / max(1, n_raw),
     )
     return report
 
 
 def validate_all(cfg: MobilityConfig | None = None) -> list[DQReport]:
-    """Gate every configured month; raise loudly on the first failure."""
+    """Gate every configured month (yellow + green); raise on first failure."""
     cfg = cfg or get_config()
     reports: list[DQReport] = []
     for month in cfg.months:
-        report = validate_month(month, cfg)
+        report = validate_month(month, cfg, color="yellow")
         report.raise_if_failed()
         reports.append(report)
-    logger.info("all %d months passed DQ gates", len(reports))
+    for month in cfg.green_months:
+        report = validate_month(month, cfg, color="green")
+        report.raise_if_failed()
+        reports.append(report)
+    logger.info("all %d files passed DQ gates", len(reports))
     persist_dq_summary(cfg, reports)
     return reports
 

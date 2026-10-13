@@ -6,6 +6,7 @@ function of (X, y, seed, trials). The objective scores stratified-CV F1 of the
 with per-fold intermediate values reported for median pruning.
 """
 
+import warnings
 from dataclasses import dataclass, field
 from typing import Any, cast
 
@@ -16,11 +17,13 @@ from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 from optuna.trial import Trial
 from portfolio_core.logging import get_logger
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
 from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]
 
 from churn_pipeline.config import ChurnConfig
+from churn_pipeline.evaluate import cost_curve
 from churn_pipeline.model import build_pipeline
 
 log = get_logger(__name__)
@@ -34,7 +37,8 @@ class ModelSelection:
 
     family: str
     params: dict[str, Any]
-    best_cv_f1: float
+    best_score: float
+    objective: str
     n_trials: int
     family_scores: dict[str, float] = field(default_factory=dict)
 
@@ -85,7 +89,7 @@ def build_estimator(cfg: ChurnConfig, family: str, params: dict[str, Any]) -> An
     return build_pipeline(cfg, family=family, params=resolved)
 
 
-def _objective(cfg: ChurnConfig, X: pd.DataFrame, y: pd.Series) -> Any:
+def _f1_objective(cfg: ChurnConfig, X: pd.DataFrame, y: pd.Series) -> Any:
     """Stratified-CV F1 with per-fold intermediates for median pruning."""
 
     def fn(trial: Trial) -> float:
@@ -106,6 +110,38 @@ def _objective(cfg: ChurnConfig, X: pd.DataFrame, y: pd.Series) -> Any:
     return fn
 
 
+def _cost_objective(cfg: ChurnConfig, X: pd.DataFrame, y: pd.Series) -> Any:
+    """CV business cost (FP=fp_cost, FN=fn_cost), threshold tuned per trial.
+
+    Per fold we fit on the train part and score out-of-fold probabilities on
+    the validation part; the trial's cost is the business cost of the pooled
+    out-of-fold probabilities at their cost-optimal threshold — the same
+    threshold-tuning view used at evaluation, so the objective optimizes
+    exactly what deployment measures. Pruning intermediates report the
+    running mean of per-fold costs (each at its own fold-optimal threshold).
+    """
+
+    def fn(trial: Trial) -> float:
+        family, params = suggest_params(trial)
+        pipe = build_estimator(cfg, family, params)
+        folds = StratifiedKFold(n_splits=cfg.cv_folds, shuffle=True, random_state=cfg.seed)
+        y_arr = np.asarray(y, dtype=int)
+        oof = np.zeros(len(y_arr), dtype=float)
+        fold_costs: list[float] = []
+        for step, (tr, va) in enumerate(folds.split(X, y)):
+            pipe.fit(X.iloc[tr], y.iloc[tr])
+            proba = np.asarray(pipe.predict_proba(X.iloc[va])[:, 1], dtype=float)
+            oof[va] = proba
+            fold_costs.append(float(cost_curve(cfg, y_arr[va], proba)[0].min()))
+            trial.report(-float(np.mean(fold_costs)), step=step)
+            if trial.should_prune():
+                raise optuna.TrialPruned()
+        total_costs, _ = cost_curve(cfg, y_arr, oof)
+        return -float(total_costs.min())
+
+    return fn
+
+
 def run_study(
     cfg: ChurnConfig,
     X_train: pd.DataFrame,
@@ -119,14 +155,16 @@ def run_study(
     still take only a few seconds.
     """
     optuna.logging.set_verbosity(optuna.logging.WARNING)
+    objective = _cost_objective if cfg.hpo_objective == "cost" else _f1_objective
     study = optuna.create_study(
         direction="maximize",
         sampler=TPESampler(seed=cfg.seed),
         pruner=MedianPruner(n_startup_trials=6, n_min_trials=3),
     )
-    with threadpool_limits(limits=1):
+    with threadpool_limits(limits=1), warnings.catch_warnings():
+        warnings.simplefilter("ignore", ConvergenceWarning)
         study.optimize(
-            _objective(cfg, X_train, y_train),
+            objective(cfg, X_train, y_train),
             n_trials=n_trials or cfg.hpo_trials,
             show_progress_bar=False,
         )
@@ -135,20 +173,30 @@ def run_study(
     family = str(best.params["model"])
     params = {k: v for k, v in best.params.items() if k != "model"}
     family_scores = {
-        fam: float(np.mean([t.value for t in study.trials if t.value is not None]))
+        fam: float(
+            -np.mean(
+                [
+                    t.value
+                    for t in study.trials
+                    if t.value is not None and t.params.get("model") == fam
+                ]
+            )
+        )
         for fam in MODEL_FAMILIES
     }
     log.info(
-        "hpo: selected %s %s (cv f1=%.4f over %d trials)",
+        "hpo: selected %s %s (%s=%.4f over %d trials)",
         family,
         {k: round(v, 4) for k, v in params.items()},
+        cfg.hpo_objective,
         best_value,
         len(study.trials),
     )
     return ModelSelection(
         family=family,
         params=params,
-        best_cv_f1=best_value,
+        best_score=best_value,
+        objective=cfg.hpo_objective,
         n_trials=len(study.trials),
         family_scores=family_scores,
     )

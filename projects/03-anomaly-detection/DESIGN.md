@@ -89,6 +89,15 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.4.0 (2026-10-13): wave-7 roadmap implementation — adaptive-threshold
+  streaming simulation (`detect --adaptive`: 5 × 1 440-row chunks, median/IQR
+  drift z, 0 events on the stable test stream, fixed 120 flags @ 15.9%/15.0%
+  recall/precision vs. adaptive 113 @ 15.0%/15.0%); rolling-median residual
+  features (IsolationForest ROC-AUC 0.9158 → 0.9999, PR-AUC → 0.9960;
+  anomaly k-distance 20.5 → 59.9 vs. normal 9.5 → 17.0 — blob de-clustered);
+  NSL-KDD production track (checksum-pinned mirrors of KDDTrain+/KDDTest+;
+  41 mapped features; IsolationForest transfer probe ROC-AUC 0.8817 /
+  PR-AUC 0.8916 at 56.9% test prevalence).
 - 0.3.0 (2026-10-12): per-family Optuna HPO (`tune` stage: ~30 seeded TPE
   trials, median pruning, validation = last 20% of the train window) with
   tuned detectors persisted to `data/models_tuned/` alongside per-study

@@ -8,7 +8,7 @@ Two layers, per platform convention (ADR-0002):
 """
 
 from datetime import date
-from typing import Any
+from typing import Any, Literal
 
 from portfolio_core.config import Settings
 from portfolio_core.schemas import PortfolioBaseModel
@@ -69,6 +69,20 @@ class ForecastConfig(PortfolioBaseModel):
     hpo_n_trials: int = Field(default=50, ge=5, description="Optuna trials for HPO.")
     temporal_epochs: int = Field(default=60, ge=5, description="Max epochs for temporal_net.")
     temporal_patience: int = Field(default=8, ge=1, description="Early-stop patience (epochs).")
+    data_source: Literal["synthetic", "uci"] = Field(
+        default="synthetic",
+        description="Panel source. Synthetic stays the default so CI runs offline; "
+        "'uci' activates the real-data track (network + ~45 MB download on first use).",
+    )
+    uci_n_stores: int = Field(default=8, ge=2, description="Top countries kept as stores.")
+    uci_n_products: int = Field(default=200, ge=10, description="Top stock codes kept as products.")
+    uci_checksum_sha256: str | None = Field(
+        default="572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb",
+        description="Pinned sha256 of the UCI zip snapshot (2026-10-12 download).",
+    )
+    uci_min_newest_date: str = Field(
+        default="2010-12-01", description="DQ freshness floor for the UCI track."
+    )
 
     @field_validator("lags")
     @classmethod

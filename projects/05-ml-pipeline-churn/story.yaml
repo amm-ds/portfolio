@@ -32,10 +32,12 @@ sections:
       - Quantify value honestly: every metric is reported against a naive
         majority baseline on the same holdout and the same cost model.
       - Select the classifier with Optuna (logistic vs gradient boosting,
-        seeded) — and check whether the selection objective (CV F1) actually
-        transfers to the business metric.
-      - Decide the operating threshold by minimizing FP·1 + FN·5, and verify
-        whether isotonic calibration improves that optimum.
+        seeded) on a **cost-aware objective** — CV business cost with
+        per-trial threshold tuning — so selection and deployment optimize the
+        same thing.
+      - Decide the operating threshold by minimizing FP·1 + FN·5, attach a
+        paired bootstrap CI to the cost delta vs naive, and verify whether
+        isotonic calibration improves that optimum.
       - Enforce data quality as a gate: null rates and ranges are checked
         before training, and a failure halts the pipeline loudly.
 
@@ -75,8 +77,9 @@ sections:
         and from the holdout.
 
       **Business implication:** a client demo runs on data with the same
-      failure modes as their CRM extract, and swapping in their real extract
-      requires no code change — only a new DatasetContract row.
+      failure modes as their CRM extract, and onboarding their real extract
+      is one command — `prepare --input client.csv` — through the same DQ
+      gates and DatasetContract, no pipeline changes.
   - id: eda
     text_md: |
       Churn is concentrated where contracts are short: month-to-month
@@ -120,13 +123,18 @@ sections:
       ```
 
       **Selection:** a wave-2 `GridSearchCV` over C keeps the logistic
-      baseline; Optuna (seeded TPE, 25 trials, median pruning, stratified-CV
-      F1) then searches LogisticRegression (C log 1e-3..1e2, l1_ratio 0..1)
-      against HistGradientBoostingClassifier. The winner — **HistGB**
-      (learning_rate 0.0795, max_iter 116, max_leaf_nodes 20,
-      min_samples_leaf 41; CV F1 0.3648 vs 0.3433) — is written back to
-      `params.yaml` as the production config. An isotonic-calibrated twin is
-      fitted on the calibration split only.
+      baseline; Optuna (seeded TPE, 25 trials, median pruning) then searches
+      LogisticRegression (C log 1e-3..1e2, l1_ratio 0..1) against
+      HistGradientBoostingClassifier on a **cost-aware objective**: stratified
+      CV produces out-of-fold probabilities per trial, and the trial is
+      scored by the business cost (FP=1/FN=5) at its own cost-optimal
+      threshold — the same threshold-tuning view used at evaluation. The
+      winner — **logistic regression (C=0.2365, l1_ratio=0.1388)**, CV cost
+      1,217, mean trial cost 934 (logreg) vs 1,215 (HistGB) — is written back
+      to `params.yaml` as the production config. An earlier F1-objective run
+      picked HistGB instead; the two objectives disagreeing is itself a
+      finding (see results). An isotonic-calibrated twin is fitted on the
+      calibration split only.
 
       **Business implication:** the artifact handed to engineering scores raw
       CRM rows as-is — no ETL rewrite, no train/serve skew — and the winning
@@ -156,10 +164,12 @@ sections:
       Diagnostics add permutation importance (5 repeats, error bars), PR
       curves with the naive base-rate floor, and decision-curve analysis.
 
-      **Business implication:** calibration improved probabilities 10×
-      (ECE 0.157 → 0.017) without moving the cost optimum — know which metric
+      **Business implication:** calibration improved probabilities 20×
+      (ECE 0.281 → 0.014) without moving the cost optimum — know which metric
       pays: ECE matters when probabilities themselves are consumed, the cost
-      curve is what settles the alarm threshold.
+      curve is what settles the alarm threshold; and the paired bootstrap CI
+      (−158, 95% CI [−237, −87]) is what makes the saving defensible in a
+      budget meeting.
     figures: [calibration_curve, precision_recall_curve, decision_curve]
   - id: results
     text_md: |
@@ -170,27 +180,31 @@ sections:
       | naive majority | cost-optimal | 0.5000 | 0.4770 | – | 440 |
       | logistic, default 0.5 | 0.500 | 0.8344 | 0.5796 | – | 350 |
       | logistic, tuned | 0.725 | 0.8344 | **0.6833** | – | **282** |
-      | selected (HistGB) | 0.700 | 0.8125 | 0.6593 | 0.157 | 321 |
-      | selected + isotonic | 0.225 | 0.8008 | 0.6642 | **0.017** | 328 |
+      | selected (cost-HPO logistic) | 0.700 | 0.8318 | 0.6756 | 0.281 | **282** |
+      | selected + isotonic | 0.175 | 0.8298 | 0.6380 | **0.014** | 311 |
 
       Key findings:
 
-      - **Cost vs naive: −35.9% (440 → 282), macro F1 +43% (0.477 → 0.683).**
+      - **Cost vs naive: −35.9% (440 → 282), macro F1 +43% (0.477 → 0.683)** —
+        and the paired bootstrap (2,000 seeded resamples, fixed operating
+        thresholds) puts the delta at **−158, 95% CI [−237, −87]: significant.**
+      - **Winner changed with the objective.** An F1-objective study picked
+        HistGB (CV F1 0.3648 vs 0.3433) which loses on holdout business cost
+        (321); the cost-aware study picked a lightly-regularized logistic
+        that lands exactly at the cost optimum (282 at t=0.700). Optimizing
+        the deployment metric *is* the fix.
       - **Threshold tuning alone: −19.4%** of the cost win (350 → 282), same
         model, no retraining — the operating point is a business decision.
-      - **Isotonic calibration: ECE 0.157 → 0.017 (−89%)**, F1 up slightly,
-        but the cost optimum does not improve (328 vs 321).
-      - **Selection-objective lesson:** HPO picked HistGB on CV F1 (0.3648 vs
-        0.3433), yet the simpler tuned logistic wins the business cost on
-        holdout (282 vs 321).
+      - **Isotonic calibration: ECE 0.281 → 0.014 (−95%)**, but the cost
+        optimum does not improve (311 vs 282).
       - The naive run posts the best accuracy (0.912): on an 8.8% churn
         rate, never alarming is accurate and useless.
 
-      **Business implication:** the HPO-selected GBM loses on business cost
-      to the simpler logistic — the deployment objective, not the leaderboard
-      metric, chose the production model; report both and the choice is
-      defensible.
-    figures: [business_cost_curve, permutation_importance]
+      **Business implication:** cost-aware selection and cost-tuned
+      thresholding together deliver the best row in the ladder, with a
+      bootstrap CI proving the saving is not sampling noise — that is the
+      story a client budget conversation needs.
+    figures: [business_cost_curve, permutation_importance, bootstrap_ci]
     metrics_keys: [naive_majority, logreg_threshold_0.725, selected_model, selected_model_calibrated]
   - id: conclusions
     text_md: |
@@ -201,20 +215,22 @@ sections:
 
       - Threshold choice is a business decision: tuning to the cost curve cut
         cost by a fifth with zero retraining.
-      - Optimize what you deploy: selection metrics must be scored against
-        the business metric, not a proxy.
+      - Optimize what you deploy: cost-aware selection now drives the study,
+        and the winner it picked lands at the holdout cost optimum.
       - Calibration is a product decision: trustworthy probabilities and
         cost-optimal decisions are different deliverables — ship both
         evaluations.
+      - Uncertainty has a number: paired bootstrap CIs turn "the model saves
+        money" into "the model saves 158 ± CI 75 cost units at alpha 0.05".
 
-      Roadmap:
+      Roadmap (what remains):
 
-      - **Cost-aware HPO objectives** — score Optuna trials by CV business
-        cost (FP=1/FN=5) so selection and deployment optimize the same thing.
-      - **CRM-extract onboarding path** — swap the synthetic generator for a
-        client's extract behind the same DatasetContract, no pipeline changes.
-      - **Paired bootstrap CIs on business cost** — confidence intervals on
-        the cost deltas that decide the operating point.
+      - **Real-data track** — swap the synthetic generator for a public telco
+        churn export behind the same DatasetContract, or onboard a client
+        extract directly via `prepare --input client.csv`.
+      - **Model comparison** — gradient-boosted comparator vs logistic via
+        `portfolio_eval.compare_runs` with paired bootstrap CIs on business
+        cost.
 
       **Business implication:** the framework transfers to a client's CRM
       extract unchanged — same gates, same artifact contract, same cost

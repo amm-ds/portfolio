@@ -14,6 +14,7 @@ import json
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import optuna
 import plotly.graph_objects as go
 import torch
@@ -43,13 +44,19 @@ def suggest_config(trial: optuna.Trial, cfg: NLPConfig) -> NLPConfig:
     )
 
 
-def make_study(cfg: NLPConfig) -> optuna.Study:
-    """Deterministic study: seeded TPE sampler + median pruner between epochs."""
+def make_study(
+    cfg: NLPConfig, seed: int | None = None, startup_trials: int | None = None
+) -> optuna.Study:
+    """Deterministic study: seeded TPE sampler + median pruner between epochs.
+
+    ``seed``/``startup_trials`` overrides exist so the small multi-seed
+    variance study can run independent studies per seed.
+    """
     return optuna.create_study(
         direction="maximize",
-        sampler=TPESampler(seed=cfg.seed),
+        sampler=TPESampler(seed=cfg.seed if seed is None else seed),
         pruner=MedianPruner(
-            n_startup_trials=cfg.hpo.startup_trials,
+            n_startup_trials=cfg.hpo.startup_trials if startup_trials is None else startup_trials,
             n_warmup_steps=cfg.hpo.pruner_warmup_epochs,
         ),
     )
@@ -113,6 +120,63 @@ def run_hpo(
         len(study.trials),
     )
     return best, study
+
+
+def run_multi_seed_hpo(
+    cfg: NLPConfig,
+    train_tok: Dataset,
+    val_tok: Dataset,
+    n_labels: int,
+    device: torch.device,
+) -> dict[str, Any]:
+    """Seed-variance study: one small independent study per fixed seed.
+
+    Each seed re-runs the same search space (with the tighter ``epochs_max``
+    budget) so the spread of best validation macro-F1 across seeds can be
+    compared against the HPO gain itself — the honest finding may be that
+    variance exceeds the gain at this sample size.
+    """
+    ms = cfg.hpo_seeds
+    seed_cfg = cfg.model_copy(
+        update={
+            "hpo": cfg.hpo.model_copy(update={"epochs_max": ms.epochs_max, "n_trials": ms.n_trials})
+        }
+    )
+    best_per_seed: dict[str, float] = {}
+    for seed in ms.seeds:
+        study = make_study(seed_cfg, seed=seed, startup_trials=ms.startup_trials)
+
+        def objective(trial: optuna.Trial) -> float:
+            trial_cfg = suggest_config(trial, seed_cfg)
+            _, history = train_nn(trial_cfg, train_tok, val_tok, n_labels, device)
+            return history.best_epoch().val_f1_macro
+
+        study.optimize(objective, n_trials=ms.n_trials)
+        best_per_seed[str(seed)] = float(study.best_value)
+        logger.info("seed-variance: seed=%d best val_f1=%.4f", seed, study.best_value)
+
+    values = np.asarray(list(best_per_seed.values()), dtype=float)
+    report = {
+        "seeds": best_per_seed,
+        "mean": float(values.mean()),
+        "std": float(values.std(ddof=0)),
+        "n_trials_per_seed": ms.n_trials,
+        "epochs_max": ms.epochs_max,
+    }
+    logger.info(
+        "seed-variance: mean=%.4f std=%.4f over %d seeds",
+        report["mean"],
+        report["std"],
+        len(values),
+    )
+    return report
+
+
+def persist_seed_report(cfg: NLPConfig, report: dict[str, Any]) -> Path:
+    path = Path(cfg.reports_dir) / "hpo_seeds.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(report, indent=2))
+    return path
 
 
 def tuned_config(cfg: NLPConfig) -> NLPConfig:

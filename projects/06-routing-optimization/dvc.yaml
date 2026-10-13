@@ -22,6 +22,7 @@ stages:
     - params.yaml
     - reports/solutions.json
     - ../../docs/data-registry/best_known/solomon100.csv
+    - best_known_supplement.csv
     outs:
     - reports/results.md
     - reports/metrics.json

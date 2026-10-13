@@ -137,8 +137,8 @@ def curated(cfg: MobilityConfig) -> pl.DataFrame:
 
 @pytest.fixture()
 def validated(cfg: MobilityConfig) -> MobilityConfig:
-    """Run the validate stage so join tests have their true input on disk."""
-    from mobility.validate import validate_all
+    """Run the validate stage (yellow only) so join tests have their input."""
+    from mobility.validate import validate_month
 
-    validate_all(cfg)
+    validate_month(cfg.months[0], cfg, color="yellow")
     return cfg

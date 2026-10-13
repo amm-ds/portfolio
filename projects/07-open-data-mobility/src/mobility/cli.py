@@ -1,5 +1,7 @@
 """Typer CLI: the pipeline as subcommands (mirrors dvc.yaml stages)."""
 
+import json
+
 import typer
 from portfolio_core.logging import get_logger, setup_logging
 
@@ -10,6 +12,8 @@ from mobility.evaluate import build_report
 from mobility.features import build_features
 from mobility.join import join_all
 from mobility.model import train_baselines, train_nn
+from mobility.serving import build_serving_artifact
+from mobility.transfer import evaluate_transfer
 from mobility.tune import tune_all
 from mobility.validate import load_dq_reports, persist_dq_summary, validate_all
 
@@ -71,6 +75,20 @@ def train_nn_cmd() -> None:
     typer.echo(f"predictions: {preds.height} test rows")
 
 
+@app.command("build-serving-artifact")
+def build_serving_artifact_cmd() -> None:
+    """Persist the tuned GBM pair + zones for the showcase API (SERVING.md)."""
+    out = build_serving_artifact(_cfg())
+    typer.echo(f"serving artifact -> {out}")
+
+
+@app.command("transfer")
+def transfer_cmd() -> None:
+    """Evaluate yellow-trained GBMs on green-taxi demand (bounded 3-month slice)."""
+    result = evaluate_transfer(_cfg())
+    typer.echo(json.dumps(result["overall"], indent=2))
+
+
 @app.command("evaluate")
 def evaluate_cmd() -> None:
     """Metrics, figures, and the HTML report from persisted predictions."""
@@ -106,6 +124,8 @@ def all_cmd() -> None:
     tune_cmd()
     train_baselines_cmd()
     train_nn_cmd()
+    transfer_cmd()
+    build_serving_artifact_cmd()
     evaluate_cmd()
 
 

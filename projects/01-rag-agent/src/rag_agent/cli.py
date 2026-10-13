@@ -16,7 +16,7 @@ from portfolio_core.logging import get_logger
 
 from rag_agent.agent import build_agent
 from rag_agent.config import RAGConfig
-from rag_agent.corpus import load_corpus
+from rag_agent.corpus import load_corpus, prepare_client_corpus
 from rag_agent.corpus import prepare_corpus as prepare_corpus_impl
 from rag_agent.evaluate import run as run_evaluation
 from rag_agent.index import (
@@ -48,10 +48,32 @@ def load_config() -> RAGConfig:
 
 
 @app.command()
-def prepare_corpus() -> None:
-    """Download a bounded topical slice of Wikipedia into data/raw/."""
+def prepare_corpus(
+    source: Annotated[
+        str, typer.Option("--source", help="wikimedia (default) | client.")
+    ] = "wikimedia",
+    client_dir: Annotated[
+        Path | None,
+        typer.Argument(
+            help="Directory of client JSONL files ({title, text, topic?}); "
+            "required for --source client.",
+        ),
+    ] = None,
+    license_name: Annotated[
+        str,
+        typer.Option("--license", help="Dataset license recorded in the contract (source=client)."),
+    ] = "Proprietary - client-provided",
+) -> None:
+    """Download a bounded topical slice of Wikipedia, or onboard a client corpus."""
     config = load_config()
-    contract = prepare_corpus_impl(config)
+    if source == "client":
+        if client_dir is None:
+            raise typer.BadParameter("--source client requires the JSONL directory argument")
+        contract = prepare_client_corpus(config, client_dir, license_name)
+    elif source == "wikimedia":
+        contract = prepare_corpus_impl(config)
+    else:
+        raise typer.BadParameter(f"unknown --source {source!r}; expected 'wikimedia' or 'client'")
     typer.echo(
         f"corpus ready: {contract.n_rows} articles "
         f"(sha256={contract.checksum_sha256[:12]}…) at {config.corpus_path}"

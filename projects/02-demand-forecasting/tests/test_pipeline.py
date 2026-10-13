@@ -10,6 +10,7 @@ from demand_forecasting.data import build_panel, dataset_contract, prepare, vali
 from demand_forecasting.evaluate import evaluate
 from demand_forecasting.features import build_features
 from demand_forecasting.model import fit_all, load_models, save_models
+from demand_forecasting.probabilistic import run_probabilistic
 from demand_forecasting.reconcile import reconcile_and_plot
 from portfolio_core.dq import DQGateError
 
@@ -30,9 +31,19 @@ def test_prepare_persists_panel_and_contract(
 def test_dataset_contract_is_deterministic(
     settings: DemandSettings, config: ForecastConfig
 ) -> None:
-    a = dataset_contract(build_panel(settings, config), settings)
-    b = dataset_contract(build_panel(settings, config), settings)
+    a = dataset_contract(build_panel(settings, config), config)
+    b = dataset_contract(build_panel(settings, config), config)
     assert a.checksum_sha256 == b.checksum_sha256
+
+
+def test_dataset_contract_per_track(settings: DemandSettings, config: ForecastConfig) -> None:
+    """Each track carries its own identity card (name, source, license)."""
+    panel = build_panel(settings, config)
+    syn = dataset_contract(panel, config)
+    assert syn.source.startswith("synthetic://")
+    uci = dataset_contract(panel, config.model_copy(update={"data_source": "uci"}))
+    assert uci.name == "uci-online-retail-ii"
+    assert uci.source.startswith("https://archive.ics.uci.edu")
 
 
 def test_dq_gate_fails_on_nulls(
@@ -42,7 +53,7 @@ def test_dq_gate_fails_on_nulls(
         pl.when(pl.arange(0, pl.len()) == 0).then(None).otherwise(pl.col("units")).alias("units")
     )
     with pytest.raises(DQGateError):
-        validate_panel(panel, settings)
+        validate_panel(panel, settings, config)
 
 
 def test_evaluate_writes_report_and_figures(
@@ -56,6 +67,7 @@ def test_evaluate_writes_report_and_figures(
     save_features(frame, settings)
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
+    run_probabilistic(settings, config)
 
     metrics = json.loads((settings.reports_dir / "metrics.json").read_text())
     assert set(metrics) == {
@@ -72,6 +84,7 @@ def test_evaluate_writes_report_and_figures(
 
     assert (settings.reports_dir / "report.html").exists()
     assert (settings.reports_dir / "reconciliation.json").exists()
+    assert (settings.reports_dir / "probabilistic.json").exists()
     for name in (
         "eda_series_overview",
         "eda_units_distribution",
@@ -79,6 +92,7 @@ def test_evaluate_writes_report_and_figures(
         "metrics_bars",
         "fold_stability",
         "reconciliation_coherence",
+        "probabilistic_band",
     ):
         assert (settings.reports_dir / "figures" / f"{name}.html").exists()
         assert (settings.reports_dir / "figures" / f"{name}.json").exists()
