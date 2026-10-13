@@ -1,6 +1,13 @@
-import { render } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { render, waitFor } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { renderMarkdown } from "../lib/markdown";
+
+vi.mock("mermaid", () => ({
+  default: {
+    initialize: vi.fn(),
+    render: vi.fn(async () => ({ svg: '<svg data-mock="mermaid-svg"></svg>' })),
+  },
+}));
 
 function renderToText(md: string): string {
   const { container } = render(<>{renderMarkdown(md)}</>);
@@ -115,5 +122,79 @@ describe("renderMarkdown tables", () => {
     const md = "| a |\n|---|\n| 1 |\ntrailing line without pipes";
     const { container } = render(<>{renderMarkdown(md)}</>);
     expect(container.querySelectorAll("tbody tr")).toHaveLength(1);
+  });
+});
+
+describe("renderMarkdown fenced code", () => {
+  it("renders a ```mermaid fence via MermaidDiagram into a wrapped svg", async () => {
+    const md = "```mermaid\ngraph TD; A-->B;\n```";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    expect(container.querySelector(".mermaid-wrap")).not.toBeNull();
+    await waitFor(() =>
+      expect(container.querySelector('.mermaid-host svg[data-mock="mermaid-svg"]')).not.toBeNull(),
+    );
+  });
+
+  it("renders other languages as styled pre/code", () => {
+    const md = "```python\nprint('hi')\n```";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const pre = container.querySelector("pre.code-block")!;
+    expect(pre).not.toBeNull();
+    expect(pre.querySelector("code")?.textContent).toBe("print('hi')");
+    expect(container.querySelector(".mermaid-wrap")).toBeNull();
+  });
+
+  it("renders a fence without a language as pre/code", () => {
+    const md = "```\njust text\n```";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    expect(container.querySelector("pre.code-block code")?.textContent).toBe("just text");
+  });
+
+  it("keeps blank lines inside a fence as one code block", () => {
+    const md = "```\nline1\n\nline2\n```";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const pres = container.querySelectorAll("pre.code-block");
+    expect(pres).toHaveLength(1);
+    expect(pres[0].textContent).toBe("line1\n\nline2");
+  });
+
+  it("keeps document ordering: paragraph, list, fence, table", () => {
+    const md = [
+      "Intro paragraph.",
+      "",
+      "- item a",
+      "- item b",
+      "",
+      "```json",
+      '{"k": 1}',
+      "```",
+      "",
+      "| a |",
+      "|---|",
+      "| 1 |",
+    ].join("\n");
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const kids = [...container.children];
+    expect(kids[0].tagName).toBe("P");
+    expect(kids[1].tagName).toBe("UL");
+    expect(kids[2].tagName).toBe("PRE");
+    expect(kids[2].querySelector("code")?.textContent).toBe('{"k": 1}');
+    expect(kids[3].tagName).toBe("TABLE");
+  });
+});
+
+describe("renderMarkdown list variants", () => {
+  it("renders `*` bullets exactly like `-` bullets", () => {
+    const { container } = render(<>{renderMarkdown("* one\n* two")}</>);
+    const items = container.querySelectorAll("ul li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toBe("one");
+  });
+
+  it("renders paren ordered lists (1) 2)) as ol", () => {
+    const { container } = render(<>{renderMarkdown("1) first\n2) second")}</>);
+    const items = container.querySelectorAll("ol li");
+    expect(items).toHaveLength(2);
+    expect(items[1].textContent).toBe("second");
   });
 });

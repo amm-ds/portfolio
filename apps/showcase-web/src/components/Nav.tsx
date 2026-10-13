@@ -8,9 +8,12 @@ export function Nav() {
           amm-ds · portfolio
         </NavLink>
         <nav className="nav-links">
+          <NavLink to="/" end>
+            Home
+          </NavLink>
           <NavLink to="/projects">Projects</NavLink>
           <NavLink to="/services">Services</NavLink>
-          <NavLink to="/chat">RAG Demo</NavLink>
+          <NavLink to="/contact">Contact</NavLink>
           <a
             className="github"
             href="https://github.com/amm-ds/portfolio"

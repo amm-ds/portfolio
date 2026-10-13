@@ -1433,3 +1433,131 @@ button:disabled {
     transition: none;
   }
 }
+
+/* --- Fenced code blocks & mermaid --- */
+
+.code-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.9rem 1.1rem;
+  margin: 0 0 1rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.code-block code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+}
+
+.mermaid-wrap {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0 0 1rem;
+  overflow-x: auto;
+}
+
+.mermaid-wrap .frame-skeleton {
+  position: static;
+  min-height: 120px;
+  border-radius: 6px;
+}
+
+.mermaid-host {
+  display: flex;
+  justify-content: center;
+}
+
+.mermaid-host svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-fallback {
+  border-left: 3px solid var(--danger);
+}
+
+/* --- Home "where to go" cards --- */
+
+.go-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.go-card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.25rem;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.go-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.go-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+.go-card h3::before {
+  content: none;
+}
+
+.go-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* --- Projects demo banner & contact page --- */
+
+.demo-banner {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.25rem;
+  margin: 0 0 1.5rem;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.demo-banner:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+
+.demo-banner .demo-label {
+  font-family: var(--mono);
+  color: var(--accent);
+  margin-right: 0.5rem;
+}
+
+.contact-status {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--ok);
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--muted);
+}
