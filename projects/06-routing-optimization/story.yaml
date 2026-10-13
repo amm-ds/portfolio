@@ -14,6 +14,10 @@ sections:
     Clients usually ask two questions: *how good is a quick, transparent
     heuristic, and what would a heavier optimizer buy us?* This project answers
     the first question honestly and gives the second a measurable baseline.
+
+    **Business implication:** last-mile routing is a direct cost lever — every
+    percent of distance is fuel, vehicle hours and CO₂, so even single-digit
+    routing improvements compound into a material annual saving.
   figures: []
   metrics_keys: []
 - id: objectives
@@ -30,6 +34,10 @@ sections:
     randomized-feasible reference that makes the value of constraint-aware
     construction visible; and a small, reproducible HPO loop that tunes the
     improvement stage without hiding what the search actually found.
+
+    **Business implication:** the deliverable is not a route plan, it is a
+    *verifiable quality number* — a stated optimality gap that procurement can
+    hold any future optimizer (ours or a vendor's) accountable to.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned]
 - id: data
@@ -41,11 +49,21 @@ sections:
     coordinates, demand, time window and service time are pinned by the
     instance file.
 
-    The archive is downloaded once from the SINTEF TOP mirror with a
-    sha256-pinned dataset card (`data/raw/dataset_card.json`), and best-known
-    reference distances come from the curated registry table
-    `docs/data-registry/best_known/solomon100.csv`. Data-quality gates (null
-    rates, ranges vs fleet capacity) halt the pipeline loudly on any anomaly.
+    **Datasets:**
+
+    - [CVRPLIB Solomon VRPTW benchmark](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)
+      — academic benchmark, free to use with citation; downloaded from the
+      SINTEF TOP mirror as one sha256-pinned archive (snapshot card in
+      `data/raw/dataset_card.json`). 56 classic 100-customer instances exist;
+      this showcase runs 10 of them, with the curated published best-known
+      values used as the gap-table reference.
+
+    Data-quality gates (null rates, ranges vs fleet capacity) halt the
+    pipeline loudly on any anomaly.
+
+    **Business implication:** using a public, citation-backed benchmark means
+    every quality claim in this case study can be re-checked by the client's
+    own team against literature values — no trust-us slide required.
   figures: []
   metrics_keys: []
 - id: eda
@@ -59,6 +77,11 @@ sections:
 
     The depot (star) sits inside the cluster, and the tightest windows are
     scattered across it — no simple geographic sweep can respect them.
+
+    **Business implication:** this is why "draw neat geographic territories"
+    underperforms in practice — the binding constraint is the delivery
+    promise window, so any tooling must optimize the clock and the map
+    together.
   figures: [eda_instance_map]
   metrics_keys: []
 - id: training
@@ -86,6 +109,10 @@ sections:
     tail-exchange on/off, and a best-of-k randomized-restart portfolio
     (k = 1..8). Objective: mean distance across the 10 instances. The winner
     is persisted to `params.yaml` and reported as **two_opt_tuned**.
+
+    **Business implication:** the search itself taught that randomized
+    restarts don't pay — measurement beats intuition, and a 24-trial,
+    seconds-long HPO already eliminates two popular "obvious" investments.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned]
 - id: evaluation
@@ -101,6 +128,10 @@ sections:
     and the convergence curves show the 2-opt descent move by move — where the
     tuned and untuned runs coincide (C101) and where best-improvement
     acceptance escapes the untuned local optimum (RC105).
+
+    **Business implication:** because evaluation is cheap and fully
+    reproducible, it can run inside CI on every change — optimization quality
+    becomes a guarded regression metric, not a one-off report.
   figures: [route_map_C101, solver_profile, convergence_C101, convergence_RC105]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned]
 - id: results
@@ -115,19 +146,29 @@ sections:
     | two_opt (untuned) | 1289.91 | 19.55 % | 15.7 | 5.9 ms |
     | **two_opt_tuned (HPO)** | **1284.15** | **19.08 %** | 15.7 | 12.9 ms |
 
-    The chosen config: move budget 50, best-improvement acceptance, 2-opt +
-    2-opt* tail exchanges, restarts best-of-1. Deltas: construction
-    (randomized → savings) is worth −2765.85 distance (−68.2 %); the 2-opt
-    stage adds −49.22 (−5.1 gap points); tuning adds −5.76 more (−0.45 points),
-    winning on 5/10 instances (best: RC105 −19.10, gap 17.85 % → 16.69 %).
-    Best per-instance tuned gap: 8.94 % (RC104); worst: 29.24 % (C102).
+    Key findings:
 
-    Two honest negatives from the search: randomized restarts never pay (the
-    search itself chose k=1 — randomized starts are ~3× worse than savings
-    starts, so 2-opt from them never catches up), and the move budget
-    saturates fast (≤ ~20 accepted moves to a local optimum). And the standing
-    caveat: on RC105 the naive baselines exceed the stated 25-vehicle fleet
-    (randomized 30, nearest-neighbor 26) — reported, not hidden.
+    - The chosen config: move budget 50, best-improvement acceptance, 2-opt +
+      2-opt* tail exchanges, restarts best-of-1. Tuning is worth −5.76 mean
+      distance (−0.45 gap points) over the untuned run, winning on 5/10
+      instances (best: RC105 −19.10, gap 17.85 % → 16.69 %).
+    - Constraint-aware construction remains the big lever: randomized →
+      savings is −2765.85 distance (−68.2 %); 2-opt adds −49.22; tuning adds
+      the final −5.76.
+    - Honest negatives, kept on the record: randomized restarts never pay
+      (the search itself chose k=1) and the move budget saturates (≤ ~20
+      accepted moves) — bigger budgets and more restarts are not where the
+      value is.
+    - Standing caveat: on RC105 the naive baselines exceed the stated
+      25-vehicle fleet (randomized 30, nearest-neighbor 26) — reported, not
+      hidden; distance stays valid and the vehicle count flags the hard
+      instance.
+    - Best per-instance tuned gap: 8.94 % (RC104); worst: 29.24 % (C102).
+
+    **Business implication:** 19 % above published optima with transparent,
+    line-by-line auditable heuristics beats a black-box "AI" whose gap nobody
+    can state — you get a quality number you can defend in a cost review, and
+    a clear price list for what further sophistication would buy.
   figures: [gap_pct]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned]
 - id: conclusions
@@ -146,12 +187,17 @@ sections:
     of existing routes; they cannot re-sequence across routes the way
     insertion, relocation, or ALNS destroy-and-repair moves can. Closing
     toward single digits needs that richer neighborhood (roadmap), and the
-    wave-3 HPO framework carries over directly to tune its operator weights.
+    HPO framework from this wave carries over directly to tune its operator
+    weights.
 
     Lessons: (1) validate feasibility in code, never by inspection; (2)
     benchmark against published optima, or "improvements" are unverifiable;
     (3) keep a randomized feasible baseline in the chart — without it the 68 %
     construction win is invisible; (4) demand negative results from HPO: here
     it proved restarts and bigger budgets are not where the value is.
+
+    **Business implication:** the roadmap is now evidence-priced — a
+    metaheuristic track is justified only against a measured 19.08 % bar, and
+    the same harness will show within hours whether it clears it.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned]

@@ -14,6 +14,10 @@ sections:
       No demo shortcuts: every quality claim below is measured on a graded
       question set.
 
+      **Business implication:** you get an assistant whose answers can be
+      audited claim by claim — the difference between "the AI said so" and
+      "here is the exact passage it relied on".
+
   - id: objectives
     text_md: |
       Deliver a question-answering agent with three hard properties. First,
@@ -30,6 +34,10 @@ sections:
       provider keeps the entire pipeline, evaluation included, runnable in CI
       without credentials.
 
+      **Business implication:** answers come with citations a reviewer can
+      check — trust is a feature, not a promise — and the SLOs are written
+      down, so acceptance criteria exist before any demo.
+
   - id: data
     text_md: |
       The corpus is a topical slice of the English Wikipedia dump
@@ -39,11 +47,25 @@ sections:
       set of exact-title anchor articles collected outside the pattern quota.
       The result is 593 articles (≈3.5 MB of text).
 
-      Text is Wikipedia content, licensed CC BY-SA 3.0 / GFDL; attribution ships
-      in `data/raw/dataset_contract.json` together with a sha256 checksum,
-      row count and snapshot date. Data-quality gates (null rates, length
-      ranges) halt the pipeline loudly on violation, and DVC tracks every
-      artifact for reproducibility.
+      Data-quality gates (null rates, length ranges) halt the pipeline loudly
+      on violation, and DVC tracks every artifact for reproducibility.
+
+      **Datasets**
+
+      - [Wikipedia (HF)](https://amm-ds.github.io/portfolio/data-registry/wikipedia/) —
+        English Wikipedia snapshot `20231101.en`, streamed via
+        `datasets` (config `20231101.en`). License: **CC BY-SA 3.0 / GFDL,
+        attribution required**. This project uses a bounded 593-article topical
+        corpus derived from it; the derived corpus ships with its own
+        sha256-pinned dataset contract at `data/raw/dataset_contract.json`.
+      - **Attribution:** article text is Wikipedia content, authored by the
+        Wikipedia community and licensed CC BY-SA 3.0 / GFDL; selection,
+        filtering and transformations are reproducible via `dvc repro` in the
+        project directory.
+
+      **Business implication:** the data has a license trail, a checksum and a
+      snapshot date — the legal and reproducibility questions procurement
+      always asks are answered in one file.
 
   - id: eda
     text_md: |
@@ -59,6 +81,10 @@ sections:
       titles (e.g. "Photosynthesis", "Renewable energy") are entirely absent
       from this dump. Exact-title anchors and eval questions were verified
       against the real corpus, not assumed.
+
+      **Business implication:** we scoped the corpus by measuring what is
+      actually in the data rather than assuming — the same habit that catches
+      data-availability surprises before they become project risks.
     figures:
       - eda_corpus_composition
 
@@ -79,6 +105,10 @@ sections:
       top of the list, which is what a reading LLM actually consumes. The
       agent layer is provider-agnostic per ADR-0004: a live OpenAI-compatible
       endpoint when configured, a deterministic mock otherwise — one code path.
+
+      **Business implication:** the whole pipeline runs on commodity CPU — no
+      GPU budget, no vendor lock-in, and one seam swaps the LLM provider
+      without touching anything else.
     figures:
       - retrieval_funnel
 
@@ -99,6 +129,10 @@ sections:
       in mock mode (CI, offline) and live mode (real provider) with no code
       changes; the chosen production config is persisted in `params.yaml` as
       `retrieval_best`.
+
+      **Business implication:** the mock/live provider split means this eval
+      runs in CI without secrets — quality gates survive procurement and keep
+      guarding every future change.
     figures:
       - chunk_size_sweep
       - retrieval_hpo_frontier
@@ -130,19 +164,27 @@ sections:
 
       - Embeddings beat random ranking by **+0.92 recall@5** — the system
         retrieves, it does not luck out.
-      - The stronger encoder (BGE-small) **ties MiniLM exactly** at this scale;
-        no reason to pay for it here.
-      - Rerank off trades ranking quality for coverage (MRR 0.833 vs 0.936) —
-        rerank stays on because the top of the list is what the LLM reads.
-      - top_k=3 saturates recall at chunks=200, so the chosen config matches
-        the wave-2 default quality at **≈804 input tokens/query instead of
-        ≈2,279 (−65% context cost)**; estimated live cost drops to ≈ $0.00015.
+      - The chosen config matches the wave-2 default quality at **−65%
+        context cost** (≈804 vs ≈2,279 input tokens/query): recall is equal,
+        MRR@5 is +0.032 better, and the estimated live cost per query drops
+        to ≈ $0.00015.
+      - The rerank-off nuance: turning the cross-encoder off raises recall@5
+        to 1.000 but drops MRR@5 to 0.833 — coverage is not the same as
+        putting the right passage first, and the top of the list is what the
+        LLM reads.
+      - The stronger encoder (BGE-small) **ties MiniLM exactly** at this
+        scale; no reason to pay for it here.
 
       **So what:** retrieval quality here is bought with chunking discipline,
       not model size — the cheapest configuration is the best one. RAG quality
       in mock mode (context_recall 0.962, faithfulness 0.273) reflects the
       canned offline answer; the harness re-scores real grounded answers
       unchanged with a live provider.
+
+      **Business implication:** "better" was quantified against a random floor
+      and two ablations before money was spent on a bigger model — the tuning
+      budget went to the knob that actually mattered, cutting per-query cost
+      by two-thirds at equal quality.
     figures:
       - model_comparison
       - retrieval_hpo_frontier
@@ -173,3 +215,7 @@ sections:
       measurement and persisted as code (`retrieval_best`), and a single
       provider-abstraction seam (ADR-0004) that keeps the whole system testable
       offline and deployable live without code changes.
+
+      **Business implication:** the same discipline ports to a client dataset
+      in days, not months — bounded scope, measured baselines, and an honest
+      list of what we do not yet know, delivered as working code.

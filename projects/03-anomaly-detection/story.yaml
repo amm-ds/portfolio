@@ -14,6 +14,10 @@ sections:
       project shows how three standard detectors behave on it, and how to
       evaluate them without fooling yourself.
 
+      **Business implication:** every missed incident has a cost, and every
+      false page has one too — the question is which detector minimises the
+      total at a fixed alert budget.
+
   - id: objectives
     text_md: |
       Compare three detector families — IsolationForest, Local Outlier Factor
@@ -26,22 +30,43 @@ sections:
       ground truth. Third, every model is benchmarked against a seeded
       random baseline: anything that cannot beat coin-flip has no business
       alerting anyone at 3 a.m.
+
+      **Business implication:** these three rules are what make the comparison
+      shoppable — a client can re-run the same harness on their own telemetry
+      and get numbers that mean the same thing.
     metrics_keys: [random, isolation_forest]
 
   - id: data
     text_md: |
-      The stream is synthetic and seeded (n = 20 000 one-minute rows, seed 42):
-      daily seasonality plus noise on three channels — `cpu`, `mem`, and
-      `latency_ms` — with 2% of minutes injected as anomalies (a CPU step of
-      +30–50 points and a 2–5× latency multiplier at random timestamps). The
-      generator lives in the shared platform (`portfolio_core.synthetic`), so
-      the dataset regenerates offline, bit-identical, in every CI run.
+      **Datasets**
+
+      - **Synthetic telemetry (default):** the stream used throughout is
+        synthetic and seeded (n = 20 000 one-minute rows, seed 42) — daily
+        seasonality plus noise on three channels (`cpu`, `mem`, `latency_ms`),
+        with 2% of minutes injected as anomalies (a CPU step of +30–50 points
+        and a 2–5× latency multiplier at random timestamps). This is the
+        default because evaluation must be *graded*: the injected ground truth
+        lets us compute honest ROC-AUC/PR-AUC, and the seedable generator
+        regenerates bit-identical data offline in every CI run — no network,
+        no drift between environments. The generator lives in the shared
+        platform (`portfolio_core.synthetic`).
+      - **NSL-KDD (optional real-data track):** the [NSL-KDD data
+        registry](https://amm-ds.github.io/portfolio/data-registry/nsl-kdd/)
+        entry (UNB/CIC research benchmark, cleaned network-flow records with
+        attack categories) is the planned real-data swap-in. It drops into the
+        same `DatasetContract` shape, but it is *not* the default: licensing
+        and download steps make it unsuitable for graded CI evaluation, so it
+        stays an opt-in track behind the contract.
 
       A versioned `DatasetContract` (checksum, source, license, snapshot date)
-      travels with the data, and the injected `is_anomaly` flag is used for
-      **evaluation only** — no detector ever sees it. The same contract shape
-      accepts a real-data track (node-exporter / NSL-KDD flow features) as a
-      future swap-in.
+      travels with whichever dataset is active, and the ground-truth
+      `is_anomaly` / attack label is used for **evaluation only** — no
+      detector ever sees it.
+
+      **Business implication:** a reproducible, graded default plus a
+      contract-shaped real-data track means the evaluation harness is
+      production-shaped from day one — swapping synthetic for client telemetry
+      is a config change, not a rebuild.
 
   - id: eda
     text_md: |
@@ -56,6 +81,10 @@ sections:
       anomalies sit far from normal points (≈ 18.9 vs. ≈ 8.5) but at uniform
       spacing *among themselves* — a compact, self-similar cluster. Keep that
       fact in mind for the results.
+
+      **Business implication:** this single EDA fact predicts which detector
+      families will fail before any training budget is spent — that is the
+      kind of analysis that saves a client from deploying the wrong tool.
     figures: [eda_signals_overview]
 
   - id: training
@@ -76,7 +105,11 @@ sections:
       on the full train window before scoring. Data-quality gates (null rate
       ≤ 1% per column, CPU and memory within [0, 100], latency > 0) run before
       anything trains and halt the pipeline loudly on violation.
-    figures: [telemetry_flags, hpo_importance]
+
+      **Business implication:** tuning and validation run entirely on past
+      data with leakage-proof splits — so the detector you deploy is the
+      detector you measured, and retraining on a client's own history does
+      not silently change the guarantees.
 
   - id: evaluation
     text_md: |
@@ -92,6 +125,11 @@ sections:
       figure shows what the champion's precision/recall curve looks like
       across alert budgets, with the 2% budget marked.
 
+      **Business implication:** reporting AUC *and* the precision/recall at a
+      stated alert budget is what makes these numbers negotiable with a
+      client — "at 120 pages per window you catch ~15% of incidents" is a
+      staffing conversation, not a vanity metric.
+
   - id: results
     text_md: |
       The full run ladder on the held-out window (ROC-AUC / PR-AUC): random
@@ -106,21 +144,34 @@ sections:
       IsolationForest was already near-optimal untuned (tuning moved ROC-AUC
       by +0.001).
 
-      Tuning rescued One-Class SVM: the default `gamma="scale"` failed
-      (0.337), but the study found `gamma=0.013` (parameter importance 0.99) —
-      a ~6× tighter kernel whose boundary carves the anomaly blob out instead
-      of folding it in. Tuning did **not** rescue LOF: its best neighborhood
-      size saturated at the search cap (200) and test ROC-AUC went down.
-      The failure is structural — LOF compares each point only to its local
-      neighborhood, so inside a self-similar anomaly cluster every point
-      looks normal (median LOF ≈ 1.11 on test anomalies vs ≈ 1.09 on
-      normals). No neighborhood size fixes a method that never looks outward.
+      Key findings:
 
-      One operational caveat: at the fixed 2% alert budget the three top
-      detectors tie — each flags 120 test minutes at ~15% recall / ~14%
-      precision. AUC/PR-AUC measure ranking quality; a production deployment
-      would pick the operating point from the sweep curve against an
-      alerting budget, not from AUC alone.
+      - **OCSVM rescued by tuning (0.34 → 0.91 ROC-AUC):** the default
+        `gamma="scale"` failed, but the study found `gamma=0.013` (parameter
+        importance 0.99) — a ~6× tighter kernel whose boundary carves the
+        anomaly blob out instead of folding it in.
+      - **LOF not rescued — structural blindness:** its best neighborhood
+        size saturated at the search cap (200) and test ROC-AUC went down
+        (0.527 → 0.505). LOF compares each point only to its local
+        neighborhood, so inside a self-similar anomaly cluster every point
+        looks normal (median LOF ≈ 1.11 on test anomalies vs ≈ 1.09 on
+        normals). No neighborhood size fixes a method that never looks
+        outward.
+      - **Fixed-2%-budget operating point ties:** at the fixed alert budget the
+        three top detectors each flag 120 test minutes at ~15% recall / ~14%
+        precision. AUC/PR-AUC measure ranking quality; a production deployment
+        would pick the operating point from the sweep curve against an
+        alerting budget, not from AUC alone.
+
+      The engineering guardrails behind these numbers: fixed contamination for
+      every run (untuned and tuned), HPO validated on a slice of the train
+      window only, and sklearn-1.9-safe score replication so train-time and
+      test-time scoring stay consistent.
+
+      **Business implication:** One-Class SVM went from worst to contender
+      after tuning — the lesson is that defaults, not algorithms, are often
+      the problem; a cheap, disciplined HPO pass should precede any "this
+      model doesn't work" verdict.
     figures: [roc_curves, pr_curves, score_distribution, threshold_sweep]
     metrics_keys:
       [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
@@ -151,6 +202,12 @@ sections:
       only, and a fixed (untuned) threshold mean the reported numbers are
       ones a client can plan an alerting budget around. Next steps: residual
       features to de-cluster the anomaly signature, cost-aware threshold
-      selection on the sweep curve, and a real-telemetry track behind the
-      same dataset contract.
+      selection on the sweep curve, and a real-telemetry track (NSL-KDD)
+      behind the same dataset contract.
+
+      **Business implication:** the deliverable is not "a model with 0.92
+      AUC" — it is an evaluation harness that tells you *when to distrust the
+      model*, what tuning changed and why, and what a given alert budget buys;
+      that is what de-risks putting anomaly detection on a client's critical
+      path.
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
