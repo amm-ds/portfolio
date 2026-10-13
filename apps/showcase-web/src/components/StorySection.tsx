@@ -22,6 +22,7 @@ export function StorySection({
       pid={projectId}
       name={name}
       caption={`fig :: ${section.id} · ${i + 1}/${total} — ${section.title}`}
+      sectionId={section.id}
     />
   ));
 

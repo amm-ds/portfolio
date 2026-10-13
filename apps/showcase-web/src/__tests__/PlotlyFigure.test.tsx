@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { PlotlyFigure } from "../components/PlotlyFigure";
+import { buildLayout, PlotlyFigure, scaledHeight } from "../components/PlotlyFigure";
 
 const mocks = vi.hoisted(() => ({
   react: vi.fn(),
@@ -45,37 +45,52 @@ describe("PlotlyFigure", () => {
     const [el, data, layout, config] = mocks.react.mock.calls[0];
     expect((el as HTMLElement).dataset.testid).toBe("plotly-retrieval_funnel");
     expect(data).toEqual(PAYLOAD.data);
+    // jsdom measures clientWidth as 0 → scaled height falls back to the 360 minimum.
     expect(layout).toMatchObject({
-      height: 560,
+      height: 360,
       autosize: true,
       paper_bgcolor: "rgba(0,0,0,0)",
       plot_bgcolor: "rgba(0,0,0,0)",
+      font: { color: "#e2e8f0" },
     });
     expect(layout.width).toBeUndefined();
     expect(config).toEqual({ responsive: true, displayModeBar: false });
     expect(screen.getByText("fig :: results · 1/1 — Results")).toBeInTheDocument();
   });
 
-  it("clamps layout height to [320, 900]", async () => {
+  it("renders the caption as a link to the story section anchor when sectionId is given", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    render(
+      <PlotlyFigure
+        pid="p"
+        name="linked"
+        caption="fig :: results · 1/1 — Results"
+        sectionId="results"
+      />,
+    );
+    await waitFor(() => expect(mocks.react).toHaveBeenCalled());
+    const link = screen.getByRole("link", { name: "fig :: results · 1/1 — Results" });
+    expect(link.getAttribute("href")).toBe("#sec-results");
+    expect(link.classList.contains("figure-caption")).toBe(true);
+  });
+
+  it("renders a plain figcaption when no sectionId is given", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    render(<PlotlyFigure pid="p" name="plain" caption="fig :: eda · 1/1 — EDA" />);
+    await waitFor(() => expect(mocks.react).toHaveBeenCalled());
+    expect(screen.queryByRole("link", { name: /fig ::/ })).toBeNull();
+    expect(screen.getByText("fig :: eda · 1/1 — EDA").tagName).toBe("FIGCAPTION");
+  });
+
+  it("scales the authored height to the measured container width", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse({ data: [], layout: { height: 1200 } }),
-      ),
+      vi.fn().mockResolvedValue(jsonResponse({ data: [], layout: { height: 1200 } })),
     );
     render(<PlotlyFigure pid="p" name="tall" />);
     await waitFor(() => expect(mocks.react).toHaveBeenCalled());
-    expect(mocks.react.mock.calls[0][2].height).toBe(900);
-
-    cleanup();
-    mocks.react.mockClear();
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ data: [], layout: { height: 100 } })),
-    );
-    render(<PlotlyFigure pid="p" name="tiny" />);
-    await waitFor(() => expect(mocks.react).toHaveBeenCalled());
-    expect(mocks.react.mock.calls[0][2].height).toBe(320);
+    // 1200 * 0 / 1000 → clamped to the 360 minimum in jsdom
+    expect(mocks.react.mock.calls[0][2].height).toBe(360);
   });
 
   it("falls back to the HTML iframe when the JSON payload 404s", async () => {
@@ -106,5 +121,83 @@ describe("PlotlyFigure", () => {
     const el = mocks.react.mock.calls[0][0] as HTMLElement;
     unmount();
     await waitFor(() => expect(mocks.purge).toHaveBeenCalledWith(el));
+  });
+});
+
+describe("scaledHeight", () => {
+  it("scales linearly against a 1000px design width", () => {
+    expect(scaledHeight(560, 1000)).toBe(560);
+    expect(scaledHeight(560, 800)).toBe(448);
+    expect(scaledHeight(560, 1800)).toBe(1008);
+  });
+
+  it("clamps to [360, 1100]", () => {
+    expect(scaledHeight(100, 1000)).toBe(360);
+    expect(scaledHeight(1200, 2000)).toBe(1100);
+  });
+
+  it("falls back to the default height for missing/non-numeric values", () => {
+    expect(scaledHeight(undefined, 1000)).toBe(560);
+    expect(scaledHeight("560", 1000)).toBe(560);
+    expect(scaledHeight(Number.NaN, 1000)).toBe(560);
+  });
+});
+
+describe("buildLayout", () => {
+  it("applies dark-theme defaults for font, legend and both axes", () => {
+    const layout = buildLayout({ height: 560 }, 1000);
+    expect(layout.font).toEqual({ color: "#e2e8f0" });
+    expect(layout.legend).toEqual({
+      bgcolor: "rgba(0,0,0,0)",
+      font: { color: "#e2e8f0" },
+    });
+    for (const axis of ["xaxis", "yaxis"]) {
+      expect(layout[axis]).toMatchObject({
+        tickfont: { color: "#e2e8f0" },
+        title: { font: { color: "#e2e8f0" } },
+        linecolor: "rgba(148,163,184,0.3)",
+        zerolinecolor: "rgba(148,163,184,0.3)",
+        gridcolor: "rgba(148,163,184,0.15)",
+      });
+    }
+    expect(layout.paper_bgcolor).toBe("rgba(0,0,0,0)");
+    expect(layout.plot_bgcolor).toBe("rgba(0,0,0,0)");
+    expect(layout.autosize).toBe(true);
+    expect(layout.height).toBe(560);
+    expect(layout.width).toBeUndefined();
+  });
+
+  it("payload values always win over defaults", () => {
+    const raw = {
+      height: 400,
+      font: { color: "#ff0000", size: 14 },
+      legend: { bgcolor: "#123456", font: { size: 10 } },
+      xaxis: { gridcolor: "#00ff00", tickfont: { size: 9 } },
+      yaxis: { title: { text: "score", font: { color: "#0000ff" } } },
+    };
+    const layout = buildLayout(raw, 1000);
+    expect(layout.font).toEqual({ color: "#ff0000", size: 14 });
+    expect(layout.legend).toEqual({ bgcolor: "#123456", font: { color: "#e2e8f0", size: 10 } });
+    expect(layout.xaxis).toMatchObject({
+      gridcolor: "#00ff00",
+      tickfont: { color: "#e2e8f0", size: 9 },
+      linecolor: "rgba(148,163,184,0.3)",
+    });
+    expect(layout.yaxis).toMatchObject({
+      title: { text: "score", font: { color: "#0000ff" } },
+    });
+  });
+
+  it("passes annotations through untouched (takeaway colors preserved)", () => {
+    const annotations = [{ text: "takeaway", font: { color: "#94a3b8" } }];
+    const layout = buildLayout({ annotations }, 1000);
+    expect(layout.annotations).toEqual(annotations);
+  });
+
+  it("does not mutate the raw layout", () => {
+    const raw = { height: 560, xaxis: { gridcolor: "#eee" } };
+    const snapshot = JSON.parse(JSON.stringify(raw));
+    buildLayout(raw, 1000);
+    expect(raw).toEqual(snapshot);
   });
 });
