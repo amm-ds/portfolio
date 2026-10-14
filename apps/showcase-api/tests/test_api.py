@@ -57,7 +57,9 @@ def test_metrics_and_figures_served(tmp_path: Path, monkeypatch) -> None:  # typ
 def test_chat_gated_off_by_default() -> None:
     """RAG chat is an LLM cost proxy: routes must not exist unless explicitly enabled."""
     r = client.post("/rag/chat", json={"question": "hi"})
-    assert r.status_code == 405  # caught by the SPA catch-all (GET-only) → 405
+    # Not registered: 404 without the web build (CI), 405 via the GET-only
+    # SPA catch-all when the build is present (local/dev container).
+    assert r.status_code in (404, 405)
 
 
 def test_chat_request_validation() -> None:
