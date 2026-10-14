@@ -27,7 +27,7 @@ Champion by PR-AUC: `ocsvm_tuned` — tuning rescued One-Class SVM
 (`gamma=0.013` vs. the failing `scale` default); LOF was *not* rescued
 (structural local-density blindness). IsolationForest was near-optimal
 untuned. At the fixed 2% alert budget the three top detectors tie
-(~15% recall / ~14% precision). Wave 7 delivered: adaptive-threshold
+(~15% recall / ~14% precision). adaptive-threshold
 streaming (0 drift events on the stable test stream; 113 vs. 120 flags at
 equal ~15% precision), rolling-median residual features (IsolationForest
 ROC-AUC 0.9158 → 0.9999 — the anomaly blob de-clusters), and the NSL-KDD

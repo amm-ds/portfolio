@@ -11,7 +11,7 @@ features built with `shift` (never the current row), calendar features, and
 global models with one-hot series identity — naive floors, a Ridge baseline,
 default + Optuna-tuned gradient boosting, and a hand-written PyTorch
 embedding+MLP, all through the identical embargoed expanding-window
-`TimeSeriesCV` (4 folds, 7-day gap). Wave 3 adds seeded Optuna HPO (resumable,
+`TimeSeriesCV` (4 folds, 7-day gap). seeded Optuna HPO (resumable,
 checkpointed), MinT-lite hierarchical reconciliation with a tested coherence
 guarantee, and takeaway-annotated figures.
 

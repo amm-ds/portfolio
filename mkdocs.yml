@@ -45,6 +45,7 @@ nav:
           - ADR-0005 plotly-only viz: architecture/adr/0005-plotly-as-only-viz.md
   - Engineering:
       - Playbook: engineering-playbook.md
+      - Pre-publish review (2026-10-14): audits/pre-publish-2026-10-14.md
       - Setup report: repository_setup_report_senior_data_scientist.md
   - Projects:
       - projects/index.md

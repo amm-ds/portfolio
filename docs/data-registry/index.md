@@ -13,6 +13,7 @@ checksum mismatch, turning silent upstream drift into explicit failures
 | UCI Online Retail II | [uci-online-retail-ii](uci-online-retail-ii.md) | Free for research | 02 (optional) |
 | CVRPLIB — Solomon VRPTW | [cvrplib-solomon](cvrplib-solomon.md) | Academic benchmark | 06 |
 | AG News (HF) | [ag-news](ag-news.md) | Research purposes | 04 |
+| NSL-KDD | [nsl-kdd](nsl-kdd.md) | Research benchmark (UNB CIC) | 03 |
 | Wikipedia (HF) | [wikipedia](wikipedia.md) | CC BY-SA / GFDL (attribution required) | 01 |
 
 Access scripts live in `scripts/` next to the cards.

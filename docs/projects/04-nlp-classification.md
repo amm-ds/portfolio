@@ -26,7 +26,7 @@ Encoders beat the strong classical baseline by ~+3 pp macro-F1 at 3.6k rows;
 the GPU-gated `--full-data` path (20k-row evidence run) adds +2.5 pp more.
 HPO improved validation macro-F1 (0.8880 → 0.8953) but gains sat inside seed
 noise (mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
-honesty rule kept the wave-2 artifact as `distilbert_tuned`. Temperature
+honesty rule kept the original artifact as `distilbert_tuned`. Temperature
 scaling cuts test ECE 0.047 → 0.013 for free. Full ladder:
 `projects/04-nlp-classification/reports/metrics.json`; decision record:
 `reports/selection.json`; interactive figures in `reports/figures/`.

@@ -122,7 +122,7 @@ sections:
           H --> I[predict_proba]
       ```
 
-      **Selection:** a wave-2 `GridSearchCV` over C keeps the logistic
+      **Selection:** an earlier `GridSearchCV` over C keeps the logistic
       baseline; Optuna (seeded TPE, 25 trials, median pruning) then searches
       LogisticRegression (C log 1e-3..1e2, l1_ratio 0..1) against
       HistGradientBoostingClassifier on a **cost-aware objective**: stratified
@@ -159,7 +159,7 @@ sections:
       via `portfolio_eval`: ROC-AUC, macro precision/recall/F1, business cost
       (FP·1 + FN·5) at each run's operating point, and ECE (10 bins) for the
       selected runs. Five runs: naive majority (constant probability = base
-      rate), the wave-2 logistic at 0.5 and at its cost optimum, and the
+      rate), the earlier logistic at 0.5 and at its cost optimum, and the
       selected model raw and isotonic-calibrated at their cost optima.
       Diagnostics add permutation importance (5 repeats, error bars), PR
       curves with the naive base-rate floor, and decision-curve analysis.
