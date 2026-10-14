@@ -209,17 +209,35 @@ sections:
       validation rows. What survives the noise: the 20k-row scaling evidence
       (+2.5 pp test macro-F1) and the calibration result (−71 % ECE).
 
-      **Roadmap:**
-
-      - Full-dataset fine-tune on the 120k AG News corpus via the proven
-        `--full-data` path (GPU-gated; engineering already done).
-      - Cost-sensitive routing on the calibrated probabilities — per-class
-        thresholds for imbalanced production mixes.
-      - Multi-label extension for hybrid Business/Sci-Tech articles — deferred
-        as a different problem contract, not a tuning knob.
-
       **Business implication:** treat this as the auditable lower bound of a
       scaling decision — the classical baseline remains the right answer where
       latency or interpretability dominates, and the documented gap-plus-
       headroom gives a concrete basis for funding the roadmap above.
     metrics_keys: [distilbert_tuned]
+roadmap:
+  - status: delivered
+    text: >-
+      Full-data path behind a GPU flag — `train-nn --full-data` shipped with an
+      honest CPU wall-clock gate; the 20k-row evidence run scored 0.9270 test
+      macro-F1 (+2.5 pp over the bounded models).
+  - status: delivered
+    text: >-
+      Multi-seed HPO — 3 seeds × 6 trials; mean val macro-F1 0.8910 ± 0.0042,
+      showing the HPO gain sits inside seed noise at this sample size (honest
+      null result, reported as such).
+  - status: delivered
+    text: >-
+      Temperature scaling — T = 0.843 fitted on validation; test ECE cut from
+      0.0467 to 0.0133 (−71 %) with zero change to predictions.
+  - status: remaining
+    text: >-
+      Full 120k fine-tune on GPU when hardware is available — the engineering
+      is proven by the 20k evidence run; the remaining step is compute.
+  - status: remaining
+    text: >-
+      Cost-sensitive routing on the calibrated probabilities — per-class
+      decision thresholds for imbalanced production class mixes remain to be tuned.
+  - status: deferred
+    text: >-
+      Multi-label extension for hybrid Business/Sci-Tech articles — a different
+      problem contract (multi-hot labels, different metrics), not a tuning knob.

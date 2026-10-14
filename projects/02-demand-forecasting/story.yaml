@@ -226,19 +226,22 @@ sections:
       model can be trusted. Later folds drift upward for every model — that
       drift is a feature of the evaluation, not a bug.
 
-      Forward roadmap:
-
-      - **Calibrated intervals for intermittent demand** — per-series conformal
-        and zero-inflated band models; the current global bands under-cover on
-        synthetic data and degenerate on real data (q80 = 0).
-      - **Full MinT reconciliation** — covariance projection once the UCI track
-        is structured by product category into a deeper hierarchy.
-      - **Returns-aware demand** — model cancellations and returns as their own
-        flow instead of excluding them, for net-demand forecasting.
-
       **Business implication:** the value delivered is not a magic model — it is
       knowing precisely which model wins, by how much, where it stops winning,
       and being able to re-derive that answer from a clean clone; that is what
       makes the forecast safe to plug into replenishment.
     figures: [fold_stability, forecast_vs_actual]
     metrics_keys: [naive_last, hgb, hgb_tuned]
+roadmap:
+  - status: delivered
+    text: Optuna HPO (56 seeded trials) — production hgb_tuned config, -1.0% MAE over defaults, reproducible from data/hpo_best.json.
+  - status: delivered
+    text: UCI Online Retail II real-data track — checksum-pinned fetch, 405k-row intermittent panel; hgb_tuned still wins (MAE 8.99) where ridge collapses.
+  - status: delivered
+    text: Probabilistic forecasts — quantile HGB p10/p50/p90 + split-conformal band with empirical coverage against the 80% target and a band figure.
+  - status: remaining
+    text: Calibrated intervals for intermittent demand — per-series conformal / zero-inflated bands; global bands under-cover on synthetic (73%) and degenerate on real data (q80 = 0).
+  - status: remaining
+    text: Returns-aware demand — model cancellations and returns as their own flow instead of excluding them, for net-demand forecasting.
+  - status: deferred
+    text: Full MinT covariance projection — waits for a deeper real hierarchy; the UCI track provides product depth once a category tree is built over stock codes.
