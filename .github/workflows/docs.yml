@@ -5,6 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Serialize deployments — GitHub Pages rejects/queues concurrent deployments
+# ("in progress deployment" race / deploy timeouts when pushes land close together).
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
 permissions:
   contents: read
   pages: write
