@@ -16,7 +16,7 @@ describe("RoadmapBlock", () => {
   it("renders delivered under 'delivered' and remaining+deferred under 'what's next'", () => {
     render(<RoadmapBlock roadmap={ROADMAP} />);
     expect(screen.getByText("roadmap")).toBeInTheDocument();
-    expect(screen.getByText("delivered")).toBeInTheDocument();
+    expect(screen.getByText("Milestones achieved")).toBeInTheDocument();
     expect(screen.getByText("what's next")).toBeInTheDocument();
     expect(screen.getByText("Baseline retrieval with citations")).toBeInTheDocument();
     expect(screen.getByText("Reranked index with eval harness")).toBeInTheDocument();
@@ -38,9 +38,9 @@ describe("RoadmapBlock", () => {
     expect(c2.firstChild).toBeNull();
   });
 
-  it("omits the 'delivered' group when nothing was delivered", () => {
+  it("omits the milestones group when nothing was delivered", () => {
     render(<RoadmapBlock roadmap={[{ status: "remaining", text: "v2 model sweep" }]} />);
-    expect(screen.queryByText("delivered")).toBeNull();
+    expect(screen.queryByText("Milestones achieved")).toBeNull();
     expect(screen.getByText("what's next")).toBeInTheDocument();
   });
 });

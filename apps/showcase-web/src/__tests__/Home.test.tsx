@@ -44,7 +44,7 @@ describe("Home (lean, wave 6)", () => {
     expect(screen.getByText("alejandro@amm-ds: ~")).toBeInTheDocument();
     expect(screen.getByText("data scientist & ml engineer")).toBeInTheDocument();
     expect(
-      screen.getByText("agentic ai · forecasting · anomaly · optimization · open data"),
+      screen.getByText("agentic ai · forecasting · machine learning · optimization · data engineering"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc"),
@@ -94,9 +94,13 @@ describe("Home (lean, wave 6)", () => {
     expect(document.querySelector(".project-grid")).toBeNull();
   });
 
-  it("keeps a positioning paragraph and the availability line", () => {
+  it("keeps a positioning paragraph and a clean availability card", () => {
     renderHome();
     expect(screen.getByText(/I build ML\/AI systems end to end/i)).toBeInTheDocument();
+    const availability = document.querySelector(".availability")!;
+    expect(availability).not.toBeNull();
+    expect(availability.classList.contains("accent-card")).toBe(true);
+    expect(availability.textContent).toContain("Available for freelance work");
     expect(screen.getByText(/Available for freelance work/i)).toBeInTheDocument();
   });
 });

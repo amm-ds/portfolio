@@ -50,3 +50,11 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
     </a>
   );
 }
+
+/** Deployment providers — same tile pattern as frameworks. */
+export const PROVIDERS: Framework[] = [
+  { name: "AWS", url: "https://aws.amazon.com", slug: "amazonaws", letters: "Aw" },
+  { name: "Microsoft Azure", url: "https://azure.microsoft.com", slug: "microsoftazure", letters: "Az" },
+  { name: "Google Cloud", url: "https://cloud.google.com", slug: "googlecloud", letters: "Gc" },
+  { name: "Docker", url: "https://docker.com", slug: "docker", letters: "Dk" },
+];

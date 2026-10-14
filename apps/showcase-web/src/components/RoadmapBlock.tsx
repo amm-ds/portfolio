@@ -8,8 +8,8 @@ const MARKS: Record<RoadmapItemData["status"], { mark: string; className: string
 };
 
 /**
- * Story roadmap: delivered work under "Delivered", open forward work and
- * consciously parked items under "What's next". Renders nothing when the
+ * Story roadmap: delivered work under "Milestones achieved", open forward work
+ * and consciously parked items under "What's next". Renders nothing when the
  * story has no roadmap yet.
  */
 export function RoadmapBlock({ roadmap }: { roadmap: RoadmapItemData[] | undefined }) {
@@ -24,7 +24,7 @@ export function RoadmapBlock({ roadmap }: { roadmap: RoadmapItemData[] | undefin
       <h2 className="roadmap-title">roadmap</h2>
       {delivered.length > 0 && (
         <div className="roadmap-group">
-          <h3>delivered</h3>
+          <h3>Milestones achieved</h3>
           <ul>
             {delivered.map((r, i) => (
               <li key={i}>

@@ -5,7 +5,7 @@ import { useTypedScript } from "../hooks/useTyped";
 
 export const HERO_SCRIPT = [
   { cmd: "whoami", output: "data scientist & ml engineer" },
-  { cmd: "focus", output: "agentic ai · forecasting · anomaly · optimization · open data" },
+  { cmd: "focus", output: "agentic ai · forecasting · machine learning · optimization · data engineering" },
   { cmd: "stack", output: "pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc" },
   { cmd: "principles", output: "reproducible pipelines · honest baselines · production-grade code" },
 ];

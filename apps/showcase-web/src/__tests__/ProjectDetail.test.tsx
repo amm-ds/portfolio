@@ -120,6 +120,9 @@ describe("ProjectDetail story handling", () => {
       "href",
       "https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent",
     );
+    // header links use the spaced chip pattern
+    const metaLinks = document.querySelectorAll(".meta-links .chip-link");
+    expect(metaLinks).toHaveLength(3);
   });
 
   it("shows the run-pipeline hint when both story and metrics are missing", async () => {

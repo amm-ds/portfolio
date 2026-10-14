@@ -1,6 +1,6 @@
 import { Card } from "../components/Card";
 import { DataTable } from "../components/DataTable";
-import { FRAMEWORKS, FrameworkTile } from "../components/Frameworks";
+import { FRAMEWORKS, PROVIDERS, FrameworkTile } from "../components/Frameworks";
 
 interface Offering {
   title: string;
@@ -171,14 +171,19 @@ export function Services() {
       </div>
 
       <h2 className="section-title">cloud & deployment</h2>
-      <Card accent="secondary" className="cloud-block">
+      <div className="cloud-plain">
         <p>
           <strong>Cloud-agnostic by design.</strong> Delivery runs on the client's platform —
           AWS, Azure, GCP, or on-premises. Pipelines are portable (Docker + uv + DVC), so
           there is no vendor lock-in and everything runs from a clean clone. Data stays
           inside the client's boundary; nothing phones home.
         </p>
-      </Card>
+        <div className="frameworks-grid providers-grid">
+          {PROVIDERS.map((p) => (
+            <FrameworkTile key={p.name} fw={p} />
+          ))}
+        </div>
+      </div>
 
       <h2 className="section-title">process</h2>
       <ol className="process-timeline">
