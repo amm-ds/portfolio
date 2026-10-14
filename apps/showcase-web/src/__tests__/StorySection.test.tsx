@@ -73,7 +73,7 @@ describe("StorySection figure layout (wave 4)", () => {
     expect(document.querySelector(".figure-frame")).toBeNull();
   });
 
-  it("uses the two-column story layout structure", () => {
+  it("uses the two-column story layout structure", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
       <StorySection
@@ -86,5 +86,6 @@ describe("StorySection figure layout (wave 4)", () => {
     expect(document.querySelector(".story-cols")).not.toBeNull();
     expect(document.querySelector(".story-main")).not.toBeNull();
     expect(document.querySelector(".story-figs")).not.toBeNull();
+    await waitFor(() => expect(document.querySelector("iframe")).not.toBeNull());
   });
 });

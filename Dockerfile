@@ -31,6 +31,10 @@ RUN uv sync --all-packages --no-dev
 
 COPY --from=web /web/dist apps/showcase-web/dist
 
+# Non-root runtime user
+RUN useradd --system --create-home app && chown -R app /app
+USER app
+
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 

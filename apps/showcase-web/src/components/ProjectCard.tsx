@@ -1,5 +1,27 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Project } from "../api";
+import { getMetrics, type Project } from "../api";
+import { formatMetricValue, pickHeadlineMetric } from "../lib/delta";
+
+/** Live headline metric for a card: first non-baseline run's first metric; hidden until loaded. */
+function CardKeyNumber({ projectId }: { projectId: string }) {
+  const [text, setText] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getMetrics(projectId)
+      .then((m) => {
+        if (cancelled || !m) return;
+        const h = pickHeadlineMetric(m);
+        if (h) setText(`${h.metric}: ${formatMetricValue(h.value)}`);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+  if (!text) return null;
+  return <span className="key-number">{text}</span>;
+}
 
 export function ProjectCard({ project }: { project: Project }) {
   return (
@@ -19,7 +41,7 @@ export function ProjectCard({ project }: { project: Project }) {
         ))}
       </div>
       <p className="data">
-        <strong>Data:</strong> {project.data}
+        <strong>Data:</strong> {project.data} <CardKeyNumber projectId={project.id} />
       </p>
     </Link>
   );

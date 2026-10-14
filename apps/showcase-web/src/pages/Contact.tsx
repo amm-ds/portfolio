@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SITE_EMAIL } from "../config";
 
 export function Contact() {
   return (
@@ -9,7 +10,7 @@ export function Contact() {
         <p className="contact-status">[status] open for freelance and consulting engagements</p>
       </section>
 
-      <div className="contact-block">
+      <div className="contact-block accent-card">
         <ul>
           <li>
             GitHub:{" "}
@@ -19,7 +20,8 @@ export function Contact() {
             — fastest way to reach me; open an issue or use the profile contact.
           </li>
           <li>
-            Email: <span className="muted">[ placeholder — add before launch ]</span>
+            Email:{" "}
+            <a href={`mailto:${SITE_EMAIL}`}>{SITE_EMAIL}</a>
           </li>
           <li>Languages: English, Spanish.</li>
           <li>Location/timezone: location-independent; flexible overlap with EU and US hours.</li>
@@ -35,7 +37,7 @@ export function Contact() {
         <Link to="/services">see services &amp; process →</Link>
       </p>
 
-      <div className="cta-band">
+      <div className="cta-band accent-card">
         <p>
           <strong>Available now.</strong> Freelance and contract engagements, EU/US timezone
           overlap, typical response within 48 hours.

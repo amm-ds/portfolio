@@ -95,6 +95,7 @@ export function PlotlyFigure({
 }) {
   const [payload, setPayload] = useState<PlotlyPayload | null>(null);
   const [failed, setFailed] = useState(false);
+  const [inView, setInView] = useState(false);
   const elRef = useRef<HTMLDivElement>(null);
   const plotlyRef = useRef<typeof PlotlyStatic | null>(null);
 
@@ -121,8 +122,30 @@ export function PlotlyFigure({
     };
   }, [pid, name]);
 
+  // Gate the (heavy) plotly chunk on viewport proximity; load immediately
+  // when IntersectionObserver is unavailable.
   useEffect(() => {
-    if (!payload || !elRef.current) return;
+    if (failed) return;
+    if (typeof IntersectionObserver === "undefined" || !elRef.current) {
+      setInView(true);
+      return;
+    }
+    const el = elRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [failed]);
+
+  useEffect(() => {
+    if (!payload || !inView || !elRef.current) return;
     // Capture the element now: refs are detached before passive effect cleanups run.
     const el = elRef.current;
     let disposed = false;
@@ -160,7 +183,7 @@ export function PlotlyFigure({
       // Plotly may still be loading; purge only once it rendered into `el`.
       plotlyRef.current?.purge(el);
     };
-  }, [payload]);
+  }, [payload, inView]);
 
   if (failed) {
     return <FigureFrame projectId={pid} name={name} caption={caption} />;
@@ -179,7 +202,7 @@ export function PlotlyFigure({
   return (
     <figure className="figure-frame">
       <div className="plotly-wrap">
-        {!payload && (
+        {(!payload || !inView) && (
           <div className="frame-skeleton" aria-hidden="true">
             <span>loading…</span>
           </div>

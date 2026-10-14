@@ -148,7 +148,7 @@ export function Services() {
       </div>
 
       <h2 className="section-title">cloud & deployment</h2>
-      <div className="cloud-block">
+      <div className="cloud-block accent-card">
         <p>
           <strong>Cloud-agnostic by design.</strong> Delivery runs on the client's platform —
           AWS, Azure, GCP, or on-premises. Pipelines are portable (Docker + uv + DVC), so
@@ -169,7 +169,7 @@ export function Services() {
       </ol>
 
       <h2 className="section-title">engagement models</h2>
-      <div className="engagement-table">
+      <div className="engagement-table table-scroll">
         <table>
           <thead>
             <tr>

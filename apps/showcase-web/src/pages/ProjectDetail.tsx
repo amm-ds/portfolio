@@ -99,7 +99,8 @@ export function ProjectDetail() {
     return (
       <div className="state-box">
         <p>
-          Unknown project <code>{id}</code>. Back to the <Link to="/">project list</Link>.
+          Unknown project <code>{id}</code>. Back to the{" "}
+          <Link to="/projects">project list</Link>.
         </p>
       </div>
     );
