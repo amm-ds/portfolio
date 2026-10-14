@@ -124,16 +124,17 @@ export function ProjectDetail() {
           </div>
           <div className="meta-links">
             <a
+              className="chip-link"
               href={`https://github.com/amm-ds/portfolio/tree/main/projects/${id}`}
               target="_blank"
               rel="noreferrer"
             >
               [code]
             </a>
-            <a href={docsUrl(id)} target="_blank" rel="noreferrer">
+            <a className="chip-link" href={docsUrl(id)} target="_blank" rel="noreferrer">
               [docs]
             </a>
-            <a href={REPO_URL} target="_blank" rel="noreferrer">
+            <a className="chip-link" href={REPO_URL} target="_blank" rel="noreferrer">
               [source]
             </a>
           </div>

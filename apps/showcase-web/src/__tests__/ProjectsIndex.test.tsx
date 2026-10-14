@@ -138,13 +138,29 @@ describe("ProjectsIndex", () => {
     expect(document.querySelector(".badge")).toBeNull();
   });
 
-  it("ships responsive grid breakpoints (1 / 2 / 3 columns)", () => {
+  it("ships responsive layouts: umbrellas side-by-side, stacked cards within", () => {
     expect(stylesCss).toContain("grid-template-columns: 1fr;");
     expect(stylesCss).toContain("@media (min-width: 720px)");
     expect(stylesCss).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
     expect(stylesCss).toContain("@media (min-width: 1100px)");
     expect(stylesCss).toContain("grid-template-columns: repeat(3, minmax(0, 1fr));");
     expect(stylesCss).toContain("align-items: stretch;");
+    // umbrella columns sit side by side and force stacked cards inside
+    expect(stylesCss).toContain(".umbrellas {");
+    expect(stylesCss).toContain(".umbrella .project-grid {\n  grid-template-columns: 1fr;\n}");
+  });
+
+  it("renders the umbrellas container with one column per umbrella", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText("AI")).toBeInTheDocument());
+    const umbrellas = document.querySelector(".umbrellas")!;
+    expect(umbrellas).not.toBeNull();
+    expect(umbrellas.querySelectorAll(":scope > .umbrella")).toHaveLength(3);
   });
 
   it("renders a live key number from metrics (first non-baseline run)", async () => {

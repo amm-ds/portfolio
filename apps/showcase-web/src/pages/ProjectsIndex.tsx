@@ -77,23 +77,26 @@ export function ProjectsIndex() {
       {projects !== null && projects.length === 0 && (
         <div className="state-box">No projects published yet — check back soon.</div>
       )}
-      {projects !== null &&
-        groupByUmbrella(projects).map((u) => (
-          <section key={u.name} className="umbrella" aria-label={u.name}>
-            <h2 className="section-title">{u.name}</h2>
-            <p className="section-intro">{u.description}</p>
-            {u.topics.map((t) => (
-              <div key={t.topic} className="topic-group">
-                {u.topics.length > 1 && <h3 className="topic-title">{t.topic}</h3>}
-                <div className="project-grid">
-                  {t.projects.map((p) => (
-                    <ProjectCard key={p.id} project={p} />
-                  ))}
+      {projects !== null && projects.length > 0 && (
+        <div className="umbrellas">
+          {groupByUmbrella(projects).map((u) => (
+            <section key={u.name} className="umbrella" aria-label={u.name}>
+              <h2 className="section-title">{u.name}</h2>
+              <p className="section-intro">{u.description}</p>
+              {u.topics.map((t) => (
+                <div key={t.topic} className="topic-group">
+                  {u.topics.length > 1 && <h3 className="topic-title">{t.topic}</h3>}
+                  <div className="project-grid">
+                    {t.projects.map((p) => (
+                      <ProjectCard key={p.id} project={p} />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </section>
-        ))}
+              ))}
+            </section>
+          ))}
+        </div>
+      )}
     </>
   );
 }
