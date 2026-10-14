@@ -21,6 +21,8 @@ members = [
     "05-ml-pipeline-churn",
     "06-routing-optimization",
     "07-open-data-mobility",
+    "08-inference-serving",
+    "09-agentic-workflows",
     "amm-ds-portfolio",
     "portfolio-core",
     "portfolio-eval",
@@ -219,6 +221,52 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=17" },
     { name = "scikit-learn", specifier = ">=1.5" },
     { name = "torch", specifier = ">=2.4" },
+    { name = "typer", specifier = ">=0.12" },
+]
+
+[[package]]
+name = "08-inference-serving"
+version = "0.1.0"
+source = { editable = "projects/08-inference-serving" }
+dependencies = [
+    { name = "numpy" },
+    { name = "plotly" },
+    { name = "polars" },
+    { name = "portfolio-core" },
+    { name = "portfolio-eval" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.1" },
+    { name = "plotly", specifier = ">=5.24" },
+    { name = "polars", specifier = ">=1.9" },
+    { name = "portfolio-core", editable = "libs/portfolio-core" },
+    { name = "portfolio-eval", editable = "libs/portfolio-eval" },
+    { name = "typer", specifier = ">=0.12" },
+]
+
+[[package]]
+name = "09-agentic-workflows"
+version = "0.1.0"
+source = { editable = "projects/09-agentic-workflows" }
+dependencies = [
+    { name = "numpy" },
+    { name = "plotly" },
+    { name = "polars" },
+    { name = "portfolio-core" },
+    { name = "portfolio-eval" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.1" },
+    { name = "plotly", specifier = ">=5.24" },
+    { name = "polars", specifier = ">=1.9" },
+    { name = "portfolio-core", editable = "libs/portfolio-core" },
+    { name = "portfolio-eval", editable = "libs/portfolio-eval" },
     { name = "typer", specifier = ">=0.12" },
 ]
 
