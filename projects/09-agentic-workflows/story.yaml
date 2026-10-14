@@ -1,0 +1,20 @@
+project_id: 09-agentic-workflows
+roadmap:
+  - status: remaining
+    text: Multi-step agent graphs — planning, tool use, and retries on pydantic-ai
+  - status: remaining
+    text: Workflow evaluation harness — step-level success criteria, cost budgets per run
+  - status: remaining
+    text: Human-in-the-loop checkpointing pattern with typed state
+sections:
+  - id: background
+    text_md: |
+      Single-shot agents are the demo; workflows are the product. This project extends the
+      agentic-AI flagship into multi-step, stateful workflows — planning, tool
+      orchestration, retries, and human checkpoints — with the same typed contracts and
+      evaluation discipline as the rest of the platform.
+  - id: objectives
+    text_md: |
+      Typed multi-step agent graphs with recoverable failures; step-level evaluation
+      criteria and per-run cost budgets; and a human-in-the-loop checkpoint pattern that
+      keeps autonomy auditable.

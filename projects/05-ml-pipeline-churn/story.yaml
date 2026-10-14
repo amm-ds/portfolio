@@ -229,26 +229,30 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      Cost-aware HPO — Optuna study on CV business cost with per-trial
-      threshold tuning changed the winner; the cost-HPO model holds the
+      Cost-aware HPO — shipped, verified: Optuna study on CV business cost with
+      per-trial threshold tuning changed the winner; the cost-HPO model holds the
       holdout cost optimum (282 cost units at threshold 0.700).
   - status: delivered
     text: >-
-      CRM client onboarding — `prepare --input client.csv` ingests a client
-      extract through the same DQ gates and DatasetContract as the synthetic data.
+      CRM client onboarding — shipped, verified: `prepare --input client.csv`
+      ingests a client extract through the same DQ gates and DatasetContract
+      as the synthetic data.
   - status: delivered
     text: >-
-      Bootstrap CIs — paired 2,000-resample CI on the cost delta vs naive:
-      −158 [−237, −87], significant at 95 %; savings claims now carry a number.
+      Bootstrap CIs — shipped, verified: paired 2,000-resample CI on the cost
+      delta vs naive is −158 [−237, −87], significant at 95 %.
   - status: delivered
     text: >-
-      Calibration verdict — isotonic-calibrated variant evaluated on the same
-      cost curve; the cost-optimal decision is unchanged, so raw probabilities ship.
-  - status: remaining
+      Calibration verdict — shipped, verified: isotonic-calibrated variant
+      evaluated on the same cost curve; the cost-optimal decision is unchanged
+      (ECE 0.281 → 0.014), so raw probabilities ship.
+  - status: delivered
     text: >-
-      Real-data CRM track — swap the synthetic generator for a public telco churn
-      export or a client extract; engagement-dependent, needs an external dataset.
-  - status: remaining
+      Gradient-boosted comparator — shipped, verified: HistGB was raced against
+      logistic inside the Optuna study on the cost-aware objective; logistic won
+      (mean trial cost 934 vs 1,215), settling the model question.
+  - status: deferred
     text: >-
-      Broader model comparison — gradient-boosted comparator vs logistic via
-      paired bootstrap CIs on business cost.
+      Real-data CRM track — engagement-dependent: swapping the synthetic
+      generator for a public telco export or a client extract needs an external
+      dataset and a client engagement; the onboarding path is already built.

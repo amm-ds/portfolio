@@ -1,0 +1,18 @@
+stages:
+  prepare:
+    cmd: uv run python -m agentic_workflows.cli prepare
+    deps:
+      - src/agentic_workflows
+      - params.yaml
+    outs:
+      - data
+  evaluate:
+    cmd: uv run python -m agentic_workflows.cli evaluate
+    deps:
+      - src/agentic_workflows
+      - params.yaml
+      - data
+    outs:
+      - reports/metrics.json
+      - reports/report.html
+      - reports/figures

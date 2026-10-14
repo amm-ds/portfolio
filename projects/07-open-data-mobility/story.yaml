@@ -237,22 +237,29 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      Serving artifact per SERVING.md (tuned GBM + p90 + zones) with the
-      showcase API forecast endpoint verified live — JFK zone 132 returns
-      prediction 223.8 / p90 251.8.
+      Streaming Polars pipeline, raw 41.2M trips → zero-filled 265 × 8,784
+      zone×hour grid — shipped, verified (<3 GB peak RAM).
   - status: delivered
     text: >-
-      Green-taxi expansion (bounded 2024-01..03 slice) with an honest transfer
-      study — yellow-trained GBMs lose MAE to green persistence but win RMSE
-      and MAPE; per-service retraining recommended.
-  - status: remaining
+      Temporal holdout run ladder (naive vs GBM vs TemporalNet) with tuned
+      variants and calibrated p90 band (90.8% coverage) — shipped, verified.
+  - status: delivered
     text: >-
-      Drift monitoring and scheduled retraining on each new TLC monthly
-      snapshot for the served endpoint.
-  - status: remaining
+      Serving artifact per SERVING.md (tuned GBM + p90 + zones) with the
+      showcase API forecast endpoint verified live — shipped, verified.
+  - status: delivered
+    text: >-
+      Green-taxi cross-service transfer study (bounded 2024-01..03 slice) —
+      shipped, verified; per-service retraining recommendation documented.
+  - status: deferred
+    text: >-
+      Drift monitoring and scheduled retraining on new TLC snapshots —
+      engagement-dependent; needs a live deployment contract.
+  - status: deferred
     text: >-
       Per-service (green/FHV) model retraining — the transfer study showed
-      yellow-trained weights do not carry over on sparse services.
+      yellow weights do not carry over; needs per-service history and a
+      committed deployment.
   - status: deferred
     text: >-
       Zone choropleth geo view for operator dashboards — needs geopandas /

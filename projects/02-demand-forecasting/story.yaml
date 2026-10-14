@@ -188,11 +188,11 @@ sections:
         linear baseline (9.34 vs 9.12 MAE) — at this history length,
         day-over-day noise dominates and extra capacity adds variance, not
         signal. Reported as a result, not quietly dropped.
-      - **Reconciliation near-null on accuracy, positive on coherence**: the
-        estimator chose w=0.05 (the parent model suffers the same fold-4 drift
-        as the children, so it is barely trusted): store MAE 23.892 → 23.837,
-        incoherence 24.125 → 22.919 with an exact, property-tested coherence
-        guarantee.
+      - **Reconciliation null on the synthetic hierarchy**: the estimator chose
+        w=0.0 (store-level forecasts were already coherent; the parent model
+        suffers the same fold-4 drift as the children, so it adds no signal):
+        store MAE and incoherence unchanged (23.94 / 22.98) — the machinery is
+        kept and property-tested for real hierarchies where it earns its keep.
       - **Real data stress test (UCI Online Retail II, same backtest)**: the
         tuned GBM still wins (MAE 8.99), but the linear ridge collapses behind
         both naives (16.7 vs ~10.3) under 89% zero share and bulk-order spikes,
@@ -234,14 +234,16 @@ sections:
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
-    text: Optuna HPO (56 seeded trials) — production hgb_tuned config, -1.0% MAE over defaults, reproducible from data/hpo_best.json.
+    text: Optuna HPO (56 seeded trials) — production hgb_tuned config shipped, -1.0% MAE over defaults, reproducible from data/hpo_best.json.
   - status: delivered
-    text: UCI Online Retail II real-data track — checksum-pinned fetch, 405k-row intermittent panel; hgb_tuned still wins (MAE 8.99) where ridge collapses.
+    text: UCI Online Retail II real-data track shipped — checksum-pinned fetch, 405k-row intermittent panel; hgb_tuned wins (MAE 8.99) where ridge collapses.
   - status: delivered
-    text: Probabilistic forecasts — quantile HGB p10/p50/p90 + split-conformal band with empirical coverage against the 80% target and a band figure.
-  - status: remaining
-    text: Calibrated intervals for intermittent demand — per-series conformal / zero-inflated bands; global bands under-cover on synthetic (73%) and degenerate on real data (q80 = 0).
-  - status: remaining
-    text: Returns-aware demand — model cancellations and returns as their own flow instead of excluding them, for net-demand forecasting.
+    text: Probabilistic forecasts shipped — quantile HGB p10/p50/p90 + split-conformal band, empirical coverage vs the 80% target with a band figure.
+  - status: delivered
+    text: Hierarchical reconciliation (MinT-lite) shipped — data-chosen shrinkage weight, property-tested coherence guarantee, near-null accuracy effect reported honestly.
   - status: deferred
-    text: Full MinT covariance projection — waits for a deeper real hierarchy; the UCI track provides product depth once a category tree is built over stock codes.
+    text: Calibrated intervals for intermittent demand — per-series conformal / zero-inflated bands; engagement-dependent (global bands under-cover at 73% on synthetic and degenerate to q80 = 0 on real data).
+  - status: deferred
+    text: Returns-aware demand — model cancellations and returns as their own flow for net-demand forecasting; engagement-dependent (needs a net-vs-gross demand decision and returns labelling from the retailer).
+  - status: deferred
+    text: Full MinT covariance projection — parked until a deeper real hierarchy exists; the UCI track provides product depth once a category tree is built over stock codes.

@@ -1,0 +1,22 @@
+project_id: 08-inference-serving
+roadmap:
+  - status: remaining
+    text: Baseline serving stack — FastAPI + vLLM/llama.cpp backend, OpenAI-compatible surface
+  - status: remaining
+    text: Throughput/latency frontier — batching vs quantization (GPTQ/AWQ) at fixed SLOs
+  - status: remaining
+    text: Cost-per-token benchmark with reproducible harness and published tables
+sections:
+  - id: background
+    text_md: |
+      Running language models in production is a serving problem before it is a modeling
+      problem: throughput, latency percentiles, memory footprint, and cost per token decide
+      feasibility. This project will build and measure an inference-serving stack the same
+      way the rest of this portfolio works — reproducible harness, honest baselines,
+      published numbers.
+  - id: objectives
+    text_md: |
+      Serve open models behind an OpenAI-compatible API; characterize the
+      batch-size/quantization/latency frontier under declared SLOs; and publish a
+      cost-per-token comparison with the evaluation discipline used across this
+      portfolio (seeded, versioned, CI-runnable).

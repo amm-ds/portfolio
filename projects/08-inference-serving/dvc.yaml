@@ -1,0 +1,18 @@
+stages:
+  prepare:
+    cmd: uv run python -m inference_serving.cli prepare
+    deps:
+      - src/inference_serving
+      - params.yaml
+    outs:
+      - data
+  evaluate:
+    cmd: uv run python -m inference_serving.cli evaluate
+    deps:
+      - src/inference_serving
+      - params.yaml
+      - data
+    outs:
+      - reports/metrics.json
+      - reports/report.html
+      - reports/figures
