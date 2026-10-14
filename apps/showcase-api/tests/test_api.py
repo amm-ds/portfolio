@@ -18,7 +18,7 @@ def test_projects_index(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no
 
     (tmp_path / "01-demo").mkdir()
     (tmp_path / "01-demo" / "portfolio.yaml").write_text(
-        "id: 01-demo\ntitle: Demo\ndomain: x\ntechniques: [t]\ndata: s\norder: 1\n"
+        "id: 01-demo\ntitle: Demo\ndomain: x\ntopic: T\ntechniques: [t]\ndata: s\norder: 1\n"
     )
     monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
     r = client.get("/projects")
@@ -75,7 +75,7 @@ def test_story_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no
 
     (tmp_path / "01-demo").mkdir(parents=True)
     (tmp_path / "01-demo" / "portfolio.yaml").write_text(
-        "id: 01-demo\ntitle: Demo\ndomain: x\ntechniques: [t]\ndata: s\norder: 1\n"
+        "id: 01-demo\ntitle: Demo\ndomain: x\ntopic: T\ntechniques: [t]\ndata: s\norder: 1\n"
     )
     monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
 

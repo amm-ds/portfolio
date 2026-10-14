@@ -61,11 +61,25 @@ class StorySection(PortfolioBaseModel):
         return self
 
 
+class RoadmapItem(PortfolioBaseModel):
+    """One roadmap entry. Status drives the case-study roadmap visual:
+    delivered (done, with results elsewhere in the story), remaining
+    (genuinely open forward work), or deferred (consciously parked, with
+    the reason in the text)."""
+
+    status: str = Field(pattern="^(delivered|remaining|deferred)$")
+    text: str = Field(min_length=1, max_length=300)
+
+
 class ProjectStory(PortfolioBaseModel):
     """The full case study for one project."""
 
     project_id: str = Field(min_length=1)
     sections: list[StorySection] = Field(min_length=1)
+    roadmap: list[RoadmapItem] = Field(
+        default_factory=list,
+        description="Finalized roadmap: delivered/deferred/remaining, no history.",
+    )
 
     @model_validator(mode="after")
     def _unique_sections(self) -> "ProjectStory":
@@ -77,6 +91,9 @@ class ProjectStory(PortfolioBaseModel):
 
     def section(self, section_id: str) -> StorySection | None:
         return next((s for s in self.sections if s.id == section_id), None)
+
+    def roadmap_by_status(self, status: str) -> list[RoadmapItem]:
+        return [r for r in self.roadmap if r.status == status]
 
 
 def default_title(section_id: str) -> str:

@@ -5,9 +5,11 @@ export interface Project {
   id: string;
   title: string;
   domain: string;
+  /** Display grouping key for the projects index. */
+  topic: string;
   techniques: string[];
   data: string;
-  status: "flagship" | "working";
+  status: "flagship" | "working" | "planned";
   order: number;
 }
 
@@ -55,9 +57,16 @@ export interface StorySectionData {
   metrics_keys: string[];
 }
 
+export interface RoadmapItemData {
+  status: "delivered" | "remaining" | "deferred";
+  text: string;
+}
+
 export interface ProjectStoryData {
   project_id: string;
   sections: StorySectionData[];
+  /** Finalized roadmap (optional while stories are being authored). */
+  roadmap?: RoadmapItemData[];
 }
 
 /** 404 means "story not authored yet" — callers fall back to the raw artifacts view. */

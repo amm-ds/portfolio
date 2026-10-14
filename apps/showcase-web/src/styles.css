@@ -32,14 +32,13 @@ body {
   line-height: 1.6;
 }
 
-/* Mono accent typeface: headings, nav, buttons, metric values, badges, labels. */
+/* Mono accent typeface: headings, nav, buttons, metric values, chips, labels. */
 h1,
 h2,
 h3,
 h4,
 .nav,
 button,
-.badge,
 .chip,
 .section-title,
 .metrics-table,
@@ -91,6 +90,110 @@ code {
 }
 
 
+
+/* --- Home "where to go" trio --- */
+
+.go-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.go-card {
+  display: block;
+  color: inherit;
+  padding: 1.1rem 1.25rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.go-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.go-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+.go-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* --- Roadmap block --- */
+
+.roadmap {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.roadmap-title {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+.roadmap-title::before {
+  content: "$ ";
+  color: var(--accent);
+  text-shadow: none;
+}
+
+.roadmap-group {
+  margin-bottom: 1rem;
+}
+
+.roadmap-group:last-child {
+  margin-bottom: 0;
+}
+
+.roadmap-group h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--secondary);
+}
+
+.roadmap-group ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roadmap-group li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.3rem 0;
+  color: var(--text);
+  opacity: 0.92;
+  font-size: 0.94rem;
+}
+
+.roadmap-mark {
+  font-family: var(--mono);
+  flex-shrink: 0;
+}
+
+.roadmap-mark.delivered {
+  color: var(--ok);
+}
+
+.roadmap-mark.remaining {
+  color: var(--muted);
+}
+
+.roadmap-mark.deferred {
+  color: var(--danger);
+}
+
 /* --- Shared utilities --- */
 
 .accent-card {
@@ -98,6 +201,14 @@ code {
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius);
+}
+
+.card-secondary {
+  border-left-color: var(--secondary);
+}
+
+.card-danger {
+  border-left-color: var(--danger);
 }
 
 .table-scroll {
@@ -369,27 +480,6 @@ code {
   margin: 0;
 }
 
-.badge {
-  flex-shrink: 0;
-  font-size: 0.74rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  color: var(--muted);
-  letter-spacing: 0.02em;
-}
-
-.badge.flagship {
-  color: var(--accent);
-  border-color: var(--accent);
-  text-shadow: 0 0 14px var(--accent-glow);
-}
-
-.badge.working {
-  color: var(--secondary);
-  border-color: var(--secondary);
-}
-
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -503,27 +593,26 @@ code {
   margin: 0 0 1rem;
 }
 
-/* --- Markdown tables (GFM pipe tables rendered by lib/markdown) --- */
+/* --- DataTable: shared table pattern (DataTable component + prose tables) --- */
 
-.prose table {
-  width: 100%;
-  border-collapse: collapse;
+.data-table {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  margin: 0 0 1rem;
+  border-radius: var(--radius);
+  overflow: hidden;
   font-size: 0.92rem;
+  margin: 0 0 1rem;
 }
 
-.prose table th,
-.prose table td {
-  padding: 0.45rem 0.8rem;
-  border: 1px solid var(--border);
+.data-table th,
+.data-table td {
+  padding: 0.6rem 0.9rem;
   text-align: left;
+  border-bottom: 1px solid var(--border);
   vertical-align: top;
 }
 
-.prose table th {
+.data-table th {
   font-family: var(--mono);
   font-size: 0.8rem;
   font-weight: 600;
@@ -531,16 +620,14 @@ code {
   background: rgba(45, 212, 191, 0.06);
 }
 
-.prose table td {
+.data-table td {
   color: var(--text);
   opacity: 0.92;
 }
 
-@media (max-width: 640px) {
-  .prose table {
-    display: block;
-    overflow-x: auto;
-  }
+.data-table tbody tr:last-child td,
+.data-table tbody tr:last-child th {
+  border-bottom: none;
 }
 
 .callouts {
@@ -590,33 +677,18 @@ code {
 /* --- Metrics table --- */
 
 .metrics-table {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
   font-size: 0.9rem;
 }
 
 .metrics-table th,
 .metrics-table td {
-  padding: 0.6rem 0.9rem;
   text-align: right;
-  border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .metrics-table th:first-child,
 .metrics-table td:first-child {
   text-align: left;
-}
-
-.metrics-table thead th {
-  color: var(--secondary);
-  font-weight: 600;
-}
-
-.metrics-table tbody tr:last-child td {
-  border-bottom: none;
 }
 
 /* --- Figures --- */
@@ -838,9 +910,6 @@ button:disabled {
 }
 
 .offering-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
   padding: 1.25rem;
 }
 
@@ -924,28 +993,7 @@ button:disabled {
 }
 
 .engagement-table {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
   font-size: 0.92rem;
-}
-
-.engagement-table th,
-.engagement-table td {
-  padding: 0.7rem 0.95rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-}
-
-.engagement-table thead th {
-  color: var(--secondary);
-  font-weight: 600;
-  font-size: 0.82rem;
-}
-
-.engagement-table tbody tr:last-child td {
-  border-bottom: none;
 }
 
 .engagement-table td:last-child {

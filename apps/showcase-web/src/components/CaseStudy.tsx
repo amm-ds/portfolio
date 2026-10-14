@@ -1,9 +1,11 @@
 import type { Metrics, ProjectStoryData } from "../api";
 import { useScrollSpy } from "../hooks/useScrollSpy";
+import { RoadmapBlock } from "./RoadmapBlock";
 import { StorySection } from "./StorySection";
 
 /**
- * Case-study layout: sticky section rail (scroll-spy) + rendered sections.
+ * Case-study layout: sticky section rail (scroll-spy) + rendered sections,
+ * with the roadmap block at the end (after conclusions).
  */
 export function CaseStudy({
   projectId,
@@ -35,6 +37,7 @@ export function CaseStudy({
         {story.sections.map((s, i) => (
           <StorySection key={s.id} projectId={projectId} section={s} index={i} metrics={metrics} />
         ))}
+        <RoadmapBlock roadmap={story.roadmap} />
       </div>
     </div>
   );

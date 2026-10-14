@@ -2,21 +2,23 @@ import { useEffect, useState } from "react";
 import { getProjects, type Project } from "../api";
 import { ProjectCard } from "../components/ProjectCard";
 
-function Group({ title, projects }: { title: string; projects: Project[] }) {
-  if (projects.length === 0) return null;
-  return (
-    <>
-      <h2 className="section-title">{title}</h2>
-      <div className="project-grid">
-        {projects.map((p) => (
-          <ProjectCard key={p.id} project={p} />
-        ))}
-      </div>
-    </>
-  );
+interface TopicGroup {
+  topic: string;
+  projects: Project[];
 }
 
-/** Full project index: flagships and working showcases, with live key numbers. */
+/** Group by topic; topics sorted by their earliest project, projects by order. */
+export function groupByTopic(projects: Project[]): TopicGroup[] {
+  const groups = new Map<string, Project[]>();
+  for (const p of [...projects].sort((a, b) => a.order - b.order)) {
+    const list = groups.get(p.topic) ?? [];
+    list.push(p);
+    groups.set(p.topic, list);
+  }
+  return [...groups.entries()].map(([topic, ps]) => ({ topic, projects: ps }));
+}
+
+/** Full project index: grouped by topic, with live key numbers per card. */
 export function ProjectsIndex() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -35,15 +37,17 @@ export function ProjectsIndex() {
       {projects !== null && projects.length === 0 && (
         <div className="state-box">No projects published yet — check back soon.</div>
       )}
-      {projects !== null && projects.length > 0 && (
-        <>
-          <Group title="flagships" projects={projects.filter((p) => p.status === "flagship")} />
-          <Group
-            title="working showcases"
-            projects={projects.filter((p) => p.status === "working")}
-          />
-        </>
-      )}
+      {projects !== null &&
+        groupByTopic(projects).map((g) => (
+          <section key={g.topic} aria-label={g.topic}>
+            <h2 className="section-title">{g.topic}</h2>
+            <div className="project-grid">
+              {g.projects.map((p) => (
+                <ProjectCard key={p.id} project={p} />
+              ))}
+            </div>
+          </section>
+        ))}
     </>
   );
 }

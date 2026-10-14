@@ -61,8 +61,17 @@ describe("Home (lean, wave 6)", () => {
     expect(cta.getAttribute("href")).toBe("/contact");
   });
 
-  it("renders the where-to-go trio", () => {
+  it("renders the where-to-go trio as three identical cards", () => {
     renderHome();
+    const cards = document.querySelectorAll(".go-card");
+    expect(cards).toHaveLength(3);
+    cards.forEach((card) => {
+      // shared accent-card surface + title with $ prefix + one-liner
+      expect(card.classList.contains("accent-card")).toBe(true);
+      const h3 = card.querySelector("h3")!;
+      expect(h3.textContent).toMatch(/^\$ \w+ →$/);
+      expect(card.querySelector("p")!.textContent!.length).toBeGreaterThan(10);
+    });
     for (const to of ["/projects", "/services", "/contact"]) {
       const link = screen.getByRole("link", { name: new RegExp(`\\$ ${to.slice(1)}`, "i") });
       expect(link).toHaveAttribute("href", to);

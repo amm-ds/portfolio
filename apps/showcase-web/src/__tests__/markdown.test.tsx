@@ -179,7 +179,9 @@ describe("renderMarkdown fenced code", () => {
     expect(kids[1].tagName).toBe("UL");
     expect(kids[2].tagName).toBe("PRE");
     expect(kids[2].querySelector("code")?.textContent).toBe('{"k": 1}');
-    expect(kids[3].tagName).toBe("TABLE");
+    // tables render inside the shared scroll wrapper with the data-table class
+    expect(kids[3].classList.contains("table-scroll")).toBe(true);
+    expect(kids[3].querySelector("table.data-table")).not.toBeNull();
   });
 });
 

@@ -1,61 +1,77 @@
-import { Link } from "react-router-dom";
+import { Card } from "../components/Card";
+import { DataTable } from "../components/DataTable";
 import { FRAMEWORKS, FrameworkTile } from "../components/Frameworks";
 
-const OFFERINGS = [
+interface Offering {
+  title: string;
+  outcome: string;
+  elements: string[];
+  deliverables: string[];
+}
+
+const OFFERINGS: Offering[] = [
   {
     title: "ML/AI systems delivery",
-    blurb:
-      "End-to-end design and build of production ML systems — from data contracts and training pipelines to evaluation harnesses and deployment-ready services.",
+    outcome: "Production ML systems designed, built, and handed over — not notebooks.",
+    elements: ["full-stack development", "API design", "model inference & serving"],
     deliverables: [
-      "working system",
+      "working system, runnable from a clean clone",
       "DVC/CI reproducibility",
       "evaluation report with baselines",
-      "runbooks",
-      "handover documentation",
+      "runbooks & handover documentation",
     ],
   },
   {
     title: "Agentic AI & LLM applications",
-    blurb:
-      "Retrieval-augmented assistants and agents with typed tool use, structured outputs and citation enforcement — delivered with the evaluation harness to prove quality and the budgets to run it.",
+    outcome: "Assistants and agents that cite their sources and stay inside their budgets.",
+    elements: ["API design — FastAPI/REST", "model inference & serving", "evaluation & HPO"],
     deliverables: [
       "agent service (FastAPI)",
       "retrieval index pipeline",
       "faithfulness/relevance eval harness",
-      "cost & latency budgets",
-      "fallback chains",
+      "cost & latency budgets with fallback chains",
     ],
   },
   {
     title: "Data engineering",
-    blurb:
-      "Reproducible pipelines over large, messy open or commercial data — lazy, out-of-core processing, data-quality gates that fail loudly, checksum-pinned snapshots.",
+    outcome: "Pipelines over large, messy data that fail loudly and re-run cheaply.",
+    elements: ["data pipelines — Polars/DVC", "out-of-core processing"],
     deliverables: [
       "versioned pipeline (DVC)",
-      "dataset registry with licenses and checksums",
-      "DQ dashboards",
+      "dataset registry with licenses & checksums",
+      "data-quality gates",
       "scale notes",
     ],
   },
   {
     title: "Forecasting & analytics",
-    blurb:
-      "Demand, churn and behavioral modeling with honest backtests and decision-ready visualizations — including uncertainty bands and business-cost threshold tuning.",
+    outcome: "Models evaluated the way the business will judge them — with costs, not vanity scores.",
+    elements: ["data pipelines", "interactive visualization"],
     deliverables: [
-      "leakage-proof evaluation",
-      "calibrated models",
-      "business-cost analysis",
+      "leakage-proof backtests",
+      "calibrated models with uncertainty bands",
+      "business-cost threshold analysis",
       "interactive reports",
     ],
   },
   {
-    title: "MLOps & reproducibility audits",
-    blurb:
-      "Versioning, CI gates, review culture, drift response — an audit of what breaks first and the cheapest fixes, aligned with a published engineering playbook.",
+    title: "Interactive dashboards & visualization",
+    outcome: "Decision-ready frontends on top of models and pipelines.",
+    elements: ["interactive visualization — Plotly/React", "full-stack development"],
     deliverables: [
-      "gap report",
-      "prioritized remediation",
-      "CI/CD and DVC setup",
+      "plotly figures & dashboards",
+      "react frontends over the model APIs",
+      "self-updating reports from pipeline artifacts",
+    ],
+  },
+  {
+    title: "MLOps, evaluation & CI",
+    outcome: "A setup where bad models and broken pipelines cannot ship silently.",
+    elements: ["evaluation & HPO — Optuna", "leakage-proof CV", "MLOps/CI — GitHub Actions", "Docker", "uv"],
+    deliverables: [
+      "CI gates for evaluation & data quality",
+      "dockerized, uv-managed environments",
+      "prioritized remediation gap report",
       "team playbook",
     ],
   },
@@ -122,16 +138,23 @@ export function Services() {
       <h2 className="section-title">offerings</h2>
       <div className="offerings-grid">
         {OFFERINGS.map((o) => (
-          <div key={o.title} className="offering-card">
+          <Card key={o.title} className="offering-card">
             <h3>{o.title}</h3>
-            <p className="offering-blurb">{o.blurb}</p>
+            <p className="offering-blurb">{o.outcome}</p>
+            <div className="chips">
+              {o.elements.map((e) => (
+                <span key={e} className="chip">
+                  {e}
+                </span>
+              ))}
+            </div>
             <h4>deliverables</h4>
             <ul>
               {o.deliverables.map((d) => (
                 <li key={d}>{d}</li>
               ))}
             </ul>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -148,14 +171,14 @@ export function Services() {
       </div>
 
       <h2 className="section-title">cloud & deployment</h2>
-      <div className="cloud-block accent-card">
+      <Card accent="secondary" className="cloud-block">
         <p>
           <strong>Cloud-agnostic by design.</strong> Delivery runs on the client's platform —
           AWS, Azure, GCP, or on-premises. Pipelines are portable (Docker + uv + DVC), so
           there is no vendor lock-in and everything runs from a clean clone. Data stays
           inside the client's boundary; nothing phones home.
         </p>
-      </div>
+      </Card>
 
       <h2 className="section-title">process</h2>
       <ol className="process-timeline">
@@ -169,54 +192,30 @@ export function Services() {
       </ol>
 
       <h2 className="section-title">engagement models</h2>
-      <div className="engagement-table table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">model</th>
-              <th scope="col">when it fits</th>
-              <th scope="col">pricing</th>
+      <DataTable className="engagement-table">
+        <thead>
+          <tr>
+            <th scope="col">model</th>
+            <th scope="col">when it fits</th>
+            <th scope="col">pricing</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ENGAGEMENTS.map((e) => (
+            <tr key={e.model}>
+              <td>
+                <strong>{e.model}</strong>
+              </td>
+              <td>{e.fits}</td>
+              <td>{e.pricing}</td>
             </tr>
-          </thead>
-          <tbody>
-            {ENGAGEMENTS.map((e) => (
-              <tr key={e.model}>
-                <td>
-                  <strong>{e.model}</strong>
-                </td>
-                <td>{e.fits}</td>
-                <td>{e.pricing}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </DataTable>
       <p className="pricing-note">
         [note] pilots are deliberately small and fixed-price so the working relationship is
         tested before larger commitments.
       </p>
-
-      <h2 className="section-title">proof</h2>
-      <div className="state-box">
-        Every offering above is backed by a public, reproducible case study — real pipelines,
-        real metrics, interactive figures.{" "}
-        <Link to="/projects">browse the case studies →</Link>
-      </div>
-
-      <h2 className="section-title">contact & availability</h2>
-      <div className="contact-block">
-        <ul>
-          <li>
-            GitHub:{" "}
-            <a href="https://github.com/amm-ds" target="_blank" rel="noreferrer">
-              amm-ds
-            </a>
-          </li>
-          <li>Availability: open to freelance and consulting engagements; typical response within 48 hours.</li>
-          <li>Languages: English, Spanish.</li>
-          <li>Location/timezone: flexible overlap with EU and US hours.</li>
-        </ul>
-      </div>
     </>
   );
 }

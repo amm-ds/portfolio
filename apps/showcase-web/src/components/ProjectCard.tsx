@@ -31,7 +31,6 @@ export function ProjectCard({ project }: { project: Project }) {
           <h3>{project.title}</h3>
           <p className="domain">{project.domain}</p>
         </div>
-        <span className={`badge ${project.status}`}>[{project.status}]</span>
       </div>
       <div className="chips">
         {project.techniques.map((t) => (

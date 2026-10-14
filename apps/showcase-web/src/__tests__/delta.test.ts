@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeCallouts, isBaselineRun } from "../lib/delta";
+import {
+  computeCallouts,
+  formatMetricValue,
+  isBaselineRun,
+  pickHeadlineMetric,
+} from "../lib/delta";
 
 describe("isBaselineRun", () => {
   it("matches naive/random/lag/majority/persistence names", () => {
@@ -112,5 +117,29 @@ describe("computeCallouts", () => {
       ["naive_zeros", "model"],
     );
     expect(callouts.every((c) => c.deltaPct === null)).toBe(true);
+  });
+});
+
+describe("formatMetricValue", () => {
+  it("formats integers plainly and decimals to 4 places", () => {
+    expect(formatMetricValue(7)).toBe("7");
+    expect(formatMetricValue(0.812345)).toBe("0.8123");
+  });
+});
+
+describe("pickHeadlineMetric", () => {
+  it("prefers the first non-baseline run's first metric", () => {
+    const picked = pickHeadlineMetric({ naive_last: { mae: 100 }, tuned: { mae: 72 } })!;
+    expect(picked).toEqual({ run: "tuned", metric: "mae", value: 72 });
+  });
+
+  it("falls back to a baseline when no other run exists", () => {
+    const picked = pickHeadlineMetric({ naive_last: { mae: 100 } })!;
+    expect(picked.run).toBe("naive_last");
+  });
+
+  it("skips _-prefixed meta runs and returns null when nothing fits", () => {
+    expect(pickHeadlineMetric({ _meta: { version: "1" } } as never)).toBeNull();
+    expect(pickHeadlineMetric({ weird: { note: "n/a" } } as never)).toBeNull();
   });
 });
