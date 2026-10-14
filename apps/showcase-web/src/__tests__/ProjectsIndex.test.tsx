@@ -10,52 +10,93 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+const RAG = {
+  id: "01-rag-agent",
+  title: "RAG Agent",
+  domain: "NLP",
+  techniques: ["RAG"],
+  data: "docs",
+  status: "flagship",
+  order: 1,
+};
+
+const DEMAND = {
+  id: "02-demand-forecasting",
+  title: "Demand Forecasting",
+  domain: "time series",
+  techniques: ["LightGBM"],
+  data: "retail",
+  status: "working",
+  order: 2,
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
 
 describe("ProjectsIndex", () => {
-  it("renders the project grid sorted by order", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse([
-          {
-            id: "02-demand-forecasting",
-            title: "Demand Forecasting",
-            domain: "time series",
-            techniques: ["LightGBM"],
-            data: "retail",
-            status: "working",
-            order: 2,
-          },
-          {
-            id: "01-rag-agent",
-            title: "RAG Agent",
-            domain: "NLP",
-            techniques: ["RAG"],
-            data: "docs",
-            status: "flagship",
-            order: 1,
-          },
-        ]),
-      ),
-    );
+  it("groups projects under flagships and working showcases", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([DEMAND, RAG])));
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText("RAG Agent")).toBeInTheDocument());
-    const titles = [...document.querySelectorAll(".project-card h3")].map(
-      (el) => el.textContent,
-    );
-    expect(titles).toEqual(["RAG Agent", "Demand Forecasting"]);
+    expect(screen.getByText("flagships")).toBeInTheDocument();
+    expect(screen.getByText("working showcases")).toBeInTheDocument();
+    // flagship before working group; each card keeps its badge
+    const flagshipGroup = screen.getByText("flagships").nextElementSibling!;
+    expect(flagshipGroup.querySelector(".project-card h3")?.textContent).toBe("RAG Agent");
     expect(screen.getByText("[flagship]")).toBeInTheDocument();
-    // live-demo banner links to the RAG chat
-    const demo = screen.getByRole("link", { name: /RAG demo/i });
-    expect(demo.getAttribute("href")).toBe("/chat");
+    expect(screen.getByText("[working]")).toBeInTheDocument();
+  });
+
+  it("renders a live key number from metrics (first non-baseline run)", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([RAG]));
+      if (url.endsWith("/metrics")) {
+        return Promise.resolve(
+          jsonResponse({ naive_last: { mae: 100 }, tuned: { mae: 72.34567 } }),
+        );
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText("mae: 72.3457")).toBeInTheDocument());
+  });
+
+  it("renders no key number when metrics are missing", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([RAG]));
+      return Promise.resolve(jsonResponse({ detail: "no" }, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText("RAG Agent")).toBeInTheDocument());
+    expect(document.querySelector(".key-number")).toBeNull();
+  });
+
+  it("shows an empty state when /projects returns []", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText(/no projects published yet/i)).toBeInTheDocument());
   });
 
   it("shows an error state when the API is unreachable", async () => {

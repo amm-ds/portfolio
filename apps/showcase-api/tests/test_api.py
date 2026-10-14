@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from showcase_api.main import app
 
@@ -53,9 +54,20 @@ def test_metrics_and_figures_served(tmp_path: Path, monkeypatch) -> None:  # typ
     assert r.status_code == 200 and "fig" in r.text
 
 
-def test_chat_validation() -> None:
-    r = client.post("/rag/chat", json={"question": ""})
-    assert r.status_code == 422
+def test_chat_gated_off_by_default() -> None:
+    """RAG chat is an LLM cost proxy: routes must not exist unless explicitly enabled."""
+    r = client.post("/rag/chat", json={"question": "hi"})
+    assert r.status_code == 405  # caught by the SPA catch-all (GET-only) → 405
+
+
+def test_chat_request_validation() -> None:
+    from pydantic import ValidationError
+    from showcase_api.main import ChatRequest
+
+    with pytest.raises(ValidationError):
+        ChatRequest(question="")
+    with pytest.raises(ValidationError):
+        ChatRequest(question="x" * 4001)
 
 
 def test_story_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]

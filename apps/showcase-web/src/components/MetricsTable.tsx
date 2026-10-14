@@ -1,11 +1,8 @@
 import type { Metrics } from "../api";
+import { formatMetricValue } from "../lib/delta";
 
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
-}
-
-function formatMetric(value: number): string {
-  return Number.isInteger(value) ? value.toString() : value.toFixed(4);
 }
 
 /** Render the nested metrics object: one row per run, one column per metric.
@@ -28,7 +25,7 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
     ? Object.entries(meta).filter(([, value]) => isNumber(value) || typeof value === "string")
     : [];
   return (
-    <div className="metrics-table">
+    <div className="metrics-table table-scroll">
       <table>
         <thead>
           <tr>
@@ -46,7 +43,7 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
               <td>{run}</td>
               {metricNames.map((name) => {
                 const value = metrics[run][name];
-                return <td key={name}>{isNumber(value) ? formatMetric(value) : "—"}</td>;
+                return <td key={name}>{isNumber(value) ? formatMetricValue(value) : "—"}</td>;
               })}
             </tr>
           ))}
@@ -55,7 +52,7 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
       {metaEntries.length > 0 && (
         <p className="muted">
           {metaEntries.map(([key, value]) =>
-            `${key}: ${isNumber(value) ? formatMetric(value) : String(value)}`,
+            `${key}: ${isNumber(value) ? formatMetricValue(value) : String(value)}`,
           ).join(" · ")}
         </p>
       )}

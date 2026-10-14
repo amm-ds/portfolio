@@ -78,7 +78,7 @@ export function Home() {
         ))}
       </div>
 
-      <p className="availability">
+      <p className="availability accent-card">
         Available for freelance work — ML/AI systems, agentic AI and RAG, data engineering
         and MLOps. Typical response within 48 hours; EU/US timezone overlap.
       </p>

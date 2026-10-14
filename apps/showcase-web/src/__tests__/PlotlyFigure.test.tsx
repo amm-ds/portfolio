@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildLayout, PlotlyFigure, scaledHeight } from "../components/PlotlyFigure";
 
@@ -91,6 +91,31 @@ describe("PlotlyFigure", () => {
     await waitFor(() => expect(mocks.react).toHaveBeenCalled());
     // 1200 * 0 / 1000 → clamped to the 360 minimum in jsdom
     expect(mocks.react.mock.calls[0][2].height).toBe(360);
+  });
+
+  it("defers the plotly import until the host nears the viewport", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    // jsdom has no IntersectionObserver: stub a controllable one
+    let ioCallback: ((entries: { isIntersecting: boolean }[]) => void) | null = null;
+    class MockIO {
+      constructor(cb: typeof ioCallback) {
+        ioCallback = cb;
+      }
+      observe() {}
+      disconnect() {}
+    }
+    vi.stubGlobal("IntersectionObserver", MockIO);
+    render(<PlotlyFigure pid="p" name="gated" />);
+    // payload arrives, but the plot must not render before intersection
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(mocks.react).not.toHaveBeenCalled();
+    expect(screen.getByText("loading…")).toBeInTheDocument();
+    // host enters the viewport → render proceeds
+    act(() => {
+      ioCallback!([{ isIntersecting: true }]);
+    });
+    await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
   });
 
   it("falls back to the HTML iframe when the JSON payload 404s", async () => {

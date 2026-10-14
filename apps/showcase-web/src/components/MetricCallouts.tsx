@@ -1,9 +1,5 @@
 import type { Metrics } from "../api";
-import { computeCallouts } from "../lib/delta";
-
-function formatValue(value: number): string {
-  return Number.isInteger(value) ? value.toString() : value.toFixed(4);
-}
+import { computeCallouts, formatMetricValue } from "../lib/delta";
 
 /** Metric callout chips for a story section (baseline-delta aware). */
 export function MetricCallouts({ metrics, metricsKeys }: { metrics: Metrics; metricsKeys: string[] }) {
@@ -16,7 +12,7 @@ export function MetricCallouts({ metrics, metricsKeys }: { metrics: Metrics; met
         <span key={c.run} className="callout-chip">
           <span className="run">[{c.run}]</span>
           <span>
-            {c.metric}: <span className="value">{formatValue(c.value)}</span>
+            {c.metric}: <span className="value">{formatMetricValue(c.value)}</span>
           </span>
           {c.deltaPct !== null && c.baselineRun && (
             <span className={`delta ${c.improved ? "improved" : "regressed"}`}>

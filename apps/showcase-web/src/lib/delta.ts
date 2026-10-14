@@ -33,6 +33,27 @@ export function isBaselineRun(run: string): boolean {
   return BASELINE_RE.test(run);
 }
 
+/** Format a metric value for display (integers plain, decimals to 4 places). */
+export function formatMetricValue(value: number): string {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(4);
+}
+
+/**
+ * Headline metric for a project card: the first numeric metric of the first
+ * non-baseline run (baselines only as a last resort); null when nothing fits.
+ */
+export function pickHeadlineMetric(
+  metrics: Metrics,
+): { run: string; metric: string; value: number } | null {
+  const runs = Object.keys(metrics).filter((r) => !r.startsWith("_"));
+  const ordered = [...runs.filter((r) => !isBaselineRun(r)), ...runs.filter(isBaselineRun)];
+  for (const run of ordered) {
+    const h = headline(metrics[run]);
+    if (h) return { run, metric: h.metric, value: h.value };
+  }
+  return null;
+}
+
 export function computeCallouts(metrics: Metrics, referencedRuns: string[]): MetricCallout[] {
   const present = referencedRuns.filter((r) => headline(metrics[r] ?? {}) !== null);
   const callouts: MetricCallout[] = present.map((run) => {

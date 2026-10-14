@@ -4,9 +4,9 @@ import { Footer } from "./components/Footer";
 import { Home } from "./pages/Home";
 import { ProjectsIndex } from "./pages/ProjectsIndex";
 import { ProjectDetail } from "./pages/ProjectDetail";
-import { RAGChat } from "./pages/RAGChat";
 import { Services } from "./pages/Services";
 import { Contact } from "./pages/Contact";
+import { NotFound } from "./pages/NotFound";
 
 export function App() {
   return (
@@ -17,11 +17,10 @@ export function App() {
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<ProjectsIndex />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
-          <Route path="/chat" element={<RAGChat />} />
           <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<Navigate to="/services" replace />} />
-          <Route path="*" element={<Home />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />
