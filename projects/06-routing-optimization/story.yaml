@@ -238,8 +238,8 @@ sections:
     Where the remaining gap lives: ~4 % mean is concentrated in C2's
     few-vehicle wide-horizon optima (6.50 %) and a handful of tight chains
     (C203, C103) — the destroy size and operator pool, not the framework, are
-    the next levers. The roadmap below is the final one: delivered results,
-    one conscious deferral, and the genuinely open work.
+    the next levers. The roadmap below records what was delivered and what
+    was consciously deferred.
 
     **Business implication:** a 4.23 % mean gap to 1987-published optima, on
     every problem family, with seeded deterministic code a client can audit —
@@ -250,26 +250,34 @@ sections:
 roadmap:
 - status: delivered
   text: |
-    ALNS behind the `RoutePlan` contract — destroy (random/worst/Shaw) +
-    regret-2 repair, segment-adapted weights, SA acceptance: 4.23 % mean gap
-    over all 56 instances, 56/56 wins, HPO-tuned (segment 100, reaction 0.5).
+    ALNS solver behind the `RoutePlan` contract — shipped, verified:
+    destroy (random/worst/Shaw) + regret-2 repair, segment-adapted weights,
+    SA acceptance; 4.23 % mean gap over all 56 instances, 56/56 wins,
+    HPO-tuned (segment 100, reaction 0.5).
 - status: delivered
   text: |
-    Full 56-instance Solomon benchmark with per-family gap reporting
-    (C1 4.48 %, C2 6.50 %, R1 4.10 %, R2 3.04 %, RC1 4.75 %, RC2 3.00 %) and
-    the `family_gap` figure.
+    Full 56-instance Solomon benchmark with per-family gap reporting —
+    shipped (C1 4.48 %, C2 6.50 %, R1 4.10 %, R2 3.04 %, RC1 4.75 %,
+    RC2 3.00 %) with the `family_gap` figure.
 - status: delivered
   text: |
-    2-opt HPO negatives documented and kept on record — randomized restarts
-    never pay (k=1 chosen) and 2-opt budgets saturate (≤ ~20 accepted moves).
+    Seeded HPO searches for both improvement stages — shipped; negatives on
+    record (randomized restarts never pay, k=1 chosen; 2-opt budgets
+    saturate at ≤ ~20 accepted moves).
+- status: delivered
+  text: |
+    Hard-feasibility evaluation harness — shipped: once-only/capacity
+    validator plus per-route time-window simulation gates every solution
+    before it reaches a table or figure.
 - status: deferred
   text: |
     Hierarchical objective (minimize vehicle count first, then distance):
     multi-echelon fleet constraints are a different problem contract —
     parked deliberately; ALNS's 11.0 mean vehicles vs 10-vehicle C1 optima
     mark where it would matter.
-- status: remaining
+- status: deferred
   text: |
     Time-window-preserving destroy operators for the C2-family residuals
-    (C2 6.50 %, C203 19.48 %) — adaptive destroy size and operator pool are
-    the open levers, tunable with the existing HPO harness.
+    (C2 6.50 %, C203 19.48 %) — not committed: needs a dedicated
+    destroy-size/operator-pool study beyond the shipped q=10 ALNS; the HPO
+    harness is ready if an engagement asks for it.

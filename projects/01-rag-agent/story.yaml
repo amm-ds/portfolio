@@ -283,29 +283,28 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      Provider fallback chain per ADR-0004 — live OpenAI-compatible endpoint
-      when configured, deterministic mock otherwise; one code path, CI-safe,
-      offline-runnable evaluation.
+      Provider fallback chain — shipped, verified: one code path, live
+      OpenAI-compatible endpoint when configured, deterministic mock
+      otherwise; CI-safe, offline-runnable evaluation.
   - status: delivered
     text: >-
-      Client-corpus onboarding path — prepare-corpus --source client reuses the
-      whole pipeline (chunk, embed, index, evaluate) on client documents with a
-      license flag.
+      Client-corpus onboarding — shipped, verified: prepare-corpus --source
+      client runs the full pipeline (chunk, embed, index, evaluate) on client
+      documents with a license flag.
   - status: delivered
     text: >-
-      Cost telemetry — per-query token usage and estimated cost persisted to
-      reports/cost_telemetry.json with the mock floor recorded offline.
+      Cost telemetry — shipped, verified: per-query token usage and estimated
+      cost in reports/cost_telemetry.json, mock floor recorded offline.
   - status: delivered
     text: >-
-      LLM rubric judge behind JUDGE=llm — structured pydantic-ai verdicts when
-      credentials exist, graceful fallback to the deterministic keyword judge.
-  - status: remaining
+      LLM rubric judge — shipped, verified: structured pydantic-ai verdicts
+      behind JUDGE=llm with graceful fallback to the deterministic keyword
+      judge.
+  - status: deferred
     text: >-
-      Interactive deployment demo — the /rag/chat API endpoints are live;
-      remaining is the demo experience wiring eval and ad-hoc client questions
-      to them on demand.
-  - status: remaining
+      Interactive deployment demo — deferred: /rag/chat API endpoints are live
+      and tested; the demo-experience wiring is engagement-dependent.
+  - status: deferred
     text: >-
-      Live-mode telemetry accumulation — run the evaluation with provider
-      credentials to populate cost_telemetry.json in live mode and validate
-      the cost model against a real bill.
+      Live-mode telemetry accumulation — deferred: needs provider credentials
+      and a real bill to validate the cost model against.

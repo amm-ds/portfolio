@@ -1,0 +1,12 @@
+id: 08-inference-serving
+title: LLM Inference & Serving
+domain: Model serving & inference optimization
+topic: ML Systems & Decisioning
+techniques:
+- serving (FastAPI)
+- quantization
+- batching
+- latency SLOs
+data: Open models (HF) + public benchmarks
+status: planned
+order: 8

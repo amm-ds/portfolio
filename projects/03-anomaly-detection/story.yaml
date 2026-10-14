@@ -262,14 +262,14 @@ sections:
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
 roadmap:
   - status: delivered
-    text: Adaptive-threshold streaming — drift-aware simulation over 5×24h chunks (drift z 0.027–0.089, zero drift events), machinery unit-tested and ready for live traffic.
+    text: Adaptive-threshold streaming — drift-aware simulation over 5×24h chunks (drift z 0.027–0.089, zero events), machinery unit-tested and ready for live traffic.
   - status: delivered
-    text: Rolling-median residual features — residual probe lifts IsolationForest from 0.9158 to 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the anomaly blob.
+    text: Rolling-median residual features — residual probe lifts IsolationForest 0.9158 → 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the anomaly blob.
   - status: delivered
     text: NSL-KDD real-data track — checksum-pinned fetch of 125,973 network-flow records; champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC.
-  - status: remaining
-    text: Residual features as the default — re-run the full run ladder (including LOF and One-Class SVM) on the de-clustered feature space; probe shows the gain, the ladder re-run is open.
-  - status: remaining
-    text: Production streaming integration — replace the chunked simulation with a real event source so the adaptive threshold runs against live-shaped traffic.
-  - status: remaining
-    text: NSL-KDD hardening — one-hot categoricals, per-attack-category breakdown, and a literature-protocol comparison table.
+  - status: deferred
+    text: Residual features as the default run ladder — the shipped probe shows the gain; the full ladder re-run (LOF and OCSVM included) is engagement-dependent.
+  - status: deferred
+    text: Production streaming integration — needs a real event source; deferred until a client engagement supplies live-shaped traffic.
+  - status: deferred
+    text: NSL-KDD hardening — one-hot categoricals, per-attack-category breakdown, and a literature-protocol comparison table; engagement-dependent.

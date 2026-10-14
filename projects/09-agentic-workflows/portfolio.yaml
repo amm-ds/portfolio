@@ -1,0 +1,12 @@
+id: 09-agentic-workflows
+title: Agentic AI Workflows
+domain: Agentic AI / multi-step LLM workflows
+topic: Agentic AI & LLM
+techniques:
+- pydantic-ai graphs
+- tool orchestration
+- structured outputs
+- eval harnesses
+data: Public tool-using benchmarks + synthetic task suites
+status: planned
+order: 9
