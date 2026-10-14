@@ -13,3 +13,5 @@ record, and the evaluation artifacts.
 | 05 | [Churn Modeling with sklearn Pipelines](05-ml-pipeline-churn.md) | Classical ML | Synthetic | Working showcase |
 | 06 | [Routing Optimization (VRPTW)](06-routing-optimization.md) | Combinatorial optimization | CVRPLIB Solomon | Working showcase |
 | 07 | [Urban Mobility Demand Intelligence](07-open-data-mobility.md) | Data engineering + ML | NYC TLC + NOAA | **Flagship — complete** |
+| 08 | LLM Inference & Serving *(planned)* | Model serving | Open models + benchmarks | Planned |
+| 09 | Agentic AI Workflows *(planned)* | Agentic AI | Public benchmarks + synthetic suites | Planned |
