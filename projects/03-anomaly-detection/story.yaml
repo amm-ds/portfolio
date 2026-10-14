@@ -254,19 +254,22 @@ sections:
         only, and a fixed (untuned) threshold mean the reported numbers are
         ones a client can plan an alerting budget around.
 
-      Roadmap (what remains):
-
-      - Make rolling-median residual features the default feature set and
-        re-run the full run ladder — including LOF and One-Class SVM — on the
-        de-clustered space.
-      - Streaming ingest: replace the chunked simulation with a real event
-        source so the adaptive threshold runs against live-shaped traffic.
-      - NSL-KDD hardening: one-hot categoricals, per-attack-category
-        breakdown, literature-protocol comparison.
-
       **Business implication:** the deliverable is not "a model with 0.92
       AUC" — it is an evaluation harness that tells you *when to distrust the
       model*, what tuning and features changed and why, and what a given
       alert budget buys; that is what de-risks putting anomaly detection on a
       client's critical path.
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
+roadmap:
+  - status: delivered
+    text: Adaptive-threshold streaming — drift-aware simulation over 5×24h chunks (drift z 0.027–0.089, zero drift events), machinery unit-tested and ready for live traffic.
+  - status: delivered
+    text: Rolling-median residual features — residual probe lifts IsolationForest from 0.9158 to 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the anomaly blob.
+  - status: delivered
+    text: NSL-KDD real-data track — checksum-pinned fetch of 125,973 network-flow records; champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC.
+  - status: remaining
+    text: Residual features as the default — re-run the full run ladder (including LOF and One-Class SVM) on the de-clustered feature space; probe shows the gain, the ladder re-run is open.
+  - status: remaining
+    text: Production streaming integration — replace the chunked simulation with a real event source so the adaptive threshold runs against live-shaped traffic.
+  - status: remaining
+    text: NSL-KDD hardening — one-hot categoricals, per-attack-category breakdown, and a literature-protocol comparison table.

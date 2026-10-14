@@ -227,21 +227,38 @@ sections:
         what turns a forecast into a staffing number; the flagged N/A-zone
         under-coverage shows where not to trust it.
 
-      **Roadmap (what's next):**
-
-      - Drift monitoring and scheduled retraining on each new TLC monthly
-        snapshot for the served endpoint.
-      - Per-service (green/FHV) model retraining — the transfer study showed
-        yellow-trained weights do not carry over on sparse services.
-      - Zone choropleth geo view for operator dashboards — deferred: requires
-        geospatial boundaries (geopandas), not yet in the dependency set.
-      - Causal weather-impact estimates (hour-of-week normalized) to upgrade
-        the directional elasticity findings into pricing triggers — deferred:
-        requires a causal design, not achievable from observational groupbys.
-
       **Business implication:** 41.2M rows, a strict temporal holdout, and a
       sub-3 GB memory footprint mean this quality of analysis runs on a laptop
       and re-runs in minutes — a client gets enterprise-grade rigour without
       enterprise-grade infrastructure.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
+
+roadmap:
+  - status: delivered
+    text: >-
+      Serving artifact per SERVING.md (tuned GBM + p90 + zones) with the
+      showcase API forecast endpoint verified live — JFK zone 132 returns
+      prediction 223.8 / p90 251.8.
+  - status: delivered
+    text: >-
+      Green-taxi expansion (bounded 2024-01..03 slice) with an honest transfer
+      study — yellow-trained GBMs lose MAE to green persistence but win RMSE
+      and MAPE; per-service retraining recommended.
+  - status: remaining
+    text: >-
+      Drift monitoring and scheduled retraining on each new TLC monthly
+      snapshot for the served endpoint.
+  - status: remaining
+    text: >-
+      Per-service (green/FHV) model retraining — the transfer study showed
+      yellow-trained weights do not carry over on sparse services.
+  - status: deferred
+    text: >-
+      Zone choropleth geo view for operator dashboards — needs geopandas /
+      geospatial zone boundaries, not yet in the dependency set.
+  - status: deferred
+    text: >-
+      Causal weather-impact estimates to upgrade directional elasticities into
+      pricing triggers — needs a causal design, not achievable from
+      observational groupbys.

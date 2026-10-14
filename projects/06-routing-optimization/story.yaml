@@ -238,16 +238,38 @@ sections:
     Where the remaining gap lives: ~4 % mean is concentrated in C2's
     few-vehicle wide-horizon optima (6.50 %) and a handful of tight chains
     (C203, C103) — the destroy size and operator pool, not the framework, are
-    the next levers.
+    the next levers. The roadmap below is the final one: delivered results,
+    one conscious deferral, and the genuinely open work.
 
-    Roadmap — what remains:
-
-    - **Hierarchical objective** (deferred): match the SINTEF convention —
-      minimize vehicle count first, distance second. ALNS's 11.0 mean vehicles
-      vs the 10-vehicle C1 optima show where this matters for fleet planning.
-
-    **Business implication:** the evidence-priced roadmap is nearly done — one
-    deliberate deferral remains (hierarchical objective), and the harness that
-    measured everything else will show within hours whether it clears the bar.
+    **Business implication:** a 4.23 % mean gap to 1987-published optima, on
+    every problem family, with seeded deterministic code a client can audit —
+    that is the quality number a procurement process can anchor to, and the
+    ~0.8 s per-instance cost makes the same harness usable for daily routing.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns]
+roadmap:
+- status: delivered
+  text: |
+    ALNS behind the `RoutePlan` contract — destroy (random/worst/Shaw) +
+    regret-2 repair, segment-adapted weights, SA acceptance: 4.23 % mean gap
+    over all 56 instances, 56/56 wins, HPO-tuned (segment 100, reaction 0.5).
+- status: delivered
+  text: |
+    Full 56-instance Solomon benchmark with per-family gap reporting
+    (C1 4.48 %, C2 6.50 %, R1 4.10 %, R2 3.04 %, RC1 4.75 %, RC2 3.00 %) and
+    the `family_gap` figure.
+- status: delivered
+  text: |
+    2-opt HPO negatives documented and kept on record — randomized restarts
+    never pay (k=1 chosen) and 2-opt budgets saturate (≤ ~20 accepted moves).
+- status: deferred
+  text: |
+    Hierarchical objective (minimize vehicle count first, then distance):
+    multi-echelon fleet constraints are a different problem contract —
+    parked deliberately; ALNS's 11.0 mean vehicles vs 10-vehicle C1 optima
+    mark where it would matter.
+- status: remaining
+  text: |
+    Time-window-preserving destroy operators for the C2-family residuals
+    (C2 6.50 %, C203 19.48 %) — adaptive destroy size and operator pool are
+    the open levers, tunable with the existing HPO harness.
