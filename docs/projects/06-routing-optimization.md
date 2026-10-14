@@ -20,8 +20,8 @@ time windows) before reporting.
 | randomized (feasible floor) | 316.95 % | 0.6 ms/instance |
 | nearest_neighbor | 71.64 % | 1.1 ms/instance |
 | clarke_wright | 18.31 % | 3.0 ms/instance |
-| two_opt_tuned (HPO) | 13.63 % | 9.6 ms/instance |
-| **alns (HPO-tuned)** | **4.23 %** | 801 ms/instance |
+| two_opt_tuned (HPO) | 13.63 % | 9.4 ms/instance |
+| **alns (HPO-tuned)** | **4.23 %** | 795 ms/instance |
 
 ALNS wins 56/56 and reaches single-digit gaps on every family (C1 4.48 %, C2
 6.50 %, R1 4.10 %, R2 3.04 %, RC1 4.75 %, RC2 3.00 %), with negative gaps on 8

@@ -192,7 +192,7 @@ sections:
       - Weather elasticity (rain ≥1 mm vs dry): outer-borough curb demand drops
         7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan is resilient
         (0.97×), EWR rises (1.08×). Raw groupbys, hour-of-week mix not
-        normalised — **directional, not causal**.
+        normalized — **directional, not causal**.
       - **Cross-service transfer (green taxi, March 2024):** yellow-trained
         GBMs lose MAE to green persistence (0.296 vs 0.212 — green demand is
         an order of magnitude sparser) but win RMSE (−17%) and MAPE (−19%);
@@ -235,7 +235,7 @@ sections:
         yellow-trained weights do not carry over on sparse services.
       - Zone choropleth geo view for operator dashboards — deferred: requires
         geospatial boundaries (geopandas), not yet in the dependency set.
-      - Causal weather-impact estimates (hour-of-week normalised) to upgrade
+      - Causal weather-impact estimates (hour-of-week normalized) to upgrade
         the directional elasticity findings into pricing triggers — deferred:
         requires a causal design, not achievable from observational groupbys.
 

@@ -14,7 +14,7 @@ CV business cost at per-trial cost-optimal thresholds) whose winning config is
 written back to `params.yaml` as the production config. Client CRM extracts
 onboard via `prepare --input client.csv` through the same DQ gates and
 contract. Evaluation is a five-run ladder on one holdout: naive majority →
-wave-2 logistic (default and cost-tuned thresholds) → selected model raw and
+logistic baseline (default and cost-tuned thresholds) → selected model raw and
 isotonic-calibrated — with calibration (ECE), permutation importance, PR
 curves, decision-curve analysis, a business-cost curve (FP=1, FN=5) that
 chooses the operating threshold, and a paired bootstrap CI on the cost delta

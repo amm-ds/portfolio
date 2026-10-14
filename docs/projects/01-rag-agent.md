@@ -34,14 +34,14 @@ offline).
 | Embedding model comparison (BGE-small vs MiniLM) | exact tie → cheaper model kept |
 | Rerank ablation (off vs on): recall@5 / MRR@5 | 1.000 / 0.833 vs 0.962 / 0.936 |
 | **Production config** (`retrieval_best`) | MiniLM, chunks=200, top_k=3, rerank ON |
-| Context cost vs wave-2 default | ≈804 vs ≈2,279 input tokens/query (−65%) |
+| Context cost vs earlier default | ≈804 vs ≈2,279 input tokens/query (−65%) |
 | RAG context_recall / faithfulness / relevance (mock) | 0.962 / 0.273 / 0.442 |
 | p50 / p95 agent latency (local floor) | 4.2 ms / 5.0 ms |
 | Estimated live cost per query | ≈ $0.00015 |
 
 Takeaway: retrieval quality is bought with chunking discipline, not model
 size — the cheapest configuration (MiniLM, 200-token chunks, top-3, rerank on)
-is the best one, at roughly a third of the context cost of the wave-2 default.
+is the best one, at roughly a third of the context cost of the earlier default.
 Figures: corpus composition, chunk-size sweep with random baseline, embedding
 model comparison, retrieval funnel, HPO frontier (chosen config starred),
 latency histogram (all in `reports/figures/`).

@@ -95,7 +95,7 @@ sections:
       Three neural candidates train through the same hand-written PyTorch
       loop (AdamW, manual linear warmup+decay LR schedule, per-epoch
       validation macro-F1, patience-1 early stopping, seeded): DistilBERT with
-      wave-2 defaults; DistilBERT retrained on the Optuna winner (seeded TPE,
+      earlier defaults; DistilBERT retrained on the Optuna winner (seeded TPE,
       median pruning between epochs, 12 trials over lr / warmup / weight decay
       / epochs); and roberta-base as a second encoder, default hyperparameters.
       Each encoder is tokenized with its own tokenizer, padded per batch to
@@ -126,14 +126,14 @@ sections:
       Macro-F1 is the headline metric: on a balanced test set it exposes the
       majority-class failure mode that accuracy masks. Model selection is
       explicit: the reported `distilbert_tuned` run is whichever of the
-      HPO-retrained model and the wave-2 artifact scores higher on this split
+      HPO-retrained model and the earlier artifact scores higher on this split
       (decision persisted in `reports/selection.json`).
 
       ```mermaid
       flowchart TD
           A[Untouched 1000-row test split] --> B[Predict with all 6 runs]
           B --> C[Platform metrics + macro-F1]
-          C --> D{HPO model vs wave-2 artifact}
+          C --> D{HPO model vs earlier artifact}
           D -- higher test F1 --> E[Reported as distilbert_tuned]
           D -- lower test F1 --> F[Artifact kept, decision persisted]
       ```
@@ -174,7 +174,7 @@ sections:
         seeds 42/43/44 gives best val F1 0.8953 / 0.8852 / 0.8926 —
         **mean 0.8910 ± 0.0042** — so the ~+0.3 pp mean gain over defaults is
         inside seed noise at 400 validation rows. And the val→test regression
-        still holds: the HPO model scored 0.9011 on test vs the wave-2
+        still holds: the HPO model scored 0.9011 on test vs the original
         artifact's 0.9021, so the artifact kept the `distilbert_tuned` title
         (decision persisted in `reports/selection.json`).
       - **Calibration is real and free:** temperature scaling fitted on the

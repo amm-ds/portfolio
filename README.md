@@ -43,12 +43,12 @@ on the same platform, designed for deepening.
 
 | Project | Result |
 |---|---|
-| 01 RAG agent | Retrieval config by measurement: recall@5 **0.962 vs 0.038 random**; chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; embedding-model + rerank ablations with honest ties |
+| 01 RAG agent | Retrieval config by measurement: recall@5 **0.962 vs 0.038 random**; chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; client-corpus onboarding + cost telemetry shipped |
 | 02 Forecasting | Optuna HPO (56 trials) → production GBM: MAE **8.53, −41.1% vs persistence**; hand-written PyTorch temporal_net trails ridge (reported honestly); MinT-lite reconciliation verified coherence |
 | 03 Anomaly detection | Detector HPO: OCSVM rescued **0.34 → 0.91 ROC-AUC** (gamma tuning); IsolationForest stays best (0.917); LOF structurally blind (honest); score distributions + threshold-sweep decision visuals |
 | 04 NLP | Six-run ladder to macro-F1 **0.902** (naive 0.10 → random 0.25 → TF-IDF 0.87 → roberta 0.898 → DistilBERT 0.902); 12-trial fine-tuning HPO with bit-exact determinism; val→test non-transfer documented |
-| 05 Churn | Model selection twist documented: HPO-selected GBM loses on **business cost** to the tuned logistic — production pick stays logistic (−35.9% cost vs naive); isotonic calibration −89% ECE; decision-curve analysis |
-| 06 VRPTW | Solver HPO + restarts: mean gap **19.08% vs published optima** (randomized floor: 303%); convergence traces; honest negatives — restarts never pay, move budget saturates |
+| 05 Churn | **Cost-aware HPO** — selection now optimizes the deployment objective (cost 282, −35.9% vs naive; bootstrap CI [−237, −87] significant); isotonic calibration −95% ECE; CRM-extract onboarding |
+| 06 VRPTW | **ALNS: 4.23% mean gap vs published optima across all 56 Solomon instances, 56/56 wins vs tuned 2-opt** (randomized floor: 317%); per-family gaps; convergence traces |
 | 07 Mobility | Zone-hour demand over 41.2M trips: GBM MAE 4.67 (−28.4% vs naive); **p90 band 90.8% coverage** (N/A zones flagged); permutation importance shows weather ≈ 0 for point MAE — its value is the elasticity signal |
 
 ## Engineering practices

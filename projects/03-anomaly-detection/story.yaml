@@ -23,7 +23,7 @@ sections:
       | detector retraining | cheap here — the full pipeline with 90 HPO trials runs in ~75 s |
 
       **Business implication:** every missed incident has a cost, and every
-      false page has one too — the question is which detector minimises the
+      false page has one too — the question is which detector minimizes the
       total at a fixed alert budget.
 
   - id: objectives
