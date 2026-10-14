@@ -53,24 +53,26 @@ function renderTable(
   const header = splitTableCells(headerLine);
   const rows = rowLines.map(splitTableCells);
   return (
-    <table key={keyPrefix}>
-      <thead>
-        <tr>
-          {header.map((c, ci) => (
-            <th key={ci}>{renderInline(c, `${keyPrefix}h${ci}`)}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r, ri) => (
-          <tr key={ri}>
-            {r.map((c, ci) => (
-              <td key={ci}>{renderInline(c, `${keyPrefix}r${ri}c${ci}`)}</td>
+    <div className="table-scroll" key={keyPrefix}>
+      <table className="data-table">
+        <thead>
+          <tr>
+            {header.map((c, ci) => (
+              <th key={ci}>{renderInline(c, `${keyPrefix}h${ci}`)}</th>
             ))}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((r, ri) => (
+            <tr key={ri}>
+              {r.map((c, ci) => (
+                <td key={ci}>{renderInline(c, `${keyPrefix}r${ri}c${ci}`)}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

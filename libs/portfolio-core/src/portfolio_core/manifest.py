@@ -13,6 +13,7 @@ class ProjectInfo(PortfolioBaseModel):
     id: str = Field(pattern=r"^\d{2}-[a-z0-9-]+$")
     title: str
     domain: str
+    topic: str = Field(min_length=1, description="Display grouping key for the projects index.")
     techniques: list[str]
     data: str = Field(description="Data source summary, e.g. 'NYC TLC (real)'")
     status: str = Field(default="working", pattern="^(flagship|working|planned)$")

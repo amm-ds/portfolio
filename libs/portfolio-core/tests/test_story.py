@@ -6,6 +6,7 @@ from hypothesis import strategies as st
 from portfolio_core.story import (
     CANONICAL_SECTIONS,
     ProjectStory,
+    RoadmapItem,
     StorySection,
     load_story,
 )
@@ -85,3 +86,32 @@ def test_story_ordering_and_figures() -> None:
     )
     assert story.sections[0].figures == ["overview"]
     assert story.sections[1].metrics_keys == ["gbm_mean"]
+
+
+def test_roadmap_block_roundtrip(tmp_path: Path) -> None:
+    story = ProjectStory(
+        project_id="p",
+        sections=[_section("background")],
+        roadmap=[
+            RoadmapItem(status="delivered", text="Shipped thing"),
+            RoadmapItem(status="remaining", text="Open thing"),
+            RoadmapItem(status="deferred", text="Parked thing — needs X"),
+        ],
+    )
+    import yaml
+
+    (tmp_path / "story.yaml").write_text(
+        yaml.safe_dump(story.model_dump(mode="json"), sort_keys=False)
+    )
+    loaded = load_story(tmp_path)
+    assert loaded is not None
+    assert len(loaded.roadmap) == 3
+    assert [r.status for r in loaded.roadmap] == ["delivered", "remaining", "deferred"]
+    assert len(loaded.roadmap_by_status("remaining")) == 1
+
+
+def test_roadmap_status_validated() -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        RoadmapItem(status="planned", text="x")

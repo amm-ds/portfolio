@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Card } from "../components/Card";
 import { Terminal } from "../components/Terminal";
 import { useTypedScript } from "../hooks/useTyped";
 
@@ -13,7 +14,7 @@ const GO_LINKS = [
   {
     to: "/projects",
     label: "projects",
-    line: "7 reproducible case studies — metrics, figures, and a live RAG demo.",
+    line: "7 reproducible case studies — metrics, interactive figures, published pipelines.",
   },
   {
     to: "/services",
@@ -71,17 +72,17 @@ export function Home() {
       <h2 className="section-title">where to go</h2>
       <div className="go-grid">
         {GO_LINKS.map((g) => (
-          <Link key={g.to} to={g.to} className="go-card">
+          <Link key={g.to} to={g.to} className="go-card accent-card">
             <h3>$ {g.label} →</h3>
             <p>{g.line}</p>
           </Link>
         ))}
       </div>
 
-      <p className="availability accent-card">
+      <Card className="availability">
         Available for freelance work — ML/AI systems, agentic AI and RAG, data engineering
         and MLOps. Typical response within 48 hours; EU/US timezone overlap.
-      </p>
+      </Card>
     </>
   );
 }

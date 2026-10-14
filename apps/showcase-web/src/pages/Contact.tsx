@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Card } from "../components/Card";
 import { SITE_EMAIL } from "../config";
 
 export function Contact() {
@@ -10,7 +11,7 @@ export function Contact() {
         <p className="contact-status">[status] open for freelance and consulting engagements</p>
       </section>
 
-      <div className="contact-block accent-card">
+      <Card className="contact-block">
         <ul>
           <li>
             GitHub:{" "}
@@ -27,7 +28,7 @@ export function Contact() {
           <li>Location/timezone: location-independent; flexible overlap with EU and US hours.</li>
           <li>Response time: typical first reply within 48 hours.</li>
         </ul>
-      </div>
+      </Card>
 
       <h2 className="section-title">how engagements start</h2>
       <p className="section-intro">
@@ -37,7 +38,7 @@ export function Contact() {
         <Link to="/services">see services &amp; process →</Link>
       </p>
 
-      <div className="cta-band accent-card">
+      <Card className="cta-band">
         <p>
           <strong>Available now.</strong> Freelance and contract engagements, EU/US timezone
           overlap, typical response within 48 hours.
@@ -48,7 +49,7 @@ export function Contact() {
             github
           </a>
         </p>
-      </div>
+      </Card>
     </>
   );
 }

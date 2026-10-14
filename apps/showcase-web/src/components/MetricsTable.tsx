@@ -1,5 +1,6 @@
 import type { Metrics } from "../api";
 import { formatMetricValue } from "../lib/delta";
+import { DataTable } from "./DataTable";
 
 function isNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -25,8 +26,8 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
     ? Object.entries(meta).filter(([, value]) => isNumber(value) || typeof value === "string")
     : [];
   return (
-    <div className="metrics-table table-scroll">
-      <table>
+    <>
+      <DataTable className="metrics-table">
         <thead>
           <tr>
             <th scope="col">run</th>
@@ -48,7 +49,7 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </DataTable>
       {metaEntries.length > 0 && (
         <p className="muted">
           {metaEntries.map(([key, value]) =>
@@ -56,6 +57,6 @@ export function MetricsTable({ metrics }: { metrics: Metrics }) {
           ).join(" · ")}
         </p>
       )}
-    </div>
+    </>
   );
 }

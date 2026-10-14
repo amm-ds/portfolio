@@ -53,6 +53,7 @@ packages = ["src/{pkg}"]
 PORTFOLIO_YAML = """id: {dirname}
 title: {title}
 domain: <domain>
+topic: <topic — display grouping key, e.g. "Forecasting & Time Series">
 techniques:
   - <technique>
 data: <source summary>
@@ -61,6 +62,11 @@ order: {order}
 """
 
 STORY_YAML = """project_id: {dirname}
+roadmap:
+  - status: remaining
+    text: <first roadmap item>
+  - status: deferred
+    text: <parked item — with its reason>
 sections:
   - id: background
     text_md: |

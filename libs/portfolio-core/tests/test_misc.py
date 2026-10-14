@@ -24,7 +24,7 @@ def test_build_model_requires_mock_response_without_key() -> None:
 def test_manifest_loads_index(tmp_path: Path) -> None:
     (tmp_path / "01-a").mkdir()
     (tmp_path / "01-a" / "portfolio.yaml").write_text(
-        "id: 01-a\ntitle: A\ndomain: x\ntechniques: [t]\ndata: synthetic\norder: 1\n"
+        "id: 01-a\ntitle: A\ndomain: x\ntopic: T\ntechniques: [t]\ndata: synthetic\norder: 1\n"
     )
     idx = load_index(tmp_path)
     assert len(idx) == 1 and isinstance(idx[0], ProjectInfo) and idx[0].id == "01-a"
