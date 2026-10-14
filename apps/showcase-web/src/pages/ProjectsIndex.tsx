@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { getProjects, type Project } from "../api";
 import { ProjectCard } from "../components/ProjectCard";
 
-interface TopicGroup {
+export interface TopicGroup {
   topic: string;
   projects: Project[];
 }
@@ -18,7 +18,47 @@ export function groupByTopic(projects: Project[]): TopicGroup[] {
   return [...groups.entries()].map(([topic, ps]) => ({ topic, projects: ps }));
 }
 
-/** Full project index: grouped by topic, with live key numbers per card. */
+/** Umbrella → topics mapping, in display order (single source of truth). */
+export const UMBRELLAS: { name: string; description: string; topics: string[] }[] = [
+  {
+    name: "AI",
+    description: "Agents, retrieval systems, and transformer models.",
+    topics: ["Agentic AI & LLM", "NLP & Transformers"],
+  },
+  {
+    name: "Machine Learning",
+    description: "Forecasting, detection, decisioning, and optimization.",
+    topics: [
+      "Forecasting & Time Series",
+      "Anomaly Detection",
+      "ML Systems & Decisioning",
+      "Optimization",
+    ],
+  },
+  {
+    name: "Data Engineering",
+    description: "Pipelines over large open datasets.",
+    topics: ["Large-Scale Data Engineering"],
+  },
+];
+
+export interface UmbrellaGroup {
+  name: string;
+  description: string;
+  topics: TopicGroup[];
+}
+
+/** Compose groupByTopic into umbrella sections; empty umbrellas are dropped. */
+export function groupByUmbrella(projects: Project[]): UmbrellaGroup[] {
+  const topicGroups = groupByTopic(projects);
+  return UMBRELLAS.map((u) => ({
+    name: u.name,
+    description: u.description,
+    topics: topicGroups.filter((t) => u.topics.includes(t.topic)),
+  })).filter((u) => u.topics.length > 0);
+}
+
+/** Full project index: umbrella sections → topic subgroups → responsive card grid. */
 export function ProjectsIndex() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,14 +78,20 @@ export function ProjectsIndex() {
         <div className="state-box">No projects published yet — check back soon.</div>
       )}
       {projects !== null &&
-        groupByTopic(projects).map((g) => (
-          <section key={g.topic} aria-label={g.topic}>
-            <h2 className="section-title">{g.topic}</h2>
-            <div className="project-grid">
-              {g.projects.map((p) => (
-                <ProjectCard key={p.id} project={p} />
-              ))}
-            </div>
+        groupByUmbrella(projects).map((u) => (
+          <section key={u.name} className="umbrella" aria-label={u.name}>
+            <h2 className="section-title">{u.name}</h2>
+            <p className="section-intro">{u.description}</p>
+            {u.topics.map((t) => (
+              <div key={t.topic} className="topic-group">
+                {u.topics.length > 1 && <h3 className="topic-title">{t.topic}</h3>}
+                <div className="project-grid">
+                  {t.projects.map((p) => (
+                    <ProjectCard key={p.id} project={p} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </section>
         ))}
     </>
