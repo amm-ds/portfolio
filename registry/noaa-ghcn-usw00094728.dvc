@@ -1,0 +1,11 @@
+frozen: true
+deps:
+- hash: md5
+  path: 
+    https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_station/USW00094728.csv.gz
+  checksum: '"1bc0b7-65dd5d7f1e75e"'
+  size: 1818807
+outs:
+- hash: md5
+  path: noaa-ghcn-usw00094728
+md5: 30cff69ecc3746cb8bd441124d4e4a41

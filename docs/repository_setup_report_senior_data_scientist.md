@@ -1,4 +1,4 @@
-# Repository Setup Report — Principal/Architect-Level Data Science & AI Portfolio
+# Repository Setup Report (historical brief — received commissioning document, kept for the record) — Principal/Architect-Level Data Science & AI Portfolio
 
 **Prepared for:** Alejandro Mérida Maroto (amm-ds)
 **Purpose:** Brief for a coding agent to scaffold a public GitHub repository that functions as (1) a client-facing portfolio for freelance engagements and (2) a demonstration of principal/architect-level engineering judgment — not just working models, but documented decisions, reference architectures, and reproducible platforms.

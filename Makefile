@@ -41,3 +41,16 @@ new-project: ## Scaffold a new project: make new-project ARGS="08-name Title"
 clean: ## Remove caches and build artifacts
 	rm -rf .pytest_cache .mypy_cache .ruff_cache htmlcov dist build
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# --- DVC: metrics / experiments / registry (ADR-0007) ---
+metrics-show: ## dvc metrics show across all projects
+	uv run dvc metrics show
+
+registry-update: ## refresh dataset-registry version metadata
+	uv run dvc update registry/
+
+exp-run: ## queue a params experiment: make exp-run P=02-demand-forecasting PARAM=hpo_n_trials=30
+	cd projects/$(P) && uv run dvc exp run --queue --set-param $(PARAM)
+
+exp-show: ## show experiments: make exp-show P=02-demand-forecasting
+	cd projects/$(P) && uv run dvc exp show

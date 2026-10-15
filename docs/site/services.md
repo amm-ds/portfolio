@@ -1,6 +1,6 @@
 # Services
 
-Freelance ML/AI engineering for teams that need senior, end-to-end delivery —
+Freelance ML/AI engineering for teams that need end-to-end delivery —
 from problem framing to production systems, with the engineering artifacts
 (decision records, evaluation harnesses, runbooks) that keep them operable.
 
@@ -59,6 +59,14 @@ The stack is deliberate and portable — each tool chosen for a written reason
 | Experiment/HPO | [Optuna](https://optuna.org/) |
 | Versioning & pipelines | [DVC](https://dvc.org/) · [uv](https://docs.astral.sh/uv/) |
 | Services & UI | [FastAPI](https://fastapi.tiangolo.com/) · [React](https://react.dev/) · [TypeScript](https://www.typescriptlang.org/) |
+| Local LLM serving | [Ollama](https://ollama.com/) |
+| LLM/RAG evaluation | [RAGAS](https://ragas.io/) · [pydantic-evals](https://ai.pydantic.dev/evals/) |
+
+Evaluation choices are deliberate (see the architecture decision records):
+**RAGAS** for retrieval-augmented systems (faithfulness, answer relevance, context
+precision/recall), **pydantic-evals** for agent and workflow evaluation, with local
+models (Ollama) as zero-cost judges — no evaluation budget is ever an excuse for
+not evaluating.
 
 ## Cloud-agnostic delivery
 

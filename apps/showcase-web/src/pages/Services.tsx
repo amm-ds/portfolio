@@ -13,7 +13,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "ML/AI systems delivery",
     outcome: "Production ML systems designed, built, and handed over — not notebooks.",
-    elements: ["full-stack development", "API design", "model inference & serving"],
+    elements: ["Full-stack (TS/React)", "APIs (FastAPI/REST)", "Inference & serving"],
     deliverables: [
       "working system, runnable from a clean clone",
       "DVC/CI reproducibility",
@@ -24,7 +24,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "Agentic AI & LLM applications",
     outcome: "Assistants and agents that cite their sources and stay inside their budgets.",
-    elements: ["API design — FastAPI/REST", "model inference & serving", "evaluation & HPO"],
+    elements: ["APIs (FastAPI/REST)", "Inference & serving", "Eval/HPO (Optuna)"],
     deliverables: [
       "agent service (FastAPI)",
       "retrieval index pipeline",
@@ -35,7 +35,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "Data engineering",
     outcome: "Pipelines over large, messy data that fail loudly and re-run cheaply.",
-    elements: ["data pipelines — Polars/DVC", "out-of-core processing"],
+    elements: ["Data pipelines (Polars/DVC)", "Out-of-core processing"],
     deliverables: [
       "versioned pipeline (DVC)",
       "dataset registry with licenses & checksums",
@@ -46,7 +46,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "Forecasting & analytics",
     outcome: "Models evaluated the way the business will judge them — with costs, not vanity scores.",
-    elements: ["data pipelines", "interactive visualization"],
+    elements: ["Data pipelines", "Viz (Plotly/React)"],
     deliverables: [
       "leakage-proof backtests",
       "calibrated models with uncertainty bands",
@@ -57,7 +57,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "Interactive dashboards & visualization",
     outcome: "Decision-ready frontends on top of models and pipelines.",
-    elements: ["interactive visualization — Plotly/React", "full-stack development"],
+    elements: ["Viz (Plotly/React)", "Full-stack (TS/React)"],
     deliverables: [
       "plotly figures & dashboards",
       "react frontends over the model APIs",
@@ -67,7 +67,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "MLOps, evaluation & CI",
     outcome: "A setup where bad models and broken pipelines cannot ship silently.",
-    elements: ["evaluation & HPO — Optuna", "leakage-proof CV", "MLOps/CI — GitHub Actions", "Docker", "uv"],
+    elements: ["Eval/HPO (Optuna)", "Leakage-proof CV", "MLOps/CI (Actions/Docker)", "uv"],
     deliverables: [
       "CI gates for evaluation & data quality",
       "dockerized, uv-managed environments",
@@ -123,9 +123,9 @@ export function Services() {
     <>
       <section className="services-hero">
         <p className="kicker">$ services --freelance</p>
-        <h1>Senior ML/AI engineering, end to end</h1>
+        <h1>ML/AI engineering, end to end</h1>
         <p>
-          Freelance ML/AI engineering for teams that need senior, end-to-end delivery — from
+          Freelance ML/AI engineering for teams that need end-to-end delivery — from
           problem framing to production systems with the engineering artifacts (decision
           records, evaluation harnesses, runbooks) that keep them operable.
         </p>

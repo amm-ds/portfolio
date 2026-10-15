@@ -17,8 +17,8 @@ function renderServices() {
 describe("Services page (wave 8)", () => {
   it("renders the hero and exactly 6 offering cards", () => {
     renderServices();
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toContain(
-      "Senior ML/AI engineering",
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "ML/AI engineering, end to end",
     );
     const offerings = document.querySelectorAll(".offering-card");
     expect(offerings).toHaveLength(6);
@@ -31,21 +31,26 @@ describe("Services page (wave 8)", () => {
   it("each offering has an outcome line, technical chips and deliverables", () => {
     renderServices();
     expect(screen.getByText(/Production ML systems designed, built, and handed over/)).toBeInTheDocument();
-    // technical elements rendered as chips (scoped — some names also appear in prose)
+    // technical elements rendered as short, specific chips (scoped — some names also appear in prose)
     const chipTexts = [...document.querySelectorAll(".chip")].map((el) => el.textContent);
     for (const chip of [
-      "full-stack development",
-      "API design — FastAPI/REST",
-      "model inference & serving",
-      "data pipelines — Polars/DVC",
-      "interactive visualization — Plotly/React",
-      "evaluation & HPO — Optuna",
-      "MLOps/CI — GitHub Actions",
-      "Docker",
+      "Full-stack (TS/React)",
+      "APIs (FastAPI/REST)",
+      "Inference & serving",
+      "Data pipelines (Polars/DVC)",
+      "Viz (Plotly/React)",
+      "Eval/HPO (Optuna)",
+      "MLOps/CI (Actions/Docker)",
+      "Out-of-core processing",
+      "Leakage-proof CV",
       "uv",
     ]) {
       expect(chipTexts).toContain(chip);
     }
+    // every chip stays short (≤ 3 words)
+    chipTexts.forEach((c) => {
+      expect(c!.trim().split(/\s+/).length).toBeLessThanOrEqual(3);
+    });
     expect(screen.getByText("faithfulness/relevance eval harness")).toBeInTheDocument();
   });
 
@@ -60,7 +65,29 @@ describe("Services page (wave 8)", () => {
   it("keeps the frameworks grid, a plain cloud block with provider logos, process and engagement table", () => {
     renderServices();
     expect(document.getElementById("frameworks")).not.toBeNull();
-    expect(document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-tile")).toHaveLength(13);
+    expect(document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-tile")).toHaveLength(16);
+    // deterministic order: new entries placed per spec
+    const names = [...document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-name")].map(
+      (el) => el.textContent,
+    );
+    expect(names).toEqual([
+      "pydantic",
+      "pydantic-ai",
+      "Ollama",
+      "scikit-learn",
+      "PyTorch",
+      "Polars",
+      "Plotly",
+      "DVC",
+      "uv",
+      "FastAPI",
+      "React",
+      "TypeScript",
+      "Optuna",
+      "RAGAS",
+      "pydantic-evals",
+      "Hugging Face",
+    ]);
     expect(screen.getByText(/Cloud-agnostic by design/i)).toBeInTheDocument();
     // cloud section is plain text (no Card wrapper) + provider logo row
     const cloud = document.querySelector(".cloud-plain")!;
@@ -87,9 +114,11 @@ describe("Services page (wave 8)", () => {
     expect(providerTiles[0].querySelector("img")).toBeNull();
   });
 
-  it("ships a horizontal process timeline (4-up, 2-up, 1-up)", () => {
+  it("ships a horizontal process timeline (4-up, 2-up, 1-up) with breathing room", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    expect(css).toContain(".process-timeline {\n  list-style: none;\n  margin: 0;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));");
+    expect(css).toContain(".process-timeline {\n  list-style: none;\n  margin: 1.75rem 0 0;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));");
+    expect(css).toContain("row-gap: 2.25rem;");
+    expect(css).toContain("padding-top: 1.15rem;");
     expect(css).toContain("@media (max-width: 1099px)");
     expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
     expect(css).toContain("@media (max-width: 719px)");

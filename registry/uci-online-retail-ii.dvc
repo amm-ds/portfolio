@@ -1,0 +1,9 @@
+frozen: true
+deps:
+- hash: md5
+  path: https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip
+  checksum: '304389322520525836903006122742865374485'
+outs:
+- hash: md5
+  path: uci-online-retail-ii
+md5: 99e3c794a7658d568647268cc4f6ac8e

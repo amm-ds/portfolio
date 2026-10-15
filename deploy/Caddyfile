@@ -1,0 +1,16 @@
+# Caddy reverse proxy — automatic TLS via Let's Encrypt (DNS via Cloudflare).
+# Replace the domain below (also in docker-compose.prod.yml).
+
+your-domain.com {
+    encode zstd gzip
+
+    # Security headers (frame denial, minimal exposure)
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+
+    reverse_proxy api:8000
+}

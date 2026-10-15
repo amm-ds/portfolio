@@ -1,0 +1,11 @@
+frozen: true
+deps:
+- hash: md5
+  path: 
+    https://www.sintef.no/globalassets/project/top/vrptw/solomon/solomon-100.zip
+  checksum: '"1D002745E3F1A00"'
+  size: 83546
+outs:
+- hash: md5
+  path: cvrplib-solomon-100
+md5: 48d0880d4566f36d00aee05335cdfe35

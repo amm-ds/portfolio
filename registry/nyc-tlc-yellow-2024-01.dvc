@@ -1,0 +1,11 @@
+frozen: true
+deps:
+- hash: md5
+  path: 
+    https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet
+  checksum: '"d6ebae95a45f284994e283e2df97c06f-3"'
+  size: 49961641
+outs:
+- hash: md5
+  path: nyc-tlc-yellow-2024-01
+md5: 79848bba3f7761ba1ef15c3d300b6310

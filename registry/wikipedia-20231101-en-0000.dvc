@@ -1,0 +1,11 @@
+frozen: true
+deps:
+- hash: md5
+  path: 
+    https://huggingface.co/api/datasets/wikimedia/wikipedia/parquet/20231101.en/train/0000.parquet
+  checksum: '"f044be5a91bc0e0a41b59ac0d0c1619f1e1e354ffd6acf69f96ed5a97feaa91c"'
+  size: 420296449
+outs:
+- hash: md5
+  path: wikipedia-20231101-en-0000
+md5: 85c1075c5ef4dd99d76e4f79ec86e656

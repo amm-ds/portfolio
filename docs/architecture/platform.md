@@ -75,10 +75,12 @@ so every pipeline also runs offline and in CI.
 
 ## LLM provider abstraction
 
-See ADR-0004. One factory, three modes: OpenAI-compatible endpoint via env
-(`LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL`), deterministic mock for CI/offline,
-and pydantic-ai `TestModel` for unit tests. No project imports a provider SDK
-directly.
+See ADR-0004 (amended) and ADR-0006. One factory, local-first: env-configured
+OpenAI-compatible endpoint (`LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL`) when set,
+otherwise local Ollama (default `qwen3.6:35b-a3b-q4_K_M`, `OLLAMA_MODEL` overrides)
+with a bounded-timeout client. Runtime mocks are test-only
+(`portfolio_core.llm.mock_model_for_tests` + pydantic-ai `TestModel`). No project
+imports a provider SDK directly.
 
 ## Operational posture
 

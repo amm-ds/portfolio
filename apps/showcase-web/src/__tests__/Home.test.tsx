@@ -94,13 +94,18 @@ describe("Home (lean, wave 6)", () => {
     expect(document.querySelector(".project-grid")).toBeNull();
   });
 
-  it("keeps a positioning paragraph and a clean availability card", () => {
+  it("keeps a positioning paragraph and a terminal-style status line (no card)", () => {
     renderHome();
     expect(screen.getByText(/I build ML\/AI systems end to end/i)).toBeInTheDocument();
-    const availability = document.querySelector(".availability")!;
-    expect(availability).not.toBeNull();
-    expect(availability.classList.contains("accent-card")).toBe(true);
-    expect(availability.textContent).toContain("Available for freelance work");
-    expect(screen.getByText(/Available for freelance work/i)).toBeInTheDocument();
+    const status = document.querySelector(".home-status")!;
+    expect(status).not.toBeNull();
+    expect(status.textContent).toContain("available for engagements");
+    expect(status.querySelector(".status-dot")).not.toBeNull();
+    expect(status.textContent).toMatch(/48h/);
+    const contact = screen.getByRole("link", { name: "→ /contact" });
+    expect(contact.getAttribute("href")).toBe("/contact");
+    // no boxed availability card remains
+    expect(document.querySelector(".availability")).toBeNull();
+    expect(document.querySelector(".home-status")!.classList.contains("accent-card")).toBe(false);
   });
 });
