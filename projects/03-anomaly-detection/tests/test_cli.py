@@ -104,6 +104,24 @@ def test_nsl_command(tiny_config: AnomalyConfig, monkeypatch: pytest.MonkeyPatch
     assert "0.9000" in result.output
 
 
+def test_nab_command(tiny_config: AnomalyConfig, monkeypatch: pytest.MonkeyPatch) -> None:
+    def stub(config: AnomalyConfig) -> dict:
+        return {
+            "overall": {
+                "pr_auc": 0.4,
+                "range_f1": 0.3,
+                "events_detected": 9,
+                "events_missed": 11,
+                "alerts_fired": 60,
+            }
+        }
+
+    monkeypatch.setattr("anomaly_detection.cli.run_nab", stub)
+    result = runner.invoke(cli.app, ["nab"])
+    assert result.exit_code == 0, result.output
+    assert "range-F1=0.300" in result.output
+
+
 def test_evaluate_command(tiny_config: AnomalyConfig) -> None:
     assert runner.invoke(cli.app, ["prepare"]).exit_code == 0
     assert runner.invoke(cli.app, ["features"]).exit_code == 0
@@ -118,11 +136,23 @@ def test_evaluate_command(tiny_config: AnomalyConfig) -> None:
 def test_all_command_runs_full_pipeline(
     tiny_config: AnomalyConfig, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # `all` includes the NSL track, which needs network — stub it offline.
+    # `all` includes the network tracks (NSL + NAB) — stub them offline.
     def stub_nsl(config: AnomalyConfig) -> dict:
         return {"roc_auc": 0.9, "pr_auc": 0.8, "test_anomaly_rate": 0.5}
 
+    def stub_nab(config: AnomalyConfig) -> dict:
+        return {
+            "overall": {
+                "pr_auc": 0.4,
+                "range_f1": 0.3,
+                "events_detected": 9,
+                "events_missed": 11,
+                "alerts_fired": 60,
+            }
+        }
+
     monkeypatch.setattr("anomaly_detection.cli.run_nsl_probe", stub_nsl)
+    monkeypatch.setattr("anomaly_detection.cli.run_nab", stub_nab)
     result = runner.invoke(cli.app, ["all"])
     assert result.exit_code == 0, result.output
     assert tiny_config.raw_path.exists()

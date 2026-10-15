@@ -14,6 +14,7 @@ from anomaly_detection.evaluate import run_evaluation
 from anomaly_detection.features import build_features, load_features, save_features
 from anomaly_detection.hpo import tune_all
 from anomaly_detection.model import feature_matrix, fit_models, save_models, split_train_test
+from anomaly_detection.nab import run_nab
 from anomaly_detection.nsl import run_nsl_probe
 from anomaly_detection.probes import run_residual_probe
 from anomaly_detection.stream import run_detection
@@ -145,6 +146,19 @@ def residuals() -> None:
 
 
 @app.command()
+def nab() -> None:
+    """NAB real-data primary track: 12 series, event-based metrics + figures."""
+    config = get_config()
+    result = run_nab(config)
+    overall = result["overall"]
+    detected, missed = overall["events_detected"], overall["events_missed"]
+    typer.echo(
+        f"NAB overall: PR-AUC={overall['pr_auc']:.3f} range-F1={overall['range_f1']:.3f} "
+        f"({detected}/{detected + missed} events, {overall['alerts_fired']} alerts)"
+    )
+
+
+@app.command()
 def nsl() -> None:
     """NSL-KDD production track: fetch, map, and run the transfer probe."""
     config = get_config()
@@ -187,6 +201,13 @@ def all() -> None:
     typer.echo(
         f"NSL-KDD transfer probe: ROC-AUC={nsl_result['roc_auc']:.4f} "
         f"PR-AUC={nsl_result['pr_auc']:.4f}"
+    )
+    nab_result = run_nab(config)
+    overall = nab_result["overall"]
+    detected, missed = overall["events_detected"], overall["events_missed"]
+    typer.echo(
+        f"NAB overall: PR-AUC={overall['pr_auc']:.3f} range-F1={overall['range_f1']:.3f} "
+        f"({detected}/{detected + missed} events, {overall['alerts_fired']} alerts)"
     )
 
 

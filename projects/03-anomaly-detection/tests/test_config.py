@@ -41,6 +41,13 @@ def test_extra_fields_forbidden() -> None:
         AnomalyConfig(bogus=1)  # type: ignore[call-arg]
 
 
+def test_data_source_defaults_to_nab() -> None:
+    assert AnomalyConfig().data_source == "nab"
+    assert AnomalyConfig(data_source="synthetic").data_source == "synthetic"
+    with pytest.raises(ValidationError):
+        AnomalyConfig.model_validate({"data_source": "kdd"})
+
+
 def test_resolve_paths() -> None:
     config = AnomalyConfig(data_dir="data", reports_dir="reports")
     assert config.raw_path == PROJECT_ROOT / "data" / "raw.parquet"

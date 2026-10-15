@@ -1,9 +1,12 @@
 # 03 — Anomaly Detection over Telemetry
 
-Unsupervised anomaly detection on server-style telemetry (CPU, memory, latency):
-three classical detectors compete on a seeded synthetic stream with injected
-ground-truth anomalies, evaluated with time-ordered train/test splits behind
-explicit data-quality gates.
+Unsupervised anomaly detection evaluated honestly on **real data first**: 12
+series from the Numenta Anomaly Benchmark (AWS CloudWatch, traffic sensors,
+known-cause system failures) with labelled event windows, plus a seeded
+synthetic telemetry stream (CPU, memory, latency) that remains the
+clearly-labelled CI / fast path. Three classical detectors compete behind
+explicit data-quality gates, with event-based metrics (PR-AUC, range-F1)
+leading and time-ordered train/test splits throughout.
 
 > **Showcase status:** working showcase on the standard platform (flagship
 > projects are `01-rag-agent` and `07-open-data-mobility`). See the
@@ -107,6 +110,49 @@ trials, the streaming simulation, the residual probe, and the NSL-KDD
 download + transfer probe. All 8 DQ gates pass; the persisted report is
 [`reports/dq_report.html`](reports/dq_report.html).
 
+## Wave 13: NAB real data becomes the primary track
+
+External-audit driven: real data now headlines, and the metrics lead with what
+an audit asks for — events, not points. The seeded synthetic telemetry
+generator **stays as the clearly-labelled CI / fast path** (the entire
+test-suite runs on it); NAB is the default `data_source` for real runs.
+
+**NAB** ([dataset card](https://amm-ds.github.io/portfolio/data-registry/nab/),
+[import manifest](../data-registry/imports/nab.json)): a bounded subset of 12
+series from the [Numenta Anomaly Benchmark](https://github.com/numenta/NAB)
+spanning `realAWSCloudwatch`, `realKnownCause`, and `realTraffic`, each
+checksum-pinned, with labelled anomaly windows from `combined_windows.json`
+(cite Ahmad, Lavin, Purdy & Agha 2017, Neurocomputing).
+
+**Event-based metrics** (audit recommendation): a labelled window counts as
+detected when at least one alert falls inside it (lead tolerance 0, documented
+in `nab.py`); range precision counts alerts outside any window. Results on the
+current snapshot (IsolationForest, train-anchored 2% alert threshold, 9 of 12
+series evaluable — the other 3 have all labelled windows inside the train
+split and are excluded from aggregates, not scored as misses):
+
+| family | PR-AUC | range-F1 | range prec./rec. | events |
+|---|---|---|---|---|
+| realAWSCloudwatch | 0.404 | 0.088 | 0.049 / 0.500 | 3/3, 132 alerts |
+| realKnownCause | 0.438 | 0.074 | 0.040 / 0.938 | 8/9, 1 289 alerts |
+| realTraffic | 0.728 | 0.310 | 0.232 / 0.750 | 5/5, 188 alerts |
+| **overall** | **0.527** | **0.157** | **0.107 / 0.729** | **16/17, 1 609 alerts** |
+
+(ROC-AUC 0.735 overall, reported secondary per the audit.) The adaptive
+streaming mode runs on NAB too: its drift trigger fires on 31 of 120 chunks on
+real series — the median/IQR trigger calibrated on synthetic is too twitchy
+for real score noise, an honest finding for the tuning backlog.
+
+**The honest delta** — synthetic PR-AUC 0.916 vs. NAB 0.527 (and residual
+features hit 0.9999 on synthetic): the synthetic track's injected anomalies
+are *trivially separable*, so it can demonstrate pipeline mechanics, HPO
+behavior, and detector-family failure modes, but it **cannot** rank solutions
+on the property clients care about — precision at real anomaly rarity. On NAB
+the champion finds most events (range recall 0.73) but fires 1 609 alerts to
+catch 16 windows (range precision 0.11): the real problem is the
+false-positive firehose, exactly what the synthetic track could never show.
+Figures: `nab_timelines` (per-series true vs. detected windows), `nab_score_distribution`, `nab_alert_budget`; artifact `reports/nab_metrics.json`.
+
 ## Wave-7 additions: streaming, residuals, real data
 
 Three roadmap items from earlier waves are now delivered, with real numbers.
@@ -188,14 +234,14 @@ uv run pytest projects/03-anomaly-detection -q
 ## Roadmap
 
 Delivered so far: Optuna HPO, seeded random baseline, adaptive-threshold
-streaming simulation, rolling-median residual features (0.9999 ROC-AUC), and
-the NSL-KDD transfer probe. What remains:
+streaming, rolling-median residual features, NSL-KDD transfer probe, and the
+NAB real-data primary track with event-based metrics. What remains:
 
-- **Make residuals the default feature set** for this failure mode and
-  re-run the full run ladder (LOF/OCSVM included) on residual features.
-- **Streaming ingest**: replace the chunked simulation with a real
-  event source (e.g. message-queue or file-tail) so `detect --adaptive`
-  runs against live-shaped traffic with true distribution drift.
-- **NSL-KDD hardening**: one-hot categorical encoding, per-attack-category
-  breakdown, and comparison against the labeled train split under the
-  protocol the benchmark literature uses.
+- **Recalibrate the adaptive drift trigger on real data** — the median/IQR
+  trigger tuned on synthetic fires on 26% of NAB chunks; it needs a
+  higher z threshold or a variance-normalised statistic before production use.
+- **Attack the false-positive firehose** on NAB: per-series alert budgets,
+  event deduplication / grouping, and per-family thresholds (range precision
+  0.11 overall is the real problem to solve).
+- **Residual features as the default** on both tracks, and the full run
+  ladder (LOF / tuned OCSVM included) re-run on NAB.

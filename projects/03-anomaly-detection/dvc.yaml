@@ -79,3 +79,11 @@ stages:
     outs:
       - data/nsl
       - reports/nsl_probe.json
+  nab:
+    cmd: uv run python -m anomaly_detection.cli nab
+    deps:
+      - src/anomaly_detection
+      - params.yaml
+    outs:
+      - data/nab
+      - reports/nab_metrics.json
