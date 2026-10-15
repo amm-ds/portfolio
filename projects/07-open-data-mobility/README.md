@@ -18,15 +18,20 @@ Run ladder on the temporal holdout (pickups/hour; lower is better), tuned
 variants configured by Optuna HPO on an embargoed train-side validation
 window (DESIGN.md §Hyperparameter optimisation):
 
-| run | MAE | RMSE | MAPE | ΔMAE vs naive |
-|---|---|---|---|---|
-| naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | — |
-| gbm_mean (defaults) | 4.667 | **15.096** | 62.0% | −28.4% |
-| gbm_tuned (30 Optuna trials) | 4.676 | 15.189 | 61.6% | −28.3% |
-| gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | −31.2% |
-| gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | −29.7% |
-| temporal_net (64-32 MLP) | 5.510 | 19.686 | **54.5%** | −15.5% |
-| temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | −20.5% |
+| run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
+|---|---|---|---|---|---|
+| naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | 1.063 | — |
+| gbm_mean (defaults) | 4.667 | **15.096** | 62.0% | 0.761 | −28.4% |
+| gbm_tuned (30 Optuna trials) | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
+| gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | 0.732 | −31.2% |
+| gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
+| temporal_net (64-32 MLP) | 5.510 | 19.686 | **54.5%** | 0.899 | −15.5% |
+| temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | 0.845 | −20.5% |
+
+MAE/MAPE are scale-dependent; MASE normalises by the in-sample
+seasonal-naive-24 error (≈6.13 pickups/hour), so every run is readable as a
+fraction of "how wrong is last-week persistence" — 1.0 = no better than
+persistence.
 
 - **Challenger arms (wave 11):** xgb/lgbm tuned on the identical embargoed
   validation window (Apr 22+ fold, 500k-row cap, test untouched). Both lost to
@@ -99,10 +104,14 @@ Weather elasticity (mean hourly pickups, rain ≥1 mm vs dry, test window):
 
 Figures (interactive HTML + showcase JSON) in `reports/figures/`:
 `eda_trips_profile` (hour-of-day × borough profile), `zone_hour_heatmap`
-(borough-grouped top-30 zones × hour-of-week), `actual_vs_pred_top5`,
-`borough_mae`, `weather_elasticity`, `p90_band`, `p90_calibration`
-(coverage vs 90% target), `gbm_feature_importance`, `gbm_vs_nn`. Full report:
-`reports/report.html`; metrics: `reports/metrics.json`.
+(borough-grouped top-30 zones × hour-of-week), `zone_demand_map` and
+`zone_residual_map` (TLC-zone choropleths of demand geography and per-zone
+MAPE), `zone_fan` (mean + p90 forecast fan for the busiest zones),
+`actual_vs_pred_top5`, `borough_mae`, `weather_elasticity`, `p90_band`,
+`p90_calibration` (coverage vs 90% target), `gbm_feature_importance`,
+`gbm_vs_nn`. Full report: `reports/report.html`; metrics:
+`reports/metrics.json` (MAE/RMSE/MAPE + MASE). The served model is documented
+in [MODEL_CARD.md](MODEL_CARD.md).
 
 ## Design
 

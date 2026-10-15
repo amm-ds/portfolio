@@ -98,7 +98,7 @@ sections:
       **Business implication:** knowing demand is hour-and-borough driven, not
       evenly spread, changes staffing decisions — you staff the 18:00 Manhattan
       peak and the airport flatness very differently.
-    figures: [eda_trips_profile, zone_hour_heatmap]
+    figures: [eda_trips_profile, zone_hour_heatmap, zone_demand_map]
     metrics_keys: []
 
   - id: training
@@ -166,15 +166,19 @@ sections:
     text_md: |
       Run ladder on the Q4 holdout (pickups/hour):
 
-      | run | MAE | RMSE | MAPE | ΔMAE vs naive |
-      |---|---|---|---|---|
-      | naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | — |
-      | gbm_mean | 4.667 | **15.096** | 62.0% | −28.4% |
-      | gbm_tuned (30 trials) | 4.676 | 15.189 | 61.6% | −28.3% |
-      | gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | −31.2% |
-      | gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | −29.7% |
-      | temporal_net | 5.510 | 19.686 | **54.5%** | −15.5% |
-      | temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | −20.5% |
+      | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
+      |---|---|---|---|---|---|
+      | naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | 1.063 | — |
+      | gbm_mean | 4.667 | **15.096** | 62.0% | 0.761 | −28.4% |
+      | gbm_tuned (30 trials) | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
+      | gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | 0.732 | −31.2% |
+      | gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
+      | temporal_net | 5.510 | 19.686 | **54.5%** | 0.899 | −15.5% |
+      | temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | 0.845 | −20.5% |
+
+      MASE divides MAE by the in-sample seasonal-naive-24 error, so every run
+      reads as a fraction of persistence error (1.0 = no better than "same
+      hour last week"); the served GBM runs at 0.76.
 
       - **GBM HPO was honest but flat**: the tuned GBM matches the hand-picked
         defaults within noise — the Apr–May validation window did not transfer
@@ -213,7 +217,7 @@ sections:
       GBM removes ~28% of forecast error city-wide, and the 90.8%-calibrated
       p90 band gives a defensible number of extra vehicles to hold each hour —
       except in the sparse N/A zones, where the bands are flagged as too tight.
-    figures: [gbm_vs_nn, p90_calibration, weather_elasticity, gbm_feature_importance, p90_band, green_transfer]
+    figures: [gbm_vs_nn, p90_calibration, weather_elasticity, gbm_feature_importance, p90_band, green_transfer, zone_residual_map, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
   - id: conclusions
@@ -233,6 +237,9 @@ sections:
       - **Calibration is a deliverable:** the p90 band at 90.8% coverage is
         what turns a forecast into a staffing number; the flagged N/A-zone
         under-coverage shows where not to trust it.
+      - The served model ships with a model card (MODEL_CARD.md): intended
+        use, data slices, per-borough metrics, limits — the procurement
+        one-pager.
 
       **Business implication:** 41.2M rows, a strict temporal holdout, and a
       sub-3 GB memory footprint mean this quality of analysis runs on a laptop
@@ -267,10 +274,11 @@ roadmap:
       Per-service (green/FHV) model retraining — the transfer study showed
       yellow weights do not carry over; needs per-service history and a
       committed deployment.
-  - status: deferred
+  - status: delivered
     text: >-
-      Zone choropleth geo view for operator dashboards — needs geopandas /
-      geospatial zone boundaries, not yet in the dependency set.
+      Zone choropleth geo views on official TLC boundaries — demand geography
+      (zone_demand_map) and per-zone MAPE residuals (zone_residual_map), plus
+      a per-zone forecast fan chart (zone_fan).
   - status: deferred
     text: >-
       Causal weather-impact estimates to upgrade directional elasticities into

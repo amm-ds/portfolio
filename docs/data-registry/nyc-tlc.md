@@ -33,5 +33,9 @@ uv run python docs/data-registry/scripts/fetch_tlc.py --months 2024-01 2024-12 -
 
 - Zone/location lookup table:
   `https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv`
+- Zone boundaries (shapefile, used by Project 07 choropleths):
+  `https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip`
+  (263 zone polygons, EPSG:2263; checksum-pinned in the pipeline's
+  `data/raw/checksums.json`, snapshot 2026-10-15)
 - Trip data dictionary:
   https://www.nyc.gov/assets/tlc/downloads/pdf/data_dictionary_trip_records_yellow.pdf

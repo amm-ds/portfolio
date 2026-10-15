@@ -128,6 +128,29 @@ def download_all(cfg: MobilityConfig | None = None) -> list[DatasetContract]:
             )
         )
 
+    shapes_dest = cfg.raw_dir / "taxi_zones.zip"
+    fetch(cfg.zone_shapes_url, shapes_dest, pins.get(shapes_dest.name))
+    checksum = sha256_of(shapes_dest)
+    if shapes_dest.name not in pins:
+        _record_pin(cfg.checksum_registry, shapes_dest.name, checksum)
+        logger.info("pinned %s sha256=%s", shapes_dest.name, checksum)
+    else:
+        logger.info("checksum verified %s", shapes_dest.name)
+    import zipfile
+
+    with zipfile.ZipFile(shapes_dest) as z:
+        n_rows = len(z.namelist())
+    contracts.append(
+        _write_contract(
+            cfg,
+            name="taxi_zones",
+            source=cfg.zone_shapes_url,
+            license_=TLC_LICENSE,
+            path=shapes_dest,
+            n_rows=n_rows,
+        )
+    )
+
     for name, url, license_ in [
         ("taxi_zone_lookup", cfg.zone_lookup_url, TLC_LICENSE),
         ("noaa_usw00094728_ghcn_daily", cfg.noaa_url, NOAA_LICENSE),
