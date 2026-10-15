@@ -2,10 +2,12 @@ id: 02-demand-forecasting
 title: Demand Forecasting
 domain: Time-series forecasting
 techniques:
-- scikit-learn
-- pytorch
 - time-series CV
-- hierarchical reconciliation
+- GBM
+- PyTorch
+- Optuna
+- conformal bands
+- MinT
 data: Synthetic hierarchy (UCI Retail II optional)
 status: working
 order: 2

@@ -16,8 +16,8 @@ def test_seeded_sampler_is_deterministic(features: pl.DataFrame, config: Forecas
     for _ in range(3):
         trial_a = study_a.ask()
         trial_b = study_b.ask()
-        pa = suggest_params(trial_a)
-        pb = suggest_params(trial_b)
+        pa = suggest_params(trial_a, "hgb")
+        pb = suggest_params(trial_b, "hgb")
         assert pa == pb
 
 

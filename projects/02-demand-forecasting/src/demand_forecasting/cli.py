@@ -45,7 +45,23 @@ def _settings_and_config(
         data_dir=data_dir or base.data_dir,
         reports_dir=reports_dir or base.reports_dir,
     )
-    return settings, ForecastConfig(data_source=data_source)
+    return settings, _config_from_params(ForecastConfig(data_source=data_source))
+
+
+def _config_from_params(config: ForecastConfig) -> ForecastConfig:
+    """Overlay params.yaml onto the config (dvc param changes are real).
+
+    Only keys that match ForecastConfig fields are applied; unknown keys are
+    ignored so the file can carry comments and per-stage extras.
+    """
+    import yaml  # type: ignore[import-untyped]
+
+    path = Path("params.yaml")
+    if not path.exists():
+        return config
+    data = yaml.safe_load(path.read_text()) or {}
+    known = {k: v for k, v in data.items() if k in ForecastConfig.model_fields}
+    return ForecastConfig(**known) if known else config
 
 
 @app.command("prepare")
@@ -94,12 +110,15 @@ def hpo(
     data_dir: Annotated[Path | None, typer.Option()] = None,
     reports_dir: Annotated[Path | None, typer.Option()] = None,
     trials: Annotated[int | None, typer.Option(help="Override trial count.")] = None,
+    model: Annotated[
+        Literal["hgb", "xgb", "lgbm"], typer.Option(help="Booster arm to tune.")
+    ] = "hgb",
 ) -> None:
-    """Run seeded Optuna HPO for the production HGB config (slow; not part of ``all``)."""
+    """Run seeded Optuna HPO for a production booster config (slow; not in ``all``)."""
     from demand_forecasting.hpo import run_hpo
 
     settings, config = _settings_and_config(data_dir, reports_dir)
-    run_hpo(settings, config, n_trials=trials)
+    run_hpo(settings, config, model=model, n_trials=trials)
 
 
 @app.command("evaluate")

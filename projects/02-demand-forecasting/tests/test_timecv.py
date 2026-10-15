@@ -37,7 +37,7 @@ def test_backtest_splits_are_date_aligned(features: pl.DataFrame, config: Foreca
 
 
 def test_backtest_runs_all_models(features: pl.DataFrame, config: ForecastConfig) -> None:
-    """The backtest produces one run per model (2 naives + ridge + hgb + tuned + NN)."""
+    """The backtest produces one run per model (2 naives + ridge + 4 boosters + NN)."""
     result = backtest(features, config)
     assert {r.name for r in result.runs} == {
         "naive_mean",
@@ -45,6 +45,8 @@ def test_backtest_runs_all_models(features: pl.DataFrame, config: ForecastConfig
         "ridge",
         "hgb",
         "hgb_tuned",
+        "xgb_tuned",
+        "lgbm_tuned",
         "temporal_net",
     }
     for run in result.runs:
@@ -52,7 +54,7 @@ def test_backtest_runs_all_models(features: pl.DataFrame, config: ForecastConfig
         assert mae is not None and mae.value > 0
         rmse = run.get("rmse")
         assert rmse is not None and rmse.value >= mae.value
-    assert len(result.folds) == config.n_splits * 6
+    assert len(result.folds) == config.n_splits * 8
 
 
 def test_naive_baselines_are_sane(features: pl.DataFrame, config: ForecastConfig) -> None:

@@ -13,8 +13,8 @@ min_train_size: 60
 hpo_n_trials: 50
 temporal_epochs: 60
 temporal_patience: 8
-# Production HGB config — best params of the seeded Optuna study
-# (56 complete trials, CV mean MAE 8.5291; see data/hpo_best.json).
+# Production booster configs — best params of the seeded Optuna studies
+# (hgb: 56 trials CV MAE 8.5291; xgb: 25 trials 8.5392; lgbm: 25 trials 8.4133).
 hgb_tuned:
   learning_rate: 0.08258768319962584
   max_iter: 190
@@ -22,6 +22,19 @@ hgb_tuned:
   min_samples_leaf: 48
   l2_regularization: 0.0014656689866341544
   max_features: 0.5260286352147595
+xgb_tuned:
+  learning_rate: 0.04717052037625178
+  n_estimators: 482
+  max_depth: 4
+  subsample: 0.7571172192068059
+  colsample_bytree: 0.7962072844310213
+  reg_lambda: 2.9140978279786215e-08
+lgbm_tuned:
+  learning_rate: 0.1563510870813346
+  n_estimators: 217
+  num_leaves: 18
+  min_child_samples: 139
+  reg_lambda: 0.0002520721916536751
 # UCI Online Retail II real-data track (synthetic stays the default).
 data_source: synthetic
 uci_n_stores: 8

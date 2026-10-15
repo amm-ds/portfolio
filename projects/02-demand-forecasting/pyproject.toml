@@ -11,6 +11,8 @@ dependencies = [
     "plotly>=5.24",
     "polars>=1.9",
     "numpy>=2.1",
+    "xgboost>=2.0",
+    "lightgbm>=4.0",
     "portfolio-core",
     "portfolio-eval",
 ]

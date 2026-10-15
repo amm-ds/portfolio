@@ -172,7 +172,9 @@ sections:
       | naive_last | 14.48 | 19.88 | 19.3% | — (strongest naive) |
       | ridge | 9.12 | 12.71 | 12.4% | -37.0% |
       | hgb | 8.62 | 12.18 | 11.4% | -40.5% |
-      | **hgb_tuned (HPO)** | **8.53** | **12.07** | **11.3%** | **-41.1%** |
+      | hgb_tuned (HPO) | 8.53 | 12.07 | 11.3% | -41.1% |
+      | xgb_tuned (HPO) | 8.54 | 12.09 | 11.3% | -41.0% |
+      | **lgbm_tuned (HPO)** | **8.41** | **11.91** | **11.2%** | **-41.9%** |
       | temporal_net | 9.34 | 12.76 | 13.4% | -35.5% |
 
       Key findings:
@@ -208,7 +210,7 @@ sections:
       and messy real retail data alike — and we can show exactly where that
       advantage holds and where it ends.
     figures: [metrics_bars, forecast_vs_actual, hpo_history, reconciliation_coherence]
-    metrics_keys: [naive_mean, naive_last, ridge, hgb, hgb_tuned, temporal_net]
+    metrics_keys: [naive_mean, naive_last, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 
   - id: conclusions
     text_md: |
@@ -233,6 +235,8 @@ sections:
     figures: [fold_stability, forecast_vs_actual]
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
+  - status: delivered
+    text: XGBoost + LightGBM boosting arms — 25-trial seeded HPO each through the identical backtest; LightGBM takes the crown (MAE 8.413 vs hgb_tuned 8.529), XGBoost a statistical wash.
   - status: delivered
     text: Optuna HPO (56 seeded trials) — production hgb_tuned config shipped, -1.0% MAE over defaults, reproducible from data/hpo_best.json.
   - status: delivered
