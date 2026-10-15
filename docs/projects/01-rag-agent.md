@@ -6,8 +6,9 @@ A grounded question-answering agent over a curated topical slice of English
 Wikipedia. A `pydantic-ai` agent answers **only** from retrieved evidence and
 returns a structured `AnalysisResult` — summary, per-claim citations, and a
 calibrated confidence — with no LLM SDK in the project (provider abstraction
-per ADR-0004: live OpenAI-compatible endpoint, or a deterministic mock fully
-offline).
+per ADR-0004, amended wave 10: env-configured OpenAI-compatible endpoint
+first, local Ollama second — default `qwen3.6:35b-a3b-q4_K_M`; no runtime
+mock, `--offline` keeps a retrieval-only CI path).
 
 ## Pipeline
 
@@ -24,24 +25,27 @@ offline).
    sizes, RAG faithfulness / answer relevance / context recall via judge, and
    per-query latency + estimated cost, all written to `reports/`.
 
-## Key results (2026-10-12, this machine, CPU-only, offline mock mode)
+## Key results (2026-10-14/15, this machine, local `qwen3.6:35b-a3b-q4_K_M`)
 
 | Metric | Value |
 |---|---|
-| Retrieval recall@5 / recall@10 (all chunk sizes) | 0.962 / 1.000 |
+| Retrieval recall@5 / recall@10 (all chunk sizes, n=26) | 0.962 / 1.000 |
 | MRR@5 — chunk 200 / 400 / 800 | 0.936 / 0.904 / 0.869 |
 | Random baseline recall@5 (seeded) | 0.038 / 0.000 / 0.000 → **+0.92** vs embeddings |
 | Embedding model comparison (BGE-small vs MiniLM) | exact tie → cheaper model kept |
 | Rerank ablation (off vs on): recall@5 / MRR@5 | 1.000 / 0.833 vs 0.962 / 0.936 |
 | **Production config** (`retrieval_best`) | MiniLM, chunks=200, top_k=3, rerank ON |
-| Context cost vs earlier default | ≈804 vs ≈2,279 input tokens/query (−65%) |
-| RAG context_recall / faithfulness / relevance (mock) | 0.962 / 0.273 / 0.442 |
-| p50 / p95 agent latency (local floor) | 4.2 ms / 5.0 ms |
-| Estimated live cost per query | ≈ $0.00015 |
+| RAGAS faithfulness / answer_relevancy (n=10, local judge) | **0.805 / 0.904** |
+| RAGAS context_recall / context_precision (n=10) | 0.952 / 0.333 |
+| Keyword-judge CI floor on the same subset | 0.36 / 0.37 faithfulness / relevance |
+| p50 / p95 agent latency (local model, honest) | 61 s / 245 s |
+| Cost | **$0 API** (local inference); cloud-equivalent ≈ $0.0043/query |
 
 Takeaway: retrieval quality is bought with chunking discipline, not model
-size — the cheapest configuration (MiniLM, 200-token chunks, top-3, rerank on)
-is the best one, at roughly a third of the context cost of the earlier default.
+size, and answer quality is verified — RAGAS faithfulness 0.805 against a 0.36
+keyword floor. Local inference trades wall clock (minutes per answer) for $0
+API cost, quantified in `reports/cost_telemetry.json`. LLM phases run on the
+first 10 graded questions (bounded subset); retrieval metrics use all 26.
 Figures: corpus composition, chunk-size sweep with random baseline, embedding
 model comparison, retrieval funnel, HPO frontier (chosen config starred),
 latency histogram (all in `reports/figures/`).
