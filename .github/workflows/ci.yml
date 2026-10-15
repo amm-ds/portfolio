@@ -23,12 +23,20 @@ jobs:
         run: uv sync --all-packages --dev
       - name: Ruff
         run: uv run ruff check . && uv run ruff format --check .
-      - name: Mypy (strict on libs)
-        run: uv run mypy libs
-      - name: Tests with coverage gates
+      - name: Mypy (libs strict + projects/apps typed)
+        run: uv run mypy libs projects apps
+      - name: Tests with coverage gates (libs ≥80%)
         run: uv run pytest --cov=libs --cov-report=term-missing
+      - name: Frontend: install, test, typecheck, build
+        working-directory: apps/showcase-web
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+          npm run build
       - name: Docs build (strict)
         run: uv run mkdocs build --strict
+      - name: Dependency audit
+        run: uv pip audit || true
 
   docker:
     runs-on: ubuntu-latest
