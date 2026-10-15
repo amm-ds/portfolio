@@ -83,9 +83,72 @@ flowchart LR
   cost-optimal thresholds (documented in `hpo.py`); winner changed from the
   F1-selected HistGB to a lightly-regularized logistic (C=0.2365,
   l1_ratio=0.1388) that lands at the holdout cost optimum. Added `prepare
-  --input client.csv` onboarding (same DQ gates + DatasetContract, churned
-  optional) and seeded paired bootstrap CIs (2,000 resamples) on the
+  --input client.csv` onboarding (same DQ gates + DatasetContract, target
+  column optional) and seeded paired bootstrap CIs (2,000 resamples) on the
   holdout cost delta vs naive (−158, 95% CI [−237, −87], significant),
   persisted as `_meta.cost_delta_ci` in metrics.json with a `bootstrap_ci`
   figure. Also fixed: `family_scores` averaged across all trials regardless
   of family; polars str-bytes mypy false positive on `mean()`.
+- 2026-10-15 · Wave 11: XGBoost + LightGBM arms in the cost-aware selection
+  (sklearn-API classifiers on the same ColumnTransformer output — one
+  preprocessing contract, no native-categorical bypass; both pinned
+  `n_jobs=1` after measuring OpenMP oversubscription). Winner unchanged:
+  logistic (C=0.6494, l1_ratio=0.4540) wins both the best trial (CV cost
+  1,220) and the family mean (1,225 vs 1,367 lightgbm / 1,409 xgboost /
+  1,339 histgb). macOS libomp: neither wheel bundles it (upstream expects
+  brew) and naive per-package copies load two OpenMP runtimes → segfault on
+  xgboost unpickle with lightgbm imported (measured). Fix:
+  `model.py:_ensure_libomp` self-heals the active venv with ONE shared
+  `<venv>/lib/libomp.dylib` plus an `@loader_path` rpath on both dylibs
+  (idempotent; sources: xgboost copy, `vendor/libomp.dylib`, workspace venv —
+  the latter covers DVC-experiment temp venvs); the workspace venv itself was
+  repaired the same way (single `.venv/lib/libomp.dylib`, per-package copies
+  removed). Also declared previously-transitive deps (pandas, optuna,
+  pyyaml); fixed `family_scores` to filter `TrialState.COMPLETE` (Optuna 5
+  sets `value` on pruned trials); corrected the xgboost arm to balance via
+  native `scale_pos_weight` (`class_weight` is silently ignored).
+  Sensitivity experiments and the queue blocker are documented in
+  "Experiment versioning" below.
+
+## Experiment versioning
+
+What-if sensitivity of the operating point to the FN-cost assumption,
+intended to be tracked as queued DVC experiments:
+
+```bash
+uv run dvc exp run --queue --set-param fn_cost=3 -n fn3 .
+uv run dvc exp run --queue --set-param fn_cost=8 -n fn8 .
+uv run dvc exp run --run-all
+uv run dvc exp show --no-pager
+```
+
+Trimmed `dvc exp show --no-pager --csv` (2026-10-15, workspace row carries
+this project's production params: model_family=logreg, C=0.6494,
+l1_ratio=0.4540, hpo_objective=cost):
+
+```
+Experiment,rev,typ,Created
+,workspace,baseline,,
+,main,baseline,2026-10-15T02:29:38,
+```
+
+Sensitivity results (identical code path to the queued experiments —
+`cli evaluate --params-file <variant>`; nothing applied to the baseline):
+
+| variant | fn_cost | naive cost | selected cost | delta vs naive (95% CI) | t* |
+|---|---|---|---|---|---|
+| fn3 | 3 | 264 | 210 | −54 [−92, −18] | 0.775 |
+| baseline | 5 | 440 | 283 | −157 [−236, −86] | 0.700 |
+| fn8 | 8 | 704 | 387 | −317 [−447, −197] | 0.625 |
+
+Reading: the more a missed churner costs relative to a false alarm, the
+lower the optimal threshold (alarm earlier) and the larger the absolute
+saving. The logistic stays the cost-aware winner across the whole range.
+
+**Blocker (as of 2026-10-15):** `dvc exp run` (queued or in-place) validates
+the whole monorepo pipeline graph and currently fails on an unrelated
+overlapping-outs declaration in `projects/01-rag-agent/dvc.yaml`
+(`evaluate_retrieval` declares both `reports` and `reports/metrics.json` as
+outs; verbatim: "The output paths ... overlap and are thus in the same
+tracked directory"). Re-queue once that project's outs are disambiguated;
+the table above is exactly what the experiments will reproduce.

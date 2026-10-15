@@ -9,8 +9,8 @@ c_grid:
 cv_folds: 3
 model_family: logreg
 model_params:
-  C: 0.23647688546406256
-  l1_ratio: 0.13881283755258783
+  C: 0.6493881644270072
+  l1_ratio: 0.4539876752994031
 hpo_trials: 25
 hpo_objective: cost
 calib_frac: 0.2

@@ -28,7 +28,7 @@ from churn_pipeline.model import build_pipeline
 
 log = get_logger(__name__)
 
-MODEL_FAMILIES = ("logreg", "histgb")
+MODEL_FAMILIES = ("logreg", "histgb", "xgboost", "lightgbm")
 
 
 @dataclass(frozen=True)
@@ -50,8 +50,14 @@ def suggest_params(trial: Trial) -> tuple[str, dict[str, Any]]:
     in-between = elasticnet — sklearn ≥ 1.9 unified API, solver resolved for
     speed: lbfgs for pure l2, saga otherwise).
     HistGradientBoostingClassifier: learning_rate (log 0.05..0.3),
-    max_iter (50..150), max_leaf_nodes (15..31), min_samples_leaf (20..60) —
-    ranges capped to keep the full selection pass under a minute.
+    max_iter (50..150), max_leaf_nodes (15..31), min_samples_leaf (20..60).
+    XGBClassifier (sklearn API): n_estimators (50..300), learning_rate
+    (log 0.03..0.3), max_depth (3..8), subsample (0.5..1.0).
+    LGBMClassifier (sklearn API): n_estimators (50..300), learning_rate
+    (log 0.03..0.3), num_leaves (15..63), min_child_samples (20..60).
+    Boosting ranges are capped to keep the full selection pass under a
+    minute; all arms consume the same ColumnTransformer output inside the
+    Pipeline (no native categorical bypass — one preprocessing contract).
     """
     family = trial.suggest_categorical("model", MODEL_FAMILIES)
     if family == "logreg":
@@ -61,12 +67,26 @@ def suggest_params(trial: Trial) -> tuple[str, dict[str, Any]]:
             "C": trial.suggest_float("C", 1e-3, 1e2, log=True),
             "l1_ratio": trial.suggest_float("l1_ratio", 0.0, 1.0),
         }
-    else:
+    elif family == "histgb":
         params = {
             "learning_rate": trial.suggest_float("learning_rate", 0.05, 0.3, log=True),
             "max_iter": trial.suggest_int("max_iter", 50, 150),
             "max_leaf_nodes": trial.suggest_int("max_leaf_nodes", 15, 31),
             "min_samples_leaf": trial.suggest_int("min_samples_leaf", 20, 60),
+        }
+    elif family == "xgboost":
+        params = {
+            "n_estimators": trial.suggest_int("n_estimators", 50, 300),
+            "learning_rate": trial.suggest_float("learning_rate", 0.03, 0.3, log=True),
+            "max_depth": trial.suggest_int("max_depth", 3, 8),
+            "subsample": trial.suggest_float("subsample", 0.5, 1.0),
+        }
+    else:  # lightgbm
+        params = {
+            "n_estimators": trial.suggest_int("n_estimators", 50, 300),
+            "learning_rate": trial.suggest_float("learning_rate", 0.03, 0.3, log=True),
+            "num_leaves": trial.suggest_int("num_leaves", 15, 63),
+            "min_child_samples": trial.suggest_int("min_child_samples", 20, 60),
         }
     return family, params
 
@@ -123,6 +143,12 @@ def _cost_objective(cfg: ChurnConfig, X: pd.DataFrame, y: pd.Series) -> Any:
 
     def fn(trial: Trial) -> float:
         family, params = suggest_params(trial)
+        if family == "xgboost":
+            # XGBClassifier ignores sklearn class_weight; balance via the
+            # native scale_pos_weight (fixed per dataset, like class_weight).
+            n_pos = float(np.sum(y == 1))
+            n_neg = float(len(y) - n_pos)
+            params = {**params, "scale_pos_weight": n_neg / max(n_pos, 1.0)}
         pipe = build_estimator(cfg, family, params)
         folds = StratifiedKFold(n_splits=cfg.cv_folds, shuffle=True, random_state=cfg.seed)
         y_arr = np.asarray(y, dtype=int)
@@ -172,18 +198,19 @@ def run_study(
     best_value = cast(float, best.value)
     family = str(best.params["model"])
     params = {k: v for k, v in best.params.items() if k != "model"}
-    family_scores = {
-        fam: float(
-            -np.mean(
-                [
-                    t.value
-                    for t in study.trials
-                    if t.value is not None and t.params.get("model") == fam
-                ]
-            )
-        )
-        for fam in MODEL_FAMILIES
-    }
+    # Only COMPLETED trials carry full-pipeline OOF costs; pruned trials hold
+    # partial-fold intermediates (Optuna 5 sets value on pruned trials too).
+    family_scores: dict[str, float] = {}
+    for fam in MODEL_FAMILIES:
+        vals = [
+            t.value
+            for t in study.trials
+            if t.state == optuna.trial.TrialState.COMPLETE
+            and t.params.get("model") == fam
+            and t.value is not None
+        ]
+        if vals:
+            family_scores[fam] = float(-np.mean(vals))
     log.info(
         "hpo: selected %s %s (%s=%.4f over %d trials)",
         family,

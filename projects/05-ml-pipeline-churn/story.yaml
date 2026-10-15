@@ -124,17 +124,19 @@ sections:
 
       **Selection:** an earlier `GridSearchCV` over C keeps the logistic
       baseline; Optuna (seeded TPE, 25 trials, median pruning) then searches
-      LogisticRegression (C log 1e-3..1e2, l1_ratio 0..1) against
-      HistGradientBoostingClassifier on a **cost-aware objective**: stratified
-      CV produces out-of-fold probabilities per trial, and the trial is
-      scored by the business cost (FP=1/FN=5) at its own cost-optimal
-      threshold — the same threshold-tuning view used at evaluation. The
-      winner — **logistic regression (C=0.2365, l1_ratio=0.1388)**, CV cost
-      1,217, mean trial cost 934 (logreg) vs 1,215 (HistGB) — is written back
-      to `params.yaml` as the production config. An earlier F1-objective run
-      picked HistGB instead; the two objectives disagreeing is itself a
-      finding (see results). An isotonic-calibrated twin is fitted on the
-      calibration split only.
+      **four arms** — LogisticRegression (C log 1e-3..1e2, l1_ratio 0..1),
+      HistGradientBoostingClassifier, XGBClassifier, and LGBMClassifier (both
+      sklearn-API, on the same in-pipeline preprocessing) — on a
+      **cost-aware objective**: stratified CV produces out-of-fold
+      probabilities per trial, and the trial is scored by the business cost
+      (FP=1/FN=5) at its own cost-optimal threshold — the same
+      threshold-tuning view used at evaluation. The winner — **logistic
+      regression (C=0.6494, l1_ratio=0.4540)**, best CV cost 1,220, family
+      means 1,225 (logreg) / 1,367 (lightgbm) / 1,409 (xgboost, balanced
+      via scale_pos_weight) / 1,339 (histgb) — is written back to `params.yaml` as the production config.
+      An earlier F1-objective run picked HistGB instead; the two objectives
+      disagreeing is itself a finding (see results). An isotonic-calibrated
+      twin is fitted on the calibration split only.
 
       **Business implication:** the artifact handed to engineering scores raw
       CRM rows as-is — no ETL rewrite, no train/serve skew — and the winning
@@ -168,7 +170,7 @@ sections:
       (ECE 0.281 → 0.014) without moving the cost optimum — know which metric
       pays: ECE matters when probabilities themselves are consumed, the cost
       curve is what settles the alarm threshold; and the paired bootstrap CI
-      (−158, 95% CI [−237, −87]) is what makes the saving defensible in a
+      (−157, 95% CI [−236, −86]) is what makes the saving defensible in a
       budget meeting.
     figures: [calibration_curve, precision_recall_curve, decision_curve]
   - id: results
@@ -180,23 +182,27 @@ sections:
       | naive majority | cost-optimal | 0.5000 | 0.4770 | – | 440 |
       | logistic, default 0.5 | 0.500 | 0.8344 | 0.5796 | – | 350 |
       | logistic, tuned | 0.725 | 0.8344 | **0.6833** | – | **282** |
-      | selected (cost-HPO logistic) | 0.700 | 0.8318 | 0.6756 | 0.281 | **282** |
-      | selected + isotonic | 0.175 | 0.8298 | 0.6380 | **0.014** | 311 |
+      | selected (cost-HPO logistic) | 0.700 | 0.8321 | 0.6744 | 0.280 | **283** |
+      | selected + isotonic | 0.125 | 0.8216 | 0.6087 | **0.017** | 322 |
 
       Key findings:
 
-      - **Cost vs naive: −35.9% (440 → 282), macro F1 +43% (0.477 → 0.683)** —
+      - **Cost vs naive: −35.7% (440 → 283), macro F1 +43% (0.477 → 0.683)** —
         and the paired bootstrap (2,000 seeded resamples, fixed operating
-        thresholds) puts the delta at **−158, 95% CI [−237, −87]: significant.**
-      - **Winner changed with the objective.** An F1-objective study picked
-        HistGB (CV F1 0.3648 vs 0.3433) which loses on holdout business cost
-        (321); the cost-aware study picked a lightly-regularized logistic
-        that lands exactly at the cost optimum (282 at t=0.700). Optimizing
-        the deployment metric *is* the fix.
+        thresholds) puts the delta at **−157, 95% CI [−236, −86]: significant.**
+      - **Winner robust to stronger challengers.** Adding XGBoost and
+        LightGBM arms to the cost-aware search changed neither the winner
+        nor the story: the logistic wins the best trial (CV cost 1,220) and
+        the family mean (1,225 vs 1,339–1,409). An earlier F1-objective study
+        had picked HistGB, which loses on business cost — the objective, not
+        the algorithm family, is what matters.
       - **Threshold tuning alone: −19.4%** of the cost win (350 → 282), same
         model, no retraining — the operating point is a business decision.
-      - **Isotonic calibration: ECE 0.281 → 0.014 (−95%)**, but the cost
-        optimum does not improve (311 vs 282).
+      - **Isotonic calibration: ECE 0.280 → 0.017 (−94%)**, but the cost
+        optimum does not improve (322 vs 283).
+      - **Cost-model sensitivity** (DVC experiments; DESIGN.md): fn_cost=3 →
+        selected cost 210 vs naive 264 (t*=0.775); fn_cost=8 → 387 vs 704
+        (t*=0.625): higher miss cost, earlier alarm, logistic still wins.
       - The naive run posts the best accuracy (0.912): on an 8.8% churn
         rate, never alarming is accurate and useless.
 
@@ -221,7 +227,7 @@ sections:
         cost-optimal decisions are different deliverables — ship both
         evaluations.
       - Uncertainty has a number: paired bootstrap CIs turn "the model saves
-        money" into "the model saves 158 ± CI 75 cost units at alpha 0.05".
+        money" into "the model saves 157 cost units, 95% CI [75, 236], at alpha 0.05".
 
       **Business implication:** the framework transfers to a client's CRM
       extract unchanged — same gates, same artifact contract, same cost
@@ -231,7 +237,7 @@ roadmap:
     text: >-
       Cost-aware HPO — shipped, verified: Optuna study on CV business cost with
       per-trial threshold tuning changed the winner; the cost-HPO model holds the
-      holdout cost optimum (282 cost units at threshold 0.700).
+      holdout cost optimum (283 cost units at threshold 0.700; four arms raced).
   - status: delivered
     text: >-
       CRM client onboarding — shipped, verified: `prepare --input client.csv`
@@ -240,17 +246,18 @@ roadmap:
   - status: delivered
     text: >-
       Bootstrap CIs — shipped, verified: paired 2,000-resample CI on the cost
-      delta vs naive is −158 [−237, −87], significant at 95 %.
+      delta vs naive is −157 [−236, −86], significant at 95 %.
   - status: delivered
     text: >-
       Calibration verdict — shipped, verified: isotonic-calibrated variant
       evaluated on the same cost curve; the cost-optimal decision is unchanged
-      (ECE 0.281 → 0.014), so raw probabilities ship.
+      (ECE 0.280 → 0.017; calibrated cost 322 vs raw 283), so raw probabilities ship.
   - status: delivered
     text: >-
-      Gradient-boosted comparator — shipped, verified: HistGB was raced against
-      logistic inside the Optuna study on the cost-aware objective; logistic won
-      (mean trial cost 934 vs 1,215), settling the model question.
+      Gradient-boosted arms — shipped, verified: HistGB, XGBoost, and LightGBM
+      raced logistic inside the Optuna study on the cost-aware objective;
+      logistic won the best trial (CV cost 1,220) and the family mean (1,225
+      vs 1,339-1,409), settling the model question.
   - status: deferred
     text: >-
       Real-data CRM track — engagement-dependent: swapping the synthetic
