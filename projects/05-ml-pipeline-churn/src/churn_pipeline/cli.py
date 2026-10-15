@@ -10,10 +10,8 @@ from datetime import date
 from pathlib import Path
 from typing import Annotated, Any, cast
 
-import pandas as pd  # type: ignore[import-untyped]
 import polars as pl
 import typer
-import yaml  # type: ignore[import-untyped]
 from portfolio_core import synthetic
 from portfolio_core.dq import DQReport
 from portfolio_core.logging import get_logger
@@ -22,9 +20,8 @@ from portfolio_core.schemas import DatasetContract
 from portfolio_eval.report import ReportBuilder
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.model_selection import train_test_split
-from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]
 
-from churn_pipeline.config import ChurnConfig
+from churn_pipeline.config import ChurnConfig, pd, threadpool_limits, yaml
 from churn_pipeline.eda import eda_churn_profile_figure
 from churn_pipeline.evaluate import artifact_paths, evaluate_holdout
 from churn_pipeline.hpo import ModelSelection, build_estimator, run_study

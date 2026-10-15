@@ -12,7 +12,6 @@ from typing import Any, cast
 
 import numpy as np
 import optuna
-import pandas as pd  # type: ignore[import-untyped]
 from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 from optuna.trial import Trial
@@ -20,9 +19,8 @@ from portfolio_core.logging import get_logger
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold, cross_val_predict
-from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]
 
-from churn_pipeline.config import ChurnConfig
+from churn_pipeline.config import ChurnConfig, pd, threadpool_limits
 from churn_pipeline.evaluate import cost_curve
 from churn_pipeline.model import build_pipeline
 

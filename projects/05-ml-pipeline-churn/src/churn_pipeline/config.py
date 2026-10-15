@@ -8,8 +8,18 @@ data preparation, model training and evaluation.
 from pathlib import Path
 from typing import Any
 
+import pandas as pd  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
+import yaml  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
 from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field, field_validator
+from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]  # re-exported
+
+__all__ = [
+    "ChurnConfig",
+    "pd",  # pandas re-export: untyped here so consumers need no per-file ignore
+    "threadpool_limits",  # same for threadpoolctl
+    "yaml",  # same for pyyaml
+]
 
 
 def _default_threshold_grid() -> list[float]:

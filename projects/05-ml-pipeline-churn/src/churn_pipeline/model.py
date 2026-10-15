@@ -7,7 +7,6 @@ artifact is self-contained and safe to score on equally messy raw data.
 
 from typing import Any
 
-import pandas as pd  # type: ignore[import-untyped]
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.impute import SimpleImputer
@@ -16,87 +15,28 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold, train_test_sp
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-
-def _ensure_libomp() -> None:
-    """macOS fallback: give XGBoost/LightGBM wheels one shared libomp.
-
-    Neither project's PyPI wheels (incl. arm64) bundle ``libomp.dylib``
-    anymore — upstream expects ``brew install libomp``. This repo stays
-    brew-free, so we self-heal the active venv (idempotent): place a single
-    ``libomp.dylib`` at ``<venv>/lib`` (sourced from xgboost's bundled copy,
-    ``vendor/libomp.dylib``, or the workspace venv — walking up from cwd,
-    which also covers DVC-experiment temp venvs) and add an
-    ``@loader_path/../../../..//`` rpath to each dylib so both resolve the
-    *same* image. Copying a libomp per package instead loads two OpenMP
-    runtimes and segfaults (measured: xgboost unpickle after lightgbm
-    import). No-op off macOS. See DESIGN.md (wave 11).
-    """
-    import platform
-    import shutil
-    import subprocess
-    import sys
-    from importlib.util import find_spec
-    from pathlib import Path
-
-    if platform.system() != "Darwin":
-        return
-
-    def _pkg_lib(pkg: str) -> Path | None:
-        spec = find_spec(pkg)
-        if spec is None or not spec.submodule_search_locations:
-            return None
-        return Path(next(iter(spec.submodule_search_locations))) / "lib"
-
-    sources: list[Path] = []
-    xgb_lib = _pkg_lib("xgboost")
-    if xgb_lib is not None:
-        sources.append(xgb_lib / "libomp.dylib")
-    here = Path(__file__).resolve()
-    sources.extend(p / "vendor" / "libomp.dylib" for p in (here.parent, *here.parents[1:4]))
-    for base in [Path.cwd(), *Path.cwd().parents][:8]:
-        sources.extend(base.glob(".venv/lib/libomp.dylib"))
-
-    target = Path(sys.prefix) / "lib" / "libomp.dylib"
-    if not target.exists():
-        target.parent.mkdir(parents=True, exist_ok=True)
-        for source in sources:
-            if source.exists() and source != target:
-                try:
-                    shutil.copy2(source, target)
-                except OSError:
-                    return  # read-only envs: the libs raise their own error
-                break
-    if not target.exists():
-        return
-
-    rpath = "@loader_path/../../../..//"
-    for pkg, dylib_name in (("xgboost", "libxgboost.dylib"), ("lightgbm", "lib_lightgbm.dylib")):
-        lib_dir = _pkg_lib(pkg)
-        if lib_dir is None:
-            continue
-        dylib = lib_dir / dylib_name
-        if not dylib.exists():
-            continue
-        try:
-            out = subprocess.run(
-                ["otool", "-l", str(dylib)], capture_output=True, text=True, check=True
-            ).stdout
-            if "@loader_path/../../../..//" not in out:
-                subprocess.run(
-                    ["install_name_tool", "-add_rpath", rpath, str(dylib)],
-                    capture_output=True,
-                    check=False,
-                )
-        except (OSError, subprocess.SubprocessError):
-            pass
+_LIBOMP_HINT = (
+    "On macOS, install OpenMP (the PyPI wheels for xgboost/lightgbm do not "
+    "bundle it): brew install libomp. Linux wheels bundle libgomp and need "
+    "nothing. Original error: {cause}"
+)
 
 
-_ensure_libomp()  # must run before `import lightgbm`
+def _boosting_import_error(cause: BaseException) -> RuntimeError:
+    """Actionable error when the boosting native libraries cannot load."""
+    text = str(cause)
+    if "libomp" in text or "OpenMP" in text:
+        return RuntimeError(_LIBOMP_HINT.format(cause=text))
+    return RuntimeError(f"xgboost/lightgbm failed to import: {cause}")
 
-from lightgbm import LGBMClassifier  # noqa: E402
-from xgboost import XGBClassifier  # noqa: E402
 
-from churn_pipeline.config import ChurnConfig  # noqa: E402
+try:  # optional boosting arms; the wave-2 logistic arm needs neither
+    from lightgbm import LGBMClassifier
+    from xgboost import XGBClassifier
+except (ImportError, OSError) as _boost_exc:  # pragma: no cover - env dependent
+    raise _boosting_import_error(_boost_exc) from _boost_exc
+
+from churn_pipeline.config import ChurnConfig, pd  # noqa: E402
 from churn_pipeline.features import MissingValueIndicator, OutlierCapper  # noqa: E402
 
 NUMERIC_COLS = ["age", "tenure_months", "monthly_charges", "support_calls"]

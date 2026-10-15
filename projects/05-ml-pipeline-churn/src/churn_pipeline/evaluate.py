@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
-import pandas as pd  # type: ignore[import-untyped]
 import plotly.graph_objects as go
 from numpy.typing import NDArray
 from portfolio_core.plotting import add_takeaway, apply_theme, style_runs
@@ -23,7 +22,7 @@ from sklearn.inspection import permutation_importance
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_auc_score
 from sklearn.pipeline import Pipeline
 
-from churn_pipeline.config import ChurnConfig
+from churn_pipeline.config import ChurnConfig, pd
 
 DEFAULT_THRESHOLD = 0.5
 

@@ -98,17 +98,29 @@ flowchart LR
   1,339 histgb). macOS libomp: neither wheel bundles it (upstream expects
   brew) and naive per-package copies load two OpenMP runtimes → segfault on
   xgboost unpickle with lightgbm imported (measured). Fix:
-  `model.py:_ensure_libomp` self-heals the active venv with ONE shared
+  `model.py:_ensure_libomp` self-healed the active venv with ONE shared
   `<venv>/lib/libomp.dylib` plus an `@loader_path` rpath on both dylibs
-  (idempotent; sources: xgboost copy, `vendor/libomp.dylib`, workspace venv —
-  the latter covers DVC-experiment temp venvs); the workspace venv itself was
-  repaired the same way (single `.venv/lib/libomp.dylib`, per-package copies
-  removed). Also declared previously-transitive deps (pandas, optuna,
+  (sources: xgboost copy, `vendor/libomp.dylib` — removed in wave 12 —, or
+  the workspace venv — the latter covers DVC-experiment temp venvs); the
+  workspace venv itself was repaired the same way (single
+  `.venv/lib/libomp.dylib`, per-package copies removed). Also declared previously-transitive deps (pandas, optuna,
   pyyaml); fixed `family_scores` to filter `TrialState.COMPLETE` (Optuna 5
   sets `value` on pruned trials); corrected the xgboost arm to balance via
   native `scale_pos_weight` (`class_weight` is silently ignored).
   Sensitivity experiments and the queue blocker are documented in
   "Experiment versioning" below.
+- 2026-10-15 · Wave 12 (external-audit remediation): removed
+  `vendor/libomp.dylib` and the `_ensure_libomp` venv surgery from wave 11 —
+  replaced by a documented prerequisite (README: macOS `brew install libomp`;
+  Linux wheels bundle libgomp) and a graceful import guard in `model.py`
+  (`_boosting_import_error`: actionable message on libomp-load failures, no
+  path rewriting or rpath grafting). Type ignores reduced 13 → 6 by
+  re-exporting the untyped third-party names (pandas, pyyaml, threadpoolctl)
+  from `config.py` so consumers import typed-Any handles; remaining ignores
+  each carry a reason (sklearn Any-base classes ×2, the three re-exports,
+  and one intentional invalid-kwargs test). The workspace venv keeps the
+  wave-11 repair (single `.venv/lib/libomp.dylib` + loader-path rpaths), so
+  all tests pass on this machine with no in-repo binary.
 
 ## Experiment versioning
 

@@ -1,9 +1,8 @@
 """HPO search-space and determinism tests (toy studies, no network)."""
 
 import numpy as np
-import pandas as pd
 import pytest
-from churn_pipeline.config import ChurnConfig
+from churn_pipeline.config import ChurnConfig, pd
 from churn_pipeline.hpo import (
     MODEL_FAMILIES,
     build_estimator,
