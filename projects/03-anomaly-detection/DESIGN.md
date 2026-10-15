@@ -89,6 +89,21 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.5.0 (2026-10-15): wave-13 external audit — NAB real data becomes the
+  primary track (`data_source="nab"` default; synthetic generator stays the
+  labelled CI/fast path): 12 checksum-pinned series across
+  realAWSCloudwatch/realKnownCause/realTraffic with event-based metrics
+  leading (window detected if >=1 alert inside, lead tolerance 0; range
+  precision/recall/F1; PR-AUC primary, ROC-AUC secondary). Headline: overall
+  PR-AUC 0.527 / range-F1 0.157 (16/17 events, 1609 alerts, range precision
+  0.107) vs. synthetic PR-AUC 0.916 — the honest real-vs-synthetic delta:
+  injected anomalies are trivially separable, so the synthetic track cannot
+  expose the false-positive firehose. New figures `nab_timelines`,
+  `nab_score_distribution`, `nab_alert_budget`; adaptive streaming runs on
+  NAB (drift trigger fires on 31/120 chunks — recalibration remaining);
+  series without evaluable test windows are excluded from aggregates, never
+  scored as misses. Dataset card `docs/data-registry/nab.md` + import
+  manifest `data-registry/imports/nab.json`.
 - 0.4.0 (2026-10-13): wave-7 roadmap implementation — adaptive-threshold
   streaming simulation (`detect --adaptive`: 5 × 1 440-row chunks, median/IQR
   drift z, 0 events on the stable test stream, fixed 120 flags @ 15.9%/15.0%

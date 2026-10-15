@@ -52,33 +52,34 @@ sections:
     text_md: |
       **Datasets**
 
-      - **Synthetic telemetry (default):** the stream used throughout is
-        synthetic and seeded (n = 20 000 one-minute rows, seed 42) — daily
-        seasonality plus noise on three channels (`cpu`, `mem`, `latency_ms`),
-        with 2% of minutes injected as anomalies (a CPU step of +30–50 points
-        and a 2–5× latency multiplier at random timestamps). This is the
-        default because evaluation must be *graded*: the injected ground truth
-        lets us compute honest ROC-AUC/PR-AUC, and the seedable generator
-        regenerates bit-identical data offline in every CI run — no network,
-        no drift between environments. The generator lives in the shared
-        platform (`portfolio_core.synthetic`).
-      - **NSL-KDD (optional real-data track):** the [NSL-KDD data
+      - **NAB — primary real-data track (default `data_source`):** a bounded
+        subset of 12 series from the [Numenta Anomaly
+        Benchmark](https://github.com/numenta/NAB) spanning three real-world
+        families — AWS CloudWatch metrics, traffic sensors, and known-cause
+        system failures — each fetched as a checksum-pinned CSV with labelled
+        anomaly windows from `combined_windows.json` (dataset card:
+        [NAB registry](https://amm-ds.github.io/portfolio/data-registry/nab/),
+        import manifest: `data-registry/imports/nab.json`; cite Ahmad, Lavin,
+        Purdy & Agha 2017, Neurocomputing). Event-based evaluation leads:
+        a window counts as detected when at least one alert falls inside it.
+      - **Synthetic telemetry (CI / fast path):** a seeded generator (n =
+        20 000 one-minute rows, seed 42) with 2% injected anomalies — daily
+        seasonality plus CPU/memory/latency channels. It regenerates
+        bit-identical offline in every CI run and answers pipeline questions
+        fast, but its anomalies are trivially separable, so it cannot rank
+        solutions on real-world precision — that is what NAB is for.
+      - **NSL-KDD (secondary real-data track):** the [NSL-KDD data
         registry](https://amm-ds.github.io/portfolio/data-registry/nsl-kdd/)
-        entry (UNB/CIC research benchmark, cleaned network-flow records with
-        attack categories) is the planned real-data swap-in. It drops into the
-        same `DatasetContract` shape, but it is *not* the default: licensing
-        and download steps make it unsuitable for graded CI evaluation, so it
-        stays an opt-in track behind the contract.
+        entry (UNB/CIC research benchmark) — a labeled network-flow transfer
+        probe behind the same `DatasetContract` shape.
 
-      A versioned `DatasetContract` (checksum, source, license, snapshot date)
-      travels with whichever dataset is active, and the ground-truth
-      `is_anomaly` / attack label is used for **evaluation only** — no
-      detector ever sees it.
+      Ground-truth labels are used for **evaluation only** — no detector ever
+      sees them.
 
-      **Business implication:** a reproducible, graded default plus a
-      contract-shaped real-data track means the evaluation harness is
-      production-shaped from day one — swapping synthetic for client telemetry
-      is a config change, not a rebuild.
+      **Business implication:** real data headlines the evaluation and the
+      synthetic stream is explicitly labelled as the fast path — a client
+      sees both the honest real-world numbers and the reproducible harness
+      that produced them.
 
   - id: eda
     text_md: |
@@ -181,52 +182,54 @@ sections:
 
       Key findings:
 
-      - **OCSVM rescued by tuning (0.34 → 0.91 ROC-AUC):** the default
-        `gamma="scale"` failed, but the study found `gamma=0.013` (parameter
-        importance 0.99) — a ~6× tighter kernel whose boundary carves the
-        anomaly blob out instead of folding it in.
-      - **LOF not rescued — structural blindness:** its best neighborhood
-        size saturated at the search cap (200) and test ROC-AUC went down
-        (0.527 → 0.505). LOF compares each point only to its local
-        neighborhood, so inside a self-similar anomaly cluster every point
-        looks normal (median LOF ≈ 1.11 on test anomalies vs ≈ 1.09 on
-        normals). No neighborhood size fixes a method that never looks
-        outward.
-      - **Fixed-2%-budget operating point ties:** at the fixed alert budget the
-        three top detectors each flag 120 test minutes at ~15% recall / ~14%
-        precision. AUC/PR-AUC measure ranking quality; a production deployment
-        would pick the operating point from the sweep curve against an
-        alerting budget, not from AUC alone.
-      - **Rolling-median residuals de-cluster the blob (0.9158 → 0.9999
-        ROC-AUC):** adding six `signal − rolling_median` features lifts the
-        untuned IsolationForest to near-perfect ranking (PR-AUC 0.996); the
-        k-NN distance of anomalies jumps 20.5 → 59.9 while normals stay at
-        9.5 → 17.0 — exactly the isolation signature local-density methods
-        could not see.
-      - **Adaptive-threshold streaming agrees with fixed on a stable stream:**
-        the champion simulated over 5 × 24 h chunks shows per-chunk drift
-        z of 0.027–0.089 (trigger 1.0) — zero drift events, and the
-        train-anchored adaptive threshold emits 113 flags vs. the fixed 120
-        at the same ~15% precision. The drift-response machinery is in place
-        and unit-tested for when drift persists.
-      - **NSL-KDD transfer probe holds up (0.8817 ROC-AUC / 0.8916 PR-AUC):**
-        the champion family fit on 125 973 real network-flow records scores
-        0.88+ on the labeled test split despite completely different feature
-        semantics and a 57% prevalence — a strong transfer signal with the
-        caveats stated in the data section.
+      - **Real data headline (NAB, 12 series, event-based):** overall PR-AUC
+        **0.527**, range-F1 **0.157** — 16/17 labelled windows detected, but
+        at range precision 0.107 it takes 1 609 alerts to catch them. By
+        family: realTraffic PR-AUC 0.728 / range-F1 0.310, realKnownCause
+        0.438 / 0.074, realAWSCloudwatch 0.404 / 0.088. Versus the synthetic
+        track (PR-AUC 0.916, residual features 0.9999), the delta *is* the
+        finding: injected synthetic anomalies are trivially separable, so the
+        synthetic track can demonstrate pipeline mechanics, HPO behavior, and
+        detector-family failure modes — but it cannot expose the property
+        clients pay for, precision at real anomaly rarity. The audit-driven
+        switch to event-based metrics on NAB is what surfaced the
+        false-positive firehose as the true problem.
+      - **Adaptive streaming on real series:** the median/IQR drift trigger
+        fires on 31 of 120 NAB chunks — calibrated on synthetic, it is too
+        twitchy for real score noise; recalibration is on the roadmap.
+      - **OCSVM rescued by tuning (0.34 → 0.91 ROC-AUC, synthetic track):**
+        the default `gamma="scale"` failed, but the study found
+        `gamma=0.013` (parameter importance 0.99) — a ~6× tighter kernel whose
+        boundary carves the anomaly blob out instead of folding it in.
+      - **LOF not rescued — structural blindness (synthetic track):** its
+        best neighborhood size saturated at the search cap (200) and test
+        ROC-AUC went down (0.527 → 0.505); inside a self-similar anomaly
+        cluster every point looks normal to a purely local method.
+      - **Rolling-median residuals de-cluster the synthetic blob
+        (0.9158 → 0.9999 ROC-AUC):** adding six `signal − rolling_median`
+        columns lifts the untuned IsolationForest to near-perfect ranking —
+        residual features are the right default *for that failure mode*.
+      - **NSL-KDD transfer probe (0.8817 ROC-AUC / 0.8916 PR-AUC):** the
+        champion family holds up on 22 544 real network-flow records despite
+        completely different feature semantics — a secondary real-data signal
+        with its caveats stated in the data section.
 
-      The engineering guardrails behind these numbers: fixed contamination for
-      every run (untuned and tuned), HPO validated on a slice of the train
-      window only, sklearn-1.9-safe score replication, and checksum-pinned
-      fetches for the real-data track.
+      The engineering guardrails behind these numbers: fixed contamination,
+      HPO validated inside the train window only, checksum-pinned fetches,
+      train-window-anchored thresholds, and series with no evaluable test
+      events excluded from aggregates (never scored as misses).
 
       **Business implication:** One-Class SVM went from worst to contender
-      after tuning — the lesson is that defaults, not algorithms, are often
-      the problem; a cheap, disciplined HPO pass (plus residual features that
-      cost one polars expression) should precede any "this model doesn't
-      work" verdict.
+      after tuning — and the NAB numbers say what the synthetic track could
+      not: the remaining problem is false-alert precision, so the next
+      dollar goes to alert budgeting and deduplication, not to more AUC.
     figures:
-      [roc_curves, pr_curves, score_distribution, threshold_sweep, adaptive_stream]
+      - nab_timelines
+      - nab_score_distribution
+      - nab_alert_budget
+      - roc_curves
+      - score_distribution
+      - adaptive_stream
     metrics_keys:
       [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 
@@ -262,13 +265,17 @@ sections:
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
 roadmap:
   - status: delivered
-    text: Adaptive-threshold streaming — drift-aware simulation over 5×24h chunks (drift z 0.027–0.089, zero events), machinery unit-tested and ready for live traffic.
+    text: NAB real-data primary track — 12 checksum-pinned series with event-based metrics; headline PR-AUC 0.527 / range-F1 0.157 (16/17 events at 0.107 range precision) versus synthetic 0.916.
+  - status: delivered
+    text: Adaptive-threshold streaming — drift-aware simulation on synthetic (zero events) and NAB (31/120 chunks trigger recalibration); machinery unit-tested.
   - status: delivered
     text: Rolling-median residual features — residual probe lifts IsolationForest 0.9158 → 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the anomaly blob.
   - status: delivered
     text: NSL-KDD real-data track — checksum-pinned fetch of 125,973 network-flow records; champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC.
-  - status: deferred
-    text: Residual features as the default run ladder — the shipped probe shows the gain; the full ladder re-run (LOF and OCSVM included) is engagement-dependent.
+  - status: remaining
+    text: Attack the false-positive firehose on NAB — per-series alert budgets, event deduplication, per-family thresholds; range precision 0.107 is the problem to solve.
+  - status: remaining
+    text: Recalibrate the adaptive drift trigger on real data — the median/IQR z tuned on synthetic fires on 26% of NAB chunks; needs a higher threshold or variance-normalised statistic.
   - status: deferred
     text: Production streaming integration — needs a real event source; deferred until a client engagement supplies live-shaped traffic.
   - status: deferred

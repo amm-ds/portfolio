@@ -44,6 +44,13 @@ class AnomalyConfig(RunConfig):
     n_estimators: int = Field(default=300, gt=0, description="IsolationForest trees.")
     lof_neighbors: int = Field(default=20, gt=0, description="LOF neighborhood size.")
     hpo_trials: int = Field(default=30, gt=0, description="Optuna trials per detector family.")
+    data_source: Literal["nab", "synthetic"] = Field(
+        default="nab",
+        description=(
+            "Primary data track for real runs: NAB real series (default) or the seeded "
+            "synthetic telemetry generator (CI/fast path, used by the test-suite)."
+        ),
+    )
     ocsvm_nu: float | None = Field(
         default=None,
         gt=0,
