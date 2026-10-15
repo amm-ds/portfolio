@@ -38,7 +38,7 @@ def load_config() -> RAGConfig:
     """RAGConfig defaults, overlaid with ``params.yaml`` when present (DVC)."""
     params_path = Path("params.yaml")
     if params_path.exists():
-        import yaml  # type: ignore[import-untyped]
+        import yaml  # type: ignore[import-untyped]  # PyYAML has no stubs; mkdocs transitive dep
 
         data = yaml.safe_load(params_path.read_text(encoding="utf-8")) or {}
         unknown = set(data) - set(RAGConfig.model_fields)

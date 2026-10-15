@@ -104,35 +104,35 @@ def run_ragas(config: RAGConfig, rows: list[RagasRow]) -> dict[str, float]:
     """
     if not rows:
         raise ValueError("no RAGAS rows provided")
-    from ragas import evaluate as ragas_evaluate  # type: ignore[import-untyped]
-    from ragas.embeddings import LangchainEmbeddingsWrapper  # type: ignore[import-untyped]
-    from ragas.evaluation import EvaluationDataset  # type: ignore[import-untyped]
-    from ragas.llms import LangchainLLMWrapper  # type: ignore[import-untyped]
-    from ragas.metrics import (  # type: ignore[import-untyped]
-        answer_relevancy,
-        context_precision,
-        context_recall,
-        faithfulness,
-    )
-    from ragas.run_config import RunConfig  # type: ignore[import-untyped]
+    # ragas ships no type stubs: mypy reports the untyped module once per file,
+    # so a single bare ignore on this combined import covers all submodules.
+    from ragas import embeddings, evaluate, evaluation, llms, metrics, run_config  # type: ignore
 
-    dataset = EvaluationDataset.from_list(to_ragas_dicts(rows))
-    # Local 32B calls can take minutes; default 60 s per-metric timeout is too
-    # tight. Two workers: parallel enough to overlap short verdicts, gentle
-    # enough for one memory-bandwidth-bound Ollama instance.
-    run_config = RunConfig(timeout=900, max_workers=4, max_retries=3, seed=config.seed)
-    result = ragas_evaluate(
+    dataset = evaluation.EvaluationDataset.from_list(to_ragas_dicts(rows))
+    # Local model calls can take minutes; default 60 s per-metric timeout is
+    # too tight. Four workers overlap short verdicts without thrashing one
+    # memory-bandwidth-bound Ollama instance.
+    run_cfg = run_config.RunConfig(timeout=900, max_workers=4, max_retries=3, seed=config.seed)
+    result = evaluate(
         dataset,
-        metrics=[faithfulness, answer_relevancy, context_precision, context_recall],
-        llm=LangchainLLMWrapper(langchain_chat_model()),
-        embeddings=LangchainEmbeddingsWrapper(MiniLMEmbeddings(config.embedding_model)),
-        run_config=run_config,
+        metrics=[
+            metrics.faithfulness,
+            metrics.answer_relevancy,
+            metrics.context_precision,
+            metrics.context_recall,
+        ],
+        llm=llms.LangchainLLMWrapper(langchain_chat_model()),
+        embeddings=embeddings.LangchainEmbeddingsWrapper(MiniLMEmbeddings(config.embedding_model)),
+        run_config=run_cfg,
         raise_exceptions=False,
     )
     # EvaluationResult exposes per-row lists via __getitem__; aggregate here,
     # skipping NaN rows (raise_exceptions=False marks failed samples NaN).
     metric_names = [
-        m.name for m in [faithfulness, answer_relevancy, context_precision, context_recall]
+        metrics.faithfulness.name,
+        metrics.answer_relevancy.name,
+        metrics.context_precision.name,
+        metrics.context_recall.name,
     ]
     scores: dict[str, float] = {}
     for name in metric_names:
@@ -140,3 +140,10 @@ def run_ragas(config: RAGConfig, rows: list[RagasRow]) -> dict[str, float]:
         scores[name] = round(sum(values) / len(values), 4) if values else float("nan")
     logger.info("RAGAS: %s", scores)
     return scores
+
+
+def ensure_ragas_importable() -> str:
+    """Eager import guard: fail fast (with version) if the venv is pruned mid-run."""
+    from ragas import __version__ as ragas_version
+
+    return str(ragas_version)

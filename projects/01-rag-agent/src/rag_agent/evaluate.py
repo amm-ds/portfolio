@@ -1,37 +1,46 @@
-"""Evaluation harness: retrieval sweep, RAG quality, cost/latency, reports.
+"""Evaluation orchestration: retrieval sweep, RAG quality, RAGAS, telemetry.
 
-Three blocks, all writing into ``config.reports_dir``:
+Coordinates the measurement pipeline, delegating figure construction to
+:mod:`rag_agent.figures` and report/telemetry writing to
+:mod:`rag_agent.reporting`. Everything is injectable (embed/rerank/agent) so
+tests run with fakes offline.
+
+Pipeline blocks, all writing into ``config.reports_dir``:
 
 (a) retrieval eval — graded questions run against every chunk-size index;
-    recall@5, recall@10, MRR@5 per size + a sweep figure.
-(b) RAG eval — the agent answers every question; RAGEvaluator (keyword judge
-    by default) scores faithfulness / answer relevance / context recall.
-(c) ops — per-query latency (p50/p95), estimated cost per query from recorded
-    token usage, a latency histogram and a cost-vs-quality frontier figure.
-
-Everything is injectable (embed/rerank/agent) so tests run with fakes offline.
+    recall@5, recall@10, MRR@5 per size + a seeded random baseline.
+(b) RAG eval — the agent answers each question; a rubric judge (provider model
+    by default, keyword judge as CI floor) scores faithfulness / relevance /
+    recall, and ``--ragas`` adds the RAGAS metric set with the local model as
+    evaluator.
+(c) ops — per-query latency (p50/p95) and cost telemetry for the active
+    backend (local inference = $0 API cost).
 """
 
 import json
 import random
 import time
 from collections.abc import Sequence
-from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, cast
+from typing import cast
 
 import numpy as np
 import plotly.graph_objects as go
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import add_takeaway, apply_theme, save_json, style_runs
-from portfolio_eval.metrics import MetricResult, RunResult
-from portfolio_eval.rag import KeywordJudge, RAGEvalResult, RAGEvalRow, RAGEvaluator
-from portfolio_eval.report import ReportBuilder
+from portfolio_eval.rag import KeywordJudge, RAGEvalRow, RAGEvaluator
 from pydantic_ai import Agent
 
 from rag_agent.agent import build_agent
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.corpus import load_corpus
+from rag_agent.figures import (
+    corpus_eda_figure,
+    frontier_figure,
+    hpo_frontier_figure,
+    latency_figure,
+    model_comparison_figure,
+    retrieval_funnel_figure,
+    sweep_figure,
+)
 from rag_agent.index import (
     ChunkRecord,
     CrossEncoderReranker,
@@ -43,15 +52,60 @@ from rag_agent.index import (
     chunk_articles,
 )
 from rag_agent.judge import RubricJudge, build_judge
-from rag_agent.ragas_eval import RagasRow, run_ragas
+from rag_agent.ragas_eval import RagasRow, ensure_ragas_importable, run_ragas
+from rag_agent.reporting import (
+    TOP_K_VALUES,
+    RAGRun,
+    RetrievalScores,
+    TopkData,
+    cost_telemetry,
+    est_input_tokens_at,
+    inference_backend,
+    mrr_at_5,
+    recall_at_k,
+    recall_at_k_from,
+    topk_run_for_size,
+    write_cost_telemetry,
+)
+from rag_agent.reporting import (
+    write_reports as _write_reports,
+)
 from rag_agent.schemas import AnalysisResult, Article, Citation, EvalQuestion
 
-logger = get_logger(__name__)
+__all__ = [
+    "RAGRun",
+    "RetrievalScores",
+    "TopkData",
+    "choose_retrieval_config",
+    "corpus_eda_figure",
+    "cost_telemetry",
+    "est_input_tokens_at",
+    "estimate_input_tokens",
+    "first_relevant_rank",
+    "frontier_figure",
+    "hpo_frontier_figure",
+    "inference_backend",
+    "latency_figure",
+    "load_questions",
+    "model_comparison",
+    "model_comparison_figure",
+    "mrr_at_5",
+    "query_prefixed",
+    "random_ranks",
+    "recall_at_k",
+    "recall_at_k_from",
+    "rerank_ablation",
+    "retrieval_funnel_figure",
+    "run",
+    "run_rag_eval",
+    "run_retrieval_sweep",
+    "sweep_figure",
+    "topk_run_for_size",
+    "topk_sweep",
+    "write_cost_telemetry",
+]
 
-# Rough tokens-per-word assumption for estimating prompt context sizes when the
-# provider does not report per-section usage.
-TOKENS_PER_WORD = 1.3
-BASE_PROMPT_TOKENS = 220  # system prompt + tool schemas + message envelope
+logger = get_logger(__name__)
 
 # Embedding-model arms compared on the same chunk-200 chunk structure. BGE
 # expects an instruction prefix on queries only (passages are encoded plain).
@@ -63,105 +117,6 @@ EMBEDDING_ARMS: tuple[tuple[str, str, str], ...] = (
         "Represent this sentence for searching relevant passages: ",
     ),
 )
-TOP_K_VALUES: tuple[int, ...] = (3, 5, 8, 10)
-
-
-@dataclass
-class RetrievalScores:
-    """Retrieval quality for one chunk-size index."""
-
-    chunk_size: int
-    recall_at_5: float
-    recall_at_10: float
-    mrr_at_5: float
-    n_questions: int
-
-    def as_run(self, name: str | None = None) -> RunResult:
-        return RunResult(
-            name=name or f"retrieval_chunks_{self.chunk_size}",
-            metrics=[
-                MetricResult(name="recall@5", value=self.recall_at_5),
-                MetricResult(name="recall@10", value=self.recall_at_10),
-                MetricResult(name="mrr@5", value=self.mrr_at_5),
-            ],
-        )
-
-
-@dataclass
-class RAGRun:
-    """RAG quality + ops measurements for one agent configuration."""
-
-    eval_result: RAGEvalResult
-    latencies_s: list[float] = field(default_factory=list)
-    ragas_rows: list[RagasRow] = field(default_factory=list)
-    input_tokens: list[int] = field(default_factory=list)
-    output_tokens: list[int] = field(default_factory=list)
-
-    @property
-    def p50_latency_s(self) -> float:
-        return _percentile(self.latencies_s, 0.50)
-
-    @property
-    def p95_latency_s(self) -> float:
-        return _percentile(self.latencies_s, 0.95)
-
-    def cost_per_query_usd(self, avg_input_tokens: float) -> float:
-        """Cost estimate at ``avg_input_tokens`` input + measured avg output tokens."""
-        avg_out = sum(self.output_tokens) / len(self.output_tokens) if self.output_tokens else 0.0
-        return avg_input_tokens / 1e6 * self._rate_in + avg_out / 1e6 * self._rate_out
-
-    @property
-    def est_cost_per_query_usd(self) -> float:
-        """Cost from agent-recorded usage (mock mode: floor, not context-sized)."""
-        if not self.input_tokens:
-            return float("nan")
-        avg_in = sum(self.input_tokens) / len(self.input_tokens)
-        return self.cost_per_query_usd(avg_in)
-
-    _rate_in: float = 0.15
-    _rate_out: float = 0.60
-
-    def as_run(self, name: str, input_tokens_override: float | None = None) -> RunResult:
-        d = self.eval_result.to_dict()
-        avg_in = (
-            input_tokens_override
-            if input_tokens_override is not None
-            else (sum(self.input_tokens) / len(self.input_tokens) if self.input_tokens else 0.0)
-        )
-        metrics = [
-            MetricResult(name="faithfulness", value=float(d["faithfulness"])),
-            MetricResult(name="answer_relevance", value=float(d["answer_relevance"])),
-            MetricResult(name="context_recall", value=float(d["context_recall"])),
-            MetricResult(name="p50_latency_s", value=self.p50_latency_s, higher_is_better=False),
-            MetricResult(name="p95_latency_s", value=self.p95_latency_s, higher_is_better=False),
-            MetricResult(
-                name="est_cost_usd_per_query",
-                value=self.cost_per_query_usd(avg_in),
-                higher_is_better=False,
-            ),
-        ]
-        return RunResult(name=name, metrics=metrics)
-
-
-def _percentile(values: list[float], q: float) -> float:
-    if not values:
-        return float("nan")
-    ordered = sorted(values)
-    idx = min(len(ordered) - 1, max(0, round(q * (len(ordered) - 1))))
-    return ordered[idx]
-
-
-def recall_at_k(ranks: list[int | None], k: int) -> float:
-    """Fraction of questions with a relevant article within the top ``k`` hits."""
-    if not ranks:
-        return float("nan")
-    return sum(1 for r in ranks if r is not None and r <= k) / len(ranks)
-
-
-def mrr_at_5(ranks: list[int | None]) -> float:
-    if not ranks:
-        return float("nan")
-    return sum(1.0 / r for r in ranks if r is not None and r <= 5) / len(ranks)
 
 
 def load_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuestion]:
@@ -241,25 +196,9 @@ def run_retrieval_sweep(
             first_relevant_rank(retriever.search(q.question, top_k=10), q.relevant_article_ids)
             for q in questions
         ]
-        scores.append(
-            RetrievalScores(
-                chunk_size=size,
-                recall_at_5=recall_at_k(ranks, 5),
-                recall_at_10=recall_at_k(ranks, 10),
-                mrr_at_5=mrr_at_5(ranks),
-                n_questions=len(questions),
-            )
-        )
+        scores.append(_score_ranks(ranks, len(questions), size))
         rnd = random_ranks(config, questions, retriever.chunks)
-        random_scores.append(
-            RetrievalScores(
-                chunk_size=size,
-                recall_at_5=recall_at_k(rnd, 5),
-                recall_at_10=recall_at_k(rnd, 10),
-                mrr_at_5=mrr_at_5(rnd),
-                n_questions=len(questions),
-            )
-        )
+        random_scores.append(_score_ranks(rnd, len(questions), size))
         logger.info(
             "chunk_size=%d recall@5=%.3f recall@10=%.3f mrr@5=%.3f | "
             "random recall@5=%.3f mrr@5=%.3f",
@@ -271,52 +210,6 @@ def run_retrieval_sweep(
             random_scores[-1].mrr_at_5,
         )
     return scores, random_scores, sweep_figure(scores, random_scores)
-
-
-def sweep_figure(
-    scores: list[RetrievalScores], random_scores: list[RetrievalScores] | None = None
-) -> go.Figure:
-    sizes = [s.chunk_size for s in scores]
-    fig = go.Figure(
-        data=[
-            go.Bar(name="recall@5", x=sizes, y=[s.recall_at_5 for s in scores]),
-            go.Bar(name="recall@10", x=sizes, y=[s.recall_at_10 for s in scores]),
-            go.Bar(name="mrr@5", x=sizes, y=[s.mrr_at_5 for s in scores]),
-        ]
-    )
-    if random_scores:
-        # Flat dashed reference series so the embedding gain is visible.
-        fig.add_trace(
-            go.Scatter(
-                name="random baseline recall@5",
-                x=sizes,
-                y=[s.recall_at_5 for s in random_scores],
-                mode="lines+markers",
-                line={"dash": "dash", "color": "#f472b6"},
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                name="random baseline mrr@5",
-                x=sizes,
-                y=[s.mrr_at_5 for s in random_scores],
-                mode="lines+markers",
-                line={"dash": "dot", "color": "#fbbf24"},
-            )
-        )
-    fig.update_layout(
-        barmode="group",
-        title="Retrieval quality vs chunk size (random-retrieval baseline dashed)",
-        xaxis_title="chunk size (tokens)",
-        yaxis_title="score",
-    )
-    return apply_theme(
-        add_takeaway(
-            fig,
-            "Recall saturates at every size; smaller chunks rank sharper (MRR) "
-            "at half the context cost.",
-        )
-    )
 
 
 def run_rag_eval(
@@ -478,14 +371,14 @@ def topk_sweep(
     embed_fn: EmbedFn,
     rerank_fn: RerankFn,
     k_values: Sequence[int] = TOP_K_VALUES,
-) -> dict[int, dict[str, Any]]:
+) -> dict[int, TopkData]:
     """Per chunk size: top-``max(k)`` search once, then derive every recall@k.
 
     Also records the cumulative citation-token sum per question so input-token
     (cost) estimates are available for every (size, k) point without re-search.
     """
     k_max = max(k_values)
-    per_size: dict[int, dict[str, Any]] = {}
+    per_size: dict[int, TopkData] = {}
     for size in config.chunk_sizes:
         retriever = Retriever.from_index_dir(config, config.index_path(size), embed_fn, rerank_fn)
         ranks: list[int | None] = []
@@ -500,37 +393,17 @@ def topk_sweep(
                 acc += chunk.token_count if chunk is not None else len(c.excerpt.split())
                 sums.append(acc)
             token_sums.append(sums)
-        per_size[size] = {
-            "ranks": ranks,
-            "token_sums": token_sums,
-            "n_chunks": len(retriever.chunks),
-        }
-    return per_size
-
-
-def est_input_tokens_at(topk_data: dict[str, Any], questions: list[EvalQuestion], k: int) -> float:
-    """Average estimated input tokens/query at top-``k`` for one chunk size."""
-    token_sums: list[list[int]] = topk_data["token_sums"]
-    total = 0.0
-    for q, sums in zip(questions, token_sums, strict=True):
-        context_words = sums[k - 1] if k <= len(sums) else (sums[-1] if sums else 0)
-        total += (
-            BASE_PROMPT_TOKENS
-            + len(q.question.split()) * TOKENS_PER_WORD
-            + context_words * TOKENS_PER_WORD
+        per_size[size] = TopkData(
+            ranks=ranks, token_sums=token_sums, n_chunks=len(retriever.chunks)
         )
-    return total / max(len(questions), 1)
-
-
-def recall_at_k_from(topk_data: dict[str, Any], k: int) -> float:
-    return recall_at_k(topk_data["ranks"], k)
+    return per_size
 
 
 def choose_retrieval_config(
     config: RAGConfig,
     model_scores: dict[str, RetrievalScores],
     sweep_scores: list[RetrievalScores],
-    topk: dict[int, dict[str, Any]],
+    topk: dict[int, TopkData],
 ) -> RetrievalBest:
     """Pick the production config from the HPO measurements.
 
@@ -556,190 +429,12 @@ def choose_retrieval_config(
     )
 
 
-def model_comparison_figure(model_scores: dict[str, RetrievalScores], best_slug: str) -> go.Figure:
-    slugs = list(model_scores)
-    metrics = ["recall@5", "recall@10", "mrr@5"]
-    fig = go.Figure(
-        data=[
-            go.Scatter(
-                name=slug,
-                x=metrics,
-                y=[
-                    model_scores[slug].recall_at_5,
-                    model_scores[slug].recall_at_10,
-                    model_scores[slug].mrr_at_5,
-                ],
-                mode="lines+markers",
-            )
-            for slug in slugs
-        ]
-    )
-    style_runs(fig, best=best_slug)
-    fig.update_layout(
-        title="Embedding model comparison (chunk 200, rerank on)",
-        yaxis_title="score",
-    )
-    return apply_theme(
-        add_takeaway(fig, "Both encoders saturate recall@5; ranking sharpness (MRR) decides.")
-    )
-
-
-def hpo_frontier_figure(
-    config: RAGConfig,
-    questions: list[EvalQuestion],
-    topk: dict[int, dict[str, Any]],
-    chosen: RetrievalBest,
-) -> go.Figure:
-    """Quality-vs-cost frontier over the full (chunk size x top_k) grid."""
-    fig = go.Figure()
-    for size in config.chunk_sizes:
-        fig.add_trace(
-            go.Scatter(
-                name=f"chunks={size}",
-                x=[est_input_tokens_at(topk[size], questions, k) for k in TOP_K_VALUES],
-                y=[recall_at_k_from(topk[size], k) for k in TOP_K_VALUES],
-                mode="lines+markers+text",
-                text=[f"k={k}" for k in TOP_K_VALUES],
-                textposition="top center",
-            )
-        )
-    chosen_x = est_input_tokens_at(topk[chosen.chunk_size], questions, chosen.top_k)
-    chosen_y = recall_at_k_from(topk[chosen.chunk_size], chosen.top_k)
-    fig.add_trace(
-        go.Scatter(
-            name="chosen config",
-            x=[chosen_x],
-            y=[chosen_y],
-            mode="markers",
-            marker={"symbol": "star", "size": 18, "color": "#f472b6"},
-        )
-    )
-    fig.update_layout(
-        title="Retrieval HPO frontier: recall@k vs estimated input tokens",
-        xaxis_title="estimated input tokens per query",
-        yaxis_title="recall@k",
-    )
-    return apply_theme(
-        add_takeaway(
-            fig,
-            f"Chosen: {chosen.embedding_slug}, chunks={chosen.chunk_size}, "
-            f"top_k={chosen.top_k}, rerank={'on' if chosen.rerank else 'off'} — "
-            f"recall {chosen_y:.3f} at ≈{chosen_x:.0f} tokens.",
-        )
-    )
-
-
-def retrieval_funnel_figure(
-    config: RAGConfig,
-    questions: list[EvalQuestion],
-    topk: dict[int, dict[str, Any]],
-    chosen: RetrievalBest,
-) -> go.Figure:
-    """Aggregate retrieval funnel: candidates → after rerank → relevant."""
-    size_data = topk[chosen.chunk_size]
-    n = len(questions)
-    n_candidates = min(size_data["n_chunks"], chosen.top_k * config.rerank_multiplier)
-    relevant = sum(1 for r in size_data["ranks"] if r is not None and r <= chosen.top_k)
-    fig = go.Figure(
-        go.Funnel(
-            y=[
-                f"embedding candidates (top-{n_candidates})",
-                f"after rerank (top-{chosen.top_k})",
-                "relevant article in top-k",
-            ],
-            x=[n * n_candidates, n * chosen.top_k, relevant],
-            textinfo="value+percent initial",
-        )
-    )
-    fig.update_layout(title="Retrieval funnel (aggregate, all eval questions)")
-    return apply_theme(
-        add_takeaway(
-            fig,
-            f"{relevant}/{n} questions ({relevant / max(n, 1):.0%}) keep a relevant "
-            "article after rerank.",
-        )
-    )
-
-
-def corpus_eda_figure(articles: list[Article]) -> go.Figure:
-    """EDA: articles per topic + article-length (words) distribution."""
-    from plotly.subplots import make_subplots
-
-    topics = sorted({a.topic for a in articles})
-    counts = [sum(1 for a in articles if a.topic == t) for t in topics]
-    lengths = [len(a.text.split()) for a in articles]
-
-    fig = make_subplots(
-        rows=1,
-        cols=2,
-        subplot_titles=("Articles per topic", "Article length (words)"),
-    )
-    fig.add_trace(go.Bar(x=topics, y=counts, name="articles"), row=1, col=1)
-    fig.add_trace(go.Histogram(x=lengths, nbinsx=40, name="article length"), row=1, col=2)
-    fig.update_layout(
-        title=f"Corpus composition ({len(articles)} Wikipedia articles)",
-        showlegend=False,
-    )
-    return apply_theme(
-        add_takeaway(
-            fig, "Five near-balanced topics; article lengths right-skewed, capped at 12k chars."
-        )
-    )
-
-
-def latency_figure(latencies_s: list[float]) -> go.Figure:
-    fig = go.Figure(data=[go.Histogram(x=latencies_s, nbinsx=20)])
-    fig.update_layout(
-        title="Per-query agent latency (s)",
-        xaxis_title="latency (s)",
-        yaxis_title="queries",
-    )
-    return apply_theme(fig)
-
-
-def frontier_figure(
-    config: RAGConfig,
-    scores: list[RetrievalScores],
-    est_input_tokens_per_query: dict[int, float],
-    avg_output_tokens: float,
-    rag_quality_by_size: dict[int, float],
-) -> go.Figure:
-    """Cost-vs-quality frontier: one point per chunk size."""
-    points = []
-    for s in scores:
-        in_tok = est_input_tokens_per_query.get(s.chunk_size)
-        quality = rag_quality_by_size.get(s.chunk_size)
-        if in_tok is None or quality is None:
-            continue
-        cost = (
-            in_tok / 1e6 * config.usd_per_mtok_input
-            + avg_output_tokens / 1e6 * config.usd_per_mtok_output
-        )
-        points.append((cost, quality, s.chunk_size))
-    fig = go.Figure(
-        data=[
-            go.Scatter(
-                x=[p[0] for p in points],
-                y=[p[1] for p in points],
-                mode="markers+text",
-                text=[f"chunks={p[2]}" for p in points],
-                textposition="top center",
-                marker={"size": 12},
-            )
-        ]
-    )
-    fig.update_layout(
-        title="Cost vs quality frontier (estimated, per query)",
-        xaxis_title="estimated cost per query (USD)",
-        yaxis_title="answer relevance",
-    )
-    return apply_theme(fig)
-
-
 def estimate_input_tokens(
     config: RAGConfig, questions: list[EvalQuestion], embed_fn: EmbedFn, rerank_fn: RerankFn | None
 ) -> dict[int, float]:
     """Average estimated input tokens/query for each chunk size (prompt + top-k context)."""
+    from rag_agent.reporting import BASE_PROMPT_TOKENS, TOKENS_PER_WORD
+
     estimates: dict[int, float] = {}
     for size in config.chunk_sizes:
         retriever = Retriever.from_index_dir(config, config.index_path(size), embed_fn, rerank_fn)
@@ -758,129 +453,6 @@ def estimate_input_tokens(
     return estimates
 
 
-def _write_reports(
-    config: RAGConfig,
-    scores: list[RetrievalScores],
-    rag_run: RAGRun | None,
-    figures: dict[str, go.Figure],
-    extra_metrics: dict[str, Any],
-    rag_input_tokens_override: float | None = None,
-    random_scores: list[RetrievalScores] | None = None,
-    model_scores: dict[str, RetrievalScores] | None = None,
-    rerank_scores: dict[str, RetrievalScores] | None = None,
-    topk_runs: list[RunResult] | None = None,
-    ragas_scores: dict[str, float] | None = None,
-) -> None:
-    builder = ReportBuilder(
-        title="01-rag-agent — evaluation report", figures_dir=config.reports_dir / "figures"
-    )
-    for s in scores:
-        builder.add_run(s.as_run())
-    for s in random_scores or []:
-        builder.add_run(s.as_run(f"retrieval_random_chunks_{s.chunk_size}"))
-    for slug, s in (model_scores or {}).items():
-        builder.add_run(s.as_run(f"retrieval_model_{slug}_chunks_{s.chunk_size}"))
-    for label, s in (rerank_scores or {}).items():
-        builder.add_run(s.as_run(f"retrieval_rerank_{label}_chunks_{s.chunk_size}"))
-    for run in topk_runs or []:
-        builder.add_run(run)
-    if rag_run is not None:
-        builder.add_run(
-            rag_run.as_run("rag_agent", input_tokens_override=rag_input_tokens_override)
-        )
-    if ragas_scores:
-        builder.add_run(
-            RunResult(
-                name="ragas",
-                metrics=[MetricResult(name=k, value=v) for k, v in ragas_scores.items()],
-            )
-        )
-    builder.build(config.reports_dir, figures=figures)
-    # Persist machine-readable figure payloads for the showcase app.
-    for name, fig in figures.items():
-        save_json(fig, config.reports_dir / "figures" / f"{name}.json")
-    # Augment metrics.json with the full detail the README cites.
-    metrics_path = config.reports_dir / "metrics.json"
-    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-    metrics["detail"] = extra_metrics
-    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
-    logger.info("report written: %s", config.reports_dir / "report.html")
-
-
-def topk_run_for_size(size: int, topk_data: dict[str, Any]) -> RunResult:
-    """One run row per chunk size carrying the full recall@k grid."""
-    metrics = [
-        MetricResult(name=f"recall@{k}", value=recall_at_k_from(topk_data, k)) for k in TOP_K_VALUES
-    ]
-    metrics.append(MetricResult(name="mrr@5", value=mrr_at_5(topk_data["ranks"])))
-    return RunResult(name=f"retrieval_topk_sweep_chunks_{size}", metrics=metrics)
-
-
-def inference_backend() -> str:
-    """Human-readable backend label: env provider or local Ollama model."""
-    import os
-
-    from portfolio_core.config import get_settings
-    from portfolio_core.llm import DEFAULT_OLLAMA_MODEL
-
-    s = get_settings()
-    if s.llm_api_key and s.llm_base_url:
-        return f"env:{s.llm_model or 'kimi-k2-0711-preview'}"
-    return f"ollama:{os.environ.get('OLLAMA_MODEL', DEFAULT_OLLAMA_MODEL)}"
-
-
-def cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> dict[str, Any]:
-    """Per-query token usage + cost framing for the telemetry artifact.
-
-    Local inference (Ollama) has $0 API cost; the rate-card numbers are kept as
-    a clearly-labelled hypothetical for budget comparisons with hosted models.
-    """
-    hypothetical = [
-        round(
-            in_tok / 1e6 * config.usd_per_mtok_input + out_tok / 1e6 * config.usd_per_mtok_output,
-            8,
-        )
-        for in_tok, out_tok in zip(rag_run.input_tokens, rag_run.output_tokens, strict=False)
-    ]
-    backend = inference_backend()
-    return {
-        "backend": backend,
-        "api_cost_usd": 0.0 if backend.startswith("ollama:") else None,
-        "note": (
-            "local inference: $0 API cost; eval is CPU/GPU-bound "
-            f"(~{wall_time_s / 60:.1f} min wall time)"
-        ),
-        "n_queries": len(hypothetical),
-        "total_input_tokens": sum(rag_run.input_tokens),
-        "total_output_tokens": sum(rag_run.output_tokens),
-        "eval_wall_time_s": round(wall_time_s, 1),
-        "rate_card": {
-            "usd_per_mtok_input": config.usd_per_mtok_input,
-            "usd_per_mtok_output": config.usd_per_mtok_output,
-        },
-        "rate_card_hypothetical_cost_usd": {
-            "total": round(sum(hypothetical), 8),
-            "mean": round(sum(hypothetical) / max(len(hypothetical), 1), 8),
-            "p50": round(_percentile(hypothetical, 0.50), 8),
-            "p95": round(_percentile(hypothetical, 0.95), 8),
-        },
-        "per_query": [
-            {"input_tokens": in_tok, "output_tokens": out_tok}
-            for in_tok, out_tok in zip(rag_run.input_tokens, rag_run.output_tokens, strict=False)
-        ],
-    }
-
-
-def write_cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> Path:
-    """Write ``reports/cost_telemetry.json`` for the active inference backend."""
-    payload = cost_telemetry(config, rag_run, wall_time_s)
-    path = config.reports_dir / "cost_telemetry.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    logger.info("cost telemetry written: %s (backend=%s)", path, payload["backend"])
-    return path
-
-
 def run(
     config: RAGConfig,
     ragas: bool = False,
@@ -894,13 +466,11 @@ def run(
     ``ragas=True`` additionally computes the RAGAS metric set with the local
     model as evaluator. ``max_questions`` bounds ONLY the LLM phases (agent +
     RAGAS) to the first N graded questions — retrieval metrics always use the
-    full set; local 32B inference makes the unbounded run multi-hour.
+    full set; local model inference makes the unbounded run multi-hour.
     """
     if ragas:
-        # Eager import: fail fast if the venv is pruned mid-run.
-        import ragas as _ragas  # type: ignore[import-untyped]
-
-        _ = _ragas.__version__
+        # Fail fast if the venv is pruned mid-run.
+        ensure_ragas_importable()
 
     articles = load_corpus(config)
     questions = load_questions(config, articles)
@@ -917,7 +487,7 @@ def run(
     embed_fn: EmbedFn = SentenceTransformerEmbedder(config.embedding_model)
     rerank_fn: RerankFn = CrossEncoderReranker(config.reranker_model)
 
-    # --- Retrieval HPO: chunk sweep + random floor (wave 2) -----------------
+    # --- Retrieval HPO: chunk sweep + random floor --------------------------
     scores, random_scores, sweep_fig = run_retrieval_sweep(config, questions, embed_fn, rerank_fn)
     # --- Ablations: embedding model, rerank on/off, top_k grid --------------
     model_scores = model_comparison(config, questions, articles, rerank_fn)
@@ -986,7 +556,6 @@ def run(
     extra = {
         "n_questions": len(questions),
         "rag_n_questions": len(rag_questions),
-        "n_articles": len(articles),
         "offline": offline,
         "retrieval": {
             str(s.chunk_size): {
