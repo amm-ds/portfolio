@@ -11,7 +11,7 @@ with its status. Audits are a gift — disagreements are noted with reasons.
 | Project 09 documented as working but a 54-line stub **in the repo** | **Fixed within the hour** — the full implementation existed locally but had never been swept into a commit (orchestration miss, not fabrication). Committed and pushed: toolsets, pydantic-graph workflow, HITL, pydantic-evals suite, 44 tests, real metrics. Docs and code now match. |
 | README says 7 projects; repo/docs list 9 | **Fixed** — README states "8 working showcases + 1 planned". |
 | "~97% coverage" (libs-only gate) | **Fixed** — per-package wording; CI now runs a second pass enforcing projects+apps ≥55% alongside libs ≥80% strict. |
-| 06 gap "vs published optima" (best-known ≠ optimal; vehicles not compared) | **Relabeled** best-known everywhere; **vehicle-count comparison scheduled (wave 12)** — the audit is right that Solomon ranks vehicles first. |
+| 06 gap "vs published optima" (best-known ≠ optimal; vehicles not compared) | **Fixed** — all 56 instances carry SINTEF distance+vehicle references; dual-gap reported; the audit's prediction confirmed: vehicles-first ranking puts ALNS at 43/56 (not 56/56), and both directions are disclosed. |
 | "Reproduces from a clean clone" overclaimed (figures gitignored, no DVC remote) | **Partially addressed** — README statics now show results without any run; regenerate-locally contract stands per ADR-0003 (DVC remote consciously declined below). |
 
 ## Engineering (file-level audit)
@@ -19,9 +19,9 @@ with its status. Audits are a gift — disagreements are noted with reasons.
 | Finding | Status |
 |---|---|
 | Frontend never tested in CI; mypy libs-only | **Fixed** — ci.yml runs npm ci/test/build and mypy over libs+projects+apps. |
-| Vendored `vendor/libomp.dylib` + import-time hack | **Scheduled (wave 12)** — replace with documented `brew install libomp` prerequisite + clear error. |
-| God-module evaluate.py files (06 complexity 53; 01 1,074 lines) | **Scheduled (wave 12)** — split into metrics/figures/report modules, zero behavior change. |
-| 57 `type: ignore` (~190 `Any`) concentrated in 01/04/05 | **Scheduled (wave 12)** — reduced where typed wrappers exist. |
+| Vendored `vendor/libomp.dylib` + import-time hack | **Fixed** — binary removed from the repo; documented prerequisite + actionable import error; the previously-segfaulting e2e passes unskipped. |
+| God-module evaluate.py files (06 complexity 53; 01 1,074 lines) | **Fixed** — 01 → evaluate/figures/reporting (71 tests unmodified); 06 → evaluate/figures/reporting + solver/construct/routing, full pipeline rerun with identical numbers. |
+| 57 `type: ignore` (~190 `Any`) concentrated in 01/04/05 | **Fixed (majority)** — 05: 13→6, 04: 17→6, 01: 10→5, with reason comments and typed re-export shims. |
 | Supply chain: no dependabot/CodeQL/audit | **Fixed** — dependabot (pip/npm/actions), CodeQL (python+TS), pip-audit CI step. |
 | Notebooks thin (4 code cells, no outputs) | **Conscious convention** — cleared outputs are deliberate (review diffs stay readable); each notebook is an execution-verified walkthrough, and the README statics now carry the visual load. |
 | Seniority signal: 4-day burst, no PRs/issues | **Noted** — moving to PR-based flow post-launch; the audits themselves are being answered in public, which is the practice being asked for. |
