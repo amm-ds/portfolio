@@ -22,6 +22,14 @@ harness.
 | `polars` | Lazy/streaming ETL over GB-scale open data | 03, 07 |
 | `FastAPI` + `React/TypeScript` | Showcase API + web UI (no Streamlit) | `apps/` |
 
+## Show it, don't just say it
+
+Real artifacts from the pipelines (interactive versions in each [case study](https://amm-ds.github.io/portfolio/projects/)):
+
+| Flagship demand intelligence (41.2M trips) | RAG quality-vs-cost frontier | VRPTW routes vs best-known |
+|---|---|---|
+| ![Zone-hour demand heatmap](docs/assets/readme/mobility-demand-heatmap.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![C101 route map](docs/assets/readme/routing-c101-route-map.png) |
+
 ## Projects
 
 Eight working showcases (01–07, 09) and one planned (08 — LLM inference & serving).
