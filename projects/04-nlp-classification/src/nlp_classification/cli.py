@@ -8,7 +8,6 @@ from pathlib import Path
 import numpy as np
 import torch
 import typer
-from datasets import Dataset  # type: ignore[import-untyped]
 from portfolio_core.logging import get_logger
 
 from nlp_classification.config import HPOBest, NLPConfig
@@ -37,6 +36,7 @@ from nlp_classification.model import (
     train_baseline,
     train_nn,
 )
+from nlp_classification.shims import Dataset
 
 PARAMS_PATH = Path("params.yaml")
 

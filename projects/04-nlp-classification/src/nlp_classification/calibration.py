@@ -10,12 +10,12 @@ goes into the story, the numbers go into ``reports/metrics.json`` under
 
 import numpy as np
 import torch
-from datasets import Dataset  # type: ignore[import-untyped]
 from portfolio_core.logging import get_logger
 from torch import nn
 from torch.utils.data import DataLoader
 
 from nlp_classification.model import _collate, predict_proba_nn
+from nlp_classification.shims import Dataset
 
 logger = get_logger(__name__)
 
@@ -50,10 +50,10 @@ def fit_temperature(
     def closure() -> torch.Tensor:
         optimizer.zero_grad()
         loss = nn.functional.cross_entropy(logits / temperature.clamp(min=1e-2), labels)
-        loss.backward()  # type: ignore[no-untyped-call]
+        loss.backward()  # type: ignore[no-untyped-call]  # torch autograd fn untyped in stubs
         return loss
 
-    optimizer.step(closure)  # type: ignore[no-untyped-call]
+    optimizer.step(closure)  # type: ignore[no-untyped-call]  # LBFGS.step untyped in stubs
     fitted = float(temperature.clamp(min=1e-2).item())
     nll = float(nn.functional.cross_entropy(logits / fitted, labels).item())
     logger.info("temperature scaling: T=%.4f (val NLL=%.4f)", fitted, nll)

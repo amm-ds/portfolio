@@ -13,11 +13,11 @@ import numpy as np
 import optuna
 import pytest
 import torch
-from datasets import Dataset  # type: ignore[import-untyped]
 from nlp_classification.config import HPOBest, NLPConfig
 from nlp_classification.evaluate import select_tuned_run
 from nlp_classification.hpo import make_study, suggest_config, tuned_config
 from nlp_classification.model import train_nn
+from nlp_classification.shims import Dataset
 from torch import nn
 
 

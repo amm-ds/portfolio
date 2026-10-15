@@ -18,7 +18,6 @@ from typing import Any, cast
 
 import plotly.graph_objects as go
 import torch
-from datasets import Dataset  # type: ignore[import-untyped]
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import apply_theme, save_json
@@ -46,6 +45,7 @@ from nlp_classification.model import (
     predict_nn,
     predict_random_uniform,
 )
+from nlp_classification.shims import Dataset
 
 logger = get_logger(__name__)
 

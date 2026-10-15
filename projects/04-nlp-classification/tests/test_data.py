@@ -4,7 +4,6 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from datasets import Dataset, DatasetDict, load_from_disk  # type: ignore[import-untyped]
 from nlp_classification.config import NLPConfig
 from nlp_classification.data import (
     LABEL_COLUMN,
@@ -16,6 +15,7 @@ from nlp_classification.data import (
     stratified_subsample,
     tokenize_dataset,
 )
+from nlp_classification.shims import Dataset, DatasetDict, load_from_disk
 
 
 def _cfg(tmp_path: Path) -> NLPConfig:

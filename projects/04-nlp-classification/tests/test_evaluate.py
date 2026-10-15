@@ -1,7 +1,6 @@
 """Figure builders: smoke tests with tiny inputs (no model artifacts needed)."""
 
 import pytest
-from datasets import Dataset  # type: ignore[import-untyped]
 from nlp_classification.evaluate import (
     confusion_matrix_figure,
     eda_class_balance_figure,
@@ -11,6 +10,7 @@ from nlp_classification.evaluate import (
     training_curve_figure,
 )
 from nlp_classification.model import TrainingHistory
+from nlp_classification.shims import Dataset
 
 CLASS_NAMES = ["World", "Sports", "Business", "Sci/Tech"]
 

@@ -3,12 +3,12 @@
 import numpy as np
 import pytest
 import torch
-from datasets import Dataset  # type: ignore[import-untyped]
 from nlp_classification.calibration import (
     expected_calibration_error,
     fit_temperature,
 )
 from nlp_classification.model import predict_proba_nn
+from nlp_classification.shims import Dataset
 from torch import nn
 
 

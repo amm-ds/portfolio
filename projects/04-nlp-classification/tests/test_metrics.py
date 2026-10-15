@@ -26,7 +26,9 @@ def test_run_result_includes_weighted_f1() -> None:
     run = run_result("test", [0, 1, 2, 3], [0, 1, 2, 2])
     names = {m.name for m in run.metrics}
     assert {"accuracy", "f1_macro", "f1_weighted"} <= names
-    assert 0.0 < run.get("f1_weighted").value < 1.0  # type: ignore[union-attr]
+    weighted = run.get("f1_weighted")
+    assert weighted is not None
+    assert 0.0 < weighted.value < 1.0
 
 
 def test_compare_runs_ranks_best_first() -> None:
