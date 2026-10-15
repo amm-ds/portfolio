@@ -181,7 +181,7 @@ uv run pytest projects/03-anomaly-detection -q
 - **Honest model comparison**: we report the losers too, with a verified
   mechanism (local-density blindness to clustered anomalies), rather than
   cherry-picking the winner. That diagnosis — and the remedy (residual /
-  contextual features, subspace ensembles) — is the senior part of the work.
+  contextual features, subspace ensembles) — is where the real work lies.
 - **Full reproducibility**: one seed regenerates data, features, models,
   metrics, and figures end-to-end in seconds.
 

@@ -5,14 +5,26 @@ stages:
       - src/agentic_workflows
       - params.yaml
     outs:
-      - data
+      - data/tasks.json
+
+  run:
+    cmd: uv run python -m agentic_workflows.cli run-all
+    deps:
+      - data/tasks.json
+      - src/agentic_workflows
+      - params.yaml
+    outs:
+      - data/run_records.json
+
   evaluate:
     cmd: uv run python -m agentic_workflows.cli evaluate
     deps:
+      - data/run_records.json
+      - data/tasks.json
       - src/agentic_workflows
       - params.yaml
-      - data
     outs:
-      - reports/metrics.json
       - reports/report.html
       - reports/figures
+    metrics:
+      - reports/metrics.json

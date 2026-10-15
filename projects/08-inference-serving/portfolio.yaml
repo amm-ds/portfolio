@@ -3,10 +3,11 @@ title: LLM Inference & Serving
 domain: Model serving & inference optimization
 topic: ML Systems & Decisioning
 techniques:
-- serving (FastAPI)
+- vLLM/llama.cpp
 - quantization
 - batching
 - latency SLOs
+- cost/token
 data: Open models (HF) + public benchmarks
 status: planned
 order: 8

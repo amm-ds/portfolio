@@ -1,1 +1,6 @@
 seed: 42
+max_execute_retries: 1
+max_critique_loops: 1
+suite_latency_budget_s: 180
+usd_per_mtok_input: 0.15
+usd_per_mtok_output: 0.60

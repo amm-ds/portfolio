@@ -1,0 +1,74 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run python -m agentic_workflows.cli prepare
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 81e3fe766693b1939da1c6f103bde685
+      size: 133
+    - path: src/agentic_workflows
+      hash: md5
+      md5: 25e9aa75db44674b2cdb1cdfe59621aa.dir
+      size: 161000
+      nfiles: 17
+    outs:
+    - path: data/tasks.json
+      hash: md5
+      md5: ad68b4c7f2357e2262ed76de714fc462
+      size: 4481
+  run:
+    cmd: uv run python -m agentic_workflows.cli run-all
+    deps:
+    - path: data/tasks.json
+      hash: md5
+      md5: ad68b4c7f2357e2262ed76de714fc462
+      size: 4481
+    - path: params.yaml
+      hash: md5
+      md5: 81e3fe766693b1939da1c6f103bde685
+      size: 133
+    - path: src/agentic_workflows
+      hash: md5
+      md5: 25e9aa75db44674b2cdb1cdfe59621aa.dir
+      size: 161000
+      nfiles: 17
+    outs:
+    - path: data/run_records.json
+      hash: md5
+      md5: b9bf3491529819773e89d01cd0bd91b2
+      size: 4580
+  evaluate:
+    cmd: uv run python -m agentic_workflows.cli evaluate
+    deps:
+    - path: data/run_records.json
+      hash: md5
+      md5: b9bf3491529819773e89d01cd0bd91b2
+      size: 4580
+    - path: data/tasks.json
+      hash: md5
+      md5: ad68b4c7f2357e2262ed76de714fc462
+      size: 4481
+    - path: params.yaml
+      hash: md5
+      md5: 81e3fe766693b1939da1c6f103bde685
+      size: 133
+    - path: src/agentic_workflows
+      hash: md5
+      md5: 25e9aa75db44674b2cdb1cdfe59621aa.dir
+      size: 161000
+      nfiles: 17
+    outs:
+    - path: reports/figures
+      hash: md5
+      md5: f65d1a389de36d97ee40a9ba169730d6.dir
+      size: 50381
+      nfiles: 6
+    - path: reports/metrics.json
+      hash: md5
+      md5: ccf1a50ca00b646bf3f3b084b8fd6721
+      size: 5773
+    - path: reports/report.html
+      hash: md5
+      md5: d5fd76641c0df18c96d83784c9833a79
+      size: 3146

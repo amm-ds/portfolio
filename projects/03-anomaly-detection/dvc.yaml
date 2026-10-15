@@ -49,9 +49,10 @@ stages:
       - data/models
       - data/models_tuned
     outs:
-      - reports/metrics.json
       - reports/report.html
       - reports/figures
+    metrics:
+      - reports/metrics.json
   detect:
     cmd: uv run python -m anomaly_detection.cli detect --adaptive
     deps:

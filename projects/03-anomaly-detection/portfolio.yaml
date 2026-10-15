@@ -2,11 +2,12 @@ id: 03-anomaly-detection
 title: Anomaly Detection
 domain: Unsupervised ML / telemetry
 techniques:
-- polars ETL
 - IsolationForest
 - LOF
-- One-Class SVM
-- DQ gates
+- OneClassSVM
+- Optuna
+- adaptive thresholds
+- Polars
 data: Synthetic (NSL-KDD optional)
 status: working
 order: 3
