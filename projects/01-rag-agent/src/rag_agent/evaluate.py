@@ -43,6 +43,7 @@ from rag_agent.index import (
     chunk_articles,
 )
 from rag_agent.judge import RubricJudge, build_judge
+from rag_agent.ragas_eval import RagasRow, run_ragas
 from rag_agent.schemas import AnalysisResult, Article, Citation, EvalQuestion
 
 logger = get_logger(__name__)
@@ -92,6 +93,7 @@ class RAGRun:
 
     eval_result: RAGEvalResult
     latencies_s: list[float] = field(default_factory=list)
+    ragas_rows: list[RagasRow] = field(default_factory=list)
     input_tokens: list[int] = field(default_factory=list)
     output_tokens: list[int] = field(default_factory=list)
 
@@ -326,6 +328,7 @@ def run_rag_eval(
 ) -> RAGRun:
     """Run the agent over the question set and score outputs with the judge."""
     rows: list[RAGEvalRow] = []
+    ragas_rows: list[RagasRow] = []
     latencies: list[float] = []
     input_tokens: list[int] = []
     output_tokens: list[int] = []
@@ -347,6 +350,24 @@ def run_rag_eval(
                 retrieved_relevant=any(c.article_id in relevant for c in evidence),
             )
         )
+        # RAGAS sample: full retrieved chunk texts + the graded article lead as
+        # the reference for context_recall.
+        contexts: list[str] = []
+        reference = ""
+        for citation in evidence:
+            chunk = retriever.get_chunk(citation.chunk_id)
+            if chunk is not None:
+                contexts.append(chunk.text)
+                if not reference and chunk.article_id in relevant:
+                    reference = chunk.text[:500]
+        ragas_rows.append(
+            RagasRow(
+                question=question.question,
+                answer=output.summary,
+                contexts=contexts,
+                reference=reference,
+            )
+        )
     selected = judge if judge is not None else build_judge()
     logger.info("RAG judge: %s", getattr(selected, "name", type(selected).__name__))
     # RAGEvaluator types the slot as KeywordJudge; the rubric judges share the
@@ -357,6 +378,7 @@ def run_rag_eval(
     return RAGRun(
         eval_result=rag_result,
         latencies_s=latencies,
+        ragas_rows=ragas_rows,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         _rate_in=config.usd_per_mtok_input,
@@ -739,7 +761,7 @@ def estimate_input_tokens(
 def _write_reports(
     config: RAGConfig,
     scores: list[RetrievalScores],
-    rag_run: RAGRun,
+    rag_run: RAGRun | None,
     figures: dict[str, go.Figure],
     extra_metrics: dict[str, Any],
     rag_input_tokens_override: float | None = None,
@@ -747,6 +769,7 @@ def _write_reports(
     model_scores: dict[str, RetrievalScores] | None = None,
     rerank_scores: dict[str, RetrievalScores] | None = None,
     topk_runs: list[RunResult] | None = None,
+    ragas_scores: dict[str, float] | None = None,
 ) -> None:
     builder = ReportBuilder(
         title="01-rag-agent — evaluation report", figures_dir=config.reports_dir / "figures"
@@ -761,7 +784,17 @@ def _write_reports(
         builder.add_run(s.as_run(f"retrieval_rerank_{label}_chunks_{s.chunk_size}"))
     for run in topk_runs or []:
         builder.add_run(run)
-    builder.add_run(rag_run.as_run("rag_agent", input_tokens_override=rag_input_tokens_override))
+    if rag_run is not None:
+        builder.add_run(
+            rag_run.as_run("rag_agent", input_tokens_override=rag_input_tokens_override)
+        )
+    if ragas_scores:
+        builder.add_run(
+            RunResult(
+                name="ragas",
+                metrics=[MetricResult(name=k, value=v) for k, v in ragas_scores.items()],
+            )
+        )
     builder.build(config.reports_dir, figures=figures)
     # Persist machine-readable figure payloads for the showcase app.
     for name, fig in figures.items():
@@ -783,60 +816,103 @@ def topk_run_for_size(size: int, topk_data: dict[str, Any]) -> RunResult:
     return RunResult(name=f"retrieval_topk_sweep_chunks_{size}", metrics=metrics)
 
 
-def cost_telemetry(config: RAGConfig, rag_run: RAGRun, mode: str) -> dict[str, Any]:
-    """Aggregate per-query token usage and estimated cost (rate card from config)."""
-    per_query = [
-        {
-            "input_tokens": in_tok,
-            "output_tokens": out_tok,
-            "est_cost_usd": round(
-                in_tok / 1e6 * config.usd_per_mtok_input
-                + out_tok / 1e6 * config.usd_per_mtok_output,
-                8,
-            ),
-        }
+def inference_backend() -> str:
+    """Human-readable backend label: env provider or local Ollama model."""
+    import os
+
+    from portfolio_core.config import get_settings
+    from portfolio_core.llm import DEFAULT_OLLAMA_MODEL
+
+    s = get_settings()
+    if s.llm_api_key and s.llm_base_url:
+        return f"env:{s.llm_model or 'kimi-k2-0711-preview'}"
+    return f"ollama:{os.environ.get('OLLAMA_MODEL', DEFAULT_OLLAMA_MODEL)}"
+
+
+def cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> dict[str, Any]:
+    """Per-query token usage + cost framing for the telemetry artifact.
+
+    Local inference (Ollama) has $0 API cost; the rate-card numbers are kept as
+    a clearly-labelled hypothetical for budget comparisons with hosted models.
+    """
+    hypothetical = [
+        round(
+            in_tok / 1e6 * config.usd_per_mtok_input + out_tok / 1e6 * config.usd_per_mtok_output,
+            8,
+        )
         for in_tok, out_tok in zip(rag_run.input_tokens, rag_run.output_tokens, strict=False)
     ]
-    costs = [p["est_cost_usd"] for p in per_query]
+    backend = inference_backend()
     return {
-        "mode": mode,  # "live" when a provider answered, "mock" = deterministic floor
+        "backend": backend,
+        "api_cost_usd": 0.0 if backend.startswith("ollama:") else None,
+        "note": (
+            "local inference: $0 API cost; eval is CPU/GPU-bound "
+            f"(~{wall_time_s / 60:.1f} min wall time)"
+        ),
+        "n_queries": len(hypothetical),
+        "total_input_tokens": sum(rag_run.input_tokens),
+        "total_output_tokens": sum(rag_run.output_tokens),
+        "eval_wall_time_s": round(wall_time_s, 1),
         "rate_card": {
             "usd_per_mtok_input": config.usd_per_mtok_input,
             "usd_per_mtok_output": config.usd_per_mtok_output,
         },
-        "n_queries": len(per_query),
-        "total_input_tokens": sum(rag_run.input_tokens),
-        "total_output_tokens": sum(rag_run.output_tokens),
-        "total_est_cost_usd": round(sum(costs), 8),
-        "cost_per_query_usd": {
-            "mean": round(sum(costs) / max(len(costs), 1), 8),
-            "p50": round(_percentile(costs, 0.50), 8),
-            "p95": round(_percentile(costs, 0.95), 8),
+        "rate_card_hypothetical_cost_usd": {
+            "total": round(sum(hypothetical), 8),
+            "mean": round(sum(hypothetical) / max(len(hypothetical), 1), 8),
+            "p50": round(_percentile(hypothetical, 0.50), 8),
+            "p95": round(_percentile(hypothetical, 0.95), 8),
         },
-        "per_query": per_query,
+        "per_query": [
+            {"input_tokens": in_tok, "output_tokens": out_tok}
+            for in_tok, out_tok in zip(rag_run.input_tokens, rag_run.output_tokens, strict=False)
+        ],
     }
 
 
-def write_cost_telemetry(config: RAGConfig, rag_run: RAGRun) -> Path:
-    """Write ``reports/cost_telemetry.json``; mode from provider credentials."""
-    from portfolio_core.config import get_settings
-
-    settings = get_settings()
-    mode = "live" if (settings.llm_api_key and settings.llm_base_url) else "mock"
-    payload = cost_telemetry(config, rag_run, mode)
+def write_cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> Path:
+    """Write ``reports/cost_telemetry.json`` for the active inference backend."""
+    payload = cost_telemetry(config, rag_run, wall_time_s)
     path = config.reports_dir / "cost_telemetry.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    logger.info("cost telemetry written: %s (mode=%s)", path, mode)
+    logger.info("cost telemetry written: %s (backend=%s)", path, payload["backend"])
     return path
 
 
-def run(config: RAGConfig) -> None:
-    """Full evaluation: retrieval HPO + RAG eval + ops, then reports."""
+def run(
+    config: RAGConfig,
+    ragas: bool = False,
+    offline: bool = False,
+    max_questions: int | None = None,
+) -> None:
+    """Full evaluation: retrieval HPO always; RAG/RAGAS/telemetry need a provider.
+
+    ``offline=True`` skips every model-dependent part (agent, judges, RAGAS,
+    telemetry) and reports retrieval quality only — the CI-safe path.
+    ``ragas=True`` additionally computes the RAGAS metric set with the local
+    model as evaluator. ``max_questions`` bounds ONLY the LLM phases (agent +
+    RAGAS) to the first N graded questions — retrieval metrics always use the
+    full set; local 32B inference makes the unbounded run multi-hour.
+    """
+    if ragas:
+        # Eager import: fail fast if the venv is pruned mid-run.
+        import ragas as _ragas  # type: ignore[import-untyped]
+
+        _ = _ragas.__version__
+
     articles = load_corpus(config)
     questions = load_questions(config, articles)
     if not questions:
         raise RuntimeError("no eval questions resolved against the corpus")
+    rag_questions = questions[:max_questions] if max_questions else questions
+    if len(rag_questions) < len(questions):
+        logger.warning(
+            "LLM phases bounded to first %d of %d questions (local inference wall clock)",
+            len(rag_questions),
+            len(questions),
+        )
 
     embed_fn: EmbedFn = SentenceTransformerEmbedder(config.embedding_model)
     rerank_fn: RerankFn = CrossEncoderReranker(config.reranker_model)
@@ -850,26 +926,35 @@ def run(config: RAGConfig) -> None:
     chosen = choose_retrieval_config(config, model_scores, scores, topk)
     logger.info("chosen retrieval config: %s", chosen.model_dump())
 
-    # --- RAG eval at the chosen retrieval config ----------------------------
-    arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
-    chosen_embedder: EmbedFn = SentenceTransformerEmbedder(arm[1])
-    chosen_index = (
-        config.index_path(chosen.chunk_size)
-        if chosen.embedding_slug == "minilm"
-        else config.index_dir / f"chunks_{chosen.chunk_size}_{chosen.embedding_slug}"
-    )
-    retriever = Retriever.from_index_dir(
-        config,
-        chosen_index,
-        chosen_embedder,
-        rerank_fn if chosen.rerank else None,
-        query_prefixed(chosen_embedder, arm[2]),
-    )
-    agent = build_agent(config)
-    rag_run = run_rag_eval(config, agent, retriever, questions)
+    # --- RAG eval at the chosen retrieval config (skipped when --offline) ---
+    run_start = time.perf_counter()
+    rag_run: RAGRun | None = None
+    ragas_scores: dict[str, float] | None = None
+    if not offline:
+        arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
+        chosen_embedder: EmbedFn = SentenceTransformerEmbedder(arm[1])
+        chosen_index = (
+            config.index_path(chosen.chunk_size)
+            if chosen.embedding_slug == "minilm"
+            else config.index_dir / f"chunks_{chosen.chunk_size}_{chosen.embedding_slug}"
+        )
+        retriever = Retriever.from_index_dir(
+            config,
+            chosen_index,
+            chosen_embedder,
+            rerank_fn if chosen.rerank else None,
+            query_prefixed(chosen_embedder, arm[2]),
+        )
+        agent = build_agent(config)
+        rag_run = run_rag_eval(config, agent, retriever, rag_questions)
+        if ragas:
+            ragas_scores = run_ragas(config, rag_run.ragas_rows)
+    wall_time_s = time.perf_counter() - run_start
 
     avg_output_tokens = (
-        sum(rag_run.output_tokens) / len(rag_run.output_tokens) if rag_run.output_tokens else 0.0
+        sum(rag_run.output_tokens) / len(rag_run.output_tokens)
+        if rag_run and rag_run.output_tokens
+        else 0.0
     )
     est_at = {
         size: {k: est_input_tokens_at(topk[size], questions, k) for k in TOP_K_VALUES}
@@ -882,7 +967,7 @@ def run(config: RAGConfig) -> None:
     default_data = topk[default_size]
     default_recall = recall_at_k_from(default_data, config.top_k)
 
-    latency_fig = latency_figure(rag_run.latencies_s)
+    latency_fig = latency_figure(rag_run.latencies_s) if rag_run else None
     eda_fig = corpus_eda_figure(articles)
     model_fig = model_comparison_figure(model_scores, chosen.embedding_slug)
     hpo_fig = hpo_frontier_figure(config, questions, topk, chosen)
@@ -894,12 +979,15 @@ def run(config: RAGConfig) -> None:
         "model_comparison": model_fig,
         "retrieval_funnel": funnel_fig,
         "retrieval_hpo_frontier": hpo_fig,
-        "latency_histogram": latency_fig,
     }
+    if latency_fig is not None:
+        figures["latency_histogram"] = latency_fig
     random_by_size = {s.chunk_size: s for s in random_scores}
     extra = {
         "n_questions": len(questions),
+        "rag_n_questions": len(rag_questions),
         "n_articles": len(articles),
+        "offline": offline,
         "retrieval": {
             str(s.chunk_size): {
                 "recall@5": s.recall_at_5,
@@ -939,33 +1027,47 @@ def run(config: RAGConfig) -> None:
                 "delta_mrr@5": chosen_mrr - mrr_at_5(default_data["ranks"]),
             },
         },
-        "rag": rag_run.eval_result.to_dict(),
+        "rag": rag_run.eval_result.to_dict() if rag_run else None,
+        "ragas": ragas_scores,
         "ops": {
-            "p50_latency_s": rag_run.p50_latency_s,
-            "p95_latency_s": rag_run.p95_latency_s,
-            # Context-sized estimate: what a live provider call would cost given
-            # the measured prompt+context budget at the CHOSEN configuration.
-            "est_cost_usd_per_query": rag_run.cost_per_query_usd(chosen_tokens),
-            # Mock-mode floor from agent-recorded usage (no provider call).
-            "cost_usd_per_query_mock_floor": rag_run.est_cost_per_query_usd,
+            "backend": inference_backend() if rag_run else None,
+            "p50_latency_s": rag_run.p50_latency_s if rag_run else None,
+            "p95_latency_s": rag_run.p95_latency_s if rag_run else None,
+            "est_cost_usd_per_query": (
+                rag_run.cost_per_query_usd(chosen_tokens) if rag_run else None
+            ),
             "avg_input_tokens": (
                 sum(rag_run.input_tokens) / len(rag_run.input_tokens)
-                if rag_run.input_tokens
+                if rag_run and rag_run.input_tokens
                 else None
             ),
             "avg_output_tokens": avg_output_tokens,
         },
     }
-    _write_reports(
-        config,
-        scores,
-        rag_run,
-        figures,
-        extra,
-        rag_input_tokens_override=chosen_tokens,
-        random_scores=random_scores,
-        model_scores=model_scores,
-        rerank_scores=rerank_scores,
-        topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
-    )
-    write_cost_telemetry(config, rag_run)
+    if rag_run is not None:
+        _write_reports(
+            config,
+            scores,
+            rag_run,
+            figures,
+            extra,
+            rag_input_tokens_override=chosen_tokens,
+            random_scores=random_scores,
+            model_scores=model_scores,
+            rerank_scores=rerank_scores,
+            topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
+            ragas_scores=ragas_scores,
+        )
+        write_cost_telemetry(config, rag_run, wall_time_s)
+    else:
+        _write_reports(
+            config,
+            scores,
+            None,
+            figures,
+            extra,
+            random_scores=random_scores,
+            model_scores=model_scores,
+            rerank_scores=rerank_scores,
+            topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
+        )

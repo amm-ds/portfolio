@@ -45,3 +45,5 @@ stages:
       - retrieval_best
     outs:
       - reports
+    metrics:
+      - reports/metrics.json

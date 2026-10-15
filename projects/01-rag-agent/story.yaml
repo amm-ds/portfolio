@@ -44,15 +44,16 @@ sections:
       ```mermaid
       flowchart LR
           Q[User question] --> A[Agent]
-          A -->|LLM_BASE_URL + LLM_API_KEY set| L[Live OpenAI-compatible provider]
-          A -->|no credentials| M[Deterministic mock model]
+          A -->|LLM_BASE_URL + LLM_API_KEY set| L[OpenAI-compatible provider]
+          A -->|no credentials| O[Local Ollama<br/>qwen3.6:35b-a3b-q4_K_M]
           L --> R[Structured AnalysisResult]
-          M --> R
+          O --> R
+          A -->|no provider at all| E[Loud error + setup guidance]
       ```
 
-      Everything must run CPU-only and fully offline — a deterministic mock
-      provider keeps the entire pipeline, evaluation included, runnable in CI
-      without credentials.
+      Retrieval runs CPU-only; the LLM runs on a local model by default — data
+      never leaves the machine, the evaluation included — and `evaluate
+      --offline` keeps a retrieval-only CI path without any provider.
 
       **Business implication:** answers come with citations a reviewer can
       check — trust is a feature, not a promise — and the SLOs are written
@@ -133,8 +134,9 @@ sections:
       rerank ablation shows what the reranker is for: without it recall@5 rises
       to 1.000 but MRR@5 falls to 0.833 — it puts the *right* passage at the
       top of the list, which is what a reading LLM actually consumes. The
-      agent layer is provider-agnostic per ADR-0004: a live OpenAI-compatible
-      endpoint when configured, a deterministic mock otherwise — one code path.
+      agent layer is provider-agnostic per ADR-0004 (amended wave 10): an
+      env-configured OpenAI-compatible endpoint first, local Ollama second —
+      one code path, no runtime mock.
 
       **Business implication:** the whole pipeline runs on commodity CPU — no
       GPU budget, no vendor lock-in, and one seam swaps the LLM provider
@@ -157,26 +159,29 @@ sections:
       ```mermaid
       flowchart LR
           Q[26 graded questions] --> R[Retrieval grid<br/>recall@k, MRR@5]
-          Q --> A[Agent run<br/>mock or live]
+          Q --> A[Agent run<br/>local model, bounded subset]
           R --> B[Random baseline<br/>delta]
-          A --> J[Keyword judge<br/>faithfulness, relevance, recall]
+          A --> J[Rubric judge<br/>+ RAGAS metric set]
           R --> M[reports/metrics.json<br/>+ figures]
           J --> M
       ```
 
-      The RAG layer is scored with a judge: the deterministic keyword judge by
-      default (CI-safe, no credentials), or a pydantic-ai LLM rubric judge
-      returning structured verdicts when `JUDGE=llm` is set with provider
-      credentials — with graceful fallback when unavailable. Operations are
-      measured too — per-query latency (p50/p95) and a cost-per-query estimate
-      built from recorded token usage at each grid point, persisted to
-      `reports/cost_telemetry.json`. The same harness runs in mock mode (CI,
-      offline) and live mode (real provider) with no code changes; the chosen
-      production config is persisted in `params.yaml` as `retrieval_best`.
+      The RAG layer is scored two ways: a rubric judge — the provider model by
+      default, `JUDGE=keyword` for the deterministic platform judge — measuring
+      answer faithfulness, answer relevance, and context recall; and, behind
+      `evaluate --ragas`, the **RAGAS** metric set (faithfulness,
+      answer_relevancy, context_precision, context_recall) with the local model
+      as evaluator, so the full quality run costs $0 in API calls. Operations
+      are measured too — per-query latency (p50/p95) and token usage persisted
+      to `reports/cost_telemetry.json`. Local model inference is the
+      bottleneck, so the documented real run bounds the LLM phases to the first
+      10 graded questions (`--max-questions 10`); retrieval metrics always use
+      the full set, and `evaluate --offline` is the CI-safe retrieval-only
+      path.
 
-      **Business implication:** the mock/live provider split means this eval
-      runs in CI without secrets — quality gates survive procurement and keep
-      guarding every future change.
+      **Business implication:** the offline/keyword path means the quality
+      harness still runs in CI without secrets or GPUs, while the real numbers
+      come from a $0 local run — quality gates survive procurement either way.
     figures:
       - chunk_size_sweep
       - retrieval_hpo_frontier
@@ -204,41 +209,49 @@ sections:
       | random baseline (seeded) | 0.038 | 0.385 | 0.038 |
       | **chosen: MiniLM, chunks=200, top_k=3, rerank ON** | **0.962** | — | **0.936** |
 
+      **RAG quality — real run** (local `qwen3.6:35b-a3b-q4_K_M`, first 10
+      graded questions, chosen config; retrieval metrics above use all 26):
+
+      | Metric | Value | Tool |
+      |---|---|---|
+      | RAGAS faithfulness | **0.805** | `evaluate --ragas` |
+      | RAGAS answer_relevancy | **0.904** | `evaluate --ragas` |
+      | RAGAS context_recall | **0.952** | `evaluate --ragas` |
+      | RAGAS context_precision | 0.333 | `evaluate --ragas` |
+      | faithfulness (CI floor) | 0.36 | keyword judge, same subset |
+      | answer relevance (CI floor) | 0.37 | keyword judge, same subset |
+      | p50 / p95 per-query latency | **61 s / 245 s** | local model, honest |
+
       Key findings:
 
       - Embeddings beat random ranking by **+0.92 recall@5** — the system
         retrieves, it does not luck out.
-      - The chosen config matches the earlier default quality at **−65%
-        context cost** (≈804 vs ≈2,279 input tokens/query): recall is equal,
-        MRR@5 is +0.032 better, and the estimated live cost per query drops
-        to ≈ $0.00015.
-      - The rerank-off nuance: turning the cross-encoder off raises recall@5
-        to 1.000 but drops MRR@5 to 0.833 — coverage is not the same as
-        putting the right passage first, and the top of the list is what the
-        LLM reads.
-      - The stronger encoder (BGE-small) **ties MiniLM exactly** at this
-        scale; no reason to pay for it here.
+      - Real grounding is real: RAGAS faithfulness **0.805** vs the keyword
+        floor 0.36 on the same answers — cheap lexical overlap cannot see
+        entailment; both judges stay in the harness, one for truth, one for CI.
+      - RAGAS context_precision 0.333 is expected at top_k=3 with saturated
+        recall: the list is wide enough to guarantee coverage, and putting the
+        right passage first is the reranker's job (MRR@5 0.936).
+      - Local inference costs **$0 in API calls** (cloud-equivalent ≈ $0.0043
+        per query at the rate card) and pays in wall clock instead — p50 61 s
+        per answer on this machine.
 
-      **So what:** retrieval quality here is bought with chunking discipline,
-      not model size — the cheapest configuration is the best one. RAG quality
-      in mock mode (context_recall 0.962, faithfulness 0.273) reflects the
-      canned offline answer; the harness re-scores real grounded answers
-      unchanged with a live provider.
+      **So what:** retrieval quality is bought with chunking discipline, not
+      model size, and answer quality is verified, not assumed — with the
+      numbers produced by the same local model a client can run unmodified.
 
       Delivered with this evaluation: a **client-corpus onboarding path**
       (`prepare-corpus --source client <jsonl-dir> --license <spdx>` reuses the
       whole pipeline on client documents), **cost telemetry**
-      (`reports/cost_telemetry.json` — per-query tokens and estimated cost
-      against the rate card, mock floor recorded offline), and an **LLM rubric
-      judge behind `JUDGE=llm`** with graceful fallback to the deterministic
-      keyword judge.
+      (`reports/cost_telemetry.json` — backend label, per-query tokens, wall
+      time; $0 API for local inference), and an **LLM rubric judge** (provider
+      model by default, keyword judge as the CI-offline floor, per-verdict
+      fallback).
 
       **Business implication:** "better" was quantified against a random floor
-      and two ablations before money was spent on a bigger model — the tuning
-      budget went to the knob that actually mattered, cutting per-query cost
-      by two-thirds at equal quality; and the onboarding + telemetry pieces
-      mean this system can be pointed at a client dataset and budgeted on day
-      one.
+      and two ablations before money was spent on a bigger model, and the
+      faithfulness claim now rests on measured evidence rather than a demo —
+      the tuning budget went to the knobs that actually mattered.
     figures:
       - model_comparison
       - retrieval_hpo_frontier
@@ -283,9 +296,10 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      Provider fallback chain — shipped, verified: one code path, live
-      OpenAI-compatible endpoint when configured, deterministic mock
-      otherwise; CI-safe, offline-runnable evaluation.
+      Provider fallback chain — shipped, verified: one code path, env-configured
+      OpenAI-compatible endpoint first, local Ollama second (default
+      qwen3.6:35b-a3b-q4_K_M); loud LLMProviderUnavailableError plus a
+      retrieval-only --offline CI path; no runtime mock (ADR-0004, wave 10).
   - status: delivered
     text: >-
       Client-corpus onboarding — shipped, verified: prepare-corpus --source
@@ -293,13 +307,15 @@ roadmap:
       documents with a license flag.
   - status: delivered
     text: >-
-      Cost telemetry — shipped, verified: per-query token usage and estimated
-      cost in reports/cost_telemetry.json, mock floor recorded offline.
+      Cost telemetry — shipped, verified: backend label, per-query token usage
+      and eval wall time in reports/cost_telemetry.json; local inference is
+      $0 API cost, rate-card figures kept as a labelled cloud-equivalent.
   - status: delivered
     text: >-
-      LLM rubric judge — shipped, verified: structured pydantic-ai verdicts
-      behind JUDGE=llm with graceful fallback to the deterministic keyword
-      judge.
+      LLM rubric judge + RAGAS — shipped, verified: provider-model verdicts by
+      default with per-verdict keyword fallback, and the full RAGAS metric set
+      (faithfulness 0.805, answer_relevancy 0.904, context_recall 0.952) scored
+      by the local model at $0 API cost.
   - status: deferred
     text: >-
       Interactive deployment demo — deferred: /rag/chat API endpoints are live

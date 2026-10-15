@@ -9,7 +9,6 @@ from pathlib import Path
 
 import pytest
 from portfolio_core.io import fetch, sha256_of
-from portfolio_core.llm import MockProviderUnsetError, build_model
 from portfolio_eval.metrics import MetricResult, RunResult, compare_runs
 from portfolio_eval.report import EvalReport
 from typer.testing import CliRunner
@@ -36,11 +35,16 @@ def test_fetch_checksum_mismatch_is_loud(tmp_path: Path) -> None:
     assert not dest.exists()
 
 
-def test_build_model_mock_mode_and_error_without_response() -> None:
-    model = build_model(mock_response="hello")
-    assert model is not None
-    with pytest.raises(MockProviderUnsetError):
-        build_model(mock_response=None)
+def test_build_model_mock_helper_and_provider() -> None:
+    from portfolio_core.llm import build_model, mock_model_for_tests, ollama_available
+    from pydantic_ai.models.function import FunctionModel
+
+    # Test-only helper: deterministic FunctionModel.
+    assert isinstance(mock_model_for_tests("hello"), FunctionModel)
+    # Runtime factory: whatever provider exists on this machine (skip otherwise).
+    if not ollama_available():
+        pytest.skip("no LLM provider available on this machine")
+    assert build_model() is not None
 
 
 def test_compare_runs_ranks_best_first() -> None:

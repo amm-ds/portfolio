@@ -4,9 +4,10 @@ domain: Agentic AI / LLM
 techniques:
 - pydantic-ai
 - RAG
-- sentence-transformers
-- faiss
+- FAISS
+- reranking
 - structured outputs
+- RAGAS
 data: Wikipedia (HF, real)
 status: flagship
 order: 1

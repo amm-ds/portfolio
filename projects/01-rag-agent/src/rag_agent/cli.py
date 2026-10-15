@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from portfolio_core.llm import LLMProviderUnavailableError
 from portfolio_core.logging import get_logger
 
 from rag_agent.agent import build_agent
@@ -101,10 +102,40 @@ def build_index(
 
 
 @app.command()
-def evaluate() -> None:
-    """Run retrieval sweep + RAG eval + ops, writing reports/."""
+def evaluate(
+    ragas: Annotated[
+        bool, typer.Option("--ragas", help="Also compute RAGAS metrics (local model as evaluator).")
+    ] = False,
+    max_questions: Annotated[
+        int | None,
+        typer.Option(
+            "--max-questions",
+            help="Bound the LLM phases (agent + RAGAS) to the first N graded questions; "
+            "retrieval metrics always use the full set. Local 32B inference is slow.",
+        ),
+    ] = None,
+    offline: Annotated[
+        bool,
+        typer.Option(
+            "--offline",
+            help="Retrieval-only: no LLM provider needed (skips agent, judges, RAGAS, telemetry).",
+        ),
+    ] = False,
+) -> None:
+    """Run retrieval HPO + RAG eval + ops, writing reports/.
+
+    The full path needs a model provider (local Ollama by default, or
+    LLM_BASE_URL/LLM_API_KEY); use --offline for the CI-safe retrieval-only
+    report, and --ragas to add the RAGAS metric set.
+    """
     config = load_config()
-    run_evaluation(config)
+    if offline and ragas:
+        raise typer.BadParameter("--ragas requires a provider and cannot combine with --offline")
+    try:
+        run_evaluation(config, ragas=ragas, offline=offline, max_questions=max_questions)
+    except LLMProviderUnavailableError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
     typer.echo(f"evaluation written: {config.reports_dir / 'report.html'}")
 
 
@@ -114,7 +145,11 @@ def chat(
         str | None, typer.Argument(help="Single question mode (non-interactive).")
     ] = None,
 ) -> None:
-    """Interactive REPL: ask questions, get grounded AnalysisResult answers."""
+    """Interactive REPL: ask questions, get grounded AnalysisResult answers.
+
+    Requires a model provider: local Ollama (default qwen3:32b) or
+    LLM_BASE_URL/LLM_API_KEY. There is no runtime mock.
+    """
     config = load_config()
     default_size = config.chunk_sizes[len(config.chunk_sizes) // 2]
     retriever = Retriever.from_index_dir(
@@ -123,10 +158,14 @@ def chat(
         SentenceTransformerEmbedder(config.embedding_model),
         CrossEncoderReranker(config.reranker_model),
     )
-    agent = build_agent(config)
+    try:
+        agent = build_agent(config)
+    except LLMProviderUnavailableError as exc:
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=1) from exc
     typer.echo(
-        f"RAG assistant ready (chunk_size={default_size}, model="
-        f"{'provider' if _provider_configured() else 'MOCK offline'}). Type :quit to exit."
+        f"RAG assistant ready (chunk_size={default_size}, backend={inference_backend()}). "
+        "Type :quit to exit."
     )
 
     while True:
@@ -145,6 +184,12 @@ def chat(
             typer.echo(f"  [{citation.chunk_id}] {citation.title}: {citation.excerpt}")
         if question:
             return
+
+
+def inference_backend() -> str:
+    from rag_agent.evaluate import inference_backend as _backend
+
+    return _backend()
 
 
 def _provider_configured() -> bool:

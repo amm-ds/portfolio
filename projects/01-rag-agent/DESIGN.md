@@ -68,10 +68,19 @@ exactly correct.
 
 ### 3.3 Provider abstraction
 
-Per ADR-0004 all LLM access goes through `portfolio_core.llm.build_model`:
-OpenAI-compatible endpoint when configured, deterministic FunctionModel otherwise.
-The project never imports an LLM SDK. The same code path powers the mock-mode
-evaluation, the interactive `chat`, and a live deployment — only env vars change.
+Per ADR-0004 (amended wave 10) all LLM access goes through
+`portfolio_core.llm.build_model`: env-configured OpenAI-compatible endpoint
+first, local Ollama second (default `qwen3.6:35b-a3b-q4_K_M`; `OLLAMA_MODEL` overrides —
+`gpt-oss:20b` is the documented lighter alternative). The project never
+imports an LLM SDK. The deterministic runtime mock is **removed by owner
+directive** — `evaluate`/`chat` require a provider and fail with actionable
+guidance otherwise (`--offline` keeps a retrieval-only CI path); test-only
+mocks live in `portfolio_core.llm.mock_model_for_tests`.
+
+For the wave-10 evaluation qwen3 thinking is disabled (`think: false` via
+`extra_body`, ~4× lower per-call latency) — a documented latency/depth
+trade-off. The RAGAS evaluator (§3.5) and the LLM rubric judge use the same
+provider, so the full quality evaluation costs $0 in API calls.
 
 ### 3.4 Chunking: fixed-size vs paragraph-aware
 
@@ -81,19 +90,38 @@ token budget, splits long paragraphs at sentence boundaries, and only falls back
 to word windows (with overlap) for pathological sentences. Guarantees are
 unit-tested as properties (max size, exact overlap, determinism).
 
+### 3.5 RAGAS evaluation (wave 10)
+
+`evaluate --ragas` computes the RAGAS metric set — faithfulness,
+answer_relevancy, context_precision, context_recall — on the agent's answers
+with the **local model as evaluator** (via `langchain_openai.ChatOpenAI`
+pointed at the same endpoint), so the run costs $0 in API calls. Embeddings
+for `answer_relevancy` come from the project's MiniLM encoder, not an external
+API. Implementation notes: ragas 0.3.1 pins `langchain-community<0.4`;
+`RunConfig(timeout=900, max_workers=4)` accommodates multi-minute 32B calls;
+failed samples are NaN-skipped, never fatal. `context_recall`'s reference is
+the graded relevant article's lead. Because local 32B inference is the
+bottleneck (full 26-question run ≈ hours), the documented real run bounds the
+LLM phases with `--max-questions 10`; retrieval metrics always use the full
+graded set.
+
 ## 4. SLOs and operating envelope
 
-| SLO | Target | Measured (2026-10-12, CPU-only, mock mode) |
+| SLO | Target | Measured (2026-10-14/15, local `qwen3.6:35b-a3b-q4_K_M`) |
 |---|---|---|
-| Retrieval recall@5 (graded set) | ≥ 0.60 | **0.962** (all chunk sizes); recall@10 = 1.000 |
-| RAG context_recall (keyword judge) | ≥ 0.60 | **0.962** |
-| p95 end-to-end query latency | ≤ 5.0 s live; mock measures local floor | 4.1 ms local floor (live adds provider RTT) |
-| Estimated cost per query | ≤ $0.01 | ≈ $0.00037 (context-sized estimate at 400-token chunks) |
+| Retrieval recall@5 (graded set, n=26) | ≥ 0.60 | **0.962** (all chunk sizes); recall@10 = 1.000 |
+| RAGAS faithfulness (n=10 bounded) | ≥ 0.70 | **0.805** |
+| RAGAS answer_relevancy (n=10) | ≥ 0.70 | **0.904** |
+| RAGAS context_recall (n=10) | ≥ 0.70 | **0.952** |
+| p95 end-to-end query latency | report honestly | **245 s** local (p50 61 s) — compute-bound, $0 API |
+| Cost per query | $0 API (local) | **$0**; cloud-equivalent ≈ $0.0043 mean at the rate card |
 | Corpus size | 500–600 articles | 593 articles / 3,589 chunks @200 |
 | Random-retrieval baseline (seeded floor) | reported for contrast | recall@5 0.038/0.000/0.000, MRR@5 0.038/0.000/0.000 → Δ recall@5 up to +0.92 |
 
-Fallback chain (ADR-0004): live provider → deterministic mock. There is **no**
-silent degradation inside retrieval: if the embedding model cannot be loaded or
+Fallback chain (ADR-0004 amended wave 10): env provider → local Ollama → loud
+`LLMProviderUnavailableError` (plus a retrieval-only `--offline` CI path).
+There is **no** silent degradation inside retrieval: if the embedding model
+cannot be loaded or
 downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 5. Failure modes and mitigations
@@ -105,18 +133,18 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 | Index/chunk metadata mismatch | `ValueError` on load (ntotal vs rows) |
 | Eval question references missing article | Skipped with warning; run continues on the resolvable subset |
 | Provider returns schema-invalid JSON | pydantic-ai retries, then raises `UnexpectedModelBehavior` |
-| `JUDGE=llm` without credentials | Silent fallback to the deterministic keyword judge |
+| No LLM provider available | `LLMProviderUnavailableError` with setup guidance; `evaluate --offline` for retrieval-only CI |
+| `JUDGE=keyword` or `--offline` | Deterministic keyword judge (CI default is the LLM judge when a provider exists) |
 | LLM judge call fails mid-run | That verdict falls back to the keyword judge; the run continues |
 | Client corpus has no usable records | `ValueError`/`FileNotFoundError` at intake, before any indexing |
 
 ## 5b. Operations artifacts
 
 - **Cost telemetry** — `evaluate` writes `reports/cost_telemetry.json`:
-  per-query input/output tokens, per-query estimated cost against the rate
-  card, and aggregates (n queries, totals, mean/p50/p95 cost per answer).
-  Mode is `"live"` when provider credentials are configured, `"mock"` for the
-  deterministic offline floor. This is the data source for the roadmap's
-  cost-drift alerting.
+  backend label (`ollama:<OLLAMA_MODEL>` or `env:<model>`), per-query
+  input/output tokens, eval wall time. **Local inference is $0 API cost**;
+  rate-card figures are kept as a clearly-labelled hypothetical for hosted-model
+  budget comparisons. This is the data source for the roadmap's cost telemetry.
 - **Client-corpus onboarding** — `prepare-corpus --source client <dir>
   --license <spdx>` maps client JSONL (`{title, text, topic?}`) onto the same
   Article schema and dataset contract (`source: client://<dir>`); chunking,
@@ -125,11 +153,16 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 0.3.0 (2026-10-14) — wave 10: runtime mock removed (ADR-0004 amended; agent,
+  LLM judge and chat now require a provider — local Ollama default), RAGAS
+  evaluation behind `evaluate --ragas` (local model as evaluator, $0 API),
+  cost telemetry reframed for local inference (`$0 API cost` + wall time),
+  `--offline` retrieval-only CI path, `--max-questions` bound for the LLM
+  phases, qwen3 `think: false` for eval throughput.
 - 0.2.0 (2026-10-13) — client-corpus onboarding path (`--source client`),
   cost telemetry (`reports/cost_telemetry.json`), LLM rubric judge behind
   `JUDGE=llm` with keyword fallback.
 - 0.1.0 (2026-10-12) — initial implementation: corpus prep, chunking, FAISS
   indexes (3 chunk sizes), cross-encoder rerank, pydantic-ai agent with
-  structured citations, retrieval + RAG + ops evaluation, offline mock mode,
-  DVC pipeline. See git history and `reports/metrics.json` for the evaluated
-  configuration.
+  structured citations, retrieval + RAG + ops evaluation, DVC pipeline. See
+  git history and `reports/metrics.json` for the evaluated configuration.
