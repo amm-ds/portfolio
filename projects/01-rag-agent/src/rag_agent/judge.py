@@ -1,20 +1,23 @@
 """LLM rubric judge for RAG evaluation, with graceful offline fallback.
 
-The default judge stays the platform's deterministic `KeywordJudge` (CI-safe,
-no credentials). Setting ``JUDGE=llm`` with ``LLM_BASE_URL``/``LLM_API_KEY``
-configured switches the evaluator to a pydantic-ai rubric judge that returns a
-structured ``JudgeVerdict`` (score 0-1 with reason). Runtime judge failures
-fall back to the keyword judge so a flaky provider can never break evaluation.
+Default (wave 10): the judge is the provider model — env-configured
+OpenAI-compatible endpoint first, local Ollama second — returning structured
+``JudgeVerdict``s (score 0-1 with reason). ``JUDGE=keyword`` (or the
+``--offline`` evaluate path) selects the deterministic platform keyword judge
+for CI. Runtime judge failures fall back to the keyword judge per verdict so a
+flaky provider can never break evaluation.
 """
 
 import os
 
 from portfolio_core.config import get_settings
-from portfolio_core.llm import build_model
+from portfolio_core.llm import build_model, ollama_available
 from portfolio_core.logging import get_logger
 from portfolio_eval.rag import JudgeVerdict, KeywordJudge
 from pydantic_ai import Agent
 from pydantic_ai.models import Model
+
+from rag_agent.provider import no_think_model_settings
 
 logger = get_logger(__name__)
 
@@ -39,6 +42,7 @@ class LLMRubricJudge:
             resolved,
             output_type=JudgeVerdict,
             system_prompt=RUBRIC_SYSTEM_PROMPT,
+            model_settings=no_think_model_settings(),
         )
         self._fallback = KeywordJudge()
 
@@ -54,10 +58,23 @@ class LLMRubricJudge:
 RubricJudge = KeywordJudge | LLMRubricJudge
 
 
-def build_judge() -> RubricJudge:
-    """Judge selection: ``JUDGE=llm`` + credentials → LLM judge, else keyword."""
-    want_llm = os.environ.get("JUDGE", "keyword").strip().lower() == "llm"
-    settings = get_settings()
-    if want_llm and settings.llm_api_key and settings.llm_base_url:
+def provider_available() -> bool:
+    """Env provider or local Ollama."""
+    s = get_settings()
+    return bool(s.llm_api_key and s.llm_base_url) or ollama_available()
+
+
+def build_judge(prefer: str | None = None) -> RubricJudge:
+    """Judge selection.
+
+    ``JUDGE=keyword`` (or ``prefer="keyword"``) forces the deterministic judge;
+    otherwise the LLM rubric judge is used whenever a provider exists, falling
+    back to the keyword judge when nothing is available (e.g. CI).
+    """
+    want = (prefer or os.environ.get("JUDGE", "llm")).strip().lower()
+    if want == "keyword":
+        return KeywordJudge()
+    if provider_available():
         return LLMRubricJudge()
+    logger.warning("no LLM provider available; using keyword judge")
     return KeywordJudge()

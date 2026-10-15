@@ -2,13 +2,11 @@
 
 import json
 from pathlib import Path
-from typing import Any
 
 import pytest
-from portfolio_eval.rag import RAGEvalResult
-from pydantic_ai.messages import ModelResponse, TextPart
+from portfolio_eval.rag import KeywordJudge, RAGEvalResult
 from pydantic_ai.models.function import FunctionModel
-from rag_agent.agent import MOCK_ANALYSIS_JSON, build_agent
+from rag_agent.agent import build_agent
 from rag_agent.config import RAGConfig
 from rag_agent.evaluate import (
     RAGRun,
@@ -33,6 +31,22 @@ from rag_agent.evaluate import (
 )
 from rag_agent.index import EmbedFn, Retriever
 from rag_agent.schemas import Article, Citation, EvalQuestion
+
+CANNED_ANALYSIS_JSON = json.dumps(
+    {
+        "summary": "Test-only canned answer.",
+        "citations": [
+            {"chunk_id": "c", "article_id": "a", "title": "t", "excerpt": "e", "score": 1.0}
+        ],
+        "confidence": 0.5,
+    }
+)
+
+
+def canned_analysis_model() -> FunctionModel:
+    from portfolio_core.llm import mock_model_for_tests
+
+    return mock_model_for_tests(CANNED_ANALYSIS_JSON)
 
 
 def test_recall_at_k_and_mrr() -> None:
@@ -178,15 +192,12 @@ def scores_sample() -> list[RetrievalScores]:
 def test_run_rag_eval_on_synthetic_rows(
     config: RAGConfig, retriever: Retriever, articles: list[Article]
 ) -> None:
-    def _respond(messages: list[Any], info: Any) -> ModelResponse:
-        return ModelResponse(parts=[TextPart(content=MOCK_ANALYSIS_JSON)])
-
-    agent = build_agent(config, model=FunctionModel(_respond))
+    agent = build_agent(config, model=canned_analysis_model())
     questions = [
         EvalQuestion(question="why are plants green", relevant_article_ids=["photo-000"]),
         EvalQuestion(question="what is machine learning", relevant_article_ids=["ml-000"]),
     ]
-    rag_run = run_rag_eval(config, agent, retriever, questions)
+    rag_run = run_rag_eval(config, agent, retriever, questions, judge=KeywordJudge())
     assert rag_run.eval_result.n == 2
     assert 0.0 <= rag_run.eval_result.faithfulness <= 1.0
     assert len(rag_run.latencies_s) == 2
@@ -246,18 +257,40 @@ def test_write_reports_produces_all_artifacts(
 
 def test_cost_telemetry_shape_and_write(config: RAGConfig) -> None:
     rag_run = _synthetic_rag_run()  # 2 queries: in [100, 120], out [50, 60]
-    payload = cost_telemetry(config, rag_run, mode="mock")
-    assert payload["mode"] == "mock"
+    payload = cost_telemetry(config, rag_run, wall_time_s=120.0)
+    assert payload["backend"].startswith(("ollama:", "env:"))
+    if payload["backend"].startswith("ollama:"):
+        assert payload["api_cost_usd"] == 0.0
     assert payload["n_queries"] == 2
     assert payload["total_input_tokens"] == 220
     assert payload["total_output_tokens"] == 110
+    assert payload["eval_wall_time_s"] == 120.0
     assert len(payload["per_query"]) == 2
     expected = 100 / 1e6 * 0.15 + 50 / 1e6 * 0.60
-    assert payload["per_query"][0]["est_cost_usd"] == round(expected, 8)
-    assert payload["cost_per_query_usd"]["mean"] > 0
-    assert payload["cost_per_query_usd"]["p50"] > 0
+    hypo = payload["rate_card_hypothetical_cost_usd"]
+    assert hypo["mean"] > 0
+    assert round(hypo["mean"], 8) == round((expected + (120 / 1e6 * 0.15 + 60 / 1e6 * 0.60)) / 2, 8)
 
-    path = write_cost_telemetry(config, rag_run)  # no credentials in CI → mock floor entry
+    path = write_cost_telemetry(config, rag_run, wall_time_s=60.0)
     written = json.loads(path.read_text(encoding="utf-8"))
-    assert written["mode"] == "mock"
     assert written["n_queries"] == 2
+    assert written["eval_wall_time_s"] == 60.0
+    assert written["backend"] == payload["backend"]
+
+
+def test_to_ragas_dicts_column_mapping() -> None:
+    from rag_agent.ragas_eval import RagasRow, to_ragas_dicts
+
+    rows = [
+        RagasRow(question="q?", answer="a", contexts=["c1", "c2"], reference="ref"),
+        RagasRow(question="q2?", answer="a2", contexts=[], reference=""),
+    ]
+    dicts = to_ragas_dicts(rows)
+    assert dicts[0] == {
+        "user_input": "q?",
+        "response": "a",
+        "retrieved_contexts": ["c1", "c2"],
+        "reference": "ref",
+    }
+    assert dicts[1]["retrieved_contexts"] == []
+    assert set(dicts[0]) == {"user_input", "response", "retrieved_contexts", "reference"}

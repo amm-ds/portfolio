@@ -3,11 +3,13 @@
 Agentic-AI flagship of the portfolio: a grounded question-answering assistant
 over a curated slice of English Wikipedia, built on `pydantic-ai` with
 structured, cited outputs. Retrieval is embeddings + FAISS with cross-encoder
-reranking; everything runs CPU-only and works fully offline (deterministic
-mock LLM) when no provider is configured.
+reranking; the agent runs on a **local model via Ollama (default
+`qwen3.6:35b-a3b-q4_K_M` platform default; `qwen3:32b` and `gpt-oss:20b` are documented alternatives)** or any
+OpenAI-compatible endpoint — there is no runtime mock, and quality is measured
+with RAGAS using the local model as evaluator ($0 API cost).
 
 - Design record: [DESIGN.md](DESIGN.md)
-- Live artifacts: `reports/report.html`, `reports/metrics.json`, `reports/figures/`
+- Live artifacts: `reports/report.html`, `reports/metrics.json`, `reports/figures/`, `reports/cost_telemetry.json`
 - Data contract: `data/raw/dataset_contract.json` (sha256-pinned)
 
 ## Problem
@@ -28,20 +30,26 @@ cross-encoder (`ms-marco-MiniLM-L-6-v2`) rerank of the top 5×k →
 `pydantic-ai` agent whose only corpus access is two tools
 (`search_documents`, `read_excerpt`) and whose output is the structured
 `AnalysisResult(summary, citations, confidence)`. Provider behaviour follows
-ADR-0004: live OpenAI-compatible endpoint when env-configured, deterministic
-mock otherwise. See [DESIGN.md](DESIGN.md) for options considered and SLOs.
+ADR-0004 (amended wave 10): env-configured OpenAI-compatible endpoint first,
+local Ollama second (default `qwen3.6:35b-a3b-q4_K_M`). There is no runtime mock. See
+[DESIGN.md](DESIGN.md) for options considered and SLOs.
 
 ## Results
 
-Measured on this machine (CPU-only, offline mock LLM mode), over a graded set
-of questions with known relevant articles. Full detail in
-`reports/metrics.json`; interactive figures in `reports/figures/`.
+Measured on this machine with a **local Ollama model** (`qwen3.6:35b-a3b-q4_K_M`,
+the platform default at run time — reproduce with
+`OLLAMA_MODEL=qwen3.6:35b-a3b-q4_K_M`; any OpenAI-compatible endpoint works
+too). Retrieval metrics use the full graded set; the LLM phases (agent answers,
+judges, RAGAS) are bounded to the **first 10 questions** because local
+inference is the bottleneck — stated plainly, not hidden. Full detail in
+`reports/metrics.json` (`dvc metrics show`); interactive figures in
+`reports/figures/`.
 
 <!-- RESULTS:START -->
-Measured on this machine (Apple Silicon, CPU-only) in offline mock-LLM mode,
-2026-10-12. Corpus: **593 articles** (5 topics, ≤120 each plus exact-title
-anchors), **26 graded questions**, 0 skipped. Machine-readable:
-`reports/metrics.json`.
+Corpus: **593 articles** (5 topics, ≤120 each plus exact-title anchors),
+**26 graded questions** (retrieval), **10 questions** (LLM phases), 0 skipped.
+Backend: `ollama:qwen3.6:35b-a3b-q4_K_M` — local inference, $0 API cost.
+Run date: 2026-10-14/15; eval wall time ≈ 116 min for the bounded run.
 
 **Retrieval HPO** — chunk-size sweep against a seeded uniform-random baseline,
 plus embedding-model comparison, rerank ablation and a top_k sweep; the
@@ -50,7 +58,7 @@ production config (`retrieval_best` in `params.yaml`, mirrored in
 
 | Configuration | recall@5 | recall@10 | MRR@5 | random recall@5 | Δ MRR@5 vs random |
 |---|---|---|---|---|---|
-| chunks=200, top_k=10 (wave-2 default arm) | **0.962** | 1.000 | **0.936** | 0.038 | +0.897 |
+| chunks=200, top_k=10 | **0.962** | 1.000 | **0.936** | 0.038 | +0.897 |
 | chunks=400, top_k=10 | **0.962** | 1.000 | 0.904 | 0.000 | +0.904 |
 | chunks=800, top_k=10 | **0.962** | 1.000 | 0.869 | 0.000 | +0.869 |
 | + model = BGE-small (vs MiniLM, chunks 200) | 0.962 | 1.000 | 0.936 | — | 0.000 (tie) |
@@ -68,39 +76,44 @@ Key findings:
   MRR@5 drops to 0.833 — the cross-encoder puts the *right* passage at the top,
   which is what a reading LLM needs. Rerank stays on.
 - **top_k=3 already saturates recall at chunks=200** (recall@3 = 0.962): the
-  chosen config matches the wave-2 default quality (Δ MRR@5 +0.032 vs the
-  400/k=5 default) at **≈804 input tokens/query instead of ≈2,279 (−65%)** —
-  see the [HPO frontier](reports/figures/retrieval_hpo_frontier.html) with the
-  chosen point starred, the [model comparison](reports/figures/model_comparison.html),
-  and the [retrieval funnel](reports/figures/retrieval_funnel.html)
-  (25/26 questions keep a relevant article after rerank).
+  chosen config matches the earlier default quality (Δ MRR@5 +0.032) at
+  **≈804 input tokens/query instead of ≈2,279 (−65%)** — see the
+  [HPO frontier](reports/figures/retrieval_hpo_frontier.html) with the chosen
+  point starred and the [retrieval funnel](reports/figures/retrieval_funnel.html).
 
-**RAG quality** (`RAGEvaluator`, keyword judge, mock-mode answers, chosen config):
+**RAG quality — RAGAS** (10-question bounded subset, local model as evaluator,
+chosen config; `evaluate --ragas`):
 
-| Metric | Value | Note |
+| RAGAS metric | Value | Reading |
 |---|---|---|
-| context_recall | 0.962 | retrieval-side recall@3, matches the HPO |
-| answer_relevance | 0.442 | scored against the fixed mock answer text |
-| faithfulness | 0.273 | mock answer is canned, so grounding is intentionally weak offline |
+| faithfulness | **0.805** | the answer is supported by the retrieved context |
+| answer_relevancy | **0.904** | the answer addresses the question |
+| context_recall | **0.952** | retrieved contexts cover the reference (graded article lead) |
+| context_precision | **0.333** | on average 1 of the top-3 contexts is graded-relevant — expected at top_k=3 with saturated recall; precision at the top of the list is the reranker's job |
 
-Faithfulness/relevance here measure the deterministic offline answer; with
-`LLM_BASE_URL`/`LLM_API_KEY` configured the agent retrieves and cites real
-evidence, and the same harness scores its outputs.
+**CI-offline floor** — the deterministic keyword judge on the same subset
+(`evaluate --offline`): faithfulness 0.36, answer_relevance 0.37. The delta
+vs RAGAS is the point of having both: keyword overlap is a cheap lower-bound
+proxy (it cannot recognize paraphrase or entailment), while RAGAS asks the
+model whether claims are actually supported. Judge failures fall back per-
+verdict to the keyword floor, so numbers never block a run.
 
-**Operations (chosen config):**
+**Operations (chosen config, local model):**
 
 | Metric | Value |
 |---|---|
-| p50 agent latency (mock, local floor) | 4.2 ms |
-| p95 agent latency (mock, local floor) | 5.0 ms |
-| Est. live cost per query (chosen config) | ≈ $0.00015 |
-| Mock-mode cost floor per query | ≈ $0.00006 |
+| p50 agent latency | **61 s** per query (retrieval + tool round-trips + generation) |
+| p95 agent latency | **245 s** per query |
+| API cost | **$0** — local inference (eval is compute-bound) |
+| Equivalent cloud cost (rate-card hypothetical) | mean ≈ $0.0043/query (p50 $0.0025, p95 $0.0113) at the `params.yaml` rate card |
+| Avg tokens per query | ≈ 13.7k in / ≈ 3.7k out |
 | Latency distribution | [histogram](reports/figures/latency_histogram.html) |
+| Telemetry | [reports/cost_telemetry.json](reports/cost_telemetry.json) |
 
-Latency in mock mode measures the local pipeline floor (retrieval + schema
-validation without a provider round-trip); a live provider adds its network
-and generation latency on top. Cost uses the rate card in `params.yaml`
-($0.15/M input, $0.60/M output tokens) over the measured prompt+context size.
+These are honest local-model timings: quality is free at the API line but
+costs wall clock — the trade a client weighs against hosted-model per-token
+pricing. qwen3 thinking was disabled for the evaluation (`think: false`, ~4×
+faster per call), a documented latency/depth trade-off.
 <!-- RESULTS:END -->
 
 ## Figures
@@ -121,14 +134,25 @@ and generation latency on top. Cost uses the rate card in `params.yaml`
 cd projects/01-rag-agent
 uv run python -m rag_agent.cli prepare-corpus   # streams Wikipedia (bounded scan)
 uv run python -m rag_agent.cli build-index      # 3 FAISS indexes (chunk-size sweep)
-uv run python -m rag_agent.cli evaluate         # retrieval HPO + RAG + ops + cost telemetry
-uv run python -m rag_agent.cli chat             # interactive demo (offline mock)
+uv run python -m rag_agent.cli evaluate --ragas --max-questions 10   # real run (needs Ollama)
+uv run python -m rag_agent.cli chat             # interactive demo (needs Ollama)
 ```
 
-or, with DVC: `dvc repro` (stages in `dvc.yaml`, knobs in `params.yaml`).
+The agent, the LLM judge and the RAGAS evaluator need a model provider: local
+Ollama (default `qwen3.6:35b-a3b-q4_K_M`, already pulled on this machine; `gpt-oss:20b` is a
+documented lighter alternative) or an OpenAI-compatible endpoint via
+`LLM_BASE_URL`/`LLM_API_KEY` in `.env`. There is no runtime mock — when no
+provider answers, the CLI prints the setup guidance and exits. `evaluate
+--offline` is the CI-safe path (retrieval HPO only, no LLM calls).
 
-To run with a live LLM instead of the mock, copy `.env.example` to `.env` and
-fill in `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` — no code changes.
+Local 32B inference is the bottleneck: the full 26-question RAGAS evaluation
+takes hours, so the documented real run bounds the LLM phases to the first 10
+graded questions with `--max-questions 10` (retrieval metrics always use the
+full 26). qwen3 thinking is disabled for the evaluation (`think: false`, ~4×
+faster per call) — a documented latency/depth trade-off.
+
+or, with DVC: `dvc repro` (stages in `dvc.yaml`, knobs in `params.yaml`), then
+`dvc metrics show` to read `reports/metrics.json` as tracked metrics.
 
 ### Client-corpus onboarding
 
@@ -147,15 +171,18 @@ a 3-document synthetic client corpus used by the onboarding tests.
 
 ### Cost telemetry & judge selection
 
-- `evaluate` always writes `reports/cost_telemetry.json`: per-query
-  input/output tokens and estimated cost against the `params.yaml` rate card,
-  plus aggregates (n, totals, mean/p50/p95 cost per answer). With a live
-  provider the mode is `"live"`; offline runs record the deterministic
-  `"mock"` floor entry.
-- `JUDGE=llm` (with provider credentials) switches the RAG evaluator to a
-  pydantic-ai rubric judge returning structured `JudgeVerdict`s; without
-  credentials it falls back gracefully to the keyword judge — the CI default
-  stays deterministic.
+- `evaluate` writes `reports/cost_telemetry.json`: per-query input/output
+  tokens, eval wall time, and the active backend (`ollama:qwen3.6:35b-a3b-q4_K_M` or
+  `env:<model>`). **Local inference = $0 API cost**; the rate-card numbers in
+  the file are a clearly-labelled hypothetical for budget comparisons with
+  hosted models.
+- The RAG judge defaults to the provider model (LLM rubric judge returning
+  structured `JudgeVerdict`s); `JUDGE=keyword` selects the deterministic
+  platform keyword judge (used by `--offline` and CI). Runtime judge failures
+  fall back per-verdict to the keyword judge.
+- `--ragas` adds the RAGAS metric set (faithfulness, answer_relevancy,
+  context_precision, context_recall) scored by the same local model — $0
+  evaluation, honest local latencies.
 
 Quality gates (from the repo root):
 
@@ -170,14 +197,15 @@ uv run pytest projects/01-rag-agent -q
 
 - **Grounded agents, not chat demos**: tool-restricted evidence access,
   structured citations, output-schema validation that fails loudly.
-- **Measured quality**: graded retrieval metrics (recall@k, MRR) and LLM-judged
-  faithfulness/relevance, plus a chunk-size sweep showing the
-  quality/latency/cost trade-off with real numbers.
+- **Measured quality**: graded retrieval metrics (recall@k, MRR), RAGAS
+  faithfulness/relevance/precision/recall scored by the local model, plus a
+  chunk-size/top_k HPO with a seeded random floor — every quality claim has a
+  number and a baseline.
 - **Production hygiene**: dataset contracts with checksums, DQ gates, DVC
-  reproducibility, CPU-only footprint, offline capability, and an explicit
-  cost-per-query estimate.
+  reproducibility, CPU-only retrieval, $0-API local inference with honest
+  latency reporting, and a client-corpus onboarding path.
 - **Provider portability**: one code path runs against any OpenAI-compatible
-  endpoint or fully offline (ADR-0004).
+  endpoint or local Ollama (ADR-0004, amended wave 10) — no runtime mocks.
 
 ## Data attribution
 
