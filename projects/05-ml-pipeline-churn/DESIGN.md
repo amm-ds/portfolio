@@ -122,6 +122,26 @@ flowchart LR
   wave-11 repair (single `.venv/lib/libomp.dylib` + loader-path rpaths), so
   all tests pass on this machine with no in-repo binary.
 
+- 2026-10-15 · Wave 13 (real-data primary): the IBM telco churn dataset
+  (7,043 rows, sha256-pinned, canonical GitHub mirror — the HF id
+  `julien-c/telco-churn` from planning does not exist and is the documented
+  fallback trigger) is now the default `data_source: telco`, behind the same
+  DQ gates + DatasetContract; the synthetic generator is the clearly labeled
+  CI path. Added a scheme layer (`model.py:SCHEMES`) so the pipeline contract
+  (capping, flags, imputation, one-hot, cost tuning) is column-agnostic;
+  telco carries gender/senior_citizen/contract as fairness slices through
+  prepare → holdout → evaluation. New: per-slice report (`_meta.slices` +
+  `fairness_slices` figure) and a FN-cost × threshold cost-surface heatmap
+  with the operating point marked. Registry: `registry/telco-churn.dvc`
+  import-url manifest + `docs/data-registry/telco-churn.md` card + index
+  entry. Real-data verdicts: XGBoost replaces the synthetic track's logistic
+  winner; isotonic calibration improves BOTH ECE and cost on telco (the
+  synthetic non-transfer conclusion does not generalize); the operating
+  threshold does not transfer across regimes (t*=0.700 synthetic vs 0.175
+  telco) — the cost-curve procedure does. Holdout: cost 1,035 → 601
+  (−41.9%), bootstrap −416 [−485, −343]; slice gap is contractual
+  (month-to-month recall 0.98 vs two-year 0.00 at FN=5).
+
 ## Experiment versioning
 
 What-if sensitivity of the operating point to the FN-cost assumption,

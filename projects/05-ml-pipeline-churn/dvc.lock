@@ -6,12 +6,12 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 926254bf065287cf0c0e166d888a18ff
-      size: 633
+      md5: f4b06c2f0bb6d7dcf1ee1c8f2418c7c2
+      size: 703
     - path: src/churn_pipeline/
       hash: md5
-      md5: 46b5720d44b854215c759f36fd1993ef.dir
-      size: 139383
+      md5: 2624c1ec66f5344a619f92ea4ba0b60d.dir
+      size: 163912
       nfiles: 17
     params:
       params.yaml:
@@ -24,38 +24,39 @@ stages:
         cap_quantile_high: 0.99
         cap_quantile_low: 0.01
         cv_folds: 3
+        data_source: telco
         n_samples: 5000
         seed: 42
         test_frac: 0.2
     outs:
     - path: data/churn.parquet
       hash: md5
-      md5: 50e001758127fc0d3c31a4f96e213993
-      size: 45694
+      md5: 9a5e362f0a55680c2b20d6c0e46290b1
+      size: 35784
     - path: data/dataset_contract.json
       hash: md5
-      md5: e909aa7485768d233e3d032098d9ebc0
-      size: 271
+      md5: ea671c3903a9aa630852b82a8b0b3836
+      size: 376
     - path: reports/dq_report.md
       hash: md5
-      md5: 9bca8a1e72b5838b78c5e35783cb9752
-      size: 611
+      md5: 629186cb76128a6cb1f6f81fbec546db
+      size: 553
   train:
     cmd: uv run --python 3.12.9 python -m churn_pipeline.cli train --params-file
       params.yaml
     deps:
     - path: data/churn.parquet
       hash: md5
-      md5: 50e001758127fc0d3c31a4f96e213993
-      size: 45694
+      md5: 9a5e362f0a55680c2b20d6c0e46290b1
+      size: 35784
     - path: params.yaml
       hash: md5
-      md5: 926254bf065287cf0c0e166d888a18ff
-      size: 633
+      md5: f4b06c2f0bb6d7dcf1ee1c8f2418c7c2
+      size: 703
     - path: src/churn_pipeline/
       hash: md5
-      md5: 46b5720d44b854215c759f36fd1993ef.dir
-      size: 139383
+      md5: 2624c1ec66f5344a619f92ea4ba0b60d.dir
+      size: 163912
       nfiles: 17
     params:
       params.yaml:
@@ -66,77 +67,81 @@ stages:
         - 10.0
         calib_frac: 0.2
         cv_folds: 3
+        data_source: telco
         fn_cost: 5.0
         fp_cost: 1.0
         hpo_objective: cost
         hpo_trials: 25
-        model_family: logreg
+        model_family: xgboost
         model_params:
-          C: 0.6493881644270072
-          l1_ratio: 0.4539876752994031
+          learning_rate: 0.030921572415730004
+          max_depth: 3
+          n_estimators: 211
+          subsample: 0.5186934422187627
         seed: 42
         test_frac: 0.2
     outs:
     - path: data/holdout.parquet
       hash: md5
-      md5: b77e4d444dfac9dbe4e535da6c85efc4
-      size: 23017
+      md5: 646e9855d59ee59d30f2c33a47f7771d
+      size: 21298
     - path: data/model.pkl
       hash: md5
-      md5: b82f5731135ac794775cc21b54766802
-      size: 3645
+      md5: 8979b0a479165ef98340a52dbc2c5a93
+      size: 3608
     - path: data/model_meta.json
       hash: md5
-      md5: 9febbfc1b038f9bc49bd155928fc5deb
-      size: 147
+      md5: 82c2a00e3cead0101c42073372571766
+      size: 158
     - path: data/model_selection.json
       hash: md5
-      md5: 1a7b5541440acdd616c649e7df87c1ca
-      size: 191
+      md5: e6bb3c79d293be184c5133ed08df9cc0
+      size: 367
     - path: data/selected_model.pkl
       hash: md5
-      md5: fbb4624e4053739db113f02810924cf8
-      size: 3644
+      md5: 1e073ad774091768573f93d21f966adc
+      size: 255220
     - path: data/selected_model_calibrated.pkl
       hash: md5
-      md5: cbd2707b8b54042909f8bd6e9fbed804
-      size: 7442
+      md5: 91460b24028798472fffb1382be5b39a
+      size: 489090
   evaluate:
     cmd: uv run --python 3.12.9 python -m churn_pipeline.cli evaluate 
       --params-file params.yaml
     deps:
     - path: data/holdout.parquet
       hash: md5
-      md5: b77e4d444dfac9dbe4e535da6c85efc4
-      size: 23017
+      md5: 646e9855d59ee59d30f2c33a47f7771d
+      size: 21298
     - path: data/model.pkl
       hash: md5
-      md5: b82f5731135ac794775cc21b54766802
-      size: 3645
+      md5: 8979b0a479165ef98340a52dbc2c5a93
+      size: 3608
     - path: data/model_meta.json
       hash: md5
-      md5: 9febbfc1b038f9bc49bd155928fc5deb
-      size: 147
+      md5: 82c2a00e3cead0101c42073372571766
+      size: 158
     - path: data/selected_model.pkl
       hash: md5
-      md5: fbb4624e4053739db113f02810924cf8
-      size: 3644
+      md5: 1e073ad774091768573f93d21f966adc
+      size: 255220
     - path: data/selected_model_calibrated.pkl
       hash: md5
-      md5: cbd2707b8b54042909f8bd6e9fbed804
-      size: 7442
+      md5: 91460b24028798472fffb1382be5b39a
+      size: 489090
     - path: params.yaml
       hash: md5
-      md5: 926254bf065287cf0c0e166d888a18ff
-      size: 633
+      md5: f4b06c2f0bb6d7dcf1ee1c8f2418c7c2
+      size: 703
     - path: src/churn_pipeline/
       hash: md5
-      md5: 46b5720d44b854215c759f36fd1993ef.dir
-      size: 139383
+      md5: 2624c1ec66f5344a619f92ea4ba0b60d.dir
+      size: 163912
       nfiles: 17
     params:
       params.yaml:
         calibration_bins: 10
+        data_source: telco
         fn_cost: 5.0
         fp_cost: 1.0
         seed: 42
@@ -186,9 +191,9 @@ stages:
     outs:
     - path: reports/metrics.json
       hash: md5
-      md5: c86dc42e21a3d3e39aa536014f417a01
-      size: 1457
+      md5: 30ab4cbe2f59f92e30089217fde6181e
+      size: 3532
     - path: reports/report.html
       hash: md5
-      md5: d4e0aa2f45725fb18ba5adfcccbc4994
-      size: 2383
+      md5: f22efefb54a1ac2401b41ffc39ef2cab
+      size: 2633

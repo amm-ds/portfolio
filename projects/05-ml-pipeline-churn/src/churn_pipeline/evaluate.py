@@ -17,12 +17,14 @@ from numpy.typing import NDArray
 from portfolio_core.plotting import add_takeaway, apply_theme, style_runs
 from portfolio_eval.metrics import MetricResult, RunResult
 from portfolio_eval.ml import classification_metrics
+from sklearn import metrics as skm
 from sklearn.calibration import calibration_curve
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import confusion_matrix, precision_recall_curve, roc_auc_score
 from sklearn.pipeline import Pipeline
 
 from churn_pipeline.config import ChurnConfig, pd
+from churn_pipeline.model import slice_cols
 
 DEFAULT_THRESHOLD = 0.5
 
@@ -94,6 +96,150 @@ def net_benefit(y_true: NDArray[np.int64], proba: NDArray[np.float64], pt: float
     tp = float(np.sum(pred & (y_true == 1)))
     fp = float(np.sum(pred & (y_true == 0)))
     return tp / n - (fp / n) * (pt / (1.0 - pt))
+
+
+def slice_report(
+    cfg: ChurnConfig,
+    y_true: NDArray[np.int64],
+    proba: NDArray[np.float64],
+    threshold: float,
+    slices: dict[str, NDArray[Any]],
+    min_slice_n: int = 20,
+) -> dict[str, dict[str, Any]]:
+    """Per-slice precision/recall/F1 and business cost at a fixed threshold.
+
+    Each slice column contributes one entry per observed value (e.g.
+    gender=Male/Female), plus an "overall" row. Slices with fewer than
+    ``min_slice_n`` rows are skipped, and those with fewer than 5 positives
+    are flagged, since recall there is unstable.
+    """
+    report: dict[str, dict[str, Any]] = {}
+    for col, values in slices.items():
+        for value in sorted({str(v) for v in values}):
+            mask = np.array([str(v) == value for v in values])
+            if mask.sum() < min_slice_n:
+                continue  # slice too small to read meaningfully
+            yt, yp = y_true[mask], (proba[mask] >= threshold).astype(int)
+            n_pos = int(yt.sum())
+            report[f"{col}={value}"] = {
+                "n": int(mask.sum()),
+                "n_pos": n_pos,
+                "precision": float(skm.precision_score(yt, yp, zero_division=0)),
+                "recall": float(skm.recall_score(yt, yp, zero_division=0)),
+                "f1": float(skm.f1_score(yt, yp, zero_division=0)),
+                "business_cost": business_cost(
+                    yt, proba[mask], threshold, cfg.fp_cost, cfg.fn_cost
+                ),
+                "small_sample": n_pos < 5,
+            }
+    overall = {
+        "n": len(y_true),
+        "n_pos": int(y_true.sum()),
+        "precision": float(
+            skm.precision_score(y_true, (proba >= threshold).astype(int), zero_division=0)
+        ),
+        "recall": float(
+            skm.recall_score(y_true, (proba >= threshold).astype(int), zero_division=0)
+        ),
+        "f1": float(skm.f1_score(y_true, (proba >= threshold).astype(int), zero_division=0)),
+        "business_cost": business_cost(y_true, proba, threshold, cfg.fp_cost, cfg.fn_cost),
+        "small_sample": False,
+    }
+    report["overall"] = overall
+    return report
+
+
+def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) -> go.Figure:
+    """Grouped bars: recall / precision / F1 per slice, cost on a second panel."""
+    from plotly.subplots import make_subplots
+
+    keys = [k for k in report if k != "overall"]
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("Slice classification metrics", "Slice business cost"),
+    )
+    for metric, color in (
+        ("recall", "#2dd4bf"),
+        ("precision", "#38bdf8"),
+        ("f1", "#f472b6"),
+    ):
+        fig.add_bar(
+            x=keys,
+            y=[report[k][metric] for k in keys],
+            name=metric,
+            marker={"color": color},
+            row=1,
+            col=1,
+        )
+    fig.add_bar(
+        x=keys,
+        y=[report[k]["business_cost"] for k in keys],
+        name="business_cost",
+        marker={"color": "#fbbf24"},
+        row=1,
+        col=2,
+    )
+    overall = report["overall"]
+    fig.add_scatter(
+        x=keys,
+        y=[overall["f1"]] * len(keys),
+        mode="lines",
+        name="overall F1",
+        line={"dash": "dash", "color": "#64748b"},
+        row=1,
+        col=1,
+    )
+    fig.update_layout(
+        title=f"Fairness slices at threshold {threshold:.3f}",
+        barmode="group",
+        yaxis_title="metric value",
+        yaxis2_title="cost (FP·1 + FN·5)",
+    )
+    style_runs(fig)
+    add_takeaway(fig, f"overall F1 {overall['f1']:.3f} - read slice gaps against this line")
+    return apply_theme(fig)
+
+
+def cost_surface_figure(
+    cfg: ChurnConfig, y_true: NDArray[np.int64], proba: NDArray[np.float64]
+) -> go.Figure:
+    """Cost surface over FN cost (y) x decision threshold (x), operating point marked."""
+    fn_grid = [round(1.0 + 0.5 * i, 2) for i in range(19)]  # 1.0 .. 10.0
+    z = np.array(
+        [
+            [business_cost(y_true, proba, t, cfg.fp_cost, float(fn)) for t in cfg.threshold_grid]
+            for fn in fn_grid
+        ]
+    )
+    fig = go.Figure()
+    fig.add_heatmap(
+        x=list(cfg.threshold_grid),
+        y=fn_grid,
+        z=z.tolist(),
+        colorscale="Tealrose",
+        colorbar={"title": "cost"},
+    )
+    row = min(range(len(fn_grid)), key=lambda i: abs(fn_grid[i] - cfg.fn_cost))
+    col = int(np.argmin(z[row]))
+    fig.add_scatter(
+        x=[cfg.threshold_grid[col]],
+        y=[fn_grid[row]],
+        mode="markers",
+        name="chosen operating point",
+        marker={"size": 13, "symbol": "star", "color": "#fbbf24"},
+    )
+    fig.update_layout(
+        title="Business-cost surface: FN cost x decision threshold",
+        xaxis_title="Decision threshold",
+        yaxis_title="FN cost (FP cost = 1)",
+    )
+    add_takeaway(
+        fig,
+        f"at FN={cfg.fn_cost:g}, t={cfg.threshold_grid[col]:.3f} minimizes cost "
+        f"({z[row, col]:.0f}); the ridge bends left as FN cost rises",
+    )
+    return apply_theme(fig)
 
 
 def paired_bootstrap_cost_delta(
@@ -450,6 +596,17 @@ def evaluate_holdout(
             selected_opt,
             naive_opt,
         ),
+        "slices": slice_report(
+            cfg,
+            y_true,
+            proba["selected"],
+            selected_opt,
+            {
+                col: np.asarray(X_test[col].astype(str))
+                for col in slice_cols(cfg)
+                if col in X_test.columns
+            },
+        ),
     }
     naive_total = _cost(naive_run)
     savings = naive_total - _cost(selected_run)
@@ -502,6 +659,8 @@ def evaluate_holdout(
             takeaway,
         ),
         "bootstrap_ci": bootstrap_ci_figure(summary["cost_delta_ci"], "selected model", "naive"),
+        "fairness_slices": fairness_slices_figure(summary["slices"], selected_opt),
+        "cost_surface": cost_surface_figure(cfg, y_true, proba["selected"]),
     }
     return runs, figures, summary
 

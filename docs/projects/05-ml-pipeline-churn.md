@@ -20,28 +20,29 @@ isotonic-calibrated — with calibration (ECE), permutation importance, PR
 curves, decision-curve analysis, a business-cost curve (FP=1, FN=5), and a
 paired bootstrap CI on the cost delta vs naive.
 
-## Key results (seed 42, n=5,000 → 1,000-row holdout)
+## Key results (IBM telco churn, 7,043 rows -> 1,409-row holdout)
 
 | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|
-| naive majority | cost-optimal | 0.5000 | 0.4770 | – | 440 |
-| logistic, default 0.5 | 0.500 | 0.8344 | 0.5796 | – | 350 |
-| logistic, tuned | 0.725 | 0.8344 | **0.6833** | – | **282** |
-| selected (cost-HPO logistic) | 0.700 | 0.8321 | 0.6744 | 0.280 | **283** |
-| selected + isotonic | 0.125 | 0.8216 | 0.6087 | **0.017** | 322 |
+| naive majority | cost-optimal | 0.5000 | 0.2098 | - | 1,035 |
+| logistic, default 0.5 | 0.500 | 0.8292 | 0.7022 | - | 691 |
+| logistic, tuned | 0.300 | 0.8292 | 0.6151 | - | 611 |
+| selected (cost-HPO XGB) | 0.150 | 0.8387 | 0.6512 | 0.028 | 619 |
+| selected + isotonic | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
 
-- Cost-aware HPO selected **LogisticRegression (C=0.6494, l1_ratio=0.4540)**
-  across 25 trials × 4 arms (best CV cost 1,220; family means 1,225 vs
-  1,339–1,409 for the boosters). An earlier F1-objective run picked HistGB,
-  which loses on holdout cost — the objective, not the family, decides.
-- Best deliverable vs naive: **cost −35.7%, F1 +43%**, confirmed by the
-  paired bootstrap: **−157, 95% CI [−236, −86]**.
-- Cost-model sensitivity (DVC experiments, DESIGN.md "Experiment
-  versioning"): fn_cost 3/5/8 → selected cost 210/283/387, optimal threshold
-  0.775/0.700/0.625 — higher miss cost, earlier alarm, logistic still wins.
-- Isotonic calibration cuts ECE **−94%** (0.280 → 0.017) without improving
-  the cost optimum — a probability-quality upgrade, not a decision upgrade.
-- 6/6 data-quality gates; full pipeline (incl. HPO) ~35 s, deterministic.
+- Cost-aware HPO selected **XGBoost** on real data (synthetic track's winner
+  was a logistic) — the winner tracks the data. Deliverable vs naive:
+  **cost −41.9% (1,035 -> 601), bootstrap −416, 95% CI [-485, -343]**.
+- Base rate 26.5% (vs 8.8% synthetic): the operating point does NOT transfer
+  (t*=0.175 vs 0.700) - the cost-curve procedure does. Calibration verdict
+  flips too: isotonic improves both ECE and cost on telco.
+- Fairness slices: recall uniform across gender (0.90 both), higher for
+  seniors (0.97 vs 0.88); the real gap is contractual (month-to-month 0.98 vs
+  two-year 0.00 at FN=5) - a stated business choice, movable on the cost
+  surface.
+- Figures now include `fairness_slices` (grouped bars) and `cost_surface`
+  (FN cost x threshold heatmap with the operating point marked).
+- 5/5 DQ gates on the pinned snapshot; full pipeline ~10 s, deterministic.
 
 ## Artifacts
 

@@ -11,12 +11,15 @@ and business-cost-driven threshold tuning.
 ## Problem
 
 Which customers will churn next month, what is that prediction worth, and at
-what alert threshold should the retention team act? The data is the platform's
-seeded synthetic churn generator (`portfolio_core.synthetic.churn`): 5,000 rows
-with **2% NaN in `age`**, **3% NaN in `support_calls`**, a **9,999 charge
-outlier**, and an 8.8% base churn rate — the messiness a real CRM export shows
-up with. Churn rate is low, so accuracy alone is misleading and missed
-churners (false negatives) must cost more than false alarms (FP=1, FN=5).
+what alert threshold should the retention team act? The primary track is the
+real **IBM telco churn dataset** (7,043 customers, 26.5% base churn, behind
+the same DQ gates and DatasetContract — see
+[data-registry/telco-churn](../../docs/data-registry/telco-churn.md)); the
+platform's seeded synthetic generator (`portfolio_core.synthetic.churn` —
+NaN gaps, a 9,999 charge outlier, 8.8% base rate) remains as the clearly
+labeled CI path (`data_source: synthetic`). Accuracy alone is misleading in
+either regime, and missed churners (false negatives) must cost more than
+false alarms (FP=1, FN=5).
 
 ## Design
 
@@ -66,70 +69,52 @@ raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSear
 
 Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 
-## Results (real run, seed 42, n=5,000)
+## Results (real run: IBM telco churn, 7,043 rows -> 1,409-row holdout)
 
-Holdout: 1,000 rows (churn rate 8.8%). Wave-2 grid search: **C=1.0** (CV F1
-0.3433). **Cost-aware Optuna selected LogisticRegression (C=0.6494,
-l1_ratio=0.4540)** over 25 seeded trials across **four arms** (logistic,
-HistGB, XGBoost, LightGBM — all on the same in-pipeline preprocessing):
-best CV business cost 1,220; mean trial cost by family: logistic 1,225 <
-histgb 1,339 < lightgbm 1,367 < xgboost 1,409 (xgb arm balanced via
-`scale_pos_weight`; `class_weight` is silently ignored by XGBClassifier).
-(An F1-objective run picked
-HistGB instead — the objective is the lever, documented in DESIGN.md.)
+Holdout churn rate 26.5% - a different regime from the 8.8% synthetic track.
+Wave-2 grid search: **C=0.01**. **Cost-aware Optuna selected XGBoost**
+(25 trials x 4 arms: n_estimators 211, learning_rate 0.0309, max_depth 3,
+subsample 0.5187; best CV business cost 2,416). On the synthetic track the
+same search picked a logistic - the winner tracks the data.
 
 | run | threshold | ROC-AUC | accuracy | P (macro) | R (macro) | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|---|---|---|
-| naive majority | cost-optimal | 0.5000 | **0.912** ⚠️ | 0.4560 | 0.5000 | 0.4770 | – | 440 |
-| logreg, default | 0.500 | 0.8344 | 0.722 | 0.5926 | 0.7552 | 0.5796 | – | 350 |
-| logreg, tuned | 0.725 | 0.8344 | 0.874 | 0.6576 | 0.7307 | **0.6833** | – | **282** |
-| selected (cost-HPO logreg) | 0.700 | 0.8321 | 0.861 | 0.6464 | 0.7390 | 0.6744 | 0.280 | **283** |
-| selected + isotonic | 0.125 | 0.8216 | 0.766 | 0.6035 | 0.7588 | 0.6087 | **0.017** | 322 |
+| naive majority | cost-optimal | 0.5000 | **0.735** ⚠️ | 0.1327 | 0.5000 | 0.2098 | - | 1,035 |
+| logreg, default | 0.500 | 0.8292 | 0.731 | 0.6999 | 0.7503 | 0.7022 | - | 691 |
+| logreg, tuned | 0.300 | 0.8292 | 0.620 | 0.6861 | 0.7253 | 0.6151 | - | 611 |
+| selected (cost-HPO XGB) | 0.150 | 0.8387 | 0.663 | 0.6890 | 0.7398 | 0.6512 | 0.028 | 619 |
+| selected + isotonic | 0.175 | 0.8317 | 0.690 | 0.6982 | 0.7539 | 0.6745 | **0.016** | **601** |
 
 Key findings:
 
-- **Against the naive floor, the deliverable cuts business cost 440 → 283
-  (−35.7%) and lifts macro F1 0.477 → 0.683 (+43%).** The paired bootstrap
-  makes the delta defensible: **−157, 95% CI [−236, −86] — significant**
-  (2,000 seeded resamples, fixed operating thresholds).
-- **Winner unchanged with more arms.** Adding XGBoost and LightGBM to the
-  cost-aware search did not dethrone the logistic: it wins both the best
-  single trial and the family mean. Boosting arms land within ~10% on cost
-  but never below it at FN/FP = 5.
-- **Threshold tuning alone: −19.4%** of the cost win (350 → 282), same model,
-  no retraining — the operating point is a business decision made on a cost
-  curve (FP=1, FN=5), not a library default.
-- **Calibration verdict:** isotonic calibration cuts ECE **0.280 → 0.017
-  (−94%)** but does **not** improve the business-cost optimum (322 vs 283) —
-  at these cost weights the raw ranking already decides well. Calibration is
-  worth deploying when the *probabilities themselves* are consumed (budget
-  forecasting, CLV math), not for this thresholded alarm.
-- **Cost-model sensitivity** (DVC experiments, see DESIGN.md "Experiment
-  versioning"): fn_cost=3 → selected cost 210 vs naive 264, t*=0.775;
-  fn_cost=8 → 387 vs 704, t*=0.625. Higher miss cost → alarm earlier; the
-  logistic wins across the range.
-- Permutation importance of the selected model keeps `monthly_charges` and
-  `contract` on top, matching the generator's ground truth.
-
-The naive baseline's **accuracy is the highest of all rows** (0.912) — on an
-8.8% churn rate, never ringing the alarm is accurate and useless, which is why
-the deliverable is cost and F1, not accuracy.
-
-Artifacts (regenerated by every run):
-
-- `reports/metrics.json` — 5-run ladder + `_meta.cost_delta_ci` (bootstrap CI)
-- `reports/report.html` — rendered evaluation report
-- `reports/figures/eda_churn_profile.{html,json}` — churn rate by contract +
-  monthly_charges / tenure distributions
-- `reports/figures/calibration_curve.{html,json}` — raw vs isotonic (ECE in legend)
-- `reports/figures/permutation_importance.{html,json}`
-- `reports/figures/precision_recall_curve.{html,json}` — naive base-rate floor
-- `reports/figures/decision_curve.{html,json}` — net benefit vs treat-all/none
-- `reports/figures/business_cost_curve.{html,json}` — all candidates + takeaway
-- `reports/figures/bootstrap_ci.{html,json}` — paired bootstrap interval
-- `reports/dq_report.md` — 6/6 data-quality gates passed
-- `data/model.pkl`, `data/selected_model*.pkl`, `data/model_selection.json`,
-  `data/holdout.parquet`, `data/model_meta.json`, `data/dataset_contract.json`
+- **Against the naive floor, the deliverable cuts business cost 1,035 -> 601
+  (-41.9%) at t=0.175.** Paired bootstrap: **-416, 95% CI [-485, -343] -
+  significant**. The naive row's "accuracy" is 0.735: never alarming is the
+  accuracy trap, inverted - on a 26.5% base rate the ignore-all policy looks
+  accurate and burns 1,035 cost units.
+- **The winner changes on real data.** XGBoost beats the logistic family on
+  CV business cost (the synthetic track's winner); after isotonic calibration
+  it also holds the holdout cost optimum (601 vs the tuned logistic's 611 -
+  within noise, but the calibrated booster is the deliverable).
+- **Calibration verdict flips:** isotonic improves *both* ECE
+  (0.028 -> 0.016) and the business-cost optimum (619 -> 601). On the noisier
+  real regime, trustworthy probabilities pay; the synthetic conclusion
+  (calibration doesn't move the optimum) does not transfer.
+- **The operating point does not transfer - the procedure does.** Synthetic
+  t*=0.700 vs telco t*=0.175: the threshold must be re-derived per regime on
+  the cost curve; re-tuning alone moved the logistic 691 -> 611.
+- **Fairness slices** (at t=0.150): recall is uniform across gender
+  (0.90 both) and *higher* for senior citizens (0.97 vs 0.88 - they churn at
+  41.7% and are easier to catch). The real gap is by contract: month-to-month
+  recall 0.98 vs one-year 0.47 and two-year 0.00 - the cost-optimal threshold
+  is tuned to the dominant short-contract churn and misses nearly all 45
+  long-contract churners in the holdout. That is a business choice (they cost
+  little at FN=5), not a bug - and the cost-surface figure shows exactly
+  where a different FN cost would move it.
+- Permutation importance on the selected model ranks `tenure_months`,
+  `monthly_charges`, and `contract` first - matching the EDA splits
+  (churners: ~74 vs ~61 mean monthly charges, ~18 vs ~38 months tenure;
+  fiber-optic internet churns at 41.9%).
 
 ## Reproduce
 
@@ -140,7 +125,8 @@ wheels bundle libgomp and need nothing.
 
 ```bash
 cd projects/05-ml-pipeline-churn
-uv run python -m churn_pipeline.cli all   # prepare → train (cost-aware HPO) → evaluate, ~35 s
+uv run python -m churn_pipeline.cli all   # prepare (telco) → train (cost-aware HPO) → evaluate, ~35 s
+# CI path (no network): edit params.yaml to `data_source: synthetic`, then the same command
 # client extract onboarding:
 uv run python -m churn_pipeline.cli prepare --input client.csv
 # or stage-wise via DVC:

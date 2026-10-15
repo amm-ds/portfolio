@@ -1,5 +1,6 @@
 n_samples: 5000
 seed: 42
+data_source: telco
 test_frac: 0.2
 c_grid:
 - 0.01
@@ -7,10 +8,12 @@ c_grid:
 - 1.0
 - 10.0
 cv_folds: 3
-model_family: logreg
+model_family: xgboost
 model_params:
-  C: 0.6493881644270072
-  l1_ratio: 0.4539876752994031
+  learning_rate: 0.030921572415730004
+  max_depth: 3
+  n_estimators: 211
+  subsample: 0.5186934422187627
 hpo_trials: 25
 hpo_objective: cost
 calib_frac: 0.2

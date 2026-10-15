@@ -1,0 +1,9 @@
+frozen: true
+deps:
+- hash: md5
+  path: https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv
+  checksum: '3b0bfab28a8101b4e4fdd08025a5c235'
+outs:
+- hash: md5
+  path: telco-churn
+md5: d41d8cd98f00b204e9800998ecf8427e

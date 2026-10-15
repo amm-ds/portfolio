@@ -10,10 +10,27 @@ from portfolio_core import synthetic
 
 @pytest.fixture()
 def small_cfg(tmp_path: Path) -> ChurnConfig:
-    """Small, fast config with artifacts redirected into tmp_path."""
+    """Small, fast config with artifacts redirected into tmp_path (synthetic CI path)."""
     return ChurnConfig(
         n_samples=400,
         seed=7,
+        data_source="synthetic",
+        c_grid=[0.1, 1.0],
+        cv_folds=2,
+        hpo_trials=6,
+        calib_frac=0.25,
+        threshold_grid=[0.2, 0.4, 0.6, 0.8],
+        data_dir=tmp_path / "data",
+        reports_dir=tmp_path / "reports",
+    )
+
+
+@pytest.fixture()
+def small_telco_cfg(tmp_path: Path) -> ChurnConfig:
+    """Telco-scheme config for offline tests (source swapped to a fixture CSV)."""
+    return ChurnConfig(
+        seed=7,
+        data_source="telco",
         c_grid=[0.1, 1.0],
         cv_folds=2,
         hpo_trials=6,

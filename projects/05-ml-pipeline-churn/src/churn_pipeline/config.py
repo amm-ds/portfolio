@@ -39,6 +39,19 @@ class ChurnConfig(PortfolioBaseModel):
         lt=0.5,
         description="Stratified holdout fraction (temporal split not applicable to this data).",
     )
+    data_source: str = Field(
+        default="telco",
+        pattern="^(telco|synthetic)$",
+        description="'telco' = IBM telco churn (real-data primary track); 'synthetic' = CI path.",
+    )
+    telco_source: str = Field(
+        default="https://raw.githubusercontent.com/IBM/telco-customer-churn-on-icp4d/master/data/Telco-Customer-Churn.csv",
+        description="Canonical CSV (http(s) fetched; local path accepted for tests).",
+    )
+    telco_sha256: str = Field(
+        default="16320c9c1ec72448db59aa0a26a0b95401046bef5d02fd3aeb906448e3055e91",
+        description="Expected sha256 of the telco CSV (verified on fetch; empty = skip).",
+    )
 
     # Model selection
     c_grid: list[float] = Field(
