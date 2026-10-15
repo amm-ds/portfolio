@@ -1,8 +1,7 @@
 """Pipeline integration on a tiny real synthetic frame (no network)."""
 
 import numpy as np
-import pandas as pd  # type: ignore[import-untyped]
-from churn_pipeline.config import ChurnConfig
+from churn_pipeline.config import ChurnConfig, pd
 from churn_pipeline.model import (
     NUMERIC_COLS,
     build_pipeline,

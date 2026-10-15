@@ -10,8 +10,8 @@ stages:
       size: 633
     - path: src/churn_pipeline/
       hash: md5
-      md5: 87ec79334103415a7ddde0d22b13f8c3.dir
-      size: 144416
+      md5: 46b5720d44b854215c759f36fd1993ef.dir
+      size: 139383
       nfiles: 17
     params:
       params.yaml:
@@ -54,8 +54,8 @@ stages:
       size: 633
     - path: src/churn_pipeline/
       hash: md5
-      md5: 87ec79334103415a7ddde0d22b13f8c3.dir
-      size: 144416
+      md5: 46b5720d44b854215c759f36fd1993ef.dir
+      size: 139383
       nfiles: 17
     params:
       params.yaml:
@@ -131,8 +131,8 @@ stages:
       size: 633
     - path: src/churn_pipeline/
       hash: md5
-      md5: 87ec79334103415a7ddde0d22b13f8c3.dir
-      size: 144416
+      md5: 46b5720d44b854215c759f36fd1993ef.dir
+      size: 139383
       nfiles: 17
     params:
       params.yaml:

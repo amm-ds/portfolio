@@ -3,9 +3,8 @@
 from pathlib import Path
 
 import numpy as np
-import pandas as pd  # type: ignore[import-untyped]
 import pytest
-from churn_pipeline.config import ChurnConfig
+from churn_pipeline.config import ChurnConfig, pd
 from portfolio_core import synthetic
 
 

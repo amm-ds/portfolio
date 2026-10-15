@@ -1,8 +1,8 @@
 """Unit tests for the custom transformers: shapes, caps, missing flags."""
 
 import numpy as np
-import pandas as pd  # type: ignore[import-untyped]
 import pytest
+from churn_pipeline.config import pd
 from churn_pipeline.features import MissingValueIndicator, OutlierCapper
 from sklearn.exceptions import NotFittedError
 
