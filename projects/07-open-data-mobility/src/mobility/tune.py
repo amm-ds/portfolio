@@ -208,7 +208,7 @@ def _mirror_params_yaml(cfg: MobilityConfig, kind: str, result: dict[str, Any]) 
 
 
 def tune_all(cfg: MobilityConfig | None = None) -> dict[str, dict[str, Any]]:
-    """Run both studies (GBM then NN); returns {kind: result}."""
+    """Run all studies: sklearn GBM, NN, and the xgb/lgbm challenger arms."""
     cfg = cfg or get_config()
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     return {"gbm": tune_gbm(cfg), "nn": tune_nn(cfg)}

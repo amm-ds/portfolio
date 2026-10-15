@@ -1,4 +1,5 @@
 # Data products and reports are DVC-tracked (dvc.yaml outs), never committed.
 data/
-reports/
+reports/*
 !reports/.gitkeep
+!reports/metrics.json

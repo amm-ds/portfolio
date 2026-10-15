@@ -58,12 +58,35 @@ stages:
       - src/mobility/features.py
       - data/features
       - reports/models/hpo_gbm.json
+      - reports/models/hpo_xgb.json
+      - reports/models/hpo_lgbm.json
     params:
       - max_train_rows
       - gbm
       - gbm_tuned
+      - xgb_tuned
+      - lgbm_tuned
       - seed
     outs:
+      - reports/models/predictions_baseline.parquet
+
+  train_arms:
+    cmd: uv run python -m mobility.cli train-arms
+    deps:
+      - src/mobility/arms.py
+      - data/features
+      - reports/models/predictions_baseline.parquet
+    params:
+      - hpo
+      - max_train_rows
+      - seed
+    outs:
+      - reports/models/hpo_xgb.json
+      - reports/models/hpo_lgbm.json
+      - reports/models/gbm_xgb_tuned.joblib
+      - reports/models/gbm_p90_xgb_tuned.joblib
+      - reports/models/gbm_lgbm_tuned.joblib
+      - reports/models/gbm_p90_lgbm_tuned.joblib
       - reports/models/predictions_baseline.parquet
 
   train_nn:
@@ -91,8 +114,9 @@ stages:
       - reports/models/predictions.parquet
       - data/curated
     outs:
-      - reports/metrics.json
       - reports/figures
+    metrics:
+      - reports/metrics.json
 
   transfer:
     cmd: uv run python -m mobility.cli transfer
@@ -102,8 +126,6 @@ stages:
       - reports/models/gbm_tuned.joblib
     outs:
       - reports/green_transfer.json
-      - reports/figures/green_transfer.html
-      - reports/figures/green_transfer.json
 
   serving:
     cmd: uv run python -m mobility.cli build-serving-artifact

@@ -32,12 +32,18 @@ MODEL_PREDS = [
     ("naive_lag24", "y_naive"),
     ("gbm_mean", "y_gbm"),
     ("gbm_tuned", "y_gbm_tuned"),
+    ("gbm_xgb_tuned", "y_gbm_xgb_tuned"),
+    ("gbm_lgbm_tuned", "y_gbm_lgbm_tuned"),
     ("temporal_net", "y_nn"),
     ("temporal_net_tuned", "y_nn_tuned"),
 ]
-#: Tuned variants improve on their untuned predecessor (HPO validates on the
-#: same embargoed window); deltas are also reported pairwise.
-TUNED_PAIRS = [("gbm_tuned", "gbm_mean"), ("temporal_net_tuned", "temporal_net")]
+#: Tuned variants improve on their predecessor; deltas are also reported pairwise.
+TUNED_PAIRS = [
+    ("gbm_tuned", "gbm_mean"),
+    ("gbm_xgb_tuned", "gbm_tuned"),
+    ("gbm_lgbm_tuned", "gbm_tuned"),
+    ("temporal_net_tuned", "temporal_net"),
+]
 WEEK_START = datetime(2024, 10, 7)  # first full Monday of the test window
 
 

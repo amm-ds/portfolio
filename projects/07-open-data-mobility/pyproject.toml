@@ -11,6 +11,10 @@ dependencies = [
     "plotly>=5.24",
     "numpy>=2.1",
     "pyarrow>=17",
+    # GBM HPO challenger arms (wave 11): same gradient-boosting family as the
+    # sklearn baseline so the run ladder isolates library differences, not model class.
+    "xgboost>=2.0",
+    "lightgbm>=4.0",
     "portfolio-core",
     "portfolio-eval",
 ]

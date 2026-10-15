@@ -171,6 +171,8 @@ sections:
       | naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | — |
       | gbm_mean | 4.667 | **15.096** | 62.0% | −28.4% |
       | gbm_tuned (30 trials) | 4.676 | 15.189 | 61.6% | −28.3% |
+      | gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | −31.2% |
+      | gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | −29.7% |
       | temporal_net | 5.510 | 19.686 | **54.5%** | −15.5% |
       | temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | −20.5% |
 
@@ -182,6 +184,11 @@ sections:
       - **NN tuning bought −6.0% MAE** (smaller 32-16 net, higher LR) at a
         MAPE cost — the tuned NN is the reported NN on MAE; the untuned one
         stays best on MAPE.
+      - **Challenger arms (xgb/lgbm)**: both lost to the incumbent on the
+        embargoed validation window, so the served model stays `gbm_tuned` —
+        even though both beat it on the Q4 test (xgb −4.1% MAE). Keying the
+        serving decision on validation, not test, is what prevents test-set
+        selection.
       - **p90 calibration: 90.8% overall** (target 90%). Manhattan 91.4% and
         Queens 89.6% are tight; sparse N/A zones under-cover at 84.7% (bands
         too thin where data is thin — flag before staffing on them), Staten
