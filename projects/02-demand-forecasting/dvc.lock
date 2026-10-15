@@ -5,12 +5,12 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 4c2499feaa8138f40c09e1d04fa51c88
-      size: 874
+      md5: 197ab51b93ba026a003b6c5685c6eab4
+      size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 4072c7a3a13e3810a658134a3bd8e564.dir
-      size: 196799
+      md5: 729203bd0a3c0e403039a1e386441760.dir
+      size: 210482
       nfiles: 25
     outs:
     - path: data/dataset.json
@@ -30,12 +30,12 @@ stages:
       size: 21882
     - path: params.yaml
       hash: md5
-      md5: 4c2499feaa8138f40c09e1d04fa51c88
-      size: 874
+      md5: 197ab51b93ba026a003b6c5685c6eab4
+      size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 4072c7a3a13e3810a658134a3bd8e564.dir
-      size: 196799
+      md5: 729203bd0a3c0e403039a1e386441760.dir
+      size: 210482
       nfiles: 25
     outs:
     - path: data/features.parquet
@@ -51,18 +51,18 @@ stages:
       size: 112084
     - path: params.yaml
       hash: md5
-      md5: 4c2499feaa8138f40c09e1d04fa51c88
-      size: 874
+      md5: 197ab51b93ba026a003b6c5685c6eab4
+      size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 4072c7a3a13e3810a658134a3bd8e564.dir
-      size: 196799
+      md5: 729203bd0a3c0e403039a1e386441760.dir
+      size: 210482
       nfiles: 25
     outs:
     - path: data/models.pkl
       hash: md5
-      md5: a6ad84442c53ec2e6a8254d8a5798258
-      size: 568830
+      md5: e82cf62faba2d25853eca5aff9dd91ec
+      size: 1773317
   evaluate:
     cmd: uv run python -m demand_forecasting.cli evaluate
     deps:
@@ -76,27 +76,27 @@ stages:
       size: 21882
     - path: params.yaml
       hash: md5
-      md5: 4c2499feaa8138f40c09e1d04fa51c88
-      size: 874
+      md5: 197ab51b93ba026a003b6c5685c6eab4
+      size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 4072c7a3a13e3810a658134a3bd8e564.dir
-      size: 196799
+      md5: 729203bd0a3c0e403039a1e386441760.dir
+      size: 210482
       nfiles: 25
     outs:
     - path: reports/figures
       hash: md5
-      md5: 46e2b8d52782631039e21ec54c005ce8.dir
-      size: 612341
-      nfiles: 18
+      md5: 9d7016fbb3cf9e2af6e0a33d221b0b3a.dir
+      size: 680565
+      nfiles: 26
     - path: reports/metrics.json
       hash: md5
-      md5: 6b1569f3af50cd446cbc941f6436c581
-      size: 708
+      md5: 84c2cf51a3ac8561cc8d6fb636aa944f
+      size: 947
     - path: reports/report.html
       hash: md5
-      md5: f4f044fa8893fde58e47d2380ced8a0c
-      size: 1903
+      md5: ad7167fcc99b2d2af55031801f3d4022
+      size: 2052
   hpo:
     cmd: uv run python -m demand_forecasting.cli hpo
     deps:
@@ -106,35 +106,27 @@ stages:
       size: 112084
     - path: params.yaml
       hash: md5
-      md5: 4c2499feaa8138f40c09e1d04fa51c88
-      size: 874
+      md5: 197ab51b93ba026a003b6c5685c6eab4
+      size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 4072c7a3a13e3810a658134a3bd8e564.dir
-      size: 196799
+      md5: 729203bd0a3c0e403039a1e386441760.dir
+      size: 210482
       nfiles: 25
     outs:
     - path: data/hpo_best.json
       hash: md5
       md5: 0dc00f2f73e3240845b7d7ee116062dc
       size: 322
+    - path: data/hpo_best_lgbm.json
+      hash: md5
+      md5: e0d8247664119004ceddcedf8dcd4907
+      size: 271
+    - path: data/hpo_best_xgb.json
+      hash: md5
+      md5: a0a4b48785280064028064260f84fe32
+      size: 321
     - path: data/hpo_study.db
       hash: md5
-      md5: 367ec59cfb723549ab44b03e43444e25
-      size: 196608
-    - path: reports/figures/hpo_history.html
-      hash: md5
-      md5: 67685321d7d55bb9771fc0fac9244546
-      size: 10690
-    - path: reports/figures/hpo_history.json
-      hash: md5
-      md5: 5434f3b1753bed29f041c41a92b01706
-      size: 9693
-    - path: reports/figures/hpo_importance.html
-      hash: md5
-      md5: 6011bcb6093fa772852ff34a6dde78bc
-      size: 8471
-    - path: reports/figures/hpo_importance.json
-      hash: md5
-      md5: d03748d997540ca1760b423348a34f50
-      size: 7474
+      md5: 79243283e3d5301e49eb95494803c81b
+      size: 262144

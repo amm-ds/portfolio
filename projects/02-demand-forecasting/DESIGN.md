@@ -151,7 +151,69 @@ flowchart LR
    validation date.
 4. Metrics are computed on pooled **out-of-fold** predictions only.
 
+## Experiment versioning (ADR-0007 worked example)
+
+HPO search budgets are versioned as DVC experiments, not ad-hoc runs. The
+mechanics (params flow through `params.yaml` — the CLI overlays it onto
+`ForecastConfig`, so `--set-param` changes what actually executes):
+
+```bash
+# queue two search-budget variants of the hpo stage
+uv run dvc exp run --queue --set-param hpo_n_trials=8 hpo
+uv run dvc exp run --queue --set-param hpo_n_trials=12 hpo
+uv run dvc exp run --run-all          # workers execute in temp workspaces
+uv run dvc exp show --no-pager        # compare budgets side by side
+```
+
+Nothing from an experiment is applied to `params.yaml` automatically — the
+full studies set the production configs (`data/hpo_best*.json` +
+`params.yaml`); experiments only answer "would a smaller budget have found
+it?".
+
+Captured `dvc exp show --no-pager` (this checkout, trimmed):
+
+```text
+Task     Name             Created    Status
+a75b2ee  train-rows-1m    03:24 AM   Failed
+9b879a7  train-rows-500k  03:25 AM   Failed
+```
+
+(Only foreign queued tasks are visible: experiments are queued repo-wide.)
+
+**Current blocker, worked-example lesson included:** every `dvc exp run` /
+`dvc repro` validates the *whole repository* pipeline, and 07's dvc.yaml
+currently declares `reports/models/predictions_baseline.parquet` as an output
+of both `train_baselines` and `train_arms`. Until that overlap is removed,
+all experiment execution repo-wide fails with:
+
+```text
+ERROR: output '../07-open-data-mobility/reports/models/predictions_baseline.parquet' is specified in:
+	- ../07-open-data-mobility/dvc.yaml:train_arms
+	- ../07-open-data-mobility/dvc.yaml:train_baselines
+```
+
+`dvc commit`, `dvc exp show` and `dvc metrics show` are unaffected (no
+pipeline build). The queue commands above are the exact ones to re-run once
+07's graph is fixed; the hpo stage is queue-ready (`params.yaml` carries
+`hpo_n_trials`, the CLI overlays it).
+
 ## Changelog
+
+- **0.5.0 (2026-10-15)** — wave 11 (general-purpose boosting arms): XGBoost +
+  LightGBM added (`xgboost>=2.0`, `lightgbm>=4.0`); `hpo.py` generalized to
+  per-arm seeded studies (hgb 56 trials, xgb 25, lgbm 25) with per-arm search
+  spaces, resumable per-arm studies in one SQLite storage, and per-arm param
+  persistence (`data/hpo_best_{xgb,lgbm}.json`); `cli hpo --model`;
+  `params.yaml` is now overlaid onto `ForecastConfig` (dvc `--set-param`
+  changes real runs). macOS: single shared libomp runtime across torch /
+  xgboost / lightgbm (import-order guard in temporal.py, rpath graft in the
+  venv, single-threaded torch in the NN) — dual OpenMP runtimes segfault or
+  deadlock. dvc.yaml: evaluate declares `reports/metrics.json` under
+  `metrics:`, figures flow through the stage's figures-dir out. Real run
+  (seed 42, 8 runs): lgbm_tuned MAE 8.413 (new champion, -1.4% vs hgb_tuned
+  8.529), xgb_tuned 8.539 (wash), temporal_net 9.341; reconciliation w=0.05;
+  quantile coverage 0.727 / conformal 0.757. Experiment versioning section
+  added; dvc exp execution blocked by 07's overlapping output (documented).
 
 - **0.4.0 (2026-10-13)** — wave 7 (roadmap delivery): UCI Online Retail II
   real-data track implemented (`uci.py`, `--data-source uci`, checksum-pinned,

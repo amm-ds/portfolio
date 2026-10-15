@@ -76,6 +76,8 @@ def test_evaluate_writes_report_and_figures(
         "ridge",
         "hgb",
         "hgb_tuned",
+        "xgb_tuned",
+        "lgbm_tuned",
         "temporal_net",
     }
     for run in result.runs:
@@ -106,7 +108,16 @@ def test_model_persistence_roundtrip(
     models = fit_all(features, config)
     path = save_models(models, tmp_path / "models.pkl")
     loaded = load_models(path)
-    assert set(loaded) == {"naive_mean", "naive_last", "ridge", "hgb", "hgb_tuned", "temporal_net"}
+    assert set(loaded) == {
+        "naive_mean",
+        "naive_last",
+        "ridge",
+        "hgb",
+        "hgb_tuned",
+        "xgb_tuned",
+        "lgbm_tuned",
+        "temporal_net",
+    }
     spec = next(s for s in model_specs() if s.name == "ridge")
     x, _, _, _ = to_xy(features, config, spec)
     pred = loaded["ridge"].predict(x)

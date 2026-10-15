@@ -48,6 +48,37 @@ class HGBTunedConfig(PortfolioBaseModel):
         return self.model_dump()
 
 
+class XGBTunedConfig(PortfolioBaseModel):
+    """Production XGBoost hyperparameters — best of a seeded 25-trial study
+    (CV mean MAE 8.5392, TPESampler seed 42); params.yaml mirrors them."""
+
+    learning_rate: float = Field(default=0.04717052037625178, gt=0)
+    n_estimators: int = Field(default=482, ge=10)
+    max_depth: int = Field(default=4, ge=1)
+    subsample: float = Field(default=0.7571172192068059, gt=0, le=1.0)
+    colsample_bytree: float = Field(default=0.7962072844310213, gt=0, le=1.0)
+    reg_lambda: float = Field(default=2.9140978279786215e-08, ge=0)
+
+    def estimator_kwargs(self) -> dict[str, Any]:
+        """Kwargs for :class:`~xgboost.XGBRegressor`."""
+        return self.model_dump()
+
+
+class LGBMTunedConfig(PortfolioBaseModel):
+    """Production LightGBM hyperparameters — best of a seeded 25-trial study
+    (CV mean MAE 8.4133, beats hgb_tuned's 8.5291); params.yaml mirrors them."""
+
+    learning_rate: float = Field(default=0.1563510870813346, gt=0)
+    n_estimators: int = Field(default=217, ge=10)
+    num_leaves: int = Field(default=18, ge=2)
+    min_child_samples: int = Field(default=139, ge=1)
+    reg_lambda: float = Field(default=0.0002520721916536751, ge=0)
+
+    def estimator_kwargs(self) -> dict[str, Any]:
+        """Kwargs for :class:`~lightgbm.LGBMRegressor`."""
+        return self.model_dump()
+
+
 class ForecastConfig(PortfolioBaseModel):
     """Forecast problem definition: horizon, hierarchy shape, features, backtest."""
 
@@ -62,6 +93,12 @@ class ForecastConfig(PortfolioBaseModel):
     )
     hgb_tuned: HGBTunedConfig = Field(
         default_factory=HGBTunedConfig, description="Production HGB params (from HPO)."
+    )
+    xgb_tuned: XGBTunedConfig = Field(
+        default_factory=XGBTunedConfig, description="Production XGBoost params (from HPO)."
+    )
+    lgbm_tuned: LGBMTunedConfig = Field(
+        default_factory=LGBMTunedConfig, description="Production LightGBM params (from HPO)."
     )
     seed: int = Field(
         default=42, description="Mirror of DemandSettings.seed for estimators built from config."

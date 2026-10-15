@@ -1,18 +1,21 @@
-"""Optuna HPO for the production HGB config (wave 3).
+"""Optuna HPO for the production booster configs (HGB / XGBoost / LightGBM).
 
 The objective is the pooled-CV mean MAE over the *same* date-aligned
 expanding-window folds used by the honest backtest (shared via
 :func:`demand_forecasting.evaluate.cv_row_folds`), so hyperparameters are
 selected under the exact evaluation protocol they will be judged by.
 
-Determinism: seeded TPE sampler + seeded estimator random_state; the best
-params land in ``data/hpo_best.json`` and are mirrored into
-``ForecastConfig.hgb_tuned`` defaults + ``params.yaml`` (production config).
+Determinism: seeded TPE sampler + seeded estimator random_state (LightGBM also
+gets ``deterministic=True``); the best params land in ``data/hpo_best.json``
+(hgb) or ``data/hpo_best_{model}.json`` and are mirrored into
+``ForecastConfig`` defaults + ``params.yaml`` (production config). The study
+lives in a resumable SQLite storage with per-trial checkpointing.
 """
 
 import json
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import optuna
@@ -30,35 +33,71 @@ from demand_forecasting.model import NUMERIC_FEATURES, model_specs, to_xy
 
 logger = get_logger(__name__)
 
-# search space (see DESIGN.md): deliberately bounded so ~50 pruned trials
+# per-arm search spaces (see DESIGN.md): bounded so ~25-50 pruned trials
 # finish in minutes on CPU
-SPACE: dict[str, tuple[str, tuple[float | int, ...]]] = {
-    "learning_rate": ("float", (0.02, 0.3)),
-    "max_iter": ("int", (60, 200)),
-    "max_leaf_nodes": ("int", (7, 63)),
-    "min_samples_leaf": ("int", (10, 100)),
-    "l2_regularization": ("float", (1e-8, 10.0)),
-    "max_features": ("float", (0.5, 1.0)),
+SPACES: dict[str, dict[str, tuple[str, tuple[float | int, ...]]]] = {
+    "hgb": {
+        "learning_rate": ("float", (0.02, 0.3)),
+        "max_iter": ("int", (60, 200)),
+        "max_leaf_nodes": ("int", (7, 63)),
+        "min_samples_leaf": ("int", (10, 100)),
+        "l2_regularization": ("float", (1e-8, 10.0)),
+        "max_features": ("float", (0.5, 1.0)),
+    },
+    "xgb": {
+        "learning_rate": ("float", (0.01, 0.3)),
+        "n_estimators": ("int", (50, 600)),
+        "max_depth": ("int", (3, 12)),
+        "subsample": ("float", (0.5, 1.0)),
+        "colsample_bytree": ("float", (0.5, 1.0)),
+        "reg_lambda": ("float", (1e-8, 100.0)),
+    },
+    "lgbm": {
+        "learning_rate": ("float", (0.01, 0.3)),
+        "n_estimators": ("int", (50, 600)),
+        "num_leaves": ("int", (7, 127)),
+        "min_child_samples": ("int", (5, 200)),
+        "reg_lambda": ("float", (1e-8, 100.0)),
+    },
 }
-LOG_SCALE = {"learning_rate", "l2_regularization"}
+LOG_SCALE: dict[str, set[str]] = {
+    "hgb": {"learning_rate", "l2_regularization"},
+    "xgb": {"learning_rate", "reg_lambda"},
+    "lgbm": {"learning_rate", "reg_lambda"},
+}
 
 
-def suggest_params(trial: optuna.Trial) -> dict[str, float | int]:
-    """Sample one point from the HGB search space."""
+def suggest_params(trial: optuna.Trial, model: str) -> dict[str, float | int]:
+    """Sample one point from the given arm's search space."""
     params: dict[str, float | int] = {}
-    for name, (kind, bounds) in SPACE.items():
+    for name, (kind, bounds) in SPACES[model].items():
         lo, hi = bounds
         if kind == "int":
             params[name] = trial.suggest_int(name, int(lo), int(hi))
         else:
-            params[name] = trial.suggest_float(name, float(lo), float(hi), log=name in LOG_SCALE)
+            params[name] = trial.suggest_float(
+                name, float(lo), float(hi), log=name in LOG_SCALE[model]
+            )
     return params
 
 
-def _hgb_design_matrix(
-    features: pl.DataFrame, config: ForecastConfig
-) -> tuple[np.ndarray, np.ndarray]:
-    """Numeric+lag+one-hot(series) matrix, identical to the backtest's hgb input."""
+def make_estimator(model: str, params: dict[str, Any], seed: int) -> Any:
+    """Seeded, deterministic estimator instance for the arm."""
+    if model == "hgb":
+        return HistGradientBoostingRegressor(random_state=seed, **params)
+    if model == "xgb":
+        from xgboost import XGBRegressor
+
+        return XGBRegressor(random_state=seed, tree_method="hist", **params)
+    if model == "lgbm":
+        from lightgbm import LGBMRegressor
+
+        return LGBMRegressor(random_state=seed, deterministic=True, verbosity=-1, **params)
+    raise ValueError(f"unknown booster arm: {model}")  # pragma: no cover
+
+
+def _design_matrix(features: pl.DataFrame, config: ForecastConfig) -> tuple[np.ndarray, np.ndarray]:
+    """Numeric+lag+one-hot(series) matrix, identical to the backtest's input."""
     spec = next(s for s in model_specs() if s.name == "hgb")
     x_raw, y, _, _ = to_xy(features, config, spec)
     n_num = len(NUMERIC_FEATURES) + len(config.lags)
@@ -73,19 +112,19 @@ def _hgb_design_matrix(
 
 
 def make_objective(
-    features: pl.DataFrame, config: ForecastConfig, seed: int
+    features: pl.DataFrame, config: ForecastConfig, seed: int, model: str = "hgb"
 ) -> Callable[[optuna.Trial], float]:
     """Build the CV-mean-MAE objective with per-fold median pruning."""
-    x, y = _hgb_design_matrix(features, config)
+    x, y = _design_matrix(features, config)
     folds = cv_row_folds(features, config)
 
     def objective(trial: optuna.Trial) -> float:
-        params = suggest_params(trial)
+        params = suggest_params(trial, model)
         maes = []
         for k, (train_rows, val_rows) in enumerate(folds):
-            model = HistGradientBoostingRegressor(random_state=seed, **params)
-            model.fit(x[train_rows], y[train_rows])
-            mae = float(np.mean(np.abs(y[val_rows] - model.predict(x[val_rows]))))
+            estimator = make_estimator(model, params, seed)
+            estimator.fit(x[train_rows], y[train_rows])
+            mae = float(np.mean(np.abs(y[val_rows] - estimator.predict(x[val_rows]))))
             maes.append(mae)
             trial.report(mae, k)
             if trial.should_prune():
@@ -129,9 +168,12 @@ def figure_hpo_importance(study: optuna.Study) -> go.Figure:
 
 
 def run_hpo(
-    settings: DemandSettings, config: ForecastConfig, n_trials: int | None = None
+    settings: DemandSettings,
+    config: ForecastConfig,
+    model: str = "hgb",
+    n_trials: int | None = None,
 ) -> optuna.Study:
-    """Run the seeded HPO study; persist best params + figures.
+    """Run the seeded HPO study for one booster arm; persist best params + figures.
 
     The study lives in a SQLite storage under ``data/`` so interrupted runs
     resume where they left off (``cli hpo`` is safe to re-invoke), and a
@@ -149,7 +191,7 @@ def run_hpo(
         direction="minimize",
         sampler=sampler,
         pruner=pruner,
-        study_name="hgb",
+        study_name=model,
         storage=storage,
         load_if_exists=True,
     )
@@ -159,46 +201,50 @@ def run_hpo(
         if study_.best_trial is None:
             return
         best = dict(study_.best_params)
-        best["random_state"] = settings.seed
         out = {
             "best_params": best,
             "best_cv_mae": float(study_.best_value),
             "n_trials": len(study_.trials),
             "seed": settings.seed,
+            "model": model,
         }
-        path = settings.data_dir / "hpo_best.json"
+        path = settings.data_dir / ("hpo_best.json" if model == "hgb" else f"hpo_best_{model}.json")
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(out, indent=2))
 
     logger.info(
-        "HPO: %d new trials (study has %d so far), seed=%d",
+        "HPO[%s]: %d new trials (study has %d so far), seed=%d",
+        model,
         n,
         len(study.trials),
         settings.seed,
     )
     study.optimize(
-        make_objective(features, config, settings.seed), n_trials=n, callbacks=[_checkpoint]
+        make_objective(features, config, settings.seed, model),
+        n_trials=n,
+        callbacks=[_checkpoint],
     )
 
     best = dict(study.best_params)
-    best["random_state"] = settings.seed
     out = {
         "best_params": best,
         "best_cv_mae": float(study.best_value),
         "n_trials": len(study.trials),
         "seed": settings.seed,
+        "model": model,
     }
-    path = settings.data_dir / "hpo_best.json"
+    path = settings.data_dir / ("hpo_best.json" if model == "hgb" else f"hpo_best_{model}.json")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=2))
-    logger.info("HPO best CV MAE=%.4f params=%s -> %s", study.best_value, best, path)
+    logger.info("HPO[%s] best CV MAE=%.4f params=%s -> %s", model, study.best_value, best, path)
 
+    suffix = "" if model == "hgb" else f"_{model}"
     figs = {
-        "hpo_history": figure_hpo_history(study),
-        "hpo_importance": figure_hpo_importance(study),
+        f"hpo_history{suffix}": figure_hpo_history(study),
+        f"hpo_importance{suffix}": figure_hpo_importance(study),
     }
     for name, fig in figs.items():
         save_html(fig, Path(settings.reports_dir) / "figures" / f"{name}.html")
         save_json(fig, Path(settings.reports_dir) / "figures" / f"{name}.json")
-    logger.info("HPO figures -> %s", settings.reports_dir / "figures")
+    logger.info("HPO[%s] figures -> %s", model, settings.reports_dir / "figures")
     return study

@@ -10,7 +10,19 @@ it runs through the identical date-aligned backtest as the other models.
 Fully seeded and CPU-friendly (seconds per fold).
 """
 
+import contextlib
+
 import numpy as np
+
+# OpenMP runtime sharing (macOS): establish the gradient boosters' libomp
+# image *before* torch loads its own copy. Importing xgboost/lightgbm first
+# makes dyld share a single OpenMP runtime; the reverse order segfaults
+# (documented torch+xgboost coexistence issue on macOS).
+try:  # pragma: no cover - environment guard, not behaviour
+    import lightgbm  # noqa: F401
+    import xgboost  # noqa: F401
+except ImportError:  # boosters are optional arms; torch must still work
+    pass
 import torch
 from torch import nn
 
@@ -44,6 +56,25 @@ class _TemporalMLP(nn.Module):
         return out
 
 
+_THREADS_PINNED = False
+
+
+def _pin_threads_once() -> None:
+    """Pin torch to a single thread (process-wide, idempotent).
+
+    Called from every fit because backtest folds reuse the process; the
+    interop setting may only be changed before any parallel work has started,
+    so a failed second call is expected and swallowed.
+    """
+    global _THREADS_PINNED
+    if _THREADS_PINNED:
+        return
+    torch.set_num_threads(1)
+    with contextlib.suppress(RuntimeError):
+        torch.set_num_interop_threads(1)
+    _THREADS_PINNED = True
+
+
 class TemporalNet:
     """sklearn-style wrapper around :class:`_TemporalMLP`.
 
@@ -71,6 +102,10 @@ class TemporalNet:
         """Train with Adam + grad clip + early stop on the newest 15% of rows."""
         torch.manual_seed(self._seed)
         np.random.seed(self._seed)
+        # Single-threaded torch: the boosters' OpenMP runtime shares this
+        # process, and multi-threaded torch + shared libomp deadlocks on
+        # macOS. The model is tiny — single-thread changes nothing but risk.
+        _pin_threads_once()
         self._vocab = {s: i for i, s in enumerate(sorted({str(v) for v in x[:, -1]}))}
         idx, xn = self._arrays(x)
 

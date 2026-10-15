@@ -110,6 +110,24 @@ class ModelSpec:
             model: Pipeline = Pipeline(
                 [("prep", pre), ("reg", HistGradientBoostingRegressor(**kwargs))]
             )
+        elif self.name == "xgb_tuned":
+            from xgboost import XGBRegressor
+
+            pre = ColumnTransformer(
+                [("num", "passthrough", numeric_idx), ("cat", encoder, cat_idx)]
+            )
+            kwargs = config.xgb_tuned.estimator_kwargs()
+            kwargs.update({"random_state": config.seed, "tree_method": "hist"})
+            model = Pipeline([("prep", pre), ("reg", XGBRegressor(**kwargs))])
+        elif self.name == "lgbm_tuned":
+            from lightgbm import LGBMRegressor
+
+            pre = ColumnTransformer(
+                [("num", "passthrough", numeric_idx), ("cat", encoder, cat_idx)]
+            )
+            kwargs = config.lgbm_tuned.estimator_kwargs()
+            kwargs.update({"random_state": config.seed, "deterministic": True, "verbosity": -1})
+            model = Pipeline([("prep", pre), ("reg", LGBMRegressor(**kwargs))])
         elif self.name == "ridge":
             pre = ColumnTransformer(
                 [("num", StandardScaler(), numeric_idx), ("cat", encoder, cat_idx)]
@@ -126,13 +144,15 @@ class ModelSpec:
 
 
 def model_specs() -> list[ModelSpec]:
-    """All models, floor first: naives, linear, default + tuned HGB, then the NN."""
+    """All models, floor first: naives, linear, boosting arms (default + tuned), NN."""
     return [
         ModelSpec(name="naive_mean", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="naive_last", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="ridge", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="hgb", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="hgb_tuned", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
+        ModelSpec(name="xgb_tuned", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
+        ModelSpec(name="lgbm_tuned", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="temporal_net", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
     ]
 

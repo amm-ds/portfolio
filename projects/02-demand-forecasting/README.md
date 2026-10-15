@@ -31,14 +31,15 @@ Summary:
 - **Models** (`model.py`): two deterministic naive floors — `naive_mean`
   (global train mean) and `naive_last` (per-series persistence) — plus global
   models with one-hot series id: `ridge` (Ridge inside a `Pipeline` with
-  `StandardScaler` + one-hot), `hgb` (default `HistGradientBoostingRegressor`),
-  `hgb_tuned` (production HGB, hyperparameters from Optuna HPO), and
-  `temporal_net` (hand-written PyTorch embedding+MLP, `temporal.py`).
+  `StandardScaler` + one-hot), three boosting arms — `hgb` (default sklearn),
+  `hgb_tuned` (production), `xgb_tuned` (XGBoost) and `lgbm_tuned` (LightGBM),
+  the latter two Optuna-tuned mirrors of the HPO space — and `temporal_net`
+  (hand-written PyTorch embedding+MLP, `temporal.py`).
   One artefact for the whole hierarchy, new series handled via
   `handle_unknown="ignore"`.
-- **HPO** (`hpo.py`): seeded Optuna study (TPESampler seed 42, median pruning,
-  56 complete trials) over learning_rate, max_iter, max_leaf_nodes,
-  min_samples_leaf, l2_regularization, max_features; objective = mean MAE over
+- **HPO** (`hpo.py`): seeded Optuna studies (TPESampler seed 42, median pruning)
+  per booster arm — sklearn HGB (6 hyperparams, 56 trials), XGBoost (6, 25) and
+  LightGBM (5, 25) — with the objective = mean MAE over
   the *same* date-aligned CV folds as the backtest. Best params (CV MAE 8.5291)
   are persisted to `data/hpo_best.json` and mirrored into
   `ForecastConfig.hgb_tuned` defaults + `params.yaml`. Resumable SQLite
@@ -77,27 +78,33 @@ ladder from naive floors to tuned and neural models:
 | naive_last (persistence, y(t-1)) | 14.476 | 19.881 | 19.28 | — (strongest naive) |
 | ridge (linear baseline) | 9.116 | 12.705 | 12.44 | -37.0% |
 | hgb (default HGB) | 8.619 | 12.178 | 11.43 | -40.5% |
-| **hgb_tuned (Optuna HPO)** | **8.529** | **12.071** | **11.34** | **-41.1%** |
+| hgb_tuned (Optuna, 56 trials) | 8.529 | 12.071 | 11.34 | -41.1% |
+| xgb_tuned (Optuna, 25 trials) | 8.539 | 12.086 | 11.32 | -41.0% |
+| **lgbm_tuned (Optuna, 25 trials)** | **8.413** | **11.905** | **11.16** | **-41.9%** |
 | temporal_net (PyTorch emb+MLP) | 9.341 | 12.756 | 13.41 | -35.5% |
 
 Key findings:
 
-- Against the stronger naive floor (`naive_last`), the tuned model cuts MAE by
-  **41.1%** (14.48 → 8.53 units) and MAPE by 7.9 points (19.28% → 11.34%);
-  against `naive_mean` the reduction is 73.2%. Persistence loses because
+- Against the stronger naive floor (`naive_last`), the champion cuts MAE by
+  **41.9%** (14.48 → 8.41 units) and MAPE by 8.1 points (19.28% → 11.16%);
+  against `naive_mean` the reduction is 73.5%. Persistence loses because
   demand has strong weekly seasonality and a rising trend: yesterday's value
   systematically misses weekday effects and never anticipates the trend — the
   lag/calendar features plus a nonlinear model capture exactly those two
   structure components.
-- **HPO earned a modest but real gain**: 56 seeded trials improved pooled CV
-  MAE from 8.619 (default) to 8.529 (-1.0%). The search favoured smaller trees
-  (max_leaf_nodes 25), a strong min_samples_leaf (48), a sub-linear learning
-  rate (0.083) and feature subsampling (max_features 0.53) — heavily
-  regularised ensembles; see the `hpo_history` / `hpo_importance` figures.
+- **LightGBM edges out the incumbent**: `lgbm_tuned` (25 seeded trials; 217
+  trees × 18 leaves, min_child_samples 139, lr 0.156) beats `hgb_tuned` by
+  1.4% MAE (8.529 → 8.413) and takes RMSE and MAPE too. `xgb_tuned` (482
+  shallow trees, max_depth 4) is a statistical wash vs hgb_tuned (+0.1% MAE).
+  Three independent boosting libraries land within 1.5% of each other —
+  on this panel the marginal value of further model-family search is small,
+  and honest reporting says so.
+- **HPO earned a modest but real gain** across arms: 56 seeded trials improved
+  the sklearn HGB from 8.619 to 8.529 (-1.0%); see the `hpo_history` /
+  `hpo_importance` figures (per-arm variants for xgb/lgbm).
 - **The neural model did not win.** `temporal_net` lands behind even the
-  linear ridge baseline (MAE 9.34 vs 9.12; hgb_tuned 8.53). On small tabular
-  lag features with 730 days of history, gradient-boosted trees remain the
-  right tool; a sequence model over raw windows is the roadmap answer —
+  linear ridge baseline (MAE 9.34 vs 9.12). On small tabular lag features
+  with 730 days of history, gradient-boosted trees remain the right tool;
   reported honestly rather than tuned until it wins.
 - **Reconciliation (MinT-lite, last fold, store level)**: the grid estimator
   chose w=0.05 — the parent-level model suffers the same fold-4 drift as the
@@ -202,7 +209,8 @@ heavy multi-agent load); UCI track ≈ **5.5 min**; 6/6 DQ gates pass on both.
 # from the repo root, inside the workspace venv
 uv run python -m demand_forecasting.cli all            # synthetic pipeline (~2.5 min)
 uv run python -m demand_forecasting.cli all --data-source uci   # real-data track (~5.5 min, fetches once)
-uv run python -m demand_forecasting.cli hpo            # Optuna HPO (minutes; resumable)
+uv run python -m demand_forecasting.cli hpo            # Optuna HPO (minutes; resumable; --model xgb|lgbm)
+uv run dvc metrics show                                 # declared metrics (reports/metrics.json)
 # or stage by stage (mirrors dvc.yaml)
 uv run python -m demand_forecasting.cli prepare
 uv run python -m demand_forecasting.cli features

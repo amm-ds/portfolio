@@ -23,11 +23,9 @@ stages:
       - data/features.parquet
     outs:
       - data/hpo_best.json
+      - data/hpo_best_xgb.json
+      - data/hpo_best_lgbm.json
       - data/hpo_study.db
-      - reports/figures/hpo_history.html
-      - reports/figures/hpo_history.json
-      - reports/figures/hpo_importance.html
-      - reports/figures/hpo_importance.json
   train:
     cmd: uv run python -m demand_forecasting.cli train
     deps:
@@ -44,6 +42,8 @@ stages:
       - data/panel.parquet
       - data/features.parquet
     outs:
-      - reports/metrics.json
       - reports/report.html
       - reports/figures
+
+    metrics:
+      - reports/metrics.json
