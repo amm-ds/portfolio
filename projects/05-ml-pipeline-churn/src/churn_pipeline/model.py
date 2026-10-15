@@ -43,9 +43,42 @@ NUMERIC_COLS = ["age", "tenure_months", "monthly_charges", "support_calls"]
 CATEGORICAL_COLS = ["contract"]
 TARGET_COL = "churned"
 
+# Per-source feature/slice schemas. Synthetic mirrors the platform generator;
+# telco is the IBM real-data primary track (same pipeline contract, different
+# observed columns: no age/support_calls, demographics kept as fairness slices).
+SCHEMES: dict[str, dict[str, list[str]]] = {
+    "synthetic": {
+        "numeric": ["age", "tenure_months", "monthly_charges", "support_calls"],
+        "categorical": ["contract"],
+        "slices": [],
+    },
+    "telco": {
+        "numeric": ["tenure_months", "monthly_charges"],
+        "categorical": ["contract", "internet_service"],
+        "slices": ["gender", "senior_citizen", "contract"],
+    },
+}
+
+
+def scheme(cfg: ChurnConfig) -> dict[str, list[str]]:
+    """Feature/slice column lists for the configured data source."""
+    return SCHEMES[cfg.data_source]
+
+
+def feature_cols(cfg: ChurnConfig) -> list[str]:
+    """Model input columns (numeric + categorical) for this data source."""
+    sc = scheme(cfg)
+    return sc["numeric"] + sc["categorical"]
+
+
+def slice_cols(cfg: ChurnConfig) -> list[str]:
+    """Fairness-slice columns carried through prepare/split/evaluate."""
+    return scheme(cfg)["slices"]
+
 
 def build_preprocessor(cfg: ChurnConfig) -> ColumnTransformer:
     """Numeric branch (cap → flag → impute → scale) + categorical one-hot."""
+    sc = scheme(cfg)
     numeric = Pipeline(
         steps=[
             ("capper", OutlierCapper(cfg.cap_quantile_low, cfg.cap_quantile_high)),
@@ -62,8 +95,8 @@ def build_preprocessor(cfg: ChurnConfig) -> ColumnTransformer:
     )
     return ColumnTransformer(
         transformers=[
-            ("num", numeric, NUMERIC_COLS),
-            ("cat", categorical, CATEGORICAL_COLS),
+            ("num", numeric, sc["numeric"]),
+            ("cat", categorical, sc["categorical"]),
         ]
     )
 
@@ -125,8 +158,14 @@ def build_pipeline(
 def split_holdout(
     cfg: ChurnConfig, df: pd.DataFrame
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    """Stratified train/holdout split (no temporal axis in this dataset)."""
-    X = df[NUMERIC_COLS + CATEGORICAL_COLS]
+    """Stratified train/holdout split (no temporal axis in this dataset).
+
+    X carries model features plus fairness-slice columns (slices ride along so
+    the holdout artifact supports the slice report; the ColumnTransformer
+    ignores them at fit/score time).
+    """
+    cols = list(dict.fromkeys(feature_cols(cfg) + slice_cols(cfg)))
+    X = df[cols]
     y = df[TARGET_COL].astype(int)
     X_train, X_test, y_train, y_test = train_test_split(
         X,

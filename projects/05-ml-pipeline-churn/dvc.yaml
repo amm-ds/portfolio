@@ -7,6 +7,7 @@ stages:
     params:
       - n_samples
       - seed
+      - data_source
       - test_frac
       - c_grid
       - cv_folds
@@ -26,6 +27,7 @@ stages:
       - data/churn.parquet
     params:
       - seed
+      - data_source
       - test_frac
       - c_grid
       - cv_folds
@@ -56,6 +58,7 @@ stages:
       - data/holdout.parquet
     params:
       - seed
+      - data_source
       - test_frac
       - threshold_grid
       - fp_cost

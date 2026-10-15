@@ -6,6 +6,7 @@ them in-process (fast, single interpreter for the full pipeline).
 
 import json
 import pickle
+import tempfile
 from datetime import date
 from pathlib import Path
 from typing import Annotated, Any, cast
@@ -14,6 +15,7 @@ import polars as pl
 import typer
 from portfolio_core import synthetic
 from portfolio_core.dq import DQReport
+from portfolio_core.io import fetch
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import save_html, save_json
 from portfolio_core.schemas import DatasetContract
@@ -26,9 +28,9 @@ from churn_pipeline.eda import eda_churn_profile_figure
 from churn_pipeline.evaluate import artifact_paths, evaluate_holdout
 from churn_pipeline.hpo import ModelSelection, build_estimator, run_study
 from churn_pipeline.model import (
-    CATEGORICAL_COLS,
-    NUMERIC_COLS,
     TARGET_COL,
+    feature_cols,
+    slice_cols,
     split_holdout,
     train_model,
 )
@@ -73,11 +75,18 @@ def _missing_rate(df: pl.DataFrame, col: str) -> float:
     return n / df.height
 
 
-def run_dq_gates(df: pl.DataFrame) -> DQReport:
-    """Enforce the platform's data-quality gates before any modeling."""
-    report = DQReport(dataset="churn_synthetic", n_rows=df.height)
-    for col, cap in (("age", 0.05), ("support_calls", 0.05)):
-        report.check_null_rate(col, _missing_rate(df, col), cap)
+def run_dq_gates(df: pl.DataFrame, dataset: str = "churn") -> DQReport:
+    """Enforce the platform's data-quality gates before any modeling.
+
+    Gates follow the columns actually present: null-rate caps on the numeric
+    features, range checks (age only exists on the synthetic/CI path), and
+    the target gate when labels exist.
+    """
+    report = DQReport(dataset=dataset, n_rows=df.height)
+    numeric_features = ["age", "tenure_months", "monthly_charges", "support_calls"]
+    for col in numeric_features:
+        if col in df.columns:
+            report.check_null_rate(col, _missing_rate(df, col), 0.05)
 
     def minmax(col: str) -> tuple[float, float]:
         """Missing/NaN-safe min/max: an all-missing column fails range cleanly."""
@@ -88,13 +97,64 @@ def run_dq_gates(df: pl.DataFrame) -> DQReport:
             return float("nan"), float("nan")
         return float(cast(float, s.min())), float(cast(float, s.max()))
 
-    report.check_range("age", *minmax("age"), 18.0, 90.0)
+    if "age" in df.columns:
+        report.check_range("age", *minmax("age"), 18.0, 90.0)
     report.check_range("tenure_months", *minmax("tenure_months"), 0.0, 240.0)
     report.check_range("monthly_charges", *minmax("monthly_charges"), 0.0, 10_000.0)
     if TARGET_COL in df.columns:  # unlabeled client extracts skip the target gate
         report.check_range("churned", *minmax("churned"), 0.0, 1.0)
     report.raise_if_failed()
     return report
+
+
+CONTRACT_MAP = {"Month-to-month": "month-to-month", "One year": "one-year", "Two year": "two-year"}
+TELCO_COLUMNS = [
+    "tenure_months",
+    "monthly_charges",
+    "contract",
+    "internet_service",
+    "gender",
+    "senior_citizen",
+    "churned",
+]
+
+
+def load_telco_frame(source: str, sha256: str = "") -> pl.DataFrame:
+    """Load the IBM telco churn CSV (canonical source or local path) canonically.
+
+    Renames to the project's schema: tenure/monthly charges numeric, contract
+    levels mapped to the synthetic vocabulary, demographics kept as fairness
+    slices (gender, senior_citizen, contract). `TotalCharges` blanks are why
+    the raw column is re-parsed as float-tolerant and then dropped (leaky and
+    derivable from tenure x monthly charges).
+    """
+    if source.startswith("http://") or source.startswith("https://"):
+        dest = Path(tempfile.gettempdir()) / "churn-telco.csv"
+        fetch(source, dest, expected_sha256=sha256 or None)
+        raw_path: Path = dest
+    else:
+        raw_path = Path(source)
+    raw = pl.read_csv(
+        raw_path,
+        null_values=["", " "],
+        schema_overrides={"TotalCharges": pl.Utf8, "SeniorCitizen": pl.Utf8},
+    )
+    missing = [c for c in ("tenure", "MonthlyCharges", "Contract", "Churn") if c not in raw.columns]
+    if missing:
+        raise ValueError(f"telco source is missing required columns: {', '.join(missing)}")
+    df = raw.select(
+        pl.col("tenure").cast(pl.Float64).alias("tenure_months"),
+        pl.col("MonthlyCharges").alias("monthly_charges"),
+        pl.col("Contract").replace_strict(CONTRACT_MAP, default=None).alias("contract"),
+        pl.col("InternetService").cast(pl.Utf8).alias("internet_service"),
+        pl.col("gender").cast(pl.Utf8).alias("gender"),
+        pl.when(pl.col("SeniorCitizen") == "1")
+        .then(pl.lit("yes"))
+        .otherwise(pl.lit("no"))
+        .alias("senior_citizen"),
+        (pl.col("Churn") == "Yes").alias("churned"),
+    )
+    return df.select(TELCO_COLUMNS)
 
 
 REQUIRED_CLIENT_COLS = ["age", "tenure_months", "monthly_charges", "support_calls", "contract"]
@@ -125,18 +185,29 @@ def prepare_core(cfg: ChurnConfig, input_csv: Path | None = None) -> Path:
         df = _load_client_extract(input_csv)
         source = f"client://{input_csv.name}"
         name = "churn_client_extract"
+        dataset = "churn_client_extract"
+        license_ = "LicenseRef-Client-Contract"
         log.info("prepare: ingested client extract %s (%d rows)", input_csv, df.height)
+    elif cfg.data_source == "telco":
+        df = load_telco_frame(cfg.telco_source, cfg.telco_sha256)
+        source = cfg.telco_source
+        name = "churn_telco"
+        dataset = "churn_telco"
+        license_ = "IBM sample data (see data-registry/telco-churn.md)"
+        log.info("prepare: loaded IBM telco churn (%d rows)", df.height)
     else:
         df = synthetic.churn(seed=cfg.seed, n=cfg.n_samples)
         source = "synthetic://portfolio_core.synthetic.churn"
         name = "churn_synthetic"
-    report = run_dq_gates(df)
+        dataset = "churn_synthetic"
+        license_ = "MIT"
+    report = run_dq_gates(df, dataset=dataset)
 
     (cfg.reports_dir / "dq_report.md").write_text(report.to_markdown())
     contract = DatasetContract(
         name=name,
         source=source,
-        license="MIT" if input_csv is None else "LicenseRef-Client-Contract",
+        license=license_,
         snapshot_date=date.today(),
         checksum_sha256=synthetic.checksum_of_frame(df),
         n_rows=df.height,
@@ -263,7 +334,7 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
         with paths[key].open("rb") as fh:
             models[key] = pickle.load(fh)
     holdout = pd.read_parquet(paths["holdout"])
-    X_test = holdout[NUMERIC_COLS + CATEGORICAL_COLS]
+    X_test = holdout[list(dict.fromkeys(feature_cols(cfg) + slice_cols(cfg)))]
     y_test = holdout[TARGET_COL].astype(int)
     meta = json.loads((cfg.data_dir / "model_meta.json").read_text())
 
@@ -287,6 +358,7 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
         "cost_delta_ci": summary["cost_delta_ci"],
         "selected_opt": summary["selected_opt"],
         "naive_opt": summary["naive_opt"],
+        "slices": summary["slices"],
     }
     metrics_path.write_text(json.dumps(metrics, indent=2))
 
