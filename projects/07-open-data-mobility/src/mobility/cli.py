@@ -68,6 +68,19 @@ def train_baselines_cmd() -> None:
     typer.echo(f"predictions: {preds.height} test rows")
 
 
+@app.command("train-arms")
+def train_arms_cmd() -> None:
+    """Tune + fit the xgb/lgbm challenger arms (runs in a torch-free subprocess)."""
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, "-c", "from mobility.arms import fit_arms; fit_arms()"],
+        check=True,
+    )
+    typer.echo(f"train-arms exit={result.returncode}")
+
+
 @app.command("train-nn")
 def train_nn_cmd() -> None:
     """Train TemporalNet (hand-written loop) and persist test predictions."""
@@ -123,6 +136,7 @@ def all_cmd() -> None:
     features_cmd()
     tune_cmd()
     train_baselines_cmd()
+    train_arms_cmd()
     train_nn_cmd()
     transfer_cmd()
     build_serving_artifact_cmd()

@@ -42,6 +42,7 @@ seed: 42
 hpo:
   gbm_trials: 30
   nn_trials: 10
+  arm_trials: 15
   max_fit_rows: 500000
   perm_importance_rows: 200000
 gbm_tuned:
@@ -66,3 +67,24 @@ nn_tuned:
     early_stop_patience: 2
   best_val_mae: 0.33023
   n_trials: 10
+xgb_tuned:
+  best_params:
+    n_estimators: 542
+    learning_rate: 0.020273
+    max_depth: 11
+    subsample: 0.891148
+    colsample_bytree: 0.952051
+    reg_lambda: 7.577511
+  best_val_mae: 3.18172
+  n_trials: 15
+lgbm_tuned:
+  best_params:
+    n_estimators: 695
+    learning_rate: 0.056696
+    num_leaves: 109
+    min_child_samples: 17
+    subsample: 0.935935
+    colsample_bytree: 0.826223
+    reg_lambda: 0.030416
+  best_val_mae: 3.173486
+  n_trials: 15

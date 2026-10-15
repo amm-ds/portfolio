@@ -23,8 +23,20 @@ window (DESIGN.md §Hyperparameter optimisation):
 | naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | — |
 | gbm_mean (defaults) | 4.667 | **15.096** | 62.0% | −28.4% |
 | gbm_tuned (30 Optuna trials) | 4.676 | 15.189 | 61.6% | −28.3% |
+| gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | −31.2% |
+| gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | −29.7% |
 | temporal_net (64-32 MLP) | 5.510 | 19.686 | **54.5%** | −15.5% |
 | temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | −20.5% |
+
+- **Challenger arms (wave 11):** xgb/lgbm tuned on the identical embargoed
+  validation window (Apr 22+ fold, 500k-row cap, test untouched). Both lost to
+  the incumbent *on validation* (xgb 3.182 vs 3.165; lgbm 3.173 vs 3.165), so
+  per the serving rule the live artifact stays `gbm_tuned` — yet on the Q4 test
+  window both challengers *do* beat it (xgb −4.1% MAE). That inversion is
+  exactly why the serving rule keys on validation, not test: switching on test
+  results would be test-set selection. Arms run in a torch-free subprocess —
+  xgboost/lightgbm's OpenMP runtime cannot coexist with torch's in one process
+  on macOS (documented in DESIGN.md).
 
 - **So what (technical):** GBM HPO was honest but flat — the tuned GBM matches
   the hand-picked defaults within noise (−0.2% MAE, +0.6% MAPE), i.e. the
@@ -106,12 +118,13 @@ pipeline diagram.
 cd projects/07-open-data-mobility
 uv run python -m mobility.cli all      # download → validate → join → features → train → evaluate
 # or stage by stage:
-uv run python -m mobility.cli download|validate|join|features|tune|train-baselines|train-nn|transfer|build-serving-artifact|evaluate
+uv run python -m mobility.cli download|validate|join|features|tune|train-baselines|train-arms|train-nn|transfer|build-serving-artifact|evaluate
 uv run python -m mobility.cli dq-report   # print/persist the latest DQ digest
 ```
 
 DVC equivalent: `dvc repro` (stages mirror the CLI in `dvc.yaml`,
-`params.yaml` mirrors `MobilityConfig`). Tests need no network:
+`params.yaml` mirrors `MobilityConfig`); `uv run dvc metrics show` prints the
+run-ladder metrics from the committed `metrics:` declaration. Tests need no network:
 
 ```bash
 uv run pytest . -q

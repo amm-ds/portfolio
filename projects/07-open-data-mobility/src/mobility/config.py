@@ -57,6 +57,8 @@ class HPOConfig(PortfolioBaseModel):
 
     gbm_trials: int = 30
     nn_trials: int = 10
+    #: Challenger-arm trials (xgb / lgbm), same validation protocol.
+    arm_trials: int = 15
     #: Fit-row budget per trial (most-recent slice of the train window only;
     #: the Oct-Dec test window is never touched). None = all train rows.
     max_fit_rows: int | None = 500_000

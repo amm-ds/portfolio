@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/mobility/config.py
       hash: md5
-      md5: 41a975d0f23da46340db94d289fde849
-      size: 5411
+      md5: d193277d389be0ce22435c13711ff011
+      size: 5505
     - path: src/mobility/download.py
       hash: md5
       md5: 36f02c0619d4dbe55e75e8056b414d7a
@@ -108,6 +108,14 @@ stages:
       hash: md5
       md5: 6031638031937ab5e8691cd5c93fd4d5
       size: 449
+    - path: reports/models/hpo_lgbm.json
+      hash: md5
+      md5: b9fc23ada1c38d1e5873f4c32999991b
+      size: 473
+    - path: reports/models/hpo_xgb.json
+      hash: md5
+      md5: f44c6055826e3f0134c921aea33be7e5
+      size: 440
     - path: src/mobility/features.py
       hash: md5
       md5: 277e07c11ec4924cfde689a962be1176
@@ -135,13 +143,34 @@ stages:
             max_features: 0.577878
           best_val_mae: 3.165204
           n_trials: 30
+        lgbm_tuned:
+          best_params:
+            n_estimators: 695
+            learning_rate: 0.056696
+            num_leaves: 109
+            min_child_samples: 17
+            subsample: 0.935935
+            colsample_bytree: 0.826223
+            reg_lambda: 0.030416
+          best_val_mae: 3.173486
+          n_trials: 15
         max_train_rows: 2000000
         seed: 42
+        xgb_tuned:
+          best_params:
+            n_estimators: 542
+            learning_rate: 0.020273
+            max_depth: 11
+            subsample: 0.891148
+            colsample_bytree: 0.952051
+            reg_lambda: 7.577511
+          best_val_mae: 3.18172
+          n_trials: 15
     outs:
     - path: reports/models/predictions_baseline.parquet
       hash: md5
-      md5: 948ee731696f6f1f525111633b5e82b7
-      size: 11628735
+      md5: a6649c49e505f39b3a0e93ff50e33aea
+      size: 20268862
   train_nn:
     cmd: uv run python -m mobility.cli train-nn
     deps:
@@ -156,8 +185,8 @@ stages:
       size: 333
     - path: reports/models/predictions_baseline.parquet
       hash: md5
-      md5: 948ee731696f6f1f525111633b5e82b7
-      size: 11628735
+      md5: a6649c49e505f39b3a0e93ff50e33aea
+      size: 20268862
     - path: src/mobility/model.py
       hash: md5
       md5: 88de10de4aabb7feecb8d34bb7ca4bfd
@@ -189,8 +218,8 @@ stages:
     outs:
     - path: reports/models/predictions.parquet
       hash: md5
-      md5: 00f734f8317d601cfde33333c6ada6e3
-      size: 14657106
+      md5: 57ea5cb4073642583da298c6d0f49a37
+      size: 23316064
     - path: reports/models/temporal_net.pt
       hash: md5
       md5: 0a022dc1179af46d80e7b469b99edbf7
@@ -217,17 +246,17 @@ stages:
       nfiles: 4
     - path: reports/models/predictions.parquet
       hash: md5
-      md5: 00f734f8317d601cfde33333c6ada6e3
-      size: 14657106
+      md5: 57ea5cb4073642583da298c6d0f49a37
+      size: 23316064
     - path: src/mobility/evaluate.py
       hash: md5
-      md5: 67a9a3d9d852101bb57e39851b1f7002
-      size: 24400
+      md5: 39199d4c569ee41c532124c0f05701fd
+      size: 24514
     outs:
     - path: reports/report.html
       hash: md5
-      md5: 4ce7ca9b4c4badabbf90f9b6529f6786
-      size: 5174
+      md5: ce2aa0dca8cdd05060a3ce16d9c1db84
+      size: 5336
   evaluate:
     cmd: uv run python -m mobility.cli evaluate
     deps:
@@ -238,22 +267,22 @@ stages:
       nfiles: 4
     - path: reports/models/predictions.parquet
       hash: md5
-      md5: 00f734f8317d601cfde33333c6ada6e3
-      size: 14657106
+      md5: 57ea5cb4073642583da298c6d0f49a37
+      size: 23316064
     - path: src/mobility/evaluate.py
       hash: md5
-      md5: 67a9a3d9d852101bb57e39851b1f7002
-      size: 24400
+      md5: 39199d4c569ee41c532124c0f05701fd
+      size: 24514
     outs:
     - path: reports/figures
       hash: md5
-      md5: 15daeeedb5cda80c747718119423e4ac.dir
-      size: 728649
+      md5: f4c7d3ce4478dd5fd56a37f63ba3177a.dir
+      size: 730223
       nfiles: 20
     - path: reports/metrics.json
       hash: md5
-      md5: 877027de43b4e4a61ca9033fd7fbfb48
-      size: 1790
+      md5: 65a820cfd9b6743ec712f546fd8e9a5f
+      size: 2480
   tune:
     cmd: uv run python -m mobility.cli tune
     deps:
@@ -268,13 +297,14 @@ stages:
       size: 13969
     - path: src/mobility/tune.py
       hash: md5
-      md5: 8098139c80f432e8bcbed3c71f423bda
-      size: 8973
+      md5: b5a41029062fdad919cf8f82f4d259c9
+      size: 8985
     params:
       params.yaml:
         hpo:
           gbm_trials: 30
           nn_trials: 10
+          arm_trials: 15
           max_fit_rows: 500000
           perm_importance_rows: 200000
         seed: 42
@@ -304,14 +334,6 @@ stages:
       md5: fcf4411892b25015c4fb67d451f31229
       size: 5605
     outs:
-    - path: reports/figures/green_transfer.html
-      hash: md5
-      md5: a8fb676b63f54a4de9f015a5c61e36c4
-      size: 8947
-    - path: reports/figures/green_transfer.json
-      hash: md5
-      md5: 4fae9cdca34503bbc883f511a92f7d4c
-      size: 7950
     - path: reports/green_transfer.json
       hash: md5
       md5: 51e5182cd069dc8a7a98b5d8af456adb
@@ -337,11 +359,66 @@ stages:
       size: 4068640
     - path: src/mobility/serving.py
       hash: md5
-      md5: a3c25c8b7fbcbbc156599d1eed0753dd
-      size: 4013
+      md5: 42eae6a25af5ff8abf178f6c6c7dec9b
+      size: 5149
     outs:
     - path: reports/models/serving
       hash: md5
-      md5: 74e822c142d18c0ef9fabb431b85d46e.dir
+      md5: 00a84165746acbbd9ac7e1af9714b3f6.dir
       size: 6818947
       nfiles: 3
+  train_arms:
+    cmd: uv run python -m mobility.cli train-arms
+    deps:
+    - path: data/features
+      hash: md5
+      md5: bf2d0d0c8044827bd0f552ceee3a4b24.dir
+      size: 6146952
+      nfiles: 2
+    - path: reports/models/predictions_baseline.parquet
+      hash: md5
+      md5: a6649c49e505f39b3a0e93ff50e33aea
+      size: 20268862
+    - path: src/mobility/arms.py
+      hash: md5
+      md5: f705262eb9aa71773f2f6d0905b083cf
+      size: 8131
+    params:
+      params.yaml:
+        hpo:
+          gbm_trials: 30
+          nn_trials: 10
+          arm_trials: 15
+          max_fit_rows: 500000
+          perm_importance_rows: 200000
+        max_train_rows: 2000000
+        seed: 42
+    outs:
+    - path: reports/models/gbm_lgbm_tuned.joblib
+      hash: md5
+      md5: e9bfc126cfeaa839e30b93c98c180fc8
+      size: 6419521
+    - path: reports/models/gbm_p90_lgbm_tuned.joblib
+      hash: md5
+      md5: 4c969eb47b6bf3dbdbfacbdea222f474
+      size: 7110066
+    - path: reports/models/gbm_p90_xgb_tuned.joblib
+      hash: md5
+      md5: af41cf55f7fe28904099836cb4cf57b8
+      size: 55524903
+    - path: reports/models/gbm_xgb_tuned.joblib
+      hash: md5
+      md5: a290e3af0229278194985c2b65ed1ace
+      size: 46259240
+    - path: reports/models/hpo_lgbm.json
+      hash: md5
+      md5: b9fc23ada1c38d1e5873f4c32999991b
+      size: 473
+    - path: reports/models/hpo_xgb.json
+      hash: md5
+      md5: f44c6055826e3f0134c921aea33be7e5
+      size: 440
+    - path: reports/models/predictions_baseline.parquet
+      hash: md5
+      md5: a6649c49e505f39b3a0e93ff50e33aea
+      size: 20268862

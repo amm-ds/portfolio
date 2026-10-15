@@ -2,12 +2,12 @@ id: 07-open-data-mobility
 title: Open Data Mobility
 domain: Data engineering + ML
 techniques:
-- polars lazy ETL
+- Polars
+- GBM + quantile
+- PyTorch
+- DVC
 - DQ gates
-- sklearn GBM
-- pytorch temporal model
-- choropleth demand maps
-- weather elasticity
+- FastAPI serving
 data: NYC TLC + NOAA (real, GB-scale)
 status: flagship
 order: 7

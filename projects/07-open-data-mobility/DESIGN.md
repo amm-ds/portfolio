@@ -143,3 +143,40 @@ flowchart LR
   tightened after observing 5–13% `passenger_count` nulls and out-of-month
   pickup dates; grid reindex added after detecting lag misalignment on
   sparse zones; NN moved to log1p target after raw-count underperformance.
+
+## Experiment versioning
+
+What-if variants are queued with DVC experiments (params-only overrides,
+applied to nothing — the queue documents intent, `dvc exp run --run-all`
+executes when someone wants the numbers):
+
+```bash
+uv run dvc exp run --queue --name train-rows-1m   -S max_train_rows=1000000
+uv run dvc exp run --queue --name train-rows-500k -S max_train_rows=500000
+uv run dvc exp show --no-pager
+```
+
+Trimmed `dvc exp show --no-pager` at queue time:
+
+| experiment | state | max_train_rows |
+|---|---|---|
+| train-rows-500k | Queued | 500000 |
+| train-rows-1m | Queued | 1000000 |
+
+Both ask: does halving/quartering the 2M-row train slice change the Q4 run
+ladder? Sensitivity to the bounded-slice budget is the open question; the
+queued experiments answer it without touching the committed pipeline state.
+
+## Wave 11 notes
+
+- Challenger arms (xgboost/lightgbm) run in a **torch-free subprocess**
+  (`mobility train-arms`, module `mobility.arms`): xgboost/lightgbm's OpenMP
+  runtime cannot coexist with torch's in one process on macOS — whichever
+  loads second segfaults the first at fit time. `model.py`/`tune.py` therefore
+  never import xgboost/lightgbm; `train-arms` runs
+  `python -c "from mobility.arms import fit_arms; fit_arms()"`.
+- Serving decision rule: a challenger replaces `gbm_tuned` only on a strictly
+  better **validation** MAE (never test). Wave-11 outcome: both challengers
+  lost on validation (xgb 3.182 vs 3.165; lgbm 3.173 vs 3.165) → the served
+  artifact stays `gbm_tuned`, even though both beat it on the Q4 test window
+  (xgb −4.1% MAE) — switching on test results would be test-set selection.

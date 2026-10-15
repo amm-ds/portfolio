@@ -1,6 +1,7 @@
 """Serving artifact contract (SERVING.md): build, load back, predict sanely."""
 
 import importlib.util
+import json
 from pathlib import Path
 
 import joblib
@@ -39,6 +40,9 @@ def _fixture_context(cfg: MobilityConfig) -> None:
     gbm, p90 = _tiny_models()
     joblib.dump(gbm, cfg.models_dir / "gbm_tuned.joblib")
     joblib.dump(p90, cfg.models_dir / "gbm_p90_tuned.joblib")
+    (cfg.models_dir / "hpo_gbm.json").write_text(
+        json.dumps({"kind": "gbm", "best_params": {}, "best_val_mae": 3.0})
+    )
     pl.DataFrame(
         {"location_id": [1, 2], "borough": ["Manhattan", "Queens"], "zone": ["A", "B"]}
     ).write_parquet(cfg.zones_path)
@@ -90,3 +94,34 @@ def test_serving_artifact_roundtrip(cfg: MobilityConfig) -> None:
     band = float(bundle["p90"].predict(row)[0])
     assert np.isfinite(pred) and np.isfinite(band)
     assert pred >= 0 and band >= pred  # quantile band sits above the mean
+
+
+def test_serving_arm_selection_rule(cfg: MobilityConfig) -> None:
+    """A challenger replaces the incumbent only on strictly better val MAE."""
+    import json as _json
+
+    from mobility.serving import select_serving_arm
+
+    _fixture_context(cfg)
+    gbm, p90 = _tiny_models()
+    joblib.dump(gbm, cfg.models_dir / "gbm_xgb_tuned.joblib")
+    joblib.dump(p90, cfg.models_dir / "gbm_p90_xgb_tuned.joblib")
+
+    def _hpo(kind: str, mae: float) -> None:
+        (cfg.models_dir / f"hpo_{kind}.json").write_text(
+            _json.dumps({"kind": kind, "best_params": {}, "best_val_mae": mae})
+        )
+
+    _hpo("gbm", 3.0)
+    # challenger worse → incumbent stays
+    _hpo("xgb", 3.5)
+    assert select_serving_arm(cfg)[0] == "gbm_tuned"
+    # challenger strictly better → switch
+    _hpo("xgb", 2.5)
+    run, stem, p90_stem = select_serving_arm(cfg)
+    assert run == "gbm_xgb_tuned"
+    assert (cfg.models_dir / f"{stem}.joblib").exists()
+    assert (cfg.models_dir / f"{p90_stem}.joblib").exists()
+    # tie keeps the incumbent (strict improvement required)
+    _hpo("xgb", 3.0)
+    assert select_serving_arm(cfg)[0] == "gbm_tuned"
