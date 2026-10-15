@@ -24,6 +24,8 @@ harness.
 
 ## Projects
 
+Eight working showcases (01–07, 09) and one planned (08 — LLM inference & serving).
+
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
 | 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | pydantic-ai agent, typed tools, citation-enforced outputs, faithfulness eval, chunk-size sweep |
@@ -31,7 +33,7 @@ harness.
 | 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | Synthetic (+ NSL-KDD opt.) | DQ gates, IsolationForest vs LOF vs OneClassSVM |
 | 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News (real) | Hand-written fine-tuning loop, macro-F1, confusion matrices |
 | 05 | [Churn Modeling, sklearn Pipelines](projects/05-ml-pipeline-churn/) | Classical ML | Synthetic (messy) | Pipeline-embedded preprocessing, calibration, business-cost thresholds |
-| 06 | [Routing Optimization (VRPTW)](projects/06-routing-optimization/) | Combinatorial optimization | CVRPLIB Solomon (real benchmark) | Savings + 2-opt vs published optima, gap-% table |
+| 06 | [Routing Optimization (VRPTW)](projects/06-routing-optimization/) | Combinatorial optimization | CVRPLIB Solomon (real benchmark) | Savings + 2-opt vs published best-known solutions, gap-% table |
 | 07 | [Urban Mobility Demand Intelligence](projects/07-open-data-mobility/) | Data engineering + ML | NYC TLC + NOAA (real, GB-scale) | Lazy Polars ETL, zone-demand forecasting, weather elasticity, choropleths |
 
 Flagships (01, 07) are complete end-to-end; 02–06 are working showcases built
@@ -48,7 +50,7 @@ on the same platform, designed for deepening.
 | 03 Anomaly detection | Detector HPO: OCSVM rescued **0.34 → 0.91 ROC-AUC** (gamma tuning); IsolationForest stays best (0.917); LOF structurally blind (honest); score distributions + threshold-sweep decision visuals |
 | 04 NLP | Six-run ladder to macro-F1 **0.902** (naive 0.10 → random 0.25 → TF-IDF 0.87 → roberta 0.898 → DistilBERT 0.902); 12-trial fine-tuning HPO with bit-exact determinism; val→test non-transfer documented |
 | 05 Churn | **Cost-aware HPO** — selection now optimizes the deployment objective (cost 282, −35.9% vs naive; bootstrap CI [−237, −87] significant); isotonic calibration −95% ECE; CRM-extract onboarding |
-| 06 VRPTW | **ALNS: 4.23% mean gap vs published optima across all 56 Solomon instances, 56/56 wins vs tuned 2-opt** (randomized floor: 317%); per-family gaps; convergence traces |
+| 06 VRPTW | **ALNS: 4.23% mean gap vs published best-known solutions across all 56 Solomon instances, 56/56 wins vs tuned 2-opt** (randomized floor: 317%); per-family gaps; convergence traces |
 | 07 Mobility | Zone-hour demand over 41.2M trips: GBM MAE 4.67 (−28.4% vs naive); **p90 band 90.8% coverage** (N/A zones flagged); permutation importance shows weather ≈ 0 for point MAE — its value is the elasticity signal |
 
 ## Engineering practices
