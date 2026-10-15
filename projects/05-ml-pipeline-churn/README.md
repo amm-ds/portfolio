@@ -42,14 +42,14 @@ raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSear
   imputation, so "missing" itself can be learned as signal.
 - Model selection (`model.py` + `hpo.py`): `GridSearchCV` over
   C ∈ {0.01, 0.1, 1, 10} keeps the wave-2 logistic row; **Optuna** (seeded TPE,
-  ~25 trials, median pruning) then chooses between LogisticRegression
-  (C log 1e-3..1e2, l1_ratio 0..1) and HistGradientBoostingClassifier
-  (learning_rate, max_iter, max_leaf_nodes, min_samples_leaf) on a
-  **cost-aware objective**: stratified CV with out-of-fold probabilities,
-  each trial scored by the business cost (FP=1/FN=5) at its own cost-optimal
-  threshold — the same threshold-tuning view used at evaluation. The winning
-  config is written back to [`params.yaml`](params.yaml) as the production
-  config.
+  ~25 trials, median pruning) then chooses among four arms — LogisticRegression
+  (C log 1e-3..1e2, l1_ratio 0..1), HistGradientBoostingClassifier, and the
+  sklearn-API **XGBClassifier / LGBMClassifier** — on a **cost-aware
+  objective**: stratified CV with out-of-fold probabilities, each trial
+  scored by the business cost (FP=1/FN=5) at its own cost-optimal threshold.
+  All arms consume the same ColumnTransformer output inside the Pipeline —
+  one preprocessing contract, no native-categorical bypass. The winning
+  config is written back to [`params.yaml`](params.yaml).
 - Calibration: the selected model is compared raw vs **isotonic-calibrated**
   (calibration split carved from training only, disjoint from the fit data and
   the holdout) via ECE and the same business-cost curve.
@@ -69,37 +69,45 @@ Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 ## Results (real run, seed 42, n=5,000)
 
 Holdout: 1,000 rows (churn rate 8.8%). Wave-2 grid search: **C=1.0** (CV F1
-0.3433). **Cost-aware Optuna selected LogisticRegression (C=0.2365,
-l1_ratio=0.1388)** — 25 trials, CV business cost 1,217; mean trial cost by
-family: logreg 934 vs HistGB 1,215. (An F1-objective run instead picked
-HistGB — see the selection lesson below.)
+0.3433). **Cost-aware Optuna selected LogisticRegression (C=0.6494,
+l1_ratio=0.4540)** over 25 seeded trials across **four arms** (logistic,
+HistGB, XGBoost, LightGBM — all on the same in-pipeline preprocessing):
+best CV business cost 1,220; mean trial cost by family: logistic 1,225 <
+histgb 1,339 < lightgbm 1,367 < xgboost 1,409 (xgb arm balanced via
+`scale_pos_weight`; `class_weight` is silently ignored by XGBClassifier).
+(An F1-objective run picked
+HistGB instead — the objective is the lever, documented in DESIGN.md.)
 
 | run | threshold | ROC-AUC | accuracy | P (macro) | R (macro) | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|---|---|---|
 | naive majority | cost-optimal | 0.5000 | **0.912** ⚠️ | 0.4560 | 0.5000 | 0.4770 | – | 440 |
 | logreg, default | 0.500 | 0.8344 | 0.722 | 0.5926 | 0.7552 | 0.5796 | – | 350 |
 | logreg, tuned | 0.725 | 0.8344 | 0.874 | 0.6576 | 0.7307 | **0.6833** | – | **282** |
-| selected (cost-HPO logreg) | 0.700 | 0.8318 | 0.862 | 0.6476 | 0.7395 | 0.6756 | 0.281 | **282** |
-| selected + isotonic | 0.175 | 0.8298 | 0.821 | 0.6162 | 0.7325 | 0.6380 | **0.014** | 311 |
+| selected (cost-HPO logreg) | 0.700 | 0.8321 | 0.861 | 0.6464 | 0.7390 | 0.6744 | 0.280 | **283** |
+| selected + isotonic | 0.125 | 0.8216 | 0.766 | 0.6035 | 0.7588 | 0.6087 | **0.017** | 322 |
 
 Key findings:
 
-- **Against the naive floor, the deliverable cuts business cost 440 → 282
-  (−35.9%) and lifts macro F1 0.477 → 0.683 (+43%).** The paired bootstrap
-  makes the delta defensible: **−158, 95% CI [−237, −87] — significant**
+- **Against the naive floor, the deliverable cuts business cost 440 → 283
+  (−35.7%) and lifts macro F1 0.477 → 0.683 (+43%).** The paired bootstrap
+  makes the delta defensible: **−157, 95% CI [−236, −86] — significant**
   (2,000 seeded resamples, fixed operating thresholds).
-- **Winner changed with the objective.** F1-based selection picked HistGB,
-  which loses on holdout business cost (321); cost-aware selection picked a
-  lightly-regularized logistic that lands exactly at the cost optimum (282
-  at t=0.700) — optimize what you deploy.
+- **Winner unchanged with more arms.** Adding XGBoost and LightGBM to the
+  cost-aware search did not dethrone the logistic: it wins both the best
+  single trial and the family mean. Boosting arms land within ~10% on cost
+  but never below it at FN/FP = 5.
 - **Threshold tuning alone: −19.4%** of the cost win (350 → 282), same model,
   no retraining — the operating point is a business decision made on a cost
   curve (FP=1, FN=5), not a library default.
-- **Calibration verdict:** isotonic calibration cuts ECE **0.281 → 0.014
-  (−95%)** but does **not** improve the business-cost optimum (311 vs 282) —
+- **Calibration verdict:** isotonic calibration cuts ECE **0.280 → 0.017
+  (−94%)** but does **not** improve the business-cost optimum (322 vs 283) —
   at these cost weights the raw ranking already decides well. Calibration is
   worth deploying when the *probabilities themselves* are consumed (budget
   forecasting, CLV math), not for this thresholded alarm.
+- **Cost-model sensitivity** (DVC experiments, see DESIGN.md "Experiment
+  versioning"): fn_cost=3 → selected cost 210 vs naive 264, t*=0.775;
+  fn_cost=8 → 387 vs 704, t*=0.625. Higher miss cost → alarm earlier; the
+  logistic wins across the range.
 - Permutation importance of the selected model keeps `monthly_charges` and
   `contract` on top, matching the generator's ground truth.
 
@@ -127,11 +135,16 @@ Artifacts (regenerated by every run):
 
 ```bash
 cd projects/05-ml-pipeline-churn
-uv run python -m churn_pipeline.cli all   # prepare → train (cost-aware HPO) → evaluate, ~10 s
+uv run python -m churn_pipeline.cli all   # prepare → train (cost-aware HPO) → evaluate, ~35 s
 # client extract onboarding:
 uv run python -m churn_pipeline.cli prepare --input client.csv
 # or stage-wise via DVC:
 dvc repro projects/05-ml-pipeline-churn
+uv run dvc metrics show projects/05-ml-pipeline-churn   # run ladder from the lockfile
+# cost-model sensitivity experiments (see DESIGN.md "Experiment versioning"):
+uv run dvc exp run --queue --set-param fn_cost=3 -n fn3 .
+uv run dvc exp run --queue --set-param fn_cost=8 -n fn8 .
+uv run dvc exp run --run-all && uv run dvc exp show --no-pager
 ```
 
 Deterministic: seed 42 controls data generation, the split, CV, the Optuna
@@ -166,14 +179,15 @@ uv run pytest projects/05-ml-pipeline-churn -q
 
 ## Roadmap
 
-Delivered in wave 7: cost-aware HPO objective (winner changed, see results),
-`prepare --input client.csv` onboarding through the same DQ gates and
-contract, and paired bootstrap CIs on the business-cost delta.
+Delivered in waves 7 + 11: cost-aware HPO objective, `prepare --input
+client.csv` onboarding, paired bootstrap CIs, and XGBoost/LightGBM arms in
+the selection (logistic still wins).
 
 Remaining:
 
 - **Real-data track**: swap the synthetic generator for a public telco churn
-  export (e.g. IBM HR/telco datasets) behind the same `DatasetContract`, or
-  onboard a client extract directly via `prepare --input`.
-- **Model comparison**: gradient-boosted comparator vs. logistic via
-  `portfolio_eval.compare_runs` with paired bootstrap CIs on business cost.
+  export behind the same `DatasetContract`, or onboard a client extract
+  directly via `prepare --input`.
+- **Wider boosting search spaces**: the wave-11 arms used deliberately tight
+  ranges to stay fast; budget-aware widening (early stopping, successive
+  halving) is the next step if a client needs the last few percent.

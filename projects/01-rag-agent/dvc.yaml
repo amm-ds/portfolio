@@ -44,6 +44,7 @@ stages:
       - usd_per_mtok_output
       - retrieval_best
     outs:
-      - reports
+      - reports/report.html
+      - reports/figures
     metrics:
       - reports/metrics.json

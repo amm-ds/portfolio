@@ -1,6 +1,6 @@
 stages:
   prepare:
-    cmd: uv run python -m churn_pipeline.cli prepare --params-file params.yaml
+    cmd: uv run --python 3.12.9 python -m churn_pipeline.cli prepare --params-file params.yaml
     deps:
       - src/churn_pipeline/
       - params.yaml
@@ -10,8 +10,6 @@ stages:
       - test_frac
       - c_grid
       - cv_folds
-      - fp_cost
-      - fn_cost
       - calibration_bins
       - cap_quantile_low
       - cap_quantile_high
@@ -21,7 +19,7 @@ stages:
       - reports/dq_report.md
 
   train:
-    cmd: uv run python -m churn_pipeline.cli train --params-file params.yaml
+    cmd: uv run --python 3.12.9 python -m churn_pipeline.cli train --params-file params.yaml
     deps:
       - src/churn_pipeline/
       - params.yaml
@@ -36,6 +34,8 @@ stages:
       - hpo_trials
       - hpo_objective
       - calib_frac
+      - fp_cost
+      - fn_cost
     outs:
       - data/model.pkl
       - data/selected_model.pkl
@@ -45,11 +45,14 @@ stages:
       - data/holdout.parquet
 
   evaluate:
-    cmd: uv run python -m churn_pipeline.cli evaluate --params-file params.yaml
+    cmd: uv run --python 3.12.9 python -m churn_pipeline.cli evaluate --params-file params.yaml
     deps:
       - src/churn_pipeline/
       - params.yaml
       - data/model.pkl
+      - data/selected_model.pkl
+      - data/selected_model_calibrated.pkl
+      - data/model_meta.json
       - data/holdout.parquet
     params:
       - seed
@@ -59,6 +62,7 @@ stages:
       - fn_cost
       - calibration_bins
     outs:
-      - reports/metrics.json
       - reports/report.html
-      - reports/figures/
+
+    metrics:
+      - reports/metrics.json

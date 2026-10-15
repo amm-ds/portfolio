@@ -39,13 +39,49 @@ def test_search_space_bounds_histgb() -> None:
     assert 20 <= params["min_samples_leaf"] <= 60
 
 
+def test_search_space_bounds_xgboost() -> None:
+    trial = FixedTrial(
+        {
+            "model": "xgboost",
+            "n_estimators": 300,
+            "learning_rate": 0.3,
+            "max_depth": 8,
+            "subsample": 1.0,
+        }
+    )
+    family, params = suggest_params(trial)
+    assert family == "xgboost"
+    assert 50 <= params["n_estimators"] <= 300
+    assert 0.03 <= params["learning_rate"] <= 0.3
+    assert 3 <= params["max_depth"] <= 8
+    assert 0.5 <= params["subsample"] <= 1.0
+
+
+def test_search_space_bounds_lightgbm() -> None:
+    trial = FixedTrial(
+        {
+            "model": "lightgbm",
+            "n_estimators": 50,
+            "learning_rate": 0.03,
+            "num_leaves": 63,
+            "min_child_samples": 60,
+        }
+    )
+    family, params = suggest_params(trial)
+    assert family == "lightgbm"
+    assert 50 <= params["n_estimators"] <= 300
+    assert 0.03 <= params["learning_rate"] <= 0.3
+    assert 15 <= params["num_leaves"] <= 63
+    assert 20 <= params["min_child_samples"] <= 60
+
+
 def test_search_space_families() -> None:
-    assert set(MODEL_FAMILIES) == {"logreg", "histgb"}
+    assert set(MODEL_FAMILIES) == {"logreg", "histgb", "xgboost", "lightgbm"}
 
 
 def test_build_estimator_unknown_family(small_cfg: ChurnConfig) -> None:
     with pytest.raises(ValueError, match="unknown model family"):
-        build_estimator(small_cfg, "xgboost", {})
+        build_estimator(small_cfg, "not-a-family", {})
 
 
 def test_build_estimator_resolves_solver_from_l1_ratio(small_cfg: ChurnConfig) -> None:
@@ -54,6 +90,28 @@ def test_build_estimator_resolves_solver_from_l1_ratio(small_cfg: ChurnConfig) -
     elastic = build_estimator(small_cfg, "logreg", {"C": 1.0, "l1_ratio": 0.5}).named_steps["clf"]
     assert elastic.solver == "saga"
     assert elastic.l1_ratio == 0.5
+
+
+def test_boosting_arms_fit_inside_pipeline(
+    small_cfg: ChurnConfig, tiny_synthetic: pd.DataFrame
+) -> None:
+    """XGB/LGBM arms keep the pipeline contract: fit on raw messy frame."""
+    from churn_pipeline.model import build_pipeline
+
+    X = tiny_synthetic[["age", "tenure_months", "monthly_charges", "support_calls", "contract"]]
+    y = tiny_synthetic["churned"].astype(int)
+    for family, params in (
+        ("xgboost", {"n_estimators": 20, "learning_rate": 0.2, "max_depth": 3, "subsample": 0.8}),
+        (
+            "lightgbm",
+            {"n_estimators": 20, "learning_rate": 0.2, "num_leaves": 15, "min_child_samples": 20},
+        ),
+    ):
+        pipe = build_pipeline(small_cfg, family=family, params=params)
+        pipe.fit(X, y)
+        proba = pipe.predict_proba(X)
+        assert proba.shape == (len(X), 2)
+        assert np.isfinite(proba).all(), family
 
 
 def _toy_xy() -> tuple[pd.DataFrame, pd.Series]:

@@ -39,7 +39,7 @@ class ChurnConfig(PortfolioBaseModel):
     cv_folds: int = Field(default=3, ge=2, description="StratifiedKFold folds for grid search.")
     model_family: str = Field(
         default="auto",
-        pattern="^(auto|logreg|histgb)$",
+        pattern="^(auto|logreg|histgb|xgboost|lightgbm)$",
         description="'auto' runs Optuna selection; otherwise the production config to train.",
     )
     model_params: dict[str, Any] = Field(
