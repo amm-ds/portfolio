@@ -1,0 +1,70 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run python -m inference_serving.cli prepare
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 826023cfbde5fa94de04dc82409de814
+      size: 1733
+    - path: src/inference_serving
+      hash: md5
+      md5: fd2bcedee17d2e4cd849915854e86c61.dir
+      size: 95713
+      nfiles: 21
+    outs:
+    - path: data/prompts.json
+      hash: md5
+      md5: 4063467a0cc9e9ea411f3243bbcb2a1f
+      size: 1643
+  bench:
+    cmd: uv run python -m inference_serving.cli bench --full
+    deps:
+    - path: data/prompts.json
+      hash: md5
+      md5: 4063467a0cc9e9ea411f3243bbcb2a1f
+      size: 1643
+    - path: params.yaml
+      hash: md5
+      md5: 826023cfbde5fa94de04dc82409de814
+      size: 1733
+    - path: src/inference_serving
+      hash: md5
+      md5: fd2bcedee17d2e4cd849915854e86c61.dir
+      size: 95713
+      nfiles: 21
+    outs:
+    - path: data/bench_run.json
+      hash: md5
+      md5: d34598ee345e7cbca2cfbbd04d11ec51
+      size: 219432
+  report:
+    cmd: uv run python -m inference_serving.cli report
+    deps:
+    - path: data/bench_run.json
+      hash: md5
+      md5: d34598ee345e7cbca2cfbbd04d11ec51
+      size: 219432
+    - path: params.yaml
+      hash: md5
+      md5: 826023cfbde5fa94de04dc82409de814
+      size: 1733
+    - path: src/inference_serving
+      hash: md5
+      md5: fd2bcedee17d2e4cd849915854e86c61.dir
+      size: 95713
+      nfiles: 21
+    outs:
+    - path: reports/figures
+      hash: md5
+      md5: f0340ec522ce1fd5238fb6b25e32e21f.dir
+      size: 70598
+      nfiles: 8
+    - path: reports/metrics.json
+      hash: md5
+      md5: 420780ae7d1b54e6a7ee6e737ef980e5
+      size: 10257
+    - path: reports/report.html
+      hash: md5
+      md5: 5adcf47ba0d86b167163b96652f529fb
+      size: 5231
