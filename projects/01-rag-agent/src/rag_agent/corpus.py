@@ -61,6 +61,7 @@ def match_topic(title: str, config: RAGConfig) -> str | None:
 
 
 def _stream_rows(config: RAGConfig) -> Iterable[dict[str, Any]]:
+    # datasets ships no py.typed stubs (HF library); runtime-only import.
     from datasets import load_dataset  # type: ignore[import-untyped]
 
     return cast(
