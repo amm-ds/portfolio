@@ -54,45 +54,6 @@ logger = get_logger(__name__)
 TWO_OPT_LABEL = "two_opt"
 
 
-import csv
-import json
-import time
-from dataclasses import dataclass, field
-from pathlib import Path
-
-import plotly.express as px
-import plotly.graph_objects as go
-import polars as pl
-import yaml  # type: ignore[import-untyped]
-from portfolio_core.dq import DQReport
-from portfolio_core.logging import get_logger
-from portfolio_core.plotting import (
-    add_takeaway,
-    apply_theme,
-    is_baseline_run,
-    save_html,
-    save_json,
-    style_runs,
-)
-from portfolio_eval.report import EvalReport
-
-from routing_optimization.config import VRPConfig
-from routing_optimization.parser import parse_solomon_file
-from routing_optimization.schemas import AlnsTuning, Problem, RoutePlan, TwoOptTuning
-from routing_optimization.solver import (
-    alns,
-    clarke_wright_savings,
-    nearest_neighbor,
-    randomized,
-    two_opt,
-)
-from routing_optimization.tuning import best_start, restart_plans, run_alns_hpo, run_hpo
-
-logger = get_logger(__name__)
-
-TWO_OPT_LABEL = "two_opt"
-
-
 @dataclass(frozen=True)
 class SolverRun:
     """One solver's outcome on one instance."""
@@ -131,9 +92,7 @@ def canonical_instance_name(raw: str) -> str:
     return stem.upper().replace("_", "")
 
 
-def load_references(
-    path: Path, supplement_path: Path | None = None
-) -> dict[str, "Reference"]:
+def load_references(path: Path, supplement_path: Path | None = None) -> dict[str, "Reference"]:
     """Load best-known distance AND vehicle count per instance.
 
     Vehicle count is the Solomon benchmark's primary ranking criterion
@@ -465,7 +424,6 @@ def _solver_gaps(evaln: InstanceEvaluation) -> dict[str, float | None]:
     return gaps
 
 
-
 def run_evaluate(cfg: VRPConfig) -> Path:
     """Compute gaps, build figures and write all evaluation artifacts."""
     solutions_path = cfg.reports_dir / "solutions.json"
@@ -509,16 +467,6 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         }
         for ev in evaluations
         if ev.best_known is not None
-        for r in ev.runs
-    )
-    veh_rows = pl.DataFrame(
-        {
-            "instance": ev.instance,
-            "solver": r.solver,
-            "veh_delta": r.n_vehicles - ev.best_known_vehicles,
-        }
-        for ev in evaluations
-        if ev.best_known is not None and ev.best_known_vehicles is not None
         for r in ev.runs
     )
     runtime_rows = pl.DataFrame(
@@ -756,8 +704,7 @@ def run_evaluate(cfg: VRPConfig) -> Path:
                         sum(
                             1
                             for ev in evaluations
-                            if family_of(ev.instance) == fam
-                            and ev.best_known_vehicles is not None
+                            if family_of(ev.instance) == fam and ev.best_known_vehicles is not None
                             for r in ev.runs
                             if r.solver == solver
                         ),

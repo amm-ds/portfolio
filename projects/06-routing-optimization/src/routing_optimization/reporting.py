@@ -38,7 +38,8 @@ def _veh_delta_str(delta: int | None) -> str:
 def results_markdown(evaluations: list[InstanceEvaluation]) -> str:
     """Full per-instance markdown results table (distance + vehicle gaps)."""
     lines = [
-        "| instance | best known (dist / veh) | solver | distance | vehicles | gap % | veh Δ | runtime (ms) |",
+        "| instance | best known (dist / veh) | solver | distance | vehicles | gap % | "
+        "veh Δ | runtime (ms) |",
         "|---|---|---|---|---|---|---|---|",
     ]
     for ev in evaluations:
@@ -90,7 +91,7 @@ def summary_markdown(evaluations: list[InstanceEvaluation]) -> str:
         ]
         runs = [r for ev in evaluations for r in ev.runs if r.solver == solver]
         mean_gap = f"{sum(gaps) / len(gaps):.2f}" if gaps else "n/a"
-        mean_delta = _veh_delta_str(round(sum(deltas) / len(deltas))) if deltas else "n/a"
+        mean_delta = f"{sum(deltas) / len(deltas):+.2f}" if deltas else "n/a"
         mean_dist = sum(r.total_distance for r in runs) / len(runs)
         mean_veh = sum(r.n_vehicles for r in runs) / len(runs)
         mean_rt = sum(r.runtime_s for r in runs) / len(runs) * 1e3
@@ -124,7 +125,7 @@ def family_markdown(evaluations: list[InstanceEvaluation]) -> str:
                 if r.solver == solver and ev.best_known_vehicles is not None
             ]
             if gaps:
-                mean_delta = _veh_delta_str(round(sum(deltas) / len(deltas))) if deltas else "n/a"
+                mean_delta = f"{sum(deltas) / len(deltas):+.2f}" if deltas else "n/a"
                 lines.append(
                     f"| {fam} | {len(members)} | {solver} "
                     f"| {sum(gaps) / len(gaps):.2f} | {mean_delta} |"

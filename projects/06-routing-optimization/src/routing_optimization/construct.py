@@ -11,6 +11,7 @@ as in the Solomon benchmark.
 import random
 
 from portfolio_core.logging import get_logger
+
 from routing_optimization.routing import _EPS, _finish, distance_matrix, route_feasible
 from routing_optimization.schemas import Problem, RoutePlan
 
@@ -221,5 +222,3 @@ def clarke_wright_savings(problem: Problem) -> RoutePlan:
             problem.name,
         )
     return _finish(problem, "clarke_wright", plan_routes, dist)
-
-

@@ -66,28 +66,45 @@ both HPO searches + ALNS ≈ 90 s).
 Artifacts in `reports/` (see `reports/results.md`, `reports/report.html`,
 `reports/metrics.json`).
 
-Mean over all 56 instances (`reports/metrics.json`) — the solver ladder:
+Mean over all 56 instances (`reports/metrics.json`) — the solver ladder.
+**Two gaps are reported**: distance gap % and vehicle-count delta (veh Δ) vs
+the published best-known solutions. Solomon's benchmark convention ranks
+**vehicles first, distance second** — the references optimize that
+hierarchical objective, so both numbers matter.
 
-| solver | mean gap to best-known | mean distance | mean vehicles | mean runtime |
-|---|---|---|---|---|
-| randomized (feasible floor) | 316.95 % | 3868.55 | 18.3 | 0.6 ms |
-| nearest_neighbor | 71.64 % | 1694.18 | 14.0 | 1.1 ms |
-| clarke_wright | 18.31 % | 1200.06 | 13.0 | 3.0 ms |
-| two_opt (untuned) | 13.75 % | 1158.34 | 13.0 | 4.2 ms |
-| two_opt_tuned (HPO) | 13.63 % | 1156.92 | 13.0 | 9.6 ms |
-| **alns (HPO-tuned)** | **4.23 %** | **1062.02** | **11.0** | 801 ms |
+| solver | mean distance gap | mean distance | mean vehicles | mean veh Δ | mean runtime |
+|---|---|---|---|---|---|
+| randomized (feasible floor) | 316.95 % | 3868.55 | 18.3 | +11.09 | 0.6 ms |
+| nearest_neighbor | 71.64 % | 1694.18 | 14.0 | +6.75 | 1.1 ms |
+| clarke_wright | 18.31 % | 1200.06 | 13.0 | +5.79 | 3.0 ms |
+| two_opt (untuned) | 13.75 % | 1158.34 | 13.0 | +5.79 | 4.2 ms |
+| two_opt_tuned (HPO) | 13.63 % | 1156.92 | 13.0 | +5.79 | 9.6 ms |
+| **alns (HPO-tuned)** | **4.23 %** | **1062.02** | **11.0** | **+3.73** | 801 ms |
 
-Per-family mean gap (`reports/metrics.json` → `families`, figure
-`family_gap`):
+Per-family mean distance gap / mean vehicle delta (figure `family_gap`, now a
+two-panel view of both criteria):
 
-| family | instances | clarke_wright | two_opt_tuned | alns |
-|---|---|---|---|---|
-| C1 | 9 | 25.76 % | 18.62 % | 4.48 % |
-| C2 | 8 | 31.62 % | 21.48 % | 6.50 % |
-| R1 | 12 | 18.17 % | 14.95 % | 4.10 % |
-| R2 | 11 | 10.29 % | 7.28 % | 3.04 % |
-| RC1 | 8 | 16.59 % | 13.29 % | 4.75 % |
-| RC2 | 8 | 9.60 % | 7.23 % | 3.00 % |
+| family | instances | two_opt_tuned | alns |
+|---|---|---|---|
+| C1 | 9 | 18.62 % / +3.44 | 4.48 % / +1.00 |
+| C2 | 8 | 21.48 % / +2.50 | 6.50 % / +1.00 |
+| R1 | 12 | 14.95 % / +6.92 | 4.10 % / +3.42 |
+| R2 | 11 | 7.28 % / +7.64 | 3.04 % / +6.73 |
+| RC1 | 8 | 13.29 % / +5.88 | 4.75 % / +2.88 |
+| RC2 | 8 | 7.23 % / +7.38 | 3.00 % / +6.75 |
+
+Ranking under the two conventions (instances won, intra-ladder):
+
+- **Distance-only**: ALNS wins 56/56.
+- **Vehicles-first (benchmark convention)**: ALNS wins 43/56 —
+  `nearest_neighbor` "wins" 10 and `randomized` 3 by using fewer vehicles at
+  far worse distance. Distance-only comparison flatters; the vehicle column is
+  the honest one for fleet planning.
+- **Vs the published references**: no run of any solver uses fewer vehicles
+  than best-known (best is ALNS at +3.73 mean); the vehicle gap is largest
+  exactly where the references' hierarchical objective bites hardest
+  (R2/RC2, +6–8 vehicles). Both directions of the comparison are reported
+  wherever they occur.
 
 Key findings:
 

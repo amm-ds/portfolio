@@ -175,39 +175,49 @@ sections:
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns]
 - id: results
   text_md: |
-    Real run, seed 42 — the solver ladder (means over all 56 instances):
+    Real run, seed 42 — the solver ladder (means over all 56 instances).
+    **Two gaps are reported**: distance gap % and vehicle-count delta (veh Δ)
+    vs the published best-known solutions — the benchmark ranks vehicles
+    first, distance second, so both numbers matter.
 
-    | solver | mean distance | mean gap | mean vehicles | mean runtime |
-    |---|---|---|---|---|
-    | randomized | 3868.55 | 316.95 % | 18.3 | 0.6 ms |
-    | nearest_neighbor | 1694.18 | 71.64 % | 14.0 | 1.1 ms |
-    | clarke_wright | 1200.06 | 18.31 % | 13.0 | 3.0 ms |
-    | two_opt (untuned) | 1158.34 | 13.75 % | 13.0 | 4.2 ms |
-    | two_opt_tuned (HPO) | 1156.92 | 13.63 % | 13.0 | 9.4 ms |
-    | **alns (HPO-tuned)** | **1062.02** | **4.23 %** | **11.0** | 795 ms |
+    | solver | mean distance | mean gap | mean vehicles | mean veh Δ | mean runtime |
+    |---|---|---|---|---|---|
+    | randomized | 3868.55 | 316.95 % | 18.3 | +11.09 | 0.6 ms |
+    | nearest_neighbor | 1694.18 | 71.64 % | 14.0 | +6.75 | 1.1 ms |
+    | clarke_wright | 1200.06 | 18.31 % | 13.0 | +5.79 | 3.0 ms |
+    | two_opt (untuned) | 1158.34 | 13.75 % | 13.0 | +5.79 | 4.2 ms |
+    | two_opt_tuned (HPO) | 1156.92 | 13.63 % | 13.0 | +5.79 | 9.4 ms |
+    | **alns (HPO-tuned)** | **1062.02** | **4.23 %** | **11.0** | **+3.73** | 795 ms |
 
-    Per-family mean gap (figure `family_gap`):
+    Per-family mean distance gap / mean vehicle delta (two-panel figure
+    `family_gap`):
 
     | family | instances | two_opt_tuned | alns |
     |---|---|---|---|
-    | C1 | 9 | 18.62 % | 4.48 % |
-    | C2 | 8 | 21.48 % | 6.50 % |
-    | R1 | 12 | 14.95 % | 4.10 % |
-    | R2 | 11 | 7.28 % | 3.04 % |
-    | RC1 | 8 | 13.29 % | 4.75 % |
-    | RC2 | 8 | 7.23 % | 3.00 % |
+    | C1 | 9 | 18.62 % / +3.44 | 4.48 % / +1.00 |
+    | C2 | 8 | 21.48 % / +2.50 | 6.50 % / +1.00 |
+    | R1 | 12 | 14.95 % / +6.92 | 4.10 % / +3.42 |
+    | R2 | 11 | 7.28 % / +7.64 | 3.04 % / +6.73 |
+    | RC1 | 8 | 13.29 % / +5.88 | 4.75 % / +2.88 |
+    | RC2 | 8 | 7.23 % / +7.38 | 3.00 % / +6.75 |
 
     Key findings:
 
-    - **ALNS wins 56/56** and cuts the mean gap from 13.63 % to **4.23 %** —
-      single digits on every family; the cross-route re-sequencing
-      (destroy + regret-2 repair) is exactly the neighborhood 2-opt cannot
-      express.
-    - **Negative gaps are real and reported**: ALNS lands below the published
-      reference on 8 instances (best RC202 −3.85 %, R207 −3.51 %, R211 −3.43 %) — the
-      reference table mixes conventions (hierarchical vehicle-first objective,
-      rounding artifacts), and our full-precision plain-distance solutions
-      legitimately undercut a few of its values.
+    - **ALNS wins 56/56 on distance** and cuts the mean gap from 13.63 % to
+      **4.23 %** — single digits on every family; the cross-route
+      re-sequencing (destroy + regret-2 repair) is exactly the neighborhood
+      2-opt cannot express.
+    - **Under the benchmark's vehicles-first ranking, ALNS wins 43/56** —
+      nearest_neighbor "wins" 10 and randomized 3 by using fewer vehicles at
+      far worse distance. Distance-only comparison flatters; the vehicle
+      column is the honest one for fleet planning.
+    - **Vs the references, no solver uses fewer vehicles than best-known**
+      (best ALNS +3.73 mean); the vehicle gap is largest where the references'
+      hierarchical objective bites hardest (R2/RC2, +6–8 vehicles).
+    - **Negative distance gaps are real and reported**: ALNS lands below the
+      published reference on 8 instances (best RC202 −3.85 %, R207 −3.51 %,
+      R211 −3.43 %) — the reference table mixes conventions, and our
+      full-precision plain-distance solutions legitimately undercut a few values.
     - Honest residuals: C2 6.50 % (few-vehicle wide-horizon optima resist
       q=10 destroy), C203 19.48 % and C103 11.67 % (tight chains).
     - Standing caveats: naive baselines can exceed the stated 25-vehicle fleet
@@ -216,10 +226,11 @@ sections:
     - The 2-opt HPO negatives stand: randomized restarts
       never pay (k=1 chosen) and 2-opt budgets saturate (≤ ~20 moves).
 
-    **Business implication:** a 4.23 % mean gap to 1987-published optima, on
-    every problem family, with seeded deterministic code a client can audit —
-    that is the quality number a procurement process can anchor to, and the
-    ~0.8 s per-instance cost makes the same harness usable for daily routing.
+    **Business implication:** a 4.23 % mean distance gap — with the honest
+    +3.73-vehicle caveat attached — on 1987-published optima and every problem
+    family, with seeded deterministic code a client can audit: that is the
+    quality number a procurement process can anchor to, and the ~0.8 s
+    per-instance cost makes the same harness usable for daily routing.
   figures: [gap_pct]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns]
 - id: conclusions
@@ -271,10 +282,10 @@ roadmap:
     before it reaches a table or figure.
 - status: deferred
   text: |
-    Hierarchical objective (minimize vehicle count first, then distance):
-    multi-echelon fleet constraints are a different problem contract —
-    parked deliberately; ALNS's 11.0 mean vehicles vs 10-vehicle C1 optima
-    mark where it would matter.
+    Hierarchical objective (vehicles first, then distance): multi-echelon
+    fleet constraints are a different problem contract — parked deliberately.
+    The dual-gap audit quantified the stakes: ALNS averages +3.73 vehicles
+    over the references, up to +6–8 on R2/RC2 (hierarchical optima: 2–4).
 - status: deferred
   text: |
     Time-window-preserving destroy operators for the C2-family residuals
