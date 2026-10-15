@@ -202,22 +202,6 @@ stages:
       size: 174498
       nfiles: 17
     outs:
-    - path: reports/figures/hpo_history.html
-      hash: md5
-      md5: 2e8c9b9e93f24334f2338584675c12ee
-      size: 8949
-    - path: reports/figures/hpo_history.json
-      hash: md5
-      md5: bb5abcd6f40645e8d7488f58149b7b3e
-      size: 7952
-    - path: reports/figures/hpo_importance.html
-      hash: md5
-      md5: 71c17e5b508ecc903e8f1ebc756256f5
-      size: 8407
-    - path: reports/figures/hpo_importance.json
-      hash: md5
-      md5: 473f29f8c28281737835051cba543362
-      size: 7410
     - path: reports/hpo_best.json
       hash: md5
       md5: a3b3e0ae23f5be448d6fd22c7891be48

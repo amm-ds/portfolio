@@ -2,10 +2,12 @@ id: 04-nlp-classification
 title: Nlp Classification
 domain: Deep learning NLP
 techniques:
-- pytorch
-- transformers
-- hand-written training loop
-- optuna HPO
+- DistilBERT
+- PyTorch
+- HF datasets
+- Optuna
+- TF-IDF
+- calibration
 data: AG News (HF, real)
 status: working
 order: 4

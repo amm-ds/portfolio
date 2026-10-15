@@ -4,11 +4,12 @@ version = "0.1.0"
 description = "Portfolio project 09-agentic-workflows."
 requires-python = ">=3.12"
 dependencies = [
-    # add project-specific deps here (keep them minimal and justified)
     "typer>=0.12",
     "plotly>=5.24",
     "polars>=1.9",
     "numpy>=2.1",
+    "pydantic-ai>=2.55",
+    "pydantic-evals>=2.55",
     "portfolio-core",
     "portfolio-eval",
 ]

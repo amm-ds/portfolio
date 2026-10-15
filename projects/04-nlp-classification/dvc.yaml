@@ -41,10 +41,8 @@ stages:
     outs:
       - reports/hpo_study.json
       - reports/hpo_best.json
-      - reports/figures/hpo_history.html
-      - reports/figures/hpo_history.json
-      - reports/figures/hpo_importance.html
-      - reports/figures/hpo_importance.json
+      # hpo figures flow through the evaluate stage's reports/figures out
+      # (a directory and its contents cannot both be stage outputs)
   hpo-seeds:
     cmd: uv run python -m nlp_classification.cli hpo-seeds
     deps:
@@ -94,8 +92,9 @@ stages:
       - reports/history.json
       - reports/hpo_study.json
     outs:
-      - reports/metrics.json
       - reports/report.html
       - reports/error_analysis.md
       - reports/selection.json
       - reports/figures
+    metrics:
+      - reports/metrics.json
