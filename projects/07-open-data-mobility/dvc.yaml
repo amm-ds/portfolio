@@ -58,8 +58,6 @@ stages:
       - src/mobility/features.py
       - data/features
       - reports/models/hpo_gbm.json
-      - reports/models/hpo_xgb.json
-      - reports/models/hpo_lgbm.json
     params:
       - max_train_rows
       - gbm
@@ -95,6 +93,7 @@ stages:
       - src/mobility/model.py
       - data/features
       - reports/models/predictions_baseline.parquet
+      - reports/models/predictions_arms.parquet
       - reports/models/hpo_nn.json
     params:
       - nn

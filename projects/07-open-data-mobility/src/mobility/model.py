@@ -347,6 +347,10 @@ def train_nn(cfg: MobilityConfig | None = None) -> pl.DataFrame:
         preds = test.select(
             ["zone_id", "borough", "ts", pl.col("target").alias("y_true"), pl.col("lag_24")]
         )
+    # merge challenger-arm predictions (owned by train_arms, separate file)
+    arms = _read_parquet_if_exists(cfg.models_dir / "predictions_arms.parquet")
+    if arms is not None:
+        preds = preds.join(arms, on=["zone_id", "ts"], how="left")
     preds = preds.with_columns(y_nn=y_nn)
 
     tuned = hpo_result(cfg, "nn")

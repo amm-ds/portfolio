@@ -168,9 +168,9 @@ def fit_arm_pair(cfg: MobilityConfig, arm: str, params: dict[str, Any]) -> None:
     joblib.dump(model, cfg.models_dir / f"gbm_{arm}_tuned.joblib")
     joblib.dump(p90_model, cfg.models_dir / f"gbm_p90_{arm}_tuned.joblib")
 
-    # merge prediction columns into the baseline predictions frame
-    base_path = cfg.models_dir / "predictions_baseline.parquet"
-    base = pl.read_parquet(base_path)
+    # arm predictions go to their OWN file (predictions_baseline.parquet is owned
+    # solely by train_baselines — DVC forbids two stages owning the same out)
+    arms_path = cfg.models_dir / "predictions_arms.parquet"
     extra = pl.DataFrame(
         {
             "zone_id": test["zone_id"],
@@ -179,9 +179,10 @@ def fit_arm_pair(cfg: MobilityConfig, arm: str, params: dict[str, Any]) -> None:
             f"y_p90_{arm}_tuned": p90_model.predict(X_test),
         }
     )
-    base = base.join(extra, on=["zone_id", "ts"], how="left")
-    base.write_parquet(base_path, compression="zstd")
-    logger.info("%s pair refit on full train window; %s columns merged", arm, arm)
+    if arms_path.exists():
+        extra = pl.read_parquet(arms_path).join(extra, on=["zone_id", "ts"], how="left")
+    extra.write_parquet(arms_path, compression="zstd")
+    logger.info("%s pair refit on full train window; columns written to predictions_arms", arm)
 
 
 def fit_arms(cfg: MobilityConfig | None = None) -> dict[str, dict[str, Any]]:
