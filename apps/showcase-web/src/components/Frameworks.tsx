@@ -11,6 +11,7 @@ export interface Framework {
 export const FRAMEWORKS: Framework[] = [
   { name: "pydantic", url: "https://pydantic.dev", slug: "pydantic", letters: "Pd" },
   { name: "pydantic-ai", url: "https://ai.pydantic.dev", letters: "PA" },
+  { name: "Ollama", url: "https://ollama.com", slug: "ollama", letters: "Ol" },
   { name: "scikit-learn", url: "https://scikit-learn.org", slug: "scikitlearn", letters: "Sk" },
   { name: "PyTorch", url: "https://pytorch.org", slug: "pytorch", letters: "Pt" },
   { name: "Polars", url: "https://pola.rs", slug: "polars", letters: "Pl" },
@@ -21,6 +22,8 @@ export const FRAMEWORKS: Framework[] = [
   { name: "React", url: "https://react.dev", slug: "react", letters: "Re" },
   { name: "TypeScript", url: "https://typescriptlang.org", slug: "typescript", letters: "Ts" },
   { name: "Optuna", url: "https://optuna.org", slug: "optuna", letters: "Op" },
+  { name: "RAGAS", url: "https://ragas.io", letters: "Ra" },
+  { name: "pydantic-evals", url: "https://ai.pydantic.dev/evals/", letters: "Pe" },
   { name: "Hugging Face", url: "https://huggingface.co", slug: "huggingface", letters: "Hf" },
 ];
 

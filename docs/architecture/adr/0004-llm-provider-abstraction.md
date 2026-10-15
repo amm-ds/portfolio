@@ -26,6 +26,13 @@ provider wrappers:
 Projects never import an LLM SDK directly; they depend on the factory and the
 pydantic output models.
 
+## Amendment (2026-10-14, ADR-0006)
+
+The deterministic mock mode is **removed from production paths** (test-only via
+`portfolio_core.llm.mock_model_for_tests`), and the default provider chain is:
+env-configured OpenAI-compatible endpoint → **local Ollama** (default `qwen3:32b`).
+See ADR-0006.
+
 ## Consequences
 
 - Zero secrets in CI; eval harness runs against the mock with fixed expectations

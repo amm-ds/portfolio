@@ -1,0 +1,11 @@
+frozen: true
+deps:
+- hash: md5
+  path: 
+    https://huggingface.co/api/datasets/fancyzhx/ag_news/parquet/default/train/0.parquet
+  checksum: '"993a8a2ca104eca7f59897458f32edf556ba6252cda9b722cc4cc2fd5ee1fdc5"'
+  size: 18585438
+outs:
+- hash: md5
+  path: ag-news-train
+md5: c8999d3b41d19743fecfe956f271a902

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { renderMarkdown } from "../lib/markdown";
@@ -198,5 +199,47 @@ describe("renderMarkdown list variants", () => {
     const items = container.querySelectorAll("ol li");
     expect(items).toHaveLength(2);
     expect(items[1].textContent).toBe("second");
+  });
+});
+
+describe("prose density (wave 10)", () => {
+  const css = readFileSync("src/styles.css", "utf8");
+
+  it("ships the typography-rhythm hooks (line-height, spacing, markers)", () => {
+    expect(css).toContain(".story-section .prose {\n  line-height: 1.62;\n}");
+    expect(css).toContain(".story-section .prose p {\n  margin: 0 0 1.05em;\n}");
+    expect(css).toContain("padding-left: 1.5rem;");
+    expect(css).toContain(".story-section .prose li {\n  margin-bottom: 0.4rem;\n}");
+    expect(css).toContain(".story-section .prose li::marker {\n  color: var(--accent);\n}");
+    // air after a paragraph that introduces a list/table/code/diagram
+    expect(css).toContain(".story-section .prose p + ul,");
+    expect(css).toContain("margin-top: 1.3rem;");
+  });
+
+  it("keeps dense documents structured (paragraph → list → table sequence intact)", () => {
+    const dense = [
+      "The evaluation compares four model families across five folds.",
+      "",
+      "- **GBDT** tuned with Optuna, early stopping on",
+      "- a **naive seasonal** baseline, and",
+      "- a linear model as the sanity check",
+      "",
+      "| run | mae |",
+      "|---|---|",
+      "| gbm | 412.3 |",
+      "| naive | 587.1 |",
+    ].join("\n");
+    const { container } = render(
+      <div className="story-section">
+        <div className="prose">{renderMarkdown(dense)}</div>
+      </div>,
+    );
+    const kids = [...container.querySelector(".prose")!.children];
+    expect(kids[0].tagName).toBe("P");
+    expect(kids[1].tagName).toBe("UL");
+    expect(kids[1].querySelectorAll("li")).toHaveLength(3);
+    expect(kids[1].querySelector("strong")?.textContent).toBe("GBDT");
+    expect(kids[2].classList.contains("table-scroll")).toBe(true);
+    expect(kids[2].querySelector("tbody tr")).not.toBeNull();
   });
 });

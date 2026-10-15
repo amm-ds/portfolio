@@ -413,13 +413,41 @@ code {
   margin: 1.5rem 0 0.75rem;
 }
 
-.availability {
+.home-status {
+  font-family: var(--mono);
+  font-size: 0.9rem;
   color: var(--text);
-  padding: 0.9rem 1.25rem;
-  margin-top: 1.5rem;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  max-width: 760px;
+  margin: 1.75rem 0 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--ok);
+  align-self: center;
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.home-status .status-note {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot {
+    animation: none;
+  }
 }
 
 /* --- Section headings: prompt-prefixed --- */
@@ -653,6 +681,10 @@ code {
   text-shadow: none;
 }
 
+.story-section .prose {
+  line-height: 1.62;
+}
+
 .story-section .prose p,
 .story-section .prose ul,
 .story-section .prose ol {
@@ -661,7 +693,31 @@ code {
 }
 
 .story-section .prose p {
-  margin: 0 0 1rem;
+  margin: 0 0 1.05em;
+}
+
+.story-section .prose ul,
+.story-section .prose ol {
+  margin: 0 0 1.1em;
+  padding-left: 1.5rem;
+}
+
+/* breathing room between list items; accent-tinted markers for skimmability */
+.story-section .prose li {
+  margin-bottom: 0.4rem;
+}
+
+.story-section .prose li::marker {
+  color: var(--accent);
+}
+
+/* extra air when a paragraph introduces a list, table, code block or diagram */
+.story-section .prose p + ul,
+.story-section .prose p + ol,
+.story-section .prose p + .table-scroll,
+.story-section .prose p + .mermaid-wrap,
+.story-section .prose p + .code-block {
+  margin-top: 1.3rem;
 }
 
 /* --- DataTable: shared table pattern (DataTable component + prose tables) --- */
@@ -1024,18 +1080,18 @@ button:disabled {
 
 .process-timeline {
   list-style: none;
-  margin: 0;
+  margin: 1.75rem 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  column-gap: 1.25rem;
-  row-gap: 1.75rem;
+  column-gap: 1.5rem;
+  row-gap: 2.25rem;
 }
 
 /* connecting line across the row; step nodes sit on it */
 .process-timeline li {
   position: relative;
-  padding-top: 0.9rem;
+  padding-top: 1.15rem;
   border-top: 1px solid var(--border);
 }
 
@@ -1128,23 +1184,62 @@ button:disabled {
   background: var(--surface);
   color: var(--muted);
   font-size: 0.85rem;
-  padding: 1.25rem;
-  text-align: center;
+  padding: 1rem 1.25rem;
 }
 
-.footer .status-line {
-  color: var(--accent);
+.footer-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.footer-name {
+  margin: 0;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--text);
+  display: inline;
+}
+
+.footer-tagline {
+  margin: 0;
+  display: inline;
+  padding-left: 0.6rem;
   font-size: 0.82rem;
-  margin: 0 0 0.5rem;
 }
 
-.footer .status-line .sep {
-  color: var(--border);
-  margin: 0 0.5rem;
+.footer-nav {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
 }
 
-.footer a {
-  color: var(--secondary);
+.footer-nav a {
+  color: var(--muted);
+}
+
+.footer-nav a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.footer-email {
+  color: var(--secondary) !important;
+}
+
+.footer-small {
+  max-width: 1100px;
+  margin: 0.6rem auto 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  opacity: 0.8;
 }
 
 @media (max-width: 800px) {

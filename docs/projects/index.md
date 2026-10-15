@@ -14,4 +14,4 @@ record, and the evaluation artifacts.
 | 06 | [Routing Optimization (VRPTW)](06-routing-optimization.md) | Combinatorial optimization | CVRPLIB Solomon | Working showcase |
 | 07 | [Urban Mobility Demand Intelligence](07-open-data-mobility.md) | Data engineering + ML | NYC TLC + NOAA | **Flagship — complete** |
 | 08 | LLM Inference & Serving *(planned)* | Model serving | Open models + benchmarks | Planned |
-| 09 | Agentic AI Workflows *(planned)* | Agentic AI | Public benchmarks + synthetic suites | Planned |
+| 09 | [Agentic AI Workflows](09-agentic-workflows.md) | Agentic AI | Synthetic tool-using suite | Working showcase |

@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Card } from "../components/Card";
 import { Terminal } from "../components/Terminal";
 import { useTypedScript } from "../hooks/useTyped";
 
@@ -79,10 +78,11 @@ export function Home() {
         ))}
       </div>
 
-      <Card className="availability">
-        Available for freelance work — ML/AI systems, agentic AI and RAG, data engineering
-        and MLOps. Typical response within 48 hours; EU/US timezone overlap.
-      </Card>
+      <p className="home-status">
+        <span className="status-dot" aria-hidden="true" />
+        available for engagements · <Link to="/contact">→ /contact</Link>
+        <span className="status-note"> — typical reply within 48h</span>
+      </p>
     </>
   );
 }

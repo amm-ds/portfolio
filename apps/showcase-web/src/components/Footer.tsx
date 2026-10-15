@@ -1,21 +1,29 @@
+import { Link } from "react-router-dom";
+import { SITE_EMAIL } from "../config";
+
 export function Footer() {
   return (
     <footer className="footer">
-      <p className="status-line">
-        amm-ds ~ main<span className="sep">●</span>reproducible
-        <span className="sep">●</span>MIT
-      </p>
-      <p>
-        Code released under the{" "}
-        <a href="https://github.com/amm-ds/portfolio/blob/main/LICENSE" target="_blank" rel="noreferrer">
-          MIT license
-        </a>
-        . Datasets remain subject to their own licenses, documented per project in the{" "}
-        <a href="https://github.com/amm-ds/portfolio" target="_blank" rel="noreferrer">
-          repository
-        </a>
-        .
-      </p>
+      <div className="footer-inner">
+        <div className="footer-brand">
+          <p className="footer-name">amm-ds</p>
+          <p className="footer-tagline">
+            Data Scientist &amp; ML Engineer — end-to-end ML/AI systems
+          </p>
+        </div>
+        <nav className="footer-nav" aria-label="Footer">
+          <Link to="/projects">Projects</Link>
+          <Link to="/services">Services</Link>
+          <Link to="/contact">Contact</Link>
+          <a href="https://github.com/amm-ds/portfolio" target="_blank" rel="noreferrer">
+            GitHub
+          </a>
+          <a href={`mailto:${SITE_EMAIL}`} className="footer-email">
+            {SITE_EMAIL}
+          </a>
+        </nav>
+      </div>
+      <p className="footer-small">© 2026 amm-ds · MIT licensed</p>
     </footer>
   );
 }
