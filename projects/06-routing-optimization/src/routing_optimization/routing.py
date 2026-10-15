@@ -9,6 +9,7 @@ the :func:`_finish` gate that turns raw routes into a validated
 import math
 
 from portfolio_core.logging import get_logger
+
 from routing_optimization.schemas import Customer, Problem, RoutePlan
 
 logger = get_logger(__name__)

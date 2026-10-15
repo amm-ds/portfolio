@@ -119,3 +119,16 @@ flowchart LR
   tuned 2-opt), wins 56/56, negative gaps on 8 instances (convention-mixed
   references); per-family: C1 4.48, C2 6.50, R1 4.10, R2 3.04, RC1 4.75,
   RC2 3.00. Roadmap down to one item: hierarchical objective.
+- **2026-10-15** — Wave 12 (external-audit remediation): (1) vehicle-count
+  comparison — `best_known_vehicles` column added to the registry CSV (14
+  rows, SINTEF values) and the project supplement (42 rows); evaluation now
+  reports distance gap % AND vehicle-count delta per instance, per family and
+  in a two-panel `family_gap` figure; solutions also ranked under the
+  benchmark convention (vehicles first, then distance) — intra-ladder ALNS
+  wins 43/56 (not 56/56) under it, and no solver beats the references on
+  vehicle count (best +3.73 mean). (2) God-module split: `evaluate.py` 950 →
+  orchestration-only (~730) + `figures.py` (254) + `reporting.py` (~120);
+  `solver.py` 708 → `solver.py` (437, 2-opt + ALNS) + `construct.py` (225,
+  NN/savings/randomized) + `routing.py` (89, shared geometry/feasibility
+  core). Pure moves — all 47 tests passed unmodified; construction/routing
+  names re-exported from `solver` for backward compatibility.

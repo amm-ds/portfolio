@@ -17,6 +17,7 @@ from portfolio_core.plotting import (
     is_baseline_run,
     style_runs,
 )
+
 from routing_optimization.schemas import Problem
 
 
@@ -304,5 +305,3 @@ def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
 
 # ---------------------------------------------------------------------------
 # Pipeline stages (used by the CLI and dvc.yaml)
-
-

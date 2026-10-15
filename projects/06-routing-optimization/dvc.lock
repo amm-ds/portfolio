@@ -9,13 +9,13 @@ stages:
       size: 1418
     - path: src/routing_optimization
       hash: md5
-      md5: 04afcdd969ca562e8f8e6eb4ecf07409.dir
-      size: 217286
-      nfiles: 17
+      md5: 3946da8b6e57ba05fc5c4f5edb82dcdc.dir
+      size: 243516
+      nfiles: 25
     outs:
     - path: data/raw
       hash: md5
-      md5: 1809bdf41bb224b50f280a36f9ff9a70.dir
+      md5: d76d29ad49052827eeb7647abfaca92e.dir
       size: 505072
       nfiles: 58
   solve:
@@ -23,7 +23,7 @@ stages:
     deps:
     - path: data/raw
       hash: md5
-      md5: 1809bdf41bb224b50f280a36f9ff9a70.dir
+      md5: d76d29ad49052827eeb7647abfaca92e.dir
       size: 505072
       nfiles: 58
     - path: params.yaml
@@ -32,9 +32,9 @@ stages:
       size: 1418
     - path: src/routing_optimization
       hash: md5
-      md5: 04afcdd969ca562e8f8e6eb4ecf07409.dir
-      size: 217286
-      nfiles: 17
+      md5: 3946da8b6e57ba05fc5c4f5edb82dcdc.dir
+      size: 243516
+      nfiles: 25
     outs:
     - path: reports/dq.md
       hash: md5
@@ -42,47 +42,47 @@ stages:
       size: 27721
     - path: reports/solutions.json
       hash: md5
-      md5: 01c7300484b87f48a516c9c0937fc48a
-      size: 174240
+      md5: ec0ad58e9975eed5e25f763fc235a820
+      size: 174249
   evaluate:
     cmd: uv run python -m routing_optimization.cli evaluate
     deps:
     - path: ../../docs/data-registry/best_known/solomon100.csv
       hash: md5
-      md5: 460548bd7fd21896cc45f33dc3e39210
-      size: 672
+      md5: cf1fc66ca83250a7552257a5921b6747
+      size: 972
     - path: best_known_supplement.csv
       hash: md5
-      md5: f2b361b79d49db589ab7ee67dd4925ef
-      size: 1352
+      md5: 2b7d2da09f9d407c55a92ce9b41b4db0
+      size: 1590
     - path: params.yaml
       hash: md5
       md5: 61b5184c85bb3a17024aeeda3d301a04
       size: 1418
     - path: reports/solutions.json
       hash: md5
-      md5: 01c7300484b87f48a516c9c0937fc48a
-      size: 174240
+      md5: ec0ad58e9975eed5e25f763fc235a820
+      size: 174249
     - path: src/routing_optimization
       hash: md5
-      md5: 04afcdd969ca562e8f8e6eb4ecf07409.dir
-      size: 217286
-      nfiles: 17
+      md5: 3946da8b6e57ba05fc5c4f5edb82dcdc.dir
+      size: 243516
+      nfiles: 25
     outs:
     - path: reports/figures
       hash: md5
-      md5: 35b6effcb25860933e0844f2e8a29db2.dir
-      size: 214662
+      md5: 9acf0be7170f857b50a17cf827804c13.dir
+      size: 216624
       nfiles: 16
     - path: reports/metrics.json
       hash: md5
-      md5: 2e3f89546a22124ed82fff329c581d37
-      size: 64883
+      md5: 0f047894b021a07f4d2be85a63b60cc4
+      size: 81459
     - path: reports/report.html
       hash: md5
-      md5: 76f9556002ca832fdc66183141f48b72
-      size: 42580
+      md5: 9fbcca574a9ff2194364b11101bc2691
+      size: 48519
     - path: reports/results.md
       hash: md5
-      md5: a6e03a15bf1c172002f484c853e08608
-      size: 22985
+      md5: 20d6ad61858b653799f63a216ce9770b
+      size: 26650
