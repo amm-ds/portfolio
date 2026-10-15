@@ -33,7 +33,7 @@ def test_rejects_zero_max_length() -> None:
 
 def test_rejects_extra_fields() -> None:
     with pytest.raises(ValidationError):
-        NLPConfig(unknown_field=1)  # type: ignore[call-arg]
+        NLPConfig(unknown_field=1)  # type: ignore[call-arg]  # deliberate extra=forbid probe
 
 
 def test_bounded_subsample_invariant() -> None:

@@ -18,15 +18,15 @@ import numpy as np
 import optuna
 import plotly.graph_objects as go
 import torch
-import yaml  # type: ignore[import-untyped]
-from datasets import Dataset  # type: ignore[import-untyped]
 from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
+from optuna.trial import TrialState
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import apply_theme, save_html, save_json
 
 from nlp_classification.config import HPOBest, NLPConfig
 from nlp_classification.model import train_nn
+from nlp_classification.shims import Dataset, yaml_safe_dump, yaml_safe_load
 
 logger = get_logger(__name__)
 
@@ -108,7 +108,7 @@ def run_hpo(
         epochs=int(study.best_params["epochs"]),
         best_val_f1_macro=float(study.best_value),
     )
-    n_pruned = sum(1 for t in study.trials if t.state == optuna.trial.TrialState.PRUNED)
+    n_pruned = sum(1 for t in study.trials if t.state == TrialState.PRUNED)
     logger.info(
         "HPO done: best val_f1=%.4f (lr=%.2e warmup=%.3f wd=%.3f epochs=%d), %d/%d trials pruned",
         best.best_val_f1_macro,
@@ -223,9 +223,9 @@ def persist_hpo(
 
     params_file = Path(params_path)
     if params_file.exists():
-        data: dict[str, Any] = yaml.safe_load(params_file.read_text()) or {}
+        data: dict[str, Any] = yaml_safe_load(params_file.read_text()) or {}
         data["hpo_best"] = best.model_dump()
-        params_file.write_text(yaml.safe_dump(data, sort_keys=False))
+        params_file.write_text(yaml_safe_dump(data, sort_keys=False))
 
 
 def hpo_history_figure(study: optuna.Study) -> go.Figure:

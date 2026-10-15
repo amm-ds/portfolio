@@ -15,13 +15,13 @@ from pathlib import Path
 from typing import Any, TypeVar, cast
 
 import numpy as np
-from datasets import Dataset, DatasetDict, load_dataset  # type: ignore[import-untyped]
 from portfolio_core.dq import DQReport
 from portfolio_core.io import sha256_of
 from portfolio_core.logging import get_logger
 from portfolio_core.schemas import DatasetContract
 
 from nlp_classification.config import NLPConfig
+from nlp_classification.shims import Dataset, DatasetDict, load_dataset
 
 logger = get_logger(__name__)
 

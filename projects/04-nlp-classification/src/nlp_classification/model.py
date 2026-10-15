@@ -15,7 +15,6 @@ from typing import Any, cast
 import joblib
 import numpy as np
 import torch
-from datasets import Dataset  # type: ignore[import-untyped]
 from portfolio_core.logging import get_logger
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -25,6 +24,7 @@ from torch.utils.data import DataLoader
 
 from nlp_classification.config import NLPConfig
 from nlp_classification.data import LABEL_COLUMN, TEXT_COLUMN
+from nlp_classification.shims import Dataset
 
 logger = get_logger(__name__)
 

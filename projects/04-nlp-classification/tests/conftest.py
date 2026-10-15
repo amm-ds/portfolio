@@ -3,8 +3,8 @@
 from collections.abc import Callable
 
 import pytest
-from datasets import ClassLabel, Dataset, DatasetDict, Features, Value  # type: ignore[import-untyped]
 from nlp_classification.data import LABEL_COLUMN, TEXT_COLUMN
+from nlp_classification.shims import ClassLabel, Dataset, DatasetDict, Features, Value
 
 N_CLASSES = 4
 CLASS_NAMES = ["World", "Sports", "Business", "Sci/Tech"]

@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from datasets import Dataset  # type: ignore[import-untyped]
 from nlp_classification.config import NLPConfig
 from nlp_classification.model import (
     TrainingHistory,
@@ -20,6 +19,7 @@ from nlp_classification.model import (
     train_baseline,
     train_nn,
 )
+from nlp_classification.shims import Dataset
 from torch import nn
 
 
