@@ -5,14 +5,25 @@ stages:
       - src/inference_serving
       - params.yaml
     outs:
-      - data
-  evaluate:
-    cmd: uv run python -m inference_serving.cli evaluate
+      - data/prompts.json
+
+  bench:
+    cmd: uv run python -m inference_serving.cli bench --full
     deps:
       - src/inference_serving
       - params.yaml
-      - data
+      - data/prompts.json
     outs:
-      - reports/metrics.json
+      - data/bench_run.json
+
+  report:
+    cmd: uv run python -m inference_serving.cli report
+    deps:
+      - src/inference_serving
+      - params.yaml
+      - data/bench_run.json
+    outs:
       - reports/report.html
       - reports/figures
+    metrics:
+      - reports/metrics.json

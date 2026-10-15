@@ -3,11 +3,12 @@ title: LLM Inference & Serving
 domain: Model serving & inference optimization
 topic: ML Systems & Decisioning
 techniques:
-- vLLM/llama.cpp
-- quantization
-- batching
-- latency SLOs
+- Ollama serving (OpenAI-compatible)
+- llama.cpp vs MLX runners
+- quantization (Q4_K_M / Q8_0 / QAT / MXFP4)
+- concurrency & latency percentiles
+- structured output (json_schema)
 - cost/token
-data: Open models (HF) + public benchmarks
-status: planned
+data: Fixed synthetic 8-prompt structured-output suite (no download)
+status: working
 order: 8

@@ -1,1 +1,65 @@
+# BenchConfig mirror (ADR-0002): every BenchConfig field appears here so DVC
+# params reproducing stays explicit. Models/arms can be trimmed without code
+# changes to fit a machine (e.g. drop qwen3:32b on smaller RAM).
 seed: 42
+
+base_url: http://localhost:11434
+request_timeout_s: 180
+max_tokens: 128
+temperature: 0.0
+reasoning_effort: none
+repeats: 5
+cooldown_s: 5
+keep_alive_s: 600
+
+# Primary arms (bounded default): MoE + dense + MXFP4 through local Ollama.
+models:
+  - name: qwen3.6:35b-a3b-q4_K_M
+    runner: llamacpp
+  - name: gemma4:31b
+    runner: mlx
+  - name: gpt-oss:20b
+    runner: llamacpp
+    reasoning_effort: low
+
+# Extra arms, --full only: dense 32B baseline.
+full_models:
+  - name: qwen3:32b
+    runner: llamacpp
+
+# Quality-vs-quant: second quant of gemma4:31b on the SAME (llama.cpp) runner.
+quality_models:
+  - name: gemma4:31b-it-qat
+    runner: llamacpp
+    role: quality
+
+# Engine comparison: same model family, GGUF/llama.cpp vs safetensors/MLX.
+# Quant is confounded (Q8_0 vs 4-bit) — read as engine+packaging.
+engine_models:
+  - name: gemma4:31b-it-q8_0
+    runner: llamacpp
+    role: engine
+  - name: gemma4:31b-mlx
+    runner: mlx
+    role: engine
+
+concurrency_default: [1, 4, 8]
+concurrency_full: [1, 2, 4, 8]
+
+# Cost section — declared assumptions, see DESIGN.md.
+usd_per_kwh: 0.30
+system_load_watts: 100
+# Hypothetical cloud rate card ($/1M OUTPUT tokens), labelled illustrative in
+# the report; not measured, not a quote.
+cloud_usd_per_mtok_output:
+  qwen3.6:35b-a3b-q4_K_M: 1.25
+  qwen3:32b: 0.60
+  gemma4:31b: 0.60
+  gemma4:31b-mlx: 0.60
+  gemma4:31b-it-q8_0: 0.90
+  gemma4:31b-it-qat: 0.60
+  gpt-oss:20b: 0.40
+
+prompts_path: data/prompts.json
+run_path: data/bench_run.json
+reports_dir: reports
