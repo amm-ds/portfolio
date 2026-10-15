@@ -17,8 +17,8 @@ stages:
       size: 6211
     - path: src/rag_agent/corpus.py
       hash: md5
-      md5: 62def3c9f4f9c3ef19a576f6e303d212
-      size: 12365
+      md5: e37e7ae1fad26ccabaa693c730ee9aa0
+      size: 12439
     - path: src/rag_agent/schemas.py
       hash: md5
       md5: 7a06b42a1e2983a15726449919ad3122
@@ -96,9 +96,9 @@ stages:
       size: 1602
     - path: src
       hash: md5
-      md5: 05f7d721e9cabcae409f5a37add559ee.dir
-      size: 229112
-      nfiles: 26
+      md5: 7ce983d42650a0cbab7eef10abc8f339.dir
+      size: 236102
+      nfiles: 30
     params:
       params.yaml:
         chunk_sizes:
@@ -116,8 +116,16 @@ stages:
         usd_per_mtok_input: 0.15
         usd_per_mtok_output: 0.6
     outs:
-    - path: reports
+    - path: reports/figures
       hash: md5
-      md5: d9ecdb8cf723f9e0868c883071b038c2.dir
-      size: 120876
-      nfiles: 15
+      md5: c38b1d9793b9e838e73a7e6aac95e98a.dir
+      size: 107262
+      nfiles: 12
+    - path: reports/metrics.json
+      hash: md5
+      md5: 300e329a6b8cee5182eac25b75f97d13
+      size: 6085
+    - path: reports/report.html
+      hash: md5
+      md5: cf378def4ea2f0280d91fbabf028601e
+      size: 4706

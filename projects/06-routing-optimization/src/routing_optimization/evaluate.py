@@ -1,10 +1,58 @@
-"""Evaluation pipeline: solve the subset, compare against best-known values.
+"""Evaluation pipeline orchestration for the routing-optimization showcase.
 
-Produces the markdown results table, ``metrics.json``, an HTML report and the
-portfolio-themed figures (gap-%, EDA instance map, route map, runtime). Solvers
-are timed per instance with :func:`time.perf_counter`; everything runs in
-seconds.
+Downloads/solves/evaluates are staged by the CLI and ``dvc.yaml``; this module
+holds the orchestration (data-quality gates, timed solver runs, the two seeded
+HPO stages, artifact persistence) and re-exports the figure builders
+(:mod:`routing_optimization.figures`) and markdown reporters
+(:mod:`routing_optimization.reporting`) for convenience and backward
+compatibility.
 """
+
+import csv
+import json
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import plotly.graph_objects as go
+import polars as pl
+import yaml  # type: ignore[import-untyped]
+from portfolio_core.dq import DQReport
+from portfolio_core.logging import get_logger
+from portfolio_core.plotting import save_html, save_json
+from portfolio_eval.report import EvalReport
+
+from routing_optimization.config import VRPConfig
+from routing_optimization.construct import (
+    clarke_wright_savings,
+    nearest_neighbor,
+    randomized,
+)
+from routing_optimization.figures import (
+    convergence_figure,
+    eda_instance_map_figure,
+    family_gap_figure,
+    gap_figure,
+    route_map_figure,
+    runtime_figure,
+    solver_profile_figure,
+)
+from routing_optimization.parser import parse_solomon_file
+from routing_optimization.reporting import (
+    family_markdown,
+    family_of,
+    gap_pct,
+    results_markdown,
+    summary_markdown,
+)
+from routing_optimization.schemas import AlnsTuning, Problem, RoutePlan, TwoOptTuning
+from routing_optimization.solver import alns, two_opt
+from routing_optimization.tuning import best_start, restart_plans, run_alns_hpo, run_hpo
+
+logger = get_logger(__name__)
+
+TWO_OPT_LABEL = "two_opt"
+
 
 import csv
 import json
@@ -64,12 +112,17 @@ class InstanceEvaluation:
     n_customers: int
     vehicle_capacity: float
     best_known: float | None
+    best_known_vehicles: int | None = None
     runs: list[SolverRun] = field(default_factory=list)
     best_routes: list[list[int]] | None = None
 
     def best(self) -> SolverRun:
         """The cheapest solver run."""
         return min(self.runs, key=lambda r: r.total_distance)
+
+    def best_by_benchmark_convention(self) -> SolverRun:
+        """Best run under the Solomon ranking: vehicles first, then distance."""
+        return min(self.runs, key=lambda r: (r.n_vehicles, r.total_distance))
 
 
 def canonical_instance_name(raw: str) -> str:
@@ -78,13 +131,17 @@ def canonical_instance_name(raw: str) -> str:
     return stem.upper().replace("_", "")
 
 
-def load_best_known(path: Path, supplement_path: Path | None = None) -> dict[str, float]:
-    """Load the curated best-known table, skipping ``#`` comment lines.
+def load_references(
+    path: Path, supplement_path: Path | None = None
+) -> dict[str, "Reference"]:
+    """Load best-known distance AND vehicle count per instance.
 
-    When ``supplement_path`` is given, project-local values fill the instances
-    the registry table does not list (registry wins on any conflict).
+    Vehicle count is the Solomon benchmark's primary ranking criterion
+    (SINTEF hierarchical objective), distance the tie-breaker. Rows with an
+    empty vehicle field yield ``Reference.vehicles=None`` (distance-only
+    comparison for those instances).
     """
-    table: dict[str, float] = {}
+    table: dict[str, Reference] = {}
 
     def _merge(source: Path) -> None:
         with source.open(newline="", encoding="utf-8") as fh:
@@ -93,9 +150,16 @@ def load_best_known(path: Path, supplement_path: Path | None = None) -> dict[str
                 if len(row) < 2 or not row[0].strip():
                     continue
                 try:
-                    table.setdefault(canonical_instance_name(row[0]), float(row[1]))
+                    distance = float(row[1])
                 except ValueError:
                     continue  # header row or non-numeric reference value
+                vehicles: int | None = None
+                if len(row) >= 3 and row[2].strip():
+                    try:
+                        vehicles = int(row[2])
+                    except ValueError:
+                        vehicles = None
+                table.setdefault(canonical_instance_name(row[0]), Reference(distance, vehicles))
 
     _merge(path)
     if supplement_path is not None and supplement_path.exists():
@@ -103,16 +167,17 @@ def load_best_known(path: Path, supplement_path: Path | None = None) -> dict[str
     return table
 
 
-def family_of(instance: str) -> str:
-    """Solomon family of an instance: C101 -> C1, RC208 -> RC2, R112 -> R1."""
-    letters = instance.rstrip("0123456789")
-    digits = instance[len(letters) :]
-    return f"{letters}{digits[0]}" if digits else letters
+def load_best_known(path: Path, supplement_path: Path | None = None) -> dict[str, float]:
+    """Distance-only view of :func:`load_references` (backward-compatible)."""
+    return {name: ref.distance for name, ref in load_references(path, supplement_path).items()}
 
 
-def gap_pct(distance: float, best_known: float) -> float:
-    """Optimality gap in percent relative to the best-known value."""
-    return (distance - best_known) / best_known * 100.0
+@dataclass(frozen=True)
+class Reference:
+    """Published best-known solution for one instance."""
+
+    distance: float
+    vehicles: int | None = None
 
 
 def run_dq(problem: Problem) -> DQReport:
@@ -197,238 +262,6 @@ def evaluate_instance(
     evaln.runs, plans = solve_with_timing(problem, max_iterations, seed=seed)
     evaln.best_routes = plans[evaln.best().solver].routes
     return evaln
-
-
-def gap_figure(rows: pl.DataFrame) -> go.Figure:
-    """Grouped bar: gap to best-known (%) per instance, one group per solver."""
-    fig = px.bar(
-        rows,
-        x="instance",
-        y="gap_pct",
-        color="solver",
-        barmode="group",
-        title="Optimality gap vs best-known (%) — Solomon 100-customer subset",
-        labels={"gap_pct": "gap %", "instance": "instance", "solver": "solver"},
-    )
-    fig.add_hline(y=0.0, line_color="#94a3b8", line_width=1)
-    return apply_theme(fig)
-
-
-def runtime_figure(rows: pl.DataFrame) -> go.Figure:
-    """Grouped bar: solver runtime per instance (seconds, log scale)."""
-    fig = px.bar(
-        rows,
-        x="instance",
-        y="runtime_s",
-        color="solver",
-        barmode="group",
-        log_y=True,
-        title="Solver runtime per instance (s, log scale)",
-        labels={"runtime_s": "runtime (s)", "instance": "instance", "solver": "solver"},
-    )
-    return apply_theme(fig)
-
-
-def route_map_figure(problem: Problem, routes: list[list[int]], title: str) -> go.Figure:
-    """Depot + customer scatter with route polylines colored per vehicle."""
-    customers = problem.customers
-    depot = problem.depot
-    palette = px.colors.qualitative.Plotly
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=[depot.x],
-            y=[depot.y],
-            mode="markers",
-            name="depot",
-            marker_symbol="star",
-            marker_size=16,
-            marker_color="#fbbf24",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=[c.x for c in customers[1:]],
-            y=[c.y for c in customers[1:]],
-            mode="markers",
-            name="customers",
-            marker_size=5,
-            marker_color="#64748b",
-        )
-    )
-    for k, route in enumerate(routes):
-        pts = [depot] + [customers[cid] for cid in route] + [depot]
-        fig.add_trace(
-            go.Scatter(
-                x=[c.x for c in pts],
-                y=[c.y for c in pts],
-                mode="lines+markers",
-                name=f"vehicle {k + 1}",
-                line_color=palette[k % len(palette)],
-                line_width=2,
-                marker_size=4,
-            )
-        )
-    fig.update_layout(title=title, showlegend=True)
-    fig.update_yaxes(scaleanchor="x", scaleratio=1)
-    return apply_theme(fig, width=900, height=760)
-
-
-def eda_instance_map_figure(problem: Problem) -> go.Figure:
-    """Customer scatter colored by time-window tightness (``due - ready``).
-
-    Narrow windows constrain route timing more than geography alone suggests;
-    tight customers (small ``due - ready``) are the ones a solver must visit
-    within a narrow time band. The depot is marked with a star.
-    """
-    customers = problem.customers
-    depot = problem.depot
-    tightness = [c.due_time - c.ready_time for c in customers[1:]]
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=[depot.x],
-            y=[depot.y],
-            mode="markers",
-            name="depot",
-            marker_symbol="star",
-            marker_size=16,
-            marker_color="#fbbf24",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=[c.x for c in customers[1:]],
-            y=[c.y for c in customers[1:]],
-            mode="markers",
-            name="customers",
-            marker_size=7,
-            marker_color=tightness,
-            marker_colorscale="Plasma",
-            marker_showscale=True,
-            marker_colorbar={"title": "window width<br>(due - ready)"},
-        )
-    )
-    fig.update_layout(
-        title=f"{problem.name} — customer geography colored by time-window tightness",
-        showlegend=True,
-    )
-    fig.update_yaxes(scaleanchor="x", scaleratio=1)
-    return apply_theme(fig, width=900, height=760)
-
-
-def convergence_figure(history: dict[str, list[float]], instance: str) -> go.Figure:
-    """Best-found distance vs accepted-move count, tuned vs untuned overlay.
-
-    ``history`` maps a solver label to its trace (index 0 is the construction
-    start). The construction start is explicitly marked, and the tuned curve
-    is promoted via :func:`portfolio_core.plotting.style_runs`.
-    """
-    fig = go.Figure()
-    for label in ("untuned", "tuned"):
-        values = history[label]
-        fig.add_trace(
-            go.Scatter(
-                x=list(range(len(values))),
-                y=values,
-                mode="lines+markers",
-                name="two_opt_tuned" if label == "tuned" else "two_opt",
-            )
-        )
-    tuned = history["tuned"]
-    fig.add_trace(
-        go.Scatter(
-            x=[0],
-            y=[tuned[0]],
-            mode="markers",
-            name="construction start",
-            marker_symbol="star",
-            marker_size=14,
-            marker_color="#fbbf24",
-        )
-    )
-    reduction = (tuned[0] - tuned[-1]) / tuned[0] * 100.0
-    style_runs(fig, best="two_opt_tuned")
-    add_takeaway(
-        fig,
-        f"construction {tuned[0]:.1f} -> tuned {tuned[-1]:.1f} "
-        f"(-{reduction:.1f}%) in {len(tuned) - 1} accepted moves",
-    )
-    fig.update_layout(
-        title=f"{instance} — 2-opt convergence",
-        xaxis_title="accepted moves",
-        yaxis_title="total distance",
-        showlegend=True,
-    )
-    return apply_theme(fig)
-
-
-def _style_runs_safe(fig: go.Figure, best: str) -> go.Figure:
-    """Apply the platform run-styling; fall back to marker colors for bar traces.
-
-    ``style_runs`` sets ``line=`` which scatter traces accept but bar traces
-    reject, so grouped-bar figures get the equivalent marker-color treatment
-    (grey baselines, accent best) via the public ``is_baseline_run`` hint.
-    """
-    try:
-        return style_runs(fig, best=best)
-    except ValueError:
-        for trace in fig.data:
-            name = str(getattr(trace, "name", "") or "")
-            if best.lower() in name.lower():
-                trace.update(marker={"color": "#2dd4bf"})
-            elif is_baseline_run(name):
-                trace.update(marker={"color": "#64748b"})
-        return fig
-
-
-def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
-    """Per-instance solver profile: grouped distance bars on a log scale.
-
-    Baselines are visually demoted (grey) and the tuned run promoted, so the
-    solver ladder reads instantly.
-    """
-    fig = px.bar(
-        rows,
-        x="instance",
-        y="distance",
-        color="solver",
-        barmode="group",
-        log_y=True,
-        title="Solver profile per instance (total distance, log scale)",
-        labels={"distance": "total distance", "instance": "instance", "solver": "solver"},
-    )
-    _style_runs_safe(fig, best="two_opt_tuned")
-    add_takeaway(
-        fig,
-        "constraint-aware construction (savings) removes most of the randomized floor; "
-        "tuned 2-opt closes a further few percent",
-    )
-    return apply_theme(fig)
-
-
-def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
-    """Mean optimality gap per Solomon family (C1/C2/R1/R2/RC1/RC2) per solver."""
-    fig = px.bar(
-        rows,
-        x="family",
-        y="gap_pct",
-        color="solver",
-        barmode="group",
-        title="Mean gap to best-known by Solomon family",
-        labels={"gap_pct": "mean gap %", "family": "family", "solver": "solver"},
-    )
-    _style_runs_safe(fig, best="alns")
-    add_takeaway(
-        fig,
-        "ALNS closes the gap on every family, single digits on C1/RC1; "
-        "baselines stay orders of magnitude behind",
-    )
-    return apply_theme(fig)
-
-
-# ---------------------------------------------------------------------------
-# Pipeline stages (used by the CLI and dvc.yaml)
 
 
 def run_solve(cfg: VRPConfig) -> Path:
@@ -632,73 +465,6 @@ def _solver_gaps(evaln: InstanceEvaluation) -> dict[str, float | None]:
     return gaps
 
 
-def results_markdown(evaluations: list[InstanceEvaluation]) -> str:
-    """Full per-instance markdown results table."""
-    lines = [
-        "| instance | best known | solver | distance | vehicles | gap % | runtime (ms) |",
-        "|---|---|---|---|---|---|---|",
-    ]
-    for ev in evaluations:
-        for r in ev.runs:
-            gap = (
-                "n/a"
-                if ev.best_known is None
-                else f"{gap_pct(r.total_distance, ev.best_known):.2f}"
-            )
-            best_marker = " **(best)**" if r == ev.best() else ""
-            lines.append(
-                f"| {ev.instance} | {ev.best_known if ev.best_known is not None else 'n/a'} "
-                f"| {r.solver}{best_marker} | {r.total_distance:.2f} | {r.n_vehicles} "
-                f"| {gap} | {r.runtime_s * 1e3:.1f} |"
-            )
-    return "\n".join(lines)
-
-
-def summary_markdown(evaluations: list[InstanceEvaluation]) -> str:
-    """Mean gap / runtime / vehicles per solver across instances."""
-    lines = [
-        "| solver | mean gap % | mean distance | mean vehicles | mean runtime (ms) |",
-        "|---|---|---|---|---|",
-    ]
-    solvers = sorted({r.solver for ev in evaluations for r in ev.runs})
-    for solver in solvers:
-        gaps = [
-            gap_pct(r.total_distance, ev.best_known)
-            for ev in evaluations
-            for r in ev.runs
-            if r.solver == solver and ev.best_known is not None
-        ]
-        runs = [r for ev in evaluations for r in ev.runs if r.solver == solver]
-        mean_gap = f"{sum(gaps) / len(gaps):.2f}" if gaps else "n/a"
-        mean_dist = sum(r.total_distance for r in runs) / len(runs)
-        mean_veh = sum(r.n_vehicles for r in runs) / len(runs)
-        mean_rt = sum(r.runtime_s for r in runs) / len(runs) * 1e3
-        lines.append(
-            f"| {solver} | {mean_gap} | {mean_dist:.2f} | {mean_veh:.1f} | {mean_rt:.1f} |"
-        )
-    return "\n".join(lines)
-
-
-def family_markdown(evaluations: list[InstanceEvaluation]) -> str:
-    """Mean gap per Solomon family per solver (instances with a reference)."""
-    lines = [
-        "| family | instances | solver | mean gap % |",
-        "|---|---|---|---|",
-    ]
-    families = sorted({family_of(ev.instance) for ev in evaluations})
-    for fam in families:
-        members = [ev for ev in evaluations if family_of(ev.instance) == fam and ev.best_known]
-        for solver in sorted({r.solver for ev in members for r in ev.runs}):
-            gaps = [
-                gap_pct(r.total_distance, ev.best_known)
-                for ev in members
-                for r in ev.runs
-                if r.solver == solver and ev.best_known is not None
-            ]
-            if gaps:
-                lines.append(f"| {fam} | {len(members)} | {solver} | {sum(gaps) / len(gaps):.2f} |")
-    return "\n".join(lines)
-
 
 def run_evaluate(cfg: VRPConfig) -> Path:
     """Compute gaps, build figures and write all evaluation artifacts."""
@@ -708,7 +474,7 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             f"{solutions_path} missing — run `routing_optimization solve` first"
         )
     solutions = json.loads(solutions_path.read_text())
-    best_known_table = load_best_known(cfg.best_known_path, cfg.best_known_supplement_path)
+    references = load_references(cfg.best_known_path, cfg.best_known_supplement_path)
 
     evaluations: list[InstanceEvaluation] = []
     for inst, data in solutions["instances"].items():
@@ -722,12 +488,14 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             )
             for name, res in data["solvers"].items()
         ]
+        ref = references.get(canonical_instance_name(inst))
         evaluations.append(
             InstanceEvaluation(
                 instance=inst,
                 n_customers=int(data["n_customers"]),
                 vehicle_capacity=float(data["vehicle_capacity"]),
-                best_known=best_known_table.get(canonical_instance_name(inst)),
+                best_known=ref.distance if ref else None,
+                best_known_vehicles=ref.vehicles if ref else None,
                 runs=solvers,
                 best_routes=data["best"]["routes"],
             )
@@ -741,6 +509,16 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         }
         for ev in evaluations
         if ev.best_known is not None
+        for r in ev.runs
+    )
+    veh_rows = pl.DataFrame(
+        {
+            "instance": ev.instance,
+            "solver": r.solver,
+            "veh_delta": r.n_vehicles - ev.best_known_vehicles,
+        }
+        for ev in evaluations
+        if ev.best_known is not None and ev.best_known_vehicles is not None
         for r in ev.runs
     )
     runtime_rows = pl.DataFrame(
@@ -787,6 +565,11 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             "family": family_of(ev.instance),
             "solver": r.solver,
             "gap_pct": round(gap_pct(r.total_distance, ev.best_known), 4),
+            "veh_delta": (
+                r.n_vehicles - ev.best_known_vehicles
+                if ev.best_known_vehicles is not None
+                else None
+            ),
         }
         for ev in evaluations
         if ev.best_known is not None
@@ -844,13 +627,35 @@ def run_evaluate(cfg: VRPConfig) -> Path:
                     / max(sum(1 for ev in evaluations for r in ev.runs if r.solver == solver), 1),
                     2,
                 ),
+                "mean_vehicle_delta": (
+                    round(
+                        sum(
+                            r.n_vehicles - ev.best_known_vehicles
+                            for ev in evaluations
+                            for r in ev.runs
+                            if r.solver == solver and ev.best_known_vehicles is not None
+                        )
+                        / max(
+                            sum(
+                                1
+                                for ev in evaluations
+                                for r in ev.runs
+                                if r.solver == solver and ev.best_known_vehicles is not None
+                            ),
+                            1,
+                        ),
+                        2,
+                    )
+                ),
             }
             for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
         },
         "instances": {
             ev.instance: {
                 "best_known": ev.best_known,
+                "best_known_vehicles": ev.best_known_vehicles,
                 "best_solver": ev.best().solver,
+                "best_solver_benchmark_convention": ev.best_by_benchmark_convention().solver,
                 "best_distance": round(ev.best().total_distance, 4),
                 "best_gap_pct": (
                     None
@@ -866,12 +671,44 @@ def run_evaluate(cfg: VRPConfig) -> Path:
                             if ev.best_known is None
                             else round(gap_pct(r.total_distance, ev.best_known), 4)
                         ),
+                        "vehicle_delta": (
+                            None
+                            if ev.best_known_vehicles is None
+                            else r.n_vehicles - ev.best_known_vehicles
+                        ),
                         "runtime_s": round(r.runtime_s, 6),
                     }
                     for r in ev.runs
                 },
             }
             for ev in evaluations
+        },
+        "ranking": {
+            "by_distance": dict(
+                sorted(
+                    {
+                        solver: sum(
+                            1
+                            for ev in evaluations
+                            if ev.best().solver == solver and ev.best_known is not None
+                        )
+                        for solver in {r.solver for ev in evaluations for r in ev.runs}
+                    }.items()
+                )
+            ),
+            "by_vehicles_then_distance": dict(
+                sorted(
+                    {
+                        solver: sum(
+                            1
+                            for ev in evaluations
+                            if ev.best_by_benchmark_convention().solver == solver
+                            and ev.best_known is not None
+                        )
+                        for solver in {r.solver for ev in evaluations for r in ev.runs}
+                    }.items()
+                )
+            ),
         },
         "tuning": {
             "solver_best": solutions.get("solver_best"),
@@ -900,6 +737,33 @@ def run_evaluate(cfg: VRPConfig) -> Path:
                         1,
                     ),
                     4,
+                )
+                for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
+            }
+            for fam in sorted({family_of(ev.instance) for ev in evaluations})
+        },
+        "family_vehicle_deltas": {
+            fam: {
+                solver: round(
+                    sum(
+                        r.n_vehicles - ev.best_known_vehicles
+                        for ev in evaluations
+                        if family_of(ev.instance) == fam and ev.best_known_vehicles is not None
+                        for r in ev.runs
+                        if r.solver == solver
+                    )
+                    / max(
+                        sum(
+                            1
+                            for ev in evaluations
+                            if family_of(ev.instance) == fam
+                            and ev.best_known_vehicles is not None
+                            for r in ev.runs
+                            if r.solver == solver
+                        ),
+                        1,
+                    ),
+                    2,
                 )
                 for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
             }
