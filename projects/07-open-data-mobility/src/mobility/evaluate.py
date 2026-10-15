@@ -52,19 +52,39 @@ def available_runs(preds: pl.DataFrame) -> list[tuple[str, str]]:
     return [(n, c) for n, c in MODEL_PREDS if c in preds.columns]
 
 
-def _run_metrics(preds: pl.DataFrame, name: str, col: str) -> RunResult:
+_NAIVE_SCALE: float | None = None
+
+
+def naive_scale(cfg: MobilityConfig) -> float | None:
+    """In-sample seasonal-naive-24 error: mean |y_t - y_{t-24}| over train.
+
+    MASE denominator; None when the train matrix is unavailable (unit tests).
+    """
+    global _NAIVE_SCALE
+    if _NAIVE_SCALE is not None:
+        return _NAIVE_SCALE
+    path = cfg.features_dir / "train.parquet"
+    if not path.exists():
+        return None
+    train = pl.read_parquet(path)
+    diff = (train["target"] - train["lag_24"]).abs().mean()
+    scale = cast(float, diff) if diff is not None else None
+    _NAIVE_SCALE = scale if scale is not None and scale > 0 else None
+    return _NAIVE_SCALE
+
+
+def _run_metrics(preds: pl.DataFrame, name: str, col: str, scale: float | None = None) -> RunResult:
     results = regression_metrics(preds["y_true"].to_list(), preds[col].to_list())
-    return RunResult(
-        name=name,
-        metrics=[
-            MetricResult(m.name, m.value, higher_is_better=False, split="test") for m in results
-        ],
-    )
+    out = [MetricResult(m.name, m.value, higher_is_better=False, split="test") for m in results]
+    if scale:
+        mae = next(m.value for m in results if m.name == "mae")
+        out.append(MetricResult("mase", mae / scale, higher_is_better=False, split="test"))
+    return RunResult(name=name, metrics=out)
 
 
-def overall_metrics(preds: pl.DataFrame) -> list[RunResult]:
-    """MAE/RMSE/MAPE per model on the temporal test window."""
-    return [_run_metrics(preds, name, col) for name, col in available_runs(preds)]
+def overall_metrics(preds: pl.DataFrame, scale: float | None = None) -> list[RunResult]:
+    """MAE/RMSE/MAPE (+MASE when the naive scale is available) per model."""
+    return [_run_metrics(preds, name, col, scale) for name, col in available_runs(preds)]
 
 
 def baseline_deltas(runs: list[RunResult], baseline: str = "naive_lag24") -> dict[str, Any]:
@@ -370,6 +390,64 @@ def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
     return apply_theme(fig)
 
 
+def fig_zone_fan(preds: pl.DataFrame, top_n: int = 2, days: int = 14) -> go.Figure:
+    """Per-zone forecast fan: actual + GBM mean + p90 band for the busiest zones."""
+    gbm_col = "y_gbm_tuned" if "y_gbm_tuned" in preds.columns else "y_gbm"
+    p90_col = "y_p90_tuned" if "y_p90_tuned" in preds.columns else "y_p90"
+    top_zones = (
+        preds.group_by(["zone_id", "borough"])
+        .agg(pl.col("y_true").sum())
+        .sort("y_true", descending=True)
+        .head(top_n)["zone_id"]
+        .to_list()
+    )
+    window = preds.filter(
+        pl.col("ts").is_between(WEEK_START, WEEK_START + pl.duration(days=days), closed="left"),
+        pl.col("zone_id").is_in(top_zones),
+    )
+    fig = make_subplots(
+        rows=top_n,
+        cols=1,
+        shared_xaxes=True,
+        subplot_titles=[f"zone {z}" for z in top_zones],
+        vertical_spacing=0.08,
+    )
+    for i, zid in enumerate(top_zones, start=1):
+        zdf = window.filter(pl.col("zone_id") == zid).sort("ts")
+        x = zdf["ts"].to_list()
+        mean = zdf[gbm_col].to_list()
+        upper = zdf[p90_col].to_list()
+        fig.add_trace(
+            go.Scatter(x=x, y=upper, name="p90", line={"width": 0}, showlegend=i == 1),
+            row=i,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=x,
+                y=mean,
+                name="gbm mean",
+                line={"color": "#2dd4bf"},
+                fill="tonexty",
+                fillcolor="rgba(45,212,191,0.25)",
+                showlegend=i == 1,
+            ),
+            row=i,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(x=x, y=zdf["y_true"].to_list(), name="actual", line={"color": "#f472b6"}),
+            row=i,
+            col=1,
+        )
+    fig.update_layout(
+        title=f"Forecast fan (mean + p90 band) — top {top_n} busiest zones, "
+        f"{days} days from {WEEK_START.date()}",
+        hovermode="x unified",
+    )
+    return apply_theme(fig, height=340 * top_n)
+
+
 def p90_coverage(preds: pl.DataFrame, col: str = "y_p90") -> float:
     """Fraction of actuals at or below the p90 prediction (~0.9 = calibrated)."""
     return cast(float, (preds["y_true"] <= preds[col]).mean())
@@ -498,7 +576,8 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     demand = pl.read_parquet(cfg.zone_hour_demand_path)
     zones = pl.read_parquet(cfg.zones_path)
 
-    runs = overall_metrics(preds)
+    scale = naive_scale(cfg)
+    runs = overall_metrics(preds, scale)
     comparison_md = RunComparison(runs).to_markdown()
     ranking = compare_runs(runs, "mae")
     borough_mae = per_borough_mae(preds)
@@ -534,6 +613,14 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     }
     if importance_fig is not None:
         figures["gbm_feature_importance"] = importance_fig
+    figures["zone_fan"] = fig_zone_fan(preds)
+    try:
+        from mobility.geo import fig_zone_demand_map, fig_zone_residual_map
+
+        figures["zone_demand_map"] = fig_zone_demand_map(demand)
+        figures["zone_residual_map"] = fig_zone_residual_map(preds)
+    except FileNotFoundError as e:
+        logger.warning("geo figures skipped: %s", e)
 
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = cfg.reports_dir / "figures"

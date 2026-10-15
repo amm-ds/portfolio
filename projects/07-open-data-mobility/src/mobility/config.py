@@ -18,6 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 TLC_BASE_URL = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_{month}.parquet"
 ZONE_LOOKUP_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv"
+ZONE_SHAPES_URL = "https://d37ci6vzurychx.cloudfront.net/misc/taxi_zones.zip"
 NOAA_URL = "https://www.ncei.noaa.gov/pub/data/ghcn/daily/by_station/USW00094728.csv.gz"
 
 
@@ -91,6 +92,7 @@ class MobilityConfig(PortfolioBaseModel):
     tlc_base_url: str = TLC_BASE_URL
     tlc_green_base_url: str = TLC_BASE_URL.replace("yellow_tripdata", "green_tripdata")
     zone_lookup_url: str = ZONE_LOOKUP_URL
+    zone_shapes_url: str = ZONE_SHAPES_URL
     noaa_url: str = NOAA_URL
 
     # Paths (absolute, anchored at the project root)

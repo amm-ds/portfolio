@@ -15,6 +15,10 @@ dependencies = [
     # sklearn baseline so the run ladder isolates library differences, not model class.
     "xgboost>=2.0",
     "lightgbm>=4.0",
+    # Flagship geo view (wave 13): TLC zone choropleths (boundaries source
+    # pinned in the data registry); pyogrio is the fast vectorio backend.
+    "geopandas>=1.0",
+    "pyogrio>=0.9",
     "portfolio-core",
     "portfolio-eval",
 ]
