@@ -1,8 +1,8 @@
 # Projects
 
-Seven showcases across agentic AI, classical ML, deep learning, optimization,
-and large-scale open-data engineering. Each page links the problem, the design
-record, and the evaluation artifacts.
+Nine showcases across agentic AI, classical ML, deep learning, optimization,
+decision science, and large-scale open-data engineering. Each page links the
+problem, the design record, and the evaluation artifacts.
 
 | # | Project | Domain | Data | Status |
 |---|---|---|---|---|
@@ -15,3 +15,4 @@ record, and the evaluation artifacts.
 | 07 | [Urban Mobility Demand Intelligence](07-open-data-mobility.md) | Data engineering + ML | NYC TLC + NOAA | **Flagship — complete** |
 | 08 | LLM Inference & Serving *(planned)* | Model serving | Open models + benchmarks | Planned |
 | 09 | [Agentic AI Workflows](09-agentic-workflows.md) | Agentic AI | Synthetic tool-using suite | Working showcase |
+| 10 | [Retention Uplift & Experimentation](10-uplift-experimentation.md) | Decision Science | Hillstrom email (MineThatData) | Working showcase |

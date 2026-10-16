@@ -1,0 +1,13 @@
+id: 10-uplift-experimentation
+title: Retention Uplift & Experimentation
+domain: Decision Science
+topic: Decision Science
+techniques:
+- CUPED variance reduction
+- power analysis
+- uplift meta-learners (T/X)
+- Qini evaluation
+- profit-based targeting policy
+data: Hillstrom email marketing (MineThatData, ~64k customers, sha256-pinned)
+status: working
+order: 10

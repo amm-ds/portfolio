@@ -1,0 +1,156 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run python -m uplift_experimentation.cli prepare --params-file 
+      params.yaml
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: 167e341745f664fcea56df08e49175a7
+      size: 925
+    - path: src/uplift_experimentation/
+      hash: md5
+      md5: 8fa407513022edfa727ea3f9a574c422.dir
+      size: 127595
+      nfiles: 23
+    params:
+      params.yaml:
+        control_segment: No E-Mail
+        hillstrom_sha256: 
+          0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece
+        hillstrom_source: 
+          http://minethatdata.com/Kevin_Hillstrom_MineThatData_E-MailAnalytics_DataMiningChallenge_2008.03.20.csv
+        seed: 42
+        treatment_segment: Mens E-Mail
+    outs:
+    - path: data/dataset_contract.json
+      hash: md5
+      md5: 6492fa6e63ec4523d2f3e974045187e9
+      size: 420
+    - path: data/hillstrom.parquet
+      hash: md5
+      md5: 78f7c56f7d877b21f2894478651377cf
+      size: 464287
+    - path: data/raw/hillstrom.csv
+      hash: md5
+      md5: 0af45f3c7ee495ed5654b398b1aab809
+      size: 3964977
+    - path: reports/figures/eda_segment_profile.html
+      hash: md5
+      md5: e308504a772a6d6c33751a9d697be28b
+      size: 10263
+    - path: reports/figures/eda_segment_profile.json
+      hash: md5
+      md5: 4ad4bf40f321ef0df24b0a253b4e197e
+      size: 9266
+    - path: reports/segment_summary.json
+      hash: md5
+      md5: c510abda79aea910ed0e9f21004d08e2
+      size: 762
+  train:
+    cmd: uv run python -m uplift_experimentation.cli train --params-file 
+      params.yaml
+    deps:
+    - path: data/hillstrom.parquet
+      hash: md5
+      md5: 78f7c56f7d877b21f2894478651377cf
+      size: 464287
+    - path: params.yaml
+      hash: md5
+      md5: 167e341745f664fcea56df08e49175a7
+      size: 925
+    - path: src/uplift_experimentation/
+      hash: md5
+      md5: 8fa407513022edfa727ea3f9a574c422.dir
+      size: 127595
+      nfiles: 23
+    params:
+      params.yaml:
+        cv_folds: 5
+        seed: 42
+    outs:
+    - path: data/scores.parquet
+      hash: md5
+      md5: c49c6aa6c40720defc171b10f7bbdf9d
+      size: 1104464
+  evaluate:
+    cmd: uv run python -m uplift_experimentation.cli evaluate --params-file 
+      params.yaml
+    deps:
+    - path: data/scores.parquet
+      hash: md5
+      md5: c49c6aa6c40720defc171b10f7bbdf9d
+      size: 1104464
+    - path: params.yaml
+      hash: md5
+      md5: 167e341745f664fcea56df08e49175a7
+      size: 925
+    - path: src/uplift_experimentation/
+      hash: md5
+      md5: 8fa407513022edfa727ea3f9a574c422.dir
+      size: 127595
+      nfiles: 23
+    params:
+      params.yaml:
+        alpha: 0.05
+        budget_fractions:
+        - 0.05
+        - 0.1
+        - 0.15
+        - 0.2
+        - 0.25
+        - 0.3
+        - 0.4
+        - 0.5
+        - 0.6
+        - 0.7
+        - 0.8
+        - 0.9
+        - 1.0
+        cost_per_email: 0.01
+        cuped_covariate: log_history
+        margin_per_conversion: 114.0
+        n_deciles: 10
+        policy_budget: 0.25
+        power: 0.8
+    outs:
+    - path: reports/figures/cuped_variance.html
+      hash: md5
+      md5: c01d37f3b51bb9c74ae3602fe466fe02
+      size: 9319
+    - path: reports/figures/cuped_variance.json
+      hash: md5
+      md5: f856a9f231789cd26df708242d013ded
+      size: 8322
+    - path: reports/figures/profit_frontier.html
+      hash: md5
+      md5: cd40843b23bc32f98173de4275edfc9f
+      size: 3189432
+    - path: reports/figures/profit_frontier.json
+      hash: md5
+      md5: 614b8a1491fd93cc01514d7ad0e5af77
+      size: 3188435
+    - path: reports/figures/qini_curves.html
+      hash: md5
+      md5: e4a13e274fcf880edac6ead5e26e0aaa
+      size: 3189002
+    - path: reports/figures/qini_curves.json
+      hash: md5
+      md5: e2c9b3907b2203a08570053238f02b4e
+      size: 3188005
+    - path: reports/figures/uplift_by_decile.html
+      hash: md5
+      md5: 86260c5938a0fd94c68a54cac0d1d122
+      size: 9363
+    - path: reports/figures/uplift_by_decile.json
+      hash: md5
+      md5: 0a36c43ca031d589032cc9f166ffd1a0
+      size: 8366
+    - path: reports/metrics.json
+      hash: md5
+      md5: 004b545d74cfff0e87c59d265cd83c83
+      size: 3934
+    - path: reports/report.html
+      hash: md5
+      md5: 78358d41c2a4fe1abbc766fd074e2ecd
+      size: 3784

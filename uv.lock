@@ -26,6 +26,7 @@ members = [
     "07-open-data-mobility",
     "08-inference-serving",
     "09-agentic-workflows",
+    "10-uplift-experimentation",
     "amm-ds-portfolio",
     "portfolio-core",
     "portfolio-eval",
@@ -304,6 +305,35 @@ requires-dist = [
     { name = "portfolio-eval", editable = "libs/portfolio-eval" },
     { name = "pydantic-ai", specifier = ">=2.55" },
     { name = "pydantic-evals", specifier = ">=2.55" },
+    { name = "typer", specifier = ">=0.12" },
+]
+
+[[package]]
+name = "10-uplift-experimentation"
+version = "0.1.0"
+source = { editable = "projects/10-uplift-experimentation" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "polars" },
+    { name = "portfolio-core" },
+    { name = "portfolio-eval" },
+    { name = "pyyaml" },
+    { name = "scikit-learn" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "numpy", specifier = ">=2.1" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "plotly", specifier = ">=5.24" },
+    { name = "polars", specifier = ">=1.9" },
+    { name = "portfolio-core", editable = "libs/portfolio-core" },
+    { name = "portfolio-eval", editable = "libs/portfolio-eval" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "scikit-learn", specifier = ">=1.5" },
     { name = "typer", specifier = ">=0.12" },
 ]
 
