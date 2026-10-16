@@ -1,0 +1,71 @@
+name: drift-observatory
+
+on:
+  schedule:
+    # Thursdays — TLC months typically publish with ~2 months delay
+    - cron: "37 6 * * 4"
+  workflow_dispatch:
+    inputs:
+      month:
+        description: "TLC month to score (YYYY-MM); default = newest available"
+        required: false
+
+# Serialize with the docs deploy; never cancel an in-flight observatory run.
+concurrency:
+  group: drift-observatory
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  drift-check:
+    runs-on: macos-15 # Apple Silicon runner family; the pinned model + artifacts are arch-portable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install workspace (runtime deps only)
+        run: uv sync --all-packages
+
+      # The pinned serving artifacts are DVC outs; without a remote we cannot
+      # `dvc pull`, so the observatory retrains the cheap path from features.
+      # Features/curated are regenerated only if missing (dvc repro skips warm outs).
+      - name: Restore pipeline state
+        working-directory: projects/07-open-data-mobility
+        run: |
+          uv run dvc repro --downstream features || true
+
+      - name: Score the newest TLC month against the pinned model
+        id: drift
+        working-directory: projects/07-open-data-mobility
+        env:
+          DRIFT_MONTH: ${{ inputs.month }}
+        run: |
+          MONTH="${DRIFT_MONTH:-$(date -u -v-65d +%Y-%m)}"
+          echo "Scoring TLC month: $MONTH"
+          uv run python -m mobility.cli drift-check --month "$MONTH" --fail-on-regression
+        # exit 1 = regression beyond tolerance (documented in the drift report)
+
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: projects/07-open-data-mobility/reports/drift/
+          if-no-files-found: ignore
+
+      - name: Open regression issue (only on drift)
+        if: failure() && steps.drift.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create --title "Drift observatory: regression detected ($(date -u +%Y-%m-%d))" \
+            --label drift \
+            --body "The weekly drift check scored a new TLC month against the pinned 07 model and found a regression beyond tolerance. See the 'drift-report' artifact of run ${{ github.run_id }} and docs/runbooks/drift-response.md."

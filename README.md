@@ -74,6 +74,12 @@ on the same platform, designed for deepening.
 - **Review culture:** PR template with design questions, engineering playbook
   ([docs/engineering-playbook.md](docs/engineering-playbook.md)).
 
+## Live demo
+
+The showcase app runs locally via `make docker-up`; the public deployment link lands
+here once the Hetzner host is live (see `deploy/DEPLOY.md`). The docs site is always
+available: https://amm-ds.github.io/portfolio/
+
 ## Reproduce in 3 commands
 
 ```bash
