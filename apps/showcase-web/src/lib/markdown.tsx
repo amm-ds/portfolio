@@ -1,10 +1,12 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { MermaidDiagram } from "../components/MermaidDiagram";
 
 // Minimal, safe markdown → React renderer. Supports what story.yaml prose
-// uses: paragraphs, **bold**, *emphasis*, `code`, -/* / N. / N) lists, pipe
-// tables, and fenced code blocks (```lang; ```mermaid renders as a diagram).
-// Everything is rendered as React text nodes — no HTML injection surface.
+// uses: paragraphs, **bold**, *emphasis*, `code`, -/* / N. / N) lists (with
+// GFM-style indented continuation lines for wrapped items), pipe tables,
+// thematic breaks (---/***/___), and fenced code blocks (```lang; ```mermaid
+// renders as a diagram). Everything is rendered as React text nodes — no HTML
+// injection surface.
 
 const INLINE_RE = /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*)/g;
 
@@ -30,6 +32,10 @@ const OL_ITEM_RE = /^\s*\d+[.)]\s+/;
 // GFM separator row: only pipes, dashes, colons and whitespace; needs a dash.
 const TABLE_SEP_RE = /^\s*\|?[\s:|-]+\|?\s*$/;
 const FENCE_RE = /^\s*```/;
+// Thematic break: --- / *** / ___ (surrounding whitespace allowed).
+const HR_RE = /^\s*(?:-{3}|\*{3}|_{3})\s*$/;
+// Indented (2+ spaces) non-item line: continuation of the preceding list item.
+const CONTINUATION_RE = /^\s{2,}\S/;
 
 function isTableSeparator(line: string): boolean {
   return line.includes("-") && TABLE_SEP_RE.test(line);
@@ -83,23 +89,49 @@ function renderBlock(lines: string[], keyPrefix: string): ReactNode {
     const rowLines = lines.slice(sepIdx + 1).filter((l) => l.includes("|"));
     return renderTable(lines[sepIdx - 1], rowLines, keyPrefix);
   }
-  if (lines.every((l) => UL_ITEM_RE.test(l))) {
-    return (
+  // A list starts when the block's FIRST line is an item. Later lines either
+  // match the item pattern (new item), are indented 2+ spaces (continuation
+  // of the previous item, joined with a space), or end the list and begin a
+  // new paragraph block.
+  const ordered = lines.length > 0 && OL_ITEM_RE.test(lines[0]);
+  const unordered = !ordered && lines.length > 0 && UL_ITEM_RE.test(lines[0]);
+  if (ordered || unordered) {
+    const itemRe = unordered ? UL_ITEM_RE : OL_ITEM_RE;
+    const items: string[] = [];
+    let rest: string[] | null = null;
+    for (const l of lines) {
+      if (rest) {
+        rest.push(l);
+      } else if (itemRe.test(l)) {
+        items.push(l.replace(itemRe, "").trim());
+      } else if (items.length > 0 && CONTINUATION_RE.test(l)) {
+        items[items.length - 1] += ` ${l.trim()}`;
+      } else {
+        rest = [l];
+      }
+    }
+    const list = ordered ? (
+      <ol key={keyPrefix}>
+        {items.map((text, li) => (
+          <li key={li}>{renderInline(text, `${keyPrefix}i${li}`)}</li>
+        ))}
+      </ol>
+    ) : (
       <ul key={keyPrefix}>
-        {lines.map((l, li) => (
-          <li key={li}>{renderInline(l.replace(UL_ITEM_RE, ""), `${keyPrefix}i${li}`)}</li>
+        {items.map((text, li) => (
+          <li key={li}>{renderInline(text, `${keyPrefix}i${li}`)}</li>
         ))}
       </ul>
     );
-  }
-  if (lines.every((l) => OL_ITEM_RE.test(l))) {
-    return (
-      <ol key={keyPrefix}>
-        {lines.map((l, li) => (
-          <li key={li}>{renderInline(l.replace(OL_ITEM_RE, ""), `${keyPrefix}i${li}`)}</li>
-        ))}
-      </ol>
-    );
+    if (rest) {
+      return (
+        <Fragment key={keyPrefix}>
+          {list}
+          {renderBlock(rest, `${keyPrefix}x`)}
+        </Fragment>
+      );
+    }
+    return list;
   }
   return <p key={keyPrefix}>{renderInline(lines.join(" "), keyPrefix)}</p>;
 }
@@ -141,6 +173,9 @@ export function renderMarkdown(md: string): ReactNode[] {
         i++;
       }
       out.push(renderCodeBlock(codeLines.join("\n"), lang, `b${key++}`));
+    } else if (HR_RE.test(line)) {
+      flushBlock();
+      out.push(<hr key={`b${key++}`} className="md-break" />);
     } else if (line.trim() === "") {
       flushBlock();
     } else {

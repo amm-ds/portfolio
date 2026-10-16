@@ -1290,7 +1290,7 @@ button:disabled {
   width: 100%;
 }
 
-/* --- Case study layout: constrained prose, full-width figures (desktop) --- */
+/* --- Case study layout: prose and figures share the full-width container --- */
 
 .story-cols {
   display: block;
@@ -1306,16 +1306,20 @@ button:disabled {
   .story-cols {
     display: block;
   }
-  /* prose reads best at article width; figures breathe at full width */
-  .story-main {
-    max-width: 70ch;
-  }
+  /* prose shares the figures' full-width container (owner request) */
   .story-figs {
     margin-top: 1.5rem;
   }
   .story-figs .figure-frame {
     margin-bottom: 1.5rem;
   }
+}
+
+/* subtle thematic break between markdown blocks */
+.md-break {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.6rem 0;
 }
 
 /* --- Home presentation sections --- */
