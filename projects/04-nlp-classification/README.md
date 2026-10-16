@@ -42,7 +42,7 @@ Data quality gates (`portfolio_core.dq`): zero empty texts, labels within
 See [DESIGN.md](DESIGN.md) for requirements, options considered, and the
 pipeline diagram.
 
-## Results (real run, this machine, CPU only)
+## Results (real runs, this machine — CPU ladder, full-data run on Apple MPS)
 
 Bounded test split: **1000 rows**, perfectly stratified (250 per class),
 seed 42. Every run below is scored on that identical, untouched split with the
@@ -57,28 +57,61 @@ platform's `classification_metrics` + weighted F1. Full numbers in
 | 4 | `encoder_b` | 0.8980 | 0.8982 | roberta-base, default hypers, 2 epochs |
 | 5 | `distilbert` | **0.9020** | **0.9021** | DistilBERT, wave-2 default hypers |
 | 6 | `distilbert_tuned` | **0.9020** | **0.9021** | selection winner (see below) |
-| 7 | `distilbert_fulldata_20k` | **0.9270** | **0.9270** | full-data path evidence: 20k-row subset |
+| 7 | `distilbert_full_120k` | **0.9460** | **0.9460** | full 120k fine-tune on Apple-Silicon MPS |
 
 Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
-pp**, encoder_b **+64.5 pp**, DistilBERT family **+64.9 pp**. DistilBERT beats
+pp**, encoder_b **+64.5 pp**, bounded DistilBERT family **+64.9 pp**, full-data
+DistilBERT **+69.3 pp**. DistilBERT beats
 the TF-IDF baseline by **+3.1 pp** and its roberta-base challenger by **+0.4
 pp** — inside test noise (±1.9 pp), so read the two encoders as tied at this
 data scale. `naive_majority` looks deceptively good on accuracy (0.25 =
 chance on a balanced test split) but collapses on macro-F1 (0.10) — exactly
 why the portfolio scores runs with macro-F1, not accuracy.
 
-### Full-data path (GPU-track roadmap item)
+### Full-data path (GPU-track roadmap item — delivered on MPS)
 
-`train-nn --full-data` implements the real scaling route: it loads the full
-120k AG News train split (or a `--subset N` seeded stratified slice), gates on
-GPU availability — on CPU it errors with an honest wall-clock estimate
-(measured ~50 s / 3.6k-row epoch → full 120k ≈ 45–50 min/epoch, ~1.5–2 h for
-2 epochs) unless `--force-cpu` is passed. **Evidence run** (same flag
-machinery, bounded): `train-nn --full-data --subset 20000 --force-cpu` —
-18k train / 2k val, 2 epochs, ~22 min on CPU — reached **val F1 0.9189** and
-**0.9270 test macro-F1**, +2.5 pp over the 3.6k-row models. Scaling to 18k
-rows already approaches published full-corpus numbers; the remaining step to
-120k is compute, not engineering.
+`train-nn --full-data` runs the real scaling route: the full 120k AG News
+train split (108k train / 12k val after the same stratified carve-out), gated
+behind an accelerator. `--device auto|mps|cpu` picks the device (default
+`auto`: CUDA → Apple MPS → CPU; the bounded showcase stays CPU-first). On
+machines with no accelerator the full-data path errors with an honest
+wall-clock estimate (~45–50 min/epoch on this CPU) unless `--force-cpu` /
+`--device cpu` is passed; `--subset N` gives bounded evidence runs.
+
+**The full run** (this machine, Apple Silicon MPS, torch 2.14.1, batch 32 —
+verified by an up-front memory probe at 256 MiB allocated — seed 42, 2
+epochs, val macro-F1 0.9433 → **0.9464**): **0.9460 test macro-F1** on the
+untouched 1000-row split, **+4.4 pp over the 3.6k-row models**. Honest
+measured wall-clock: **27.5 min for epoch 1 (1651 s), 18.0 min for epoch 2
+(1079 s)** — the training loop totalled ~46 min, the whole command ~47 min
+end-to-end — versus the ~50 s / 3.6k-row CPU epoch this path is gated on
+(full 120k ≈ 45–50 min/epoch on CPU, ~1.5–2 h for 2 epochs). Epoch 1 ran
+while other jobs shared this machine; steady state is ~18 min/epoch, and
+epoch-to-epoch variance tracks machine load, not GPU thermal drift. MPS
+quirks documented: the libomp-dependent classical stack (lightgbm, xgboost)
+and torch MPS coexist in one process here (the workspace libomp repair
+holds), MPS has no OOM recovery so the batch is probed with a synthetic
+forward+backward before training, and single-process tokenization of the
+120k split is CPU-bound (~10 s — batched HF tokenizer, not a bottleneck).
+
+Scaling story (all on the same untouched 1000-row test split, seed 42):
+
+| Train rows | Run | Test macro-F1 | Δ vs 3.6k |
+|---|---|---|---|
+| 3.6k | `distilbert` / `distilbert_tuned` | 0.9021 | — |
+| 18k | `distilbert_fulldata_20k` (evidence) | 0.9270 | +2.5 pp |
+| 108k | `distilbert_full_120k` | **0.9460** | +4.4 pp |
+
+The dominant confusion pair is **stable across the whole curve**:
+Business → Sci/Tech, 24/250 at 3.6k → 15/250 at 20k → 14/250 at 120k — the
+same hybrid technology-business headlines (e.g. *"Amazon Snaps Up China's
+Largest Web Retailer…"*) still trip the model, just nearly half as often.
+That residual is a labeling-ambiguity floor, not a data-scale problem — the
+multi-label extension in the roadmap is the honest answer.
+
+Serving economics for this model class — latency percentiles, throughput,
+and cost on local serving stacks (llama.cpp vs MLX on Apple Silicon) — are
+benchmarked in [08 · LLM Inference & Serving](../08-inference-serving/README.md).
 
 ### HPO — and the honest part
 
@@ -125,11 +158,14 @@ Early stopping fired after epoch 2 (patience 1); best epoch-1 weights were
 restored and saved to `reports/models/distilbert.pt`.
 
 **Error analysis.** The dominant confusion of the selected model is
-**Business → Sci/Tech (24 of 250 Business rows)**, e.g. *"Amazon Snaps Up
-China's Largest Web Retailer…"* and *"PeopleSoft customers reassured…"* —
-stories about technology companies that are legitimately business news. Full
-table in [`reports/error_analysis.md`](reports/error_analysis.md); per-class
-comparison vs the TF-IDF baseline in `reports/figures/per_class_f1_comparison.*`.
+**Business → Sci/Tech (24 of 250 Business rows)**; the full-data model shows
+the **same pair (14 of 250)** — e.g. *"Amazon Snaps Up China's Largest Web
+Retailer…"* and *"PeopleSoft customers reassured…"* — stories about
+technology companies that are legitimately business news. The pair is stable
+across the scaling curve (24 → 15 → 14 of 250); only its frequency shrinks
+with data. Full table in [`reports/error_analysis.md`](reports/error_analysis.md);
+per-class comparison vs the TF-IDF baseline in
+`reports/figures/per_class_f1_comparison.*`.
 
 **Why fine-tuning beats bag-of-words here.** TF-IDF + logistic regression sees
 each headline as an unordered weighted word bag: it captures which *words*
@@ -139,16 +175,20 @@ fine-tuning only re-points that representation at the four classes, so ~3.6k
 labeled rows are enough to learn discriminations an 8k-feature sparse vector
 cannot express.
 
-**Honest limits.** Deliberately bounded showcase: 4k train / 1k test stratified
-subsample, ≤4 epochs, max_length 128, CPU budget. The HPO studies (12-trial
-main + 3×6 seed variance) are small-budget demonstrations — at 400 validation
-rows, hyperparameter rankings and seed-to-seed variance carry more noise than
-the gains being chased, as both the val→test regression and the seed study
-show. What is *not* noise: the 20k-row evidence run (+2.5 pp test macro-F1
-over 3.6k) shows data scaling works as published, and the TF-IDF baseline will
-plateau in the low 90s while encoders keep gaining toward ~0.93–0.94 at full
-data. Treat the bounded numbers as the cheap, reproducible lower bound of the
-scaling curve, not the ceiling.
+**Honest limits.** Deliberately bounded showcase at the core: 4k train / 1k
+test stratified subsample for the bounded ladder, ≤4 epochs, max_length 128.
+The HPO studies (12-trial main + 3×6 seed variance) are small-budget
+demonstrations — at 400 validation rows, hyperparameter rankings and
+seed-to-seed variance carry more noise than the gains being chased, as both
+the val→test regression and the seed study show. What is *not* noise: the
+scaling curve (0.9021 → 0.9270 → 0.9460 test macro-F1 at 3.6k / 18k / 108k
+train rows) and the calibration result (−71 % ECE). The full-data fine-tune
+was trained on Apple Silicon MPS — a second-class citizen compared to CUDA
+(see the quirks above), and its measured ~18 min/epoch steady-state
+wall-clock is machine-specific.
+Treat the bounded numbers as the cheap, reproducible lower bound of the
+scaling curve — the full run confirms the published ~0.93–0.95 headroom is
+real and reachable on a laptop GPU.
 
 Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 
@@ -174,7 +214,11 @@ uv run python -m nlp_classification.cli train-tuned      # retrains with HPO bes
 uv run python -m nlp_classification.cli train-encoder-b  # roberta-base candidate
 uv run python -m nlp_classification.cli evaluate         # seven-run ladder + selection + calibration
 
-# full-data path (GPU-gated; bounded evidence run on CPU):
+# full-data path (accelerator-gated; auto = CUDA → MPS → CPU):
+uv run python -m nlp_classification.cli train-nn --full-data            # full 120k on MPS (~47 min measured)
+uv run python -m nlp_classification.cli evaluate                        # seven-run ladder + selection + calibration
+
+# bounded evidence run on CPU:
 uv run python -m nlp_classification.cli train-nn --full-data --subset 20000 --force-cpu
 
 # or everything at once
@@ -209,9 +253,11 @@ uv run pytest projects/04-nlp-classification -q
 Final forward intent — everything below is ready to execute against the
 existing pipeline:
 
-- **Full-dataset fine-tune** on the 120k AG News corpus via the proven
-  `train-nn --full-data` path (GPU-gated; the 20k evidence run already
-  demonstrates +2.5 pp test macro-F1).
+- **Full-dataset fine-tune — delivered:** the 120k AG News corpus trained
+  through `train-nn --full-data` on Apple Silicon MPS (see above): 0.9460
+  test macro-F1, +4.4 pp over the bounded models, ~18 min/epoch steady-state
+  on MPS (27.5 min for epoch 1 under shared machine load; ~46 min training
+  loop, ~47 min for the whole command).
 - **Cost-sensitive routing** on top of the calibrated probabilities
   (temperature scaling already cuts ECE by 71 %; per-class thresholds for
   imbalanced production mixes remain to be tuned).

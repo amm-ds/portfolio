@@ -6,6 +6,8 @@ weighted F1, all on the same untouched test split: two naive floors
 baseline, the wave-2 DistilBERT artifact, a second encoder (``encoder_b``),
 and ``distilbert_tuned`` — the winner of an honest selection between the
 HPO-retrained model and the wave-2 artifact (see ``reports/selection.json``).
+When the full-data artifact exists, the 120k fine-tune
+(``distilbert_full_120k``) is scored alongside them.
 
 Figures (EDA, HPO panels, confusion matrix and per-class comparison of the
 selected model, training curve) are written as HTML for the report and JSON
@@ -290,11 +292,12 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     run_tuned, selection = select_tuned_run(y_true, y_pred_hpo, y_pred_wave2, cfg.selection_path)
     runs = [run_majority, run_random, run_base, run_wave2, run_encoder_b, run_tuned]
 
-    # full-data evidence run (only when the --full-data artifact exists)
+    # full-data run (only when the --full-data artifact exists; the artifact is
+    # the current full-data model — the 120k fine-tune by default)
     fulldata_path = cfg.models_dir / FULLDATA_MODEL_PATH
     if fulldata_path.exists():
         y_pred_full = _predict_with(cfg, cfg.model_name, fulldata_path, test_ds, len(labels))
-        runs.append(run_result("distilbert_fulldata_20k", y_true, y_pred_full))
+        runs.append(run_result("distilbert_full_120k", y_true, y_pred_full))
 
     # the selected model drives the diagnostic figures and the calibration note
     y_pred_selected = y_pred_hpo if selection["winner"] == "hpo_retrained" else y_pred_wave2

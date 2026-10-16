@@ -58,7 +58,7 @@ flowchart LR
     J --> K[reports/report.html, metrics.json, figures HTML+JSON]
 ```
 
-## Real results (this machine, CPU)
+## Real results (this machine — CPU ladder, full-data run on Apple MPS)
 
 From `reports/metrics.json` (seed 42, identical 1000-row stratified test split).
 Full run ladder:
@@ -72,12 +72,20 @@ Full run ladder:
 | distilbert | 0.9020 | 0.9021 | wave-2 defaults (val F1 0.8880) |
 | distilbert_tuned | 0.9020 | 0.9021 | selection winner = wave-2 artifact |
 | distilbert_fulldata_20k | 0.9270 | 0.9270 | full-data path evidence (20k subset: 18k train/2k val, 2 ep) |
+| distilbert_full_120k | 0.9460 | 0.9460 | full 120k fine-tune on Apple MPS (108k train/12k val, 2 ep) |
 
-Full-data path: `train-nn --full-data` (GPU-gated; CPU requires `--force-cpu`
-with an honest wall-clock estimate — full 120k ≈ 45–50 min/epoch measured).
-Evidence run `--subset 20000 --force-cpu`: val F1 0.9189, test macro-F1 0.9270
-(+2.5 pp over the 3.6k-row models) — data scaling confirmed, remaining step to
-120k is compute, not engineering.
+Full-data path: `train-nn --full-data [--device auto|mps|cpu]` — auto picks
+CUDA → Apple MPS → CPU, and on CPU (or `--force-cpu`) it warns with an honest
+wall-clock estimate (full 120k ≈ 45–50 min/epoch measured on this CPU).
+Evidence run `--subset 20000 --force-cpu`: val F1 0.9189, test macro-F1 0.9270.
+**Full run on MPS** (batch 32 verified by an up-front memory probe, seed 42,
+2 epochs): val macro-F1 0.9433 → 0.9464, test macro-F1 0.9460 (+4.4 pp over
+the 3.6k-row models); scaling curve 0.9021 → 0.9270 → 0.9460. MPS quirks:
+libomp-dependent classical deps (lightgbm) coexist with torch MPS in one
+process, MPS has no OOM recovery (batch probed with a synthetic step before
+training), and epoch wall-clock varies with shared machine load (measured:
+27.5 min for epoch 1 while other jobs ran, 18.0 min steady-state for epoch 2;
+~46 min for the full 2-epoch training loop).
 
 Multi-seed HPO (3 seeds × 6 trials, epochs 2–3 budget): best val macro-F1 per
 seed 0.8953 / 0.8852 / 0.8926 → **mean 0.8910 ± 0.0042**. The mean gain over
@@ -104,6 +112,13 @@ per-class comparison in `reports/error_analysis.md` and
 
 ## Changelog
 
+- 2026-10-16 · v0.5.0 — Full 120k fine-tune delivered: `--device
+  auto|mps|cpu` on `train-nn` (auto = CUDA → MPS → CPU; bounded path stays
+  CPU-first), up-front MPS batch memory probe (`mps_safe_batch_size`), the
+  full 120k run on Apple Silicon MPS (108k train/12k val, 2 epochs,
+  27.5/18.0 min measured per epoch) scored 0.9460 test macro-F1; evaluate run renamed to
+  `distilbert_full_120k`; scaling curve 0.9021 → 0.9270 → 0.9460 with the
+  Business → Sci/Tech confusion pair stable across all three sizes.
 - 2026-10-13 · v0.4.0 — Roadmap implementation: full-data path behind a GPU
   flag (`train-nn --full-data [--subset N] [--force-cpu]`, honest wall-clock
   gate) with a 20k-row evidence run (val F1 0.9189, test macro-F1 0.9270);
