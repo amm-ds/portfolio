@@ -24,6 +24,8 @@ from rag_agent.schemas import EvalQuestion
 if TYPE_CHECKING:
     import plotly.graph_objects as go
 
+    from rag_agent.verify import VerifyReport
+
 logger = get_logger(__name__)
 
 # Rough tokens-per-word assumption for estimating prompt context sizes when the
@@ -194,6 +196,9 @@ class RAGRun:
     faithfulness_rows: list[float] = field(default_factory=list)
     relevance_rows: list[float] = field(default_factory=list)
     retrieved_rows: list[float] = field(default_factory=list)
+    # Wave-14 verify-then-answer loop: one report per agent answer, aligned
+    # with latencies_s (absent when verification is disabled).
+    verify_reports: list["VerifyReport"] = field(default_factory=list)
 
     @property
     def p50_latency_s(self) -> float:

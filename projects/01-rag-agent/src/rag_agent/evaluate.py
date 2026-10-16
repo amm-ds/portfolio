@@ -77,6 +77,7 @@ from rag_agent.reporting import (
     write_reports as _write_reports,
 )
 from rag_agent.schemas import AnalysisResult, Article, Citation, EvalQuestion
+from rag_agent.verify import ClaimJudge, VerifyReport, build_claim_judge, verify_result
 
 __all__ = [
     "RAGRun",
@@ -253,6 +254,7 @@ def run_rag_eval(
     retriever: Retriever,
     questions: list[EvalQuestion],
     judge: RubricJudge | None = None,
+    verifier: ClaimJudge | None = None,
 ) -> RAGRun:
     """Run the agent over the question set; collect traces + judge verdicts.
 
@@ -263,12 +265,24 @@ def run_rag_eval(
     correct refusal must not count as unfaithful. Unanswerable questions are
     scored by the abstention metrics instead. A raised/invalid agent run is
     recorded as a format failure, never propagated.
+
+    When ``config.verify.enabled`` (the wave-14 verify-then-answer loop), each
+    drafted answer is claim-verified against its cited chunks before judging:
+    unsupported claims are repaired/dropped and low-support answers fall back
+    to abstention. ``verifier`` overrides the claim judge (tests inject a
+    scripted/keyword one); by default the provider model is used with the
+    deterministic keyword judge as offline fallback.
     """
     selected = judge if judge is not None else build_judge()
     logger.info("RAG judge: %s", getattr(selected, "name", type(selected).__name__))
+    claim_judge: ClaimJudge | None = None
+    if config.verify.enabled:
+        claim_judge = verifier if verifier is not None else build_claim_judge()
+        logger.info("claim verifier: %s", getattr(claim_judge, "name", type(claim_judge).__name__))
 
     traces: list[QuestionTrace] = []
     ragas_rows: list[RagasRow] = []
+    verify_reports: list[VerifyReport] = []
     latencies: list[float] = []
     input_tokens: list[int] = []
     output_tokens: list[int] = []
@@ -289,6 +303,13 @@ def run_rag_eval(
         except Exception as exc:  # format failure: record, don't abort the run
             error = f"{type(exc).__name__}: {exc}"[:200]
         latencies.append(time.perf_counter() - start)
+
+        # Wave 14: verify-then-answer — repair/drop unsupported claims, or fall
+        # back to abstention, BEFORE the answer is judged / fed to RAGAS.
+        if output is not None and claim_judge is not None:
+            verify_reports.append(
+                verify_result(question.question, output, retriever, config, claim_judge)
+            )
 
         evidence = retriever.search(question.question, top_k=config.top_k)
         relevant = set(question.relevant_article_ids)
@@ -377,6 +398,7 @@ def run_rag_eval(
         faithfulness_rows=faith_scores,
         relevance_rows=relevance_scores,
         retrieved_rows=retrieved_flags,
+        verify_reports=verify_reports,
         _rate_in=config.usd_per_mtok_input,
         _rate_out=config.usd_per_mtok_output,
     )
@@ -566,6 +588,7 @@ def run(
     ragas: bool = False,
     offline: bool = False,
     max_questions: int | None = None,
+    verify: bool | None = None,
     embed_fn: EmbedFn | None = None,
     rerank_fn: RerankFn | None = None,
 ) -> None:
@@ -577,8 +600,12 @@ def run(
     model as evaluator. ``max_questions`` bounds ONLY the LLM phases (agent +
     RAGAS) to the first N graded questions — retrieval metrics always use the
     full set; local model inference makes the unbounded run multi-hour.
+    ``verify`` overrides ``config.verify.enabled`` (``--verify``/``--no-verify``
+    A/B); None keeps the params.yaml value.
     ``embed_fn``/``rerank_fn`` overrides are for tests (deterministic fakes).
     """
+    if verify is not None:
+        config.verify.enabled = verify
     if ragas:
         # Fail fast if the venv is pruned mid-run.
         ensure_ragas_importable()
@@ -658,6 +685,27 @@ def run(
     wall_time_s = time.perf_counter() - run_start
 
     abstention = abstention_report(rag_run.traces, seed=config.seed) if rag_run else None
+    verify_stats: dict[str, Any] | None = None
+    if rag_run and rag_run.verify_reports:
+        v_reports = rag_run.verify_reports
+        total_verify_s = sum(r.latency_s for r in v_reports)
+        total_answer_s = sum(rag_run.latencies_s)
+        verify_stats = {
+            "enabled": config.verify.enabled,
+            "min_support": config.verify.min_support,
+            "max_repair_calls": config.verify.max_repair_calls,
+            "n_answers_verified": len(v_reports),
+            "n_verify_abstentions": sum(1 for r in v_reports if r.abstained),
+            "n_verify_skipped": sum(1 for r in v_reports if r.skipped),
+            "total_repair_calls": sum(r.n_repair_calls for r in v_reports),
+            "mean_support_fraction": round(
+                sum(r.support_fraction for r in v_reports) / len(v_reports), 4
+            ),
+            "mean_verify_latency_s": round(total_verify_s / len(v_reports), 3),
+            "verify_latency_share_of_answer": (
+                round(total_verify_s / total_answer_s, 4) if total_answer_s > 0 else None
+            ),
+        }
     rag_ci: dict[str, Any] | None = None
     if rag_run:
         rag_ci = {
@@ -770,6 +818,7 @@ def run(
         },
         "rag": rag_run.eval_result.to_dict() if rag_run else None,
         "ragas": ragas_scores,
+        "verify": verify_stats,
         "ops": {
             "backend": inference_backend() if rag_run else None,
             "p50_latency_s": rag_run.p50_latency_s if rag_run else None,

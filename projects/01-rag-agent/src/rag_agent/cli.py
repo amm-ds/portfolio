@@ -29,6 +29,7 @@ from rag_agent.index import (
 from rag_agent.index import (
     build_index as build_index_impl,
 )
+from rag_agent.verify import ClaimJudge, build_claim_judge, verify_result
 
 app = typer.Typer(help=__doc__, add_completion=False)
 logger = get_logger(__name__)
@@ -121,6 +122,14 @@ def evaluate(
             help="Retrieval-only: no LLM provider needed (skips agent, judges, RAGAS, telemetry).",
         ),
     ] = False,
+    verify: Annotated[
+        bool | None,
+        typer.Option(
+            "--verify/--no-verify",
+            help="Override the verify-then-answer loop (params.yaml default: on). "
+            "--no-verify reproduces the pre-wave-14 baseline answer path.",
+        ),
+    ] = None,
 ) -> None:
     """Run retrieval HPO + RAG eval + ops, writing reports/.
 
@@ -132,7 +141,9 @@ def evaluate(
     if offline and ragas:
         raise typer.BadParameter("--ragas requires a provider and cannot combine with --offline")
     try:
-        run_evaluation(config, ragas=ragas, offline=offline, max_questions=max_questions)
+        run_evaluation(
+            config, ragas=ragas, offline=offline, max_questions=max_questions, verify=verify
+        )
     except LLMProviderUnavailableError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc
@@ -144,6 +155,14 @@ def chat(
     question: Annotated[
         str | None, typer.Argument(help="Single question mode (non-interactive).")
     ] = None,
+    verify: Annotated[
+        bool | None,
+        typer.Option(
+            "--verify/--no-verify",
+            help="Override the verify-then-answer loop (params.yaml default: on): "
+            "unsupported claims are repaired/dropped, low-support answers abstain.",
+        ),
+    ] = None,
 ) -> None:
     """Interactive REPL: ask questions, get grounded AnalysisResult answers.
 
@@ -151,6 +170,8 @@ def chat(
     LLM_BASE_URL/LLM_API_KEY. There is no runtime mock.
     """
     config = load_config()
+    if verify is not None:
+        config.verify.enabled = verify
     default_size = config.chunk_sizes[len(config.chunk_sizes) // 2]
     retriever = Retriever.from_index_dir(
         config,
@@ -163,9 +184,12 @@ def chat(
     except LLMProviderUnavailableError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc
+    claim_judge: ClaimJudge | None = None
+    if config.verify.enabled:
+        claim_judge = build_claim_judge()
     typer.echo(
-        f"RAG assistant ready (chunk_size={default_size}, backend={inference_backend()}). "
-        "Type :quit to exit."
+        f"RAG assistant ready (chunk_size={default_size}, backend={inference_backend()}, "
+        f"verify={'on' if claim_judge else 'off'}). Type :quit to exit."
     )
 
     while True:
@@ -179,7 +203,18 @@ def chat(
             return
         result = agent.run_sync(prompt_text, deps=retriever)
         output = result.output
-        typer.echo(f"\n[{output.confidence:.2f} confidence] {output.summary}")
+        if claim_judge is not None:
+            report = verify_result(prompt_text, output, retriever, config, claim_judge)
+            note = (
+                f" [verified: support {report.support_fraction:.2f}, "
+                f"{report.n_repair_calls} repair(s)"
+                + (", abstained" if report.abstained else "")
+                + (", skipped (already abstained)" if report.skipped else "")
+                + "]"
+            )
+        else:
+            note = ""
+        typer.echo(f"\n[{output.confidence:.2f} confidence]{note} {output.summary}")
         for citation in output.citations:
             typer.echo(f"  [{citation.chunk_id}] {citation.title}: {citation.excerpt}")
         if question:
