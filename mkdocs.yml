@@ -30,6 +30,9 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.details
 
+exclude_docs: |
+  repository_setup_report_senior_data_scientist.md
+
 plugins:
   - search
 
@@ -47,6 +50,7 @@ nav:
           - ADR-0007 DVC metrics/experiments/registry: architecture/adr/0007-dvc-metrics-experiments-registry.md
   - Engineering:
       - Playbook: engineering-playbook.md
+      - How this was built: site/how-this-was-built.md
       - Pre-publish review (2026-10-14): audits/pre-publish-2026-10-14.md
       - Productization gap report: audits/productization-gap-report.md
       - External audit response (2026-10-15): audits/2026-10-15-external-audit-response.md

@@ -367,10 +367,11 @@ def run_solve(cfg: VRPConfig) -> Path:
         if alns_trace is not None:
             alns_convergence[inst] = _alns_checkpoints(alns_trace, stats or {})
 
-        # External reference: time-bounded CP-SAT, hinted by the ALNS plan so a
-        # feasible incumbent exists from the first millisecond. The limit is a
-        # wall-time bound (~10 s vs ALNS's ~0.8 s — an asymmetric comparison,
-        # disclosed in README/story).
+        # Hinted cross-check: time-bounded CP-SAT with the ALNS plan as the
+        # hint, so a feasible incumbent exists from the first millisecond.
+        # This is an incumbent-improvement probe, not an independent baseline
+        # (the plan is returned unchanged on timeout); the asymmetry is
+        # disclosed in README/story.
         t0 = time.perf_counter()
         cp_plan = ortools_cp(
             problem,

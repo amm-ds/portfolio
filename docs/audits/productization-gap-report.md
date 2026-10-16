@@ -1,5 +1,11 @@
 # Productization Gap Report — 2026-10-15
 
+> **Superseded (2026-10-16).** This report predates the builds of projects
+> 08 (inference & serving), 09 (agentic workflows) and 10 (uplift &
+> experimentation), all of which are now built and documented in their own
+> READMEs. The per-project gap tables below are historical; treat the
+> project READMEs and the second-pass audit response as current.
+
 What separates each project from "closed and productized", and the plan for the new
 ones. Criteria for "productized": reproducible pipeline (✅ all), real measured results
 with honest baselines (✅ all), a serving or consumption path, operational coverage

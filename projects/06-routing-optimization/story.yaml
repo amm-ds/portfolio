@@ -122,7 +122,8 @@ sections:
       removal, repair with greedy regret-2 insertion, operator weights adapted
       per segment from scores, simulated-annealing acceptance; starts from the
       tuned 2-opt plan.
-    - **ortools_cp** (external reference) — OR-Tools CP-SAT model: one circuit
+    - **ortools_cp** (ALNS-hinted cross-check, not an independent baseline) —
+      OR-Tools CP-SAT model: one circuit
       per vehicle over time-window-filtered arcs, time/capacity propagated
       along arcs, ALNS plan injected as the solution hint; single worker,
       fixed seed, 10 s wall-time budget per instance. If the limit expires
@@ -171,8 +172,9 @@ sections:
     the published best-known values and reported as gap %, aggregated
     per instance and per family. Runtimes: microseconds-to-milliseconds for
     the heuristics, ~0.8–3 s/instance for ALNS, and a deliberately generous
-    10 s/instance budget for the CP-SAT external reference — an asymmetric
-    comparison whose verdict is reported honestly in the results. The route
+    10 s/instance budget for the CP-SAT hinted cross-check — an asymmetric
+    probe (the ALNS plan is injected as the hint) whose verdict is reported
+    honestly in the results. The route
     map shows the best C101 plan, the family chart shows where each solver
     stands per problem class, the convergence curves show the 2-opt and ALNS
     descents, and the Pareto chart places every solver on the
@@ -239,13 +241,16 @@ sections:
       distance stays valid and the vehicle count flags the fragmentation.
     - The 2-opt HPO negatives stand: randomized restarts
       never pay (k=1 chosen) and 2-opt budgets saturate (≤ ~20 moves).
-    - **External reference verdict (OR-Tools CP-SAT, 10 s/instance, hinted by
-      the ALNS plan): it does not beat ALNS anywhere on the 100-customer
-      benchmark.** On all 56 instances it ended at `UNKNOWN` — CP-SAT could
-      not even register its own hinted solution within the budget — and the
-      arm returned the incumbent unchanged: ortools_cp ties ALNS 56/56 at
-      ~5x the runtime (13.6 s vs 2.8 s mean). The 4.23 % gap is not an
-      artifact of weak in-house optimization. Where CP-SAT does dominate is
+    - **Hinted cross-check verdict (OR-Tools CP-SAT, 10 s/instance, hinted by
+      the ALNS plan — an incumbent-improvement probe, not an independent
+      baseline): it does not improve the ALNS plan anywhere on the
+      100-customer benchmark.** On all 56 instances it ended at `UNKNOWN` —
+      CP-SAT could not even register its own hinted solution within the budget
+      — and the arm returned the incumbent unchanged: ortools_cp ties ALNS
+      56/56 at ~5x the runtime (13.6 s vs 2.8 s mean). The supported claim is
+      narrower than an independent comparison: an exact solver given ~15x the
+      time **and a head-start hint** could not shave anything off any ALNS
+      plan. Where CP-SAT does dominate is
       small problems: it certifies the 25-customer C101 prefix to a 191.8
       optimum in 2.9 s (the 2-opt hint was 286.3) and proves the 5-customer
       test instance optimal in 0.1 s. The model is verified sound — with the
@@ -298,10 +303,10 @@ roadmap:
     HPO-tuned (segment 100, reaction 0.5).
 - status: delivered
   text: |
-    OR-Tools CP-SAT external reference (`ortools_cp`) — shipped: time-bounded
-    (10 s/instance), hinted by the ALNS plan, deterministic within the limit.
-    Verdict: ties ALNS 56/56 at ~5x runtime; certifies small subproblems to
-    optimality in seconds. Pareto + ALNS-convergence figures added.
+    CP-SAT hinted cross-check (`ortools_cp`) — shipped: time-bounded
+    (10 s/instance), ALNS plan as hint; an improvement probe, not an
+    independent baseline. Ties ALNS 56/56 at ~5x runtime; certifies small
+    subproblems to optimality. Pareto + convergence figures added.
 - status: delivered
   text: |
     Full 56-instance Solomon benchmark with per-family gap reporting —
