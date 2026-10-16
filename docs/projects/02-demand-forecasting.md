@@ -1,60 +1,83 @@
 # 02 · Hierarchical Demand Forecasting
 
-**Domain:** time-series forecasting · **Data:** seeded synthetic retail
-hierarchy (4 stores × 6 products × 730 days) · **Status:** working showcase on
-the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
+**Domain:** time-series forecasting · **Data:** UCI Online Retail II (primary
+real track; seeded synthetic hierarchy as the labelled CI fast path) ·
+**Status:** working showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
 ## What it shows
 
 Leakage-safe, production-depth forecasting on a store-by-product hierarchy: lag
 features built with `shift` (never the current row), calendar features, and
-global models with one-hot series identity — naive floors, a Ridge baseline,
-default + Optuna-tuned gradient boosting, and a hand-written PyTorch
-embedding+MLP, all through the identical embargoed expanding-window
-`TimeSeriesCV` (4 folds, 7-day gap). seeded Optuna HPO (resumable,
+global models with one-hot series identity — naive floors, seasonal-naive and
+per-series ETS statistical baselines, a Ridge baseline, default + Optuna-tuned
+gradient boosting (sklearn HGB, XGBoost, LightGBM arms), and a hand-written
+PyTorch embedding+MLP, all through the identical embargoed expanding-window
+`TimeSeriesCV` (4 folds, 7-day purge gap). Seeded Optuna HPO (resumable,
 checkpointed), MinT-lite hierarchical reconciliation with a tested coherence
-guarantee, and takeaway-annotated figures.
+guarantee, probabilistic 80% bands, and takeaway-annotated figures.
 
-## Key results (seed 42, pooled out-of-fold)
+## Key results (pooled out-of-fold)
 
-Synthetic track (24 series × 4 folds):
+Real-data track — UCI Online Retail II (top 8 countries × top 200 products,
+374 days, 405,416 panel rows, 89% zero share; MAE/MASE lead, MAPE reported but
+not decision-grade at this zero share):
 
-| run | MAE | RMSE | MAPE |
-|---|---|---|---|
-| naive_mean (floor) | 31.762 | 42.543 | 49.02% |
-| naive_last | 14.476 | 19.881 | 19.28% |
-| ridge | 9.116 | 12.705 | 12.44% |
-| hgb | 8.619 | 12.178 | 11.43% |
-| **hgb_tuned (Optuna, 56 trials)** | **8.529** | **12.071** | **11.34%** |
-| temporal_net (PyTorch) | 9.341 | 12.756 | 13.41% |
+| run | MAE | RMSE | MAPE | MASE |
+|---|---|---|---|---|
+| naive_mean (floor) | 10.838 | 97.607 | 91.3% | 1.132 |
+| naive_last (persistence) | 10.288 | 135.674 | 356.2% | 1.168 |
+| seasonal_naive (lag-7) | 9.859 | 135.298 | 439.0% | 1.117 |
+| ETS (Holt-Winters, damped+weekly) | 11.256 | 116.865 | 352.3% | 1.361 |
+| ridge (collapses) | 16.734 | 98.531 | 236.2% | 1.560 |
+| hgb (default sklearn) | 9.085 | 97.256 | 245.9% | 1.002 |
+| **hgb_tuned (Optuna, 56 trials)** | **8.989** | **96.688** | 228.6% | **0.980** |
+| xgb_tuned (Optuna, 25 trials) | 9.385 | 98.136 | 275.2% | 1.042 |
+| lgbm_tuned (Optuna, 25 trials) | 9.600 | 96.535 | 287.9% | 1.055 |
+| temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 |
 
-Real-data track (UCI Online Retail II, 1,084 series × 4 folds, 89% zero share):
+Synthetic track — seeded CI fast path (24 series × 4 folds, seed 42; note what
+clean data does to the statistical baselines):
 
-| run | MAE | RMSE | MAPE |
-|---|---|---|---|
-| naive_mean | 10.838 | 97.607 | 91.3% |
-| naive_last | 10.288 | 135.674 | 356.2% |
-| ridge (collapses) | 16.734 | 98.531 | 236.2% |
-| hgb | 9.085 | 97.256 | 245.9% |
-| **hgb_tuned** | **8.989** | **96.688** | 228.6% |
-| temporal_net | 12.704 | 96.813 | 215.8% |
+| run | MAE | RMSE | MAPE | MASE |
+|---|---|---|---|---|
+| naive_mean (floor) | 31.762 | 42.543 | 49.02% | 3.490 |
+| naive_last (persistence) | 14.476 | 19.881 | 19.28% | 1.591 |
+| seasonal_naive (lag-7) | 10.387 | 14.741 | 13.78% | 1.141 |
+| **ETS (Holt-Winters, damped+weekly)** | **8.110** | **11.510** | 10.45% | **0.891** |
+| ridge | 9.116 | 12.705 | 12.44% | 1.002 |
+| hgb | 8.619 | 12.178 | 11.43% | 0.947 |
+| hgb_tuned (Optuna, 56 trials) | 8.529 | 12.071 | 11.34% | 0.937 |
+| xgb_tuned (Optuna, 25 trials) | 8.539 | 12.086 | 11.32% | 0.938 |
+| **lgbm_tuned (Optuna, 25 trials)** | **8.413** | **11.905** | 11.16% | **0.924** |
+| temporal_net (PyTorch emb+MLP) | 9.341 | 12.756 | 13.41% | 1.026 |
 
-- HPO improved on hgb in **every** fold on synthetic; the NN trails the linear
-  baseline on both tracks — reported honestly.
+- **Cross-track transfer is the honest punchline**: `lgbm_tuned`, best ML run
+  on synthetic (MAE 8.413, −41.9% vs persistence), drops to fourth on UCI
+  (9.600); `hgb_tuned` generalises best on real data (8.989, the only run with
+  MASE < 1). Configs tuned on clean synthetic demand do not transfer to
+  intermittent real demand.
+- ETS wins the synthetic ladder outright (MASE 0.891) and loses to its own
+  seasonal naive on UCI (11.256 vs 9.859, MASE 1.361) — 89% zeros break the
+  smooth-seasonality assumption. Both verdicts reported.
+- HPO improved on hgb in **every** fold on synthetic (8.619 → 8.529, −1.0%);
+  the NN trails the linear baseline on both tracks — reported honestly.
 - Probabilistic 80% band coverage: synthetic 0.727 (quantile) / 0.757
   (conformal); UCI 0.919 / 0.858 with a degenerate q80 = 0 calibration —
   per-series conformal is the roadmap fix.
-- UCI reconciliation: w=0.65, incoherence 400.4 → 140.2 (coherence property
-  exact); store MAE 748.2 → 726.4.
-- 6/6 DQ gates on both tracks; synthetic pipeline ≈ 2.5 min, UCI ≈ 5.5 min;
-  46 offline tests.
+- UCI reconciliation: w=0.70, incoherence 384.0 → 115.2 (coherence property
+  exact); store MAE 746.9 → 737.9. Synthetic: w=0.05, near-null accuracy
+  effect reported honestly.
+- 6/6 DQ gates on both tracks; synthetic pipeline ≈ 4 min, UCI ≈ 25 min;
+  58 offline tests.
 
 ## Artifacts
 
 - Figures per track: `reports/figures/` and `reports_uci/figures/` —
   `eda_series_overview`, `eda_units_distribution`, `forecast_vs_actual`,
-  `metrics_bars`, `fold_stability`, `hpo_history`, `hpo_importance`,
-  `reconciliation_coherence`, `probabilistic_band` (`.html` + `.json`)
+  `forecast_fan`, `metrics_bars`, `fold_stability`, `hpo_history` (+ per-arm
+  `hpo_history_xgb` / `hpo_history_lgbm`), `hpo_importance`,
+  `reconciliation_coherence`, `coherence_heatmap`, `probabilistic_band`
+  (`.html` + `.json`)
 - Metrics: `reports/metrics.json` (+ `_uci`) · Report: `report.html` ·
   Reconciliation: `reconciliation.json` · Probabilistic: `probabilistic.json`
 - Dataset cards: `data/dataset.json`, `data_uci/dataset.json` · HPO:
@@ -67,4 +90,6 @@ Real-data track (UCI Online Retail II, 1,084 series × 4 folds, 89% zero share):
 - [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting/DESIGN.md) — requirements,
   options considered (global vs per-series, validation protocol, HPO, NN,
   reconciliation), pipeline diagram, changelog
+- Dataset card: [UCI Online Retail II](../data-registry/uci-online-retail-ii.md)
+- Drift response runbook: [drift-response.md](../runbooks/drift-response.md)
 - Source: `projects/02-demand-forecasting/src/demand_forecasting/`

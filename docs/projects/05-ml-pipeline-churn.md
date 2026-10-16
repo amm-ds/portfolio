@@ -1,7 +1,8 @@
 # 05 · Churn Modeling with Production-Grade sklearn Pipelines
 
-**Domain:** Classical ML · **Data:** seeded synthetic churn (messy on purpose:
-2% NaN age, 3% NaN support calls, a 9,999 charge outlier) · **Status:** working
+**Domain:** Classical ML · **Data:** IBM telco churn (7,043 rows, 26.5% base
+rate) with a seeded synthetic CI path (messy on purpose: 2% NaN age, 3% NaN
+support calls, a 9,999 charge outlier) · **Status:** working
 showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
 ## What it shows
@@ -40,7 +41,7 @@ paired bootstrap CI on the cost delta vs naive.
   seniors (0.97 vs 0.88); the real gap is contractual (month-to-month 0.98 vs
   two-year 0.00 at FN=5) - a stated business choice, movable on the cost
   surface.
-- Figures now include `fairness_slices` (grouped bars) and `cost_surface`
+- Figures include `fairness_slices` (grouped bars) and `cost_surface`
   (FN cost x threshold heatmap with the operating point marked).
 - 5/5 DQ gates on the pinned snapshot; full pipeline ~10 s, deterministic.
 
@@ -56,6 +57,8 @@ paired bootstrap CI on the cost delta vs naive.
 
 ## Links
 
+- Dataset card: [data-registry/telco-churn](https://amm-ds.github.io/portfolio/data-registry/telco-churn/) —
+  pinned source, SHA-256, DQ expectations
 - [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn/README.md) — full
   results, reproduce commands, client takeaways
 - [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn/DESIGN.md) — requirements,

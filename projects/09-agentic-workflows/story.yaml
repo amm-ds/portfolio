@@ -1,82 +1,232 @@
 project_id: 09-agentic-workflows
 roadmap:
   - status: delivered
-    text: Multi-step agent graphs — Plan→Execute→Critique on pydantic-graph with typed state and bounded retries
+    text: >-
+      Multi-step agent graphs — shipped, verified: Plan→Execute→Critique on
+      pydantic-graph over typed WorkflowState with bounded retries and one
+      Critique loop-back; the graph machinery is covered by 44 offline tests.
   - status: delivered
-    text: Workflow evaluation harness — 14-task suite, deterministic graders, cost/latency budgets per run
+    text: >-
+      Workflow evaluation harness — shipped, verified: 14-task suite with
+      deterministic graders (answer success, exact tool-set, step budget,
+      latency budget); evaluate runs fully offline from data/run_records.json.
   - status: delivered
-    text: Human-in-the-loop checkpointing pattern with typed state serialized to disk
+    text: >-
+      Human-in-the-loop checkpointing — shipped, verified: typed ApprovalRequest
+      plus full state serialize to data/checkpoint.json; CLI resumes with
+      approve or reject-with-feedback (re-plan, then Execute).
   - status: remaining
-    text: Parallel map/fork execution across plan steps (pydantic-graph Fork/Join)
+    text: >-
+      Parallel map/fork execution across plan steps (pydantic-graph Fork/Join)
+      to cut the per-task wall clock that dominates the local-model profile.
   - status: remaining
-    text: Cross-project agent evaluation on real retrieval corpora (shared with 01-rag-agent)
+    text: >-
+      Cross-project agent evaluation on real retrieval corpora (shared with
+      01-rag-agent) to test the harness away from the synthetic handbook.
 sections:
   - id: background
     text_md: |
-      Single-shot agents are the demo; workflows are the product. This project extends the
-      agentic-AI flagship into multi-step, stateful workflows — planning, tool
-      orchestration, retries, and human checkpoints — with the same typed contracts and
-      evaluation discipline as the rest of the platform.
+      Single-shot agents are the demo; workflows are the product. This project
+      extends the agentic-AI flagship into multi-step, stateful workflows —
+      planning, tool orchestration, bounded retries, self-critique, and human
+      checkpoints — with the same typed contracts and evaluation discipline as
+      the rest of the platform. The question is not whether an LLM can answer,
+      but whether it can be trusted through a multi-step procedure.
+
+      - **Explicit graphs over free-form loops** — a pydantic-graph
+        Plan→Execute→Critique workflow makes every transition, retry bound, and
+        loop-back auditable code instead of prompt folklore.
+      - **Deterministic grading** — a 14-task suite graded by offline,
+        code-level evaluators turns "the agent works" into per-task pass rates a
+      client can inspect.
+      - **Bounded autonomy** — retries are capped, latency and cost budgets are
+        recorded per run, and consequential actions pause at a human checkpoint
+        whose state is serialized to disk.
+
+      The result is an agent stack that fails loudly and measurably rather than
+      fluently.
+
+      **Business implication:** a client deciding where agents may run
+      unsupervised needs evidence, not a demo — graded outcomes against explicit
+      budgets, with a checkpoint pattern for the actions that carry real cost.
+    figures: []
+    metrics_keys: []
   - id: objectives
     text_md: |
-      Typed multi-step agent graphs with recoverable failures; step-level evaluation
-      criteria and per-run cost budgets; and a human-in-the-loop checkpoint pattern that
-      keeps autonomy auditable.
+      - **Typed multi-step graphs with recoverable failures** — typed state
+        threaded through Plan→Execute→Critique; validation failures take a
+        bounded repair path, never an unbounded retry loop.
+      - **Step-level evaluation criteria with per-run budgets** — answer
+        success, exact tool-set selection, step budget, and a 180 s per-task
+        latency budget, accumulated per node.
+      - **Auditable human-in-the-loop** — a checkpoint node serializes the full
+        typed state to disk so a human can approve, reject with feedback, or
+        audit the run after the fact.
+      - **Honest measurement** — graders are deterministic and run fully
+        offline; no LLM judge, no vibes. Cost is reported at a reference rate
+        card even though local inference is $0.
+
+      **Business implication:** the deliverable is an operating decision — which
+      tasks the workflow may run end-to-end, which need a human checkpoint, and
+      what each run costs — with every claim backed by a recorded run.
+    figures: []
+    metrics_keys: []
   - id: data
     text_md: |
-      A synthetic "research ops" domain: the Atlas Valley field-station handbook — 12
-      in-code documents covering fuel, solar, water, batteries, comms, caches and cold
-      storage. All tools are deterministic (AST calculator, fixed conversion table,
-      keyword search, in-memory notebook), so every ground truth in the suite is exact
-      and the whole evaluation runs offline.
+      The domain is a synthetic "research ops" world: the Atlas Valley
+      field-station handbook, 12 in-code documents covering fuel, solar, water,
+      batteries, comms, caches, and cold storage. Every tool is deterministic,
+      so every ground truth in the suite is exact and the whole evaluation runs
+      offline. Tasks and expected answers live in `data/tasks.json`; graded run
+      records land in `data/run_records.json`.
+
+      | tool | implementation | why it is deterministic |
+      |---|---|---|
+      | `calculator` | locked-down AST evaluator | fixed arithmetic, no model call |
+      | `unit_convert` | fixed conversion table | table lookup only |
+      | `search_handbook` | keyword search over 12 docs | corpus is in code |
+      | `note_store` | per-run in-memory notebook | same input, same note |
+      | `math_*` toolset | composed via `PrefixedToolset` | two toolsets, zero name collisions |
+
+      **Business implication:** determinism is what makes agent quality
+      measurable — the client is not buying fluency, they are buying correct
+      procedures, and this domain pins correctness to code.
+    figures: []
+    metrics_keys: []
   - id: eda
     text_md: |
-      The corpus is intentionally small and fully enumerable: five task categories
-      (lookup, calculation, conversion, multi-step, note-keeping) exercise one to three
-      tools each. Expected answers are pinned to tool outputs by
-      `TestSuiteHonesty` — ground truths cannot silently drift from the domain.
-    figures: []
+      The corpus is small and fully enumerable, which is the point: five task
+      categories exercise one to three tools each, and expected answers are
+      pinned to actual tool outputs by `TestSuiteHonesty` — ground truths
+      cannot silently drift from the domain.
+
+      | category | what it exercises | typical chain |
+      |---|---|---|
+      | lookup | retrieval from the handbook | `search_handbook` |
+      | calculation | doc-grounded arithmetic | `search_handbook` → `calculator` |
+      | conversion | unit translation | `unit_convert` |
+      | multi-step | chained tool calls | 2–3 tools |
+      | note-keeping | notebook state | `note_store` |
+
+      The category-level cut of the graded run is rendered as
+      `category_success`: conversion is the only category at zero, because its
+      two tasks in the bounded run (t07, t09) died at the plan node before any
+      tool ran.
+
+      **Business implication:** category composition shows a client exactly
+      where agent risk concentrates — multi-tool reasoning is not where this
+      bounded run failed; the fragile point was the plan step itself.
+    figures: [category_success]
     metrics_keys: []
   - id: training
     text_md: |
       No model training: the workflow *is* the artifact. A pydantic-graph
-      Plan→Execute→Critique→End graph threads a typed `WorkflowState`; each node runs a
-      narrow pydantic-ai agent with its own structured-output contract. Execute carries
-      the four research-ops tools and a bounded repair path on validation failure; the
-      Critique node may loop back once. A `PrefixedToolset` composes a second math
-      toolset without name collisions (unit-tested). The real runs use `qwen3:32b` on
-      local Ollama (ADR-0004); each node retries its agent up to 3 times because the
-      reasoning model occasionally returns empty turns.
+      Plan→Execute→Critique→End graph threads a typed `WorkflowState`; each
+      node runs a narrow pydantic-ai agent with its own structured-output
+      contract.
+
+      ```mermaid
+      flowchart LR
+          A[user request] --> P[Plan<br/>structured step plan]
+          P --> E[Execute<br/>tool calls + bounded repair]
+          E --> C[Critique<br/>self-check]
+          C -->|fail, once| P
+          C -->|pass| R[WorkflowResult<br/>answer, steps, tools, tokens]
+      ```
+
+      - **Execute** carries the four research-ops tools and repairs validation
+        failures on a bounded path; **Critique** may loop back to Plan once.
+      - **Human checkpoint** — Plan can pause instead: the typed
+        `ApprovalRequest` plus full state serialize to `data/checkpoint.json`;
+        the CLI resumes with approve (continue at Execute) or
+        reject-with-feedback (re-plan, then Execute).
+      - **Tool registry** — a `PrefixedToolset` composes a second math toolset
+        without name collisions (unit-tested).
+      - **Model** — real runs use `qwen3:32b` on local Ollama (ADR-0004); each
+        node retries its agent up to 3 times because the reasoning model
+        occasionally returns empty turns.
+
+      **Business implication:** every transition, retry, and loop bound is code,
+      so the workflow a client audits is the workflow that runs.
+    figures: []
+    metrics_keys: []
   - id: evaluation
     text_md: |
-      Fourteen tasks graded by `pydantic-evals` with deterministic evaluators: answer
-      success (all expected keywords present), tool selection (exact tool-set match),
-      step budget, and a 180 s per-task latency budget. Token usage is accumulated per
-      node; cost is reported at a reference rate card (local Ollama itself is $0). The
-      `run` stage needs a live model; `evaluate` is fully offline from recorded runs.
+      Fourteen tasks graded by `pydantic-evals` (suite defined in
+      `src/agentic_workflows/evals.py`) with deterministic evaluators: answer
+      success (all expected keywords present), tool selection (exact tool-set
+      match), step budget, and a 180 s per-task latency budget. Token usage is
+      accumulated per node; cost is reported at a reference rate card (local
+      Ollama itself is $0).
+
+      - **Run and evaluate are separate DVC stages** — `run` needs a live
+        model; `evaluate` is fully offline from `data/run_records.json`, so a
+        run is paid for once and graded reproducibly forever.
+      - **No LLM judge** — grading is code, which means the same run always
+        yields the same scores.
+      - **The grader's view** — `per_task_grading` renders each task's answer
+        success against its tool selection, the two axes that diverge most.
+      - **Tests** — 44 offline tests (scripted `FunctionModel`) cover the
+        graph, HITL, tools, and eval machinery.
+
+      **Business implication:** deterministic, offline grading is what makes an
+      agent's quality a contract term rather than a demo impression.
+    figures: [per_task_grading]
     metrics_keys: [agentic_suite]
   - id: results
     text_md: |
-      Real run on local `qwen3:32b` (Ollama), 8 of the 14 suite tasks spanning all five
-      categories (`run-all --ids t01,t03,t05,t07,t09,t10,t12,t13`; a full 14-task run
-      exceeded two hours of wall clock on the reasoning model and was bounded — the
-      suite definition and graders cover the full 14). **Answer success 6/8 (75%)**,
-      **tool-selection accuracy 3/8 (37.5%)**, step budget 8/8. Two tasks (t07, t09)
-      died at the plan node to the reasoning model's empty-turn flakiness even after
-      bounded retries — recorded as `workflow_error`, not retried into the night.
-      Extra-tool noise (`note_store` used unprompted) explains the tool-selection
-      misses on otherwise correct answers. Latency: median 474 s, p95 871 s per task —
-      the 180 s budget held for only 1/8 runs, an honest profile of a 32B reasoning
-      model on local hardware. Throughput cost ≈ 4.5k input + 1.6k output tokens per
-      task (≈ $0.0017 at the reference rate card; $0 on Ollama).
+      Bounded real run on local `qwen3:32b` (Ollama): 8 of the 14 suite tasks
+      spanning all five categories (`run-all --ids t01,t03,t05,t07,t09,t10,t12,t13`;
+      a full 14-task run exceeded two hours of wall clock on the reasoning
+      model, and `run-all` without flags runs everything). Aggregates land in
+      `reports/metrics.json` (`agentic_suite`); full report in `reports/report.html`.
+
+      | task | answer | tool set | latency |
+      |---|---|---|---|
+      | t01 | ✓ | extra `note_store` | 164 s |
+      | t03 | ✓ | exact | 451 s |
+      | t05 | ✓ | extra `note_store` | 871 s |
+      | t07 | ✗ `workflow_error` at plan | — | 365 s |
+      | t09 | ✗ `workflow_error` at plan | — | 336 s |
+      | t10 | ✓ | extra `note_store` | 752 s |
+      | t12 | ✓ | exact | 497 s |
+      | t13 | ✓ | exact | 610 s |
+
+      **Answer success 6/8 (75%)**, **tool-selection accuracy 3/8 (37.5%)**,
+      step budget 8/8. The tool-selection misses are unprompted `note_store`
+      calls on otherwise-correct answers. Latency: median 474 s, p95 871 s —
+      the 180 s budget held for 1/8 runs, an honest profile of a 32B reasoning
+      model on local hardware. Throughput ≈ 4.5k input + 1.6k output tokens per
+      task (≈ $0.0017 at the reference rate card; $0 on Ollama). See
+      `per_task_grading`, `per_task_latency`, and `category_success`.
+
+      **Business implication:** for throughput-sensitive work, explicit graphs
+      plus deterministic graders beat free-form agents — the failures are
+      classified (plan flakiness, extra-tool noise), budgeted, and fixable,
+      instead of anecdotal.
     figures: [per_task_grading, per_task_latency, category_success]
     metrics_keys: [agentic_suite]
   - id: conclusions
     text_md: |
-      Explicit graphs buy auditability: every transition, retry and loop bound is code,
-      and the same typed state that drives execution serializes verbatim into the
-      human-checkpoint file. Deterministic graders make agent quality measurable without
-      an LLM judge — answer success and tool-selection accuracy on a 14-task suite
-      surface real behavior differences between models. Reasoning models served locally
-      need retry wrappers around structured-output calls: occasional empty turns
-      otherwise kill long workflows.
+      Three lessons generalize beyond this domain:
+
+      - **Explicit graphs buy auditability** — every transition, retry, and
+        loop bound is code, and the same typed state that drives execution
+        serializes verbatim into the human-checkpoint file.
+      - **Deterministic graders make agent quality measurable** — answer
+        success and tool-selection accuracy on a 14-task suite surface real
+        behavior differences between models without an LLM judge.
+      - **Local reasoning models need retry wrappers** — occasional empty
+        turns otherwise kill long workflows; t07 and t09 were recorded as
+        `workflow_error` after bounded retries, not retried into the night.
+
+      The machinery is trustworthy — 44 tests cover the graph, HITL, tools, and
+      eval harness — and the honest weak points are the plan node's flakiness
+      and reasoning-model latency on local hardware, both bounded and recorded.
+
+      **Business implication:** adopt this pattern when actions are
+      consequential and auditable — human checkpoints for irreversible steps,
+      explicit budgets for everything else — and treat local 32B reasoning as a
+      profiling environment, not a serving tier.
+    figures: []
+    metrics_keys: []

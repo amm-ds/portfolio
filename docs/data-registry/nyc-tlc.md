@@ -31,6 +31,16 @@ uv run python docs/data-registry/scripts/fetch_tlc.py --months 2024-01 2024-12 -
 
 ## Notes
 
+- **Drift observatory:** the scheduled `drift-observatory` workflow scores
+  *each newly published month* against Project 07's pinned serving model
+  (`mobility.cli drift-check --month YYYY-MM`): the month's file is fetched
+  through this card's URL pattern, lightly re-validated, aggregated to the
+  zone-hour grain, and scored with the persisted GBM + p90 pair — no
+  retraining. A relative MAE regression beyond `drift.tolerance` (default
+  15%) against the pinned test-window metrics opens a tracking issue;
+  response steps live in
+  [docs/runbooks/drift-response.md](../runbooks/drift-response.md).
+  Months that are not published yet exit 2 (skip-worthy, no issue).
 - Zone/location lookup table:
   `https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv`
 - Zone boundaries (shapefile, used by Project 07 choropleths):

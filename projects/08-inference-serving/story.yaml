@@ -1,92 +1,220 @@
 project_id: 08-inference-serving
 roadmap:
   - status: delivered
-    text: Reproducible async benchmark harness over the local Ollama serving layer (fixed structured-output task, latency/throughput/TTFT/schema-valid metrics)
+    text: >-
+      Reproducible async benchmark harness over the local Ollama serving layer
+      (ADR-0004 endpoint): fixed structured-output task, per-cell
+      latency/TTFT/tok/s/schema-valid metrics, bounded default under 45 min.
   - status: delivered
-    text: Engine comparison on Apple Silicon — llama.cpp vs MLX runner on the same model family, runner auto-detection via /api/ps
+    text: >-
+      Engine comparison on Apple Silicon — llama.cpp vs MLX on the same model
+      family, runner auto-detected via /api/ps; quant confound labelled.
   - status: delivered
-    text: Quality-vs-quantization table (Q8_0 vs QAT-int4 on one runner) with cost-per-1M-token honesty section
+    text: >-
+      Quality-vs-quantization check (Q8_0 vs QAT-int4 on one runner) with an
+      honest cost-per-1M-token section built on declared electricity
+      assumptions.
   - status: remaining
-    text: Continuous batching sweep (parallel slots beyond semaphore concurrency) once Ollama exposes slot scheduling controls
+    text: >-
+      Second serving stack comparison (vLLM or raw llama.cpp server) — tests
+      whether the bandwidth-bound findings are Ollama-specific or hold across
+      serving stacks.
+  - status: remaining
+    text: >-
+      Repeat runs with intervals on the same hardware to quantify run-to-run
+      variance; current numbers are a single author run, not a distribution.
+  - status: remaining
+    text: >-
+      Concurrency > 8 sweep to find where the p95-vs-concurrency slope bends
+      past the interactive SLO on bandwidth-bound unified memory.
   - status: deferred
-    text: KV-cache quantization (q8 KV) comparison — runner does not expose it on this Ollama build; would need raw llama.cpp server
+    text: >-
+      KV-cache quantization (q8 KV) — the runner does not expose it on this
+      Ollama build; would need a raw llama.cpp server to measure.
 sections:
   - id: background
     text_md: |
-      Running language models in production is a serving problem before it is a
-      modeling problem: latency percentiles, throughput, memory footprint, and
-      cost per token decide feasibility. This project measures the portfolio's
-      real serving stack — local Ollama exposing an OpenAI-compatible endpoint —
-      instead of quoting vendor numbers. Per ADR-0004 the platform already
-      standardizes on this endpoint for all LLM projects; benchmarking it means
-      every other project's latency and cost story rests on measured ground.
+      Running language models in production is a serving problem before it is
+      a modeling problem: latency percentiles, throughput, memory footprint,
+      and cost per token decide whether a use case ships at all. This project
+      measures the portfolio's real serving stack instead of quoting vendor
+      numbers.
+
+      - **Measured, not quoted:** the benchmark target is the same local
+        Ollama OpenAI-compatible endpoint every LLM project ships against
+        (ADR-0004, `docs/architecture/adr/0004-llm-provider-abstraction.md` —
+        no redundant gateway), so the numbers describe real traffic, not a
+        lab proxy.
+      - **Decisions it feeds:** local-vs-cloud serving economics, model and
+        quantization choice under a latency SLO, and concurrency sizing for
+        interactive workloads.
+
+      The task is fixed and bounded so the benchmark can be re-run, not just
+      read.
+
+      **Business implication:** a client weighing local inference against a
+      cloud API starts from measured per-model latency and cost numbers on
+      the stack that would actually run — not from vendor rate cards or
+      leaderboard claims.
   - id: objectives
     text_md: |
-      Characterize the model × engine × concurrency frontier on a fixed,
-      bounded structured-output task: p50/p95/p99 latency, TTFT, aggregate and
-      per-request output tokens/s, schema-valid rate, and failures. Compare
-      Ollama's llama.cpp and MLX runners on Apple Silicon, and quantizations on
-      a single runner. Publish an honest cost section: $0 API, amortized
-      electricity with declared assumptions, and a labelled hypothetical cloud
-      rate card.
+      - **Characterize the frontier:** per-cell p50/p95/p99 latency, TTFT,
+        aggregate and per-request output tok/s, schema-valid rate, keyword
+        quality rate, and failures across model × engine × concurrency.
+      - **Compare engines honestly:** llama.cpp (GGUF) vs MLX (safetensors)
+        on Apple Silicon, same model family, with the quant confound
+        labelled.
+      - **Compare quantizations on one runner:** quality and latency side by
+        side, not folklore about 4-bit degradation.
+      - **Publish an honest cost view:** $0 API spend, amortized electricity
+        with declared assumptions, and a labelled hypothetical cloud rate
+        card.
+
+      Success is a reproducible set of numbers tied to serving
+      configurations, not a leaderboard rank.
+
+      **Business implication:** the deliverable is an operating decision —
+      which model/quant arm meets a latency SLO at what cost — with every
+      metric traceable to a configuration a client could actually deploy.
   - id: data
     text_md: |
-      No dataset is downloaded: the benchmark task is fixed and synthetic —
-      8 general-knowledge prompts (capital of France, boiling point, DNA, …)
-      each carrying a keyword set for a tiny quality check. Every model answers
-      the same prompts under the same validated pydantic `Answer` schema
-      (one-sentence answer, confidence in [0,1], citation), temperature 0,
-      bounded output tokens, and hidden reasoning disabled so decode is
-      bounded. The suite lives in `data/prompts.json` (prepare stage).
+      No dataset is downloaded: the benchmark task is fixed and synthetic — 8
+      general-knowledge prompts (capital of France, boiling point of water,
+      DNA structure, …), each carrying a keyword set for a tiny answer-quality
+      check.
+
+      - **Validated output contract:** every model answers the same prompts
+        under the same pydantic `Answer` schema (one-sentence answer,
+        confidence in [0,1], citation), `temperature 0`, bounded
+        `max_tokens`, and reasoning disabled, so decode is bounded and
+        comparable across models.
+      - **Where it lives:** the `prepare` stage materializes the suite into
+        `data/prompts.json`; recorded runs land in `data/bench_run.json`.
+
+      A fixed task is what makes different models directly comparable.
+
+      **Business implication:** a client can re-run the identical task on
+      their own hardware and get numbers comparable cell-for-cell with these
+      — the benchmark is portable, not a one-off demo.
   - id: eda
     text_md: |
-      Exploratory analysis is the smoke pass: one request per arm verified that
-      `json_schema` response_format is honored, that qwen3.6's default thinking
-      mode would silently burn the token budget (fixed with
-      `reasoning_effort: none`, `low` for gpt-oss), and that gemma4's raw-prompt
-      template still answers chat-shaped requests — these are serving-land facts
-      that a naive harness would have mis-measured.
+      Exploratory analysis is the smoke pass that keeps the harness from
+      mis-measuring serving-land behavior before any timing starts.
+
+      - **`json_schema` is honored:** the endpoint accepts
+        `response_format` with a validated schema, so schema-valid rate is
+        measurable per cell instead of guessed from prose.
+      - **Reasoning defaults burn budget:** qwen3.6 defaults to thinking
+        mode, which silently exhausted the bounded token budget (0 valid
+        answers); fixed with `reasoning_effort: none` (`low` for gpt-oss) so
+        decode stays bounded.
+      - **Quality check parses across arms:** the `quality_quant` figure
+        shows schema-valid and keyword rates holding across quantization
+        arms — the harness measures answer quality identically everywhere.
+
+      These are facts about the serving layer, not about model intelligence.
+
+      **Business implication:** a naive harness would have reported qwen3.6
+      as a broken model; knowing per-model reasoning defaults is part of the
+      true cost of serving.
     figures:
       - quality_quant
   - id: training
     text_md: |
       There is no training; "methods" is the serving configuration. Ollama
-      0.40.x auto-selects the runner from the model artifact — GGUF manifests
-      run on llama.cpp, MLX safetensors on Apple's MLX engine — verified via
-      the `runner` field of `/api/ps` (this build has no runner override env;
-      MLX arrives via `-mlx` manifest tags). No MLX build exists for
-      qwen3.6:35b-a3b ("missing switch expert weights" on conversion), so its
-      engine cell is recorded as unavailable rather than forced.
+      0.40.x picks the runner from the model artifact — GGUF → llama.cpp,
+      MLX safetensors → Apple's MLX engine — verified via the `runner` field
+      of `/api/ps` (no runner-override env on this build; MLX arrives via
+      `-mlx` tags).
+
+      | model | architecture | quant | runner |
+      |---|---|---|---|
+      | qwen3.6:35b-a3b-q4_K_M | 3B-active MoE | Q4_K_M | llama.cpp |
+      | gpt-oss:20b | dense | MXFP4 | llama.cpp |
+      | gemma4:31b | dense | 4-bit MLX | MLX |
+      | qwen3:32b (`--full`) | dense | — | llama.cpp |
+      | gemma4 q8_0 / -qat (`--full`) | dense | Q8_0 / QAT-int4 | llama.cpp |
+
+      - **Engine is packaging:** on Apple Silicon "which engine" is which
+        manifest you pull; the honest comparison is same-family, different
+        packaging, quant confound labelled.
+      - **Missing cell, recorded:** no MLX build exists for qwen3.6:35b-a3b
+        (conversion fails on switch-expert weights) — a data point, not
+        silently skipped.
+
+      Rationale lives in `DESIGN.md`; stages are `prepare` → `bench` →
+      `report`.
+
+      **Business implication:** swapping engine or quantization is a manifest
+      pull, not a re-architecture — the table maps one-to-one onto deployment
+      options.
   - id: evaluation
     text_md: |
-      Each (model, engine, concurrency) cell repeats the 8-prompt suite 5 times
-      (40 requests) under an asyncio semaphore at concurrency 1/2/4/8, with a
-      cooldown between cells. Per cell: nearest-rank p50/p95/p99 latency, mean
-      TTFT, aggregate tok/s (tokens over cell wall time), per-request tok/s,
-      schema-valid rate, keyword quality rate, failures. Bounded default: 3
-      models × 3 concurrency levels, under 45 minutes; `--full` adds the dense
-      qwen3:32b arm, concurrency 2, and the quant/engine cells.
+      Cells are (model, engine, concurrency) with concurrency 1/2/4/8 under
+      an asyncio semaphore; each cell repeats the 8-prompt suite 5 times (40
+      requests) with a cooldown between cells.
+
+      | dimension | setup |
+      |---|---|
+      | cell | model × engine × concurrency 1/2/4/8, 5 repeats of the 8-prompt suite |
+      | driver | async httpx streaming against `/v1/chat/completions`, `json_schema` response_format |
+      | latency | nearest-rank p50/p95/p99, mean TTFT |
+      | throughput | aggregate tok/s (tokens over cell wall time) + per-request tok/s |
+      | quality | schema-valid rate, keyword quality rate, failures |
+
+      The `latency_concurrency` figure plots the per-cell p95 this protocol
+      produces. The bounded default (3 models × 3 concurrency levels)
+      finishes in under 45 minutes; `--full` adds the dense qwen3:32b
+      baseline, concurrency 2, and the quant/engine cells.
+
+      **Business implication:** the protocol is short and deterministic
+      enough to run inside a client proof-of-concept — SLO verification
+      becomes an afternoon task, not a project.
+    figures:
+      - latency_concurrency
   - id: results
     text_md: |
-      Headline numbers live in `reports/metrics.json` and `report.html`
-      (regenerate on your hardware with `bench --full && report`). The shape of
-      the results: MoE arms keep single-digit-second p95 latencies that grow
-      gracefully with concurrency; decode on unified memory is bandwidth-bound,
-      so batching hides latency rather than multiplying throughput; 4-bit arms
-      hold schema validity at essentially the same rate as Q8_0 on this task —
-      quantization costs serving headroom, not structured-output reliability.
+      All numbers are a single **author run** (Ollama 0.40.4, Apple-Silicon
+      Mac, 128 GB unified memory): 19 cells, **760 requests, 0 failures**.
+      They are not committed to the repo; regenerate on your hardware with
+      `bench --full && report` (`reports/metrics.json`, `reports/report.html`).
+
+      - **Engine:** MLX ≈ 2.9× GGUF tok/s on this machine (gemma4:31b, c=1);
+        quant confounded, so `engine_panel` reads as engine+packaging, not a
+        pure runner race.
+      - **Latency:** MoE arms keep single-digit-second p95 that grows
+        gracefully — qwen3.6 goes 0.81 s (c=1) → 7.80 s (c=8) — and
+        `latency_concurrency` shows p95 ≈ linear in concurrency on every arm.
+      - **Throughput:** decode on unified memory is bandwidth-bound —
+        `toks_per_s` is flat or declining with concurrency, batching hides
+        latency rather than multiplying throughput; the 3B-active MoE still
+        serves ~7× the tok/s of dense qwen3:32b.
+      - **Quality:** 4-bit arms hold schema validity at essentially the same
+        rate as Q8_0 — quantization costs serving headroom, not
+        structured-output reliability.
+
+      **Business implication:** under a single-digit-second interactive SLO,
+      the 4-bit MoE arm serves locally at roughly $0.12 per 1M output tokens
+      (declared 100 W, $0.30/kWh) — quantization is a latency and cost lever,
+      not a quality risk, at this task size.
     figures:
       - latency_concurrency
       - toks_per_s
       - engine_panel
   - id: conclusions
     text_md: |
-      Three lessons. First, measure the serving layer you actually ship — the
-      OpenAI-compatible endpoint doubles as both product surface and benchmark
-      target, so the numbers apply to real traffic. Second, engine choice on
-      Apple Silicon is currently a packaging choice (which manifest you pull),
-      not a runtime toggle — the honest comparison is same-family, different
-      packaging, with the quant confound labelled. Third, bounded structured
-      tasks make models directly comparable: schema-valid rate collapses
-      "it usually works" into a number, and per-model reasoning-effort defaults
-      are a serving concern, not a modeling one.
+      Three lessons generalize beyond this benchmark:
+
+      - **Measure the layer you ship:** the OpenAI-compatible endpoint is both
+        product surface and benchmark target, so the numbers apply to real
+        traffic with no translation layer.
+      - **Engine choice is packaging, not runtime:** the honest comparison is
+        same-family manifests with the quant confound labelled — and a
+        missing engine build is a data point, not a gap to paper over.
+      - **Bounded structured tasks make models comparable:** schema-valid
+        rate collapses "it usually works" into a number, and per-model
+        reasoning-effort defaults are a serving concern, not a modeling one.
+
+      **Business implication:** the framework transfers to a client decision
+      unchanged — same task, same protocol, same honesty labels — only the
+      hardware and the latency SLO change.
