@@ -202,8 +202,79 @@ describe("renderMarkdown list variants", () => {
   });
 });
 
+describe("renderMarkdown wrapped lists and thematic breaks", () => {
+  it("joins an indented continuation line into the previous bullet as one <li>", () => {
+    const md = [
+      "- **Real track — UCI Online Retail II** (implemented; run with",
+      "  `--data-source uci`):",
+      "- second bullet stays its own item",
+    ].join("\n");
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const items = container.querySelectorAll("ul li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toBe(
+      "Real track — UCI Online Retail II (implemented; run with --data-source uci):",
+    );
+    // inline bold and code formatting work in the joined continuation
+    expect(items[0].querySelector("strong")?.textContent).toBe("Real track — UCI Online Retail II");
+    expect(items[0].querySelector("code")?.textContent).toBe("--data-source uci");
+    expect(items[1].textContent).toBe("second bullet stays its own item");
+  });
+
+  it("joins continuation lines indented deeper than 2 spaces (YAML-aligned wraps)", () => {
+    const md = "- first item\n        deeply indented wrap line\n- second item";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const items = container.querySelectorAll("ul li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toBe("first item deeply indented wrap line");
+  });
+
+  it("splits a list followed by an unindented non-item line into list + paragraph", () => {
+    const md = "- item one\n- item two\nNew paragraph after the list.";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const ul = container.querySelector("ul");
+    expect(ul).not.toBeNull();
+    expect(ul!.querySelectorAll("li")).toHaveLength(2);
+    const ps = container.querySelectorAll("p");
+    expect(ps).toHaveLength(1);
+    expect(ps[0].textContent).toBe("New paragraph after the list.");
+  });
+
+  it("renders ---, *** and ___ lines as <hr class='md-break'>", () => {
+    const { container } = render(<>{renderMarkdown("above\n\n---\n\nbelow")}</>);
+    const hr = container.querySelector("hr.md-break");
+    expect(hr).not.toBeNull();
+    expect(container.querySelector("p")?.textContent).toBe("above");
+    expect(container.querySelectorAll("p")[1]?.textContent).toBe("below");
+    for (const tok of ["***", "___"]) {
+      const c = render(<>{renderMarkdown(`${tok}`)}</>);
+      expect(c.container.querySelectorAll("hr.md-break")).toHaveLength(1);
+    }
+  });
+
+  it("renders ordered-list continuations the same way", () => {
+    const md = "1. first step wraps\n   onto the next line\n2. second step";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const items = container.querySelectorAll("ol li");
+    expect(items).toHaveLength(2);
+    expect(items[0].textContent).toBe("first step wraps onto the next line");
+  });
+
+  it("does not treat a non-item first line as a list", () => {
+    const { container } = render(<>{renderMarkdown("dashes - inside a paragraph stay text")}</>);
+    expect(container.querySelector("ul")).toBeNull();
+    expect(container.querySelector("p")?.textContent).toContain("dashes - inside a paragraph");
+  });
+});
+
 describe("prose density (wave 10)", () => {
   const css = readFileSync("src/styles.css", "utf8");
+
+  it("keeps the story prose as wide as the figures (no 70ch cap on .story-main)", () => {
+    expect(css).not.toMatch(/\.story-main\s*\{[^}]*max-width:\s*70ch/);
+    // section padding/typography rhythm untouched
+    expect(css).toContain(".story-section .prose {\n  line-height: 1.62;\n}");
+  });
 
   it("ships the typography-rhythm hooks (line-height, spacing, markers)", () => {
     expect(css).toContain(".story-section .prose {\n  line-height: 1.62;\n}");
