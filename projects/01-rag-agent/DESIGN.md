@@ -101,9 +101,46 @@ API. Implementation notes: ragas 0.3.1 pins `langchain-community<0.4`;
 `RunConfig(timeout=900, max_workers=4)` accommodates multi-minute 32B calls;
 failed samples are NaN-skipped, never fatal. `context_recall`'s reference is
 the graded relevant article's lead. Because local 32B inference is the
-bottleneck (full 26-question run ≈ hours), the documented real run bounds the
-LLM phases with `--max-questions 10`; retrieval metrics always use the full
-graded set.
+bottleneck (full 65-question run ≈ hours), the documented real run bounds the
+LLM phases with `--max-questions 30`; retrieval metrics always use the full
+65-question graded set.
+
+### 3.6 Golden-set v2: abstention, failure taxonomy, bootstrap CIs (wave 11)
+
+The graded set was expanded to **65 questions**: 44 single-hop, 11 multi-hop,
+and **10 unanswerable** questions whose topics deliberately sit outside the
+corpus and whose `expected_behavior` is `abstain`. Answerable questions must
+have a relevant chunk in the top-10 of the production retriever
+(`validate_golden_set`); unanswerable ones are validated at authoring time
+(topic disjointness) and accepted on schema.
+
+Three measurement mechanisms were added on top of the existing judges:
+
+- **Abstention metrics** (`_meta.abstention` in `metrics.json`): refusal
+  accuracy (unanswerable questions the agent refused), cite-when-expected
+  (answerable questions citing a graded-relevant article), and false-abstention
+  rate (answerable questions the agent refused). Each rate is a mean over
+  per-question 0/1 indicators with a **percentile bootstrap 95% CI**
+  (n_resamples=1000, seeded from `config.seed`). Refusal detection is the
+  deterministic documented rule `is_abstention`: confidence < 0.3 OR explicit
+  no-evidence phrasing in the summary.
+- **Failure taxonomy** (`_meta.taxonomy` + `reports/figures/failure_taxonomy`):
+  every question is classified by deterministic first-match rules —
+  `format-failure` (agent raised / schema-invalid output), abstain-expected +
+  abstained → `correct`, abstain-expected + answered → `unsupported-claim`,
+  answerable without relevant evidence in top_k → `retrieval-miss`,
+  answerable with judge faithfulness < 0.5 → `unsupported-claim`, else
+  `correct`. A correct refusal on an unanswerable question counts as correct,
+  so the taxonomy sums to the question count.
+- **Bootstrap CIs everywhere else**: the rag_agent row (judge faithfulness,
+  answer relevance, context recall) gets `_meta.rag_ci` over its per-question
+  scores, and the RAGAS row gets `_meta.ragas_ci` over per-row RAGAS scores —
+  same n=1000 seeded percentile bootstrap as the abstention CIs.
+
+The per-question evidence behind every number ships as
+`reports/question_traces.json` (question → top-chunk rank → cited y/n →
+faithfulness → verdict) and is linked from a table appended to
+`reports/report.html`.
 
 ## 4. SLOs and operating envelope
 

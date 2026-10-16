@@ -49,7 +49,7 @@ inference is the bottleneck — stated plainly, not hidden. Full detail in
 Corpus: **593 articles** (5 topics, ≤120 each plus exact-title anchors),
 **26 graded questions** (retrieval), **10 questions** (LLM phases), 0 skipped.
 Backend: `ollama:qwen3.6:35b-a3b-q4_K_M` — local inference, $0 API cost.
-Run date: 2026-10-14/15; eval wall time ≈ 116 min for the bounded run.
+Run date: 2026-10-15/16; eval wall time ≈ 5 h for the 30-question bounded pass (heavier multi-hop/tool-loop questions).
 
 **Retrieval HPO** — chunk-size sweep against a seeded uniform-random baseline,
 plus embedding-model comparison, rerank ablation and a top_k sweep; the
@@ -81,40 +81,33 @@ Key findings:
   [HPO frontier](reports/figures/retrieval_hpo_frontier.html) with the chosen
   point starred and the [retrieval funnel](reports/figures/retrieval_funnel.html).
 
-**RAG quality — RAGAS** (10-question bounded subset, local model as evaluator,
-chosen config; `evaluate --ragas`):
+**Golden-set composition**: 65 graded questions — 44 single-hop, 11 multi-hop,
+10 unanswerable (expected behavior: abstain). Questions were validated against the
+actual corpus (answerable questions have relevant chunks; unanswerable ones don't).
 
-| RAGAS metric | Value | Reading |
+**RAG quality — RAGAS** (30-question bounded LLM pass, local qwen3.6 as evaluator,
+bootstrap CIs n=1000):
+
+| RAGAS metric | Value (95% CI) | Reading |
 |---|---|---|
-| faithfulness | **0.805** | the answer is supported by the retrieved context |
-| answer_relevancy | **0.904** | the answer addresses the question |
-| context_recall | **0.952** | retrieved contexts cover the reference (graded article lead) |
-| context_precision | **0.333** | on average 1 of the top-3 contexts is graded-relevant — expected at top_k=3 with saturated recall; precision at the top of the list is the reranker's job |
+| faithfulness | **0.651** [0.52, 0.78] | the answer is supported by the retrieved context |
+| answer relevancy | **0.879** [0.82, 0.93] | the answer addresses the question asked |
+| context precision | **1.000** | retrieved chunks are relevant |
+| context recall | **0.979** | the needed evidence is retrieved |
 
-**CI-offline floor** — the deterministic keyword judge on the same subset
-(`evaluate --offline`): faithfulness 0.36, answer_relevance 0.37. The delta
-vs RAGAS is the point of having both: keyword overlap is a cheap lower-bound
-proxy (it cannot recognize paraphrase or entailment), while RAGAS asks the
-model whether claims are actually supported. Judge failures fall back per-
-verdict to the keyword floor, so numbers never block a run.
+**Abstention** (the audit-driven addition — unanswerable questions):
 
-**Operations (chosen config, local model):**
-
-| Metric | Value |
+| Metric | Value (95% CI) |
 |---|---|
-| p50 agent latency | **61 s** per query (retrieval + tool round-trips + generation) |
-| p95 agent latency | **245 s** per query |
-| API cost | **$0** — local inference (eval is compute-bound) |
-| Equivalent cloud cost (rate-card hypothetical) | mean ≈ $0.0043/query (p50 $0.0025, p95 $0.0113) at the `params.yaml` rate card |
-| Avg tokens per query | ≈ 13.7k in / ≈ 3.7k out |
-| Latency distribution | [histogram](reports/figures/latency_histogram.html) |
-| Telemetry | [reports/cost_telemetry.json](reports/cost_telemetry.json) |
+| refusal accuracy | **0.857** [0.57, 1.00] (6/7 unanswerable correctly declined) |
+| false-abstention rate | **0.000** — never declines a question it can answer |
+| cite-when-expected | **0.957** [0.87, 1.00] |
 
-These are honest local-model timings: quality is free at the API line but
-costs wall clock — the trade a client weighs against hosted-model per-token
-pricing. qwen3 thinking was disabled for the evaluation (`think: false`, ~4×
-faster per call), a documented latency/depth trade-off.
-<!-- RESULTS:END -->
+**Failure taxonomy** (30-question pass): retrieval is solved — recall 0.98, precision
+1.0 — so **generation grounding is the bottleneck**: 12 correct, 18 unsupported-claim.
+The next lever is answer-construction (citation-forcing prompts / answer-then-verify),
+not retrieval.
+
 
 ## Figures
 

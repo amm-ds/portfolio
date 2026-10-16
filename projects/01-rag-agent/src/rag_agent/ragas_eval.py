@@ -95,7 +95,15 @@ class MiniLMEmbeddings:
         return self.embed_documents([text])[0]
 
 
-def run_ragas(config: RAGConfig, rows: list[RagasRow]) -> dict[str, float]:
+@dataclass
+class RagasResult:
+    """RAGAS aggregates plus the per-row scores used for bootstrap CIs."""
+
+    scores: dict[str, float]
+    per_row: dict[str, list[float]]
+
+
+def run_ragas(config: RAGConfig, rows: list[RagasRow]) -> RagasResult:
     """Compute the RAGAS metric set on the eval rows with the local evaluator.
 
     Metrics: faithfulness, answer_relevancy, context_precision, context_recall.
@@ -135,11 +143,14 @@ def run_ragas(config: RAGConfig, rows: list[RagasRow]) -> dict[str, float]:
         metrics.context_recall.name,
     ]
     scores: dict[str, float] = {}
+    per_row: dict[str, list[float]] = {}
     for name in metric_names:
-        values = [float(v) for v in result[name] if v == v]  # v != v filters NaN
+        row_values = [float(v) for v in result[name]]
+        per_row[name] = row_values
+        values = [v for v in row_values if v == v]  # v != v filters NaN
         scores[name] = round(sum(values) / len(values), 4) if values else float("nan")
     logger.info("RAGAS: %s", scores)
-    return scores
+    return RagasResult(scores=scores, per_row=per_row)
 
 
 def ensure_ragas_importable() -> str:

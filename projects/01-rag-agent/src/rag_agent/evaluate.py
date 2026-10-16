@@ -21,12 +21,12 @@ import json
 import random
 import time
 from collections.abc import Sequence
-from typing import cast
+from typing import Any
 
 import numpy as np
 import plotly.graph_objects as go
 from portfolio_core.logging import get_logger
-from portfolio_eval.rag import KeywordJudge, RAGEvalRow, RAGEvaluator
+from portfolio_eval.rag import RAGEvalResult
 from pydantic_ai import Agent
 
 from rag_agent.agent import build_agent
@@ -40,6 +40,7 @@ from rag_agent.figures import (
     model_comparison_figure,
     retrieval_funnel_figure,
     sweep_figure,
+    taxonomy_figure,
 )
 from rag_agent.index import (
     ChunkRecord,
@@ -55,12 +56,17 @@ from rag_agent.judge import RubricJudge, build_judge
 from rag_agent.ragas_eval import RagasRow, ensure_ragas_importable, run_ragas
 from rag_agent.reporting import (
     TOP_K_VALUES,
+    QuestionTrace,
     RAGRun,
     RetrievalScores,
     TopkData,
+    abstention_report,
+    bootstrap_ci,
+    classify_question,
     cost_telemetry,
     est_input_tokens_at,
     inference_backend,
+    is_abstention,
     mrr_at_5,
     recall_at_k,
     recall_at_k_from,
@@ -123,15 +129,17 @@ def load_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuest
     """Load graded questions, resolving expected titles to corpus article ids.
 
     Questions whose relevant titles are absent from the corpus are skipped with
-    a warning so the eval degrades gracefully instead of scoring noise.
+    a warning so the eval degrades gracefully instead of scoring noise —
+    except ``unanswerable`` questions, which intentionally cite no titles.
     """
     raw = json.loads(config.eval_questions_path.read_text(encoding="utf-8"))
     title_to_id = {a.title: a.article_id for a in articles}
     questions: list[EvalQuestion] = []
     for item in raw:
-        resolved = [title_to_id[t] for t in item["relevant_titles"] if t in title_to_id]
-        missing = [t for t in item["relevant_titles"] if t not in title_to_id]
-        if not resolved:
+        behavior = item.get("expected_behavior", "answer")
+        resolved = [title_to_id[t] for t in item.get("relevant_titles", []) if t in title_to_id]
+        missing = [t for t in item.get("relevant_titles", []) if t not in title_to_id]
+        if behavior == "answer" and not resolved:
             logger.warning(
                 "skipping eval question (no relevant titles in corpus): %s", item["question"]
             )
@@ -140,9 +148,36 @@ def load_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuest
             logger.warning(
                 "eval question %r: titles not in corpus ignored: %s", item["question"], missing
             )
-        questions.append(EvalQuestion(question=item["question"], relevant_article_ids=resolved))
+        questions.append(
+            EvalQuestion(
+                question=item["question"],
+                relevant_article_ids=resolved,
+                category=item.get("category", "single_hop"),
+                expected_behavior=behavior,
+            )
+        )
     logger.info("loaded %d eval questions (%d skipped)", len(questions), len(raw) - len(questions))
     return questions
+
+
+def validate_golden_set(
+    config: RAGConfig, questions: list[EvalQuestion], retriever: Retriever
+) -> list[str]:
+    """Validate questions against the actual index before they ship.
+
+    Answerable questions must have a relevant chunk within the top-10 hits of
+    the production retriever (otherwise the question grades retrieval noise).
+    Unanswerable questions are validated at authoring time — their topics must
+    sit outside the corpus topics — and are accepted here on schema alone.
+    """
+    problems: list[str] = []
+    for question in questions:
+        if question.expected_behavior == "abstain":
+            continue
+        citations = retriever.search(question.question, top_k=10)
+        if first_relevant_rank(citations, question.relevant_article_ids) is None:
+            problems.append(f"no relevant chunk in top-10: {question.question!r}")
+    return problems
 
 
 def first_relevant_rank(citations: list[Citation], relevant_article_ids: list[str]) -> int | None:
@@ -219,61 +254,129 @@ def run_rag_eval(
     questions: list[EvalQuestion],
     judge: RubricJudge | None = None,
 ) -> RAGRun:
-    """Run the agent over the question set and score outputs with the judge."""
-    rows: list[RAGEvalRow] = []
+    """Run the agent over the question set; collect traces + judge verdicts.
+
+    Per question we record a :class:`QuestionTrace` (the failure-taxonomy
+    input). Per-row judge verdicts aggregate with exactly the formulas of
+    ``RAGEvaluator.run`` (mean faithfulness, mean relevance over question+
+    context, retrieval-recall fraction) — answerable questions only, since a
+    correct refusal must not count as unfaithful. Unanswerable questions are
+    scored by the abstention metrics instead. A raised/invalid agent run is
+    recorded as a format failure, never propagated.
+    """
+    selected = judge if judge is not None else build_judge()
+    logger.info("RAG judge: %s", getattr(selected, "name", type(selected).__name__))
+
+    traces: list[QuestionTrace] = []
     ragas_rows: list[RagasRow] = []
     latencies: list[float] = []
     input_tokens: list[int] = []
     output_tokens: list[int] = []
+    faith_scores: list[float] = []
+    relevance_scores: list[float] = []
+    retrieved_flags: list[float] = []
+    n_answerable = 0
+
     for question in questions:
         start = time.perf_counter()
-        result = agent.run_sync(question.question, deps=retriever)
+        output: AnalysisResult | None = None
+        error = ""
+        try:
+            result = agent.run_sync(question.question, deps=retriever)
+            output = result.output
+            input_tokens.append(int(result.usage.input_tokens))
+            output_tokens.append(int(result.usage.output_tokens))
+        except Exception as exc:  # format failure: record, don't abort the run
+            error = f"{type(exc).__name__}: {exc}"[:200]
         latencies.append(time.perf_counter() - start)
-        output: AnalysisResult = result.output
-        input_tokens.append(int(result.usage.input_tokens))
-        output_tokens.append(int(result.usage.output_tokens))
 
         evidence = retriever.search(question.question, top_k=config.top_k)
         relevant = set(question.relevant_article_ids)
-        rows.append(
-            RAGEvalRow(
+        top10 = retriever.search(question.question, top_k=10)
+        top_rank = first_relevant_rank(top10, question.relevant_article_ids)
+        retrieved_relevant = any(c.article_id in relevant for c in evidence)
+
+        if output is None:
+            traces.append(
+                QuestionTrace(
+                    question=question.question,
+                    category=question.category,
+                    expected_behavior=question.expected_behavior,
+                    top_rank=top_rank,
+                    retrieved_relevant=retrieved_relevant,
+                    cited_relevant=False,
+                    faithfulness=float("nan"),
+                    abstained=False,
+                    format_ok=False,
+                    error=error,
+                )
+            )
+            continue
+
+        summary = output.summary
+        cited_relevant = any(c.article_id in relevant for c in output.citations)
+        abstained = is_abstention(summary, output.confidence)
+        context = "\n".join(c.excerpt for c in evidence)
+        faith = selected.judge(question.question, context, summary).score
+        relevance = selected.judge(
+            question.question, question.question + " " + context, summary
+        ).score
+        traces.append(
+            QuestionTrace(
                 question=question.question,
-                contexts=[c.excerpt for c in evidence],
-                answer=output.summary,
-                retrieved_relevant=any(c.article_id in relevant for c in evidence),
+                category=question.category,
+                expected_behavior=question.expected_behavior,
+                top_rank=top_rank,
+                retrieved_relevant=retrieved_relevant,
+                cited_relevant=cited_relevant,
+                faithfulness=faith,
+                abstained=abstained,
+                format_ok=True,
             )
         )
-        # RAGAS sample: full retrieved chunk texts + the graded article lead as
-        # the reference for context_recall.
-        contexts: list[str] = []
-        reference = ""
-        for citation in evidence:
-            chunk = retriever.get_chunk(citation.chunk_id)
-            if chunk is not None:
-                contexts.append(chunk.text)
-                if not reference and chunk.article_id in relevant:
-                    reference = chunk.text[:500]
-        ragas_rows.append(
-            RagasRow(
-                question=question.question,
-                answer=output.summary,
-                contexts=contexts,
-                reference=reference,
+        if question.expected_behavior == "answer":
+            n_answerable += 1
+            faith_scores.append(faith)
+            relevance_scores.append(relevance)
+            retrieved_flags.append(1.0 if retrieved_relevant else 0.0)
+            # RAGAS sample: full retrieved chunk texts + the graded article lead.
+            contexts: list[str] = []
+            reference = ""
+            for citation in evidence:
+                chunk = retriever.get_chunk(citation.chunk_id)
+                if chunk is not None:
+                    contexts.append(chunk.text)
+                    if not reference and chunk.article_id in relevant:
+                        reference = chunk.text[:500]
+            ragas_rows.append(
+                RagasRow(
+                    question=question.question,
+                    answer=summary,
+                    contexts=contexts,
+                    reference=reference,
+                )
             )
-        )
-    selected = judge if judge is not None else build_judge()
-    logger.info("RAG judge: %s", getattr(selected, "name", type(selected).__name__))
-    # RAGEvaluator types the slot as KeywordJudge; the rubric judges share the
-    # same .judge(question, context, answer) -> JudgeVerdict protocol.
-    evaluator = RAGEvaluator(judge=cast("KeywordJudge", selected))
-    rag_result = evaluator.run(rows)
+
+    def _mean(values: list[float]) -> float:
+        return sum(values) / len(values) if values else float("nan")
+
+    rag_result = RAGEvalResult(
+        n=n_answerable,
+        faithfulness=_mean(faith_scores),
+        answer_relevance=_mean(relevance_scores),
+        context_recall=_mean(retrieved_flags),
+    )
     logger.info("RAG eval: %s", rag_result.to_dict())
     return RAGRun(
         eval_result=rag_result,
         latencies_s=latencies,
         ragas_rows=ragas_rows,
+        traces=traces,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
+        faithfulness_rows=faith_scores,
+        relevance_rows=relevance_scores,
+        retrieved_rows=retrieved_flags,
         _rate_in=config.usd_per_mtok_input,
         _rate_out=config.usd_per_mtok_output,
     )
@@ -303,23 +406,28 @@ def model_comparison(
     questions: list[EvalQuestion],
     articles: list[Article],
     rerank_fn: RerankFn,
+    embed_fn: EmbedFn | None = None,
 ) -> dict[str, RetrievalScores]:
     """Compare embedding models on the same chunk-200 chunk structure.
 
     The MiniLM arm reuses the existing production index; other arms get their
     own persisted index under ``data/index/chunks_200_<slug>/`` (built once,
-    reused afterwards).
+    reused afterwards). ``embed_fn`` override is for tests: both arms then
+    search the existing index with the injected encoder.
     """
     size = min(config.chunk_sizes)
     results: dict[str, RetrievalScores] = {}
     for slug, model_name, prefix in EMBEDDING_ARMS:
-        embedder: EmbedFn = SentenceTransformerEmbedder(model_name)
-        index_dir = (
-            config.index_path(size)
-            if slug == "minilm"
-            else config.index_dir / f"chunks_{size}_{slug}"
-        )
-        if slug != "minilm" and not (index_dir / "faiss.index").exists():
+        embedder: EmbedFn = embed_fn or SentenceTransformerEmbedder(model_name)
+        if embed_fn is not None:
+            index_dir = config.index_path(size)
+        else:
+            index_dir = (
+                config.index_path(size)
+                if slug == "minilm"
+                else config.index_dir / f"chunks_{size}_{slug}"
+            )
+        if embed_fn is None and slug != "minilm" and not (index_dir / "faiss.index").exists():
             chunks = chunk_articles(articles, size=size, overlap=config.chunk_overlap)
             build_index(chunks, embedder, index_dir, description=f"size={size} model={slug}")
         retriever = Retriever.from_index_dir(
@@ -458,6 +566,8 @@ def run(
     ragas: bool = False,
     offline: bool = False,
     max_questions: int | None = None,
+    embed_fn: EmbedFn | None = None,
+    rerank_fn: RerankFn | None = None,
 ) -> None:
     """Full evaluation: retrieval HPO always; RAG/RAGAS/telemetry need a provider.
 
@@ -467,6 +577,7 @@ def run(
     model as evaluator. ``max_questions`` bounds ONLY the LLM phases (agent +
     RAGAS) to the first N graded questions — retrieval metrics always use the
     full set; local model inference makes the unbounded run multi-hour.
+    ``embed_fn``/``rerank_fn`` overrides are for tests (deterministic fakes).
     """
     if ragas:
         # Fail fast if the venv is pruned mid-run.
@@ -484,13 +595,15 @@ def run(
             len(questions),
         )
 
-    embed_fn: EmbedFn = SentenceTransformerEmbedder(config.embedding_model)
-    rerank_fn: RerankFn = CrossEncoderReranker(config.reranker_model)
+    if embed_fn is None:
+        embed_fn = SentenceTransformerEmbedder(config.embedding_model)
+    if rerank_fn is None:
+        rerank_fn = CrossEncoderReranker(config.reranker_model)
 
     # --- Retrieval HPO: chunk sweep + random floor --------------------------
     scores, random_scores, sweep_fig = run_retrieval_sweep(config, questions, embed_fn, rerank_fn)
     # --- Ablations: embedding model, rerank on/off, top_k grid --------------
-    model_scores = model_comparison(config, questions, articles, rerank_fn)
+    model_scores = model_comparison(config, questions, articles, rerank_fn, embed_fn=embed_fn)
     rerank_scores = rerank_ablation(config, questions, embed_fn, rerank_fn)
     topk = topk_sweep(config, questions, embed_fn, rerank_fn)
     chosen = choose_retrieval_config(config, model_scores, scores, topk)
@@ -500,6 +613,19 @@ def run(
     run_start = time.perf_counter()
     rag_run: RAGRun | None = None
     ragas_scores: dict[str, float] | None = None
+    ragas_ci: dict[str, Any] | None = None
+    # Golden-set validation against the production index (embed-only, works offline).
+    validation_retriever = Retriever.from_index_dir(
+        config,
+        config.index_path(min(config.chunk_sizes)),
+        embed_fn,
+        rerank_fn,
+    )
+    problems = validate_golden_set(config, questions, validation_retriever)
+    for problem in problems:
+        logger.warning("golden-set validation: %s", problem)
+    if problems:
+        logger.warning("golden-set validation found %d problem(s)", len(problems))
     if not offline:
         arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
         chosen_embedder: EmbedFn = SentenceTransformerEmbedder(arm[1])
@@ -518,8 +644,41 @@ def run(
         agent = build_agent(config)
         rag_run = run_rag_eval(config, agent, retriever, rag_questions)
         if ragas:
-            ragas_scores = run_ragas(config, rag_run.ragas_rows)
+            ragas_result = run_ragas(config, rag_run.ragas_rows)
+            ragas_scores = ragas_result.scores
+            ragas_ci = {
+                name: {
+                    "mean": ragas_result.scores[name],
+                    "ci95": list(bootstrap_ci(values, seed=config.seed)),
+                }
+                for name, values in ragas_result.per_row.items()
+            }
+        else:
+            ragas_ci = None
     wall_time_s = time.perf_counter() - run_start
+
+    abstention = abstention_report(rag_run.traces, seed=config.seed) if rag_run else None
+    rag_ci: dict[str, Any] | None = None
+    if rag_run:
+        rag_ci = {
+            "faithfulness": {
+                "mean": rag_run.eval_result.faithfulness,
+                "ci95": list(bootstrap_ci(rag_run.faithfulness_rows, seed=config.seed)),
+            },
+            "answer_relevance": {
+                "mean": rag_run.eval_result.answer_relevance,
+                "ci95": list(bootstrap_ci(rag_run.relevance_rows, seed=config.seed)),
+            },
+            "context_recall": {
+                "mean": rag_run.eval_result.context_recall,
+                "ci95": list(bootstrap_ci(rag_run.retrieved_rows, seed=config.seed)),
+            },
+        }
+    taxonomy_counts: dict[str, int] = {}
+    if rag_run:
+        for trace in rag_run.traces:
+            label = classify_question(trace)
+            taxonomy_counts[label] = taxonomy_counts.get(label, 0) + 1
 
     avg_output_tokens = (
         sum(rag_run.output_tokens) / len(rag_run.output_tokens)
@@ -552,6 +711,19 @@ def run(
     }
     if latency_fig is not None:
         figures["latency_histogram"] = latency_fig
+    if rag_run and rag_run.traces:
+        figures["failure_taxonomy"] = taxonomy_figure(rag_run.traces)
+    golden_counts: dict[str, int] = {}
+    for q in questions:
+        key = f"{q.category}/{q.expected_behavior}"
+        golden_counts[key] = golden_counts.get(key, 0) + 1
+    meta = {
+        "golden_set": golden_counts,
+        "abstention": abstention,
+        "rag_ci": rag_ci,
+        "taxonomy": taxonomy_counts,
+        "ragas_ci": ragas_ci,
+    }
     random_by_size = {s.chunk_size: s for s in random_scores}
     extra = {
         "n_questions": len(questions),
@@ -626,6 +798,8 @@ def run(
             rerank_scores=rerank_scores,
             topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
             ragas_scores=ragas_scores,
+            traces=rag_run.traces,
+            meta=meta,
         )
         write_cost_telemetry(config, rag_run, wall_time_s)
     else:
@@ -639,4 +813,5 @@ def run(
             model_scores=model_scores,
             rerank_scores=rerank_scores,
             topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
+            meta=meta,
         )
