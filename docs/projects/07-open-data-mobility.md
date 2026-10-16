@@ -26,6 +26,23 @@ outer-borough curb demand drops 7–10% in rain (Queens 0.92×, Staten Island
 0.93×) while Manhattan holds (0.97×) and EWR rises (1.08×) — directional,
 with documented non-causal caveats.
 
+## Drift observatory
+
+Monitoring is running software, not just a runbook. The scheduled Thursday
+`.github/workflows/drift-observatory.yml` workflow scores each newly
+published TLC month against the persisted serving model
+(`mobility.cli drift-check --month YYYY-MM`, no retraining): regression
+beyond the ±15% tolerance exits 1 and opens an issue per
+`docs/runbooks/drift-response.md`; months not yet published exit 2.
+First scored month (2024-11): +8.2% vs pinned, within tolerance — a wiring
+check, since real value starts with the first unseen month. Reports
+accumulate in `reports/drift/`.
+
+## Serving
+
+The tuned GBM pair is persisted per `SERVING.md`; the showcase API forecast
+endpoint is verified live (JFK zone 132 → 223.827 point / 251.811 p90).
+
 ## Where things live
 
 - Code + design: [projects/07-open-data-mobility](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility) — pipeline `mobility download|validate|join|features|tune|train-baselines|train-nn|evaluate|dashboard|dq-report|all`, DVC stages in `dvc.yaml`

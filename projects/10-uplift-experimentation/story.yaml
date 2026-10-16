@@ -2,26 +2,25 @@ project_id: 10-uplift-experimentation
 sections:
   - id: background
     text_md: |
-      Marketing analytics has a seductive failure mode: build the best
-      possible model of who will convert, then market to its top scorers.
-      That targets *sure things* — customers who would convert anyway — and
-      ignores *persuadables*, the only people a campaign can actually create.
-      Worse, at real base rates a response model will happily target customers
-      whose purchase probability the campaign *lowers*. The decision is not
-      "who will buy?" but "who buys *because of us*?" — a counterfactual
-      question that only a randomized design plus an uplift model can answer.
+      Marketing analytics has a seductive failure mode: build the best model
+      of who will convert, then market to its top scorers. That targets
+      *sure things* — customers who would convert anyway — and ignores
+      *persuadables*, the only people a campaign can actually create. The
+      decision is not "who will buy?" but "who buys *because of us*?" — a
+      counterfactual question that only a randomized design plus an uplift
+      model can answer.
 
       This project runs the full experimentation stack on the canonical
       Hillstrom email benchmark: a 2008 randomized campaign of 64,000
       customers split across a Mens E-Mail arm, a Womens E-Mail arm, and a
-      no-email control. The decision on the table: who gets the next wave,
-      and what is that worth in money rather than clicks.
+      no-email control. The decision on the table: who gets the next send,
+      and what is it worth in money rather than clicks.
 
       | cost parameter | value | meaning |
       |---|---|---|
-      | revenue per conversion | $114 | measured mean spend among converters — revenue, not margin (COGS not in the snapshot) |
-      | cost per email | $0.01 | marginal ESP send cost |
-      | policy budget | 25% | share of customers the next wave may target |
+      | `revenue_per_conversion` | $114 | measured mean spend among converters — revenue, not margin (no COGS in the snapshot) |
+      | `cost_per_email` | $0.01 | marginal ESP send cost |
+      | policy budget | 25% | share of customers the targeting policy may mail |
       | base conversion rate | ~0.9% | the regime where naive targeting wastes budget |
 
       **Business implication:** campaign profit is a concentration problem —
@@ -30,21 +29,22 @@ sections:
       defensible dollar figure, not a leaderboard AUC.
   - id: objectives
     text_md: |
-      - Read the randomized experiment honestly: arm sizes, balance on
-        pre-period covariates, and the difference-in-means effect with its
-        standard error — before any modeling.
-      - Reduce variance with CUPED using a strictly pre-treatment covariate
-        (prior-year spend), and *measure* how much variance it actually
-        removes rather than assuming the textbook win.
-      - Size the experiment: required customers per arm for the measured
+      - **Read the experiment honestly:** arm sizes, balance on pre-period
+        covariates, and the difference-in-means effect with its standard
+        error — before any modeling.
+      - **Reduce variance with CUPED** using a strictly pre-treatment
+        covariate (prior-year spend), and *measure* how much variance it
+        actually removes rather than assuming the textbook win.
+      - **Size the experiment:** customers per arm required for the measured
         effect at alpha 0.05 and power 0.8, against the customers actually
         available.
-      - Compare three targeting policies on out-of-fold scores — the
+      - **Compare three targeting policies** on out-of-fold scores — the
         marketing-practice response model, a T-learner, and an X-learner —
         against the naive baselines (random, treat-everyone, no-campaign) on
-        Qini curves and on profit under the campaign cost model.
-      - Recommend a budget-constrained targeting policy with an expected
-        incremental-profit delta vs random, and state the honest limits of
+        Qini curves and on profit under the campaign cost model, each with a
+        paired-bootstrap CI.
+      - **Recommend a budget-constrained policy** with an expected
+        incremental-profit delta vs random and the honest limits of
         predicting conversions at a 1% base rate.
 
       **Business implication:** every artifact below answers a question a
@@ -59,7 +59,7 @@ sections:
       (visit, conversion, spend). Fetched checksum-pinned from the author's
       site through the platform's `io.fetch` — the sha256 gate fails loudly
       if the upstream snapshot drifts (see
-      [data-registry/hillstrom](https://github.com/amm-ds/portfolio/tree/main/docs/data-registry/hillstrom.md)).
+      [data-registry/hillstrom](https://amm-ds.github.io/portfolio/data-registry/hillstrom/)).
 
       The primary read is the two-arm frame — Mens E-Mail (treatment) vs
       No E-Mail (control), 42,613 customers after dropping the Womens E-Mail
@@ -71,7 +71,7 @@ sections:
       | treatment | segment | 1 = Mens E-Mail, 0 = No E-Mail |
       | conversion | conversion | primary outcome (~0.9% base) |
       | visit / spend | visit / spend | secondary outcomes |
-      | log_history | history | numeric feature + CUPED covariate |
+      | `log_history` | history | numeric feature + CUPED covariate |
       | recency, mens, womens, newbie | same | numeric/binary features |
       | channel, zip_code | same | categorical features |
 
@@ -81,12 +81,13 @@ sections:
   - id: eda
     text_md: |
       Randomization holds: the three arms are near-identical on pre-period
-      spend (~$242 mean history in each arm), so outcome contrasts are
-      attributable to the campaign, not to assignment bias. The outcomes tell
-      the classic Hillstrom story: the emails move **visits** strongly (10.6%
-      in control vs 15.1% Womens / 18.3% Mens) but **conversion** only in the
-      Mens arm (0.57% control vs 0.88% Womens / 1.25% Mens) on a ~0.9% base
-      rate — a rare event that dominates every downstream design choice.
+      spend (~$242 mean history in each arm), so outcome contrasts attribute
+      to the campaign, not to assignment bias — visible arm-by-arm in
+      `eda_segment_profile`. The outcomes tell the classic Hillstrom story:
+      the emails move **visits** strongly (10.6% control vs 15.1% Womens /
+      18.3% Mens) but **conversion** only in the Mens arm (0.57% vs 0.88% /
+      1.25%) on a ~0.9% base rate — a rare event that dominates every
+      downstream design choice.
 
       | segment | n | visit rate | conversion rate | mean prior spend |
       |---|---|---|---|---|
@@ -95,14 +96,14 @@ sections:
       | No E-Mail | 21,306 | 0.106 | 0.0057 | ~$241 |
 
       **Business implication:** balance is verified, not assumed — and a ~1%
-      conversion base rate means the money question ("who converts because of
-      us?") is statistically hard, which is exactly why the variance-reduction
-      and power machinery comes next.
+      conversion base rate makes the money question ("who converts because
+      of us?") statistically hard, which is exactly why the
+      variance-reduction and power machinery comes next.
     figures: [eda_segment_profile]
   - id: training
     text_md: |
       Three targeting policies are fit on the two-arm frame, all hand-rolled
-      on sklearn (no causallib/causalml — DESIGN.md records the trade-off):
+      on sklearn (no causallib/causalml — `DESIGN.md` records the trade-off):
 
       ```mermaid
       flowchart LR
@@ -116,77 +117,59 @@ sections:
 
       Base learners are HistGradientBoosting inside a one-hot
       ColumnTransformer; the X-learner combines its two effect regressors as
-      g(x)·tau0 + (1−g(x))·tau1 with a regularized logistic propensity clipped
-      to [0.05, 0.95]. Every score is **out-of-fold** from 5-fold
+      g(x)·tau0 + (1−g(x))·tau1 with a regularized logistic propensity
+      clipped to [0.05, 0.95]. Every score is **out-of-fold** from 5-fold
       cross-fitting: the evaluation read never sees a prediction from a model
       that saw the row, so policy comparisons are not confounded by
-      overfitting — the standard mistake that makes in-sample Qini curves look
-      informative when they are not.
+      overfitting — the standard mistake that makes in-sample Qini curves
+      look informative when they are not.
 
       **Business implication:** the models are auditable line-by-line; nothing
       in the targeting policy is a black box a client cannot interrogate.
   - id: evaluation
     text_md: |
-      Protocol: out-of-fold scores on all 42,613 customers, three policies
-      plus three naive baselines (random, treat-everyone, no-campaign), judged
-      two ways.
+      All 42,613 customers scored out-of-fold; three policies plus the
+      random, treat-everyone, and no-campaign baselines, judged two ways.
 
-      **Qini curve / coefficient.** Customers are sorted by score; at each
-      targeted fraction f the curve plots n_t(f)·[rate_treated(f) −
-      rate_control(f)] — incremental conversions — against f. The Qini
-      coefficient is the area between the policy curve and the random line:
-      the uplift analogue of AUROC, in conversion units.
+      - **Qini curve / coefficient (`qini_curves`).** Sorted by score, the
+        curve plots incremental conversions at each targeted fraction f. The
+        coefficient — the area between the policy curve and the random line —
+        is the uplift analogue of AUROC, in conversion units.
+      - **Profit frontier (`profit_frontier`).** profit(f) = inc(f)·$114 −
+        mailed(f)·$0.01, with $114 = `revenue_per_conversion` (mean spend
+        among converters; no COGS in the snapshot, so profit = revenue −
+        send cost). The recommendation is the argmax at the 25% budget —
+        chosen on money, with the Qini curve as the diagnostic.
+      - **Paired uncertainty.** Every number carries a 95% CI from a paired
+        row bootstrap (n=1000, seeded) of out-of-fold scores: one shared
+        row-resample per replication, so differences are paired on identical
+        resamples. Rankings are stated on the difference CI — spanning zero
+        means not established.
+      - **Cost sensitivity (`cost_sensitivity`).** The profit-maximizing
+        fraction is recomputed across a sweep of `cost_per_email` vs
+        mail-everyone profit, plus the analytic break-even send cost — the
+        answer to "at what cost does targeting beat mailing everyone?"
+      - **Baselines and deciles (`uplift_by_decile`).** Random and
+        treat-everyone sit on the random line by construction (Qini 0) —
+        their profit curves are the bar any model must clear; the decile
+        figure cross-checks predicted ordering against the empirical arm
+        contrast slice by slice.
 
-      **Profit frontier.** Under the campaign cost model,
-      profit(f) = inc(f)·$114 − mailed(f)·$0.01 — where $114 is revenue per
-      conversion (mean spend among converters; the snapshot exposes no COGS,
-      so profit is revenue minus send cost, not true margin). The recommended
-      policy is the argmax of profit at the 25% budget — chosen on money,
-      with the Qini curve as the diagnostic that explains the choice.
-
-      **Uncertainty is paired.** Every model number carries a 95% CI from a
-      paired row bootstrap of the out-of-fold scores (n=1000, seeded): one
-      shared row-resample per replication across policies, so model-vs-model
-      differences are paired on identical resamples. Qini curves are drawn
-      with bootstrap bands; model-ranking statements are made on the CI of
-      the difference, not on point estimates — when that interval spans zero
-      the ranking is reported as not established.
-
-      **Cost sensitivity.** The profit-maximizing targeting fraction is
-      recomputed for a sweep of cost_per_email against the mail-everyone
-      profit, plus the analytic break-even send cost at the policy budget —
-      the direct answer to "at what cost does targeting beat mailing
-      everyone?"
-
-      **Baselines as first-class citizens.** Random and treat-everyone sit on
-      the random line by construction (Qini 0); their profit curves are the
-      honest bar any model must clear. The decile figure cross-checks that
-      predicted ordering tracks the empirical arm contrast slice by slice.
-
-      **Business implication:** the evaluation answers "who do I mail and what
-      is it worth" directly — both metrics are denominated in conversions and
-      dollars, not abstract scores.
+      **Business implication:** the evaluation answers "who do I mail and
+      what is it worth" in conversions and dollars, not abstract scores.
     figures: [qini_curves, uplift_by_decile, profit_frontier, cost_sensitivity]
   - id: results
     text_md: |
-      Experiment read (conversion): treated 1.253% vs control 0.573%, ATE
-      **+0.68pp**, SE 0.09pp — real, small, exactly the regime where targeting
-      discipline pays.
+      Treated 1.253% vs control 0.573% → ATE **+0.68pp**, SE 0.09pp — real,
+      small, exactly the regime where targeting discipline pays. CUPED (log
+      prior-year spend covariate) leaves the ATE unchanged but removes only
+      **0.08% of conversion variance** (0.52% on visit) — prior spend barely
+      predicts a ~1% event: CUPED is exactly as good as its covariate.
+      Power: **3,063 customers/arm** at alpha 0.05 / power 0.8 vs 21,306
+      available — decisive, and plans the next campaign.
 
-      CUPED (covariate log1p prior-year spend): adjusted ATE +0.00680 vs
-      +0.00681 naive — unbiased by construction — but only **0.08% of
-      conversion variance removed**: prior spend barely predicts a ~1% event.
-      On the visit outcome the same machinery removes **0.52%**. The lesson is
-      the point: CUPED is exactly as good as its covariate, so covariate
-      selection is a design decision, not a formula to paste.
-
-      Power: for the measured +0.68pp at alpha 0.05 / power 0.8, the analytic
-      two-proportion formula requires **3,063 customers per arm**; 21,306 are
-      available — the read is decisive, and the formula doubles as a planning
-      tool for the next campaign (MDE at this size: ~±0.26pp).
-
-      Policy ladder (out-of-fold, revenue $114/conversion, $0.01/email; 95% CIs
-      from a paired row bootstrap of the out-of-fold scores, n=1000):
+      Policy ladder (out-of-fold, `revenue_per_conversion` $114,
+      $0.01/email; 95% CIs from a paired row bootstrap, n=1000, seeded):
 
       | policy | Qini [95% CI] | profit @ 25% budget [95% CI] | delta vs random |
       |---|---|---|---|
@@ -196,68 +179,63 @@ sections:
       | random | 0.0 | $4,026 | — |
       | treat-everyone | 0.0 | — (full-mail $16,103) | — |
 
-      Key findings:
+      Findings (`qini_curves`, `profit_frontier`, `cost_sensitivity`):
 
-      - **Honest headline: at $0.01/email, mail-everyone is the profit maximum
-        ($16,103 vs $6,838 for the top-25% policy). The uplift model's value
-        is concentration** — the top-25% T-learner policy delivers ~61 of the
-        ~145 total incremental conversions (≈42%) while mailing a quarter of
-        the list, and vs random at the same budget it earns +$2,812 (+69%):
-        ~61 conversions from 10,653 emails vs ~36 at random.
-      - **Cost sensitivity:** the profit-maximizing fraction drops below
-        full-mail by ≈$0.20/email, and the top-25% policy beats mail-everyone
-        on profit above **≈$0.30 per email** (analytic break-even) — the
-        fatigue / list-wear regime, where targeting is the difference between
-        profit and loss.
-      - **Ranking verdict, with the interval:** the response model's Qini area
-        is nominally higher, but the 95% CI on the paired Qini difference
-        (response − T-learner) is [−8.18, 9.52] and **spans zero — the
-        curve-area ranking is not established**. What is established is the
-        money: the paired profit-at-budget difference CI is [−$3,617, −$48],
-        entirely below zero. Overlapping single-policy CIs understate the
-        separation; the paired difference is the honest read.
-      - Qini area and budget profit disagree for the response model (highest
-        area, lowest budget profit) — the policy is chosen on the money.
-      - The X-learner trails here: near-constant propensity and strong overlap
-        give its second stage nothing to recover, only variance. Regime-
-        specific, not a general verdict.
-      - Predicting conversions is not changing them: the decile check shows
-        the predicted ordering only roughly tracking empirical uplift at this
-        base rate — the same lesson as Project 05's fairness finding on the
-        retention side.
+      - **At $0.01/email, mail-everyone is the profit maximum ($16,103).**
+        The uplift model's value is **concentration**: the top-25% T-learner
+        delivers ~61 of ~145 incremental conversions (≈42%) from a quarter
+        of the list, beating random at equal budget +$2,812 (+69%).
+      - **Cost sensitivity:** profit-max drops below full-mail by
+        ≈$0.20/email; above ≈$0.30/email (analytic break-even c\* ≈ $0.2999)
+        top-25% beats mail-everyone — at $0.50: $1,618 vs −$4,777.
+      - **Ranking verdict:** the paired Qini-difference CI (response − T) is
+        [−8.18, 9.52] and **spans zero — the curve-area ranking is NOT
+        established**; the paired profit-difference CI is [−$3,617, −$48],
+        entirely below zero — **T-learner's profit advantage IS
+        established**. Single-policy CIs overlap; the paired difference is
+        honest.
+      - The response model posts the highest Qini area but the lowest budget
+        profit — policy is chosen on the money.
+      - The X-learner trails: near-constant propensity and strong overlap
+        leave its second stage only variance to recover — regime-specific,
+        not general.
 
       **Business implication:** a defensible targeting list with a dollar
-      figure, plus the machinery to re-derive it on the client's own
-      randomized holdout.
+      figure and paired-bootstrap intervals, plus the machinery to re-derive
+      it on the client's own randomized holdout.
     figures: [qini_curves, profit_frontier, cost_sensitivity, cuped_variance]
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
     text_md: |
-      The full stack — randomization checks, honest effect read, CUPED, power
-      analysis, uplift meta-learners, Qini, profit frontier — composes into
-      one operating decision, and each layer earns its place:
+      The full stack — randomization checks, honest effect read, CUPED,
+      power analysis, uplift meta-learners, Qini, profit frontier — composes
+      into one operating decision:
 
-      - **Effect before model:** +0.68pp with SE 0.09pp comes from the design,
-        not from any learner; a model cannot rescue an underpowered read (the
-        power formula says what effect size is even visible).
-      - **Covariates are the CUPED story:** 0.08% vs 0.52% variance reduction
-        is not a formula failure — it measures how much signal the covariate
-        carries. Measure it; do not assume the textbook number.
+      - **Effect before model:** +0.68pp with SE 0.09pp comes from the
+        design, not from any learner; a model cannot rescue an underpowered
+        read (the power formula says what effect size is even visible).
+      - **Covariates are the CUPED story:** 0.08% vs 0.52% variance
+        reduction is not a formula failure — it measures how much signal the
+        covariate carries. Measure it; do not assume the textbook number.
       - **Out-of-fold or it didn't happen:** cross-fitted scores keep the
         Qini read honest; in-sample uplift curves are decoration.
-      - **Choose policies on the money, state rankings with intervals:** Qini
-        explains, profit decides — the response model's curve area would
-        mislead a budget owner here. And the Qini ranking itself is stated
-        with its paired-bootstrap CI: it spans zero for response vs T-learner,
-        so only the profit ranking is claimed.
-      - **Predicting is not changing:** response ranking targets sure things;
-        uplift ranking targets persuadables. At a 1% base rate the difference
-        is honest noise management, not magic.
+      - **Choose policies on the money, state rankings with intervals:**
+        Qini explains, profit decides — the response model's curve area
+        would mislead a budget owner here. And the Qini ranking itself is
+        stated with its paired-bootstrap CI: it spans zero for response vs
+        T-learner, so only the profit ranking is claimed.
+      - **Predicting is not changing:** response ranking targets sure
+        things; uplift ranking targets persuadables. At a 1% base rate the
+        difference is honest noise management, not magic.
 
       **Business implication:** hand this framework a client's randomized
-      campaign extract and it returns a targeting policy, its expected dollar
-      delta, and the sample-size math for the next experiment — with only the
-      cost model and the fetch URL to change.
+      campaign extract and it returns a targeting policy, its expected
+      dollar delta, and the sample-size math for the next experiment — with
+      only the cost model and the fetch URL to change. Full rationale and
+      rejected alternatives: `DESIGN.md`; reproduction and client
+      takeaways: `README.md`; model details: `MODEL_CARD.md`; the rendered
+      run: `reports/report.html`; machine-readable numbers:
+      `reports/metrics.json`.
 roadmap:
   - status: delivered
     text: >-
@@ -290,10 +268,10 @@ roadmap:
       per-channel uplift model and a channel-switching cost model.
   - status: delivered
     text: >-
-      Bootstrap CIs + cost sensitivity — shipped: paired row bootstrap
-      (n=1000, seeded) over out-of-fold scores; per-policy 95% CIs on Qini
-      and profit-at-budget, paired difference CIs, Qini figure bands, and a
-      cost sweep with the ≈$0.30/email break-even. Unit-tested.
+      Bootstrap CIs + cost sensitivity — shipped, verified: paired row
+      bootstrap (n=1000, seeded) over out-of-fold scores; per-policy 95% CIs
+      on Qini and profit, paired difference CIs (profit ranking established,
+      Qini not), Qini bands, cost sweep with ≈$0.30/email break-even.
   - status: remaining
     text: >-
       Model-based CUPED covariate — a control-arm outcome model as covariate
