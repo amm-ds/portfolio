@@ -50,6 +50,7 @@ semantics as `portfolio_core.io.fetch` (which cannot set headers).
 | Full benchmark | 10-instance subset; all 56 | **all 56 + per-family reporting** | Per-family gaps (C1…RC2) expose where each solver actually stands; subset hid C2's wide-horizon difficulty. Best-known references for the 42 instances missing from the registry CSV ship as a clearly-sourced project-local supplement (`best_known_supplement.csv`, SINTEF TOP values; registry wins conflicts). |
 | Fleet cap (`max_vehicles`) | hard fail; soft (warn + report) | **soft** | The instance fleet (25) is an upper bound, not the optimum; a baseline heuristic exceeding it (CW needs 31 on R101) is a finding, reported with the vehicle count — never hidden. |
 | Distance | rounded vs full-precision Euclidean | **full precision, Euclidean** | Matches the double-precision convention the best-known table is published under. |
+| External reference | none; OR-Tools CP-SAT yardstick | **CP-SAT, hinted + time-bounded (`ortools_cp`)** | Per-vehicle circuits over time-window-filtered arcs (necessary condition `ready_i + service_i + dist_ij <= due_j`), fleet capped at hinted fleet + slack, ALNS plan injected as the solution hint, depot return on a separate timestamp (a shared departure/arrival variable makes every route a `t >= t` cycle). Single worker + fixed seed = deterministic within the limit; UNKNOWN status falls back to the hint, so the arm never degrades an incumbent. Measured verdict: ties ALNS on all 56 instances within a 10 s budget at ~5x the runtime; certifies <=25-customer subproblems to optimality in seconds. |
 
 ## Flow
 
@@ -119,6 +120,24 @@ flowchart LR
   tuned 2-opt), wins 56/56, negative gaps on 8 instances (convention-mixed
   references); per-family: C1 4.48, C2 6.50, R1 4.10, R2 3.04, RC1 4.75,
   RC2 3.00. Roadmap down to one item: hierarchical objective.
+- **2026-10-15** — Wave 13 (external reference): `ortools_cp` OR-Tools CP-SAT
+  arm behind the same `RoutePlan` contract — per-vehicle circuits over
+  time-window-filtered arcs, hinted by the ALNS plan, single worker + fixed
+  seed, 10 s/instance wall budget from config (`ortools_time_limit_s`,
+  `ortools_max_vehicles`, `ortools_fleet_slack`). Debugging history that
+  mattered: the first model crashed or hung at 100 customers (full arc graph =
+  204k bools; presolve consumed the whole limit) and proved INFEASIBLE
+  everywhere because depot departure and return shared one time variable
+  (every route became a `t >= t` cycle) — caught by the tiny-instance tests.
+  Fixed model: filtered arcs, separate return timestamp, depot-usage guard,
+  coverage-checked extraction with hint fallback. Result: on all 56
+  instances CP-SAT ended at UNKNOWN within budget and the arm returned the
+  ALNS incumbent unchanged (ties 56/56 at ~5x runtime; 25-customer prefix of
+  C101 certified optimal at 191.8 in 2.9 s vs the 286.3 2-opt hint). New
+  figures: `pareto_gap_runtime` (all seven solvers), `alns_convergence_C101`
+  / `_RC105` (two-panel ALNS traces); ALNS `trace`/`stats` captured on the
+  convergence instances. New tests: `tests/test_ortools.py` (feasibility,
+  never-worse-than-hint, determinism-within-limit).
 - **2026-10-15** — Wave 12 (external-audit remediation): (1) vehicle-count
   comparison — `best_known_vehicles` column added to the registry CSV (14
   rows, SINTEF values) and the project supplement (42 rows); evaluation now

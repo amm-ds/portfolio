@@ -16,7 +16,7 @@ import polars as pl
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json, style_runs
 from portfolio_core.timecv import TimeSeriesCV
-from portfolio_eval.metrics import RunResult
+from portfolio_eval.metrics import MetricResult, RunResult
 from portfolio_eval.ml import RunComparison, regression_metrics
 from portfolio_eval.report import ReportBuilder
 
@@ -92,6 +92,51 @@ class BacktestResult:
         return out
 
 
+def _mase_scale(
+    y_hist: np.ndarray, series_hist: np.ndarray, season: int = 7
+) -> tuple[np.ndarray, np.ndarray]:
+    """Per-series MASE scale: mean in-sample |lag-season diff| over the history.
+
+    Vectorized: rows of a series keep date order after a stable group-sort, so
+    the seasonal difference within each contiguous segment is exactly the
+    in-sample one-step seasonal-naive error. Series without ``season + 1``
+    history points get scale 0 (excluded from MASE by the caller).
+    """
+    uniques, codes = np.unique(series_hist, return_inverse=True)
+    order = np.argsort(codes, kind="stable")
+    y_sorted = y_hist[order].astype(float)
+    c_sorted = codes[order]
+    starts = np.flatnonzero(np.r_[True, c_sorted[1:] != c_sorted[:-1]])
+    counts = np.diff(np.r_[starts, len(c_sorted)])
+    scales = np.zeros(len(uniques))
+    for si, (start, cnt) in enumerate(zip(starts.tolist(), counts.tolist(), strict=True)):
+        seg = y_sorted[start : start + cnt]
+        if cnt > season:
+            scales[si] = float(np.mean(np.abs(seg[season:] - seg[:-season])))
+    return uniques, scales
+
+
+def _fold_mase_parts(
+    y_train: np.ndarray,
+    series_train: np.ndarray,
+    y_val: np.ndarray,
+    series_val: np.ndarray,
+    err_val: np.ndarray,
+    season: int = 7,
+) -> tuple[float, float]:
+    """Pooled MASE numerator/denominator for one fold.
+
+    Denominator is the fold's per-series in-sample seasonal-naive scale
+    evaluated at the val rows; rows whose series lacks history are excluded.
+    """
+    uniques, scales = _mase_scale(y_train, series_train, season)
+    idx = np.clip(np.searchsorted(uniques, series_val), 0, len(uniques) - 1)
+    hit = uniques[idx] == series_val
+    val_scale = np.where(hit, scales[idx], 0.0)
+    mask = val_scale > 0
+    return float(np.abs(err_val[mask]).sum()), float(val_scale[mask].sum())
+
+
 def backtest(
     features: pl.DataFrame, config: ForecastConfig, specs: list[ModelSpec] | None = None
 ) -> BacktestResult:
@@ -100,6 +145,8 @@ def backtest(
     Splits are computed on *dates* (one expanding window shared by all series)
     and then mapped to row indices, so no date block is ever split across
     train/validation and the embargo ``gap`` holds at day granularity.
+    Reports MAE/RMSE/MAPE (platform metrics) plus MASE — MAE scaled by the
+    fold's in-sample seasonal-naive error per series.
     """
     result = BacktestResult()
     folds = cv_row_folds(features, config)
@@ -109,12 +156,22 @@ def backtest(
         x, y, dates, series = to_xy(features, config, spec)
         pooled_true: list[np.ndarray] = []
         pooled_pred: list[np.ndarray] = []
+        mase_num, mase_den = 0.0, 0.0
         for k, (train_rows, val_rows) in enumerate(folds):
             model = spec.build(config)
             model.fit(x[train_rows], y[train_rows])
             y_pred = model.predict(x[val_rows])
             pooled_true.append(y[val_rows])
             pooled_pred.append(y_pred)
+            num, den = _fold_mase_parts(
+                y[train_rows],
+                series[train_rows],
+                y[val_rows],
+                series[val_rows],
+                y[val_rows] - y_pred,
+            )
+            mase_num += num
+            mase_den += den
             result.folds.append(
                 FoldRecord(
                     model=spec.name,
@@ -128,13 +185,16 @@ def backtest(
         metrics = regression_metrics(
             np.concatenate(pooled_true).tolist(), np.concatenate(pooled_pred).tolist()
         )
+        mase = mase_num / mase_den if mase_den > 0 else float("nan")
+        metrics.append(MetricResult("mase", mase, higher_is_better=False))
         result.runs.append(RunResult(name=spec.name, metrics=metrics))
         logger.info(
-            "%s: MAE=%.3f RMSE=%.3f MAPE=%.2f%%",
+            "%s: MAE=%.3f RMSE=%.3f MAPE=%.2f%% MASE=%.3f",
             spec.name,
             metrics[0].value,
             metrics[1].value,
             metrics[2].value,
+            mase,
         )
     return result
 
@@ -214,6 +274,11 @@ def figure_fold_stability(result: BacktestResult) -> go.Figure:
         )
     fig.update_layout(title="Fold stability (MAE per fold)", xaxis_title="fold")
     style_runs(fig, best=best_model(result))
+    add_takeaway(
+        fig,
+        "takeaway: every run degrades on later folds (trend drift) — the honest "
+        "backtest prices in drift a random split would hide",
+    )
     return apply_theme(fig)
 
 

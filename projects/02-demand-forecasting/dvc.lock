@@ -9,8 +9,8 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 729203bd0a3c0e403039a1e386441760.dir
-      size: 210482
+      md5: 29338191c73e2b347003db0d3f814f4c.dir
+      size: 232789
       nfiles: 25
     outs:
     - path: data/dataset.json
@@ -34,8 +34,8 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 729203bd0a3c0e403039a1e386441760.dir
-      size: 210482
+      md5: 29338191c73e2b347003db0d3f814f4c.dir
+      size: 232789
       nfiles: 25
     outs:
     - path: data/features.parquet
@@ -55,14 +55,14 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 729203bd0a3c0e403039a1e386441760.dir
-      size: 210482
+      md5: 29338191c73e2b347003db0d3f814f4c.dir
+      size: 232789
       nfiles: 25
     outs:
     - path: data/models.pkl
       hash: md5
-      md5: e82cf62faba2d25853eca5aff9dd91ec
-      size: 1773317
+      md5: d569798bd31d01d4adc07fe44ca350fc
+      size: 2864899
   evaluate:
     cmd: uv run python -m demand_forecasting.cli evaluate
     deps:
@@ -80,23 +80,23 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 729203bd0a3c0e403039a1e386441760.dir
-      size: 210482
+      md5: 29338191c73e2b347003db0d3f814f4c.dir
+      size: 232789
       nfiles: 25
     outs:
     - path: reports/figures
       hash: md5
-      md5: 9d7016fbb3cf9e2af6e0a33d221b0b3a.dir
-      size: 680565
-      nfiles: 26
+      md5: ed36fd0005858a3c7863051e1c621e71.dir
+      size: 793614
+      nfiles: 30
     - path: reports/metrics.json
       hash: md5
-      md5: 84c2cf51a3ac8561cc8d6fb636aa944f
-      size: 947
+      md5: 0b1edde70f312d214bb3cc03b7f0b4b0
+      size: 1502
     - path: reports/report.html
       hash: md5
-      md5: ad7167fcc99b2d2af55031801f3d4022
-      size: 2052
+      md5: 983512f1e36dfa3bbede951dac75f158
+      size: 2363
   hpo:
     cmd: uv run python -m demand_forecasting.cli hpo
     deps:
@@ -110,8 +110,8 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 729203bd0a3c0e403039a1e386441760.dir
-      size: 210482
+      md5: 29338191c73e2b347003db0d3f814f4c.dir
+      size: 232789
       nfiles: 25
     outs:
     - path: data/hpo_best.json

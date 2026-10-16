@@ -8,6 +8,8 @@ polars DataFrames / problem models so tests can exercise them without the
 pipeline.
 """
 
+from typing import TypedDict
+
 import plotly.express as px
 import plotly.graph_objects as go
 import polars as pl
@@ -299,6 +301,123 @@ def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
         "ALNS leads on both criteria — single-digit distance gaps and the fewest "
         "vehicles of our ladder; every solver still uses more vehicles than the "
         "hierarchical-optimizing references",
+    )
+    return apply_theme(fig, height=720)
+
+
+def pareto_figure(rows: pl.DataFrame) -> go.Figure:
+    """Runtime-vs-gap Pareto across ALL solvers (means over instances).
+
+    One marker per solver: x = mean runtime (s, log), y = mean distance gap
+    to best-known (%); lower-left is better. The external CP-SAT reference is
+    marked distinct from the hand-written ladder, and the vehicle-count delta
+    is annotated so the two benchmark criteria stay visible on one chart.
+    """
+    fig = px.scatter(
+        rows,
+        x="mean_runtime_s",
+        y="mean_gap_pct",
+        color="solver",
+        log_x=True,
+        title="Pareto: mean runtime vs mean distance gap (all solvers, 56 instances)",
+        labels={
+            "mean_runtime_s": "mean runtime (s, log)",
+            "mean_gap_pct": "mean gap to best-known (%)",
+            "solver": "solver",
+        },
+    )
+    for trace in fig.data:
+        trace.update(marker_size=12)
+    for row in rows.iter_rows(named=True):
+        delta = row["mean_veh_delta"]
+        delta_txt = f"{delta:+.2f}" if delta is not None else "n/a"
+        fig.add_annotation(
+            x=row["mean_runtime_s"],
+            y=row["mean_gap_pct"],
+            text=f"{row['solver']} (veh Δ {delta_txt})",
+            showarrow=False,
+            yshift=18,
+            font_size=11,
+        )
+    style_runs(fig, best="alns")
+    add_takeaway(
+        fig,
+        "the hand-written ladder dominates on speed; CP-SAT buys quality only "
+        "with orders of magnitude more time — and never fewer vehicles",
+    )
+    return apply_theme(fig, height=640)
+
+
+class AlnsConvergenceHistory(TypedDict, total=False):
+    """Checkpoint-sampled ALNS trace + per-segment destroy-operator weights."""
+
+    iterations: list[float]
+    best: list[float]
+    segments: list[float]
+    destroy_weights: list[list[float]]
+
+
+def alns_convergence_figure(history: AlnsConvergenceHistory, instance: str) -> go.Figure:
+    """Two-panel ALNS convergence on one instance.
+
+    Top frame: best-found distance vs iteration at the recorded checkpoints.
+    Bottom frame: destroy-operator weights per adapted segment (random /
+    worst / Shaw) — why the search moved where it did.
+    """
+    from plotly.subplots import make_subplots
+
+    iterations = history["iterations"]
+    best = history["best"]
+    segments = history.get("segments", [])
+    weights = history.get("destroy_weights", [])
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        row_heights=[0.6, 0.4],
+        vertical_spacing=0.14,
+        subplot_titles=(
+            "best distance vs ALNS iteration (checkpoints)",
+            "destroy-operator weights per segment (random / worst / Shaw)",
+        ),
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=iterations,
+            y=best,
+            mode="lines+markers",
+            name="alns best distance",
+            marker_color="#2dd4bf",
+        ),
+        row=1,
+        col=1,
+    )
+    reduction = (best[0] - best[-1]) / best[0] * 100.0 if best[0] else 0.0
+    labels = ["random", "worst", "shaw"]
+    palette = px.colors.qualitative.Plotly
+    for k in range(3):
+        fig.add_trace(
+            go.Scatter(
+                x=segments,
+                y=[w[k] for w in weights],
+                mode="lines+markers",
+                name=f"destroy: {labels[k]}",
+                marker_color=palette[k % len(palette)],
+                showlegend=bool(weights),
+            ),
+            row=2,
+            col=1,
+        )
+    fig.update_layout(
+        title=f"{instance} — ALNS convergence",
+        xaxis2_title="segment",
+        yaxis_title="total distance",
+        yaxis2_title="operator weight",
+    )
+    add_takeaway(
+        fig,
+        f"best {best[0]:.1f} -> {best[-1]:.1f} (-{reduction:.1f}%) over "
+        f"{iterations[-1]} iterations; weights re-balanced every segment",
     )
     return apply_theme(fig, height=720)
 

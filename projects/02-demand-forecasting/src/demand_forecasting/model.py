@@ -73,6 +73,98 @@ class NaiveLast:
         return x[:, self._lag1_index].astype(float)
 
 
+class NaiveSeasonal:
+    """Weekly seasonal naive: predict the same weekday last week (``lag_7``).
+
+    The standard statistical floor for weekly-seasonal demand — every model
+    must beat "same day last week" before it earns a place in the ladder.
+    """
+
+    def __init__(self, lag7_index: int) -> None:
+        self._lag7_index = lag7_index
+
+    def fit(self, x: np.ndarray, y: np.ndarray) -> "NaiveSeasonal":
+        """Nothing to learn — the shifted feature carries the prediction."""
+        return self
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """Return the per-series same-weekday-last-week value for every row."""
+        return x[:, self._lag7_index].astype(float)
+
+
+class ETSSeries:
+    """Per-series ETS (ExponentialSmoothing) baseline, sklearn-style wrapper.
+
+    One damped-trend + weekly-seasonal Holt-Winters model per series, fit on
+    the training window only; the val block is scored from each series'
+    forecast at its per-series horizon position (rows arrive in date order, so
+    the k-th occurrence of a series in the val slice is day k of its horizon).
+
+    Fallback chain (documented, tested): series with fewer than ``2 * 7 + 2``
+    training points, or any statsmodels fit failure, fall back to the weekly
+    seasonal naive (``lag_7``) prediction for that series.
+    """
+
+    MIN_HISTORY = 16  # 2 full weekly cycles + margin
+
+    def __init__(self, lag7_index: int) -> None:
+        self._lag7_index = lag7_index
+        self._models: dict[str, Any] = {}
+        self._fallback: set[str] = set()
+
+    @staticmethod
+    def _fit_one(y_series: np.ndarray) -> Any:
+        """Fit one Holt-Winters model with a documented fallback chain."""
+        from statsmodels.tsa.holtwinters import (  # type: ignore[import-untyped]
+            ExponentialSmoothing,
+        )
+
+        attempts: list[dict[str, Any]] = [
+            {"trend": "add", "damped_trend": True, "seasonal": "add"},
+            {"trend": "add", "damped_trend": False, "seasonal": "add"},
+            {"trend": None, "damped_trend": False, "seasonal": "add"},
+        ]
+        last_err: Exception | None = None
+        for kwargs in attempts:
+            try:
+                model = ExponentialSmoothing(y_series, seasonal_periods=7, **kwargs).fit(
+                    optimized=True, use_brute=True
+                )
+                if not np.all(np.isfinite(model.fittedvalues)):
+                    raise ValueError("non-finite fitted values")
+                return model
+            except Exception as err:
+                last_err = err
+        raise ValueError(f"ETS fallback chain exhausted: {last_err}")
+
+    def fit(self, x: np.ndarray, y: np.ndarray) -> "ETSSeries":
+        """Fit one ETS per series on the training window (date-sorted rows)."""
+        series = np.array([str(s) for s in x[:, -1]])
+        for sid in sorted(set(series.tolist())):
+            ys = y[series == sid]
+            if len(ys) < self.MIN_HISTORY:
+                self._fallback.add(sid)
+                continue
+            try:
+                self._models[sid] = self._fit_one(ys.astype(float))
+            except ValueError:
+                self._fallback.add(sid)
+        return self
+
+    def predict(self, x: np.ndarray) -> np.ndarray:
+        """Per-series ETS forecast at each row's horizon position."""
+        series = np.array([str(s) for s in x[:, -1]])
+        preds = x[:, self._lag7_index].astype(float)  # fallback default
+        for sid, model in self._models.items():
+            mask = series == sid
+            horizon = int(mask.sum())
+            if horizon == 0:
+                continue
+            fc = np.asarray(model.forecast(horizon), dtype=float)
+            preds[mask] = fc
+        return preds
+
+
 @dataclass(frozen=True)
 class ModelSpec:
     """A named estimator factory plus its feature columns."""
@@ -98,6 +190,14 @@ class ModelSpec:
         if self.name == "naive_last":
             # lag_1 sits directly after the numeric block
             return NaiveLast(lag1_index=len(self.numeric))
+        if self.name == "seasonal_naive":
+            # lags follow the numeric block in config.lags order: lag_7 is
+            # at offset len(numeric) + position of 7 in config.lags
+            lag7_index = len(self.numeric) + config.lags.index(7)
+            return NaiveSeasonal(lag7_index=lag7_index)
+        if self.name == "ets":
+            lag7_index = len(self.numeric) + config.lags.index(7)
+            return ETSSeries(lag7_index=lag7_index)
         encoder = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
         if self.name in ("hgb", "hgb_tuned"):
             pre = ColumnTransformer(
@@ -144,10 +244,14 @@ class ModelSpec:
 
 
 def model_specs() -> list[ModelSpec]:
-    """All models, floor first: naives, linear, boosting arms (default + tuned), NN."""
+    """All models: naives + statistical baselines, then learners and boosters."""
     return [
         ModelSpec(name="naive_mean", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="naive_last", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
+        ModelSpec(
+            name="seasonal_naive", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES
+        ),
+        ModelSpec(name="ets", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="ridge", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="hgb", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),
         ModelSpec(name="hgb_tuned", numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES),

@@ -25,7 +25,7 @@ import plotly.graph_objects as go
 import polars as pl
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_html, save_json
+from portfolio_core.plotting import add_takeaway, apply_theme, save_html, save_json
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import BacktestResult, backtest
@@ -258,12 +258,45 @@ def figure_reconciliation(result: ReconciliationResult, hold: pl.DataFrame) -> g
     return apply_theme(fig, width=1100, height=800)
 
 
+def figure_coherence_heatmap(result: ReconciliationResult, hold: pl.DataFrame) -> go.Figure:
+    """Per-store mean |incoherence| before/after as an annotated heatmap."""
+    stores = sorted(hold["store"].unique().to_list())
+    before, after = [], []
+    for store in stores:
+        sub = hold.filter(pl.col("store") == store)
+        cs = sub["child_pred"].to_numpy()
+        pp = sub["parent_pred"].to_numpy()
+        _reconciled, remaining = apply_shrinkage(cs, pp, result.shrinkage)
+        before.append(float(np.mean(np.abs(pp - cs))))
+        after.append(float(np.mean(np.abs(remaining))))
+    fig = go.Figure()
+    fig.add_heatmap(
+        z=[before, after],
+        x=stores,
+        y=["before", f"after (w={result.shrinkage:.2f})"],
+        text=[[f"{v:.1f}" for v in before], [f"{v:.1f}" for v in after]],
+        texttemplate="%{text}",
+        colorscale="Blues",
+        showscale=False,
+    )
+    fig.update_layout(title="Hierarchy coherence heatmap — mean |parent - sum(children)| per store")
+    add_takeaway(
+        fig,
+        "takeaway: reconciliation shrinks cross-level incoherence by exactly "
+        f"(1-w)={1 - result.shrinkage:.2f} everywhere — coherence is a guarantee, not a hope",
+    )
+    return apply_theme(fig, width=900, height=420)
+
+
 def reconcile_and_plot(
     settings: DemandSettings, config: ForecastConfig, child_result: BacktestResult
 ) -> ReconciliationResult:
-    """Run reconciliation and persist the coherence figure (html + json)."""
+    """Run reconciliation and persist the coherence figures (html + json)."""
     result, hold = run_reconciliation(settings, config, child_result)
     fig = figure_reconciliation(result, hold)
     save_html(fig, Path(settings.reports_dir) / "figures" / "reconciliation_coherence.html")
     save_json(fig, Path(settings.reports_dir) / "figures" / "reconciliation_coherence.json")
+    heat = figure_coherence_heatmap(result, hold)
+    save_html(heat, Path(settings.reports_dir) / "figures" / "coherence_heatmap.html")
+    save_json(heat, Path(settings.reports_dir) / "figures" / "coherence_heatmap.json")
     return result

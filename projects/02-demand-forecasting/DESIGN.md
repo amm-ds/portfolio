@@ -199,6 +199,29 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.6.0 (2026-10-15)** — wave 13 (external-audit driven): UCI Online Retail
+  II promoted to the headline track (README/story lead with real numbers;
+  synthetic explicitly the CI fast path — and a CLI bug fixed where the
+  params.yaml overlay clobbered `--data-source`). Statistical baselines:
+  `seasonal_naive` (lag-7) and per-series ETS (`statsmodels>=0.14` new dep;
+  damped additive Holt-Winters, fallback chain to seasonal naive for short or
+  failing series, documented + tested) through the identical backtest on both
+  tracks. **MASE** added to every run (per-fold in-sample seasonal-naive
+  scale, pooled). Audit figures: `forecast_fan` (p10/p50/p90 + actual, real
+  track), `coherence_heatmap` (per-store incoherence before/after), takeaway
+  on `fold_stability`. Conformal coverage stated as h=1-only with the
+  multi-horizon note persisted in `probabilistic.json`. Real run — UCI ladder:
+  hgb_tuned champion (MAE 8.989, MASE 0.980, only run < 1.0), seasonal_naive
+  best floor (9.859), ETS 11.256 (intermittency breaks Holt-Winters), lgbm
+  synthetic champion drops to 9.600 (cross-track transfer finding), ridge
+  collapses (16.734). Synthetic ladder: ETS wins outright (8.110, MASE 0.891)
+  — the deliberate mirror image. Reconciliation UCI w=0.70 (incoherence
+  384.0 → 115.2, store MAE 746.9 → 737.9); coverage 0.727/0.757 synthetic,
+  0.919/0.858 UCI. Note: the store-level reconciliation backtest re-fits HGB
+  and jitters run-to-run within the documented OpenMP-reduction tolerance —
+  the wave-13-canonical rerun moved w 0.65 → 0.70 while the 10-run ladder
+  stayed bitwise identical; quoted reconciliation numbers are from the latest
+  canonical run.
 - **0.5.0 (2026-10-15)** — wave 11 (general-purpose boosting arms): XGBoost +
   LightGBM added (`xgboost>=2.0`, `lightgbm>=4.0`); `hpo.py` generalized to
   per-arm seeded studies (hgb 56 trials, xgb 25, lgbm 25) with per-arm search

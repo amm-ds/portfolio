@@ -155,6 +155,7 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         alns_destroy_q=2,
         alns_hpo_trials=3,
         alns_hpo_instances=["TINY"],
+        ortools_time_limit_s=2.0,
     )
     run_solve(cfg)
     assert (cfg.reports_dir / "solutions.json").exists()
@@ -169,6 +170,7 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "two_opt",
         "two_opt_tuned",
         "alns",
+        "ortools_cp",
     }
     assert set(data["instances"]["TINY"]["solvers"]) == {
         "nearest_neighbor",
@@ -177,6 +179,7 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "two_opt",
         "two_opt_tuned",
         "alns",
+        "ortools_cp",
     }
     # the tuned runs are never worse than the randomized floor, and the HPO
     # winners are persisted to the (overridden) params.yaml
@@ -206,5 +209,9 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "figures/convergence_TINY.json",
         "figures/family_gap.html",
         "figures/family_gap.json",
+        "figures/pareto_gap_runtime.html",
+        "figures/pareto_gap_runtime.json",
+        "figures/alns_convergence_TINY.html",
+        "figures/alns_convergence_TINY.json",
     ):
         assert (cfg.reports_dir / artifact).exists(), artifact

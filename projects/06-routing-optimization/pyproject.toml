@@ -8,6 +8,7 @@ dependencies = [
     "plotly>=5.24",
     "polars>=1.9",
     "numpy>=2.1",
+    "ortools>=9.9",
     "portfolio-core",
     "portfolio-eval",
 ]
