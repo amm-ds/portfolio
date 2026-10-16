@@ -20,7 +20,11 @@ FIGURES: dict[str, tuple[str, str, str]] = {
     # output name: (project, preferred stem, fallback stem)
     "mobility-demand-map.png": ("07-open-data-mobility", "zone_demand_map", "zone_hour_heatmap"),
     "rag-quality-cost-frontier.png": ("01-rag-agent", "retrieval_hpo_frontier", "chunk_size_sweep"),
-    "routing-solver-pareto.png": ("06-routing-optimization", "pareto_gap_runtime", "route_map_C101"),
+    "routing-solver-pareto.png": (
+        "06-routing-optimization",
+        "pareto_gap_runtime",
+        "route_map_C101",
+    ),
 }
 
 

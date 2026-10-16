@@ -192,6 +192,21 @@ uv run python -m {pkg}.cli evaluate
 ```
 """
 
+MODEL_CARD = """# Model Card — {title}
+
+## Intended use
+<who/what this is for — and not for>
+
+## Data
+<sources, slices, known limitations>
+
+## Metrics
+<headline metrics by slice, evaluation protocol>
+
+## Limits
+<where the model/artifact should not be trusted>
+"""
+
 DESIGN = """# DESIGN — {title}
 
 ## Requirements
@@ -249,6 +264,7 @@ def main() -> None:
         "dvc.yaml": DVC_YAML,
         "README.md": README,
         "DESIGN.md": DESIGN,
+        "MODEL_CARD.md": MODEL_CARD,
         f"src/{pkg}/__init__.py": "",
         f"src/{pkg}/config.py": CONFIG_PY,
         f"src/{pkg}/schemas.py": SCHEMAS_PY,

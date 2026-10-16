@@ -57,3 +57,5 @@ affected?* A PR that cannot answer them is draft.
    matching `reports/metrics.json`). Served by `GET /projects/{id}/story`.
 8. A naive baseline (mean/majority/random/lag, depending on the problem) with
    the delta-vs-baseline numbers and an honest explanation in the results.
+9. A MODEL_CARD.md (intended use, data, metrics by slice, limits) — convention
+   from project 07; `make release-verify` asserts metrics before releases.
