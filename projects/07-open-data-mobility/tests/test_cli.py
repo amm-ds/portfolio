@@ -20,6 +20,7 @@ def test_cli_help_lists_all_commands() -> None:
         "train-nn",
         "evaluate",
         "dashboard",
+        "drift-check",
         "dq-report",
         "all",
     ):

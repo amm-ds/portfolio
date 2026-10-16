@@ -145,3 +145,25 @@ stages:
       - data/curated
     outs:
       - reports/report.html
+
+  # Manual stage (run explicitly via `dvc repro drift_check` or the CLI; the
+  # scheduled drift-observatory workflow calls the CLI directly with the
+  # newest published month). Scores `drift.month` against the persisted
+  # serving artifact — no retraining. Exit 2 (month not published yet) is
+  # expected for the newest months and is not a repro failure signal here.
+  drift_check:
+    cmd: uv run python -m mobility.cli drift-check --month ${drift.month}
+    deps:
+      - src/mobility/drift.py
+      - src/mobility/validate.py
+      - src/mobility/join.py
+      - src/mobility/features.py
+      - src/mobility/serving.py
+      - data/curated/zones.parquet
+      - data/curated/weather.parquet
+      - reports/models/serving
+      - reports/metrics.json
+    params:
+      - drift
+    outs:
+      - reports/drift

@@ -5,8 +5,8 @@ stages:
     deps:
     - path: src/mobility/config.py
       hash: md5
-      md5: 012f38946cac6db0ebfd4aeeac80e4d0
-      size: 5626
+      md5: 3b40cda106a0d566d515f2a93328ae5b
+      size: 6628
     - path: src/mobility/download.py
       hash: md5
       md5: edb012a4a951f352c86d5d1a656c9394
@@ -418,3 +418,54 @@ stages:
       hash: md5
       md5: a6649c49e505f39b3a0e93ff50e33aea
       size: 20268862
+  drift_check:
+    cmd: uv run python -m mobility.cli drift-check --month 2025-01
+    deps:
+    - path: data/curated/weather.parquet
+      hash: md5
+      md5: 9c944bd865b6d2ca4b05e70fa0b20855
+      size: 398077
+    - path: data/curated/zones.parquet
+      hash: md5
+      md5: 67a5acda6ff58b34601d594e346dcd4b
+      size: 4532
+    - path: reports/metrics.json
+      hash: md5
+      md5: bc576083185dc752f288a9eee0b42e13
+      size: 2703
+    - path: reports/models/serving
+      hash: md5
+      md5: 00a84165746acbbd9ac7e1af9714b3f6.dir
+      size: 6818947
+      nfiles: 3
+    - path: src/mobility/drift.py
+      hash: md5
+      md5: 9ae95777ff88df5747816e728305754a
+      size: 18024
+    - path: src/mobility/features.py
+      hash: md5
+      md5: 277e07c11ec4924cfde689a962be1176
+      size: 3085
+    - path: src/mobility/join.py
+      hash: md5
+      md5: 799a121fb0dc6c665683d4ab100c4780
+      size: 7960
+    - path: src/mobility/serving.py
+      hash: md5
+      md5: 42eae6a25af5ff8abf178f6c6c7dec9b
+      size: 5149
+    - path: src/mobility/validate.py
+      hash: md5
+      md5: 43da8a4b6b40e428302f32fa59b06b81
+      size: 9428
+    params:
+      params.yaml:
+        drift:
+          tolerance: 0.15
+          month: 2025-01
+    outs:
+    - path: reports/drift
+      hash: md5
+      md5: 5e3eaf52db7b08e6f4e33c92fafd7d0e.dir
+      size: 20577
+      nfiles: 5
