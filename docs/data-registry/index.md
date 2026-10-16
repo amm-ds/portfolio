@@ -17,5 +17,6 @@ checksum mismatch, turning silent upstream drift into explicit failures
 | NSL-KDD | [nsl-kdd](nsl-kdd.md) | Research benchmark (UNB CIC) | 03 |
 | NAB (Numenta Anomaly Benchmark) | [nab](nab.md) | Research benchmark (cite Ahmad et al. 2017) | 03 (primary) |
 | Wikipedia (HF) | [wikipedia](wikipedia.md) | CC BY-SA / GFDL (attribution required) | 01 |
+| Hillstrom email marketing | [hillstrom](hillstrom.md) | MineThatData challenge data (research use, attribute) | 10 |
 
 Access scripts live in `scripts/` next to the cards.

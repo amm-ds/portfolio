@@ -1,0 +1,123 @@
+"""Validated configuration for the uplift & experimentation pipeline.
+
+Playbook convention: tunable numbers live in pydantic config models, not as
+module-level constants. ``UpliftConfig`` is the single source of truth for
+data preparation, modeling and evaluation; every field mirrors params.yaml.
+"""
+
+from pathlib import Path
+
+import pandas as pd  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
+import yaml  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
+from portfolio_core.schemas import PortfolioBaseModel
+from pydantic import Field, field_validator
+from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]  # re-exported
+
+__all__ = [
+    "UpliftConfig",
+    "pd",  # pandas re-export: untyped here so consumers need no per-file ignore
+    "threadpool_limits",  # same for threadpoolctl
+    "yaml",  # same for pyyaml
+]
+
+
+class UpliftConfig(PortfolioBaseModel):
+    """Configuration for the full uplift pipeline (prepare → train → evaluate)."""
+
+    # Data
+    seed: int = Field(default=42, description="Global random seed (split + cross-fitting).")
+    hillstrom_source: str = Field(
+        default="http://minethatdata.com/Kevin_Hillstrom_MineThatData_E-MailAnalytics_DataMiningChallenge_2008.03.20.csv",
+        description="Canonical Hillstrom CSV (author's site; http(s) fetched or local path).",
+    )
+    hillstrom_sha256: str = Field(
+        default="0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece",
+        description="Expected sha256 of the Hillstrom CSV (verified on fetch; empty = skip).",
+    )
+    treatment_segment: str = Field(
+        default="Mens E-Mail",
+        pattern="^(Mens E-Mail|Womens E-Mail)$",
+        description="Campaign arm analyzed as treatment (vs 'No E-Mail' control).",
+    )
+    control_segment: str = Field(
+        default="No E-Mail", pattern="^No E-Mail$", description="Holdout control arm."
+    )
+
+    # Campaign cost model (documented in DESIGN.md)
+    margin_per_conversion: float = Field(
+        default=114.0,
+        gt=0.0,
+        description="Margin ($) per incremental conversion; grounded in mean spend of "
+        "converters (~$114 AOV in the snapshot) as a revenue proxy.",
+    )
+    cost_per_email: float = Field(
+        default=0.01, gt=0.0, description="Marginal cost ($) of one email send."
+    )
+
+    # CUPED
+    cuped_covariate: str = Field(
+        default="log_history",
+        pattern="^(log_history|history)$",
+        description="Pre-period covariate.",
+    )
+
+    # Uplift models
+    cv_folds: int = Field(default=5, ge=2, le=10, description="Cross-fitting folds for OOF scores.")
+
+    # Power analysis
+    alpha: float = Field(default=0.05, gt=0.0, lt=0.5, description="Two-sided significance level.")
+    power: float = Field(default=0.8, gt=0.5, lt=1.0, description="Desired statistical power.")
+
+    # Policy evaluation
+    budget_fractions: list[float] = Field(
+        default_factory=lambda: [
+            0.05,
+            0.1,
+            0.15,
+            0.2,
+            0.25,
+            0.3,
+            0.4,
+            0.5,
+            0.6,
+            0.7,
+            0.8,
+            0.9,
+            1.0,
+        ],
+        min_length=2,
+        description="Budget fractions where profit is evaluated per policy.",
+    )
+    policy_budget: float = Field(
+        default=0.25, gt=0.0, lt=1.0, description="Budget fraction for the recommended policy."
+    )
+    n_deciles: int = Field(
+        default=10, ge=2, le=20, description="Deciles for uplift-binning checks."
+    )
+
+    # Artifact locations
+    data_dir: Path = Path("data")
+    reports_dir: Path = Path("reports")
+
+    @field_validator("budget_fractions")
+    @classmethod
+    def _budgets_in_unit_interval(cls, v: list[float]) -> list[float]:
+        if any(f <= 0.0 or f > 1.0 for f in v):
+            raise ValueError("budget_fractions must lie in (0, 1]")
+        if v != sorted(v):
+            raise ValueError("budget_fractions must be sorted ascending")
+        return v
+
+    @property
+    def feature_cols(self) -> list[str]:
+        """Pre-treatment covariates the uplift models may use (no leakage)."""
+        return [
+            "recency",
+            "history",
+            "log_history",
+            "mens",
+            "womens",
+            "newbie",
+            "channel",
+            "zip_code",
+        ]

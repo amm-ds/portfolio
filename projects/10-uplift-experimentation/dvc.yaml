@@ -1,0 +1,60 @@
+stages:
+  prepare:
+    cmd: uv run python -m uplift_experimentation.cli prepare --params-file params.yaml
+    deps:
+      - src/uplift_experimentation/
+      - params.yaml
+    params:
+      - seed
+      - hillstrom_source
+      - hillstrom_sha256
+      - treatment_segment
+      - control_segment
+    outs:
+      - data/raw/hillstrom.csv
+      - data/hillstrom.parquet
+      - data/dataset_contract.json
+      - reports/segment_summary.json
+      - reports/figures/eda_segment_profile.html
+      - reports/figures/eda_segment_profile.json
+
+  train:
+    cmd: uv run python -m uplift_experimentation.cli train --params-file params.yaml
+    deps:
+      - src/uplift_experimentation/
+      - params.yaml
+      - data/hillstrom.parquet
+    params:
+      - seed
+      - cv_folds
+    outs:
+      - data/scores.parquet
+
+  evaluate:
+    cmd: uv run python -m uplift_experimentation.cli evaluate --params-file params.yaml
+    deps:
+      - src/uplift_experimentation/
+      - params.yaml
+      - data/scores.parquet
+    params:
+      - cuped_covariate
+      - alpha
+      - power
+      - margin_per_conversion
+      - cost_per_email
+      - budget_fractions
+      - policy_budget
+      - n_deciles
+    outs:
+      - reports/report.html
+      - reports/figures/qini_curves.html
+      - reports/figures/qini_curves.json
+      - reports/figures/uplift_by_decile.html
+      - reports/figures/uplift_by_decile.json
+      - reports/figures/profit_frontier.html
+      - reports/figures/profit_frontier.json
+      - reports/figures/cuped_variance.html
+      - reports/figures/cuped_variance.json
+
+    metrics:
+      - reports/metrics.json

@@ -1,0 +1,41 @@
+seed: 42
+
+# Data
+hillstrom_source: http://minethatdata.com/Kevin_Hillstrom_MineThatData_E-MailAnalytics_DataMiningChallenge_2008.03.20.csv
+hillstrom_sha256: 0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291aece
+treatment_segment: Mens E-Mail
+control_segment: No E-Mail
+# Campaign cost model (documented in DESIGN.md):
+# - margin_per_conversion: measured mean spend among converters (~$114 AOV) as a
+#   revenue proxy for margin; configurable for a real engagement
+# - cost_per_email: marginal send cost of an ESP-delivered campaign
+margin_per_conversion: 114.0
+cost_per_email: 0.01
+
+# CUPED
+cuped_covariate: log_history
+
+# Uplift models (5-fold cross-fitting gives out-of-fold scores for the Qini read)
+cv_folds: 5
+
+# Power analysis
+alpha: 0.05
+power: 0.8
+
+# Policy recommendation
+budget_fractions:
+- 0.05
+- 0.1
+- 0.15
+- 0.2
+- 0.25
+- 0.3
+- 0.4
+- 0.5
+- 0.6
+- 0.7
+- 0.8
+- 0.9
+- 1.0
+policy_budget: 0.25
+n_deciles: 10

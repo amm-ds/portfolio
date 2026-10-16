@@ -1,0 +1,13 @@
+frozen: true
+deps:
+- hash: md5
+  path: 
+    http://minethatdata.com/Kevin_Hillstrom_MineThatData_E-MailAnalytics_DataMiningChallenge_2008.03.20.csv
+  checksum: '"3c8031-448e8ea0a51c0"'
+  size: 3964977
+outs:
+- hash: md5
+  path: hillstrom.csv
+  md5: 0af45f3c7ee495ed5654b398b1aab809
+  size: 3964977
+md5: 7feba19534df5dfc795c9f696ac51ca6
