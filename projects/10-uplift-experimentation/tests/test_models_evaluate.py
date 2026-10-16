@@ -4,6 +4,7 @@ evaluate-stage reads (CUPED/power/policy metrics) on locally scored frames."""
 import numpy as np
 import pandas as pd
 import polars as pl
+import pytest
 from uplift_experimentation.config import UpliftConfig
 from uplift_experimentation.evaluate import cuped_read, evaluate_policies, power_analysis
 from uplift_experimentation.models import cross_fit_scores
@@ -127,3 +128,50 @@ def test_cuped_and_power_reads_on_local_frame(two_arm_frame: pd.DataFrame) -> No
 
 def test_polars_fixture_two_arm(two_arm_frame: pd.DataFrame) -> None:
     pl.from_pandas(two_arm_frame)  # the prepared frame round-trips to polars
+
+
+def test_bootstrap_ci_and_cost_sensitivity_reads(two_arm_frame: pd.DataFrame) -> None:
+    """The evaluate-stage CI + cost-sensitivity wiring on a local frame."""
+    from uplift_experimentation.evaluate import (
+        bootstrap_ci_read,
+        cost_sensitivity_figure,
+        cost_sensitivity_read,
+        qini_figure,
+    )
+
+    df = two_arm_frame.copy()
+    # Uplift in this fixture lives on history > 120, so log_history is an
+    # informative ranking direction for every policy.
+    df["response"] = df["log_history"]
+    df["t_learner"] = df["log_history"] + 1e-6
+    df["x_learner"] = df["log_history"] * 0.5
+    cfg = UpliftConfig(bootstrap_reps=200)
+
+    ci, bands, grid = bootstrap_ci_read(cfg, df)
+    assert set(ci["policies"]) == {"response", "t_learner", "x_learner"}
+    for read in ci["policies"].values():
+        assert read["qini_ci"][0] <= read["qini_ci"][1]
+        assert read["profit_at_budget_ci"][0] <= read["profit_at_budget_ci"][1]
+    assert "response - t_learner" in ci["pairs"]
+    pair = ci["pairs"]["response - t_learner"]
+    assert pair["qini_diff_spans_zero"] == (
+        pair["qini_diff_ci"][0] <= 0.0 <= pair["qini_diff_ci"][1]
+    )
+    # Bands are quantile ribbons on the shared grid, ordered lo <= hi.
+    for lo, hi in bands.values():
+        assert lo.shape == grid.shape and np.all(lo <= hi)
+
+    # Cost sensitivity on a deterministic curve: 30 incremental conversions
+    # total, 25 of them inside the top 30% — a stable concentration read.
+    fr = np.linspace(0.0, 1.0, 101)
+    inc = 30.0 * np.minimum(fr / 0.3, 1.0)
+    curves = {"t_learner": (fr, inc)}
+    cs = cost_sensitivity_read(cfg, curves, "t_learner", n_total=10_000)
+    assert len(cs["rows"]) == len(cfg.cost_grid)
+    # breakeven = revenue * (inc(1) - inc(0.25)) / (N * (1 - 0.25))
+    assert cs["breakeven_cost_per_email"] == pytest.approx(114.0 * 5.0 / 7_500.0, rel=1e-3)
+    mail = [r["profit_mail_everyone"] for r in cs["rows"]]
+    assert mail == sorted(mail, reverse=True)  # mail profit falls with send cost
+    assert cs["rows"][-1]["targeting_beats_mail_everyone"]
+    qini_figure(curves, "t_learner", bands, grid)  # banded figure builds cleanly
+    cost_sensitivity_figure(cs, cfg)

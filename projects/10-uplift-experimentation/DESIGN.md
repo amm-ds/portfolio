@@ -39,29 +39,52 @@
 4. **X-learner combination**: `tau = g(x)*tau0(x) + (1-g(x))*tau1(x)` with a
    regularized logistic propensity `g`, clipped to [0.05, 0.95].
 5. **Cost model** (all values in `params.yaml`, documented here):
-   `margin_per_conversion = $114` grounded in the measured mean spend among
-   converters in the snapshot (~$114 AOV; a revenue proxy for margin —
-   configurable for a real engagement); `cost_per_email = $0.01`
-   (marginal ESP send cost). `profit(f) = inc(f)·margin − mailed(f)·cost`.
+   `revenue_per_conversion = $114` is the measured mean spend among converters
+   in the snapshot — i.e. **revenue** per incremental conversion, not margin:
+   the snapshot exposes no COGS, so profit here is revenue minus the email
+   send cost alone (a true engagement would net out COGS and subtract
+   fulfillment). `cost_per_email = $0.01` (marginal ESP send cost).
+   `profit(f) = inc(f)·revenue − mailed(f)·cost`.
 6. **Qini slice convention**: a top-f slice with no control rows counts its
    treated conversions as fully incremental; with no treated rows it
    contributes 0. At f=1 the curve ends at `n_t·(p_t − p_c)`.
 7. **Recommended policy = argmax profit at the policy budget** (default 25%),
    not argmax Qini: the policy is chosen on the money it makes, the Qini
-   curve is the diagnostic that explains why.
+   curve is the diagnostic that explains why. Model-vs-model statements about
+   the Qini ranking carry a paired-bootstrap CI on the difference; when that
+   interval spans zero the ranking is reported as not established.
+8. **Uncertainty = paired row bootstrap** over the out-of-fold scores
+   (`bootstrap_reps = 1000`, seeded `seed + 999`): one shared row-resample per
+   replication across all policies, so per-policy Qini/profit percentile CIs
+   and every policy-pair difference are paired on identical resamples.
+9. **Cost sensitivity** is a first-class read: for a `cost_grid` sweep of
+   `cost_per_email`, the profit-maximizing targeting fraction of the
+   recommended policy is recomputed against the mail-everyone profit, plus the
+   analytic break-even send cost at the policy budget,
+   `c* = revenue·(inc(1) − inc(budget)) / (N·(1 − budget))`.
 
 ## Cost model rationale
 
-Email is nearly free relative to a conversion margin, so under a response
-model nearly everyone looks worth mailing (and at these prices full-mail is
-profitable even at random — the frontier says so honestly). The uplift read
-changes the sign for some segments (sure things would convert anyway; some
-customers are actively annoyed). The uplift model earns its keep when the
-budget is constrained: at a 25% budget it buys ~68% more conversions for the
-same number of emails. The profit frontier, not an accuracy metric, is where
-that shows up — hence the margin/cost pair is a first-class config surface.
+Email is nearly free relative to a conversion's revenue, so under a response
+model nearly everyone looks worth mailing — and at these prices mail-everyone
+is the profit maximum even at random ($16,103 vs the top-25% policy's $6,838
+under this cost model): the frontier says so honestly. The uplift read changes
+the sign for some segments (sure things would convert anyway; some customers
+are actively annoyed), and the uplift model's value at these prices is
+**concentration** — the top-25% policy buys ~68% more conversions for the same
+number of emails, and it overtakes mail-everyone on profit once sends cost
+more than the analytic break-even (≈$0.30/email at a 25% budget). The profit
+frontier, not an accuracy metric, is where that shows up — hence the
+revenue/cost pair is a first-class config surface, swept by `cost_grid`.
 
 ## Changelog
 
+- 2026-10-16 — audit pass 2: bootstrap CIs (paired row resampling, n=1000,
+  seeded) on per-policy Qini + profit-at-budget and on policy-pair
+  differences; Qini figure bands; cost-sensitivity sweep with mail-everyone
+  break-even; `margin_per_conversion` relabeled `revenue_per_conversion`
+  ($114 is mean spend among converters — revenue, not margin; COGS not in the
+  snapshot); headline restated to lead with mail-everyone as the profit max
+  at current costs and the top-25% policy's value as concentration.
 - 2026-10-16 — initial design: two-arm Hillstrom read, hand-rolled T/X on
   sklearn, CUPED + power + Qini + profit, cross-fitted OOF scoring.

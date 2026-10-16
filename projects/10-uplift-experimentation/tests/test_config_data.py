@@ -24,6 +24,22 @@ def test_config_rejects_unsorted_budgets() -> None:
         UpliftConfig(budget_fractions=[0.5, 0.1])
 
 
+def test_cost_model_and_bootstrap_defaults() -> None:
+    cfg = UpliftConfig()
+    # $114 is REVENUE per conversion (mean spend among converters), not margin.
+    assert cfg.revenue_per_conversion == 114.0
+    assert cfg.cost_per_email == 0.01
+    assert cfg.bootstrap_reps == 1000
+    assert cfg.cost_grid == sorted(cfg.cost_grid) and all(c > 0 for c in cfg.cost_grid)
+
+
+def test_config_rejects_bad_cost_grid() -> None:
+    with pytest.raises(ValueError, match="positive"):
+        UpliftConfig(cost_grid=[0.01, -0.5])
+    with pytest.raises(ValueError, match="sorted"):
+        UpliftConfig(cost_grid=[0.5, 0.1])
+
+
 def test_load_experiment_frame_from_local_path(
     tmp_path: Path, hillstrom_like: pl.DataFrame
 ) -> None:

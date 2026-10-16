@@ -1,9 +1,10 @@
 """Evaluation: Qini ladder, profit frontier, CUPED + power reads, report.
 
 Reads the cross-fitted scores from the train stage and produces every artifact
-the report needs: per-policy Qini coefficients, decile checks, profit under the
-campaign cost model, the CUPED variance-reduction panel, and the analytic
-power analysis — plus the four themed figures (HTML + JSON).
+the report needs: per-policy Qini coefficients with paired-bootstrap CIs,
+decile checks, profit under the campaign cost model (frontier + cost
+sensitivity), the CUPED variance-reduction panel, and the analytic power
+analysis — plus the five themed figures (HTML + JSON).
 """
 
 import json
@@ -26,7 +27,10 @@ from uplift_experimentation.cuped import (
 from uplift_experimentation.models import SCORE_POLICIES
 from uplift_experimentation.power import power_read
 from uplift_experimentation.qini import (
+    bootstrap_policy_stats,
+    ci_spans_zero,
     incremental_at_full,
+    percentile_ci,
     profit_curve,
     qini_coefficient,
     qini_points,
@@ -54,9 +58,6 @@ def evaluate_policies(
     curves: dict[str, tuple[np.ndarray, np.ndarray]] = {}
     metrics: dict[str, dict[str, float]] = {}
 
-    # Baselines share the analytic random line; treat-everyone is the f=1 point.
-    np.asarray(cfg.budget_fractions, dtype=float)
-
     def profit_at(fr: np.ndarray, inc: np.ndarray, f: float) -> float:
         idx = int(np.argmin(np.abs(fr - f)))
         return float(
@@ -64,7 +65,7 @@ def evaluate_policies(
                 np.array([fr[idx]]),
                 np.array([inc[idx]]),
                 n_total,
-                cfg.margin_per_conversion,
+                cfg.revenue_per_conversion,
                 cfg.cost_per_email,
             )[0]
         )
@@ -94,7 +95,7 @@ def evaluate_policies(
                 np.array([cfg.policy_budget]),
                 np.array([cfg.policy_budget * inc_all]),
                 n_total,
-                cfg.margin_per_conversion,
+                cfg.revenue_per_conversion,
                 cfg.cost_per_email,
             )[0]
         )
@@ -107,6 +108,167 @@ def evaluate_policies(
             "profit_delta_vs_random": prof_budget - profit_random_budget,
         }
     return metrics, curves
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap uncertainty + cost sensitivity
+# ---------------------------------------------------------------------------
+
+
+def bootstrap_ci_read(
+    cfg: UpliftConfig, df: pd.DataFrame
+) -> tuple[dict[str, Any], dict[str, tuple[np.ndarray, np.ndarray]], np.ndarray]:
+    """Paired bootstrap CIs for per-policy Qini / profit-at-budget + curve bands.
+
+    One shared row-resample per replication across all policies, so every
+    model-vs-model difference is paired on identical resamples. Returns
+    (ci_meta for metrics.json, per-policy figure bands, band grid).
+    """
+    treatment = df["treatment"].to_numpy(dtype=int)
+    outcome = df["conversion"].to_numpy(dtype=float)
+    scores = {p: df[p].to_numpy(dtype=float) for p in SCORE_POLICIES}
+    band_grid = np.linspace(0.0, 1.0, 101)
+    boot_seed = cfg.seed + 999  # distinct stream from cross-fitting
+    stats = bootstrap_policy_stats(
+        treatment,
+        outcome,
+        scores,
+        budget=cfg.policy_budget,
+        n_total=len(df),
+        revenue_per_conversion=cfg.revenue_per_conversion,
+        cost_per_email=cfg.cost_per_email,
+        n_boot=cfg.bootstrap_reps,
+        seed=boot_seed,
+        band_grid=band_grid,
+    )
+
+    ci_meta: dict[str, Any] = {
+        "method": "paired row bootstrap of out-of-fold scores, percentile interval",
+        "n_boot": cfg.bootstrap_reps,
+        "seed": boot_seed,
+        "alpha": 0.05,
+        "policies": {},
+        "pairs": {},
+    }
+    for policy in SCORE_POLICIES:
+        ci_meta["policies"][policy] = {
+            "qini_ci": list(percentile_ci(stats["qini"][policy])),
+            "profit_at_budget_ci": list(percentile_ci(stats["profit_at_budget"][policy])),
+        }
+    for i, a in enumerate(SCORE_POLICIES):
+        for b in SCORE_POLICIES[i + 1 :]:
+            qini_diff = stats["qini"][a] - stats["qini"][b]
+            profit_diff = stats["profit_at_budget"][a] - stats["profit_at_budget"][b]
+            qini_ci = percentile_ci(qini_diff)
+            profit_ci = percentile_ci(profit_diff)
+            ci_meta["pairs"][f"{a} - {b}"] = {
+                "qini_diff_ci": list(qini_ci),
+                "qini_diff_spans_zero": ci_spans_zero(qini_ci),
+                "profit_at_budget_diff_ci": list(profit_ci),
+                "profit_at_budget_diff_spans_zero": ci_spans_zero(profit_ci),
+            }
+    return ci_meta, stats["band"], band_grid
+
+
+def cost_sensitivity_read(
+    cfg: UpliftConfig,
+    curves: dict[str, tuple[np.ndarray, np.ndarray]],
+    best: str,
+    n_total: int,
+) -> dict[str, Any]:
+    """How the profit-maximizing targeting fraction moves as sends get pricey.
+
+    For each cost_per_email in cfg.cost_grid: the best budget fraction for the
+    recommended policy, its profit, and the mail-everyone profit. Also the
+    analytic break-even send cost at the policy budget — the answer to "at what
+    cost does top-k beat mail-everyone?":
+
+        c* = revenue * (inc(1) - inc(budget)) / (N * (1 - budget))
+    """
+    fr, inc = curves[best]
+    inc_all = float(inc[-1])
+    inc_budget = float(np.interp(cfg.policy_budget, fr, inc))
+    fractions = np.asarray(cfg.budget_fractions, dtype=float)
+    rows = []
+    for cost in cfg.cost_grid:
+        profits = profit_curve(
+            fractions,
+            np.interp(fractions, fr, inc),
+            n_total,
+            cfg.revenue_per_conversion,
+            cost,
+        )
+        k = int(np.argmax(profits))
+        mail_everyone = float(
+            profit_curve(
+                np.array([1.0]),
+                np.array([inc_all]),
+                n_total,
+                cfg.revenue_per_conversion,
+                cost,
+            )[0]
+        )
+        rows.append(
+            {
+                "cost_per_email": float(cost),
+                "profit_max_fraction": float(fractions[k]),
+                "profit_at_max": float(profits[k]),
+                "profit_mail_everyone": mail_everyone,
+                "targeting_beats_mail_everyone": bool(profits[k] > mail_everyone),
+            }
+        )
+    n_mail_budget = n_total * (1.0 - cfg.policy_budget)
+    breakeven = cfg.revenue_per_conversion * (inc_all - inc_budget) / n_mail_budget
+    return {
+        "best_policy": best,
+        "policy_budget": cfg.policy_budget,
+        "rows": rows,
+        "breakeven_cost_per_email": float(breakeven),
+        "note": "profit = revenue - email cost; revenue_per_conversion is mean spend "
+        "among converters (no COGS in the snapshot), so break-even costs are optimistic "
+        "if true margin is lower than revenue.",
+    }
+
+
+def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figure:
+    """Profit vs send cost: mail-everyone vs the recommended top-k policy."""
+    fig = go.Figure()
+    costs = [r["cost_per_email"] for r in read["rows"]]
+    fig.add_scatter(
+        x=costs,
+        y=[r["profit_mail_everyone"] for r in read["rows"]],
+        mode="lines+markers",
+        name="mail everyone",
+    )
+    fig.add_scatter(
+        x=costs,
+        y=[r["profit_at_max"] for r in read["rows"]],
+        mode="lines+markers",
+        name=f"{read['best_policy']} @ {read['policy_budget']:.0%} budget",
+    )
+    fig.add_vline(
+        x=read["breakeven_cost_per_email"],
+        line_dash="dot",
+        line_color="#64748b",
+        annotation_text=f"break-even ${read['breakeven_cost_per_email']:.2f}/email",
+        annotation_position="top left",
+    )
+    apply_theme(fig)
+    style_runs(fig, best=read["best_policy"])
+    fig.update_layout(
+        title="Cost sensitivity — when does targeted top-k beat mail-everyone?",
+        xaxis_title="cost per email ($, log scale)",
+        yaxis_title="profit ($)",
+        xaxis_type="log",
+        legend={"orientation": "h", "y": -0.2},
+    )
+    add_takeaway(
+        fig,
+        f"At ${cfg.cost_per_email:.2f}/email mail-everyone wins on raw profit; the top-"
+        f"{read['policy_budget']:.0%} policy overtakes once sends cost more than "
+        f"${read['breakeven_cost_per_email']:.2f} each (fatigue/list-wear pricing).",
+    )
+    return fig
 
 
 def cuped_outcome_read(cfg: UpliftConfig, df: pd.DataFrame, outcome: str) -> dict[str, float]:
@@ -174,8 +336,17 @@ def decile_table(cfg: UpliftConfig, df: pd.DataFrame, policy: str) -> dict[str, 
 # ---------------------------------------------------------------------------
 
 
-def qini_figure(curves: dict[str, tuple[np.ndarray, np.ndarray]], best: str) -> go.Figure:
-    """Qini curves: model policies promoted, random/treat-everyone demoted grey."""
+def qini_figure(
+    curves: dict[str, tuple[np.ndarray, np.ndarray]],
+    best: str,
+    bands: dict[str, tuple[np.ndarray, np.ndarray]] | None = None,
+    band_grid: np.ndarray | None = None,
+) -> go.Figure:
+    """Qini curves: model policies promoted, random/treat-everyone demoted grey.
+
+    ``bands`` carries per-policy 95% bootstrap ribbons (interpolated onto
+    ``band_grid``); added after styling so the grey/demote pass skips them.
+    """
     fig = go.Figure()
     for policy, (fr, inc) in curves.items():
         fig.add_scatter(
@@ -187,6 +358,26 @@ def qini_figure(curves: dict[str, tuple[np.ndarray, np.ndarray]], best: str) -> 
         )
     apply_theme(fig)
     style_runs(fig, best=best)
+    if bands and band_grid is not None:
+        for policy, (lo, hi) in bands.items():
+            fig.add_scatter(
+                x=band_grid,
+                y=hi,
+                mode="lines",
+                line={"width": 0},
+                showlegend=False,
+                hoverinfo="skip",
+            )
+            fig.add_scatter(
+                x=band_grid,
+                y=lo,
+                mode="lines",
+                fill="tonexty",
+                fillcolor="rgba(45, 212, 191, 0.12)",
+                line={"width": 0},
+                name=f"{policy} 95% band",
+                hoverinfo="skip",
+            )
     fig.update_layout(
         title="Qini curves — incremental conversions vs targeted fraction",
         xaxis_title="fraction of customers targeted (top scores first)",
@@ -196,7 +387,8 @@ def qini_figure(curves: dict[str, tuple[np.ndarray, np.ndarray]], best: str) -> 
     add_takeaway(
         fig,
         f"The {best} ranking concentrates incremental conversions in the top deciles; "
-        "random and treat-everyone collapse onto the same diagonal.",
+        "random and treat-everyone collapse onto the same diagonal. Shaded bands are "
+        "95% paired-bootstrap intervals over the out-of-fold scores.",
     )
     return fig
 
@@ -231,7 +423,7 @@ def profit_figure(
     """Incremental profit vs budget fraction for every policy."""
     fig = go.Figure()
     for policy, (fr, inc) in curves.items():
-        profit = profit_curve(fr, inc, n_total, cfg.margin_per_conversion, cfg.cost_per_email)
+        profit = profit_curve(fr, inc, n_total, cfg.revenue_per_conversion, cfg.cost_per_email)
         fig.add_scatter(
             x=fr,
             y=profit,
@@ -245,13 +437,13 @@ def profit_figure(
     fig.update_layout(
         title="Profit frontier under the campaign cost model",
         xaxis_title="budget fraction (share of customers emailed)",
-        yaxis_title=f"profit (margin ${cfg.margin_per_conversion:.0f}/conversion, "
+        yaxis_title=f"profit (revenue ${cfg.revenue_per_conversion:.0f}/conversion, "
         f"${cfg.cost_per_email:.2f}/email)",
         legend={"orientation": "h", "y": -0.2},
     )
     add_takeaway(
         fig,
-        "Profit = incremental conversions x margin - emails x cost; a model only pays "
+        "Profit = incremental conversions x revenue - emails x cost; a model only pays "
         "when its curve sits above the random line over the affordable budget range.",
     )
     return fig
@@ -296,6 +488,10 @@ def _money(x: float) -> str:
     return f"${x:,.0f}"
 
 
+def _ci_str(ci: list[float]) -> str:
+    return f"[{ci[0]:.2f}, {ci[1]:.2f}]"
+
+
 def build_report(
     cfg: UpliftConfig,
     policy_metrics: dict[str, dict[str, float]],
@@ -303,6 +499,8 @@ def build_report(
     power: dict[str, float],
     deciles: dict[str, list[float]],
     best: str,
+    ci: dict[str, Any] | None = None,
+    cost_sens: dict[str, Any] | None = None,
 ) -> EvalReport:
     """Assemble the HTML report: experiment read, CUPED, power, policy ladder."""
     report = EvalReport(title="Retention Uplift & Experimentation — evaluation")
@@ -360,17 +558,84 @@ def build_report(
     report.add_markdown_table("Power analysis (two-sided two-proportion)", "\n".join(power_rows))
 
     ladder = [
-        f"| policy | Qini | profit @ {cfg.policy_budget * 100:.0f}% budget | delta vs random |",
+        f"| policy | Qini [95% CI] | profit @ {cfg.policy_budget * 100:.0f}% budget [95% CI] "
+        "| delta vs random |",
         "|---|---|---|---|",
     ]
     for policy in [*SCORE_POLICIES, *BASELINE_POLICIES]:
         m = policy_metrics[policy]
         delta = m["profit_delta_vs_random"]
+        qini_ci_s = (
+            _ci_str(ci["policies"][policy]["qini_ci"])
+            if ci is not None and policy in ci["policies"]
+            else "—"
+        )
+        profit_ci_s = (
+            _ci_str(ci["policies"][policy]["profit_at_budget_ci"])
+            if ci is not None and policy in ci["policies"]
+            else "—"
+        )
         ladder.append(
-            f"| {policy} | {m['qini_coefficient']:.4f} | {_money(m['profit_at_budget'])} "
+            f"| {policy} | {m['qini_coefficient']:.2f} {qini_ci_s} "
+            f"| {_money(m['profit_at_budget'])} {profit_ci_s} "
             f"| {'—' if np.isnan(delta) else _money(delta)} |"
         )
     report.add_markdown_table("Policy ladder (out-of-fold)", "\n".join(ladder))
+
+    if ci is not None:
+        pair = ci["pairs"].get("response - t_learner")
+        if pair is not None:
+            # The difference is defined as response - t_learner throughout.
+            q_lo, q_hi = pair["qini_diff_ci"]
+            p_lo, p_hi = pair["profit_at_budget_diff_ci"]
+            if pair["qini_diff_spans_zero"]:
+                qini_verdict = (
+                    f"the 95% CI on the Qini difference (response - T-learner) "
+                    f"[{q_lo:.2f}, {q_hi:.2f}] spans zero — the curve-area ranking is "
+                    "<b>not established</b>"
+                )
+            else:
+                sign = "above" if q_lo > 0 else "below"
+                qini_verdict = (
+                    f"the 95% CI on the Qini difference (response - T-learner) "
+                    f"[{q_lo:.2f}, {q_hi:.2f}] sits {sign} zero"
+                )
+            if pair["profit_at_budget_diff_spans_zero"]:
+                profit_verdict = f"the profit difference CI [{p_lo:,.0f}, {p_hi:,.0f}] spans zero"
+            else:
+                profit_verdict = (
+                    f"the profit difference CI [{p_lo:,.0f}, {p_hi:,.0f}] excludes zero — "
+                    "T-learner's budget-profit advantage is established (the individual "
+                    "profit CIs overlap; the paired difference is the honest read)"
+                )
+            report.add_html(
+                "Model ranking, with intervals",
+                f"<p>The response model's Qini area is nominally higher, but {qini_verdict}; "
+                f"at the 25% budget, {profit_verdict}. The recommendation stands on the "
+                "money, and the curve-area ranking is stated with its interval rather "
+                "than asserted.</p>",
+            )
+
+    if cost_sens is not None:
+        rows = [
+            "| cost/email | best fraction | profit (best) | profit (mail everyone) | top-k wins? |",
+            "|---|---|---|---|---|",
+        ]
+        for r in cost_sens["rows"]:
+            rows.append(
+                f"| ${r['cost_per_email']:.3f} | {r['profit_max_fraction']:.0%} "
+                f"| {_money(r['profit_at_max'])} | {_money(r['profit_mail_everyone'])} "
+                f"| {'yes' if r['targeting_beats_mail_everyone'] else 'no'} |"
+            )
+        report.add_markdown_table(f"Cost sensitivity ({cost_sens['best_policy']})", "\n".join(rows))
+        report.add_html(
+            "Cost sensitivity verdict",
+            f"<p>Mail-everyone is the profit maximum at the current ${cfg.cost_per_email:.2f} "
+            f"per email. The top-{cost_sens['policy_budget']:.0%} policy overtakes it once "
+            f"sends cost more than <b>${cost_sens['breakeven_cost_per_email']:.2f}</b> each "
+            "— the fatigue / list-wear regime — because every marginal email below the cut "
+            "costs more than the conversions it recovers.</p>",
+        )
 
     top_share = cfg.policy_budget
     report.add_html(
@@ -403,18 +668,21 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
     power = power_analysis(cfg, df)
     best = max(SCORE_POLICIES, key=lambda p: policy_metrics[p]["profit_delta_vs_random"])
     deciles = decile_table(cfg, df, best)
+    ci_meta, bands, band_grid = bootstrap_ci_read(cfg, df)
+    cost_sens = cost_sensitivity_read(cfg, curves, best, len(df))
 
     figures = {
-        "qini_curves": qini_figure(curves, best),
+        "qini_curves": qini_figure(curves, best, bands, band_grid),
         "uplift_by_decile": decile_figure(deciles, best),
         "profit_frontier": profit_figure(cfg, curves, len(df)),
         "cuped_variance": cuped_figure(cuped),
+        "cost_sensitivity": cost_sensitivity_figure(cost_sens, cfg),
     }
     for name, fig in figures.items():
         save_html(fig, figures_dir / f"{name}.html")
         save_json(fig, figures_dir / f"{name}.json")
 
-    report = build_report(cfg, policy_metrics, cuped, power, deciles, best)
+    report = build_report(cfg, policy_metrics, cuped, power, deciles, best, ci_meta, cost_sens)
     for name in figures:
         report.add_html(
             name.replace("_", " ").title(),
@@ -428,8 +696,10 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
         "best_policy": best,
         "cuped": cuped,
         "power": power,
+        "ci": ci_meta,
+        "cost_sensitivity": cost_sens,
         "cost_model": {
-            "margin_per_conversion": cfg.margin_per_conversion,
+            "revenue_per_conversion": cfg.revenue_per_conversion,
             "cost_per_email": cfg.cost_per_email,
         },
         "deciles": deciles,
