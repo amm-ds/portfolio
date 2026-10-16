@@ -13,10 +13,16 @@ between the model curve and the random line (trapezoid rule) — the analogue of
 AUROC for uplift, in units of conversions x fraction.
 
 Profit under the campaign cost model: targeting the top-f slice mails
-f * N emails and earns inc(f) * margin, so
+f * N emails and earns inc(f) * revenue, so
 
-    profit(f) = inc(f) * margin - f * N * cost_per_email.
+    profit(f) = inc(f) * revenue - f * N * cost_per_email.
+
+`revenue_per_conversion` is the measured mean spend among converters — revenue,
+not margin: the snapshot exposes no COGS, so profit here is revenue minus the
+email send cost alone.
 """
+
+from typing import Any
 
 import numpy as np
 
@@ -71,7 +77,6 @@ def incremental_at_full(treatment: np.ndarray, outcome: np.ndarray) -> float:
     treatment = np.asarray(treatment, dtype=int)
     outcome = np.asarray(outcome, dtype=float)
     n_t = treatment.sum()
-    len(treatment) - n_t
     p_t = outcome[treatment == 1].mean()
     p_c = outcome[treatment == 0].mean()
     return float(n_t * (p_t - p_c))
@@ -81,14 +86,14 @@ def profit_curve(
     fractions: np.ndarray,
     incremental: np.ndarray,
     n_total: int,
-    margin: float,
+    revenue_per_conversion: float,
     cost_per_email: float,
 ) -> np.ndarray:
-    """profit(f) = incremental(f) * margin - mailed(f) * cost_per_email."""
+    """profit(f) = incremental(f) * revenue - mailed(f) * cost_per_email."""
     fractions = np.asarray(fractions, dtype=float)
     incremental = np.asarray(incremental, dtype=float)
     mailed = fractions * n_total
-    return incremental * margin - mailed * cost_per_email
+    return incremental * revenue_per_conversion - mailed * cost_per_email
 
 
 def uplift_by_decile(
@@ -125,4 +130,95 @@ def uplift_by_decile(
         "empirical_uplift": emp,
         "n_treated": n_t,
         "n_control": n_c,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Paired bootstrap uncertainty (Qini coefficient, profit-at-budget, curves)
+# ---------------------------------------------------------------------------
+
+
+def percentile_ci(values: np.ndarray, alpha: float = 0.05) -> tuple[float, float]:
+    """Central (1 - alpha) percentile interval, e.g. alpha=0.05 -> the 95% CI."""
+    values = np.asarray(values, dtype=float)
+    return float(np.quantile(values, alpha / 2)), float(np.quantile(values, 1 - alpha / 2))
+
+
+def ci_spans_zero(ci: tuple[float, float]) -> bool:
+    """True when the interval covers 0 — the comparison is not established."""
+    return ci[0] <= 0.0 <= ci[1]
+
+
+def bootstrap_policy_stats(
+    treatment: np.ndarray,
+    outcome: np.ndarray,
+    scores: dict[str, np.ndarray],
+    *,
+    budget: float,
+    n_total: int,
+    revenue_per_conversion: float,
+    cost_per_email: float,
+    n_boot: int,
+    seed: int,
+    band_grid: np.ndarray | None = None,
+) -> dict[str, Any]:
+    """Paired nonparametric bootstrap of the per-policy evaluation read.
+
+    Each replication resamples ROWS with replacement (one shared index draw for
+    every policy, so model-vs-model differences are paired on the same
+    resample) and recomputes, per policy: the Qini coefficient, the profit at
+    the budget fraction, and — when ``band_grid`` is given — the Qini curve
+    interpolated onto that grid (for figure bands). Deterministic under
+    ``seed``; n_total/mail cost enter exactly as in the point estimates.
+
+    Returns {"qini": {policy: (n_boot,)}, "profit_at_budget": {policy: (n_boot,)},
+    "band": {policy: (lo, hi)}, "band_grid": grid or None}.
+    """
+    treatment = np.asarray(treatment, dtype=int)
+    outcome = np.asarray(outcome, dtype=float)
+    score_arrs = {p: np.asarray(s, dtype=float) for p, s in scores.items()}
+    n = len(outcome)
+    grid = None if band_grid is None else np.asarray(band_grid, dtype=float)
+    if grid is not None and (grid.ndim != 1 or grid[0] != 0.0 or grid[-1] != 1.0):
+        raise ValueError("band_grid must be 1-D from 0.0 to 1.0")
+
+    qini_b: dict[str, list[float]] = {p: [] for p in score_arrs}
+    profit_b: dict[str, list[float]] = {p: [] for p in score_arrs}
+    band_b: dict[str, list[np.ndarray]] = {p: [] for p in score_arrs}
+    rng = np.random.default_rng(seed)
+    for _ in range(n_boot):
+        idx = rng.integers(0, n, n)
+        t_b, y_b = treatment[idx], outcome[idx]
+        for policy, s in score_arrs.items():
+            fr, inc = qini_points(t_b, y_b, s[idx])
+            # Qini coefficient without re-sorting: area minus the random line.
+            qini_b[policy].append(trapezoid(fr, inc) - inc[-1] / 2.0)
+            k = int(np.argmin(np.abs(fr - budget)))
+            profit_b[policy].append(
+                float(
+                    profit_curve(
+                        np.array([fr[k]]),
+                        np.array([inc[k]]),
+                        n_total,
+                        revenue_per_conversion,
+                        cost_per_email,
+                    )[0]
+                )
+            )
+            if grid is not None:
+                band_b[policy].append(np.interp(grid, fr, inc))
+
+    bands: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    if grid is not None:
+        for policy, curves in band_b.items():
+            mat = np.vstack(curves)
+            bands[policy] = (
+                np.quantile(mat, 0.025, axis=0),
+                np.quantile(mat, 0.975, axis=0),
+            )
+    return {
+        "qini": {p: np.asarray(v) for p, v in qini_b.items()},
+        "profit_at_budget": {p: np.asarray(v) for p, v in profit_b.items()},
+        "band": bands,
+        "band_grid": grid,
     }

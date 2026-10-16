@@ -40,8 +40,10 @@ stages:
       - cuped_covariate
       - alpha
       - power
-      - margin_per_conversion
+      - revenue_per_conversion
       - cost_per_email
+      - bootstrap_reps
+      - cost_grid
       - budget_fractions
       - policy_budget
       - n_deciles
@@ -53,6 +55,8 @@ stages:
       - reports/figures/uplift_by_decile.json
       - reports/figures/profit_frontier.html
       - reports/figures/profit_frontier.json
+      - reports/figures/cost_sensitivity.html
+      - reports/figures/cost_sensitivity.json
       - reports/figures/cuped_variance.html
       - reports/figures/cuped_variance.json
 

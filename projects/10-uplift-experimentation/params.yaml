@@ -6,11 +6,28 @@ hillstrom_sha256: 0e5893329d8b93cefecc571777672028290ab69865718020c78c7284f291ae
 treatment_segment: Mens E-Mail
 control_segment: No E-Mail
 # Campaign cost model (documented in DESIGN.md):
-# - margin_per_conversion: measured mean spend among converters (~$114 AOV) as a
-#   revenue proxy for margin; configurable for a real engagement
+# - revenue_per_conversion: measured mean spend among converters (~$114 AOV),
+#   i.e. REVENUE per incremental conversion — margin would subtract COGS,
+#   which the snapshot does not expose; configurable for a real engagement
 # - cost_per_email: marginal send cost of an ESP-delivered campaign
-margin_per_conversion: 114.0
+revenue_per_conversion: 114.0
 cost_per_email: 0.01
+
+# Bootstrap uncertainty (Qini coefficient + profit-at-budget CIs, paired across
+# policies so model-vs-model differences share the same row resamples)
+bootstrap_reps: 1000
+
+# Cost-sensitivity sweep: profit-maximizing targeting fraction and the
+# mail-everyone break-even as cost_per_email rises
+cost_grid:
+- 0.005
+- 0.01
+- 0.02
+- 0.05
+- 0.1
+- 0.2
+- 0.3
+- 0.5
 
 # CUPED
 cuped_covariate: log_history

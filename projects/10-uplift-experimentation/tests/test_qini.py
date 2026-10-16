@@ -3,7 +3,10 @@
 import numpy as np
 import pytest
 from uplift_experimentation.qini import (
+    bootstrap_policy_stats,
+    ci_spans_zero,
     incremental_at_full,
+    percentile_ci,
     profit_curve,
     qini_coefficient,
     qini_points,
@@ -62,13 +65,13 @@ def test_incremental_at_full_is_difference_in_means_scaled() -> None:
 
 
 def test_profit_curve_cost_math() -> None:
-    # 1,000 customers, 25% targeted, 1 incremental conversion, margin $150, $0.01/email:
+    # 1,000 customers, 25% targeted, 1 incremental conversion, revenue $150, $0.01/email:
     # profit = 1 * 150 - 250 * 0.01 = 147.5
     profit = profit_curve(
         fractions=np.array([0.25]),
         incremental=np.array([1.0]),
         n_total=1000,
-        margin=150.0,
+        revenue_per_conversion=150.0,
         cost_per_email=0.01,
     )
     assert profit[0] == pytest.approx(147.5)
@@ -77,7 +80,7 @@ def test_profit_curve_cost_math() -> None:
         fractions=np.array([1.0]),
         incremental=np.array([0.0]),
         n_total=1000,
-        margin=150.0,
+        revenue_per_conversion=150.0,
         cost_per_email=0.01,
     )
     assert loss[0] == pytest.approx(-10.0)
@@ -104,3 +107,99 @@ def test_uplift_by_decile_counts_and_empirical() -> None:
     assert table["empirical_uplift"][0] == pytest.approx(1.0)
     assert table["empirical_uplift"][1] == pytest.approx(0.0)
     assert table["mean_score"][0] > table["mean_score"][1]  # decile 1 = highest scores
+
+
+# ---------------------------------------------------------------------------
+# Paired bootstrap: determinism + the spans-zero verdict
+# ---------------------------------------------------------------------------
+
+
+def _bootstrap_args(n: int = 1_500, seed: int = 0) -> dict:
+    """A randomized two-arm frame with one informative and one noise policy."""
+    rng = np.random.default_rng(seed)
+    treatment = rng.integers(0, 2, n)
+    high = rng.random(n) < 0.3
+    p = np.where(high, 0.10, 0.02) + treatment * np.where(high, 0.12, 0.0)
+    outcome = rng.binomial(1, np.clip(p, 0, 1))
+    informative = np.where(high, 1.0, 0.0) + rng.normal(0, 0.05, n)
+    noise = rng.normal(0, 1, n)
+    return {
+        "treatment": treatment,
+        "outcome": outcome,
+        "scores": {"informative": informative, "noise": noise},
+        "budget": 0.25,
+        "n_total": n,
+        "revenue_per_conversion": 114.0,
+        "cost_per_email": 0.01,
+        "n_boot": 300,
+        "seed": 42,
+    }
+
+
+def test_bootstrap_is_deterministic_under_seed() -> None:
+    args = {**_bootstrap_args(), "band_grid": np.linspace(0.0, 1.0, 21)}
+    a = bootstrap_policy_stats(**args)
+    b = bootstrap_policy_stats(**args)
+    for policy in ("informative", "noise"):
+        np.testing.assert_array_equal(a["qini"][policy], b["qini"][policy])
+        np.testing.assert_array_equal(a["profit_at_budget"][policy], b["profit_at_budget"][policy])
+        np.testing.assert_array_equal(a["band"][policy][0], b["band"][policy][0])
+        np.testing.assert_array_equal(a["band"][policy][1], b["band"][policy][1])
+    # A different seed must give a different resampling sequence.
+    c = bootstrap_policy_stats(**{**args, "seed": 43})
+    assert not np.array_equal(a["qini"]["informative"], c["qini"]["informative"])
+
+
+def test_bootstrap_ci_brackets_the_point_estimate() -> None:
+    args = _bootstrap_args()
+    stats = bootstrap_policy_stats(**args)
+    ci = percentile_ci(stats["qini"]["informative"])
+    assert ci[0] < ci[1]
+    point = qini_coefficient(args["treatment"], args["outcome"], args["scores"]["informative"])
+    # The percentile CI is centered on the bootstrap distribution, so the point
+    # estimate need not fall inside it exactly — but at this signal size the
+    # bootstrap bias is far smaller than the interval half-width.
+    assert ci[0] - (ci[1] - ci[0]) < point < ci[1] + (ci[1] - ci[0])
+    assert abs(point - float(np.mean(stats["qini"]["informative"]))) < (ci[1] - ci[0])
+
+
+def test_bootstrap_difference_ci_spans_zero_when_rankings_are_equivalent() -> None:
+    # Two independent noise policies carry no ranking signal: the paired CI on
+    # the Qini difference MUST span zero — no ranking is established.
+    args = _bootstrap_args()
+    rng = np.random.default_rng(7)
+    args["scores"] = {
+        "noise_a": rng.normal(0, 1, len(args["outcome"])),
+        "noise_b": rng.normal(0, 1, len(args["outcome"])),
+    }
+    stats = bootstrap_policy_stats(**args)
+    ci = percentile_ci(stats["qini"]["noise_a"] - stats["qini"]["noise_b"])
+    assert ci_spans_zero(ci)
+    # ...and each noise policy is individually indistinguishable from random.
+    assert ci_spans_zero(percentile_ci(stats["qini"]["noise_a"]))
+
+
+def test_bootstrap_difference_ci_excludes_zero_for_strong_signal() -> None:
+    # The informative ranking beats a noise ranking by a wide, paired margin:
+    # the difference CI excludes zero.
+    stats = bootstrap_policy_stats(**_bootstrap_args())
+    ci = percentile_ci(stats["qini"]["informative"] - stats["qini"]["noise"])
+    assert not ci_spans_zero(ci)
+    assert ci[0] > 0
+
+
+def test_bootstrap_band_grid_shape_and_bounds() -> None:
+    grid = np.linspace(0.0, 1.0, 21)
+    stats = bootstrap_policy_stats(**{**_bootstrap_args(), "band_grid": grid})
+    for lo, hi in stats["band"].values():
+        assert lo.shape == grid.shape and hi.shape == grid.shape
+        assert np.all(lo <= hi)
+    np.testing.assert_array_equal(stats["band_grid"], grid)
+
+
+def test_percentile_ci_and_span_helpers() -> None:
+    values = np.array([-2.0, -1.0, 0.0, 1.0, 2.0])
+    lo, hi = percentile_ci(values, alpha=0.4)  # 0.2 / 0.8 quantiles, linear interp
+    assert lo == pytest.approx(-1.2) and hi == pytest.approx(1.2)
+    assert ci_spans_zero((lo, hi))
+    assert not ci_spans_zero((0.5, 1.5))

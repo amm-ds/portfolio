@@ -6,12 +6,12 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 167e341745f664fcea56df08e49175a7
-      size: 925
+      md5: da01d6b2877fccf1a7c0ff8da06a6a70
+      size: 1369
     - path: src/uplift_experimentation/
       hash: md5
-      md5: 8fa407513022edfa727ea3f9a574c422.dir
-      size: 127595
+      md5: 32ecee090942925f5016053438fd2d66.dir
+      size: 161087
       nfiles: 23
     params:
       params.yaml:
@@ -57,12 +57,12 @@ stages:
       size: 464287
     - path: params.yaml
       hash: md5
-      md5: 167e341745f664fcea56df08e49175a7
-      size: 925
+      md5: da01d6b2877fccf1a7c0ff8da06a6a70
+      size: 1369
     - path: src/uplift_experimentation/
       hash: md5
-      md5: 8fa407513022edfa727ea3f9a574c422.dir
-      size: 127595
+      md5: 32ecee090942925f5016053438fd2d66.dir
+      size: 161087
       nfiles: 23
     params:
       params.yaml:
@@ -83,16 +83,17 @@ stages:
       size: 1104464
     - path: params.yaml
       hash: md5
-      md5: 167e341745f664fcea56df08e49175a7
-      size: 925
+      md5: da01d6b2877fccf1a7c0ff8da06a6a70
+      size: 1369
     - path: src/uplift_experimentation/
       hash: md5
-      md5: 8fa407513022edfa727ea3f9a574c422.dir
-      size: 127595
+      md5: 32ecee090942925f5016053438fd2d66.dir
+      size: 161087
       nfiles: 23
     params:
       params.yaml:
         alpha: 0.05
+        bootstrap_reps: 1000
         budget_fractions:
         - 0.05
         - 0.1
@@ -107,16 +108,33 @@ stages:
         - 0.8
         - 0.9
         - 1.0
+        cost_grid:
+        - 0.005
+        - 0.01
+        - 0.02
+        - 0.05
+        - 0.1
+        - 0.2
+        - 0.3
+        - 0.5
         cost_per_email: 0.01
         cuped_covariate: log_history
-        margin_per_conversion: 114.0
         n_deciles: 10
         policy_budget: 0.25
         power: 0.8
+        revenue_per_conversion: 114.0
     outs:
+    - path: reports/figures/cost_sensitivity.html
+      hash: md5
+      md5: 893fa933da20204c6b7619f6f79e3e06
+      size: 9639
+    - path: reports/figures/cost_sensitivity.json
+      hash: md5
+      md5: 8bfb487640d0301a99869031a49fcefd
+      size: 8642
     - path: reports/figures/cuped_variance.html
       hash: md5
-      md5: c01d37f3b51bb9c74ae3602fe466fe02
+      md5: 5852981d68e2cca176b3c89b324b0039
       size: 9319
     - path: reports/figures/cuped_variance.json
       hash: md5
@@ -124,23 +142,23 @@ stages:
       size: 8322
     - path: reports/figures/profit_frontier.html
       hash: md5
-      md5: cd40843b23bc32f98173de4275edfc9f
-      size: 3189432
+      md5: e2b72a1e0a8721d61cc67e4b0d926688
+      size: 3189434
     - path: reports/figures/profit_frontier.json
       hash: md5
-      md5: 614b8a1491fd93cc01514d7ad0e5af77
-      size: 3188435
+      md5: 7187f83a3bdce299baf3bca4f872e03c
+      size: 3188437
     - path: reports/figures/qini_curves.html
       hash: md5
-      md5: e4a13e274fcf880edac6ead5e26e0aaa
-      size: 3189002
+      md5: cec024a6c846944943dfe7333571e98e
+      size: 3204829
     - path: reports/figures/qini_curves.json
       hash: md5
-      md5: e2c9b3907b2203a08570053238f02b4e
-      size: 3188005
+      md5: 476e643e793ed6fc09618410a8d6d65a
+      size: 3203832
     - path: reports/figures/uplift_by_decile.html
       hash: md5
-      md5: 86260c5938a0fd94c68a54cac0d1d122
+      md5: 1acd8d6ddb0ce8022a05caa94fd79212
       size: 9363
     - path: reports/figures/uplift_by_decile.json
       hash: md5
@@ -148,9 +166,9 @@ stages:
       size: 8366
     - path: reports/metrics.json
       hash: md5
-      md5: 004b545d74cfff0e87c59d265cd83c83
-      size: 3934
+      md5: 96cc21d3a55315c08779a62038730bd9
+      size: 8253
     - path: reports/report.html
       hash: md5
-      md5: 78358d41c2a4fe1abbc766fd074e2ecd
-      size: 3784
+      md5: 5bc6f91950d272356af8400d08a1d7d3
+      size: 5722

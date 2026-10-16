@@ -44,11 +44,12 @@ class UpliftConfig(PortfolioBaseModel):
     )
 
     # Campaign cost model (documented in DESIGN.md)
-    margin_per_conversion: float = Field(
+    revenue_per_conversion: float = Field(
         default=114.0,
         gt=0.0,
-        description="Margin ($) per incremental conversion; grounded in mean spend of "
-        "converters (~$114 AOV in the snapshot) as a revenue proxy.",
+        description="Revenue ($) per incremental conversion; grounded in the measured mean "
+        "spend of converters (~$114 AOV in the snapshot). This is revenue, not margin — "
+        "the snapshot exposes no COGS, so profit here = revenue - email cost.",
     )
     cost_per_email: float = Field(
         default=0.01, gt=0.0, description="Marginal cost ($) of one email send."
@@ -95,6 +96,16 @@ class UpliftConfig(PortfolioBaseModel):
         default=10, ge=2, le=20, description="Deciles for uplift-binning checks."
     )
 
+    # Bootstrap uncertainty + cost sensitivity
+    bootstrap_reps: int = Field(
+        default=1000, ge=100, description="Paired-bootstrap replications for Qini/profit CIs."
+    )
+    cost_grid: list[float] = Field(
+        default_factory=lambda: [0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5],
+        min_length=2,
+        description="cost_per_email values for the profit sensitivity sweep.",
+    )
+
     # Artifact locations
     data_dir: Path = Path("data")
     reports_dir: Path = Path("reports")
@@ -106,6 +117,15 @@ class UpliftConfig(PortfolioBaseModel):
             raise ValueError("budget_fractions must lie in (0, 1]")
         if v != sorted(v):
             raise ValueError("budget_fractions must be sorted ascending")
+        return v
+
+    @field_validator("cost_grid")
+    @classmethod
+    def _cost_grid_positive_sorted(cls, v: list[float]) -> list[float]:
+        if any(c <= 0.0 for c in v):
+            raise ValueError("cost_grid must be positive")
+        if v != sorted(v):
+            raise ValueError("cost_grid must be sorted ascending")
         return v
 
     @property

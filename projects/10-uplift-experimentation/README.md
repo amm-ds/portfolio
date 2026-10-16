@@ -49,30 +49,50 @@ two-proportion, Fleiss variance form): **3,063 customers per arm required**;
 tells you the smallest effect this audience could ever resolve (~±0.26pp).
 
 **Uplift models** (out-of-fold Qini coefficient — area between the policy
-curve and the random line, in incremental conversions):
+curve and the random line, in incremental conversions — with 95% CIs from a
+paired row bootstrap of the out-of-fold scores, n=1000, seed 1041):
 
-| policy | Qini coefficient | profit @ 25% budget | Δ vs random |
+| policy | Qini [95% CI] | profit @ 25% budget [95% CI] | Δ vs random |
 |---|---|---|---|
-| response model | 13.01 | $4,881 | +$856 |
-| **T-learner (recommended)** | **12.03** | **$6,838** | **+$2,812** |
-| X-learner | 5.90 | $4,564 | +$539 |
+| response model | 13.01 [1.83, 24.36] | $4,881 [$2,246, $7,386] | +$856 |
+| **T-learner (recommended)** | **12.03 [0.77, 24.39]** | **$6,838 [$4,430, $9,370]** | **+$2,812** |
+| X-learner | 5.90 [−5.45, 17.48] | $4,564 [$2,150, $7,306] | +$539 |
 | random | 0.0 | $4,026 | — |
 | treat-everyone | 0.0 | — (full-mail: $16,103) | — |
 
-Cost model: margin $114 per incremental conversion (measured mean spend among
-converters), $0.01 per email. `profit(f) = inc(f)·margin − mailed(f)·cost`.
+Cost model: **revenue** $114 per incremental conversion (measured mean spend
+among converters — this is revenue, not margin: the snapshot exposes no COGS,
+so profit here is revenue minus the email send cost alone), $0.01 per email.
+`profit(f) = inc(f)·revenue − mailed(f)·cost`.
 
-**Recommended policy:** target the top 25% by T-learner score —
-**+$2,812 expected incremental profit per campaign wave vs random targeting
-at the same budget (+69%)**: ~61 incremental conversions from 10,653 emails vs
-~36 at random. Note the trade the table makes visible: with a $0.01 send cost
-even random full-mail is profitable ($16,103), so the uplift model's value is
-concentration — the same budget, ~70% more conversions — and it becomes the
-difference between profit and loss the moment the cost model includes
-fatigue or list wear (raise `cost_per_email` in `params.yaml` and watch the
-frontier). Qini area and profit-at-budget disagree for the response model
-(highest area, lowest budget profit): the policy is chosen on the money, the
-curve explains why.
+**Headline, honestly stated.** At the current $0.01 send cost, **mailing
+everyone is the profit maximum** — $16,103 per wave vs $6,838 for the
+top-25% policy. The uplift model's value at these prices is **efficiency, not
+raw profit**: the top-25% T-learner policy delivers ~61 of the ~145 total
+incremental conversions (≈42%) while mailing a quarter of the list — and vs
+random targeting at the same budget it earns **+$2,812 (+69%)**: ~61
+incremental conversions from 10,653 emails vs ~36 at random. The value flips
+to outright selection the moment sends get expensive: the profit-maximizing
+fraction drops below full-mail by ≈$0.20 per email, and the top-25% policy
+**beats mail-everyone on profit above ≈$0.30 per email** (the analytic
+break-even `c* = revenue·(inc(1)−inc(0.25)) / (N·0.75)`; see the
+`cost_sensitivity` figure and `_meta.cost_sensitivity`). If the cost model
+priced fatigue or list wear anywhere near that, targeting is the difference
+between profit and loss.
+
+**Ranking verdict, with the interval.** The response model's Qini area is
+nominally higher than the T-learner's (13.01 vs 12.03), but the 95% CI on
+the paired Qini difference (response − T-learner) is **[−8.18, 9.52] and
+spans zero — the curve-area ranking is not established**. What is
+established is the money: the paired profit-at-budget difference CI is
+[−$3,617, −$48] (response − T-learner), entirely below zero. The overlapping
+single-policy profit CIs ($4,881 vs $6,838) understate the separation; the
+paired difference is the honest read. The recommendation stands on profit,
+and the Qini ranking is stated with its interval rather than asserted.
+
+Qini area and profit-at-budget disagree for the response model (highest
+area, lowest budget profit): the policy is chosen on the money, the curve
+explains why.
 
 **The honest caveat:** predicting conversions ≠ changing them — same lesson
 as Project 05's fairness finding on the retention side. The decile check
@@ -84,8 +104,10 @@ is noisy, and the X-learner's second stage adds variance without signal here
 ## Artifacts
 
 - Figures (`reports/figures/`, `.html` + `.json`): `eda_segment_profile`,
-  `qini_curves`, `uplift_by_decile`, `profit_frontier`, `cuped_variance`
-- Metrics: `reports/metrics.json` (policy ladder + `_meta.cuped/power/deciles`)
+  `qini_curves` (with 95% bootstrap bands), `uplift_by_decile`,
+  `profit_frontier`, `cost_sensitivity`, `cuped_variance`
+- Metrics: `reports/metrics.json` (policy ladder + `_meta.cuped/power/deciles`
+  + `_meta.ci` bootstrap intervals and `_meta.cost_sensitivity` sweep)
 - Report: `reports/report.html` · Segment summary: `reports/segment_summary.json`
 - Dataset identity: `data/dataset_contract.json` ·
   [dataset card](../../docs/data-registry/hillstrom.md)

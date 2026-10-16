@@ -31,9 +31,11 @@ arm is reported in EDA and excluded from the primary read.
 ## Metrics
 
 Out-of-fold Qini coefficient (area between policy curve and random line),
-incremental conversions, and profit at budget under margin $114 /
-$0.01-per-email. Headline: T-learner Qini 12.0, +$2,812 profit delta vs
-random at 25% budget. See `reports/metrics.json` for the full ladder.
+incremental conversions, and profit at budget under revenue $114 per
+conversion / $0.01 per email ($114 is mean spend among converters — revenue,
+not margin; COGS is not in the snapshot). Headline: T-learner Qini 12.0,
++$2,812 profit delta vs random at 25% budget; both carry 95% paired-bootstrap
+CIs in `reports/metrics.json` (`_meta.ci`).
 
 ## Limits
 
