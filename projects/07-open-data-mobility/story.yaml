@@ -159,6 +159,17 @@ sections:
       **Business implication:** the holdout answers "would this still work
       next quarter?" — scoring on the most recent three months, not a random
       shuffle, is the closest analogue to deploying forward in time.
+
+      **Drift observatory:** that question does not stop at delivery. The
+      scheduled `drift-observatory` workflow scores each newly published TLC
+      month against the **persisted serving model** (no retraining) with the
+      same zone-hour features: fetch the one month file, light DQ gates,
+      predict, and compare MAE against the pinned test-window baseline —
+      regression beyond `drift.tolerance` (default 15%) opens an issue
+      (`docs/runbooks/drift-response.md`). Months not yet published exit 2
+      (skip-worthy). Reports accumulate in `reports/drift/`; the first scored
+      month (2024-11) came in at +8.2% vs pinned — inside tolerance, with the
+      naive-relative margin (30.1% vs 28.2%) intact.
     figures: [actual_vs_pred_top5, borough_mae]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
@@ -265,10 +276,11 @@ roadmap:
     text: >-
       Green-taxi cross-service transfer study (bounded 2024-01..03 slice) —
       shipped, verified; per-service retraining recommendation documented.
-  - status: deferred
+  - status: delivered
     text: >-
-      Drift monitoring and scheduled retraining on new TLC snapshots —
-      engagement-dependent; needs a live deployment contract.
+      Drift monitoring on new TLC snapshots — the scheduled drift-observatory
+      workflow scores each published month against the pinned serving model
+      (reports land in reports/drift/); scheduled retraining stays deferred.
   - status: deferred
     text: >-
       Per-service (green/FHV) model retraining — the transfer study showed

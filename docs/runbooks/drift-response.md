@@ -7,6 +7,10 @@ relative on a fixed holdout = incident.
 
 - Scheduled eval re-run (`dvc repro evaluate`) compares against the pinned
   baseline metrics in the project's `reports/metrics.json`.
+- Project 07's drift observatory (`.github/workflows/drift-observatory.yml`)
+  scores every newly published TLC month against the pinned serving model and
+  opens an issue when the relative MAE regression exceeds tolerance; reports
+  land in `projects/07-open-data-mobility/reports/drift/`.
 - DQ gates (`DQReport`) failing where they previously passed signals upstream
   schema drift (dataset cards pin the expected snapshot — check for source
   changes first).

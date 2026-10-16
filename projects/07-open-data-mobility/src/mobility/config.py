@@ -67,6 +67,18 @@ class HPOConfig(PortfolioBaseModel):
     perm_importance_rows: int = 200_000
 
 
+class DriftConfig(PortfolioBaseModel):
+    """Drift observatory knobs (contract: .github/workflows/drift-observatory.yml).
+
+    ``tolerance`` is the relative MAE regression bound: a scored month
+    regresses when (month MAE - pinned MAE)/pinned MAE > tolerance.
+    ``month`` is the TLC month the manual ``drift_check`` dvc stage scores.
+    """
+
+    tolerance: float = 0.15
+    month: str = "2025-01"
+
+
 class MobilityConfig(PortfolioBaseModel):
     """Everything the pipeline needs, in one validated document."""
 
@@ -123,6 +135,7 @@ class MobilityConfig(PortfolioBaseModel):
     gbm: GBMConfig = Field(default_factory=GBMConfig)
     nn: NNConfig = Field(default_factory=NNConfig)
     hpo: HPOConfig = Field(default_factory=HPOConfig)
+    drift: DriftConfig = Field(default_factory=DriftConfig)
     seed: int = 42
 
     @property
@@ -156,6 +169,21 @@ class MobilityConfig(PortfolioBaseModel):
     @property
     def models_dir(self) -> Path:
         return self.reports_dir / "models"
+
+    @property
+    def drift_dir(self) -> Path:
+        """Drift observatory reports (DVC out of the manual drift_check stage)."""
+        return self.reports_dir / "drift"
+
+    @property
+    def drift_raw_dir(self) -> Path:
+        """Scratch for the single scored month (never a pipeline out)."""
+        return self.raw_dir.parent / "drift" / "raw"
+
+    @property
+    def drift_clean_dir(self) -> Path:
+        """Light-cleaned scored month, kept apart from data/validated."""
+        return self.raw_dir.parent / "drift" / "cleaned"
 
 
 _DEFAULT_CONFIG: MobilityConfig | None = None

@@ -39,6 +39,9 @@ nn:
   grad_clip: 5.0
   early_stop_patience: 2
 seed: 42
+drift:
+  tolerance: 0.15
+  month: '2025-01'
 hpo:
   gbm_trials: 30
   nn_trials: 10

@@ -8,6 +8,7 @@ from portfolio_core.logging import get_logger, setup_logging
 from mobility import config as config_mod
 from mobility.config import MobilityConfig
 from mobility.download import download_all
+from mobility.drift import MonthUnavailableError, run_drift_check
 from mobility.evaluate import build_report
 from mobility.features import build_features
 from mobility.join import join_all
@@ -114,6 +115,54 @@ def dashboard_cmd() -> None:
     """Reassemble the HTML report/figures (dvc 'dashboard' stage)."""
     path = build_report(_cfg())
     typer.echo(f"dashboard -> {path}")
+
+
+@app.command("drift-check")
+def drift_check_cmd(
+    month: str = typer.Option(
+        ..., "--month", "-m", help="TLC month to score (YYYY-MM); must be published upstream."
+    ),
+    fail_on_regression: bool = typer.Option(
+        False,
+        "--fail-on-regression",
+        help="Exit 1 when the month's MAE regresses beyond tolerance "
+        "(the scheduled Action sets this).",
+    ),
+    tolerance: float | None = typer.Option(
+        None,
+        "--tolerance",
+        help="Regression tolerance override (default: params drift.tolerance = 0.15).",
+    ),
+) -> None:
+    """Score one published TLC month against the pinned serving model (drift observatory).
+
+    Exit codes (contract: .github/workflows/drift-observatory.yml):
+    0 = within tolerance (also without --fail-on-regression on a regression —
+    the report is still written, for manual runs); 1 = regression beyond
+    tolerance (only with --fail-on-regression); 2 = month not published yet
+    (HTTP 404/403) or bad --month — the Action treats 2 as skip-worthy, no
+    issue opened.
+    """
+    try:
+        result = run_drift_check(month, _cfg(), tolerance=tolerance)
+    except MonthUnavailableError as e:
+        typer.echo(f"drift-check skipped: {e}", err=True)
+        raise typer.Exit(2) from None
+    except ValueError as e:
+        # Bad --month format is a skip (exit 2); anything else is a real failure.
+        if "expected YYYY-MM" in str(e):
+            typer.echo(f"drift-check: {e}", err=True)
+            raise typer.Exit(2) from None
+        raise
+
+    status = "REGRESSION" if result.regressed else "within tolerance"
+    typer.echo(
+        f"{month}: MAE {result.month_mae:.4f} vs pinned {result.pinned_mae:.4f} "
+        f"({result.regression_ratio:+.2%}, tolerance ±{result.tolerance:.0%}) → {status}"
+    )
+    typer.echo(f"report -> {result.report_path}")
+    if result.regressed and fail_on_regression:
+        raise typer.Exit(1)
 
 
 @app.command("dq-report")

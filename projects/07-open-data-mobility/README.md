@@ -92,6 +92,40 @@ Brooklyn 1.2, N/A 0.9, Bronx 0.5, EWR 0.3, Staten Island 0.2 pickups/hour.
 Manhattan dominates absolute error because it dominates volume (≈60 pickups/h
 per zone at peak); relative error there is comparable to other boroughs.
 
+## Drift observatory
+
+The pinned serving model is scored against **every newly published TLC month**
+— no retraining: the drift question is whether the artifact still works on
+unseen data. The scheduled `.github/workflows/drift-observatory.yml` Action
+runs weekly (plus manual dispatch):
+
+```bash
+uv run python -m mobility.cli drift-check --month 2025-03 [--fail-on-regression] [--tolerance 0.15]
+```
+
+The month's parquet is fetched through the checksum machinery (one file,
+bounded), lightly re-validated, aggregated to the zone-hour grain, featurised
+exactly like training, and scored with the persisted serving bundle; MAE/MAPE
+are compared against naive lag-24 on the same rows and against the pinned
+test-window metrics in `reports/metrics.json`. Regression =
+(month MAE − pinned MAE)/pinned MAE > `drift.tolerance` (`params.yaml`,
+`--tolerance` overrides).
+
+Exit codes (the Action's contract): **0** within tolerance; **1** regression
+beyond tolerance — only with `--fail-on-regression` (the Action then opens an
+issue per `docs/runbooks/drift-response.md`); **2** month not published yet
+(HTTP 404, or the CDN's 403 for a missing key — TLC files land ~2 months
+late) or bad `--month` — skip-worthy, no issue. Without
+`--fail-on-regression` a regression still writes its report and exits 0, for
+manual runs.
+
+Artifacts per scored month in `reports/drift/`: `<month>.json` (machine
+report), `<month>_mae.html`/`.json` (themed figure vs the pinned baseline),
+`<month>.dq.json` (gate detail), and a running `DRIFT.md` digest. The manual
+DVC stage (`dvc repro drift_check`, month from `params.yaml` `drift.month`)
+writes the same `reports/drift` out. First scored month (2024-11, seeded from
+the local snapshot): MAE 5.059 vs pinned 4.676 (+8.2%, within tolerance).
+
 Weather elasticity (mean hourly pickups, rain ≥1 mm vs dry, test window):
 
 - Outer areas drop most in rain: `Unknown`/N/A zones ≈ 0.90×, Queens 0.92×,
