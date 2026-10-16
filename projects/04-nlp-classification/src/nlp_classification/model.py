@@ -7,6 +7,7 @@
 """
 
 import json
+import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -257,13 +258,20 @@ def train_nn(
         model = build_nn_model(cfg, n_labels)
     model.to(device)
 
+    loss_fn = nn.CrossEntropyLoss()
+    if device.type == "mps":
+        # MPS has no automatic OOM recovery: probe one step and shrink the
+        # batch up-front so a 2 h run cannot die on step 3 of epoch 1.
+        cfg = cfg.model_copy(
+            update={"batch_size": mps_safe_batch_size(cfg, model, device, loss_fn)}
+        )
+
     train_loader, val_loader = make_loaders(cfg, train_ds, val_ds)
     total_steps = cfg.epochs * len(train_loader)
     warmup_steps = int(cfg.warmup_ratio * total_steps)
     optimizer = torch.optim.AdamW(
         model.parameters(), lr=cfg.learning_rate, weight_decay=cfg.weight_decay
     )
-    loss_fn = nn.CrossEntropyLoss()
 
     history = TrainingHistory()
     best_f1 = -1.0
@@ -272,6 +280,7 @@ def train_nn(
     global_step = 0
 
     for epoch in range(1, cfg.epochs + 1):
+        epoch_started = time.perf_counter()
         model.train()
         batch_losses: list[float] = []
         for batch in train_loader:
@@ -301,12 +310,13 @@ def train_nn(
         )
         history.epochs.append(record)
         logger.info(
-            "epoch %d/%d train_loss=%.4f val_loss=%.4f val_f1=%.4f",
+            "epoch %d/%d train_loss=%.4f val_loss=%.4f val_f1=%.4f (%.1fs)",
             epoch,
             cfg.epochs,
             train_loss,
             val_loss,
             val_f1,
+            time.perf_counter() - epoch_started,
         )
         if on_epoch is not None:
             on_epoch(epoch, val_f1)
@@ -375,25 +385,93 @@ def load_nn_state_dict(model: nn.Module, path: str | Path, device: torch.device)
 
 
 class DeviceGateError(RuntimeError):
-    """Raised when the full-data path is requested without a GPU or --force-cpu."""
+    """Raised when the requested device is unavailable or the full-data gate fires."""
 
 
-def resolve_device(force_cpu: bool, full_data: bool, train_rows: int) -> torch.device:
-    """Pick the training device; gate the full-data path behind a GPU.
+def resolve_device(requested: str, full_data: bool, train_rows: int) -> torch.device:
+    """Pick the training device; gate the full-data path behind an accelerator.
 
-    Full-data estimates scale from the measured CPU throughput of this
-    pipeline (~50 s per 3.6k-row epoch, max_length 128, batch 32): the full
-    120k train split runs ~45-50 min per epoch on this machine, so a 2-epoch
-    fine-tune is a 1.5-2 h CPU job — not a laptop default.
+    ``requested`` is ``auto`` (cuda → MPS → CPU), ``mps`` (Apple Silicon GPU,
+    hard requirement) or ``cpu``. ``auto`` only promotes the full-data path to
+    an accelerator — the bounded showcase stays CPU-first by default. Full-data
+    CPU estimates scale from the measured throughput of this pipeline
+    (~50 s per 3.6k-row epoch, max_length 128, batch 32): the full 120k train
+    split runs ~45-50 min per epoch on this machine, so a 2-epoch fine-tune is
+    a 1.5-2 h CPU job — not a laptop default.
     """
-    if torch.cuda.is_available() and not force_cpu:
-        return torch.device("cuda")
-    if full_data and not force_cpu:
+    if requested not in {"auto", "mps", "cpu"}:
+        raise DeviceGateError(f"unknown device {requested!r} (expected auto|mps|cpu)")
+    if requested == "cpu":
+        return torch.device("cpu")
+    if requested == "mps":
+        if torch.backends.mps.is_available():
+            return torch.device("mps")
+        raise DeviceGateError("--device mps requested but torch MPS is not available")
+
+    accelerator: torch.device | None = None
+    if torch.cuda.is_available():
+        accelerator = torch.device("cuda")
+    elif torch.backends.mps.is_available():
+        accelerator = torch.device("mps")
+
+    if accelerator is not None and (full_data or requested != "auto"):
+        return accelerator
+    if full_data:
         epochs_hours = train_rows / 3600 * 50 / 3600
         raise DeviceGateError(
-            f"--full-data needs a GPU (none available) or --force-cpu. Estimated "
-            f"wall-clock for {train_rows:,} rows on this CPU: ~{epochs_hours:.1f} h per "
-            "epoch at the measured ~50 s / 3.6k-row epoch (full 120k ~= 45-50 min/epoch, "
-            "2-epoch run ~= 1.5-2 h). Use --subset for bounded evidence runs."
+            f"--full-data needs a GPU (none available) or --device cpu/--force-cpu. "
+            f"Estimated wall-clock for {train_rows:,} rows on this CPU: "
+            f"~{epochs_hours:.1f} h per epoch at the measured ~50 s / 3.6k-row epoch "
+            "(full 120k ~= 45-50 min/epoch, 2-epoch run ~= 1.5-2 h). "
+            "Use --subset for bounded evidence runs."
         )
     return torch.device("cpu")
+
+
+def _shrink_until_fits(probe: Callable[[int], None], start: int) -> int:
+    """Run ``probe(batch)``; halve the batch on MPS OOM until it fits.
+
+    Any RuntimeError that is not an out-of-memory (or a failure at batch 1)
+    propagates unchanged — only genuine memory pressure shrinks the batch.
+    """
+    batch = start
+    while True:
+        try:
+            probe(batch)
+            return batch
+        except RuntimeError as exc:
+            if "out of memory" not in str(exc).lower() or batch <= 1:
+                raise
+            batch //= 2
+            torch.mps.empty_cache()
+
+
+def mps_safe_batch_size(
+    cfg: NLPConfig, model: nn.Module, device: torch.device, loss_fn: nn.Module
+) -> int:
+    """Probe one synthetic forward+backward on MPS and shrink the batch if needed.
+
+    Returns ``cfg.batch_size`` unchanged on any other device (the probe only
+    runs for ``device.type == "mps"``). Allocated MPS memory after the probe is
+    logged so the batch choice is auditable.
+    """
+    if device.type != "mps":
+        return cfg.batch_size
+
+    def probe(batch: int) -> None:
+        input_ids = torch.randint(0, 100, (batch, cfg.max_length), device=device)
+        attention_mask = torch.ones_like(input_ids)
+        labels = torch.zeros(batch, dtype=torch.long, device=device)
+        outputs = model(input_ids=input_ids, attention_mask=attention_mask)
+        logits = outputs.logits if hasattr(outputs, "logits") else outputs
+        loss = loss_fn(logits, labels)
+        loss.backward()
+        model.zero_grad(set_to_none=True)
+
+    batch = _shrink_until_fits(probe, cfg.batch_size)
+    logger.info(
+        "mps memory probe: batch=%d fits, allocated=%.1f MiB",
+        batch,
+        torch.mps.current_allocated_memory() / 2**20,
+    )
+    return batch

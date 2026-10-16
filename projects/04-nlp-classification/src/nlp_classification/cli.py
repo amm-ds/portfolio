@@ -105,21 +105,34 @@ def train_nn_cmd(
     force_cpu: bool = typer.Option(
         False, "--force-cpu", help="Run the full-data path on CPU despite the wall-clock estimate."
     ),
+    device: str = typer.Option(
+        "auto",
+        "--device",
+        help="Training device: auto (accelerator for --full-data, else CPU), mps, or cpu.",
+    ),
+    epochs: int | None = typer.Option(
+        None, "--epochs", help="Override the epoch budget for this run (default: params.yaml)."
+    ),
 ) -> None:
     """Fine-tune DistilBERT: bounded split by default; --full-data for the GPU track."""
     started = time.perf_counter()
     cfg = _cfg()
+    if epochs is not None:
+        if epochs < 1:
+            raise typer.BadParameter("--epochs must be >= 1")
+        cfg = cfg.model_copy(update={"epochs": epochs})
     if subset is not None and not full_data:
         raise typer.BadParameter("--subset only makes sense with --full-data")
 
+    requested = "cpu" if force_cpu else device
     if full_data:
         train_part, val_part = load_full_train(cfg, subset)
         try:
-            device = resolve_device(force_cpu, full_data=True, train_rows=len(train_part))
+            device_obj = resolve_device(requested, full_data=True, train_rows=len(train_part))
         except DeviceGateError as exc:
             typer.echo(str(exc))
             raise typer.Exit(code=2) from exc
-        if device.type == "cpu":
+        if device_obj.type == "cpu":
             typer.echo(
                 f"WARNING: running the full-data path on CPU "
                 f"({len(train_part):,} rows) — this is a bounded evidence run, "
@@ -130,7 +143,7 @@ def train_nn_cmd(
     else:
         train_part = _load_split(cfg, "train")
         val_part = _load_split(cfg, "val")
-        device = torch.device("cpu")
+        device_obj = resolve_device(requested, full_data=False, train_rows=len(train_part))
         model_path = cfg.models_dir / NN_MODEL_PATH
         history_path = cfg.history_path
 
@@ -139,7 +152,8 @@ def train_nn_cmd(
     val_tok = tokenize_dataset(val_part, tokenizer, cfg.max_length)
     n_labels = len(label_names(train_part))
 
-    model, history = train_nn(cfg, train_tok, val_tok, n_labels, device)
+    typer.echo(f"training on device={device_obj} (batch={cfg.batch_size}, epochs={cfg.epochs})")
+    model, history = train_nn(cfg, train_tok, val_tok, n_labels, device_obj)
     save_nn_state_dict(model, model_path)
     history.to_json(history_path)
     best = history.best_epoch()
@@ -230,6 +244,8 @@ def evaluate() -> None:
     started = time.perf_counter()
     metrics = run_evaluate(_cfg())
     for run, values in metrics.items():
+        if run == "_meta":
+            continue  # nested dict (calibration, hpo_seeds) — not a scalar ladder row
         typer.echo(f"{run}: " + ", ".join(f"{k}={v:.4f}" for k, v in values.items()))
     typer.echo(f"report written to reports/report.html in {time.perf_counter() - started:.1f}s")
 

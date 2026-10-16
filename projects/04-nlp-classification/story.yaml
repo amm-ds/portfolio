@@ -145,7 +145,8 @@ sections:
 
   - id: results
     text_md: |
-      Measured on this machine (CPU only, seed 42), from `reports/metrics.json`:
+      Measured on this machine (CPU ladder + full-data run on Apple MPS,
+      seed 42), from `reports/metrics.json`:
 
       | # | run | accuracy | f1_macro |
       |---|---|---|---|
@@ -155,17 +156,23 @@ sections:
       | 4 | encoder_b (roberta-base) | 0.8980 | 0.8982 |
       | 5 | distilbert | 0.9020 | 0.9021 |
       | 6 | distilbert_tuned | 0.9020 | 0.9021 |
-      | 7 | distilbert_fulldata_20k | 0.9270 | 0.9270 |
+      | 7 | distilbert_full_120k | 0.9460 | 0.9460 |
 
       Key findings:
 
       - Encoders beat the TF-IDF baseline by ~+2.7–3.1 pp macro-F1 and the
         naive floors by ~65 pp; DistilBERT and roberta-base are tied within
         test noise (±1.9 pp).
-      - **Data scaling (full-data path):** a 20k-row subset through the
-        GPU-gated `--full-data` machinery scored **0.9270** test macro-F1 —
-        +2.5 pp over the 3.6k-row models, approaching published full-corpus
-        numbers; the step to 120k is compute, not engineering.
+      - **Data scaling (full-data path, delivered):** the full 120k fine-tune
+        on Apple Silicon MPS (108k train / 12k val, 2 epochs, measured 27.5
+        min for epoch 1 and 18.0 min steady-state for epoch 2, seed 42) scored
+        **0.9460 test macro-F1 — +4.4 pp over the 3.6k-row
+        models**. The three-point curve on the identical untouched test
+        split: **0.9021 (3.6k) → 0.9270 (20k evidence) → 0.9460 (full
+        120k)** — the published ~0.93–0.95 headroom is real and reachable
+        on a laptop GPU; the wall-clock gate that blocked this run on CPU
+        (~45–50 min/epoch estimated) was honest, MPS trained both epochs in
+        ~46 min.
       - **HPO:** best trial lr 3.82e-5, warmup 0.042, weight decay 0.018,
         epochs 2 → validation macro-F1 **0.8953** vs 0.8880 defaults (2/12
         trials pruned). The retrained model reproduces its trial's validation
@@ -182,16 +189,20 @@ sections:
         test ECE from **0.0467 to 0.0133** (−71 %) with zero change to
         predictions — a reliability upgrade for any confidence-thresholded
         routing.
-      - **Error analysis:** dominant confusion Business → Sci/Tech (24/250),
-        e.g. *"Amazon Snaps Up China's Largest Web Retailer…"* and
-        *"PeopleSoft customers reassured…"* — technology-business hybrids a
-        human desk editor would also pause on.
+      - **Error analysis:** the dominant confusion pair is **stable across
+        the scaling curve — Business → Sci/Tech, 24/250 (3.6k) → 15/250
+        (20k) → 14/250 (120k)** — e.g. *"Amazon Snaps Up China's Largest
+        Web Retailer…"* and *"PeopleSoft customers reassured…"*, technology-
+        business hybrids a human desk editor would also pause on. More data
+        shrinks the frequency, not the pair: the residual is a
+        labeling-ambiguity floor, which is why the multi-label extension is a
+        roadmap item rather than a tuning knob.
 
       **Business implication:** the fine-tuned model beats a strong classical
-      baseline by ~3 pp macro-F1 at tiny scale, the 20k evidence run shows the
-      documented headroom is real (+2.5 pp more), and the HPO/seed episodes
-      show the process catching wins that are noise — so the numbers you can
-      trust are exactly the ones that survive all three checks.
+      baseline by ~3 pp macro-F1 at tiny scale and by ~7.5 pp at full data,
+      and the HPO/seed episodes show the process catching wins that are
+      noise — so the numbers you can trust are exactly the ones that survive
+      all three checks.
     figures: [per_class_f1_comparison]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned]
 
@@ -203,11 +214,17 @@ sections:
       protected us from shipping a "better-on-validation" model that was
       actually worse on test.
 
-      **Honest limits:** 4k/1k stratified subsample, ≤4 epochs, max_length
-      128, CPU budget; the HPO studies (12-trial main + 3×6 seed variance) are
+      **Honest limits:** the bounded ladder is a deliberately small showcase
+      (4k train / 1k test stratified subsample, ≤4 epochs, max_length 128,
+      CPU budget); the HPO studies (12-trial main + 3×6 seed variance) are
       small-budget demonstrations whose gains sit inside seed noise at 400
-      validation rows. What survives the noise: the 20k-row scaling evidence
-      (+2.5 pp test macro-F1) and the calibration result (−71 % ECE).
+      validation rows. What survives the noise: the full scaling curve
+      (0.9021 → 0.9270 → 0.9460 test macro-F1) and the calibration result
+      (−71 % ECE). The full-data run used Apple Silicon MPS — slower and
+      quirkier than CUDA (no OOM recovery, batch probed up-front, epoch
+      wall-clock varies with shared machine load: 27.5 min for epoch 1, 18.0
+      min steady-state) — so its timings are machine-specific, though the
+      quality result is not.
 
       **Business implication:** treat this as the auditable lower bound of a
       scaling decision — the classical baseline remains the right answer where
@@ -231,10 +248,13 @@ roadmap:
     text: >-
       Temperature scaling — shipped, verified: T = 0.843 fitted on validation;
       test ECE cut from 0.0467 to 0.0133 (−71 %) with zero change to predictions.
-  - status: deferred
+  - status: delivered
     text: >-
-      Full 120k fine-tune — needs GPU; the engineering is proven by the 20k
-      evidence run, the remaining step is compute, not design.
+      Full 120k fine-tune — shipped, verified: `train-nn --full-data` on
+      Apple Silicon MPS (--device auto|mps|cpu, batch probed up-front, ~18
+      min/epoch steady-state) scored 0.9460 test macro-F1 (+4.4 pp over 3.6k);
+      scaling 0.9021 → 0.9270 → 0.9460, confusion pair (Business → Sci/Tech)
+      stable.
   - status: deferred
     text: >-
       Cost-sensitive routing on the calibrated probabilities — per-class
