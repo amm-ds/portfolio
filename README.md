@@ -65,7 +65,7 @@ built on the same platform, designed for deepening.
 | 07 Mobility | Zone-hour demand over 41.2M trips: GBM MAE 4.67 (−28.4% vs naive); **p90 band 90.8% coverage** (N/A zones flagged); permutation importance shows weather ≈ 0 for point MAE — its value is the elasticity signal |
 | 08 Inference | Local serving benchmark (author run): 19 cells / 760 requests / 0 failures; **MLX ≈ 2.9× GGUF tok/s on Apple Silicon**; 4-bit quantization costs serving headroom, not structured-output validity |
 | 09 Agentic | pydantic-graph workflow suite, bounded real run on local 32B (8/14 tasks): answer success **6/8**, tool-selection **37.5%**, median 474 s/task — the honest profile of local reasoning models |
-| 10 Uplift | Hillstrom RCT: ATE +0.68pp, CUPED covariate lesson, power analysis; T-learner targeting **+$2,812/wave vs random** at 25% budget ($6,838 vs $4,026) — with mail-everyone ($16,103) reported next to it, because the honest headline includes the simpler policy |
+| 10 Uplift | Hillstrom RCT: ATE +0.68pp, CUPED covariate lesson, power analysis; T-learner **+$2,812/wave vs random** at 25% budget (paired CI [−$3,617, −$48] — established), while **mail-everyone ($16,103) beats it at $0.01/email** — the value is concentration (~42% of conversions at ¼ volume); targeting wins above ≈$0.30/email (break-even grid); Qini curve-area ranking honestly reported as not established (CI spans zero) |
 
 ## Engineering practices
 
