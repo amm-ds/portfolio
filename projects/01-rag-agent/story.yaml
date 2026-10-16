@@ -158,7 +158,7 @@ sections:
 
       ```mermaid
       flowchart LR
-          Q[26 graded questions] --> R[Retrieval grid<br/>recall@k, MRR@5]
+          Q[65 graded questions] --> R[Retrieval grid<br/>recall@k, MRR@5]
           Q --> A[Agent run<br/>local model, bounded subset]
           R --> B[Random baseline<br/>delta]
           A --> J[Rubric judge<br/>+ RAGAS metric set]
@@ -196,7 +196,15 @@ sections:
 
   - id: results
     text_md: |
-      **Retrieval configuration comparison** (26 graded questions, CPU-only;
+      **Golden-set RAG evaluation (65-question set: 44 single-hop / 11 multi-hop /
+      10 unanswerable; 30-question bounded local-model pass, bootstrap CIs):**
+      RAGAS faithfulness **0.651** [0.52, 0.78], relevancy **0.879** [0.82, 0.93],
+      context precision **1.000**, recall **0.979**. Abstention: refusal accuracy
+      **0.857** [0.57, 1.00], false-abstention **0.000**, cite-when-expected **0.957**.
+      Failure taxonomy: 12 correct / 18 unsupported-claim — **retrieval is solved;
+      generation grounding is the bottleneck** (the audit-driven finding).
+
+      **Retrieval configuration comparison** (65 graded questions, CPU-only;
       random baseline seeded):
 
       | Configuration | recall@5 | recall@10 | MRR@5 |

@@ -41,6 +41,125 @@ class TopkData(TypedDict):
     n_chunks: int
 
 
+# Deterministic abstention rule: the model refused to answer. Documented and
+# unit-tested; low-confidence OR explicit no-evidence phrasing in the summary.
+ABSTENTION_MARKERS = (
+    "no relevant",
+    "no evidence",
+    "no information",
+    "cannot answer",
+    "can't answer",
+    "not found",
+    "unable to",
+    "no passage",
+)
+
+
+@dataclass
+class QuestionTrace:
+    """Per-question evaluation record: the failure-taxonomy input."""
+
+    question: str
+    category: str  # single_hop | multi_hop | unanswerable
+    expected_behavior: str  # answer | abstain
+    top_rank: int | None  # 1-based rank of first relevant chunk in top-10 (None = not found)
+    retrieved_relevant: bool  # relevant chunk within the production top_k
+    cited_relevant: bool  # the agent cited at least one relevant article
+    faithfulness: float  # per-row judge score (NaN when the run failed)
+    abstained: bool
+    format_ok: bool  # False when the agent run raised / output was invalid
+    error: str = ""
+
+
+def is_abstention(summary: str, confidence: float) -> bool:
+    """Deterministic refusal detector (rule documented in module docstring)."""
+    lowered = summary.lower()
+    return confidence < 0.3 or any(marker in lowered for marker in ABSTENTION_MARKERS)
+
+
+def classify_question(trace: QuestionTrace) -> str:
+    """Failure taxonomy, first match wins (rules documented):
+
+    1. ``format-failure`` — the agent run raised or returned schema-invalid output.
+    2. abstain-expected + abstained → ``correct`` (refusing is the right answer).
+    3. abstain-expected + answered → ``unsupported-claim`` (claims without evidence).
+    4. ``retrieval-miss`` — answerable but no relevant chunk in the production top_k.
+    5. ``unsupported-claim`` — relevant evidence found but the judge scores the
+       answer below 0.5 (claims not supported by the context).
+    6. ``correct`` — everything else.
+    """
+    if not trace.format_ok:
+        return "format-failure"
+    if trace.expected_behavior == "abstain":
+        return "correct" if trace.abstained else "unsupported-claim"
+    if not trace.retrieved_relevant:
+        return "retrieval-miss"
+    if trace.faithfulness < 0.5:
+        return "unsupported-claim"
+    return "correct"
+
+
+def abstention_report(
+    traces: list[QuestionTrace], n_resamples: int = 1000, seed: int = 42
+) -> dict[str, Any]:
+    """Refusal accuracy, cite-when-expected, and false-abstention rates + CIs.
+
+    Each rate is a mean over per-question 0/1 indicators; the 95% CI is the
+    percentile bootstrap (``n_resamples`` draws, seeded) over those indicators.
+    """
+    unanswerable = [t for t in traces if t.expected_behavior == "abstain"]
+    answerable = [t for t in traces if t.expected_behavior == "answer"]
+    refused_flags = [1.0 if t.abstained else 0.0 for t in unanswerable]
+    cited_flags = [1.0 if t.cited_relevant else 0.0 for t in answerable]
+    false_abstain_flags = [1.0 if t.abstained else 0.0 for t in answerable]
+    return {
+        "n_unanswerable": len(unanswerable),
+        "n_answerable": len(answerable),
+        "refusal_accuracy": (
+            sum(refused_flags) / len(unanswerable) if unanswerable else float("nan")
+        ),
+        "refusal_accuracy_ci95": (
+            list(bootstrap_ci(refused_flags, n_resamples=n_resamples, seed=seed))
+            if unanswerable
+            else [float("nan"), float("nan")]
+        ),
+        "cite_when_expected": (sum(cited_flags) / len(answerable) if answerable else float("nan")),
+        "cite_when_expected_ci95": (
+            list(bootstrap_ci(cited_flags, n_resamples=n_resamples, seed=seed))
+            if answerable
+            else [float("nan"), float("nan")]
+        ),
+        "false_abstention_rate": (
+            sum(false_abstain_flags) / len(answerable) if answerable else float("nan")
+        ),
+        "false_abstention_rate_ci95": (
+            list(bootstrap_ci(false_abstain_flags, n_resamples=n_resamples, seed=seed))
+            if answerable
+            else [float("nan"), float("nan")]
+        ),
+    }
+
+
+def bootstrap_ci(
+    values: list[float], n_resamples: int = 1000, seed: int = 42
+) -> tuple[float, float]:
+    """Percentile bootstrap 95% CI for a mean (NaN values dropped)."""
+    import random as _random
+
+    clean = [v for v in values if v == v]
+    if not clean:
+        return (float("nan"), float("nan"))
+    rng = _random.Random(seed)
+    means = []
+    for _ in range(n_resamples):
+        sample = [clean[rng.randrange(len(clean))] for _ in range(len(clean))]
+        means.append(sum(sample) / len(sample))
+    means.sort()
+    lo = means[max(0, int(0.025 * n_resamples))]
+    hi = means[min(n_resamples - 1, int(0.975 * n_resamples))]
+    return (round(lo, 4), round(hi, 4))
+
+
 @dataclass
 class RetrievalScores:
     """Retrieval quality for one chunk-size index."""
@@ -69,8 +188,12 @@ class RAGRun:
     eval_result: RAGEvalResult
     latencies_s: list[float] = field(default_factory=list)
     ragas_rows: list[RagasRow] = field(default_factory=list)
+    traces: list[QuestionTrace] = field(default_factory=list)
     input_tokens: list[int] = field(default_factory=list)
     output_tokens: list[int] = field(default_factory=list)
+    faithfulness_rows: list[float] = field(default_factory=list)
+    relevance_rows: list[float] = field(default_factory=list)
+    retrieved_rows: list[float] = field(default_factory=list)
 
     @property
     def p50_latency_s(self) -> float:
@@ -238,6 +361,8 @@ def write_reports(
     rerank_scores: dict[str, RetrievalScores] | None = None,
     topk_runs: list[RunResult] | None = None,
     ragas_scores: dict[str, float] | None = None,
+    traces: list[QuestionTrace] | None = None,
+    meta: dict[str, Any] | None = None,
 ) -> None:
     """Assemble report.html + figures + metrics.json (RunBuilder + detail block)."""
     from portfolio_eval.report import ReportBuilder
@@ -274,5 +399,71 @@ def write_reports(
     metrics_path = config.reports_dir / "metrics.json"
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     metrics["detail"] = extra_metrics
+    if meta:
+        metrics["_meta"] = meta
     metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    if traces:
+        write_question_traces(config, traces)
+        inject_trace_section(config, traces)
     logger.info("report written: %s", config.reports_dir / "report.html")
+
+
+def write_question_traces(config: RAGConfig, traces: list[QuestionTrace]) -> Path:
+    """Persist the per-question trace table the report links to."""
+    rows = [
+        {
+            "question": t.question,
+            "category": t.category,
+            "expected_behavior": t.expected_behavior,
+            "top_rank": t.top_rank,
+            "retrieved_relevant": t.retrieved_relevant,
+            "cited_relevant": t.cited_relevant,
+            "faithfulness": t.faithfulness,
+            "abstained": t.abstained,
+            "format_ok": t.format_ok,
+            "verdict": classify_question(t),
+            "error": t.error,
+        }
+        for t in traces
+    ]
+    path = config.reports_dir / "question_traces.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def inject_trace_section(config: RAGConfig, traces: list[QuestionTrace]) -> None:
+    """Append a compact per-question trace table to report.html (links the JSON)."""
+    report_path = config.reports_dir / "report.html"
+    if not report_path.exists():
+        return
+    max_rows = 40
+    header = (
+        "<h2>Per-question trace</h2>"
+        '<p>Full table: <a href="question_traces.json"><code>question_traces.json</code></a></p>'
+        "<table><tr><th>question</th><th>category</th><th>expected</th><th>top rank</th>"
+        "<th>cited</th><th>verdict</th></tr>"
+    )
+    rows_html = []
+    for t in traces[:max_rows]:
+        rows_html.append(
+            "<tr>"
+            f"<td>{_html_escape(t.question[:90])}</td>"
+            f"<td>{t.category}</td>"
+            f"<td>{t.expected_behavior}</td>"
+            f"<td>{t.top_rank if t.top_rank is not None else '—'}</td>"
+            f"<td>{'✓' if t.cited_relevant else '—'}</td>"
+            f"<td>{classify_question(t)}</td>"
+            "</tr>"
+        )
+    section = header + "".join(rows_html) + "</table>"
+    html = report_path.read_text(encoding="utf-8")
+    if "</body>" in html:
+        html = html.replace("</body>", f"{section}</body>")
+        report_path.write_text(html, encoding="utf-8")
+
+
+def _html_escape(text: str) -> str:
+    return (
+        text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+    )

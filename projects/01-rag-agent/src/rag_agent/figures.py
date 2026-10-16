@@ -12,8 +12,10 @@ from portfolio_core.plotting import add_takeaway, apply_theme, style_runs
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.reporting import (
     TOP_K_VALUES,
+    QuestionTrace,
     RetrievalScores,
     TopkData,
+    classify_question,
     est_input_tokens_at,
     recall_at_k_from,
 )
@@ -194,6 +196,31 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
         add_takeaway(
             fig, "Five near-balanced topics; article lengths right-skewed, capped at 12k chars."
         )
+    )
+
+
+def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
+    """Failure-taxonomy breakdown: counts per deterministic verdict class."""
+    order = ["correct", "retrieval-miss", "unsupported-claim", "format-failure"]
+    counts = {label: 0 for label in order}
+    for trace in traces:
+        counts[classify_question(trace)] += 1
+    fig = go.Figure(
+        data=[
+            go.Bar(
+                x=order,
+                y=[counts[label] for label in order],
+                marker_color=["#34d399", "#fbbf24", "#f472b6", "#a78bfa"],
+            )
+        ]
+    )
+    fig.update_layout(
+        title="Failure taxonomy (per-question verdicts)",
+        xaxis_title="verdict",
+        yaxis_title="questions",
+    )
+    return apply_theme(
+        add_takeaway(fig, f"{counts['correct']}/{len(traces)} questions fully correct.")
     )
 
 
