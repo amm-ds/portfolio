@@ -26,9 +26,9 @@ harness.
 
 Real artifacts from the pipelines (interactive versions in each [case study](https://amm-ds.github.io/portfolio/projects/)):
 
-| Flagship demand intelligence (41.2M trips) | RAG quality-vs-cost frontier | VRPTW routes vs best-known |
+| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Solver runtime-vs-gap Pareto (vs OR-Tools reference) |
 |---|---|---|
-| ![Zone-hour demand heatmap](docs/assets/readme/mobility-demand-heatmap.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![C101 route map](docs/assets/readme/routing-c101-route-map.png) |
+| ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![Solver runtime-vs-gap Pareto](docs/assets/readme/routing-solver-pareto.png) |
 
 ## Projects
 
