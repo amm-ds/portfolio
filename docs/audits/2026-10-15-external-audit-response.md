@@ -55,3 +55,25 @@ with its status. Audits are a gift — disagreements are noted with reasons.
   productization gap report's build order (08 serving → drift observatory → uplift).
 
 *Updated as wave-12 items land.*
+
+## Second pass (2026-10-16 audit, repo at e1986d1 → 175bbe3) — status
+
+Point-by-point response to the second-pass findings. P0 items landed
+2026-10-16 in commits `7142f45` (docs/CI/README/06 relabel), `4de464f`
+(07 drift observatory), `2d10528` (10 CIs + honest headline), `e68f366` +
+`175bbe3` (all-ten project-page curation).
+
+| Second-pass finding | Status |
+|---|---|
+| Weekly drift workflow calls a missing command | **Fixed** — `mobility.cli drift-check --month … --fail-on-regression` shipped (drift.py + 9 tests), wired to the Thursday schedule; 2024-11 wiring check at +8.2% MAE (in-window; real value starts with unseen months) |
+| 06 OR-Tools arm not independent | **Fixed (relabel)** — "external reference/yardstick" wording removed everywhere; now stated as an ALNS-hinted incumbent-improvement probe that ties 56/56 with no improvement. Unhinted comparison (PyVRP / routing at equal budget) kept as a deferred roadmap item |
+| 06 headline not like-for-like | **Fixed** — root README leads with dual criteria (distance 4.23% + vehicles +3.73, 43/56 vehicles-first); "56/56" no longer the public headline |
+| README + 01 docs page lag results | **Fixed** — README regenerated with 9 projects and current numbers (04: 0.9460; 02: track-corrected; 03/05 real-data leads; 08/09/10 rows); 01 docs page now carries the 65-question golden set |
+| 10 headline weaker than framing | **Fixed** — paired bootstrap CIs (n=1000): Qini ranking NOT established (diff CI [−8.18, 9.52] spans zero), profit advantage IS ([−$3,617, −$48]); mail-everyone ($16,103) stated as the profit maximum at $0.01/email with concentration as the targeting value; cost-grid break-even ≈$0.30/email; `$114` relabeled revenue_per_conversion; discarded statements removed |
+| 08/09 thin results | **Partially fixed** — both built and documented (08: 19 cells/760 req author run; 09: bounded 8/14 graded run); pages curated. Remaining per roadmap: second serving stack + repeat runs with intervals (08); full 14-task run with a faster model + hosted arm (09) |
+| CI soft spots (`\|\| true`, mixed coverage, no S rules) | **Fixed (first two)** — pip-audit can now fail the build; projects/apps coverage pass overrides addopts so libs no longer contaminates the total. Ruff S rules still open |
+| Giant orchestration functions (06 run_evaluate C=104, 01 evaluate.run C=54); mypy strict per project; broad except handlers | **Open** — acknowledged; scheduled behind the curation pass |
+| Public metrics/figures not fetchable without DVC remote | **Open (declined stance retained)** — README statics embedded; regenerate-locally contract documented. Revisit if visitor bandwidth demands it |
+| Project pages: verbosity, figure linkage, up-to-date numbers | **Fixed** — all 10 stories rewritten to the intro → bullets/tables/mermaid → conclusion → **Business implication** pattern, every eda/evaluation/results section tied to an existing figure, stale numbers reconciled against reports/metrics.json (incl. 01 retrieval headline moved to the 65-q set: 0.831 vs 0.031; 02 track correction; 05 synthetic-as-primary drift) |
+
+*Updated 2026-10-16 as second-pass items land.*
