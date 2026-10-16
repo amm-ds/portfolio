@@ -31,6 +31,7 @@ from rag_agent.evaluate import (
 )
 from rag_agent.index import EmbedFn, Retriever
 from rag_agent.schemas import Article, Citation, EvalQuestion
+from rag_agent.verify import KeywordEntailmentJudge
 
 CANNED_ANALYSIS_JSON = json.dumps(
     {
@@ -197,13 +198,17 @@ def test_run_rag_eval_on_synthetic_rows(
         EvalQuestion(question="why are plants green", relevant_article_ids=["photo-000"]),
         EvalQuestion(question="what is machine learning", relevant_article_ids=["ml-000"]),
     ]
-    rag_run = run_rag_eval(config, agent, retriever, questions, judge=KeywordJudge())
+    rag_run = run_rag_eval(
+        config, agent, retriever, questions, judge=KeywordJudge(), verifier=KeywordEntailmentJudge()
+    )
     assert rag_run.eval_result.n == 2
     assert 0.0 <= rag_run.eval_result.faithfulness <= 1.0
     assert len(rag_run.latencies_s) == 2
     assert len(rag_run.input_tokens) == 2
     assert rag_run.p50_latency_s >= 0.0
     assert rag_run.est_cost_per_query_usd > 0.0
+    # Verification ran on both answers (config default: enabled).
+    assert len(rag_run.verify_reports) == 2
 
 
 def test_estimate_input_tokens(

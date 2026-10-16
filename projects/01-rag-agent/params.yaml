@@ -66,3 +66,11 @@ retrieval_best:
   chunk_size: 200
   top_k: 3
   rerank: true
+# Verify-then-answer loop (wave 14): claim-level entailment check of the
+# drafted answer against its cited chunks; unsupported claims are repaired or
+# dropped, and answers below the support floor fall back to abstention.
+# Overriden per run with `evaluate --verify/--no-verify` and `chat --verify/--no-verify`.
+verify:
+  enabled: true
+  min_support: 0.6
+  max_repair_calls: 2

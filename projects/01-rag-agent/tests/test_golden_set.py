@@ -21,6 +21,7 @@ from rag_agent.reporting import (
     write_question_traces,
 )
 from rag_agent.schemas import EvalQuestion
+from rag_agent.verify import KeywordEntailmentJudge
 
 CANNED_ANALYSIS_JSON = json.dumps(
     {
@@ -157,7 +158,9 @@ def test_run_rag_eval_traces_and_abstention_split(config: RAGConfig, retriever: 
             expected_behavior="abstain",
         ),
     ]
-    rag_run = run_rag_eval(config, agent, retriever, questions, judge=KeywordJudge())
+    rag_run = run_rag_eval(
+        config, agent, retriever, questions, judge=KeywordJudge(), verifier=KeywordEntailmentJudge()
+    )
     assert len(rag_run.traces) == 2
     # Headline aggregate counts answerable questions only.
     assert rag_run.eval_result.n == 1

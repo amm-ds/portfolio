@@ -43,6 +43,7 @@ stages:
       - usd_per_mtok_input
       - usd_per_mtok_output
       - retrieval_best
+      - verify
     outs:
       - reports/report.html
       - reports/figures

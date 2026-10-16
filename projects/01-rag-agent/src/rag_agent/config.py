@@ -113,6 +113,20 @@ class RetrievalBest(PortfolioBaseModel):
     rerank: bool = True
 
 
+class VerifyConfig(PortfolioBaseModel):
+    """Verify-then-answer loop tunables (wave 14, see rag_agent.verify).
+
+    After the agent drafts an answer, each claim is entailment-checked against
+    its cited chunks; unsupported claims are repaired or dropped, and when the
+    support fraction stays below ``min_support`` the answer falls back to
+    abstention.
+    """
+
+    enabled: bool = True
+    min_support: float = Field(default=0.6, ge=0.0, le=1.0)
+    max_repair_calls: int = Field(default=2, ge=0)
+
+
 class RAGConfig(PortfolioBaseModel):
     """Tunables for corpus preparation, indexing, retrieval and evaluation."""
 
@@ -149,6 +163,8 @@ class RAGConfig(PortfolioBaseModel):
     retrieval_best: RetrievalBest | None = Field(
         default=None, description="Production config chosen by the retrieval HPO sweep."
     )
+
+    verify: VerifyConfig = Field(default_factory=VerifyConfig)
 
     @model_validator(mode="after")
     def _validate_overlap(self) -> "RAGConfig":

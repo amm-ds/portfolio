@@ -142,6 +142,52 @@ The per-question evidence behind every number ships as
 faithfulness → verdict) and is linked from a table appended to
 `reports/report.html`.
 
+### 3.7 Verify-then-answer loop (wave 14)
+
+The wave-13 golden-set pass showed retrieval is solved (context recall 0.979,
+precision 1.000) while generation grounding is the bottleneck (12 correct /
+18 unsupported-claim; RAGAS faithfulness 0.651). The documented next lever —
+implemented here — checks the drafted answer *before* it reaches the user or
+the judges:
+
+```mermaid
+flowchart LR
+    A[Agent drafts AnalysisResult<br/>summary + citations] --> V{already<br/>abstained?}
+    V -->|yes| K[Skip: refusal<br/>is not a claim]
+    V -->|no| C[Split summary<br/>into claims]
+    C --> J[Claim judge: entailment vs<br/>full text of cited chunks<br/>1 batched call, validated verdicts]
+    J --> U{unsupported<br/>claims?}
+    U -->|yes, budget left| R[Repair: 1 regeneration<br/>call per claim, stricter prompt<br/>then re-verify]
+    U -->|no| S[Support fraction]
+    R --> S
+    S -->|&ge; min_support| F[Re-assembled answer:<br/>supported + repaired claims]
+    S -->|&lt; min_support| AB[Abstain: refusal text +<br/>confidence &lt; 0.3]
+```
+
+- **Claim judge** (`rag_agent.verify`): the provider model (same local Ollama
+  default) returns validated `ClaimVerdict`s in ONE batched call per answer —
+  per-claim entailment against the *full text* of every cited chunk, not just
+  the excerpt. `VERIFY_JUDGE=keyword` (or no provider) selects the
+  deterministic content-word-coverage entailment judge; runtime judge failures
+  fall back to it per batch, mirroring the rubric-judge pattern.
+- **Repair/drop**: each unsupported claim gets ONE regeneration call with a
+  stricter prompt (everything must be entailed; `UNSUPPORTED` marker when
+  impossible), capped at `verify.max_repair_calls` (default 2) per answer;
+  claims still unsupported after repair — and anything beyond the budget —
+  are dropped.
+- **Support floor**: if the surviving-claim fraction stays below
+  `verify.min_support` (default 0.6), the answer falls back to abstention
+  (refusal text + confidence < 0.3), integrating with the existing
+  `is_abstention` path and the wave-11 abstention metrics.
+- **Best-effort**: an unexpected verifier failure logs a warning and returns
+  the original answer — verification can never make an answer worse than the
+  unverified baseline.
+- **Config/CLI**: `verify: {enabled, min_support, max_repair_calls}` in
+  `RAGConfig`/`params.yaml` (default on); `evaluate --verify/--no-verify` and
+  `chat --verify/--no-verify` A/B the loop. Overhead is measured per answer
+  (`detail.verify` in `metrics.json`: mean verify latency and its share of
+  answer latency, repair-call and induced-abstention counts).
+
 ## 4. SLOs and operating envelope
 
 | SLO | Target | Measured (2026-10-14/15, local `qwen3.6:35b-a3b-q4_K_M`) |
@@ -173,6 +219,8 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 | No LLM provider available | `LLMProviderUnavailableError` with setup guidance; `evaluate --offline` for retrieval-only CI |
 | `JUDGE=keyword` or `--offline` | Deterministic keyword judge (CI default is the LLM judge when a provider exists) |
 | LLM judge call fails mid-run | That verdict falls back to the keyword judge; the run continues |
+| Claim judge / repair call fails | That batch falls back to keyword entailment / the claim is dropped; the answer path never breaks |
+| Verify support floor breached | Answer falls back to abstention (refusal text + confidence < 0.3), counted by the abstention metrics |
 | Client corpus has no usable records | `ValueError`/`FileNotFoundError` at intake, before any indexing |
 
 ## 5b. Operations artifacts
@@ -190,6 +238,12 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 0.4.0 (2026-10-16) — wave 14: verify-then-answer loop (`rag_agent.verify`):
+  batched per-claim entailment of the drafted summary against full cited-chunk
+  text (provider judge, keyword fallback), budget-capped repair of unsupported
+  claims, support-floor abstention fallback (`verify.min_support`), on by
+  default via `verify:` in params.yaml with `--verify/--no-verify` A/B on
+  `evaluate` and `chat`; verify overhead measured into `detail.verify`.
 - 0.3.0 (2026-10-14) — wave 10: runtime mock removed (ADR-0004 amended; agent,
   LLM judge and chat now require a provider — local Ollama default), RAGAS
   evaluation behind `evaluate --ragas` (local model as evaluator, $0 API),
