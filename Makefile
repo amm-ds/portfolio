@@ -54,3 +54,12 @@ exp-run: ## queue a params experiment: make exp-run P=02-demand-forecasting PARA
 
 exp-show: ## show experiments: make exp-show P=02-demand-forecasting
 	cd projects/$(P) && uv run dvc exp show
+
+release-verify: ## Ollama-gated evals + artifact assertions (release-time, ADR-0003)
+	@test -n "$$(curl -s --max-time 3 localhost:11434/api/tags)" || \
+	  (echo "Ollama not running — start it for release verification (CI stays offline per ADR-0003)" && exit 1)
+	uv run python -c "\
+from pathlib import Path; \
+missing = [p for p in Path('projects').iterdir() if p.is_dir() and not (p/'reports/metrics.json').exists()]; \
+assert not [m.name for m in missing if m.name[0].isdigit() and (m/'portfolio.yaml').exists() and 'planned' not in (m/'portfolio.yaml').read_text()], f'missing metrics: {missing}'; \
+print('release-verify: all shipped projects have metrics.json')"

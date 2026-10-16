@@ -1,0 +1,84 @@
+{
+  "dataset": "nab",
+  "canonical_source": "https://github.com/numenta/NAB",
+  "citation": "Ahmad, Lavin, Purdy & Agha (2017), Neurocomputing 262:134-147",
+  "snapshot_date": "2026-10-15",
+  "labels": {
+    "url": "https://raw.githubusercontent.com/numenta/NAB/master/labels/combined_windows.json",
+    "sha256": "1e1fbc4601321aad8d0f8b3784c8134299379f68f6c1f7777565f8ffd57ab6b1"
+  },
+  "series": [
+    {
+      "family": "realAWSCloudwatch",
+      "name": "ec2_cpu_utilization_24ae8d",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realAWSCloudwatch/ec2_cpu_utilization_24ae8d.csv",
+      "sha256": "ab446fbd8b9f37507eb2fdb06315826d8daeef02e241133ce06e0ee571ba53d9"
+    },
+    {
+      "family": "realAWSCloudwatch",
+      "name": "ec2_cpu_utilization_53ea38",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realAWSCloudwatch/ec2_cpu_utilization_53ea38.csv",
+      "sha256": "8942e498de7b40f1b4a6d802755592c09b8fb73ce8f658763a09cb9ea1ea94ac"
+    },
+    {
+      "family": "realAWSCloudwatch",
+      "name": "ec2_disk_write_bytes_1ef3de",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realAWSCloudwatch/ec2_disk_write_bytes_1ef3de.csv",
+      "sha256": "ce3d6c6a652ed7c31a6dd3727a36e128fcac6fb2381c63267ad0fbc02eccd9df"
+    },
+    {
+      "family": "realAWSCloudwatch",
+      "name": "elb_request_count_8c0756",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realAWSCloudwatch/elb_request_count_8c0756.csv",
+      "sha256": "74c26574a01ca9fb89dddb5021e2e13c3a93eb25dc640438a9acb1ceb00f1021"
+    },
+    {
+      "family": "realKnownCause",
+      "name": "ambient_temperature_system_failure",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realKnownCause/ambient_temperature_system_failure.csv",
+      "sha256": "230b68ccca20f59d562afd5d24ad52939c9b784386bed0054018358bf9120581"
+    },
+    {
+      "family": "realKnownCause",
+      "name": "machine_temperature_system_failure",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realKnownCause/machine_temperature_system_failure.csv",
+      "sha256": "92bf5b87fc7f9bba8ca0b7ec63ccaac8cb4a1371a258e8c29a10ae9c018d82a4"
+    },
+    {
+      "family": "realKnownCause",
+      "name": "nyc_taxi",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realKnownCause/nyc_taxi.csv",
+      "sha256": "d8fa6f7f0734bf5c8be12c52a94e20a82664c397d9dec4449156bd453d32856d"
+    },
+    {
+      "family": "realKnownCause",
+      "name": "ec2_request_latency_system_failure",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realKnownCause/ec2_request_latency_system_failure.csv",
+      "sha256": "98378580aa80157e057c61d59d81daddccc6c65a2c0c800e3f01f603b8215c3f"
+    },
+    {
+      "family": "realTraffic",
+      "name": "speed_7578",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realTraffic/speed_7578.csv",
+      "sha256": "15ba994384730cb5a2e6818f17ded1430b40d92eb7a08e5b1a48a445c8c350f6"
+    },
+    {
+      "family": "realTraffic",
+      "name": "speed_6005",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realTraffic/speed_6005.csv",
+      "sha256": "7976e7596cd1e579696c737576e96a26fe041484472ed7d0a463ce2b094d7aa7"
+    },
+    {
+      "family": "realTraffic",
+      "name": "TravelTime_387",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realTraffic/TravelTime_387.csv",
+      "sha256": "38e70e9ead8227fd023bff6e93247d5bc01ee008f781b921a156962419b399bb"
+    },
+    {
+      "family": "realTraffic",
+      "name": "occupancy_t4013",
+      "url": "https://raw.githubusercontent.com/numenta/NAB/master/data/realTraffic/occupancy_t4013.csv",
+      "sha256": "5663a8122a300360eb51fbbd0f21706da05af1af55262926d6a226bb6d071704"
+    }
+  ]
+}
