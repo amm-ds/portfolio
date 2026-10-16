@@ -103,6 +103,23 @@ class VRPConfig(Settings):
     alns_max_iterations: int = Field(
         default=120, ge=1, description="ALNS iteration cap (bounds runtime per instance)."
     )
+    ortools_time_limit_s: float = Field(
+        default=10.0,
+        gt=0,
+        description="CP-SAT wall-time limit per instance (external-reference solver).",
+    )
+    ortools_max_vehicles: int = Field(
+        default=20,
+        ge=1,
+        description="CP-SAT fleet bound; the model fleet is min(instance fleet, "
+        "max(this, hint fleet)) so the hinted incumbent always fits.",
+    )
+    ortools_fleet_slack: int = Field(
+        default=3,
+        ge=0,
+        description="CP-SAT model fleet = hinted fleet + this slack (capped by "
+        "ortools_max_vehicles and the instance fleet).",
+    )
     alns_destroy_q: int = Field(
         default=10, ge=1, description="Customers removed per ALNS destroy operation."
     )

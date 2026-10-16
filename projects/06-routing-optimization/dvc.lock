@@ -9,9 +9,9 @@ stages:
       size: 1418
     - path: src/routing_optimization
       hash: md5
-      md5: 3946da8b6e57ba05fc5c4f5edb82dcdc.dir
-      size: 243516
-      nfiles: 25
+      md5: de1ec2a720b0441ac8976a0af22b3df1.dir
+      size: 284662
+      nfiles: 27
     outs:
     - path: data/raw
       hash: md5
@@ -32,9 +32,9 @@ stages:
       size: 1418
     - path: src/routing_optimization
       hash: md5
-      md5: 3946da8b6e57ba05fc5c4f5edb82dcdc.dir
-      size: 243516
-      nfiles: 25
+      md5: de1ec2a720b0441ac8976a0af22b3df1.dir
+      size: 284662
+      nfiles: 27
     outs:
     - path: reports/dq.md
       hash: md5
@@ -42,8 +42,8 @@ stages:
       size: 27721
     - path: reports/solutions.json
       hash: md5
-      md5: ec0ad58e9975eed5e25f763fc235a820
-      size: 174249
+      md5: 959d286bb8d1ef62f92f532fb23327cf
+      size: 184639
   evaluate:
     cmd: uv run python -m routing_optimization.cli evaluate
     deps:
@@ -61,28 +61,28 @@ stages:
       size: 1418
     - path: reports/solutions.json
       hash: md5
-      md5: ec0ad58e9975eed5e25f763fc235a820
-      size: 174249
+      md5: 959d286bb8d1ef62f92f532fb23327cf
+      size: 184639
     - path: src/routing_optimization
       hash: md5
-      md5: 3946da8b6e57ba05fc5c4f5edb82dcdc.dir
-      size: 243516
-      nfiles: 25
+      md5: de1ec2a720b0441ac8976a0af22b3df1.dir
+      size: 284662
+      nfiles: 27
     outs:
     - path: reports/figures
       hash: md5
-      md5: 9acf0be7170f857b50a17cf827804c13.dir
-      size: 216624
-      nfiles: 16
+      md5: 4d02b836151d42010884fa187a9a6e5d.dir
+      size: 290969
+      nfiles: 22
     - path: reports/metrics.json
       hash: md5
-      md5: 0f047894b021a07f4d2be85a63b60cc4
-      size: 81459
+      md5: 69b39589db39193c6b63202021ce5550
+      size: 92477
     - path: reports/report.html
       hash: md5
-      md5: 9fbcca574a9ff2194364b11101bc2691
-      size: 48519
+      md5: 5efec7d76b46ee9f386f57f08626ab44
+      size: 56823
     - path: reports/results.md
       hash: md5
-      md5: 20d6ad61858b653799f63a216ce9770b
-      size: 26650
+      md5: b1c53369136aee762e1e238ee6d80e95
+      size: 31150

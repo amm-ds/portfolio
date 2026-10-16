@@ -1,5 +1,7 @@
 {
   "target_coverage": 0.8,
+  "horizon": 1,
+  "horizons_note": "The modelling frame is one-day-ahead (h=1 only). Multi-horizon coverage (h in {1, 7}) needs a horizon-stacked frame \u2014 roadmap.",
   "quantile_band": {
     "coverage_pooled": 0.7273936170212766,
     "per_fold": [

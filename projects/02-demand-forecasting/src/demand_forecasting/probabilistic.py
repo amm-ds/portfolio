@@ -110,6 +110,11 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
 
     result: dict[str, Any] = {
         "target_coverage": TARGET_COVERAGE,
+        "horizon": 1,
+        "horizons_note": (
+            "The modelling frame is one-day-ahead (h=1 only). Multi-horizon "
+            "coverage (h in {1, 7}) needs a horizon-stacked frame — roadmap."
+        ),
         "quantile_band": {
             "coverage_pooled": quantile_cov_pooled,
             "per_fold": per_fold,
@@ -134,6 +139,9 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
     fig = figure_probabilistic_band(features, last, result)
     save_html(fig, Path(settings.reports_dir) / "figures" / "probabilistic_band.html")
     save_json(fig, Path(settings.reports_dir) / "figures" / "probabilistic_band.json")
+    # audit-list fan chart: same content served under its canonical name
+    save_html(fig, Path(settings.reports_dir) / "figures" / "forecast_fan.html")
+    save_json(fig, Path(settings.reports_dir) / "figures" / "forecast_fan.json")
     return result
 
 

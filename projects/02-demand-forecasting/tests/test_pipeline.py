@@ -73,6 +73,8 @@ def test_evaluate_writes_report_and_figures(
     assert set(metrics) == {
         "naive_mean",
         "naive_last",
+        "seasonal_naive",
+        "ets",
         "ridge",
         "hgb",
         "hgb_tuned",
@@ -94,7 +96,9 @@ def test_evaluate_writes_report_and_figures(
         "metrics_bars",
         "fold_stability",
         "reconciliation_coherence",
+        "coherence_heatmap",
         "probabilistic_band",
+        "forecast_fan",
     ):
         assert (settings.reports_dir / "figures" / f"{name}.html").exists()
         assert (settings.reports_dir / "figures" / f"{name}.json").exists()
@@ -111,6 +115,8 @@ def test_model_persistence_roundtrip(
     assert set(loaded) == {
         "naive_mean",
         "naive_last",
+        "seasonal_naive",
+        "ets",
         "ridge",
         "hgb",
         "hgb_tuned",

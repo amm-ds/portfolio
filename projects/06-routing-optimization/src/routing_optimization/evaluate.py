@@ -29,14 +29,18 @@ from routing_optimization.construct import (
     randomized,
 )
 from routing_optimization.figures import (
+    AlnsConvergenceHistory,
+    alns_convergence_figure,
     convergence_figure,
     eda_instance_map_figure,
     family_gap_figure,
     gap_figure,
+    pareto_figure,
     route_map_figure,
     runtime_figure,
     solver_profile_figure,
 )
+from routing_optimization.ortools_solver import ortools_cp
 from routing_optimization.parser import parse_solomon_file
 from routing_optimization.reporting import (
     family_markdown,
@@ -137,6 +141,27 @@ class Reference:
 
     distance: float
     vehicles: int | None = None
+
+
+def _alns_checkpoints(
+    trace: list[float], stats: dict[str, list[list[float]]], n_checkpoints: int = 6
+) -> AlnsConvergenceHistory:
+    """Sample the per-iteration ALNS best-distance trace at ~``n_checkpoints``
+    evenly spaced checkpoints, plus the destroy-operator weights per adapted
+    segment — the inputs of the ``alns_convergence`` figure."""
+    n = len(trace)
+    if n <= n_checkpoints:
+        idx = list(range(n))
+    else:
+        step = (n - 1) / (n_checkpoints - 1)
+        idx = sorted({round(i * step) for i in range(n_checkpoints)})
+    weights = stats.get("destroy_weights", [])
+    return {
+        "iterations": [float(i) for i in idx],
+        "best": [trace[i] for i in idx],
+        "segments": [float(k + 1) for k in range(len(weights))],
+        "destroy_weights": [list(w) for w in weights],
+    }
 
 
 def run_dq(problem: Problem) -> DQReport:
@@ -266,6 +291,7 @@ def run_solve(cfg: VRPConfig) -> Path:
 
     # Tuned 2-opt runs (also the ALNS starting points).
     convergence: dict[str, dict[str, list[float]]] = {}
+    alns_convergence: dict[str, AlnsConvergenceHistory] = {}
     for problem in problems:
         inst = problem.name
         runs = runs_by_inst[inst]
@@ -312,6 +338,8 @@ def run_solve(cfg: VRPConfig) -> Path:
         inst = problem.name
         runs = runs_by_inst[inst]
         plans = plans_by_inst[inst]
+        alns_trace: list[float] | None = [] if inst in cfg.convergence_instances else None
+        stats: dict[str, list[list[float]]] | None = {} if alns_trace is not None else None
         t0 = time.perf_counter()
         plan = alns(
             problem,
@@ -322,6 +350,8 @@ def run_solve(cfg: VRPConfig) -> Path:
             reaction_factor=alns_hpo.tuning.reaction_factor,
             init_weights=alns_hpo.tuning.init_weights,
             destroy_q=cfg.alns_destroy_q,
+            trace=alns_trace,
+            stats=stats,
         )
         alns_runtime = time.perf_counter() - t0
         runs.append(
@@ -334,6 +364,32 @@ def run_solve(cfg: VRPConfig) -> Path:
             )
         )
         plans["alns"] = plan
+        if alns_trace is not None:
+            alns_convergence[inst] = _alns_checkpoints(alns_trace, stats or {})
+
+        # External reference: time-bounded CP-SAT, hinted by the ALNS plan so a
+        # feasible incumbent exists from the first millisecond. The limit is a
+        # wall-time bound (~10 s vs ALNS's ~0.8 s — an asymmetric comparison,
+        # disclosed in README/story).
+        t0 = time.perf_counter()
+        cp_plan = ortools_cp(
+            problem,
+            hint=plan,
+            time_limit_s=cfg.ortools_time_limit_s,
+            max_vehicles=cfg.ortools_max_vehicles,
+            fleet_slack=cfg.ortools_fleet_slack,
+            seed=cfg.seed,
+        )
+        runs.append(
+            SolverRun(
+                "ortools_cp",
+                cp_plan.total_distance,
+                cp_plan.n_vehicles,
+                time.perf_counter() - t0,
+                base_solver="alns",
+            )
+        )
+        plans["ortools_cp"] = cp_plan
 
         best = min(runs, key=lambda r: r.total_distance)
         instances_payload[inst] = {
@@ -377,6 +433,7 @@ def run_solve(cfg: VRPConfig) -> Path:
         "best_mean_distance": round(alns_hpo.best.mean_distance, 4),
     }
     payload["convergence"] = convergence
+    payload["alns_convergence"] = alns_convergence
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     solutions_path = cfg.reports_dir / "solutions.json"
     solutions_path.write_text(json.dumps(payload, indent=2))
@@ -524,6 +581,54 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         for r in ev.runs
     )
     figures["family_gap"] = family_gap_figure(family_rows)
+
+    pareto_rows = pl.DataFrame(
+        {
+            "solver": solver,
+            "mean_runtime_s": (
+                sum(r.runtime_s for ev in evaluations for r in ev.runs if r.solver == solver)
+                / max(sum(1 for ev in evaluations for r in ev.runs if r.solver == solver), 1)
+            ),
+            "mean_gap_pct": (
+                sum(
+                    gap_pct(r.total_distance, ev.best_known)
+                    for ev in evaluations
+                    for r in ev.runs
+                    if r.solver == solver and ev.best_known is not None
+                )
+                / max(
+                    sum(
+                        1
+                        for ev in evaluations
+                        for r in ev.runs
+                        if r.solver == solver and ev.best_known is not None
+                    ),
+                    1,
+                )
+            ),
+            "mean_veh_delta": (
+                sum(
+                    r.n_vehicles - ev.best_known_vehicles
+                    for ev in evaluations
+                    for r in ev.runs
+                    if r.solver == solver and ev.best_known_vehicles is not None
+                )
+                / max(
+                    sum(
+                        1
+                        for ev in evaluations
+                        for r in ev.runs
+                        if r.solver == solver and ev.best_known_vehicles is not None
+                    ),
+                    1,
+                )
+            ),
+        }
+        for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
+    )
+    figures["pareto_gap_runtime"] = pareto_figure(pareto_rows)
+    for inst, history in solutions.get("alns_convergence", {}).items():
+        figures[f"alns_convergence_{inst}"] = alns_convergence_figure(history, inst)
 
     figures_dir = cfg.reports_dir / "figures"
     figures_dir.mkdir(parents=True, exist_ok=True)
@@ -737,6 +842,7 @@ def run_evaluate(cfg: VRPConfig) -> Path:
 __all__ = [
     "InstanceEvaluation",
     "SolverRun",
+    "alns_convergence_figure",
     "canonical_instance_name",
     "convergence_figure",
     "eda_instance_map_figure",
@@ -747,6 +853,7 @@ __all__ = [
     "gap_figure",
     "gap_pct",
     "load_best_known",
+    "pareto_figure",
     "persist_solver_best",
     "results_markdown",
     "route_map_figure",

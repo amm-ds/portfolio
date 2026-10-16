@@ -23,16 +23,22 @@ Summary:
 - **Data**: platform-seeded synthetic panel (`seed=42`, 730 days → 17,520 rows),
   gated by `DQReport` (null-rate, range, freshness) and versioned by a
   `DatasetContract` with SHA-256 (`data/dataset.json`). A real-data track
-  (UCI Online Retail II) is documented in DESIGN.md but not implemented.
+  (UCI Online Retail II) is implemented behind `--data-source uci` — the
+  headline results below come from it; synthetic stays the default so CI
+  runs offline.
 - **Features** (`features.py`): lags `[1, 7, 14]` built with `shift` **per
   series** (never the current row), plus calendar features (day-of-week,
   weekend, month, week, day-of-year sin/cos) and a linear trend counter.
   Undefined-lag rows are dropped, never imputed.
 - **Models** (`model.py`): two deterministic naive floors — `naive_mean`
-  (global train mean) and `naive_last` (per-series persistence) — plus global
-  models with one-hot series id: `ridge` (Ridge inside a `Pipeline` with
-  `StandardScaler` + one-hot), three boosting arms — `hgb` (default sklearn),
-  `hgb_tuned` (production), `xgb_tuned` (XGBoost) and `lgbm_tuned` (LightGBM),
+  (global train mean) and `naive_last` (per-series persistence) — two
+  statistical baselines — `seasonal_naive` (lag-7, same weekday last week)
+  and per-series ETS (statsmodels Holt-Winters, damped trend + weekly
+  seasonality, fallback chain to seasonal naive for short/failing series,
+  documented + tested) — plus global models with one-hot series id: `ridge`
+  (Ridge inside a `Pipeline` with `StandardScaler` + one-hot), three
+  boosting arms — `hgb` (default sklearn), `hgb_tuned` (production),
+  `xgb_tuned` (XGBoost) and `lgbm_tuned` (LightGBM),
   the latter two Optuna-tuned mirrors of the HPO space — and `temporal_net`
   (hand-written PyTorch embedding+MLP, `temporal.py`).
   One artefact for the whole hierarchy, new series handled via
@@ -67,21 +73,32 @@ Summary:
   no date block straddles train/validation. Metrics from
   `portfolio_eval.ml.regression_metrics` on pooled out-of-fold predictions.
 
-## Results (seed 42, real run of `demand_forecasting.cli all`)
+## Synthetic track — CI fast path (`data_source: synthetic`, seed 42)
 
-Pooled out-of-fold metrics across all 4 folds and 24 series — the full run
-ladder from naive floors to tuned and neural models:
+The synthetic hierarchy (24 series, clean trend + weekly seasonality) is the
+**CI/offline path**: fully seedable, byte-reproducible, no network. It exists
+so every gate in this repo runs hermetically; the headline results live on the
+real-data track below. Pooled out-of-fold ladder through the identical
+backtest — note what clean data does to the statistical baselines:
 
-| model | MAE (units) | RMSE (units) | MAPE (%) | Δ MAE vs naive_last |
+| model | MAE (units) | RMSE (units) | MAPE (%) | MASE |
 |---|---|---|---|---|
-| naive_mean (global train mean) | 31.762 | 42.543 | 49.02 | — (worst floor) |
-| naive_last (persistence, y(t-1)) | 14.476 | 19.881 | 19.28 | — (strongest naive) |
-| ridge (linear baseline) | 9.116 | 12.705 | 12.44 | -37.0% |
-| hgb (default HGB) | 8.619 | 12.178 | 11.43 | -40.5% |
-| hgb_tuned (Optuna, 56 trials) | 8.529 | 12.071 | 11.34 | -41.1% |
-| xgb_tuned (Optuna, 25 trials) | 8.539 | 12.086 | 11.32 | -41.0% |
-| **lgbm_tuned (Optuna, 25 trials)** | **8.413** | **11.905** | **11.16** | **-41.9%** |
-| temporal_net (PyTorch emb+MLP) | 9.341 | 12.756 | 13.41 | -35.5% |
+| naive_mean (global train mean) | 31.762 | 42.543 | 49.02 | 3.490 |
+| naive_last (persistence, y(t-1)) | 14.476 | 19.881 | 19.28 | 1.591 |
+| seasonal_naive (lag-7) | 10.387 | 14.741 | 13.78 | 1.141 |
+| **ETS (Holt-Winters, damped+weekly)** | **8.110** | **11.510** | **10.45** | **0.891** |
+| ridge (linear baseline) | 9.116 | 12.705 | 12.44 | 1.002 |
+| hgb (default HGB) | 8.619 | 12.178 | 11.43 | 0.947 |
+| hgb_tuned (Optuna, 56 trials) | 8.529 | 12.071 | 11.34 | 0.937 |
+| xgb_tuned (Optuna, 25 trials) | 8.539 | 12.086 | 11.32 | 0.938 |
+| lgbm_tuned (Optuna, 25 trials) | 8.413 | 11.905 | 11.16 | 0.924 |
+| temporal_net (PyTorch emb+MLP) | 9.341 | 12.756 | 13.41 | 1.026 |
+
+On clean synthetic data **ETS wins outright** (MASE 0.891) — a correctly
+specified Holt-Winters model is exactly the right class for smooth
+trend + weekly seasonality, and the boosters only approximate it. This is the
+deliberate counterpoint to the real track, where intermittency flips the
+ordering. On synthetic, `lgbm_tuned` is the best ML model (MAE 8.413).
 
 Key findings:
 
@@ -109,8 +126,8 @@ Key findings:
 - **Reconciliation (MinT-lite, last fold, store level)**: the grid estimator
   chose w=0.05 — the parent-level model suffers the same fold-4 drift as the
   children, so barely any trust is placed in it. Store-level MAE improved
-  23.892 → 23.837 and incoherence |parent forecast − Σ children| fell
-  24.125 → 22.919 (exactly ×(1−w), the tested coherence property). Structural
+  24.048 → 23.925 and incoherence |parent forecast − Σ children| fell
+  23.146 → 21.989 (exactly ×(1−w), the tested coherence property). Structural
   coherence is guaranteed; accuracy gains from reconciliation need a
   drift-robust parent model — a documented, quantified caveat.
 - Where the gains plateau: all runs degrade on the last fold as the injected
@@ -130,85 +147,88 @@ Per-fold MAE (see the `fold_stability` figure for the full six-run view):
 hgb_tuned improves on hgb in **every** fold; temporal_net tracks ridge but
 never leads.
 
-## Real-data track (UCI Online Retail II, `cli all --data-source uci`)
+## Headline results — real data (UCI Online Retail II, `cli all --data-source uci`)
 
-Same pipeline, same backtest, real transactions: 525,461 sales lines parsed
-from the 2009-2010 sheet → top 8 countries × top 200 products, 374 days
+Real transactions, same pipeline, same embargoed backtest: 525,461 sales lines
+parsed from the 2009-2010 sheet → top 8 countries × top 200 products, 374 days
 (2009-12-01..2010-12-09), 405,416 panel rows, **89.2% zero share** — classical
-intermittent demand. Pooled out-of-fold ladder:
+intermittent demand. Pooled out-of-fold ladder, **MAE/MASE lead; MAPE is
+reported but not decision-grade here** (near-zero actuals inflate it to
+220–440% for every run — the wave-7 finding stands):
 
-| run | MAE | RMSE | MAPE |
-|---|---|---|---|
-| naive_mean | 10.838 | 97.607 | 91.3% |
-| naive_last | 10.288 | 135.674 | 356.2% |
-| ridge | 16.734 | 98.531 | 236.2% |
-| hgb | 9.085 | 97.256 | 245.9% |
-| **hgb_tuned** | **8.989** | **96.688** | 228.6% |
-| temporal_net | 12.704 | 96.813 | 215.8% |
+| run | MAE | RMSE | MAPE | MASE |
+|---|---|---|---|---|
+| naive_mean | 10.838 | 97.607 | 91.3% | 1.132 |
+| naive_last (persistence) | 10.288 | 135.674 | 356.2% | 1.168 |
+| seasonal_naive (lag-7) | 9.859 | 135.298 | 439.0% | 1.117 |
+| ETS (Holt-Winters, damped+weekly) | 11.256 | 116.865 | 352.3% | 1.361 |
+| ridge (linear baseline) | 16.734 | 98.531 | 236.2% | 1.560 |
+| hgb (default sklearn) | 9.085 | 97.256 | 245.9% | 1.002 |
+| **hgb_tuned (Optuna, 56 trials)** | **8.989** | **96.688** | 228.6% | **0.980** |
+| xgb_tuned (Optuna, 25 trials) | 9.385 | 98.136 | 275.2% | 1.042 |
+| lgbm_tuned (Optuna, 25 trials) | 9.600 | 96.535 | 287.9% | 1.055 |
+| temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 |
 
-What transfers and what breaks — the honest synthetic-vs-real comparison:
+What the audit-driven statistical baselines reveal on **real** data:
 
-- **Transfers**: the rung ordering at the top (tuned HGB best, default HGB
-  close, NN behind) and the value of naive floors. `hgb_tuned` still wins.
-- **Breaks — ridge collapses**: the linear model (MAE 16.7) falls *behind both
-  naives* (~10.3). Squared-loss linear fitting cannot handle 89% zeros plus
-  bulk orders up to 19,152 units in a single day; tree ensembles' piecewise
-  structure and the tuned min_samples_leaf absorb it.
-- **Breaks — MAPE becomes meaningless**: persistence's MAPE explodes to 356%
-  (yesterday's zero actuals), and every model's MAPE is inflated by near-zero
-  denominators. On real intermittent data MAE is the decision metric; MAPE is
-  reported only for completeness.
-- **Breaks — RMSE ≫ MAE everywhere** (e.g. hgb_tuned 96.7 vs 9.0): rare
-  wholesale spikes dominate squared errors. Plan on quantile/robust objectives,
-  not RMSE targets.
-- **Reconciliation pays off on real data**: w=0.65 (vs 0.05 synthetic) —
-  store-level MAE 748.2 → 726.4, incoherence 400.4 → 140.2 (exactly ×(1−w)).
-  Real hierarchies carry more cross-series signal than the synthetic one.
-- **Probabilistic (both tracks, target 80% band)**:
+- **They do not beat the boosters here** — the mirror image of the synthetic
+  track, where ETS wins outright. `seasonal_naive` (9.859) is the strongest
+  floor and a serious contender (it beats ridge, the NN and both tuned
+  GBM arms), but `hgb_tuned` is the only run with MASE < 1 — the only model
+  reliably better than "same day last week". ETS *loses* to its own seasonal
+  naive (11.256 vs 9.859, MASE 1.361): Holt-Winters assumes every series is
+  smooth and seasonal, and 89% zeros plus bulk spikes break that assumption
+  (the fallback chain is documented and unit-tested).
+- **Cross-track transfer is the honest punchline**: `lgbm_tuned`, the
+  synthetic champion (MAE 8.413), drops to 9.600 on UCI — fourth place.
+  Configs tuned on clean synthetic data do not transfer to intermittent real
+  demand; the tuned HGB config generalizes best. This is why both tracks stay
+  in the repo side by side.
+- **Ridge collapses** (16.734, behind every floor) and **MAPE/RMSE are not
+  decision metrics** on this data (356–439% MAPE; RMSE ≫ MAE from wholesale
+  spikes). MAE and MASE are the numbers to plan with.
+- **Reconciliation pays off**: w=0.70 — incoherence 384.0 → 115.2 (exactly
+  ×(1−w), property-tested); store-level MAE 746.9 → 737.9 (−1.2% this run —
+  coherence is a guarantee, accuracy gains depend on parent-model quality,
+  stated plainly).
+- **Probabilistic (target 80% band)**:
 
   | track | quantile band coverage | split-conformal coverage |
   |---|---|---|
   | synthetic | 0.727 (under-covers) | 0.757 (q80 = 13.25) |
   | UCI real | 0.919 (over-covers) | 0.858 (q80 = 0.0 — degenerate) |
 
-  Honest reading: on synthetic data the bands are too narrow (heavy
-  day-over-day noise; HGB quantiles over-smooth). On real intermittent data
-  they over-cover, and the conformal calibration degenerates — 80% of early-fold
-  residuals are exactly 0 (the model nails zero-demand days), so q80 = 0 and
-  the band collapses onto the point forecast. Fix direction: per-series
-  conformal and zero-inflated intervals (roadmap).
+  Coverage is **h=1 only** — the frame is one-day-ahead; multi-horizon bands
+  (h ∈ {1, 7}) need a horizon-stacked frame (roadmap). Honest reading: global
+  bands under-cover on clean data and degenerate on intermittent data
+  (80% of residuals are exact zeros → q80 = 0); per-series conformal is the
+  fix direction.
 
-Figures (HTML + JSON for the showcase app) in `reports/figures/` (synthetic)
-and `reports_uci/figures/` (real):
+Figures (HTML + JSON per track, `reports/figures/` synthetic,
+`reports_uci/figures/` real) — the audit list:
 
-- `eda_series_overview` / `eda_units_distribution` — raw-panel EDA
-- `forecast_vs_actual` — actual vs **hgb_tuned** vs **naive_last** on the last
-  fold, with a takeaway subtitle quantifying the improvement on that fold
-- `metrics_bars` — grouped MAE/RMSE/MAPE comparison across all six runs
-- `fold_stability` — MAE per fold per model
-- `hpo_history` / `hpo_importance` — Optuna optimization history and
-  hyperparameter importance
-- `reconciliation_coherence` — per-store parent actual vs Σ children
-  before/after the MinT-lite adjustment
-- `probabilistic_band` — actual vs p50 with p10-p90 band, two highest-volume
-  series, last fold
+- `forecast_fan` (real track) — p10/p50/p90 fan + actual for the two
+  highest-volume series, last fold, with takeaway
+- `coherence_heatmap` — per-store |parent − Σ children| before/after the
+  MinT-lite adjustment, annotated
+- `fold_stability` — the error-by-fold panel (drift visible per run)
+- `forecast_vs_actual` — champion vs strongest naive on example series
+- `metrics_bars` / `eda_series_overview` / `eda_units_distribution` /
+  `hpo_history` / `hpo_importance` / `reconciliation_coherence` /
+  `probabilistic_band` as before
 
-Other artifacts: `reports/metrics.json`, `reports/report.html`,
-`reports/reconciliation.json`, `reports/probabilistic.json`,
-`data/panel.parquet` (17,520 rows), `data/features.parquet` (17,184 rows × 17
-cols), `data/models.pkl` (all six models refit on full history),
-`data/hpo_best.json` (+ `hpo_study.db`), `data/dataset.json` (dataset identity
-card). UCI track: `data_uci/` (panel 405,416 rows, contract, models) and
-`reports_uci/` (metrics, reconciliation, probabilistic, report, figures).
-Full synthetic pipeline ≈ **2.5 min** including probabilistic (≈ 6 min under
-heavy multi-agent load); UCI track ≈ **5.5 min**; 6/6 DQ gates pass on both.
+Artifacts: per track, `reports/metrics.json` (10 runs incl. MASE),
+`report.html`, `reconciliation.json`, `probabilistic.json`; `data_uci/` (panel
+405,416 rows, contract, models) and `data/` (synthetic). Runtime: synthetic
+≈ **4 min** with probabilistic; UCI ≈ **25 min** (ETS fits 1,084 series per
+fold); 6/6 DQ gates pass on both tracks.
 
 ## Reproduce
 
 ```bash
 # from the repo root, inside the workspace venv
-uv run python -m demand_forecasting.cli all            # synthetic pipeline (~2.5 min)
-uv run python -m demand_forecasting.cli all --data-source uci   # real-data track (~5.5 min, fetches once)
+uv run python -m demand_forecasting.cli all            # synthetic pipeline (~4 min)
+uv run python -m demand_forecasting.cli all --data-source uci   # real-data track (~25 min, fetches once)
 uv run python -m demand_forecasting.cli hpo            # Optuna HPO (minutes; resumable; --model xgb|lgbm)
 uv run dvc metrics show                                 # declared metrics (reports/metrics.json)
 # or stage by stage (mirrors dvc.yaml)
@@ -232,10 +252,11 @@ uv run pytest projects/02-demand-forecasting -q
   centered; embargoed expanding-window backtest instead of a random split;
   per-fold stability reported alongside the headline metric so drift is
   visible before it hurts.
-- **Baseline-first modelling**: two naive floors (global mean, persistence)
-  anchor every claim; the trained models must *earn* their complexity —
-  tuned gradient boosting beats persistence by 41.1% MAE, the linear baseline
-  by 6.4%, an honest, quantified trade-off.
+- **Baseline-first modelling**: naive floors (global mean, persistence,
+  weekly seasonal-naive) and a per-series ETS anchor every claim; the trained
+  models must *earn* their complexity — on real data the champion beats the
+  strongest floor (`seasonal_naive`) by 8.8% MAE, an honest, quantified
+  trade-off.
 - **Model selection as an engineering discipline**: HPO optimises on the same
   embargoed folds it is judged on, the un-tuned model stays in the ladder for
   comparison, and the neural candidate is reported with its honest verdict
@@ -250,15 +271,18 @@ uv run pytest projects/02-demand-forecasting -q
 
 ## Roadmap
 
-Delivered in wave 7: the UCI real-data track, probabilistic forecasts
-(quantile HGB + split-conformal), both exercised with real numbers above.
-What remains, in priority order:
+Delivered: UCI real-data track (now the headline), probabilistic forecasts
+(quantile HGB + split-conformal), Optuna HPO across three boosting arms, and
+the wave-13 audit items — statistical baselines (`seasonal_naive` + per-series
+damped Holt-Winters ETS with documented fallbacks) and **MASE** on both tracks,
+plus the fan-chart/coherence-heatmap/error-by-fold figure set. What remains:
 
-1. **Calibrated intervals for intermittent demand**: per-series (or
-   clustered) conformal calibration and zero-inflated interval models — the
-   current global bands under-cover on synthetic (73%) and degenerate on real
-   data (q80 = 0).
-2. **Full MinT reconciliation**: covariance projection across a deeper product
-   hierarchy once the UCI track is structured by product category.
-3. **Returns-aware demand**: model cancellations/returns as a separate flow
+1. **Calibrated intervals for intermittent demand**: per-series (or clustered)
+   conformal calibration and zero-inflated interval models — global bands
+   under-cover on synthetic (73%) and degenerate on real data (q80 = 0).
+2. **Multi-horizon coverage (h ∈ {1, 7})**: the frame is one-day-ahead today;
+   horizon-stacked conformal needs a re-engineered target frame.
+3. **Full MinT reconciliation**: covariance projection once the UCI track grows
+   a product-category hierarchy.
+4. **Returns-aware demand**: model cancellations/returns as their own flow
    instead of excluding them, for net-demand forecasting.

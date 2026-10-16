@@ -45,7 +45,10 @@ def _settings_and_config(
         data_dir=data_dir or base.data_dir,
         reports_dir=reports_dir or base.reports_dir,
     )
-    return settings, _config_from_params(ForecastConfig(data_source=data_source))
+    # params.yaml overlay first, then the CLI flag wins (an explicit
+    # --data-source must not be clobbered by the params default)
+    config = _config_from_params(ForecastConfig())
+    return settings, config.model_copy(update={"data_source": data_source})
 
 
 def _config_from_params(config: ForecastConfig) -> ForecastConfig:
