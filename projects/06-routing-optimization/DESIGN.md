@@ -120,7 +120,7 @@ flowchart LR
   tuned 2-opt), wins 56/56, negative gaps on 8 instances (convention-mixed
   references); per-family: C1 4.48, C2 6.50, R1 4.10, R2 3.04, RC1 4.75,
   RC2 3.00. Roadmap down to one item: hierarchical objective.
-- **2026-10-15** — Wave 13 (external reference): `ortools_cp` OR-Tools CP-SAT
+- **2026-10-15** — Wave 13 (hinted CP-SAT cross-check): `ortools_cp` OR-Tools CP-SAT
   arm behind the same `RoutePlan` contract — per-vehicle circuits over
   time-window-filtered arcs, hinted by the ALNS plan, single worker + fixed
   seed, 10 s/instance wall budget from config (`ortools_time_limit_s`,

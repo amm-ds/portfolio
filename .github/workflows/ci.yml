@@ -28,7 +28,8 @@ jobs:
       - name: Tests with coverage gates (libs ≥80% strict)
         run: uv run pytest --cov=libs --cov-fail-under=80 --cov-report=term-missing
       - name: "Coverage floor — projects + apps ≥55%"
-        run: uv run pytest --cov=projects --cov=apps --cov-fail-under=55 --cov-report=term
+        # Override addopts to exclude libs from this pass's total
+        run: uv run pytest -o addopts="--import-mode=importlib -q" --cov=projects --cov=apps --cov-fail-under=55 --cov-report=term
       - name: "Frontend — install, test, typecheck, build"
         working-directory: apps/showcase-web
         run: |
@@ -38,7 +39,7 @@ jobs:
       - name: Docs build (strict)
         run: uv run mkdocs build --strict
       - name: Dependency audit
-        run: uv pip audit || true
+        run: uv pip audit
 
   docker:
     runs-on: ubuntu-latest

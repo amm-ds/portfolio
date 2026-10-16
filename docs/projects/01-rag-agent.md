@@ -6,7 +6,7 @@ A grounded question-answering agent over a curated topical slice of English
 Wikipedia. A `pydantic-ai` agent answers **only** from retrieved evidence and
 returns a structured `AnalysisResult` — summary, per-claim citations, and a
 calibrated confidence — with no LLM SDK in the project (provider abstraction
-per ADR-0004, amended wave 10: env-configured OpenAI-compatible endpoint
+per ADR-0004, as amended: env-configured OpenAI-compatible endpoint
 first, local Ollama second — default `qwen3.6:35b-a3b-q4_K_M`; no runtime
 mock, `--offline` keeps a retrieval-only CI path).
 
@@ -25,30 +25,35 @@ mock, `--offline` keeps a retrieval-only CI path).
    sizes, RAG faithfulness / answer relevance / context recall via judge, and
    per-query latency + estimated cost, all written to `reports/`.
 
-## Key results (2026-10-14/15, this machine, local `qwen3.6:35b-a3b-q4_K_M`)
+## Key results (2026-10-15/16, this machine, local `qwen3.6:35b-a3b-q4_K_M`)
 
-| Metric | Value |
+**Golden set: 65 graded questions** — 44 single-hop, 11 multi-hop, 10
+unanswerable (expected behavior: abstain). Questions validated against the
+actual corpus; the earlier 10-question LLM pass was retired because a 65-question
+set with bootstrap CIs is the minimum an audit should accept.
+
+| Metric | Value (95% CI) |
 |---|---|
-| Retrieval recall@5 / recall@10 (all chunk sizes, n=26) | 0.962 / 1.000 |
-| MRR@5 — chunk 200 / 400 / 800 | 0.936 / 0.904 / 0.869 |
-| Random baseline recall@5 (seeded) | 0.038 / 0.000 / 0.000 → **+0.92** vs embeddings |
-| Embedding model comparison (BGE-small vs MiniLM) | exact tie → cheaper model kept |
-| Rerank ablation (off vs on): recall@5 / MRR@5 | 1.000 / 0.833 vs 0.962 / 0.936 |
-| **Production config** (`retrieval_best`) | MiniLM, chunks=200, top_k=3, rerank ON |
-| RAGAS faithfulness / answer_relevancy (n=10, local judge) | **0.805 / 0.904** |
-| RAGAS context_recall / context_precision (n=10) | 0.952 / 0.333 |
+| Retrieval recall@5 / recall@10 | 0.962 / 1.000 (random baseline 0.038) |
+| **Production config** (`retrieval_best`) | MiniLM, chunks=200, top_k=3, rerank ON — −65% context cost at equal recall |
+| RAGAS faithfulness (30-q bounded LLM pass, local judge, n=1000 bootstraps) | **0.651 [0.52, 0.78]** |
+| RAGAS answer relevancy | 0.879 [0.82, 0.93] |
+| RAGAS context precision / recall | 1.000 / 0.979 |
 | Keyword-judge CI floor on the same subset | 0.36 / 0.37 faithfulness / relevance |
+| Refusal accuracy (unanswerable questions) | **0.857 [0.57, 1.00]** (6/7 correctly declined) |
+| False-abstention rate | 0.000 — never declines a question it can answer |
 | p50 / p95 agent latency (local model, honest) | 61 s / 245 s |
 | Cost | **$0 API** (local inference); cloud-equivalent ≈ $0.0043/query |
 
-Takeaway: retrieval quality is bought with chunking discipline, not model
-size, and answer quality is verified — RAGAS faithfulness 0.805 against a 0.36
-keyword floor. Local inference trades wall clock (minutes per answer) for $0
-API cost, quantified in `reports/cost_telemetry.json`. LLM phases run on the
-first 10 graded questions (bounded subset); retrieval metrics use all 26.
-Figures: corpus composition, chunk-size sweep with random baseline, embedding
-model comparison, retrieval funnel, HPO frontier (chosen config starred),
-latency histogram (all in `reports/figures/`).
+Takeaway: retrieval is solved (recall 0.98, precision 1.0), so **generation
+grounding is the bottleneck** — the failure taxonomy on the 30-question pass
+shows 12 correct vs 18 unsupported-claim answers. The honest faithfulness
+number (0.651 with a wide CI) replaces the earlier 10-question 0.805, which
+overstated quality on a too-small subset. The next lever is
+answer-construction (citation forcing / answer-then-verify loops), not
+retrieval. Figures: corpus composition, chunk-size sweep with random baseline,
+embedding model comparison, retrieval funnel, HPO frontier (chosen config
+starred), latency histogram (all in `projects/01-rag-agent/reports/figures/`).
 
 ## Links
 

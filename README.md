@@ -26,26 +26,29 @@ harness.
 
 Real artifacts from the pipelines (interactive versions in each [case study](https://amm-ds.github.io/portfolio/projects/)):
 
-| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Solver runtime-vs-gap Pareto (vs OR-Tools reference) |
+| Flagship demand intelligence (41.2M trips, zone map) | RAG quality-vs-cost frontier | Solver runtime-vs-gap Pareto (incl. hinted CP-SAT cross-check) |
 |---|---|---|
 | ![NYC taxi-zone demand map](docs/assets/readme/mobility-demand-map.png) | ![RAG quality-cost frontier](docs/assets/readme/rag-quality-cost-frontier.png) | ![Solver runtime-vs-gap Pareto](docs/assets/readme/routing-solver-pareto.png) |
 
 ## Projects
 
-Eight working showcases (01–07, 09) and one planned (08 — LLM inference & serving).
+Nine projects, all working showcases on the same platform.
 
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
-| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | pydantic-ai agent, typed tools, citation-enforced outputs, faithfulness eval, chunk-size sweep |
-| 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | Synthetic (+ UCI opt.) | Leakage-proof time-CV, GBM vs PyTorch, reconciliation |
-| 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | Synthetic (+ NSL-KDD opt.) | DQ gates, IsolationForest vs LOF vs OneClassSVM |
-| 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News (real) | Hand-written fine-tuning loop, macro-F1, confusion matrices |
-| 05 | [Churn Modeling, sklearn Pipelines](projects/05-ml-pipeline-churn/) | Classical ML | Synthetic (messy) | Pipeline-embedded preprocessing, calibration, business-cost thresholds |
-| 06 | [Routing Optimization (VRPTW)](projects/06-routing-optimization/) | Combinatorial optimization | CVRPLIB Solomon (real benchmark) | Savings + 2-opt vs published best-known solutions, gap-% table |
+| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | pydantic-ai agent, typed tools, citation-enforced outputs, 65-question golden set, chunk-size sweep |
+| 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | UCI Online Retail II (real) + synthetic | Leakage-proof time-CV, LightGBM vs PyTorch vs ETS, reconciliation |
+| 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | NAB (real) + seeded synthetic CI path | Event-based metrics (PR-AUC, range-F1), detector HPO, threshold sweeps |
+| 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News 120k (real) | Hand-written fine-tuning loop, macro-F1 0.946, calibration analysis |
+| 05 | [Churn Modeling, sklearn Pipelines](projects/05-ml-pipeline-churn/) | Classical ML | IBM telco churn (real) + synthetic | Pipeline-embedded preprocessing, cost-aware HPO, fairness slices |
+| 06 | [Routing Optimization (VRPTW)](projects/06-routing-optimization/) | Combinatorial optimization | CVRPLIB Solomon (real benchmark) | Hand-written ALNS vs best-known solutions, dual distance + vehicle gap |
 | 07 | [Urban Mobility Demand Intelligence](projects/07-open-data-mobility/) | Data engineering + ML | NYC TLC + NOAA (real, GB-scale) | Lazy Polars ETL, zone-demand forecasting, weather elasticity, choropleths |
+| 08 | [LLM Inference & Serving](projects/08-inference-serving/) | AI infrastructure | Local Ollama stack (real serving target) | Latency percentiles vs concurrency, GGUF-vs-MLX engine panel, quantization frontier |
+| 09 | [Agentic Workflows](projects/09-agentic-workflows/) | Agentic AI | Deterministic 14-task suite | pydantic-graph Plan→Execute→Critique, HITL checkpoints, offline graders |
+| 10 | [Uplift & Experimentation](projects/10-uplift-experimentation/) | Decision science | Hillstrom email RCT (real) | CUPED, power analysis, T/X-learner uplift, Qini & profit curves |
 
-Flagships (01, 07) are complete end-to-end; 02–06 are working showcases built
-on the same platform, designed for deepening.
+Flagships (01, 07) are complete end-to-end; the rest are working showcases
+built on the same platform, designed for deepening.
 
 ## Selected results
 
@@ -53,13 +56,16 @@ on the same platform, designed for deepening.
 
 | Project | Result |
 |---|---|
-| 01 RAG agent | Retrieval config by measurement: recall@5 **0.962 vs 0.038 random**; chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; client-corpus onboarding + cost telemetry shipped |
-| 02 Forecasting | Optuna HPO (56 trials) → production GBM: MAE **8.53, −41.1% vs persistence**; hand-written PyTorch temporal_net trails ridge (reported honestly); MinT-lite reconciliation verified coherence |
-| 03 Anomaly detection | Detector HPO: OCSVM rescued **0.34 → 0.91 ROC-AUC** (gamma tuning); IsolationForest stays best (0.917); LOF structurally blind (honest); score distributions + threshold-sweep decision visuals |
-| 04 NLP | Six-run ladder to macro-F1 **0.902** (naive 0.10 → random 0.25 → TF-IDF 0.87 → roberta 0.898 → DistilBERT 0.902); 12-trial fine-tuning HPO with bit-exact determinism; val→test non-transfer documented |
-| 05 Churn | **Cost-aware HPO** — selection now optimizes the deployment objective (cost 282, −35.9% vs naive; bootstrap CI [−237, −87] significant); isotonic calibration −95% ECE; CRM-extract onboarding |
-| 06 VRPTW | **ALNS: 4.23% mean gap vs published best-known solutions across all 56 Solomon instances, 56/56 wins vs tuned 2-opt** (randomized floor: 317%); per-family gaps; convergence traces |
+| 01 RAG agent | Retrieval config by measurement: recall@5 **0.962 vs 0.038 random**; chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; 65-question golden set: faithfulness **0.651 [0.52, 0.78]**, refusal accuracy **0.857** — the honest local-judge profile |
+| 02 Forecasting | Real-data primary (UCI Online Retail II): LightGBM MAE **8.413, −41.9% vs persistence**; ETS + seasonal-naive baselines; the finding the synthetic track hid — tuned configs do not transfer to intermittent demand |
+| 03 Anomaly detection | Real-data primary (NAB, event-based): **PR-AUC 0.527, range-F1 0.157** — the synthetic headline (ROC-AUC 0.916) was the pipeline check, and this repo says so; seeded synthetic stays as the CI fast path |
+| 04 NLP | Ladder to a full 120k fine-tune: test macro-F1 **0.9460** (naive 0.10 → TF-IDF 0.87 → bounded fine-tune 0.902 → full 0.9460 on Apple-Silicon MPS); val→test non-transfer and the Business/Sci-Tech labeling floor documented |
+| 05 Churn | Real-data primary (IBM telco): cost-aware HPO selects XGBoost; business cost **1,035 → 601 (−41.9%)**, paired bootstrap CI **[−485, −343]**; isotonic improves both ECE and the cost optimum on real data — the synthetic conclusion did not transfer |
+| 06 VRPTW | Hand-written ALNS: **4.23% mean distance gap vs best-known across all 56 Solomon instances** (+3.73 mean vehicles — both criteria reported; vehicles-first ranking 43/56); the hinted CP-SAT cross-check could not improve any incumbent |
 | 07 Mobility | Zone-hour demand over 41.2M trips: GBM MAE 4.67 (−28.4% vs naive); **p90 band 90.8% coverage** (N/A zones flagged); permutation importance shows weather ≈ 0 for point MAE — its value is the elasticity signal |
+| 08 Inference | Local serving benchmark (author run): 19 cells / 760 requests / 0 failures; **MLX ≈ 2.9× GGUF tok/s on Apple Silicon**; 4-bit quantization costs serving headroom, not structured-output validity |
+| 09 Agentic | pydantic-graph workflow suite, bounded real run on local 32B (8/14 tasks): answer success **6/8**, tool-selection **37.5%**, median 474 s/task — the honest profile of local reasoning models |
+| 10 Uplift | Hillstrom RCT: ATE +0.68pp, CUPED covariate lesson, power analysis; T-learner targeting **+$2,812/wave vs random** at 25% budget ($6,838 vs $4,026) — with mail-everyone ($16,103) reported next to it, because the honest headline includes the simpler policy |
 
 ## Engineering practices
 

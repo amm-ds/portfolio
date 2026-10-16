@@ -10,8 +10,8 @@ benchmarked against published best-known solutions on the Solomon
   academic benchmark, subset of 10 instances, ~1 MB)
 - **Status:** working showcase on the standard platform (flagships: 01 and 07)
 - **Runtime:** the hand-written heuristics solve all 56 instances in seconds;
-  the full solve stage takes **~15 min** because the OR-Tools CP-SAT
-  external-reference arm spends its 10 s/instance budget on every instance
+  the full solve stage takes **~15 min** because the ALNS-hinted CP-SAT
+  cross-check arm spends its 10 s/instance budget on every instance
 
 ## Problem
 
@@ -52,12 +52,14 @@ See [DESIGN.md](DESIGN.md) for the full requirements/options/decision record.
      regret-2 insertion, operator weights adapted per segment, simulated-
      annealing acceptance; starts from the tuned 2-opt plan, iteration-capped
      from config.
-- `ortools_solver.py` — `ortools_cp`, the external reference: a time-bounded
-  OR-Tools CP-SAT model (per-vehicle circuits over time-window-filtered arcs,
-  fleet capped at the hinted fleet + slack, ALNS plan injected as the hint).
-  Single worker, fixed seed — deterministic within the limit; when the limit
-  expires before CP-SAT confirms a solution, the hinted plan is returned, so
-  the arm never degrades the incumbent.
+- `ortools_solver.py` — `ortools_cp`, an **ALNS-hinted CP-SAT cross-check**
+  (not an independent baseline): a time-bounded OR-Tools CP-SAT model
+  (per-vehicle circuits over time-window-filtered arcs, fleet capped at the
+  hinted fleet + slack, ALNS plan injected as the hint). Single worker, fixed
+  seed — deterministic within the limit; when the limit expires before CP-SAT
+  confirms a solution, the hinted plan is returned, so the arm never degrades
+  the incumbent. On all 56 instances it ended `UNKNOWN` at the hint with no
+  improvement — see the cross-check section below.
 - `tuning.py` — seeded random-search HPO, run twice: over the 2-opt stage
   (budget, acceptance, tail exchange, restarts; all instances) and over the
   ALNS knobs (segment length, reaction factor, init weights; 6-instance
@@ -70,7 +72,7 @@ See [DESIGN.md](DESIGN.md) for the full requirements/options/decision record.
 ## Results (real run, seed 42, all 56 Solomon instances)
 
 Full pipeline: `uv run python -m routing_optimization.cli all` (benchmark +
-both HPO searches + ALNS ≈ 2 min; the CP-SAT reference arm adds its
+both HPO searches + ALNS ≈ 2 min; the CP-SAT hinted arm adds its
 10 s/instance budget, ≈ 15 min total).
 Artifacts in `reports/` (see `reports/results.md`, `reports/report.html`,
 `reports/metrics.json`).
@@ -89,7 +91,7 @@ hierarchical objective, so both numbers matter.
 | two_opt (untuned) | 13.75 % | 1158.34 | 13.0 | +5.79 | 15.0 ms |
 | two_opt_tuned (HPO) | 13.63 % | 1156.92 | 13.0 | +5.79 | 36.3 ms |
 | **alns (HPO-tuned)** | **4.23 %** | **1062.02** | **11.0** | **+3.73** | 2.77 s |
-| ortools_cp (external ref, 10 s/instance) | 4.23 % | 1062.02 | 11.0 | +3.73 | 13.6 s |
+| ortools_cp (ALNS-hinted, 10 s/instance) | 4.23 % | 1062.02 | 11.0 | +3.73 | 13.6 s |
 
 Runtimes are wall-clock on a shared machine (the heuristics are normally
 sub-10 ms; the ALNS mean here was inflated by load — best-case ALNS is
@@ -120,26 +122,32 @@ Ranking under the two conventions (instances won, intra-ladder):
   (R2/RC2, +6–8 vehicles). Both directions of the comparison are reported
   wherever they occur.
 
-## External reference: OR-Tools CP-SAT (ortools_cp)
+## Cross-check: ALNS-hinted OR-Tools CP-SAT (ortools_cp)
 
-The audit asked for an external yardstick, so the ladder's top run is now
-cross-checked against Google's CP-SAT solver (`ortools_solver.py`): a classic
-VRPTW model — one circuit per vehicle over time-window-filtered travel arcs,
-time and capacity propagated along arcs, the ALNS plan injected as the
-solution hint — run single-worker with a fixed seed for a **10 s wall-time
-budget per instance** (vs ALNS's ~0.8 s; the comparison is deliberately
-asymmetric and that asymmetry is the finding).
+The ladder's top run is cross-checked against Google's CP-SAT solver
+(`ortools_solver.py`): a classic VRPTW model — one circuit per vehicle over
+time-window-filtered travel arcs, time and capacity propagated along arcs, the
+ALNS plan injected as the solution hint — run single-worker with a fixed seed
+for a **10 s wall-time budget per instance** (vs ALNS's ~0.8 s).
+
+What this arm is and is not: it is an **incumbent-improvement probe and
+small-scale verifier** — not an independent baseline. Because the ALNS plan is
+injected as the hint and returned unchanged on timeout, the arm cannot rank
+ALNS against a solver that starts from scratch; an unhinted comparison
+(e.g. PyVRP or OR-Tools routing at an equal time budget) is planned.
 
 Verdict, honestly stated:
 
-- **CP-SAT does not beat ALNS anywhere on the 100-customer benchmark.** On
-  all 56 instances it ended its budget at `UNKNOWN` — it could not even
-  register its own hinted solution in time — and the arm returned the ALNS
-  incumbent unchanged: identical distances, identical vehicle counts
+- **CP-SAT does not improve the ALNS incumbent anywhere on the 100-customer
+  benchmark.** On all 56 instances it ended its budget at `UNKNOWN` — it could
+  not even register its own hinted solution in time — and the arm returned the
+  ALNS plan unchanged: identical distances, identical vehicle counts
   (ortools_cp ties ALNS 56/56, wins 0 on tie-break order), at **~5× the
-  runtime**. The 4.23 % mean gap is therefore not an artifact of weak
-  in-house optimization: a state-of-the-art solver, given an order of
-  magnitude more time, does not close it on these instances.
+  runtime**. The meaningful claim the run supports is narrower than
+  "independent comparison": a state-of-the-art exact solver, given an order of
+  magnitude more time **and a head-start hint**, could not shave anything off
+  any of the 56 ALNS plans — the incumbent quality is not a symptom of a
+  weakly-searched neighborhood.
 - **Where CP-SAT does dominate: small problems.** On a 25-customer prefix of
   C101 it certifies the optimum instantly, improving the 2-opt hint
   286.3 → 191.8 (−33 %) in 2.9 s; on the 5-customer test instance it proves
@@ -241,16 +249,20 @@ uv run pytest projects/06-routing-optimization -q
 - **Reproducibility:** pinned data snapshot (sha256 dataset card), DVC stages,
   deterministic seeded solvers, DQ gates that halt the pipeline.
 
-## Roadmap
+## Roadmap — delivered (retrospective)
 
-Delivered this cycle: ALNS behind the same `RoutePlan` contract (mean gap
-13.63 % → 4.23 %, single digits on every family), the full 56-instance
-benchmark with per-family reporting, and the OR-Tools CP-SAT external
-reference (verdict above: it ties ALNS on the 100-customer benchmark within a
-10 s budget at ~5× the runtime, and certifies small instances to optimality).
-One item remains:
+- ALNS behind the same `RoutePlan` contract (mean distance gap 13.63 % →
+  4.23 %, single digits on every family).
+- Full 56-instance benchmark with per-family reporting on both criteria:
+  distance gap and vehicle count vs the best-known references (vehicles-first
+  ranking: ALNS wins 43/56 intra-ladder).
+- Hierarchical-objective reporting per the SINTEF convention (vehicles first,
+  distance second) — landed; the fleet column above (ALNS 11.0 mean vehicles
+  vs 10-vehicle C1 optima) shows where it matters.
+- OR-Tools CP-SAT cross-check arm (verdict above: hinted probe only, ties
+  ALNS on the 100-customer benchmark within a 10 s budget at ~5× the runtime;
+  certifies small instances to optimality).
 
-- **Hierarchical objective** (deferred): match the SINTEF convention —
-  minimize vehicle count first, distance second — and report the
-  two-dimensional comparison. The fleet counts above (e.g. ALNS's 11.0 mean
-  vehicles vs the 10-vehicle C1 optima) show where this matters.
+Deferred (engagement-dependent): unhinted independent-solver comparison
+(PyVRP or OR-Tools routing at equal budget); Gehring–Homberger 200–1000
+customer instances; solver-as-a-service endpoint.

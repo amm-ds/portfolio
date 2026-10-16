@@ -1,11 +1,11 @@
-"""External reference solver: time-bounded OR-Tools CP-SAT model for the VRPTW.
+"""Hinted cross-check solver: time-bounded OR-Tools CP-SAT model for the VRPTW.
 
-The audit's recommended external yardstick for our hand-written ladder. A
-classic CP-SAT routing model: one circuit per (bounded) vehicle over the
+An incumbent-improvement probe for our hand-written ladder — NOT an
+independent baseline, because the construction-heuristic plan is injected as a
+solution hint and returned unchanged when the time limit expires. A classic
+CP-SAT routing model: one circuit per (bounded) vehicle over the
 depot + customers, time and capacity propagated along arcs, objective = total
-distance. A construction-heuristic plan is injected as a solution hint so a
-feasible incumbent exists from the first millisecond and CP-SAT improves it
-for a configured wall-time limit.
+distance.
 
 The model is kept small enough for a ~10 s single-worker solve on the
 100-customer Solomon instances by (a) capping the fleet at the hinted fleet
