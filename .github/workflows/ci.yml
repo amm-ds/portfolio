@@ -27,9 +27,9 @@ jobs:
         run: uv run mypy libs projects apps
       - name: Tests with coverage gates (libs ≥80% strict)
         run: uv run pytest --cov=libs --cov-fail-under=80 --cov-report=term-missing
-      - name: Coverage floor: projects + apps ≥55%
+      - name: "Coverage floor — projects + apps ≥55%"
         run: uv run pytest --cov=projects --cov=apps --cov-fail-under=55 --cov-report=term
-      - name: Frontend: install, test, typecheck, build
+      - name: "Frontend — install, test, typecheck, build"
         working-directory: apps/showcase-web
         run: |
           npm ci --no-audit --no-fund
