@@ -2,70 +2,79 @@ project_id: 02-demand-forecasting
 sections:
   - id: background
     text_md: |
-      A retailer sells six products across four stores and needs a trustworthy
-      daily unit forecast for every store-product combination. These forecasts
-      drive replenishment, and the demand they describe is anything but flat:
+      A retailer sells 6 products across 4 stores and needs a trustworthy
+      daily unit forecast for every store-product combination; those numbers
+      drive replenishment, so every point of forecast error is working
+      capital or lost sales. The demand they describe is anything but flat:
 
-      - every series carries a **slow upward trend** — demand grows over the two
-        years of history, faster in some stores than others;
-      - every series has a **pronounced weekly rhythm** — weekdays and weekends
-        differ systematically, so yesterday's number is routinely the wrong
-        answer;
+      - every series carries a **slow upward trend** — demand grows over the
+        two years of history, faster in some stores than others;
+      - every series has a **pronounced weekly rhythm** — weekdays and
+        weekends differ systematically, so yesterday's number is routinely
+        the wrong answer;
       - **levels differ widely** across the 24 store-product series, so one
         global average fits none of them.
 
-      That structure is exactly what makes forecasting interesting — and what
-      makes a careless evaluation lie to you: a random train/test split lets a
-      model memorise adjacent days and masks drift. This case study therefore
-      builds the full path from raw panel to validated model: data contracts
-      and quality gates, leakage-safe features, naive reference baselines,
-      hyperparameter search, a neural candidate, hierarchical reconciliation,
-      and an embargoed expanding-window backtest that reports stability
-      alongside accuracy.
+      That structure is what makes naive forecasting fail — and what makes a
+      careless evaluation lie, because a random train/test split lets a model
+      memorise adjacent days and masks drift. The study therefore walks the
+      full path from raw panel to validated model: data contracts and quality
+      gates, shift-only lag features, naive reference floors, seeded Optuna
+      HPO, a neural candidate, hierarchical reconciliation, and an embargoed
+      expanding-window backtest. The full design log lives in `README.md` and
+      `DESIGN.md`.
 
       **Business implication:** stockouts and overstock are directly
-      forecast-shaped decisions — every point of forecast error is working
-      capital or lost sales.
+      forecast-shaped decisions — a client cannot size safety stock on a
+      number nobody has validated against the simplest alternatives.
 
   - id: objectives
     text_md: |
-      The engagement succeeds when all of the following hold — each one is
-      checked by a concrete artefact in the repo:
+      The engagement succeeds when all of the following hold, each checked by
+      a concrete artefact in the repo:
 
-      | success criterion | how it is demonstrated |
-      |---|---|
-      | Beats naive baselines by a wide, quantified margin | 10-run ladder in `reports/metrics.json` (synthetic) and `reports_uci/metrics.json` (real), anchored on `naive_mean` / `naive_last` / `seasonal_naive` |
-      | No feature leakage | lag features built with `shift` only; exact-value unit tests on hand-built series |
-      | Evaluation survives drift | embargoed expanding-window `TimeSeriesCV` (4 folds, 7-day gap), per-fold stability figure |
-      | One deployable artefact for the hierarchy | global models with one-hot series identity; unknown series handled gracefully |
-      | Production-grade model choice | seeded Optuna HPO on the same folds; un-tuned run kept for comparison |
-      | Hierarchy-consistent forecasts | MinT-lite reconciliation with a property-tested coherence guarantee |
+      - **Beat naive floors by a wide, quantified margin** — a 10-run ladder
+        in `reports/metrics.json` (seeded CI path) and
+        `reports_uci/metrics.json` (real track), anchored on `naive_mean`,
+        `naive_last` and `seasonal_naive`.
+      - **No feature leakage** — lag features built with `shift` only, with
+        exact-value unit tests on hand-built series.
+      - **Evaluation that survives drift** — embargoed expanding-window
+        `TimeSeriesCV` (4 folds, 7-day purge gap) with per-fold stability
+        reported alongside the pooled numbers.
+      - **One deployable artefact for the hierarchy** — global models with
+        one-hot series identity; unknown series handled gracefully.
+      - **Production-grade model choice** — seeded Optuna HPO judged on the
+        same folds; the un-tuned run stays in the ladder for comparison.
+      - **Hierarchy-consistent forecasts** — MinT-lite reconciliation with a
+        property-tested coherence guarantee.
 
       **Business implication:** the deliverable is a defensible number, not a
-      model file — "we beat yesterday's number by 41%, and here is the protocol
-      that proves it" is what a planning meeting can act on.
+      model file — "we beat the strongest naive floor on real transactions,
+      and here is the protocol that proves it" is what a planning meeting can
+      act on.
 
   - id: data
     text_md: |
-      **Datasets**
+      Two tracks run through the identical pipeline (stages in `dvc.yaml`,
+      config in `params.yaml`):
 
-      - **Default track — seeded synthetic retail hierarchy**
-        (`synthetic://retail_hierarchy`, generated in-repo): 730 days × 4
-        stores × 6 products = 17,520 rows of daily units with injected trend,
-        weekly seasonality and noise (seed 42 — byte-identical on any machine).
-        This is the default because CI and client demos must run fully offline
-        and reproduce exactly, with zero downloads; it still exercises the full
-        production machinery — `DatasetContract` identity card with SHA-256
-        checksum and DQ gates for null rate, range and freshness.
-      - **Real track — UCI Online Retail II** (implemented; run with
-        `--data-source uci`):
+      - **Primary — UCI Online Retail II** (run with `--data-source uci`):
         [dataset card](https://amm-ds.github.io/portfolio/data-registry/uci-online-retail-ii/),
         free for research (Chen, Gallino & Li 2012, *Management Science*).
         Checksum-pinned download (sha256 in `params.yaml`), parsed with a
         dependency-free XLSX streamer: 525,461 sales lines from the 2009-2010
         sheet aggregated to the top 8 countries × top 200 products over 374
-        days (405,416 rows, 89% zero share — genuinely intermittent demand).
-        Returns/cancellations excluded, documented.
+        days — 405,416 rows with an 89% zero share, genuinely intermittent
+        demand. Returns and cancellations are excluded, and documented.
+      - **CI path — seeded synthetic retail hierarchy**
+        (`synthetic://retail_hierarchy`, seed 42, byte-identical anywhere):
+        730 days × 4 stores × 6 products = 17,520 rows with injected trend,
+        weekly seasonality and noise. Clearly labelled as the fast offline
+        path — CI and demos must run without network — while still
+        exercising the full production machinery: a `DatasetContract`
+        identity card with SHA-256 checksum and DQ gates for null rate,
+        range and freshness.
 
       The hierarchy the models forecast over:
 
@@ -78,31 +87,36 @@ sections:
           S3 --> S3P[6 products]
       ```
 
-      **Business implication:** results regenerate from a clean clone in minutes —
-      synthetic offline by default, real transactions one flag away.
+      **Business implication:** results regenerate from a clean clone in
+      minutes — synthetic offline by default, real transactions one flag
+      away.
 
   - id: eda
     text_md: |
-      The series overview shows the two structural components that any
-      competent model must capture: a slow upward trend (stronger in
-      higher-indexed stores) and a regular weekly wave, with weekends clearly
-      separated from weekdays.
+      `eda_series_overview` shows the two structural components any competent
+      model must capture: a slow upward trend, stronger in higher-indexed
+      stores, and a regular weekly cycle with weekends clearly separated
+      from weekdays.
 
-      The units distribution is wide and right-skewed across the hierarchy —
-      store-product levels differ by design — which is why a single global
+      `eda_units_distribution` is wide and right-skewed across the hierarchy
+      — store-product levels differ by design — which is why a single global
       mean is such a poor predictor (MAE 31.8) and why the models receive a
-      series identity feature instead of being pooled blindly.
+      series-identity feature instead of being pooled blindly.
 
-      **Business implication:** the two things that make naive forecasting fail
-      — trend and weekly rhythm — are visible in the raw data before any model
-      is trained, so the business case for better-than-naive forecasting can be
-      made from a chart, not a promise.
+      **Business implication:** the two things that make naive forecasting
+      fail — trend and weekly rhythm — are visible in the raw data before
+      any model is trained, so the business case for better-than-naive
+      forecasting can be made from a chart, not a promise.
+
+      On the real track the picture sharpens further: with 89% zero rows, the
+      intermittent-demand problem is visible in the distribution long before
+      any accuracy number is computed.
     figures: [eda_series_overview, eda_units_distribution]
 
   - id: training
     text_md: |
-      Ten runs, one per algorithmic rung — all through the identical embargoed
-      expanding-window backtest:
+      Ten runs, one per algorithmic rung, all through the identical embargoed
+      backtest:
 
       ```mermaid
       graph LR
@@ -117,50 +131,41 @@ sections:
           L --> TN[temporal_net<br/>PyTorch emb+MLP]
       ```
 
-      - `naive_mean` / `naive_last` — global train mean and per-series
-        persistence (the floors every other run must beat).
-      - `seasonal_naive` — same weekday last week (lag-7); the standard
-        statistical floor for weekly-seasonal demand.
-      - `ets` — per-series damped-trend Holt-Winters with weekly seasonality
-        (statsmodels), fallback chain to seasonal naive for short or failing
-        series (documented, tested). On clean synthetic data it wins the
-        ladder outright; on intermittent real demand it loses to its own
-        seasonal naive — both verdicts reported.
-      - `ridge` — linear model in a scaled sklearn Pipeline with one-hot series
-        identity.
-      - `hgb` / `hgb_tuned` — gradient boosting; the tuned run is the production
-        config chosen by a seeded 56-trial Optuna study (learning rate, leaves,
-        regularisation; objective = CV MAE over the same folds).
-      - `xgb_tuned` / `lgbm_tuned` — XGBoost and LightGBM mirrors of the same
-        HPO discipline (25 seeded trials each).
-      - `temporal_net` — a hand-written PyTorch model (series embeddings + MLP,
-        own Adam, gradient clipping, early stopping). Verdict: behind ridge at
-        this data scale — reported, not hidden.
+      - `naive_mean` / `naive_last` — the floors every other run must beat.
+      - `seasonal_naive` (lag-7) and `ets` — per-series damped-trend
+        Holt-Winters with a documented, tested fallback chain to seasonal
+        naive for short or failing series.
+      - `ridge` — linear model in a scaled sklearn Pipeline with one-hot
+        series identity.
+      - `hgb` / `hgb_tuned` / `xgb_tuned` / `lgbm_tuned` — gradient boosting,
+        HPO-tuned by seeded Optuna studies (56 trials for the sklearn HGB, 25
+        each for the mirrors), objective = CV MAE over the same folds;
+        `hpo_history` and `hpo_importance` (per-arm `hpo_history_xgb` /
+        `hpo_history_lgbm`) show the search converging on regularised,
+        smaller-tree configs.
+      - `temporal_net` — a hand-written PyTorch model (series embeddings +
+        MLP, own Adam, gradient clipping, early stopping).
 
-      All learners are global: one artefact covers the whole hierarchy, series
-      identity enters as a one-hot feature, and shared seasonality/trend effects
-      transfer across series. Hierarchical reconciliation (MinT-lite scalar
-      shrinkage, grid-estimated on the embargoed previous fold) adjusts the
-      store-product forecasts toward the store-level forecast by a data-chosen
-      weight w.
+      All learners are global — one artefact covers the whole hierarchy —
+      and MinT-lite reconciliation (scalar shrinkage grid-estimated on the
+      embargoed previous fold) adjusts store-product forecasts toward the
+      store level by a data-chosen weight `w`.
 
       **Business implication:** model selection is an engineering step, not a
       gamble — every candidate faces the same leakage-proof protocol, so the
       model that ships is the one that won on evidence, not the one that was
       newest.
+    figures: [hpo_history, hpo_importance, hpo_history_xgb, hpo_history_lgbm]
 
   - id: evaluation
     text_md: |
       Validation uses the platform's `TimeSeriesCV`: four expanding-window
-      folds over the 716 dated feature rows with a 7-day embargo between each
-      training window and its validation block. Metrics are the platform
-      standard for regression (MAE, RMSE, MAPE) plus MASE — MAE scaled by the
-      fold's per-series in-sample seasonal-naive-7 error — pooled over all
-      out-of-fold predictions across folds and all 24 series; nothing is
-      reported in-sample. Per-fold MAE is tracked alongside the pooled numbers
-      so instability and drift stay visible.
-
-      The backtest flow every model — including the naives — passes through:
+      folds with a 7-day purge (embargo) gap between each training window
+      and its validation block, so no date block straddles train and
+      validation. Metrics are the platform regression standard (MAE, RMSE,
+      MAPE) plus MASE — MAE scaled by the fold's per-series in-sample
+      seasonal-naive-7 error — pooled over all out-of-fold predictions across
+      folds and all series; nothing is reported in-sample.
 
       ```mermaid
       flowchart LR
@@ -168,128 +173,114 @@ sections:
           C --> T[train on window k]
           T --> G[7-day embargo gap]
           G --> V[predict validation block k]
-          V --> M[pooled out-of-fold<br/>MAE / RMSE / MAPE]
+          V --> M[pooled out-of-fold<br/>MAE / RMSE / MAPE / MASE]
           M --> P[per-fold stability check]
       ```
+
+      Per-fold MAE is tracked in the `fold_stability` figure so drift and
+      instability stay visible before deployment; `reports/report.html`
+      collects the full run.
 
       **Business implication:** the embargoed backtest answers whether the
       model survives next quarter, not just last week — it prices in drift
       before deployment does.
+    figures: [fold_stability]
 
   - id: results
     text_md: |
-      Headline — real data (UCI Online Retail II, 1,084 intermittent
-      series, 4 folds; MAE/MASE lead, MAPE shown but not decision-grade):
+      Headline numbers are the real UCI track (1,084 intermittent series, 4
+      folds; MAE/MASE lead, MAPE is not decision-grade at 89% zeros).
+      `forecast_vs_actual` and the real-track `forecast_fan` show the
+      champion vs the strongest naive on example series:
 
-      | run | MAE | RMSE | MAPE | MASE |
-      |---|---|---|---|---|
-      | naive_mean | 10.84 | 97.61 | 91.3% | 1.132 |
-      | naive_last | 10.29 | 135.67 | 356.2% | 1.168 |
-      | seasonal_naive | 9.86 | 135.30 | 439.0% | 1.117 |
-      | ets | 11.26 | 116.87 | 352.3% | 1.361 |
-      | ridge | 16.73 | 98.53 | 236.2% | 1.560 |
-      | hgb | 9.09 | 97.26 | 245.9% | 1.002 |
-      | **hgb_tuned** | **8.99** | **96.69** | 228.6% | **0.980** |
-      | xgb_tuned | 9.39 | 98.14 | 275.2% | 1.042 |
-      | lgbm_tuned | 9.60 | 96.54 | 287.9% | 1.055 |
-      | temporal_net | 12.70 | 96.81 | 215.8% | 1.232 |
+      | run | MAE | MASE |
+      |---|---|---|
+      | naive_mean | 10.84 | 1.132 |
+      | naive_last | 10.29 | 1.168 |
+      | seasonal_naive | 9.86 | 1.117 |
+      | ets | 11.26 | 1.361 |
+      | ridge | 16.73 | 1.560 |
+      | hgb | 9.09 | 1.002 |
+      | **hgb_tuned** | **8.99** | **0.980** |
+      | xgb_tuned | 9.39 | 1.042 |
+      | lgbm_tuned | 9.60 | 1.055 |
+      | temporal_net | 12.70 | 1.232 |
 
-      The CI-path synthetic ladder (identical backtest) shows the mirror image
-      — ETS wins outright there (MAE 8.11, MASE 0.891) because clean trend +
-      seasonality is exactly its class; on real intermittent demand the tuned
-      HGB is the only run better than seasonal naive (MASE < 1), and the
-      synthetic-tuned LightGBM champion drops to fourth — cross-track transfer
-      is the honest lesson.
+      The synthetic CI ladder (`metrics_bars` ranks both) is the mirror
+      image: ETS wins outright (MAE 8.11, MASE 0.891) — clean trend plus
+      weekly seasonality is exactly its class; among ML runs `lgbm_tuned`
+      leads (8.413, −41.9% vs persistence), `hgb_tuned` 8.529, `xgb_tuned` a
+      wash.
 
-      | run | MAE | RMSE | MAPE | Δ MAE vs naive_last |
-      |---|---|---|---|---|
-      | naive_mean | 31.76 | 42.54 | 49.0% | — (floor) |
-      | naive_last | 14.48 | 19.88 | 19.3% | — (strongest persistence) |
-      | seasonal_naive | 10.39 | 14.74 | 13.8% | -28.2% |
-      | **ets** | **8.11** | **11.51** | **10.4%** | **-44.0%** |
-      | ridge | 9.12 | 12.71 | 12.4% | -37.0% |
-      | hgb | 8.62 | 12.18 | 11.4% | -40.5% |
-      | hgb_tuned (HPO) | 8.53 | 12.07 | 11.3% | -41.1% |
-      | xgb_tuned (HPO) | 8.54 | 12.09 | 11.3% | -41.0% |
-      | lgbm_tuned (HPO) | 8.41 | 11.91 | 11.2% | -41.9% |
-      | temporal_net | 9.34 | 12.76 | 13.4% | -35.5% |
+      - **Tuned configs do not transfer** — synthetic ML champion
+        `lgbm_tuned` drops to fourth on UCI (9.60); `hgb_tuned` generalises
+        best (8.99, the only MASE < 1 — reliably beating "same day last
+        week").
+      - **ETS breaks on intermittent demand** — it loses to its own seasonal
+        naive on UCI (11.26 vs 9.86); 89% zeros violate its
+        smooth-seasonality assumption. Ridge collapses (16.73, behind every
+        floor).
+      - **HPO earns a modest, real gain** — 56 seeded trials moved the
+        sklearn HGB 8.619 → 8.529 (−1.0%) on synthetic folds
+        (`hpo_history`).
+      - **Reconciliation pays off on the real hierarchy** — w=0.70,
+        incoherence 384.0 → 115.2 (×(1−w) exactly, property-tested), store
+        MAE 746.9 → 737.9 (`coherence_heatmap`, `reconciliation_coherence`);
+        synthetic chose w=0.05 — the fold-4-drifting parent is barely
+        trusted.
+      - **Probabilistic bands miss the target honestly** — 80% coverage 0.73
+        synthetic / 0.92 UCI, conformal degenerating to q80 = 0 on
+        zero-heavy residuals (`probabilistic_band`).
 
-      Key findings:
-
-      - **Statistical baselines top the synthetic ladder**: ETS (damped
-        Holt-Winters + weekly seasonality) wins outright — MAE 8.11, MASE
-        0.891 — because clean trend + weekly seasonality is exactly its model
-        class and the boosters only approximate it. Among the ML runs the
-        tuned GBM is the production model: **-41.1% MAE vs persistence**,
-        with the margin stable across folds (38.8–41.1% in every fold — drift
-        inflates all errors equally, which a random split would have hidden).
-      - **HPO earned a modest, real gain**: 56 seeded trials found a
-        regularised smaller-tree config (25 leaves, min 48 samples/leaf,
-        learning rate 0.083, feature subsampling 0.53) worth **-1.0% MAE** over
-        the defaults (8.62 → 8.53), reproducible from `data/hpo_best.json`.
-      - **Honest temporal_net verdict**: the neural model trails even the
-        linear baseline (9.34 vs 9.12 MAE) — at this history length,
-        day-over-day noise dominates and extra capacity adds variance, not
-        signal. Reported as a result, not quietly dropped.
-      - **Reconciliation near-null on the synthetic hierarchy**: the estimator
-        chose w=0.05 — the parent-level model suffers the same fold-4 drift as
-        the children, so barely any trust is placed in it: store MAE
-        24.05 → 23.93, incoherence 23.15 → 21.99 (exactly ×(1−w), the tested
-        coherence property) — the machinery is kept and property-tested for
-        real hierarchies where it earns its keep.
-      - **Real data stress test (UCI Online Retail II, same backtest)**: the
-        tuned GBM still wins (MAE 8.99, the only run with MASE < 1 — better
-        than "same day last week"), the linear ridge collapses behind every
-        floor (16.7 vs ~10), MAPE stops being meaningful (persistence hits
-        356%), and reconciliation finally pays off (w=0.70, incoherence
-        384.0 → 115.2, store MAE 746.9 → 737.9).
-      - **Probabilistic bands (target 80%)**: quantile-HGB coverage 0.73
-        (synthetic, under-covers) vs 0.92 (real, over-covers); split-conformal
-        0.76 vs 0.86 — with the real-track calibration degenerating to q80 = 0
-        because most residuals are exact zeros. Honest, direction-giving numbers.
-
-      **Business implication:** a tuned gradient-boosting model forecasts demand
-      two-fifths more accurately than "yesterday's number" — on clean synthetic
-      and messy real retail data alike — and we can show exactly where that
-      advantage holds and where it ends.
-    figures: [metrics_bars, forecast_vs_actual, forecast_fan, coherence_heatmap, hpo_history, reconciliation_coherence]
+      **Business implication:** on real transactions the tuned HGB beats the
+      strongest floor (seasonal naive) by 8.8% MAE — modest, because on
+      intermittent demand the honest competitor is "same day last week"; a
+      config tuned on clean data does not port over.
+    figures: [metrics_bars, forecast_vs_actual, forecast_fan, coherence_heatmap, reconciliation_coherence, probabilistic_band]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 
   - id: conclusions
     text_md: |
-      What works: global models with series identity (one deployable artefact
-      for the whole hierarchy); shift-only lag features plus calendar
-      encodings; embargoed time-CV with naive floors making every claim
-      auditable; seeded Optuna HPO as a repeatable production step (`cli hpo`,
-      resumable storage); reconciliation machinery that guarantees coherence
-      even when accuracy gains are bounded by parent-model drift.
+      - **Global models with series identity work** — one deployable
+        artefact covers the whole hierarchy, with shared seasonality and
+        trend effects transferring across series.
+      - **Leakage-proof features and validation are the real product** —
+        shift-only lags, calendar encodings, and an embargoed backtest with
+        naive floors make every claim auditable.
+      - **Seeded Optuna HPO is a repeatable production step** (`cli hpo`,
+        resumable storage) — but configs tuned on one demand regime do not
+        transfer to another; re-tune on the target panel before shipping.
+      - **Reconciliation guarantees coherence, not accuracy** — the gain is
+        bounded by how much the parent model can be trusted (w=0.05
+        synthetic vs 0.70 on UCI).
 
       Honest limits: gains over persistence are stable but bounded by
-      day-over-day noise (~8.5 units residual MAE); the neural model does not
-      pay off on small tabular lag features; reconciliation improves coherence
-      exactly by its shrinkage factor and accuracy only as far as the parent
-      model can be trusted. Later folds drift upward for every model — that
-      drift is a feature of the evaluation, not a bug.
+      day-over-day noise (~8.5 units residual MAE on the synthetic ladder);
+      the neural model does not pay off on small tabular lag features; later
+      folds drift upward for every model, which the
+      `docs/runbooks/drift-response.md` runbook turns into a monitored
+      retraining trigger rather than a surprise. Full detail in `README.md`,
+      `DESIGN.md` and `reports/report.html`.
 
-      **Business implication:** the value delivered is not a magic model — it is
-      knowing precisely which model wins, by how much, where it stops winning,
-      and being able to re-derive that answer from a clean clone; that is what
-      makes the forecast safe to plug into replenishment.
-    figures: [fold_stability, forecast_vs_actual]
+      **Business implication:** the value delivered is knowing precisely
+      which model wins, by how much, and where it stops winning — with
+      `forecast_vs_actual` and `fold_stability` the two charts to show a
+      client first, and a clean-clone reproduction behind every number.
+    figures: [forecast_vs_actual, fold_stability]
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
-    text: XGBoost + LightGBM boosting arms — 25-trial seeded HPO each through the identical backtest; LightGBM takes the crown (MAE 8.413 vs hgb_tuned 8.529), XGBoost a statistical wash.
+    text: XGBoost + LightGBM arms — 25-trial seeded HPO each through the identical backtest. On the synthetic ladder lgbm_tuned tops the ML runs (MAE 8.413 vs hgb_tuned 8.529; xgb_tuned a wash), ETS still best overall (8.110); on the primary UCI track hgb_tuned wins (8.99) and lgbm_tuned falls to 9.60.
   - status: delivered
-    text: Optuna HPO (56 seeded trials) — production hgb_tuned config shipped, -1.0% MAE over defaults, reproducible from data/hpo_best.json.
+    text: Optuna HPO (56 seeded trials) — production hgb_tuned config shipped, -1.0% MAE over defaults (8.619 → 8.529 on the synthetic folds), reproducible from data/hpo_best.json.
   - status: delivered
-    text: UCI Online Retail II real-data track shipped — checksum-pinned fetch, 405k-row intermittent panel; hgb_tuned wins (MAE 8.99) where ridge collapses.
+    text: UCI Online Retail II real-data track is now the primary headline — checksum-pinned fetch, 405k-row intermittent panel (89% zeros); hgb_tuned wins (MAE 8.99, MASE 0.980) where ridge collapses (16.73).
   - status: delivered
-    text: Probabilistic forecasts shipped — quantile HGB p10/p50/p90 + split-conformal band, empirical coverage vs the 80% target with a band figure.
+    text: Probabilistic forecasts shipped — quantile HGB p10/p50/p90 + split-conformal band, empirical coverage vs the 80% target (0.73 synthetic / 0.92 UCI) with the probabilistic_band figure.
   - status: delivered
-    text: Hierarchical reconciliation (MinT-lite) shipped — data-chosen shrinkage weight, property-tested coherence guarantee, near-null accuracy effect reported honestly.
+    text: Hierarchical reconciliation (MinT-lite) shipped — data-chosen shrinkage w (0.05 synthetic, 0.70 UCI), property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI); accuracy effect reported honestly.
   - status: delivered
-    text: Statistical baselines + MASE (wave 13, audit-driven) — seasonal_naive (lag-7) and per-series damped Holt-Winters ETS with documented fallbacks on both tracks; MASE on every run; fan/coherence figures. ETS wins synthetic outright, loses to its own seasonal naive on real data — both reported.
+    text: Statistical baselines + MASE (audit-driven) — seasonal_naive (lag-7) and per-series damped Holt-Winters ETS with documented fallbacks on both tracks; MASE on every run; fan/coherence figures. ETS wins synthetic outright (8.110), loses to its own seasonal naive on UCI (11.26 vs 9.86) — both reported.
   - status: deferred
     text: Calibrated intervals for intermittent demand — per-series conformal / zero-inflated bands; engagement-dependent (global bands under-cover at 73% on synthetic and degenerate to q80 = 0 on real data).
   - status: deferred

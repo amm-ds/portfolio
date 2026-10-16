@@ -9,6 +9,10 @@ task with validated schemas.
 
 ## Key results (real run, Ollama 0.40.4, Apple-Silicon Mac, 128 GB unified memory)
 
+These numbers are a single **author run** on one machine — they are **not
+committed to the repo** and are not universal. Regenerate on your hardware
+with `bench --full && report` and compare cell-for-cell.
+
 Full run: 19 cells, **760 requests, zero failures, schema-valid rate 1.00 and
 keyword-quality 1.00 in every cell** (8 fixed prompts x 5 repeats per cell,
 `temperature 0`, `max_tokens 128`, reasoning disabled).

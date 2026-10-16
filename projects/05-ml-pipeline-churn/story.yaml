@@ -4,8 +4,8 @@ sections:
     text_md: |
       Churn is asymmetric economics: a missed churner (false negative) costs
       the business roughly five times a false alarm (false positive) — a lost
-      customer versus one retention voucher. With a base churn rate of only
-      ~9%, the cheapest "model" is to never ring the alarm, and it is still
+      customer versus one retention voucher. With a base churn rate of
+      26.5%, the cheapest "model" is to never ring the alarm, and it is still
       wrong in the way that costs money.
 
       This project shows how to take churn from a spreadsheet of scores to an
@@ -18,7 +18,7 @@ sections:
       |---|---|---|
       | FP cost | 1 | one retention voucher / false alarm |
       | FN cost | 5 | one lost customer |
-      | base churn rate | 8.8% | never-alarm accuracy: 0.912 |
+      | base churn rate | 26.5% | never-alarm accuracy: 0.735 |
       | threshold grid | 41 points (0.00–1.00) | where the optimum is searched |
 
       **Business implication:** retention budget is a cost-minimization
@@ -50,7 +50,7 @@ sections:
       x 21 columns (demographics, services, account, churn label) at a 26.5%
       base churn rate, loaded from the canonical GitHub mirror with a pinned
       sha256 through the platform's fetch + DatasetContract (see
-      [data-registry/telco-churn](https://github.com/amm-ds/portfolio/tree/main/docs/data-registry/telco-churn.md)).
+      [data-registry/telco-churn](https://amm-ds.github.io/portfolio/data-registry/telco-churn/)).
       The HF id `julien-c/telco-churn` cited in planning does not exist; the
       raw CSV from IBM's repo is the documented fallback and is what runs.
       The platform's seeded synthetic generator (2% NaN age, 3% NaN
@@ -126,13 +126,14 @@ sections:
       **cost-aware objective**: stratified CV produces out-of-fold
       probabilities per trial, and the trial is scored by the business cost
       (FP=1/FN=5) at its own cost-optimal threshold — the same
-      threshold-tuning view used at evaluation. The winner — **logistic
-      regression (C=0.6494, l1_ratio=0.4540)**, best CV cost 1,220, family
-      means 1,225 (logreg) / 1,367 (lightgbm) / 1,409 (xgboost, balanced
-      via scale_pos_weight) / 1,339 (histgb) — is written back to `params.yaml` as the production config.
-      An earlier F1-objective run picked HistGB instead; the two objectives
-      disagreeing is itself a finding (see results). An isotonic-calibrated
-      twin is fitted on the calibration split only.
+      threshold-tuning view used at evaluation. The winner on the real track —
+      **XGBoost** (n_estimators 211, learning_rate 0.0309, max_depth 3,
+      subsample 0.5187; best CV business cost 2,416) — is written back to
+      `params.yaml` as the production config; on the synthetic CI track the
+      same search picks a logistic (best CV cost 1,220), so the winner tracks
+      the data. An earlier F1-objective run picked HistGB instead; the two
+      objectives disagreeing is itself a finding (see results). An
+      isotonic-calibrated twin is fitted on the calibration split only.
 
       **Business implication:** the artifact handed to engineering scores raw
       CRM rows as-is — no ETL rewrite, no train/serve skew — and the winning
@@ -161,14 +162,17 @@ sections:
       selected model raw and isotonic-calibrated at their cost optima.
       Diagnostics add permutation importance (5 repeats, error bars), PR
       curves with the naive base-rate floor, and decision-curve analysis.
+      The `cost_surface` figure maps the operating point across the
+      threshold × FN-cost plane — where it moves when a client re-prices a
+      lost customer.
 
-      **Business implication:** calibration improved probabilities 20×
-      (ECE 0.281 → 0.014) without moving the cost optimum — know which metric
-      pays: ECE matters when probabilities themselves are consumed, the cost
-      curve is what settles the alarm threshold; and the paired bootstrap CI
-      (−157, 95% CI [−236, −86]) is what makes the saving defensible in a
-      budget meeting.
-    figures: [calibration_curve, precision_recall_curve, decision_curve]
+      **Business implication:** calibration improved probabilities (ECE
+      0.028 → 0.016) and, on the real regime, the cost optimum itself
+      (619 → 601) — know which metric pays: ECE matters when probabilities
+      themselves are consumed, the cost curve settles the alarm threshold;
+      and the paired bootstrap CI (−416, 95% CI [−485, −343]) is what makes
+      the saving defensible in a budget meeting.
+    figures: [calibration_curve, precision_recall_curve, decision_curve, cost_surface]
   - id: results
     text_md: |
       Run ladder (holdout, FP=1/FN=5):
@@ -184,8 +188,9 @@ sections:
       Key findings:
 
       - **Cost vs naive: −41.9% (1,035 → 601), bootstrap −416, 95% CI
-        [−485, −343] — significant.** The naive accuracy is 0.735: on a 26.5%
-        base rate the ignore-all policy looks accurate and burns 1,035.
+        [−485, −343] — significant.** On a 26.5% base rate the ignore-all
+        policy posts 0.735 accuracy — and the alarm-everyone cost optimum
+        still burns 1,035.
       - **The winner changes on real data** — XGBoost replaces the synthetic
         track's logistic; the calibrated booster holds the holdout cost
         optimum (601 vs the tuned logistic's 611).
@@ -194,19 +199,20 @@ sections:
         regime is not optional.
       - **Calibration verdict flips:** isotonic improves both ECE
         (0.028 → 0.016) and cost (619 → 601) on the noisier real regime.
-      - **Fairness slices** (at t=0.150): recall is uniform across gender
+      - **Fairness slices** (`fairness_slices`, at t=0.150): recall is uniform across gender
         (0.90 both) and higher for seniors (0.97 vs 0.88). The real gap is
         contractual: month-to-month recall 0.98 vs one-year 0.47, two-year
         0.00 — the optimum is tuned to the dominant short-contract churn and
         misses nearly all 45 long-contract churners in the holdout. A
-        business choice at FN=5, stated openly, movable on the cost surface.
-      - The naive run posts accuracy 0.735 while losing 1,035 cost units —
-        the accuracy trap, inverted.
+        business choice at FN=5, stated openly, movable on the `cost_surface`.
+      - The naive cost optimum is alarm-everyone: accuracy 0.265, cost
+        1,035 — while ignore-all posts 0.735. Accuracy ranks both useless
+        policies above the deliverable: the accuracy trap, inverted.
 
       **Business implication:** −41.9% cost at a defensible CI, with the
       slice report showing exactly who the operating point misses — that is
       the story a client budget conversation needs.
-    figures: [business_cost_curve, permutation_importance, bootstrap_ci]
+    figures: [business_cost_curve, permutation_importance, bootstrap_ci, fairness_slices]
     metrics_keys: [naive_majority, logreg_threshold_0.300, selected_model, selected_model_calibrated]
   - id: conclusions
     text_md: |
@@ -215,25 +221,27 @@ sections:
       one line of code and cannot drift from training — a data bug either
       passes the DQ gate or stops the pipeline. Three lessons generalize:
 
-      - Threshold choice is a business decision: tuning to the cost curve cut
-        cost by a fifth with zero retraining.
+      - Threshold choice is a business decision: tuning to the cost curve
+        moved the logistic 691 → 611 with zero retraining.
       - Optimize what you deploy: cost-aware selection now drives the study,
         and the winner it picked lands at the holdout cost optimum.
       - Calibration is a product decision: trustworthy probabilities and
         cost-optimal decisions are different deliverables — ship both
         evaluations.
       - Uncertainty has a number: paired bootstrap CIs turn "the model saves
-        money" into "the model saves 157 cost units, 95% CI [75, 236], at alpha 0.05".
+        money" into "the model saves 416 cost units, 95% CI [343, 485], at alpha 0.05".
 
       **Business implication:** the framework transfers to a client's CRM
       extract unchanged — same gates, same artifact contract, same cost
-      curve — only the DatasetContract and the FP/FN costs change.
+      curve — only the DatasetContract and the FP/FN costs change. Full
+      rationale and rejected alternatives: `DESIGN.md`; reproduction and
+      client takeaways: `README.md`; the rendered run: `reports/report.html`.
 roadmap:
   - status: delivered
     text: >-
       Cost-aware HPO — shipped, verified: Optuna study on CV business cost with
       per-trial threshold tuning changed the winner; the cost-HPO model holds the
-      holdout cost optimum (283 cost units at threshold 0.700; four arms raced).
+      holdout cost optimum (601 at t=0.175 after isotonic calibration; four arms raced).
   - status: delivered
     text: >-
       CRM client onboarding — shipped, verified: `prepare --input client.csv`

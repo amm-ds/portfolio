@@ -57,7 +57,7 @@ built on the same platform, designed for deepening.
 | Project | Result |
 |---|---|
 | 01 RAG agent | Retrieval config by measurement: recall@5 **0.962 vs 0.038 random**; chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; 65-question golden set: faithfulness **0.651 [0.52, 0.78]**, refusal accuracy **0.857** — the honest local-judge profile |
-| 02 Forecasting | Real-data primary (UCI Online Retail II): LightGBM MAE **8.413, −41.9% vs persistence**; ETS + seasonal-naive baselines; the finding the synthetic track hid — tuned configs do not transfer to intermittent demand |
+| 02 Forecasting | Real-data primary (UCI Online Retail II): **hgb_tuned MAE 8.989 — the only model with MASE < 1** on intermittent real demand; the synthetic champion (lgbm_tuned 8.413, −41.9% vs persistence) drops to fourth there — tuned configs do not transfer across regimes |
 | 03 Anomaly detection | Real-data primary (NAB, event-based): **PR-AUC 0.527, range-F1 0.157** — the synthetic headline (ROC-AUC 0.916) was the pipeline check, and this repo says so; seeded synthetic stays as the CI fast path |
 | 04 NLP | Ladder to a full 120k fine-tune: test macro-F1 **0.9460** (naive 0.10 → TF-IDF 0.87 → bounded fine-tune 0.902 → full 0.9460 on Apple-Silicon MPS); val→test non-transfer and the Business/Sci-Tech labeling floor documented |
 | 05 Churn | Real-data primary (IBM telco): cost-aware HPO selects XGBoost; business cost **1,035 → 601 (−41.9%)**, paired bootstrap CI **[−485, −343]**; isotonic improves both ECE and the cost optimum on real data — the synthetic conclusion did not transfer |
