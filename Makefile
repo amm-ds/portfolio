@@ -1,4 +1,4 @@
-.PHONY: setup lint typecheck test test-fast demo docs docs-serve dvc-repro docker-build docker-up new-project clean
+.PHONY: setup lint lint-ci typecheck test test-fast demo docs docs-serve dvc-repro docker-build docker-up new-project clean metrics-show registry-update exp-run exp-show release-verify
 
 PYTEST := uv run pytest
 
@@ -54,6 +54,9 @@ exp-run: ## queue a params experiment: make exp-run P=02-demand-forecasting PARA
 
 exp-show: ## show experiments: make exp-show P=02-demand-forecasting
 	cd projects/$(P) && uv run dvc exp show
+
+lint-ci: ## Validate workflow YAML + Makefile consistency
+	uv run python scripts/lint_ci.py
 
 release-verify: ## Ollama-gated evals + artifact assertions (release-time, ADR-0003)
 	@test -n "$$(curl -s --max-time 3 localhost:11434/api/tags)" || \
