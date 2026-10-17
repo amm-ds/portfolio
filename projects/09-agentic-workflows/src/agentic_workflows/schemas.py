@@ -25,6 +25,20 @@ class PlanStep(PortfolioBaseModel):
     expected_output: str = Field(default="", description="What this step should produce.")
 
 
+class StepTrace(PortfolioBaseModel):
+    """Per-node performance trace: one entry per Plan/Execute/Critique visit.
+
+    Token counts come from the node's agent result usage; ``latency_s`` is
+    ``perf_counter`` wall time around the node run (including its bounded
+    retries). Records written before step-trace capture simply lack the field.
+    """
+
+    node: Literal["plan", "execute", "critique"]
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    latency_s: float = Field(default=0.0, ge=0)
+
+
 class WorkflowState(PortfolioBaseModel):
     """Mutable state threaded through the Plan → Execute → Critique graph.
 
@@ -42,6 +56,7 @@ class WorkflowState(PortfolioBaseModel):
 
     steps_taken: list[str] = Field(default_factory=list)
     tools_used: list[str] = Field(default_factory=list)
+    step_traces: list[StepTrace] = Field(default_factory=list)
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
 
@@ -82,6 +97,7 @@ class WorkflowResult(PortfolioBaseModel):
     answer: str
     steps_taken: list[str]
     tools_used: list[str]
+    step_traces: list[StepTrace] = Field(default_factory=list)
     confidence: float = Field(ge=0.0, le=1.0)
     retries: int = Field(default=0, ge=0)
     critique_loops: int = Field(default=0, ge=0)
@@ -147,13 +163,20 @@ class EvalTask(PortfolioBaseModel):
 
 
 class TaskRunRecord(PortfolioBaseModel):
-    """Recorded result of running one suite task through the workflow."""
+    """Recorded result of running one suite task through the workflow.
+
+    ``status`` is ``budget_exceeded`` when the run was cut off by a budget cap:
+    the per-task cloud-equivalent cap (recorded, suite continues) or the suite
+    cap (recorded, remaining tasks aborted). ``steps`` is the per-node step
+    trace; records written before trace capture lack it and load as ``[]``.
+    """
 
     task_id: str = Field(min_length=1)
-    status: Literal["ok", "workflow_error"]
+    status: Literal["ok", "workflow_error", "budget_exceeded"]
     answer: str
     steps_taken: list[str]
     tools_used: list[str]
+    steps: list[StepTrace] = Field(default_factory=list)
     confidence: float = Field(ge=0.0, le=1.0)
     retries: int = Field(default=0, ge=0)
     critique_loops: int = Field(default=0, ge=0)

@@ -21,6 +21,7 @@ from pydantic_ai import Agent
 from pydantic_ai.models import Model
 from pydantic_graph import BaseNode, End, Graph, GraphBuilder, GraphRunContext
 
+from agentic_workflows.config import get_settings
 from agentic_workflows.schemas import (
     ApprovalDecision,
     ApprovalRequest,
@@ -36,6 +37,7 @@ from agentic_workflows.workflow import (
     PlanNode,
     WorkflowDeps,
     build_workflow_graph,
+    provider_model_settings,
     render_plan,
     run_agent_with_retries,
 )
@@ -56,6 +58,7 @@ class ApprovalCheckpointNode(BaseNode[WorkflowState, WorkflowDeps, Checkpoint]):
             ctx.deps.model,
             output_type=PlanOutput,
             system_prompt=PLAN_SYSTEM,
+            model_settings=provider_model_settings(),
         )
         result = await run_agent_with_retries(agent, f"TASK: {state.task}")
         state.plan = result.output.steps
@@ -91,7 +94,7 @@ async def request_approval_async(
     model: Model | None = None,
 ) -> Checkpoint:
     """Plan the task and return the typed checkpoint (callers persist it)."""
-    resolved_model = model if model is not None else build_model()
+    resolved_model = model if model is not None else build_model(get_settings())
     graph = build_approval_graph()
     return await graph.run(
         state=WorkflowState(task=task),
@@ -127,7 +130,7 @@ async def resume_async(
     Approve  → continue at ExecuteNode with the plan as approved.
     Reject   → back to PlanNode; the feedback becomes the re-plan brief.
     """
-    resolved_model = model if model is not None else build_model()
+    resolved_model = model if model is not None else build_model(get_settings())
     state = checkpoint.state
     if decision.approved:
         logger.info("checkpoint approved; continuing at ExecuteNode")

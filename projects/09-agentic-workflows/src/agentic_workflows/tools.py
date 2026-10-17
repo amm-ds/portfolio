@@ -1,13 +1,16 @@
 """Research-ops toolsets: a deterministic synthetic domain for tool-using agents.
 
 The domain is a fictional remote field-research station ("Atlas Valley").
-Four typed tools over a small canned handbook give the agents everything they
-need; a second, math-focused toolset shows ``PrefixedToolset`` composition —
-two toolsets combined in one agent with zero name collisions.
+Five typed tools give the agents everything they need — four over a small
+canned handbook, plus ``search_documents`` for dense retrieval over project
+01's Wikipedia corpus (read-only); a second, math-focused toolset shows
+``PrefixedToolset`` composition — two toolsets combined in one agent with
+zero name collisions.
 
-Everything here is pure and offline: the corpus is in-code, search scores are
-keyword overlap, and the calculator is a locked-down AST evaluator. Ground
-truths in the eval suite are therefore exact, not model-judged.
+Everything here is pure and offline: the handbook corpus is in-code, search
+scores are keyword overlap, the document corpus is a pre-built local FAISS
+index, and the calculator is a locked-down AST evaluator. Ground truths in
+the eval suite are therefore exact, not model-judged.
 """
 
 from __future__ import annotations
@@ -21,6 +24,8 @@ from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field
 from pydantic_ai.tools import RunContext
 from pydantic_ai.toolsets import CombinedToolset, FunctionToolset, PrefixedToolset
+
+from agentic_workflows.documents import search_documents
 
 # ---------------------------------------------------------------------------
 # Canned domain corpus ("Atlas Valley Field Station — ops handbook")
@@ -364,8 +369,14 @@ def note_store(
 
 
 def research_ops_toolset() -> FunctionToolset[Notebook]:
-    """The four research-ops tools as a reusable ``FunctionToolset``."""
-    return FunctionToolset([calculator, unit_convert, search_handbook, note_store])
+    """The five research-ops tools as a reusable ``FunctionToolset``.
+
+    ``search_documents`` is the cross-project arm: dense retrieval over
+    project 01's Wikipedia corpus (read-only, see ``documents.py``).
+    """
+    return FunctionToolset(
+        [calculator, unit_convert, search_handbook, search_documents, note_store]
+    )
 
 
 # ---------------------------------------------------------------------------
