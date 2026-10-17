@@ -274,10 +274,16 @@ def budget_limits(settings: Settings | None = None) -> Any | None:
 def meter_result(result: Any, model_name: str, settings: Settings | None = None) -> UsdRecord:
     """Meter a pydantic-ai agent result (or raw usage object) into the ledger.
 
-    Accepts anything exposing ``.usage()`` (AgentRunResult) or a bare usage
-    object; prices it via :func:`usage_cost` and records it in the process
-    singleton ledger. Raises :class:`BudgetExceededError` at the cap.
+    Accepts anything exposing ``.usage`` — either a method (``AgentRunResult``
+    in older pydantic-ai) or a property returning a usage object (2.55+) — or
+    a bare usage object; prices it via :func:`usage_cost` and records it in
+    the process singleton ledger. Raises :class:`BudgetExceededError` at the
+    cap.
     """
-    usage_fn = getattr(result, "usage", None)
-    usage = usage_fn() if callable(usage_fn) else result
+    usage_attr = getattr(type(result), "usage", None)
+    if isinstance(usage_attr, property):
+        usage = result.usage
+    else:
+        usage_fn = getattr(result, "usage", None)
+        usage = usage_fn() if callable(usage_fn) else result
     return get_ledger(settings).record(model_name, usage)
