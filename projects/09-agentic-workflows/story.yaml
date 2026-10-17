@@ -4,10 +4,10 @@ roadmap:
     text: >-
       Multi-step agent graphs — shipped, verified: Plan→Execute→Critique on
       pydantic-graph over typed WorkflowState with bounded retries and one
-      Critique loop-back; the graph machinery is covered by 44 offline tests.
+      Critique loop-back; the graph machinery is covered by 57 offline tests.
   - status: delivered
     text: >-
-      Workflow evaluation harness — shipped, verified: 14-task suite with
+      Workflow evaluation harness — shipped, verified: 15-task suite with
       deterministic graders (answer success, exact tool-set, step budget,
       latency budget); evaluate runs fully offline from data/run_records.json.
   - status: delivered
@@ -15,14 +15,16 @@ roadmap:
       Human-in-the-loop checkpointing — shipped, verified: typed ApprovalRequest
       plus full state serialize to data/checkpoint.json; CLI resumes with
       approve or reject-with-feedback (re-plan, then Execute).
+  - status: delivered
+    text: >-
+      Cross-project agent evaluation on real retrieval corpora — shipped,
+      verified: search_documents queries 01's Wikipedia FAISS index read-only;
+      suite task t15 grades a two-article multi-hop lookup with the same
+      deterministic graders.
   - status: remaining
     text: >-
       Parallel map/fork execution across plan steps (pydantic-graph Fork/Join)
-      to cut the per-task wall clock that dominates the local-model profile.
-  - status: remaining
-    text: >-
-      Cross-project agent evaluation on real retrieval corpora (shared with
-      01-rag-agent) to test the harness away from the synthetic handbook.
+      to cut per-task wall clock further now that hosted latency is ~20 s.
 sections:
   - id: background
     text_md: |
@@ -36,12 +38,12 @@ sections:
       - **Explicit graphs over free-form loops** — a pydantic-graph
         Plan→Execute→Critique workflow makes every transition, retry bound, and
         loop-back auditable code instead of prompt folklore.
-      - **Deterministic grading** — a 14-task suite graded by offline,
+      - **Deterministic grading** — a 15-task suite graded by offline,
         code-level evaluators turns "the agent works" into per-task pass rates a
       client can inspect.
       - **Bounded autonomy** — retries are capped, latency and cost budgets are
-        recorded per run, and consequential actions pause at a human checkpoint
-        whose state is serialized to disk.
+        enforced per task and per suite by the spend ledger, and consequential
+        actions pause at a human checkpoint whose state is serialized to disk.
 
       The result is an agent stack that fails loudly and measurably rather than
       fluently.
@@ -58,13 +60,14 @@ sections:
         bounded repair path, never an unbounded retry loop.
       - **Step-level evaluation criteria with per-run budgets** — answer
         success, exact tool-set selection, step budget, and a 180 s per-task
-        latency budget, accumulated per node.
+        latency budget, accumulated per node with per-node step traces.
       - **Auditable human-in-the-loop** — a checkpoint node serializes the full
         typed state to disk so a human can approve, reject with feedback, or
         audit the run after the fact.
-      - **Honest measurement** — graders are deterministic and run fully
-        offline; no LLM judge, no vibes. Cost is reported at a reference rate
-        card even though local inference is $0.
+      - **Deterministic grading** — graders are code-level and run fully
+        offline; no LLM judge, no vibes. Cost is a labelled
+        cloud-equivalent estimate enforced by ledger caps ($0.25 per task,
+        $2.00 per suite), never a billed amount.
 
       **Business implication:** the deliverable is an operating decision — which
       tasks the workflow may run end-to-end, which need a human checkpoint, and
@@ -73,49 +76,58 @@ sections:
     metrics_keys: []
   - id: data
     text_md: |
-      The domain is a synthetic "research ops" world: the Atlas Valley
-      field-station handbook, 12 in-code documents covering fuel, solar, water,
-      batteries, comms, caches, and cold storage. Every tool is deterministic,
-      so every ground truth in the suite is exact and the whole evaluation runs
-      offline. Tasks and expected answers live in `data/tasks.json`; graded run
-      records land in `data/run_records.json`.
+      Two corpora back the suite. The synthetic domain is a "research ops"
+      world: the Atlas Valley field-station handbook, 12 in-code documents
+      covering fuel, solar, water, batteries, comms, caches, and cold storage.
+      The real-data arm reuses project 01's Wikipedia slice: 3,589 chunks over
+      five topics (climate, renewable energy, aviation, machine learning,
+      photosynthesis), retrieved through 01's persisted FAISS index — read-only,
+      no re-indexing. Every tool is deterministic, so every ground truth in the
+      suite is exact and the whole evaluation runs offline. Tasks and expected
+      answers live in `data/tasks.json`; graded run records land in
+      `data/run_records.json`.
 
       | tool | implementation | why it is deterministic |
       |---|---|---|
       | `calculator` | locked-down AST evaluator | fixed arithmetic, no model call |
       | `unit_convert` | fixed conversion table | table lookup only |
       | `search_handbook` | keyword search over 12 docs | corpus is in code |
+      | `search_documents` | FAISS + MiniLM over 01's index | pre-built index, read-only |
       | `note_store` | per-run in-memory notebook | same input, same note |
       | `math_*` toolset | composed via `PrefixedToolset` | two toolsets, zero name collisions |
 
       **Business implication:** determinism is what makes agent quality
       measurable — the client is not buying fluency, they are buying correct
-      procedures, and this domain pins correctness to code.
+      procedures, and these corpora pin correctness to code.
     figures: []
     metrics_keys: []
   - id: eda
     text_md: |
       The corpus is small and fully enumerable, which is the point: five task
       categories exercise one to three tools each, and expected answers are
-      pinned to actual tool outputs by `TestSuiteHonesty` — ground truths
-      cannot silently drift from the domain.
+      pinned to actual tool outputs by a suite-integrity test (synthetic
+      tasks) and `tests/test_documents.py` (the real-corpus t15 facts:
+      Wright brothers
+      1903, wind 2022, gap 119) — ground truths cannot silently drift from the
+      domain.
 
       | category | what it exercises | typical chain |
       |---|---|---|
-      | lookup | retrieval from the handbook | `search_handbook` |
+      | lookup | retrieval (handbook + real corpus) | `search_handbook` / `search_documents` |
       | calculation | doc-grounded arithmetic | `search_handbook` → `calculator` |
       | conversion | unit translation | `unit_convert` |
       | multi-step | chained tool calls | 2–3 tools |
       | note-keeping | notebook state | `note_store` |
 
       The category-level cut of the graded run is rendered as
-      `category_success`: conversion is the only category at zero, because its
-      two tasks in the bounded run (t07, t09) died at the plan node before any
-      tool ran.
+      `category_success`: on the hosted full run every category is at 100%
+      answer success, and the retrieval-heavy categories show the hosted
+      model's signature habit — unprompted extra tool calls (`note_store`,
+      `calculator`) that exact-set tool grading records as misses.
 
       **Business implication:** category composition shows a client exactly
-      where agent risk concentrates — multi-tool reasoning is not where this
-      bounded run failed; the fragile point was the plan step itself.
+      where agent risk concentrates — with hosted reliability the failures left
+      are behavioral (extra-tool noise), not infrastructure.
     figures: [category_success]
     metrics_keys: []
   - id: training
@@ -131,20 +143,23 @@ sections:
           P --> E[Execute<br/>tool calls + bounded repair]
           E --> C[Critique<br/>self-check]
           C -->|fail, once| P
-          C -->|pass| R[WorkflowResult<br/>answer, steps, tools, tokens]
+          C -->|pass| R[WorkflowResult<br/>answer, steps, tools, tokens, traces]
       ```
 
-      - **Execute** carries the four research-ops tools and repairs validation
+      - **Execute** carries the five research-ops tools and repairs validation
         failures on a bounded path; **Critique** may loop back to Plan once.
       - **Human checkpoint** — Plan can pause instead: the typed
         `ApprovalRequest` plus full state serialize to `data/checkpoint.json`;
         the CLI resumes with approve (continue at Execute) or
         reject-with-feedback (re-plan, then Execute).
       - **Tool registry** — a `PrefixedToolset` composes a second math toolset
-        without name collisions (unit-tested).
-      - **Model** — real runs use `qwen3:32b` on local Ollama (ADR-0004); each
-        node retries its agent up to 3 times because the reasoning model
-        occasionally returns empty turns.
+        without name collisions (unit-tested); `search_documents` imports
+        `rag_agent.index` as a workspace dependency for read-only retrieval.
+      - **Model presets** — hosted runs use `kimi-for-coding` with the platform
+        preset (thinking disabled, temperature omitted — the endpoint rejects
+        explicit values); local runs use Ollama (`qwen3:32b`) or any
+        OpenAI-compatible server (LM Studio included) through the same branch.
+        Each node retries its agent up to 3 times against empty-turn flakiness.
 
       **Business implication:** every transition, retry, and loop bound is code,
       so the workflow a client audits is the workflow that runs.
@@ -152,59 +167,74 @@ sections:
     metrics_keys: []
   - id: evaluation
     text_md: |
-      Fourteen tasks graded by `pydantic-evals` (suite defined in
+      Fifteen tasks graded by `pydantic-evals` (suite defined in
       `src/agentic_workflows/evals.py`) with deterministic evaluators: answer
       success (all expected keywords present), tool selection (exact tool-set
       match), step budget, and a 180 s per-task latency budget. Token usage is
-      accumulated per node; cost is reported at a reference rate card (local
-      Ollama itself is $0).
+      accumulated and traced per node (`StepTrace`: node, in/out tokens,
+      latency); cost is a labelled cloud-equivalent estimate at the reference
+      card, enforced by the spend ledger.
 
       - **Run and evaluate are separate DVC stages** — `run` needs a live
         model; `evaluate` is fully offline from `data/run_records.json`, so a
         run is paid for once and graded reproducibly forever.
       - **No LLM judge** — grading is code, which means the same run always
         yields the same scores.
-      - **The grader's view** — `per_task_grading` renders each task's answer
-        success against its tool selection, the two axes that diverge most.
-      - **Tests** — 44 offline tests (scripted `FunctionModel`) cover the
-        graph, HITL, tools, and eval machinery.
+      - **Budget wiring** — the ledger resets at suite start, caps the suite at
+        $2.00, and a $0.25 per-task cap aborts a task mid-run (`budget_exceeded`
+        in the record, suite continues); `budget_limits` rides every live call.
+      - **The grader's view** — `per_task_grading` renders answer success vs
+        tool selection (the hosted model answers everything but pads with extra
+        tools); `cost_latency_bars` adds the cost/latency profile per task.
+      - **Tests** — 57 offline tests (scripted `FunctionModel`, fixture search
+        index) cover the graph, HITL, tools, documents, budget paths, and eval
+        machinery.
 
       **Business implication:** deterministic, offline grading is what makes an
       agent's quality a contract term rather than a demo impression.
-    figures: [per_task_grading]
+    figures: [per_task_grading, cost_latency_bars]
     metrics_keys: [agentic_suite]
   - id: results
     text_md: |
-      Bounded real run on local `qwen3:32b` (Ollama): 8 of the 14 suite tasks
-      spanning all five categories (`run-all --ids t01,t03,t05,t07,t09,t10,t12,t13`;
-      a full 14-task run exceeded two hours of wall clock on the reasoning
-      model, and `run-all` without flags runs everything). Aggregates land in
-      `reports/metrics.json` (`agentic_suite`); full report in `reports/report.html`.
+      Hosted run on `kimi-for-coding` (thinking disabled), plain `run-all`:
+      **all 15 tasks in ~9.5 minutes** — the local 32B needed >2 hours for 8.
 
-      | task | answer | tool set | latency |
-      |---|---|---|---|
-      | t01 | ✓ | extra `note_store` | 164 s |
-      | t03 | ✓ | exact | 451 s |
-      | t05 | ✓ | extra `note_store` | 871 s |
-      | t07 | ✗ `workflow_error` at plan | — | 365 s |
-      | t09 | ✗ `workflow_error` at plan | — | 336 s |
-      | t10 | ✓ | extra `note_store` | 752 s |
-      | t12 | ✓ | exact | 497 s |
-      | t13 | ✓ | exact | 610 s |
+      - answer success **15/15**, step budget **15/15**, latency budget
+        **14/15** — hosting removed every infrastructure failure (the local
+        run lost t07/t09 to plan-node flakiness)
+      - the suite catches what demos hide: exact-set tool grading flagged
+        unprompted extra tool calls on 12 of 15 otherwise-correct answers —
+        tool selection **3/15** (20%)
+      - latency: median **19.9 s** per task; p95 266.9 s — one runaway
+        execute loop on t14, cut by the 4M-token `UsageLimits`, recovered
+        via bounded retry
+      - tokens: **163k in + 14k out**; ledger total **$0.13**
+        cloud-equivalent of the $2.00 cap (cache reads 30%)
 
-      **Answer success 6/8 (75%)**, **tool-selection accuracy 3/8 (37.5%)**,
-      step budget 8/8. The tool-selection misses are unprompted `note_store`
-      calls on otherwise-correct answers. Latency: median 474 s, p95 871 s —
-      the 180 s budget held for 1/8 runs, an honest profile of a 32B reasoning
-      model on local hardware. Throughput ≈ 4.5k input + 1.6k output tokens per
-      task (≈ $0.0017 at the reference rate card; $0 on Ollama). See
-      `per_task_grading`, `per_task_latency`, and `category_success`.
+      | task | answer | tool set | latency | est. cost |
+      |---|---|---|---|---|
+      | t01 | ✓ | +note_store | 17.1 s | $0.0070 |
+      | t02 | ✓ | +note_store | 16.5 s | $0.0073 |
+      | t03 | ✓ | +note_store | 22.5 s | $0.0111 |
+      | t04 | ✓ | +note_store | 27.2 s | $0.0132 |
+      | t05 | ✓ | +note_store,docs | 33.9 s | $0.0138 |
+      | t06 | ✓ | +note_store,docs | 28.7 s | $0.0158 |
+      | t07 | ✓ | +calculator | 13.3 s | $0.0063 |
+      | t08 | ✓ | +calculator | 13.5 s | $0.0061 |
+      | t09 | ✓ | +calculator | 11.6 s | $0.0063 |
+      | t10 | ✓ | +note_store,docs | 45.9 s | $0.0516 |
+      | t11 | ✓ | exact | 13.3 s | $0.0077 |
+      | t12 | ✓ | exact | 19.9 s | $0.0108 |
+      | t13 | ✓ | exact | 23.3 s | $0.0093 |
+      | t14 | ✓ | +search_documents | 266.9 s | $0.0422 |
+      | t15 | ✓ | +calculator | 14.9 s | $0.0097 |
 
-      **Business implication:** for throughput-sensitive work, explicit graphs
-      plus deterministic graders beat free-form agents — the failures are
-      classified (plan flakiness, extra-tool noise), budgeted, and fixable,
-      instead of anecdotal.
-    figures: [per_task_grading, per_task_latency, category_success]
+      Per-task costs pre-cache-discount (sum $0.22); ledger total $0.13.
+
+      **Business implication:** at ~$0.01 cloud-equivalent per task and ~20 s
+      latency, graded multi-step agents are an operating tier — budgets and
+      checkpoints make them delegable.
+    figures: [per_task_grading, per_task_latency, category_success, cost_latency_bars]
     metrics_keys: [agentic_suite]
   - id: conclusions
     text_md: |
@@ -214,19 +244,22 @@ sections:
         loop bound is code, and the same typed state that drives execution
         serializes verbatim into the human-checkpoint file.
       - **Deterministic graders make agent quality measurable** — answer
-        success and tool-selection accuracy on a 14-task suite surface real
-        behavior differences between models without an LLM judge.
-      - **Local reasoning models need retry wrappers** — occasional empty
-        turns otherwise kill long workflows; t07 and t09 were recorded as
-        `workflow_error` after bounded retries, not retried into the night.
+        success and tool-selection accuracy on a 15-task suite surface real
+        behavior differences between a flaky local 32B and a hosted coding
+        model without an LLM judge.
+      - **Budgets must be enforced, not logged** — the $2.00 suite cap, $0.25
+        per-task cap, and 4M-token call limits all fired through code paths the
+        suite exercises in tests; the one runaway loop the run produced was cut
+        by them, not by luck.
 
-      The machinery is trustworthy — 44 tests cover the graph, HITL, tools, and
-      eval harness — and the honest weak points are the plan node's flakiness
-      and reasoning-model latency on local hardware, both bounded and recorded.
+      The machinery is trustworthy — 57 tests cover the graph, HITL, tools,
+      documents, budget paths, and eval harness — and the remaining weak
+      point is behavioral: hosted models over-call tools, which exact-set
+      grading counts as misses on otherwise-perfect answers.
 
       **Business implication:** adopt this pattern when actions are
       consequential and auditable — human checkpoints for irreversible steps,
-      explicit budgets for everything else — and treat local 32B reasoning as a
+      enforced budgets for everything else — and treat local 32B reasoning as a
       profiling environment, not a serving tier.
     figures: []
     metrics_keys: []

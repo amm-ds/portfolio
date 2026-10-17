@@ -12,6 +12,9 @@ dependencies = [
     "pydantic-evals>=2.55",
     "portfolio-core",
     "portfolio-eval",
+    # Cross-project arm: search_documents loads 01's persisted FAISS index
+    # read-only (rag_agent.index) — no re-indexing, no writes under 01's data.
+    "01-rag-agent",
 ]
 
 [project.scripts]
@@ -20,6 +23,7 @@ agentic_workflows = "agentic_workflows.cli:app"
 [tool.uv.sources]
 portfolio-core = { workspace = true }
 portfolio-eval = { workspace = true }
+"01-rag-agent" = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]

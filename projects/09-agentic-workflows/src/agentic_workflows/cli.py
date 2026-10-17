@@ -17,10 +17,11 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from portfolio_core.llm_budget import get_ledger
 from portfolio_core.logging import get_logger
 
 from agentic_workflows import evals
-from agentic_workflows.config import load_config
+from agentic_workflows.config import get_settings, load_config
 from agentic_workflows.hitl import (
     describe_checkpoint,
     load_checkpoint,
@@ -105,7 +106,18 @@ def run_all(
     records = evals.run_suite(cfg, tasks=tasks)
     evals.write_records(records, cfg.records_path)
     ok = sum(1 for record in records if record.status == "ok")
+    over = sum(1 for record in records if record.status == "budget_exceeded")
     typer.echo(f"run-all complete: {ok}/{len(records)} tasks ok → {cfg.records_path}")
+    if over:
+        typer.echo(f"budget: {over} task(s) stopped at a budget cap (see records)")
+    ledger = get_ledger(get_settings())
+    total_in = sum(record.input_tokens for record in records)
+    total_out = sum(record.output_tokens for record in records)
+    typer.echo(
+        f"ledger: {len(ledger.records)} metered calls, {total_in:,} in + {total_out:,} out tokens; "
+        f"estimated spend ${ledger.spend_usd} of ${ledger.budget_usd} suite cap "
+        f"(cloud-equivalent, labelled estimate)"
+    )
 
 
 @app.command()

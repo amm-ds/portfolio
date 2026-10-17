@@ -1,16 +1,20 @@
 """Evaluation harness: synthetic task suite, typed graders, reports.
 
-The suite (``TASK_SUITE``) is 14 tasks over the deterministic research-ops
+The suite (``TASK_SUITE``) is 15 tasks: 14 over the deterministic research-ops
 corpus with exact ground truths — keyword checks the final answer must contain
-and the exact set of tools a correct solution needs. Grading runs through
-``pydantic-evals`` (``Dataset`` + custom ``Evaluator`` subclasses); the report
-builder then aggregates per-task and per-category results into
-``reports/metrics.json``, three plotly figures, and the HTML report.
+and the exact set of tools a correct solution needs — plus one cross-project
+lookup over project 01's real Wikipedia corpus via ``search_documents``.
+Grading runs through ``pydantic-evals`` (``Dataset`` + custom ``Evaluator``
+subclasses); the report builder then aggregates per-task and per-category
+results into ``reports/metrics.json``, four plotly figures, and the HTML
+report.
 
 Two entry points, matching the DVC stages:
 
 - :func:`run_suite` — actually runs every task through the workflow graph
-  (needs a live model: env provider or local Ollama).
+  (needs a live model: env provider or local Ollama). Resets the spend ledger,
+  caps the suite at ``LLM_SUITE_COST_LIMIT_USD``, and enforces a per-task
+  cloud-equivalent cap through the meter callback.
 - :func:`evaluate_records` — grades a previously written
   ``data/run_records.json``; fully offline because grading is deterministic.
 """
@@ -22,11 +26,19 @@ import statistics
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 import plotly.graph_objects as go
 from portfolio_core.llm import build_model
+from portfolio_core.llm_budget import (
+    BudgetExceededError,
+    budget_limits,
+    get_ledger,
+    meter_result,
+    reset_ledger,
+)
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json
 from portfolio_eval.metrics import MetricResult, RunResult
@@ -36,11 +48,30 @@ from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import Evaluator, EvaluatorContext
 from pydantic_evals.reporting import EvaluationReport
 
-from agentic_workflows.config import EvalConfig
+from agentic_workflows.config import EvalConfig, get_settings
 from agentic_workflows.schemas import EvalTask, TaskRunRecord
 from agentic_workflows.workflow import run_workflow_async
 
 logger = get_logger(__name__)
+
+
+class TaskBudgetError(RuntimeError):
+    """Per-task cloud-equivalent spend crossed the task cap.
+
+    Raised by the suite's meter after the offending node result is recorded
+    in the ledger, so the spend stays honest; caught per-task by
+    :func:`run_suite` (recorded as ``budget_exceeded``, the suite continues).
+    """
+
+
+@dataclass
+class _TaskMeter:
+    """Mutable per-task accumulator fed by the meter callback."""
+
+    input_tokens: int = 0
+    output_tokens: int = 0
+    spend_usd: Decimal = Decimal(0)
+
 
 # ---------------------------------------------------------------------------
 # The synthetic task suite — ground truths derived from tools.HANDBOOK
@@ -160,6 +191,22 @@ TASK_SUITE: tuple[EvalTask, ...] = (
         expected_keywords=["450"],
         expected_tools=["search_handbook", "calculator"],
     ),
+    # Cross-project arm: real-data retrieval over 01's Wikipedia corpus
+    # (read-only FAISS index, see documents.py). Two chunks, two articles:
+    # Wright brothers (aviation-122) gives 1903, Wind power (renewable-energy-122)
+    # gives 2022 — the multi-hop answer is the 119-year gap.
+    EvalTask(
+        id="t15",
+        prompt=(
+            "According to the Wikipedia document corpus: in what year did the Wright "
+            "brothers make the first controlled, sustained flight of a powered aircraft, "
+            "and in what year did wind power supply over 2000 TWh of electricity? "
+            "How many years separate the two events?"
+        ),
+        category="lookup",
+        expected_keywords=["1903", "2022", "119"],
+        expected_tools=["search_documents"],
+    ),
 )
 
 
@@ -236,18 +283,83 @@ def run_suite(
     model: Model | None = None,
     tasks: list[EvalTask] | None = None,
 ) -> list[TaskRunRecord]:
-    """Run every task through the workflow graph; returns typed records."""
+    """Run every task through the workflow graph; returns typed records.
+
+    Budget wiring (labelled cloud-equivalent estimates, never billed amounts):
+
+    - the spend ledger is reset at suite start and capped at the suite limit
+      (``LLM_SUITE_COST_LIMIT_USD``); crossing it aborts the remaining tasks;
+    - a per-task cap (``task_cost_limit_usd``, default $0.25) is enforced by
+      the meter callback: the node result is recorded, then
+      :class:`TaskBudgetError` aborts the task and the suite continues;
+    - ``budget_limits`` (hosted request/token limits) is forwarded to every
+      model call.
+    """
+    settings = get_settings()
     selected = tasks or list(TASK_SUITE)
-    resolved_model = model if model is not None else build_model()
+
+    reset_ledger()
+    ledger = get_ledger(settings)
+    ledger.budget_usd = Decimal(str(settings.llm_suite_cost_limit_usd))
+    usage_limits = budget_limits(settings)
+    task_limit = Decimal(str(config.task_cost_limit_usd))
+    logger.info(
+        "suite budget: $%s per task, $%s suite cap (cloud-equivalent estimates)",
+        task_limit,
+        ledger.budget_usd,
+    )
+
     records: list[TaskRunRecord] = []
+    suite_aborted = False
     for task in selected:
+        if suite_aborted or ledger.spend_usd >= ledger.budget_usd:
+            records.append(
+                TaskRunRecord(
+                    task_id=task.id,
+                    status="budget_exceeded",
+                    answer="",
+                    steps_taken=[],
+                    tools_used=[],
+                    confidence=0.0,
+                    duration_s=0.0,
+                    error="not run: suite budget exhausted by earlier tasks",
+                )
+            )
+            continue
         start = time.perf_counter()
+        task_meter = _TaskMeter()
+        # The model is built per task: each task runs in its own event loop
+        # (asyncio.run per task), and a shared httpx client would surface
+        # "Event loop is closed" on the first call of every later task.
+        task_model = model if model is not None else build_model(settings)
+        task_model_name = settings.llm_model or str(getattr(task_model, "model_name", "unknown"))
+
+        def meter(
+            result: Any,
+            _meter: _TaskMeter = task_meter,
+            _task_id: str = task.id,
+            _model_name: str = task_model_name,
+        ) -> None:
+            # result.usage is a RunUsage property on AgentRunResult — pass the
+            # usage object itself (meter_result duck-types it).
+            entry = meter_result(result.usage, _model_name, settings)
+            _meter.input_tokens += entry.input_tokens
+            _meter.output_tokens += entry.output_tokens
+            _meter.spend_usd += entry.spend_usd
+            if _meter.spend_usd > task_limit:
+                raise TaskBudgetError(
+                    f"task {_task_id} crossed the per-task cloud-equivalent cap: "
+                    f"${_meter.spend_usd} > ${task_limit}"
+                )
+
         try:
             result = run_workflow_sync(
                 task.prompt,
-                model=resolved_model,
+                model=task_model,
                 max_execute_retries=config.max_execute_retries,
                 max_critique_loops=config.max_critique_loops,
+                meter=meter,
+                usage_limits=usage_limits,
             )
             records.append(
                 TaskRunRecord(
@@ -256,6 +368,7 @@ def run_suite(
                     answer=result.answer,
                     steps_taken=result.steps_taken,
                     tools_used=result.tools_used,
+                    steps=result.step_traces,
                     confidence=result.confidence,
                     retries=result.retries,
                     critique_loops=result.critique_loops,
@@ -264,6 +377,39 @@ def run_suite(
                     output_tokens=result.output_tokens,
                 )
             )
+        except TaskBudgetError as exc:
+            logger.warning("task %s hit the per-task budget cap", task.id)
+            records.append(
+                TaskRunRecord(
+                    task_id=task.id,
+                    status="budget_exceeded",
+                    answer="",
+                    steps_taken=[],
+                    tools_used=[],
+                    confidence=0.0,
+                    duration_s=round(time.perf_counter() - start, 3),
+                    input_tokens=task_meter.input_tokens,
+                    output_tokens=task_meter.output_tokens,
+                    error=str(exc),
+                )
+            )
+        except BudgetExceededError as exc:
+            logger.warning("task %s exhausted the suite budget; aborting remaining tasks", task.id)
+            records.append(
+                TaskRunRecord(
+                    task_id=task.id,
+                    status="budget_exceeded",
+                    answer="",
+                    steps_taken=[],
+                    tools_used=[],
+                    confidence=0.0,
+                    duration_s=round(time.perf_counter() - start, 3),
+                    input_tokens=task_meter.input_tokens,
+                    output_tokens=task_meter.output_tokens,
+                    error=str(exc),
+                )
+            )
+            suite_aborted = True
         except Exception as exc:
             logger.exception("task %s failed", task.id)
             records.append(
@@ -376,8 +522,9 @@ def _score(
 
 def suite_figures(
     report: EvaluationReport[EvalTask, TaskRunRecord, None],
+    config: EvalConfig | None = None,
 ) -> dict[str, go.Figure]:
-    """The three story figures: success, tool selection, latency per task."""
+    """The four story figures: success, tool selection, latency, cost per task."""
     cases = list(report.cases)
     names = [case.name for case in cases]
     success = [_score(report, name, "AnswerSuccess") for name in names]
@@ -426,7 +573,7 @@ def suite_figures(
     within = sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)
     add_takeaway(
         fig_latency,
-        f"Median {statistics.median(durations):.1f}s per task on the local 32B model; "
+        f"Median {statistics.median(durations):.1f}s per task; "
         f"{within}/{len(durations)} runs inside the {budgets[0]:.0f}s budget.",
     )
 
@@ -451,10 +598,73 @@ def suite_figures(
         "search→calculator pairing the plan step is built for.",
     )
 
+    # Cost/latency figure: stacked input/output tokens with the per-task
+    # cloud-equivalent cost labelled on each bar, latency as a line against
+    # the 180 s budget on a secondary axis.
+    in_rate = config.usd_per_mtok_input if config is not None else 1.0
+    out_rate = config.usd_per_mtok_output if config is not None else 4.0
+    input_tokens = [case.output.input_tokens for case in cases]
+    output_tokens = [case.output.output_tokens for case in cases]
+    costs = [
+        (i / 1e6 * in_rate + o / 1e6 * out_rate)
+        for i, o in zip(input_tokens, output_tokens, strict=True)
+    ]
+    totals = [i + o for i, o in zip(input_tokens, output_tokens, strict=True)]
+    cost_labels = [f"${c:.4f}" for c in costs]
+    fig_cost = go.Figure(
+        data=[
+            go.Bar(name="input tokens", x=names, y=input_tokens, marker={"color": "#2dd4bf"}),
+            go.Bar(name="output tokens", x=names, y=output_tokens, marker={"color": "#38bdf8"}),
+            go.Scatter(
+                name="cloud-equivalent cost per task",
+                x=names,
+                y=totals,
+                text=cost_labels,
+                mode="text",
+                textposition="top center",
+                textfont={"size": 11, "color": "#fbbf24"},
+                showlegend=True,
+                hoverinfo="skip",
+            ),
+            go.Scatter(
+                name="latency",
+                x=names,
+                y=durations,
+                mode="lines+markers",
+                line={"color": "#a78bfa"},
+                yaxis="y2",
+            ),
+            go.Scatter(
+                name="latency budget",
+                x=names,
+                y=budgets,
+                mode="lines",
+                line={"dash": "dash", "color": "#f472b6"},
+                yaxis="y2",
+            ),
+        ]
+    )
+    fig_cost.update_layout(
+        barmode="stack",
+        title="Per-task tokens, cloud-equivalent cost, and latency vs budget",
+        xaxis_title="task",
+        yaxis={"title": "tokens", "range": [0, max(totals, default=1) * 1.2]},
+        yaxis2={"title": "seconds", "overlaying": "y", "side": "right"},
+    )
+    apply_theme(fig_cost)
+    add_takeaway(
+        fig_cost,
+        f"Total ${sum(costs):.4f} cloud-equivalent ($1/Mtok in, $4/Mtok out; "
+        f"labelled estimate, membership-quota key); median ${statistics.median(costs):.4f} "
+        f"per task; latency budget {budgets[0]:.0f}s held for "
+        f"{sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)}/{len(durations)}.",
+    )
+
     return {
         "per_task_grading": fig_success,
         "per_task_latency": fig_latency,
         "category_success": fig_category,
+        "cost_latency_bars": fig_cost,
     }
 
 
@@ -540,7 +750,7 @@ def build_report(
             )
         )
 
-    figures = suite_figures(report)
+    figures = suite_figures(report, config)
     builder.build(config.reports_dir, figures=figures)
     for name, fig in figures.items():
         save_json(fig, config.reports_dir / "figures" / f"{name}.json")

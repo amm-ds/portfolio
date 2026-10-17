@@ -96,10 +96,16 @@ class TestSuiteIntegrity:
         assert categories == {"lookup", "calculation", "conversion", "multi_step", "note_keeping"}
 
     def test_every_task_fits_corpus_and_tools(self) -> None:
-        toolset_tools = {"calculator", "unit_convert", "search_handbook", "note_store"}
+        toolset_tools = {
+            "calculator",
+            "unit_convert",
+            "search_handbook",
+            "search_documents",
+            "note_store",
+        }
         for task in evals.TASK_SUITE:
             assert set(task.expected_tools) <= toolset_tools, task.id
-            # every calculation/lookup answer must be derivable from the corpus:
+            # every calculation/lookup answer must be derivable from a corpus:
             # the keyword set is non-empty and prompts mention corpus entities
             assert task.expected_keywords, task.id
 

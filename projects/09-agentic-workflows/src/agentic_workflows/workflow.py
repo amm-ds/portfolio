@@ -12,25 +12,37 @@ Model resolution follows ADR-0004: ``build_model()`` (env provider or local
 Ollama) unless a model is injected — tests inject a ``FunctionModel``.
 Determinism comes from the typed contracts and the canned tool corpus, not
 from sampling temperature, so the same task grades identically run to run.
+When a hosted provider is configured (LLM_BASE_URL + LLM_API_KEY), every node
+agent is built with the hosted preset from ``portfolio_core.llm``
+(thinking disabled, temperature omitted — the Kimi coding endpoint rejects
+explicit temperature values).
 """
 
 from __future__ import annotations
 
 import asyncio
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
-from portfolio_core.llm import build_model
+from portfolio_core.llm import (
+    build_model,
+    hosted_model_settings,
+    is_hosted_provider,
+)
 from portfolio_core.logging import get_logger
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models import Model
 from pydantic_graph import BaseNode, End, Graph, GraphBuilder, GraphRunContext
 
+from agentic_workflows.config import get_settings
 from agentic_workflows.schemas import (
     CritiqueOutput,
     ExecutionOutput,
     PlanOutput,
+    StepTrace,
     WorkflowResult,
     WorkflowState,
 )
@@ -38,19 +50,25 @@ from agentic_workflows.tools import Notebook, research_ops_toolset
 
 logger = get_logger(__name__)
 
+MeterFn = Callable[[Any], None]
+"""Callback receiving each node's agent result (used by the suite to meter spend)."""
+
 PLAN_SYSTEM = """You are the PLANNER of a research-ops workflow.
 Break the user's task into a short ordered plan (1-5 steps). Each step names
-the tool it needs from: calculator, unit_convert, search_handbook, note_store —
-or none (reasoning only). Never invent tools. Reply with the structured plan.
+the tool it needs from: calculator, unit_convert, search_handbook,
+search_documents, note_store — or none (reasoning only). Never invent tools.
+search_documents is for facts from the Wikipedia document corpus; search_handbook
+is for Atlas Valley station facts. Reply with the structured plan.
 """
 
 EXECUTE_SYSTEM = """You are the EXECUTOR of a research-ops workflow.
 Follow the given plan. Use tools to gather facts — search_handbook for any
-station fact, calculator for arithmetic, unit_convert for unit changes,
-note_store when the task asks to record something. Never answer station facts
-from memory; always verify via search_handbook first. Then reply with the
-structured output: findings (facts with their numbers), a draft answer that
-cites the numbers, and your self_confidence.
+station fact, search_documents for facts from the Wikipedia document corpus,
+calculator for arithmetic, unit_convert for unit changes, note_store when the
+task asks to record something. Never answer station facts from memory; always
+verify via search_handbook first. Then reply with the structured output:
+findings (facts with their numbers), a draft answer that cites the numbers,
+and your self_confidence.
 """
 
 CRITIQUE_SYSTEM = """You are the CRITIQUE of a research-ops workflow.
@@ -63,10 +81,30 @@ or ungrounded. Be strict: any missing number or unsupported claim is a 'revise'.
 
 @dataclass
 class WorkflowDeps:
-    """Graph dependencies: the model and the run's notebook."""
+    """Graph dependencies: the model, the run's notebook, and suite hooks.
+
+    ``meter`` (optional) receives each node's agent result — the eval suite
+    uses it to record cloud-equivalent spend against the budget caps.
+    ``usage_limits`` (optional) is passed to every agent run so hosted request
+    and token limits are enforced natively per call.
+    """
 
     model: Model
     notebook: Notebook
+    meter: MeterFn | None = None
+    usage_limits: Any | None = None
+
+
+def provider_model_settings() -> Any | None:
+    """Hosted preset (thinking disabled, temperature omitted) when a hosted
+    OpenAI-compatible provider is configured, else ``None`` (local default).
+
+    Uses this project's settings (env file at the monorepo root) so the hosted
+    branch is detected regardless of the caller's working directory.
+    """
+    if is_hosted_provider(get_settings()):
+        return hosted_model_settings()
+    return None
 
 
 def render_plan(state: WorkflowState) -> str:
@@ -98,6 +136,7 @@ async def run_agent_with_retries(
     *,
     deps: Notebook | None = None,
     attempts: int = 3,
+    usage_limits: Any | None = None,
 ) -> Any:
     """Run an agent with bounded retries around flaky providers.
 
@@ -105,18 +144,38 @@ async def run_agent_with_retries(
     content (thinking consumed the turn); the internal single retry then
     raises ``UnexpectedModelBehavior``. A few bounded attempts at the node
     level keep the workflow robust without hiding real failures.
+    ``usage_limits`` is forwarded to every model call (hosted budget guard).
     """
     last_error: Exception | None = None
     for attempt in range(1, attempts + 1):
         try:
             if deps is not None:
-                return await agent.run(prompt, deps=deps)
-            return await agent.run(prompt)
+                return await agent.run(prompt, deps=deps, usage_limits=usage_limits)
+            return await agent.run(prompt, usage_limits=usage_limits)
         except Exception as exc:
             last_error = exc
             logger.warning("agent run attempt %d/%d failed: %s", attempt, attempts, exc)
     assert last_error is not None
     raise last_error
+
+
+def _record_step(
+    state: WorkflowState,
+    node: Literal["plan", "execute", "critique"],
+    result: Any,
+    latency_s: float,
+    meter: MeterFn | None,
+) -> None:
+    """Append the node's step trace and meter its usage when a meter is wired."""
+    trace = StepTrace(
+        node=node,
+        input_tokens=int(result.usage.input_tokens or 0),
+        output_tokens=int(result.usage.output_tokens or 0),
+        latency_s=round(latency_s, 3),
+    )
+    state.step_traces.append(trace)
+    if meter is not None:
+        meter(result)
 
 
 class PlanNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
@@ -125,7 +184,10 @@ class PlanNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
     async def run(self, ctx: GraphRunContext[WorkflowState, WorkflowDeps]) -> ExecuteNode:
         state = ctx.state
         agent: Agent[None, PlanOutput] = Agent(
-            ctx.deps.model, output_type=PlanOutput, system_prompt=PLAN_SYSTEM
+            ctx.deps.model,
+            output_type=PlanOutput,
+            system_prompt=PLAN_SYSTEM,
+            model_settings=provider_model_settings(),
         )
         prompt = f"TASK: {state.task}"
         if state.critique_feedback:
@@ -133,11 +195,13 @@ class PlanNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
                 "\n\nThe previous plan was rejected. Feedback from the human reviewer:\n"
                 f"{state.critique_feedback}\nProduce a revised plan."
             )
-        result = await run_agent_with_retries(agent, prompt)
+        start = time.perf_counter()
+        result = await run_agent_with_retries(agent, prompt, usage_limits=ctx.deps.usage_limits)
         state.plan = result.output.steps
         state.plan_notes = result.output.notes
         state.input_tokens += int(result.usage.input_tokens or 0)
         state.output_tokens += int(result.usage.output_tokens or 0)
+        _record_step(state, "plan", result, time.perf_counter() - start, ctx.deps.meter)
         state.steps_taken.append(f"plan ({len(state.plan)} steps)")
         logger.info("planned task into %d steps", len(state.plan))
         return ExecuteNode()
@@ -157,12 +221,19 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
             deps_type=Notebook,
             toolsets=[research_ops_toolset()],
             system_prompt=EXECUTE_SYSTEM,
+            model_settings=provider_model_settings(),
         )
         prompt = f"TASK: {state.task}\n\nPLAN:\n{render_plan(state)}"
         if state.execute_feedback:
             prompt += f"\n\nRepair note from a failed attempt:\n{state.execute_feedback}"
+        start = time.perf_counter()
         try:
-            result = await run_agent_with_retries(agent, prompt, deps=ctx.deps.notebook)
+            result = await run_agent_with_retries(
+                agent,
+                prompt,
+                deps=ctx.deps.notebook,
+                usage_limits=ctx.deps.usage_limits,
+            )
         except Exception as exc:
             state.retries += 1
             logger.warning("execute attempt %d failed: %s", state.retries, exc)
@@ -181,6 +252,9 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
         state.tools_used.extend(_tool_names(result.all_messages()))
         state.input_tokens += int(result.usage.input_tokens or 0)
         state.output_tokens += int(result.usage.output_tokens or 0)
+        # Meter outside the repair try: budget cuts must abort the task, not
+        # be swallowed by the execute repair path.
+        _record_step(state, "execute", result, time.perf_counter() - start, ctx.deps.meter)
         state.steps_taken.append(f"draft (self-confidence {output.self_confidence:.2f})")
         return CritiqueNode()
 
@@ -194,17 +268,23 @@ class CritiqueNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
         state = ctx.state
         state.steps_taken.append("critique")
         agent: Agent[None, CritiqueOutput] = Agent(
-            ctx.deps.model, output_type=CritiqueOutput, system_prompt=CRITIQUE_SYSTEM
+            ctx.deps.model,
+            output_type=CritiqueOutput,
+            system_prompt=CRITIQUE_SYSTEM,
+            model_settings=provider_model_settings(),
         )
+        start = time.perf_counter()
         result = await run_agent_with_retries(
             agent,
             f"TASK: {state.task}\n\nFINDINGS:\n- "
             + "\n- ".join(state.findings)
             + f"\n\nDRAFT:\n{state.draft}",
+            usage_limits=ctx.deps.usage_limits,
         )
         verdict = result.output
         state.input_tokens += int(result.usage.input_tokens or 0)
         state.output_tokens += int(result.usage.output_tokens or 0)
+        _record_step(state, "critique", result, time.perf_counter() - start, ctx.deps.meter)
         if verdict.verdict == "revise" and state.critique_loops < state.max_critique_loops:
             state.critique_loops += 1
             state.execute_feedback = (
@@ -231,6 +311,7 @@ def _final_result(state: WorkflowState, critique_issues: list[str]) -> WorkflowR
         answer=state.draft,
         steps_taken=list(state.steps_taken),
         tools_used=list(state.tools_used),
+        step_traces=list(state.step_traces),
         confidence=_confidence(state, critique_issues),
         retries=state.retries,
         critique_loops=state.critique_loops,
@@ -245,6 +326,7 @@ def _failure_result(state: WorkflowState, reason: str) -> WorkflowResult:
         answer=f"Workflow could not complete: {reason}",
         steps_taken=list(state.steps_taken),
         tools_used=list(state.tools_used),
+        step_traces=list(state.step_traces),
         confidence=0.0,
         retries=state.retries,
         critique_loops=state.critique_loops,
@@ -283,9 +365,16 @@ async def run_workflow_async(
     max_critique_loops: int = 1,
     start: type[BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]] | None = None,
     state: WorkflowState | None = None,
+    meter: MeterFn | None = None,
+    usage_limits: Any | None = None,
 ) -> WorkflowResult:
-    """Run the workflow graph; inject ``model``/``state`` for tests and resumes."""
-    resolved_model = model if model is not None else build_model()
+    """Run the workflow graph; inject ``model``/``state`` for tests and resumes.
+
+    ``meter`` (optional) receives each node's agent result — the eval suite
+    wires it to the spend ledger. ``usage_limits`` (optional) is forwarded to
+    every model call for hosted request/token budgets.
+    """
+    resolved_model = model if model is not None else build_model(get_settings())
     entry = start or PlanNode
     workflow_state = state or WorkflowState(
         task=task,
@@ -295,7 +384,12 @@ async def run_workflow_async(
     graph = build_workflow_graph(entry)
     return await graph.run(
         state=workflow_state,
-        deps=WorkflowDeps(model=resolved_model, notebook=notebook or Notebook()),
+        deps=WorkflowDeps(
+            model=resolved_model,
+            notebook=notebook or Notebook(),
+            meter=meter,
+            usage_limits=usage_limits,
+        ),
         inputs=entry(),
     )
 
@@ -309,6 +403,8 @@ def run_workflow(
     max_critique_loops: int = 1,
     start: type[BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]] | None = None,
     state: WorkflowState | None = None,
+    meter: MeterFn | None = None,
+    usage_limits: Any | None = None,
 ) -> WorkflowResult:
     """Synchronous wrapper for CLI/REPL use (not callable inside a running loop)."""
     return asyncio.run(
@@ -320,5 +416,7 @@ def run_workflow(
             max_critique_loops=max_critique_loops,
             start=start,
             state=state,
+            meter=meter,
+            usage_limits=usage_limits,
         )
     )

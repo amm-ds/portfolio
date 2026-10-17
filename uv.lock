@@ -286,6 +286,7 @@ name = "09-agentic-workflows"
 version = "0.1.0"
 source = { editable = "projects/09-agentic-workflows" }
 dependencies = [
+    { name = "01-rag-agent" },
     { name = "numpy" },
     { name = "plotly" },
     { name = "polars" },
@@ -298,6 +299,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "01-rag-agent", editable = "projects/01-rag-agent" },
     { name = "numpy", specifier = ">=2.1" },
     { name = "plotly", specifier = ">=5.24" },
     { name = "polars", specifier = ">=1.9" },

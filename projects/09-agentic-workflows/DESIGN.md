@@ -44,17 +44,20 @@ would blur that signal.
 
 ### Eval design
 
-- **Suite**: 14 synthetic tasks over a 12-document in-code corpus ("Atlas
-  Valley" field station). All numbers in the ground truths come from the corpus
-  and the tools, so grading is exact — answer keywords and expected tool sets
-  are derived, not judged (`tests/test_evals.py::TestSuiteHonesty` pins them).
+- **Suite**: 15 tasks — 14 over a 12-document in-code corpus ("Atlas Valley"
+  field station) plus one cross-project lookup over 01's real Wikipedia corpus.
+  All numbers in the ground truths come from the corpora and the tools, so
+  grading is exact — answer keywords and expected tool sets are derived, not
+  judged (`tests/test_evals.py::TestSuiteHonesty` and
+  `tests/test_documents.py` pin them).
 - **Graders**: `pydantic-evals` `Evaluator` subclasses — `AnswerSuccess`
   (all expected keywords present), `ToolSelection` (exact tool-set equality),
   `StepBudget`, `LatencyBudget`. No model in the judge → the `evaluate` DVC
   stage is fully offline.
-- **Cost/latency**: token usage is accumulated per node from `result.usage`;
-  per-task latency is wall time. Cost is reported at a reference rate card
-  (local Ollama is $0; the rate card answers "what would this cost hosted").
+- **Cost/latency**: token usage is accumulated per node from `result.usage`
+  and traced per node (`StepTrace`); per-task latency is wall time. Cost is
+  reported at a cloud-equivalent reference rate card (local inference is $0;
+  the rate card answers "what would this cost hosted").
 - **Stages**: `run` (live LLM) and `evaluate` (offline grading) are separate
   DVC stages so grading is reproducible without a provider.
 
@@ -76,6 +79,60 @@ a bounded 3-attempt retry (`run_agent_with_retries`); the Execute node's
 existing repair path sits on top of that. Worst case per task is statically
 bounded: 3 attempts × (1 + max_execute_retries) executes + bounded critique loop.
 
+### Hosted provider (Kimi Code membership endpoint)
+
+Any OpenAI-compatible endpoint works through the same branch (ADR-0004 env
+provider). For the hosted Kimi coding endpoint (`https://api.kimi.com/coding/v1`,
+model `kimi-for-coding`) the platform preset applies automatically when a
+hosted provider is configured:
+
+- **Thinking disabled** (`hosted_model_settings()`): `extra_body={"thinking":
+  {"type": "disabled"}}` — the big token saving; without it the model always
+  reasons and reasoning tokens bill as output.
+- **Temperature omitted**: the endpoint rejects explicit values (both 0 and 1
+  with thinking disabled); the preset sets none. This project never passes a
+  temperature — determinism comes from the typed contracts and canned tools.
+- Every model construction routes through `provider_model_settings()`, and the
+  suite's env file resolves at the monorepo root, so the hosted branch works
+  from any working directory. An equivalent local preset is LM Studio
+  (`LLM_BASE_URL=http://localhost:1234/v1`, `LLM_API_KEY=lm-studio`): any
+  OpenAI-compatible local server rides the same branch, priced at $0 by the
+  ledger's local rate card. Ollama needs no env at all.
+
+### Cost metering and budget caps
+
+Costs are **labelled cloud-equivalent estimates** ($1.00/Mtok input,
+$4.00/Mtok output — the public kimi-k2.8-preview reference card): the hosted
+key is membership-quota, not pay-per-token, so nothing is a billed amount
+(`portfolio_core.llm_budget`).
+
+- `run-all` resets the process ledger at suite start and caps it at
+  `LLM_SUITE_COST_LIMIT_USD` ($2.00): crossing it records the current task as
+  `budget_exceeded` and aborts the remaining tasks cleanly.
+- A per-task cap (`task_cost_limit_usd` in `params.yaml`, $0.25) is enforced by
+  the meter callback wired into every node: the node result is recorded, then
+  `TaskBudgetError` aborts the task; the suite continues with the next task.
+- `budget_limits()` (hosted request/token `UsageLimits`) is forwarded to every
+  live model call. The USD caps live in the ledger, not `UsageLimits.cost_limit`
+  (genai-prices has no card for `kimi-for-coding` — see llm_budget's design
+  note).
+- Every node also appends a `StepTrace` (`node`, `input_tokens`,
+  `output_tokens`, `latency_s` from `perf_counter`) to the run record, so the
+  cost/latency profile is inspectable per node, not just per task.
+
+### Cross-project retrieval (real-data arm)
+
+`search_documents` extends the research toolset with dense retrieval over
+project 01's Wikipedia slice: the persisted FAISS index + chunk metadata under
+`projects/01-rag-agent/data/index/chunks_200` are loaded **read-only** via
+`rag_agent.index` (a workspace dependency) — no re-indexing, no writes under
+01's data dir. The same MiniLM embedding model that built the index embeds the
+query; results are formatted "chunk_id | title — excerpt" with 600-char
+excerpts so a single snippet carries its key fact. Suite task t15 grades a
+multi-hop lookup across two articles (Wright brothers → 1903; Wind power →
+2022; the gap is 119 years) with the same deterministic graders as the
+synthetic tasks.
+
 ## Decision
 
 Graph-per-node (option 2) with deterministic evals and disk-serialized HITL
@@ -86,3 +143,10 @@ checkpoints; toolsets composed via `FunctionToolset` + `PrefixedToolset`.
 - 2026-10-14 — Initial build: tools/toolsets, Plan→Execute→Critique graph,
   HITL checkpointing, 14-task suite with pydantic-evals graders, CLI + DVC
   stages, real run on qwen3:32b.
+- 2026-10-17 — Hosted-provider wave: per-node step traces (`StepTrace`) in run
+  records; spend-ledger budget wiring (suite cap $2.00, per-task cap $0.25,
+  `budget_limits` on every call, totals in the CLI); hosted preset routing
+  through `provider_model_settings()`; full 15-task hosted run on
+  `kimi-for-coding` (thinking disabled); `cost_latency_bars` figure;
+  `search_documents` cross-project retrieval over 01's Wikipedia index
+  (read-only) with suite task t15; LM Studio documented as the local preset.

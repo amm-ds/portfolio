@@ -8,6 +8,8 @@ techniques:
 - pydantic-graph
 - HITL
 - pydantic-evals
+- cross-project RAG retrieval
+- LLM cost budgeting
 data: Public tool-using benchmarks + synthetic task suites
 status: working
 order: 9
