@@ -13,7 +13,7 @@ const GO_LINKS = [
   {
     to: "/projects",
     label: "projects",
-    line: "7 reproducible case studies — metrics, interactive figures, published pipelines.",
+    line: "10 reproducible case studies — metrics, interactive figures, published pipelines.",
   },
   {
     to: "/services",
@@ -59,7 +59,7 @@ export function Home() {
         <h1>Data Scientist &amp; ML Engineer</h1>
         <p className="hero-sub">
           I build ML/AI systems end to end — from data contracts and reproducible pipelines
-          to honest evaluation and production deployment — and I keep the working code and
+          to measured evaluation and production deployment — and I keep the working code and
           case studies public. Location-independent; open to freelance and contract work.
         </p>
         <HeroTerminal />

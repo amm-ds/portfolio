@@ -1,11 +1,18 @@
-# NLP Classification with Transformers
+# 04 · NLP Classification with Transformers
 
 **Domain:** Deep learning NLP · **Data:** AG News (real, HuggingFace `fancyzhx/ag_news`) ·
 **Status:** Working showcase
 
+> Newsrooms, aggregators, and compliance teams routing a continuous stream of
+> headlines need topic triage that keyword rules break on at the first
+> unfamiliar wording. A full-data DistilBERT fine-tune on a laptop GPU
+> reaches **0.9460 test macro-F1**, ~7.5 pp above the strong TF-IDF baseline.
+>
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
+
 Fine-tuned transformers vs. a TF-IDF + LogisticRegression baseline on news topic
 classification — with a hand-written PyTorch training loop, an Optuna HPO stage
-(seeded TPE, median pruning), a second encoder candidate, and honest model
+(seeded TPE, median pruning), a second encoder candidate, and audited model
 selection, plus a full 120k fine-tune on Apple-Silicon MPS.
 
 ## Key results
@@ -14,6 +21,10 @@ selection, plus a full 120k fine-tune on Apple-Silicon MPS.
 (laptop GPU, seed 42, 2 epochs, val macro-F1 0.9433 → 0.9464 during training)
 reaches **0.9460 test macro-F1** on the same untouched 1,000-row stratified
 test split as every other run, at ~18–27 min/epoch measured.
+
+*How to read: every run is scored on the same untouched 1,000-row stratified
+test split; rows are historical rungs of one scaling ladder, not separate
+experiments; bold = headline.*
 
 | Run | Accuracy | F1 macro |
 |---|---|---|

@@ -1,4 +1,16 @@
-# 03 — Anomaly Detection over Telemetry
+# 03 · Anomaly Detection over Telemetry
+
+**Domain:** anomaly detection / systems monitoring · **Data:** Numenta Anomaly
+Benchmark (12 series; seeded synthetic telemetry as the labelled CI fast path;
+NSL-KDD transfer probe) · **Status:** working showcase
+
+> On-call engineers pay for missed incidents in outage multiples and for
+> false pages in alert fatigue — the detector choice is a budget question.
+> On real NAB telemetry the champion finds 16 of 17 labelled events (range
+> recall 0.729), but at 0.107 range precision the firehose is the remaining
+> problem.
+>
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection)
 
 Unsupervised anomaly detection, **real data first**: 12 series from the
 [Numenta Anomaly Benchmark](https://github.com/numenta/NAB) (AWS CloudWatch,
@@ -16,6 +28,10 @@ and [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomal
 detector-failure and real-vs-synthetic analysis.
 
 ## NAB headline (event-based, 9 of 12 series evaluable)
+
+*How to read: PR-AUC rewards alerts inside labelled windows; range-F1 scores
+whole events; "events" = detected/total with the alert count at a fixed 2%
+budget; bold = overall champion.*
 
 | family | PR-AUC | range-F1 | range prec./rec. | events |
 |---|---|---|---|---|
@@ -37,10 +53,8 @@ rescue; LOF's local-density blindness is structural and tuning-resistant.
 - Probes: `reports/detect.json` (adaptive stream), `reports/residual_probe.json`,
   `reports/nsl_probe.json`
 - Evaluation report: `reports/report.html`
-- Figures (`reports/figures/`): `nab_timelines`, `nab_score_distribution`,
-  `nab_alert_budget`, `eda_signals_overview`, `roc_curves`, `pr_curves`,
-  `telemetry_flags`, `score_distribution`, `threshold_sweep`, `hpo_importance`,
-  `adaptive_stream` (HTML + JSON for the showcase API)
+- Figures: interactive versions live in the [showcase app case study](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection);
+  static artifacts (HTML + JSON) in `reports/figures/`
 - DQ report: `reports/dq_report.html` — 8/8 gates passing
 
 ## Pipeline

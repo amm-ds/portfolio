@@ -39,7 +39,7 @@ figure until it reads well is exactly the kind of loop agents are good at.
 ## Where that leaves the judgment
 
 The parts of this portfolio that are hard to fake — dataset selection,
-leakage-free validation design, baseline honesty, deciding which result is
+leakage-free validation design, baseline discipline, deciding which result is
 the headline — are the parts I did. The code is real, the tests run, the
 numbers regenerate from `dvc repro`, and every claim on this site traces to
 a committed artifact. If you want to probe the difference, start with the

@@ -1,23 +1,35 @@
-# LLM Inference & Serving
+# 08 · LLM Inference & Serving
 
-**Working showcase.** The portfolio's LLM inference & serving benchmark — both
-external audits' #1 recommendation. An async load driver measures the real
-serving stack (local Ollama's OpenAI-compatible endpoint, ADR-0004 — no
-redundant gateway, see the project's DESIGN.md) across models,
-quantizations, runners, and concurrency levels, on a fixed structured-output
-task with validated schemas.
+**Domain:** LLM Systems · **Data:** fixed 8-prompt structured-output
+benchmark (synthetic task, no download) · **Status:** working showcase on
+the standard platform
+
+> Anyone deciding between local and cloud LLM serving usually gets vendor
+> rate cards, not measurements of the stack they would actually run.
+> Headline: the 4-bit MoE arm serves locally at ~$0.12 per 1M output tokens
+> with single-digit-second p95 through concurrency 8 — measured on the real
+> endpoint, 760 requests, zero failures.
+>
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/08-inference-serving)
+
+Every project in this portfolio serves LLMs through one local Ollama
+endpoint (ADR-0004 — no redundant gateway, see the project's DESIGN.md), and
+this benchmark is where that stack gets measured — both external audits' #1
+recommendation. An async load driver exercises models, quantizations,
+runners, and concurrency levels on a fixed structured-output task with
+validated schemas, so the numbers describe real traffic, not a lab proxy.
 
 ## Key results (real run, Ollama 0.40.4, Apple-Silicon Mac, 128 GB unified memory)
 
-These numbers are a single **author run** on one machine — they are **not
-committed to the repo** and are not universal. Regenerate on your hardware
-with `bench --full && report` and compare cell-for-cell.
-
 Full run: 19 cells, **760 requests, zero failures, schema-valid rate 1.00 and
 keyword-quality 1.00 in every cell** (8 fixed prompts x 5 repeats per cell,
-`temperature 0`, `max_tokens 128`, reasoning disabled).
+`temperature 0`, `max_tokens 128`, reasoning disabled). One caveat before
+reading on: these numbers are a single **author run** on one machine — **not
+committed to the repo** and not universal. Regenerate on your hardware with
+`bench --full && report` and compare cell-for-cell.
 
-Headline (p95 latency / aggregate output tok/s per cell):
+How to read this table: each cell shows p95 latency in seconds / aggregate
+output tok/s for that model at the given concurrency.
 
 | model | runner | c=1 | c=4 | c=8 |
 |---|---|---|---|---|

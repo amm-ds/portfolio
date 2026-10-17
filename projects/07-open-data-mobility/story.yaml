@@ -22,7 +22,9 @@ sections:
 
       This project builds that forecast from the ground up on **real,
       messy, public data** — not a clean Kaggle extract — and quantifies
-      how much weather moves the numbers a planner would act on.
+      how much weather moves the numbers a planner would act on: on a strict
+      future holdout the model removes 28.4% of forecast error vs "same hour
+      last week".
 
       **Business implication:** an hour-ahead, zone-level demand signal
       turns fleet staging and driver shifts from guesswork into a
@@ -33,7 +35,7 @@ sections:
   - id: objectives
     text_md: |
       The target is **next-hour pickup demand for every NYC taxi zone**
-      (265 zones), with two model families and an honest uncertainty band,
+      (265 zones), with two model families and a calibrated uncertainty band,
       answering two business questions: how much better than "same hour
       last week" do modern models get, and what does rain do to curb
       demand?
@@ -41,7 +43,7 @@ sections:
       - **Point forecast plus buffer:** a GBM mean plus a calibrated
         **p90 upper band** per zone-hour — the number a dispatcher can
         staff against.
-      - **Honest weather claims:** every weather statement is labelled
+      - **Weather claims:** every weather statement is labelled
         directional, not causal.
       - **Success gates:**
 
@@ -57,7 +59,7 @@ sections:
 
       **Business implication:** the client gets a staffing decision —
       expected demand plus how many extra vehicles to hold each hour —
-      plus an honest read on what rain does and does not tell you.
+      plus a straight read on what rain does and does not tell you.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
@@ -79,7 +81,7 @@ sections:
         [data-registry/noaa-ghcn](https://amm-ds.github.io/portfolio/data-registry/noaa-ghcn/).
 
       The bounded slice — one vehicle class, one city, one year — is the
-      declared laptop-friendly boundary: large enough to be honest about
+      declared laptop-friendly boundary: large enough to be credible at real
       scale, small enough to re-run in minutes.
 
       **Business implication:** every input is licensed for commercial use
@@ -157,7 +159,7 @@ sections:
   - id: evaluation
     text_md: |
       Holdout: **October–December 2024** (584,855 zone-hours), a pure
-      temporal split so drift is priced in honestly; every model is
+      temporal split so drift is priced in by design; every model is
       compared against **naive lag-24 persistence** (same hour last week).
 
       - **Metric set:** MAE/RMSE/MAPE overall and per borough
@@ -167,12 +169,13 @@ sections:
       - **Leak-proof tuning:** Optuna saw only the last expanding-window
         validation fold (24 h embargo, train side); the test window is
         never touched.
-      - **Protocol honesty:** scoring the most recent quarter — not a
+      - **Deployment-shaped protocol:** scoring the most recent quarter — not a
         random shuffle — is the closest analogue to deploying forward.
 
-      That question does not stop at delivery: the scheduled Thursday
-      `drift-observatory` workflow (`.github/workflows/drift-observatory.yml`)
-      scores each newly published TLC month against the **persisted serving
+      That question does not stop at delivery: monitoring is running software,
+      not a runbook. The scheduled Thursday `drift-observatory` workflow
+      (`.github/workflows/drift-observatory.yml`) scores each newly published
+      TLC month against the **persisted serving
       model** (`mobility.cli drift-check --month YYYY-MM`, reports in
       `reports/drift/`): light DQ gates, training-identical features, MAE
       vs the pinned test baseline; beyond the ±15% tolerance it exits 1
@@ -204,7 +207,7 @@ sections:
 
       MASE 1.0 = persistence parity; served GBM 0.76 (`gbm_vs_nn`).
 
-      - **GBM tuning was honest but flat:** tuned ≈ defaults within noise —
+      - **GBM tuning was flat:** tuned ≈ defaults within noise —
         tuning will not rescue weak features.
       - **Challengers lost on validation:** beat the incumbent on the Q4
         test (xgb −4.1% MAE) but lost on embargoed validation —
@@ -214,7 +217,7 @@ sections:
         84.7% under-cover (flagged, not filled); Staten Island 98.5%.
       - **Importance is temporal** (`gbm_feature_importance`): lag_168 0.80
         > lag_24 0.64 > lag_1 0.55 > hour 0.32; weather ≈ 0 for point MAE —
-        an honest negative result; the payoff is the elasticity signal
+        a negative result, reported not hidden; the payoff is the elasticity signal
         (`weather_elasticity`): rain ≥1 mm drops outer-borough demand 7–10%
         (Queens 0.92×, Staten Island 0.93×), Manhattan holds 0.97×, EWR
         rises 1.08× — directional, not causal.
@@ -229,7 +232,7 @@ sections:
       hour last week"; the 90.8%-calibrated p90 band yields a defensible
       buffer of extra vehicles per hour — except flagged sparse N/A zones,
       where bands run too tight.
-    figures: [gbm_vs_nn, p90_calibration, weather_elasticity, gbm_feature_importance, p90_band, green_transfer, zone_residual_map, zone_fan]
+    figures: [gbm_vs_nn, p90_calibration, p90_band, gbm_feature_importance, weather_elasticity, green_transfer, zone_residual_map, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
   - id: conclusions
@@ -242,7 +245,7 @@ sections:
       - **Data contracts earn trust:** per-month DQ gates caught a 2002
         trip inside a 2024 file and 5–13% null passenger counts before they
         could poison the lag features.
-      - **Baselines keep you honest:** the raw-count NN scored *below*
+      - **Baselines anchor the comparison:** the raw-count NN scored *below*
         persistence until a log1p target transform fixed the loss
         geometry — a one-line change visible only because the naive
         baseline was always in the comparison.

@@ -1,10 +1,24 @@
-# Routing Optimization (VRPTW)
+# 06 · Routing Optimization (VRPTW)
 
 **Domain:** combinatorial optimization ·
 **Data:** CVRPLIB Solomon VRPTW benchmark (all 56 100-customer instances) ·
+**Status:** working showcase —
 [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization) ·
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)
+
+> **TL;DR:** fleet operators running last-mile and field-service routes, where
+> every percent of distance is fuel, driver hours and CO₂, every day.
+> The solver ladder lands **4.23%** from published best-known optima on all 56
+> Solomon instances, in auditable seeded code.
+>
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
+
+Fleet operators routing last-mile and field-service vehicles leave fuel,
+driver hours and CO₂ on the table every day. This project answers with a
+deterministic, seeded solver ladder that lands within 4.23% of published
+best-known optima on the full Solomon benchmark — and states exactly what the
+remaining gap costs:
 
 A deterministic, seeded solver ladder for the vehicle routing problem with
 time windows — randomized floor, nearest neighbor, Clarke–Wright savings,
@@ -15,6 +29,10 @@ solutions on the full Solomon benchmark. Every solution is machine-validated
 (exactly-once service, capacity, time windows) before reporting.
 
 ## Key results (real run, seed 42, 56 instances)
+
+How to read this table: mean gap to published best-known distance, lower is
+better; the benchmark's vehicles-first ranking is reported alongside the gap
+(see the story results).
 
 | solver | mean gap to best-known | mean runtime |
 |---|---|---|
@@ -33,17 +51,11 @@ benchmark's vehicles-first ranking it wins 43/56 intra-ladder with a mean of
 is an incumbent-improvement probe, not an independent baseline: it ended
 UNKNOWN on all 56 within its 10 s budget and returned the ALNS plan
 unchanged, while certifying small subproblems to optimality (25-customer
-C101 prefix: 191.8 in 2.9 s). Artifacts in
-`projects/06-routing-optimization/reports/`:
-
-- `figures/eda_instance_map.html` — C101 customers colored by time-window tightness
-- `figures/route_map_C101.html` — best C101 plan (ALNS: 11 vehicles)
-- `figures/family_gap.html` — mean gap + vehicle delta per Solomon family per solver
-- `figures/solver_profile.html` — the solver ladder per instance
-- `figures/convergence_C101.html` / `convergence_RC105.html` — 2-opt descent
-- `figures/alns_convergence_C101.html` / `alns_convergence_RC105.html` — ALNS descent
-- `figures/gap_pct.html` / `figures/pareto_gap_runtime.html` / `figures/runtime.html`
-- `results.md` / `metrics.json` / `report.html` — full tables (per-instance + per-family)
+C101 prefix: 191.8 in 2.9 s). All artifacts live in
+`projects/06-routing-optimization/reports/`: interactive figures (instance
+maps, per-family gaps, convergence descents, runtime-vs-gap Pareto) with
+`results.md` / `metrics.json` / `report.html` for the full per-instance and
+per-family tables — interactive versions in the [interactive case study](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization).
 
 ## Roadmap
 

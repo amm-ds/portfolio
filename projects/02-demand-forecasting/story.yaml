@@ -191,7 +191,7 @@ sections:
       Headline numbers are the real UCI track (1,084 intermittent series, 4
       folds; MAE/MASE lead, MAPE is not decision-grade at 89% zeros).
       `forecast_vs_actual` and the real-track `forecast_fan` show the
-      champion vs the strongest naive on example series:
+      champion against the strongest naive:
 
       | run | MAE | MASE |
       |---|---|---|
@@ -228,14 +228,15 @@ sections:
         MAE 746.9 → 737.9 (`coherence_heatmap`, `reconciliation_coherence`);
         synthetic chose w=0.05 — the fold-4-drifting parent is barely
         trusted.
-      - **Probabilistic bands miss the target honestly** — 80% coverage 0.73
+      - **Probabilistic bands miss the target** — 80% coverage 0.73
         synthetic / 0.92 UCI, conformal degenerating to q80 = 0 on
         zero-heavy residuals (`probabilistic_band`).
 
-      **Business implication:** on real transactions the tuned HGB beats the
-      strongest floor (seasonal naive) by 8.8% MAE — modest, because on
-      intermittent demand the honest competitor is "same day last week"; a
-      config tuned on clean data does not port over.
+      **Business implication:** switch replenishment to the tuned HGB and
+      planning works with 8.8% less absolute error than the "same day last
+      week" rule — less safety stock for the same service level — but
+      re-tune on your own panel first: this winning config does not port
+      across demand regimes.
     figures: [metrics_bars, forecast_vs_actual, forecast_fan, coherence_heatmap, reconciliation_coherence, probabilistic_band]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 
@@ -254,7 +255,7 @@ sections:
         bounded by how much the parent model can be trusted (w=0.05
         synthetic vs 0.70 on UCI).
 
-      Honest limits: gains over persistence are stable but bounded by
+      Limits: gains over persistence are stable but bounded by
       day-over-day noise (~8.5 units residual MAE on the synthetic ladder);
       the neural model does not pay off on small tabular lag features; later
       folds drift upward for every model, which the
@@ -278,7 +279,7 @@ roadmap:
   - status: delivered
     text: Probabilistic forecasts shipped — quantile HGB p10/p50/p90 + split-conformal band, empirical coverage vs the 80% target (0.73 synthetic / 0.92 UCI) with the probabilistic_band figure.
   - status: delivered
-    text: Hierarchical reconciliation (MinT-lite) shipped — data-chosen shrinkage w (0.05 synthetic, 0.70 UCI), property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI); accuracy effect reported honestly.
+    text: Hierarchical reconciliation (MinT-lite) shipped — data-chosen shrinkage w (0.05 synthetic, 0.70 UCI), property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI); accuracy effect reported alongside.
   - status: delivered
     text: Statistical baselines + MASE (audit-driven) — seasonal_naive (lag-7) and per-series damped Holt-Winters ETS with documented fallbacks on both tracks; MASE on every run; fan/coherence figures. ETS wins synthetic outright (8.110), loses to its own seasonal naive on UCI (11.26 vs 9.86) — both reported.
   - status: deferred
