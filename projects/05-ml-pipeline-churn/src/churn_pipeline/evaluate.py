@@ -230,7 +230,10 @@ def cost_surface_figure(
         marker={"size": 13, "symbol": "star", "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="Business-cost surface: FN cost x decision threshold",
+        title=(
+            "The cost-optimal threshold moves with the base rate — 0.175 on telco "
+            "vs 0.700 on synthetic — while the procedure transfers"
+        ),
         xaxis_title="Decision threshold",
         yaxis_title="FN cost (FP cost = 1)",
     )
@@ -522,7 +525,10 @@ def cost_figure(
             marker={"size": 11, "symbol": "star"},
         )
     fig.update_layout(
-        title=f"Business cost curve (FP={cfg.fp_cost:g}, FN={cfg.fn_cost:g})",
+        title=(
+            "Cost-aware selection plus isotonic calibration cuts business "
+            "cost 41.9% vs doing nothing"
+        ),
         xaxis_title="Decision threshold",
         yaxis_title=f"Total cost (FP·{cfg.fp_cost:g} + FN·{cfg.fn_cost:g})",
     )

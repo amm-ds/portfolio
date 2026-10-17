@@ -84,7 +84,10 @@ def fig_zone_demand_map(demand: pl.DataFrame) -> go.Figure:
     fig = _choropleth(
         gdf,
         means,
-        "NYC taxi demand geography — mean pickups per zone-hour (2024)",
+        (
+            "Zone-hour demand concentrates in Midtown/Manhattan cores and the "
+            "JFK/EWR airports — the 265-zone grid is far from flat"
+        ),
         "Teal",
         "pickups/h",
     )

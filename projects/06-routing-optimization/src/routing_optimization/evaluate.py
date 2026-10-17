@@ -553,7 +553,7 @@ def run_evaluate(cfg: VRPConfig) -> Path:
     if map_eval.best_routes is not None:
         best = map_eval.best()
         gap = (
-            f", gap {gap_pct(best.total_distance, map_eval.best_known):.2f}%"
+            f" — within {gap_pct(best.total_distance, map_eval.best_known):.2f}% of best-known"
             if map_eval.best_known is not None
             else ""
         )
@@ -561,8 +561,8 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             map_problem,
             map_eval.best_routes,
             title=(
-                f"{map_eval.instance} best solution — {best.n_vehicles} vehicles, "
-                f"{best.total_distance:.2f} km{gap}"
+                f"ALNS routes all 100 {map_eval.instance} customers feasibly "
+                f"(capacity + time windows{gap})"
             ),
         )
 

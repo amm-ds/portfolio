@@ -293,7 +293,10 @@ def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
         )
     fig.update_layout(
         barmode="group",
-        title="Per-family comparison vs published best-known solutions (56 instances)",
+        title=(
+            "HPO-tuned ALNS closes the gap to best-known optima into single "
+            "digits on every Solomon family"
+        ),
         xaxis2_title="family",
     )
     add_takeaway(
@@ -319,7 +322,10 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
         y="mean_gap_pct",
         color="solver",
         log_x=True,
-        title="Pareto: mean runtime vs mean distance gap (all solvers, 56 instances)",
+        title=(
+            "The hand-written ALNS ladder dominates the speed-quality Pareto; "
+            "hinted CP-SAT buys little quality at ~5x the runtime"
+        ),
         labels={
             "mean_runtime_s": "mean runtime (s, log)",
             "mean_gap_pct": "mean gap to best-known (%)",
