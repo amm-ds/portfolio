@@ -130,7 +130,7 @@ export function Services() {
           records, evaluation harnesses, runbooks) that keep them operable.
         </p>
         <p>
-          Every engagement is backed by public, reproducible case studies — honest baselines
+          Every engagement is backed by public, reproducible case studies — measured baselines
           and documented decisions. If it is worth saying, it is worth showing working code.
         </p>
       </section>
