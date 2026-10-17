@@ -43,6 +43,25 @@ validation macro-F1 (0.8880 → 0.8953) but gains sat inside seed noise
 (mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
 honesty rule kept the original artifact as `distilbert_tuned`.
 
+**Serving economics** (measured on this machine — Apple M4 Max, CPU, torch
+2.14.1, 12 threads; batch=1 end-to-end, n=200 predictions per variant; cost
+at a declared $1/M-input + $4/M-output rate card, ~51.5 in + ~3.5 out
+tokens per prediction; accuracy from the committed test-split metrics,
+int8 measured on a 2000-row train sample):
+
+| Variant | Size (MB) | p50 latency (ms) | Throughput (pred/s) | Cost ($/1k preds) | Accuracy | F1 macro |
+|---|---|---|---|---|---|---|
+| `tfidf_logreg` | 0.5 | 0.2 | 4477.8 | 0.0000 | 0.8720 | 0.8714 |
+| `distilbert_tuned` fp32 (bounded) | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9020 | 0.9021 |
+| `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
+| `distilbert_full_120k` int8 (dynamic) | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
+
+Dynamic int8 (`torch.quantization.quantize_dynamic`, qnnpack on arm64)
+halves model size with no measured quality loss (sample macro-F1 0.9627 →
+0.9637, Δ +0.0010) but is slower than fp32 at batch=1 on Apple Silicon —
+quantization buys memory, not speed, here. Data:
+`projects/04-nlp-classification/reports/latency_probe.json`.
+
 ![The full 120k DistilBERT fine-tune climbs to 0.946 macro-F1 on the test split within two epochs](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
 
 Temperature
