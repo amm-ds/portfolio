@@ -38,7 +38,7 @@ FIGURES: dict[str, tuple[str, str, str]] = {
 # (docs/projects/<id>.md): project dir → figure stems, in page order.
 DOCS_FIGURES: dict[str, tuple[str, ...]] = {
     "01-rag-agent": ("chunk_size_sweep", "failure_taxonomy"),
-    "02-demand-forecasting": ("forecast_vs_actual", "metrics_bars"),
+    "02-demand-forecasting": ("reports_uci/figures/forecast_vs_actual", "metrics_bars"),
     "03-anomaly-detection": ("nab_timelines",),
     "04-nlp-classification": ("confusion_matrix_selected", "training_curve"),
     "05-ml-pipeline-churn": ("business_cost_curve", "cost_surface"),
@@ -79,7 +79,12 @@ def main() -> None:
     for project, stems in DOCS_FIGURES.items():
         out_dir = ASSETS / "projects" / project
         for stem in stems:
-            src = REPO / "projects" / project / "reports" / "figures" / f"{stem}.json"
+            # Stems containing "/" are project-relative paths (e.g. the UCI
+            # track's figures live under reports_uci/figures/).
+            if "/" in stem:
+                src = REPO / "projects" / project / f"{stem}.json"
+            else:
+                src = REPO / "projects" / project / "reports" / "figures" / f"{stem}.json"
             if not src.exists():
                 print(f"SKIP {project}/{stem} — artifact missing (run the project's pipeline)")
                 continue

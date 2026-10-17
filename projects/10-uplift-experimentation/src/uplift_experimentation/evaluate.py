@@ -250,23 +250,36 @@ def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figur
         x=read["breakeven_cost_per_email"],
         line_dash="dot",
         line_color="#64748b",
-        annotation_text=f"break-even ${read['breakeven_cost_per_email']:.2f}/email",
+        annotation_text=f"break-even {read['breakeven_cost_per_email']:.2f} USD/email",
         annotation_position="top left",
     )
     apply_theme(fig)
     style_runs(fig, best=read["best_policy"])
+    title = (
+        f"Above ≈{read['breakeven_cost_per_email']:.2f} USD/email the targeted "
+        f"top-{read['policy_budget']:.0%} policy beats mail-everyone"
+    )
+    half = next((r for r in read["rows"] if abs(r["cost_per_email"] - 0.5) < 1e-9), None)
+    if half is not None:
+        profit_max = half["profit_at_max"]
+        profit_all = half["profit_mail_everyone"]
+
+        def _signed(v: float) -> str:
+            return f"-{abs(v):,.0f}" if v < 0 else f"{v:,.0f}"
+
+        title += f" — {_signed(profit_max)} vs {_signed(profit_all)} USD at 0.50/email"
     fig.update_layout(
-        title="Cost sensitivity — when does targeted top-k beat mail-everyone?",
-        xaxis_title="cost per email ($, log scale)",
-        yaxis_title="profit ($)",
+        title=title,
+        xaxis_title="cost per email (USD, log scale)",
+        yaxis_title="profit (USD)",
         xaxis_type="log",
         legend={"orientation": "h", "y": -0.2},
     )
     add_takeaway(
         fig,
-        f"At ${cfg.cost_per_email:.2f}/email mail-everyone wins on raw profit; the top-"
+        f"At {cfg.cost_per_email:.2f} USD/email mail-everyone wins on raw profit; the top-"
         f"{read['policy_budget']:.0%} policy overtakes once sends cost more than "
-        f"${read['breakeven_cost_per_email']:.2f} each (fatigue/list-wear pricing).",
+        f"{read['breakeven_cost_per_email']:.2f} USD each (fatigue/list-wear pricing).",
     )
     return fig
 
@@ -379,7 +392,10 @@ def qini_figure(
                 hoverinfo="skip",
             )
     fig.update_layout(
-        title="Qini curves — incremental conversions vs targeted fraction",
+        title=(
+            "The response model posts the highest Qini area, but its paired "
+            "difference CI spans zero — the ranking is not established"
+        ),
         xaxis_title="fraction of customers targeted (top scores first)",
         yaxis_title="incremental conversions",
         legend={"orientation": "h", "y": -0.2},
@@ -435,10 +451,13 @@ def profit_figure(
     apply_theme(fig)
     style_runs(fig, best="x_learner")
     fig.update_layout(
-        title="Profit frontier under the campaign cost model",
+        title=(
+            "Top-25% T-learner beats random by +2,812 USD (+69%); "
+            "mail-everyone is the profit maximum at 0.01 USD/email"
+        ),
         xaxis_title="budget fraction (share of customers emailed)",
-        yaxis_title=f"profit (revenue ${cfg.revenue_per_conversion:.0f}/conversion, "
-        f"${cfg.cost_per_email:.2f}/email)",
+        yaxis_title=f"profit (revenue {cfg.revenue_per_conversion:.0f} USD/conversion, "
+        f"{cfg.cost_per_email:.2f} USD/email)",
         legend={"orientation": "h", "y": -0.2},
     )
     add_takeaway(

@@ -246,7 +246,9 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
             mode="lines",
             line={"dash": "dot"},
         )
-    fig.update_layout(title=f"Actual vs forecast — last CV fold ({model} vs {naive})")
+    fig.update_layout(
+        title=f"{model} clears the {naive} floor by {reduction:.0%} MAE — last CV fold"
+    )
     # platform storytelling convention: naive floor demoted, best run promoted
     style_runs(fig, best=model)
     add_takeaway(
@@ -260,7 +262,17 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
 def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     """Grouped bar chart of MAE / RMSE / MAPE across all runs (naives included)."""
     fig = RunComparison(result.runs).figure()
-    fig.update_layout(title="Per-model metrics (pooled out-of-fold)")
+    n_below = sum(
+        1
+        for r in result.runs
+        if (m := next((x for x in r.metrics if x.name == "mase"), None)) is not None and m.value < 1
+    )
+    fig.update_layout(
+        title=(
+            f"{n_below} run(s) clear the seasonal-naive floor (MASE < 1) — "
+            "pooled out-of-fold ladder"
+        )
+    )
     return fig
 
 

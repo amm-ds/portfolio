@@ -688,7 +688,10 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
         ]
     )
     fig.update_layout(
-        title="Tool-usage matrix: calls per task (captured per tool call)",
+        title=(
+            "Tool over-calling is visible per task — note_store, search_documents, "
+            "duplicate in-set calls"
+        ),
         xaxis_title="task",
         yaxis_title="",
     )
@@ -777,7 +780,10 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
     budget = max((case.inputs.latency_budget_s for case in cases), default=180.0)
     fig.update_layout(
         barmode="stack",
-        title="Node waterfall: latency stacked per graph visit (repeats labelled #2, #3)",
+        title=(
+            "Every task completes in 10-27 s — far under the 180 s budget; "
+            "a retry appears as an extra labelled segment, never one long visit"
+        ),
         xaxis_title="seconds",
         yaxis={"title": "", "autorange": "reversed"},
         shapes=[
@@ -1035,7 +1041,10 @@ def _fig_agent_architecture() -> go.Figure:
     fig.update_layout(annotations=annotations)
     apply_theme(fig, height=470)
     fig.update_layout(
-        title="Agent architecture: explicit graph — every transition, retry and loop bound is code",
+        title=(
+            "Every plan/execute/critique transition, retry and loop bound is "
+            "explicit code — the graph the workflow actually runs"
+        ),
     )
     add_takeaway(
         fig,

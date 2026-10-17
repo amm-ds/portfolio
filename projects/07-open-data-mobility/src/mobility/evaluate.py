@@ -329,7 +329,10 @@ def fig_weather_elasticity(by_borough: pl.DataFrame) -> go.Figure:
     )
     fig.add_hline(y=1.0, line_dash="dash", line_color="#f472b6")
     fig.update_layout(
-        title="Weather elasticity: mean hourly pickups, rain (≥1 mm) vs dry, by borough",
+        title=(
+            "Rain cuts outer-borough curb demand 7-10% — Queens 0.92x, Staten Island 0.93x — "
+            "while Manhattan holds at 0.97x and EWR rises 1.08x"
+        ),
         yaxis_title="rain / dry ratio",
     )
     obs = by_borough.drop_nulls("rain_vs_dry_ratio")
@@ -606,7 +609,14 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "p90_band": fig_p90_band(preds),
         "p90_calibration": fig_p90_calibration(coverage_borough),
         "gbm_vs_nn": add_takeaway(
-            RunComparison(runs).figure(metric_names=["mae", "rmse", "mape_pct"]),
+            RunComparison(runs)
+            .figure(metric_names=["mae", "rmse", "mape_pct"])
+            .update_layout(
+                title=(
+                    "The served GBM removes 28.4% of forecast error vs last-week "
+                    "persistence — the neural challenger wins MAPE only"
+                )
+            ),
             f"Best run: {ranking['ranking'][0]} "
             f"(MAE {best_mae:.2f}); naive_lag24 is the grey persistence reference.",
         ),

@@ -253,6 +253,12 @@ sections:
 roadmap:
   - status: delivered
     text: >-
+      Serving endpoint shipped — showcase-API artifact (reports/models/serving)
+      built without retraining: the isotonic-calibrated XGBoost champion plus
+      its cost-optimal threshold t=0.175 (holdout cost 601 at FP=1/FN=5),
+      re-derived from data/holdout.parquet; contract in SERVING.md.
+  - status: delivered
+    text: >-
       Cost-aware HPO — shipped, verified: Optuna study on CV business cost with
       per-trial threshold tuning changed the winner; the cost-HPO model holds the
       holdout cost optimum (601 at t=0.175 after isotonic calibration; four arms raced).

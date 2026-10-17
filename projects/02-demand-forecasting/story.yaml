@@ -272,6 +272,12 @@ sections:
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
+    text: >-
+      Serving endpoint shipped — showcase-API artifact (reports/models/serving)
+      built without retraining: champion lgbm_tuned selected by lowest HPO CV
+      MAE (8.413 vs hgb 8.529 / xgb 8.539) from data/hpo_best*.json, loaded
+      fitted from data/models.pkl; contract in SERVING.md.
+  - status: delivered
     text: XGBoost + LightGBM arms — 25-trial seeded HPO each through the identical backtest. On the synthetic ladder lgbm_tuned tops the ML runs (MAE 8.413 vs hgb_tuned 8.529; xgb_tuned a wash), ETS still best overall (8.110); on the primary UCI track hgb_tuned wins (8.99) and lgbm_tuned falls to 9.60.
   - status: delivered
     text: Optuna HPO (56 seeded trials) — production hgb_tuned config shipped, -1.0% MAE over defaults (8.619 → 8.529 on the synthetic folds), reproducible from data/hpo_best.json.

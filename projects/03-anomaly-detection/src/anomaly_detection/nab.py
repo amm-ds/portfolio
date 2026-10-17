@@ -372,8 +372,12 @@ def nab_figures(
             row=row,
             col=col,
         )
+    n_alerts = sum(int(r["alerts_fired"]) for r in results.values())
     fig.update_layout(
-        title="NAB series — true anomaly windows (shaded) vs. detected alerts (pink x)",
+        title=(
+            "Real NAB telemetry hides labelled incidents in noisy baselines — "
+            f"most of the {n_alerts:,} alerts miss the event windows"
+        ),
         height=1100,
     )
     add_takeaway(fig, "One panel per series: real anomaly windows are contextual, not just spikes.")
