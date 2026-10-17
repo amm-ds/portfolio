@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "FastAPI showcase backend: project index, results/figures, RAG chat (SSE), DQ reports."
 requires-python = ">=3.12"
 dependencies = [
+    "06-routing-optimization",
     "fastapi>=0.115",
     "portfolio-core",
     "portfolio-eval",
@@ -16,6 +17,7 @@ dependencies = [
 showcase-api = "showcase_api.main:app"
 
 [tool.uv.sources]
+06-routing-optimization = { workspace = true }
 portfolio-core = { workspace = true }
 portfolio-eval = { workspace = true }
 
@@ -25,3 +27,12 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/showcase_api"]
+
+[tool.pytest.ini_options]
+# pytest uses this config (not the repo-root one) when the test path is inside
+# this package. Keep the shared import mode; do NOT inherit the root addopts'
+# `--cov=libs` gate — that gate is calibrated for full-suite runs (CI:
+# `uv run pytest`), and these tests transitively import
+# routing_optimization.evaluate, dragging plotting/eval modules into the
+# measured set and failing an 80% libs bar this package cannot satisfy alone.
+addopts = "--import-mode=importlib"
