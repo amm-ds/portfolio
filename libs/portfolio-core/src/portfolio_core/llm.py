@@ -3,8 +3,8 @@
 Production priority:
 1. Configured OpenAI-compatible endpoint via env (``LLM_BASE_URL``/``LLM_API_KEY``,
    e.g. Kimi/Moonshot) — unchanged.
-2. **Local Ollama** (default): ``OLLAMA_MODEL`` (default ``qwen3:32b``) against
-   ``OLLAMA_BASE_URL`` (default ``http://localhost:11434/v1``). Local-first:
+2. **Local Ollama** (default): ``OLLAMA_MODEL`` (default ``qwen3.6:35b-a3b-q4_K_M``)
+   against ``OLLAMA_BASE_URL`` (default ``http://localhost:11434/v1``). Local-first:
    $0 API cost, data never leaves the machine, structured-output support on
    self-hosted Ollama.
 
@@ -13,9 +13,14 @@ pydantic-ai ``FunctionModel`` helpers for unit tests (``mock_model_for_tests``).
 Projects must not ship mock fallbacks in runtime code (owner directive, wave 10).
 """
 
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, cast
 
 from portfolio_core.config import Settings
+
+if TYPE_CHECKING:
+    from pydantic_ai.settings import ModelSettings
 
 
 class LLMProviderUnavailableError(RuntimeError):
@@ -76,10 +81,57 @@ def build_model(settings: Settings | None = None) -> Any:
 
     raise LLMProviderUnavailableError(
         "No LLM provider available. Either start Ollama (https://ollama.com) and "
-        "`ollama pull qwen3:32b`, or set LLM_BASE_URL + LLM_API_KEY in .env "
+        "`ollama pull qwen3.6:35b-a3b-q4_K_M`, or set LLM_BASE_URL + LLM_API_KEY in .env "
         "(see .env.example). Mock providers are test-only and intentionally not "
         "available at runtime."
     )
+
+
+def is_hosted_provider(settings: Settings | None = None) -> bool:
+    """True when a hosted OpenAI-compatible endpoint is configured (LLM_API_KEY set)."""
+    from portfolio_core.config import get_settings
+
+    s = settings or get_settings()
+    return bool(s.llm_api_key and s.llm_base_url)
+
+
+def hosted_model_settings() -> ModelSettings:
+    """ModelSettings preset for the hosted Kimi coding endpoint.
+
+    Empirically probed against ``https://api.kimi.com/coding/v1`` (wave 10):
+
+    - Sampling is fixed server-side: ``temperature: 0`` is rejected
+      ("only 1 is allowed"), and with thinking disabled even ``temperature: 1``
+      is rejected ("only 0.6 is allowed for this model"). The only universally
+      safe choice is to OMIT temperature — pydantic-ai omits unset keys from the
+      request, so this preset sets none. Projects that currently pass
+      ``temperature=0`` must merge via :func:`neutralize_hosted_model_settings`.
+    - Thinking CAN be disabled: ``extra_body={"thinking": {"type": "disabled"}}``
+      is accepted, drops ``reasoning_content`` and reasoning token burn. Without
+      it the model always thinks (reasoning tokens are billed as output).
+    """
+    from pydantic_ai.settings import ModelSettings
+
+    return ModelSettings(extra_body={"thinking": {"type": "disabled"}})
+
+
+def neutralize_hosted_model_settings(settings: ModelSettings) -> ModelSettings:
+    """Return a copy of ``settings`` safe for the hosted Kimi coding endpoint.
+
+    Removes any ``temperature`` key (the endpoint fixes sampling and rejects
+    explicit values) and merges in the thinking-disable body, preserving any
+    caller-supplied ``extra_body`` entries.
+    """
+    existing_extra_body = settings.get("extra_body")
+    merged_extra_body: dict[str, Any] = (
+        dict(existing_extra_body) if isinstance(existing_extra_body, dict) else {}
+    )
+    merged_extra_body["thinking"] = {"type": "disabled"}
+    neutralized: dict[str, Any] = {
+        key: value for key, value in settings.items() if key != "temperature"
+    }
+    neutralized["extra_body"] = merged_extra_body
+    return cast("ModelSettings", neutralized)
 
 
 def mock_model_for_tests(response: str) -> Any:
