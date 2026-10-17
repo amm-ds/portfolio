@@ -1,13 +1,17 @@
-"""Showcase API — serves project results and the RAG demo.
+"""Showcase API — serves project results, served-model inference, and the RAG demo.
 
 Nothing here contains training logic; it reads the artifacts projects produce
-(reports/metrics.json, reports/figures/*.html) and delegates chat to Project
-01's agent when that package is installed (it is, in the workspace/Docker image).
+(reports/metrics.json, reports/figures/*.html, reports/models/serving/*) and
+delegates chat to Project 01's agent when that package is installed (it is, in
+the workspace/Docker image). Served inference: 02/05/07 read persisted serving
+artifacts (503 with build instructions when absent); 06 solves VRPTW instances
+purely from the request body with the tuned config from its params.yaml.
 """
 
 import json
 import os
 import re
+import time
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
@@ -18,6 +22,9 @@ from portfolio_core.logging import get_logger, setup_logging
 from portfolio_core.manifest import ProjectInfo, load_index
 from portfolio_core.story import ProjectStory, load_story
 from pydantic import BaseModel, Field
+from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
+
+from showcase_api import serving
 
 logger = get_logger(__name__)
 
@@ -124,30 +131,14 @@ class ForecastResponse(BaseModel):
     p90: float
 
 
-_serving_cache: tuple[Any, dict[str, Any], list[dict[str, Any]]] | None = None
-
-
 def _serving_artifacts() -> tuple[Any, dict[str, Any], list[dict[str, Any]]] | None:
     """Load the serving bundle once and cache it (joblib load is ~10 ms per call
     on a 6.5 MB artifact — not per-request material, and caching removes the
     disk-amplification concern entirely)."""
-    global _serving_cache
-    if _serving_cache is not None:
-        return _serving_cache
-    model_path, meta_path, zones_path = (
-        _SERVING_DIR / "model.joblib",
-        _SERVING_DIR / "meta.json",
-        _SERVING_DIR / "zones.json",
-    )
-    if not (model_path.exists() and meta_path.exists() and zones_path.exists()):
+    artifacts = serving.cached_artifacts(_SERVING_DIR, extra_json=("zones.json",))
+    if artifacts is None:
         return None
-    import joblib
-
-    bundle = joblib.load(model_path)
-    meta = json.loads(meta_path.read_text())
-    zones = json.loads(zones_path.read_text())
-    _serving_cache = (bundle, meta, zones)
-    return _serving_cache
+    return artifacts["model"], artifacts["meta"], artifacts["zones"]
 
 
 @app.post(f"/projects/{_MOBILITY_ID}/forecast", response_model=ForecastResponse)
@@ -183,6 +174,227 @@ def forecast_mobility(request: ForecastRequest) -> ForecastResponse:
         zone=str(zone_row.get("zone", "?")),
         prediction=round(max(0.0, pred), 3),
         p90=round(max(0.0, p90), 3),
+    )
+
+
+# --- Served forecasts (Project 02) ------------------------------------------
+# Contract: projects/02-demand-forecasting/reports/models/serving/ holds
+# model.joblib ({"model": sklearn Pipeline taking a raw dict with a string
+# series_id + numeric features, "feature_names", "target_transform"}) and
+# meta.json ({"model_name", "series": [...known series ids...], "example_row"}).
+
+_DEMAND_ID = "02-demand-forecasting"
+_DEMAND_SERVING_DIR = _project_dir(_DEMAND_ID) / "reports" / "models" / "serving"
+
+
+class DemandForecastRequest(BaseModel):
+    series_id: str = Field(min_length=1, max_length=128)
+    features: dict[str, float] = Field(min_length=1, max_length=256)
+
+
+class DemandForecastResponse(BaseModel):
+    forecast: float
+    model: str
+
+
+@app.post(f"/projects/{_DEMAND_ID}/forecast", response_model=DemandForecastResponse)
+def forecast_demand(request: DemandForecastRequest) -> DemandForecastResponse:
+    """Per-series demand forecast from the persisted tuned pipeline."""
+    artifacts = serving.cached_artifacts(_DEMAND_SERVING_DIR)
+    if artifacts is None:
+        raise HTTPException(
+            status_code=503,
+            detail="serving artifacts not built — run the serving stage in "
+            "projects/02-demand-forecasting first (writes reports/models/serving/)",
+        )
+    bundle: dict[str, Any] = artifacts["model"]
+    meta: dict[str, Any] = artifacts["meta"]
+    model = bundle["model"]
+    feature_names: list[str] = list(bundle.get("feature_names") or meta.get("feature_names") or [])
+    missing = [f for f in feature_names if f != "series_id" and f not in request.features]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"missing features: {', '.join(missing)}")
+    # Known-series list: meta["series"] when present; derived from the example
+    # row's series_id otherwise (the serving meta may not enumerate series);
+    # when neither exists, any series_id is accepted.
+    known: Any = meta.get("series") or meta.get("series_ids") or meta.get("known_series")
+    if known is None:
+        example = meta.get("example_row")
+        if isinstance(example, dict) and isinstance(example.get("series_id"), str):
+            known = [example["series_id"]]
+    if known is not None and request.series_id not in known:
+        raise HTTPException(status_code=422, detail=f"unknown series_id {request.series_id!r}")
+    # The champion pipeline scores an object row: numeric features in
+    # feature_names order (series_id excluded), then the series_id string —
+    # mirrors demand_forecasting's own serving test ("exactly like the API").
+    import numpy as np
+
+    row = np.array(
+        [
+            [float(request.features[f]) for f in feature_names if f != "series_id"]
+            + [request.series_id]
+        ],
+        dtype=object,
+    )
+    pred = float(model.predict(row)[0])
+    if bundle.get("target_transform") == "log1p":
+        pred = float(np.expm1(pred))
+    model_name = _model_label(meta, model)
+    return DemandForecastResponse(forecast=round(max(0.0, pred), 4), model=model_name)
+
+
+def _model_label(meta: dict[str, Any], model: Any) -> str:
+    """Human model label: meta model_name, else train_runs/model_selection, else class."""
+    name = meta.get("model_name")
+    if not name:
+        runs = meta.get("train_runs")
+        if isinstance(runs, list) and runs:
+            name = runs[0]
+    if not name:
+        selection = meta.get("model_selection")
+        if isinstance(selection, dict):
+            name = selection.get("champion") or selection.get("family")
+    return str(name or type(model).__name__)
+
+
+# --- Served churn scoring (Project 05) --------------------------------------
+# Contract: projects/05-ml-pipeline-churn/reports/models/serving/ holds
+# model.joblib ({"model": sklearn estimator (DataFrame row -> proba),
+# "feature_names", "decision": {"threshold", "fp_cost", "fn_cost"}}) and
+# meta.json ({"model_name"?, "example_row"}). feature_names may include
+# string categoricals (e.g. contract, internet_service).
+
+_CHURN_ID = "05-ml-pipeline-churn"
+_CHURN_SERVING_DIR = _project_dir(_CHURN_ID) / "reports" / "models" / "serving"
+
+
+class ChurnScoreRequest(BaseModel):
+    # String values are allowed: feature_names include categoricals such as
+    # contract / internet_service.
+    features: dict[str, float | str] = Field(min_length=1, max_length=256)
+
+
+class ChurnDecision(BaseModel):
+    alarm: bool
+    threshold: float
+    expected_cost_note: str
+
+
+class ChurnScoreResponse(BaseModel):
+    churn_probability: float
+    decision: ChurnDecision
+
+
+@app.post(f"/projects/{_CHURN_ID}/score", response_model=ChurnScoreResponse)
+def score_churn(request: ChurnScoreRequest) -> ChurnScoreResponse:
+    """Churn probability + cost-threshold alarm from the persisted pipeline."""
+    artifacts = serving.cached_artifacts(_CHURN_SERVING_DIR)
+    if artifacts is None:
+        raise HTTPException(
+            status_code=503,
+            detail="serving artifacts not built — run the serving stage in "
+            "projects/05-ml-pipeline-churn first (writes reports/models/serving/)",
+        )
+    bundle: dict[str, Any] = artifacts["model"]
+    meta: dict[str, Any] = artifacts["meta"]
+    model = bundle["model"]
+    feature_names: list[str] = list(bundle.get("feature_names") or meta.get("feature_names") or [])
+    missing = [f for f in feature_names if f not in request.features]
+    if missing:
+        raise HTTPException(status_code=422, detail=f"missing features: {', '.join(missing)}")
+    row = {f: request.features[f] for f in feature_names}
+    import pandas as pd  # type: ignore[import-untyped]
+
+    proba = float(model.predict_proba(pd.DataFrame([row]))[0, 1])
+    decision_cfg: dict[str, Any] = dict(bundle.get("decision") or {})
+    threshold = float(decision_cfg.get("threshold", 0.5))
+    fp_cost = decision_cfg.get("fp_cost", 1)
+    fn_cost = decision_cfg.get("fn_cost", 1)
+    note = (
+        f"alarm at p>={threshold:g}: expected cost {fp_cost} per false positive vs "
+        f"{fn_cost} per missed churner (fn_cost weighted {fn_cost}x an fp)"
+    )
+    return ChurnScoreResponse(
+        churn_probability=round(proba, 4),
+        decision=ChurnDecision(
+            alarm=proba >= threshold,
+            threshold=threshold,
+            expected_cost_note=note,
+        ),
+    )
+
+
+# --- Served VRPTW solving (Project 06) --------------------------------------
+# No artifacts: solving is a pure function of the Problem schema. The tuned
+# 2-opt config is read from the project's params.yaml (solver_best, written by
+# the solve stage); max_iterations is capped at that tuned value. ALNS is not
+# served (keep worst-case latency low).
+
+_ROUTING_ID = "06-routing-optimization"
+_ROUTING_DIR = _project_dir(_ROUTING_ID)
+_ROUTING_PARAMS = _ROUTING_DIR / "params.yaml"
+_MAX_SOLVE_CUSTOMERS = 200
+_SOLVE_SEED = 42
+
+
+class SolveResponse(RoutePlan):
+    """The RoutePlan pydantic JSON plus serving metadata."""
+
+    runtime_s: float
+
+
+def _two_opt_tuning() -> TwoOptTuning:
+    """The tuned 2-opt config persisted under ``solver_best:`` in params.yaml.
+
+    Falls back to the schema defaults when the file or block is absent.
+    """
+    raw: dict[str, Any] = {}
+    try:
+        import yaml  # type: ignore[import-untyped]
+
+        data: dict[str, Any] = yaml.safe_load(_ROUTING_PARAMS.read_text()) or {}
+        raw = dict(data.get("solver_best") or {})
+    except FileNotFoundError:
+        pass
+    return TwoOptTuning(**{k: v for k, v in raw.items() if k in TwoOptTuning.model_fields})
+
+
+@app.post(f"/projects/{_ROUTING_ID}/solve", response_model=SolveResponse)
+def solve_routing(problem: Problem) -> SolveResponse:
+    """Solve a VRPTW instance with the tuned 2-opt portfolio (fixed seed 42).
+
+    Guarded to n_customers <= 200; with the tuned config (max_iterations 50)
+    the worst-case runtime on a 200-customer R2-scale instance stays well
+    under 30 s.
+    """
+    if problem.n_customers > _MAX_SOLVE_CUSTOMERS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"too many customers: {problem.n_customers} > {_MAX_SOLVE_CUSTOMERS} cap",
+        )
+    from routing_optimization.evaluate import solve_with_timing
+    from routing_optimization.solver import two_opt
+    from routing_optimization.tuning import best_start, restart_plans
+
+    tuning = _two_opt_tuning()
+    # Base constructions + untuned 2-opt via the project's entry point; the
+    # served plan is the tuned 2-opt on the best construction/restart start
+    # (mirrors run_solve's tuned stage).
+    _runs, plans = solve_with_timing(problem, tuning.max_iterations, seed=_SOLVE_SEED)
+    base = min((plans["nearest_neighbor"], plans["clarke_wright"]), key=lambda p: p.total_distance)
+    start = best_start(base, restart_plans(problem, seed=_SOLVE_SEED, restarts=tuning.restarts))
+    t0 = time.perf_counter()
+    tuned = two_opt(
+        problem,
+        start,
+        max_iterations=tuning.max_iterations,
+        acceptance=tuning.acceptance,
+        tail_exchange=tuning.tail_exchange,
+    )
+    runtime_s = time.perf_counter() - t0
+    tuned.validate_against(problem)
+    return SolveResponse(
+        **{**tuned.model_dump(), "solver": "two_opt_tuned"}, runtime_s=round(runtime_s, 6)
     )
 
 

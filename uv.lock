@@ -5946,6 +5946,7 @@ name = "showcase-api"
 version = "0.1.0"
 source = { editable = "apps/showcase-api" }
 dependencies = [
+    { name = "06-routing-optimization" },
     { name = "fastapi" },
     { name = "portfolio-core" },
     { name = "portfolio-eval" },
@@ -5956,6 +5957,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "06-routing-optimization", editable = "projects/06-routing-optimization" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "portfolio-core", editable = "libs/portfolio-core" },
     { name = "portfolio-eval", editable = "libs/portfolio-eval" },
