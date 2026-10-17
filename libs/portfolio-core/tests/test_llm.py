@@ -46,7 +46,8 @@ def test_build_model_raises_without_provider(monkeypatch) -> None:
     """No env credentials + no Ollama → clear, actionable error (no silent mock)."""
     monkeypatch.setattr("portfolio_core.llm.ollama_available", lambda *a, **k: False)
     try:
-        build_model(Settings())
+        # explicit None overrides a real .env in the working tree
+        build_model(Settings(LLM_API_KEY=None, LLM_BASE_URL=None))
     except LLMProviderUnavailableError as e:
         assert "ollama pull" in str(e)
     else:  # pragma: no cover

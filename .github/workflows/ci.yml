@@ -6,7 +6,7 @@ on:
   pull_request:
 
 env:
-  LLM_BASE_URL: "" # force mock provider: no key in CI
+  LLM_BASE_URL: "" # no hosted key in CI; LLM phases fall back to keyword judges / skip
 
 jobs:
   gate:
