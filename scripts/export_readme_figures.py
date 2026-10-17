@@ -45,7 +45,7 @@ DOCS_FIGURES: dict[str, tuple[str, ...]] = {
     "06-routing-optimization": ("route_map_C101", "family_gap"),
     "07-open-data-mobility": ("zone_demand_map", "gbm_vs_nn", "weather_elasticity"),
     "08-inference-serving": ("latency_concurrency", "engine_panel"),
-    "09-agentic-workflows": ("per_task_grading", "category_success"),
+    "09-agentic-workflows": ("agent_architecture", "tool_usage_matrix", "node_waterfall"),
     "10-uplift-experimentation": ("qini_curves", "profit_frontier", "cost_sensitivity"),
 }
 

@@ -369,6 +369,9 @@ def run_suite(
                     steps_taken=result.steps_taken,
                     tools_used=result.tools_used,
                     steps=result.step_traces,
+                    tool_calls=result.tool_calls,
+                    plan_steps=result.plan_steps,
+                    critique_verdict=result.critique_verdict,
                     confidence=result.confidence,
                     retries=result.retries,
                     critique_loops=result.critique_loops,
@@ -502,6 +505,107 @@ def suite_averages(report: EvaluationReport[EvalTask, TaskRunRecord, None]) -> d
 
 
 # ---------------------------------------------------------------------------
+# Offline trajectory decomposition of the tool-selection score
+# ---------------------------------------------------------------------------
+
+#: Canonical column order of the tool-usage matrix figure.
+SUITE_TOOLS: tuple[str, ...] = (
+    "search_handbook",
+    "search_documents",
+    "calculator",
+    "unit_convert",
+    "note_store",
+)
+
+
+def decompose_tooling(pairs: list[tuple[EvalTask, TaskRunRecord]]) -> dict[str, Any]:
+    """Decompose the exact-set tool-selection score from captured trajectories.
+
+    Deterministic and offline: given each task's ``expected_tools`` and the
+    record's ``tool_calls`` (falling back to the flat ``tools_used`` names —
+    one call each — for records written before per-call capture), compute
+    per-task extras/misses, per-tool call accounting (expected vs extra), an
+    extra-call breakdown, and the expected-but-unused slots. This is what turns
+    "3/15 exact-set" into an actionable statement about *which* tool is being
+    over-called on *which* tasks.
+    """
+    per_task: dict[str, dict[str, Any]] = {}
+    tool_calls: dict[str, int] = {}
+    tool_expected_calls: dict[str, int] = {}
+    tool_extra_calls: dict[str, int] = {}
+    tool_tasks: dict[str, set[str]] = {}
+    extra_tasks: dict[str, set[str]] = {}
+    unused_expected: dict[str, list[str]] = {}
+
+    n_calls = 0
+    n_expected_calls = 0
+    n_expected_slots = 0
+    n_expected_hit = 0
+    n_exact = 0
+
+    for task, record in pairs:
+        names = [call.name for call in record.tool_calls] or list(record.tools_used)
+        expected = set(task.expected_tools)
+        called = set(names)
+        extra = sorted(called - expected)
+        missing = sorted(expected - called)
+
+        n_calls += len(names)
+        n_expected_calls += sum(1 for name in names if name in expected)
+        n_expected_slots += len(expected)
+        n_expected_hit += len(expected & called)
+        n_exact += int(not extra and not missing)
+
+        for name in names:
+            tool_calls[name] = tool_calls.get(name, 0) + 1
+            tool_tasks.setdefault(name, set()).add(task.id)
+            if name in expected:
+                tool_expected_calls[name] = tool_expected_calls.get(name, 0) + 1
+            else:
+                tool_extra_calls[name] = tool_extra_calls.get(name, 0) + 1
+                extra_tasks.setdefault(name, set()).add(task.id)
+        if missing:
+            unused_expected[task.id] = missing
+
+        per_task[task.id] = {
+            "expected": sorted(expected),
+            "called": sorted(called),
+            "extra": extra,
+            "missing": missing,
+            "n_calls": len(names),
+            "exact_set": not extra and not missing,
+        }
+
+    per_tool = {
+        name: {
+            "calls": tool_calls[name],
+            "expected_calls": tool_expected_calls.get(name, 0),
+            "extra_calls": tool_extra_calls.get(name, 0),
+            "tasks": sorted(tool_tasks[name]),
+        }
+        for name in sorted(tool_calls)
+    }
+    return {
+        "n_tasks": len(pairs),
+        "n_calls": n_calls,
+        "n_expected_calls": n_expected_calls,
+        # Call-level precision: share of all invocations that a correct plan
+        # would have made. Task-level recall: share of expected tool slots
+        # actually filled. Exact-set: the grader's own 3/15-style score.
+        "call_precision": round(n_expected_calls / n_calls, 3) if n_calls else 0.0,
+        "tool_recall": round(n_expected_hit / n_expected_slots, 3) if n_expected_slots else 0.0,
+        "exact_set_rate": round(n_exact / len(pairs), 3) if pairs else 0.0,
+        "per_tool": per_tool,
+        "extra_calls": {
+            name: {"calls": tool_extra_calls[name], "tasks": sorted(extra_tasks[name])}
+            for name in sorted(extra_tasks)
+        },
+        "unused_expected": unused_expected,
+        "per_task": per_task,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Report: metrics.json + figures + HTML
 # ---------------------------------------------------------------------------
 
@@ -520,87 +624,435 @@ def _score(
     return float(value) if isinstance(value, int | float) else 0.0
 
 
-def suite_figures(
+def _fig_per_task_grading(
     report: EvaluationReport[EvalTask, TaskRunRecord, None],
-    config: EvalConfig | None = None,
-) -> dict[str, go.Figure]:
-    """The four story figures: success, tool selection, latency, cost per task."""
+) -> go.Figure:
+    """Answer success vs exact-set tool selection per task (kept from wave 3)."""
     cases = list(report.cases)
     names = [case.name for case in cases]
     success = [_score(report, name, "AnswerSuccess") for name in names]
     tool_sel = [_score(report, name, "ToolSelection") for name in names]
 
-    fig_success = go.Figure(
+    fig = go.Figure(
         data=[
             go.Bar(name="task success", x=names, y=success, marker={"color": "#2dd4bf"}),
             go.Bar(name="tool selection", x=names, y=tool_sel, marker={"color": "#38bdf8"}),
         ]
     )
-    fig_success.update_layout(
+    fig.update_layout(
         barmode="group",
         title="Per-task grading: answer success vs tool selection",
         xaxis_title="task",
         yaxis_title="score (1 = pass)",
         yaxis={"range": [0, 1.05]},
     )
-    apply_theme(fig_success)
+    apply_theme(fig)
     add_takeaway(
-        fig_success,
+        fig,
         f"Suite success rate {sum(success) / max(len(success), 1):.0%}; "
         f"tool-selection accuracy {sum(tool_sel) / max(len(tool_sel), 1):.0%}.",
     )
+    return fig
 
-    durations = [case.output.duration_s for case in cases]
-    budgets = [case.inputs.latency_budget_s for case in cases]
-    fig_latency = go.Figure(
+
+def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
+    """Tasks x tools heatmap of per-call counts from the captured tool traces.
+
+    Every cell with calls is annotated with its count, so the over-call noise
+    (unplanned ``note_store`` / ``search_documents`` / ``calculator``) reads at
+    a glance: one bright cell is a planned call, a bright *column* under a
+    tool that few tasks expect is the exact-set miss driver.
+    """
+    names = [case.name for case in cases]
+    matrix: list[list[int]] = []
+    for tool in SUITE_TOOLS:
+        row: list[int] = []
+        for case in cases:
+            call_names = [c.name for c in case.output.tool_calls] or list(case.output.tools_used)
+            row.append(sum(1 for name in call_names if name == tool))
+        matrix.append(row)
+    text = [[str(value) if value > 0 else "" for value in row] for row in matrix]
+    fig = go.Figure(
         data=[
-            go.Bar(name="observed latency", x=names, y=durations, marker={"color": "#a78bfa"}),
-            go.Scatter(
-                name="latency budget",
+            go.Heatmap(
+                z=matrix,
                 x=names,
-                y=budgets,
-                mode="lines",
-                line={"dash": "dash", "color": "#f472b6"},
-            ),
+                y=list(SUITE_TOOLS),
+                text=text,
+                texttemplate="%{text}",
+                showscale=False,
+                colorscale=[[0, "#16213a"], [1, "#2dd4bf"]],
+                zmin=0,
+                hovertemplate="%{y} on %{x}: %{z} call(s)<extra></extra>",
+            )
         ]
     )
-    fig_latency.update_layout(
-        title="Per-task workflow latency vs budget",
+    fig.update_layout(
+        title="Tool-usage matrix: calls per task (captured per tool call)",
         xaxis_title="task",
-        yaxis_title="seconds",
+        yaxis_title="",
     )
-    apply_theme(fig_latency)
-    within = sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)
+    apply_theme(fig)
+    # Dynamic takeaway: name the most-called tool that the fewest tasks expect.
+    expected_by_tool = {
+        tool: sum(1 for case in cases if tool in case.inputs.expected_tools) for tool in SUITE_TOOLS
+    }
+    totals = {tool: sum(row) for tool, row in zip(SUITE_TOOLS, matrix, strict=True)}
+    loudest = max(SUITE_TOOLS, key=lambda t: totals[t] - expected_by_tool[t])
+    loudest_tasks = sum(
+        1
+        for case in cases
+        if any(c.name == loudest for c in case.output.tool_calls)
+        or loudest in case.output.tools_used
+    )
     add_takeaway(
-        fig_latency,
-        f"Median {statistics.median(durations):.1f}s per task; "
-        f"{within}/{len(durations)} runs inside the {budgets[0]:.0f}s budget.",
+        fig,
+        f"{totals[loudest]} {loudest} calls across {loudest_tasks}/{len(cases)} tasks — only "
+        f"{expected_by_tool[loudest]} task(s) plan for it; a bright column here is an "
+        "unplanned habit, not a need.",
+    )
+    return fig
+
+
+def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
+    """Per-task stacked node visits: one segment per ``steps[]`` entry.
+
+    Segment width is that visit's latency; labels are ``plan`` / ``execute``
+    (``#2``, ``#3`` for repeat visits — repair and critique-driven re-runs) /
+    ``critique``. A runaway task reads as ONE giant segment (t14: ~260 s
+    inside a single execute visit), not a stack of retries. The 180 s budget
+    is an annotation, not a dominating axis line.
+    """
+    names = [case.name for case in cases]
+    segments: dict[str, dict[str, tuple[float, int, int]]] = {}
+    first_pos: dict[str, int] = {}
+    for case in cases:
+        seen: dict[str, int] = {}
+        for pos, trace in enumerate(case.output.steps):
+            seen[trace.node] = seen.get(trace.node, 0) + 1
+            label = trace.node if seen[trace.node] == 1 else f"{trace.node} #{seen[trace.node]}"
+            segments.setdefault(label, {})[case.name] = (
+                trace.latency_s,
+                trace.input_tokens,
+                trace.output_tokens,
+            )
+            first_pos.setdefault(label, pos)
+    labels = sorted(segments, key=lambda label: first_pos[label])
+
+    node_color = {"plan": "#38bdf8", "execute": "#2dd4bf", "critique": "#a78bfa"}
+    fig = go.Figure()
+    for label in labels:
+        node = label.split(" ")[0]
+        repeat = label != node
+        latencies: list[float] = []
+        hover: list[str] = []
+        text: list[str] = []
+        for name in names:
+            visit = segments[label].get(name)
+            if visit is None:
+                latencies.append(0.0)
+                hover.append("")
+                text.append("")
+            else:
+                latency, in_tokens, out_tokens = visit
+                latencies.append(latency)
+                hover.append(
+                    f"{name} · {label}: {latency:.1f}s, {in_tokens} in + {out_tokens} out tokens"
+                )
+                text.append(f"{latency:.0f}s" if latency >= 60 else "")
+        fig.add_bar(
+            name=label,
+            y=names,
+            x=latencies,
+            orientation="h",
+            marker={
+                "color": node_color[node],
+                "opacity": 0.65 if repeat else 1.0,
+            },
+            hovertext=hover,
+            hovertemplate="%{hovertext}<extra></extra>",
+            text=text,
+            textposition="inside",
+        )
+    budget = max((case.inputs.latency_budget_s for case in cases), default=180.0)
+    fig.update_layout(
+        barmode="stack",
+        title="Node waterfall: latency stacked per graph visit (repeats labelled #2, #3)",
+        xaxis_title="seconds",
+        yaxis={"title": "", "autorange": "reversed"},
+        shapes=[
+            {
+                "type": "line",
+                "x0": budget,
+                "x1": budget,
+                "y0": 0,
+                "y1": 1,
+                "yref": "paper",
+                "line": {"color": "#f472b6", "dash": "dash", "width": 1.5},
+            }
+        ],
+        annotations=[
+            {
+                "xref": "x",
+                "yref": "paper",
+                "x": budget,
+                "y": 1.03,
+                "text": f"{budget:.0f} s budget",
+                "showarrow": False,
+                "font": {"size": 11, "color": "#f472b6"},
+            }
+        ],
+    )
+    apply_theme(fig)
+    # Lead with the widest single segment: the "one giant visit" story.
+    widest: tuple[str, str, float] | None = None
+    for label, per_task in segments.items():
+        for task_name, (latency, _, _) in per_task.items():
+            if widest is None or latency > widest[2]:
+                widest = (task_name, label, latency)
+    if widest is not None:
+        task_name, label, latency = widest
+        add_takeaway(
+            fig,
+            f"Widest single segment: {task_name} {label} at {latency:.0f}s — retries add "
+            "new labelled segments (#2, #3), they never stretch one visit.",
+        )
+    else:
+        add_takeaway(fig, "No node visits recorded.")
+    return fig
+
+
+def _fig_agent_architecture() -> go.Figure:
+    """The workflow graph as a plotly-shapes diagram (dark theme).
+
+    Boxes for user → Plan → Execute (with the five-tool toolset sub-box) →
+    Critique and both terminal ends; solid edges for the happy path and the
+    critique revise loop; a dashed lane for the HITL checkpoint variant
+    (approve re-enters at Execute, reject re-plans). Repair self-loop and
+    retry bound are drawn, not described.
+    """
+    # Boxes and text labels live in paper coordinates; arrow annotations need
+    # axis coordinates (axref/ayref cannot be "paper"), so the invisible y
+    # axis spans exactly [0, 1] and edge() maps through it one-to-one. The
+    # whole canvas is used: the HITL lane occupies the bottom paper band.
+    Y_MIN = 0.0
+    fig = go.Figure()
+    fig.update_layout(
+        xaxis={"range": [0, 1], "visible": False},
+        yaxis={"range": [0, 1.0], "visible": False},
+    )
+    box_fill = "#1e293b"
+    boxes: list[tuple[float, float, float, float, str, str, dict[str, Any]]] = [
+        # (x0, y0, x1, y1, label, line color, extra layout kwargs)
+        (0.01, 0.80, 0.09, 0.92, "user request", "#64748b", {}),
+        (0.15, 0.76, 0.27, 0.94, "Plan", "#38bdf8", {}),
+        (0.36, 0.60, 0.62, 0.98, "Execute", "#2dd4bf", {}),
+        (0.375, 0.62, 0.605, 0.86, "", "#2dd4bf", {"opacity": 0.35}),
+        (0.72, 0.76, 0.84, 0.94, "Critique", "#a78bfa", {}),
+        (0.90, 0.78, 0.99, 0.92, "End (result)", "#34d399", {}),
+        (0.44, 0.06, 0.58, 0.20, "End (failure)", "#f472b6", {}),
+        (0.13, 0.06, 0.31, 0.20, "ApprovalCheckpoint (HITL)", "#f472b6", {"dash": "dash"}),
+    ]
+    shapes = []
+    for x0, y0, x1, y1, _label, color, extra in boxes:
+        shapes.append(
+            {
+                "type": "rect",
+                "x0": x0,
+                "y0": y0,
+                "x1": x1,
+                "y1": y1,
+                "fillcolor": box_fill,
+                "opacity": extra.get("opacity", 0.9),
+                "line": {"color": color, "width": 2, "dash": extra.get("dash", "solid")},
+                "xref": "paper",
+                "yref": "paper",
+            }
+        )
+    fig.update_layout(shapes=shapes)
+
+    label_style: dict[str, Any] = {"size": 12, "color": "#e2e8f0"}
+    annotations: list[dict[str, Any]] = [
+        # Box labels (paper coordinates)
+        {
+            "x": 0.05,
+            "y": 0.86,
+            "text": "user\nrequest",
+            "showarrow": False,
+            "font": label_style,
+        },
+        {
+            "x": 0.21,
+            "y": 0.85,
+            "text": "Plan\ntyped step plan",
+            "showarrow": False,
+            "font": label_style,
+        },
+        {
+            "x": 0.49,
+            "y": 0.90,
+            "text": "Execute\ntool-using agent",
+            "showarrow": False,
+            "font": label_style,
+        },
+        *[
+            {
+                "x": 0.49,
+                "y": y,
+                "text": tool,
+                "showarrow": False,
+                "xref": "paper",
+                "yref": "paper",
+                "font": {"size": 10, "color": "#94a3b8"},
+            }
+            for tool, y in zip(
+                ("search_handbook", "search_documents", "calculator", "unit_convert", "note_store"),
+                (0.82, 0.775, 0.73, 0.685, 0.64),
+                strict=True,
+            )
+        ],
+        {
+            "x": 0.78,
+            "y": 0.85,
+            "text": "Critique\nself-check",
+            "showarrow": False,
+            "font": label_style,
+        },
+        {
+            "x": 0.945,
+            "y": 0.85,
+            "text": "End\n(result)",
+            "showarrow": False,
+            "font": label_style,
+        },
+        {
+            "x": 0.51,
+            "y": 0.13,
+            "text": "End\n(failure)",
+            "showarrow": False,
+            "font": label_style,
+        },
+        {
+            "x": 0.22,
+            "y": 0.13,
+            "text": "ApprovalCheckpoint\nHITL gate",
+            "showarrow": False,
+            "font": label_style,
+        },
+    ]
+    for annotation in annotations:
+        annotation.setdefault("xref", "paper")
+        annotation.setdefault("yref", "paper")
+
+    def edge(
+        x0: float,
+        y0: float,
+        x1: float,
+        y1: float,
+        label: str,
+        *,
+        dash: str = "solid",
+        color: str = "#94a3b8",
+        lx: float | None = None,
+        ly: float | None = None,
+    ) -> None:
+        def _y(paper_y: float) -> float:
+            return Y_MIN + (1.0 - Y_MIN) * paper_y
+
+        annotations.append(
+            {
+                "x": x1,
+                "y": _y(y1),
+                "ax": x0,
+                "ay": _y(y0),
+                "xref": "x",
+                "yref": "y",
+                "axref": "x",
+                "ayref": "y",
+                "showarrow": True,
+                "arrowhead": 2,
+                "arrowsize": 1.2,
+                "arrowcolor": color,
+                "arrowwidth": 1.5,
+            }
+        )
+        if label:
+            annotations.append(
+                {
+                    "x": lx if lx is not None else (x0 + x1) / 2,
+                    "y": ly if ly is not None else (y0 + y1) / 2 + 0.035,
+                    "text": label,
+                    "showarrow": False,
+                    "xref": "paper",
+                    "yref": "paper",
+                    "font": {"size": 11, "color": color},
+                    "bgcolor": "#0f172a",
+                }
+            )
+
+    edge(0.09, 0.86, 0.15, 0.86, "")
+    edge(0.27, 0.85, 0.36, 0.85, "plan")
+    edge(0.62, 0.85, 0.72, 0.85, "draft")
+    edge(0.72, 0.79, 0.60, 0.79, "revise (≤1)", lx=0.66, ly=0.755)
+    edge(0.84, 0.85, 0.90, 0.85, "pass")
+    # Repair self-loop drawn inside the Execute box top band.
+    edge(
+        0.58,
+        0.955,
+        0.43,
+        0.955,
+        "repair ≤ max_execute_retries",
+        color="#2dd4bf",
+        lx=0.505,
+        ly=0.975,
+    )
+    edge(0.47, 0.60, 0.50, 0.20, "retries exhausted", color="#f472b6", lx=0.575, ly=0.42)
+    # HITL dashed lane
+    edge(0.20, 0.76, 0.20, 0.20, "pause", dash="dash", color="#f472b6", lx=0.155, ly=0.48)
+    edge(
+        0.31,
+        0.13,
+        0.40,
+        0.64,
+        "approve → re-enter at Execute",
+        dash="dash",
+        color="#f472b6",
+        lx=0.42,
+        ly=0.36,
+    )
+    edge(
+        0.24,
+        0.20,
+        0.24,
+        0.76,
+        "reject → re-plan",
+        dash="dash",
+        color="#f472b6",
+        lx=0.295,
+        ly=0.48,
     )
 
-    categories = sorted({case.inputs.category for case in cases})
-    cat_success = []
-    for category in categories:
-        idx = [i for i, case in enumerate(cases) if case.inputs.category == category]
-        cat_success.append(sum(success[i] for i in idx) / len(idx))
-    fig_category = go.Figure(
-        data=[go.Bar(name="success rate", x=categories, y=cat_success, marker={"color": "#34d399"})]
+    fig.update_layout(annotations=annotations)
+    apply_theme(fig, height=470)
+    fig.update_layout(
+        title="Agent architecture: explicit graph — every transition, retry and loop bound is code",
     )
-    fig_category.update_layout(
-        title="Answer success rate by task category",
-        xaxis_title="category",
-        yaxis_title="success rate",
-        yaxis={"range": [0, 1.05]},
-    )
-    apply_theme(fig_category)
     add_takeaway(
-        fig_category,
-        "Lookup and conversion are single-tool tasks; calculations need the "
-        "search→calculator pairing the plan step is built for.",
+        fig,
+        "Solid: plan→execute→critique with a bounded repair self-loop and one revise loop. "
+        "Dashed: the HITL checkpoint lane — approve re-enters at Execute, reject re-plans.",
     )
+    # add_takeaway resets the theme margins; this diagram is a canvas, not a
+    # chart, so reclaim the space for the drawing itself.
+    fig.update_layout(margin={"l": 10, "r": 10, "t": 80, "b": 10})
+    return fig
 
-    # Cost/latency figure: stacked input/output tokens with the per-task
-    # cloud-equivalent cost labelled on each bar, latency as a line against
-    # the 180 s budget on a secondary axis.
+
+def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Figure:
+    """Stacked tokens + cloud-equivalent cost + latency vs budget (kept)."""
+    names = [case.name for case in cases]
+    durations = [case.output.duration_s for case in cases]
+    budgets = [case.inputs.latency_budget_s for case in cases]
     in_rate = config.usd_per_mtok_input if config is not None else 1.0
     out_rate = config.usd_per_mtok_output if config is not None else 4.0
     input_tokens = [case.output.input_tokens for case in cases]
@@ -611,7 +1063,7 @@ def suite_figures(
     ]
     totals = [i + o for i, o in zip(input_tokens, output_tokens, strict=True)]
     cost_labels = [f"${c:.4f}" for c in costs]
-    fig_cost = go.Figure(
+    fig = go.Figure(
         data=[
             go.Bar(name="input tokens", x=names, y=input_tokens, marker={"color": "#2dd4bf"}),
             go.Bar(name="output tokens", x=names, y=output_tokens, marker={"color": "#38bdf8"}),
@@ -644,27 +1096,44 @@ def suite_figures(
             ),
         ]
     )
-    fig_cost.update_layout(
+    fig.update_layout(
         barmode="stack",
         title="Per-task tokens, cloud-equivalent cost, and latency vs budget",
         xaxis_title="task",
         yaxis={"title": "tokens", "range": [0, max(totals, default=1) * 1.2]},
         yaxis2={"title": "seconds", "overlaying": "y", "side": "right"},
     )
-    apply_theme(fig_cost)
+    apply_theme(fig)
     add_takeaway(
-        fig_cost,
+        fig,
         f"Total ${sum(costs):.4f} cloud-equivalent ($1/Mtok in, $4/Mtok out; "
         f"labelled estimate, membership-quota key); median ${statistics.median(costs):.4f} "
         f"per task; latency budget {budgets[0]:.0f}s held for "
         f"{sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)}/{len(durations)}.",
     )
+    return fig
 
+
+def suite_figures(
+    report: EvaluationReport[EvalTask, TaskRunRecord, None],
+    config: EvalConfig | None = None,
+) -> dict[str, go.Figure]:
+    """The five story figures.
+
+    ``per_task_grading`` and ``cost_latency_bars`` are unchanged in intent;
+    ``category_success`` was dropped (category rates duplicate the per-task
+    bars) in favor of three trajectory views made possible by per-call tool
+    capture: ``tool_usage_matrix`` (calls per task per tool),
+    ``node_waterfall`` (per-visit latency stack), and ``agent_architecture``
+    (the graph itself).
+    """
+    cases = list(report.cases)
     return {
-        "per_task_grading": fig_success,
-        "per_task_latency": fig_latency,
-        "category_success": fig_category,
-        "cost_latency_bars": fig_cost,
+        "per_task_grading": _fig_per_task_grading(report),
+        "cost_latency_bars": _fig_cost_latency_bars(cases, config),
+        "tool_usage_matrix": _fig_tool_usage_matrix(cases),
+        "node_waterfall": _fig_node_waterfall(cases),
+        "agent_architecture": _fig_agent_architecture(),
     }
 
 
@@ -755,9 +1224,11 @@ def build_report(
     for name, fig in figures.items():
         save_json(fig, config.reports_dir / "figures" / f"{name}.json")
 
+    tooling = decompose_tooling([(case.inputs, case.output) for case in cases])
     detail = {
         "grader": "deterministic keyword + tool-set graders (pydantic-evals Evaluator subclasses)",
         "n_tasks": len(cases),
+        "tooling": tooling,
         "per_task": {
             case.name: {
                 "category": case.inputs.category,
@@ -768,6 +1239,11 @@ def build_report(
                 "duration_s": case.output.duration_s,
                 "confidence": case.output.confidence,
                 "tools_used": case.output.tools_used,
+                "tool_calls": [
+                    json.loads(call.model_dump_json()) for call in case.output.tool_calls
+                ],
+                "plan_steps": case.output.plan_steps,
+                "critique_verdict": case.output.critique_verdict,
                 "answer": case.output.answer,
                 "error": case.output.error,
             }
@@ -778,8 +1254,64 @@ def build_report(
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     metrics["detail"] = detail
     metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    _append_tooling_section(config.reports_dir / "report.html", tooling)
     logger.info("report written: %s", config.reports_dir / "report.html")
     return metrics_path
+
+
+def _append_tooling_section(report_html: Path, tooling: dict[str, Any]) -> None:
+    """Append the trajectory-decomposition section to report.html (in place).
+
+    ``portfolio_eval``'s builder only knows runs + figures; the tooling
+    section is this suite's own HTML, inserted before ``</body>`` so the
+    library stays untouched.
+    """
+    if not report_html.exists():
+        return
+
+    def _row(cells: list[str], header: bool = False) -> str:
+        tag = "th" if header else "td"
+        return f"<tr>{''.join(f'<{tag}>{cell}</{tag}>' for cell in cells)}</tr>"
+
+    header = _row(["tool", "calls", "expected", "extra", "tasks used on"], header=True)
+    rows = "".join(
+        _row(
+            [
+                f"<code>{name}</code>",
+                str(stats["calls"]),
+                str(stats["expected_calls"]),
+                str(stats["extra_calls"]),
+                ", ".join(stats["tasks"]),
+            ]
+        )
+        for name, stats in tooling["per_tool"].items()
+    )
+    extra = (
+        ", ".join(
+            f"<code>{name}</code> on {stats['calls']} call(s), {len(stats['tasks'])} task(s)"
+            for name, stats in tooling["extra_calls"].items()
+        )
+        or "none"
+    )
+    unused = (
+        ", ".join(
+            f"{task}: {'/'.join(tools)}" for task, tools in tooling["unused_expected"].items()
+        )
+        or "none"
+    )
+    section = (
+        "<h2>Tooling decomposition</h2>"
+        "<p>Offline trajectory decomposition of the exact-set tool-selection score from the "
+        "captured per-call traces: call-level precision (share of invocations a correct plan "
+        f"would make) <b>{tooling['call_precision']:.0%}</b>; task-level recall (expected tool "
+        f"slots filled) <b>{tooling['tool_recall']:.0%}</b>; exact-set rate "
+        f"<b>{tooling['exact_set_rate']:.0%}</b> over {tooling['n_calls']} calls on "
+        f"{tooling['n_tasks']} tasks.</p>"
+        f"<table>{header}{rows}</table>"
+        f"<p><b>Extra calls:</b> {extra}.<br><b>Expected but unused:</b> {unused}.</p>"
+    )
+    html = report_html.read_text(encoding="utf-8")
+    report_html.write_text(html.replace("</body>", f"{section}\n</body>"), encoding="utf-8")
 
 
 def tasks_json(tasks: list[EvalTask]) -> str:

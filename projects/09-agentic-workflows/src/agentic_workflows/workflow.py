@@ -23,7 +23,7 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from portfolio_core.llm import (
@@ -43,10 +43,11 @@ from agentic_workflows.schemas import (
     ExecutionOutput,
     PlanOutput,
     StepTrace,
+    ToolCallTrace,
     WorkflowResult,
     WorkflowState,
 )
-from agentic_workflows.tools import Notebook, research_ops_toolset
+from agentic_workflows.tools import Notebook, traced_research_ops_toolset
 
 logger = get_logger(__name__)
 
@@ -87,12 +88,16 @@ class WorkflowDeps:
     uses it to record cloud-equivalent spend against the budget caps.
     ``usage_limits`` (optional) is passed to every agent run so hosted request
     and token limits are enforced natively per call.
+    ``tool_traces`` is the per-run tool-call buffer: the Execute node's traced
+    toolset appends a :class:`~agentic_workflows.schemas.ToolCallTrace` per
+    invocation, and the node mirrors the buffer into the workflow state.
     """
 
     model: Model
     notebook: Notebook
     meter: MeterFn | None = None
     usage_limits: Any | None = None
+    tool_traces: list[ToolCallTrace] = field(default_factory=list)
 
 
 def provider_model_settings() -> Any | None:
@@ -219,7 +224,7 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
             ctx.deps.model,
             output_type=ExecutionOutput,
             deps_type=Notebook,
-            toolsets=[research_ops_toolset()],
+            toolsets=[traced_research_ops_toolset(ctx.deps.tool_traces)],
             system_prompt=EXECUTE_SYSTEM,
             model_settings=provider_model_settings(),
         )
@@ -235,6 +240,8 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
                 usage_limits=ctx.deps.usage_limits,
             )
         except Exception as exc:
+            # Tool calls made before the failure still belong to the record.
+            state.tool_traces[:] = ctx.deps.tool_traces
             state.retries += 1
             logger.warning("execute attempt %d failed: %s", state.retries, exc)
             if state.retries <= state.max_execute_retries:
@@ -250,6 +257,7 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
         state.draft = output.draft
         state.self_confidence = output.self_confidence
         state.tools_used.extend(_tool_names(result.all_messages()))
+        state.tool_traces[:] = ctx.deps.tool_traces
         state.input_tokens += int(result.usage.input_tokens or 0)
         state.output_tokens += int(result.usage.output_tokens or 0)
         # Meter outside the repair try: budget cuts must abort the task, not
@@ -284,6 +292,7 @@ class CritiqueNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
         verdict = result.output
         state.input_tokens += int(result.usage.input_tokens or 0)
         state.output_tokens += int(result.usage.output_tokens or 0)
+        state.critique_verdict = verdict.verdict
         _record_step(state, "critique", result, time.perf_counter() - start, ctx.deps.meter)
         if verdict.verdict == "revise" and state.critique_loops < state.max_critique_loops:
             state.critique_loops += 1
@@ -306,12 +315,26 @@ def _confidence(state: WorkflowState, critique_issues: list[str]) -> float:
     return round(max(0.0, min(1.0, confidence)), 3)
 
 
+def _plan_steps(state: WorkflowState) -> list[str]:
+    """The approved plan as rendered step lines (id, description, tool)."""
+    lines = []
+    for step in state.plan:
+        line = f"{step.id}. {step.description}"
+        if step.tool:
+            line += f" → {step.tool}"
+        lines.append(line)
+    return lines
+
+
 def _final_result(state: WorkflowState, critique_issues: list[str]) -> WorkflowResult:
     return WorkflowResult(
         answer=state.draft,
         steps_taken=list(state.steps_taken),
         tools_used=list(state.tools_used),
         step_traces=list(state.step_traces),
+        tool_calls=list(state.tool_traces),
+        plan_steps=_plan_steps(state),
+        critique_verdict=state.critique_verdict or None,
         confidence=_confidence(state, critique_issues),
         retries=state.retries,
         critique_loops=state.critique_loops,
@@ -327,6 +350,9 @@ def _failure_result(state: WorkflowState, reason: str) -> WorkflowResult:
         steps_taken=list(state.steps_taken),
         tools_used=list(state.tools_used),
         step_traces=list(state.step_traces),
+        tool_calls=list(state.tool_traces),
+        plan_steps=_plan_steps(state),
+        critique_verdict=state.critique_verdict or None,
         confidence=0.0,
         retries=state.retries,
         critique_loops=state.critique_loops,

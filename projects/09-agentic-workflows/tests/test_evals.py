@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 from agentic_workflows import evals
 from agentic_workflows.config import EvalConfig
-from agentic_workflows.schemas import EvalTask, TaskRunRecord
+from agentic_workflows.schemas import EvalTask, TaskRunRecord, ToolCallTrace
 from pydantic_evals.evaluators import EvaluatorContext
 
 
@@ -147,19 +148,167 @@ class TestOfflineEvaluation:
         assert "agentic_suite" in metrics
         assert metrics["agentic_suite"]["success_rate"] == averages["AnswerSuccess"]
         assert "detail" in metrics and "per_task" in metrics["detail"]
+        assert "tooling" in metrics["detail"]
         assert (config.reports_dir / "report.html").exists()
-        for name in ("per_task_grading", "per_task_latency", "category_success"):
+        for name in (
+            "per_task_grading",
+            "cost_latency_bars",
+            "tool_usage_matrix",
+            "node_waterfall",
+            "agent_architecture",
+        ):
             assert (config.reports_dir / "figures" / f"{name}.html").exists()
             assert (config.reports_dir / "figures" / f"{name}.json").exists()
+        assert not (config.reports_dir / "figures" / "category_success.json").exists()
 
     def test_records_round_trip(self, tmp_path: Path) -> None:
         records = [_record(task.id) for task in evals.TASK_SUITE[:3]]
         path = evals.write_records(records, tmp_path / "records.json")
         assert evals.load_records(path) == records
 
+    def test_old_records_without_new_fields_load_with_defaults(self, tmp_path: Path) -> None:
+        """Pre-capture records (no tool_calls/plan_steps/critique_verdict) load fine."""
+        record = _record("t01")
+        payload = json.loads(record.model_dump_json())
+        for key in ("tool_calls", "plan_steps", "critique_verdict"):
+            payload.pop(key)
+        assert set(payload) < set(TaskRunRecord.model_fields)
+        path = tmp_path / "old_records.json"
+        path.write_text(json.dumps([payload]))
+        loaded = evals.load_records(path)
+        assert loaded[0].tool_calls == []
+        assert loaded[0].plan_steps == []
+        assert loaded[0].critique_verdict is None
+        assert loaded[0].steps_taken == record.steps_taken
+
     def test_tasks_json_round_trip(self) -> None:
         payload = evals.tasks_json(list(evals.TASK_SUITE))
         assert evals.parse_tasks(payload) == list(evals.TASK_SUITE)
+
+
+class TestToolCallCapture:
+    """Per-call tool traces land in the workflow result and run record."""
+
+    def _scripted_tool_model(self) -> Any:
+        """Scripted model whose executor really calls calculator + note_store."""
+        from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
+        from pydantic_ai.models.function import FunctionModel
+
+        def responder(messages: list[Any], info: Any) -> ModelResponse:
+            role = ""
+            saw_response = False
+            for message in messages:
+                if isinstance(message, ModelResponse):
+                    saw_response = True
+                for part in getattr(message, "parts", []):
+                    content = getattr(part, "content", "")
+                    if isinstance(content, str):
+                        if "PLANNER" in content:
+                            role = "plan"
+                        elif "EXECUTOR" in content:
+                            role = "exec"
+                        elif "CRITIQUE" in content:
+                            role = "critique"
+            if role == "plan":
+                payload: dict[str, Any] = {
+                    "steps": [
+                        {
+                            "id": 1,
+                            "description": "Compute weekly diesel",
+                            "tool": "calculator",
+                            "expected_output": "75.6",
+                        }
+                    ],
+                    "notes": "",
+                }
+            elif role == "exec":
+                if not saw_response:
+                    return ModelResponse(
+                        parts=[
+                            ToolCallPart(
+                                tool_name="calculator",
+                                args={"expr": "1.8*6*7"},
+                                tool_call_id="c1",
+                            )
+                        ]
+                    )
+                payload = {
+                    "findings": ["1.8*6*7 = 75.6"],
+                    "draft": "The answer is 75.6 liters.",
+                    "self_confidence": 0.9,
+                }
+            else:
+                payload = {"verdict": "pass", "issues": [], "suggestion": ""}
+            return ModelResponse(parts=[TextPart(content=json.dumps(payload))])
+
+        return FunctionModel(responder)
+
+    def test_tool_calls_captured_with_names_and_latency(self) -> None:
+        from agentic_workflows.workflow import run_workflow
+
+        result = run_workflow("weekly diesel?", model=self._scripted_tool_model())
+        assert [call.name for call in result.tool_calls] == ["calculator"]
+        (call,) = result.tool_calls
+        assert call.node == "execute"
+        assert call.latency_s >= 0.0
+        assert call.result_chars > 0
+        assert call.ok is True
+        assert "1.8*6*7" in call.args_brief
+
+    def test_plan_steps_and_critique_verdict_persisted(self) -> None:
+        from agentic_workflows.workflow import run_workflow
+
+        result = run_workflow("weekly diesel?", model=self._scripted_tool_model())
+        assert result.plan_steps == ["1. Compute weekly diesel → calculator"]
+        assert result.critique_verdict == "pass"
+
+
+class TestToolingDecomposition:
+    """The offline trajectory decomposition math behind detail.tooling."""
+
+    def _pair(
+        self,
+        task_id: str,
+        call_names: list[str],
+    ) -> tuple[EvalTask, TaskRunRecord]:
+        task = next(t for t in evals.TASK_SUITE if t.id == task_id)
+        record = TaskRunRecord(
+            task_id=task_id,
+            status="ok",
+            answer="x",
+            steps_taken=["s"],
+            tools_used=sorted(set(call_names)),
+            tool_calls=[ToolCallTrace(name=name, node="execute") for name in call_names],
+            confidence=0.9,
+            duration_s=1.0,
+        )
+        return task, record
+
+    def test_exact_set_and_extra_breakdown(self) -> None:
+        task = evals.TASK_SUITE[2]  # t03: search_handbook + calculator
+        exact = self._pair(task.id, ["search_handbook", "calculator"])
+        noisy = self._pair(task.id, ["search_handbook", "calculator", "note_store"])
+        missing = self._pair(task.id, ["calculator"])
+        tooling = evals.decompose_tooling([exact, noisy, missing])
+        assert tooling["n_calls"] == 6
+        assert tooling["n_expected_calls"] == 5
+        assert tooling["call_precision"] == round(5 / 6, 3)
+        # recall: 2/2 + 2/2 + 1/2 = 5 expected slots of 6
+        assert tooling["tool_recall"] == round(5 / 6, 3)
+        assert tooling["exact_set_rate"] == round(1 / 3, 3)
+        assert tooling["extra_calls"]["note_store"]["calls"] == 1
+        assert tooling["extra_calls"]["note_store"]["tasks"] == [task.id]
+        assert tooling["unused_expected"] == {task.id: ["search_handbook"]}
+        assert tooling["per_tool"]["note_store"]["extra_calls"] == 1
+        assert tooling["per_tool"]["calculator"]["expected_calls"] == 3
+
+    def test_old_records_degrade_to_flat_tools_used(self) -> None:
+        """Records without tool_calls fall back to one call per tools_used name."""
+        task = evals.TASK_SUITE[0]  # t01: search_handbook
+        record = _record(task.id, tools=("search_handbook", "note_store"))
+        tooling = evals.decompose_tooling([(task, record)])
+        assert tooling["n_calls"] == 2
+        assert tooling["extra_calls"]["note_store"]["calls"] == 1
 
 
 class TestSuiteHonesty:

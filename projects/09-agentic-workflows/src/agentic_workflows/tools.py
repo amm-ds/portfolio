@@ -16,9 +16,13 @@ the eval suite are therefore exact, not model-judged.
 from __future__ import annotations
 
 import ast
+import functools
+import inspect
 import operator
+import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import Any, Literal, cast
 
 from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field
@@ -26,6 +30,7 @@ from pydantic_ai.tools import RunContext
 from pydantic_ai.toolsets import CombinedToolset, FunctionToolset, PrefixedToolset
 
 from agentic_workflows.documents import search_documents
+from agentic_workflows.schemas import ToolCallTrace
 
 # ---------------------------------------------------------------------------
 # Canned domain corpus ("Atlas Valley Field Station — ops handbook")
@@ -376,6 +381,83 @@ def research_ops_toolset() -> FunctionToolset[Notebook]:
     """
     return FunctionToolset(
         [calculator, unit_convert, search_handbook, search_documents, note_store]
+    )
+
+
+def _args_brief(args: tuple[Any, ...], kwargs: dict[str, Any], limit: int = 80) -> str:
+    """Compact one-line repr of a tool call's arguments (RunContext excluded)."""
+    parts = [repr(a) for a in args if not isinstance(a, RunContext)]
+    parts += [f"{key}={value!r}" for key, value in kwargs.items()]
+    brief = ", ".join(parts)
+    return brief if len(brief) <= limit else brief[: limit - 1] + "…"
+
+
+def _traced_tool[F: Callable[..., Any]](fn: F, buffer: list[ToolCallTrace]) -> F:
+    """Wrap a tool function so every invocation appends a :class:`ToolCallTrace`.
+
+    Signature-preserving (``functools.wraps`` — pydantic-ai follows
+    ``__wrapped__`` for schema and ``RunContext`` detection), so the wrapped
+    tool is indistinguishable from the original in the model-facing schema.
+    Sync and async callables keep their flavor; failures are re-raised after
+    the trace is recorded (``ok=False``).
+    """
+
+    def _emit(
+        args: tuple[Any, ...], kwargs: dict[str, Any], start: float, ok: bool, result: Any
+    ) -> None:
+        buffer.append(
+            ToolCallTrace(
+                name=getattr(fn, "__name__", "tool"),
+                node="execute",
+                args_brief=_args_brief(args, kwargs),
+                latency_s=round(time.perf_counter() - start, 3),
+                result_chars=len(str(result)) if ok else 0,
+                ok=ok,
+            )
+        )
+
+    if inspect.iscoroutinefunction(fn):
+
+        @functools.wraps(fn)
+        async def _async_traced(*args: Any, **kwargs: Any) -> Any:
+            start = time.perf_counter()
+            try:
+                result = await fn(*args, **kwargs)
+            except Exception:
+                _emit(args, kwargs, start, False, None)
+                raise
+            _emit(args, kwargs, start, True, result)
+            return result
+
+        return cast(F, _async_traced)
+
+    @functools.wraps(fn)
+    def _sync_traced(*args: Any, **kwargs: Any) -> Any:
+        start = time.perf_counter()
+        try:
+            result = fn(*args, **kwargs)
+        except Exception:
+            _emit(args, kwargs, start, False, None)
+            raise
+        _emit(args, kwargs, start, True, result)
+        return result
+
+    return cast(F, _sync_traced)
+
+
+def traced_research_ops_toolset(buffer: list[ToolCallTrace]) -> FunctionToolset[Notebook]:
+    """The research-ops toolset with per-invocation tracing into ``buffer``.
+
+    Same five tools, same schemas as :func:`research_ops_toolset` — the
+    wrappers only add trace emission, so the model sees no schema change.
+    The workflow threads one buffer per run through ``WorkflowDeps`` and the
+    Execute node mirrors it into the run record.
+    """
+    return FunctionToolset(
+        [
+            _traced_tool(fn, buffer)
+            for fn in (calculator, unit_convert, search_handbook, search_documents, note_store)
+        ]
     )
 
 

@@ -4,7 +4,7 @@ roadmap:
     text: >-
       Multi-step agent graphs — shipped, verified: Plan→Execute→Critique on
       pydantic-graph over typed WorkflowState with bounded retries and one
-      Critique loop-back; the graph machinery is covered by 57 offline tests.
+      Critique loop-back; the graph machinery is covered by 62 offline tests.
   - status: delivered
     text: >-
       Workflow evaluation harness — shipped, verified: 15-task suite with
@@ -119,51 +119,56 @@ sections:
       | multi-step | chained tool calls | 2–3 tools |
       | note-keeping | notebook state | `note_store` |
 
-      The category-level cut of the graded run is rendered as
-      `category_success`: on the hosted full run every category is at 100%
-      answer success, and the retrieval-heavy categories show the hosted
-      model's signature habit — unprompted extra tool calls (`note_store`,
-      `calculator`) that exact-set tool grading records as misses.
+      Per-call tool traces make the over-call pattern visible as
+      `tool_usage_matrix`: a bright column under a tool few tasks plan for is
+      an unplanned habit, not a need. On the latest hosted run `note_store`
+      fired on 4 tasks that never asked for it and `search_documents` on 2 —
+      the exact-set miss driver grading records.
 
       **Business implication:** category composition shows a client exactly
-      where agent risk concentrates — with hosted reliability the failures left
-      are behavioral (extra-tool noise), not infrastructure.
-    figures: [category_success]
+      where agent risk concentrates — with hosted reliability the failures
+      left are behavioral (extra-tool noise), not infrastructure.
+    figures: [tool_usage_matrix]
     metrics_keys: []
   - id: training
     text_md: |
-      No model training: the workflow *is* the artifact. A pydantic-graph
-      Plan→Execute→Critique→End graph threads a typed `WorkflowState`; each
-      node runs a narrow pydantic-ai agent with its own structured-output
-      contract.
+      The workflow *is* the artifact — a pydantic-graph
+      Plan→Execute→Critique→End over typed `WorkflowState`, one pydantic-ai
+      agent per node.
 
       ```mermaid
       flowchart LR
-          A[user request] --> P[Plan<br/>structured step plan]
-          P --> E[Execute<br/>tool calls + bounded repair]
+          A[user request] --> P[Plan<br/>typed step plan]
+          P --> E[Execute<br/>tools + bounded repair]
+          E -->|repair ≤ max_execute_retries| E
+          E -->|retries exhausted| F[End<br/>failure]
           E --> C[Critique<br/>self-check]
-          C -->|fail, once| P
-          C -->|pass| R[WorkflowResult<br/>answer, steps, tools, tokens, traces]
+          C -->|revise, ≤1| E
+          C -->|pass| R[WorkflowResult<br/>answer, steps, tools, traces]
       ```
 
-      - **Execute** carries the five research-ops tools and repairs validation
-        failures on a bounded path; **Critique** may loop back to Plan once.
-      - **Human checkpoint** — Plan can pause instead: the typed
-        `ApprovalRequest` plus full state serialize to `data/checkpoint.json`;
-        the CLI resumes with approve (continue at Execute) or
-        reject-with-feedback (re-plan, then Execute).
-      - **Tool registry** — a `PrefixedToolset` composes a second math toolset
-        without name collisions (unit-tested); `search_documents` imports
-        `rag_agent.index` as a workspace dependency for read-only retrieval.
-      - **Model presets** — hosted runs use `kimi-for-coding` with the platform
-        preset (thinking disabled, temperature omitted — the endpoint rejects
-        explicit values); local runs use Ollama (`qwen3:32b`) or any
-        OpenAI-compatible server (LM Studio included) through the same branch.
-        Each node retries its agent up to 3 times against empty-turn flakiness.
+      Critique `revise` loops back to **Execute** (never Plan); Execute
+      repairs failures on a bounded self-loop, exiting to `End(failure)`
+      when retries are exhausted. The human gate re-enters the same graph
+      elsewhere:
 
-      **Business implication:** every transition, retry, and loop bound is code,
-      so the workflow a client audits is the workflow that runs.
-    figures: []
+      ```mermaid
+      flowchart LR
+          PL[Plan] -->|pause| G[ApprovalCheckpoint<br/>ApprovalRequest + state on disk]
+          G -->|approve: re-enter| E[Execute]
+          G -->|reject + feedback| RP[Plan<br/>re-plan]
+      ```
+
+      **Toolset** (traced per call: name, args, latency, size, ok):
+
+      | tool | signature | does | guardrail | use when | this run |
+      |---|---|---|---|---|---|
+      | `calculator` | `(expr) -> float` | AST arithmetic | no names/calls; exp ≤ 64 | arithmetic | 16 / 11 (2 unplanned) |
+      | `unit_convert` | `(value, from, to) -> float` | fixed-table conversion | dimension match | convert units | 3 / 3 |
+      | `search_handbook` | `(query, top_k=3) -> list[str]` | keyword search, 12 docs | corpus in code | station facts | 19 / 11 |
+      | `search_documents` | `(query, top_k=3) -> list[str]` | dense retrieval, 01's FAISS | read-only index | real-corpus lookup | 4 / 3 (2 unplanned) |
+      | `note_store` | `(ctx, action, note="") -> list[str]` | per-run notebook | no empty appends | "record" requested | 5 / 5 (4 unplanned) |
+    figures: [agent_architecture]
     metrics_keys: []
   - id: evaluation
     text_md: |
@@ -184,57 +189,63 @@ sections:
         $2.00, and a $0.25 per-task cap aborts a task mid-run (`budget_exceeded`
         in the record, suite continues); `budget_limits` rides every live call.
       - **The grader's view** — `per_task_grading` renders answer success vs
-        tool selection (the hosted model answers everything but pads with extra
-        tools); `cost_latency_bars` adds the cost/latency profile per task.
-      - **Tests** — 57 offline tests (scripted `FunctionModel`, fixture search
-        index) cover the graph, HITL, tools, documents, budget paths, and eval
-        machinery.
+        tool selection; `tool_usage_matrix` and `node_waterfall` turn the
+        per-call traces into the two behavioral stories (over-call noise,
+        single-visit latency); `agent_architecture` renders the graph itself;
+        `cost_latency_bars` adds the cost/latency profile per task.
+      - **Trajectory decomposition** — `metrics.json detail.tooling`
+        decomposes the exact-set score offline: per-tool expected vs extra
+        calls, an extra-call breakdown per task, and unused expected slots
+        (none this run).
+      - **Tests** — 62 offline tests cover the graph, HITL, tools, documents,
+        budget paths, tool capture, and eval machinery.
 
       **Business implication:** deterministic, offline grading is what makes an
       agent's quality a contract term rather than a demo impression.
-    figures: [per_task_grading, cost_latency_bars]
+    figures: [per_task_grading, tool_usage_matrix, cost_latency_bars, agent_architecture]
     metrics_keys: [agentic_suite]
   - id: results
     text_md: |
-      Hosted run on `kimi-for-coding` (thinking disabled), plain `run-all`:
-      **all 15 tasks in ~9.5 minutes** — the local 32B needed >2 hours for 8.
+      Hosted run on `kimi-for-coding`, plain `run-all`, per-call capture on:
+      **15/15 ok, all critiques pass, zero retries**.
 
       - answer success **15/15**, step budget **15/15**, latency budget
-        **14/15** — hosting removed every infrastructure failure (the local
-        run lost t07/t09 to plan-node flakiness)
-      - the suite catches what demos hide: exact-set tool grading flagged
-        unprompted extra tool calls on 12 of 15 otherwise-correct answers —
-        tool selection **3/15** (20%)
-      - latency: median **19.9 s** per task; p95 266.9 s — one runaway
-        execute loop on t14, cut by the 4M-token `UsageLimits`, recovered
-        via bounded retry
-      - tokens: **163k in + 14k out**; ledger total **$0.13**
-        cloud-equivalent of the $2.00 cap (cache reads 30%)
+        **15/15** — t14's previous 266.9 s runaway finished in 18.0 s
+      - tool selection **8/15** exact-set (up from 3/15); the misses are 8
+        unplanned calls, itemized below
+      - call precision **83%** (39 of 47 calls planned); tool recall
+        **100%** — nothing expected was skipped
+      - latency: median **17.1 s**, p95 25.4 s — single-visit executes
+      - tokens: **93k in + 13k out**; ledger total **$0.10** of the $2.00
+        cap (cache reads ~30%; pre-cache rate-card sum $0.14)
 
-      | task | answer | tool set | latency | est. cost |
+      | task | answer | tool set | latency | calls |
       |---|---|---|---|---|
-      | t01 | ✓ | +note_store | 17.1 s | $0.0070 |
-      | t02 | ✓ | +note_store | 16.5 s | $0.0073 |
-      | t03 | ✓ | +note_store | 22.5 s | $0.0111 |
-      | t04 | ✓ | +note_store | 27.2 s | $0.0132 |
-      | t05 | ✓ | +note_store,docs | 33.9 s | $0.0138 |
-      | t06 | ✓ | +note_store,docs | 28.7 s | $0.0158 |
-      | t07 | ✓ | +calculator | 13.3 s | $0.0063 |
-      | t08 | ✓ | +calculator | 13.5 s | $0.0061 |
-      | t09 | ✓ | +calculator | 11.6 s | $0.0063 |
-      | t10 | ✓ | +note_store,docs | 45.9 s | $0.0516 |
-      | t11 | ✓ | exact | 13.3 s | $0.0077 |
-      | t12 | ✓ | exact | 19.9 s | $0.0108 |
-      | t13 | ✓ | exact | 23.3 s | $0.0093 |
-      | t14 | ✓ | +search_documents | 266.9 s | $0.0422 |
-      | t15 | ✓ | +calculator | 14.9 s | $0.0097 |
+      | t01 | ✓ | +note_store | 16.3 s | 2 |
+      | t02 | ✓ | exact | 9.7 s | 1 |
+      | t03 | ✓ | exact* | 17.1 s | 3 |
+      | t04 | ✓ | exact | 17.8 s | 2 |
+      | t05 | ✓ | +note_store,docs | 25.4 s | 4 |
+      | t06 | ✓ | exact* | 20.4 s | 6 |
+      | t07 | ✓ | exact | 10.9 s | 1 |
+      | t08 | ✓ | exact | 9.8 s | 1 |
+      | t09 | ✓ | +calculator | 10.3 s | 2 |
+      | t10 | ✓ | +note_store | 22.3 s | 4 |
+      | t11 | ✓ | +note_store | 21.4 s | 5 |
+      | t12 | ✓ | exact* | 27.3 s | 6 |
+      | t13 | ✓ | +search_documents | 16.6 s | 3 |
+      | t14 | ✓ | exact* | 18.0 s | 4 |
+      | t15 | ✓ | +calculator | 15.6 s | 3 |
 
-      Per-task costs pre-cache-discount (sum $0.22); ledger total $0.13.
+      *exact set, with duplicate in-set calls (t12 searched the handbook 4x)
+      — free under exact-set grading, visible in the traces.
+      Extra calls: `note_store` ×4 (t01/t05/t10/t11), `calculator` ×2
+      (t09/t15), `search_documents` ×2 (t05/t13).
 
-      **Business implication:** at ~$0.01 cloud-equivalent per task and ~20 s
-      latency, graded multi-step agents are an operating tier — budgets and
+      **Business implication:** ~$0.01 cloud-equivalent and ~17 s per task
+      with enforced budgets make graded agents an operating tier —
       checkpoints make them delegable.
-    figures: [per_task_grading, per_task_latency, category_success, cost_latency_bars]
+    figures: [per_task_grading, node_waterfall, tool_usage_matrix, cost_latency_bars, agent_architecture]
     metrics_keys: [agentic_suite]
   - id: conclusions
     text_md: |
@@ -252,10 +263,12 @@ sections:
         suite exercises in tests; the one runaway loop the run produced was cut
         by them, not by luck.
 
-      The machinery is trustworthy — 57 tests cover the graph, HITL, tools,
-      documents, budget paths, and eval harness — and the remaining weak
-      point is behavioral: hosted models over-call tools, which exact-set
-      grading counts as misses on otherwise-perfect answers.
+      The machinery is trustworthy — 62 tests cover the graph, HITL, tools,
+      documents, budget paths, tool capture, and eval harness — and the
+      remaining weak point is behavioral: hosted models still pad with
+      unplanned tools (8 extra calls this run) and duplicate in-set calls,
+      which exact-set grading counts as misses on otherwise-perfect answers.
+      Per-call traces now make that noise measurable instead of anecdotal.
 
       **Business implication:** adopt this pattern when actions are
       consequential and auditable — human checkpoints for irreversible steps,

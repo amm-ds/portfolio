@@ -39,6 +39,23 @@ class StepTrace(PortfolioBaseModel):
     latency_s: float = Field(default=0.0, ge=0)
 
 
+class ToolCallTrace(PortfolioBaseModel):
+    """One tool invocation captured during an Execute visit.
+
+    Written by the traced research-ops toolset into a per-run buffer; the
+    Execute node mirrors the buffer into the run record. ``args_brief`` is a
+    truncated repr (~80 chars) of the call arguments, ``result_chars`` the
+    length of the stringified result, ``ok`` False when the tool raised.
+    """
+
+    name: str
+    node: Literal["plan", "execute", "critique"] = "execute"
+    args_brief: str = ""
+    latency_s: float = Field(default=0.0, ge=0)
+    result_chars: int = Field(default=0, ge=0)
+    ok: bool = True
+
+
 class WorkflowState(PortfolioBaseModel):
     """Mutable state threaded through the Plan → Execute → Critique graph.
 
@@ -56,6 +73,7 @@ class WorkflowState(PortfolioBaseModel):
 
     steps_taken: list[str] = Field(default_factory=list)
     tools_used: list[str] = Field(default_factory=list)
+    tool_traces: list[ToolCallTrace] = Field(default_factory=list)
     step_traces: list[StepTrace] = Field(default_factory=list)
     input_tokens: int = Field(default=0, ge=0)
     output_tokens: int = Field(default=0, ge=0)
@@ -64,6 +82,7 @@ class WorkflowState(PortfolioBaseModel):
     retries: int = Field(default=0, ge=0)
     critique_feedback: str = ""
     critique_loops: int = Field(default=0, ge=0)
+    critique_verdict: str = ""
     max_execute_retries: int = Field(default=1, ge=0)
     max_critique_loops: int = Field(default=1, ge=0)
 
@@ -98,6 +117,9 @@ class WorkflowResult(PortfolioBaseModel):
     steps_taken: list[str]
     tools_used: list[str]
     step_traces: list[StepTrace] = Field(default_factory=list)
+    tool_calls: list[ToolCallTrace] = Field(default_factory=list)
+    plan_steps: list[str] = Field(default_factory=list)
+    critique_verdict: str | None = None
     confidence: float = Field(ge=0.0, le=1.0)
     retries: int = Field(default=0, ge=0)
     critique_loops: int = Field(default=0, ge=0)
@@ -168,7 +190,10 @@ class TaskRunRecord(PortfolioBaseModel):
     ``status`` is ``budget_exceeded`` when the run was cut off by a budget cap:
     the per-task cloud-equivalent cap (recorded, suite continues) or the suite
     cap (recorded, remaining tasks aborted). ``steps`` is the per-node step
-    trace; records written before trace capture lack it and load as ``[]``.
+    trace; ``tool_calls`` the per-invocation tool trace (both empty on records
+    written before trace capture, and on budget/error cutoffs); ``plan_steps``
+    the approved plan's step list; ``critique_verdict`` the final critique
+    decision (``None`` when the graph failed before Critique).
     """
 
     task_id: str = Field(min_length=1)
@@ -177,6 +202,9 @@ class TaskRunRecord(PortfolioBaseModel):
     steps_taken: list[str]
     tools_used: list[str]
     steps: list[StepTrace] = Field(default_factory=list)
+    tool_calls: list[ToolCallTrace] = Field(default_factory=list)
+    plan_steps: list[str] = Field(default_factory=list)
+    critique_verdict: str | None = None
     confidence: float = Field(ge=0.0, le=1.0)
     retries: int = Field(default=0, ge=0)
     critique_loops: int = Field(default=0, ge=0)

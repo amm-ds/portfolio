@@ -18,44 +18,55 @@
 | `documents.py` | Cross-project arm: `search_documents` loads project 01's persisted FAISS index + chunk metadata **read-only** (`rag_agent.index` workspace dependency) — dense retrieval over 3.5k Wikipedia chunks, no re-indexing |
 | `workflow.py` | pydantic-graph `Plan → Execute → Critique → End` workflow with typed state, a bounded repair path on validation failure, a one-shot critique loop-back, per-node step traces, and hosted/local model presets |
 | `hitl.py` | Human-in-the-loop checkpoint: plan, pause with a typed `ApprovalRequest`, serialize to `data/checkpoint.json`, resume via CLI (approve / reject-with-feedback) |
-| `evals.py` | 15-task suite with exact ground truths, `pydantic-evals` graders (answer success, tool selection, step budget, latency budget), spend-ledger budget wiring, report builder with four figures |
+| `evals.py` | 15-task suite with exact ground truths, `pydantic-evals` graders (answer success, tool selection, step budget, latency budget), spend-ledger budget wiring, per-call tool-trace capture, offline tooling decomposition, report builder with five figures |
 | `cli.py` | `prepare` / `run` / `run-all` / `evaluate` / `checkpoint request|approve|reject` |
 
 ## Results
 
 All **15 suite tasks** ran end-to-end on the hosted Kimi coding endpoint
-(`kimi-for-coding`, thinking disabled) via plain `run-all` — ~9.5 minutes of
-wall clock for the suite, where the local 32B reasoning model needed >2 hours
-for 8 tasks. See `reports/metrics.json` and `reports/report.html` (written by
+(`kimi-for-coding`) via plain `run-all` with per-call tool capture on.
+See `reports/metrics.json` and `reports/report.html` (written by
 `evaluate`); grading is deterministic and runs fully offline from
 `data/run_records.json`.
 
-| task | category | answer | tool set | latency | tokens (in/out) | est. cost |
-|---|---|---|---|---|---|---|
-| t01 | lookup | ✓ | +note_store | 17.1s | 4,637/595 | $0.0070 |
-| t02 | lookup | ✓ | +note_store | 16.5s | 4,678/654 | $0.0073 |
-| t03 | calculation | ✓ | +note_store | 22.5s | 7,619/859 | $0.0111 |
-| t04 | calculation | ✓ | +note_store | 27.2s | 8,084/1,289 | $0.0132 |
-| t05 | calculation | ✓ | +note_store, search_documents | 33.9s | 9,257/1,126 | $0.0138 |
-| t06 | calculation | ✓ | +note_store, search_documents | 28.7s | 11,189/1,158 | $0.0158 |
-| t07 | conversion | ✓ | +calculator | 13.3s | 4,411/467 | $0.0063 |
-| t08 | conversion | ✓ | +calculator | 13.5s | 4,343/451 | $0.0061 |
-| t09 | conversion | ✓ | +calculator | 11.6s | 4,361/494 | $0.0063 |
-| t10 | multi_step | ✓ | +note_store, search_documents | 45.9s | 44,470/1,777 | $0.0516 |
-| t11 | multi_step | ✓ | exact | 13.3s | 4,945/685 | $0.0077 |
-| t12 | note_keeping | ✓ | exact | 19.9s | 6,961/948 | $0.0108 |
-| t13 | calculation | ✓ | exact | 23.3s | 5,459/959 | $0.0093 |
-| t14 | multi_step | ✓ | +search_documents | 266.9s | 36,125/1,527 | $0.0422 |
-| t15 | lookup (real corpus) | ✓ | +calculator | 14.9s | 6,718/742 | $0.0097 |
+| task | category | answer | tool set | latency | calls |
+|---|---|---|---|---|---|
+| t01 | lookup | ✓ | +note_store | 16.3s | 2 |
+| t02 | lookup | ✓ | exact | 9.7s | 1 |
+| t03 | calculation | ✓ | exact* | 17.1s | 3 |
+| t04 | calculation | ✓ | exact | 17.8s | 2 |
+| t05 | calculation | ✓ | +note_store, search_documents | 25.4s | 4 |
+| t06 | calculation | ✓ | exact* | 20.4s | 6 |
+| t07 | conversion | ✓ | exact | 10.9s | 1 |
+| t08 | conversion | ✓ | exact | 9.8s | 1 |
+| t09 | conversion | ✓ | +calculator | 10.3s | 2 |
+| t10 | multi_step | ✓ | +note_store | 22.3s | 4 |
+| t11 | multi_step | ✓ | +note_store | 21.4s | 5 |
+| t12 | note_keeping | ✓ | exact* | 27.3s | 6 |
+| t13 | calculation | ✓ | +search_documents | 16.6s | 3 |
+| t14 | multi_step | ✓ | exact* | 18.0s | 4 |
+| t15 | lookup (real corpus) | ✓ | +calculator | 15.6s | 3 |
+
+\* exact tool set, but with duplicate in-set calls (e.g. t12 searched the
+handbook 4×) — free under exact-set grading, now visible in the captured
+`tool_calls` traces.
 
 Headline numbers (hosted full run): **answer success 15/15**, step budget
-15/15, latency budget 14/15 (t14 had one runaway execute loop — cut by the
-4M-token `UsageLimits`, recovered on the bounded retry), **tool selection
-3/15** — exact-set grading records the hosted model's unprompted extra tool
-calls (`note_store`, `calculator`) as misses on otherwise-correct answers.
-Median latency **19.9s** per task (local 32B: 474s). Totals: 163k in + 14k out
-tokens; ledger spend **$0.13** of the $2.00 suite cap (per-task costs above
-are pre-cache-discount rate-card estimates, summing to $0.22).
+15/15, latency budget 15/15 (t14 — the previous runaway at 266.9 s —
+finished in 18.0 s), **tool selection 8/15** exact-set (up from 3/15) — the
+misses are 8 unplanned calls: `note_store` ×4 (t01/t05/t10/t11),
+`calculator` ×2 (t09/t15), `search_documents` ×2 (t05/t13). Median latency
+**17.1s** per task; call precision 83% (39 of 47 calls planned), tool recall
+100%. Totals: 93k in + 13k out tokens; ledger spend **$0.10** of the $2.00
+suite cap ($0.14 pre-cache rate-card sum).
+
+Figures (in `reports/figures/`, `.html` + `.json` per figure):
+`per_task_grading` (answers vs exact-set tool selection),
+`tool_usage_matrix` (captured calls per task × tool), `node_waterfall`
+(latency stacked per graph visit), `cost_latency_bars` (tokens, cost,
+latency per task), `agent_architecture` (the graph itself: nodes, retry
+bound, revise loop, HITL lane). Every record's `tool_calls` trace shows
+each tool invocation with args, latency, result size, and success.
 
 ## Cost
 
