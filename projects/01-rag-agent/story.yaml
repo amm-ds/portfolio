@@ -135,7 +135,9 @@ sections:
         `all-MiniLM-L6-v2` (L2-normalized, CPU) into a FAISS `IndexFlatIP`;
         at query time the top 5×k embedding hits are re-scored by the
         `ms-marco-MiniLM-L-6-v2` cross-encoder so the *right* passage tops
-        the list — which is what a reading LLM actually consumes.
+        the list — which is what a reading LLM actually consumes. The
+        `retrieval_funnel` quantifies the funnel from embedding hits to
+        reranked citations.
       - **Provider-agnostic agent layer** — per ADR-0004
         (`docs/architecture/adr/0004-llm-provider-abstraction.md`): an
         env-configured OpenAI-compatible endpoint first, local Ollama second
@@ -156,29 +158,25 @@ sections:
       - **Bounded HPO grid** — 3 chunk sizes × top_k ∈ {3, 5, 8, 10}, a
         MiniLM vs BGE-small arm, a rerank on/off ablation, and a **seeded
         uniform-random baseline** marking the floor any ranker must beat; the
-        `chunk_size_sweep` and `retrieval_hpo_frontier` figures render the
-        grid.
+        `chunk_size_sweep` figure renders the grid.
       - **Two judge layers** — a rubric judge (provider model by default,
         `JUDGE=keyword` as the deterministic CI floor) measuring faithfulness,
         relevance and context recall; and, behind `evaluate --ragas`, the
-        **RAGAS** set (faithfulness, answer_relevancy, context_precision,
-        context_recall) scored by the active provider (local: $0 API cost;
-        hosted: metered).
+        **RAGAS** set scored by the active provider (local $0; hosted
+        metered).
       - **Verify-then-answer loop** — every drafted answer is claim-split and
         entailment-checked against the full text of its cited chunks;
-        unsupported claims are repaired (budget-capped, max 2 calls) or
-        dropped, and answers below the min_support floor (0.6) fall back to
-        abstention.
+        unsupported claims are repaired (≤2 calls) or dropped; answers below
+        min_support (0.6) abstain.
       - **Operations** — per-query latency and token usage persist to
-        `reports/cost_telemetry.json`; hosted runs add a per-phase meter
-        (agent / judge / verify / RAGAS calls, tokens and cloud-equivalent
-        spend) with a hard USD cap per run, and schema-invalid agent output
-        is retried (≤2) before it counts as a format failure.
+        `reports/cost_telemetry.json` (spread: `latency_histogram`); hosted
+        runs add a per-phase meter (calls, tokens, cloud-equivalent spend)
+        with a hard USD cap, and schema-invalid output is retried (≤2) before
+        it counts as a format failure.
 
-      Everything lands in `reports/metrics.json`. Local inference bounds the
-      LLM phases to a 30-question subset; the hosted pass runs the full 65
-      questions with every phase metered; `evaluate --offline` keeps a
-      CI-safe retrieval-only path.
+      Everything lands in `reports/metrics.json`; local runs bound LLM phases
+      to a 30-question subset, the hosted pass runs all 65 with every phase
+      metered, and `evaluate --offline` keeps a CI-safe retrieval-only path.
 
       **Business implication:** the offline/keyword path means the quality
       harness still runs in CI without secrets or GPUs, while the real
@@ -186,7 +184,6 @@ sections:
       either way.
     figures:
       - chunk_size_sweep
-      - retrieval_hpo_frontier
       - latency_histogram
     metrics_keys:
       - retrieval_chunks_200
@@ -200,8 +197,8 @@ sections:
   - id: results
     text_md: |
       Retrieval first — everything downstream depends on it (65-question
-      golden set, seeded random floor; identical across providers — the
-      sweep is embeddings-only):
+      golden set, seeded random floor; provider-independent embeddings sweep,
+      `retrieval_hpo_frontier`; encoder tie in `model_comparison`):
 
       | Configuration | recall@5 | recall@10 | MRR@5 |
       |---|---|---|---|
@@ -220,14 +217,14 @@ sections:
       | hosted kimi-for-coding, verify ON (n=65) | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] | 39 repair calls |
 
       - **Grounding tracks the provider** — hosted faithfulness 0.685
-        [0.605, 0.760] vs 0.606 local (different denominators, 65 vs 30 —
-        directional, not a controlled win); relevancy 0.878 [0.820, 0.918].
+        [0.605, 0.760] vs 0.606 local (65 vs 30 questions — directional, not
+        controlled); relevancy 0.878 [0.820, 0.918].
         Refusal accuracy 0.9 [0.7, 1.0]; false-abstention 0.036.
       - **Verify overhead is calls, not minutes** — hosted p50/p95 latency
         23 s / 175 s per answer (p95 tail: one runaway tool-loop question
-        cut off by the token guard); the new output-retry recovered the
-        run's one schema-invalid draft, so the lone format-failure is the
-        token guard, not schema noise.
+        cut off by the token guard); output-retry recovered the run's one
+        schema-invalid draft — the lone format-failure is the token guard,
+        not schema noise.
       - **Metered cost (hosted, full 65-q run)** — $3.58 cloud-equivalent
         over 922 calls: agent $1.79, RAGAS $1.13, verify $0.47, judge $0.19;
         79.6% of input tokens were prompt-cache reads. The USD cap is real:
@@ -235,8 +232,8 @@ sections:
         raised cap.
 
       Retrieval is solid (0.831 vs 0.031 random); grounding is still the
-      bottleneck — the hosted column buys ~+0.08 faithfulness, and the
-      meter says what it costs.
+      bottleneck — the hosted column buys ~+0.08 faithfulness, and the meter
+      says what it costs (`failure_taxonomy` charts the 44/18/2/1 hosted mix).
 
       **Business implication:** quality claims now carry a provider A/B and
       a per-phase cost table — the evidence a client needs to choose where

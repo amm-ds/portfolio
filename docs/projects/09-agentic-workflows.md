@@ -37,7 +37,7 @@ misses — which is why a "failure" there can still be a correct answer.
 | tokens / cost | 93k in + 13k out; ledger total **$0.10** cloud-equivalent of the $2.00 suite cap ($0.14 pre-cache-discount rate-card sum) |
 | tooling decomposition | 47 captured tool calls: call precision **83%**, tool recall **100%** (nothing expected was ever skipped) |
 
-![All 15 hosted tasks pass answer success while exact-set tool selection flags unprompted extra calls on 12 of 15 tasks — the gap demos hide.](../assets/projects/09-agentic-workflows/per_task_grading.png){ width="100%" }
+![All 15 hosted tasks pass answer success while exact-set tool selection flags 8 unplanned extra tool calls across 7 of 15 tasks — the gap demos hide.](../assets/projects/09-agentic-workflows/per_task_grading.png){ width="100%" }
 
 | suite | 15 tasks, 5 categories — 14 over the deterministic Atlas Valley corpus + 1 real-data lookup over 01's Wikipedia index (t15) |
 |---|---|
@@ -55,7 +55,7 @@ flakiness.
 
 ![Which tools each task called, and how often — the over-call pattern (note_store, search_documents, duplicate in-set calls) that exact-set grading flags is visible per task.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
 
-![Where the time goes per task: stacked plan/execute/critique visits — every task now completes in 7–23 s, far under the 180 s budget; a retry would appear as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
+![Where the time goes per task: stacked plan/execute/critique visits — every task completes in 10–27 s, far under the 180 s budget; a retry would appear as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
 
 ## Architecture
 

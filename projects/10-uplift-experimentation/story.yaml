@@ -131,11 +131,11 @@ sections:
       All 42,613 customers scored out-of-fold; three policies plus the
       random, treat-everyone, and no-campaign baselines, judged two ways.
 
-      - **Qini curve / coefficient (`qini_curves`).** Sorted by score, the
+      - **Qini curve / coefficient.** Sorted by score, the
         curve plots incremental conversions at each targeted fraction f. The
         coefficient — the area between the policy curve and the random line —
         is the uplift analogue of AUROC, in conversion units.
-      - **Profit frontier (`profit_frontier`).** profit(f) = inc(f)·$114 −
+      - **Profit frontier.** profit(f) = inc(f)·$114 −
         mailed(f)·$0.01, with $114 = `revenue_per_conversion` (mean spend
         among converters; no COGS in the snapshot, so profit = revenue −
         send cost). The recommendation is the argmax at the 25% budget —
@@ -145,7 +145,7 @@ sections:
         row-resample per replication, so differences are paired on identical
         resamples. Rankings are stated on the difference CI — spanning zero
         means not established.
-      - **Cost sensitivity (`cost_sensitivity`).** The profit-maximizing
+      - **Cost sensitivity.** The profit-maximizing
         fraction is recomputed across a sweep of `cost_per_email` vs
         mail-everyone profit, plus the analytic break-even send cost — the
         answer to "at what cost does targeting beat mailing everyone?"
@@ -157,12 +157,13 @@ sections:
 
       **Business implication:** the evaluation answers "who do I mail and
       what is it worth" in conversions and dollars, not abstract scores.
-    figures: [qini_curves, uplift_by_decile, profit_frontier, cost_sensitivity]
+    figures: [uplift_by_decile]
   - id: results
     text_md: |
       Treated 1.253% vs control 0.573% → ATE **+0.68pp**, SE 0.09pp — real,
-      small, exactly the regime where targeting discipline pays. CUPED (log
-      prior-year spend covariate) leaves the ATE unchanged but removes only
+      small, exactly the regime where targeting discipline pays. CUPED
+      (`cuped_variance`, log prior-year spend covariate) leaves the ATE
+      unchanged but removes only
       **0.08% of conversion variance** (0.52% on visit) — prior spend barely
       predicts a ~1% event: CUPED is exactly as good as its covariate.
       Power: **3,063 customers/arm** at alpha 0.05 / power 0.8 vs 21,306

@@ -134,27 +134,26 @@ sections:
     text_md: |
       The workflow *is* the artifact — a pydantic-graph
       Plan→Execute→Critique→End over typed `WorkflowState`, one pydantic-ai
-      agent per node.
+      agent per node; `agent_architecture` renders this graph.
 
       ```mermaid
       flowchart LR
-          A[user request] --> P[Plan<br/>typed step plan]
+          A[user request] --> P[Plan]
           P --> E[Execute<br/>tools + bounded repair]
           E -->|repair ≤ max_execute_retries| E
           E -->|retries exhausted| F[End<br/>failure]
           E --> C[Critique<br/>self-check]
           C -->|revise, ≤1| E
-          C -->|pass| R[WorkflowResult<br/>answer, steps, tools, traces]
+          C -->|pass| R[WorkflowResult]
       ```
 
       Critique `revise` loops back to **Execute** (never Plan); Execute
-      repairs failures on a bounded self-loop, exiting to `End(failure)`
-      when retries are exhausted. The human gate re-enters the same graph
-      elsewhere:
+      self-repairs on a bounded loop, exiting to `End(failure)` when retries
+      exhaust. The human gate re-enters the same graph elsewhere:
 
       ```mermaid
       flowchart LR
-          PL[Plan] -->|pause| G[ApprovalCheckpoint<br/>ApprovalRequest + state on disk]
+          PL[Plan] -->|pause| G[ApprovalCheckpoint<br/>state on disk]
           G -->|approve: re-enter| E[Execute]
           G -->|reject + feedback| RP[Plan<br/>re-plan]
       ```
@@ -188,11 +187,9 @@ sections:
       - **Budget wiring** — the ledger resets at suite start, caps the suite at
         $2.00, and a $0.25 per-task cap aborts a task mid-run (`budget_exceeded`
         in the record, suite continues); `budget_limits` rides every live call.
-      - **The grader's view** — `per_task_grading` renders answer success vs
-        tool selection; `tool_usage_matrix` and `node_waterfall` turn the
-        per-call traces into the two behavioral stories (over-call noise,
-        single-visit latency); `agent_architecture` renders the graph itself;
-        `cost_latency_bars` adds the cost/latency profile per task.
+      - **The grader's view** — `cost_latency_bars` adds the cost/latency
+        profile per task; per-task grading, the trace reads, and the graph
+        render in results, eda, and training respectively.
       - **Trajectory decomposition** — `metrics.json detail.tooling`
         decomposes the exact-set score offline: per-tool expected vs extra
         calls, an extra-call breakdown per task, and unused expected slots
@@ -202,7 +199,7 @@ sections:
 
       **Business implication:** deterministic, offline grading is what makes an
       agent's quality a contract term rather than a demo impression.
-    figures: [per_task_grading, tool_usage_matrix, cost_latency_bars, agent_architecture]
+    figures: [cost_latency_bars]
     metrics_keys: [agentic_suite]
   - id: results
     text_md: |
@@ -211,11 +208,12 @@ sections:
 
       - answer success **15/15**, step budget **15/15**, latency budget
         **15/15** — t14's previous 266.9 s runaway finished in 18.0 s
-      - tool selection **8/15** exact-set (up from 3/15); the misses are 8
-        unplanned calls, itemized below
+      - tool selection **8/15** exact-set (up from 3/15); `per_task_grading`
+        renders the answer-vs-tool-set read, the misses itemized below
       - call precision **83%** (39 of 47 calls planned); tool recall
         **100%** — nothing expected was skipped
       - latency: median **17.1 s**, p95 25.4 s — single-visit executes
+        (`node_waterfall`)
       - tokens: **93k in + 13k out**; ledger total **$0.10** of the $2.00
         cap (cache reads ~30%; pre-cache rate-card sum $0.14)
 
@@ -245,7 +243,7 @@ sections:
       **Business implication:** ~$0.01 cloud-equivalent and ~17 s per task
       with enforced budgets make graded agents an operating tier —
       checkpoints make them delegable.
-    figures: [per_task_grading, node_waterfall, tool_usage_matrix, cost_latency_bars, agent_architecture]
+    figures: [per_task_grading, node_waterfall]
     metrics_keys: [agentic_suite]
   - id: conclusions
     text_md: |

@@ -43,7 +43,7 @@ validation macro-F1 (0.8880 → 0.8953) but gains sat inside seed noise
 (mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
 honesty rule kept the original artifact as `distilbert_tuned`.
 
-![The full 120k DistilBERT fine-tune climbs to 0.946 macro-F1 on the validation split within two epochs](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
+![The full 120k DistilBERT fine-tune climbs to 0.946 macro-F1 on the test split within two epochs](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
 
 Temperature
 scaling cuts test ECE 0.047 → 0.013 for free. The dominant confusion pair,

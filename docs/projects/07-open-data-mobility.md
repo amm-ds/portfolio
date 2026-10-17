@@ -10,7 +10,7 @@ trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
 
-![Zone-hour pickup demand peaks in Manhattan (14.2 pickups/h) while outer boroughs stay sparse, across the 265-zone serving grid.](../assets/projects/07-open-data-mobility/zone_demand_map.png){ width="100%" }
+![Zone-hour pickup demand concentrates in Midtown/Manhattan cores and the JFK/EWR airports — the busiest zone averages 213.9 pickups/hour across the 265-zone grid.](../assets/projects/07-open-data-mobility/zone_demand_map.png){ width="100%" }
 
 **Flagship — complete.** End-to-end demand nowcasting on real, messy,
 GB-scale public data: 41.2M NYC yellow-taxi trips (2024) joined with NOAA
@@ -22,12 +22,12 @@ temporal splits.
 
 The GBM removes **28.4% of forecast error** vs the "same hour last week"
 baseline on a strict future holdout — and the features, not the tuner, carry
-the signal: 30 trials of HPO moved MAE by 0.1%. Tuned challengers (xgb/lgbm)
+the signal: 30 trials of HPO moved MAE by 0.2%. Tuned challengers (xgb/lgbm)
 won on the Q4 test window but lost on the embargoed validation window, so the
 serving rule kept the incumbent — switching on test results would be test-set
 selection. Read the table: MASE normalises by last-week persistence error
-(1.0 = no better than "same hour last week"); lower is better; the bolded row
-is the served model.
+(1.0 = no better than "same hour last week"); lower is better; bold marks
+each column's best, and the served model is the `gbm_mean` incumbent.
 
 | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
 |---|---|---|---|---|---|

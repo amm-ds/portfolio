@@ -265,9 +265,10 @@ sections:
 
       **Business implication:** the value delivered is knowing precisely
       which model wins, by how much, and where it stops winning — with
-      `forecast_vs_actual` and `fold_stability` the two charts to show a
-      client first, and a clean-clone reproduction behind every number.
-    figures: [forecast_vs_actual, fold_stability]
+      the forecast-vs-actual and fold-stability figures from the sections
+      above the two charts to show a client first, and a clean-clone
+      reproduction behind every number.
+    figures: []
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
