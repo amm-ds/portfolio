@@ -54,3 +54,23 @@ evaluation from the pydantic-ai ecosystem — installed, integrates with the age
 - Cost runbooks reframe: "cost incident" becomes an availability/SLO matter locally;
   cloud endpoints (env-configured) retain cost telemetry.
 - New projects inherit the local-first factory via `portfolio_core.llm`.
+
+## Amendment (wave 15, 2026-10-17) — hosted provider A/B on project 01
+
+The local-first default stands; the wave-15 golden-set pass on project 01 adds the
+hosted leg of the A/B. The Kimi Code membership endpoint
+(`https://api.kimi.com/coding/v1`, model `kimi-for-coding`, OpenAI-compatible) is
+wired via `.env`, and the whole evaluation (agent, rubric judge, verify verdicts +
+repairs, RAGAS) runs against it with every LLM phase metered through
+`portfolio_core.llm_budget` under a hard USD cap per run
+(`LLM_COST_LIMIT_USD`). Two endpoint constraints are now platform facts: sampling is
+fixed server-side — explicit `temperature` is rejected, so the
+`hosted_model_settings()`/`neutralize_hosted_model_settings()` preset omits it
+(including neutralizing RAGAS's per-call temperature mutation); thinking CAN be
+disabled via `extra_body={"thinking": {"type": "disabled"}}`, which the preset sets.
+All reported costs are labelled cloud-equivalent estimates at the public
+kimi-k2.8 reference card — the membership key is quota-based, so nothing reported is
+a billed amount. The full 65-question pass metered $3.58 (agent $1.79 / RAGAS
+$1.13 / verify $0.47 / judge $0.19; 79.6% of input tokens prompt-cache reads); a
+first pass tripped the $3.00 cap mid-run and the CLI stopped cleanly — the cap is
+enforced, not advisory.
