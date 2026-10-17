@@ -14,6 +14,8 @@
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
 
+![ALNS plans feasible, capacity- and time-window-valid routes for all 100 C101 customers on the clustered family, within 4.48% of best-known distance.](../assets/projects/06-routing-optimization/route_map_C101.png){ width="100%" }
+
 Fleet operators routing last-mile and field-service vehicles leave fuel,
 driver hours and CO₂ on the table every day. This project answers with a
 deterministic, seeded solver ladder that lands within 4.23% of published
@@ -56,6 +58,8 @@ C101 prefix: 191.8 in 2.9 s). All artifacts live in
 maps, per-family gaps, convergence descents, runtime-vs-gap Pareto) with
 `results.md` / `metrics.json` / `report.html` for the full per-instance and
 per-family tables — interactive versions in the [interactive case study](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization).
+
+![HPO-tuned ALNS closes the gap to best-known optima into single digits on every Solomon family (C1 4.48%, C2 6.50%, R1 4.10%, R2 3.04%, RC1 4.75%, RC2 3.00%).](../assets/projects/06-routing-optimization/family_gap.png){ width="100%" }
 
 ## Roadmap
 

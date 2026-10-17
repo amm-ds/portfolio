@@ -38,10 +38,14 @@ output tok/s for that model at the given concurrency.
 | gemma4:31b (dense) | mlx | 2.52 s / 17.6 | 8.28 s / 18.4 | 16.06 s / 18.5 |
 | qwen3:32b (dense, --full) | llamacpp | 5.06 s / 9.6 | 16.31 s / 9.6 | 31.27 s / 9.4 |
 
+![p95 latency grows roughly linearly with concurrency while aggregate tok/s stays flat — decode is memory-bandwidth bound, so batching hides latency but buys no free throughput.](../assets/projects/08-inference-serving/latency_concurrency.png){ width="100%" }
+
 Engine panel (gemma4:31b family, concurrency 1): **MLX 4-bit beats GGUF Q8_0
 on llama.cpp 2.9x on tok/s** (18.8 vs 6.4) with p95 2.47 s vs 7.12 s — but
 quant is confounded (the registry has no same-quant cross-runner pair), so
 this reads as engine+packaging, not a pure runner race.
+
+![MLX 4-bit beats GGUF Q8_0 on llama.cpp by 2.9x on tok/s (18.8 vs 6.4) with p95 2.47 s vs 7.12 s at concurrency 1.](../assets/projects/08-inference-serving/engine_panel.png){ width="100%" }
 
 Quality-vs-quant (same llama.cpp runner, concurrency 1): **QAT-int4 holds
 1.00 schema-valid and 1.00 keyword quality while running 53% faster than
