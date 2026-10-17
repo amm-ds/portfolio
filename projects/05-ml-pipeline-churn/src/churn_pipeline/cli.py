@@ -34,6 +34,7 @@ from churn_pipeline.model import (
     split_holdout,
     train_model,
 )
+from churn_pipeline.serving import build_serving_artifact
 
 OptN = Annotated[int | None, typer.Option(help="Override n_samples from params.yaml.")]
 OptSeed = Annotated[int | None, typer.Option(help="Override seed from params.yaml.")]
@@ -414,6 +415,16 @@ def evaluate(
 ) -> None:
     """Score the holdout: metrics, calibration, importance, cost curve."""
     evaluate_core(load_config(params_file, n, seed))
+
+
+@app.command("build-serving")
+def build_serving(
+    n: OptN = None,
+    seed: OptSeed = None,
+    params_file: OptParams = Path("params.yaml"),
+) -> Path:
+    """Build the showcase-API serving artifact (loads pickles; no retraining)."""
+    return build_serving_artifact(load_config(params_file, n, seed))
 
 
 @app.command("all")
