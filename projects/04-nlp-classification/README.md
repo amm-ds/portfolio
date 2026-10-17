@@ -68,6 +68,37 @@ data scale. `naive_majority` looks deceptively good on accuracy (0.25 =
 chance on a balanced test split) but collapses on macro-F1 (0.10) — exactly
 why the portfolio scores runs with macro-F1, not accuracy.
 
+### Serving economics
+
+Measured, not estimated — this machine (Apple M4 Max, torch 2.14.1, CPU
+with 12 torch threads), batch=1 end-to-end serving (tokenize + forward for
+the transformers, vectorize + predict for sklearn), n=200 held-out test
+rows per variant, p50 per prediction. Model size: artifact bytes for the
+sklearn pipeline, serialized `state_dict` for torch. Accuracy/F1 for the
+first three rows are the committed 1000-row test-split numbers (no
+re-evaluation); the int8 row's quality is measured on a 2000-row train
+sample (fp32 on the same sample: macro-F1 0.9627 → int8 0.9637, Δ +0.0010 —
+no drop). Cost is cloud-equivalent at a declared rate card ($1 / 1M input
+tokens, $4 / 1M output tokens) with measured token counts (~51.5 input +
+~3.5 output tokens per prediction; classification output ≈ the tokenized
+class name). Full data: [`reports/latency_probe.json`](reports/latency_probe.json),
+reproduce with `uv run python -m nlp_classification.latency_probe --n 200`.
+
+| Variant | Size (MB) | p50 latency (ms) | Throughput (pred/s) | Cost ($/1k preds) | Accuracy | F1 macro |
+|---|---|---|---|---|---|---|
+| `tfidf_logreg` | 0.5 | 0.2 | 4477.8 | 0.0000 | 0.8720 | 0.8714 |
+| `distilbert_tuned` fp32 (bounded) | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9020 | 0.9021 |
+| `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
+| `distilbert_full_120k` int8 (dynamic) | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
+
+Read the table as a routing decision: TF-IDF is ~40x faster and free of
+token-metered cost, at −7.4 pp macro-F1; the full DistilBERT buys that back
+for ~$0.065 per 1k items at ~110 pred/s on a laptop CPU. Dynamic int8
+(`torch.quantization.quantize_dynamic`, qnnpack on arm64) halves model size
+with zero measured quality loss but is **slower** here (13.2 vs 8.7 ms
+p50) — on Apple Silicon the int8 kernels lose to fp32 Accelerate at
+batch=1, so quantization buys memory and transfer, not speed.
+
 ### Full-data path (GPU-track roadmap item — delivered on MPS)
 
 `train-nn --full-data` runs the real scaling route: the full 120k AG News
@@ -109,9 +140,10 @@ Largest Web Retailer…"*) still trip the model, just nearly half as often.
 That residual is a labeling-ambiguity floor, not a data-scale problem — the
 multi-label extension in the roadmap is the honest answer.
 
-Serving economics for this model class — latency percentiles, throughput,
-and cost on local serving stacks (llama.cpp vs MLX on Apple Silicon) — are
-benchmarked in [08 · LLM Inference & Serving](../08-inference-serving/README.md).
+Classifier serving economics — size, latency, throughput, and token cost —
+are measured in the [Serving economics](#serving-economics) table above;
+LLM-serving stacks (llama.cpp vs MLX on Apple Silicon) are benchmarked in
+[08 · LLM Inference & Serving](../08-inference-serving/README.md).
 
 ### HPO — and the honest part
 

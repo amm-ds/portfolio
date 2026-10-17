@@ -153,14 +153,22 @@ def per_class_f1_comparison_figure(
 
 
 def training_curve_figure(history: TrainingHistory) -> go.Figure:
-    """Train/val loss and validation macro-F1 across epochs."""
+    """Train/val loss and validation macro-F1 across epochs.
+
+    Charts the full-120k headline run when its history is available (the
+    bounded-run history is the fallback for the no-GPU CI path).
+    """
     epochs = [e.epoch for e in history.epochs]
+    best = max((e.val_f1_macro for e in history.epochs), default=0.0)
     fig = go.Figure()
     fig.add_scatter(x=epochs, y=[e.train_loss for e in history.epochs], name="train loss")
     fig.add_scatter(x=epochs, y=[e.val_loss for e in history.epochs], name="val loss")
     fig.add_scatter(x=epochs, y=[e.val_f1_macro for e in history.epochs], name="val macro-F1")
     fig.update_layout(
-        title="Hand-written loop: losses and validation macro-F1",
+        title=(
+            f"Fine-tuning saturates within two epochs — val macro-F1 plateaus "
+            f"at ~{best:.3f} while train loss keeps falling"
+        ),
         xaxis_title="epoch",
         yaxis_title="value",
     )
@@ -307,12 +315,19 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
         else cfg.models_dir / NN_MODEL_PATH
     )
 
-    history = TrainingHistory.from_json(cfg.history_path)
+    full_history_path = cfg.reports_dir / "history_fulldata.json"
+    history = TrainingHistory.from_json(
+        full_history_path if full_history_path.exists() else cfg.history_path
+    )
     val_ds = Dataset.load_from_disk(str(cfg.val_dir))
     figures = {
         "eda_class_balance": eda_class_balance_figure(train_ds, val_ds, test_ds, labels),
         "confusion_matrix_selected": confusion_matrix_figure(
-            y_true, y_pred_selected, labels, "Selected model — confusion matrix"
+            y_true,
+            y_pred_selected,
+            labels,
+            "Business → Sci/Tech stays the dominant confusion pair — "
+            "a labeling-ambiguity floor, not a data-scale problem",
         ),
         "per_class_f1_comparison": per_class_f1_comparison_figure(
             y_true, y_pred_selected, y_pred_base.tolist(), labels

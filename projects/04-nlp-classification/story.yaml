@@ -149,11 +149,9 @@ sections:
 
   - id: results
     text_md: |
-      Headline: the full 120k fine-tune of DistilBERT on Apple-Silicon MPS
-      (laptop GPU, seed 42, 2 epochs) reaches **test macro-F1 0.9460**,
-      with validation macro-F1 improving 0.9433 → 0.9464 during training;
-      measured wall-clock ~18–27 min/epoch. Full numbers in
-      `reports/metrics.json` and `reports/report.html`.
+      Headline: the full 120k DistilBERT fine-tune on Apple-Silicon MPS
+      (seed 42, 2 epochs) reaches **test macro-F1 0.9460** (val 0.9433 →
+      0.9464; ~18–27 min/epoch). Full numbers: `reports/metrics.json`.
 
       | # | run | accuracy | f1_macro |
       |---|---|---|---|
@@ -165,32 +163,35 @@ sections:
       | 6 | `distilbert_tuned` (bounded) | 0.9020 | 0.9021 |
       | 7 | `distilbert_full_120k` | 0.9460 | 0.9460 |
 
-      - **Scaling curve:** on the identical untouched test split the ladder
-        climbs 0.10 → 0.2533 → 0.8714 → 0.9021 → 0.9270 (20k-subset
-        evidence) → **0.9460** — +4.4 pp over the bounded models, and
-        confirmation that the published ~0.93–0.95 headroom is reachable
-        on a laptop GPU.
-      - **HPO null result:** the Optuna winner lifted validation macro-F1
-        0.8880 → 0.8953 but scored 0.9011 on test vs the artifact's
-        0.9021; across seeds 42/43/44 the study gives 0.8953 / 0.8852 /
-        0.8926 (mean 0.8910 ± 0.0042) — the gain sits inside seed noise,
-        so the artifact kept the `distilbert_tuned` title.
-      - **Determinism:** the hand-written loop reproduces its trial
-        validation score bit-for-bit when retrained.
-      - **Error floor:** the dominant confusion pair is stable across the
-        curve — Business → Sci/Tech, 24/250 → 15/250 → 14/250 — hybrid
-        technology-business headlines a human editor would also pause on.
-        More data shrinks the frequency, not the pair: a
-        labeling-ambiguity floor, which is why the answer is the
-        multi-label roadmap item, not another tuning knob. The
-        `per_class_f1_comparison` figure shows per-class F1 against the
-        TF-IDF baseline.
+      Serving economics (Apple M4 Max, CPU batch=1, n=200; $1/M-in +
+      $4/M-out card; int8 on a 2000-row train sample):
+
+      | variant | MB | p50 ms | pred/s | $/1k | acc | f1 |
+      |---|---|---|---|---|---|---|
+      | `tfidf_logreg` | 0.5 | 0.2 | 4477.8 | 0.0000 | 0.8720 | 0.8714 |
+      | `distilbert_tuned` fp32 | 255.5 | 9.0 | 110.7 | 0.0656 | 0.9020 | 0.9021 |
+      | `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
+      | `distilbert_full_120k` int8 | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
+
+      **int8:** halves size, no measured quality loss (sample macro-F1
+      0.9627 → 0.9637), but slower at batch=1 (13.2 vs 8.7 ms) — memory,
+      not speed.
+
+      - **Scaling curve:** 0.10 → 0.2533 → 0.8714 → 0.9021 → 0.9270 (20k
+        evidence) → **0.9460** (+4.4 pp over bounded) on the untouched
+        test split — laptop-GPU-confirmed headroom.
+      - **HPO null result:** validation macro-F1 rose 0.8880 → 0.8953 but
+        test scored 0.9011 vs the artifact's 0.9021; seeds 42/43/44 give
+        0.8953 / 0.8852 / 0.8926 (mean 0.8910 ± 0.0042) — inside seed
+        noise; the artifact kept the `distilbert_tuned` title.
+      - **Error floor:** Business → Sci/Tech stays dominant (24/250 →
+        15/250 → 14/250) — hybrid tech-business headlines; more data
+        shrinks the frequency, not the pair (labeling-ambiguity floor,
+        hence the multi-label roadmap item).
 
       **Business implication:** fund the full-data fine-tune when ~7.5 pp
-      macro-F1 over the TF-IDF baseline is worth the GPU budget — and let
-      the HPO/seed episodes decide what to believe: the process discards
-      wins that are noise, so the numbers to trust are exactly the ones
-      that survive all three checks.
+      macro-F1 over TF-IDF is worth ~$0.07 per 1k items; only wins
+      surviving all three checks ship.
     figures: [per_class_f1_comparison]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_full_120k]
 
