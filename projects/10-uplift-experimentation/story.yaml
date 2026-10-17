@@ -29,9 +29,9 @@ sections:
       defensible dollar figure, not a leaderboard AUC.
   - id: objectives
     text_md: |
-      - **Read the experiment honestly:** arm sizes, balance on pre-period
-        covariates, and the difference-in-means effect with its standard
-        error — before any modeling.
+      - **Read the experiment before modeling:** arm sizes, balance on
+        pre-period covariates, and the difference-in-means effect with its
+        standard error — before any modeling.
       - **Reduce variance with CUPED** using a strictly pre-treatment
         covariate (prior-year spend), and *measure* how much variance it
         actually removes rather than assuming the textbook win.
@@ -44,7 +44,7 @@ sections:
         Qini curves and on profit under the campaign cost model, each with a
         paired-bootstrap CI.
       - **Recommend a budget-constrained policy** with an expected
-        incremental-profit delta vs random and the honest limits of
+        incremental-profit delta vs random and the real limits of
         predicting conversions at a 1% base rate.
 
       **Business implication:** every artifact below answers a question a
@@ -192,8 +192,8 @@ sections:
         [−8.18, 9.52] and **spans zero — the curve-area ranking is NOT
         established**; the paired profit-difference CI is [−$3,617, −$48],
         entirely below zero — **T-learner's profit advantage IS
-        established**. Single-policy CIs overlap; the paired difference is
-        honest.
+        established**. Single-policy CIs overlap; trust the paired
+        difference.
       - The response model posts the highest Qini area but the lowest budget
         profit — policy is chosen on the money.
       - The X-learner trails: near-constant propensity and strong overlap
@@ -207,7 +207,7 @@ sections:
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
     text_md: |
-      The full stack — randomization checks, honest effect read, CUPED,
+      The full stack — randomization checks, design-level effect read, CUPED,
       power analysis, uplift meta-learners, Qini, profit frontier — composes
       into one operating decision:
 
@@ -218,7 +218,7 @@ sections:
         reduction is not a formula failure — it measures how much signal the
         covariate carries. Measure it; do not assume the textbook number.
       - **Out-of-fold or it didn't happen:** cross-fitted scores keep the
-        Qini read honest; in-sample uplift curves are decoration.
+        Qini read unbiased; in-sample uplift curves are decoration.
       - **Choose policies on the money, state rankings with intervals:**
         Qini explains, profit decides — the response model's curve area
         would mislead a budget owner here. And the Qini ranking itself is
@@ -226,7 +226,7 @@ sections:
         T-learner, so only the profit ranking is claimed.
       - **Predicting is not changing:** response ranking targets sure
         things; uplift ranking targets persuadables. At a 1% base rate the
-        difference is honest noise management, not magic.
+        difference is noise management, not magic.
 
       **Business implication:** hand this framework a client's randomized
       campaign extract and it returns a targeting policy, its expected

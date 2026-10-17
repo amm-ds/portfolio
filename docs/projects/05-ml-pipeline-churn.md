@@ -5,7 +5,19 @@ rate) with a seeded synthetic CI path (messy on purpose: 2% NaN age, 3% NaN
 support calls, a 9,999 charge outlier) · **Status:** working
 showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
+> **TL;DR:** subscription businesses where a missed churner costs five times a
+> false alarm, and the base rate makes "do nothing" look accurate.
+> The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs that do-nothing
+> policy, with a bootstrap 95% CI of [−485, −343].
+>
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn)
+
 ## What it shows
+
+Churn is asymmetric economics for any subscription business: a missed churner
+costs about five times a false alarm. This project delivers a production-grade
+decision pipeline that cuts that decision cost by **41.9%** (1,035 → 601) vs a
+do-nothing policy on real IBM telco data:
 
 A single self-contained `sklearn.Pipeline` — custom `OutlierCapper` and
 `MissingValueIndicator` transformers, median imputation, scaling, one-hot
@@ -22,6 +34,10 @@ curves, decision-curve analysis, a business-cost curve (FP=1, FN=5), and a
 paired bootstrap CI on the cost delta vs naive.
 
 ## Key results (IBM telco churn, 7,043 rows -> 1,409-row holdout)
+
+How to read this table: business cost (FP=1, FN=5) is the verdict column —
+lower is better; the bolded row is the selected model at its cost-optimal
+threshold.
 
 | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|
@@ -47,9 +63,7 @@ paired bootstrap CI on the cost delta vs naive.
 
 ## Artifacts
 
-- Figures: `eda_churn_profile`, `calibration_curve`, `permutation_importance`,
-  `precision_recall_curve`, `decision_curve`, `business_cost_curve`,
-  `bootstrap_ci` (`.html` + `.json` for the showcase app)
+- Figures: interactive versions in the [interactive case study](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn), served from `reports/figures/` (HTML + JSON for the showcase app)
 - Metrics: `reports/metrics.json` (5-run ladder + `_meta.cost_delta_ci`) ·
   Report: `reports/report.html` · DQ: `reports/dq_report.md`
 - Selection record: `data/model_selection.json` · Dataset identity card:

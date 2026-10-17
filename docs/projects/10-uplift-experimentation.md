@@ -4,12 +4,22 @@
 (MineThatData, ~64k customers, sha256-pinned from the author's site) ·
 **Status:** working showcase on the standard platform
 
+> A campaign owner who mails "most likely to convert" targets sure things —
+> and wastes the budget that persuadables would repay.
+> Headline: on the canonical Hillstrom benchmark, the recommended top-25%
+> T-learner targeting beats random by **+$2,812 (+69%)** at equal budget,
+> with the profit ranking established by paired-bootstrap CIs.
+>
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/10-uplift-experimentation)
+
 ## What it shows
 
-The full experimentation stack that turns a randomized campaign into an
-operating targeting policy. On the canonical Hillstrom benchmark (Mens E-Mail
-arm vs no-email control, 42,613 customers): DQ gates and balance checks on
-the pinned snapshot; the honest difference-in-means read (conversion +0.68pp,
+Campaign owners deciding who gets the next send face a counterfactual
+question — who buys *because of us*? — that conversion scorers cannot
+answer. This project runs the full experimentation stack that turns a
+randomized campaign into an operating targeting policy. On the canonical
+Hillstrom benchmark (Mens E-Mail arm vs no-email control, 42,613 customers):
+DQ gates and balance checks on the pinned snapshot; the honest difference-in-means read (conversion +0.68pp,
 SE 0.09pp); **CUPED** variance reduction with a strictly pre-period covariate
 (measured, not assumed: 0.08% on conversion, 0.52% on visit — covariate
 quality is the whole game); an **analytic power analysis** (3,063 per arm
@@ -26,6 +36,11 @@ row-resample per replication), and a **cost sweep** locates the break-even
 send cost where targeted mail beats mailing everyone.
 
 ## Key results (out-of-fold, seed 42)
+
+How to read this table: Qini is the curve area above random in conversion
+units (higher is better); profit is expected incremental profit from mailing
+the top 25% by score under the cost model; Δ vs random is at the same 25%
+budget, with 95% CIs from a paired row bootstrap.
 
 | policy | Qini [95% CI] | profit @ 25% budget [95% CI] | Δ vs random |
 |---|---|---|---|
@@ -57,9 +72,8 @@ send cost where targeted mail beats mailing everyone.
 
 ## Artifacts
 
-- Figures: `eda_segment_profile`, `qini_curves`, `uplift_by_decile`,
-  `profit_frontier`, `cuped_variance`, `cost_sensitivity` (`.html` + `.json`
-  for the showcase app)
+- Figures: one `.html` + `.json` per figure id in `reports/figures/` (served
+  to the showcase app; ids referenced from `story.yaml`)
 - Metrics: `reports/metrics.json` (policy ladder + `_meta.cuped/power/ci/
   cost_sensitivity/deciles`)
   · Report: `reports/report.html` · Segments: `reports/segment_summary.json`

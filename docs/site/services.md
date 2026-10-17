@@ -31,7 +31,7 @@ snapshots, dataset registries with licenses.
 Deliverables: versioned pipelines (DVC), DQ dashboards, scale and memory notes.
 
 ### Forecasting & analytics
-Demand, churn, and behavioral modeling with honest backtests and
+Demand, churn, and behavioral modeling with strict backtests and
 decision-ready visualizations — uncertainty bands, business-cost threshold
 tuning, and decision-curve analysis.
 Deliverables: leakage-proof evaluation, calibrated models, business-cost
@@ -111,4 +111,4 @@ commitments.
 Live, reproducible demonstrations of the above capabilities:
 [project index](../projects/index.md) — each case study covers background,
 objectives, data (with dataset cards), EDA, training, evaluation, results,
-and conclusions, with honest naive-baseline deltas.
+and conclusions, with measured naive-baseline deltas.

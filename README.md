@@ -44,7 +44,7 @@ Nine projects, all working showcases on the same platform.
 | 06 | [Routing Optimization (VRPTW)](projects/06-routing-optimization/) | Combinatorial optimization | CVRPLIB Solomon (real benchmark) | Hand-written ALNS vs best-known solutions, dual distance + vehicle gap |
 | 07 | [Urban Mobility Demand Intelligence](projects/07-open-data-mobility/) | Data engineering + ML | NYC TLC + NOAA (real, GB-scale) | Lazy Polars ETL, zone-demand forecasting, weather elasticity, choropleths |
 | 08 | [LLM Inference & Serving](projects/08-inference-serving/) | AI infrastructure | Local Ollama stack (real serving target) | Latency percentiles vs concurrency, GGUF-vs-MLX engine panel, quantization frontier |
-| 09 | [Agentic Workflows](projects/09-agentic-workflows/) | Agentic AI | Deterministic 14-task suite | pydantic-graph Plan→Execute→Critique, HITL checkpoints, offline graders |
+| 09 | [Agentic Workflows](projects/09-agentic-workflows/) | Agentic AI | 15-task suite (14 synthetic + real Wikipedia retrieval via 01's index) | pydantic-graph Plan→Execute→Critique, HITL checkpoints, budget-capped offline graders |
 | 10 | [Uplift & Experimentation](projects/10-uplift-experimentation/) | Decision science | Hillstrom email RCT (real) | CUPED, power analysis, T/X-learner uplift, Qini & profit curves |
 
 Flagships (01, 07) are complete end-to-end; the rest are working showcases
@@ -56,7 +56,7 @@ built on the same platform, designed for deepening.
 
 | Project | Result |
 |---|---|
-| 01 RAG agent | Retrieval config by measurement: recall@5 **0.831 vs 0.031 random on the 65-question golden set** (earlier 26-q sweep: 0.962); chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; verify loop A/B: unsupported claims **18→14**, correct **12→15** (n=30) at 33 repair calls, RAGAS faithfulness 0.651→0.606 (judge noise) — grounding improved, honestly priced |
+| 01 RAG agent | Retrieval config by measurement: recall@5 **0.831 vs 0.031 random on the 65-question golden set** (earlier 26-q sweep: 0.962); chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; verify loop A/B: unsupported claims **18→14**, correct **12→15** (n=30) at 33 repair calls, RAGAS faithfulness 0.651→0.606 (judge noise) — grounding improved, with its repair-call cost measured |
 | 02 Forecasting | Real-data primary (UCI Online Retail II): **hgb_tuned MAE 8.989 — the only model with MASE < 1** on intermittent real demand; the synthetic champion (lgbm_tuned 8.413, −41.9% vs persistence) drops to fourth there — tuned configs do not transfer across regimes |
 | 03 Anomaly detection | Real-data primary (NAB, event-based): **PR-AUC 0.527, range-F1 0.157** — the synthetic headline (ROC-AUC 0.916) was the pipeline check, and this repo says so; seeded synthetic stays as the CI fast path |
 | 04 NLP | Ladder to a full 120k fine-tune: test macro-F1 **0.9460** (naive 0.10 → TF-IDF 0.87 → bounded fine-tune 0.902 → full 0.9460 on Apple-Silicon MPS); val→test non-transfer and the Business/Sci-Tech labeling floor documented |
@@ -64,8 +64,8 @@ built on the same platform, designed for deepening.
 | 06 VRPTW | Hand-written ALNS: **4.23% mean distance gap vs best-known across all 56 Solomon instances** (+3.73 mean vehicles — both criteria reported; vehicles-first ranking 43/56); the hinted CP-SAT cross-check could not improve any incumbent |
 | 07 Mobility | Zone-hour demand over 41.2M trips: GBM MAE 4.67 (−28.4% vs naive); **p90 band 90.8% coverage** (N/A zones flagged); permutation importance shows weather ≈ 0 for point MAE — its value is the elasticity signal |
 | 08 Inference | Local serving benchmark (author run): 19 cells / 760 requests / 0 failures; **MLX ≈ 2.9× GGUF tok/s on Apple Silicon**; 4-bit quantization costs serving headroom, not structured-output validity |
-| 09 Agentic | pydantic-graph workflow suite, bounded real run on local 32B (8/14 tasks): answer success **6/8**, tool-selection **37.5%**, median 474 s/task — the honest profile of local reasoning models |
-| 10 Uplift | Hillstrom RCT: ATE +0.68pp, CUPED covariate lesson, power analysis; T-learner **+$2,812/wave vs random** at 25% budget (paired CI [−$3,617, −$48] — established), while **mail-everyone ($16,103) beats it at $0.01/email** — the value is concentration (~42% of conversions at ¼ volume); targeting wins above ≈$0.30/email (break-even grid); Qini curve-area ranking honestly reported as not established (CI spans zero) |
+| 09 Agentic | Full 15-task hosted run on `kimi-for-coding` (thinking disabled, ~9.5 min suite): answer success **15/15**, step budget 15/15, latency budget 14/15, median **19.9 s**/task; tool-selection **3/15** under exact-set grading (unprompted extra tools on correct answers); ledger **$0.13** of the $2.00 suite cap; t15 retrieves two-article facts from 01's real Wikipedia index |
+| 10 Uplift | Hillstrom RCT: ATE +0.68pp, CUPED covariate lesson, power analysis; T-learner **+$2,812/wave vs random** at 25% budget (paired CI [−$3,617, −$48] — established), while **mail-everyone ($16,103) beats it at $0.01/email** — the value is concentration (~42% of conversions at ¼ volume); targeting wins above ≈$0.30/email (break-even grid); Qini curve-area ranking reported as not established (CI spans zero) |
 
 ## Engineering practices
 

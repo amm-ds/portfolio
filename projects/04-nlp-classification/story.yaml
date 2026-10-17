@@ -26,14 +26,14 @@ sections:
 
       | Criterion | Target | Verified by |
       |---|---|---|
-      | Honest floors | majority + seeded random runs included | macro-F1 exposes what accuracy hides |
+      | Naive floors | majority + seeded random runs included | macro-F1 exposes what accuracy hides |
       | Classical anchor | TF-IDF + LogisticRegression always reported | `baseline_tfidf_logreg` row |
       | HPO discipline | seeded Optuna study, best params persisted | `reports/hpo_study.json` |
-      | Selection honesty | HPO model must beat artifact on test or lose | `reports/selection.json` |
+      | Selection discipline | HPO model must beat artifact on test or lose | `reports/selection.json` |
       | Reproducibility | seeded end-to-end, CPU-feasible | bit-exact validation scores on re-run |
       | Headline scale | full 120k fine-tune on laptop GPU (MPS) | test macro-F1, wall-clock documented |
 
-      **Business implication:** a small, reproducible, honestly selected
+      **Business implication:** a small, reproducible, rigorously selected
       model beats a larger undocumented one — every number here can be
       audited in an afternoon, which is what a risk-conscious adopter
       should demand.
@@ -170,7 +170,7 @@ sections:
         evidence) → **0.9460** — +4.4 pp over the bounded models, and
         confirmation that the published ~0.93–0.95 headroom is reachable
         on a laptop GPU.
-      - **HPO honesty:** the Optuna winner lifted validation macro-F1
+      - **HPO null result:** the Optuna winner lifted validation macro-F1
         0.8880 → 0.8953 but scored 0.9011 on test vs the artifact's
         0.9021; across seeds 42/43/44 the study gives 0.8953 / 0.8852 /
         0.8926 (mean 0.8910 ± 0.0042) — the gain sits inside seed noise,
@@ -181,15 +181,16 @@ sections:
         curve — Business → Sci/Tech, 24/250 → 15/250 → 14/250 — hybrid
         technology-business headlines a human editor would also pause on.
         More data shrinks the frequency, not the pair: a
-        labeling-ambiguity floor, which is why the honest answer is the
+        labeling-ambiguity floor, which is why the answer is the
         multi-label roadmap item, not another tuning knob. The
         `per_class_f1_comparison` figure shows per-class F1 against the
         TF-IDF baseline.
 
-      **Business implication:** fine-tuning beats the strong classical
-      baseline by ~7.5 pp macro-F1 at full data, and the HPO/seed episodes
-      show the process discarding wins that are noise — the numbers to
-      trust are exactly the ones that survive all three checks.
+      **Business implication:** fund the full-data fine-tune when ~7.5 pp
+      macro-F1 over the TF-IDF baseline is worth the GPU budget — and let
+      the HPO/seed episodes decide what to believe: the process discards
+      wins that are noise, so the numbers to trust are exactly the ones
+      that survive all three checks.
     figures: [per_class_f1_comparison]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_full_120k]
 
@@ -204,7 +205,7 @@ sections:
       - **What survives scrutiny:** the scaling curve (0.9021 → 0.9270 →
         0.9460 test macro-F1) and the persistent Business → Sci/Tech
         labeling-ambiguity floor.
-      - **Honest limits:** the bounded ladder is a deliberately small
+      - **Limits:** the bounded ladder is a deliberately small
         showcase (≤4 epochs, 128-token cap, CPU budget); the HPO studies
         are small-budget demonstrations whose gains sit inside seed noise;
         and full-data timings are Apple-Silicon-MPS-specific (~18–27
@@ -225,7 +226,7 @@ roadmap:
       historical evidence on the same test split.
   - status: delivered
     text: >-
-      Multi-seed HPO — shipped and reported as an honest null: best val
+      Multi-seed HPO — shipped and reported as a null result: best val
       macro-F1 0.8953 / 0.8852 / 0.8926 (mean 0.8910 ± 0.0042); the gain
       over defaults (0.8880) sits inside seed noise and did not transfer
       to test.
@@ -249,4 +250,4 @@ roadmap:
     text: >-
       Multi-label extension for hybrid Business/Sci-Tech articles — a
       different problem contract (multi-hot labels, different metrics),
-      the honest answer to the labeling-ambiguity floor.
+      the structural fix for the labeling-ambiguity floor.

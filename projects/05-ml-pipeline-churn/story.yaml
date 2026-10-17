@@ -2,7 +2,13 @@ project_id: 05-ml-pipeline-churn
 sections:
   - id: background
     text_md: |
-      Churn is asymmetric economics: a missed churner (false negative) costs
+      Any subscription business with a churn rate around one in four is
+      losing customers it could have saved — this project turns churn scores
+      into an operating decision that cuts decision cost by 41.9% vs a
+      do-nothing policy, with a defensible confidence interval (bootstrap
+      −416, 95% CI [−485, −343]).
+
+      The economics are asymmetric: a missed churner (false negative) costs
       the business roughly five times a false alarm (false positive) — a lost
       customer versus one retention voucher. With a base churn rate of
       26.5%, the cheapest "model" is to never ring the alarm, and it is still
@@ -10,7 +16,7 @@ sections:
 
       This project shows how to take churn from a spreadsheet of scores to an
       operating decision: a production-grade sklearn pipeline whose artifact
-      can be handed raw CRM rows, an honest naive baseline on the same cost
+      can be handed raw CRM rows, a naive baseline on the same cost
       curve, model selection with Optuna, and a threshold chosen on a
       business-cost curve rather than accepted as a library default.
 
@@ -29,8 +35,9 @@ sections:
       - Rank customers by churn risk on deliberately messy tabular data, with
         all preprocessing embedded in the fitted model (no train/serve skew,
         deployable as-is).
-      - Quantify value honestly: every metric is reported against a naive
-        majority baseline on the same holdout and the same cost model.
+      - Report every metric against a naive majority baseline on the same
+        holdout and the same cost model — no model is allowed to look good
+        by changing the yardstick.
       - Select the classifier with Optuna (logistic vs gradient boosting,
         seeded) on a **cost-aware objective** — CV business cost with
         per-trial threshold tuning — so selection and deployment optimize the

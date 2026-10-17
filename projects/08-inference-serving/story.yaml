@@ -11,9 +11,8 @@ roadmap:
       family, runner auto-detected via /api/ps; quant confound labelled.
   - status: delivered
     text: >-
-      Quality-vs-quantization check (Q8_0 vs QAT-int4 on one runner) with an
-      honest cost-per-1M-token section built on declared electricity
-      assumptions.
+      Quality-vs-quantization check (Q8_0 vs QAT-int4 on one runner) with a
+      cost-per-1M-token section built on declared electricity assumptions.
   - status: remaining
     text: >-
       Second serving stack comparison (vLLM or raw llama.cpp server) — tests
@@ -36,9 +35,10 @@ sections:
     text_md: |
       Running language models in production is a serving problem before it is
       a modeling problem: latency percentiles, throughput, memory footprint,
-      and cost per token decide whether a use case ships at all. This project
-      measures the portfolio's real serving stack instead of quoting vendor
-      numbers.
+      and cost per token decide whether a use case ships at all. The headline
+      from measuring the portfolio's real serving stack instead of quoting
+      vendor numbers: the 4-bit MoE arm serves locally at ~$0.12 per 1M
+      output tokens with single-digit-second p95 through concurrency 8.
 
       - **Measured, not quoted:** the benchmark target is the same local
         Ollama OpenAI-compatible endpoint every LLM project ships against
@@ -61,14 +61,13 @@ sections:
       - **Characterize the frontier:** per-cell p50/p95/p99 latency, TTFT,
         aggregate and per-request output tok/s, schema-valid rate, keyword
         quality rate, and failures across model × engine × concurrency.
-      - **Compare engines honestly:** llama.cpp (GGUF) vs MLX (safetensors)
-        on Apple Silicon, same model family, with the quant confound
-        labelled.
+      - **Compare engines head-to-head:** llama.cpp (GGUF) vs MLX
+        (safetensors) on Apple Silicon, same model family, with the quant
+        confound labelled.
       - **Compare quantizations on one runner:** quality and latency side by
         side, not folklore about 4-bit degradation.
-      - **Publish an honest cost view:** $0 API spend, amortized electricity
-        with declared assumptions, and a labelled hypothetical cloud rate
-        card.
+      - **Publish a cost view with declared assumptions:** $0 API spend,
+        amortized electricity, and a labelled hypothetical cloud rate card.
 
       Success is a reproducible set of numbers tied to serving
       configurations, not a leaderboard rank.
@@ -136,8 +135,8 @@ sections:
       | gemma4 q8_0 / -qat (`--full`) | dense | Q8_0 / QAT-int4 | llama.cpp |
 
       - **Engine is packaging:** on Apple Silicon "which engine" is which
-        manifest you pull; the honest comparison is same-family, different
-        packaging, quant confound labelled.
+        manifest you pull; the meaningful comparison is same-family,
+        different packaging, quant confound labelled.
       - **Missing cell, recorded:** no MLX build exists for qwen3.6:35b-a3b
         (conversion fails on switch-expert weights) — a data point, not
         silently skipped.
@@ -174,9 +173,11 @@ sections:
       - latency_concurrency
   - id: results
     text_md: |
-      All numbers are a single **author run** (Ollama 0.40.4, Apple-Silicon
-      Mac, 128 GB unified memory): 19 cells, **760 requests, 0 failures**.
-      They are not committed to the repo; regenerate on your hardware with
+      19 cells, **760 requests, 0 failures** — the 4-bit MoE arm holds
+      single-digit-second p95 through concurrency 8, and quantization costs
+      serving headroom, not answer quality. The catch: all numbers are a
+      single **author run** (Ollama 0.40.4, Apple-Silicon Mac, 128 GB unified
+      memory), not committed to the repo — regenerate on your hardware with
       `bench --full && report` (`reports/metrics.json`, `reports/report.html`).
 
       - **Engine:** MLX ≈ 2.9× GGUF tok/s on this machine (gemma4:31b, c=1);
@@ -208,13 +209,14 @@ sections:
       - **Measure the layer you ship:** the OpenAI-compatible endpoint is both
         product surface and benchmark target, so the numbers apply to real
         traffic with no translation layer.
-      - **Engine choice is packaging, not runtime:** the honest comparison is
-        same-family manifests with the quant confound labelled — and a
-        missing engine build is a data point, not a gap to paper over.
+      - **Engine choice is packaging, not runtime:** the meaningful
+        comparison is same-family manifests with the quant confound
+        labelled — and a missing engine build is a data point, not a gap
+        to paper over.
       - **Bounded structured tasks make models comparable:** schema-valid
         rate collapses "it usually works" into a number, and per-model
         reasoning-effort defaults are a serving concern, not a modeling one.
 
       **Business implication:** the framework transfers to a client decision
-      unchanged — same task, same protocol, same honesty labels — only the
-      hardware and the latency SLO change.
+      unchanged — same task, same protocol, same declared-assumption labels —
+      only the hardware and the latency SLO change.

@@ -4,6 +4,14 @@
 real track; seeded synthetic hierarchy as the labelled CI fast path) ·
 **Status:** working showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
+> A retailer stocking 200 products across 8 countries needs daily unit
+> forecasts it can trust for replenishment — every point of error is working
+> capital or lost sales. On real transactions the tuned gradient-boosting
+> model beats the strongest naive floor (seasonal naive) by 8.8% MAE
+> (8.989 vs 9.859), the only run with MASE < 1.
+>
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
+
 ## What it shows
 
 Leakage-safe, production-depth forecasting on a store-by-product hierarchy: lag
@@ -20,7 +28,8 @@ guarantee, probabilistic 80% bands, and takeaway-annotated figures.
 
 Real-data track — UCI Online Retail II (top 8 countries × top 200 products,
 374 days, 405,416 panel rows, 89% zero share; MAE/MASE lead, MAPE reported but
-not decision-grade at this zero share):
+not decision-grade at this zero share). *How to read: lower is better everywhere;
+MASE below 1.0 means the run beats "same day last week"; bold = shipped champion.*
 
 | run | MAE | RMSE | MAPE | MASE |
 |---|---|---|---|---|
@@ -36,7 +45,8 @@ not decision-grade at this zero share):
 | temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 |
 
 Synthetic track — seeded CI fast path (24 series × 4 folds, seed 42; note what
-clean data does to the statistical baselines):
+clean data does to the statistical baselines). *How to read: same metrics on clean
+seeded data; bold = track winners (ETS overall, lgbm_tuned best among ML runs).*
 
 | run | MAE | RMSE | MAPE | MASE |
 |---|---|---|---|---|
@@ -60,24 +70,20 @@ clean data does to the statistical baselines):
   seasonal naive on UCI (11.256 vs 9.859, MASE 1.361) — 89% zeros break the
   smooth-seasonality assumption. Both verdicts reported.
 - HPO improved on hgb in **every** fold on synthetic (8.619 → 8.529, −1.0%);
-  the NN trails the linear baseline on both tracks — reported honestly.
+  the NN trails the linear baseline on both tracks — reported, not hidden.
 - Probabilistic 80% band coverage: synthetic 0.727 (quantile) / 0.757
   (conformal); UCI 0.919 / 0.858 with a degenerate q80 = 0 calibration —
   per-series conformal is the roadmap fix.
 - UCI reconciliation: w=0.70, incoherence 384.0 → 115.2 (coherence property
-  exact); store MAE 746.9 → 737.9. Synthetic: w=0.05, near-null accuracy
-  effect reported honestly.
+  exact); store MAE 746.9 → 737.9. Synthetic: w=0.05, accuracy effect near
+  null and reported as such.
 - 6/6 DQ gates on both tracks; synthetic pipeline ≈ 4 min, UCI ≈ 25 min;
   58 offline tests.
 
 ## Artifacts
 
-- Figures per track: `reports/figures/` and `reports_uci/figures/` —
-  `eda_series_overview`, `eda_units_distribution`, `forecast_vs_actual`,
-  `forecast_fan`, `metrics_bars`, `fold_stability`, `hpo_history` (+ per-arm
-  `hpo_history_xgb` / `hpo_history_lgbm`), `hpo_importance`,
-  `reconciliation_coherence`, `coherence_heatmap`, `probabilistic_band`
-  (`.html` + `.json`)
+- Figures: interactive versions live in the [showcase app case study](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting);
+  static artifacts (`.html` + `.json`, per track) in `reports/figures/` and `reports_uci/figures/`
 - Metrics: `reports/metrics.json` (+ `_uci`) · Report: `report.html` ·
   Reconciliation: `reconciliation.json` · Probabilistic: `probabilistic.json`
 - Dataset cards: `data/dataset.json`, `data_uci/dataset.json` · HPO:
