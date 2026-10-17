@@ -199,6 +199,29 @@ describe("ProjectsIndex", () => {
     expect(document.querySelector(".key-number")).toBeNull();
   });
 
+  it("renders a one-line impact statement on each card (wording from docs/projects/index.md)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(document.querySelectorAll(".project-card .impact")).toHaveLength(7));
+    // exact wording of the "Impact in one line" column for project 01
+    expect(
+      screen.getByText(
+        "retrieval recall@5 0.83 vs 0.03 random; verify loop cuts unsupported claims 18→14",
+      ),
+    ).toBeInTheDocument();
+    const cardOf = (title: string) =>
+      [...document.querySelectorAll(".project-card")].find(
+        (c) => c.querySelector("h3")?.textContent === title,
+      )!;
+    expect(cardOf("Routing").querySelector(".impact")?.textContent).toContain(
+      "within 4.23% of best-known solutions",
+    );
+  });
+
   it("shows an empty state when /projects returns []", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
     render(

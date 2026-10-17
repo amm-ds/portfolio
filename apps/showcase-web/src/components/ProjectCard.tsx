@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMetrics, type Project } from "../api";
+import { impactLine } from "../lib/impact";
 import { formatMetricValue, pickHeadlineMetric } from "../lib/delta";
 
 /** Live headline metric for a card: first non-baseline run's first metric; hidden until loaded. */
@@ -24,6 +25,7 @@ function CardKeyNumber({ projectId }: { projectId: string }) {
 }
 
 export function ProjectCard({ project }: { project: Project }) {
+  const impact = impactLine(project.id);
   return (
     <Link to={`/projects/${project.id}`} className="project-card">
       <div className="project-card-top">
@@ -32,6 +34,7 @@ export function ProjectCard({ project }: { project: Project }) {
           <p className="domain">{project.domain}</p>
         </div>
       </div>
+      {impact && <p className="impact">{impact}</p>}
       <div className="chips">
         {project.techniques.map((t) => (
           <span key={t} className="chip">

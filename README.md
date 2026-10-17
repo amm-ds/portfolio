@@ -80,11 +80,24 @@ built on the same platform, designed for deepening.
 - **Review culture:** PR template with design questions, engineering playbook
   ([docs/engineering-playbook.md](docs/engineering-playbook.md)).
 
-## Live demo
+## Live endpoints
 
-The showcase app runs locally via `make docker-up`; the public deployment link lands
-here once the Hetzner host is live (see `deploy/DEPLOY.md`). The docs site is always
-available: https://amm-ds.github.io/portfolio/
+The showcase app serves the pipelines' real artifacts over HTTP. Run
+`make docker-up` → http://localhost:8000:
+
+- `POST /projects/07-open-data-mobility/forecast` — zone-hour demand with a p90 band (07)
+- `POST /projects/02-demand-forecasting/forecast` — hierarchical demand forecast (02)
+- `POST /projects/05-ml-pipeline-churn/score` — churn propensity scoring (05)
+- `POST /projects/06-routing-optimization/solve` — VRPTW routing solver (06)
+- Per-project story / metrics / figure APIs: `GET /projects/{id}/{story,metrics,figures}`
+- RAG chat API: `POST /rag/chat` (streaming variant included), retrieval index baked in
+
+Artifact-backed endpoints return **503 until the artifacts exist** — each 503 names
+the exact rebuild command, and the artifacts regenerate from a clean clone with
+`dvc repro`.
+
+Public deployment is pending a hosting decision (see `deploy/DEPLOY.md`); the docs
+site is always live: https://amm-ds.github.io/portfolio/
 
 ## Reproduce in 3 commands
 
@@ -93,6 +106,8 @@ git clone https://github.com/amm-ds/portfolio.git && cd portfolio
 make setup     # uv sync + pre-commit
 dvc repro      # downloads pinned public data, runs all pipelines
 ```
+
+…or open in GitHub Codespaces (`.devcontainer/`) — the environment builds itself.
 
 The showcase app runs without an LLM key (deterministic mock provider); set
 `LLM_BASE_URL`/`LLM_API_KEY` in `.env` for a live provider (see
