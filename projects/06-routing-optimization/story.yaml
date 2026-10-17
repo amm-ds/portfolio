@@ -94,7 +94,7 @@ sections:
     tightness, while C2's wide horizons leave scheduling room but reward
     extreme consolidation. Different families bind on different
     constraints — the reason a solver must be checked per family, not just
-    on averages (see `family_gap` in the results).
+    on averages (see the family-gap figure in the results).
 
     **Business implication:** "draw neat geographic territories"
     underperforms because the binding constraint is the delivery-promise
@@ -163,10 +163,10 @@ sections:
     best-known values (registry table + SINTEF TOP supplement), reported
     per instance and per family. The figure set tells the story at a
     glance: `solver_profile` shows the full ladder per instance,
-    `family_gap` locates each family, `route_map_C101` shows the best C101
-    plan, `convergence_C101` / `convergence_RC105` and
-    `alns_convergence_C101` / `alns_convergence_RC105` show both descents,
-    and `pareto_gap_runtime` with `runtime` place every solver on the
+    `route_map_C101` shows the best C101 plan, `convergence_C101` /
+    `convergence_RC105` and `alns_convergence_C101` /
+    `alns_convergence_RC105` show both descents, and `pareto_gap_runtime`
+    with `runtime` place every solver on the
     runtime-vs-gap plane. Runtimes are load-sensitive (shared machine), so
     the seeded, deterministic distances and gaps are the verdict and times
     are context. Full tables in `reports/results.md`.
@@ -174,7 +174,7 @@ sections:
     **Business implication:** evaluation is cheap and fully reproducible,
     so it can run in CI on every change — optimization quality becomes a
     guarded regression metric, not a one-off report.
-  figures: [route_map_C101, solver_profile, family_gap, convergence_C101, convergence_RC105, alns_convergence_C101, alns_convergence_RC105, pareto_gap_runtime, runtime]
+  figures: [route_map_C101, solver_profile, convergence_C101, convergence_RC105, alns_convergence_C101, alns_convergence_RC105, pareto_gap_runtime, runtime]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: results
   text_md: |
@@ -213,13 +213,14 @@ sections:
       `UNKNOWN` on all 56, incumbent returned unchanged (ties 56/56 at ~5×
       runtime). Its real win is small-scale certification: 25-customer C101
       prefix certified optimal at 191.8 in 2.9 s (2-opt hint: 286.3);
-      5-customer instance proved optimal in 0.1 s (`pareto_gap_runtime`).
+      5-customer instance proved optimal in 0.1 s (runtime-vs-gap
+      placement in the evaluation figure).
 
     **Business implication:** a 4.23 % mean distance gap (with the
     +3.73-vehicle caveat) against 1987-published optima on every family, in
     auditable seeded code — the number procurement can anchor to; ~0.8 s
     best case per instance keeps the harness usable daily.
-  figures: [gap_pct, family_gap, pareto_gap_runtime]
+  figures: [gap_pct, family_gap]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: conclusions
   text_md: |

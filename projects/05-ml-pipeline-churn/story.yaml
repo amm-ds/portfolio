@@ -98,7 +98,8 @@ sections:
       | senior citizens | 1,142 | 41.7% |
       | fiber-optic internet | 3,096 | 41.9% |
 
-      The outlier charge sits far outside the bulk of both distributions —
+      The `eda_churn_profile` distributions make the split visible: the outlier
+      charge sits far outside the bulk of both distributions —
       exactly the row that would distort an unguarded scaler — and the
       NaN-encoded gaps are invisible to a casual `head()` but visible to the
       DQ gates.
@@ -167,8 +168,10 @@ sections:
       selected runs. Five runs: naive majority (constant probability = base
       rate), the earlier logistic at 0.5 and at its cost optimum, and the
       selected model raw and isotonic-calibrated at their cost optima.
-      Diagnostics add permutation importance (5 repeats, error bars), PR
-      curves with the naive base-rate floor, and decision-curve analysis.
+      Diagnostics add permutation importance (`permutation_importance`, 5
+      repeats, error bars), PR curves with the naive base-rate floor
+      (`precision_recall_curve`), and decision-curve analysis
+      (`decision_curve`); the reliability view is `calibration_curve`.
       The `cost_surface` figure maps the operating point across the
       threshold × FN-cost plane — where it moves when a client re-prices a
       lost customer.
@@ -194,7 +197,8 @@ sections:
 
       Key findings:
 
-      - **Cost vs naive: −41.9% (1,035 → 601), bootstrap −416, 95% CI
+      - **Cost vs naive: −41.9% (1,035 → 601) on the `business_cost_curve`,
+        bootstrap −416, 95% CI
         [−485, −343] — significant.** On a 26.5% base rate the ignore-all
         policy posts 0.735 accuracy — and the alarm-everyone cost optimum
         still burns 1,035.
@@ -215,6 +219,9 @@ sections:
       - The naive cost optimum is alarm-everyone: accuracy 0.265, cost
         1,035 — while ignore-all posts 0.735. Accuracy ranks both useless
         policies above the deliverable: the accuracy trap, inverted.
+      - Drivers and uncertainty: `permutation_importance` ranks
+        contract/tenure/charges as the signal; `bootstrap_ci` is the paired
+        interval behind the −416.
 
       **Business implication:** −41.9% cost at a defensible CI, with the
       slice report showing exactly who the operating point misses — that is

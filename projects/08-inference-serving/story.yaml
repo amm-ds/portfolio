@@ -184,8 +184,8 @@ sections:
         quant confounded, so `engine_panel` reads as engine+packaging, not a
         pure runner race.
       - **Latency:** MoE arms keep single-digit-second p95 that grows
-        gracefully — qwen3.6 goes 0.81 s (c=1) → 7.80 s (c=8) — and
-        `latency_concurrency` shows p95 ≈ linear in concurrency on every arm.
+        gracefully — qwen3.6 goes 0.81 s (c=1) → 7.80 s (c=8) — with p95
+        ≈ linear in concurrency on every arm.
       - **Throughput:** decode on unified memory is bandwidth-bound —
         `toks_per_s` is flat or declining with concurrency, batching hides
         latency rather than multiplying throughput; the 3B-active MoE still
@@ -199,7 +199,6 @@ sections:
       (declared 100 W, $0.30/kWh) — quantization is a latency and cost lever,
       not a quality risk, at this task size.
     figures:
-      - latency_concurrency
       - toks_per_s
       - engine_panel
   - id: conclusions
