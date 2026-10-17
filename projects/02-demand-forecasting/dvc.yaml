@@ -47,3 +47,16 @@ stages:
 
     metrics:
       - reports/metrics.json
+
+  serving:
+    cmd: uv run python -m demand_forecasting.cli build-serving
+    deps:
+      - src/demand_forecasting
+      - params.yaml
+      - data/models.pkl
+      - data/hpo_best.json
+      - data/hpo_best_xgb.json
+      - data/hpo_best_lgbm.json
+      - data/features.parquet
+    outs:
+      - reports/models/serving

@@ -69,3 +69,17 @@ stages:
 
     metrics:
       - reports/metrics.json
+
+  serving:
+    cmd: uv run --python 3.12.9 python -m churn_pipeline.cli build-serving --params-file params.yaml
+    deps:
+      - src/churn_pipeline/
+      - data/selected_model_calibrated.pkl
+      - data/holdout.parquet
+      - data/model_selection.json
+    params:
+      - fp_cost
+      - fn_cost
+      - threshold_grid
+    outs:
+      - reports/models/serving

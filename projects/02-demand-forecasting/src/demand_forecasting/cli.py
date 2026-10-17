@@ -22,6 +22,7 @@ from demand_forecasting.features import build_features, save_features
 from demand_forecasting.model import fit_all, save_models
 from demand_forecasting.probabilistic import run_probabilistic
 from demand_forecasting.reconcile import reconcile_and_plot
+from demand_forecasting.serving import build_serving_artifact
 
 app = typer.Typer(
     help="Hierarchical demand forecasting on a synthetic retail hierarchy.", no_args_is_help=True
@@ -135,6 +136,17 @@ def evaluate_cmd(
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
     run_probabilistic(settings, config)
+
+
+@app.command("build-serving")
+def build_serving(
+    data_dir: Annotated[Path | None, typer.Option()] = None,
+    reports_dir: Annotated[Path | None, typer.Option()] = None,
+    data_source: Annotated[Literal["synthetic", "uci"], typer.Option()] = "synthetic",
+) -> Path:
+    """Build the showcase-API serving artifact (loads pickles; no retraining)."""
+    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
+    return build_serving_artifact(settings, config)
 
 
 @app.command()

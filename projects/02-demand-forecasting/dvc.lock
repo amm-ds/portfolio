@@ -9,9 +9,9 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 29338191c73e2b347003db0d3f814f4c.dir
-      size: 232789
-      nfiles: 25
+      md5: ae3bae852e17ea00a183a2e9b60aca06.dir
+      size: 249053
+      nfiles: 27
     outs:
     - path: data/dataset.json
       hash: md5
@@ -34,9 +34,9 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 29338191c73e2b347003db0d3f814f4c.dir
-      size: 232789
-      nfiles: 25
+      md5: ae3bae852e17ea00a183a2e9b60aca06.dir
+      size: 249053
+      nfiles: 27
     outs:
     - path: data/features.parquet
       hash: md5
@@ -55,9 +55,9 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 29338191c73e2b347003db0d3f814f4c.dir
-      size: 232789
-      nfiles: 25
+      md5: ae3bae852e17ea00a183a2e9b60aca06.dir
+      size: 249053
+      nfiles: 27
     outs:
     - path: data/models.pkl
       hash: md5
@@ -80,9 +80,9 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 29338191c73e2b347003db0d3f814f4c.dir
-      size: 232789
-      nfiles: 25
+      md5: ae3bae852e17ea00a183a2e9b60aca06.dir
+      size: 249053
+      nfiles: 27
     outs:
     - path: reports/figures
       hash: md5
@@ -110,9 +110,9 @@ stages:
       size: 1231
     - path: src/demand_forecasting
       hash: md5
-      md5: 29338191c73e2b347003db0d3f814f4c.dir
-      size: 232789
-      nfiles: 25
+      md5: ae3bae852e17ea00a183a2e9b60aca06.dir
+      size: 249053
+      nfiles: 27
     outs:
     - path: data/hpo_best.json
       hash: md5
@@ -130,3 +130,41 @@ stages:
       hash: md5
       md5: 79243283e3d5301e49eb95494803c81b
       size: 262144
+  serving:
+    cmd: uv run python -m demand_forecasting.cli build-serving
+    deps:
+    - path: data/features.parquet
+      hash: md5
+      md5: 33251b91a47c0ea85816fde2441d9a72
+      size: 112084
+    - path: data/hpo_best.json
+      hash: md5
+      md5: 0dc00f2f73e3240845b7d7ee116062dc
+      size: 322
+    - path: data/hpo_best_lgbm.json
+      hash: md5
+      md5: e0d8247664119004ceddcedf8dcd4907
+      size: 271
+    - path: data/hpo_best_xgb.json
+      hash: md5
+      md5: a0a4b48785280064028064260f84fe32
+      size: 321
+    - path: data/models.pkl
+      hash: md5
+      md5: d569798bd31d01d4adc07fe44ca350fc
+      size: 2864899
+    - path: params.yaml
+      hash: md5
+      md5: 197ab51b93ba026a003b6c5685c6eab4
+      size: 1231
+    - path: src/demand_forecasting
+      hash: md5
+      md5: ae3bae852e17ea00a183a2e9b60aca06.dir
+      size: 249053
+      nfiles: 27
+    outs:
+    - path: reports/models/serving
+      hash: md5
+      md5: a994f9f84bf652f48ced4654cbe48b3d.dir
+      size: 386716
+      nfiles: 2
