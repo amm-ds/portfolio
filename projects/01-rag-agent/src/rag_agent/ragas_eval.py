@@ -1,13 +1,25 @@
-"""RAGAS evaluation on the graded question set, scored by the LOCAL model.
+"""RAGAS evaluation on the graded question set, scored by the active provider.
 
 The evaluator LLM is the same provider the agent uses (env-configured
-OpenAI-compatible endpoint, else local Ollama — default ``qwen3:32b``), so the
-RAGAS run costs $0 in API calls. Embeddings for ``answer_relevancy`` come from
-the project's MiniLM encoder, not an external API.
+OpenAI-compatible endpoint, else local Ollama — default ``qwen3.6:35b-a3b-q4_K_M``).
+Embeddings for ``answer_relevancy`` come from the project's MiniLM encoder, not
+an external API.
 
 RAGAS needs LangChain-facing wrappers; ``langchain_openai.ChatOpenAI`` points
 at the same OpenAI-compatible endpoints pydantic-ai uses, so no extra
-infrastructure is required.
+infrastructure is required. Two provider caveats are handled in
+:class:`MeteredChatOpenAI`:
+
+- **temperature** — RAGAS mutates ``llm.temperature`` per call, but the hosted
+  Kimi coding endpoint fixes sampling server-side and rejects any explicit
+  value, so every ``generate_prompt`` call resets it to ``None`` (omitted from
+  the request).
+- **spend metering** — per-call token usage is read from the returned
+  ``LLMResult.llm_output["token_usage"]`` and metered into the "ragas" phase.
+  RAGAS's own cost callbacks only recognize genuine OpenAI clients, not this
+  OpenAI-compatible endpoint, so metering at this wrapped-call boundary is the
+  reliable source (thinking stays disabled via ``extra_body`` here, unlike the
+  pydantic-ai phases, so reasoning-token burn is already avoided).
 """
 
 import os
@@ -19,6 +31,7 @@ from portfolio_core.llm import DEFAULT_OLLAMA_BASE_URL, DEFAULT_OLLAMA_MODEL
 from portfolio_core.logging import get_logger
 
 from rag_agent.config import RAGConfig
+from rag_agent.metering import get_meter
 
 logger = get_logger(__name__)
 
@@ -50,25 +63,87 @@ def _settings_or_default() -> Settings:
     return get_settings()
 
 
-def langchain_chat_model() -> Any:  # langchain_openai.ChatOpenAI (untyped lib)
-    """Chat model for the RAGAS evaluator: env provider first, else local Ollama."""
+def _metered_chat_openai_class() -> Any:
+    """``ChatOpenAI`` subclass that meters usage and neutralizes temperature.
+
+    Defined in a factory because ``langchain_openai`` is an optional import at
+    module scope in some environments; the class is created once.
+    """
     from langchain_openai import ChatOpenAI
+
+    class _MeteredChatOpenAI(ChatOpenAI):
+        """ChatOpenAI that (a) never sends an explicit temperature and (b)
+        meters per-call token usage into the "ragas" phase."""
+
+        def _neutralize_sampling(self) -> None:
+            # RAGAS sets .temperature (and .n) on the model before each call;
+            # the hosted endpoint rejects explicit sampling params, so drop them.
+            self.temperature = None
+            self.n = 1
+
+        def generate_prompt(self, prompts: Any, **kwargs: Any) -> Any:  # type: ignore[override]
+            self._neutralize_sampling()
+            result = super().generate_prompt(prompts, **kwargs)
+            _meter_llm_result(result)
+            return result
+
+        async def agenerate_prompt(self, prompts: Any, **kwargs: Any) -> Any:  # type: ignore[override]
+            self._neutralize_sampling()
+            result = await super().agenerate_prompt(prompts, **kwargs)
+            _meter_llm_result(result)
+            return result
+
+    return _MeteredChatOpenAI
+
+
+def _meter_llm_result(result: Any) -> None:
+    """Meter one langchain ``LLMResult`` via its ``token_usage`` llm_output."""
+    llm_output = getattr(result, "llm_output", None) or {}
+    token_usage = llm_output.get("token_usage") if isinstance(llm_output, dict) else None
+    if not token_usage:
+        return
+    get_meter().record("ragas", _usage_from_openai_dict(token_usage))
+
+
+def _usage_from_openai_dict(token_usage: dict[str, Any]) -> Any:
+    """Duck-typed usage object the platform meter understands (cached reads incl.)."""
+    from types import SimpleNamespace
+
+    details = token_usage.get("prompt_tokens_details") or {}
+    return SimpleNamespace(
+        input_tokens=token_usage.get("prompt_tokens") or token_usage.get("input_tokens") or 0,
+        output_tokens=token_usage.get("completion_tokens") or token_usage.get("output_tokens") or 0,
+        prompt_tokens_details=SimpleNamespace(
+            cached_tokens=details.get("cached_tokens") or details.get("cache_read") or 0
+        ),
+    )
+
+
+def langchain_chat_model() -> Any:  # langchain_openai.ChatOpenAI (untyped lib)
+    """Chat model for the RAGAS evaluator: env provider first, else local Ollama.
+
+    Hosted: thinking disabled via ``extra_body`` (the pydantic-ai phases use the
+    platform ``hosted_model_settings`` preset; RAGAS speaks langchain, so the
+    same body is set here) and NO temperature — the endpoint rejects explicit
+    sampling values, and :class:`MeteredChatOpenAI` enforces omission per call.
+    Local: qwen3 thinking off via the documented ``think: False`` extra body.
+    """
     from pydantic import SecretStr
 
     s = _settings_or_default()
+    cls = _metered_chat_openai_class()
     if s.llm_api_key and s.llm_base_url:
-        return ChatOpenAI(
+        return cls(
             base_url=s.llm_base_url,
             api_key=SecretStr(s.llm_api_key),
             model=s.llm_model or "kimi-k2-0711-preview",
-            temperature=0,
+            extra_body={"thinking": {"type": "disabled"}},
         )
     base_url = os.environ.get("OLLAMA_BASE_URL", DEFAULT_OLLAMA_BASE_URL)
-    return ChatOpenAI(
+    return cls(
         base_url=base_url,
         api_key=SecretStr("ollama"),
         model=os.environ.get("OLLAMA_MODEL", DEFAULT_OLLAMA_MODEL),
-        temperature=0,
         extra_body={"think": False},  # qwen3 thinking off: ~4x faster judging
     )
 
@@ -104,7 +179,7 @@ class RagasResult:
 
 
 def run_ragas(config: RAGConfig, rows: list[RagasRow]) -> RagasResult:
-    """Compute the RAGAS metric set on the eval rows with the local evaluator.
+    """Compute the RAGAS metric set on the eval rows with the active provider.
 
     Metrics: faithfulness, answer_relevancy, context_precision, context_recall.
     ``reference`` for context_recall is the graded relevant article's lead

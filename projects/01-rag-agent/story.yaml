@@ -162,20 +162,23 @@ sections:
         `JUDGE=keyword` as the deterministic CI floor) measuring faithfulness,
         relevance and context recall; and, behind `evaluate --ragas`, the
         **RAGAS** set (faithfulness, answer_relevancy, context_precision,
-        context_recall) scored by the local model at $0 API cost.
+        context_recall) scored by the active provider (local: $0 API cost;
+        hosted: metered).
       - **Verify-then-answer loop** — every drafted answer is claim-split and
         entailment-checked against the full text of its cited chunks;
         unsupported claims are repaired (budget-capped, max 2 calls) or
         dropped, and answers below the min_support floor (0.6) fall back to
         abstention.
       - **Operations** — per-query latency and token usage persist to
-        `reports/cost_telemetry.json`; the `latency_histogram` figure shows
-        the honest local-model latency distribution.
+        `reports/cost_telemetry.json`; hosted runs add a per-phase meter
+        (agent / judge / verify / RAGAS calls, tokens and cloud-equivalent
+        spend) with a hard USD cap per run, and schema-invalid agent output
+        is retried (≤2) before it counts as a format failure.
 
-      Everything lands in `reports/metrics.json`. Local inference is the
-      bottleneck, so the real run bounds LLM phases to a 30-question subset
-      while retrieval always scores the full set; `evaluate --offline` keeps
-      a CI-safe retrieval-only path.
+      Everything lands in `reports/metrics.json`. Local inference bounds the
+      LLM phases to a 30-question subset; the hosted pass runs the full 65
+      questions with every phase metered; `evaluate --offline` keeps a
+      CI-safe retrieval-only path.
 
       **Business implication:** the offline/keyword path means the quality
       harness still runs in CI without secrets or GPUs, while the real
@@ -197,54 +200,47 @@ sections:
   - id: results
     text_md: |
       Retrieval first — everything downstream depends on it (65-question
-      golden set, seeded random floor; `retrieval_hpo_frontier` stars the
-      chosen config):
+      golden set, seeded random floor; identical across providers — the
+      sweep is embeddings-only):
 
       | Configuration | recall@5 | recall@10 | MRR@5 |
       |---|---|---|---|
       | chunks=200, top_k=10 | 0.831 | 0.846 | 0.808 |
-      | chunks=400, top_k=10 | 0.831 | 0.846 | 0.792 |
-      | chunks=200 + BGE-small | 0.831 | 0.846 | 0.805 |
       | random baseline | 0.031 | 0.046 | 0.018 |
       | **chosen: MiniLM, chunks=200, top_k=3, rerank ON** | **0.831** | — | **0.808** |
 
-      - **+0.80 recall@5 over random** — retrieval is real, not luck (the
-        earlier 26-question sweep read 0.962 vs 0.038; the 65-question set is
-        the harder, honest denominator).
-      - **top_k=3 already saturates recall@5** — the chosen config holds full
-        recall at **−65% context cost** (≈804 vs ≈2,279 input tokens/query
-        vs top_k=10); chunk size, not model size, is the quality lever, and
-        rerank lifts MRR@5 (0.718 off → 0.808 on).
+      Provider A/B — same pipeline: local `qwen3.6-q4` (30-q subset, the
+      local wall-clock bound) vs hosted `kimi-for-coding` (full 65 q).
+      Hosted costs are **cloud-equivalent estimates** at the kimi-k2.8 card
+      — membership quota, never billed:
 
-      Verify A/B, same 30-question subset (`failure_taxonomy` shows the
-      before/after mix, `model_comparison` the config table):
-
-      | Pass | RAGAS faithfulness | relevancy | Taxonomy (n=30) |
+      | Pass | Taxonomy | RAGAS faithfulness | Verify overhead |
       |---|---|---|---|
-      | without verify (committed pass) | 0.651 [0.52, 0.78] | 0.879 [0.82, 0.93] | 12 correct / 18 unsupported-claim |
-      | with verify (new run) | 0.6058 | 0.7196 (precision 1.0, recall 0.9784) | 15 correct / 14 unsupported-claim / 1 format-failure |
+      | local qwen3.6-q4, verify ON (n=30) | 15 correct / 14 unsupported / 1 format | 0.606 | 33 repair calls |
+      | hosted kimi-for-coding, verify ON (n=65) | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] | 39 repair calls |
 
-      - **Unsupported claims fell 18→14; correct answers rose 12→15** —
-        faithfulness moved 0.651→0.606, within judge noise across runs:
-        quality held while groundness improved.
-      - **The cost is real** — 33 repair calls (max 2/answer), mean
-        claim-support 0.8389 vs the 0.6 floor; 4 verify-abstentions, 6
-        skipped.
-      - **Abstention stays honest** — refusal accuracy 0.857 [0.57, 1.00]
-        (6/7), cite-when-expected 0.957, false-abstention 0.174; far above
-        the keyword floor (0.44 [0.29, 0.61]).
-      - **Wall clock, not dollars** — p50 61 s / p95 245 s; $0 API,
-        ≈$0.0068/query cloud-equivalent with the verify loop (the repair
-        passes add input tokens).
+      - **Grounding tracks the provider** — hosted faithfulness 0.685
+        [0.605, 0.760] vs 0.606 local (different denominators, 65 vs 30 —
+        directional, not a controlled win); relevancy 0.878 [0.820, 0.918].
+        Refusal accuracy 0.9 [0.7, 1.0]; false-abstention 0.036.
+      - **Verify overhead is calls, not minutes** — hosted p50/p95 latency
+        23 s / 175 s per answer (p95 tail: one runaway tool-loop question
+        cut off by the token guard); the new output-retry recovered the
+        run's one schema-invalid draft, so the lone format-failure is the
+        token guard, not schema noise.
+      - **Metered cost (hosted, full 65-q run)** — $3.58 cloud-equivalent
+        over 922 calls: agent $1.79, RAGAS $1.13, verify $0.47, judge $0.19;
+        79.6% of input tokens were prompt-cache reads. The USD cap is real:
+        a first pass tripped at $3.04; the re-run completed under a logged,
+        raised cap.
 
-      Retrieval is solid (0.831 vs 0.031 random on the 65-question set);
-      grounding was the bottleneck, and the verify loop closes part of it —
-      worth its repair-call overhead on high-stakes corpora, and not free.
+      Retrieval is solid (0.831 vs 0.031 random); grounding is still the
+      bottleneck — the hosted column buys ~+0.08 faithfulness, and the
+      meter says what it costs.
 
-      **Business implication:** the tuning budget went to the knobs that
-      mattered (chunking, rerank, top_k — not a bigger model), and grounding
-      now rests on a measured A/B rather than a demo — the evidence a client
-      needs before trusting answers they can't afford to get wrong.
+      **Business implication:** quality claims now carry a provider A/B and
+      a per-phase cost table — the evidence a client needs to choose where
+      the assistant runs and what to budget.
     figures:
       - model_comparison
       - retrieval_hpo_frontier
@@ -258,7 +254,7 @@ sections:
 
   - id: conclusions
     text_md: |
-      Honest limits first — the numbers above come with caveats a client
+      Limits first — the numbers above come with caveats a client
       should hear before reuse:
 
       - **Judge noise is real at n=30** — RAGAS faithfulness moved
@@ -290,7 +286,7 @@ sections:
       rationale in `DESIGN.md`, reproduction steps in `README.md`.
 
       **Business implication:** the same discipline ports to a client dataset
-      in days, not months — bounded scope, measured baselines, and an honest
+      in days, not months — bounded scope, measured baselines, and a plain
       list of what we do not yet know, delivered as working code.
 
 roadmap:
@@ -307,10 +303,11 @@ roadmap:
       documents with a license flag.
   - status: delivered
     text: >-
-      Cost telemetry — shipped, verified: backend label, per-query token usage
-      and eval wall time in reports/cost_telemetry.json; local inference is
-      $0 API cost, rate-card figures kept as a labelled cloud-equivalent
-      (≈$0.0068/query with the verify loop).
+      Cost telemetry — shipped, verified: per-query token usage and wall time
+      in reports/cost_telemetry.json; wave 15 adds per-phase metering
+      (agent/judge/verify/ragas) with a hard USD cap per run — the hosted
+      65-q pass metered $3.58 (79.6% of input tokens cache reads); local
+      stays $0 API.
   - status: delivered
     text: >-
       LLM rubric judge + RAGAS on the 65-question golden set — shipped,

@@ -208,14 +208,19 @@ at n=30; keep verify on by default.
 
 ## 4. SLOs and operating envelope
 
-| SLO | Target | Measured (2026-10-14/15, local `qwen3.6:35b-a3b-q4_K_M`) |
+Historical local measurements (2026-10-14/15, `qwen3.6:35b-a3b-q4_K_M`) — the
+current golden-set numbers (65 questions, local + hosted provider A/B) live in
+`README.md` §Wave 14/16 and `docs/projects/01-rag-agent.md`; this table records
+the original envelope targets and their first measured values:
+
+| SLO | Target | First measurement (local, earlier 26-q / 10-q sets) |
 |---|---|---|
 | Retrieval recall@5 (graded set, n=26) | ≥ 0.60 | **0.962** (all chunk sizes); recall@10 = 1.000 |
-| RAGAS faithfulness (n=10 bounded) | ≥ 0.70 | **0.805** |
-| RAGAS answer_relevancy (n=10) | ≥ 0.70 | **0.904** |
-| RAGAS context_recall (n=10) | ≥ 0.70 | **0.952** |
-| p95 end-to-end query latency | report honestly | **245 s** local (p50 61 s) — compute-bound, $0 API |
-| Cost per query | $0 API (local) | **$0**; cloud-equivalent ≈ $0.0043 mean at the rate card |
+| RAGAS faithfulness (n=10 bounded) | ≥ 0.70 | **0.805** — superseded by the 65-q golden set |
+| RAGAS answer_relevancy (n=10) | ≥ 0.70 | **0.904** — superseded |
+| RAGAS context_recall (n=10) | ≥ 0.70 | **0.952** — superseded |
+| p95 end-to-end query latency | report plainly | **245 s** local (p50 61 s) — compute-bound, $0 API |
+| Cost per query | $0 API (local) | **$0** local; hosted 65-q run metered at $3.58 cloud-equivalent across four phases |
 | Corpus size | 500–600 articles | 593 articles / 3,589 chunks @200 |
 | Random-retrieval baseline (seeded floor) | reported for contrast | recall@5 0.038/0.000/0.000, MRR@5 0.038/0.000/0.000 → Δ recall@5 up to +0.92 |
 

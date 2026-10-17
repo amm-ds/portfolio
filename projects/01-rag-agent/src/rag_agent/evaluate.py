@@ -9,12 +9,15 @@ Pipeline blocks, all writing into ``config.reports_dir``:
 
 (a) retrieval eval — graded questions run against every chunk-size index;
     recall@5, recall@10, MRR@5 per size + a seeded random baseline.
-(b) RAG eval — the agent answers each question; a rubric judge (provider model
-    by default, keyword judge as CI floor) scores faithfulness / relevance /
-    recall, and ``--ragas`` adds the RAGAS metric set with the local model as
-    evaluator.
+(b) RAG eval — the agent answers each question with bounded output-retries on
+    schema-invalid ``AnalysisResult`` (wave 15; retries counted in the trace);
+    a rubric judge (provider model by default, keyword judge as CI floor)
+    scores faithfulness / relevance / recall, and ``--ragas`` adds the RAGAS
+    metric set with the active provider as evaluator.
 (c) ops — per-query latency (p50/p95) and cost telemetry for the active
-    backend (local inference = $0 API cost).
+    backend. Hosted runs meter every LLM phase (agent / judge / verify / RAGAS)
+    into the platform spend ledger (USD cap per run; wave 15); local inference
+    stays $0 API cost.
 """
 
 import json
@@ -25,9 +28,12 @@ from typing import Any
 
 import numpy as np
 import plotly.graph_objects as go
+from portfolio_core.llm_budget import BudgetExceededError, budget_limits
 from portfolio_core.logging import get_logger
 from portfolio_eval.rag import RAGEvalResult
-from pydantic_ai import Agent
+from pydantic import ValidationError
+from pydantic_ai import Agent, AgentRunResult
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from rag_agent.agent import build_agent
 from rag_agent.config import RAGConfig, RetrievalBest
@@ -53,6 +59,7 @@ from rag_agent.index import (
     chunk_articles,
 )
 from rag_agent.judge import RubricJudge, build_judge
+from rag_agent.metering import get_meter, start_metering
 from rag_agent.ragas_eval import RagasRow, ensure_ragas_importable, run_ragas
 from rag_agent.reporting import (
     TOP_K_VALUES,
@@ -113,6 +120,54 @@ __all__ = [
 ]
 
 logger = get_logger(__name__)
+
+# Wave 15: bounded output-retries for schema-invalid agent output. pydantic-ai
+# validates ``AnalysisResult`` on every run; an invalid draft raises
+# ``ValidationError`` inside the run, surfacing as ``UnexpectedModelBehavior``
+# once the (here zeroed) internal regeneration budget is exhausted. The eval
+# previously recorded that as a format-failure and never retried. Up to two
+# call-site retries (the pattern of project 09's run_agent_with_retries) rerun
+# the agent from scratch — the failed conversation is not reusable — and every
+# retry is counted in the question trace.
+MAX_OUTPUT_RETRIES = 2
+
+
+def answer_with_output_retries(
+    agent: Agent[Retriever, AnalysisResult],
+    question: str,
+    retriever: Retriever,
+    max_retries: int = MAX_OUTPUT_RETRIES,
+) -> tuple[AgentRunResult[AnalysisResult] | None, int, str]:
+    """Run the agent with ≤ ``max_retries`` output-retries on invalid output.
+
+    Returns ``(result, n_retries, error)``: a successful ``result`` (retries
+    counted), or ``(None, n_retries, error)`` when every attempt failed — the
+    caller keeps the format-failure taxonomy label in that case. The USD budget
+    cap (:class:`BudgetExceededError`) always propagates: it must stop the run,
+    never be recorded as a per-question failure.
+    """
+    retries = 0
+    while True:
+        try:
+            result = agent.run_sync(
+                question,
+                deps=retriever,
+                retries={"output": 0},  # retries are explicit and counted here
+                usage_limits=budget_limits(),
+            )
+            return result, retries, ""
+        except BudgetExceededError:
+            raise
+        except (ValidationError, UnexpectedModelBehavior) as exc:
+            error = f"{type(exc).__name__}: {exc}"[:200]
+            if retries >= max_retries:
+                logger.warning("agent output invalid after %d retries: %s", retries, error)
+                return None, retries, error
+            retries += 1
+            logger.warning("agent output invalid (retry %d/%d): %s", retries, max_retries, error)
+        except Exception as exc:  # non-validation failure: record, don't retry
+            return None, retries, f"{type(exc).__name__}: {exc}"[:200]
+
 
 # Embedding-model arms compared on the same chunk-200 chunk structure. BGE
 # expects an instruction prefix on queries only (passages are encoded plain).
@@ -263,8 +318,9 @@ def run_rag_eval(
     ``RAGEvaluator.run`` (mean faithfulness, mean relevance over question+
     context, retrieval-recall fraction) — answerable questions only, since a
     correct refusal must not count as unfaithful. Unanswerable questions are
-    scored by the abstention metrics instead. A raised/invalid agent run is
-    recorded as a format failure, never propagated.
+    scored by the abstention metrics instead. A schema-invalid agent run is
+    retried up to twice (wave 15, counted in the trace) and only recorded as a
+    format failure when every attempt fails, never propagated.
 
     When ``config.verify.enabled`` (the wave-14 verify-then-answer loop), each
     drafted answer is claim-verified against its cited chunks before judging:
@@ -294,14 +350,19 @@ def run_rag_eval(
     for question in questions:
         start = time.perf_counter()
         output: AnalysisResult | None = None
+        output_retries = 0
         error = ""
         try:
-            result = agent.run_sync(question.question, deps=retriever)
-            output = result.output
-            input_tokens.append(int(result.usage.input_tokens))
-            output_tokens.append(int(result.usage.output_tokens))
-        except Exception as exc:  # format failure: record, don't abort the run
-            error = f"{type(exc).__name__}: {exc}"[:200]
+            result, output_retries, error = answer_with_output_retries(
+                agent, question.question, retriever
+            )
+            if result is not None:
+                output = result.output
+                get_meter().record("agent", result)
+                input_tokens.append(int(result.usage.input_tokens))
+                output_tokens.append(int(result.usage.output_tokens))
+        except BudgetExceededError:  # the cap stops the run, never a per-question trace
+            raise
         latencies.append(time.perf_counter() - start)
 
         # Wave 14: verify-then-answer — repair/drop unsupported claims, or fall
@@ -329,6 +390,7 @@ def run_rag_eval(
                     faithfulness=float("nan"),
                     abstained=False,
                     format_ok=False,
+                    output_retries=output_retries,
                     error=error,
                 )
             )
@@ -353,6 +415,7 @@ def run_rag_eval(
                 faithfulness=faith,
                 abstained=abstained,
                 format_ok=True,
+                output_retries=output_retries,
             )
         )
         if question.expected_behavior == "answer":
@@ -609,6 +672,9 @@ def run(
     if ragas:
         # Fail fast if the venv is pruned mid-run.
         ensure_ragas_importable()
+    # Fresh spend-ledger window for this run: the hosted USD cap applies per
+    # evaluate invocation (no-op when the local provider is active).
+    start_metering()
 
     articles = load_corpus(config)
     questions = load_questions(config, articles)
@@ -850,7 +916,7 @@ def run(
             traces=rag_run.traces,
             meta=meta,
         )
-        write_cost_telemetry(config, rag_run, wall_time_s)
+        write_cost_telemetry(config, rag_run, wall_time_s, phases=get_meter().snapshot())
     else:
         _write_reports(
             config,

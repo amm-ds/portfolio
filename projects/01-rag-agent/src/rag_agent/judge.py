@@ -12,12 +12,15 @@ import os
 
 from portfolio_core.config import get_settings
 from portfolio_core.llm import build_model, ollama_available
+from portfolio_core.llm_budget import BudgetExceededError, budget_limits
 from portfolio_core.logging import get_logger
 from portfolio_eval.rag import JudgeVerdict, KeywordJudge
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.models import Model
 
-from rag_agent.provider import no_think_model_settings
+from rag_agent.metering import get_meter
+from rag_agent.provider import model_settings_for_provider
 
 logger = get_logger(__name__)
 
@@ -42,14 +45,18 @@ class LLMRubricJudge:
             resolved,
             output_type=JudgeVerdict,
             system_prompt=RUBRIC_SYSTEM_PROMPT,
-            model_settings=no_think_model_settings(),
+            model_settings=model_settings_for_provider(),
         )
         self._fallback = KeywordJudge()
 
     def judge(self, question: str, context: str, answer: str) -> JudgeVerdict:
         prompt = f"Question: {question}\n\nContext:\n{context}\n\nAnswer:\n{answer}"
         try:
-            return self._agent.run_sync(prompt).output
+            result = self._agent.run_sync(prompt, usage_limits=budget_limits())
+            get_meter().record("judge", result)
+            return result.output
+        except (BudgetExceededError, UsageLimitExceeded):
+            raise  # the cap must stop the run, never degrade to the keyword floor
         except Exception as exc:  # provider hiccup must never break the eval
             logger.warning("LLM judge failed (%s); falling back to keyword judge", exc)
             return self._fallback.judge(question, context, answer)

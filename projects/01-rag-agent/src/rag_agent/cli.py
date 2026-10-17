@@ -13,6 +13,7 @@ from typing import Annotated
 
 import typer
 from portfolio_core.llm import LLMProviderUnavailableError
+from portfolio_core.llm_budget import BudgetExceededError
 from portfolio_core.logging import get_logger
 
 from rag_agent.agent import build_agent
@@ -147,6 +148,11 @@ def evaluate(
     except LLMProviderUnavailableError as exc:
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=1) from exc
+    except BudgetExceededError as exc:
+        # The hosted USD cap tripped mid-run: stop cleanly and say exactly what
+        # to change (raise LLM_COST_LIMIT_USD or reduce scope) — never silently.
+        typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2) from exc
     typer.echo(f"evaluation written: {config.reports_dir / 'report.html'}")
 
 

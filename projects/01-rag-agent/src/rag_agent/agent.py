@@ -20,7 +20,7 @@ from pydantic_ai.tools import RunContext
 
 from rag_agent.config import RAGConfig
 from rag_agent.index import Retriever
-from rag_agent.provider import no_think_model_settings
+from rag_agent.provider import model_settings_for_provider
 from rag_agent.schemas import AnalysisResult, Citation
 
 logger = get_logger(__name__)
@@ -49,7 +49,7 @@ def build_agent(config: RAGConfig, model: Model | None = None) -> Agent[Retrieve
         output_type=AnalysisResult,
         deps_type=Retriever,
         system_prompt=SYSTEM_PROMPT,
-        model_settings=no_think_model_settings(),
+        model_settings=model_settings_for_provider(),
     )
 
     @agent.tool
