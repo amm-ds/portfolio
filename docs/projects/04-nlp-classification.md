@@ -41,12 +41,18 @@ The older bounded numbers are historical rungs of one scaling ladder
 (0.9021 → 0.9270 → 0.9460, +4.4 pp from bounded to full data). HPO improved
 validation macro-F1 (0.8880 → 0.8953) but gains sat inside seed noise
 (mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
-honesty rule kept the original artifact as `distilbert_tuned`. Temperature
+honesty rule kept the original artifact as `distilbert_tuned`.
+
+![The full 120k DistilBERT fine-tune climbs to 0.946 macro-F1 on the validation split within two epochs](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
+
+Temperature
 scaling cuts test ECE 0.047 → 0.013 for free. The dominant confusion pair,
 Business → Sci/Tech (24/250 → 15/250 → 14/250 across the curve), is a
 labeling-ambiguity floor, not a data-scale problem. Full ladder:
 `projects/04-nlp-classification/reports/metrics.json`; decision record:
 `reports/selection.json`; interactive figures in `reports/figures/`.
+
+![Business → Sci/Tech stays the dominant confusion pair at full data — a labeling-ambiguity floor, not a data-scale problem](../assets/projects/04-nlp-classification/confusion_matrix_selected.png){ width="100%" }
 
 ## Artifacts
 

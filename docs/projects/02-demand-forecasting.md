@@ -44,6 +44,8 @@ MASE below 1.0 means the run beats "same day last week"; bold = shipped champion
 | lgbm_tuned (Optuna, 25 trials) | 9.600 | 96.535 | 287.9% | 1.055 |
 | temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 |
 
+![The tuned HGB run tracks real intermittent demand where the statistical baselines overshoot](../assets/projects/02-demand-forecasting/forecast_vs_actual.png){ width="100%" }
+
 Synthetic track — seeded CI fast path (24 series × 4 folds, seed 42; note what
 clean data does to the statistical baselines). *How to read: same metrics on clean
 seeded data; bold = track winners (ETS overall, lgbm_tuned best among ML runs).*
@@ -79,6 +81,8 @@ seeded data; bold = track winners (ETS overall, lgbm_tuned best among ML runs).*
   null and reported as such.
 - 6/6 DQ gates on both tracks; synthetic pipeline ≈ 4 min, UCI ≈ 25 min;
   58 offline tests.
+
+![Only the tuned HGB run beats the seasonal-naive floor on real data — the sole MASE below 1 in the ladder](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 
 ## Artifacts
 

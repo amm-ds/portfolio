@@ -33,6 +33,8 @@ detector-failure and real-vs-synthetic analysis.
 whole events; "events" = detected/total with the alert count at a fixed 2%
 budget; bold = overall champion.*
 
+![Real NAB telemetry hides labelled incidents in noisy baselines — most of the 1,609 alerts miss the event windows](../assets/projects/03-anomaly-detection/nab_timelines.png){ width="100%" }
+
 | family | PR-AUC | range-F1 | range prec./rec. | events |
 |---|---|---|---|---|
 | realAWSCloudwatch | 0.404 | 0.088 | 0.049 / 0.500 | 3/3, 132 alerts |

@@ -1,23 +1,30 @@
 #!/usr/bin/env python3
-"""Export static PNG snapshots of flagship figures for the README.
+"""Export static PNG snapshots of project figures for docs pages and the README.
 
 Reads the plotly JSON artifacts each project publishes (reports/figures/*.json)
-and renders PNGs into docs/assets/readme/. Interactive figures remain the
-canonical view (ADR-0005) — these statics exist so the README shows results
-without running anything.
+and renders PNGs into docs/assets/. Interactive figures remain the canonical
+view (ADR-0005) — these statics exist so the mkdocs pages and README show
+results without running anything.
+
+Rendering goes through kaleido directly (not plotly's write_image wrapper)
+so heavy figures (geo choropleths, dense scatters) get a 300 s budget instead
+of kaleido's default 90 s.
 
 Run: uv run python scripts/export_readme_figures.py
 """
 
 from pathlib import Path
 
+import kaleido
 import plotly.io as pio
 
 REPO = Path(__file__).resolve().parents[1]
-OUT = REPO / "docs" / "assets" / "readme"
+ASSETS = REPO / "docs" / "assets"
+OUT_README = ASSETS / "readme"
+RENDER_TIMEOUT_S = 300
 
+# README hero figures: output name → (project dir, preferred stem, fallback stem)
 FIGURES: dict[str, tuple[str, str, str]] = {
-    # output name: (project, preferred stem, fallback stem)
     "mobility-demand-map.png": ("07-open-data-mobility", "zone_demand_map", "zone_hour_heatmap"),
     "rag-quality-cost-frontier.png": ("01-rag-agent", "retrieval_hpo_frontier", "chunk_size_sweep"),
     "routing-solver-pareto.png": (
@@ -27,9 +34,38 @@ FIGURES: dict[str, tuple[str, str, str]] = {
     ),
 }
 
+# Per-project figures embedded in the mkdocs case-study pages
+# (docs/projects/<id>.md): project dir → figure stems, in page order.
+DOCS_FIGURES: dict[str, tuple[str, ...]] = {
+    "01-rag-agent": ("chunk_size_sweep", "failure_taxonomy"),
+    "02-demand-forecasting": ("forecast_vs_actual", "metrics_bars"),
+    "03-anomaly-detection": ("nab_timelines",),
+    "04-nlp-classification": ("confusion_matrix_selected", "training_curve"),
+    "05-ml-pipeline-churn": ("business_cost_curve", "cost_surface"),
+    "06-routing-optimization": ("route_map_C101", "family_gap"),
+    "07-open-data-mobility": ("zone_demand_map", "gbm_vs_nn", "weather_elasticity"),
+    "08-inference-serving": ("latency_concurrency", "engine_panel"),
+    "09-agentic-workflows": ("per_task_grading", "category_success"),
+    "10-uplift-experimentation": ("qini_curves", "profit_frontier", "cost_sensitivity"),
+}
+
+WIDTH = 1200
+HEIGHT = 700
+SCALE = 2
+
+
+def render_png(src: Path, dest: Path) -> None:
+    fig = pio.read_json(str(src))
+    png = kaleido.calc_fig_sync(
+        fig,
+        opts={"format": "png", "width": WIDTH, "height": HEIGHT, "scale": SCALE},
+        kopts={"timeout": RENDER_TIMEOUT_S},
+    )
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(png)
+
 
 def main() -> None:
-    OUT.mkdir(parents=True, exist_ok=True)
     for out_name, (project, stem, fallback) in FIGURES.items():
         src = REPO / "projects" / project / "reports" / "figures" / f"{stem}.json"
         if not src.exists():
@@ -37,9 +73,18 @@ def main() -> None:
         if not src.exists():
             print(f"SKIP {out_name} — neither stem found (run the project's pipeline)")
             continue
-        fig = pio.read_json(str(src))
-        fig.write_image(str(OUT / out_name), width=1200, height=700, scale=2)
-        print(f"wrote {OUT / out_name}")
+        render_png(src, OUT_README / out_name)
+        print(f"wrote {OUT_README / out_name}")
+
+    for project, stems in DOCS_FIGURES.items():
+        out_dir = ASSETS / "projects" / project
+        for stem in stems:
+            src = REPO / "projects" / project / "reports" / "figures" / f"{stem}.json"
+            if not src.exists():
+                print(f"SKIP {project}/{stem} — artifact missing (run the project's pipeline)")
+                continue
+            render_png(src, out_dir / f"{stem}.png")
+            print(f"wrote {out_dir / f'{stem}.png'}")
 
 
 if __name__ == "__main__":

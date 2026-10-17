@@ -37,6 +37,8 @@ which is why a "failure" there can still be a correct answer.
 | latency | median **19.9 s**, p95 266.9 s per task (180 s budget held 14/15; t14 had one runaway execute loop, cut by the 4M-token `UsageLimits`, recovered on the bounded retry) |
 | tokens / cost | 163k in + 14k out; ledger total **$0.13** cloud-equivalent of the $2.00 suite cap ($0.22 pre-cache-discount rate-card sum) |
 
+![All 15 hosted tasks pass answer success while exact-set tool selection flags unprompted extra calls on 12 of 15 tasks — the gap demos hide.](../assets/projects/09-agentic-workflows/per_task_grading.png){ width="100%" }
+
 | suite | 15 tasks, 5 categories — 14 over the deterministic Atlas Valley corpus + 1 real-data lookup over 01's Wikipedia index (t15) |
 |---|---|
 | graders | answer success (exact keywords), tool selection (exact tool set), step budget, latency budget — deterministic `pydantic-evals` evaluators; `evaluate` runs fully offline from `data/run_records.json` |
@@ -47,6 +49,8 @@ For comparison, the earlier bounded local run (8 of the 14 tasks then in the
 suite, on `qwen3:32b`) scored 6/8 answers, 3/8 tool selection, median 474
 s/task — and t07/t09 died at the plan node to reasoning-model empty-turn
 flakiness.
+
+![Answer success holds across the suite's 5 task categories, with the local 32B run lagging at 6/8 answers and 474 s median per task.](../assets/projects/09-agentic-workflows/category_success.png){ width="100%" }
 
 ## Architecture
 

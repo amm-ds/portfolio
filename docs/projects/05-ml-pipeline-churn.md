@@ -47,12 +47,17 @@ threshold.
 | selected (cost-HPO XGB) | 0.150 | 0.8387 | 0.6512 | 0.028 | 619 |
 | selected + isotonic | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
 
+![Cost-aware selection plus isotonic calibration cuts business cost 41.9% versus the do-nothing policy](../assets/projects/05-ml-pipeline-churn/business_cost_curve.png){ width="100%" }
+
 - Cost-aware HPO selected **XGBoost** on real data (synthetic track's winner
   was a logistic) — the winner tracks the data. Deliverable vs naive:
   **cost −41.9% (1,035 -> 601), bootstrap −416, 95% CI [-485, -343]**.
 - Base rate 26.5% (vs 8.8% synthetic): the operating point does NOT transfer
   (t*=0.175 vs 0.700) - the cost-curve procedure does. Calibration verdict
   flips too: isotonic improves both ECE and cost on telco.
+
+![The cost-optimal threshold moves with the base rate — 0.175 on telco versus 0.700 on synthetic — while the cost-curve procedure transfers](../assets/projects/05-ml-pipeline-churn/cost_surface.png){ width="100%" }
+
 - Fairness slices: recall uniform across gender (0.90 both), higher for
   seniors (0.97 vs 0.88); the real gap is contractual (month-to-month 0.98 vs
   two-year 0.00 at FN=5) - a stated business choice, movable on the cost

@@ -10,6 +10,8 @@ trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
 
+![Zone-hour pickup demand peaks in Manhattan (14.2 pickups/h) while outer boroughs stay sparse, across the 265-zone serving grid.](../assets/projects/07-open-data-mobility/zone_demand_map.png){ width="100%" }
+
 **Flagship — complete.** End-to-end demand nowcasting on real, messy,
 GB-scale public data: 41.2M NYC yellow-taxi trips (2024) joined with NOAA
 GHCN-Daily weather, engineered with lazy/streaming Polars under a 2 GB RAM
@@ -37,6 +39,8 @@ is the served model.
 | TemporalNet (torch, log1p target) | 5.510 | 19.686 | **54.5%** | 0.899 | −15.5% |
 | TemporalNet tuned (10 trials) | 5.178 | 21.580 | 57.5% | **0.845** | −20.5% |
 
+![The served GBM removes 28.4% of forecast error vs last-week persistence while tuned challengers that won the Q4 test window lose on the embargoed validation window.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
+
 p90 band calibration **90.8%** overall (target 90%; sparse N/A
 zones under-cover at 84.7%, flagged). Per-borough GBM MAE peaks in Manhattan
 (14.2 pickups/h) where volume peaks. Permutation importance: weekly/daily lag
@@ -44,6 +48,8 @@ features dominate, weather ≈ 0 for point MAE. Weather elasticity:
 outer-borough curb demand drops 7–10% in rain (Queens 0.92×, Staten Island
 0.93×) while Manhattan holds (0.97×) and EWR rises (1.08×) — directional,
 with documented non-causal caveats.
+
+![Rain cuts outer-borough curb demand 7–10% (Queens 0.92×, Staten Island 0.93×) while Manhattan holds at 0.97× and EWR rises 1.08×.](../assets/projects/07-open-data-mobility/weather_elasticity.png){ width="100%" }
 
 ## Drift observatory
 

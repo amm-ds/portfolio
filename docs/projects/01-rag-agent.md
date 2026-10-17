@@ -43,6 +43,8 @@ unanswerable (expected behavior: abstain). Retrieval is provider-independent
 0.031 random floor; the chosen config (MiniLM, chunks=200, top_k=3, rerank ON)
 holds full recall at −65% context cost.
 
+![Chunk size, not model size, sets retrieval recall — 200-token chunks hold full recall@5 at 65% lower context cost](../assets/projects/01-rag-agent/chunk_size_sweep.png){ width="100%" }
+
 **Provider A/B** — the same pipeline on local `qwen3.6:35b-a3b-q4_K_M`
 (30-q subset — local inference wall-clock) and hosted `kimi-for-coding`
 (full 65 q). Hosted costs below are **cloud-equivalent estimates** at the
@@ -62,6 +64,8 @@ billed amounts**.
 | Verify overhead | 33 repair calls | 39 repair calls (125 verify calls: verdicts + repairs + re-checks) |
 | Agent latency p50 / p95 | 61 s / 245 s (load-contended local) | **23 s / 175 s** (p95 = one runaway tool-loop question cut off by the per-run token guard) |
 | Cost | $0 API (cloud-equivalent ≈ $0.0068/query) | **$3.58 cloud-equivalent, metered per phase** (see below) |
+
+![The verify-then-answer loop cuts unsupported claims from 60% to 47% of answers locally and keeps them bounded on the hosted run](../assets/projects/01-rag-agent/failure_taxonomy.png){ width="100%" }
 
 Per-phase meter, hosted full run (`reports/cost_telemetry.json`, 922 calls,
 3.79M of 4.76M input tokens prompt-cache reads = **79.6% cached share**):
