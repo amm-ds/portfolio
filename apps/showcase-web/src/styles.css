@@ -580,6 +580,14 @@ code {
   color: var(--secondary);
 }
 
+.project-card .impact {
+  font-size: 0.85rem;
+  color: var(--secondary);
+  margin: 0.8rem 0 0;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.6rem;
+}
+
 .project-card .data {
   font-size: 0.85rem;
   color: var(--muted);

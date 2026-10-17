@@ -32,6 +32,8 @@ affected?* A PR that cannot answer them is draft.
 
 - [ ] `make test` green (ruff, ruff-format, mypy, pytest with coverage gates)
 - [ ] `dvc repro` reproduces the changed pipeline from a clean state
+- [ ] Dev environment reproduces from a clean clone: `make setup` locally, or
+      GitHub Codespaces via `.devcontainer/` (builds the same root Dockerfile)
 - [ ] Contracts unchanged, or all consumers updated + changelog noted in PR
 - [ ] Docs updated: project README results, DESIGN.md if decisions changed,
       ADR if platform conventions changed
