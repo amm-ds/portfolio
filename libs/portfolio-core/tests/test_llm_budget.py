@@ -219,6 +219,21 @@ class TestMeterResult:
         assert record.spend_usd == Decimal("2.000000")
         reset_ledger()
 
+    def test_meters_property_style_usage(self) -> None:
+        """pydantic-ai 2.55 exposes AgentRunResult.usage as a property; a
+        callable-only duck-type silently meters $0 (wave-16 regression)."""
+
+        class FakeResult:
+            @property
+            def usage(self) -> object:
+                return fake_pydantic_usage(input_tokens=100_000, output_tokens=50_000)
+
+        reset_ledger()
+        record = meter_result(FakeResult(), "kimi-for-coding", Settings(LLM_COST_LIMIT_USD=3.0))
+        assert record.input_tokens == 100_000
+        assert record.spend_usd == Decimal("0.300000")  # 0.1M*$1 + 0.05M*$4
+        reset_ledger()
+
 
 class TestHostedModelSettings:
     def test_preset_omits_temperature_and_disables_thinking(self) -> None:
