@@ -108,6 +108,56 @@ bootstrap CIs n=1000):
 The next lever is answer-construction (citation-forcing prompts / answer-then-verify),
 not retrieval.
 
+### Wave 14 — verify-then-answer loop (the delivered lever)
+
+Every drafted answer now passes a **claim verifier** before it reaches the user or
+the judges (`rag_agent.verify`, on by default — design in
+[DESIGN.md](DESIGN.md#37-verify-then-answer-loop-wave-14)): the summary is split
+into claims, each claim is entailment-checked against the *full text* of its cited
+chunks by the local judge (one batched call, validated verdicts; deterministic
+keyword entailment as CI/offline fallback), unsupported claims are **repaired**
+(one stricter regeneration call each, ≤ `verify.max_repair_calls`) or **dropped**,
+and when the surviving-claim fraction stays below `verify.min_support` (0.6) the
+answer **falls back to abstention** (refusal + confidence < 0.3, integrating with
+the existing abstention path). `evaluate --verify/--no-verify` A/Bs the loop.
+
+**A/B on the same first-30 bounded subset** (local `qwen3.6:35b-a3b-q4_K_M`,
+verify ON vs the wave-13 baseline pass):
+
+| Metric | Verify OFF (wave 13) | Verify ON (wave 14) |
+|---|---|---|
+| failure taxonomy | 12 correct / 18 unsupported-claim | **15 correct / 14 unsupported-claim** (+1 format-failure: an agent output-retry hiccup under load, not verify) |
+| RAGAS faithfulness | 0.651 [0.52, 0.78] | 0.606 [0.44, 0.78] |
+| RAGAS answer relevancy | 0.879 [0.82, 0.93] | 0.720 [0.56, 0.86] |
+| rubric-judge faithfulness | 0.283 | 0.441 [0.29, 0.61] |
+| false-abstention rate | 0.000 | 0.174 [0.04, 0.35] (4 support-floor abstentions) |
+
+**Honest verdict.** The target metric moved — unsupported-claim share fell from
+60% to 47% — but the mechanism is mostly **abstention, not repair**: of the 6
+unsupported→correct conversions, 3 are support-floor refusals (which the rubric
+judge scores faithful because a refusal makes no claims) and 3 are kept/repaired
+answers; one verify-induced abstention still landed in unsupported-claim (judge
+scored the refusal 0.0). RAGAS faithfulness did **not** improve (0.651 → 0.606,
+CIs overlapping) and answer relevancy dropped (0.879 → 0.720) as answers got
+shorter or became refusals. Judge noise is comparable to the delta — the same
+run judged a duplicated question 1.0 and 0.2 — so a 30-question pass cannot
+resolve effects this size. The loop works as designed and never makes an answer
+less grounded (repairs/drops only remove unsupported content), but per-claim
+repair quality at this local-model scale is weak; the measured lever that moves
+the taxonomy is the support floor. Verdict: **keep verify on (default) — the
+failure taxonomy improves and ungrounded content never ships — but treat the
+faithfulness delta as unresolved at n=30**, and prefer retrieval-side or
+prompt-side grounding gains over repair-call volume.
+
+**Overhead** (`metrics.json → detail.verify`, local, run under machine
+contention): mean verify latency **171 s per answer**, i.e. **+157% on top of
+the agent phase** (one batched verdict call per answer, 33 repair-regeneration
+calls over 29 verified answers ≈ 1.1/answer, plus one re-verification per
+successful repair; mean claim-support fraction 0.84). The dominant cost is
+repair regeneration — lowering `verify.max_repair_calls` trades taxonomy gain
+for latency directly. On hosted models this is seconds of API time, not
+minutes of wall clock.
+
 
 ## Figures
 
@@ -173,6 +223,9 @@ a 3-document synthetic client corpus used by the onboarding tests.
   structured `JudgeVerdict`s); `JUDGE=keyword` selects the deterministic
   platform keyword judge (used by `--offline` and CI). Runtime judge failures
   fall back per-verdict to the keyword judge.
+- The wave-14 claim verifier follows the same contract: provider-model
+  entailment verdicts by default, `VERIFY_JUDGE=keyword` for the deterministic
+  CI/offline floor, per-batch keyword fallback on runtime failures.
 - `--ragas` adds the RAGAS metric set (faithfulness, answer_relevancy,
   context_precision, context_recall) scored by the same local model — $0
   evaluation, honest local latencies.

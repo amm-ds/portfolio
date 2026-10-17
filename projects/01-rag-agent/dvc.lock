@@ -5,24 +5,24 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 436de384cf3c12a8cd26552c10563277
-      size: 1602
+      md5: 8e00c644f7ab6a86a84cebd00fefcb56
+      size: 1980
     - path: src/rag_agent/chunking.py
       hash: md5
       md5: ac1fc4061f917bd2e78cf0d3427a82ef
       size: 4805
     - path: src/rag_agent/config.py
       hash: md5
-      md5: decabb8503c2106ae1e565f9afa66ae4
-      size: 6211
+      md5: de48db3316d44796d17caf09723d7369
+      size: 6784
     - path: src/rag_agent/corpus.py
       hash: md5
       md5: e37e7ae1fad26ccabaa693c730ee9aa0
       size: 12439
     - path: src/rag_agent/schemas.py
       hash: md5
-      md5: 7a06b42a1e2983a15726449919ad3122
-      size: 1459
+      md5: 88475837212f02907dc729181c6c39bf
+      size: 2163
     params:
       params.yaml:
         articles_per_topic: 120
@@ -49,16 +49,16 @@ stages:
       nfiles: 2
     - path: params.yaml
       hash: md5
-      md5: 436de384cf3c12a8cd26552c10563277
-      size: 1602
+      md5: 8e00c644f7ab6a86a84cebd00fefcb56
+      size: 1980
     - path: src/rag_agent/chunking.py
       hash: md5
       md5: ac1fc4061f917bd2e78cf0d3427a82ef
       size: 4805
     - path: src/rag_agent/config.py
       hash: md5
-      md5: decabb8503c2106ae1e565f9afa66ae4
-      size: 6211
+      md5: de48db3316d44796d17caf09723d7369
+      size: 6784
     - path: src/rag_agent/index.py
       hash: md5
       md5: 98e1e5267317cd46ba7d5bd0d57d7974
@@ -92,13 +92,13 @@ stages:
       nfiles: 2
     - path: params.yaml
       hash: md5
-      md5: 436de384cf3c12a8cd26552c10563277
-      size: 1602
+      md5: 8e00c644f7ab6a86a84cebd00fefcb56
+      size: 1980
     - path: src
       hash: md5
-      md5: 7ce983d42650a0cbab7eef10abc8f339.dir
-      size: 236102
-      nfiles: 30
+      md5: 22eb020651db907af954319387cae4f6.dir
+      size: 318727
+      nfiles: 32
     params:
       params.yaml:
         chunk_sizes:
@@ -115,17 +115,21 @@ stages:
         top_k: 5
         usd_per_mtok_input: 0.15
         usd_per_mtok_output: 0.6
+        verify:
+          enabled: true
+          min_support: 0.6
+          max_repair_calls: 2
     outs:
     - path: reports/figures
       hash: md5
-      md5: c38b1d9793b9e838e73a7e6aac95e98a.dir
-      size: 107262
-      nfiles: 12
+      md5: e75ebe4d53bc581513eac4f859ea776c.dir
+      size: 124707
+      nfiles: 14
     - path: reports/metrics.json
       hash: md5
-      md5: 300e329a6b8cee5182eac25b75f97d13
-      size: 6085
+      md5: fcb4bdcb2a2ed94d93401cd275ec6e0b
+      size: 8399
     - path: reports/report.html
       hash: md5
-      md5: cf378def4ea2f0280d91fbabf028601e
-      size: 4706
+      md5: b1b7bb822e3daf0619f4b8eba1301e71
+      size: 9718

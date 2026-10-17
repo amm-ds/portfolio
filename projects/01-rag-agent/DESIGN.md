@@ -188,6 +188,24 @@ flowchart LR
   (`detail.verify` in `metrics.json`: mean verify latency and its share of
   answer latency, repair-call and induced-abstention counts).
 
+**Measured (wave 14, same first-30 bounded subset, local
+`qwen3.6:35b-a3b-q4_K_M`, verify ON vs wave-13 baseline):** failure taxonomy
+12 correct / 18 unsupported-claim → **15 / 14** (+1 format-failure: an agent
+output-retry hiccup under load, not verify). RAGAS faithfulness 0.651 → 0.606
+(CIs overlapping; a duplicated question was judged 1.0 and 0.2 in the same
+run, so judge noise ≈ the delta at n=30), answer relevancy 0.879 → 0.720
+(shorter/repaired answers and refusals), rubric-judge faithfulness 0.283 →
+0.441 (refusals make no unsupported claims), false-abstention 0.000 → 0.174
+(4 support-floor abstentions). Mechanism: of 6 unsupported→correct
+conversions, 3 are support-floor refusals and 3 kept/repaired answers — the
+measured lever is abstention; repair quality at local-model scale is weak
+(33 repair calls over 29 answers, mean claim-support fraction 0.84).
+Overhead: mean 171 s verify latency per answer, **+157% over the agent phase**
+(local, contention-inflated; repair calls dominate — `max_repair_calls` trades
+taxonomy gain for latency directly). Verdict: grounding never gets worse and
+the target taxonomy improves, but the RAGAS faithfulness delta is unresolved
+at n=30; keep verify on by default.
+
 ## 4. SLOs and operating envelope
 
 | SLO | Target | Measured (2026-10-14/15, local `qwen3.6:35b-a3b-q4_K_M`) |
