@@ -36,7 +36,7 @@ Nine projects, all working showcases on the same platform.
 
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
-| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | pydantic-ai agent, typed tools, citation-enforced outputs, 65-question golden set, chunk-size sweep |
+| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | pydantic-ai agent, 65-q golden set, provider A/B (local qwen3.6 vs hosted kimi, recall@5 0.831, per-phase cost metering) |
 | 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | UCI Online Retail II (real) + synthetic | Leakage-proof time-CV, LightGBM vs PyTorch vs ETS, reconciliation |
 | 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | NAB (real) + seeded synthetic CI path | Event-based metrics (PR-AUC, range-F1), detector HPO, threshold sweeps |
 | 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News 120k (real) | Hand-written fine-tuning loop, macro-F1 0.946, calibration analysis |
@@ -56,7 +56,7 @@ built on the same platform, designed for deepening.
 
 | Project | Result |
 |---|---|
-| 01 RAG agent | Retrieval config by measurement: recall@5 **0.831 vs 0.031 random on the 65-question golden set** (earlier 26-q sweep: 0.962); chosen MiniLM/chunk-200/top_k-3/rerank cuts context cost **−65%** at equal recall; verify loop A/B: unsupported claims **18→14**, correct **12→15** (n=30) at 33 repair calls, RAGAS faithfulness 0.651→0.606 (judge noise) — grounding improved, with its repair-call cost measured |
+| 01 RAG agent | Retrieval config by measurement: recall@5 **0.831 vs 0.031 random** (65-question golden set); verify loop cut unsupported claims **60%→47%** locally and holds at **28% (18/65) on a hosted model**, RAGAS faithfulness **0.685 [0.61, 0.76]** vs 0.606 local; all four LLM phases metered — the full 65-question run cost **$3.58 cloud-equivalent** (agent $1.79 / RAGAS $1.13 / verify $0.47 / judge $0.19) under a hard $3 cap that stopped a runaway mid-run |
 | 02 Forecasting | Real-data primary (UCI Online Retail II): **hgb_tuned MAE 8.989 — the only model with MASE < 1** on intermittent real demand; the synthetic champion (lgbm_tuned 8.413, −41.9% vs persistence) drops to fourth there — tuned configs do not transfer across regimes |
 | 03 Anomaly detection | Real-data primary (NAB, event-based): **PR-AUC 0.527, range-F1 0.157** — the synthetic headline (ROC-AUC 0.916) was the pipeline check, and this repo says so; seeded synthetic stays as the CI fast path |
 | 04 NLP | Ladder to a full 120k fine-tune: test macro-F1 **0.9460** (naive 0.10 → TF-IDF 0.87 → bounded fine-tune 0.902 → full 0.9460 on Apple-Silicon MPS); val→test non-transfer and the Business/Sci-Tech labeling floor documented |

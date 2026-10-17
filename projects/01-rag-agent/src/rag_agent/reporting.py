@@ -70,6 +70,7 @@ class QuestionTrace:
     faithfulness: float  # per-row judge score (NaN when the run failed)
     abstained: bool
     format_ok: bool  # False when the agent run raised / output was invalid
+    output_retries: int = 0  # wave 15: bounded output-retries before success/failure
     error: str = ""
 
 
@@ -302,11 +303,20 @@ def inference_backend() -> str:
     return f"ollama:{os.environ.get('OLLAMA_MODEL', DEFAULT_OLLAMA_MODEL)}"
 
 
-def cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> dict[str, Any]:
+def cost_telemetry(
+    config: RAGConfig,
+    rag_run: RAGRun,
+    wall_time_s: float,
+    phases: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Per-query token usage + cost framing for the telemetry artifact.
 
     Local inference (Ollama) has $0 API cost; the rate-card numbers are kept as
     a clearly-labelled hypothetical for budget comparisons with hosted models.
+    ``phases`` is the wave-15 per-phase meter snapshot (agent/judge/verify/
+    ragas calls, tokens, cloud-equivalent spend); when active it replaces the
+    unknown ``api_cost_usd`` with the metered run total and records the cost
+    basis (membership-quota key — rate-card equivalent, never billed).
     """
     hypothetical = [
         round(
@@ -316,12 +326,28 @@ def cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> di
         for in_tok, out_tok in zip(rag_run.input_tokens, rag_run.output_tokens, strict=False)
     ]
     backend = inference_backend()
-    return {
+    hosted_spend = (
+        round(phases["total"]["spend_usd"], 8)
+        if phases is not None and phases.get("active")
+        else None
+    )
+    if hosted_spend is not None:
+        api_cost: float | None = hosted_spend
+    else:
+        api_cost = 0.0 if backend.startswith("ollama:") else None
+    payload: dict[str, Any] = {
         "backend": backend,
-        "api_cost_usd": 0.0 if backend.startswith("ollama:") else None,
+        "api_cost_usd": api_cost,
         "note": (
-            "local inference: $0 API cost; eval is CPU/GPU-bound "
-            f"(~{wall_time_s / 60:.1f} min wall time)"
+            (
+                "hosted run: api_cost_usd is the metered cloud-equivalent spend "
+                f"(~{wall_time_s / 60:.1f} min wall time)"
+            )
+            if hosted_spend is not None
+            else (
+                "local inference: $0 API cost; eval is CPU/GPU-bound "
+                f"(~{wall_time_s / 60:.1f} min wall time)"
+            )
         ),
         "n_queries": len(hypothetical),
         "total_input_tokens": sum(rag_run.input_tokens),
@@ -342,11 +368,29 @@ def cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> di
             for in_tok, out_tok in zip(rag_run.input_tokens, rag_run.output_tokens, strict=False)
         ],
     }
+    if phases is not None:
+        # Wave 15: per-phase meter breakdown; kept alongside (not replacing)
+        # the legacy fields above so existing readers keep working.
+        payload["phases"] = phases["phases"]
+        payload["total"] = phases["total"]
+        payload["meter"] = {
+            "active": phases["active"],
+            "model": phases.get("model"),
+            "cost_basis": phases.get("cost_basis"),
+            "ledger_spend_usd": phases.get("ledger_spend_usd"),
+            "budget_usd": phases.get("budget_usd"),
+        }
+    return payload
 
 
-def write_cost_telemetry(config: RAGConfig, rag_run: RAGRun, wall_time_s: float) -> Path:
+def write_cost_telemetry(
+    config: RAGConfig,
+    rag_run: RAGRun,
+    wall_time_s: float,
+    phases: dict[str, Any] | None = None,
+) -> Path:
     """Write ``reports/cost_telemetry.json`` for the active inference backend."""
-    payload = cost_telemetry(config, rag_run, wall_time_s)
+    payload = cost_telemetry(config, rag_run, wall_time_s, phases=phases)
     path = config.reports_dir / "cost_telemetry.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -426,6 +470,7 @@ def write_question_traces(config: RAGConfig, traces: list[QuestionTrace]) -> Pat
             "faithfulness": t.faithfulness,
             "abstained": t.abstained,
             "format_ok": t.format_ok,
+            "output_retries": t.output_retries,
             "verdict": classify_question(t),
             "error": t.error,
         }

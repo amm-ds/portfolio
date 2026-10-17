@@ -299,3 +299,70 @@ def test_to_ragas_dicts_column_mapping() -> None:
     }
     assert dicts[1]["retrieved_contexts"] == []
     assert set(dicts[0]) == {"user_input", "response", "retrieved_contexts", "reference"}
+
+
+# --- Wave 15: bounded output-retries on schema-invalid agent output ----------
+
+INVALID_ANALYSIS_JSON = json.dumps(
+    {
+        "summary": "",  # violates min_length=1 → ValidationError
+        "citations": [
+            {"chunk_id": "c", "article_id": "a", "title": "t", "excerpt": "e", "score": 1.0}
+        ],
+        "confidence": 0.9,
+    }
+)
+
+
+def _sequenced_model(responses: list[str]) -> FunctionModel:
+    """FunctionModel that replays ``responses`` one per call."""
+    from pydantic_ai.messages import ModelResponse, TextPart
+
+    calls = {"n": 0}
+
+    def respond(messages: list, info: object) -> ModelResponse:
+        calls["n"] += 1
+        content = responses[min(calls["n"] - 1, len(responses) - 1)]
+        return ModelResponse(parts=[TextPart(content=content)])
+
+    model = FunctionModel(respond)
+    model.calls = calls  # type: ignore[attr-defined]
+    return model
+
+
+def test_output_retry_recovers_invalid_then_valid(config: RAGConfig, retriever: Retriever) -> None:
+    from rag_agent.metering import start_metering
+
+    start_metering(active=False)  # retries only; metering covered elsewhere
+    model = _sequenced_model([INVALID_ANALYSIS_JSON, CANNED_ANALYSIS_JSON])
+    agent = build_agent(config, model=model)
+    questions = [EvalQuestion(question="why are plants green", relevant_article_ids=["photo-000"])]
+    rag_run = run_rag_eval(
+        config, agent, retriever, questions, judge=KeywordJudge(), verifier=KeywordEntailmentJudge()
+    )
+    trace = rag_run.traces[0]
+    assert trace.format_ok
+    assert trace.output_retries == 1
+    assert model.calls["n"] == 2  # invalid attempt + one retry
+    assert rag_run.eval_result.n == 1
+
+
+def test_output_retry_gives_up_and_keeps_format_failure_label(
+    config: RAGConfig, retriever: Retriever
+) -> None:
+    from rag_agent.metering import start_metering
+    from rag_agent.reporting import classify_question
+
+    start_metering(active=False)
+    model = _sequenced_model([INVALID_ANALYSIS_JSON])
+    agent = build_agent(config, model=model)
+    questions = [EvalQuestion(question="why are plants green", relevant_article_ids=["photo-000"])]
+    rag_run = run_rag_eval(
+        config, agent, retriever, questions, judge=KeywordJudge(), verifier=KeywordEntailmentJudge()
+    )
+    trace = rag_run.traces[0]
+    assert not trace.format_ok
+    assert trace.output_retries == 2  # both allowed retries spent
+    assert classify_question(trace) == "format-failure"
+    assert model.calls["n"] == 3  # initial attempt + 2 retries
+    assert "ValidationError" in trace.error or "UnexpectedModelBehavior" in trace.error

@@ -28,16 +28,19 @@ import time
 from dataclasses import dataclass, field
 
 from portfolio_core.llm import build_model
+from portfolio_core.llm_budget import BudgetExceededError, budget_limits
 from portfolio_core.logging import get_logger
 from portfolio_core.schemas import PortfolioBaseModel
 from portfolio_eval.rag import _STOPWORDS
 from pydantic import Field
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import UsageLimitExceeded
 from pydantic_ai.models import Model
 
 from rag_agent.config import RAGConfig
 from rag_agent.index import Retriever
-from rag_agent.provider import no_think_model_settings
+from rag_agent.metering import get_meter
+from rag_agent.provider import model_settings_for_provider
 from rag_agent.reporting import is_abstention
 from rag_agent.schemas import AnalysisResult
 
@@ -179,7 +182,7 @@ class LLMEntailmentJudge:
                 "You check whether answer claims are entailed by retrieved evidence. "
                 "You are strict: unsupported means the evidence does not state it."
             ),
-            model_settings=no_think_model_settings(),
+            model_settings=model_settings_for_provider(),
         )
         self._repair_agent = Agent(
             resolved,
@@ -188,19 +191,23 @@ class LLMEntailmentJudge:
                 "You repair unsupported sentences of grounded answers so that every "
                 "remaining word is entailed by the cited evidence."
             ),
-            model_settings=no_think_model_settings(),
+            model_settings=model_settings_for_provider(),
         )
 
     def verify_claims(self, question: str, claims: list[str], evidence: str) -> list[ClaimVerdict]:
         numbered = "\n".join(f"{i}. {c}" for i, c in enumerate(claims, start=1))
         prompt = ENTAILMENT_PROMPT.format(question=question, evidence=evidence, claims=numbered)
         try:
-            verdicts = self._verdict_agent.run_sync(prompt).output.verdicts
+            result = self._verdict_agent.run_sync(prompt, usage_limits=budget_limits())
+            get_meter().record("verify", result)
+            verdicts = result.output.verdicts
             if len(verdicts) != len(claims):
                 raise ValueError(
                     f"judge returned {len(verdicts)} verdicts for {len(claims)} claims"
                 )
             return verdicts
+        except (BudgetExceededError, UsageLimitExceeded):
+            raise  # the cap must stop the run, never degrade to the keyword floor
         except Exception as exc:  # provider hiccup must never break the answer path
             logger.warning("claim judge failed (%s); falling back to keyword entailment", exc)
             return self._fallback.verify_claims(question, claims, evidence)
@@ -210,7 +217,11 @@ class LLMEntailmentJudge:
             question=question, evidence=evidence, claim=claim, impossible=REPAIR_IMPOSSIBLE
         )
         try:
-            return self._repair_agent.run_sync(prompt).output.strip()
+            result = self._repair_agent.run_sync(prompt, usage_limits=budget_limits())
+            get_meter().record("verify", result)
+            return result.output.strip()
+        except (BudgetExceededError, UsageLimitExceeded):
+            raise  # the cap must stop the run, never silently drop claims
         except Exception as exc:
             logger.warning("repair call failed (%s); dropping the claim", exc)
             return REPAIR_IMPOSSIBLE
