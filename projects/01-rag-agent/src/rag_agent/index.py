@@ -95,7 +95,7 @@ class SentenceTransformerEmbedder:
             _guard_torch_threads()
             try:
                 self._model = SentenceTransformer(self.model_name, device="cpu")
-            except Exception as exc:
+            except Exception as exc:  # broad: HF hub load failures vary; wrapped + chained
                 raise EmbeddingModelError(
                     f"failed to load embedding model {self.model_name!r}: {exc}. "
                     "Check network access to huggingface.co (or HF_HOME/HF_HUB_OFFLINE)."
@@ -129,7 +129,7 @@ class CrossEncoderReranker:
             _guard_torch_threads()
             try:
                 self._model = CrossEncoder(self.model_name, device="cpu")
-            except Exception as exc:
+            except Exception as exc:  # broad: HF hub load failures vary; wrapped + chained
                 raise EmbeddingModelError(
                     f"failed to load reranker model {self.model_name!r}: {exc}. "
                     "Check network access to huggingface.co."
@@ -221,7 +221,7 @@ class Retriever:
             vector = np.asarray(self.query_embed_fn([query]), dtype=np.float32)
         except EmbeddingModelError:
             raise
-        except Exception as exc:
+        except Exception as exc:  # broad: embed call failures vary; wrapped + chained
             raise EmbeddingModelError(f"embedding the query failed: {exc}") from exc
         if vector.ndim != 2 or vector.shape[0] != 1:
             raise EmbeddingModelError(f"embed_fn returned shape {vector.shape}, expected (1, dim)")

@@ -50,7 +50,7 @@ def _load_calibrated(cfg: ChurnConfig) -> Any:
             f"{path} missing — run the train stage before building the serving artifact"
         )
     with path.open("rb") as fh:
-        return pickle.load(fh)
+        return pickle.load(fh)  # noqa: S301 - serving artifact persisted by this pipeline
 
 
 def _holdout_frame(cfg: ChurnConfig) -> pd.DataFrame:

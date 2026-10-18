@@ -284,7 +284,10 @@ def figure_fold_stability(result: BacktestResult) -> go.Figure:
         fig.add_scatter(
             x=list(range(1, len(values) + 1)), y=values, name=model, mode="lines+markers"
         )
-    fig.update_layout(title="Fold stability (MAE per fold)", xaxis_title="fold")
+    fig.update_layout(
+        title="Every run degrades on later folds - trend drift the honest backtest prices in",
+        xaxis_title="fold",
+    )
     style_runs(fig, best=best_model(result))
     add_takeaway(
         fig,
@@ -305,7 +308,8 @@ def figure_eda_series_overview(panel: pl.DataFrame) -> go.Figure:
         sub = df.filter(pl.col("series_id") == sid).sort("date")
         fig.add_scatter(x=sub["date"].to_numpy(), y=sub["units"].to_numpy(), name=sid, mode="lines")
     fig.update_layout(
-        title="Raw daily units — sample series across the hierarchy", yaxis_title="units"
+        title="Trend and a clear weekly cycle are visible in raw units before any model runs",
+        yaxis_title="units",
     )
     return apply_theme(fig)
 
@@ -314,7 +318,10 @@ def figure_eda_units_distribution(panel: pl.DataFrame) -> go.Figure:
     """Histogram of daily units over the whole panel (all series pooled)."""
     fig = go.Figure()
     fig.add_histogram(x=panel["units"].to_numpy(), nbinsx=60, name="units")
-    fig.update_layout(title="Daily-units distribution (all series)", xaxis_title="units")
+    fig.update_layout(
+        title="Store-product levels differ by design - a single global mean posts MAE 31.8",
+        xaxis_title="units",
+    )
     return apply_theme(fig)
 
 

@@ -413,7 +413,7 @@ def run_suite(
                 )
             )
             suite_aborted = True
-        except Exception as exc:
+        except Exception as exc:  # broad: task boundary — failure becomes a failed record
             logger.exception("task %s failed", task.id)
             records.append(
                 TaskRunRecord(
@@ -641,7 +641,10 @@ def _fig_per_task_grading(
     )
     fig.update_layout(
         barmode="group",
-        title="Per-task grading: answer success vs tool selection",
+        title=(
+            "Answers pass 15/15 but exact tool selection is 8/15 - the "
+            "remaining risk is behavioral over-calling, not infrastructure"
+        ),
         xaxis_title="task",
         yaxis_title="score (1 = pass)",
         yaxis={"range": [0, 1.05]},
@@ -1107,7 +1110,10 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
     )
     fig.update_layout(
         barmode="stack",
-        title="Per-task tokens, cloud-equivalent cost, and latency vs budget",
+        title=(
+            "Every task lands inside the $0.25 and 180 s budgets - the suite "
+            "spent $0.10 of the $2.00 cap"
+        ),
         xaxis_title="task",
         yaxis={"title": "tokens", "range": [0, max(totals, default=1) * 1.2]},
         yaxis2={"title": "seconds", "overlaying": "y", "side": "right"},

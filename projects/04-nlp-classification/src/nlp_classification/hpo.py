@@ -251,7 +251,10 @@ def hpo_history_figure(study: optuna.Study) -> go.Figure:
         name="best so far",
     )
     fig.update_layout(
-        title="Optuna HPO — validation macro-F1 per trial (median pruning)",
+        title=(
+            f"HPO null result: {len(trials)} trials lift best val macro-F1 to "
+            f"{running:.4f} - inside seed noise, test prefers the artifact"
+        ),
         xaxis_title="trial",
         yaxis_title="val macro-F1",
     )
@@ -268,8 +271,12 @@ def hpo_importance_figure(study: optuna.Study) -> go.Figure:
     importances = optuna.importance.get_param_importances(study)
     names = list(importances)
     fig = go.Figure(data=go.Bar(x=names, y=[importances[n] for n in names]))
+    top = max(importances, key=lambda name: importances[name])
     fig.update_layout(
-        title="HPO parameter importance (fANOVA)",
+        title=(
+            f"{top} dominates the search ({importances[top]:.0%} importance) - "
+            "but the gains stay inside seed noise"
+        ),
         yaxis_title="importance",
         yaxis_range=[0, 1],
     )

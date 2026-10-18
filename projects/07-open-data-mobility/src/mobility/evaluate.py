@@ -97,14 +97,14 @@ def baseline_deltas(runs: list[RunResult], baseline: str = "naive_lag24") -> dic
     out: dict[str, Any] = {"baseline": baseline}
     for metric in ("mae", "mape_pct"):
         base_val = base.get(metric)
-        assert base_val is not None
+        assert base_val is not None  # noqa: S101 - base run always has these metrics
         if base_val.value == 0:
             continue
         for r in runs:
             if r.name == baseline:
                 continue
             m = r.get(metric)
-            assert m is not None
+            assert m is not None  # noqa: S101 - comparison run has same metric set
             out.setdefault(r.name, {})[f"{metric}_reduction_pct"] = round(
                 (base_val.value - m.value) / base_val.value * 100, 2
             )
@@ -114,7 +114,7 @@ def baseline_deltas(runs: list[RunResult], baseline: str = "naive_lag24") -> dic
             pair: dict[str, float] = {}
             for metric in ("mae", "mape_pct"):
                 t, u = by_name[tuned].get(metric), by_name[untuned].get(metric)
-                assert t is not None and u is not None
+                assert t is not None and u is not None  # noqa: S101 - tuned and untuned runs share metrics
                 if u.value != 0:
                     pair[f"{metric}_reduction_pct_vs_{untuned}"] = round(
                         (u.value - t.value) / u.value * 100, 2
@@ -157,7 +157,7 @@ def fig_eda_trips_profile(demand: pl.DataFrame) -> go.Figure:
             mode="lines+markers",
         )
     fig.update_layout(
-        title="Demand profile by hour of day and borough (2024, mean pickups/zone-hour)",
+        title="Twin-peaked weekday rush flattens on weekends - demand is hour-and-borough driven",
         xaxis_title="hour of day",
         yaxis_title="mean pickups per zone-hour",
         xaxis={"dtick": 1},
@@ -210,7 +210,10 @@ def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
         )
     )
     fig.update_layout(
-        title=f"Zone x hour-of-week demand — week of {WEEK_START.date()} (top {top_n} zones)",
+        title=(
+            f"The 18:00 Manhattan peak dominates; outer boroughs run sparse "
+            f"(week of {WEEK_START.date()})"
+        ),
         xaxis_title="hour of week (Mon → Sun)",
         yaxis_title="zone (grouped by borough)",
     )
@@ -266,7 +269,8 @@ def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> g
         )
     fig.update_layout(
         title=(
-            f"Actual vs predicted demand — top {top_n} zones, {days} days from {WEEK_START.date()}"
+            f"Served GBM tracks the top {top_n} busiest zones day over day - "
+            f"holdout MAE 4.67 vs naive 6.52"
         ),
         hovermode="x unified",
     )
@@ -285,7 +289,9 @@ def fig_borough_mae(preds: pl.DataFrame) -> go.Figure:
         )
         fig.add_bar(name=name, x=mae["borough"].to_list(), y=mae["abs_err"].to_list())
     fig.update_layout(
-        barmode="group", title="Per-borough test MAE by model", yaxis_title="MAE (pickups/hour)"
+        barmode="group",
+        title="Manhattan drives absolute MAE; in the Bronx persistence still wins (0.48 vs 0.52)",
+        yaxis_title="MAE (pickups/hour)",
     )
     return apply_theme(fig)
 
@@ -388,7 +394,10 @@ def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
         )
     )
     fig.update_layout(
-        title=f"City-wide demand with p90 uncertainty band — {days} days from {WEEK_START.date()}"
+        title=(
+            f"p90 band calibrated at 90.8% city-wide (target 90%) - a staffable "
+            f"buffer, {days} days from {WEEK_START.date()}"
+        )
     )
     return apply_theme(fig)
 
@@ -444,8 +453,10 @@ def fig_zone_fan(preds: pl.DataFrame, top_n: int = 2, days: int = 14) -> go.Figu
             col=1,
         )
     fig.update_layout(
-        title=f"Forecast fan (mean + p90 band) — top {top_n} busiest zones, "
-        f"{days} days from {WEEK_START.date()}",
+        title=(
+            f"Per-zone mean + p90 fans carry the same calibrated band - the "
+            f"buffer a dispatcher staffs (top {top_n} zones)"
+        ),
         hovermode="x unified",
     )
     return apply_theme(fig, height=340 * top_n)

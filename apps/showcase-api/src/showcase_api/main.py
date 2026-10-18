@@ -471,7 +471,7 @@ async def _load_agent() -> Any:
                 SentenceTransformerEmbedder(cfg.embedding_model),
                 CrossEncoderReranker(cfg.reranker_model),
             )
-        except Exception as e:
+        except Exception as e:  # broad: any load failure → 503, chained
             logger.warning("retriever unavailable: %s", e)
             raise HTTPException(status_code=503, detail="retriever unavailable") from e
         _agent_cache = (build_agent(cfg), retriever)

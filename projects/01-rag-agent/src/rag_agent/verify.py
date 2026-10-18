@@ -208,7 +208,7 @@ class LLMEntailmentJudge:
             return verdicts
         except (BudgetExceededError, UsageLimitExceeded):
             raise  # the cap must stop the run, never degrade to the keyword floor
-        except Exception as exc:  # provider hiccup must never break the answer path
+        except Exception as exc:  # broad: provider hiccup; logged, keyword fallback
             logger.warning("claim judge failed (%s); falling back to keyword entailment", exc)
             return self._fallback.verify_claims(question, claims, evidence)
 
@@ -222,7 +222,7 @@ class LLMEntailmentJudge:
             return result.output.strip()
         except (BudgetExceededError, UsageLimitExceeded):
             raise  # the cap must stop the run, never silently drop claims
-        except Exception as exc:
+        except Exception as exc:  # broad: repair is best-effort; failure → REPAIR_IMPOSSIBLE
             logger.warning("repair call failed (%s); dropping the claim", exc)
             return REPAIR_IMPOSSIBLE
 
@@ -260,7 +260,7 @@ def verify_result(
     report = VerifyReport(final_summary=result.summary)
     try:
         _verify(question, result, retriever, config, judge, report)
-    except Exception as exc:  # pragma: no cover - defensive; the loop must not break answers
+    except Exception as exc:  # pragma: no cover - defensive (broad: loop must not break answers)
         logger.warning("verification failed (%s); keeping the original answer", exc)
         report.claims.clear()
         report.support_fraction = 1.0

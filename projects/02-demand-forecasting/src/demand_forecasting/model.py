@@ -133,7 +133,7 @@ class ETSSeries:
                 if not np.all(np.isfinite(model.fittedvalues)):
                     raise ValueError("non-finite fitted values")
                 return model
-            except Exception as err:
+            except Exception as err:  # broad: statsmodels failures vary; try next config
                 last_err = err
         raise ValueError(f"ETS fallback chain exhausted: {last_err}")
 
@@ -305,5 +305,5 @@ def save_models(models: dict[str, Any], path: Path) -> Path:
 def load_models(path: Path) -> dict[str, Any]:
     """Load models persisted by :func:`save_models`."""
     with open(path, "rb") as f:
-        models: dict[str, Any] = pickle.load(f)
+        models: dict[str, Any] = pickle.load(f)  # noqa: S301 - serving artifact persisted by this pipeline
     return models

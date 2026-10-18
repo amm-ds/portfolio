@@ -67,7 +67,7 @@ def residual_probe(config: AnomalyConfig) -> dict[str, Any]:
     """Compare base rolling features vs. +rolling-median residual features."""
     base_scores, y_test, base_train, base_test = _fit_score(config, residuals=False)
     res_scores, y_test_r, res_train, res_test = _fit_score(config, residuals=True)
-    assert np.array_equal(y_test, y_test_r)
+    assert np.array_equal(y_test, y_test_r)  # noqa: S101 - same split scored twice
 
     result: dict[str, Any] = {
         "detector": "isolation_forest",

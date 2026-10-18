@@ -66,7 +66,7 @@ def add_random_baseline(
     runs.insert(0, run)
     roc = run.get("roc_auc")
     pr = run.get("pr_auc")
-    assert roc is not None and pr is not None
+    assert roc is not None and pr is not None  # noqa: S101 - run metrics always recorded
     logger.info("random baseline roc_auc=%.4f pr_auc=%.4f", roc.value, pr.value)
 
 
@@ -109,7 +109,7 @@ def score_all(
         scores_by_model[name] = scores
         roc = run.get("roc_auc")
         pr = run.get("pr_auc")
-        assert roc is not None and pr is not None
+        assert roc is not None and pr is not None  # noqa: S101 - run metrics always recorded
         logger.info("%s roc_auc=%.4f pr_auc=%.4f", name, roc.value, pr.value)
     return runs, scores_by_model, y_test, ts
 
@@ -141,7 +141,7 @@ def roc_figure(
     for run in runs:
         fpr, tpr, _ = skm.roc_curve(y_test, scores_by_model[run.name])
         metric = run.get("roc_auc")
-        assert metric is not None
+        assert metric is not None  # noqa: S101 - run metrics always recorded
         fig.add_scatter(x=fpr, y=tpr, mode="lines", name=f"{run.name} (AUC={metric.value:.3f})")
     fig.update_layout(title="ROC curves — test window", xaxis_title="FPR", yaxis_title="TPR")
     return apply_theme(fig)
@@ -163,12 +163,18 @@ def pr_figure(
     for run in runs:
         precision, recall, _ = skm.precision_recall_curve(y_test, scores_by_model[run.name])
         metric = run.get("pr_auc")
-        assert metric is not None
+        assert metric is not None  # noqa: S101 - run metrics always recorded
         fig.add_scatter(
             x=recall, y=precision, mode="lines", name=f"{run.name} (AP={metric.value:.3f})"
         )
+    best_ap = max(m.value for run in runs if (m := run.get("pr_auc")) is not None)
     fig.update_layout(
-        title="PR curves — test window", xaxis_title="recall", yaxis_title="precision"
+        title=(
+            f"At {baseline:.1%} prevalence the no-skill floor is {baseline:.3f} - "
+            f"tuned runs separate (best AP {best_ap:.3f}), untuned hug the floor"
+        ),
+        xaxis_title="recall",
+        yaxis_title="precision",
     )
     return apply_theme(fig)
 
@@ -205,7 +211,10 @@ def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
         marker={"color": "#fbbf24", "size": 6},
     )
     fig.update_layout(
-        title="Test window — telemetry with best-model anomaly flags",
+        title=(
+            "Champion flags at the fixed 2% budget track simultaneous "
+            "CPU+latency spikes - memory holds its seasonal path"
+        ),
         xaxis_title="time",
         yaxis_title="value",
     )
@@ -233,7 +242,10 @@ def eda_signals_overview(raw: pl.DataFrame, max_rows: int = 2_880) -> go.Figure:
         marker={"color": "#f472b6", "size": 7, "symbol": "x"},
     )
     fig.update_layout(
-        title=f"Raw telemetry — first {window.height:,} minutes (synthetic, seeded)",
+        title=(
+            f"Clean daily seasonality; incidents spike CPU and latency together "
+            f"while memory holds its path (first {window.height:,} minutes)"
+        ),
         xaxis_title="time",
         yaxis_title="value",
     )
@@ -270,7 +282,12 @@ def threshold_sweep_figure(
     fig.add_vline(x=config.contamination, line={"dash": "dash", "color": "#fbbf24"})
     fig.update_xaxes(type="log", title="alert budget (flagged fraction of test window)")
     fig.update_yaxes(title="rate", range=[0, 1.05])
-    fig.update_layout(title=f"{name} — precision/recall vs. alert budget")
+    fig.update_layout(
+        title=(
+            f"{name} at the fixed {config.contamination:.0%} alert budget: recall "
+            f"{op_rec:.0%}, precision {op_prec:.0%} - a staffing dial, not a mystery"
+        )
+    )
     add_takeaway(
         fig,
         f"At the fixed {config.contamination:.0%} alert budget: recall {op_rec:.0%}, "
@@ -356,8 +373,13 @@ def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | Non
     best_txt = ", ".join(
         f"{k}={v:.3g}" if isinstance(v, float) else f"{k}={v}" for k, v in best.items()
     )
+    top = max(importances, key=importances.get)
     fig.update_layout(
-        title=f"{family} — HPO ({payload['n_trials']} trials, seeded TPE + median prune)"
+        title=(
+            f"{family} HPO rides on {top} ({importances[top]:.0%} importance) - "
+            f"{payload['n_trials']} seeded TPE trials, best val PR-AUC "
+            f"{payload['best_value']:.3f}"
+        )
     )
     add_takeaway(
         fig,

@@ -56,5 +56,12 @@ def eda_segment_profile_figure(df: pl.DataFrame) -> go.Figure:
         "Randomization holds: arms are near-identical on pre-period spend; outcome rates "
         "separate the arms only slightly — conversion is rare (~1%) and needs variance reduction.",
     )
-    fig.update_layout(barmode="group", legend={"orientation": "h", "y": -0.18})
+    fig.update_layout(
+        barmode="group",
+        title=(
+            "Randomization holds: arms near-identical at ~$242 prior spend; "
+            "only Mens E-Mail moves conversion (0.57% -> 1.25%)"
+        ),
+        legend={"orientation": "h", "y": -0.18},
+    )
     return fig

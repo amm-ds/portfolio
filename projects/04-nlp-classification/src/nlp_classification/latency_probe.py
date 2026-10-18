@@ -24,6 +24,7 @@ tokens — with per-prediction token counts measured from the tokenizer
 import argparse
 import io
 import json
+import shutil
 import statistics
 import subprocess
 import time
@@ -248,15 +249,18 @@ def quality_on_sample(
 
 
 def _machine_note() -> str:
+    sysctl = shutil.which("sysctl")
+    if sysctl is None:
+        return "Apple Silicon MPS, 2026-10"
     try:
-        chip = subprocess.run(
-            ["sysctl", "-n", "machdep.cpu.brand_string"],
+        chip = subprocess.run(  # noqa: S603 - fixed argv, no shell, trusted constant
+            [sysctl, "-n", "machdep.cpu.brand_string"],
             check=True,
             capture_output=True,
             text=True,
         ).stdout.strip()
         return f"{chip} (Apple Silicon, MPS available)"
-    except Exception:  # pragma: no cover - non-Apple fallback
+    except (OSError, subprocess.SubprocessError):  # pragma: no cover - non-Apple fallback
         return "Apple Silicon MPS, 2026-10"
 
 

@@ -185,7 +185,12 @@ def figure_probabilistic_band(
             showlegend=False,
         )
     cov = result["quantile_band"]["coverage_pooled"]
-    fig.update_layout(title="Probabilistic forecast — p10-p90 band, last CV fold")
+    fig.update_layout(
+        title=(
+            f"The 80% band covers only {cov:.0%} here - zero-heavy residuals "
+            "break the conformal width"
+        )
+    )
     add_takeaway(
         fig,
         f"takeaway: empirical band coverage {cov:.0%} (target {TARGET_COVERAGE:.0%}); "

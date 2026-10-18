@@ -28,7 +28,8 @@ def main() -> None:
     args.dest.mkdir(parents=True, exist_ok=True)
 
     req = urllib.request.Request(URL, headers={"User-Agent": "Mozilla/5.0"})
-    with urllib.request.urlopen(req, timeout=300) as resp:
+    # URL is a hardcoded https registry mirror, pinned in the data-registry card
+    with urllib.request.urlopen(req, timeout=300) as resp:  # noqa: S310
         payload = resp.read()
     zf = zipfile.ZipFile(io.BytesIO(payload))
     n = 0

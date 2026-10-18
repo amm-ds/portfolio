@@ -57,7 +57,7 @@ class LLMRubricJudge:
             return result.output
         except (BudgetExceededError, UsageLimitExceeded):
             raise  # the cap must stop the run, never degrade to the keyword floor
-        except Exception as exc:  # provider hiccup must never break the eval
+        except Exception as exc:  # broad: provider hiccup; logged, keyword fallback
             logger.warning("LLM judge failed (%s); falling back to keyword judge", exc)
             return self._fallback.judge(question, context, answer)
 

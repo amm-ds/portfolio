@@ -157,10 +157,10 @@ async def run_agent_with_retries(
             if deps is not None:
                 return await agent.run(prompt, deps=deps, usage_limits=usage_limits)
             return await agent.run(prompt, usage_limits=usage_limits)
-        except Exception as exc:
+        except Exception as exc:  # broad: agent failures vary; bounded retries then re-raise
             last_error = exc
             logger.warning("agent run attempt %d/%d failed: %s", attempt, attempts, exc)
-    assert last_error is not None
+    assert last_error is not None  # noqa: S101 - loop ran and every attempt raised
     raise last_error
 
 
@@ -239,7 +239,7 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
                 deps=ctx.deps.notebook,
                 usage_limits=ctx.deps.usage_limits,
             )
-        except Exception as exc:
+        except Exception as exc:  # broad: execute failure recoverable via repair loop
             # Tool calls made before the failure still belong to the record.
             state.tool_traces[:] = ctx.deps.tool_traces
             state.retries += 1

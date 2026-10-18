@@ -146,7 +146,13 @@ def figure_hpo_history(study: optuna.Study) -> go.Figure:
         best = min(best, v)
         bests.append(best)
     fig.add_scatter(x=numbers, y=bests, name="best so far", mode="lines")
-    fig.update_layout(title="HPO optimization history (CV mean MAE)", xaxis_title="trial")
+    fig.update_layout(
+        title=(
+            f"{len(trials)} seeded trials buy a modest, real gain - best CV "
+            f"MAE {best:.3f}, converging on regularised small trees"
+        ),
+        xaxis_title="trial",
+    )
     return apply_theme(fig)
 
 
@@ -163,7 +169,13 @@ def figure_hpo_importance(study: optuna.Study) -> go.Figure:
     fig = go.Figure()
     names = list(importances)
     fig.add_bar(x=[importances[n] for n in names], y=names, orientation="h", name="importance")
-    fig.update_layout(title="HPO hyperparameter importance")
+    top2 = sum(sorted(importances.values(), reverse=True)[:2])
+    fig.update_layout(
+        title=(
+            f"Regularisation knobs dominate - top two params carry {top2:.0%} "
+            "of the search importance"
+        )
+    )
     return apply_theme(fig)
 
 

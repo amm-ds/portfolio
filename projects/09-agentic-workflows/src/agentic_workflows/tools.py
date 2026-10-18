@@ -423,7 +423,7 @@ def _traced_tool[F: Callable[..., Any]](fn: F, buffer: list[ToolCallTrace]) -> F
             start = time.perf_counter()
             try:
                 result = await fn(*args, **kwargs)
-            except Exception:
+            except Exception:  # broad: trace every failure shape; always re-raised
                 _emit(args, kwargs, start, False, None)
                 raise
             _emit(args, kwargs, start, True, result)
@@ -436,7 +436,7 @@ def _traced_tool[F: Callable[..., Any]](fn: F, buffer: list[ToolCallTrace]) -> F
         start = time.perf_counter()
         try:
             result = fn(*args, **kwargs)
-        except Exception:
+        except Exception:  # broad: trace every failure shape; always re-raised
             _emit(args, kwargs, start, False, None)
             raise
         _emit(args, kwargs, start, True, result)
