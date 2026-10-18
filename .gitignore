@@ -22,8 +22,16 @@ data/
 *.sqlite
 models/
 artifacts/
-reports/figures/*.html
 !**/data/.gitkeep
+
+# Deployable artifacts — committed to git (small by policy) so a fresh clone /
+# CI-built image serves a functional app without `dvc pull`. Bulky raw data
+# stays DVC-tracked; the 01 RAG index is the one opt-in exception. See
+# deploy/DEPLOY.md.
+!projects/*/reports/models/
+projects/*/reports/models/*
+!projects/*/reports/models/serving/
+!projects/*/reports/models/serving/**
 
 # DVC
 /.dvc/cache
