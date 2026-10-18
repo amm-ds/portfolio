@@ -42,6 +42,12 @@ extra:
     card_url: https://amm-ds.github.io/portfolio/assets/social-card.png
     page_url: https://amm-ds.github.io/portfolio/
 
+extra_javascript:
+  # Mermaid diagrams in project pages: library + portfolio init (big boxes,
+  # readable text, dark-slate theme). Order matters — init after the library.
+  - https://unpkg.com/mermaid@10.9.3/dist/mermaid.min.js
+  - assets/mermaid-init.js
+
 plugins:
   - search
 

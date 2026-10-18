@@ -21,7 +21,17 @@ _TEMPLATE: dict[str, Any] = {
         "paper_bgcolor": "#0f172a",
         "plot_bgcolor": "#0f172a",
         "margin": {"l": 60, "r": 30, "t": 60, "b": 50},
-        "title": {"x": 0.02, "xanchor": "left", "yanchor": "top", "pad": {"t": 12}},
+        "title": {
+            "x": 0.02,
+            "xanchor": "left",
+            "yanchor": "top",
+            "pad": {"t": 12},
+            "font": {"color": "#f1f5f9", "size": 17},
+        },
+        # Axis text must read on the dark canvas — both primary and secondary.
+        "xaxis": {"tickfont": {"color": "#cbd5e1"}, "title": {"font": {"color": "#cbd5e1"}}},
+        "yaxis": {"tickfont": {"color": "#cbd5e1"}, "title": {"font": {"color": "#cbd5e1"}}},
+        "yaxis2": {"tickfont": {"color": "#cbd5e1"}, "title": {"font": {"color": "#cbd5e1"}}},
         "hovermode": "x unified",
         # Hover cards must read on any background: light card, dark text.
         "hoverlabel": {
@@ -98,9 +108,9 @@ def add_takeaway(fig: go.Figure, takeaway: str) -> go.Figure:
     title = fig.layout.title
     head = title.text if title.text else ""
     combined = (
-        f"{head}<br><span style='font-size:12px;color:#94a3b8'>{takeaway}</span>"
+        f"{head}<br><span style='font-size:13px;color:#cbd5e1'>{takeaway}</span>"
         if head
-        else f"<span style='font-size:12px;color:#94a3b8'>{takeaway}</span>"
+        else f"<span style='font-size:13px;color:#cbd5e1'>{takeaway}</span>"
     )
     fig.update_layout(
         title={**title.to_plotly_json(), "text": combined},

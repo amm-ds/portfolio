@@ -35,7 +35,7 @@ sections:
       The task is fixed and bounded so the benchmark can be re-run, not just
       read.
 
-      **Business implication:** a client weighing local inference against a
+      **Business summary:** a client weighing local inference against a
       cloud API starts from measured latency and cost on the stack that
       would actually run — not vendor rate cards or leaderboard claims.
   - id: objectives
@@ -54,7 +54,7 @@ sections:
       Success is a reproducible set of numbers tied to serving
       configurations, not a leaderboard rank.
 
-      **Business implication:** the deliverable is an operating decision —
+      **Business summary:** the deliverable is an operating decision —
       which model/quant arm meets a latency SLO at what cost — with every
       metric traceable to a configuration a client could actually deploy.
   - id: data
@@ -74,7 +74,7 @@ sections:
 
       A fixed task is what makes different models directly comparable.
 
-      **Business implication:** a client can re-run the identical task on
+      **Business summary:** a client can re-run the identical task on
       their own hardware and get numbers comparable cell-for-cell with these
       — the benchmark is portable, not a one-off demo.
   - id: eda
@@ -95,7 +95,7 @@ sections:
 
       These are facts about the serving layer, not about model intelligence.
 
-      **Business implication:** a naive harness would have reported qwen3.6
+      **Business summary:** a naive harness would have reported qwen3.6
       as a broken model; per-model reasoning defaults are part of the true
       cost of serving.
     figures:
@@ -126,7 +126,7 @@ sections:
       Rationale lives in `DESIGN.md`; stages are `prepare` → `bench` →
       `report`.
 
-      **Business implication:** swapping engine or quantization is a manifest
+      **Business summary:** swapping engine or quantization is a manifest
       pull, not a re-architecture — the table maps one-to-one onto
       deployment options.
   - id: evaluation
@@ -148,7 +148,7 @@ sections:
       finishes in under 45 minutes; `--full` adds the dense qwen3:32b
       baseline, concurrency 2, and the quant/engine cells.
 
-      **Business implication:** the protocol is short and deterministic
+      **Business summary:** the protocol is short and deterministic
       enough to run inside a client proof-of-concept — SLO verification
       becomes an afternoon task, not a project.
     figures:
@@ -176,7 +176,7 @@ sections:
         rate as Q8_0 — quantization costs serving headroom, not
         structured-output reliability.
 
-      **Business implication:** under a single-digit-second interactive SLO,
+      **Business summary:** under a single-digit-second interactive SLO,
       the 4-bit MoE arm serves locally at roughly $0.12 per 1M output tokens
       (declared 100 W, $0.30/kWh) — quantization is a latency and cost lever,
       not a quality risk, at this task size.
@@ -204,6 +204,6 @@ sections:
       their own hardware and treats these numbers as a worked example, not
       a guarantee.
 
-      **Business implication:** the framework transfers to a client decision
+      **Business summary:** the framework transfers to a client decision
       unchanged — same task, same protocol, same declared-assumption labels —
       only the hardware and the latency SLO change.

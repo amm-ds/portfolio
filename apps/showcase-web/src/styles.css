@@ -728,7 +728,7 @@ code {
   margin-top: 1.3rem;
 }
 
-/* --- Business-implication card: trailing "**Business implication:** ..." --- */
+/* --- Business-summary card: trailing "**Business summary:** ..." --- */
 
 .bi-card {
   background: var(--surface);

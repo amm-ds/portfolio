@@ -26,7 +26,7 @@ sections:
       future holdout the model removes 28.4% of forecast error vs "same hour
       last week".
 
-      **Business implication:** an hour-ahead, zone-level demand signal
+      **Business summary:** an hour-ahead, zone-level demand signal
       turns fleet staging and driver shifts from guesswork into a
       scheduled decision.
     figures: []
@@ -57,7 +57,7 @@ sections:
       The deliverable is a forecast plus a defensible buffer size, not a
       leaderboard entry.
 
-      **Business implication:** the client gets a staffing decision —
+      **Business summary:** the client gets a staffing decision —
       expected demand plus how many extra vehicles to hold each hour —
       and a straight read on what rain does and does not tell you.
     figures: []
@@ -84,7 +84,7 @@ sections:
       declared laptop-friendly boundary: large enough to be credible at real
       scale, small enough to re-run in minutes.
 
-      **Business implication:** every input is licensed for commercial use
+      **Business summary:** every input is licensed for commercial use
       and re-obtainable by one command, so the analysis reproduces inside
       your own environment — no proprietary data dependency.
     figures: []
@@ -109,7 +109,7 @@ sections:
 
       Demand is hour-and-borough driven, not evenly spread.
 
-      **Business implication:** staff the 18:00 Manhattan peak and the
+      **Business summary:** staff the 18:00 Manhattan peak and the
       airport flatness very differently — this EDA is what turns a
       city-wide average into per-zone staffing plans.
     figures: [eda_trips_profile, zone_hour_heatmap, zone_demand_map]
@@ -150,7 +150,7 @@ sections:
       The method section is the audit trail: no leakage inflates the
       numbers before the headline error rates are trusted.
 
-      **Business implication:** a client can verify the protocol and re-run
+      **Business summary:** a client can verify the protocol and re-run
       the whole fit on a laptop before betting a fleet plan on the model.
     figures: []
     metrics_keys: []
@@ -186,7 +186,7 @@ sections:
       wiring check; the observatory's real value starts with the first
       unseen month.
 
-      **Business implication:** the client inherits a monitoring contract,
+      **Business summary:** the client inherits a monitoring contract,
       not just a model — regression opens a tracked issue with a response
       runbook instead of waiting for the next quarterly review.
     figures: [actual_vs_pred_top5, borough_mae, zone_fan]
@@ -229,7 +229,7 @@ sections:
       - **Serving is live:** the showcase API returned JFK (zone 132):
         223.827 point / 251.811 p90.
 
-      **Business implication:** ~28% of forecast error is removed vs "same
+      **Business summary:** ~28% of forecast error is removed vs "same
       hour last week"; the 90.8%-calibrated p90 band yields a defensible
       buffer of extra vehicles per hour — except flagged sparse N/A zones,
       where bands run too tight.
@@ -265,7 +265,7 @@ sections:
       flagged N/A zones under-cover at 84.7% — staff from the band in
       dense boroughs, fall back to persistence rules in flagged zones.
 
-      **Business implication:** this quality of analysis runs on a laptop
+      **Business summary:** this quality of analysis runs on a laptop
       and re-runs in minutes — 41.2M rows, a strict temporal holdout and a
       sub-3 GB footprint deliver enterprise-grade rigour without
       enterprise-grade infrastructure.

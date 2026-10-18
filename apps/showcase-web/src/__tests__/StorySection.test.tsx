@@ -90,24 +90,44 @@ describe("StorySection figure layout (wave 4)", () => {
   });
 });
 
-describe("StorySection business-implication card", () => {
+describe("StorySection business-summary card", () => {
   const WITH_BI = {
     ...BASE,
     text_md:
       "Framing paragraph with some *context*.\n\n" +
       "A second paragraph before the takeaway.\n\n" +
-      "**Business implication:** retention budget is a cost-minimization\n" +
+      "**Business summary:** retention budget is a cost-minimization\n" +
       "problem, judged in money saved.\n",
   };
 
-  it("renders the trailing **Business implication:** paragraph as a card", () => {
+  it("renders the trailing **Business summary:** paragraph as a card", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} index={0} metrics={null} />);
     const card = document.querySelector(".bi-card");
     expect(card).not.toBeNull();
-    expect(card?.getAttribute("aria-label")).toBe("Business implication");
-    expect(card?.querySelector(".bi-label")?.textContent).toBe("Business implication");
+    expect(card?.getAttribute("aria-label")).toBe("Business summary");
+    expect(card?.querySelector(".bi-label")?.textContent).toBe("Business summary");
     expect(card?.textContent).toContain("retention budget is a cost-minimization");
+  });
+
+  it("still renders the legacy **Business implication:** marker as a card", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(
+      <StorySection
+        projectId="05-ml-pipeline-churn"
+        section={{
+          ...BASE,
+          text_md: "Setup prose.\n\n**Business implication:** legacy tail text.\n",
+        }}
+        index={0}
+        metrics={null}
+      />,
+    );
+    const card = document.querySelector(".bi-card");
+    expect(card).not.toBeNull();
+    expect(card?.getAttribute("aria-label")).toBe("Business summary");
+    expect(card?.textContent).toContain("legacy tail text");
+    expect(document.querySelector(".story-main .prose")?.textContent).toContain("Setup prose.");
   });
 
   it("keeps the rest of the section content unchanged outside the card", () => {
