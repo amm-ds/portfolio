@@ -22,6 +22,7 @@ def _result() -> dict:
 def test_transfer_figure_marks_mixed_result() -> None:
     """When naive beats the GBM on MAE, the takeaway must say so plainly."""
     fig = fig_green_transfer(_result())
-    annotations = [a.text for a in fig.layout.annotations]
-    assert any("Mixed transfer" in a and "wins on RMSE" in a for a in annotations)
+    # The takeaway rides in the title as a second line (add_takeaway).
+    assert "Mixed transfer" in fig.layout.title.text
+    assert "wins on RMSE" in fig.layout.title.text
     assert list(fig.data[0].x) == ["naive_lag24", "gbm_mean", "gbm_tuned"]  # reference first
