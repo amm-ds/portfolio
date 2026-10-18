@@ -120,15 +120,15 @@ sections:
 
       ```mermaid
       graph LR
-          N1[naive_mean<br/>global train mean] --> N2[naive_last<br/>persistence]
-          N2 --> SN[seasonal_naive<br/>same weekday last week]
-          SN --> E[ets<br/>per-series Holt-Winters]
-          E --> R[ridge<br/>linear + one-hot id]
-          R --> H[hgb<br/>default boosting]
-          H --> HT[hgb_tuned<br/>Optuna 56 trials]
-          HT --> X[xgb_tuned<br/>Optuna 25 trials]
-          X --> L[lgbm_tuned<br/>Optuna 25 trials]
-          L --> TN[temporal_net<br/>PyTorch emb+MLP]
+          N1[naive_mean] --> N2[naive_last]
+          N2 --> SN[seasonal_naive]
+          SN --> E[ets]
+          E --> R[ridge]
+          R --> H[hgb]
+          H --> HT[hgb_tuned]
+          HT --> X[xgb_tuned]
+          X --> L[lgbm_tuned]
+          L --> TN[temporal_net]
       ```
 
       - `naive_mean` / `naive_last` — the floors every other run must beat.
@@ -164,14 +164,15 @@ sections:
       MAPE) plus MASE — MAE scaled by the fold's per-series in-sample
       seasonal-naive-7 error — pooled over all out-of-fold predictions
       across folds and all series; nothing is reported in-sample.
+      The lag-feature table `features.parquet` holds 17,184 rows.
 
       ```mermaid
       flowchart LR
-          F[features.parquet<br/>17,184 rows] --> C[date-aligned folds<br/>4 expanding windows]
-          C --> T[train on window k]
+          F[features.parquet] --> C[date-aligned folds]
+          C --> T[fit window k]
           T --> G[7-day embargo gap]
-          G --> V[predict validation block k]
-          V --> M[pooled out-of-fold<br/>MAE / RMSE / MAPE / MASE]
+          G --> V[predict block k]
+          V --> M[pooled out-of-fold metrics]
           M --> P[per-fold stability check]
       ```
 

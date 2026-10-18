@@ -115,15 +115,18 @@ sections:
 
       ```mermaid
       flowchart LR
-          A[raw CRM row<br/>NaNs, outlier, strings] --> B[OutlierCapper<br/>train-time 1%/99% caps]
-          B --> C[MissingValueIndicator<br/>was_missing flags]
-          C --> D[SimpleImputer median<br/>+ StandardScaler]
-          E[contract] --> F[most_frequent impute<br/>+ OneHot ignore-unknown]
+          A[raw CRM row] --> B[OutlierCapper]
+          B --> C[MissingValueIndicator]
+          C --> D[impute + scale]
+          E[contract] --> F[one-hot encode]
           D --> G[ColumnTransformer]
           F --> G
-          G --> H[classifier<br/>logreg or HistGB]
+          G --> H[classifier]
           H --> I[predict_proba]
       ```
+
+      Caps: train-time 1%/99% quantiles; median imputation, most-frequent
+      (`contract`); one-hot ignores unknowns.
 
       **Selection:** an earlier `GridSearchCV` over C keeps the logistic
       baseline; Optuna (seeded TPE, 25 trials, median pruning) then searches
@@ -152,17 +155,17 @@ sections:
 
       ```mermaid
       flowchart LR
-          A[predict_proba on<br/>1,000-row holdout] --> B[41-point threshold grid]
-          B --> C[FP·1 + FN·5<br/>cost per threshold]
+          A[predict_proba on holdout] --> B[41-point threshold grid]
+          B --> C[cost at threshold]
           C --> D[cost-optimal threshold]
-          D --> E[RunResult<br/>F1, ROC-AUC, ECE, cost]
-          E --> F{calibration<br/>helps cost?}
+          D --> E[RunResult]
+          E --> F{calibration helps cost?}
           F -->|yes| G[ship calibrated]
-          F -->|no| H[ship raw, keep ECE noted]
+          F -->|no| H[ship raw]
       ```
 
-      Holdout rows are never seen by HPO, fitting, or calibration. Metrics
-      via `portfolio_eval`: ROC-AUC, macro precision/recall/F1, business cost
+      The 1,409 holdout rows are never seen by HPO, fitting, or calibration.
+      Metrics via `portfolio_eval`: ROC-AUC, macro precision/recall/F1, business cost
       (FP·1 + FN·5) at each run's operating point, and ECE (10 bins) for the
       selected runs. Five runs: naive majority (constant probability = base
       rate), the earlier logistic at 0.5 and at its cost optimum, and the
