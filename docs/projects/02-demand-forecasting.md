@@ -8,7 +8,7 @@ real track; seeded synthetic hierarchy as the labelled CI fast path) ·
 > forecasts it can trust for replenishment — every point of error is working
 > capital or lost sales. On real transactions the tuned gradient-boosting
 > model beats the strongest naive floor (seasonal naive) by 8.8% MAE
-> (8.989 vs 9.859), the only run with MASE < 1.
+> (8.989 vs 9.859) — the only run with MASE < 1.
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -22,7 +22,7 @@ gradient boosting (sklearn HGB, XGBoost, LightGBM arms), and a hand-written
 PyTorch embedding+MLP, all through the identical embargoed expanding-window
 `TimeSeriesCV` (4 folds, 7-day purge gap). Seeded Optuna HPO (resumable,
 checkpointed), MinT-lite hierarchical reconciliation with a tested coherence
-guarantee, probabilistic 80% bands, and takeaway-annotated figures.
+guarantee, and probabilistic 80% bands.
 
 ## Key results (pooled out-of-fold)
 
@@ -74,8 +74,8 @@ seeded data; bold = track winners (ETS overall, lgbm_tuned best among ML runs).*
 - HPO improved on hgb in **every** fold on synthetic (8.619 → 8.529, −1.0%);
   the NN trails the linear baseline on both tracks — reported, not hidden.
 - Probabilistic 80% band coverage: synthetic 0.727 (quantile) / 0.757
-  (conformal); UCI 0.919 / 0.858 with a degenerate q80 = 0 calibration —
-  per-series conformal is the roadmap fix.
+  (conformal); UCI 0.919 / 0.858, with a degenerate q80 = 0 calibration on
+  zero-heavy residuals.
 - UCI reconciliation: w=0.70, incoherence 384.0 → 115.2 (coherence property
   exact); store MAE 746.9 → 737.9. Synthetic: w=0.05, accuracy effect near
   null and reported as such.

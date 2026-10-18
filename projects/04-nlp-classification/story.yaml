@@ -16,7 +16,7 @@ sections:
 
       **Business implication:** framing this as a cost-vs-delivery
       trade-off, not a technology contest, is what makes the ladder below
-      actionable for a routing/automation decision.
+      actionable for a routing decision.
 
   - id: objectives
     text_md: |
@@ -35,8 +35,7 @@ sections:
 
       **Business implication:** a small, reproducible, rigorously selected
       model beats a larger undocumented one — every number here can be
-      audited in an afternoon, which is what a risk-conscious adopter
-      should demand.
+      audited in an afternoon.
 
   - id: data
     text_md: |
@@ -57,9 +56,8 @@ sections:
         described in `README.md`.
 
       **Business implication:** real data, a documented license posture,
-      pinned seeds, and a sha256 snapshot contract are exactly the
-      artifacts a compliance review asks for before any model touches
-      production data.
+      pinned seeds, and a sha256 snapshot contract are exactly what a
+      compliance review asks for before a model touches production data.
 
   - id: eda
     text_md: |
@@ -76,9 +74,9 @@ sections:
       - **Consequence:** metric differences between runs are model
         effects, not artifacts of class priors or truncation.
 
-      **Business implication:** on balanced data a macro-F1 claim will not
-      collapse the moment the production class mix shifts — though
-      per-class monitoring stays mandatory for any deployment.
+      **Business implication:** on balanced data the macro-F1 claim
+      survives a shift in the production class mix — though per-class
+      monitoring stays mandatory for deployment.
     figures: [eda_class_balance]
 
   - id: training
@@ -114,14 +112,13 @@ sections:
         val loss rising again while train loss keeps falling: extra epochs
         overfit, not improve (`reports/history_probe4.json`).
 
-      The `training_curve`, `epochs_probe`, `hpo_history` and
-      `hpo_importance` figures track loss, the epoch-budget probe,
-      per-trial validation F1 and parameter importance.
+      The `training_curve`, `epochs_probe` and `hpo_history` figures track
+      loss, the epoch-budget probe, and per-trial validation F1.
 
       **Business implication:** every training detail a buyer would audit —
       optimizer, schedule, stopping rule, seeds — is hand-written, visible,
       and unit-tested.
-    figures: [training_curve, epochs_probe, hpo_history, hpo_importance]
+    figures: [training_curve, epochs_probe, hpo_history]
 
   - id: evaluation
     text_md: |
@@ -149,15 +146,15 @@ sections:
       still errs.
 
       **Business implication:** one untouched test split for every run is
-      an anti-marketing device — no cherry-picked comparison, no test-set
-      leakage through tuning; the numbers survive a skeptical re-run.
+      an anti-marketing device — no cherry-picking, no test-set leakage
+      through tuning; the numbers survive a skeptical re-run.
     figures: [confusion_matrix_selected]
 
   - id: results
     text_md: |
       Headline: the full 120k DistilBERT fine-tune on Apple-Silicon MPS
       (seed 42, 2 epochs) reaches **test macro-F1 0.9460** (val 0.9433 →
-      0.9464; ~18–27 min/epoch). Full numbers: `reports/metrics.json`.
+      0.9464; ~18–27 min/epoch).
 
       | # | run | accuracy | f1_macro |
       |---|---|---|---|
@@ -226,10 +223,9 @@ sections:
       above, not left for a client to discover.
 
       **Business implication:** treat this as the auditable lower bound of
-      a scaling decision — the TF-IDF baseline remains the right answer
-      where latency or interpretability dominates, and the documented
-      0.9460 headline gives a concrete basis for deciding whether to fund
-      full-scale training.
+      a scaling decision — the 0.9460 headline gives a concrete basis for
+      funding full-scale training, and TF-IDF remains the right answer
+      where latency or interpretability dominates.
     metrics_keys: [distilbert_full_120k]
 roadmap:
   - status: delivered
@@ -254,9 +250,3 @@ roadmap:
       20k evidence rung of the scaling ladder — 0.9270 test macro-F1 (+2.5 pp
       over the bounded 0.9021) on CPU via the full-data path; superseded by
       the full-120k 0.9460 headline.
-  - status: deferred
-    text: >-
-      Production routing extension — cost-sensitive per-class thresholds and
-      multi-label handling for hybrid Business/Sci-Tech items; needs a real
-      production class mix and cost matrix from an engagement, not a
-      benchmark artifact.

@@ -21,8 +21,18 @@ _TEMPLATE: dict[str, Any] = {
         "paper_bgcolor": "#0f172a",
         "plot_bgcolor": "#0f172a",
         "margin": {"l": 60, "r": 30, "t": 60, "b": 50},
-        "title": {"x": 0.02, "xanchor": "left"},
+        "title": {"x": 0.02, "xanchor": "left", "yanchor": "top", "pad": {"t": 12}},
         "hovermode": "x unified",
+        # Hover cards must read on any background: light card, dark text.
+        "hoverlabel": {
+            "bgcolor": "#f8fafc",
+            "font": {"color": "#0f172a", "size": 13, "family": "Inter, system-ui, sans-serif"},
+            "bordercolor": "#334155",
+        },
+        # Horizontal legend pinned above the plot area so it can never overlap
+        # the title or the takeaway annotation; per-figure overrides win.
+        "legend": {"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0.02, "xanchor": "left"},
+        "showlegend": True,
     }
 }
 

@@ -7,8 +7,7 @@ NSL-KDD transfer probe) · **Status:** working showcase
 > On-call engineers pay for missed incidents in outage multiples and for
 > false pages in alert fatigue — the detector choice is a budget question.
 > On real NAB telemetry the champion finds 16 of 17 labelled events (range
-> recall 0.729), but at 0.107 range precision the firehose is the remaining
-> problem.
+> recall 0.729), but at 0.107 range precision the firehose is the finding.
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection)
 
@@ -44,8 +43,8 @@ budget; bold = overall champion.*
 
 The honest delta vs. the synthetic track (PR-AUC 0.916, residuals 0.9999):
 injected synthetic anomalies are trivially separable; on real data the
-champion finds most events (recall 0.73) but the remaining problem is the
-false-positive firehose (precision 0.107). On the synthetic run ladder,
+champion finds most events (recall 0.73) but the firehose is the finding
+(precision 0.107). On the synthetic run ladder,
 `tuned OCSVM` is the PR-AUC champion (0.136) after a 0.34 → 0.91 tuning
 rescue; LOF's local-density blindness is structural and tuning-resistant.
 

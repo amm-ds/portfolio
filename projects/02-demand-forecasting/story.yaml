@@ -5,7 +5,7 @@ sections:
       A retailer sells 6 products across 4 stores and needs a trustworthy
       daily unit forecast for every store-product combination; those numbers
       drive replenishment, so every point of forecast error is working
-      capital or lost sales. The demand they describe is anything but flat:
+      capital or lost sales. The demand is anything but flat:
 
       - every series carries a **slow upward trend** — demand grows over the
         two years of history, faster in some stores than others;
@@ -16,22 +16,22 @@ sections:
         global average fits none of them.
 
       That structure is what makes naive forecasting fail — and what makes a
-      careless evaluation lie, because a random train/test split lets a model
+      careless evaluation lie: a random train/test split lets a model
       memorise adjacent days and masks drift. The study therefore walks the
-      full path from raw panel to validated model: data contracts and quality
-      gates, shift-only lag features, naive reference floors, seeded Optuna
-      HPO, a neural candidate, hierarchical reconciliation, and an embargoed
-      expanding-window backtest. The full design log lives in `README.md` and
-      `DESIGN.md`.
+      full path from raw panel to validated model: data contracts and
+      quality gates, shift-only lag features, naive reference floors, seeded
+      Optuna HPO, a neural candidate, hierarchical reconciliation, and an
+      embargoed expanding-window backtest. The full design log lives in
+      `README.md` and `DESIGN.md`.
 
-      **Business implication:** stockouts and overstock are directly
-      forecast-shaped decisions — a client cannot size safety stock on a
-      number nobody has validated against the simplest alternatives.
+      **Business implication:** stockouts and overstock are forecast-shaped
+      decisions; safety stock cannot be sized on a number nobody validated
+      against the simplest alternatives.
 
   - id: objectives
     text_md: |
-      The engagement succeeds when all of the following hold, each checked by
-      a concrete artefact in the repo:
+      The engagement succeeds when all of the following hold, each checked
+      by a concrete artefact in the repo:
 
       - **Beat naive floors by a wide, quantified margin** — a 10-run ladder
         in `reports/metrics.json` (seeded CI path) and
@@ -50,9 +50,9 @@ sections:
         property-tested coherence guarantee.
 
       **Business implication:** the deliverable is a defensible number, not a
-      model file — "we beat the strongest naive floor on real transactions,
-      and here is the protocol that proves it" is what a planning meeting can
-      act on.
+      model file — a planning meeting can act on "we beat the strongest
+      naive floor on real transactions, and here is the protocol that proves
+      it."
 
   - id: data
     text_md: |
@@ -93,30 +93,30 @@ sections:
 
   - id: eda
     text_md: |
-      `eda_series_overview` shows the two structural components any competent
-      model must capture: a slow upward trend, stronger in higher-indexed
-      stores, and a regular weekly cycle with weekends clearly separated
-      from weekdays.
+      `eda_series_overview` shows the two structural components any model
+      must capture: a slow upward trend, stronger in higher-indexed stores,
+      and a regular weekly cycle with weekends clearly separated from
+      weekdays.
 
       `eda_units_distribution` is wide and right-skewed across the hierarchy
       — store-product levels differ by design — which is why a single global
       mean is such a poor predictor (MAE 31.8) and why the models receive a
       series-identity feature instead of being pooled blindly.
 
-      **Business implication:** the two things that make naive forecasting
-      fail — trend and weekly rhythm — are visible in the raw data before
-      any model is trained, so the business case for better-than-naive
-      forecasting can be made from a chart, not a promise.
+      On the real track the picture sharpens further: with 89% zero rows,
+      the intermittent-demand problem is visible in the distribution long
+      before any accuracy number is computed.
 
-      On the real track the picture sharpens further: with 89% zero rows, the
-      intermittent-demand problem is visible in the distribution long before
-      any accuracy number is computed.
+      **Business implication:** trend and weekly rhythm — the two things
+      that break naive forecasting — are visible in the raw data, so the
+      case for better-than-naive forecasting rests on a chart, not a
+      promise.
     figures: [eda_series_overview, eda_units_distribution]
 
   - id: training
     text_md: |
-      Ten runs, one per algorithmic rung, all through the identical embargoed
-      backtest:
+      Ten runs, one per algorithmic rung, all through the identical
+      embargoed backtest:
 
       ```mermaid
       graph LR
@@ -137,11 +137,11 @@ sections:
         naive for short or failing series.
       - `ridge` — linear model in a scaled sklearn Pipeline with one-hot
         series identity.
-      - `hgb` / `hgb_tuned` / `xgb_tuned` / `lgbm_tuned` — gradient boosting,
-        HPO-tuned by seeded Optuna studies (56 trials for the sklearn HGB, 25
-        each for the mirrors), objective = CV MAE over the same folds;
-        `hpo_history` and `hpo_importance` show the search converging on
-        regularised, smaller-tree configs.
+      - `hgb` / `hgb_tuned` / `xgb_tuned` / `lgbm_tuned` — gradient
+        boosting, HPO-tuned by seeded Optuna studies (56 trials for the
+        sklearn HGB, 25 each for the mirrors), objective = CV MAE over the
+        same folds; `hpo_history` and `hpo_importance` show the search
+        converging on regularised, smaller-tree configs.
       - `temporal_net` — a hand-written PyTorch model (series embeddings +
         MLP, own Adam, gradient clipping, early stopping).
 
@@ -150,10 +150,9 @@ sections:
       embargoed previous fold) adjusts store-product forecasts toward the
       store level by a data-chosen weight `w`.
 
-      **Business implication:** model selection is an engineering step, not a
-      gamble — every candidate faces the same leakage-proof protocol, so the
-      model that ships is the one that won on evidence, not the one that was
-      newest.
+      **Business implication:** every candidate faces the same
+      leakage-proof protocol, so the model that ships won on evidence, not
+      novelty.
     figures: [hpo_history, hpo_importance]
 
   - id: evaluation
@@ -163,8 +162,8 @@ sections:
       and its validation block, so no date block straddles train and
       validation. Metrics are the platform regression standard (MAE, RMSE,
       MAPE) plus MASE — MAE scaled by the fold's per-series in-sample
-      seasonal-naive-7 error — pooled over all out-of-fold predictions across
-      folds and all series; nothing is reported in-sample.
+      seasonal-naive-7 error — pooled over all out-of-fold predictions
+      across folds and all series; nothing is reported in-sample.
 
       ```mermaid
       flowchart LR
@@ -180,9 +179,9 @@ sections:
       instability stay visible before deployment; `reports/report.html`
       collects the full run.
 
-      **Business implication:** the embargoed backtest answers whether the
-      model survives next quarter, not just last week — it prices in drift
-      before deployment does.
+      **Business implication:** the embargoed backtest prices in drift
+      before deployment — it answers whether the model survives next
+      quarter, not just last week.
     figures: [fold_stability]
 
   - id: results
@@ -214,8 +213,8 @@ sections:
         `lgbm_tuned` drops to fourth on UCI (9.60); `hgb_tuned` generalises
         best (8.99, the only MASE < 1 — reliably beating "same day last
         week").
-      - **ETS breaks on intermittent demand** — it loses to its own seasonal
-        naive on UCI (11.26 vs 9.86); 89% zeros violate its
+      - **ETS breaks on intermittent demand** — it loses to its own
+        seasonal naive on UCI (11.26 vs 9.86); 89% zeros violate its
         smooth-seasonality assumption. Ridge collapses (16.73, behind every
         floor).
       - **HPO earns a modest, real gain** — 56 seeded trials moved the
@@ -229,11 +228,10 @@ sections:
         synthetic / 0.92 UCI, conformal degenerating to q80 = 0 on
         zero-heavy residuals (`probabilistic_band`).
 
-      **Business implication:** switch replenishment to the tuned HGB and
-      planning works with 8.8% less absolute error than the "same day last
-      week" rule — less safety stock for the same service level — but
-      re-tune on your own panel first: this winning config does not port
-      across demand regimes.
+      **Business implication:** switching replenishment to the tuned HGB
+      cuts absolute error 8.8% versus the "same day last week" rule — less
+      safety stock at the same service level. But re-tune on your own panel
+      first: the winning config does not port across demand regimes.
     figures: [metrics_bars, forecast_vs_actual, probabilistic_band]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 
@@ -252,11 +250,11 @@ sections:
         bounded by how much the parent model can be trusted (w=0.05
         synthetic vs 0.70 on UCI).
 
-      **Results quality:** the headline is acceptable-with-caveats — the
-      8.8% MAE gain over seasonal naive is real (the only MASE < 1 run), but
-      it is bounded by day-over-day noise, the 80% bands under-cover at 0.73
-      on synthetic, and the winning config does not transfer across demand
-      regimes. Each caveat is measured above, not suspected.
+      **Results quality:** acceptable-with-caveats — the 8.8% MAE gain over
+      seasonal naive is real (the only MASE < 1 run), but it is bounded by
+      day-over-day noise, the 80% bands under-cover at 0.73 on synthetic,
+      and the winning config does not transfer across demand regimes. Each
+      caveat is measured above, not suspected.
 
       Limits: gains over persistence are stable but bounded (~8.5 units
       residual MAE on the synthetic ladder); the neural model does not pay
@@ -266,9 +264,9 @@ sections:
       `README.md`, `DESIGN.md`, `reports/report.html`.
 
       **Business implication:** the value delivered is knowing precisely
-      which model wins, by how much, and where it stops winning —
-      forecast-vs-actual and fold-stability are the two charts to show a
-      client first, and every number reproduces from a clean clone.
+      which model wins, by how much, and where it stops winning; the
+      forecast-vs-actual and fold-stability views are the first two charts
+      to show a client.
     figures: []
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
@@ -281,12 +279,10 @@ roadmap:
   - status: delivered
     text: MinT-lite hierarchical reconciliation — data-chosen shrinkage w (0.05 synthetic / 0.70 UCI) with a property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI, ×(1−w) exactly); store MAE 746.9 → 737.9 on the real track.
   - status: delivered
-    text: Probabilistic 80% bands shipped and stress-tested — quantile HGB p10/p50/p90 + split-conformal; empirical coverage 0.73 synthetic / 0.92 UCI against the 0.80 target, conformal degenerating to q80 = 0 on zero-heavy residuals — the miss that defines the open item below.
+    text: Probabilistic 80% bands shipped and stress-tested — quantile HGB p10/p50/p90 + split-conformal; empirical coverage 0.73 synthetic / 0.92 UCI against the 0.80 target, conformal degenerating to q80 = 0 on zero-heavy residuals.
   - status: delivered
     text: >-
       Serving endpoint — showcase-API artifact (reports/models/serving)
       built without retraining: champion lgbm_tuned selected by lowest HPO
       CV MAE (8.413) from data/hpo_best*.json, loaded fitted from
       data/models.pkl; contract in SERVING.md.
-  - status: remaining
-    text: Calibrated per-series intervals for intermittent demand — global bands under-cover (0.73 synthetic) and degenerate on real zeros; a forward engagement item once a client panel with a category tree exists (also unlocks full MinT covariance projection).

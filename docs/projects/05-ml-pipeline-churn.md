@@ -14,10 +14,10 @@ showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-ope
 
 ## What it shows
 
-Churn is asymmetric economics for any subscription business: a missed churner
-costs about five times a false alarm. This project delivers a production-grade
-decision pipeline that cuts that decision cost by **41.9%** (1,035 → 601) vs a
-do-nothing policy on real IBM telco data:
+Churn is asymmetric economics for any subscription business: a missed
+churner costs about five times a false alarm. This project delivers a
+production-grade decision pipeline that cuts that decision cost by **41.9%**
+(1,035 → 601) vs a do-nothing policy on real IBM telco data:
 
 A single self-contained `sklearn.Pipeline` — custom `OutlierCapper` and
 `MissingValueIndicator` transformers, median imputation, scaling, one-hot
@@ -30,8 +30,8 @@ via `prepare --input client.csv` through the same DQ gates and contract.
 Evaluation is a five-run ladder on one holdout: naive majority → logistic
 baseline (default and cost-tuned thresholds) → selected model raw and
 isotonic-calibrated — with calibration (ECE), permutation importance, PR
-curves, decision-curve analysis, a business-cost curve (FP=1, FN=5), and a
-paired bootstrap CI on the cost delta vs naive.
+curves, a business-cost curve (FP=1, FN=5), and a paired bootstrap CI on the
+cost delta vs naive.
 
 ## Key results (IBM telco churn, 7,043 rows -> 1,409-row holdout)
 
