@@ -45,4 +45,7 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"
 
-CMD ["uvicorn", "showcase_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Trust proxy headers only from explicitly allowed IPs (loopback by default;
+# the prod compose network sets FORWARDED_ALLOW_IPS to its Caddy container so
+# the rate limiter keys on real clients, not the proxy — see deploy/).
+CMD ["sh", "-c", "uvicorn showcase_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips ${FORWARDED_ALLOW_IPS:-127.0.0.1}"]

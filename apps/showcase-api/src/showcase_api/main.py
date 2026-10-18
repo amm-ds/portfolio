@@ -11,6 +11,7 @@ purely from the request body with the tuned config from its params.yaml.
 import json
 import os
 import re
+import threading
 import time
 from collections.abc import AsyncIterator
 from pathlib import Path
@@ -371,19 +372,38 @@ def _two_opt_tuning() -> TwoOptTuning:
     return TwoOptTuning(**{k: v for k, v in raw.items() if k in TwoOptTuning.model_fields})
 
 
+# Concurrency cap for the CPU-bound solve endpoint: at most 2 solves run at
+# once (sync endpoint → threadpool workers, so a threading semaphore, not
+# asyncio). Excess requests get a fast 503 instead of queueing CPU work
+# (audit pass 3, finding 3). Sized for the 2-cpu container limit in compose.
+_SOLVE_SEMAPHORE = threading.BoundedSemaphore(2)
+
+
 @app.post(f"/projects/{_ROUTING_ID}/solve", response_model=SolveResponse)
 def solve_routing(problem: Problem) -> SolveResponse:
     """Solve a VRPTW instance with the tuned 2-opt portfolio (fixed seed 42).
 
-    Guarded to n_customers <= 200; with the tuned config (max_iterations 50)
-    the worst-case runtime on a 200-customer R2-scale instance stays well
-    under 30 s.
+    Guarded to n_customers <= 200 and to 2 concurrent solves; with the tuned
+    config (max_iterations 50) the worst-case runtime on a 200-customer
+    R2-scale instance stays well under 30 s.
     """
     if problem.n_customers > _MAX_SOLVE_CUSTOMERS:
         raise HTTPException(
             status_code=422,
             detail=f"too many customers: {problem.n_customers} > {_MAX_SOLVE_CUSTOMERS} cap",
         )
+    if not _SOLVE_SEMAPHORE.acquire(blocking=False):
+        raise HTTPException(
+            status_code=503,
+            detail="solve capacity busy (2 concurrent solves max) — retry shortly",
+        )
+    try:
+        return _solve_routing_inner(problem)
+    finally:
+        _SOLVE_SEMAPHORE.release()
+
+
+def _solve_routing_inner(problem: Problem) -> SolveResponse:
     from routing_optimization.evaluate import solve_with_timing
     from routing_optimization.solver import two_opt
     from routing_optimization.tuning import best_start, restart_plans

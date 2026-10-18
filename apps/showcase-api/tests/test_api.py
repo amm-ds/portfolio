@@ -469,3 +469,46 @@ def test_request_logging_emits_one_line(caplog) -> None:  # type: ignore[no-unty
     ]
     assert len(lines) == 1
     assert "ms" in lines[0]
+
+
+def test_rate_limiter_store_is_bounded() -> None:
+    """Bucket dict must not grow unbounded under key spam (audit pass 3 f3)."""
+    from showcase_api.middleware import RateLimiter
+
+    limiter = RateLimiter(per_minute=60, burst=2, max_keys=5)
+    for i in range(50):
+        allowed, _ = limiter.check(f"spam-{i}")
+        assert allowed  # each fresh key gets burst tokens
+    assert len(limiter._buckets) <= 5
+
+
+def test_rate_limiter_evicts_stalest_on_overflow() -> None:
+    from showcase_api.middleware import RateLimiter
+
+    limiter = RateLimiter(per_minute=1, burst=1, max_keys=3)
+    limiter.check("a")
+    limiter.check("b")
+    limiter.check("c")
+    for _ in range(3):  # drain burst so next inserts have old refill times
+        limiter.check("a")
+        limiter.check("b")
+        limiter.check("c")
+    limiter.check("d-new")  # overflow: evicts the stalest existing key
+    assert len(limiter._buckets) <= 3
+    assert "d-new" in limiter._buckets
+
+
+def test_solve_returns_503_when_capacity_busy(monkeypatch) -> None:
+    """Two concurrent solves max; a third request gets a fast 503."""
+    import threading
+
+    import showcase_api.main as main_mod
+
+    # Exhaust both slots for the duration of the test.
+    s = threading.BoundedSemaphore(2)
+    s.acquire()
+    s.acquire()
+    monkeypatch.setattr(main_mod, "_SOLVE_SEMAPHORE", s)
+    r = client.post("/projects/06-routing-optimization/solve", json=_vrptw_payload(5))
+    assert r.status_code == 503
+    assert "busy" in r.json()["detail"]

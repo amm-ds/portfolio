@@ -11,3 +11,4 @@ reports/*
 reports/models/*
 !reports/models/serving/
 !reports/models/serving/**
+reports/figures/*.html
