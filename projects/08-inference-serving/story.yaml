@@ -106,7 +106,20 @@ sections:
       0.40.x picks the runner from the model artifact — GGUF → llama.cpp,
       MLX safetensors → Apple's MLX engine — verified via the `runner` field
       of `/api/ps` (no runner-override env on this build; MLX arrives via
-      `-mlx` tags).
+      `-mlx` tags). The bench harness pipeline:
+
+      ```mermaid
+      graph LR
+          S[prompt suite] --> D[async load driver]
+          D -->|concurrency 1-8| E[Ollama endpoint]
+          E -->|llama.cpp / MLX| A[validated Answer schema]
+          A --> M[cell metrics]
+          M -->|p50, p95, tok/s| R[report + figures]
+      ```
+
+      The fixed suite is scored by an async httpx driver against the
+      Ollama endpoint, validated into the `Answer` schema, aggregated into
+      per-cell metrics, and rendered as report plus figures.
 
       | model | architecture | quant | runner |
       |---|---|---|---|
@@ -116,9 +129,8 @@ sections:
       | qwen3:32b (`--full`) | dense | — | llama.cpp |
       | gemma4 q8_0 / -qat (`--full`) | dense | Q8_0 / QAT-int4 | llama.cpp |
 
-      - **Engine is packaging:** on Apple Silicon "which engine" is which
-        manifest you pull; the meaningful comparison is same-family,
-        different packaging, quant confound labelled.
+      - **Engine is packaging:** the meaningful comparison is same-family
+        manifests with the quant confound labelled.
       - **Missing cell, recorded:** no MLX build exists for qwen3.6:35b-a3b
         (conversion fails on switch-expert weights) — a data point, not
         silently skipped.

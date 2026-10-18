@@ -107,13 +107,18 @@ sections:
 
       ```mermaid
       flowchart LR
-          A[pre-treatment features] --> R[response model:<br/>classifier on treated arm only]
-          A --> T[T-learner:<br/>mu1, mu0 separately<br/>score = mu1 - mu0]
-          T --> X[X-learner:<br/>imputed effects D1, D0<br/>+ propensity-weighted combo]
-          R --> O[out-of-fold scores<br/>5-fold cross-fitting]
+          A[pre-treatment features] --> R[response model]
+          A --> T[T-learner]
+          T --> X[X-learner]
+          R --> O[out-of-fold scores]
           X --> O
           T --> O
       ```
+
+      The response model is a classifier fit on the treated arm only;
+      the T-learner fits mu1 and mu0 separately and scores mu1 − mu0;
+      the X-learner imputes per-arm effects D1, D0 before the
+      propensity-weighted combination below.
 
       Base learners are HistGradientBoosting inside a one-hot
       ColumnTransformer; the X-learner combines its two effect regressors as

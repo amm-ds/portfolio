@@ -35,7 +35,7 @@ flowchart LR
     P --> O[Support floor 0.6]
     O -->|below floor| B[Abstain]
     O --> C[Cited answer]
-    A -.-> T{{Corpus access:<br/>tools only}}
+    A -.-> T{{Corpus access}}
     A <-.->|ADR-0004 env-hosted ⇄ local| L{{Provider seam}}
 ```
 

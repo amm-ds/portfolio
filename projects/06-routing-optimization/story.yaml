@@ -123,8 +123,8 @@ sections:
         A[randomized feasible floor] --> B[nearest_neighbor]
         B --> C[clarke_wright savings]
         C --> D[two_opt improvement]
-        D --> E[two_opt_tuned via seeded HPO]
-        E --> F[alns destroy + repair]
+        D --> E[two_opt_tuned HPO]
+        E --> F[alns search]
         F --> G[ortools_cp hinted cross-check]
         G --> H[validated route plan]
     ```
@@ -145,12 +145,16 @@ sections:
 
     ```mermaid
     flowchart LR
-        S[solver output] --> V[hard validator: once-only, capacity]
+        S[solver output] --> V[hard validator]
         V --> T[time-window simulation]
         T -->|infeasible| X[pipeline halts loudly]
-        T -->|feasible| G[dual gap: distance % + vehicle Δ vs best-known]
-        G --> R[metrics.json, figures, reports/report.html]
+        T -->|feasible| G[dual gap table]
+        G --> R[metrics + figures]
     ```
+
+    The hard validator enforces once-only service and capacity, and
+    validated numbers persist to `reports/metrics.json`, figures, and
+    `reports/report.html`.
 
     All seven solvers run on all 56 instances against the published
     best-known values (registry table + SINTEF TOP supplement), reported per
