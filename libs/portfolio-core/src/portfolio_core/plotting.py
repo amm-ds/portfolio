@@ -83,20 +83,23 @@ def is_baseline_run(name: str) -> bool:
 
 
 def add_takeaway(fig: go.Figure, takeaway: str) -> go.Figure:
-    """Render a one-line insight under the title (the figure's 'so what')."""
-    fig.add_annotation(
-        text=takeaway,
-        xref="paper",
-        yref="paper",
-        x=0.02,
-        y=1.045,
-        xanchor="left",
-        yanchor="bottom",
-        showarrow=False,
-        font={"size": 12, "color": "#94a3b8"},
-        align="left",
+    """Render a one-line insight under the title (the figure's 'so what').
+
+    Implemented as a second line of the title itself (small, muted span) —
+    a separate annotation collides with the title on the dark template
+    because both anchor just above the plot area.
+    """
+    title = fig.layout.title
+    head = title.text if title.text else ""
+    combined = (
+        f"{head}<br><span style='font-size:12px;color:#94a3b8'>{takeaway}</span>"
+        if head
+        else f"<span style='font-size:12px;color:#94a3b8'>{takeaway}</span>"
     )
-    fig.update_layout(margin={"t": 90, "l": 60, "r": 30, "b": 50})
+    fig.update_layout(
+        title={**title.to_plotly_json(), "text": combined},
+        margin={"t": 90, "l": 60, "r": 30, "b": 50},
+    )
     return fig
 
 
