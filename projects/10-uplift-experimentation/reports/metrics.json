@@ -1,0 +1,284 @@
+{
+  "response": {
+    "qini_coefficient": 13.010604259382859,
+    "incremental_conversions_full": 144.99427391345162,
+    "profit_full": 16103.217226133487,
+    "profit_at_budget": 4881.46359939759,
+    "profit_random_at_budget": 4025.804306533372,
+    "profit_delta_vs_random": 855.6592928642181
+  },
+  "t_learner": {
+    "qini_coefficient": 12.0251517639593,
+    "incremental_conversions_full": 144.99427391345162,
+    "profit_full": 16103.217226133487,
+    "profit_at_budget": 6838.146818950931,
+    "profit_random_at_budget": 4025.804306533372,
+    "profit_delta_vs_random": 2812.3425124175596
+  },
+  "x_learner": {
+    "qini_coefficient": 5.904021776402146,
+    "incremental_conversions_full": 144.99427391345162,
+    "profit_full": 16103.217226133487,
+    "profit_at_budget": 4564.451408450704,
+    "profit_random_at_budget": 4025.804306533372,
+    "profit_delta_vs_random": 538.6471019173318
+  },
+  "random": {
+    "qini_coefficient": 0.0,
+    "incremental_conversions_full": 144.99427391345162,
+    "profit_full": 16103.217226133487,
+    "profit_at_budget": 4025.804306533372,
+    "profit_random_at_budget": 4025.804306533372,
+    "profit_delta_vs_random": 0.0
+  },
+  "treat-everyone": {
+    "qini_coefficient": 0.0,
+    "incremental_conversions_full": 144.99427391345162,
+    "profit_full": 16103.217226133487,
+    "profit_at_budget": NaN,
+    "profit_random_at_budget": 4025.804306533372,
+    "profit_delta_vs_random": NaN
+  },
+  "_meta": {
+    "best_policy": "t_learner",
+    "cuped": {
+      "conversion": {
+        "theta": 0.0026848989094261375,
+        "variance_reduction": 0.0008291362433279215,
+        "ate_naive": 0.006805006519615695,
+        "ate_se_naive": 0.0009208727857351216,
+        "ate_cuped": 0.0068082048522941415,
+        "ate_se_cuped": 0.0009204899048224264,
+        "se_reduction": 0.0004157804624332906,
+        "var_naive": 0.00904554931719428,
+        "var_adjusted": 0.009038049324414583
+      },
+      "visit": {
+        "theta": 0.02481578182873094,
+        "variance_reduction": 0.005183885279967604,
+        "ate_naive": 0.07658956365153125,
+        "ate_se_naive": 0.0033858878117283653,
+        "ate_cuped": 0.07661912496040786,
+        "ate_se_cuped": 0.0033769790290834973,
+        "se_reduction": 0.002631151160416123,
+        "var_naive": 0.12359631171449637,
+        "var_adjusted": 0.1229556026135413
+      }
+    },
+    "power": {
+      "p_treated": 0.01253109306800582,
+      "p_control": 0.005726086548390125,
+      "effect": 0.006805006519615695,
+      "n_per_arm": 3063,
+      "n_total": 6126,
+      "actual_per_arm": 21306,
+      "sufficient": true
+    },
+    "ci": {
+      "method": "paired row bootstrap of out-of-fold scores, percentile interval",
+      "n_boot": 1000,
+      "seed": 1041,
+      "alpha": 0.05,
+      "policies": {
+        "response": {
+          "qini_ci": [
+            1.8258679778544484,
+            24.362037820813473
+          ],
+          "profit_at_budget_ci": [
+            2245.584143590605,
+            7385.900922451779
+          ]
+        },
+        "t_learner": {
+          "qini_ci": [
+            0.7716135913443968,
+            24.391529281655764
+          ],
+          "profit_at_budget_ci": [
+            4430.167328075213,
+            9370.23037032083
+          ]
+        },
+        "x_learner": {
+          "qini_ci": [
+            -5.446538714675855,
+            17.47631336929398
+          ],
+          "profit_at_budget_ci": [
+            2149.8818148620976,
+            7306.291419687459
+          ]
+        }
+      },
+      "pairs": {
+        "response - t_learner": {
+          "qini_diff_ci": [
+            -8.183199726191127,
+            9.520513351628901
+          ],
+          "qini_diff_spans_zero": true,
+          "profit_at_budget_diff_ci": [
+            -3616.745561928583,
+            -48.29474469809558
+          ],
+          "profit_at_budget_diff_spans_zero": false
+        },
+        "response - x_learner": {
+          "qini_diff_ci": [
+            -5.563724694213169,
+            19.477015516299446
+          ],
+          "qini_diff_spans_zero": true,
+          "profit_at_budget_diff_ci": [
+            -2213.943421394989,
+            2818.7462999242443
+          ],
+          "profit_at_budget_diff_spans_zero": true
+        },
+        "t_learner - x_learner": {
+          "qini_diff_ci": [
+            -6.015744265906822,
+            17.877871369182674
+          ],
+          "qini_diff_spans_zero": true,
+          "profit_at_budget_diff_ci": [
+            -323.2671914844485,
+            4342.609684584468
+          ],
+          "profit_at_budget_diff_spans_zero": true
+        }
+      }
+    },
+    "cost_sensitivity": {
+      "best_policy": "t_learner",
+      "policy_budget": 0.25,
+      "rows": [
+        {
+          "cost_per_email": 0.005,
+          "profit_max_fraction": 1.0,
+          "profit_at_max": 16316.282226133486,
+          "profit_mail_everyone": 16316.282226133486,
+          "targeting_beats_mail_everyone": false
+        },
+        {
+          "cost_per_email": 0.01,
+          "profit_max_fraction": 1.0,
+          "profit_at_max": 16103.217226133487,
+          "profit_mail_everyone": 16103.217226133487,
+          "targeting_beats_mail_everyone": false
+        },
+        {
+          "cost_per_email": 0.02,
+          "profit_max_fraction": 1.0,
+          "profit_at_max": 15677.087226133486,
+          "profit_mail_everyone": 15677.087226133486,
+          "targeting_beats_mail_everyone": false
+        },
+        {
+          "cost_per_email": 0.05,
+          "profit_max_fraction": 1.0,
+          "profit_at_max": 14398.697226133487,
+          "profit_mail_everyone": 14398.697226133487,
+          "targeting_beats_mail_everyone": false
+        },
+        {
+          "cost_per_email": 0.1,
+          "profit_max_fraction": 1.0,
+          "profit_at_max": 12268.047226133487,
+          "profit_mail_everyone": 12268.047226133487,
+          "targeting_beats_mail_everyone": false
+        },
+        {
+          "cost_per_email": 0.2,
+          "profit_max_fraction": 0.9,
+          "profit_at_max": 8065.183652292225,
+          "profit_mail_everyone": 8006.747226133486,
+          "targeting_beats_mail_everyone": true
+        },
+        {
+          "cost_per_email": 0.3,
+          "profit_max_fraction": 0.9,
+          "profit_at_max": 4230.013652292226,
+          "profit_mail_everyone": 3745.4472261334868,
+          "targeting_beats_mail_everyone": true
+        },
+        {
+          "cost_per_email": 0.5,
+          "profit_max_fraction": 0.25,
+          "profit_at_max": 1618.2076142131982,
+          "profit_mail_everyone": -4777.152773866514,
+          "targeting_beats_mail_everyone": true
+        }
+      ],
+      "breakeven_cost_per_email": 0.29989329115278707,
+      "note": "profit = revenue - email cost; revenue_per_conversion is mean spend among converters (no COGS in the snapshot), so break-even costs are optimistic if true margin is lower than revenue."
+    },
+    "cost_model": {
+      "revenue_per_conversion": 114.0,
+      "cost_per_email": 0.01
+    },
+    "deciles": {
+      "decile": [
+        1.0,
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0
+      ],
+      "mean_score": [
+        0.025015767431366208,
+        0.011787771089289086,
+        0.009351961491473845,
+        0.008073652745630672,
+        0.0069248251641884076,
+        0.005808695905683627,
+        0.004788385968143243,
+        0.003661590925768355,
+        0.00236010435082419,
+        -0.008260073327478232
+      ],
+      "empirical_uplift": [
+        0.011127649721054164,
+        0.012044540210891819,
+        0.00558271933780621,
+        0.007416362771523704,
+        0.00450040303761229,
+        0.006694004963548937,
+        0.0030633875409905396,
+        0.00694592546244481,
+        0.007371675387179304,
+        0.003256442418135311
+      ],
+      "n_treated": [
+        2143.0,
+        2145.0,
+        2082.0,
+        2142.0,
+        2162.0,
+        2112.0,
+        2098.0,
+        2141.0,
+        2148.0,
+        2134.0
+      ],
+      "n_control": [
+        2118.0,
+        2116.0,
+        2179.0,
+        2120.0,
+        2099.0,
+        2149.0,
+        2164.0,
+        2120.0,
+        2113.0,
+        2128.0
+      ]
+    }
+  }
+}

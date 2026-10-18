@@ -1,1 +1,12 @@
-/reports
+# Reports are regenerable via dvc repro and stay out of git — except figure
+# specs, which are committed as deployable artifacts (see deploy/DEPLOY.md).
+# The RAG retrieval index (data/index/) is the opt-in exception: enable chat
+# by running `dvc repro` in this project on the host.
+/reports/*
+!/reports/figures/
+/reports/*.json
+/reports/*.html
+# …except the runtime-served summary files (the API serves both at
+# /projects/01-rag-agent/{metrics,report}) — same rationale as DEPLOY.md.
+!/reports/metrics.json
+!/reports/report.html

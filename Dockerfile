@@ -1,11 +1,15 @@
 # Multi-stage image: React/TS web build → uv workspace runtime (FastAPI).
 #
-# The image serves the showcase app (API + static web) with the RAG retrieval
-# index baked in, so /rag/chat works immediately (offline mock provider by
-# default; set LLM_* env for a live provider — HF embedding models download
-# on first request, ~200 MB). Project *results* (reports/, figures) are baked
-# when present and regenerated authoritatively by `dvc repro` — see
-# docs/runbooks/pipeline-restore.md.
+# The image serves the showcase app (API + static web). Figure specs
+# (projects/*/reports/figures/) and serving bundles
+# (projects/*/reports/models/serving/) are committed to git, so every build —
+# fresh clone or CI — ships a fully functional app; no `dvc pull` needed. The
+# 01 RAG retrieval index is the one opt-in exception and is NOT baked: enable
+# /rag/chat by running `dvc repro` in projects/01-rag-agent on the host
+# (offline mock provider by default; set LLM_* env for a live provider — HF
+# embedding models download on first request, ~200 MB). Bulky raw data stays
+# DVC-tracked and regenerates authoritatively via `dvc repro` — see
+# docs/runbooks/pipeline-restore.md and deploy/DEPLOY.md.
 
 FROM node:22-alpine AS web
 WORKDIR /web

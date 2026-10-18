@@ -1,0 +1,36 @@
+{
+  "feature_names": [
+    "lag_1",
+    "lag_2",
+    "lag_24",
+    "lag_168",
+    "hour",
+    "day_of_week",
+    "month",
+    "prcp_mm",
+    "tmax_c",
+    "tmin_c",
+    "snow_mm"
+  ],
+  "n_features": 11,
+  "built_at": "2026-10-15T01:22:25.458219+00:00",
+  "train_runs": [
+    "gbm_tuned"
+  ],
+  "example": {
+    "zone_id": 132,
+    "features": {
+      "lag_1": 191.0,
+      "lag_2": 191.0,
+      "lag_24": 193.0,
+      "lag_168": 197.0,
+      "hour": 11.0,
+      "day_of_week": 4.0,
+      "month": 11.0,
+      "prcp_mm": 0.0,
+      "tmax_c": 14.4,
+      "tmin_c": 6.7,
+      "snow_mm": 0.0
+    }
+  }
+}

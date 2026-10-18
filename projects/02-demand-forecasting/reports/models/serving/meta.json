@@ -1,0 +1,68 @@
+{
+  "feature_names": [
+    "t",
+    "dow",
+    "is_weekend",
+    "month",
+    "week",
+    "doy_sin",
+    "doy_cos",
+    "lag_1",
+    "lag_7",
+    "lag_14",
+    "series_id"
+  ],
+  "n_features": 11,
+  "built_at": "2026-10-17T19:23:53.970690+00:00",
+  "train_runs": [
+    "lgbm_tuned"
+  ],
+  "model_selection": {
+    "champion": "lgbm_tuned",
+    "val_mae_by_arm": {
+      "hgb": 8.529125457865657,
+      "xgb": 8.539181730848677,
+      "lgbm": 8.413293721673135
+    },
+    "rule": "lowest HPO CV MAE (data/hpo_best*.json) across the tuned booster arms; ties keep the earlier (hgb) incumbent; the fitted champion is loaded from data/models.pkl \u2014 no retraining"
+  },
+  "example_row": {
+    "t": 371.5,
+    "dow": 4.0,
+    "is_weekend": 0.0,
+    "month": 7.0,
+    "week": 27.0,
+    "doy_sin": -0.0312,
+    "doy_cos": -0.0312,
+    "lag_1": 66.0,
+    "lag_7": 66.0,
+    "lag_14": 65.0,
+    "series_id": "store_0|product_0"
+  },
+  "series": [
+    "store_0|product_0",
+    "store_0|product_1",
+    "store_0|product_2",
+    "store_0|product_3",
+    "store_0|product_4",
+    "store_0|product_5",
+    "store_1|product_0",
+    "store_1|product_1",
+    "store_1|product_2",
+    "store_1|product_3",
+    "store_1|product_4",
+    "store_1|product_5",
+    "store_2|product_0",
+    "store_2|product_1",
+    "store_2|product_2",
+    "store_2|product_3",
+    "store_2|product_4",
+    "store_2|product_5",
+    "store_3|product_0",
+    "store_3|product_1",
+    "store_3|product_2",
+    "store_3|product_3",
+    "store_3|product_4",
+    "store_3|product_5"
+  ]
+}

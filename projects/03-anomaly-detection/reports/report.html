@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Evaluation — 03-anomaly-detection — evaluation report</title>
+<style>
+body { font-family: Inter, system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
+       max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+h1 { color: #2dd4bf; } h2 { color: #38bdf8; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid #334155; padding: 0.4rem 0.8rem; text-align: left; }
+th { background: #1e293b; }
+code { background: #1e293b; padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style></head><body>
+<h1>Evaluation — 03-anomaly-detection</h1>
+<h2>Metrics</h2><table><tr><th>run</th><th>pr_auc</th><th>roc_auc</th></tr><tr><td>random</td><td>0.0194</td><td>0.5091</td></tr><tr><td>isolation_forest</td><td>0.1239</td><td>0.9158</td></tr><tr><td>lof</td><td>0.0195</td><td>0.5272</td></tr><tr><td>ocsvm</td><td>0.0241</td><td>0.3368</td></tr><tr><td>isolation_forest_tuned</td><td>0.1208</td><td>0.9171</td></tr><tr><td>lof_tuned</td><td>0.0254</td><td>0.5054</td></tr><tr><td>ocsvm_tuned</td><td>0.1355</td><td>0.9056</td></tr></table>
+<h2>Eda Signals Overview</h2><p><a href="figures/eda_signals_overview.html">interactive figure</a> (<code>eda_signals_overview.html</code>)</p>
+<h2>Roc Curves</h2><p><a href="figures/roc_curves.html">interactive figure</a> (<code>roc_curves.html</code>)</p>
+<h2>Pr Curves</h2><p><a href="figures/pr_curves.html">interactive figure</a> (<code>pr_curves.html</code>)</p>
+<h2>Telemetry Flags</h2><p><a href="figures/telemetry_flags.html">interactive figure</a> (<code>telemetry_flags.html</code>)</p>
+<h2>Threshold Sweep</h2><p><a href="figures/threshold_sweep.html">interactive figure</a> (<code>threshold_sweep.html</code>)</p>
+<h2>Score Distribution</h2><p><a href="figures/score_distribution.html">interactive figure</a> (<code>score_distribution.html</code>)</p>
+<h2>Hpo Importance</h2><p><a href="figures/hpo_importance.html">interactive figure</a> (<code>hpo_importance.html</code>)</p>
+</body></html>

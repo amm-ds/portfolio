@@ -1,3 +1,3 @@
-/metrics.json
-/report.html
-/figures
+/figures/*
+!/figures/*.json
+!/figures/*.html

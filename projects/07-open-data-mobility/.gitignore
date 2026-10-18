@@ -1,5 +1,13 @@
-# Data products and reports are DVC-tracked (dvc.yaml outs), never committed.
+# Data products and reports are DVC-tracked (dvc.yaml outs), never committed —
+# except figure specs and serving bundles, which are committed as deployable
+# artifacts (see deploy/DEPLOY.md).
 data/
 reports/*
 !reports/.gitkeep
 !reports/metrics.json
+!reports/report.html
+!reports/figures/
+!reports/models/
+reports/models/*
+!reports/models/serving/
+!reports/models/serving/**

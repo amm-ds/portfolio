@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Hierarchical Demand Forecasting — evaluation — evaluation report</title>
+<style>
+body { font-family: Inter, system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
+       max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+h1 { color: #2dd4bf; } h2 { color: #38bdf8; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid #334155; padding: 0.4rem 0.8rem; text-align: left; }
+th { background: #1e293b; }
+code { background: #1e293b; padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style></head><body>
+<h1>Hierarchical Demand Forecasting — evaluation</h1>
+<h2>Metrics</h2><table><tr><th>run</th><th>mae</th><th>mape_pct</th><th>mase</th><th>rmse</th></tr><tr><td>naive_mean</td><td>31.7615</td><td>49.0187</td><td>3.4901</td><td>42.5432</td></tr><tr><td>naive_last</td><td>14.4762</td><td>19.2788</td><td>1.5907</td><td>19.8814</td></tr><tr><td>seasonal_naive</td><td>10.3873</td><td>13.7751</td><td>1.1414</td><td>14.7408</td></tr><tr><td>ets</td><td>8.1102</td><td>10.4484</td><td>0.8912</td><td>11.5103</td></tr><tr><td>ridge</td><td>9.1159</td><td>12.4443</td><td>1.0017</td><td>12.7055</td></tr><tr><td>hgb</td><td>8.6188</td><td>11.4297</td><td>0.9471</td><td>12.1783</td></tr><tr><td>hgb_tuned</td><td>8.5291</td><td>11.3368</td><td>0.9372</td><td>12.0711</td></tr><tr><td>xgb_tuned</td><td>8.5392</td><td>11.3152</td><td>0.9383</td><td>12.0861</td></tr><tr><td>lgbm_tuned</td><td>8.4133</td><td>11.1589</td><td>0.9245</td><td>11.9053</td></tr><tr><td>temporal_net</td><td>9.3410</td><td>13.4090</td><td>1.0264</td><td>12.7556</td></tr></table>
+<h2>Eda Series Overview</h2><p><a href="figures/eda_series_overview.html">interactive figure</a> (<code>eda_series_overview.html</code>)</p>
+<h2>Eda Units Distribution</h2><p><a href="figures/eda_units_distribution.html">interactive figure</a> (<code>eda_units_distribution.html</code>)</p>
+<h2>Forecast Vs Actual</h2><p><a href="figures/forecast_vs_actual.html">interactive figure</a> (<code>forecast_vs_actual.html</code>)</p>
+<h2>Metrics Bars</h2><p><a href="figures/metrics_bars.html">interactive figure</a> (<code>metrics_bars.html</code>)</p>
+<h2>Fold Stability</h2><p><a href="figures/fold_stability.html">interactive figure</a> (<code>fold_stability.html</code>)</p>
+</body></html>
