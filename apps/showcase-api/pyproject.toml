@@ -5,6 +5,11 @@ description = "FastAPI showcase backend: project index, results/figures, RAG cha
 requires-python = ">=3.12"
 dependencies = [
     "06-routing-optimization",
+    # Serving artifacts for 02/05 are joblib pickles of each project's fitted
+    # pipelines — unpickling requires those projects' deps (lightgbm, xgboost)
+    # in the API environment, not just at train time.
+    "02-demand-forecasting",
+    "05-ml-pipeline-churn",
     "fastapi>=0.115",
     "portfolio-core",
     "portfolio-eval",
@@ -18,6 +23,8 @@ showcase-api = "showcase_api.main:app"
 
 [tool.uv.sources]
 06-routing-optimization = { workspace = true }
+02-demand-forecasting = { workspace = true }
+05-ml-pipeline-churn = { workspace = true }
 portfolio-core = { workspace = true }
 portfolio-eval = { workspace = true }
 
