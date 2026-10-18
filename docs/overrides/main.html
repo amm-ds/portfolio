@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+<meta property="og:title" content="{{ config.extra.seo.title }}" />
+<meta property="og:description" content="{{ config.extra.seo.description }}" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="{{ config.extra.seo.page_url }}" />
+<meta property="og:image" content="{{ config.extra.seo.card_url }}" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="{{ config.extra.seo.title }}" />
+<meta name="twitter:description" content="{{ config.extra.seo.description }}" />
+<meta name="twitter:image" content="{{ config.extra.seo.card_url }}" />
+<meta name="theme-color" content="#0f172a" />
+{% endblock %}
