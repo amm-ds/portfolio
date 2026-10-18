@@ -37,15 +37,20 @@ FIGURES: dict[str, tuple[str, str, str]] = {
 # Per-project figures embedded in the mkdocs case-study pages
 # (docs/projects/<id>.md): project dir → figure stems, in page order.
 DOCS_FIGURES: dict[str, tuple[str, ...]] = {
-    "01-rag-agent": ("chunk_size_sweep", "failure_taxonomy"),
+    "01-rag-agent": ("agent_pipeline", "chunk_size_sweep", "failure_taxonomy"),
     "02-demand-forecasting": ("reports_uci/figures/forecast_vs_actual", "metrics_bars"),
     "03-anomaly-detection": ("nab_timelines",),
-    "04-nlp-classification": ("confusion_matrix_selected", "training_curve"),
+    "04-nlp-classification": ("confusion_matrix_selected", "training_curve", "epochs_probe"),
     "05-ml-pipeline-churn": ("business_cost_curve", "cost_surface"),
     "06-routing-optimization": ("route_map_C101", "family_gap"),
     "07-open-data-mobility": ("zone_demand_map", "gbm_vs_nn", "weather_elasticity"),
     "08-inference-serving": ("latency_concurrency", "engine_panel"),
-    "09-agentic-workflows": ("agent_architecture", "tool_usage_matrix", "node_waterfall"),
+    "09-agentic-workflows": (
+        "per_task_grading",
+        "agent_architecture",
+        "tool_usage_matrix",
+        "node_waterfall",
+    ),
     "10-uplift-experimentation": ("qini_curves", "profit_frontier", "cost_sensitivity"),
 }
 

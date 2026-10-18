@@ -68,7 +68,8 @@ def search_documents(query: str, top_k: int = TOP_K) -> list[str]:
     Dense retrieval over the FAISS index built by 01's RAG pipeline: the query
     is embedded with the same model that indexed the chunks, ranked by inner
     product, returned as formatted snippets "title — excerpt" with the chunk
-    id, best match first.
+    id, best match first. Use ONLY for questions about the Wikipedia document
+    corpus; Atlas Valley station facts live in ``search_handbook``.
 
     Args:
         query: Natural-language question or topic.

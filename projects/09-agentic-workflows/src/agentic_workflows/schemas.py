@@ -173,13 +173,22 @@ class EvalTask(PortfolioBaseModel):
     contain (case-insensitive); ``expected_tools`` is the exact set of tools a
     correct solution needs. Both are derived deterministically from the canned
     research-ops corpus, so grading is exact rather than model-judged.
+
+    Tasks with ``expected_behavior == "refuse"`` are designed-to-fail probes:
+    they ask for something the tools cannot do (a nonexistent capability or an
+    impossible conversion). They carry no keywords/tools; the
+    :class:`~agentic_workflows.evals.RefusalSuccess` grader passes when the
+    workflow declines gracefully (a refusal answer, no crash).
     """
 
-    id: str = Field(min_length=1, pattern=r"^t\d{2}$")
+    id: str = Field(min_length=1, pattern=r"^[th]\d{2}$")
     prompt: str = Field(min_length=1)
-    category: Literal["lookup", "calculation", "conversion", "multi_step", "note_keeping"]
-    expected_keywords: list[str] = Field(min_length=1)
-    expected_tools: list[str] = Field(min_length=1)
+    category: Literal[
+        "lookup", "calculation", "conversion", "multi_step", "note_keeping", "out_of_scope"
+    ]
+    expected_behavior: Literal["answer", "refuse"] = "answer"
+    expected_keywords: list[str] = Field(default_factory=list)
+    expected_tools: list[str] = Field(default_factory=list)
     max_steps: int = Field(default=8, ge=1)
     latency_budget_s: float = Field(default=180.0, gt=0)
 

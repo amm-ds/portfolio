@@ -24,7 +24,9 @@ stages:
       - src/agentic_workflows
       - params.yaml
     outs:
-      - reports/report.html
+      # reports/report.html is intentionally NOT a DVC out: it is committed to
+      # git (the showcase API serves it at /projects/<id>/report) — tracking it
+      # in both places makes dvc commit refuse to record hashes.
       - reports/figures
     metrics:
       - reports/metrics.json
