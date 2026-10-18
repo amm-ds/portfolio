@@ -59,11 +59,29 @@ DEFAULT_WIDTH = 1000
 DEFAULT_HEIGHT = 560
 
 
+_HOVERLABEL: dict[str, Any] = {
+    "bgcolor": "#f8fafc",
+    "font": {"color": "#0f172a", "size": 13, "family": "Inter, system-ui, sans-serif"},
+    "bordercolor": "#334155",
+}
+
+
 def apply_theme(
     fig: go.Figure, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
 ) -> go.Figure:
-    """Apply the portfolio theme in place and return the figure."""
-    fig.update_layout(width=width, height=height, template="portfolio")
+    """Apply the portfolio theme in place and return the figure.
+
+    ``hoverlabel`` is set explicitly (not only via the template): template
+    defaults do not serialize into figure JSON, and the showcase app serves
+    the JSON — so anything only in the template never reaches the rendered
+    chart.
+    """
+    fig.update_layout(
+        width=width,
+        height=height,
+        template="portfolio",
+        hoverlabel=dict(_HOVERLABEL),
+    )
     return fig
 
 
