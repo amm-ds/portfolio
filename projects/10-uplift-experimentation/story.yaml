@@ -24,8 +24,8 @@ sections:
       | base conversion rate | ~0.9% | the regime where naive targeting wastes budget |
 
       **Business implication:** campaign profit is a concentration problem —
-      spend the fixed budget on the customers whose incremental conversion
-      probability is highest, and the deliverable is a targeting list plus a
+      spend the fixed budget on the customers with the highest incremental
+      conversion probability; the deliverable is a targeting list plus a
       defensible dollar figure, not a leaderboard AUC.
   - id: objectives
     text_md: |
@@ -47,9 +47,9 @@ sections:
         incremental-profit delta vs random and the real limits of
         predicting conversions at a 1% base rate.
 
-      **Business implication:** every artifact below answers a question a
-      campaign owner actually asks: is the effect real, is the sample big
-      enough, who do I mail, and what do I get for it.
+      **Business implication:** every artifact answers a question a campaign
+      owner actually asks: is the effect real, is the sample big enough,
+      who do I mail, and what do I get for it.
   - id: data
     text_md: |
       Hillstrom email marketing dataset (Kevin Hillstrom's MineThatData
@@ -75,9 +75,9 @@ sections:
       | recency, mens, womens, newbie | same | numeric/binary features |
       | channel, zip_code | same | categorical features |
 
-      **Business implication:** the dataset every uplift paper benchmarks
-      against — a client can replicate every number here against their own
-      randomized holdout using the same code.
+      **Business implication:** this is the dataset every uplift paper
+      benchmarks against — a client can replicate every number here on
+      their own randomized holdout with the same code.
   - id: eda
     text_md: |
       Randomization holds: the three arms are near-identical on pre-period
@@ -124,8 +124,9 @@ sections:
       overfitting — the standard mistake that makes in-sample Qini curves
       look informative when they are not.
 
-      **Business implication:** the models are auditable line-by-line; nothing
-      in the targeting policy is a black box a client cannot interrogate.
+      **Business implication:** the models are auditable line-by-line;
+      nothing in the targeting policy is a black box a client cannot
+      interrogate.
   - id: evaluation
     text_md: |
       All 42,613 customers scored out-of-fold; three policies plus the
@@ -147,8 +148,9 @@ sections:
         means not established.
       - **Cost sensitivity.** The profit-maximizing
         fraction is recomputed across a sweep of `cost_per_email` vs
-        mail-everyone profit, plus the analytic break-even send cost — the
-        answer to "at what cost does targeting beat mailing everyone?"
+        mail-everyone profit, plus the analytic break-even send cost —
+        the answer to "at what cost does targeting beat mailing everyone?",
+        plotted in `cost_sensitivity`.
       - **Baselines and deciles (`uplift_by_decile`).** Random and
         treat-everyone sit on the random line by construction (Qini 0) —
         their profit curves are the bar any model must clear; the decile
@@ -157,7 +159,7 @@ sections:
 
       **Business implication:** the evaluation answers "who do I mail and
       what is it worth" in conversions and dollars, not abstract scores.
-    figures: [uplift_by_decile]
+    figures: [uplift_by_decile, cost_sensitivity]
   - id: results
     text_md: |
       Treated 1.253% vs control 0.573% → ATE **+0.68pp**, SE 0.09pp — real,
@@ -165,9 +167,9 @@ sections:
       (`cuped_variance`, log prior-year spend covariate) leaves the ATE
       unchanged but removes only
       **0.08% of conversion variance** (0.52% on visit) — prior spend barely
-      predicts a ~1% event: CUPED is exactly as good as its covariate.
+      predicts a ~1% event: CUPED is as good as its covariate.
       Power: **3,063 customers/arm** at alpha 0.05 / power 0.8 vs 21,306
-      available — decisive, and plans the next campaign.
+      available — decisive; it plans the next campaign.
 
       Policy ladder (out-of-fold, `revenue_per_conversion` $114,
       $0.01/email; 95% CIs from a paired row bootstrap, n=1000, seeded):
@@ -180,7 +182,7 @@ sections:
       | random | 0.0 | $4,026 | — |
       | treat-everyone | 0.0 | — (full-mail $16,103) | — |
 
-      Findings (`qini_curves`, `profit_frontier`, `cost_sensitivity`):
+      Findings (`qini_curves`, `profit_frontier`):
 
       - **At $0.01/email, mail-everyone is the profit maximum ($16,103).**
         The uplift model's value is **concentration**: the top-25% T-learner
@@ -201,10 +203,10 @@ sections:
         leave its second stage only variance to recover — regime-specific,
         not general.
 
-      **Business implication:** a defensible targeting list with a dollar
-      figure and paired-bootstrap intervals, plus the machinery to re-derive
-      it on the client's own randomized holdout.
-    figures: [qini_curves, profit_frontier, cost_sensitivity, cuped_variance]
+      **Business implication:** the deliverable is a defensible targeting
+      list with a dollar figure and paired-bootstrap intervals, plus the
+      machinery to re-derive it on the client's own randomized holdout.
+    figures: [qini_curves, profit_frontier, cuped_variance]
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
     text_md: |
@@ -271,10 +273,3 @@ roadmap:
       bootstrap (n=1000, seeded) over out-of-fold scores; per-policy 95% CIs
       on Qini and profit, paired difference CIs (profit ranking established,
       Qini not), Qini bands, cost sweep with ≈$0.30/email break-even.
-  - status: deferred
-    text: >-
-      Engagement-dependent extensions — one note covers all: multi-arm
-      policy (which email per customer, not just whether to send), a
-      model-based CUPED covariate, and causal forests (grf/econml) for
-      non-parametric CATEs. Documented in DESIGN.md; none changes the
-      delivered recommendations.

@@ -25,9 +25,9 @@ baseline on a strict future holdout — and the features, not the tuner, carry
 the signal: 30 trials of HPO moved MAE by 0.2%. Tuned challengers (xgb/lgbm)
 won on the Q4 test window but lost on the embargoed validation window, so the
 serving rule kept the incumbent — switching on test results would be test-set
-selection. Read the table: MASE normalises by last-week persistence error
-(1.0 = no better than "same hour last week"); lower is better; bold marks
-each column's best, and the served model is the `gbm_mean` incumbent.
+selection. MASE normalises by last-week persistence error (1.0 = no better
+than "same hour last week"); lower is better; bold marks each column's best,
+and the served model is the `gbm_mean` incumbent.
 
 | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
 |---|---|---|---|---|---|

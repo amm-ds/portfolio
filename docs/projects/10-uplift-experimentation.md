@@ -37,10 +37,10 @@ send cost where targeted mail beats mailing everyone.
 
 ## Key results (out-of-fold, seed 42)
 
-How to read this table: Qini is the curve area above random in conversion
-units (higher is better); profit is expected incremental profit from mailing
-the top 25% by score under the cost model; Δ vs random is at the same 25%
-budget, with 95% CIs from a paired row bootstrap.
+Qini is the curve area above random in conversion units (higher is
+better); profit is expected incremental profit from mailing the top 25% by
+score under the cost model; Δ vs random is at the same 25% budget, with 95%
+CIs from a paired row bootstrap.
 
 | policy | Qini [95% CI] | profit @ 25% budget [95% CI] | Δ vs random |
 |---|---|---|---|

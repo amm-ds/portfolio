@@ -28,8 +28,8 @@ reading on: these numbers are a single **author run** on one machine — **not
 committed to the repo** and not universal. Regenerate on your hardware with
 `bench --full && report` and compare cell-for-cell.
 
-How to read this table: each cell shows p95 latency in seconds / aggregate
-output tok/s for that model at the given concurrency.
+Each cell shows p95 latency in seconds / aggregate output tok/s for that
+model at the given concurrency.
 
 | model | runner | c=1 | c=4 | c=8 |
 |---|---|---|---|---|

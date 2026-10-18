@@ -2,33 +2,29 @@ project_id: 06-routing-optimization
 sections:
 - id: background
   text_md: |
-    Last-mile and field-service routing is one of the few places where a few
-    percent of travel distance converts directly into fuel, driver hours and
-    CO₂ — every day, on every route. The vehicle routing problem with time
-    windows (VRPTW) is its canonical form: a fleet leaves a depot, serves
-    every customer exactly once inside a promised time window, respects
-    vehicle capacity, and returns. At 100 customers the search space is
-    already beyond enumeration, so quality has to be measured against
-    published best-known values, not hope. This project answers with an
-    auditable, seeded solver ladder that lands within 4.23 % of those
-    published optima on every family — and states exactly what the remaining
-    gap costs.
+    Last-mile and field-service routing converts percent of travel distance
+    directly into fuel, driver hours and CO₂ — daily, on every route. Its
+    canonical form is the vehicle routing problem with time windows (VRPTW):
+    a fleet leaves a depot, serves every customer exactly once inside a
+    promised window, respects vehicle capacity, and returns. At 100 customers
+    the search space is beyond enumeration, so quality is measured against
+    published best-known values. This project answers with an auditable,
+    seeded solver ladder that lands within 4.23 % of published optima on
+    every family — and states what the remaining gap costs.
 
     - **Cost levers** — fuel and vehicle-hours per route, daily and
       fleet-wide; overtime and missed-window penalties; fleet size, where
       better consolidation defers vehicle purchases; CO₂ reporting,
       increasingly a compliance line item.
     - **The two client questions** — *how good is a quick, transparent
-      heuristic, and what would a heavier optimizer buy us?*
+      heuristic, and what would a heavier optimizer buy?*
     - **One pipeline, both answers** — a seeded, deterministic solver
-      ladder and a metaheuristic share one `RoutePlan` contract, each
-      carrying a stated, verifiable gap to published optima (design in
-      `DESIGN.md`).
+      ladder and a metaheuristic share one `RoutePlan` contract, each with a
+      stated, verifiable gap to published optima (design in `DESIGN.md`).
 
-    **Business implication:** last-mile routing is a direct cost lever —
-    every percent of distance is fuel, vehicle hours and CO₂, so even
-    single-digit routing improvements compound into a material annual
-    saving.
+    **Business implication:** every percent of distance is fuel, vehicle
+    hours and CO₂, so even single-digit routing improvements compound into a
+    material annual saving.
   figures: []
   metrics_keys: []
 - id: objectives
@@ -45,12 +41,11 @@ sections:
     | speed | full 56-instance benchmark incl. both HPO searches in ~90 s | per-solver wall time |
     | legibility | a feasible randomized floor in every chart | construction/metaheuristic deltas stay readable |
 
-    Two reporting rules hold throughout: the dual criteria are always
-    reported together — the benchmark ranks vehicles first, distance second —
-    and every tuning loop reports what it actually found, including negative
-    results.
+    Two reporting rules hold: the dual criteria are always reported together
+    (the benchmark ranks vehicles first, distance second), and every tuning
+    loop reports what it found, including negative results.
 
-    **Business implication:** the deliverable is a stated optimality gap that
+    **Business implication:** the deliverable is a stated optimality gap
     procurement can hold any future optimizer — ours or a vendor's —
     accountable to.
   figures: []
@@ -58,55 +53,53 @@ sections:
 - id: data
   text_md: |
     The benchmark is the complete Solomon VRPTW 100-customer set (CVRPLIB),
-    the reference this literature has used since 1987. All 56 instances run,
-    spanning six families — clustered tight-window (C1), clustered
-    long-horizon (C2), random tight (R1), random long-horizon (R2) and mixed
-    RC1/RC2 — each pinning 100 customers' coordinates, demand, time window
-    and service time.
+    this literature's reference since 1987: all 56 instances across six
+    families — clustered tight-window (C1), clustered long-horizon (C2),
+    random tight (R1), random long-horizon (R2), mixed RC1/RC2 — each
+    pinning 100 customers' coordinates, demand, time window and service time.
 
     - **[CVRPLIB Solomon VRPTW benchmark](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)**
-      — academic benchmark, free to use with citation; sha256-pinned
-      archive from the SINTEF TOP mirror (snapshot card in
-      `data/raw/dataset_card.json`).
-    - **Reference values** — the curated registry best-known table plus a
-      project-local `best_known_supplement.csv` covering the 42 instances
-      the registry table omits, sourced from the published SINTEF TOP table.
+      — academic benchmark, free with citation; sha256-pinned archive from
+      the SINTEF TOP mirror (snapshot card in `data/raw/dataset_card.json`).
+    - **Reference values** — curated registry best-known table plus a
+      project-local `best_known_supplement.csv` for the 42 instances the
+      registry omits, sourced from the published SINTEF TOP table.
     - **DQ gates** — null rates and ranges vs fleet capacity halt the
       pipeline loudly on any anomaly.
 
-    **Business implication:** a public, citation-backed benchmark means
-    every quality claim can be re-checked by the client's own team against
-    literature values — no trust-us slide required.
+    **Business implication:** a public, citation-backed benchmark lets the
+    client's own team re-check every quality claim against literature values
+    — no trust-us slide required.
   figures: []
   metrics_keys: []
 - id: eda
   text_md: |
-    Geography only tells half the story. On C101 (`eda_instance_map`) the
-    customers form tight spatial clusters, but the color scale shows how
-    narrow their time windows are (width = due − ready). Narrow windows
-    constrain the *order* in which nearby customers may be visited — which
-    is why C101 is easy to serve with few vehicles yet hard to keep short:
-    the routing is dictated by the clock more than by the map. The depot
-    (star) sits inside the cluster, and the tightest windows are scattered
-    across it, so no simple geographic sweep can respect them.
+    Geography tells half the story. On C101 (`eda_instance_map`) customers
+    form tight spatial clusters, but the color scale shows how narrow their
+    time windows are (width = due − ready). Narrow windows constrain the
+    *order* in which nearby customers may be visited — C101 is easy to serve
+    with few vehicles yet hard to keep short: the clock dictates routing more
+    than the map. The depot (star) sits inside the cluster and the tightest
+    windows are scattered across it, so no simple geographic sweep respects
+    them.
 
     The pattern differs per family: R1/RC1 pair geography with window
     tightness, while C2's wide horizons leave scheduling room but reward
-    extreme consolidation. Different families bind on different
-    constraints — the reason a solver must be checked per family, not just
-    on averages (see the family-gap figure in the results).
+    extreme consolidation. Families bind on different constraints — the
+    reason a solver must be checked per family, not on averages (family-gap
+    figure in results).
 
-    **Business implication:** "draw neat geographic territories"
-    underperforms because the binding constraint is the delivery-promise
-    window — any tooling must optimize the clock and the map together.
+    **Business implication:** territory-drawn routing underperforms because
+    the binding constraint is the delivery-promise window — tooling must
+    optimize the clock and the map together.
   figures: [eda_instance_map]
   metrics_keys: []
 - id: training
   text_md: |
     There is no model fitting — "training" is construction, improvement,
-    metaheuristics, tuning. Pydantic models (`Customer`,
-    `Problem`, `RoutePlan`, tuning contracts) keep every solver on one
-    contract. The seeded ladder, Euclidean distances:
+    metaheuristics, tuning. Pydantic models (`Customer`, `Problem`,
+    `RoutePlan`, tuning contracts) keep every solver on one contract. The
+    seeded ladder, Euclidean distances:
 
     - **randomized** — seed-shuffled packing into capacity/time-window
       feasible routes; the flat floor answering "what would blind
@@ -122,8 +115,8 @@ sections:
     - **ortools_cp** — ALNS-hinted CP-SAT cross-check: the ALNS plan is
       injected as the hint under a 10 s/instance budget; an
       incumbent-improvement probe, **not an independent baseline**. If the
-      budget expires first the incumbent is returned unchanged, so the arm
-      never degrades a plan.
+      budget expires first the incumbent returns unchanged, so the arm never
+      degrades a plan.
 
     ```mermaid
     flowchart LR
@@ -137,12 +130,12 @@ sections:
     ```
 
     Two seeded random searches tune the stages — 24 trials over the 2-opt
-    knobs (all 56 instances) and 12 over the ALNS knobs (6-instance
-    subset); winners persist to `params.yaml`.
+    knobs (all 56 instances) and 12 over the ALNS knobs (6-instance subset);
+    winners persist to `params.yaml`.
 
-    **Business implication:** HPO paid for itself in evidence, not just
-    config — it proved randomized restarts don't pay (k=1 chosen) before a
-    single ALNS iteration ran: measurement beats intuition.
+    **Business implication:** HPO paid for itself in evidence: it proved
+    randomized restarts don't pay (k=1 chosen) before a single ALNS
+    iteration ran — measurement beats intuition.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: evaluation
@@ -160,20 +153,18 @@ sections:
     ```
 
     All seven solvers run on all 56 instances against the published
-    best-known values (registry table + SINTEF TOP supplement), reported
-    per instance and per family. The figure set tells the story at a
-    glance: `solver_profile` shows the full ladder per instance,
-    `route_map_C101` shows the best C101 plan, `alns_convergence_C101`
-    shows the winning metaheuristic's descent, and `pareto_gap_runtime`
-    places every solver on the runtime-vs-gap plane. Runtimes are
-    load-sensitive (shared machine), so the seeded, deterministic
-    distances and gaps are the verdict and times are context. Full
-    per-solver runtime tables in `reports/results.md`.
+    best-known values (registry table + SINTEF TOP supplement), reported per
+    instance and per family. `solver_profile` shows the full ladder per
+    instance, `alns_convergence_C101` the winning metaheuristic's descent,
+    and `pareto_gap_runtime` places every solver on the runtime-vs-gap
+    plane. Runtimes are load-sensitive (shared machine), so the seeded,
+    deterministic distances and gaps are the verdict and times are context.
+    Full per-solver runtime tables in `reports/results.md`.
 
-    **Business implication:** evaluation is cheap and fully reproducible,
-    so it can run in CI on every change — optimization quality becomes a
-    guarded regression metric, not a one-off report.
-  figures: [route_map_C101, solver_profile, alns_convergence_C101, pareto_gap_runtime]
+    **Business implication:** evaluation is cheap and fully reproducible, so
+    it runs in CI on every change — optimization quality becomes a guarded
+    regression metric, not a one-off report.
+  figures: [solver_profile, alns_convergence_C101, pareto_gap_runtime]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: results
   text_md: |
@@ -196,7 +187,7 @@ sections:
       regret-2 repair makes the cross-route moves 2-opt cannot. Per family
       (`family_gap`; two_opt_tuned: 13–22 % / +2.5–7.6): C1 4.48/+1.00, C2
       6.50/+1.00, R1 4.10/+3.42, R2 3.04/+6.73, RC1 4.75/+2.88, RC2
-      3.00/+6.75.
+      3.00/+6.75 — the winning C101 plan renders in `route_map_C101`.
     - **Vehicles-first ranking: ALNS wins 43/56 intra-ladder** — naive
       solvers take the rest with fewer vehicles at far worse distance, and
       no solver beats best-known on vehicles (+3.73 mean, +6–8 on R2/RC2
@@ -212,14 +203,13 @@ sections:
       `UNKNOWN` on all 56, incumbent returned unchanged (ties 56/56 at ~5×
       runtime). Its real win is small-scale certification: 25-customer C101
       prefix certified optimal at 191.8 in 2.9 s (2-opt hint: 286.3);
-      5-customer instance proved optimal in 0.1 s (runtime-vs-gap
-      placement in the evaluation figure).
+      5-customer instance proved optimal in 0.1 s.
 
-    **Business implication:** a 4.23 % mean distance gap (with the
-    +3.73-vehicle caveat) against 1987-published optima on every family, in
-    auditable seeded code — the number procurement can anchor to; ~0.8 s
-    best case per instance keeps the harness usable daily.
-  figures: [gap_pct, family_gap]
+    **Business implication:** the anchor number is a 4.23 % mean distance gap
+    (with the +3.73-vehicle caveat) against 1987-published optima on every
+    family, in auditable seeded code — and the ~0.8 s best case keeps the
+    harness usable daily.
+  figures: [gap_pct, family_gap, route_map_C101]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: conclusions
   text_md: |
@@ -254,10 +244,9 @@ sections:
     chains (C203, C103) — destroy size and operator pool are the next
     levers.
 
-    **Business implication:** the same harness a client would deploy daily
-    runs the whole benchmark in minutes with a literature-anchored quality
-    number — solver selection under a runtime budget stops being a leap of
-    faith.
+    **Business implication:** the deployable harness runs the whole
+    benchmark in minutes with a literature-anchored quality number —
+    solver selection under a runtime budget stops being a leap of faith.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 roadmap:
@@ -285,10 +274,3 @@ roadmap:
     budget with the ALNS plan injected as the hint; an incumbent-improvement
     probe, not an independent baseline. Ties ALNS 56/56 at ~5x runtime;
     certifies the 25-customer C101 prefix optimal (191.8) in 2.9 s.
-- status: deferred
-  text: >-
-    Engagement-dependent extensions — one note covers all three: an
-    unhinted independent-solver comparison (PyVRP or OR-Tools at an equal
-    budget), Gehring-Homberger 200-1000-customer scale-out, and a
-    solver-as-a-service endpoint. The `RoutePlan` contract and benchmark
-    are ready.
