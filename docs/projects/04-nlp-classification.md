@@ -10,10 +10,10 @@
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
 
-Fine-tuned transformers vs. a TF-IDF + LogisticRegression baseline on news topic
-classification — with a hand-written PyTorch training loop, an Optuna HPO stage
-(seeded TPE, median pruning), a second encoder candidate, and audited model
-selection, plus a full 120k fine-tune on Apple-Silicon MPS.
+Fine-tuned transformers vs. a TF-IDF + LogisticRegression baseline on news
+topic classification — a hand-written PyTorch training loop, seeded Optuna
+HPO, a second encoder candidate, audited model selection, and a full 120k
+fine-tune on Apple-Silicon MPS.
 
 ## Key results
 
@@ -39,7 +39,7 @@ experiments; bold = headline.*
 
 The older bounded numbers are historical rungs of one scaling ladder
 (0.9021 → 0.9270 → 0.9460, +4.4 pp from bounded to full data). HPO improved
-validation macro-F1 (0.8880 → 0.8953) but gains sat inside seed noise
+validation macro-F1 (0.8880 → 0.8953) but the gain sat inside seed noise
 (mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
 honesty rule kept the original artifact as `distilbert_tuned`.
 

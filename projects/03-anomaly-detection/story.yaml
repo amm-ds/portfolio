@@ -6,10 +6,10 @@ sections:
       incidents before users do. The expensive failures are the silent ones:
       a latency creep that turns into an outage, a CPU saturation that burns
       the autoscaling budget — each missed minute is paid for later, in
-      multiples. Labeled incident history rarely exists and anomalies are rare
-      (order of 2% of minutes); unlabeled, imbalanced, and streaming, this is
-      anomaly detection at its hardest. The full design rationale lives in
-      `DESIGN.md`.
+      multiples. Labeled incident history rarely exists and anomalies are
+      rare (order of 2% of minutes); unlabeled, imbalanced, and streaming,
+      this is anomaly detection at its hardest. The full design rationale
+      lives in `DESIGN.md`.
 
       The economics that frame every choice below:
 
@@ -19,32 +19,33 @@ sections:
       | false page | engineer minutes × alert fatigue, erodes trust until real pages get ignored |
       | detector retraining | cheap here — the full pipeline with 90 HPO trials runs in ~80 s |
 
-      **Business implication:** every missed incident has a cost, and every
+      **Business implication:** every missed incident has a cost and every
       false page has one too — the question is which detector minimizes the
       total at a fixed alert budget.
 
   - id: objectives
     text_md: |
-      Compare three detector families — IsolationForest, Local Outlier Factor
-      (LOF), and One-Class SVM — on the same telemetry stream under rules that
-      make the comparison like-for-like:
+      Compare three detector families — IsolationForest, Local Outlier
+      Factor (LOF), and One-Class SVM — on the same telemetry stream under
+      rules that make the comparison like-for-like:
 
       - **Time-ordered split:** detectors train on the past only (first 70%
-        of the timeline) and are scored on a later window, so metrics reflect
-        deployment conditions rather than memorization.
+        of the timeline) and are scored on a later window, so metrics
+        reflect deployment conditions rather than memorization.
       - **Fixed a-priori threshold:** alerts fire at the assumed 2%
         contamination quantile — never tuned against ground truth.
-      - **Seeded random baseline:** anything that cannot beat coin-flip has no
-        business paging anyone at 3 a.m.
-      - **Untuned vs. tuned rows:** every family is reported with and without
-        HPO, so tuning gains (or the lack of them) are visible per family.
+      - **Seeded random baseline:** anything that cannot beat coin-flip has
+        no business paging anyone at 3 a.m.
+      - **Untuned vs. tuned rows:** every family is reported with and
+        without HPO, so tuning gains (or the lack of them) are visible per
+        family.
       - **Event-based metrics on real data:** on NAB, PR-AUC and range-F1
         lead — a labelled window counts as detected when at least one alert
         falls inside it.
 
-      **Business implication:** these rules are what make the comparison
-      shoppable — a client can re-run the same harness on their own telemetry
-      and get numbers that mean the same thing.
+      **Business implication:** these rules make the comparison shoppable —
+      a client can re-run the same harness on their own telemetry and get
+      numbers that mean the same thing.
     metrics_keys: [random, isolation_forest]
 
   - id: data
@@ -71,8 +72,8 @@ sections:
         entry (UNB/CIC network-flow benchmark) behind the same
         `DatasetContract` shape — a transfer probe, caveats stated below.
 
-      Ground-truth labels are used for **evaluation only** — no detector ever
-      sees them.
+      Ground-truth labels are used for **evaluation only** — no detector
+      ever sees them.
 
       **Business implication:** real data headlines and the synthetic stream
       is labelled the fast path — a client sees both the real-world numbers
@@ -81,39 +82,40 @@ sections:
   - id: eda
     text_md: |
       The raw signals in `eda_signals_overview` (below, first two days) show
-      clean daily seasonality: CPU and memory trace smooth sinusoids, latency
-      wanders around 120 ms. Injected anomalies appear as sharp, simultaneous
-      spikes in CPU and latency while memory stays on its seasonal path — the
-      signature of a resource incident rather than sensor noise.
+      clean daily seasonality: CPU and memory trace smooth sinusoids,
+      latency wanders around 120 ms. Injected anomalies appear as sharp,
+      simultaneous spikes in CPU and latency while memory stays on its
+      seasonal path — the signature of a resource incident rather than
+      sensor noise.
 
       The EDA question that decides this project: are anomalies *spread out*
-      or *clustered* in feature space? k-nearest-neighbor distances answer it:
-      anomalies sit far from normal points (≈ 18.9 vs. ≈ 8.5) but at uniform
-      spacing *among themselves* — a compact, self-similar cluster. Hold that
-      fact; it predicts the results.
+      or *clustered* in feature space? k-nearest-neighbor distances answer
+      it: anomalies sit far from normal points (≈ 18.9 vs. ≈ 8.5) but at
+      uniform spacing *among themselves* — a compact, self-similar cluster.
+      Hold that fact; it predicts the results.
 
       **Business implication:** this single EDA fact predicts which detector
-      families will fail before any training budget is spent — that is the
-      kind of analysis that saves a client from deploying the wrong tool.
+      families fail before any training budget is spent — analysis that
+      saves a client from deploying the wrong tool.
     figures: [eda_signals_overview]
 
   - id: training
     text_md: |
       Feature engineering is pure polars ETL: three raw signals plus rolling
       mean and standard deviation per signal over 10- and 60-minute windows
-      (12 engineered columns); warm-up rows lacking a full window are dropped
-      for a complete-case matrix.
+      (12 engineered columns); warm-up rows lacking a full window are
+      dropped for a complete-case matrix.
       All three detectors fit on the **first 70% of the timeline only** —
-      13 958 rows — and each family gets its own study: ~30 seeded TPE trials
-      with median pruning, maximizing PR-AUC on the last 20% of the train
-      window. IsolationForest searches tree count and subsampling; LOF
+      13 958 rows — and each family gets its own study: ~30 seeded TPE
+      trials with median pruning, maximizing PR-AUC on the last 20% of the
+      train window. IsolationForest searches tree count and subsampling; LOF
       neighborhood size; One-Class SVM searches `nu` and the RBF `gamma` on
       log scales. The test window is never touched during search; tuned
-      detectors refit on the full train window before scoring. DQ gates (null
-      rate ≤ 1% per column, CPU/memory within [0, 100], latency > 0) run
-      before anything trains and halt the pipeline on violation.
-      `telemetry_flags` shows the test-window flags the champion
-      produces; `hpo_importance` shows what the search moved.
+      detectors refit on the full train window before scoring. DQ gates
+      (null rate ≤ 1% per column, CPU/memory within [0, 100], latency > 0)
+      run before anything trains and halt the pipeline on violation.
+      `telemetry_flags` shows the test-window flags the champion produces;
+      `hpo_importance` shows what the search moved.
 
       ```mermaid
       flowchart LR
@@ -128,25 +130,23 @@ sections:
       ```
 
       **Business implication:** tuning and validation run entirely on past
-      data with leakage-proof splits — so the detector you deploy is the
-      detector you measured, and retraining on a client's own history does
-      not silently change the guarantees.
+      data with leakage-proof splits — the detector you deploy is the
+      detector you measured.
     figures: [telemetry_flags, hpo_importance]
 
   - id: evaluation
     text_md: |
-      Each detector — untuned and tuned — scores the 5 983 test-window rows,
-      with a seeded random baseline (uniform scores, same seed) anchoring the
-      comparison. Ranking quality is ROC-AUC and PR-AUC; `pr_curves` overlays
-      both against the prevalence floor. PR-AUC matters more at this
-      prevalence (1.89%), where a naive "everything is normal" classifier
-      already scores 0.019.
+      Each detector, untuned and tuned, scores the 5 983 test-window rows
+      against a seeded random baseline (uniform scores, same seed). Ranking
+      quality is ROC-AUC and PR-AUC; `pr_curves` overlays both against the
+      prevalence floor — PR-AUC matters more at 1.89% prevalence, where a
+      naive "everything is normal" classifier already scores 0.019.
 
       Binary alert flags use one fixed operating point per model: the top 2%
-      of its scores (the assumed contamination quantile), never tuned against
-      ground truth. `threshold_sweep` traces the champion's precision/recall
-      across alert budgets with the 2% point marked — the operating point is
-      a staffing dial, not a mystery.
+      of its scores (the assumed contamination quantile), never tuned
+      against ground truth. `threshold_sweep` traces the champion's
+      precision/recall across alert budgets with the 2% point marked — the
+      operating point is a staffing dial, not a mystery.
 
       ```mermaid
       flowchart TD
@@ -159,15 +159,18 @@ sections:
       ```
 
       On NAB the same discipline is enforced event-first: threshold sweeps
-      exist on the budget curve, adaptive thresholding re-anchors on drift,
-      and series with no evaluable test events are excluded from aggregates —
-      never scored as misses.
+      stay on the budget curve, and series with no evaluable test events are
+      excluded from aggregates — never scored as misses. Adaptive
+      thresholding re-anchors on drift in streaming mode: the median/IQR
+      trigger calibrated on synthetic fires on 31 of 120 real NAB chunks
+      (`adaptive_stream`) — too twitchy as calibrated, so headline metrics
+      stay on the fixed budget curve.
 
-      **Business implication:** reporting AUC *and* the precision/recall at a
-      stated alert budget is what makes these numbers negotiable with a
-      client — "at 120 pages per window you catch ~15% of incidents" is a
-      staffing conversation, not a vanity metric.
-    figures: [pr_curves, threshold_sweep]
+      **Business implication:** reporting AUC *and* precision/recall at a
+      stated alert budget makes the numbers negotiable — "at 120 pages per
+      window you catch ~15% of incidents" is a staffing conversation, not a
+      vanity metric.
+    figures: [pr_curves, threshold_sweep, adaptive_stream]
 
   - id: results
     text_md: |
@@ -184,11 +187,8 @@ sections:
 
       The champion finds most real events (range recall 0.729), but the
       firehose is the finding: 1 609 alerts for 16 windows, range precision
-      0.107. `nab_timelines` shows per-series true vs.
-      detected windows; `nab_score_distribution` and `nab_alert_budget` show
-      the budget curve. The adaptive median/IQR drift trigger, calibrated on
-      synthetic, fires on 31 of 120 real chunks (`adaptive_stream`) — too
-      twitchy; recalibration is on the roadmap.
+      0.107. `nab_timelines` shows per-series true vs. detected windows;
+      `nab_score_distribution` and `nab_alert_budget` show the budget curve.
 
       The seeded synthetic stream stays the CI / fast path, and the
       synthetic-to-real drop is why: injected anomalies are trivially
@@ -209,23 +209,22 @@ sections:
       `reports/nab_metrics.json`, and `reports/report.html`.
 
       **Business implication:** the champion finds most real events, so the
-      next dollar goes to alert budgeting and event deduplication — at 1 609
-      alerts for 16 windows, more AUC is not the problem to solve.
+      next dollar goes to alert budgeting and event deduplication — at
+      1 609 alerts for 16 windows, more AUC is not the problem to solve.
     figures:
       - nab_timelines
       - nab_score_distribution
       - nab_alert_budget
-      - adaptive_stream
     metrics_keys:
       [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 
   - id: conclusions
     text_md: |
-      - **Detector families make different bets.** Density- and boundary-based
-        methods assume anomalies are sparse and dissimilar; a repeated,
-        self-similar incident signature defeats them — IsolationForest and
-        residual features still see it. Skipping that check is how silent
-        incidents reach production.
+      - **Detector families make different bets.** Density- and
+        boundary-based methods assume anomalies are sparse and dissimilar; a
+        repeated, self-similar incident signature defeats them —
+        IsolationForest and residual features still see it. Skipping that
+        check is how silent incidents reach production.
       - **Tuning is verdict-changing — but only sometimes.** One-Class SVM
         went from below-chance (0.337) to PR-AUC champion (0.136) because
         one scale-sensitive knob (`gamma`) was wrong by default; LOF stayed
@@ -242,15 +241,16 @@ sections:
 
       **Results quality:** the headline is weak-and-known on real NAB data —
       16/17 events found, but at 0.107 range precision the 1,609 alerts are
-      the finding. The actionable output is the alert-budget curve: pick the
-      alert volume on-call can absorb, read off the recall it buys, set
-      per-series budgets — more AUC is not where the next dollar goes.
+      the finding. The actionable output is the alert-budget curve: pick
+      the alert volume on-call can absorb and read off the recall it buys —
+      more AUC is not where the next dollar goes.
 
       Detail: `DESIGN.md`, `README.md`.
 
-      **Business implication:** not "a model with 0.92 AUC" — an evaluation
-      harness that says *when to distrust the model* and what an alert
-      budget buys; that is what de-risks it on a client's critical path.
+      **Business implication:** the deliverable is not "a model with 0.92
+      AUC" but an evaluation harness that says when to distrust the model
+      and what an alert budget buys — that is what de-risks it on a
+      client's critical path.
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
 roadmap:
   - status: delivered
@@ -261,5 +261,3 @@ roadmap:
     text: Rolling-median residual features — residual probe lifts IsolationForest 0.9158 → 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the self-similar anomaly blob the EDA predicted.
   - status: delivered
     text: NSL-KDD real-data transfer probe — checksum-pinned fetch of 125,973 network-flow records; the champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC behind the same DatasetContract.
-  - status: remaining
-    text: Attack the false-positive firehose on real telemetry — per-series alert budgets, event deduplication, and a recalibrated drift trigger (median/IQR z tuned on synthetic fires 31/120 on NAB); range precision 0.107 is the problem to solve with a client on live traffic.
