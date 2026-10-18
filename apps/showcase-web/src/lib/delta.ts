@@ -1,9 +1,9 @@
 import type { Metrics } from "../api";
 
-// Baseline-delta logic for story metric callouts. A referenced run whose name
+// Baseline-delta logic for story metric results. A referenced run whose name
 // matches BASELINE_RE (naive/random/lag/majority/persistence) is a baseline;
-// the best non-baseline run gets a signed delta chip relative to the first
-// baseline ("MAE −28% vs naive_last").
+// the best non-baseline run gets a signed delta vs the first baseline
+// ("−28% vs naive_last"), shown in the story results table.
 
 export interface MetricCallout {
   run: string;

@@ -89,8 +89,8 @@ describe("ProjectDetail story handling", () => {
     expect(screen.getByRole("navigation", { name: "Case study sections" })).toBeInTheDocument();
     // markdown rendered
     expect(screen.getByText("retrieval").tagName).toBe("STRONG");
-    // metric callouts with delta chip (baseline matched, +50% faithfulness)
-    expect(screen.getByText("[tuned]")).toBeInTheDocument();
+    // story results table with delta (baseline matched, +50% faithfulness)
+    expect(screen.getByText("tuned")).toBeInTheDocument();
     expect(screen.getByText(/\+50% vs naive_last/)).toBeInTheDocument();
     // figures: story 200 case fetches plotly JSON (404 in this mock) → iframe fallback renders async
     await waitFor(() => expect(document.querySelector("iframe")).not.toBeNull());

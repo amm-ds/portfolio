@@ -1,7 +1,7 @@
 import type { Metrics, StorySectionData } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { BusinessImplication } from "./BusinessImplication";
-import { MetricCallouts } from "./MetricCallouts";
+import { StoryMetricsTable } from "./StoryMetricsTable";
 import { PlotlyFigure } from "./PlotlyFigure";
 
 const BI_MARKER = "**Business implication:**";
@@ -19,7 +19,7 @@ function splitBusinessImplication(md: string): [string, string | null] {
   return [md.slice(0, idx).trimEnd(), tail];
 }
 
-/** One case-study section: markdown prose + metric callouts left, native plotly figures right. */
+/** One case-study section: markdown prose + results table left, native plotly figures right. */
 export function StorySection({
   projectId,
   section,
@@ -55,7 +55,7 @@ export function StorySection({
           {implication && (
             <BusinessImplication>{renderMarkdown(implication)}</BusinessImplication>
           )}
-          {metrics && <MetricCallouts metrics={metrics} metricsKeys={section.metrics_keys} />}
+          {metrics && <StoryMetricsTable metrics={metrics} metricsKeys={section.metrics_keys} />}
         </div>
         {total > 0 && <div className="story-figs">{figures}</div>}
       </div>

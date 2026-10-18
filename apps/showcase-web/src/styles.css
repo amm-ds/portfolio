@@ -42,10 +42,10 @@ button,
 .chip,
 .section-title,
 .metrics-table,
+.story-metrics-table,
 .status-line,
 .rail,
 .terminal,
-.callout-chip,
 .engagement-table th {
   font-family: var(--mono);
 }
@@ -800,48 +800,36 @@ code {
   border-bottom: none;
 }
 
-.callouts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+/* --- Story metrics table (per-section results, replaces callout chips) --- */
+
+.story-metrics-table {
+  font-size: 0.85rem;
   margin: 0 0 1rem;
 }
 
-.callout-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.45rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.45rem 0.75rem;
-  font-size: 0.82rem;
+.story-metrics-table th,
+.story-metrics-table td {
+  text-align: right;
+  white-space: nowrap;
 }
 
-.callout-chip .run {
-  color: var(--muted);
+/* run + metric columns read left, numeric columns right */
+.story-metrics-table th:nth-child(-n + 2),
+.story-metrics-table td:nth-child(-n + 2) {
+  text-align: left;
 }
 
-.callout-chip .value {
+.story-metrics-table .value {
   color: var(--accent);
   font-weight: 700;
 }
 
-.callout-chip .delta {
-  font-size: 0.78rem;
-  padding: 0.05rem 0.4rem;
-  border-radius: 5px;
-  border: 1px solid var(--border);
-}
-
-.callout-chip .delta.improved {
+.story-metrics-table .delta.improved {
   color: var(--ok);
-  border-color: var(--ok);
 }
 
-.callout-chip .delta.regressed {
+.story-metrics-table .delta.regressed {
   color: var(--danger);
-  border-color: var(--danger);
 }
 
 /* --- Metrics table --- */
