@@ -57,9 +57,7 @@ MATERIAL_GAIN = 0.001
 
 def probe_config(cfg: NLPConfig) -> NLPConfig:
     """Headline hypers with the 4-epoch budget and early stopping disabled."""
-    return cfg.model_copy(
-        update={"epochs": PROBE_EPOCHS, "early_stop_patience": PROBE_PATIENCE}
-    )
+    return cfg.model_copy(update={"epochs": PROBE_EPOCHS, "early_stop_patience": PROBE_PATIENCE})
 
 
 def run_epochs_probe(cfg: NLPConfig) -> TrainingHistory:
@@ -125,8 +123,7 @@ def epochs_probe_figure(history: TrainingHistory) -> go.Figure:
                 "y": e2_f1,
                 "yref": "y2",
                 "text": (
-                    f"shipped 2-epoch run:<br>val {SHIPPED_VAL_F1:.4f} / "
-                    f"test {SHIPPED_TEST_F1:.4f}"
+                    f"shipped 2-epoch run:<br>val {SHIPPED_VAL_F1:.4f} / test {SHIPPED_TEST_F1:.4f}"
                 ),
                 "showarrow": True,
                 "arrowhead": 2,
