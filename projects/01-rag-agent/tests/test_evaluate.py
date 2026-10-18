@@ -7,7 +7,7 @@ import pytest
 from portfolio_eval.rag import KeywordJudge, RAGEvalResult
 from pydantic_ai.models.function import FunctionModel
 from rag_agent.agent import build_agent
-from rag_agent.config import RAGConfig
+from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.evaluate import (
     RAGRun,
     RetrievalScores,
@@ -110,8 +110,52 @@ def test_figures_render(scores_sample: list[RetrievalScores]) -> None:
     fig_random = sweep_figure(scores_sample, scores_sample)  # reuse as random baseline
     assert len(fig_random.data) == 5  # 3 bars + 2 dashed reference series
     assert any("random" in trace.name for trace in fig_random.data)
+    # Readability contract (viewer report "chunk size 600 has no bars"):
+    # categorical axis (no implied 600 gap), value labels on every bar, an
+    # explicit sizes-tested caption, and zero floor points annotated not voided.
+    assert fig_random.layout.xaxis.type == "category"
+    assert all(trace.text for trace in fig_random.data[:3])
+    annotation_texts = [a.text for a in fig_random.layout.annotations]
+    assert any("no 600" in t or "categorical" in t for t in annotation_texts)
+    zero_random = sweep_figure(
+        scores_sample,
+        [
+            RetrievalScores(
+                chunk_size=s.chunk_size,
+                recall_at_5=0.0,
+                recall_at_10=0.0,
+                mrr_at_5=0.0,
+                n_questions=s.n_questions,
+            )
+            for s in scores_sample
+        ],
+    )
+    zero_texts = [a.text for a in zero_random.layout.annotations]
+    assert any("not a missing bar" in (t or "") for t in zero_texts)
     fig2 = latency_figure([0.1, 0.2, 0.3, 0.4])
     assert fig2.data
+
+
+def test_agent_pipeline_figure_renders(config: RAGConfig) -> None:
+    from rag_agent.figures import agent_pipeline_figure
+
+    chosen = RetrievalBest(
+        embedding_model=config.embedding_model,
+        embedding_slug="minilm",
+        chunk_size=200,
+        top_k=3,
+        rerank=True,
+    )
+    fig = agent_pipeline_figure(config, n_articles=593, chosen=chosen)
+    assert len(fig.layout.shapes) >= 13  # one rect per node/banner
+    texts = [a.text or "" for a in fig.layout.annotations]
+    joined = "\n".join(texts)
+    # Provider seam (ADR-0004), metered phases and grounding gates are on-figure.
+    assert "ADR-0004" in joined
+    assert "search_documents" in joined
+    assert "Metered phases" in joined
+    assert "Support floor 0.6" in joined
+    assert "593 articles" in joined
 
 
 def test_random_ranks_are_seeded_and_bounded(config: RAGConfig, retriever: Retriever) -> None:

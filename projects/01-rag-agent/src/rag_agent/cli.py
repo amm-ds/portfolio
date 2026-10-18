@@ -21,6 +21,7 @@ from rag_agent.config import RAGConfig
 from rag_agent.corpus import load_corpus, prepare_client_corpus
 from rag_agent.corpus import prepare_corpus as prepare_corpus_impl
 from rag_agent.evaluate import run as run_evaluation
+from rag_agent.evaluate import run_heldout as run_heldout_evaluation
 from rag_agent.index import (
     CrossEncoderReranker,
     Retriever,
@@ -108,6 +109,15 @@ def evaluate(
     ragas: Annotated[
         bool, typer.Option("--ragas", help="Also compute RAGAS metrics (local model as evaluator).")
     ] = False,
+    heldout: Annotated[
+        bool,
+        typer.Option(
+            "--heldout",
+            help="Evaluate the sealed held-out golden set instead of the tuning set: "
+            "retrieval metrics + one verify-on agent pass (no RAGAS), merged into "
+            "metrics detail.heldout. Needs a provider.",
+        ),
+    ] = False,
     max_questions: Annotated[
         int | None,
         typer.Option(
@@ -139,6 +149,36 @@ def evaluate(
     report, and --ragas to add the RAGAS metric set.
     """
     config = load_config()
+    if heldout:
+        if offline:
+            raise typer.BadParameter("--heldout needs a provider and cannot combine with --offline")
+        if ragas:
+            raise typer.BadParameter("--heldout bounds cost with a verify-on pass only; no --ragas")
+        if max_questions is not None:
+            raise typer.BadParameter(
+                "--heldout always runs the full sealed set; no --max-questions"
+            )
+        if verify is not None:
+            config.verify.enabled = verify
+        try:
+            payload = run_heldout_evaluation(config)
+        except LLMProviderUnavailableError as exc:
+            typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=1) from exc
+        except BudgetExceededError as exc:
+            typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=2) from exc
+        meter = payload["meter"]
+        spend = (
+            f", metered ${meter['total']['spend_usd']:.2f} cloud-equivalent"
+            if meter["active"]
+            else ""
+        )
+        typer.echo(
+            f"held-out eval written: {config.reports_dir / 'metrics.json'} "
+            f"(detail.heldout, backend={payload['ops']['backend']}{spend})"
+        )
+        return
     if offline and ragas:
         raise typer.BadParameter("--ragas requires a provider and cannot combine with --offline")
     try:

@@ -19,6 +19,15 @@ per ADR-0004, as amended: env-configured OpenAI-compatible endpoint
 first, local Ollama second — default `qwen3.6:35b-a3b-q4_K_M`; no runtime
 mock, `--offline` keeps a retrieval-only CI path).
 
+![One pipeline, two seams: the provider swap (ADR-0004) and the verify-then-answer loop enforce grounding by construction](../assets/projects/01-rag-agent/agent_pipeline.png){ width="100%" }
+
+The diagram maps the full runtime path: retrieval runs CPU-only and unmetered
+(embed → FAISS exact search → cross-encoder rerank), every LLM call passes
+through the ADR-0004 provider seam (env-hosted, metered ⇄ local Ollama, $0),
+the agent's only corpus access is `search_documents` / `read_excerpt`, and
+each drafted answer is claim-split, entailment-checked, repaired (≤2 calls) or
+dropped before it may ship — below the 0.6 support floor the agent abstains.
+
 ## Pipeline
 
 1. **Corpus** — bounded stream of `wikimedia/wikipedia` (`20231101.en`),
@@ -87,6 +96,22 @@ Figures: corpus composition, chunk-size sweep with random baseline,
 embedding model comparison, retrieval funnel, HPO frontier (chosen config
 starred), latency histogram, failure taxonomy (all in
 `projects/01-rag-agent/reports/figures/`).
+
+### Held-out confirmation
+
+All numbers above come from the 65 tuning questions. A sealed 15-question
+held-out set — written fresh after tuning froze (8 single-hop, 2 multi-hop,
+5 unanswerable), each question gated programmatically (relevant chunk in
+the production top-10 for answerable; `absent_terms` verified against the
+whole corpus for unanswerable; a Jaccard check against the 65) — is scored
+separately by `evaluate --heldout` (retrieval metrics + one verify-on agent
+pass, no RAGAS) and reported under `metrics.json → detail.heldout`.
+Hosted `kimi-for-coding`: retrieval recall@5 **0.600** / MRR@5 0.567 vs a
+0.022 random floor, faithfulness 0.62 [0.45, 0.79], taxonomy 10 correct / 4
+unsupported-claim / 1 retrieval-miss, refusal accuracy 1.00 (5/5) with zero
+false abstentions — at **$0.25 cloud-equivalent** (66 calls, 47% cached) for
+the whole pass. The recall gap vs the tuning set (0.831 → 0.600) is the
+overfitting signal the held-out set exists to catch.
 
 ## Links
 

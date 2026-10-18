@@ -18,6 +18,13 @@ Pipeline blocks, all writing into ``config.reports_dir``:
     backend. Hosted runs meter every LLM phase (agent / judge / verify / RAGAS)
     into the platform spend ledger (USD cap per run; wave 15); local inference
     stays $0 API cost.
+
+A separate ``run_heldout`` (wave 16, ``evaluate --heldout``) measures a sealed
+15-question held-out golden set — written fresh, never tuned against — and
+reports it under ``metrics detail.heldout``, apart from the tuning set: the
+same retrieval metrics plus one verify-on agent pass (agent + verify + rubric
+judge, deliberately no RAGAS to bound hosted cost) with bootstrap CIs on
+faithfulness and the failure taxonomy.
 """
 
 import json
@@ -25,7 +32,7 @@ import random
 import time
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import plotly.graph_objects as go
@@ -36,10 +43,14 @@ from pydantic import ValidationError
 from pydantic_ai import Agent, AgentRunResult
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
+if TYPE_CHECKING:
+    from pydantic_ai.models import Model
+
 from rag_agent.agent import build_agent
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.corpus import load_corpus
 from rag_agent.figures import (
+    agent_pipeline_figure,
     corpus_eda_figure,
     frontier_figure,
     hpo_frontier_figure,
@@ -80,6 +91,7 @@ from rag_agent.reporting import (
     recall_at_k_from,
     topk_run_for_size,
     write_cost_telemetry,
+    write_question_traces,
 )
 from rag_agent.reporting import (
     write_reports as _write_reports,
@@ -91,6 +103,7 @@ __all__ = [
     "RAGRun",
     "RetrievalScores",
     "TopkData",
+    "agent_pipeline_figure",
     "choose_retrieval_config",
     "corpus_eda_figure",
     "cost_telemetry",
@@ -101,6 +114,7 @@ __all__ = [
     "hpo_frontier_figure",
     "inference_backend",
     "latency_figure",
+    "load_heldout_questions",
     "load_questions",
     "model_comparison",
     "model_comparison_figure",
@@ -112,11 +126,13 @@ __all__ = [
     "rerank_ablation",
     "retrieval_funnel_figure",
     "run",
+    "run_heldout",
     "run_rag_eval",
     "run_retrieval_sweep",
     "sweep_figure",
     "topk_run_for_size",
     "topk_sweep",
+    "validate_heldout_set",
     "write_cost_telemetry",
 ]
 
@@ -190,6 +206,24 @@ def load_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuest
     except ``unanswerable`` questions, which intentionally cite no titles.
     """
     raw = json.loads(config.eval_questions_path.read_text(encoding="utf-8"))
+    return _resolve_questions(raw, articles, source=str(config.eval_questions_path))
+
+
+def load_heldout_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuestion]:
+    """Load the sealed held-out golden set (same schema as the tuning set).
+
+    The held-out file may carry ``absent_terms`` on unanswerable rows — those
+    are authoring-time guarantees consumed by :func:`validate_heldout_set`,
+    not part of :class:`EvalQuestion`.
+    """
+    raw = json.loads(config.heldout_questions_path.read_text(encoding="utf-8"))
+    return _resolve_questions(raw, articles, source=str(config.heldout_questions_path))
+
+
+def _resolve_questions(
+    raw: list[dict[str, Any]], articles: list[Article], *, source: str
+) -> list[EvalQuestion]:
+    """Shared tuning/held-out loader: title resolution + skip-on-missing rules."""
     title_to_id = {a.title: a.article_id for a in articles}
     questions: list[EvalQuestion] = []
     for item in raw:
@@ -213,8 +247,134 @@ def load_questions(config: RAGConfig, articles: list[Article]) -> list[EvalQuest
                 expected_behavior=behavior,
             )
         )
-    logger.info("loaded %d eval questions (%d skipped)", len(questions), len(raw) - len(questions))
+    logger.info(
+        "loaded %d eval questions from %s (%d skipped)",
+        len(questions),
+        source,
+        len(raw) - len(questions),
+    )
     return questions
+
+
+# Words too generic to carry question identity in the freshness check.
+_FRESHNESS_STOPWORDS = frozenset(
+    {
+        "what",
+        "is",
+        "are",
+        "was",
+        "were",
+        "how",
+        "does",
+        "do",
+        "did",
+        "why",
+        "where",
+        "who",
+        "whom",
+        "whose",
+        "which",
+        "when",
+        "that",
+        "this",
+        "the",
+        "and",
+        "or",
+        "of",
+        "in",
+        "on",
+        "at",
+        "to",
+        "for",
+        "with",
+        "from",
+        "by",
+        "as",
+        "it",
+        "its",
+        "into",
+        "like",
+        "about",
+        "between",
+        "compared",
+        "differ",
+        "differed",
+        "different",
+        "differs",
+    }
+)
+
+
+def _content_words(text: str) -> set[str]:
+    """Lowercased alpha tokens len>3 minus stopwords — the freshness fingerprint."""
+    words = {
+        token
+        for token in ("".join(c if c.isalpha() else " " for c in text.lower()).split())
+        if len(token) > 3
+    }
+    return words - _FRESHNESS_STOPWORDS
+
+
+def validate_heldout_set(
+    config: RAGConfig,
+    heldout: list[EvalQuestion],
+    tuning: list[EvalQuestion],
+    retriever: Retriever,
+    articles: list[Article],
+) -> list[str]:
+    """Gate the held-out set before it is ever scored; every problem fails loudly.
+
+    Three directions, all deterministic:
+
+    1. **Answerable** — same rule as :func:`validate_golden_set`: a relevant
+       chunk must sit in the production retriever's top-10, else the question
+       grades retrieval noise.
+    2. **Unanswerable** — every ``absent_terms`` entry must occur nowhere in
+       the corpus (title or text, case-insensitive). If the term is anywhere,
+       the question may be answerable after all and must be rewritten.
+    3. **Fresh** — the content-word Jaccard overlap against every tuning-set
+       question must stay below 0.5, so held-out questions are written fresh,
+       not variations of the 65 the pipeline was tuned against.
+    """
+    problems = validate_golden_set(config, heldout, retriever)
+    corpus_text = "\n".join(f"{a.title}\n{a.text}" for a in articles).lower()
+    raw = json.loads(config.heldout_questions_path.read_text(encoding="utf-8"))
+    absent_terms: dict[str, list[str]] = {}
+    for item in raw:
+        terms = [str(t).lower() for t in item.get("absent_terms", [])]
+        if terms:
+            absent_terms[item["question"]] = terms
+    tuning_questions = {q.question.lower() for q in tuning}
+    for question in heldout:
+        if question.question.lower() in tuning_questions:
+            problems.append(
+                f"held-out question duplicates a tuning question: {question.question!r}"
+            )
+        terms = absent_terms.get(question.question, [])
+        if question.expected_behavior == "abstain":
+            if not terms:
+                problems.append(
+                    f"unanswerable question has no absent_terms guarantee: {question.question!r}"
+                )
+            for term in terms:
+                if term in corpus_text:
+                    problems.append(
+                        f"absent term {term!r} occurs in the corpus — question may be "
+                        f"answerable: {question.question!r}"
+                    )
+        held_words = _content_words(question.question)
+        for other in tuning:
+            other_words = _content_words(other.question)
+            union = held_words | other_words
+            if not union:
+                continue
+            overlap = len(held_words & other_words) / len(union)
+            if overlap >= 0.5:
+                problems.append(
+                    f"held-out question too similar to tuning question "
+                    f"(Jaccard {overlap:.2f}): {question.question!r} vs {other.question!r}"
+                )
+    return problems
 
 
 def validate_golden_set(
@@ -836,6 +996,7 @@ def _build_figures(
     """Every report figure, in report order (latency/taxonomy appended last)."""
     figures: dict[str, go.Figure] = {
         "eda_corpus_composition": corpus_eda_figure(articles),
+        "agent_pipeline": agent_pipeline_figure(config, len(articles), hpo.chosen),
         "chunk_size_sweep": hpo.sweep_fig,
         "model_comparison": model_comparison_figure(hpo.model_scores, hpo.chosen.embedding_slug),
         "retrieval_funnel": retrieval_funnel_figure(config, questions, hpo.topk, hpo.chosen),
@@ -1076,3 +1237,147 @@ def run(
         chosen_tokens,
         rag_stage.wall_time_s,
     )
+
+
+def run_heldout(
+    config: RAGConfig,
+    judge: RubricJudge | None = None,
+    verifier: ClaimJudge | None = None,
+    embed_fn: EmbedFn | None = None,
+    rerank_fn: RerankFn | None = None,
+    model: "Model | None" = None,
+    meter_active: bool | None = None,
+) -> dict[str, Any]:
+    """Evaluate the sealed held-out golden set (``evaluate --heldout``).
+
+    Runs apart from the tuning-set eval so the tuning numbers are never
+    overwritten: retrieval metrics (recall@5/10, MRR@5 + seeded random floor)
+    at the production config, then ONE verify-on agent pass — agent + claim
+    verify + rubric judge, deliberately **no RAGAS** so a hosted run stays
+    cheap. Bootstrap 95% CIs are reported on faithfulness and on the
+    failure-taxonomy correct share. The result is merged into the existing
+    ``reports/metrics.json`` under ``detail.heldout`` (created if absent) and
+    per-question traces go to ``reports/question_traces_heldout.json``.
+
+    The gate runs first: :func:`validate_heldout_set` problems raise
+    :class:`RuntimeError` — a held-out set that is not provably answerable /
+    unanswerable / fresh is never scored.
+
+    ``judge``/``verifier``/``embed_fn``/``rerank_fn``/``model``/``meter_active``
+    overrides are for tests (deterministic fakes, metering off); production
+    resolves provider judges by default and auto-detects hosted metering.
+    """
+    start_metering(active=meter_active)  # fresh spend-ledger window for this run
+    articles = load_corpus(config)
+    tuning = load_questions(config, articles)
+    heldout = load_heldout_questions(config, articles)
+    if not heldout:
+        raise RuntimeError("no held-out questions resolved against the corpus")
+    chosen = config.retrieval_best
+    if chosen is None:
+        raise RuntimeError("config.retrieval_best is required for the held-out run")
+
+    embed_fn_override = embed_fn is not None
+    if embed_fn is None:
+        embed_fn = SentenceTransformerEmbedder(chosen.embedding_model)
+    if rerank_fn is None:
+        rerank_fn = CrossEncoderReranker(config.reranker_model)
+    arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
+    if embed_fn_override:
+        # Test override: search the fixture index for the chosen chunk size.
+        index_dir = config.index_path(chosen.chunk_size)
+    else:
+        index_dir = (
+            config.index_path(chosen.chunk_size)
+            if chosen.embedding_slug == "minilm"
+            else config.index_dir / f"chunks_{chosen.chunk_size}_{chosen.embedding_slug}"
+        )
+    retriever = Retriever.from_index_dir(
+        config,
+        index_dir,
+        embed_fn,
+        rerank_fn if chosen.rerank else None,
+        query_prefixed(embed_fn, arm[2]),
+    )
+
+    problems = validate_heldout_set(config, heldout, tuning, retriever, articles)
+    if problems:
+        for problem in problems:
+            logger.error("held-out validation: %s", problem)
+        raise RuntimeError(
+            f"held-out validation failed with {len(problems)} problem(s); refusing to score it"
+        )
+
+    ranks = [
+        first_relevant_rank(retriever.search(q.question, top_k=10), q.relevant_article_ids)
+        for q in heldout
+    ]
+    retrieval = {
+        "recall@5": recall_at_k(ranks, 5),
+        "recall@10": recall_at_k(ranks, 10),
+        "mrr@5": mrr_at_5(ranks),
+        "n_questions": len(heldout),
+    }
+    rnd_ranks = random_ranks(config, heldout, retriever.chunks)
+    retrieval["random_recall@5"] = recall_at_k(rnd_ranks, 5)
+    retrieval["random_mrr@5"] = mrr_at_5(rnd_ranks)
+    retrieval["delta_mrr@5_vs_random"] = retrieval["mrr@5"] - retrieval["random_mrr@5"]
+    logger.info("heldout retrieval: %s", retrieval)
+
+    agent = build_agent(config, model=model)
+    rag_run = run_rag_eval(config, agent, retriever, heldout, judge=judge, verifier=verifier)
+
+    correct_flags = [1.0 if classify_question(t) == "correct" else 0.0 for t in rag_run.traces]
+    taxonomy = _taxonomy_counts(rag_run)
+    composition: dict[str, int] = {}
+    for q in heldout:
+        key = f"{q.category}/{q.expected_behavior}"
+        composition[key] = composition.get(key, 0) + 1
+    traces_path = write_question_traces(
+        config, rag_run.traces, path=config.reports_dir / "question_traces_heldout.json"
+    )
+    payload: dict[str, Any] = {
+        "n_questions": len(heldout),
+        "composition": composition,
+        "retrieval": retrieval,
+        "rag": rag_run.eval_result.to_dict(),
+        "faithfulness": {
+            "mean": rag_run.eval_result.faithfulness,
+            "ci95": list(bootstrap_ci(rag_run.faithfulness_rows, seed=config.seed)),
+        },
+        "taxonomy": {
+            "counts": taxonomy,
+            "correct_share": (sum(correct_flags) / len(correct_flags) if correct_flags else 0.0),
+            "correct_share_ci95": list(bootstrap_ci(correct_flags, seed=config.seed)),
+        },
+        "abstention": abstention_report(rag_run.traces, seed=config.seed),
+        "verify": _verify_stats(config, rag_run),
+        "ops": {
+            "backend": inference_backend(),
+            "p50_latency_s": rag_run.p50_latency_s,
+            "p95_latency_s": rag_run.p95_latency_s,
+        },
+        "meter": get_meter().snapshot(),
+        "traces_path": str(traces_path),
+        "note": (
+            "sealed held-out set, reported separately from the tuning set; "
+            "verify-on pass without RAGAS to bound hosted cost"
+        ),
+    }
+
+    metrics_path = config.reports_dir / "metrics.json"
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    if metrics_path.exists():
+        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    else:
+        metrics = {"detail": {}}
+    metrics.setdefault("detail", {})["heldout"] = payload
+    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+    meter = payload["meter"]
+    logger.info(
+        "heldout run written: %s (backend=%s, metered spend=%.4f USD cloud-equivalent)",
+        metrics_path,
+        payload["ops"]["backend"],
+        meter["total"]["spend_usd"] if meter["active"] else 0.0,
+    )
+    return payload

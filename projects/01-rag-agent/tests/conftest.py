@@ -124,6 +124,7 @@ def config(tmp_path: Path) -> RAGConfig:
         contract_path=tmp_path / "data" / "raw" / "dataset_contract.json",
         index_dir=tmp_path / "data" / "index",
         eval_questions_path=tmp_path / "eval_questions.json",
+        heldout_questions_path=tmp_path / "golden_heldout.json",
         reports_dir=tmp_path / "reports",
     )
 

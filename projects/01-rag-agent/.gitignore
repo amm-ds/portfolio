@@ -11,3 +11,9 @@
 !/reports/metrics.json
 !/reports/report.html
 /reports/figures/*.html
+# The sealed held-out golden set is authored source data (like
+# src/rag_agent/eval_questions.json), not a regenerable artifact: track it even
+# though the repo-wide `data/` ignore (DVC) covers everything else under here.
+!data/
+data/*
+!data/golden_heldout.json

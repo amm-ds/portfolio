@@ -1,0 +1,92 @@
+[
+ {
+  "question": "What role does Photosystem II play in the light-dependent reactions of photosynthesis?",
+  "relevant_titles": ["Photosystem II"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How does C4 carbon fixation concentrate carbon dioxide for the Calvin cycle?",
+  "relevant_titles": ["C4 carbon fixation"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What is the function of a plastid in a plant cell?",
+  "relevant_titles": ["Plastid"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What is aircraft upset and why is it dangerous for flight safety?",
+  "relevant_titles": ["Aircraft upset"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "Where is geothermal power used in the United Kingdom?",
+  "relevant_titles": ["Geothermal power in the United Kingdom"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What are building-integrated photovoltaics?",
+  "relevant_titles": ["Building-integrated photovoltaics"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How does a convolutional neural network process grid-like data such as images?",
+  "relevant_titles": ["Convolutional neural network"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What is the climate of Mars like?",
+  "relevant_titles": ["Climate of Mars"],
+  "category": "single_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How does the Aviation Section of the U.S. Signal Corps fit into the early history of aviation?",
+  "relevant_titles": ["Aviation Section, U.S. Signal Corps", "History of aviation"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "How does boosting combine weak learners, and how does ensemble averaging differ from it?",
+  "relevant_titles": ["Boosting (machine learning)", "Ensemble averaging (machine learning)"],
+  "category": "multi_hop",
+  "expected_behavior": "answer"
+ },
+ {
+  "question": "What year did the Titanic sink?",
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["Titanic"]
+ },
+ {
+  "question": "What is the chemical structure of insulin?",
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["insulin"]
+ },
+ {
+  "question": "How does a lithium-ion battery store energy?",
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["lithium"]
+ },
+ {
+  "question": "Who wrote the novel Pride and Prejudice?",
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["Pride and Prejudice", "Austen"]
+ },
+ {
+  "question": "What is CRISPR gene editing and how does it work?",
+  "category": "unanswerable",
+  "expected_behavior": "abstain",
+  "absent_terms": ["CRISPR"]
+ }
+]

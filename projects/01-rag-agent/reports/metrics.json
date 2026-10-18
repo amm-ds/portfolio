@@ -231,6 +231,130 @@
       "est_cost_usd_per_query": 0.001083237375,
       "avg_input_tokens": 58112.390625,
       "avg_output_tokens": 1604.890625
+    },
+    "heldout": {
+      "n_questions": 15,
+      "composition": {
+        "single_hop/answer": 8,
+        "multi_hop/answer": 2,
+        "unanswerable/abstain": 5
+      },
+      "retrieval": {
+        "recall@5": 0.6,
+        "recall@10": 0.6666666666666666,
+        "mrr@5": 0.5666666666666667,
+        "n_questions": 15,
+        "random_recall@5": 0.06666666666666667,
+        "random_mrr@5": 0.02222222222222222,
+        "delta_mrr@5_vs_random": 0.5444444444444444
+      },
+      "rag": {
+        "n_questions": 10,
+        "faithfulness": 0.62,
+        "answer_relevance": 0.75,
+        "context_recall": 0.9
+      },
+      "faithfulness": {
+        "mean": 0.62,
+        "ci95": [
+          0.45,
+          0.79
+        ]
+      },
+      "taxonomy": {
+        "counts": {
+          "correct": 10,
+          "retrieval-miss": 1,
+          "unsupported-claim": 4
+        },
+        "correct_share": 0.6666666666666666,
+        "correct_share_ci95": [
+          0.4,
+          0.8667
+        ]
+      },
+      "abstention": {
+        "n_unanswerable": 5,
+        "n_answerable": 10,
+        "refusal_accuracy": 1.0,
+        "refusal_accuracy_ci95": [
+          1.0,
+          1.0
+        ],
+        "cite_when_expected": 0.9,
+        "cite_when_expected_ci95": [
+          0.7,
+          1.0
+        ],
+        "false_abstention_rate": 0.0,
+        "false_abstention_rate_ci95": [
+          0.0,
+          0.0
+        ]
+      },
+      "verify": {
+        "enabled": true,
+        "min_support": 0.6,
+        "max_repair_calls": 2,
+        "n_answers_verified": 15,
+        "n_verify_abstentions": 0,
+        "n_verify_skipped": 5,
+        "total_repair_calls": 7,
+        "mean_support_fraction": 0.9556,
+        "mean_verify_latency_s": 13.227,
+        "verify_latency_share_of_answer": 0.5347
+      },
+      "ops": {
+        "backend": "env:kimi-for-coding",
+        "p50_latency_s": 24.683182374981698,
+        "p95_latency_s": 36.597132625000086
+      },
+      "meter": {
+        "active": true,
+        "model": "kimi-for-coding",
+        "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
+        "phases": {
+          "agent": {
+            "calls": 15,
+            "input_tokens": 130199,
+            "output_tokens": 17365,
+            "cached_input_tokens": 80384,
+            "spend_usd": 0.14339
+          },
+          "judge": {
+            "calls": 30,
+            "input_tokens": 23165,
+            "output_tokens": 4763,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.042217
+          },
+          "verify": {
+            "calls": 21,
+            "input_tokens": 29581,
+            "output_tokens": 10719,
+            "cached_input_tokens": 6400,
+            "spend_usd": 0.067976
+          },
+          "ragas": {
+            "calls": 0,
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cached_input_tokens": 0,
+            "spend_usd": 0.0
+          }
+        },
+        "total": {
+          "calls": 66,
+          "input_tokens": 182945,
+          "output_tokens": 32847,
+          "cached_input_tokens": 86784,
+          "spend_usd": 0.253583
+        },
+        "ledger_spend_usd": 0.253583,
+        "budget_usd": 3.0
+      },
+      "traces_path": "reports/question_traces_heldout.json",
+      "note": "sealed held-out set, reported separately from the tuning set; verify-on pass without RAGAS to bound hosted cost"
     }
   },
   "_meta": {
