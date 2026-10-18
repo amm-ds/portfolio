@@ -167,6 +167,53 @@ def bootstrap_ci_read(
                 "profit_at_budget_diff_ci": list(profit_ci),
                 "profit_at_budget_diff_spans_zero": ci_spans_zero(profit_ci),
             }
+
+    # The recommended policy vs the two non-model baselines, on the same
+    # paired resamples (T minus comparator throughout).
+    t_policy = "t_learner"
+    inc_all = incremental_at_full(treatment, outcome)
+    fr_t, inc_t = qini_points(treatment, outcome, scores[t_policy])
+    k_t = int(np.argmin(np.abs(fr_t - cfg.policy_budget)))
+    t_point = float(
+        profit_curve(
+            np.array([fr_t[k_t]]),
+            np.array([inc_t[k_t]]),
+            len(df),
+            cfg.revenue_per_conversion,
+            cfg.cost_per_email,
+        )[0]
+    )
+    random_point = float(
+        profit_curve(
+            np.array([cfg.policy_budget]),
+            np.array([cfg.policy_budget * inc_all]),
+            len(df),
+            cfg.revenue_per_conversion,
+            cfg.cost_per_email,
+        )[0]
+    )
+    mail_point = float(
+        profit_curve(
+            np.array([1.0]),
+            np.array([inc_all]),
+            len(df),
+            cfg.revenue_per_conversion,
+            cfg.cost_per_email,
+        )[0]
+    )
+    t_profit = stats["profit_at_budget"][t_policy]
+    vs_random_ci = percentile_ci(t_profit - stats["random_profit_at_budget"])
+    vs_mail_ci = percentile_ci(t_profit - stats["mail_everyone_profit_at_budget"])
+    ci_meta["t_learner_vs_random"] = {
+        "profit_at_budget_diff_ci": list(vs_random_ci),
+        "spans_zero": ci_spans_zero(vs_random_ci),
+        "point_diff": t_point - random_point,
+    }
+    ci_meta["t_learner_vs_mail_everyone"] = {
+        "profit_at_budget_diff_ci": list(vs_mail_ci),
+        "spans_zero": ci_spans_zero(vs_mail_ci),
+        "point_diff": t_point - mail_point,
+    }
     return ci_meta, stats["band"], band_grid
 
 
@@ -517,6 +564,10 @@ def _money(x: float) -> str:
     return f"${x:,.0f}"
 
 
+def _money_signed(x: float) -> str:
+    return f"\u2212${abs(x):,.0f}" if x < 0 else f"${x:,.0f}"
+
+
 def _ci_str(ci: list[float]) -> str:
     return f"[{ci[0]:.2f}, {ci[1]:.2f}]"
 
@@ -643,6 +694,43 @@ def build_report(
                 f"at the 25% budget, {profit_verdict}. The recommendation stands on the "
                 "money, and the curve-area ranking is stated with its interval rather "
                 "than asserted.</p>",
+            )
+
+        baseline_lines: list[str] = []
+        vs_random = ci.get("t_learner_vs_random")
+        if vs_random is not None:
+            r_lo, r_hi = vs_random["profit_at_budget_diff_ci"]
+            r_note = (
+                "spans zero"
+                if vs_random["spans_zero"]
+                else "excludes zero — the advantage is established"
+            )
+            baseline_lines.append(
+                f"<li>vs <b>random</b> targeting at the {cfg.policy_budget:.0%} budget: "
+                f"paired profit difference CI [{_money_signed(r_lo)}, {_money_signed(r_hi)}] "
+                f"{r_note} (point {_money_signed(vs_random['point_diff'])})</li>"
+            )
+        vs_mail = ci.get("t_learner_vs_mail_everyone")
+        if vs_mail is not None:
+            m_lo, m_hi = vs_mail["profit_at_budget_diff_ci"]
+            m_note = (
+                "spans zero"
+                if vs_mail["spans_zero"]
+                else "sits entirely below zero — at this send cost mail-everyone's raw "
+                "profit is the established winner"
+            )
+            baseline_lines.append(
+                f"<li>vs <b>mail-everyone</b> at ${cfg.cost_per_email:.2f}/email: "
+                f"paired profit difference CI [{_money_signed(m_lo)}, {_money_signed(m_hi)}] "
+                f"{m_note} (point {_money_signed(vs_mail['point_diff'])})</li>"
+            )
+        if baseline_lines:
+            report.add_html(
+                "T-learner vs baselines, with intervals",
+                "<p>The same paired bootstrap anchors the recommended policy against the "
+                "two non-model baselines (T-learner minus comparator):</p><ul>"
+                + "".join(baseline_lines)
+                + "</ul>",
             )
 
     if cost_sens is not None:

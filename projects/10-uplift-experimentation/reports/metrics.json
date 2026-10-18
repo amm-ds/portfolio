@@ -148,6 +148,22 @@
           ],
           "profit_at_budget_diff_spans_zero": true
         }
+      },
+      "t_learner_vs_random": {
+        "profit_at_budget_diff_ci": [
+          717.5813496189148,
+          4766.662824368375
+        ],
+        "spans_zero": false,
+        "point_diff": 2812.3425124175596
+      },
+      "t_learner_vs_mail_everyone": {
+        "profit_at_budget_diff_ci": [
+          -13124.811028096921,
+          -5807.773905899278
+        ],
+        "spans_zero": false,
+        "point_diff": -9265.070407182557
       }
     },
     "cost_sensitivity": {

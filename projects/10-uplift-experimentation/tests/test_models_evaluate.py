@@ -157,6 +157,16 @@ def test_bootstrap_ci_and_cost_sensitivity_reads(two_arm_frame: pd.DataFrame) ->
     assert pair["qini_diff_spans_zero"] == (
         pair["qini_diff_ci"][0] <= 0.0 <= pair["qini_diff_ci"][1]
     )
+    # The recommended policy vs the two non-model baselines: paired CIs with
+    # the spans-zero verdict and the point difference. (Signs are exercised on
+    # controlled frames in test_qini.py; this fixture is small, so intervals
+    # here are not guaranteed to exclude zero.)
+    for key in ("t_learner_vs_random", "t_learner_vs_mail_everyone"):
+        read = ci[key]
+        lo, hi = read["profit_at_budget_diff_ci"]
+        assert lo <= hi
+        assert read["spans_zero"] == (lo <= 0.0 <= hi)
+        assert np.isfinite(read["point_diff"])
     # Bands are quantile ribbons on the shared grid, ordered lo <= hi.
     for lo, hi in bands.values():
         assert lo.shape == grid.shape and np.all(lo <= hi)

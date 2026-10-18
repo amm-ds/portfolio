@@ -145,9 +145,16 @@ def test_bootstrap_is_deterministic_under_seed() -> None:
         np.testing.assert_array_equal(a["profit_at_budget"][policy], b["profit_at_budget"][policy])
         np.testing.assert_array_equal(a["band"][policy][0], b["band"][policy][0])
         np.testing.assert_array_equal(a["band"][policy][1], b["band"][policy][1])
-    # A different seed must give a different resampling sequence.
+    # The seeded-random ranking and the deterministic mail-everyone read must
+    # reproduce exactly under the same seed...
+    np.testing.assert_array_equal(a["random_profit_at_budget"], b["random_profit_at_budget"])
+    np.testing.assert_array_equal(
+        a["mail_everyone_profit_at_budget"], b["mail_everyone_profit_at_budget"]
+    )
+    # ...and a different seed must give a different resampling sequence.
     c = bootstrap_policy_stats(**{**args, "seed": 43})
     assert not np.array_equal(a["qini"]["informative"], c["qini"]["informative"])
+    assert not np.array_equal(a["random_profit_at_budget"], c["random_profit_at_budget"])
 
 
 def test_bootstrap_ci_brackets_the_point_estimate() -> None:
@@ -186,6 +193,52 @@ def test_bootstrap_difference_ci_excludes_zero_for_strong_signal() -> None:
     ci = percentile_ci(stats["qini"]["informative"] - stats["qini"]["noise"])
     assert not ci_spans_zero(ci)
     assert ci[0] > 0
+
+
+def test_bootstrap_t_beats_random_paired_profit_ci_excludes_zero() -> None:
+    # An informative top-25% ranking beats the random baseline's budget
+    # profit by a paired margin that excludes zero.
+    args = _bootstrap_args(n=6_000)
+    args["scores"] = {"t_learner": args["scores"]["informative"]}
+    stats = bootstrap_policy_stats(**args)
+    diff = stats["profit_at_budget"]["t_learner"] - stats["random_profit_at_budget"]
+    ci = percentile_ci(diff)
+    assert not ci_spans_zero(ci)
+    assert ci[0] > 0
+
+
+def test_bootstrap_mail_everyone_beats_t_at_tiny_send_cost() -> None:
+    # Uniform +8pp treatment effect, no ranking signal: full-mail captures
+    # every incremental conversion, so at $0.01/email mail-everyone's profit
+    # beats any top-25% policy by a paired margin entirely below zero
+    # (T minus mail-everyone < 0 -> the interval's upper bound is negative).
+    rng = np.random.default_rng(3)
+    n = 2_000
+    treatment = rng.integers(0, 2, n)
+    outcome = rng.binomial(1, np.clip(0.05 + treatment * 0.08, 0, 1))
+    args = {
+        "treatment": treatment,
+        "outcome": outcome,
+        "scores": {"t_learner": rng.normal(0, 1, n)},  # pure noise ranking
+        "budget": 0.25,
+        "n_total": n,
+        "revenue_per_conversion": 114.0,
+        "cost_per_email": 0.01,
+        "n_boot": 300,
+        "seed": 42,
+    }
+    stats = bootstrap_policy_stats(**args)
+    diff = stats["profit_at_budget"]["t_learner"] - stats["mail_everyone_profit_at_budget"]
+    ci = percentile_ci(diff)
+    assert ci[1] < 0
+    assert not ci_spans_zero(ci)
+    # Mail-everyone's bootstrap mean reproduces the analytic full-mail profit.
+    inc_all = incremental_at_full(treatment, outcome)
+    point = inc_all * 114.0 - n * 0.01
+    assert float(np.mean(stats["mail_everyone_profit_at_budget"])) == pytest.approx(point, rel=0.05)
+    # The random baseline is the diagonal: mean profit equals the diagonal point.
+    random_point = 0.25 * inc_all * 114.0 - 0.25 * n * 0.01
+    assert float(np.mean(stats["random_profit_at_budget"])) == pytest.approx(random_point, rel=0.05)
 
 
 def test_bootstrap_band_grid_shape_and_bounds() -> None:
