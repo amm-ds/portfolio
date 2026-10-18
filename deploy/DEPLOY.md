@@ -93,3 +93,20 @@ RAG chat publicly:
    `/rag/*` (plus the API's in-app per-IP floor).
 
 A 32B model does NOT fit this tier — keep big-model demos local (see ADR-0006).
+
+## Alternative: free-tier hosts (no VPS needed)
+
+The showcase is a single container, so free tiers work for a public demo:
+
+- **Render.com** — one Web Service from this repo's Dockerfile (build context
+  repo root, port 8000); free tier spins down on idle, which is fine for a
+  portfolio. Set no env vars; RAG chat stays off, rate limiting is in-app.
+- **Fly.io** — `fly launch` against the root Dockerfile; smallest shared-cpu
+  VM is enough (the api service is capped at 2 cpus / 2G in compose).
+- **Oracle Cloud free tier** (if you want always-on) — an ARM Ampere VM runs
+  the compose stack as-is.
+
+Caveats on any host: the serving artifacts and figures bake into the image
+at build time (they are committed to git — nothing else to configure), and
+the optional RAG chat needs the 01 index rebuilt on the host (`dvc repro`
+in `projects/01-rag-agent`) plus a provider key or Ollama sidecar.
