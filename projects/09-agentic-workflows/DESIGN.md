@@ -60,6 +60,14 @@ would blur that signal.
   the rate card answers "what would this cost hosted").
 - **Stages**: `run` (live LLM) and `evaluate` (offline grading) are separate
   DVC stages so grading is reproducible without a provider.
+- **Held-out set**: `HELDOUT_SUITE` is 10 unseen tasks over the same corpora
+  (7 answer tasks + 3 designed-to-fail probes). Probes ask for what the tools
+  cannot do; they are graded by `RefusalSuccess` (status `ok` + a refusal
+  marker in the answer — a fabricated number or a crash fails). `run-all
+  --heldout` / `evaluate --heldout` run and grade them; the summary lands in
+  `metrics.json detail.heldout`. Small by design (n=10): it checks for
+  prompt overfitting and confabulation, it does not re-measure the headline
+  rates.
 
 ### HITL design
 
@@ -150,3 +158,15 @@ checkpoints; toolsets composed via `FunctionToolset` + `PrefixedToolset`.
   `kimi-for-coding` (thinking disabled); `cost_latency_bars` figure;
   `search_documents` cross-project retrieval over 01's Wikipedia index
   (read-only) with suite task t15; LM Studio documented as the local preset.
+- 2026-10-18 — Tool-discipline wave: prompts/docstrings tightened after the
+  traces showed planner "supplement" steps and executor note-taking habits
+  (8 unplanned calls); Critique now audits TOOLS USED against the PLAN and
+  the Execute node records tools per visit (superseded attempts no longer
+  pollute the graded trajectory); held-out suite (`HELDOUT_SUITE`, 10 unseen
+  tasks incl. 3 designed-to-fail refusal probes) with `--heldout` CLI mode
+  and `detail.heldout` metrics; `evals.py` split into `evals.py` (suite +
+  grading), `figures.py` (figure builders) and `report.py` (report/metrics)
+  with re-exports for import stability; t15 expected_tools widened to
+  `search_documents + calculator` (the year-gap subtraction is arithmetic)
+  and the t05 prompt pinned to "before inverter losses" to remove ground-
+  truth ambiguity.

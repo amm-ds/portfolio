@@ -96,6 +96,13 @@ class TestSuiteIntegrity:
         categories = {task.category for task in evals.TASK_SUITE}
         assert categories == {"lookup", "calculation", "conversion", "multi_step", "note_keeping"}
 
+    def test_answer_tasks_carry_ground_truth(self) -> None:
+        """The schema permits empty keyword/tool lists only for refuse probes."""
+        for task in evals.TASK_SUITE:
+            assert task.expected_behavior == "answer", task.id
+            assert task.expected_keywords, task.id
+            assert task.expected_tools, task.id
+
     def test_every_task_fits_corpus_and_tools(self) -> None:
         toolset_tools = {
             "calculator",
@@ -311,6 +318,154 @@ class TestToolingDecomposition:
         assert tooling["extra_calls"]["note_store"]["calls"] == 1
 
 
+class TestHeldoutSuite:
+    """The held-out set (audit finding 6): unseen prompts + designed-to-fail probes."""
+
+    def test_suite_shape_and_disjointness(self) -> None:
+        assert len(evals.HELDOUT_SUITE) == 10
+        ids = [task.id for task in evals.HELDOUT_SUITE]
+        assert len(ids) == len(set(ids))
+        assert all(task.id.startswith("h") for task in evals.HELDOUT_SUITE)
+        tuning_prompts = {task.prompt for task in evals.TASK_SUITE}
+        assert all(task.prompt not in tuning_prompts for task in evals.HELDOUT_SUITE)
+
+    def test_categories_spread_and_behavior_split(self) -> None:
+        categories = {task.category for task in evals.HELDOUT_SUITE}
+        assert {"lookup", "calculation", "conversion", "multi_step", "note_keeping"} <= categories
+        answer = [t for t in evals.HELDOUT_SUITE if t.expected_behavior == "answer"]
+        refuse = [t for t in evals.HELDOUT_SUITE if t.expected_behavior == "refuse"]
+        assert len(answer) == 7
+        assert len(refuse) == 3
+        for task in answer:
+            assert task.expected_keywords, task.id
+            assert task.expected_tools, task.id
+        for task in refuse:
+            assert task.category == "out_of_scope", task.id
+            assert task.expected_keywords == [], task.id
+            assert task.expected_tools == [], task.id
+
+    def test_refuse_probes_grade_refusal_not_keywords(self) -> None:
+        dataset = evals.build_dataset(list(evals.HELDOUT_SUITE))
+        by_name = {case.name: case for case in dataset.cases}
+        refuse_names = {t.id for t in evals.HELDOUT_SUITE if t.expected_behavior == "refuse"}
+        for name in refuse_names:
+            grader_names = [type(e).__name__ for e in by_name[name].evaluators]
+            assert grader_names == ["RefusalSuccess", "StepBudget", "LatencyBudget"], name
+        answer_case = next(
+            case for case in dataset.cases if case.inputs.expected_behavior == "answer"
+        )
+        grader_names = [type(e).__name__ for e in answer_case.evaluators]
+        assert grader_names == ["AnswerSuccess", "ToolSelection", "StepBudget", "LatencyBudget"]
+
+    def test_tasks_json_round_trip(self) -> None:
+        payload = evals.tasks_json(list(evals.HELDOUT_SUITE))
+        assert evals.parse_tasks(payload) == list(evals.HELDOUT_SUITE)
+
+
+class TestRefusalGrader:
+    def _ctx(self, task: EvalTask, record: TaskRunRecord) -> EvaluatorContext:
+        return _ctx(task, record)
+
+    def _probe(self) -> EvalTask:
+        return next(t for t in evals.HELDOUT_SUITE if t.expected_behavior == "refuse")
+
+    def _record(self, **kwargs: Any) -> TaskRunRecord:
+        base: dict[str, Any] = dict(
+            task_id=self._probe().id,
+            status="ok",
+            answer="I cannot do that: no tool supports this conversion.",
+            steps_taken=["s"],
+            tools_used=[],
+            confidence=0.5,
+            duration_s=5.0,
+        )
+        base.update(kwargs)
+        return TaskRunRecord(**base)
+
+    def test_refusal_marker_passes(self) -> None:
+        task = self._probe()
+        for phrasing in (
+            "This cannot be done with the available tools.",
+            "Unable to convert between those dimensions.",
+            "Such a capability does not exist here.",
+        ):
+            record = self._record(answer=phrasing)
+            assert evals.RefusalSuccess().evaluate(self._ctx(task, record)) is True
+
+    def test_fabricated_answer_fails(self) -> None:
+        task = self._probe()
+        record = self._record(answer="The conversion gives 24.5 liters.")
+        assert evals.RefusalSuccess().evaluate(self._ctx(task, record)) is False
+
+    def test_crash_fails_even_with_marker(self) -> None:
+        task = self._probe()
+        record = self._record(status="workflow_error", answer="cannot complete")
+        assert evals.RefusalSuccess().evaluate(self._ctx(task, record)) is False
+
+
+class TestHeldoutEvaluation:
+    """Held-out grading runs offline and merges detail.heldout into metrics.json."""
+
+    def _records(self) -> list[TaskRunRecord]:
+        records = []
+        for task in evals.HELDOUT_SUITE:
+            if task.expected_behavior == "refuse":
+                answer = "I cannot do that — the available tools do not support this request."
+                tools: tuple[str, ...] = ()
+            else:
+                answer = "answer with " + " and ".join(task.expected_keywords)
+                tools = tuple(sorted(task.expected_tools))
+            records.append(_record(task.id, answer=answer, tools=tools))
+        return records
+
+    def test_heldout_detail_aggregates_answer_and_refuse_split(self, tmp_path: Path) -> None:
+        config = EvalConfig(
+            reports_dir=tmp_path / "reports", records_path=tmp_path / "records.json"
+        )
+        (config.reports_dir).mkdir(parents=True)
+        (config.reports_dir / "metrics.json").write_text('{"agentic_suite": {}}')
+
+        detail = evals.write_heldout_metrics(self._records(), list(evals.HELDOUT_SUITE), config)
+        assert detail["n_tasks"] == 10
+        assert detail["n_answer"] == 7
+        assert detail["n_should_fail"] == 3
+        assert detail["answer_success"] == 1.0
+        assert detail["tool_selection"] == 1.0
+        assert detail["should_fail_pass_rate"] == 1.0
+        assert detail["tooling"]["exact_set_rate"] == 1.0
+
+        merged = json.loads((config.reports_dir / "metrics.json").read_text())
+        assert merged["detail"]["heldout"]["answer_success"] == 1.0
+        assert merged["agentic_suite"] == {}
+
+    def test_heldout_detail_records_failures(self, tmp_path: Path) -> None:
+        config = EvalConfig(
+            reports_dir=tmp_path / "reports", records_path=tmp_path / "records.json"
+        )
+        (config.reports_dir).mkdir(parents=True)
+        (config.reports_dir / "metrics.json").write_text("{}")
+        records = self._records()
+        # one fabricated refusal + one wrong tool set: the split must show both
+        bad_probe = next(r for r in records if r.task_id in {"h08", "h09", "h10"})
+        records = [
+            (r.model_copy(update={"answer": "It is 24.5 liters, done."}) if r is bad_probe else r)
+            for r in records
+        ]
+        records = [
+            (
+                r.model_copy(update={"tools_used": ["search_handbook", "note_store"]})
+                if r.task_id == "h01"
+                else r
+            )
+            for r in records
+        ]
+        detail = evals.write_heldout_metrics(records, list(evals.HELDOUT_SUITE), config)
+        assert detail["should_fail_pass_rate"] == pytest.approx(2 / 3, abs=1e-3)
+        assert detail["tool_selection"] == pytest.approx(6 / 7, abs=1e-3)
+        assert detail["per_task"]["h01"]["tool_selection"] == 0.0
+        assert detail["per_task"][bad_probe.task_id]["refusal_success"] == 0.0
+
+
 class TestSuiteHonesty:
     """Guard against ground truths drifting away from the tools they grade."""
 
@@ -320,6 +475,8 @@ class TestSuiteHonesty:
         assert "29.8258" in str(unit_convert(48, "km", "mi"))
         assert "55.1156" in str(unit_convert(25, "kg", "lb"))
         assert unit_convert(-20, "c", "f") == -4.0
+        # held-out h05: drone range 8 km in miles
+        assert "4.971" in str(unit_convert(8, "km", "mi"))
 
     def test_calculation_answers_match_tool_output(self) -> None:
         from agentic_workflows.tools import calculator
@@ -333,3 +490,23 @@ class TestSuiteHonesty:
         assert calculator("1800/4") == 450  # t14
         assert calculator("40+25") == 65 and calculator("65*0.6") == 39.0  # t11
         assert calculator("5000+1200") == 6200  # t12
+        # held-out h03/h04/h06: full-tank runtime, 30-day burn, weekly uplink
+        assert "133.3" in str(calculator("240/1.8"))
+        assert calculator("1.8*8*30") == 432.0
+        assert calculator("2*7") == 14.0 and calculator("14*250") == 3500.0
+
+    def test_refuse_probes_are_actually_impossible(self) -> None:
+        """Each should-fail probe must raise in the tools it tempts."""
+        from agentic_workflows.tools import unit_convert
+
+        task_by_id = {task.id: task for task in evals.HELDOUT_SUITE}
+        probes = [t for t in evals.HELDOUT_SUITE if t.expected_behavior == "refuse"]
+        assert {task.id for task in probes} == {"h08", "h09", "h10"}
+        # h08: energy -> volume is not a unit conversion
+        with pytest.raises(ValueError, match="unknown unit"):
+            unit_convert(24, "kwh", "l")
+        # h10: mass -> volume crosses dimensions
+        with pytest.raises(ValueError, match="cannot convert"):
+            unit_convert(40, "kg", "l")
+        # h09 names a tool that does not exist in the toolset
+        assert "inventory" in task_by_id["h09"].prompt.lower()

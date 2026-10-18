@@ -29,7 +29,7 @@ from agentic_workflows.hitl import (
     resume,
     save_checkpoint,
 )
-from agentic_workflows.schemas import ApprovalDecision, WorkflowResult
+from agentic_workflows.schemas import ApprovalDecision, EvalTask, WorkflowResult
 from agentic_workflows.workflow import run_workflow
 
 app = typer.Typer(help=__doc__, add_completion=False)
@@ -49,13 +49,19 @@ def _echo_result(result: WorkflowResult) -> None:
 
 
 @app.command()
-def prepare(config: str = "params.yaml") -> None:
-    """Prepare stage: materialize the synthetic task suite into data/tasks.json."""
+def prepare(
+    config: str = "params.yaml",
+    heldout: Annotated[
+        bool, typer.Option("--heldout", help="Materialize the held-out suite instead.")
+    ] = False,
+) -> None:
+    """Prepare stage: materialize a task suite into data/tasks*.json."""
     cfg = load_config(Path(config))
-    tasks = list(evals.TASK_SUITE)
-    cfg.tasks_path.parent.mkdir(parents=True, exist_ok=True)
-    cfg.tasks_path.write_text(evals.tasks_json(tasks), encoding="utf-8")
-    typer.echo(f"tasks ready: {len(tasks)} tasks at {cfg.tasks_path}")
+    tasks = list(evals.HELDOUT_SUITE) if heldout else list(evals.TASK_SUITE)
+    path = cfg.heldout_tasks_path if heldout else cfg.tasks_path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(evals.tasks_json(tasks), encoding="utf-8")
+    typer.echo(f"tasks ready: {len(tasks)} tasks at {path}")
 
 
 @app.command()
@@ -90,24 +96,36 @@ def run_all(
         str | None,
         typer.Option("--ids", help="Comma-separated task ids to run (wall-clock bound)."),
     ] = None,
+    heldout: Annotated[
+        bool,
+        typer.Option("--heldout", help="Run the held-out suite instead of the tuning suite."),
+    ] = False,
 ) -> None:
-    """Run stage: execute suite tasks (live model) → data/run_records.json."""
+    """Run stage: execute suite tasks (live model) → data/*_records.json."""
     cfg = load_config(Path(config))
-    tasks = (
-        evals.parse_tasks(cfg.tasks_path.read_text(encoding="utf-8"))
-        if cfg.tasks_path.exists()
-        else list(evals.TASK_SUITE)
-    )
+    if heldout:
+        tasks = (
+            evals.parse_tasks(cfg.heldout_tasks_path.read_text(encoding="utf-8"))
+            if cfg.heldout_tasks_path.exists()
+            else list(evals.HELDOUT_SUITE)
+        )
+    else:
+        tasks = (
+            evals.parse_tasks(cfg.tasks_path.read_text(encoding="utf-8"))
+            if cfg.tasks_path.exists()
+            else list(evals.TASK_SUITE)
+        )
     if ids is not None:
         wanted = [item.strip() for item in ids.split(",") if item.strip()]
         tasks = [task for task in tasks if task.id in wanted]
     elif limit is not None:
         tasks = tasks[:limit]
     records = evals.run_suite(cfg, tasks=tasks)
-    evals.write_records(records, cfg.records_path)
+    records_path = cfg.heldout_records_path if heldout else cfg.records_path
+    evals.write_records(records, records_path)
     ok = sum(1 for record in records if record.status == "ok")
     over = sum(1 for record in records if record.status == "budget_exceeded")
-    typer.echo(f"run-all complete: {ok}/{len(records)} tasks ok → {cfg.records_path}")
+    typer.echo(f"run-all complete: {ok}/{len(records)} tasks ok → {records_path}")
     if over:
         typer.echo(f"budget: {over} task(s) stopped at a budget cap (see records)")
     ledger = get_ledger(get_settings())
@@ -121,20 +139,46 @@ def run_all(
 
 
 @app.command()
-def evaluate(config: str = "params.yaml") -> None:
+def evaluate(
+    config: str = "params.yaml",
+    heldout: Annotated[
+        bool,
+        typer.Option("--heldout", help="Grade held-out records into detail.heldout instead."),
+    ] = False,
+) -> None:
     """Evaluate stage: grade run records (offline) → reports/metrics.json + figures."""
     cfg = load_config(Path(config))
+    if heldout:
+        if not cfg.heldout_records_path.exists():
+            raise typer.BadParameter(
+                f"no held-out records at {cfg.heldout_records_path}; "
+                "run `run-all --heldout` first (needs a live LLM)"
+            )
+        tasks = (
+            evals.parse_tasks(cfg.heldout_tasks_path.read_text(encoding="utf-8"))
+            if cfg.heldout_tasks_path.exists()
+            else list(evals.HELDOUT_SUITE)
+        )
+        records = evals.load_records(cfg.heldout_records_path)
+        detail = evals.write_heldout_metrics(records, tasks, cfg)
+        typer.echo(
+            f"held-out evaluation: answer success {detail['answer_success']:.0%}, "
+            f"tool selection {detail['tool_selection']:.0%}, "
+            f"should-fail pass rate {detail['should_fail_pass_rate']:.0%} "
+            f"({detail['n_should_fail']} probes) → {cfg.reports_dir / 'metrics.json'}"
+        )
+        return
     if not cfg.records_path.exists():
         raise typer.BadParameter(
             f"no run records at {cfg.records_path}; run `run-all` first (needs a live LLM)"
         )
-    tasks = (
+    suite_tasks: list[EvalTask] | None = (
         evals.parse_tasks(cfg.tasks_path.read_text(encoding="utf-8"))
         if cfg.tasks_path.exists()
         else None
     )
     records = evals.load_records(cfg.records_path)
-    report = evals.evaluate_records(records, tasks=tasks)
+    report = evals.evaluate_records(records, tasks=suite_tasks)
     evals.build_report(report, cfg)
     typer.echo(f"evaluation written: {cfg.reports_dir / 'report.html'}")
 

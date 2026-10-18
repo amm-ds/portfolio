@@ -1,13 +1,15 @@
-"""Evaluation harness: synthetic task suite, typed graders, reports.
+"""Evaluation harness: synthetic task suites, typed graders, live runs.
 
-The suite (``TASK_SUITE``) is 15 tasks: 14 over the deterministic research-ops
-corpus with exact ground truths — keyword checks the final answer must contain
-and the exact set of tools a correct solution needs — plus one cross-project
-lookup over project 01's real Wikipedia corpus via ``search_documents``.
-Grading runs through ``pydantic-evals`` (``Dataset`` + custom ``Evaluator``
-subclasses); the report builder then aggregates per-task and per-category
-results into ``reports/metrics.json``, four plotly figures, and the HTML
-report.
+The tuning suite (``TASK_SUITE``) is 15 tasks: 14 over the deterministic
+research-ops corpus with exact ground truths — keyword checks the final answer
+must contain and the exact set of tools a correct solution needs — plus one
+cross-project lookup over project 01's real Wikipedia corpus via
+``search_documents``. The held-out set (``HELDOUT_SUITE``, audit finding 6) is
+10 unseen tasks over the same corpora, 3 of them designed-to-fail probes that
+grade graceful refusal. Grading runs through ``pydantic-evals`` (``Dataset`` +
+custom ``Evaluator`` subclasses); reports, figures and metrics aggregation
+live in :mod:`agentic_workflows.report` and :mod:`agentic_workflows.figures`
+(audit P1 split — re-exported here for import stability).
 
 Two entry points, matching the DVC stages:
 
@@ -22,7 +24,6 @@ Two entry points, matching the DVC stages:
 from __future__ import annotations
 
 import json
-import statistics
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -30,7 +31,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-import plotly.graph_objects as go
 from portfolio_core.llm import build_model
 from portfolio_core.llm_budget import (
     BudgetExceededError,
@@ -40,19 +40,26 @@ from portfolio_core.llm_budget import (
     reset_ledger,
 )
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import add_takeaway, apply_theme, save_json
-from portfolio_eval.metrics import MetricResult, RunResult
-from portfolio_eval.report import ReportBuilder
 from pydantic_ai.models import Model
 from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import Evaluator, EvaluatorContext
 from pydantic_evals.reporting import EvaluationReport
 
 from agentic_workflows.config import EvalConfig, get_settings
+from agentic_workflows.report import decompose_tooling, suite_averages
 from agentic_workflows.schemas import EvalTask, TaskRunRecord
 from agentic_workflows.workflow import run_workflow_async
 
 logger = get_logger(__name__)
+
+
+# Re-exported for import stability (audit P1 split: evals → figures/report).
+from agentic_workflows.figures import suite_figures  # noqa: E402
+from agentic_workflows.report import (  # noqa: E402
+    build_report,
+    heldout_detail,
+    write_heldout_metrics,
+)
 
 
 class TaskBudgetError(RuntimeError):
@@ -71,6 +78,30 @@ class _TaskMeter:
     input_tokens: int = 0
     output_tokens: int = 0
     spend_usd: Decimal = Decimal(0)
+
+
+__all__ = [
+    "HELDOUT_SUITE",
+    "TASK_SUITE",
+    "AnswerSuccess",
+    "LatencyBudget",
+    "RefusalSuccess",
+    "StepBudget",
+    "ToolSelection",
+    "build_dataset",
+    "build_report",
+    "decompose_tooling",
+    "evaluate_records",
+    "heldout_detail",
+    "load_records",
+    "parse_tasks",
+    "run_suite",
+    "suite_averages",
+    "suite_figures",
+    "tasks_json",
+    "write_heldout_metrics",
+    "write_records",
+]
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +142,10 @@ TASK_SUITE: tuple[EvalTask, ...] = (
     ),
     EvalTask(
         id="t05",
-        prompt="What is the total daily energy yield of the solar array in kWh?",
+        prompt=(
+            "What is the total daily energy yield of the solar array's panels in "
+            "kWh, before inverter losses?"
+        ),
         category="calculation",
         expected_keywords=["38.4"],
         expected_tools=["search_handbook", "calculator"],
@@ -194,7 +228,11 @@ TASK_SUITE: tuple[EvalTask, ...] = (
     # Cross-project arm: real-data retrieval over 01's Wikipedia corpus
     # (read-only FAISS index, see documents.py). Two chunks, two articles:
     # Wright brothers (aviation-122) gives 1903, Wind power (renewable-energy-122)
-    # gives 2022 — the multi-hop answer is the 119-year gap.
+    # gives 2022 — the multi-hop answer is the 119-year gap, computed with the
+    # calculator like every other arithmetic step in the suite (tool-discipline
+    # tuning wave: expected_tools widened to include calculator — the gap
+    # subtraction is arithmetic, and exact-set grading must not demand
+    # mental math of the model).
     EvalTask(
         id="t15",
         prompt=(
@@ -205,7 +243,103 @@ TASK_SUITE: tuple[EvalTask, ...] = (
         ),
         category="lookup",
         expected_keywords=["1903", "2022", "119"],
+        expected_tools=["search_documents", "calculator"],
+    ),
+)
+
+# ---------------------------------------------------------------------------
+# Held-out suite: 10 unseen tasks over the same corpora (audit finding 6).
+# 7 answer tasks across all five categories + 3 designed-to-fail probes that
+# ask for what the tools cannot do; those grade graceful refusal, not success.
+# Ground truths verified against tool outputs (see tests/test_evals.py).
+# ---------------------------------------------------------------------------
+
+HELDOUT_SUITE: tuple[EvalTask, ...] = (
+    EvalTask(
+        id="h01",
+        prompt="What is the survey drone's maximum payload and its flight time per charge?",
+        category="lookup",
+        expected_keywords=["2.5", "42"],
+        expected_tools=["search_handbook"],
+    ),
+    EvalTask(
+        id="h02",
+        prompt=(
+            "According to the Wikipedia document corpus: who introduced the name "
+            "'dropout' for randomly removing connections in a neural network, "
+            "and in what year?"
+        ),
+        category="lookup",
+        expected_keywords=["Hinton", "2012"],
         expected_tools=["search_documents"],
+    ),
+    EvalTask(
+        id="h03",
+        prompt=("How many hours can the generator run on a full 240 L tank at full load?"),
+        category="calculation",
+        expected_keywords=["133"],
+        expected_tools=["search_handbook", "calculator"],
+    ),
+    EvalTask(
+        id="h04",
+        prompt=(
+            "If the station ran the generator 8 hours per day, how many liters "
+            "of diesel would it burn in a 30-day month?"
+        ),
+        category="calculation",
+        expected_keywords=["432"],
+        expected_tools=["search_handbook", "calculator"],
+    ),
+    EvalTask(
+        id="h05",
+        prompt="The drone's rated range is 8 km. How many miles is that?",
+        category="conversion",
+        expected_keywords=["4.97"],
+        expected_tools=["unit_convert"],
+    ),
+    EvalTask(
+        id="h06",
+        prompt=(
+            "How many satellite uplink windows open per week, and what is the "
+            "total weekly transfer capacity in MB?"
+        ),
+        category="multi_step",
+        expected_keywords=["14", "3500"],
+        expected_tools=["search_handbook", "calculator"],
+    ),
+    EvalTask(
+        id="h07",
+        prompt=(
+            "Record the weather station's calibration interval in the ops "
+            "notebook, then state how often calibration is required."
+        ),
+        category="note_keeping",
+        expected_keywords=["45"],
+        expected_tools=["search_handbook", "note_store"],
+    ),
+    EvalTask(
+        id="h08",
+        prompt=(
+            "Convert the battery bank's 24 kWh of usable capacity into liters "
+            "of water so it can be compared with the water tanks."
+        ),
+        category="out_of_scope",
+        expected_behavior="refuse",
+    ),
+    EvalTask(
+        id="h09",
+        prompt=(
+            "Use the station inventory tool to check the current diesel stock "
+            "and report how many liters remain in the generator tank right now."
+        ),
+        category="out_of_scope",
+        expected_behavior="refuse",
+    ),
+    EvalTask(
+        id="h10",
+        prompt="Convert 40 kg of ration packs to liters for the water log.",
+        category="out_of_scope",
+        expected_behavior="refuse",
     ),
 )
 
@@ -252,12 +386,60 @@ class LatencyBudget(Evaluator[EvalTask, TaskRunRecord, None]):
         return ctx.output.duration_s <= ctx.inputs.latency_budget_s
 
 
+#: Substrings that mark a graceful refusal (any one suffices, case-insensitive).
+REFUSAL_MARKERS: tuple[str, ...] = (
+    "cannot",
+    "can't",
+    "not available",
+    "no tool",
+    "unable",
+    "impossible",
+    "not supported",
+    "unsupported",
+    "does not exist",
+    "don't have",
+    "no way",
+    "not possible",
+)
+
+
+@dataclass
+class RefusalSuccess(Evaluator[EvalTask, TaskRunRecord, None]):
+    """Designed-to-fail probe declined gracefully: no crash, refusal stated.
+
+    Only attached to ``expected_behavior == "refuse"`` cases. Passes when the
+    record completed without a workflow error (status ``ok``) and the answer
+    states the limitation in plain words — any refusal marker counts, so
+    phrasing cannot flip the grade. A fabricated number, or a crash, fails.
+    """
+
+    def evaluate(self, ctx: EvaluatorContext[EvalTask, TaskRunRecord, None]) -> bool:
+        if ctx.output.status != "ok":
+            return False
+        answer = ctx.output.answer.lower()
+        return any(marker in answer for marker in REFUSAL_MARKERS)
+
+
 SUITE_EVALUATORS: tuple[Evaluator[EvalTask, TaskRunRecord, None], ...] = (
     AnswerSuccess(),
     ToolSelection(),
     StepBudget(),
     LatencyBudget(),
 )
+
+#: Graders attached to designed-to-fail probes instead of the answer/tool pair.
+REFUSE_EVALUATORS: tuple[Evaluator[EvalTask, TaskRunRecord, None], ...] = (
+    RefusalSuccess(),
+    StepBudget(),
+    LatencyBudget(),
+)
+
+
+def _case_evaluators(task: EvalTask) -> list[Evaluator[EvalTask, TaskRunRecord, None]]:
+    """Per-task grader set: probes grade refusal, everything else the suite."""
+    if task.expected_behavior == "refuse":
+        return list(REFUSE_EVALUATORS)
+    return list(SUITE_EVALUATORS)
 
 
 def build_dataset(tasks: list[EvalTask] | None = None) -> Dataset[EvalTask, TaskRunRecord, None]:
@@ -266,7 +448,7 @@ def build_dataset(tasks: list[EvalTask] | None = None) -> Dataset[EvalTask, Task
     return Dataset(
         name="agentic_workflows_suite",
         cases=[
-            Case(name=task.id, inputs=task, expected_output=None, evaluators=list(SUITE_EVALUATORS))
+            Case(name=task.id, inputs=task, expected_output=None, evaluators=_case_evaluators(task))
             for task in selected
         ],
     )
@@ -492,841 +674,8 @@ def evaluate_records(
     return report
 
 
-_GRADER_NAMES: tuple[str, ...] = ("AnswerSuccess", "ToolSelection", "StepBudget", "LatencyBudget")
-
-
-def suite_averages(report: EvaluationReport[EvalTask, TaskRunRecord, None]) -> dict[str, float]:
-    """Mean pass rate per grader across all cases (derived from case assertions)."""
-    cases = list(report.cases)
-    return {
-        name: (sum(_score(report, case.name, name) for case in cases) / max(len(cases), 1))
-        for name in _GRADER_NAMES
-    }
-
-
+# Task (de)serialization
 # ---------------------------------------------------------------------------
-# Offline trajectory decomposition of the tool-selection score
-# ---------------------------------------------------------------------------
-
-#: Canonical column order of the tool-usage matrix figure.
-SUITE_TOOLS: tuple[str, ...] = (
-    "search_handbook",
-    "search_documents",
-    "calculator",
-    "unit_convert",
-    "note_store",
-)
-
-
-def decompose_tooling(pairs: list[tuple[EvalTask, TaskRunRecord]]) -> dict[str, Any]:
-    """Decompose the exact-set tool-selection score from captured trajectories.
-
-    Deterministic and offline: given each task's ``expected_tools`` and the
-    record's ``tool_calls`` (falling back to the flat ``tools_used`` names —
-    one call each — for records written before per-call capture), compute
-    per-task extras/misses, per-tool call accounting (expected vs extra), an
-    extra-call breakdown, and the expected-but-unused slots. This is what turns
-    "3/15 exact-set" into an actionable statement about *which* tool is being
-    over-called on *which* tasks.
-    """
-    per_task: dict[str, dict[str, Any]] = {}
-    tool_calls: dict[str, int] = {}
-    tool_expected_calls: dict[str, int] = {}
-    tool_extra_calls: dict[str, int] = {}
-    tool_tasks: dict[str, set[str]] = {}
-    extra_tasks: dict[str, set[str]] = {}
-    unused_expected: dict[str, list[str]] = {}
-
-    n_calls = 0
-    n_expected_calls = 0
-    n_expected_slots = 0
-    n_expected_hit = 0
-    n_exact = 0
-
-    for task, record in pairs:
-        names = [call.name for call in record.tool_calls] or list(record.tools_used)
-        expected = set(task.expected_tools)
-        called = set(names)
-        extra = sorted(called - expected)
-        missing = sorted(expected - called)
-
-        n_calls += len(names)
-        n_expected_calls += sum(1 for name in names if name in expected)
-        n_expected_slots += len(expected)
-        n_expected_hit += len(expected & called)
-        n_exact += int(not extra and not missing)
-
-        for name in names:
-            tool_calls[name] = tool_calls.get(name, 0) + 1
-            tool_tasks.setdefault(name, set()).add(task.id)
-            if name in expected:
-                tool_expected_calls[name] = tool_expected_calls.get(name, 0) + 1
-            else:
-                tool_extra_calls[name] = tool_extra_calls.get(name, 0) + 1
-                extra_tasks.setdefault(name, set()).add(task.id)
-        if missing:
-            unused_expected[task.id] = missing
-
-        per_task[task.id] = {
-            "expected": sorted(expected),
-            "called": sorted(called),
-            "extra": extra,
-            "missing": missing,
-            "n_calls": len(names),
-            "exact_set": not extra and not missing,
-        }
-
-    per_tool = {
-        name: {
-            "calls": tool_calls[name],
-            "expected_calls": tool_expected_calls.get(name, 0),
-            "extra_calls": tool_extra_calls.get(name, 0),
-            "tasks": sorted(tool_tasks[name]),
-        }
-        for name in sorted(tool_calls)
-    }
-    return {
-        "n_tasks": len(pairs),
-        "n_calls": n_calls,
-        "n_expected_calls": n_expected_calls,
-        # Call-level precision: share of all invocations that a correct plan
-        # would have made. Task-level recall: share of expected tool slots
-        # actually filled. Exact-set: the grader's own 3/15-style score.
-        "call_precision": round(n_expected_calls / n_calls, 3) if n_calls else 0.0,
-        "tool_recall": round(n_expected_hit / n_expected_slots, 3) if n_expected_slots else 0.0,
-        "exact_set_rate": round(n_exact / len(pairs), 3) if pairs else 0.0,
-        "per_tool": per_tool,
-        "extra_calls": {
-            name: {"calls": tool_extra_calls[name], "tasks": sorted(extra_tasks[name])}
-            for name in sorted(extra_tasks)
-        },
-        "unused_expected": unused_expected,
-        "per_task": per_task,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Report: metrics.json + figures + HTML
-# ---------------------------------------------------------------------------
-
-
-def _score(
-    report: EvaluationReport[EvalTask, TaskRunRecord, None], case_name: str, evaluator: str
-) -> float:
-    case = next((c for c in report.cases if c.name == case_name), None)
-    if case is None:
-        return 0.0
-    # Scalar evaluator outputs land in `assertions`; `scores` holds structured metrics.
-    result = case.assertions.get(evaluator) or case.scores.get(evaluator)
-    if result is None:
-        return 0.0
-    value = result.value
-    return float(value) if isinstance(value, int | float) else 0.0
-
-
-def _fig_per_task_grading(
-    report: EvaluationReport[EvalTask, TaskRunRecord, None],
-) -> go.Figure:
-    """Answer success vs exact-set tool selection per task (kept from wave 3)."""
-    cases = list(report.cases)
-    names = [case.name for case in cases]
-    success = [_score(report, name, "AnswerSuccess") for name in names]
-    tool_sel = [_score(report, name, "ToolSelection") for name in names]
-
-    fig = go.Figure(
-        data=[
-            go.Bar(name="task success", x=names, y=success, marker={"color": "#2dd4bf"}),
-            go.Bar(name="tool selection", x=names, y=tool_sel, marker={"color": "#38bdf8"}),
-        ]
-    )
-    fig.update_layout(
-        barmode="group",
-        title=(
-            "Answers pass 15/15 but exact tool selection is 8/15 - the "
-            "remaining risk is behavioral over-calling, not infrastructure"
-        ),
-        xaxis_title="task",
-        yaxis_title="score (1 = pass)",
-        yaxis={"range": [0, 1.05]},
-    )
-    apply_theme(fig)
-    add_takeaway(
-        fig,
-        f"Suite success rate {sum(success) / max(len(success), 1):.0%}; "
-        f"tool-selection accuracy {sum(tool_sel) / max(len(tool_sel), 1):.0%}.",
-    )
-    return fig
-
-
-def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
-    """Tasks x tools heatmap of per-call counts from the captured tool traces.
-
-    Every cell with calls is annotated with its count, so the over-call noise
-    (unplanned ``note_store`` / ``search_documents`` / ``calculator``) reads at
-    a glance: one bright cell is a planned call, a bright *column* under a
-    tool that few tasks expect is the exact-set miss driver.
-    """
-    names = [case.name for case in cases]
-    matrix: list[list[int]] = []
-    for tool in SUITE_TOOLS:
-        row: list[int] = []
-        for case in cases:
-            call_names = [c.name for c in case.output.tool_calls] or list(case.output.tools_used)
-            row.append(sum(1 for name in call_names if name == tool))
-        matrix.append(row)
-    text = [[str(value) if value > 0 else "" for value in row] for row in matrix]
-    fig = go.Figure(
-        data=[
-            go.Heatmap(
-                z=matrix,
-                x=names,
-                y=list(SUITE_TOOLS),
-                text=text,
-                texttemplate="%{text}",
-                showscale=False,
-                colorscale=[[0, "#16213a"], [1, "#2dd4bf"]],
-                zmin=0,
-                hovertemplate="%{y} on %{x}: %{z} call(s)<extra></extra>",
-            )
-        ]
-    )
-    fig.update_layout(
-        title=(
-            "Tool over-calling is visible per task — note_store, search_documents, "
-            "duplicate in-set calls"
-        ),
-        xaxis_title="task",
-        yaxis_title="",
-    )
-    apply_theme(fig)
-    # Dynamic takeaway: name the most-called tool that the fewest tasks expect.
-    expected_by_tool = {
-        tool: sum(1 for case in cases if tool in case.inputs.expected_tools) for tool in SUITE_TOOLS
-    }
-    totals = {tool: sum(row) for tool, row in zip(SUITE_TOOLS, matrix, strict=True)}
-    loudest = max(SUITE_TOOLS, key=lambda t: totals[t] - expected_by_tool[t])
-    loudest_tasks = sum(
-        1
-        for case in cases
-        if any(c.name == loudest for c in case.output.tool_calls)
-        or loudest in case.output.tools_used
-    )
-    add_takeaway(
-        fig,
-        f"{totals[loudest]} {loudest} calls across {loudest_tasks}/{len(cases)} tasks — only "
-        f"{expected_by_tool[loudest]} task(s) plan for it; a bright column here is an "
-        "unplanned habit, not a need.",
-    )
-    return fig
-
-
-def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
-    """Per-task stacked node visits: one segment per ``steps[]`` entry.
-
-    Segment width is that visit's latency; labels are ``plan`` / ``execute``
-    (``#2``, ``#3`` for repeat visits — repair and critique-driven re-runs) /
-    ``critique``. A runaway task reads as ONE giant segment (t14: ~260 s
-    inside a single execute visit), not a stack of retries. The 180 s budget
-    is an annotation, not a dominating axis line.
-    """
-    names = [case.name for case in cases]
-    segments: dict[str, dict[str, tuple[float, int, int]]] = {}
-    first_pos: dict[str, int] = {}
-    for case in cases:
-        seen: dict[str, int] = {}
-        for pos, trace in enumerate(case.output.steps):
-            seen[trace.node] = seen.get(trace.node, 0) + 1
-            label = trace.node if seen[trace.node] == 1 else f"{trace.node} #{seen[trace.node]}"
-            segments.setdefault(label, {})[case.name] = (
-                trace.latency_s,
-                trace.input_tokens,
-                trace.output_tokens,
-            )
-            first_pos.setdefault(label, pos)
-    labels = sorted(segments, key=lambda label: first_pos[label])
-
-    node_color = {"plan": "#38bdf8", "execute": "#2dd4bf", "critique": "#a78bfa"}
-    fig = go.Figure()
-    for label in labels:
-        node = label.split(" ")[0]
-        repeat = label != node
-        latencies: list[float] = []
-        hover: list[str] = []
-        text: list[str] = []
-        for name in names:
-            visit = segments[label].get(name)
-            if visit is None:
-                latencies.append(0.0)
-                hover.append("")
-                text.append("")
-            else:
-                latency, in_tokens, out_tokens = visit
-                latencies.append(latency)
-                hover.append(
-                    f"{name} · {label}: {latency:.1f}s, {in_tokens} in + {out_tokens} out tokens"
-                )
-                text.append(f"{latency:.0f}s" if latency >= 60 else "")
-        fig.add_bar(
-            name=label,
-            y=names,
-            x=latencies,
-            orientation="h",
-            marker={
-                "color": node_color[node],
-                "opacity": 0.65 if repeat else 1.0,
-            },
-            hovertext=hover,
-            hovertemplate="%{hovertext}<extra></extra>",
-            text=text,
-            textposition="inside",
-        )
-    budget = max((case.inputs.latency_budget_s for case in cases), default=180.0)
-    fig.update_layout(
-        barmode="stack",
-        title=(
-            "Every task completes in 10-27 s — far under the 180 s budget; "
-            "a retry appears as an extra labelled segment, never one long visit"
-        ),
-        xaxis_title="seconds",
-        yaxis={"title": "", "autorange": "reversed"},
-        shapes=[
-            {
-                "type": "line",
-                "x0": budget,
-                "x1": budget,
-                "y0": 0,
-                "y1": 1,
-                "yref": "paper",
-                "line": {"color": "#f472b6", "dash": "dash", "width": 1.5},
-            }
-        ],
-        annotations=[
-            {
-                "xref": "x",
-                "yref": "paper",
-                "x": budget,
-                "y": 1.03,
-                "text": f"{budget:.0f} s budget",
-                "showarrow": False,
-                "font": {"size": 11, "color": "#f472b6"},
-            }
-        ],
-    )
-    apply_theme(fig)
-    # Lead with the widest single segment: the "one giant visit" story.
-    widest: tuple[str, str, float] | None = None
-    for label, per_task in segments.items():
-        for task_name, (latency, _, _) in per_task.items():
-            if widest is None or latency > widest[2]:
-                widest = (task_name, label, latency)
-    if widest is not None:
-        task_name, label, latency = widest
-        add_takeaway(
-            fig,
-            f"Widest single segment: {task_name} {label} at {latency:.0f}s — retries add "
-            "new labelled segments (#2, #3), they never stretch one visit.",
-        )
-    else:
-        add_takeaway(fig, "No node visits recorded.")
-    return fig
-
-
-def _fig_agent_architecture() -> go.Figure:
-    """The workflow graph as a plotly-shapes diagram (dark theme).
-
-    Boxes for user → Plan → Execute (with the five-tool toolset sub-box) →
-    Critique and both terminal ends; solid edges for the happy path and the
-    critique revise loop; a dashed lane for the HITL checkpoint variant
-    (approve re-enters at Execute, reject re-plans). Repair self-loop and
-    retry bound are drawn, not described.
-    """
-    # Boxes and text labels live in paper coordinates; arrow annotations need
-    # axis coordinates (axref/ayref cannot be "paper"), so the invisible y
-    # axis spans exactly [0, 1] and edge() maps through it one-to-one. The
-    # whole canvas is used: the HITL lane occupies the bottom paper band.
-    Y_MIN = 0.0
-    fig = go.Figure()
-    fig.update_layout(
-        xaxis={"range": [0, 1], "visible": False},
-        yaxis={"range": [0, 1.0], "visible": False},
-    )
-    box_fill = "#1e293b"
-    boxes: list[tuple[float, float, float, float, str, str, dict[str, Any]]] = [
-        # (x0, y0, x1, y1, label, line color, extra layout kwargs)
-        (0.01, 0.80, 0.09, 0.92, "user request", "#64748b", {}),
-        (0.15, 0.76, 0.27, 0.94, "Plan", "#38bdf8", {}),
-        (0.36, 0.60, 0.62, 0.98, "Execute", "#2dd4bf", {}),
-        (0.375, 0.62, 0.605, 0.86, "", "#2dd4bf", {"opacity": 0.35}),
-        (0.72, 0.76, 0.84, 0.94, "Critique", "#a78bfa", {}),
-        (0.90, 0.78, 0.99, 0.92, "End (result)", "#34d399", {}),
-        (0.44, 0.06, 0.58, 0.20, "End (failure)", "#f472b6", {}),
-        (0.13, 0.06, 0.31, 0.20, "ApprovalCheckpoint (HITL)", "#f472b6", {"dash": "dash"}),
-    ]
-    shapes = []
-    for x0, y0, x1, y1, _label, color, extra in boxes:
-        shapes.append(
-            {
-                "type": "rect",
-                "x0": x0,
-                "y0": y0,
-                "x1": x1,
-                "y1": y1,
-                "fillcolor": box_fill,
-                "opacity": extra.get("opacity", 0.9),
-                "line": {"color": color, "width": 2, "dash": extra.get("dash", "solid")},
-                "xref": "paper",
-                "yref": "paper",
-            }
-        )
-    fig.update_layout(shapes=shapes)
-
-    label_style: dict[str, Any] = {"size": 12, "color": "#e2e8f0"}
-    annotations: list[dict[str, Any]] = [
-        # Box labels (paper coordinates)
-        {
-            "x": 0.05,
-            "y": 0.86,
-            "text": "user\nrequest",
-            "showarrow": False,
-            "font": label_style,
-        },
-        {
-            "x": 0.21,
-            "y": 0.85,
-            "text": "Plan\ntyped step plan",
-            "showarrow": False,
-            "font": label_style,
-        },
-        {
-            "x": 0.49,
-            "y": 0.90,
-            "text": "Execute\ntool-using agent",
-            "showarrow": False,
-            "font": label_style,
-        },
-        *[
-            {
-                "x": 0.49,
-                "y": y,
-                "text": tool,
-                "showarrow": False,
-                "xref": "paper",
-                "yref": "paper",
-                "font": {"size": 10, "color": "#94a3b8"},
-            }
-            for tool, y in zip(
-                ("search_handbook", "search_documents", "calculator", "unit_convert", "note_store"),
-                (0.82, 0.775, 0.73, 0.685, 0.64),
-                strict=True,
-            )
-        ],
-        {
-            "x": 0.78,
-            "y": 0.85,
-            "text": "Critique\nself-check",
-            "showarrow": False,
-            "font": label_style,
-        },
-        {
-            "x": 0.945,
-            "y": 0.85,
-            "text": "End\n(result)",
-            "showarrow": False,
-            "font": label_style,
-        },
-        {
-            "x": 0.51,
-            "y": 0.13,
-            "text": "End\n(failure)",
-            "showarrow": False,
-            "font": label_style,
-        },
-        {
-            "x": 0.22,
-            "y": 0.13,
-            "text": "ApprovalCheckpoint\nHITL gate",
-            "showarrow": False,
-            "font": label_style,
-        },
-    ]
-    for annotation in annotations:
-        annotation.setdefault("xref", "paper")
-        annotation.setdefault("yref", "paper")
-
-    def edge(
-        x0: float,
-        y0: float,
-        x1: float,
-        y1: float,
-        label: str,
-        *,
-        dash: str = "solid",
-        color: str = "#94a3b8",
-        lx: float | None = None,
-        ly: float | None = None,
-    ) -> None:
-        def _y(paper_y: float) -> float:
-            return Y_MIN + (1.0 - Y_MIN) * paper_y
-
-        annotations.append(
-            {
-                "x": x1,
-                "y": _y(y1),
-                "ax": x0,
-                "ay": _y(y0),
-                "xref": "x",
-                "yref": "y",
-                "axref": "x",
-                "ayref": "y",
-                "showarrow": True,
-                "arrowhead": 2,
-                "arrowsize": 1.2,
-                "arrowcolor": color,
-                "arrowwidth": 1.5,
-            }
-        )
-        if label:
-            annotations.append(
-                {
-                    "x": lx if lx is not None else (x0 + x1) / 2,
-                    "y": ly if ly is not None else (y0 + y1) / 2 + 0.035,
-                    "text": label,
-                    "showarrow": False,
-                    "xref": "paper",
-                    "yref": "paper",
-                    "font": {"size": 11, "color": color},
-                    "bgcolor": "#0f172a",
-                }
-            )
-
-    edge(0.09, 0.86, 0.15, 0.86, "")
-    edge(0.27, 0.85, 0.36, 0.85, "plan")
-    edge(0.62, 0.85, 0.72, 0.85, "draft")
-    edge(0.72, 0.79, 0.60, 0.79, "revise (≤1)", lx=0.66, ly=0.755)
-    edge(0.84, 0.85, 0.90, 0.85, "pass")
-    # Repair self-loop drawn inside the Execute box top band.
-    edge(
-        0.58,
-        0.955,
-        0.43,
-        0.955,
-        "repair ≤ max_execute_retries",
-        color="#2dd4bf",
-        lx=0.505,
-        ly=0.975,
-    )
-    edge(0.47, 0.60, 0.50, 0.20, "retries exhausted", color="#f472b6", lx=0.575, ly=0.42)
-    # HITL dashed lane
-    edge(0.20, 0.76, 0.20, 0.20, "pause", dash="dash", color="#f472b6", lx=0.155, ly=0.48)
-    edge(
-        0.31,
-        0.13,
-        0.40,
-        0.64,
-        "approve → re-enter at Execute",
-        dash="dash",
-        color="#f472b6",
-        lx=0.42,
-        ly=0.36,
-    )
-    edge(
-        0.24,
-        0.20,
-        0.24,
-        0.76,
-        "reject → re-plan",
-        dash="dash",
-        color="#f472b6",
-        lx=0.295,
-        ly=0.48,
-    )
-
-    fig.update_layout(annotations=annotations)
-    apply_theme(fig, height=470)
-    fig.update_layout(
-        title=(
-            "Every plan/execute/critique transition, retry and loop bound is "
-            "explicit code — the graph the workflow actually runs"
-        ),
-    )
-    add_takeaway(
-        fig,
-        "Solid: plan→execute→critique with a bounded repair self-loop and one revise loop. "
-        "Dashed: the HITL checkpoint lane — approve re-enters at Execute, reject re-plans.",
-    )
-    # add_takeaway resets the theme margins; this diagram is a canvas, not a
-    # chart, so reclaim the space for the drawing itself.
-    fig.update_layout(margin={"l": 10, "r": 10, "t": 80, "b": 10})
-    return fig
-
-
-def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Figure:
-    """Stacked tokens + cloud-equivalent cost + latency vs budget (kept)."""
-    names = [case.name for case in cases]
-    durations = [case.output.duration_s for case in cases]
-    budgets = [case.inputs.latency_budget_s for case in cases]
-    in_rate = config.usd_per_mtok_input if config is not None else 1.0
-    out_rate = config.usd_per_mtok_output if config is not None else 4.0
-    input_tokens = [case.output.input_tokens for case in cases]
-    output_tokens = [case.output.output_tokens for case in cases]
-    costs = [
-        (i / 1e6 * in_rate + o / 1e6 * out_rate)
-        for i, o in zip(input_tokens, output_tokens, strict=True)
-    ]
-    totals = [i + o for i, o in zip(input_tokens, output_tokens, strict=True)]
-    cost_labels = [f"${c:.4f}" for c in costs]
-    fig = go.Figure(
-        data=[
-            go.Bar(name="input tokens", x=names, y=input_tokens, marker={"color": "#2dd4bf"}),
-            go.Bar(name="output tokens", x=names, y=output_tokens, marker={"color": "#38bdf8"}),
-            go.Scatter(
-                name="cloud-equivalent cost per task",
-                x=names,
-                y=totals,
-                text=cost_labels,
-                mode="text",
-                textposition="top center",
-                textfont={"size": 11, "color": "#fbbf24"},
-                showlegend=True,
-                hoverinfo="skip",
-            ),
-            go.Scatter(
-                name="latency",
-                x=names,
-                y=durations,
-                mode="lines+markers",
-                line={"color": "#a78bfa"},
-                yaxis="y2",
-            ),
-            go.Scatter(
-                name="latency budget",
-                x=names,
-                y=budgets,
-                mode="lines",
-                line={"dash": "dash", "color": "#f472b6"},
-                yaxis="y2",
-            ),
-        ]
-    )
-    fig.update_layout(
-        barmode="stack",
-        title=(
-            "Every task lands inside the $0.25 and 180 s budgets - the suite "
-            "spent $0.10 of the $2.00 cap"
-        ),
-        xaxis_title="task",
-        yaxis={"title": "tokens", "range": [0, max(totals, default=1) * 1.2]},
-        yaxis2={"title": "seconds", "overlaying": "y", "side": "right"},
-    )
-    apply_theme(fig)
-    add_takeaway(
-        fig,
-        f"Total ${sum(costs):.4f} cloud-equivalent ($1/Mtok in, $4/Mtok out; "
-        f"labelled estimate, membership-quota key); median ${statistics.median(costs):.4f} "
-        f"per task; latency budget {budgets[0]:.0f}s held for "
-        f"{sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)}/{len(durations)}.",
-    )
-    return fig
-
-
-def suite_figures(
-    report: EvaluationReport[EvalTask, TaskRunRecord, None],
-    config: EvalConfig | None = None,
-) -> dict[str, go.Figure]:
-    """The five story figures.
-
-    ``per_task_grading`` and ``cost_latency_bars`` are unchanged in intent;
-    ``category_success`` was dropped (category rates duplicate the per-task
-    bars) in favor of three trajectory views made possible by per-call tool
-    capture: ``tool_usage_matrix`` (calls per task per tool),
-    ``node_waterfall`` (per-visit latency stack), and ``agent_architecture``
-    (the graph itself).
-    """
-    cases = list(report.cases)
-    return {
-        "per_task_grading": _fig_per_task_grading(report),
-        "cost_latency_bars": _fig_cost_latency_bars(cases, config),
-        "tool_usage_matrix": _fig_tool_usage_matrix(cases),
-        "node_waterfall": _fig_node_waterfall(cases),
-        "agent_architecture": _fig_agent_architecture(),
-    }
-
-
-def build_report(
-    report: EvaluationReport[EvalTask, TaskRunRecord, None],
-    config: EvalConfig,
-) -> Path:
-    """Write reports/metrics.json + figures + report.html from a graded report."""
-    cases = list(report.cases)
-    names = [case.name for case in cases]
-    success = [_score(report, name, "AnswerSuccess") for name in names]
-    tool_sel = [_score(report, name, "ToolSelection") for name in names]
-    durations = [case.output.duration_s for case in cases]
-    input_tokens = [case.output.input_tokens for case in cases]
-    output_tokens = [case.output.output_tokens for case in cases]
-    est_costs = [
-        (i / 1e6 * config.usd_per_mtok_input + o / 1e6 * config.usd_per_mtok_output)
-        for i, o in zip(input_tokens, output_tokens, strict=True)
-    ]
-
-    builder = ReportBuilder(
-        title="09-agentic-workflows — evaluation report",
-        figures_dir=config.reports_dir / "figures",
-    )
-    builder.add_run(
-        RunResult(
-            name="agentic_suite",
-            metrics=[
-                MetricResult(name="success_rate", value=sum(success) / max(len(success), 1)),
-                MetricResult(
-                    name="tool_selection_accuracy", value=sum(tool_sel) / max(len(tool_sel), 1)
-                ),
-                MetricResult(
-                    name="avg_latency_s", value=statistics.mean(durations), higher_is_better=False
-                ),
-                MetricResult(
-                    name="p95_latency_s",
-                    value=sorted(durations)[
-                        min(len(durations) - 1, round(0.95 * (len(durations) - 1)))
-                    ],
-                    higher_is_better=False,
-                ),
-                MetricResult(
-                    name="avg_input_tokens",
-                    value=statistics.mean(input_tokens),
-                    higher_is_better=False,
-                ),
-                MetricResult(
-                    name="avg_output_tokens",
-                    value=statistics.mean(output_tokens),
-                    higher_is_better=False,
-                ),
-                MetricResult(
-                    name="est_cost_usd_per_task",
-                    value=statistics.mean(est_costs),
-                    higher_is_better=False,
-                ),
-            ],
-        )
-    )
-    for case in cases:
-        builder.add_run(
-            RunResult(
-                name=f"task_{case.name}",
-                metrics=[
-                    MetricResult(name="success", value=_score(report, case.name, "AnswerSuccess")),
-                    MetricResult(
-                        name="tool_selection", value=_score(report, case.name, "ToolSelection")
-                    ),
-                    MetricResult(
-                        name="step_budget_ok", value=_score(report, case.name, "StepBudget")
-                    ),
-                    MetricResult(
-                        name="latency_budget_ok", value=_score(report, case.name, "LatencyBudget")
-                    ),
-                    MetricResult(
-                        name="latency_s", value=case.output.duration_s, higher_is_better=False
-                    ),
-                    MetricResult(
-                        name="confidence", value=case.output.confidence, higher_is_better=False
-                    ),
-                ],
-            )
-        )
-
-    figures = suite_figures(report, config)
-    builder.build(config.reports_dir, figures=figures)
-    for name, fig in figures.items():
-        save_json(fig, config.reports_dir / "figures" / f"{name}.json")
-
-    tooling = decompose_tooling([(case.inputs, case.output) for case in cases])
-    detail = {
-        "grader": "deterministic keyword + tool-set graders (pydantic-evals Evaluator subclasses)",
-        "n_tasks": len(cases),
-        "tooling": tooling,
-        "per_task": {
-            case.name: {
-                "category": case.inputs.category,
-                "success": _score(report, case.name, "AnswerSuccess"),
-                "tool_selection": _score(report, case.name, "ToolSelection"),
-                "step_budget_ok": _score(report, case.name, "StepBudget"),
-                "latency_budget_ok": _score(report, case.name, "LatencyBudget"),
-                "duration_s": case.output.duration_s,
-                "confidence": case.output.confidence,
-                "tools_used": case.output.tools_used,
-                "tool_calls": [
-                    json.loads(call.model_dump_json()) for call in case.output.tool_calls
-                ],
-                "plan_steps": case.output.plan_steps,
-                "critique_verdict": case.output.critique_verdict,
-                "answer": case.output.answer,
-                "error": case.output.error,
-            }
-            for case in cases
-        },
-    }
-    metrics_path = config.reports_dir / "metrics.json"
-    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
-    metrics["detail"] = detail
-    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
-    _append_tooling_section(config.reports_dir / "report.html", tooling)
-    logger.info("report written: %s", config.reports_dir / "report.html")
-    return metrics_path
-
-
-def _append_tooling_section(report_html: Path, tooling: dict[str, Any]) -> None:
-    """Append the trajectory-decomposition section to report.html (in place).
-
-    ``portfolio_eval``'s builder only knows runs + figures; the tooling
-    section is this suite's own HTML, inserted before ``</body>`` so the
-    library stays untouched.
-    """
-    if not report_html.exists():
-        return
-
-    def _row(cells: list[str], header: bool = False) -> str:
-        tag = "th" if header else "td"
-        return f"<tr>{''.join(f'<{tag}>{cell}</{tag}>' for cell in cells)}</tr>"
-
-    header = _row(["tool", "calls", "expected", "extra", "tasks used on"], header=True)
-    rows = "".join(
-        _row(
-            [
-                f"<code>{name}</code>",
-                str(stats["calls"]),
-                str(stats["expected_calls"]),
-                str(stats["extra_calls"]),
-                ", ".join(stats["tasks"]),
-            ]
-        )
-        for name, stats in tooling["per_tool"].items()
-    )
-    extra = (
-        ", ".join(
-            f"<code>{name}</code> on {stats['calls']} call(s), {len(stats['tasks'])} task(s)"
-            for name, stats in tooling["extra_calls"].items()
-        )
-        or "none"
-    )
-    unused = (
-        ", ".join(
-            f"{task}: {'/'.join(tools)}" for task, tools in tooling["unused_expected"].items()
-        )
-        or "none"
-    )
-    section = (
-        "<h2>Tooling decomposition</h2>"
-        "<p>Offline trajectory decomposition of the exact-set tool-selection score from the "
-        "captured per-call traces: call-level precision (share of invocations a correct plan "
-        f"would make) <b>{tooling['call_precision']:.0%}</b>; task-level recall (expected tool "
-        f"slots filled) <b>{tooling['tool_recall']:.0%}</b>; exact-set rate "
-        f"<b>{tooling['exact_set_rate']:.0%}</b> over {tooling['n_calls']} calls on "
-        f"{tooling['n_tasks']} tasks.</p>"
-        f"<table>{header}{rows}</table>"
-        f"<p><b>Extra calls:</b> {extra}.<br><b>Expected but unused:</b> {unused}.</p>"
-    )
-    html = report_html.read_text(encoding="utf-8")
-    report_html.write_text(html.replace("</body>", f"{section}\n</body>"), encoding="utf-8")
 
 
 def tasks_json(tasks: list[EvalTask]) -> str:

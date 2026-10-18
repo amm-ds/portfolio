@@ -58,16 +58,26 @@ PLAN_SYSTEM = """You are the PLANNER of a research-ops workflow.
 Break the user's task into a short ordered plan (1-5 steps). Each step names
 the tool it needs from: calculator, unit_convert, search_handbook,
 search_documents, note_store — or none (reasoning only). Never invent tools.
-search_documents is for facts from the Wikipedia document corpus; search_handbook
-is for Atlas Valley station facts. Reply with the structured plan.
+search_documents is ONLY for questions about the Wikipedia document corpus
+itself — never add it as a supplement for station questions; search_handbook
+answers those. If a step computes a number, name calculator (arithmetic) or
+unit_convert (unit change) for it — plans must be complete. Plan the minimum
+tool calls that solve the task: no hedge steps, no duplicate verification.
+Reply with the structured plan.
 """
 
 EXECUTE_SYSTEM = """You are the EXECUTOR of a research-ops workflow.
-Follow the given plan. Use tools to gather facts — search_handbook for any
-station fact, search_documents for facts from the Wikipedia document corpus,
-calculator for arithmetic, unit_convert for unit changes, note_store when the
-task asks to record something. Never answer station facts from memory; always
-verify via search_handbook first. Then reply with the structured output:
+Follow the given plan. Call ONLY the tools the plan assigns to a step — one
+call per planned step; unrequested recording, supplementary searches, and
+duplicate verification calls are graded misses even when the answer is right.
+Tool guide: search_handbook for any station fact (never answer those from
+memory), search_documents for facts from the Wikipedia document corpus,
+calculator for arithmetic, unit_convert for unit changes — use it, not
+calculator, for conversions — and note_store ONLY when the task explicitly
+asks to record or remember something. If the task asks for something the
+tools cannot do (a capability that does not exist, a conversion across
+dimensions), do not invent a factor or a result — state plainly that it
+cannot be done and why. Then reply with the structured output:
 findings (facts with their numbers), a draft answer that cites the numbers,
 and your self_confidence.
 """
@@ -77,6 +87,13 @@ Check the draft answer against the task and the listed findings. Reply 'pass'
 when the draft answers the task with numbers grounded in the findings; reply
 'revise' with concrete issues and a suggestion when it is wrong, incomplete,
 or ungrounded. Be strict: any missing number or unsupported claim is a 'revise'.
+Also audit the TOOLS USED against the PLAN. Reply 'revise' when a call was
+unnecessary for the task: an unrequested note_store (the task never asked to
+record), a supplementary search the answer did not need, or a duplicate
+verification call — name the tool in the issues. But when a call was plainly
+needed and the plan merely omitted that step (e.g. calculator for arithmetic
+the plan described in words), do NOT revise for it: pass, and record the plan
+omission as a minor issue instead.
 """
 
 
@@ -213,13 +230,20 @@ class PlanNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
 
 
 class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
-    """Runs the tool-using agent against the plan; repairs on validation failure."""
+    """Runs the tool-using agent against the plan; repairs on validation failure.
+
+    Tool calls are recorded per visit: ``tools_used``/``tool_traces`` hold the
+    last visit's calls only, so calls from a superseded attempt (repair or
+    critique-driven re-execute) do not pollute the graded trajectory — the
+    record describes the run that produced the final answer.
+    """
 
     async def run(
         self, ctx: GraphRunContext[WorkflowState, WorkflowDeps]
     ) -> CritiqueNode | ExecuteNode | End[WorkflowResult]:
         state = ctx.state
         state.steps_taken.append(f"execute (attempt {state.retries + 1})")
+        trace_mark = len(ctx.deps.tool_traces)  # this visit's calls start here
         agent: Agent[Notebook, ExecutionOutput] = Agent(
             ctx.deps.model,
             output_type=ExecutionOutput,
@@ -240,8 +264,8 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
                 usage_limits=ctx.deps.usage_limits,
             )
         except Exception as exc:  # broad: execute failure recoverable via repair loop
-            # Tool calls made before the failure still belong to the record.
-            state.tool_traces[:] = ctx.deps.tool_traces
+            # This visit's calls so far still belong to the record.
+            state.tool_traces[:] = ctx.deps.tool_traces[trace_mark:]
             state.retries += 1
             logger.warning("execute attempt %d failed: %s", state.retries, exc)
             if state.retries <= state.max_execute_retries:
@@ -256,8 +280,8 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
         state.findings.extend(output.findings)
         state.draft = output.draft
         state.self_confidence = output.self_confidence
-        state.tools_used.extend(_tool_names(result.all_messages()))
-        state.tool_traces[:] = ctx.deps.tool_traces
+        state.tools_used[:] = _tool_names(result.all_messages())
+        state.tool_traces[:] = ctx.deps.tool_traces[trace_mark:]
         state.input_tokens += int(result.usage.input_tokens or 0)
         state.output_tokens += int(result.usage.output_tokens or 0)
         # Meter outside the repair try: budget cuts must abort the task, not
@@ -284,7 +308,13 @@ class CritiqueNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
         start = time.perf_counter()
         result = await run_agent_with_retries(
             agent,
-            f"TASK: {state.task}\n\nFINDINGS:\n- "
+            "TASK: "
+            + state.task
+            + "\n\nPLAN:\n"
+            + ("\n".join(_plan_steps(state)) or "(none)")
+            + "\n\nTOOLS USED: "
+            + (", ".join(state.tools_used) or "(none)")
+            + "\n\nFINDINGS:\n- "
             + "\n- ".join(state.findings)
             + f"\n\nDRAFT:\n{state.draft}",
             usage_limits=ctx.deps.usage_limits,

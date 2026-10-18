@@ -61,6 +61,8 @@ class EvalConfig(PortfolioBaseModel):
 
     tasks_path: Path = Path("data/tasks.json")
     records_path: Path = Path("data/run_records.json")
+    heldout_tasks_path: Path = Path("data/tasks_heldout.json")
+    heldout_records_path: Path = Path("data/heldout_records.json")
     checkpoint_path: Path = Path("data/checkpoint.json")
     reports_dir: Path = Path("reports")
 

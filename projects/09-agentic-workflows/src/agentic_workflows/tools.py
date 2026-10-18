@@ -232,7 +232,9 @@ def calculator(expr: str) -> float:
     """Evaluate a basic arithmetic expression (+ - * / ** % and parentheses).
 
     Only numeric literals and arithmetic operators are allowed; anything else
-    (names, calls, attribute access) is rejected.
+    (names, calls, attribute access) is rejected. Use ``unit_convert`` for unit
+    conversions — not this tool — and never invent physical factors (densities,
+    exchange rates) to bridge quantities the tools cannot convert.
 
     Args:
         expr: Arithmetic expression, e.g. "(2400 + 380) / 7".
@@ -303,7 +305,9 @@ def unit_convert(value: float, from_unit: str, to_unit: str) -> float:
     """Convert a value between supported units.
 
     Supports length (km, m, mi, ft), mass (kg, lb, g), volume (l, gal, ml)
-    and temperature (c, f).
+    and temperature (c, f). Cross-dimension conversions (e.g. kg to l, kWh to
+    l) are impossible — never bridge them with an assumed density or ad-hoc
+    factor; decline the conversion instead.
 
     Args:
         value: Numeric value to convert.
@@ -358,6 +362,10 @@ def note_store(
     ctx: RunContext[Notebook], action: Literal["append", "list"], note: str = ""
 ) -> list[str]:
     """Append to or list the run's ops notebook (working memory across steps).
+
+    Use ONLY when the task explicitly asks to record, save, or remember
+    something — never as a scratchpad for intermediate findings; the plan and
+    findings already carry those. An unrequested note is a graded miss.
 
     Args:
         action: "append" to add a note, "list" to return all notes so far.

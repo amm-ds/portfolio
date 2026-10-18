@@ -129,7 +129,8 @@ class TestSearchDocuments:
     def test_t15_graders_are_deterministic(self, fixture_retriever: Retriever) -> None:
         task = next(t for t in evals.TASK_SUITE if t.id == "t15")
         assert task.category == "lookup"
-        assert task.expected_tools == ["search_documents"]
+        # the 119-year gap is arithmetic: calculator is part of the exact set
+        assert task.expected_tools == ["search_documents", "calculator"]
 
         record = TaskRunRecord(
             task_id="t15",
@@ -140,7 +141,7 @@ class TestSearchDocuments:
                 "years apart."
             ),
             steps_taken=["plan (2 steps)", "execute (attempt 1)", "critique: pass"],
-            tools_used=["search_documents"],
+            tools_used=["search_documents", "calculator"],
             confidence=0.9,
             duration_s=30.0,
             input_tokens=5000,

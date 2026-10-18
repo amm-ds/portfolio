@@ -1,27 +1,27 @@
 {
   "agentic_suite": {
     "success_rate": 1.0,
-    "tool_selection_accuracy": 0.5333333333333333,
-    "avg_latency_s": 17.265066666666666,
-    "p95_latency_s": 25.405,
-    "avg_input_tokens": 6231.733333333334,
-    "avg_output_tokens": 845.4666666666667,
-    "est_cost_usd_per_task": 0.0096136
+    "tool_selection_accuracy": 1.0,
+    "avg_latency_s": 19.2274,
+    "p95_latency_s": 31.102,
+    "avg_input_tokens": 5678.266666666666,
+    "avg_output_tokens": 769.4,
+    "est_cost_usd_per_task": 0.008755866666666667
   },
   "task_t01": {
     "success": 1.0,
-    "tool_selection": 0.0,
+    "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 16.329,
-    "confidence": 0.98
+    "latency_s": 16.064,
+    "confidence": 0.97
   },
   "task_t02": {
     "success": 1.0,
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 9.725,
+    "latency_s": 11.657,
     "confidence": 0.98
   },
   "task_t03": {
@@ -29,31 +29,31 @@
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 17.095,
-    "confidence": 0.98
+    "latency_s": 17.443,
+    "confidence": 0.97
   },
   "task_t04": {
     "success": 1.0,
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 17.801,
-    "confidence": 0.97
+    "latency_s": 23.272,
+    "confidence": 0.85
   },
   "task_t05": {
     "success": 1.0,
-    "tool_selection": 0.0,
+    "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 25.405,
-    "confidence": 0.93
+    "latency_s": 31.581,
+    "confidence": 0.9
   },
   "task_t06": {
     "success": 1.0,
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 20.372,
+    "latency_s": 18.227,
     "confidence": 0.98
   },
   "task_t07": {
@@ -61,55 +61,55 @@
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 10.946,
-    "confidence": 0.99
+    "latency_s": 11.699,
+    "confidence": 1.0
   },
   "task_t08": {
     "success": 1.0,
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 9.808,
+    "latency_s": 11.51,
     "confidence": 1.0
   },
   "task_t09": {
     "success": 1.0,
-    "tool_selection": 0.0,
+    "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 10.294,
+    "latency_s": 11.791,
     "confidence": 1.0
   },
   "task_t10": {
     "success": 1.0,
-    "tool_selection": 0.0,
+    "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 22.331,
-    "confidence": 0.9
+    "latency_s": 19.931,
+    "confidence": 0.97
   },
   "task_t11": {
     "success": 1.0,
-    "tool_selection": 0.0,
+    "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 21.377,
-    "confidence": 0.98
+    "latency_s": 20.32,
+    "confidence": 1.0
   },
   "task_t12": {
     "success": 1.0,
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 27.258,
-    "confidence": 0.98
+    "latency_s": 21.956,
+    "confidence": 0.99
   },
   "task_t13": {
     "success": 1.0,
-    "tool_selection": 0.0,
+    "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 16.631,
+    "latency_s": 17.044,
     "confidence": 0.95
   },
   "task_t14": {
@@ -117,38 +117,37 @@
     "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 18.011,
-    "confidence": 0.95
+    "latency_s": 24.814,
+    "confidence": 0.87
   },
   "task_t15": {
     "success": 1.0,
-    "tool_selection": 0.0,
+    "tool_selection": 1.0,
     "step_budget_ok": 1.0,
     "latency_budget_ok": 1.0,
-    "latency_s": 15.593,
-    "confidence": 0.98
+    "latency_s": 31.102,
+    "confidence": 0.99
   },
   "detail": {
     "grader": "deterministic keyword + tool-set graders (pydantic-evals Evaluator subclasses)",
     "n_tasks": 15,
     "tooling": {
       "n_tasks": 15,
-      "n_calls": 47,
-      "n_expected_calls": 39,
-      "call_precision": 0.83,
+      "n_calls": 30,
+      "n_expected_calls": 30,
+      "call_precision": 1.0,
       "tool_recall": 1.0,
-      "exact_set_rate": 0.533,
+      "exact_set_rate": 1.0,
       "per_tool": {
         "calculator": {
-          "calls": 16,
-          "expected_calls": 14,
-          "extra_calls": 2,
+          "calls": 11,
+          "expected_calls": 11,
+          "extra_calls": 0,
           "tasks": [
             "t03",
             "t04",
             "t05",
             "t06",
-            "t09",
             "t10",
             "t11",
             "t12",
@@ -158,30 +157,24 @@
           ]
         },
         "note_store": {
-          "calls": 5,
+          "calls": 1,
           "expected_calls": 1,
-          "extra_calls": 4,
+          "extra_calls": 0,
           "tasks": [
-            "t01",
-            "t05",
-            "t10",
-            "t11",
             "t12"
           ]
         },
         "search_documents": {
-          "calls": 4,
+          "calls": 2,
           "expected_calls": 2,
-          "extra_calls": 2,
+          "extra_calls": 0,
           "tasks": [
-            "t05",
-            "t13",
             "t15"
           ]
         },
         "search_handbook": {
-          "calls": 19,
-          "expected_calls": 19,
+          "calls": 13,
+          "expected_calls": 13,
           "extra_calls": 0,
           "tasks": [
             "t01",
@@ -208,31 +201,7 @@
           ]
         }
       },
-      "extra_calls": {
-        "calculator": {
-          "calls": 2,
-          "tasks": [
-            "t09",
-            "t15"
-          ]
-        },
-        "note_store": {
-          "calls": 4,
-          "tasks": [
-            "t01",
-            "t05",
-            "t10",
-            "t11"
-          ]
-        },
-        "search_documents": {
-          "calls": 2,
-          "tasks": [
-            "t05",
-            "t13"
-          ]
-        }
-      },
+      "extra_calls": {},
       "unused_expected": {},
       "per_task": {
         "t01": {
@@ -240,15 +209,12 @@
             "search_handbook"
           ],
           "called": [
-            "note_store",
             "search_handbook"
           ],
-          "extra": [
-            "note_store"
-          ],
+          "extra": [],
           "missing": [],
-          "n_calls": 2,
-          "exact_set": false
+          "n_calls": 1,
+          "exact_set": true
         },
         "t02": {
           "expected": [
@@ -273,7 +239,7 @@
           ],
           "extra": [],
           "missing": [],
-          "n_calls": 3,
+          "n_calls": 2,
           "exact_set": true
         },
         "t04": {
@@ -287,7 +253,7 @@
           ],
           "extra": [],
           "missing": [],
-          "n_calls": 2,
+          "n_calls": 3,
           "exact_set": true
         },
         "t05": {
@@ -297,17 +263,12 @@
           ],
           "called": [
             "calculator",
-            "note_store",
-            "search_documents",
             "search_handbook"
           ],
-          "extra": [
-            "note_store",
-            "search_documents"
-          ],
+          "extra": [],
           "missing": [],
-          "n_calls": 4,
-          "exact_set": false
+          "n_calls": 3,
+          "exact_set": true
         },
         "t06": {
           "expected": [
@@ -320,7 +281,7 @@
           ],
           "extra": [],
           "missing": [],
-          "n_calls": 6,
+          "n_calls": 2,
           "exact_set": true
         },
         "t07": {
@@ -352,15 +313,12 @@
             "unit_convert"
           ],
           "called": [
-            "calculator",
             "unit_convert"
           ],
-          "extra": [
-            "calculator"
-          ],
+          "extra": [],
           "missing": [],
-          "n_calls": 2,
-          "exact_set": false
+          "n_calls": 1,
+          "exact_set": true
         },
         "t10": {
           "expected": [
@@ -369,15 +327,12 @@
           ],
           "called": [
             "calculator",
-            "note_store",
             "search_handbook"
           ],
-          "extra": [
-            "note_store"
-          ],
+          "extra": [],
           "missing": [],
-          "n_calls": 4,
-          "exact_set": false
+          "n_calls": 2,
+          "exact_set": true
         },
         "t11": {
           "expected": [
@@ -386,15 +341,12 @@
           ],
           "called": [
             "calculator",
-            "note_store",
             "search_handbook"
           ],
-          "extra": [
-            "note_store"
-          ],
+          "extra": [],
           "missing": [],
-          "n_calls": 5,
-          "exact_set": false
+          "n_calls": 2,
+          "exact_set": true
         },
         "t12": {
           "expected": [
@@ -409,7 +361,7 @@
           ],
           "extra": [],
           "missing": [],
-          "n_calls": 6,
+          "n_calls": 3,
           "exact_set": true
         },
         "t13": {
@@ -419,15 +371,12 @@
           ],
           "called": [
             "calculator",
-            "search_documents",
             "search_handbook"
           ],
-          "extra": [
-            "search_documents"
-          ],
+          "extra": [],
           "missing": [],
-          "n_calls": 3,
-          "exact_set": false
+          "n_calls": 2,
+          "exact_set": true
         },
         "t14": {
           "expected": [
@@ -440,23 +389,22 @@
           ],
           "extra": [],
           "missing": [],
-          "n_calls": 4,
+          "n_calls": 3,
           "exact_set": true
         },
         "t15": {
           "expected": [
+            "calculator",
             "search_documents"
           ],
           "called": [
             "calculator",
             "search_documents"
           ],
-          "extra": [
-            "calculator"
-          ],
+          "extra": [],
           "missing": [],
           "n_calls": 3,
-          "exact_set": false
+          "exact_set": true
         }
       }
     },
@@ -464,38 +412,29 @@
       "t01": {
         "category": "lookup",
         "success": 1.0,
-        "tool_selection": 0.0,
+        "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 16.329,
-        "confidence": 0.98,
+        "duration_s": 16.064,
+        "confidence": 0.97,
         "tools_used": [
-          "search_handbook",
-          "note_store"
+          "search_handbook"
         ],
         "tool_calls": [
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='sample freezer temperature setpoint alarm band specifications', top_k=5",
+            "args_brief": "query='sample freezer temperature setpoint alarm band specifications', top_k=3",
             "latency_s": 0.0,
             "result_chars": 478,
-            "ok": true
-          },
-          {
-            "name": "note_store",
-            "node": "execute",
-            "args_brief": "action='append', note='Sample freezer (cold-storage doc): setpoint -20 \u00b0C, alar\u2026",
-            "latency_s": 0.0,
-            "result_chars": 106,
             "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley station handbook for the sample freezer specifications, including its temperature setpoint and alarm band. \u2192 search_handbook"
+          "1. Search the station handbook for the sample freezer specifications, including its temperature setpoint and alarm band configuration. \u2192 search_handbook"
         ],
         "critique_verdict": "pass",
-        "answer": "The sample freezer has a temperature setpoint of **-20 \u00b0C** with an **alarm band of +/-3 \u00b0C** (i.e., an alarm triggers if the temperature rises above -17 \u00b0C or falls below -23 \u00b0C). The freezer can store up to 180 sample boxes.",
+        "answer": "The sample freezer is set to a temperature setpoint of -20 \u00b0C with an alarm band of \u00b13 \u00b0C (i.e., alarms trigger at approximately -23 \u00b0C to -17 \u00b0C). The freezer has a capacity of up to 180 sample boxes.",
         "error": null
       },
       "t02": {
@@ -504,7 +443,7 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 9.725,
+        "duration_s": 11.657,
         "confidence": 0.98,
         "tools_used": [
           "search_handbook"
@@ -513,17 +452,17 @@
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='hourly check-ins radio channel frequency', top_k=5",
+            "args_brief": "query='radio channel and frequency used for hourly check-ins', top_k=3",
             "latency_s": 0.0,
             "result_chars": 148,
             "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the handbook for information about hourly check-ins and the radio channel/frequency used for them. \u2192 search_handbook"
+          "1. Search the station handbook for the radio channel and frequency used for hourly check-ins. \u2192 search_handbook"
         ],
         "critique_verdict": "pass",
-        "answer": "Hourly check-ins are conducted on channel 3 at a frequency of 146.46 MHz. (Channel 1 is reserved for emergencies, and the base call sign is \"Atlas Base.\")",
+        "answer": "Hourly check-ins use channel 3 at 146.46 MHz. (Channel 1 is reserved for emergencies, and the base call sign is \"Atlas Base.\")",
         "error": null
       },
       "t03": {
@@ -532,10 +471,9 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 17.095,
-        "confidence": 0.98,
+        "duration_s": 17.443,
+        "confidence": 0.97,
         "tools_used": [
-          "search_handbook",
           "search_handbook",
           "calculator"
         ],
@@ -543,17 +481,9 @@
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='generator fuel consumption liters per hour operating schedule', top_k=5",
+            "args_brief": "query='generator fuel consumption rate liters per hour operating schedule', top\u2026",
             "latency_s": 0.0,
-            "result_chars": 685,
-            "ok": true
-          },
-          {
-            "name": "search_handbook",
-            "node": "execute",
-            "args_brief": "query='Atlas Valley generator runtime hours per day diesel', top_k=5",
-            "latency_s": 0.0,
-            "result_chars": 818,
+            "result_chars": 537,
             "ok": true
           },
           {
@@ -566,12 +496,11 @@
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley handbook for generator fuel consumption rate (liters per hour or per day) and operating schedule. \u2192 search_handbook",
-          "2. If needed, search documents for any additional generator specs or weekly runtime details. \u2192 search_documents",
-          "3. Calculate total liters burned in one week using the found rate and schedule. \u2192 calculator"
+          "1. Search the station handbook for the generator's fuel consumption rate (liters per hour or similar) and its operating schedule. \u2192 search_handbook",
+          "2. Compute liters burned in one week from the consumption rate and operating hours (e.g., L/hr \u00d7 hours/day \u00d7 7). \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "The generator burns 75.6 liters of diesel in one week.\n\nCalculation (from the Atlas Valley handbook, doc \"gen-fuel\"):\n- Fuel consumption rate: 1.8 L/h under full load\n- Operating schedule: 6 h/day\n- Weekly runtime: 6 h/day \u00d7 7 days = 42 h/week\n- Weekly fuel burn: 1.8 L/h \u00d7 42 h = 75.6 L/week\n\n(For context, the generator's 240 L tank holds well over a week of fuel, and the 72-hour fuel reserve policy corresponds to 1.8 L/h \u00d7 72 h = 129.6 L.)",
+        "answer": "The generator burns 75.6 liters of diesel in one week. Calculation: 1.8 L/h \u00d7 6 h/day = 10.8 L/day; 10.8 L/day \u00d7 7 days = 75.6 L/week. (Source: station handbook, \"Generator fuel consumption\" \u2014 prime diesel generator burns 1.8 L/h under full load, scheduled to run 6 h/day.)",
         "error": null
       },
       "t04": {
@@ -580,9 +509,10 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 17.801,
-        "confidence": 0.97,
+        "duration_s": 23.272,
+        "confidence": 0.85,
         "tools_used": [
+          "search_handbook",
           "search_handbook",
           "calculator"
         ],
@@ -590,83 +520,81 @@
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='Atlas Valley battery bank usable capacity kWh base load HVAC surge', top\u2026",
+            "args_brief": "query='battery bank specifications total usable capacity kWh', top_k=3",
             "latency_s": 0.0,
-            "result_chars": 880,
+            "result_chars": 341,
+            "ok": true
+          },
+          {
+            "name": "search_handbook",
+            "node": "execute",
+            "args_brief": "query='typical nightly load profile base load HVAC surge kW', top_k=3",
+            "latency_s": 0.0,
+            "result_chars": 560,
             "ok": true
           },
           {
             "name": "calculator",
             "node": "execute",
-            "args_brief": "expr='24 - (1.6*8 + 0.9*3)'",
+            "args_brief": "expr='24 - (1.6 * 8 + 0.9 * 3)'",
             "latency_s": 0.0,
             "result_chars": 3,
             "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the handbook for Atlas Valley battery bank details: total usable capacity (kWh), base load, and HVAC surge power draw. \u2192 search_handbook",
-          "2. Compute total energy consumed over 8 hours: base load \u00d7 8 h plus HVAC surge energy; subtract from usable capacity. \u2192 calculator"
+          "1. Search the handbook for battery bank specifications (total usable capacity in kWh) and the typical nightly load profile (base load kW and HVAC surge kW). \u2192 search_handbook",
+          "2. Compute total energy consumed over 8 hours: (base load + HVAC surge) \u00d7 8 h, then subtract from usable battery capacity to find remaining kWh. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "After a typical 8-hour night, **8.5 kWh** of usable capacity remains in the battery bank.\n\nCalculation (per the Atlas Valley handbook, \"battery\" doc):\n- Usable capacity: 24 kWh (LiFePO4 bank)\n- Base load: 1.6 kW \u00d7 8 h = 12.8 kWh\n- HVAC surge: 0.9 kW \u00d7 ~3 h = 2.7 kWh\n- Total consumed: 12.8 + 2.7 = 15.5 kWh\n- Remaining: 24 \u2212 15.5 = **8.5 kWh**",
+        "answer": "After a typical 8-hour night, **8.5 kWh** of usable capacity remains in the battery bank.\n\nBreakdown (from the handbook):\n- Usable battery capacity: 24 kWh (LiFePO4 bank)\n- Base load: 1.6 kW \u00d7 8 h = 12.8 kWh\n- HVAC surge: 0.9 kW \u00d7 ~3 h = 2.7 kWh\n- Total consumed: 12.8 + 2.7 = 15.5 kWh\n- Remaining: 24 \u2212 15.5 = **8.5 kWh**\n\nNote: the handbook specifies the HVAC surge lasts about 3 hours, not the full 8-hour night, so the surge is only applied for 3 h.",
         "error": null
       },
       "t05": {
         "category": "calculation",
         "success": 1.0,
-        "tool_selection": 0.0,
+        "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 25.405,
-        "confidence": 0.93,
+        "duration_s": 31.581,
+        "confidence": 0.9,
         "tools_used": [
           "search_handbook",
-          "search_documents",
           "calculator",
-          "note_store"
+          "calculator"
         ],
         "tool_calls": [
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='solar array specifications panel count wattage sun hours daily energy yi\u2026",
+            "args_brief": "query='solar array specifications number of panels panel wattage peak sun hours\u2026",
             "latency_s": 0.0,
             "result_chars": 332,
             "ok": true
           },
           {
-            "name": "search_documents",
-            "node": "execute",
-            "args_brief": "query='Atlas Valley solar array energy production kWh', top_k=5",
-            "latency_s": 8.555,
-            "result_chars": 3350,
-            "ok": true
-          },
-          {
             "name": "calculator",
             "node": "execute",
-            "args_brief": "expr='12 * 3.2 * 0.96'",
+            "args_brief": "expr='(12 * 320 * 3.2) / 1000'",
             "latency_s": 0.0,
             "result_chars": 6,
             "ok": true
           },
           {
-            "name": "note_store",
+            "name": "calculator",
             "node": "execute",
-            "args_brief": "action='append', note='Solar array daily yield: 12 panels \u00d7 3.2 kWh/day/panel =\u2026",
+            "args_brief": "expr='12 * 3.2'",
             "latency_s": 0.0,
-            "result_chars": 180,
+            "result_chars": 4,
             "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley station handbook for solar array specifications (panel count, wattage, sun hours/efficiency) needed to compute daily energy yield. \u2192 search_handbook",
-          "2. Search the Wikipedia document corpus for any solar array / Atlas Valley energy data as a supplement or alternative source. \u2192 search_documents",
-          "3. Compute total daily energy yield in kWh from the gathered specs (e.g., panels \u00d7 wattage \u00d7 sun hours \u00f7 1000), or report the directly stated value. \u2192 calculator"
+          "1. Search the station handbook for solar array specifications including number of panels, panel wattage, and peak sun hours or daily irradiance data. \u2192 search_handbook",
+          "2. Calculate total daily energy yield by multiplying total panel capacity (kW) by peak sun hours to get kWh before inverter losses. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "The Atlas Valley solar array produces approximately **36.9 kWh per day** (36.864 kWh) of AC energy.\n\nCalculation from the station handbook (solar-spec doc):\n- 12 panels \u00d7 3.2 kWh/day per panel = 38.4 kWh/day (DC yield)\n- 38.4 kWh \u00d7 96% inverter efficiency = 36.864 kWh/day \u2248 36.9 kWh/day AC\n\nNote: The Wikipedia document corpus contained only generic solar industry data (e.g., US solar capacity, Mojave Desert plants) with no Atlas Valley\u2013specific figures, so the handbook is the sole authoritative source. If inverter losses are ignored, the raw panel yield is 38.4 kWh/day.",
+        "answer": "The solar array's total daily energy yield before inverter losses is 38.4 kWh/day.\n\nFrom the station handbook (solar-spec doc): each 320 Wp panel delivers an average yield of 3.2 kWh/day in the valley, and the array has 12 panels. Total daily energy yield = 12 panels \u00d7 3.2 kWh/day = 38.4 kWh/day (before inverter losses).\n\nNote: The inverter runs at 96% efficiency, so if inverter losses were applied, the net yield would be 38.4 \u00d7 0.96 = 36.864 kWh/day \u2014 but the question asks for the yield before inverter losses, which is 38.4 kWh/day.",
         "error": null
       },
       "t06": {
@@ -675,72 +603,36 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 20.372,
+        "duration_s": 18.227,
         "confidence": 0.98,
         "tools_used": [
           "search_handbook",
-          "search_handbook",
-          "calculator",
-          "calculator",
-          "calculator",
           "calculator"
         ],
         "tool_calls": [
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='Atlas Valley total water storage capacity', top_k=5",
+            "args_brief": "query='station total water storage capacity and budgeted daily consumption rate\u2026",
             "latency_s": 0.0,
-            "result_chars": 810,
-            "ok": true
-          },
-          {
-            "name": "search_handbook",
-            "node": "execute",
-            "args_brief": "query='crew budgeted daily water consumption rate', top_k=5",
-            "latency_s": 0.0,
-            "result_chars": 882,
+            "result_chars": 524,
             "ok": true
           },
           {
             "name": "calculator",
             "node": "execute",
-            "args_brief": "expr='5000 + 1200'",
-            "latency_s": 0.0,
-            "result_chars": 6,
-            "ok": true
-          },
-          {
-            "name": "calculator",
-            "node": "execute",
-            "args_brief": "expr='85 * 6'",
-            "latency_s": 0.0,
-            "result_chars": 5,
-            "ok": true
-          },
-          {
-            "name": "calculator",
-            "node": "execute",
-            "args_brief": "expr='6200 / 510'",
+            "args_brief": "expr='(5000 + 1200) / (85 * 6)'",
             "latency_s": 0.0,
             "result_chars": 9,
-            "ok": true
-          },
-          {
-            "name": "calculator",
-            "node": "execute",
-            "args_brief": "expr='12 * 510'",
-            "latency_s": 0.0,
-            "result_chars": 6,
             "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the station handbook for Atlas Valley's total water storage capacity and the crew's budgeted daily water consumption rate. \u2192 search_handbook",
-          "2. Compute the number of full days the total storage lasts at the budgeted consumption rate, rounding down to whole days. \u2192 calculator"
+          "1. Look up the station's total water storage capacity and the budgeted consumption rate from the station handbook. \u2192 search_handbook",
+          "2. Divide total water storage by the daily consumption rate and take the floor to get full days. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "Atlas Valley's total water storage lasts the crew **12 full days** at the budgeted consumption rate.\n\nCalculation:\n- Total water storage: 5,000 L (main tank) + 1,200 L (secondary bladder) = 6,200 L\n- Budgeted daily consumption: 85 L per person per day \u00d7 6 crew = 510 L/day\n- Days of supply: 6,200 L \u00f7 510 L/day = 12.16 days \u2192 rounded down to **12 full days**\n\nCheck: 12 days \u00d7 510 L/day = 6,120 L used, leaving 80 L \u2014 not enough for a 13th day (which would need 510 L).",
+        "answer": "The station's total water storage lasts the crew 12 full days at the budgeted consumption rate.\n\nCalculation:\n- Total water storage: 5,000 L (main tank) + 1,200 L (secondary bladder) = 6,200 L\n- Budgeted daily consumption: 85 L per person per day \u00d7 6 crew members = 510 L/day\n- Days of supply: 6,200 L \u00f7 510 L/day = 12.16 days \u2192 floor = 12 full days",
         "error": null
       },
       "t07": {
@@ -749,8 +641,8 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 10.946,
-        "confidence": 0.99,
+        "duration_s": 11.699,
+        "confidence": 1.0,
         "tools_used": [
           "unit_convert"
         ],
@@ -765,10 +657,10 @@
           }
         ],
         "plan_steps": [
-          "1. Convert 48 kilometers to miles using the unit conversion tool (1 km \u2248 0.621371 miles). \u2192 unit_convert"
+          "1. Convert 48 km to miles using the standard conversion factor (1 km = 0.621371 miles). \u2192 unit_convert"
         ],
         "critique_verdict": "pass",
-        "answer": "48 km one-way to the relay station is approximately 29.83 miles (29.8258 mi rounded to 4 decimals).",
+        "answer": "The 48 km one-way distance to the relay station converts to 29.8258 miles (approximately 29.83 miles).",
         "error": null
       },
       "t08": {
@@ -777,7 +669,7 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 9.808,
+        "duration_s": 11.51,
         "confidence": 1.0,
         "tools_used": [
           "unit_convert"
@@ -793,33 +685,24 @@
           }
         ],
         "plan_steps": [
-          "1. Convert 25 kilograms to pounds using the unit conversion tool. \u2192 unit_convert"
+          "1. Convert 25 kilograms to pounds using the standard conversion factor (1 kg \u2248 2.20462 lb). \u2192 unit_convert"
         ],
         "critique_verdict": "pass",
-        "answer": "25 kilograms of ration packs is equal to approximately 55.12 pounds (55.1156 lb).",
+        "answer": "25 kg of ration packs is approximately 55.12 lb (55.1156 lb).",
         "error": null
       },
       "t09": {
         "category": "conversion",
         "success": 1.0,
-        "tool_selection": 0.0,
+        "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 10.294,
+        "duration_s": 11.791,
         "confidence": 1.0,
         "tools_used": [
-          "calculator",
           "unit_convert"
         ],
         "tool_calls": [
-          {
-            "name": "calculator",
-            "node": "execute",
-            "args_brief": "expr='-20 * 9 / 5 + 32'",
-            "latency_s": 0.0,
-            "result_chars": 4,
-            "ok": true
-          },
           {
             "name": "unit_convert",
             "node": "execute",
@@ -830,41 +713,31 @@
           }
         ],
         "plan_steps": [
-          "1. Convert -20 \u00b0C to Fahrenheit using the temperature conversion formula F = C \u00d7 9/5 + 32. \u2192 unit_convert"
+          "1. Convert -20 \u00b0C to Fahrenheit using the temperature conversion formula (F = C \u00d7 9/5 + 32). \u2192 unit_convert"
         ],
         "critique_verdict": "pass",
-        "answer": "-20 \u00b0C is equal to -4 \u00b0F. Using the formula F = C \u00d7 9/5 + 32: F = (-20) \u00d7 9/5 + 32 = -36 + 32 = -4.",
+        "answer": "-20 \u00b0C is equal to -4 \u00b0F. Using the formula F = C \u00d7 9/5 + 32: F = -20 \u00d7 9/5 + 32 = -36 + 32 = -4 \u00b0F.",
         "error": null
       },
       "t10": {
         "category": "multi_step",
         "success": 1.0,
-        "tool_selection": 0.0,
+        "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 22.331,
-        "confidence": 0.9,
+        "duration_s": 19.931,
+        "confidence": 0.97,
         "tools_used": [
           "search_handbook",
-          "search_handbook",
-          "calculator",
-          "note_store"
+          "calculator"
         ],
         "tool_calls": [
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='satellite uplink data rate bandwidth station', top_k=3",
+            "args_brief": "query='satellite uplink data rate transfer capacity bandwidth MB per pass', top\u2026",
             "latency_s": 0.0,
-            "result_chars": 476,
-            "ok": true
-          },
-          {
-            "name": "search_handbook",
-            "node": "execute",
-            "args_brief": "query='satellite uplink Mbps bandwidth transfer speed', top_k=5",
-            "latency_s": 0.0,
-            "result_chars": 300,
+            "result_chars": 469,
             "ok": true
           },
           {
@@ -874,88 +747,53 @@
             "latency_s": 0.0,
             "result_chars": 5,
             "ok": true
-          },
-          {
-            "name": "note_store",
-            "node": "execute",
-            "args_brief": "action='append', note='Satellite uplink: two windows/day (06:10-06:40, 18:20-18\u2026",
-            "latency_s": 0.0,
-            "result_chars": 166,
-            "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley handbook for the satellite uplink data rate (bandwidth) available at the station. \u2192 search_handbook",
-          "2. Convert the data rate to MB/day: multiply rate (converted to MB/s if needed) by 86,400 seconds per day. \u2192 calculator"
+          "1. Search the station handbook for satellite uplink data rate / transfer capacity information (e.g., bandwidth or MB per pass/day figures). \u2192 search_handbook",
+          "2. If the handbook gives a rate and pass duration/frequency, compute total MB per day with the calculator. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "The Atlas Valley handbook does not give a continuous satellite uplink bandwidth (e.g., Mbps). Instead, it specifies two daily satellite comms windows \u2014 06:10\u201306:40 UTC and 18:20\u201318:50 UTC \u2014 with each window able to transfer at most 250 MB. Therefore the total daily satellite uplink capacity is 2 windows \u00d7 250 MB = **500 MB per day**. (For context, the station's instruments produce 1,800 MB/day of science data, compressed 4:1 to 450 MB before uplink, which fits within the 500 MB daily capacity.)",
+        "answer": "A total of 500 MB can be transferred via satellite uplink per day. The station handbook (satellite-window doc) states that satellite uplink windows open daily at 06:10-06:40 and 18:20-18:50 UTC \u2014 two windows per day \u2014 and each window can transfer at most 250 MB. Total = 2 windows \u00d7 250 MB = 500 MB per day. (For context, the science data budget doc notes instruments produce 1,800 MB/day compressed 4:1 to 450 MB, which fits within this 500 MB uplink capacity.)",
         "error": null
       },
       "t11": {
         "category": "multi_step",
         "success": 1.0,
-        "tool_selection": 0.0,
+        "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 21.377,
-        "confidence": 0.98,
+        "duration_s": 20.32,
+        "confidence": 1.0,
         "tools_used": [
           "search_handbook",
-          "search_handbook",
-          "calculator",
-          "calculator",
-          "note_store"
+          "calculator"
         ],
         "tool_calls": [
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='supply cache ration packs', top_k=5",
+            "args_brief": "query='supply caches ration packs count weight', top_k=5",
             "latency_s": 0.0,
             "result_chars": 745,
             "ok": true
           },
           {
-            "name": "search_handbook",
-            "node": "execute",
-            "args_brief": "query='supply caches Atlas Valley station', top_k=5",
-            "latency_s": 0.0,
-            "result_chars": 865,
-            "ok": true
-          },
-          {
             "name": "calculator",
             "node": "execute",
-            "args_brief": "expr='40 + 25'",
+            "args_brief": "expr='(40 + 25) * 0.6'",
             "latency_s": 0.0,
             "result_chars": 4,
-            "ok": true
-          },
-          {
-            "name": "calculator",
-            "node": "execute",
-            "args_brief": "expr='40 * 0.6 + 25 * 0.6'",
-            "latency_s": 0.0,
-            "result_chars": 4,
-            "ok": true
-          },
-          {
-            "name": "note_store",
-            "node": "execute",
-            "args_brief": "action='append', note='Supply caches: Cache Alpha (km 4.2 north) holds 40 ratio\u2026",
-            "latency_s": 0.0,
-            "result_chars": 267,
             "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley station handbook for facts about both supply caches, including the number of ration packs stored in each and their individual weights. \u2192 search_handbook",
-          "2. If any per-pack weight is given in non-kg units, convert it to kilograms using the unit converter. \u2192 unit_convert",
-          "3. Add the ration pack counts from both caches and sum their weights to get the combined totals. \u2192 calculator"
+          "1. Search the station handbook for details on both supply caches, specifically the number of ration packs in each cache and the weight per pack (or total weight per cache). \u2192 search_handbook",
+          "2. Add the ration pack counts from both caches to get the total number of packs. \u2192 calculator",
+          "3. Compute the combined weight: multiply total packs by per-pack weight (or add per-cache weights). If the handbook gives weight in grams or other non-kg units, first use unit_convert to kilograms before summing. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "Across both supply caches there are 65 ration packs with a combined weight of 39 kg.\n\nBreakdown (from the Atlas Valley station handbook, \"Supply caches\" entry):\n- Cache Alpha (at km 4.2 north): 40 ration packs \u00d7 0.6 kg = 24 kg\n- Cache Bravo (at km 7.8 north): 25 ration packs \u00d7 0.6 kg = 15 kg\n- Each ration pack weighs 0.6 kg (already given in kilograms, so no unit conversion was needed).\n- Total packs: 40 + 25 = 65\n- Combined weight: 24 kg + 15 kg = 39 kg (equivalently 65 \u00d7 0.6 kg = 39 kg)",
+        "answer": "Across both supply caches there are 65 ration packs in total, with a combined weight of 39 kg. Cache Alpha (at km 4.2 north) holds 40 ration packs and cache Bravo (at km 7.8 north) holds 25 ration packs, giving 40 + 25 = 65 packs. At 0.6 kg per pack, the combined weight is 65 \u00d7 0.6 kg = 39 kg.",
         "error": null
       },
       "t12": {
@@ -964,12 +802,9 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 27.258,
-        "confidence": 0.98,
+        "duration_s": 21.956,
+        "confidence": 0.99,
         "tools_used": [
-          "search_handbook",
-          "search_handbook",
-          "search_handbook",
           "search_handbook",
           "calculator",
           "note_store"
@@ -978,33 +813,9 @@
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='water storage tank capacity liters', top_k=5",
+            "args_brief": "query='water storage tank dimensions capacity', top_k=5",
             "latency_s": 0.0,
             "result_chars": 657,
-            "ok": true
-          },
-          {
-            "name": "search_handbook",
-            "node": "execute",
-            "args_brief": "query='water tank levels current storage', top_k=5",
-            "latency_s": 0.0,
-            "result_chars": 488,
-            "ok": true
-          },
-          {
-            "name": "search_handbook",
-            "node": "execute",
-            "args_brief": "query='bladder tank reservoir water supply', top_k=5",
-            "latency_s": 0.0,
-            "result_chars": 715,
-            "ok": true
-          },
-          {
-            "name": "search_handbook",
-            "node": "execute",
-            "args_brief": "query='water storage components total', top_k=5",
-            "latency_s": 0.0,
-            "result_chars": 321,
             "ok": true
           },
           {
@@ -1018,50 +829,40 @@
           {
             "name": "note_store",
             "node": "execute",
-            "args_brief": "action='append', note='Weekly log \u2014 Total water storage: 6,200 L (main tank 5,0\u2026",
+            "args_brief": "action='append', note='Weekly log \u2014 total station water storage: 6,200 L (main \u2026",
             "latency_s": 0.0,
-            "result_chars": 129,
+            "result_chars": 102,
             "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley station handbook for water storage facts (tank capacities, current levels, or storage figures). \u2192 search_handbook",
-          "2. If multiple/unclear units or partial figures are found, use unit conversion to normalize values (e.g., gallons to liters) as needed. \u2192 unit_convert",
-          "3. Sum the water storage components to compute the station's total water storage in liters. \u2192 calculator",
-          "4. Record the computed total water storage figure in the ops notebook for the weekly log. \u2192 note_store"
+          "1. Search the station handbook for water storage details (tank dimensions, capacity, or number of tanks) to determine total water storage. \u2192 search_handbook",
+          "2. Compute the total water storage in liters from the handbook data (e.g., volume from dimensions, or sum/convert capacities as needed). \u2192 calculator",
+          "3. Record the computed liter figure in the ops notebook for the weekly log. \u2192 note_store"
         ],
         "critique_verdict": "pass",
-        "answer": "The Atlas Valley station's total water storage is **6,200 liters**.\n\nBreakdown (from the station handbook):\n- Main water tank: 5,000 L\n- Secondary bladder: 1,200 L\n- Total: 5,000 + 1,200 = 6,200 L\n\nBoth figures were already in liters, so no unit conversion was required. The computed total (6,200 L) has been recorded in the ops notebook for the weekly log.",
+        "answer": "The station's total water storage is 6,200 liters, computed from the handbook's water storage specs: the main tank holds 5,000 L and the secondary bladder holds 1,200 L (5,000 + 1,200 = 6,200 L). This figure has been recorded in the ops notebook for the weekly log.",
         "error": null
       },
       "t13": {
         "category": "calculation",
         "success": 1.0,
-        "tool_selection": 0.0,
+        "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 16.631,
+        "duration_s": 17.044,
         "confidence": 0.95,
         "tools_used": [
           "search_handbook",
-          "search_documents",
           "calculator"
         ],
         "tool_calls": [
           {
             "name": "search_handbook",
             "node": "execute",
-            "args_brief": "query='fuel reserve policy diesel on hand', top_k=5",
+            "args_brief": "query='fuel reserve policy diesel quantity', top_k=3",
             "latency_s": 0.0,
             "result_chars": 506,
-            "ok": true
-          },
-          {
-            "name": "search_documents",
-            "node": "execute",
-            "args_brief": "query='diesel fuel consumption rate generator liters per hour', top_k=5",
-            "latency_s": 0.007,
-            "result_chars": 3238,
             "ok": true
           },
           {
@@ -1074,12 +875,11 @@
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley station handbook for the fuel reserve policy details (e.g., reserve hours/days of fuel that must be kept on hand). \u2192 search_handbook",
-          "2. Search documents for any additional context on diesel fuel consumption rates or generator fuel usage needed to compute the reserve quantity. \u2192 search_documents",
-          "3. Calculate the required liters of diesel: multiply the consumption rate by the reserve duration specified in the policy. \u2192 calculator"
+          "1. Search the station handbook for the fuel reserve policy and the diesel quantity/rate it specifies. \u2192 search_handbook",
+          "2. If the policy gives a rate or non-liter unit, convert/compute the required liters; otherwise the handbook value is the answer. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "The Atlas Valley station must keep **129.6 liters of diesel** (round up to ~130 L in practice) on hand to satisfy the fuel reserve policy. Per the handbook's fuel-reserve policy, a minimum reserve of 72 hours of generator runtime at full load must be maintained, with resupply ordered as soon as stocks drop below that figure. The prime diesel generator burns 1.8 L/h at full load, so the required reserve is 72 h \u00d7 1.8 L/h = 129.6 L. (Note: the generator's 240 L onboard tank can hold this reserve; the 6 h/day run schedule is operational context but the policy is defined in full-load runtime hours.)",
+        "answer": "The station's fuel reserve policy requires a minimum reserve of 72 hours of generator runtime at full load. The prime diesel generator consumes 1.8 L/h under full load, so the required on-hand diesel is 72 h \u00d7 1.8 L/h = 129.6 L. Therefore, at least 129.6 liters of diesel must be on hand (and resupply is ordered as soon as stocks drop below that figure).",
         "error": null
       },
       "t14": {
@@ -1088,12 +888,11 @@
         "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 18.011,
-        "confidence": 0.95,
+        "duration_s": 24.814,
+        "confidence": 0.87,
         "tools_used": [
           "search_handbook",
           "search_handbook",
-          "calculator",
           "calculator"
         ],
         "tool_calls": [
@@ -1120,32 +919,24 @@
             "latency_s": 0.0,
             "result_chars": 5,
             "ok": true
-          },
-          {
-            "name": "calculator",
-            "node": "execute",
-            "args_brief": "expr='(6*60+40) - (6*60+10)'",
-            "latency_s": 0.0,
-            "result_chars": 4,
-            "ok": true
           }
         ],
         "plan_steps": [
-          "1. Search the Atlas Valley station handbook for the satellite uplink window capacity (data rate \u00d7 window duration) and the compressed daily science data volume. \u2192 search_handbook",
-          "2. Compute the window's total capacity (rate \u00d7 time) and compare to the compressed daily data volume to answer yes/no with the numbers. \u2192 calculator"
+          "1. Search the station handbook for the satellite uplink window capacity (data rate \u00d7 window duration) and the compressed daily science data volume. \u2192 search_handbook",
+          "2. Compute the uplink window capacity (rate \u00d7 duration) and compare it to the compressed daily science data volume to answer yes/no with the numbers. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "No. One satellite uplink window cannot carry the compressed daily science data.\n\nNumbers:\n- Daily science data produced: 1,800 MB/day\n- Compression ratio: 4:1 \u2192 compressed daily volume = 1,800 / 4 = 450 MB\n- Each satellite uplink window (06:10\u201306:40 or 18:20\u201318:50 UTC, i.e., 30 min) can transfer at most 250 MB\n\nComparison: 450 MB (compressed daily data) > 250 MB (single-window capacity). A single window falls short by 200 MB (it can only carry about 55.6% of the compressed daily data). It would take at least two windows per day (2 \u00d7 250 MB = 500 MB \u2265 450 MB) to uplink the full compressed daily science data.",
+        "answer": "No. One satellite uplink window cannot carry the compressed daily science data. The station's instruments produce 1,800 MB of science data per day, which is compressed 4:1 down to 450 MB before uplink (1,800 / 4 = 450 MB). Each satellite uplink window (06:10-06:40 or 18:20-18:50 UTC) can transfer at most 250 MB. Since 250 MB < 450 MB, a single window falls short by 200 MB \u2014 it would take both daily windows (500 MB combined) to cover the day's compressed science data.",
         "error": null
       },
       "t15": {
         "category": "lookup",
         "success": 1.0,
-        "tool_selection": 0.0,
+        "tool_selection": 1.0,
         "step_budget_ok": 1.0,
         "latency_budget_ok": 1.0,
-        "duration_s": 15.593,
-        "confidence": 0.98,
+        "duration_s": 31.102,
+        "confidence": 0.99,
         "tools_used": [
           "search_documents",
           "search_documents",
@@ -1155,17 +946,17 @@
           {
             "name": "search_documents",
             "node": "execute",
-            "args_brief": "query='wind power supplied over 2000 TWh of electricity year', top_k=3",
-            "latency_s": 0.019,
-            "result_chars": 1947,
+            "args_brief": "query='Wright brothers first controlled sustained flight powered aircraft year'\u2026",
+            "latency_s": 11.935,
+            "result_chars": 1908,
             "ok": true
           },
           {
             "name": "search_documents",
             "node": "execute",
-            "args_brief": "query='Wright brothers first controlled sustained flight of a powered aircraft \u2026",
-            "latency_s": 0.02,
-            "result_chars": 1908,
+            "args_brief": "query='wind power supplied over 2000 TWh electricity year', top_k=3",
+            "latency_s": 11.938,
+            "result_chars": 1973,
             "ok": true
           },
           {
@@ -1178,13 +969,478 @@
           }
         ],
         "plan_steps": [
-          "1. Search the Wikipedia document corpus for the Wright brothers' first controlled, sustained flight of a powered aircraft and note the year. \u2192 search_documents",
-          "2. Search the Wikipedia document corpus for the year wind power supplied over 2000 TWh of electricity. \u2192 search_documents",
-          "3. Calculate the difference between the two years to find how many years separate the events. \u2192 calculator"
+          "1. Search the Wikipedia document corpus for the Wright brothers' first controlled, sustained flight of a powered aircraft to find the year. \u2192 search_documents",
+          "2. Search the Wikipedia document corpus for when wind power supplied over 2000 TWh of electricity to find the year. \u2192 search_documents",
+          "3. Compute the difference between the two years to find how many years separate the events. \u2192 calculator"
         ],
         "critique_verdict": "pass",
-        "answer": "According to the Wikipedia document corpus:\n\n1. **Wright brothers' first controlled, sustained flight of a powered aircraft:** The Wright brothers (Orville and Wilbur) made the first controlled, sustained flight of a powered, heavier-than-air aircraft with the Wright Flyer on December 17, **1903**, at Kill Devil Hills near Kitty Hawk, North Carolina.\n\n2. **Wind power supplying over 2000 TWh of electricity:** In **2022**, wind supplied over 2000 TWh of electricity, which was over 7% of world electricity and about 2% of world energy.\n\n3. **Years separating the two events:** 2022 \u2212 1903 = **119 years**.\n\nSo, 119 years separate the Wright brothers' historic flight in 1903 and wind power surpassing 2000 TWh of electricity supply in 2022.",
+        "answer": "According to the Wikipedia document corpus:\n\n- The Wright brothers made the first controlled, sustained flight of a powered, heavier-than-air aircraft with the Wright Flyer on December 17, **1903**, near Kitty Hawk, North Carolina.\n- Wind power supplied over 2000 TWh of electricity in **2022** (over 7% of world electricity and about 2% of world energy).\n\nThe two events are separated by 2022 \u2212 1903 = **119 years**.",
         "error": null
+      }
+    },
+    "heldout": {
+      "n_tasks": 10,
+      "n_answer": 7,
+      "n_should_fail": 3,
+      "answer_success": 1.0,
+      "tool_selection": 1.0,
+      "step_budget": 1.0,
+      "latency_budget": 1.0,
+      "should_fail_pass_rate": 1.0,
+      "tooling": {
+        "n_tasks": 7,
+        "n_calls": 12,
+        "n_expected_calls": 12,
+        "call_precision": 1.0,
+        "tool_recall": 1.0,
+        "exact_set_rate": 1.0,
+        "per_tool": {
+          "calculator": {
+            "calls": 4,
+            "expected_calls": 4,
+            "extra_calls": 0,
+            "tasks": [
+              "h03",
+              "h04",
+              "h06"
+            ]
+          },
+          "note_store": {
+            "calls": 1,
+            "expected_calls": 1,
+            "extra_calls": 0,
+            "tasks": [
+              "h07"
+            ]
+          },
+          "search_documents": {
+            "calls": 1,
+            "expected_calls": 1,
+            "extra_calls": 0,
+            "tasks": [
+              "h02"
+            ]
+          },
+          "search_handbook": {
+            "calls": 5,
+            "expected_calls": 5,
+            "extra_calls": 0,
+            "tasks": [
+              "h01",
+              "h03",
+              "h04",
+              "h06",
+              "h07"
+            ]
+          },
+          "unit_convert": {
+            "calls": 1,
+            "expected_calls": 1,
+            "extra_calls": 0,
+            "tasks": [
+              "h05"
+            ]
+          }
+        },
+        "extra_calls": {},
+        "unused_expected": {},
+        "per_task": {
+          "h01": {
+            "expected": [
+              "search_handbook"
+            ],
+            "called": [
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h02": {
+            "expected": [
+              "search_documents"
+            ],
+            "called": [
+              "search_documents"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h03": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h04": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h05": {
+            "expected": [
+              "unit_convert"
+            ],
+            "called": [
+              "unit_convert"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h06": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 3,
+            "exact_set": true
+          },
+          "h07": {
+            "expected": [
+              "note_store",
+              "search_handbook"
+            ],
+            "called": [
+              "note_store",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          }
+        }
+      },
+      "per_task": {
+        "h01": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 13.817,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='survey drone specifications maximum payload flight time per charge', top\u2026",
+              "latency_s": 0.0,
+              "result_chars": 391,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The survey drone has a maximum payload of 2.5 kg and a flight time of up to 42 minutes per charge.",
+          "error": null
+        },
+        "h02": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 40.881,
+          "tools_used": [
+            "search_documents"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query=\"who introduced the name 'dropout' for randomly removing connections in a\u2026",
+              "latency_s": 30.394,
+              "result_chars": 3062,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "According to the Wikipedia document corpus (article \"Dilution (neural networks)\"), the technique of randomly removing connections between neurons in a neural network was first introduced with the name \"dropout\" by Geoffrey Hinton, et al. in 2012.",
+          "error": null
+        },
+        "h03": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 17.032,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='generator fuel consumption rate at full load L/hr', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 558,
+              "ok": true
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='240 / 1.8'",
+              "latency_s": 0.0,
+              "result_chars": 10,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The generator can run for approximately 133.3 hours on a full 240 L tank at full load. This is based on the handbook's stated full-load fuel consumption of 1.8 L/h (gen-fuel doc): 240 L \u00f7 1.8 L/h = 133.33 h. For context, the station's fuel reserve policy requires a minimum of 72 h of full-load runtime, so a full tank provides roughly 61 hours of margin above that minimum.",
+          "error": null
+        },
+        "h04": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 15.433,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='generator diesel fuel consumption rate liters per hour', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 537,
+              "ok": true
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='1.8 * 8 * 30'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The station's prime diesel generator burns 1.8 L/h under full load. Running 8 hours per day for 30 days: 1.8 L/h \u00d7 8 h/day \u00d7 30 days = 432 liters of diesel burned in the month.",
+          "error": null
+        },
+        "h05": {
+          "category": "conversion",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 8.996,
+          "tools_used": [
+            "unit_convert"
+          ],
+          "tool_calls": [
+            {
+              "name": "unit_convert",
+              "node": "execute",
+              "args_brief": "value=8.0, from_unit='km', to_unit='mi'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The drone's rated range of 8 km is approximately 4.97 miles (about 5 miles).",
+          "error": null
+        },
+        "h06": {
+          "category": "multi_step",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 18.81,
+          "tools_used": [
+            "search_handbook",
+            "calculator",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='satellite uplink window how often windows open transfer capacity per win\u2026",
+              "latency_s": 0.0,
+              "result_chars": 469,
+              "ok": true
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2 * 7'",
+              "latency_s": 0.0,
+              "result_chars": 4,
+              "ok": true
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2 * 7 * 250'",
+              "latency_s": 0.0,
+              "result_chars": 6,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "Satellite uplink windows open twice per day \u2014 at 06:10\u201306:40 UTC and 18:20\u201318:50 UTC \u2014 so 2 \u00d7 7 = 14 windows open per week. Each window can transfer at most 250 MB, giving a total weekly transfer capacity of 14 \u00d7 250 = 3,500 MB.",
+          "error": null
+        },
+        "h07": {
+          "category": "note_keeping",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 15.851,
+          "tools_used": [
+            "search_handbook",
+            "note_store"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='weather station calibration interval', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 367,
+              "ok": true
+            },
+            {
+              "name": "note_store",
+              "node": "execute",
+              "args_brief": "action='append', note='Weather station calibration interval: every 45 days (acc\u2026",
+              "latency_s": 0.0,
+              "result_chars": 126,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The weather station must be calibrated every 45 days, with an accepted temperature drift tolerance of +/-0.4 \u00b0C between calibrations. This interval has been recorded in the ops notebook. In short: calibration is required once every 45 days.",
+          "error": null
+        },
+        "h08": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 30.722,
+          "tools_used": [
+            "search_handbook",
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='energy-to-water equivalence factor kWh per liter battery water tanks', t\u2026",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='kWh per liter conversion equivalence energy water', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 520,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The conversion of 24 kWh of battery capacity into liters of water cannot be completed. Step 1 of the plan was executed: the station handbook was searched (twice, with different queries) for an energy-to-water equivalence factor (kWh per liter). The handbook corpus contains only three relevant documents \u2014 battery (24 kWh usable capacity, 1.6 kW base load, 0.9 kW HVAC surge), water (5,000 L main tank, 1,200 L bladder, 85 L/person/day for 6 crew), and solar-spec (320 Wp panels, 3.2 kWh/day each, 12 panels, 96% inverter efficiency). None of these documents states any kWh-per-liter equivalence factor. Additionally, converting energy (kWh) to volume (liters) is a cross-dimensional conversion that the unit conversion tool explicitly cannot perform. Without a documented equivalence factor, any numeric answer would be invented, so the task must be reported as not feasible with the available tools and data.",
+          "error": null
+        },
+        "h09": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 21.627,
+          "tools_used": [],
+          "tool_calls": [],
+          "critique_verdict": "pass",
+          "answer": "I cannot report the current diesel stock in the generator tank because no real-time station inventory tool exists in the current toolset. The available tools cover handbook/document search, arithmetic, unit conversion, and note-taking \u2014 none can query live inventory data.\n\nAlternatives I can offer:\n1. Calculate an estimate from user-provided data (tank capacity, last known level, consumption rate, refills) using the calculator.\n2. Log the request as a note in the ops notebook for follow-up (only if explicitly requested).\n\nAwaiting user clarification on how to proceed.",
+          "error": null
+        },
+        "h10": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 37.654,
+          "tools_used": [
+            "search_handbook",
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='ration packs density kg to liter conversion factor water log', top_k=3",
+              "latency_s": 0.0,
+              "result_chars": 557,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='standard density ration packs volume liters mass volume relationship', t\u2026",
+              "latency_s": 0.0,
+              "result_chars": 733,
+              "ok": true
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='40 / 0.6'",
+              "latency_s": 0.0,
+              "result_chars": 9,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The conversion cannot be completed as specified. Converting 40 kg of ration packs to liters requires a density (mass-to-volume) factor, and the Atlas Valley ops handbook does not provide one. The handbook's only ration-pack fact is that each pack weighs 0.6 kg (cache doc); its water doc covers tank capacity and consumption budgets only, with no density or kg-to-liter conversion for rations. The unit conversion tool also cannot bridge kg to liters, as that is a cross-dimensional conversion. Without an invented density (which would be unsupported), 40 kg of ration packs cannot be expressed in liters. What can be stated from the handbook: 40 kg \u00f7 0.6 kg/pack \u2248 66.67 ration packs. To log a water volume, a density for the ration packs (or a direct liter figure) would need to be supplied.",
+          "error": null
+        }
       }
     }
   }
