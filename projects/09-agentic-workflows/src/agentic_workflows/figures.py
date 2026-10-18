@@ -40,7 +40,7 @@ def _takeaway_title(fig: go.Figure, headline: str, takeaway: str) -> None:
     fig.update_layout(
         title={
             "text": (
-                f"{headline}<br><span style='font-size:12px; color:#94a3b8'>{takeaway}</span>"
+                f"{headline}<br><span style='font-size:13px;color:#cbd5e1'>{takeaway}</span>"
             ),
             "font": {"size": 16},
         },
