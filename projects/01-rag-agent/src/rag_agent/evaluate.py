@@ -24,6 +24,7 @@ import json
 import random
 import time
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
@@ -165,7 +166,7 @@ def answer_with_output_retries(
                 return None, retries, error
             retries += 1
             logger.warning("agent output invalid (retry %d/%d): %s", retries, max_retries, error)
-        except Exception as exc:  # non-validation failure: record, don't retry
+        except Exception as exc:  # broad: not retryable; recorded and returned
             return None, retries, f"{type(exc).__name__}: {exc}"[:200]
 
 
@@ -255,7 +256,7 @@ def random_ranks(
     """
     ranks: list[int | None] = []
     for qi, question in enumerate(questions):
-        rng = random.Random(f"{config.seed}:{len(chunks)}:{qi}")
+        rng = random.Random(f"{config.seed}:{len(chunks)}:{qi}")  # noqa: S311 - seeded eval RNG, not crypto
         order = list(range(len(chunks)))
         rng.shuffle(order)
         relevant = set(question.relevant_article_ids)
@@ -646,6 +647,350 @@ def estimate_input_tokens(
     return estimates
 
 
+@dataclass(frozen=True)
+class RetrievalHpoResult:
+    """Outputs of the retrieval-HPO stage (runs offline-safe)."""
+
+    scores: list[RetrievalScores]
+    random_scores: list[RetrievalScores]
+    sweep_fig: go.Figure
+    model_scores: dict[str, RetrievalScores]
+    rerank_scores: dict[str, RetrievalScores]
+    topk: dict[int, TopkData]
+    est_at: dict[int, dict[int, float]]
+    chosen: RetrievalBest
+
+
+@dataclass(frozen=True)
+class RagStageResult:
+    """Outputs of the agent/judge (+RAGAS) stage; empty when ``offline``."""
+
+    rag_run: RAGRun | None
+    ragas_scores: dict[str, float] | None
+    ragas_ci: dict[str, Any] | None
+    wall_time_s: float
+
+
+def _run_retrieval_hpo(
+    config: RAGConfig,
+    questions: list[EvalQuestion],
+    articles: list[Article],
+    embed_fn: EmbedFn,
+    rerank_fn: RerankFn,
+) -> RetrievalHpoResult:
+    """Chunk sweep + random floor + model/rerank/top-k ablations → chosen config."""
+    scores, random_scores, sweep_fig = run_retrieval_sweep(config, questions, embed_fn, rerank_fn)
+    model_scores = model_comparison(config, questions, articles, rerank_fn, embed_fn=embed_fn)
+    rerank_scores = rerank_ablation(config, questions, embed_fn, rerank_fn)
+    topk = topk_sweep(config, questions, embed_fn, rerank_fn)
+    chosen = choose_retrieval_config(config, model_scores, scores, topk)
+    logger.info("chosen retrieval config: %s", chosen.model_dump())
+    est_at = {
+        size: {k: est_input_tokens_at(topk[size], questions, k) for k in TOP_K_VALUES}
+        for size in config.chunk_sizes
+    }
+    return RetrievalHpoResult(
+        scores=scores,
+        random_scores=random_scores,
+        sweep_fig=sweep_fig,
+        model_scores=model_scores,
+        rerank_scores=rerank_scores,
+        topk=topk,
+        est_at=est_at,
+        chosen=chosen,
+    )
+
+
+def _validate_golden_set_stage(
+    config: RAGConfig,
+    questions: list[EvalQuestion],
+    embed_fn: EmbedFn,
+    rerank_fn: RerankFn,
+) -> None:
+    """Golden-set validation against the production index (embed-only, offline-safe)."""
+    validation_retriever = Retriever.from_index_dir(
+        config,
+        config.index_path(min(config.chunk_sizes)),
+        embed_fn,
+        rerank_fn,
+    )
+    problems = validate_golden_set(config, questions, validation_retriever)
+    for problem in problems:
+        logger.warning("golden-set validation: %s", problem)
+    if problems:
+        logger.warning("golden-set validation found %d problem(s)", len(problems))
+
+
+def _run_agent_stage(
+    config: RAGConfig,
+    chosen: RetrievalBest,
+    rag_questions: list[EvalQuestion],
+    offline: bool,
+    ragas: bool,
+    embed_fn: EmbedFn,
+    rerank_fn: RerankFn,
+) -> RagStageResult:
+    """Agent + rubric judge (+ optional RAGAS) at the chosen retrieval config."""
+    run_start = time.perf_counter()
+    if offline:
+        return RagStageResult(
+            rag_run=None,
+            ragas_scores=None,
+            ragas_ci=None,
+            wall_time_s=time.perf_counter() - run_start,
+        )
+    arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
+    chosen_embedder: EmbedFn = SentenceTransformerEmbedder(arm[1])
+    chosen_index = (
+        config.index_path(chosen.chunk_size)
+        if chosen.embedding_slug == "minilm"
+        else config.index_dir / f"chunks_{chosen.chunk_size}_{chosen.embedding_slug}"
+    )
+    retriever = Retriever.from_index_dir(
+        config,
+        chosen_index,
+        chosen_embedder,
+        rerank_fn if chosen.rerank else None,
+        query_prefixed(chosen_embedder, arm[2]),
+    )
+    agent = build_agent(config)
+    rag_run = run_rag_eval(config, agent, retriever, rag_questions)
+    ragas_scores: dict[str, float] | None = None
+    ragas_ci: dict[str, Any] | None = None
+    if ragas:
+        ragas_result = run_ragas(config, rag_run.ragas_rows)
+        ragas_scores = ragas_result.scores
+        ragas_ci = {
+            name: {
+                "mean": ragas_result.scores[name],
+                "ci95": list(bootstrap_ci(values, seed=config.seed)),
+            }
+            for name, values in ragas_result.per_row.items()
+        }
+    return RagStageResult(
+        rag_run=rag_run,
+        ragas_scores=ragas_scores,
+        ragas_ci=ragas_ci,
+        wall_time_s=time.perf_counter() - run_start,
+    )
+
+
+def _verify_stats(config: RAGConfig, rag_run: RAGRun | None) -> dict[str, Any] | None:
+    """Aggregate verify-then-answer stats over the answered questions."""
+    if rag_run is None or not rag_run.verify_reports:
+        return None
+    reports = rag_run.verify_reports
+    total_verify_s = sum(r.latency_s for r in reports)
+    total_answer_s = sum(rag_run.latencies_s)
+    return {
+        "enabled": config.verify.enabled,
+        "min_support": config.verify.min_support,
+        "max_repair_calls": config.verify.max_repair_calls,
+        "n_answers_verified": len(reports),
+        "n_verify_abstentions": sum(1 for r in reports if r.abstained),
+        "n_verify_skipped": sum(1 for r in reports if r.skipped),
+        "total_repair_calls": sum(r.n_repair_calls for r in reports),
+        "mean_support_fraction": round(sum(r.support_fraction for r in reports) / len(reports), 4),
+        "mean_verify_latency_s": round(total_verify_s / len(reports), 3),
+        "verify_latency_share_of_answer": (
+            round(total_verify_s / total_answer_s, 4) if total_answer_s > 0 else None
+        ),
+    }
+
+
+def _rag_ci(config: RAGConfig, rag_run: RAGRun) -> dict[str, Any]:
+    """Mean + bootstrap-95% CI for the three RAG metrics."""
+    return {
+        "faithfulness": {
+            "mean": rag_run.eval_result.faithfulness,
+            "ci95": list(bootstrap_ci(rag_run.faithfulness_rows, seed=config.seed)),
+        },
+        "answer_relevance": {
+            "mean": rag_run.eval_result.answer_relevance,
+            "ci95": list(bootstrap_ci(rag_run.relevance_rows, seed=config.seed)),
+        },
+        "context_recall": {
+            "mean": rag_run.eval_result.context_recall,
+            "ci95": list(bootstrap_ci(rag_run.retrieved_rows, seed=config.seed)),
+        },
+    }
+
+
+def _taxonomy_counts(rag_run: RAGRun | None) -> dict[str, int]:
+    """Failure-taxonomy histogram over the per-question traces."""
+    counts: dict[str, int] = {}
+    if rag_run:
+        for trace in rag_run.traces:
+            label = classify_question(trace)
+            counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def _build_figures(
+    config: RAGConfig,
+    articles: list[Article],
+    questions: list[EvalQuestion],
+    hpo: RetrievalHpoResult,
+    rag_run: RAGRun | None,
+) -> dict[str, go.Figure]:
+    """Every report figure, in report order (latency/taxonomy appended last)."""
+    figures: dict[str, go.Figure] = {
+        "eda_corpus_composition": corpus_eda_figure(articles),
+        "chunk_size_sweep": hpo.sweep_fig,
+        "model_comparison": model_comparison_figure(hpo.model_scores, hpo.chosen.embedding_slug),
+        "retrieval_funnel": retrieval_funnel_figure(config, questions, hpo.topk, hpo.chosen),
+        "retrieval_hpo_frontier": hpo_frontier_figure(config, questions, hpo.topk, hpo.chosen),
+    }
+    if rag_run is not None:
+        figures["latency_histogram"] = latency_figure(rag_run.latencies_s)
+        if rag_run.traces:
+            figures["failure_taxonomy"] = taxonomy_figure(rag_run.traces)
+    return figures
+
+
+def _run_meta(
+    config: RAGConfig,
+    questions: list[EvalQuestion],
+    rag_run: RAGRun | None,
+    rag_ci: dict[str, Any] | None,
+    ragas_ci: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Report metadata: golden-set composition, abstention, CIs, taxonomy."""
+    golden_counts: dict[str, int] = {}
+    for q in questions:
+        key = f"{q.category}/{q.expected_behavior}"
+        golden_counts[key] = golden_counts.get(key, 0) + 1
+    abstention = abstention_report(rag_run.traces, seed=config.seed) if rag_run else None
+    return {
+        "golden_set": golden_counts,
+        "abstention": abstention,
+        "rag_ci": rag_ci,
+        "taxonomy": _taxonomy_counts(rag_run),
+        "ragas_ci": ragas_ci,
+    }
+
+
+def _extra_payload(
+    config: RAGConfig,
+    questions: list[EvalQuestion],
+    rag_questions: list[EvalQuestion],
+    offline: bool,
+    hpo: RetrievalHpoResult,
+    rag_run: RAGRun | None,
+    ragas_scores: dict[str, float] | None,
+    verify_stats: dict[str, Any] | None,
+    chosen_tokens: float,
+) -> dict[str, Any]:
+    """The ``detail`` block of ``metrics.json``: retrieval HPO + RAG + ops."""
+    avg_output_tokens = (
+        sum(rag_run.output_tokens) / len(rag_run.output_tokens)
+        if rag_run and rag_run.output_tokens
+        else 0.0
+    )
+    chosen = hpo.chosen
+    chosen_recall = recall_at_k_from(hpo.topk[chosen.chunk_size], chosen.top_k)
+    chosen_mrr = mrr_at_5(hpo.topk[chosen.chunk_size]["ranks"])
+    default_size = config.chunk_sizes[len(config.chunk_sizes) // 2]
+    default_data = hpo.topk[default_size]
+    default_recall = recall_at_k_from(default_data, config.top_k)
+    random_by_size = {s.chunk_size: s for s in hpo.random_scores}
+    return {
+        "n_questions": len(questions),
+        "rag_n_questions": len(rag_questions),
+        "offline": offline,
+        "retrieval": {
+            str(s.chunk_size): {
+                "recall@5": s.recall_at_5,
+                "recall@10": s.recall_at_10,
+                "mrr@5": s.mrr_at_5,
+                "est_input_tokens_per_query": hpo.est_at[s.chunk_size][config.top_k],
+                "random_recall@5": random_by_size[s.chunk_size].recall_at_5,
+                "random_mrr@5": random_by_size[s.chunk_size].mrr_at_5,
+                "delta_mrr@5_vs_random": s.mrr_at_5 - random_by_size[s.chunk_size].mrr_at_5,
+            }
+            for s in hpo.scores
+        },
+        "hpo": {
+            "chosen": chosen.model_dump(),
+            "models": {
+                slug: {"recall@5": s.recall_at_5, "recall@10": s.recall_at_10, "mrr@5": s.mrr_at_5}
+                for slug, s in hpo.model_scores.items()
+            },
+            "rerank_ablation": {
+                label: {"recall@5": s.recall_at_5, "mrr@5": s.mrr_at_5}
+                for label, s in hpo.rerank_scores.items()
+            },
+            "topk_grid": {
+                str(size): {
+                    f"recall@{k}": recall_at_k_from(hpo.topk[size], k) for k in TOP_K_VALUES
+                }
+                | {"est_input_tokens": {str(k): hpo.est_at[size][k] for k in TOP_K_VALUES}}
+                for size in config.chunk_sizes
+            },
+            "delta_vs_wave2_default": {
+                "wave2_default": {
+                    "embedding_slug": "minilm",
+                    "chunk_size": default_size,
+                    "top_k": config.top_k,
+                    "recall@5": default_recall,
+                },
+                "chosen": {"recall@k": chosen_recall, "mrr@5": chosen_mrr},
+                "delta_recall": chosen_recall - default_recall,
+                "delta_mrr@5": chosen_mrr - mrr_at_5(default_data["ranks"]),
+            },
+        },
+        "rag": rag_run.eval_result.to_dict() if rag_run else None,
+        "ragas": ragas_scores,
+        "verify": verify_stats,
+        "ops": {
+            "backend": inference_backend() if rag_run else None,
+            "p50_latency_s": rag_run.p50_latency_s if rag_run else None,
+            "p95_latency_s": rag_run.p95_latency_s if rag_run else None,
+            "est_cost_usd_per_query": (
+                rag_run.cost_per_query_usd(chosen_tokens) if rag_run else None
+            ),
+            "avg_input_tokens": (
+                sum(rag_run.input_tokens) / len(rag_run.input_tokens)
+                if rag_run and rag_run.input_tokens
+                else None
+            ),
+            "avg_output_tokens": avg_output_tokens,
+        },
+    }
+
+
+def _write_reports_stage(
+    config: RAGConfig,
+    hpo: RetrievalHpoResult,
+    rag_run: RAGRun | None,
+    figures: dict[str, go.Figure],
+    extra: dict[str, Any],
+    meta: dict[str, Any],
+    ragas_scores: dict[str, float] | None,
+    chosen_tokens: float,
+    wall_time_s: float,
+) -> None:
+    """Write report.html + metrics.json (+ cost telemetry when the agent ran)."""
+    topk_runs = [topk_run_for_size(size, hpo.topk[size]) for size in config.chunk_sizes]
+    _write_reports(
+        config,
+        hpo.scores,
+        rag_run,
+        figures,
+        extra,
+        rag_input_tokens_override=chosen_tokens if rag_run is not None else None,
+        random_scores=hpo.random_scores,
+        model_scores=hpo.model_scores,
+        rerank_scores=hpo.rerank_scores,
+        topk_runs=topk_runs,
+        ragas_scores=ragas_scores,
+        traces=rag_run.traces if rag_run is not None else None,
+        meta=meta,
+    )
+    if rag_run is not None:
+        write_cost_telemetry(config, rag_run, wall_time_s, phases=get_meter().snapshot())
+
+
 def run(
     config: RAGConfig,
     ragas: bool = False,
@@ -693,240 +1038,41 @@ def run(
     if rerank_fn is None:
         rerank_fn = CrossEncoderReranker(config.reranker_model)
 
-    # --- Retrieval HPO: chunk sweep + random floor --------------------------
-    scores, random_scores, sweep_fig = run_retrieval_sweep(config, questions, embed_fn, rerank_fn)
-    # --- Ablations: embedding model, rerank on/off, top_k grid --------------
-    model_scores = model_comparison(config, questions, articles, rerank_fn, embed_fn=embed_fn)
-    rerank_scores = rerank_ablation(config, questions, embed_fn, rerank_fn)
-    topk = topk_sweep(config, questions, embed_fn, rerank_fn)
-    chosen = choose_retrieval_config(config, model_scores, scores, topk)
-    logger.info("chosen retrieval config: %s", chosen.model_dump())
+    # --- Retrieval HPO: chunk sweep + ablations → chosen config -------------
+    hpo = _run_retrieval_hpo(config, questions, articles, embed_fn, rerank_fn)
+    _validate_golden_set_stage(config, questions, embed_fn, rerank_fn)
 
-    # --- RAG eval at the chosen retrieval config (skipped when --offline) ---
-    run_start = time.perf_counter()
-    rag_run: RAGRun | None = None
-    ragas_scores: dict[str, float] | None = None
-    ragas_ci: dict[str, Any] | None = None
-    # Golden-set validation against the production index (embed-only, works offline).
-    validation_retriever = Retriever.from_index_dir(
+    # --- Agent/judge stage (+ RAGAS), skipped when --offline ----------------
+    rag_stage = _run_agent_stage(
+        config, hpo.chosen, rag_questions, offline, ragas, embed_fn, rerank_fn
+    )
+    rag_run = rag_stage.rag_run
+    rag_ci = _rag_ci(config, rag_run) if rag_run else None
+    verify_stats = _verify_stats(config, rag_run)
+    chosen_tokens = hpo.est_at[hpo.chosen.chunk_size][hpo.chosen.top_k]
+
+    # --- Reporting: meta/detail blocks, figures, reports ---------------------
+    meta = _run_meta(config, questions, rag_run, rag_ci, rag_stage.ragas_ci)
+    extra = _extra_payload(
         config,
-        config.index_path(min(config.chunk_sizes)),
-        embed_fn,
-        rerank_fn,
+        questions,
+        rag_questions,
+        offline,
+        hpo,
+        rag_run,
+        rag_stage.ragas_scores,
+        verify_stats,
+        chosen_tokens,
     )
-    problems = validate_golden_set(config, questions, validation_retriever)
-    for problem in problems:
-        logger.warning("golden-set validation: %s", problem)
-    if problems:
-        logger.warning("golden-set validation found %d problem(s)", len(problems))
-    if not offline:
-        arm = next(a for a in EMBEDDING_ARMS if a[0] == chosen.embedding_slug)
-        chosen_embedder: EmbedFn = SentenceTransformerEmbedder(arm[1])
-        chosen_index = (
-            config.index_path(chosen.chunk_size)
-            if chosen.embedding_slug == "minilm"
-            else config.index_dir / f"chunks_{chosen.chunk_size}_{chosen.embedding_slug}"
-        )
-        retriever = Retriever.from_index_dir(
-            config,
-            chosen_index,
-            chosen_embedder,
-            rerank_fn if chosen.rerank else None,
-            query_prefixed(chosen_embedder, arm[2]),
-        )
-        agent = build_agent(config)
-        rag_run = run_rag_eval(config, agent, retriever, rag_questions)
-        if ragas:
-            ragas_result = run_ragas(config, rag_run.ragas_rows)
-            ragas_scores = ragas_result.scores
-            ragas_ci = {
-                name: {
-                    "mean": ragas_result.scores[name],
-                    "ci95": list(bootstrap_ci(values, seed=config.seed)),
-                }
-                for name, values in ragas_result.per_row.items()
-            }
-        else:
-            ragas_ci = None
-    wall_time_s = time.perf_counter() - run_start
-
-    abstention = abstention_report(rag_run.traces, seed=config.seed) if rag_run else None
-    verify_stats: dict[str, Any] | None = None
-    if rag_run and rag_run.verify_reports:
-        v_reports = rag_run.verify_reports
-        total_verify_s = sum(r.latency_s for r in v_reports)
-        total_answer_s = sum(rag_run.latencies_s)
-        verify_stats = {
-            "enabled": config.verify.enabled,
-            "min_support": config.verify.min_support,
-            "max_repair_calls": config.verify.max_repair_calls,
-            "n_answers_verified": len(v_reports),
-            "n_verify_abstentions": sum(1 for r in v_reports if r.abstained),
-            "n_verify_skipped": sum(1 for r in v_reports if r.skipped),
-            "total_repair_calls": sum(r.n_repair_calls for r in v_reports),
-            "mean_support_fraction": round(
-                sum(r.support_fraction for r in v_reports) / len(v_reports), 4
-            ),
-            "mean_verify_latency_s": round(total_verify_s / len(v_reports), 3),
-            "verify_latency_share_of_answer": (
-                round(total_verify_s / total_answer_s, 4) if total_answer_s > 0 else None
-            ),
-        }
-    rag_ci: dict[str, Any] | None = None
-    if rag_run:
-        rag_ci = {
-            "faithfulness": {
-                "mean": rag_run.eval_result.faithfulness,
-                "ci95": list(bootstrap_ci(rag_run.faithfulness_rows, seed=config.seed)),
-            },
-            "answer_relevance": {
-                "mean": rag_run.eval_result.answer_relevance,
-                "ci95": list(bootstrap_ci(rag_run.relevance_rows, seed=config.seed)),
-            },
-            "context_recall": {
-                "mean": rag_run.eval_result.context_recall,
-                "ci95": list(bootstrap_ci(rag_run.retrieved_rows, seed=config.seed)),
-            },
-        }
-    taxonomy_counts: dict[str, int] = {}
-    if rag_run:
-        for trace in rag_run.traces:
-            label = classify_question(trace)
-            taxonomy_counts[label] = taxonomy_counts.get(label, 0) + 1
-
-    avg_output_tokens = (
-        sum(rag_run.output_tokens) / len(rag_run.output_tokens)
-        if rag_run and rag_run.output_tokens
-        else 0.0
+    figures = _build_figures(config, articles, questions, hpo, rag_run)
+    _write_reports_stage(
+        config,
+        hpo,
+        rag_run,
+        figures,
+        extra,
+        meta,
+        rag_stage.ragas_scores,
+        chosen_tokens,
+        rag_stage.wall_time_s,
     )
-    est_at = {
-        size: {k: est_input_tokens_at(topk[size], questions, k) for k in TOP_K_VALUES}
-        for size in config.chunk_sizes
-    }
-    chosen_tokens = est_at[chosen.chunk_size][chosen.top_k]
-    chosen_recall = recall_at_k_from(topk[chosen.chunk_size], chosen.top_k)
-    chosen_mrr = mrr_at_5(topk[chosen.chunk_size]["ranks"])
-    default_size = config.chunk_sizes[len(config.chunk_sizes) // 2]
-    default_data = topk[default_size]
-    default_recall = recall_at_k_from(default_data, config.top_k)
-
-    latency_fig = latency_figure(rag_run.latencies_s) if rag_run else None
-    eda_fig = corpus_eda_figure(articles)
-    model_fig = model_comparison_figure(model_scores, chosen.embedding_slug)
-    hpo_fig = hpo_frontier_figure(config, questions, topk, chosen)
-    funnel_fig = retrieval_funnel_figure(config, questions, topk, chosen)
-
-    figures = {
-        "eda_corpus_composition": eda_fig,
-        "chunk_size_sweep": sweep_fig,
-        "model_comparison": model_fig,
-        "retrieval_funnel": funnel_fig,
-        "retrieval_hpo_frontier": hpo_fig,
-    }
-    if latency_fig is not None:
-        figures["latency_histogram"] = latency_fig
-    if rag_run and rag_run.traces:
-        figures["failure_taxonomy"] = taxonomy_figure(rag_run.traces)
-    golden_counts: dict[str, int] = {}
-    for q in questions:
-        key = f"{q.category}/{q.expected_behavior}"
-        golden_counts[key] = golden_counts.get(key, 0) + 1
-    meta = {
-        "golden_set": golden_counts,
-        "abstention": abstention,
-        "rag_ci": rag_ci,
-        "taxonomy": taxonomy_counts,
-        "ragas_ci": ragas_ci,
-    }
-    random_by_size = {s.chunk_size: s for s in random_scores}
-    extra = {
-        "n_questions": len(questions),
-        "rag_n_questions": len(rag_questions),
-        "offline": offline,
-        "retrieval": {
-            str(s.chunk_size): {
-                "recall@5": s.recall_at_5,
-                "recall@10": s.recall_at_10,
-                "mrr@5": s.mrr_at_5,
-                "est_input_tokens_per_query": est_at[s.chunk_size][config.top_k],
-                "random_recall@5": random_by_size[s.chunk_size].recall_at_5,
-                "random_mrr@5": random_by_size[s.chunk_size].mrr_at_5,
-                "delta_mrr@5_vs_random": s.mrr_at_5 - random_by_size[s.chunk_size].mrr_at_5,
-            }
-            for s in scores
-        },
-        "hpo": {
-            "chosen": chosen.model_dump(),
-            "models": {
-                slug: {"recall@5": s.recall_at_5, "recall@10": s.recall_at_10, "mrr@5": s.mrr_at_5}
-                for slug, s in model_scores.items()
-            },
-            "rerank_ablation": {
-                label: {"recall@5": s.recall_at_5, "mrr@5": s.mrr_at_5}
-                for label, s in rerank_scores.items()
-            },
-            "topk_grid": {
-                str(size): {f"recall@{k}": recall_at_k_from(topk[size], k) for k in TOP_K_VALUES}
-                | {"est_input_tokens": {str(k): est_at[size][k] for k in TOP_K_VALUES}}
-                for size in config.chunk_sizes
-            },
-            "delta_vs_wave2_default": {
-                "wave2_default": {
-                    "embedding_slug": "minilm",
-                    "chunk_size": default_size,
-                    "top_k": config.top_k,
-                    "recall@5": default_recall,
-                },
-                "chosen": {"recall@k": chosen_recall, "mrr@5": chosen_mrr},
-                "delta_recall": chosen_recall - default_recall,
-                "delta_mrr@5": chosen_mrr - mrr_at_5(default_data["ranks"]),
-            },
-        },
-        "rag": rag_run.eval_result.to_dict() if rag_run else None,
-        "ragas": ragas_scores,
-        "verify": verify_stats,
-        "ops": {
-            "backend": inference_backend() if rag_run else None,
-            "p50_latency_s": rag_run.p50_latency_s if rag_run else None,
-            "p95_latency_s": rag_run.p95_latency_s if rag_run else None,
-            "est_cost_usd_per_query": (
-                rag_run.cost_per_query_usd(chosen_tokens) if rag_run else None
-            ),
-            "avg_input_tokens": (
-                sum(rag_run.input_tokens) / len(rag_run.input_tokens)
-                if rag_run and rag_run.input_tokens
-                else None
-            ),
-            "avg_output_tokens": avg_output_tokens,
-        },
-    }
-    if rag_run is not None:
-        _write_reports(
-            config,
-            scores,
-            rag_run,
-            figures,
-            extra,
-            rag_input_tokens_override=chosen_tokens,
-            random_scores=random_scores,
-            model_scores=model_scores,
-            rerank_scores=rerank_scores,
-            topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
-            ragas_scores=ragas_scores,
-            traces=rag_run.traces,
-            meta=meta,
-        )
-        write_cost_telemetry(config, rag_run, wall_time_s, phases=get_meter().snapshot())
-    else:
-        _write_reports(
-            config,
-            scores,
-            None,
-            figures,
-            extra,
-            random_scores=random_scores,
-            model_scores=model_scores,
-            rerank_scores=rerank_scores,
-            topk_runs=[topk_run_for_size(size, topk[size]) for size in config.chunk_sizes],
-            meta=meta,
-        )

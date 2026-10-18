@@ -30,7 +30,20 @@ line-length = 100
 extend-exclude = ["site", "apps/showcase-web/node_modules", "apps/showcase-web/dist"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "S", "C901"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.per-file-ignores]
+# tests assert by design; temp paths, md5 cache keys, and round-tripping
+# pipeline artifacts in tests are non-security-sensitive.
+"**/tests/**" = ["S101", "S108", "S324", "S301"]
+# exploratory notebooks assert by design.
+"**/*.ipynb" = ["S101"]
+# trusted-artifact persistence: the UCI xlsx is a registry-pinned archive
+# parsed locally, not untrusted XML from the network.
+"**/demand_forecasting/uci.py" = ["S314"]
 
 [tool.mypy]
 python_version = "3.12"
@@ -43,6 +56,16 @@ exclude = ["tests/"]
 
 [[tool.mypy.overrides]]
 module = ["portfolio_core.*", "portfolio_eval.*"]
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "inference_serving.*",
+    "agentic_workflows.*",
+    "uplift_experimentation.*",
+    "demand_forecasting.*",
+    "routing_optimization.*",
+]
 strict = true
 
 [[tool.mypy.overrides]]

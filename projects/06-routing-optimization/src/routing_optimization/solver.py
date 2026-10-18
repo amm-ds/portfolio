@@ -87,6 +87,64 @@ def _inter_candidate(
     return delta, new_a, new_b
 
 
+Move = tuple[float, int, list[int], int, list[int]]
+
+
+def _find_first_move(
+    problem: Problem,
+    dist: list[list[float]],
+    routes: list[list[int]],
+    capacity: float,
+    tail_exchange: bool,
+) -> Move | None:
+    """First improving move; shape (delta, x, new_x, y, new_y) with y < 0
+    marking an intra-route move on route x, otherwise an inter-route move
+    rewriting routes x and y."""
+    for k in range(len(routes)):
+        route = routes[k]
+        for i in range(len(route) - 1):
+            for j in range(i + 1, len(route)):
+                cand = _intra_candidate(problem, dist, route, i, j)
+                if cand is not None:
+                    return cand[0], k, cand[1], -1, []
+    if tail_exchange:
+        for a in range(len(routes)):
+            for b in range(a + 1, len(routes)):
+                for i in range(len(routes[a])):
+                    for j in range(len(routes[b])):
+                        icand = _inter_candidate(problem, dist, routes, a, b, i, j, capacity)
+                        if icand is not None:
+                            return icand[0], a, icand[1], b, icand[2]
+    return None
+
+
+def _find_best_move(
+    problem: Problem,
+    dist: list[list[float]],
+    routes: list[list[int]],
+    capacity: float,
+    tail_exchange: bool,
+) -> Move | None:
+    """Best (most negative delta) improving move over the full neighborhood."""
+    best: Move | None = None
+    for k in range(len(routes)):
+        route = routes[k]
+        for i in range(len(route) - 1):
+            for j in range(i + 1, len(route)):
+                cand = _intra_candidate(problem, dist, route, i, j)
+                if cand is not None and (best is None or cand[0] < best[0]):
+                    best = (cand[0], k, cand[1], -1, [])
+    if tail_exchange:
+        for a in range(len(routes)):
+            for b in range(a + 1, len(routes)):
+                for i in range(len(routes[a])):
+                    for j in range(len(routes[b])):
+                        icand = _inter_candidate(problem, dist, routes, a, b, i, j, capacity)
+                        if icand is not None and (best is None or icand[0] < best[0]):
+                            best = (icand[0], a, icand[1], b, icand[2])
+    return best
+
+
 def two_opt(
     problem: Problem,
     plan: RoutePlan,
@@ -114,52 +172,12 @@ def two_opt(
     if trace is not None:
         trace.append(sum(route_distance(dist, r) for r in routes))
 
-    Move = tuple[float, int, list[int], int, list[int]]
-
-    def find_first() -> Move | None:
-        """First improving move; shape (delta, x, new_x, y, new_y) with y < 0
-        marking an intra-route move on route x, otherwise an inter-route move
-        rewriting routes x and y."""
-        for k in range(len(routes)):
-            route = routes[k]
-            for i in range(len(route) - 1):
-                for j in range(i + 1, len(route)):
-                    cand = _intra_candidate(problem, dist, route, i, j)
-                    if cand is not None:
-                        return cand[0], k, cand[1], -1, []
-        if tail_exchange:
-            for a in range(len(routes)):
-                for b in range(a + 1, len(routes)):
-                    for i in range(len(routes[a])):
-                        for j in range(len(routes[b])):
-                            icand = _inter_candidate(problem, dist, routes, a, b, i, j, capacity)
-                            if icand is not None:
-                                return icand[0], a, icand[1], b, icand[2]
-        return None
-
-    def find_best() -> Move | None:
-        """Best (most negative delta) improving move over the full neighborhood."""
-        best: Move | None = None
-        for k in range(len(routes)):
-            route = routes[k]
-            for i in range(len(route) - 1):
-                for j in range(i + 1, len(route)):
-                    cand = _intra_candidate(problem, dist, route, i, j)
-                    if cand is not None and (best is None or cand[0] < best[0]):
-                        best = (cand[0], k, cand[1], -1, [])
-        if tail_exchange:
-            for a in range(len(routes)):
-                for b in range(a + 1, len(routes)):
-                    for i in range(len(routes[a])):
-                        for j in range(len(routes[b])):
-                            icand = _inter_candidate(problem, dist, routes, a, b, i, j, capacity)
-                            if icand is not None and (best is None or icand[0] < best[0]):
-                                best = (icand[0], a, icand[1], b, icand[2])
-        return best
-
-    find_move = find_first if acceptance == "first" else find_best
     while iterations < max_iterations:
-        move = find_move()
+        move = (
+            _find_first_move(problem, dist, routes, capacity, tail_exchange)
+            if acceptance == "first"
+            else _find_best_move(problem, dist, routes, capacity, tail_exchange)
+        )
         if move is None:
             break
         _delta, x, new_x, y, new_y = move
@@ -316,7 +334,7 @@ def _regret2_repair(
             key = (regret, -best[0], -cid)  # deterministic tie-breaks
             if choice is None or key > choice[0]:
                 choice = (key, cid, best[1], best[2])
-        assert choice is not None  # pending is non-empty, so the loop set it
+        assert choice is not None  # noqa: S101 - pending non-empty, so the loop set it
         _key, cid, k, pos = choice
         routes[k] = [*routes[k][:pos], cid, *routes[k][pos:]]
         loads[k] += problem.customers[cid].demand
@@ -363,7 +381,7 @@ def alns(
     seeded: one ``random.Random(seed)`` drives every decision.
     """
     dist = distance_matrix(problem)
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # noqa: S311 - seeded ALNS RNG, not crypto
     destroy_ops = [
         lambda rs, q: _destroy_random(dist, rs, q, rng),
         lambda rs, q: _destroy_worst(dist, rs, q, rng),
