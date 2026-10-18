@@ -21,6 +21,12 @@ RUN npm run build
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS runtime
 WORKDIR /app
 
+# libgomp1: lightgbm/xgboost native libs link OpenMP — without it the serving
+# artifacts (joblib pickles) fail to unpickle in the image (OSError libgomp).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
     PYTHONUNBUFFERED=1
