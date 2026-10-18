@@ -87,6 +87,20 @@ assumption, not by measurement error in tok/s.
 
 ## Architecture
 
+The bench harness pipeline moves one fixed prompt suite through an async
+load driver into the Ollama endpoint, validates every answer into the
+`Answer` schema, aggregates per-cell metrics, and renders report plus
+figures:
+
+```mermaid
+graph LR
+    S[prompt suite] --> D[async load driver]
+    D -->|concurrency 1-8| E[Ollama endpoint]
+    E -->|llama.cpp / MLX| A[validated Answer schema]
+    A --> M[cell metrics]
+    M -->|p50, p95, tok/s| R[report + figures]
+```
+
 - **Benchmark harness** (`src/inference_serving/bench.py`) — async load
   driver over Ollama's OpenAI-compatible endpoint; fixed prompt suite;
   per-(model, engine, concurrency) cells with semaphore concurrency;

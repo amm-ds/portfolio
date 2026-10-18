@@ -15,10 +15,14 @@ sections:
 
       ```mermaid
       flowchart LR
-          A[raw trip events<br/>41.2M rows] --> B[zone x hour demand<br/>2.33M rows]
-          B --> C[next-hour forecast<br/>+ p90 band]
-          C --> D[staffing & fleet<br/>decisions]
+          A[raw trip events] --> B[zone-hour demand]
+          B --> C[next-hour forecast]
+          C --> D[staffing decisions]
       ```
+
+      That chain moves 41.2M raw trip events into a 2.33M-row
+      zone × hour demand grid, adds a p90 uncertainty band to the
+      next-hour forecast, and drives staffing and fleet decisions.
 
       This project builds that forecast from the ground up on **real,
       messy, public data** — not a clean Kaggle extract — and quantifies
@@ -138,11 +142,11 @@ sections:
 
       ```mermaid
       flowchart LR
-          A[validate<br/>per-month DQ gates] --> B[join<br/>zone x hour grid]
-          B --> C[features<br/>lags + calendar]
-          C --> T[tune<br/>Optuna, embargoed val]
-          T --> G[GBM mean + p90<br/>default & tuned]
-          T --> N[TemporalNet<br/>hand-written loop]
+          A[per-month DQ gates] --> B[zone-hour grid]
+          B --> C[lags + calendar]
+          C --> T[Optuna tuning]
+          T --> G[GBM mean, p90]
+          T --> N[TemporalNet]
           G --> P[predictions.parquet]
           N --> P
       ```
