@@ -1,4 +1,4 @@
 /dq_report.md
 /figures/*
 !/figures/*.json
-!/figures/*.html
+/figures/*.html

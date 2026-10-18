@@ -3,4 +3,4 @@
 /results.md
 /figures/*
 !/figures/*.json
-!/figures/*.html
+/figures/*.html

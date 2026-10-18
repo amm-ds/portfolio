@@ -10,7 +10,11 @@ get 429 with a ``Retry-After`` header.
 LIMITATION: the bucket store lives in this process's memory. The deployment
 runs a single uvicorn process, so this is a floor against accidental abuse /
 buggy clients — it is not DDoS protection (no shared state across replicas,
-buckets reset on restart, NATed clients share one bucket).
+buckets reset on restart, NATed clients share one bucket). Client identity
+comes from ``scope["client"]``; uvicorn only trusts X-Forwarded-For for that
+when run with ``--proxy-headers --forwarded-allow-ips …`` (set in the
+Dockerfile, restricted to the Caddy container in deploy compose) — otherwise
+every visitor behind the proxy shares the proxy's bucket.
 """
 
 import math
@@ -30,15 +34,23 @@ _MAX_BODY_BYTES_DEFAULT = 1_048_576  # 1 MB
 class RateLimiter:
     """Per-key token bucket: ``burst`` tokens of capacity, refilled at
     ``per_minute``/60 tokens per second. Not thread-safe by design — the
-    single-worker uvicorn process runs one event loop."""
+    single-worker uvicorn process runs one event loop.
+
+    The bucket store is bounded: at most ``max_keys`` entries (default 10k).
+    On overflow the stalest bucket is evicted, and empty/refilled-full buckets
+    are dropped opportunistically, so a key-spamming client cannot grow
+    unbounded memory.
+    """
 
     def __init__(
         self,
         per_minute: int = _RATE_LIMIT_PER_MINUTE_DEFAULT,
         burst: int = _RATE_LIMIT_BURST_DEFAULT,
+        max_keys: int = 10_000,
     ):
         self.rate_per_second = per_minute / 60.0
         self.capacity = float(burst)
+        self.max_keys = max_keys
         self._buckets: dict[str, tuple[float, float]] = {}  # key -> (tokens, last_refill)
 
     @classmethod
@@ -51,6 +63,10 @@ class RateLimiter:
     def check(self, key: str) -> tuple[bool, float]:
         """Consume one token for ``key``. Returns (allowed, retry_after_seconds)."""
         now = time.monotonic()
+        if len(self._buckets) >= self.max_keys and key not in self._buckets:
+            stalest = min(self._buckets, key=lambda k: self._buckets[k][1])
+            del self._buckets[stalest]
+            logger.warning("rate-limit store full (%d keys); evicted %r", self.max_keys, stalest)
         tokens, last = self._buckets.get(key, (self.capacity, now))
         tokens = min(self.capacity, tokens + (now - last) * self.rate_per_second)
         if tokens >= 1.0:

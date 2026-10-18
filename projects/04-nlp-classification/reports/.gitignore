@@ -1,7 +1,6 @@
 /history.json
 /figures/*
 !/figures/*.json
-!/figures/*.html
 /hpo_study.json
 /hpo_best.json
 /history_tuned.json
@@ -9,3 +8,4 @@
 /error_analysis.md
 /selection.json
 /hpo_seeds.json
+/figures/*.html

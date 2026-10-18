@@ -15,6 +15,10 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
+      # Only Caddy (the sole entrypoint on this internal network) may set
+      # X-Forwarded-For — so the API's rate limiter keys on real clients,
+      # not on the proxy's address for everyone (audit third pass, finding 3).
+      FORWARDED_ALLOW_IPS: "*"
     extra_hosts:
       # host.docker.internal is not resolved on Linux by default; this lets the
       # api reach an Ollama sidecar running on the Docker host (see DEPLOY.md).

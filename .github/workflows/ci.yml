@@ -39,7 +39,11 @@ jobs:
       - name: Docs build (strict)
         run: uv run mkdocs build --strict
       - name: Dependency audit
-        run: uv pip audit
+        # uv has no audit subcommand (uv pip audit / uv audit are both invalid);
+        # export the locked runtime requirements and audit them with pip-audit.
+        run: |
+          uv export --frozen --no-dev -o /tmp/requirements.txt
+          uvx pip-audit --requirement /tmp/requirements.txt --strict
 
   docker:
     runs-on: ubuntu-latest

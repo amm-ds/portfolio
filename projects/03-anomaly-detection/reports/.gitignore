@@ -1,8 +1,8 @@
 /dq_report.html
 /figures/*
 !/figures/*.json
-!/figures/*.html
 /detect.json
 /residual_probe.json
 /nsl_probe.json
 /nab_metrics.json
+/figures/*.html

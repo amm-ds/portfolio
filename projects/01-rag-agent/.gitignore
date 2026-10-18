@@ -10,3 +10,4 @@
 # /projects/01-rag-agent/{metrics,report}) — same rationale as DEPLOY.md.
 !/reports/metrics.json
 !/reports/report.html
+/reports/figures/*.html
