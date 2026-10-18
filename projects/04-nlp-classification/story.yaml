@@ -89,13 +89,13 @@ sections:
       ```mermaid
       flowchart LR
           A[Tokenized batch] --> B[AdamW step]
-          B --> C[Linear warmup + decay LR]
-          C --> D[Epoch end: val macro-F1]
+          B --> C[LR schedule]
+          C --> D[val macro-F1]
           D --> E{Improved?}
-          E -- yes --> F[Save best state dict]
+          E -- yes --> F[save best state]
           E -- no --> G[Patience minus 1]
-          G -- zero --> H[Early stop, restore best]
-          F --> I[Next epoch / done]
+          G -- zero --> H[early stop]
+          F --> I[next / done]
           H --> I
       ```
 
@@ -132,11 +132,11 @@ sections:
 
       ```mermaid
       flowchart TD
-          A[Untouched 1000-row test split] --> B[Predict with all runs]
-          B --> C[Platform metrics + macro-F1]
-          C --> D{HPO model vs earlier artifact}
+          A[Untouched test split] --> B[Predict all runs]
+          B --> C[Metrics + macro-F1]
+          C --> D{HPO vs artifact}
           D -- higher test F1 --> E[Reported as distilbert_tuned]
-          D -- lower test F1 --> F[Artifact kept, decision persisted]
+          D -- lower test F1 --> F[Artifact kept]
       ```
 
       The documented caveat: validation wins did not transfer — threshold

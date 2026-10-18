@@ -119,13 +119,13 @@ sections:
 
       ```mermaid
       flowchart LR
-          A[raw telemetry<br/>n = 20 000] --> B[DQ gates<br/>nulls, ranges, freshness]
-          B --> C[rolling features<br/>mean/std, windows 10 + 60]
-          C --> D[train window<br/>first 70% = 13 958 rows]
-          D --> E[fit window 80%<br/>untuned detectors]
-          D --> F[validation 20%<br/>30 seeded TPE trials]
-          F --> G[best params<br/>per family]
-          E --> H[tuned refit<br/>full train window]
+          A[raw telemetry] --> B[DQ gates]
+          B --> C[rolling features]
+          C --> D[train window]
+          D --> E[fit window 80%]
+          D --> F[validation 20%]
+          F --> G[best params]
+          E --> H[tuned refit]
           G --> H
       ```
 
@@ -150,12 +150,12 @@ sections:
 
       ```mermaid
       flowchart TD
-          A[anomaly score<br/>test-window minute] --> B{score >= threshold?<br/>top 2% quantile, fixed a priori}
-          B -->|yes| C[page on-call<br/>flagged minute]
+          A[anomaly score] --> B{score >= threshold?}
+          B -->|yes| C[page on-call]
           B -->|no| D[stay silent]
-          C --> E[count TP / FP<br/>vs. injected ground truth]
+          C --> E[count TP/FP]
           D --> E
-          E --> F[ROC-AUC + PR-AUC<br/>vs. random baseline]
+          E --> F[ROC-AUC + PR-AUC]
       ```
 
       On NAB the same discipline is enforced event-first: threshold sweeps

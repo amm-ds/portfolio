@@ -2,7 +2,7 @@
 isotonic), precision-recall and decision-curve analysis, and a business-cost
 threshold sweep.
 
-Run ladder (all on the same 1,000-row holdout, same FP=1/FN=5 cost model):
+Run ladder (all on the same 1,409-row holdout, same FP=1/FN=5 cost model):
 ``naive_majority`` → ``logreg_threshold_0.5`` → ``logreg_threshold_<opt>``
 (wave-2 pipeline) → ``selected_model`` → ``selected_model_calibrated``.
 """
