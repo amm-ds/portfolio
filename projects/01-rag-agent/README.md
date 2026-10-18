@@ -33,7 +33,9 @@ cross-encoder (`ms-marco-MiniLM-L-6-v2`) rerank of the top 5×k →
 (`search_documents`, `read_excerpt`) and whose output is the structured
 `AnalysisResult(summary, citations, confidence)`. Provider behaviour follows
 ADR-0004 (amended wave 10): env-configured OpenAI-compatible endpoint first,
-local Ollama second (default `qwen3.6:35b-a3b-q4_K_M`). There is no runtime mock. See
+local Ollama second (default `qwen3.6:35b-a3b-q4_K_M`). There is no runtime mock.
+The `agent_pipeline` figure (`reports/figures/`) maps the path end to end —
+retrieval lanes, provider seam, verify loop, metered phases. See
 [DESIGN.md](DESIGN.md) for options considered and SLOs.
 
 ## Results
@@ -70,6 +72,38 @@ over local (directional: different denominators, 30 vs 65 questions, and
 different judge models), with refusal behavior sharper hosted (false
 abstention 0.036 vs 0.174). Retrieval is solid in both passes (0.831 vs
 0.031 random), so generation grounding remains the bottleneck.
+
+### Held-out golden set (wave 16)
+
+Everything above is measured on the 65 tuning questions. A **sealed
+held-out set** — 15 fresh questions written after tuning froze (8
+single-hop, 2 multi-hop, 5 unanswerable) — is gated programmatically before
+it is ever scored (answerable questions must hit a relevant chunk in the
+production top-10; unanswerable ones carry `absent_terms` verified against
+the whole corpus; a Jaccard check rejects variations of the 65) and then
+run with `evaluate --heldout`: retrieval metrics + one verify-on agent pass
+(agent + verify + rubric judge, no RAGAS), reported separately under
+`metrics.json → detail.heldout`.
+
+Hosted `kimi-for-coding` pass (verify ON, 2026-10-18):
+
+| Metric | Held-out (n=15) | Tuning set (n=65) |
+|---|---|---|
+| Retrieval recall@5 / recall@10 | 0.600 / 0.667 | 0.831 / 0.846 |
+| Retrieval MRR@5 (random floor) | 0.567 (0.022) | 0.808 (0.018) |
+| Rubric-judge faithfulness (95% CI) | 0.62 [0.45, 0.79] (n=10 answerable) | 0.550 [0.483, 0.611] |
+| Failure taxonomy | 10 correct / 4 unsupported-claim / 1 retrieval-miss | 44 / 18 / 2 / 1 |
+| Refusal accuracy (unanswerable) | 1.00 [1.00, 1.00] (5/5) | 0.900 [0.70, 1.00] |
+| Verify overhead | 7 repair calls, mean support 0.956 | 39 repair calls |
+| Latency p50 / p95 | 24.7 s / 36.6 s | 23 s / 175 s |
+| Cost | $0.25 cloud-equivalent (66 calls, 47% cached) | $3.58 cloud-equivalent (922 calls) |
+
+Reading: the held-out set is harder than the tuning set — recall@5 0.600
+vs 0.831 — which is the point of a sealed set written fresh (several
+held-out articles sit deeper in the ranking, and one multi-hop question
+misses the top-5 entirely). Refusal stays perfect (5/5 unanswerable
+abstained, zero false abstentions) and the run costs 14x less than the
+tuning pass, so it can re-run every wave as a regression gate.
 
 **Golden-set composition**: 65 graded questions — 44 single-hop, 11 multi-hop,
 10 unanswerable (expected behavior: abstain), validated against the actual
@@ -161,6 +195,7 @@ minutes of wall clock.
 
 | Figure | File |
 |---|---|
+| Agent pipeline — retrieval → agent → verify → cited answer, with the ADR-0004 provider seam and metered phases | [reports/figures/agent_pipeline.html](reports/figures/agent_pipeline.html) |
 | Corpus composition (EDA) | [reports/figures/eda_corpus_composition.html](reports/figures/eda_corpus_composition.html) |
 | Retrieval quality vs chunk size (with random baseline) | [reports/figures/chunk_size_sweep.html](reports/figures/chunk_size_sweep.html) |
 | Embedding model comparison | [reports/figures/model_comparison.html](reports/figures/model_comparison.html) |
@@ -176,6 +211,7 @@ cd projects/01-rag-agent
 uv run python -m rag_agent.cli prepare-corpus   # streams Wikipedia (bounded scan)
 uv run python -m rag_agent.cli build-index      # 3 FAISS indexes (chunk-size sweep)
 uv run python -m rag_agent.cli evaluate --ragas --verify   # real run (needs a provider)
+uv run python -m rag_agent.cli evaluate --heldout          # sealed held-out pass (needs a provider)
 uv run python -m rag_agent.cli chat             # interactive demo (needs a provider)
 ```
 
@@ -234,6 +270,11 @@ a 3-document synthetic client corpus used by the onboarding tests.
   local Ollama, metered on hosted endpoints (RAGAS's own cost callbacks don't
   recognize this OpenAI-compatible endpoint, so usage is captured at the
   wrapped-call boundary in `MeteredChatOpenAI`).
+- `evaluate --heldout` scores the sealed 15-question held-out golden set (see
+  **Results**): retrieval metrics + one verify-on agent pass (agent + verify +
+  rubric judge, deliberately no RAGAS), reported under
+  `metrics.json → detail.heldout` and `question_traces_heldout.json`, metered
+  under the same USD cap.
 
 Quality gates (from the repo root):
 

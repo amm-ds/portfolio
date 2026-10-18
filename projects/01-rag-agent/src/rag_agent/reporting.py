@@ -457,8 +457,10 @@ def write_reports(
     logger.info("report written: %s", config.reports_dir / "report.html")
 
 
-def write_question_traces(config: RAGConfig, traces: list[QuestionTrace]) -> Path:
-    """Persist the per-question trace table the report links to."""
+def write_question_traces(
+    config: RAGConfig, traces: list[QuestionTrace], path: Path | None = None
+) -> Path:
+    """Persist a per-question trace table (tuning set, or the held-out set)."""
     rows = [
         {
             "question": t.question,
@@ -476,10 +478,10 @@ def write_question_traces(config: RAGConfig, traces: list[QuestionTrace]) -> Pat
         }
         for t in traces
     ]
-    path = config.reports_dir / "question_traces.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
-    return path
+    out = path or config.reports_dir / "question_traces.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
+    return out
 
 
 def inject_trace_section(config: RAGConfig, traces: list[QuestionTrace]) -> None:
