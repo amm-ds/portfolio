@@ -208,33 +208,36 @@ sections:
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
     text_md: |
-      The full stack — randomization checks, design-level effect read, CUPED,
-      power analysis, uplift meta-learners, Qini, profit frontier — composes
-      into one operating decision:
+      The full stack — randomization checks, CUPED, power analysis, uplift
+      meta-learners, Qini, profit frontier — composes into one operating
+      decision:
 
       - **Effect before model:** +0.68pp with SE 0.09pp comes from the
-        design, not from any learner; a model cannot rescue an underpowered
-        read (the power formula says what effect size is even visible).
-      - **Covariates are the CUPED story:** 0.08% vs 0.52% variance
-        reduction is not a formula failure — it measures how much signal the
-        covariate carries. Measure it; do not assume the textbook number.
+        design, not any learner; a model cannot rescue an underpowered
+        read.
+      - **Covariates are the CUPED story:** 0.08% vs 0.52% is not a
+        formula failure — it measures the covariate's signal; measure it,
+        don't assume the textbook number.
       - **Out-of-fold or it didn't happen:** cross-fitted scores keep the
         Qini read unbiased; in-sample uplift curves are decoration.
-      - **Choose policies on the money, state rankings with intervals:**
-        Qini explains, profit decides — the response model's curve area
-        would mislead a budget owner here. And the Qini ranking itself is
-        stated with its paired-bootstrap CI: it spans zero for response vs
-        T-learner, so only the profit ranking is claimed.
+      - **Choose policies on the money:** Qini explains, profit decides —
+        the response model's curve area would mislead a budget owner, and
+        its paired CI spans zero, so only the profit ranking is claimed.
       - **Predicting is not changing:** response ranking targets sure
-        things; uplift ranking targets persuadables. At a 1% base rate the
-        difference is noise management, not magic.
+        things; uplift ranking targets persuadables. At a 1% base rate
+        the difference is noise management.
+
+      **Results quality: acceptable with caveats.** The ATE is precise
+      (SE 0.09pp) and the profit ranking is established by paired CIs; the
+      Qini ranking is not, and everything rests on one 2008 snapshot — a
+      practitioner re-runs the stack on their own randomized holdout and
+      picks the policy on profit CIs, not curve area.
 
       **Business implication:** hand this framework a client's randomized
       campaign extract and it returns a targeting policy, its expected
-      dollar delta, and the sample-size math for the next experiment — with
-      only the cost model and the fetch URL to change. Full rationale and
-      rejected alternatives: `DESIGN.md`; reproduction and client
-      takeaways: `README.md`; model details: `MODEL_CARD.md`; the rendered
+      dollar delta, and the sample-size math for the next experiment —
+      with only the cost model and the fetch URL to change. Full
+      rationale: `DESIGN.md`; reproduction: `README.md`; the rendered
       run: `reports/report.html`; machine-readable numbers:
       `reports/metrics.json`.
 roadmap:
@@ -262,25 +265,16 @@ roadmap:
       sha256-pinned through portfolio_core.io.fetch, DQ gates (nulls, ranges,
       segment vocabulary), DatasetContract, dataset card + dvc import-url
       manifest in the registry.
-  - status: remaining
-    text: >-
-      Multi-arm policy — choose WHICH email (Mens vs Womens) per customer, not
-      just whether to send: the dropped third arm already supports it; needs a
-      per-channel uplift model and a channel-switching cost model.
   - status: delivered
     text: >-
       Bootstrap CIs + cost sensitivity — shipped, verified: paired row
       bootstrap (n=1000, seeded) over out-of-fold scores; per-policy 95% CIs
       on Qini and profit, paired difference CIs (profit ranking established,
       Qini not), Qini bands, cost sweep with ≈$0.30/email break-even.
-  - status: remaining
-    text: >-
-      Model-based CUPED covariate — a control-arm outcome model as covariate
-      (documented industry variant) removes more variance than raw spend; kept
-      out to stay on the spec's pre-period-covariate read, noted as forward
-      work.
   - status: deferred
     text: >-
-      Causal forests (grf/econml) — parked: heavyweight deps for a showcase
-      whose point is auditable meta-learners; revisit if a client engagement
-      needs non-parametric CATEs beyond HistGB capacity.
+      Engagement-dependent extensions — one note covers all: multi-arm
+      policy (which email per customer, not just whether to send), a
+      model-based CUPED covariate, and causal forests (grf/econml) for
+      non-parametric CATEs. Documented in DESIGN.md; none changes the
+      delivered recommendations.

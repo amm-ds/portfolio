@@ -53,7 +53,11 @@ flakiness.
 
 ![Every plan/execute/critique transition, retry and loop bound is explicit code — the graph the workflow runs, including the bounded-repair loop and the human-approval checkpoint lane.](../assets/projects/09-agentic-workflows/agent_architecture.png){ width="100%" }
 
+Read the architecture diagram as a control-flow contract, not a picture: every transition, retry bound, and critique loop-back is executable code, and the approval lane marks exactly where a human can pause a run — typed state on disk, resumed by approve or reject-with-feedback — before execution continues.
+
 ![Which tools each task called, and how often — the over-call pattern (note_store, search_documents, duplicate in-set calls) that exact-set grading flags is visible per task.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
+
+The tool matrix is the behavioral x-ray behind the 8/15 exact-set score: each row is one task, so a bright cell under a tool no task planned for — `note_store` on 4 tasks, `search_documents` on 2 — is an unplanned habit rather than a need; 8 of the 47 captured calls are extras, decomposed per tool and task in `metrics.json detail.tooling`.
 
 ![Where the time goes per task: stacked plan/execute/critique visits — every task completes in 10–27 s, far under the 180 s budget; a retry would appear as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
 

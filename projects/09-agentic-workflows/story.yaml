@@ -262,11 +262,15 @@ sections:
         by them, not by luck.
 
       The machinery is trustworthy — 62 tests cover the graph, HITL, tools,
-      documents, budget paths, tool capture, and eval harness — and the
-      remaining weak point is behavioral: hosted models still pad with
-      unplanned tools (8 extra calls this run) and duplicate in-set calls,
-      which exact-set grading counts as misses on otherwise-perfect answers.
-      Per-call traces now make that noise measurable instead of anecdotal.
+      documents, budget paths, tool capture, and eval harness.
+
+      **Results quality: strong on answers and budgets, weak-and-known on
+      tool discipline.** 15/15 answers under enforced cost caps is
+      production-grade; the 8/15 exact-set score is behavioral noise
+      (unplanned and duplicate calls) that per-call traces now make
+      measurable — a practitioner gates consequential actions at the human
+      checkpoint and fixes the misses in prompts and tool docs, not by
+      switching models.
 
       **Business implication:** adopt this pattern when actions are
       consequential and auditable — human checkpoints for irreversible steps,

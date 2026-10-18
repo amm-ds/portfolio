@@ -67,9 +67,9 @@ Delivered (retrospective): ALNS behind the `RoutePlan` contract (13.63 % →
 4.23 % mean gap, dual criteria, HPO-tuned); full 56-instance dual-criteria
 benchmark; hierarchical-objective (vehicles-first) reporting per the SINTEF
 convention; CP-SAT hinted cross-check arm. Deferred (engagement-dependent):
-unhinted independent-solver comparison (PyVRP or OR-Tools routing at equal
-budget); Gehring–Homberger 200–1000-customer instances; solver-as-a-service
-endpoint.
+unhinted independent-solver comparison, Gehring–Homberger 200–1000-customer
+scale-out, and a solver-as-a-service endpoint — the contract, validator and
+benchmark are ready for all three.
 
 ## Reproduce
 

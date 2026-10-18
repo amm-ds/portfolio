@@ -159,7 +159,7 @@ sections:
       ```
 
       On NAB the same discipline is enforced event-first: threshold sweeps
-      exist (`nab_alert_budget`), adaptive thresholding re-anchors on drift,
+      exist on the budget curve, adaptive thresholding re-anchors on drift,
       and series with no evaluable test events are excluded from aggregates —
       never scored as misses.
 
@@ -197,17 +197,16 @@ sections:
       property clients pay for, precision at real anomaly rarity. Held-out
       window ladder (ROC-AUC / PR-AUC): random 0.509 / 0.019; LOF 0.527 /
       0.019; OCSVM 0.337 / 0.024; tuned LOF 0.505 / 0.025; **tuned OCSVM
-      0.906 / 0.136**; IsolationForest 0.916 / 0.124, tuned 0.917 / 0.121 —
-      see `roc_curves` and `score_distribution`. Tuning rescued OCSVM:
-      `gamma=0.013` replaced the failed `gamma="scale"` default (parameter
-      importance 0.99), a ~6× tighter kernel that carves the anomaly blob
-      out instead of folding it in. LOF was not rescued: its best
-      neighborhood size saturated at the search cap (200) and test ROC-AUC
-      fell 0.527 → 0.505 — inside a self-similar anomaly cluster every point
-      looks normal to a purely local method. Rolling-median residuals
-      de-cluster that blob (0.9158 → 0.9999 ROC-AUC). Exact values in
-      `reports/metrics.json`, `reports/nab_metrics.json`, and
-      `reports/report.html`.
+      0.906 / 0.136**; IsolationForest 0.916 / 0.124, tuned 0.917 / 0.121.
+      Tuning rescued OCSVM: `gamma=0.013` replaced the failed
+      `gamma="scale"` default (parameter importance 0.99), a ~6× tighter
+      kernel that carves the anomaly blob out instead of folding it in. LOF
+      was not rescued: its best neighborhood size saturated at the search
+      cap (200) and test ROC-AUC fell 0.527 → 0.505 — inside a
+      self-similar anomaly cluster every point looks normal to a purely
+      local method. Rolling-median residuals de-cluster that blob (0.9158 →
+      0.9999 ROC-AUC). Exact values in `reports/metrics.json`,
+      `reports/nab_metrics.json`, and `reports/report.html`.
 
       **Business implication:** the champion finds most real events, so the
       next dollar goes to alert budgeting and event deduplication — at 1 609
@@ -216,60 +215,51 @@ sections:
       - nab_timelines
       - nab_score_distribution
       - nab_alert_budget
-      - roc_curves
-      - score_distribution
       - adaptive_stream
     metrics_keys:
       [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 
   - id: conclusions
     text_md: |
-      The takeaways:
-
       - **Detector families make different bets.** Density- and boundary-based
-        methods assume anomalies are sparse and dissimilar to everything; when
-        incidents arrive as a repeated, self-similar signature, partitioning
-        methods (IsolationForest) and residual/context-aware features still
-        see them. Choosing a detector without checking that assumption is how
-        silent incidents ship to production.
+        methods assume anomalies are sparse and dissimilar; a repeated,
+        self-similar incident signature defeats them — IsolationForest and
+        residual features still see it. Skipping that check is how silent
+        incidents reach production.
       - **Tuning is verdict-changing — but only sometimes.** One-Class SVM
-        went from below-chance (0.337) to PR-AUC champion (0.136) because one
-        scale-sensitive knob (`gamma`) was wrong by default; LOF stayed at
-        chance because its failure is structural, not hyperparametric. HPO is
-        cheap (90 seeded trials, ~80 s), so the right move is to run it
-        and report both outcomes.
+        went from below-chance (0.337) to PR-AUC champion (0.136) because
+        one scale-sensitive knob (`gamma`) was wrong by default; LOF stayed
+        at chance — a structural failure. HPO is cheap (90 trials, ~80 s) —
+        run it and report both.
       - **Point metrics flatter; event metrics tell the truth.** The
-        synthetic track's 0.916 PR-AUC collapsed to 0.527 on NAB once scoring
-        counted windows instead of minutes — methodology, not more modeling,
-        is what surfaced the false-positive firehose.
-      - **Guardrails make results trustworthy.** DQ gates that halt the
-        pipeline, a time-ordered split, validation inside the train window
-        only, a fixed (untuned) threshold, and a seeded random baseline mean
-        the reported numbers are ones a client can plan an alert budget
-        around.
+        synthetic track's 0.916 PR-AUC collapsed to 0.527 on NAB once
+        scoring counted windows, not minutes — methodology, not modeling,
+        surfaced the firehose.
+      - **Guardrails make results trustworthy.** DQ gates, a time-ordered
+        split, in-train-window validation only, a fixed threshold, and a
+        seeded random floor mean a client can plan an alert budget around
+        the numbers.
 
-      Full analysis in `DESIGN.md`; runnable detail in `README.md`.
+      **Results quality:** the headline is weak-and-known on real NAB data —
+      16/17 events found, but at 0.107 range precision the 1,609 alerts are
+      the finding. The actionable output is the alert-budget curve: pick the
+      alert volume on-call can absorb, read off the recall it buys, set
+      per-series budgets — more AUC is not where the next dollar goes.
 
-      **Business implication:** the deliverable is not "a model with 0.92
-      AUC" — it is an evaluation harness that tells you *when to distrust the
-      model*, what tuning and features changed and why, and what a given
-      alert budget buys; that is what de-risks putting anomaly detection on a
-      client's critical path.
+      Detail: `DESIGN.md`, `README.md`.
+
+      **Business implication:** not "a model with 0.92 AUC" — an evaluation
+      harness that says *when to distrust the model* and what an alert
+      budget buys; that is what de-risks it on a client's critical path.
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
 roadmap:
   - status: delivered
-    text: NAB real-data primary track — 12 checksum-pinned series with event-based metrics; headline PR-AUC 0.527 / range-F1 0.157 (16/17 events at 0.107 range precision) versus synthetic 0.916.
+    text: NAB real-data primary track — 12 checksum-pinned series with event-based metrics; headline PR-AUC 0.527 / range-F1 0.157 (16/17 events found at 0.107 range precision, 1,609 alerts) versus synthetic 0.916 — the synthetic-to-real drop is itself the headline evidence.
   - status: delivered
-    text: Adaptive-threshold streaming — drift-aware simulation on synthetic (zero events) and NAB (31/120 chunks trigger recalibration); machinery unit-tested.
+    text: Adaptive-threshold streaming — drift-aware simulation on synthetic (zero false recalibrations) and NAB (31/120 chunks trigger recalibration); machinery unit-tested, trigger calibrated on synthetic flagged as too twitchy on real data.
   - status: delivered
-    text: Rolling-median residual features — residual probe lifts IsolationForest 0.9158 → 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the anomaly blob.
+    text: Rolling-median residual features — residual probe lifts IsolationForest 0.9158 → 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the self-similar anomaly blob the EDA predicted.
   - status: delivered
-    text: NSL-KDD real-data track — checksum-pinned fetch of 125,973 network-flow records; champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC.
+    text: NSL-KDD real-data transfer probe — checksum-pinned fetch of 125,973 network-flow records; the champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC behind the same DatasetContract.
   - status: remaining
-    text: Attack the false-positive firehose on NAB — per-series alert budgets, event deduplication, per-family thresholds; range precision 0.107 is the problem to solve.
-  - status: remaining
-    text: Recalibrate the adaptive drift trigger on real data — the median/IQR z tuned on synthetic fires on 31/120 NAB chunks; needs a higher threshold or a variance-normalised statistic.
-  - status: deferred
-    text: Production streaming integration — needs a real event source; deferred until a client engagement supplies live-shaped traffic.
-  - status: deferred
-    text: NSL-KDD hardening — one-hot categoricals, per-attack-category breakdown, and a literature-protocol comparison table; engagement-dependent.
+    text: Attack the false-positive firehose on real telemetry — per-series alert budgets, event deduplication, and a recalibrated drift trigger (median/IQR z tuned on synthetic fires 31/120 on NAB); range precision 0.107 is the problem to solve with a client on live traffic.

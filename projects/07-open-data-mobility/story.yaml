@@ -212,19 +212,19 @@ sections:
       - **Challengers lost on validation:** beat the incumbent on the Q4
         test (xgb −4.1% MAE) but lost on embargoed validation —
         `gbm_tuned` stays served; serving keys on validation.
-      - **p90 calibration: 90.8% overall** (`p90_calibration`, `p90_band`;
-        target 90%): Manhattan 91.4% / Queens 89.6% tight; sparse N/A zones
+      - **p90 calibration: 90.8% overall** (`p90_band`; target 90%):
+        Manhattan 91.4% / Queens 89.6% tight; sparse N/A zones
         84.7% under-cover (flagged, not filled); Staten Island 98.5%.
-      - **Importance is temporal** (`gbm_feature_importance`): lag_168 0.80
-        > lag_24 0.64 > lag_1 0.55 > hour 0.32; weather ≈ 0 for point MAE —
-        a negative result, reported not hidden; the payoff is the elasticity signal
-        (`weather_elasticity`): rain ≥1 mm drops outer-borough demand 7–10%
-        (Queens 0.92×, Staten Island 0.93×), Manhattan holds 0.97×, EWR
-        rises 1.08× — directional, not causal.
-      - **Cross-service transfer (`green_transfer`):** yellow-trained GBMs
-        lose MAE to green persistence (0.296 vs 0.212; green demand is far
-        sparser) but win RMSE (−17%) and MAPE (−19%); per-service
-        retraining is recommended (`zone_residual_map` maps the error).
+      - **Importance is temporal**: lag_168 0.80 > lag_24 0.64 >
+        lag_1 0.55 > hour 0.32; weather ≈ 0 for point MAE — a negative
+        result, reported not hidden; the payoff is the elasticity signal
+        (`weather_elasticity`): rain ≥1 mm drops outer-borough demand
+        7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan holds
+        0.97×, EWR rises 1.08× — directional, not causal.
+      - **Cross-service transfer:** yellow-trained GBMs lose MAE to
+        green persistence (0.296 vs 0.212; green demand is far sparser)
+        but win RMSE (−17%) and MAPE (−19%); per-service retraining is
+        recommended.
       - **Serving is live:** the showcase API returned JFK (zone 132):
         223.827 point / 251.811 p90; `zone_fan` shows per-zone fans.
 
@@ -232,7 +232,7 @@ sections:
       hour last week"; the 90.8%-calibrated p90 band yields a defensible
       buffer of extra vehicles per hour — except flagged sparse N/A zones,
       where bands run too tight.
-    figures: [gbm_vs_nn, p90_calibration, p90_band, gbm_feature_importance, weather_elasticity, green_transfer, zone_residual_map, zone_fan]
+    figures: [gbm_vs_nn, p90_band, weather_elasticity, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
   - id: conclusions
@@ -241,31 +241,33 @@ sections:
 
       - **Scale is a discipline, not a budget:** 41.2M rows processed
         month-by-month through streaming aggregation, observed peak under
-        3 GB — the pipeline runs on a laptop.
+        3 GB — it runs on a laptop.
       - **Data contracts earn trust:** per-month DQ gates caught a 2002
         trip inside a 2024 file and 5–13% null passenger counts before they
         could poison the lag features.
       - **Baselines anchor the comparison:** the raw-count NN scored *below*
         persistence until a log1p target transform fixed the loss
-        geometry — a one-line change visible only because the naive
-        baseline was always in the comparison.
-      - **Calibration is a deliverable:** the p90 band at 90.8% coverage is
-        what turns a forecast into a staffing number; the flagged N/A-zone
-        under-coverage shows where not to trust it.
+        geometry — visible only because the naive baseline was always in
+        the comparison.
+      - **Calibration is a deliverable:** the p90 band turns a forecast
+        into a staffing number; the flagged N/A-zone under-coverage shows
+        where not to trust it.
       - **Monitoring is software, not a runbook:** the drift observatory
         scores every new TLC month against the persisted serving model and
         opens an issue on regression (`docs/runbooks/drift-response.md`) —
-        2024-11 (+8.2%, within tolerance) is the wiring check; it earns
-        its keep on the first unseen month.
-      - The served model ships with a model card (`MODEL_CARD.md`) and
-        serves per `SERVING.md` — intended use, slices, limits: the
-        procurement one-pager.
+        2024-11 (+8.2%, within tolerance) is only the wiring check.
+      - The served model ships with a model card (`MODEL_CARD.md`) —
+        intended use, slices, limits: the procurement one-pager.
+
+      **Results quality: strong on dense zones, caveated on sparse
+      ones.** The 28.4% error cut and 90.8% band hold on dense zones;
+      flagged N/A zones under-cover at 84.7% — staff from the band in
+      dense boroughs, fall back to persistence rules in flagged zones.
 
       **Business implication:** 41.2M rows, a strict temporal holdout, and
       a sub-3 GB footprint mean this quality of analysis runs on a laptop
       and re-runs in minutes — enterprise-grade rigour without
-      enterprise-grade infrastructure. Full rationale: `DESIGN.md`;
-      reproduction: `README.md`; rendered run: `reports/report.html`.
+      enterprise-grade infrastructure.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
@@ -295,16 +297,13 @@ roadmap:
       2024-11: +8.2%, within tolerance.
   - status: delivered
     text: >-
-      Zone choropleth geo views on official TLC boundaries — demand geography
-      (zone_demand_map) and per-zone MAPE residuals (zone_residual_map), plus
-      a per-zone forecast fan chart (zone_fan).
+      Zone-level geo views on official TLC boundaries — shipped, verified:
+      demand choropleth, per-zone MAPE residual choropleth, and a per-zone
+      forecast fan chart (zone_fan) for dispatcher drill-down.
   - status: deferred
     text: >-
-      Per-service (green/FHV) model retraining — the transfer study showed
-      yellow weights do not carry over; needs per-service history and a
-      committed deployment.
-  - status: deferred
-    text: >-
-      Causal weather-impact estimates to upgrade directional elasticities into
-      pricing triggers — needs a causal design, not achievable from
-      observational groupbys.
+      Engagement-dependent extensions — one note covers both: per-service
+      (green/FHV) retraining (yellow weights do not carry over) and
+      causal weather-impact estimation to upgrade directional elasticities
+      into pricing triggers. Both need designs beyond this project's
+      observational scope.

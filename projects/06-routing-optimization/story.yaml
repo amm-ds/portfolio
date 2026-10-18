@@ -163,18 +163,17 @@ sections:
     best-known values (registry table + SINTEF TOP supplement), reported
     per instance and per family. The figure set tells the story at a
     glance: `solver_profile` shows the full ladder per instance,
-    `route_map_C101` shows the best C101 plan, `convergence_C101` /
-    `convergence_RC105` and `alns_convergence_C101` /
-    `alns_convergence_RC105` show both descents, and `pareto_gap_runtime`
-    with `runtime` place every solver on the
-    runtime-vs-gap plane. Runtimes are load-sensitive (shared machine), so
-    the seeded, deterministic distances and gaps are the verdict and times
-    are context. Full tables in `reports/results.md`.
+    `route_map_C101` shows the best C101 plan, `alns_convergence_C101`
+    shows the winning metaheuristic's descent, and `pareto_gap_runtime`
+    places every solver on the runtime-vs-gap plane. Runtimes are
+    load-sensitive (shared machine), so the seeded, deterministic
+    distances and gaps are the verdict and times are context. Full
+    per-solver runtime tables in `reports/results.md`.
 
     **Business implication:** evaluation is cheap and fully reproducible,
     so it can run in CI on every change — optimization quality becomes a
     guarded regression metric, not a one-off report.
-  figures: [route_map_C101, solver_profile, convergence_C101, convergence_RC105, alns_convergence_C101, alns_convergence_RC105, pareto_gap_runtime, runtime]
+  figures: [route_map_C101, solver_profile, alns_convergence_C101, pareto_gap_runtime]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: results
   text_md: |
@@ -229,26 +228,31 @@ sections:
     big lever (savings, 18.3 %), local polish helps a little (2-opt+HPO,
     13.6 %), and the metaheuristic closes the rest — ALNS at **4.23 %**
     mean gap over all 56 instances, single digits on every family. The
-    hinted CP-SAT cross-check closed the loop: ~5× the runtime and the ALNS
-    plan as a head start bought nothing at 100-customer scale, but
-    certifies small subproblems to optimality in seconds. Lessons that
-    transfer:
+    hinted CP-SAT cross-check closed the loop: ~5× the runtime bought
+    nothing at 100-customer scale, but certifies small subproblems
+    optimal in seconds.
+
+    **Results quality: strong, with one stated caveat.** The gap is
+    seeded and re-runnable in CI; the caveat is +3.73 vehicles — a
+    practitioner contracts on the distance number, not on fleet-size
+    parity.
+
+    Lessons that transfer:
 
     - **Validate feasibility in code** — a `RoutePlan` either passes the
-      validator or the pipeline halts; no route reaches a slide
-      unvalidated.
+      validator or the pipeline halts.
     - **Benchmark against published optima on both criteria** —
       vehicles-first ranking means single-number gap claims hide the
-      vehicle story fleet planners pay for.
+      vehicle story.
     - **Demand negative results from tuning loops** — recording that
       restarts don't pay is worth more than a prettier config.
-    - **Cross-check, and label the probe** — a hinted
-      incumbent-improvement probe is not an independent comparison; saying
-      so is what makes the other numbers credible.
+    - **Cross-check, and label the probe** — a hinted probe is not an
+      independent comparison; labelling it makes the other numbers
+      credible.
 
     The remaining ~4 % lives in C2's wide-horizon optima and a few tight
-    chains (C203, C103) — destroy size and operator pool, not the
-    framework, are the next levers; the roadmap records the rest.
+    chains (C203, C103) — destroy size and operator pool are the next
+    levers.
 
     **Business implication:** the same harness a client would deploy daily
     runs the whole benchmark in minutes with a literature-anchored quality
@@ -283,18 +287,8 @@ roadmap:
     certifies the 25-customer C101 prefix optimal (191.8) in 2.9 s.
 - status: deferred
   text: >-
-    Unhinted independent-solver comparison (PyVRP or OR-Tools routing at an
-    equal time budget) — engagement-dependent: needs a like-for-like setup
-    the hinted probe deliberately is not; the harness and benchmark are
-    ready.
-- status: deferred
-  text: >-
-    Gehring-Homberger 200-1000-customer instances — engagement-dependent:
-    scale-out beyond the 100-customer Solomon set; the `RoutePlan` contract
-    and validator carry over unchanged.
-- status: deferred
-  text: >-
-    Solver-as-a-service endpoint — engagement-dependent: packaging the
-    ladder behind an API is a deployment project, not an optimization one;
-    per-instance runtimes (ms for heuristics, ~seconds for ALNS) already
-    fit interactive use.
+    Engagement-dependent extensions — one note covers all three: an
+    unhinted independent-solver comparison (PyVRP or OR-Tools at an equal
+    budget), Gehring-Homberger 200-1000-customer scale-out, and a
+    solver-as-a-service endpoint. The `RoutePlan` contract and benchmark
+    are ready.
