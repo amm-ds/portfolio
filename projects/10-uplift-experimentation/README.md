@@ -90,6 +90,14 @@ single-policy profit CIs ($4,881 vs $6,838) understate the separation; the
 paired difference is the honest read. The recommendation stands on profit,
 and the Qini ranking is stated with its interval rather than asserted.
 
+The recommendation is anchored against both non-model baselines on the same
+paired bootstrap (T-learner minus comparator): vs random targeting at the
+25% budget **+$2,812, 95% CI [+$718, +$4,767]** — the concentration
+advantage is established; vs mail-everyone at $0.01/email **−$9,265, 95% CI
+[−$13,125, −$5,808]** — entirely below zero, consistent with the headline:
+at these prices mailing everyone is the profit maximum, and the model's
+value is efficiency, not raw profit.
+
 Qini area and profit-at-budget disagree for the response model (highest
 area, lowest budget profit): the policy is chosen on the money, the curve
 explains why.

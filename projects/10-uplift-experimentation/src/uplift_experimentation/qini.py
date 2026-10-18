@@ -168,11 +168,18 @@ def bootstrap_policy_stats(
     every policy, so model-vs-model differences are paired on the same
     resample) and recomputes, per policy: the Qini coefficient, the profit at
     the budget fraction, and — when ``band_grid`` is given — the Qini curve
-    interpolated onto that grid (for figure bands). Deterministic under
+    interpolated onto that grid (for figure bands). On the same shared
+    resample it also reads the two non-model comparators: the RANDOM baseline
+    — by construction the straight line from (0, 0) to the resample's
+    full-mail incremental point (qini identically 0, so no coefficient is
+    tracked — only its profit at the budget), and MAIL_EVERYONE (deterministic
+    per resample: full-mail incremental conversions x revenue minus
+    n_total x cost — independent of ``budget``). Deterministic under
     ``seed``; n_total/mail cost enter exactly as in the point estimates.
 
     Returns {"qini": {policy: (n_boot,)}, "profit_at_budget": {policy: (n_boot,)},
-    "band": {policy: (lo, hi)}, "band_grid": grid or None}.
+    "random_profit_at_budget": (n_boot,), "mail_everyone_profit_at_budget":
+    (n_boot,), "band": {policy: (lo, hi)}, "band_grid": grid or None}.
     """
     treatment = np.asarray(treatment, dtype=int)
     outcome = np.asarray(outcome, dtype=float)
@@ -186,9 +193,27 @@ def bootstrap_policy_stats(
     profit_b: dict[str, list[float]] = {p: [] for p in score_arrs}
     band_b: dict[str, list[np.ndarray]] = {p: [] for p in score_arrs}
     rng = np.random.default_rng(seed)
+    random_profit_b: list[float] = []
+    mail_profit_b: list[float] = []
     for _ in range(n_boot):
         idx = rng.integers(0, n, n)
         t_b, y_b = treatment[idx], outcome[idx]
+        # Random baseline: the straight line to the resample's full-mail
+        # incremental point — exactly the definition the point estimates use.
+        # A fresh random permutation per replication would be correct in
+        # expectation but injects pure ordering luck into the comparator,
+        # widening the paired CI beyond the policy comparison at hand.
+        nt_b = int(t_b.sum())
+        if 0 < nt_b < n:
+            inc_full = nt_b * (float(t_b @ y_b) / nt_b - float((1 - t_b) @ y_b) / (n - nt_b))
+        else:
+            inc_full = 0.0
+        random_profit_b.append(
+            budget * inc_full * revenue_per_conversion - budget * n_total * cost_per_email
+        )
+        # Mail-everyone is deterministic per resample: every row mailed at the
+        # resample's full-mail incremental conversions; no budget dependence.
+        mail_profit_b.append(inc_full * revenue_per_conversion - n_total * cost_per_email)
         for policy, s in score_arrs.items():
             fr, inc = qini_points(t_b, y_b, s[idx])
             # Qini coefficient without re-sorting: area minus the random line.
@@ -219,6 +244,8 @@ def bootstrap_policy_stats(
     return {
         "qini": {p: np.asarray(v) for p, v in qini_b.items()},
         "profit_at_budget": {p: np.asarray(v) for p, v in profit_b.items()},
+        "random_profit_at_budget": np.asarray(random_profit_b),
+        "mail_everyone_profit_at_budget": np.asarray(mail_profit_b),
         "band": bands,
         "band_grid": grid,
     }

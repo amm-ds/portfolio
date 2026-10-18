@@ -24,8 +24,8 @@ milestones retrospectives in wave 9; this report is the forward-looking counterp
 | 05 Churn | ⬜ | ⬜ | Real CRM extract (engagement-gated — onboarding path ready); scheduled scoring + threshold drift review; dashboard refresh |
 | 06 Routing | 🔶 CLI + benchmark tables | ⬜ | Solver-as-a-service endpoint (POST problem → RoutePlan); instance upload path; per-family tuning presets |
 | 07 Mobility | ✅ forecast endpoint live | 🔶 serving artifact versioned | Drift monitoring + retrain on new TLC snapshots (deferred, engagement-dependent); per-service retraining (green/FHV); geo view (needs geopandas) |
-| 08 Inference & Serving (new) | ⬜ | ⬜ | **Build**: OpenAI-compatible serving stack; batching/quantization frontier at fixed SLOs; cost-per-token tables — planned scope is the product |
-| 09 Agentic Workflows (new) | ⬜ | ⬜ | **Build**: toolset library hardened; graph workflow templates; pydantic-evals suite expansion (more task categories); HITL demo path |
+| 08 Inference & Serving (new) | ✅ built | ✅ cost ledger + budget caps | Serving-economics ladder shipped; second serving stack + repeat runs remain deferred (see project README) |
+| 09 Agentic Workflows (new) | ✅ built | ✅ deterministic graders + traces | Held-out task set shipped (reported separately); evals suite is the consumption path |
 
 ## Cross-cutting gaps (platform level)
 
