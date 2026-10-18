@@ -1,7 +1,23 @@
 import type { Metrics, StorySectionData } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { BusinessImplication } from "./BusinessImplication";
 import { MetricCallouts } from "./MetricCallouts";
 import { PlotlyFigure } from "./PlotlyFigure";
+
+const BI_MARKER = "**Business implication:**";
+
+/**
+ * Split off the trailing `**Business implication:** ...` paragraph (rendered
+ * as its own card) from the rest of the section prose. Sections without the
+ * marker return the text unchanged with a null tail.
+ */
+function splitBusinessImplication(md: string): [string, string | null] {
+  const idx = md.lastIndexOf(BI_MARKER);
+  if (idx === -1) return [md, null];
+  const tail = md.slice(idx + BI_MARKER.length).trim();
+  if (tail === "") return [md, null];
+  return [md.slice(0, idx).trimEnd(), tail];
+}
 
 /** One case-study section: markdown prose + metric callouts left, native plotly figures right. */
 export function StorySection({
@@ -16,6 +32,7 @@ export function StorySection({
   metrics: Metrics | null;
 }) {
   const total = section.figures.length;
+  const [proseMd, implication] = splitBusinessImplication(section.text_md);
   const figures = section.figures.map((name, i) => (
     <PlotlyFigure
       key={name}
@@ -34,7 +51,10 @@ export function StorySection({
       </h2>
       <div className="story-cols">
         <div className="story-main">
-          <div className="prose">{renderMarkdown(section.text_md)}</div>
+          <div className="prose">{renderMarkdown(proseMd)}</div>
+          {implication && (
+            <BusinessImplication>{renderMarkdown(implication)}</BusinessImplication>
+          )}
           {metrics && <MetricCallouts metrics={metrics} metricsKeys={section.metrics_keys} />}
         </div>
         {total > 0 && <div className="story-figs">{figures}</div>}
