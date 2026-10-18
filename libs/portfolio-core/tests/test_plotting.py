@@ -12,11 +12,15 @@ def test_is_baseline_run() -> None:
     assert not is_baseline_run("clarke_wright")
 
 
-def test_add_takeaway_renders_annotation() -> None:
+def test_add_takeaway_renders_as_second_title_line() -> None:
     fig = go.Figure(go.Bar(x=["a"], y=[1]))
+    fig.update_layout(title={"text": "Headline"})
     add_takeaway(fig, "GBM beats persistence by 40%.")
-    assert len(fig.layout.annotations) == 1
-    assert fig.layout.annotations[0].text == "GBM beats persistence by 40%."
+    # Takeaway lives in the title as a muted span, not a colliding annotation.
+    assert "<span" in fig.layout.title.text
+    assert "GBM beats persistence by 40%." in fig.layout.title.text
+    assert fig.layout.title.text.startswith("Headline<br>")
+    assert len(fig.layout.annotations) == 0
 
 
 def test_style_runs_demotes_baselines_promotes_best() -> None:
