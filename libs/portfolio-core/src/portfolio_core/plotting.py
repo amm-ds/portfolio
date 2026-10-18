@@ -31,7 +31,13 @@ _TEMPLATE: dict[str, Any] = {
         },
         # Horizontal legend pinned above the plot area so it can never overlap
         # the title or the takeaway annotation; per-figure overrides win.
-        "legend": {"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0.02, "xanchor": "left"},
+        "legend": {
+            "orientation": "h",
+            "yanchor": "bottom",
+            "y": 1.02,
+            "x": 0.02,
+            "xanchor": "left",
+        },
         "showlegend": True,
     }
 }
