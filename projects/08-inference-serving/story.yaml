@@ -13,13 +13,6 @@ roadmap:
     text: >-
       Quality-vs-quantization check (Q8_0 vs QAT-int4 on one runner) with a
       cost-per-1M-token section built on declared electricity assumptions.
-  - status: deferred
-    text: >-
-      Measurement hardening — engagement-dependent: a second serving
-      stack (vLLM or raw llama.cpp server), repeated runs for run-to-run
-      variance (current numbers are a single author run), a concurrency
-      >8 sweep, and KV-cache quantization (not exposed on this Ollama
-      build).
 sections:
   - id: background
     text_md: |
@@ -43,9 +36,8 @@ sections:
       read.
 
       **Business implication:** a client weighing local inference against a
-      cloud API starts from measured per-model latency and cost numbers on
-      the stack that would actually run — not from vendor rate cards or
-      leaderboard claims.
+      cloud API starts from measured latency and cost on the stack that
+      would actually run — not vendor rate cards or leaderboard claims.
   - id: objectives
     text_md: |
       - **Characterize the frontier:** per-cell p50/p95/p99 latency, TTFT,
@@ -104,8 +96,8 @@ sections:
       These are facts about the serving layer, not about model intelligence.
 
       **Business implication:** a naive harness would have reported qwen3.6
-      as a broken model; knowing per-model reasoning defaults is part of the
-      true cost of serving.
+      as a broken model; per-model reasoning defaults are part of the true
+      cost of serving.
     figures:
       - quality_quant
   - id: training
@@ -135,8 +127,8 @@ sections:
       `report`.
 
       **Business implication:** swapping engine or quantization is a manifest
-      pull, not a re-architecture — the table maps one-to-one onto deployment
-      options.
+      pull, not a re-architecture — the table maps one-to-one onto
+      deployment options.
   - id: evaluation
     text_md: |
       Cells are (model, engine, concurrency) with concurrency 1/2/4/8 under

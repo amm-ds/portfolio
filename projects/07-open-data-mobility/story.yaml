@@ -59,7 +59,7 @@ sections:
 
       **Business implication:** the client gets a staffing decision —
       expected demand plus how many extra vehicles to hold each hour —
-      plus a straight read on what rain does and does not tell you.
+      and a straight read on what rain does and does not tell you.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
@@ -109,8 +109,8 @@ sections:
 
       Demand is hour-and-borough driven, not evenly spread.
 
-      **Business implication:** you staff the 18:00 Manhattan peak and the
-      airport flatness very differently — the EDA is what turns a
+      **Business implication:** staff the 18:00 Manhattan peak and the
+      airport flatness very differently — this EDA is what turns a
       city-wide average into per-zone staffing plans.
     figures: [eda_trips_profile, zone_hour_heatmap, zone_demand_map]
     metrics_keys: []
@@ -150,9 +150,8 @@ sections:
       The method section is the audit trail: no leakage inflates the
       numbers before the headline error rates are trusted.
 
-      **Business implication:** a client can verify the protocol — and
-      re-run the whole fit on a laptop — before betting a fleet plan on
-      the model.
+      **Business implication:** a client can verify the protocol and re-run
+      the whole fit on a laptop before betting a fleet plan on the model.
     figures: []
     metrics_keys: []
 
@@ -169,8 +168,10 @@ sections:
       - **Leak-proof tuning:** Optuna saw only the last expanding-window
         validation fold (24 h embargo, train side); the test window is
         never touched.
-      - **Deployment-shaped protocol:** scoring the most recent quarter — not a
-        random shuffle — is the closest analogue to deploying forward.
+      - **Deployment-shaped protocol:** scoring the most recent quarter —
+        not a random shuffle — is the closest analogue to deploying
+        forward; `zone_fan` renders per-zone forecast fans for dispatcher
+        drill-down.
 
       That question does not stop at delivery: monitoring is running software,
       not a runbook. The scheduled Thursday `drift-observatory` workflow
@@ -188,7 +189,7 @@ sections:
       **Business implication:** the client inherits a monitoring contract,
       not just a model — regression opens a tracked issue with a response
       runbook instead of waiting for the next quarterly review.
-    figures: [actual_vs_pred_top5, borough_mae]
+    figures: [actual_vs_pred_top5, borough_mae, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
   - id: results
@@ -207,32 +208,32 @@ sections:
 
       MASE 1.0 = persistence parity; served GBM 0.76 (`gbm_vs_nn`).
 
-      - **GBM tuning was flat:** tuned ≈ defaults within noise —
-        tuning will not rescue weak features.
-      - **Challengers lost on validation:** beat the incumbent on the Q4
-        test (xgb −4.1% MAE) but lost on embargoed validation —
-        `gbm_tuned` stays served; serving keys on validation.
+      - **GBM tuning was flat:** tuned ≈ defaults within noise — tuning
+        will not rescue weak features.
+      - **Challengers lost on validation:** xgb beat the incumbent on the
+        Q4 test (−4.1% MAE) but lost on embargoed validation — `gbm_tuned`
+        stays served; serving keys on validation.
       - **p90 calibration: 90.8% overall** (`p90_band`; target 90%):
-        Manhattan 91.4% / Queens 89.6% tight; sparse N/A zones
-        84.7% under-cover (flagged, not filled); Staten Island 98.5%.
-      - **Importance is temporal**: lag_168 0.80 > lag_24 0.64 >
-        lag_1 0.55 > hour 0.32; weather ≈ 0 for point MAE — a negative
-        result, reported not hidden; the payoff is the elasticity signal
+        Manhattan 91.4% / Queens 89.6% tight; sparse N/A zones 84.7%
+        under-cover (flagged, not filled); Staten Island 98.5%.
+      - **Importance is temporal**: lag_168 0.80 > lag_24 0.64 > lag_1
+        0.55 > hour 0.32; weather ≈ 0 for point MAE — a negative result,
+        reported not hidden; the payoff is the elasticity signal
         (`weather_elasticity`): rain ≥1 mm drops outer-borough demand
-        7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan holds
-        0.97×, EWR rises 1.08× — directional, not causal.
-      - **Cross-service transfer:** yellow-trained GBMs lose MAE to
-        green persistence (0.296 vs 0.212; green demand is far sparser)
-        but win RMSE (−17%) and MAPE (−19%); per-service retraining is
+        7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan holds 0.97×,
+        EWR rises 1.08× — directional, not causal.
+      - **Cross-service transfer:** yellow-trained GBMs lose MAE to green
+        persistence (0.296 vs 0.212; green demand is far sparser) but win
+        RMSE (−17%) and MAPE (−19%); per-service retraining is
         recommended.
       - **Serving is live:** the showcase API returned JFK (zone 132):
-        223.827 point / 251.811 p90; `zone_fan` shows per-zone fans.
+        223.827 point / 251.811 p90.
 
-      **Business implication:** ~28% of forecast error removed vs "same
+      **Business implication:** ~28% of forecast error is removed vs "same
       hour last week"; the 90.8%-calibrated p90 band yields a defensible
       buffer of extra vehicles per hour — except flagged sparse N/A zones,
       where bands run too tight.
-    figures: [gbm_vs_nn, p90_band, weather_elasticity, zone_fan]
+    figures: [gbm_vs_nn, p90_band, weather_elasticity]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
   - id: conclusions
@@ -264,9 +265,9 @@ sections:
       flagged N/A zones under-cover at 84.7% — staff from the band in
       dense boroughs, fall back to persistence rules in flagged zones.
 
-      **Business implication:** 41.2M rows, a strict temporal holdout, and
-      a sub-3 GB footprint mean this quality of analysis runs on a laptop
-      and re-runs in minutes — enterprise-grade rigour without
+      **Business implication:** this quality of analysis runs on a laptop
+      and re-runs in minutes — 41.2M rows, a strict temporal holdout and a
+      sub-3 GB footprint deliver enterprise-grade rigour without
       enterprise-grade infrastructure.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
@@ -300,10 +301,3 @@ roadmap:
       Zone-level geo views on official TLC boundaries — shipped, verified:
       demand choropleth, per-zone MAPE residual choropleth, and a per-zone
       forecast fan chart (zone_fan) for dispatcher drill-down.
-  - status: deferred
-    text: >-
-      Engagement-dependent extensions — one note covers both: per-service
-      (green/FHV) retraining (yellow weights do not carry over) and
-      causal weather-impact estimation to upgrade directional elasticities
-      into pricing triggers. Both need designs beyond this project's
-      observational scope.
