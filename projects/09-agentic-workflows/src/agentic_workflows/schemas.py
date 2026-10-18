@@ -190,7 +190,7 @@ class EvalTask(PortfolioBaseModel):
     expected_keywords: list[str] = Field(default_factory=list)
     expected_tools: list[str] = Field(default_factory=list)
     max_steps: int = Field(default=8, ge=1)
-    latency_budget_s: float = Field(default=180.0, gt=0)
+    latency_budget_s: float = Field(default=60.0, gt=0)
 
 
 class TaskRunRecord(PortfolioBaseModel):

@@ -47,7 +47,7 @@ class EvalConfig(PortfolioBaseModel):
     seed: int = Field(default=42, description="Reserved for corpus/sampling extensions.")
     max_execute_retries: int = Field(default=1, ge=0)
     max_critique_loops: int = Field(default=1, ge=0)
-    suite_latency_budget_s: float = Field(default=180.0, gt=0)
+    suite_latency_budget_s: float = Field(default=60.0, gt=0)
     task_cost_limit_usd: float = Field(
         default=0.25,
         gt=0,

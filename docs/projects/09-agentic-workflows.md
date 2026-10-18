@@ -35,11 +35,15 @@ unprompted extra calls count as misses.
 | answer success | **15/15** |
 | tool-selection accuracy | **15/15** exact-set — up from 8/15; all 30 captured calls planned (call precision 100%, tool recall 100%), `detail.tooling` |
 | step budget | 15/15 |
-| latency | median **18.2 s**, p95 31.1 s per task; 180 s budget held 15/15 |
+| latency | median **18.2 s**, p95 31.1 s per task; 60 s budget held 15/15 |
 | tokens / cost | ~85k in + ~12k out; ledger total **$0.086** cloud-equivalent of the $2.00 suite cap (~$0.009/task) |
 | held-out set | 7/7 answer success, 7/7 exact tool set, **3/3 should-fail probes refused gracefully** (`detail.heldout`) |
 
-![All 15 hosted tasks pass every grader — answers and exact-set tool selection now agree at 15/15 after the tool-discipline pass.](../assets/projects/09-agentic-workflows/per_task_grading.png){ width="100%" }
+One chart tells the whole verification story — the tuning suite passes all
+four graders 15/15, held-out answers pass 7/7, and all three
+designed-to-fail probes refuse gracefully:
+
+![Outcomes by split: tuning suite 15/15 on every grader, held-out answers 7/7, should-fail probes 3/3 refusals — the full verification story in one chart.](../assets/projects/09-agentic-workflows/suite_summary.png){ width="100%" }
 
 | suite | 15 tuning tasks + 10 held-out, 5 categories — 14 tuning tasks over the deterministic Atlas Valley corpus, 1 real-data lookup over 01's Wikipedia index (t15), held-out tasks reuse both corpora unseen |
 |---|---|
@@ -60,9 +64,34 @@ were re-scoped honestly: t15's expected set gained `calculator` (the
 119-year gap is arithmetic) and t05's prompt pins "before inverter losses".
 Result: 30/30 planned calls.
 
-![Every plan/execute/critique transition, retry and loop bound is explicit code — the graph the workflow runs, including the bounded-repair loop and the human-approval checkpoint lane.](../assets/projects/09-agentic-workflows/agent_architecture.png){ width="100%" }
+Every transition, retry bound, and critique loop-back in the graph is
+executable code, not prompt folklore:
 
-Read the architecture diagram as a control-flow contract, not a picture: every transition, retry bound, and critique loop-back is executable code (Critique now also audits the tools used against the plan), and the approval lane marks exactly where a human can pause a run — typed state on disk, resumed by approve or reject-with-feedback — before execution continues.
+```mermaid
+graph LR
+    U[user] --> P[Plan]
+    P --> E[Execute]
+    E -->|repair ≤ max retries| E
+    E --> C[Critique]
+    C -->|revise, ≤1| E
+    C -->|pass| R[WorkflowResult]
+    E -->|retries exhausted| F[End failure]
+```
+
+Consequential runs pause at a human checkpoint — typed state on disk,
+resumed by approve or reject-with-feedback — and re-enter the same graph:
+
+```mermaid
+graph LR
+    P[Plan] --> H[Approval gate]
+    H -->|approve| E[Execute]
+    H -->|reject + feedback| P
+```
+
+Read this as a control-flow contract: Critique now also audits the tools
+used against the plan, the approval lane marks exactly where a human can
+pause a run, and both terminal ends (structured `WorkflowResult` on pass,
+`End(failure)` when retries are exhausted) are part of the typed graph.
 
 ![Which tools each task called, and how often — the per-call matrix the exact-set grader reads; on the final run every invocation lands in a task's expected set.](../assets/projects/09-agentic-workflows/tool_usage_matrix.png){ width="100%" }
 
@@ -73,7 +102,7 @@ need. On the earlier hosted run `note_store` lit up on 4 tasks and
 shows zero unplanned calls, which is what 15/15 exact-set means in calls
 rather than in bars.
 
-![Where the time goes per task: stacked plan/execute/critique visits — the slowest task finished in 32 s, far under the 180 s budget; a retry appears as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
+![Where the time goes per task: stacked plan/execute/critique visits — the slowest task finished in 32 s, far under the 60 s budget; a retry appears as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
 
 ## Architecture
 
@@ -121,13 +150,14 @@ rather than in bars.
 
 ## Figures
 
-The showcase figures — per-task grading (answer success vs tool selection),
-cost/latency per task, the tool-usage matrix (calls per task × tool from the
-captured traces), the node waterfall (per-visit latency stack), and the agent
-architecture diagram — live in `reports/figures/` (one `.html` + `.json` per
-figure, served by the showcase API). Aggregates in `reports/metrics.json`
-(key `agentic_suite`, plus `detail.tooling` and `detail.heldout`); full
-report in `reports/report.html`.
+The showcase figures — the suite summary (outcomes by split: tuning,
+held-out answers, should-fail probes), cost/latency per task, the
+tool-usage matrix (calls per task × tool from the captured traces), and the
+node waterfall (per-visit latency stack) — live in `reports/figures/` (one
+`.html` + `.json` per figure, served by the showcase API). The workflow
+graph itself is a mermaid diagram (above) in this page and the story.
+Aggregates in `reports/metrics.json` (key `agentic_suite`, plus
+`detail.tooling` and `detail.heldout`); full report in `reports/report.html`.
 
 ## Where things live
 

@@ -1,7 +1,7 @@
 seed: 42
 max_execute_retries: 1
 max_critique_loops: 1
-suite_latency_budget_s: 180
+suite_latency_budget_s: 60
 task_cost_limit_usd: 0.25
 # Cloud-equivalent reference rate card ($1.00/Mtok in, $4.00/Mtok out — the
 # public kimi-k2.8-preview card used by portfolio_core.llm_budget; the hosted
