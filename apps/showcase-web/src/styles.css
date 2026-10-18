@@ -728,6 +728,41 @@ code {
   margin-top: 1.3rem;
 }
 
+/* --- Business-implication card: trailing "**Business implication:** ..." --- */
+
+.bi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 0 0 1.05em;
+}
+
+.bi-card .bi-label {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+
+.bi-card .bi-body {
+  color: var(--text);
+  opacity: 0.92;
+  line-height: 1.62;
+}
+
+.bi-card .bi-body p {
+  margin: 0;
+}
+
+.bi-card .bi-body p + p {
+  margin-top: 0.85em;
+}
+
 /* --- DataTable: shared table pattern (DataTable component + prose tables) --- */
 
 .data-table {

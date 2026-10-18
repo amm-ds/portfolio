@@ -89,3 +89,44 @@ describe("StorySection figure layout (wave 4)", () => {
     await waitFor(() => expect(document.querySelector("iframe")).not.toBeNull());
   });
 });
+
+describe("StorySection business-implication card", () => {
+  const WITH_BI = {
+    ...BASE,
+    text_md:
+      "Framing paragraph with some *context*.\n\n" +
+      "A second paragraph before the takeaway.\n\n" +
+      "**Business implication:** retention budget is a cost-minimization\n" +
+      "problem, judged in money saved.\n",
+  };
+
+  it("renders the trailing **Business implication:** paragraph as a card", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} index={0} metrics={null} />);
+    const card = document.querySelector(".bi-card");
+    expect(card).not.toBeNull();
+    expect(card?.getAttribute("aria-label")).toBe("Business implication");
+    expect(card?.querySelector(".bi-label")?.textContent).toBe("Business implication");
+    expect(card?.textContent).toContain("retention budget is a cost-minimization");
+  });
+
+  it("keeps the rest of the section content unchanged outside the card", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} index={0} metrics={null} />);
+    const prose = document.querySelector(".story-main .prose");
+    expect(prose?.textContent).toContain("Framing paragraph with some context.");
+    expect(prose?.textContent).toContain("A second paragraph before the takeaway.");
+    // the marker text is no longer part of the plain prose
+    expect(prose?.textContent).not.toContain("Business implication");
+    // only one card, holding only the tail
+    expect(document.querySelectorAll(".bi-card")).toHaveLength(1);
+    expect(document.querySelector(".bi-card")?.textContent).not.toContain("Framing paragraph");
+  });
+
+  it("renders no card when the section lacks the pattern", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(<StorySection projectId="01-rag-agent" section={BASE} index={0} metrics={null} />);
+    expect(document.querySelector(".bi-card")).toBeNull();
+    expect(document.querySelector(".story-main .prose")?.textContent).toBe("Numbers.");
+  });
+});
