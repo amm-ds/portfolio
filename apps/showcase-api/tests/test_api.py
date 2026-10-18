@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from showcase_api.main import app
+from showcase_api.middleware import RateLimiter, RateLimitMiddleware
 
 client = TestClient(app)
 
@@ -363,3 +364,108 @@ def test_solve_happy_path_feasible_plan() -> None:
 def test_solve_rejects_too_many_customers() -> None:
     r = client.post("/projects/06-routing-optimization/solve", json=_vrptw_payload(201))
     assert r.status_code == 422
+
+
+# --- Production hardening middleware -----------------------------------------
+
+
+def _rate_limit_mw() -> RateLimitMiddleware:
+    """The RateLimitMiddleware instance inside the app's built middleware stack."""
+    from showcase_api.main import app
+
+    if app.middleware_stack is None:  # stack builds lazily on first request
+        client.get("/health")
+    node = app.middleware_stack
+    while node is not None:
+        if isinstance(node, RateLimitMiddleware):
+            return node
+        node = getattr(node, "app", None)
+    raise AssertionError("RateLimitMiddleware not in stack")
+
+
+@pytest.fixture(autouse=True)
+def _relax_rate_limit():  # type: ignore[no-untyped-def]
+    """The suite fires many POSTs within microseconds; swap in a high-capacity
+    bucket so only the dedicated limiter tests feel the real cap."""
+    mw = _rate_limit_mw()
+    original = mw.limiter
+    mw.limiter = RateLimiter(per_minute=600_000, burst=100_000)
+    try:
+        yield
+    finally:
+        mw.limiter = original
+
+
+def test_rate_limiter_defaults_and_env_override(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    default = RateLimiter.from_env()
+    assert default.capacity == 10.0  # burst default
+    assert default.rate_per_second == 30 / 60.0  # RATE_LIMIT_PER_MINUTE default
+
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "120")
+    overridden = RateLimiter.from_env()
+    assert overridden.rate_per_second == 120 / 60.0
+
+
+def test_rate_limiter_refill_window() -> None:
+    """Token bucket: burst drains, retry_after reported, window refills."""
+    import time
+
+    from showcase_api.middleware import RateLimiter
+
+    rl = RateLimiter(per_minute=60, burst=2)  # 1 token/s refill
+    assert rl.check("ip")[0]
+    assert rl.check("ip")[0]
+    allowed, retry_after = rl.check("ip")
+    assert not allowed
+    assert 0.0 < retry_after <= 1.0
+
+    # Simulate the refill window elapsing: 10 s at 1 token/s refills fully.
+    tokens, _last = rl._buckets["ip"]
+    rl._buckets["ip"] = (tokens, time.monotonic() - 10.0)
+    assert rl.check("ip")[0]
+
+
+def test_rate_limit_burst_then_429_and_reset() -> None:
+    """Middleware: burst is allowed, the next POST in the window is 429 with
+    Retry-After; clearing the in-memory buckets (window reset) allows again."""
+    mw = _rate_limit_mw()
+    original = mw.limiter
+    mw.limiter = RateLimiter(per_minute=2, burst=2)
+    try:
+        url = "/projects/02-demand-forecasting/forecast"
+        body = {"series_id": "S1", "features": {"lag_1": 1.0}}
+        assert client.post(url, json=body).status_code != 429
+        assert client.post(url, json=body).status_code != 429
+        r = client.post(url, json=body)
+        assert r.status_code == 429
+        assert float(r.headers["Retry-After"]) > 0.0
+
+        mw.limiter._buckets.clear()  # window reset
+        assert client.post(url, json=body).status_code != 429
+    finally:
+        mw.limiter = original
+
+
+def test_body_limit_rejects_oversized_body() -> None:
+    """Global ~1 MB cap: an oversized POST body is rejected 413."""
+    r = client.post(
+        "/projects/02-demand-forecasting/forecast",
+        content=b'{"series_id": "S1", "features": {"pad": "%s"}}' % (b"x" * 1_100_000),
+        headers={"content-type": "application/json"},
+    )
+    assert r.status_code == 413
+
+
+def test_request_logging_emits_one_line(caplog) -> None:  # type: ignore[no-untyped-def]
+    import logging
+
+    with caplog.at_level(logging.INFO, logger="showcase_api.middleware"):
+        r = client.get("/health")
+    assert r.status_code == 200
+    lines = [
+        rec.getMessage()
+        for rec in caplog.records
+        if rec.name == "showcase_api.middleware" and "GET /health -> 200" in rec.getMessage()
+    ]
+    assert len(lines) == 1
+    assert "ms" in lines[0]

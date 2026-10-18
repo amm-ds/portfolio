@@ -25,6 +25,11 @@ from pydantic import BaseModel, Field
 from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
 
 from showcase_api import serving
+from showcase_api.middleware import (
+    BodyLimitMiddleware,
+    RateLimitMiddleware,
+    RequestLoggingMiddleware,
+)
 
 logger = get_logger(__name__)
 
@@ -36,6 +41,13 @@ _PID_RE = r"^\d{2}-[a-z0-9-]+$"
 
 setup_logging("INFO")
 app = FastAPI(title="amm-ds portfolio showcase", version="0.1.0")
+
+# Production floor (see showcase_api.middleware docstrings): body cap → rate
+# limit → request log. Last added runs outermost, so the log line sees the
+# final status (including 413/429) and latency of the whole chain.
+app.add_middleware(BodyLimitMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 
 
 def _project_dir(pid: str) -> Path:
