@@ -10,6 +10,7 @@ from inference_serving.config import (
     ModelSpec,
     load_config,
 )
+from pydantic import ValidationError
 
 
 def test_load_config_defaults_when_file_missing(tmp_path: Path) -> None:
@@ -57,6 +58,6 @@ def test_plan_cells_bounded_and_full() -> None:
 def test_modelspec_requires_name() -> None:
     try:
         ModelSpec(name="")
-    except Exception:
+    except ValidationError:
         return
     raise AssertionError("empty model name must fail validation")
