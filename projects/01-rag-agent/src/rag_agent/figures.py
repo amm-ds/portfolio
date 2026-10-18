@@ -23,6 +23,33 @@ from rag_agent.reporting import (
 from rag_agent.schemas import Article, EvalQuestion
 
 
+def _finish_themed(
+    fig: go.Figure,
+    *,
+    takeaway: str | None = None,
+    margin_t: int = 125,
+    margin_l: int = 60,
+    margin_b: int = 50,
+    showlegend: bool | None = None,
+) -> go.Figure:
+    """Apply the shared theme: takeaway as a second title line + margins.
+
+    ``add_takeaway`` renders the takeaway as a muted second line of the title
+    itself (a separate annotation collides with the top-pinned title). Where a
+    title already states the takeaway, callers pass no ``takeaway``. Margins
+    are explicit because the pinned legend above the plot needs top headroom
+    and some figures have long axis labels. Single-trace figures pass
+    ``showlegend=False`` so the legend does not render a "trace 0" chip.
+    """
+    if takeaway:
+        fig = add_takeaway(fig, takeaway)
+    fig = apply_theme(fig)
+    if showlegend is not None:
+        fig.update_layout(showlegend=showlegend)
+    fig.update_layout(margin={"t": margin_t, "l": margin_l, "r": 30, "b": margin_b})
+    return fig
+
+
 def sweep_figure(
     scores: list[RetrievalScores], random_scores: list[RetrievalScores] | None = None
 ) -> go.Figure:
@@ -153,15 +180,14 @@ def sweep_figure(
         font={"size": 12, "color": "#2dd4bf"},
         xanchor="center",
     )
-    fig = apply_theme(
-        add_takeaway(
-            fig,
+    fig = _finish_themed(
+        fig,
+        takeaway=(
             "Recall saturates at every size; smaller chunks rank sharper (MRR) at "
-            "half the context cost — every bar clears the seeded random floor.",
-        )
+            "half the context cost — every bar clears the seeded random floor."
+        ),
+        margin_t=128,  # subtitle (y=1.16) above the title needs headroom
     )
-    # add_takeaway pins margin t=90; the subtitle line above it needs more headroom.
-    fig.update_layout(margin={"t": 128, "l": 60, "r": 30, "b": 50})
     return fig
 
 
@@ -188,8 +214,8 @@ def model_comparison_figure(model_scores: dict[str, RetrievalScores], best_slug:
         title="MiniLM and BGE-small tie at recall@5 0.831 - the cheaper encoder wins",
         yaxis_title="score",
     )
-    return apply_theme(
-        add_takeaway(fig, "Both encoders saturate recall@5; ranking sharpness (MRR) decides.")
+    return _finish_themed(
+        fig, takeaway="Both encoders saturate recall@5; ranking sharpness (MRR) decides."
     )
 
 
@@ -231,13 +257,13 @@ def hpo_frontier_figure(
         xaxis_title="estimated input tokens per query",
         yaxis_title="recall@k",
     )
-    return apply_theme(
-        add_takeaway(
-            fig,
+    return _finish_themed(
+        fig,
+        takeaway=(
             f"Chosen: {chosen.embedding_slug}, chunks={chosen.chunk_size}, "
             f"top_k={chosen.top_k}, rerank={'on' if chosen.rerank else 'off'} — "
-            f"recall {chosen_y:.3f} at ≈{chosen_x:.0f} tokens.",
-        )
+            f"recall {chosen_y:.3f} at ≈{chosen_x:.0f} tokens."
+        ),
     )
 
 
@@ -270,12 +296,10 @@ def retrieval_funnel_figure(
             f"({relevant / max(n, 1):.0%}) keep a relevant article"
         )
     )
-    return apply_theme(
-        add_takeaway(
-            fig,
-            f"{relevant}/{n} questions ({relevant / max(n, 1):.0%}) keep a relevant "
-            "article after rerank.",
-        )
+    return _finish_themed(
+        fig,
+        margin_l=240,  # long funnel stage labels
+        showlegend=False,  # single unnamed trace → no "trace 0" chip
     )
 
 
@@ -301,11 +325,7 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
         ),
         showlegend=False,
     )
-    return apply_theme(
-        add_takeaway(
-            fig, "Five near-balanced topics; article lengths right-skewed, capped at 12k chars."
-        )
-    )
+    return _finish_themed(fig, margin_b=90)  # rotated topic labels need bottom headroom
 
 
 def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
@@ -328,8 +348,10 @@ def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
         xaxis_title="verdict",
         yaxis_title="questions",
     )
-    return apply_theme(
-        add_takeaway(fig, f"{counts['correct']}/{len(traces)} questions fully correct.")
+    return _finish_themed(
+        fig,
+        takeaway=f"{counts['correct']}/{len(traces)} questions fully correct.",
+        showlegend=False,  # single unnamed trace → no "trace 0" chip
     )
 
 
@@ -344,7 +366,7 @@ def latency_figure(latencies_s: list[float]) -> go.Figure:
         xaxis_title="latency (s)",
         yaxis_title="queries",
     )
-    return apply_theme(fig)
+    return _finish_themed(fig, showlegend=False)  # single unnamed trace
 
 
 def frontier_figure(
@@ -383,237 +405,4 @@ def frontier_figure(
         xaxis_title="estimated cost per query (USD)",
         yaxis_title="answer relevance",
     )
-    return apply_theme(fig)
-
-
-# Architecture diagram lane colours (dark theme).
-_LANE_COLORS = {
-    "retrieval": "#2dd4bf",  # teal — CPU, unmetered
-    "seam": "#a78bfa",  # violet — provider seam
-    "agent": "#38bdf8",  # sky — metered: agent
-    "verify": "#f472b6",  # pink — metered: verify + judge
-    "answer": "#34d399",  # emerald — final artifact
-}
-
-
-def agent_pipeline_figure(config: RAGConfig, n_articles: int, chosen: RetrievalBest) -> go.Figure:
-    """End-to-end architecture: question → retrieval → agent → verify → answer.
-
-    Static diagram (no traces): boxes are layout shapes, arrows are annotations,
-    all in ``x/y domain`` coordinates (0-1 fractions of the plot area), so it
-    renders identically in kaleido PNG exports, the React showcase (plotly.js)
-    and the HTML report. The provider seam (ADR-0004) and the hosted-metered
-    phases are drawn as first-class lanes, not prose afterthoughts.
-    """
-    XREF, YREF = "x domain", "y domain"
-    fig = go.Figure()
-    fig.update_layout(
-        xaxis={"visible": False},
-        yaxis={"visible": False},
-        margin={"t": 80, "l": 20, "r": 20, "b": 40},
-        hovermode=False,
-    )
-
-    def box(
-        x: float, y: float, w: float, h: float, label: str, color: str, *, size: int = 11
-    ) -> None:
-        fig.add_shape(
-            type="rect",
-            xref=XREF,
-            yref=YREF,
-            x0=x - w / 2,
-            x1=x + w / 2,
-            y0=y - h / 2,
-            y1=y + h / 2,
-            fillcolor="rgba(17, 28, 51, 0.9)",
-            line={"color": color, "width": 1.6},
-        )
-        fig.add_annotation(
-            x=x,
-            y=y,
-            xref=XREF,
-            yref=YREF,
-            text=label,
-            showarrow=False,
-            xanchor="center",
-            yanchor="middle",
-            font={"size": size, "color": "#e2e8f0"},
-            align="center",
-        )
-
-    def arrow(x0: float, y0: float, x1: float, y1: float, color: str = "#94a3b8") -> None:
-        fig.add_annotation(
-            x=x1,
-            y=y1,
-            xref=XREF,
-            yref=YREF,
-            ax=x0,
-            ay=y0,
-            axref=XREF,
-            ayref=YREF,
-            showarrow=True,
-            arrowhead=2,
-            arrowsize=1.1,
-            arrowwidth=1.4,
-            arrowcolor=color,
-        )
-
-    def lane_header(x: float, y: float, text: str, color: str) -> None:
-        fig.add_annotation(
-            x=x,
-            y=y,
-            xref="paper",
-            yref="paper",
-            text=text,
-            showarrow=False,
-            xanchor="left",
-            font={"size": 11, "color": color},
-        )
-
-    rerank_txt = "on" if chosen.rerank else "off"
-    # --- Lane 1: retrieval (CPU, unmetered) ---------------------------------
-    lane_header(0.02, 0.92, "RETRIEVAL · CPU-only · unmetered", _LANE_COLORS["retrieval"])
-    y1 = 0.82
-    box(0.075, y1, 0.115, 0.10, "User<br>question", _LANE_COLORS["retrieval"])
-    box(0.26, y1, 0.15, 0.12, "Embed<br>MiniLM-L6-v2<br>(80 MB, CPU)", _LANE_COLORS["retrieval"])
-    box(
-        0.475,
-        y1,
-        0.185,
-        0.12,
-        f"FAISS IndexFlatIP<br>exact search - top {config.rerank_multiplier}x k<br>"
-        f"({n_articles} articles)",
-        _LANE_COLORS["retrieval"],
-    )
-    box(
-        0.705,
-        y1,
-        0.185,
-        0.12,
-        f"Cross-encoder rerank<br>ms-marco MiniLM ({rerank_txt})<br>MRR@5 0.718→0.808",
-        _LANE_COLORS["retrieval"],
-        size=10,
-    )
-    box(0.915, y1, 0.135, 0.10, f"top-{chosen.top_k}<br>citations", _LANE_COLORS["retrieval"])
-    arrow(0.135, y1, 0.183, y1)
-    arrow(0.337, y1, 0.381, y1)
-    arrow(0.569, y1, 0.616, y1)
-    arrow(0.794, y1, 0.846, y1)
-
-    # --- Provider seam (ADR-0004) -------------------------------------------
-    # Narrow, left-aligned banner: the citations→agent arrow drops down the
-    # right side and must not cross it.
-    box(
-        0.285,
-        0.635,
-        0.43,
-        0.10,
-        "LLM provider seam (ADR-0004) — spans the LLM lanes below:<br>"
-        "env OpenAI-compatible endpoint (hosted kimi-for-coding, metered)<br>"
-        "⇄ local Ollama qwen3.6 ($0 API) · one code path, no runtime mock",
-        _LANE_COLORS["seam"],
-        size=10,
-    )
-
-    # --- Lane 2: agent loop (metered: agent) --------------------------------
-    lane_header(0.02, 0.55, "AGENT LOOP · metered phase: agent", _LANE_COLORS["agent"])
-    y2 = 0.45
-    box(
-        0.115,
-        y2,
-        0.185,
-        0.13,
-        "Tools — the only corpus access:<br>search_documents /<br>read_excerpt",
-        _LANE_COLORS["agent"],
-    )
-    box(
-        0.41,
-        y2,
-        0.215,
-        0.15,
-        "Agent loop (pydantic-ai)<br>question + citations →<br>typed AnalysisResult<br>"
-        "schema-invalid → loud failure<br>(≤2 output retries)",
-        _LANE_COLORS["agent"],
-        size=10,
-    )
-    box(
-        0.70,
-        y2,
-        0.19,
-        0.13,
-        "Drafted AnalysisResult<br>summary + per-claim<br>citations + confidence",
-        _LANE_COLORS["agent"],
-    )
-    arrow(0.915, 0.77, 0.47, 0.527, color=_LANE_COLORS["retrieval"])  # citations → agent
-    arrow(0.26, y2, 0.308, y2, color=_LANE_COLORS["agent"])  # tools → agent
-    arrow(0.308, y2 - 0.03, 0.26, y2 - 0.03, color=_LANE_COLORS["agent"])  # agent → tools
-    arrow(0.512, y2, 0.604, y2, color=_LANE_COLORS["agent"])
-
-    # --- Lane 3: verify loop (metered: verify + judge) -----------------------
-    lane_header(0.02, 0.335, "VERIFY LOOP · metered phases: verify + judge", _LANE_COLORS["verify"])
-    y3 = 0.24
-    box(0.085, y3, 0.125, 0.09, "Claim<br>split", _LANE_COLORS["verify"])
-    box(
-        0.305,
-        y3,
-        0.185,
-        0.11,
-        "Entailment judge<br>vs full cited-chunk text<br>(keyword judge = CI floor)",
-        _LANE_COLORS["verify"],
-    )
-    box(
-        0.565,
-        y3,
-        0.195,
-        0.11,
-        f"Repair (≤{config.verify.max_repair_calls} calls) or<br>drop unsupported claims",
-        _LANE_COLORS["verify"],
-    )
-    box(
-        0.835,
-        y3,
-        0.175,
-        0.11,
-        f"Support floor {config.verify.min_support:.1f}<br>below → abstain",
-        _LANE_COLORS["verify"],
-    )
-    arrow(0.70, y2 - 0.068, 0.085, y3 + 0.048, color=_LANE_COLORS["agent"])  # draft → split
-    arrow(0.15, y3, 0.211, y3, color=_LANE_COLORS["verify"])
-    arrow(0.40, y3, 0.466, y3, color=_LANE_COLORS["verify"])
-    arrow(0.663, y3, 0.746, y3, color=_LANE_COLORS["verify"])
-
-    # --- Final artifact ------------------------------------------------------
-    y4 = 0.075
-    box(
-        0.835,
-        y4,
-        0.24,
-        0.09,
-        "Answer with per-claim citations<br>(or explicit refusal)",
-        _LANE_COLORS["answer"],
-    )
-    arrow(0.835, y3 - 0.058, 0.835, y4 + 0.048, color=_LANE_COLORS["verify"])
-
-    # --- Metered-phase legend -------------------------------------------------
-    fig.add_annotation(
-        x=0.02,
-        y=0.145,
-        xref="paper",
-        yref="paper",
-        text=(
-            "Metered phases (hosted runs only): agent · verify · judge · ragas — "
-            "per-phase calls/tokens/spend in the platform spend ledger, "
-            "hard USD cap per run; local Ollama stays $0 API."
-        ),
-        showarrow=False,
-        xanchor="left",
-        font={"size": 11, "color": "#94a3b8"},
-        align="left",
-    )
-    fig.update_layout(
-        title=(
-            "One pipeline, two seams: the provider swap (ADR-0004) and the "
-            "verify-then-answer loop enforce grounding by construction"
-        )
-    )
-    return apply_theme(fig, height=640)
+    return _finish_themed(fig, showlegend=False)  # single unnamed trace

@@ -1,314 +1,64 @@
 project_id: 01-rag-agent
 sections:
-  - id: background
-    text_md: |
-      LLM assistants fail silently in the way that matters most to a
-      business: they sound confident while inventing facts.
-      Retrieval-grounded design removes that failure mode by construction —
-      the model can only speak from evidence it was shown, and every claim
-      carries a citation a human can audit.
-
-      The problems this design eliminates:
-
-      - **Hallucination by omission** — nothing forces the model to look
-        anything up, so it answers from memory instead.
-      - **Unverifiable confidence** — fluent answers with no way to check
-        where they came from.
-      - **Untestable quality** — demos that impress once, with no measurement
-        behind the claim.
-
-      This project builds that assistant as a fully reproducible pipeline: a
-      bounded, checksum-pinned slice of Wikipedia, a local embeddings index,
-      and an agent whose only window into the corpus is two retrieval tools.
-      No demo shortcuts — every quality claim below is measured on a graded
-      question set.
-
-      **Business implication:** you get an assistant whose answers can be
-      audited claim by claim — the difference between "the AI said so" and
-      "here is the exact passage it relied on".
-
-  - id: objectives
-    text_md: |
-      The deliverable is a question-answering agent with three hard
-      properties, each enforced rather than prompted:
-
-      - **Typed, validated output** — the model must return a structured
-        `AnalysisResult` (summary, citations, confidence); a schema-invalid
-        response fails the run loudly instead of reaching a user.
-      - **Evidence grounding** — the only corpus access is
-        `search_documents` / `read_excerpt`; the system prompt forbids outside
-        knowledge.
-      - **Operational SLOs** — retrieval recall ≥ 0.60 on the graded set,
-        an end-to-end latency target, and a per-query cost a client can
-        budget against (≤ $0.01).
-
-      The provider fallback chain makes "works everywhere" explicit:
-
-      ```mermaid
-      flowchart LR
-          Q[User question] --> A[Agent]
-          A -->|LLM_BASE_URL + LLM_API_KEY set| L[OpenAI-compatible provider]
-          A -->|no credentials| O[Local Ollama<br/>qwen3.6:35b-a3b-q4_K_M]
-          L --> R[Structured AnalysisResult]
-          O --> R
-          A -->|no provider at all| E[Loud error + setup guidance]
-      ```
-
-      Retrieval runs CPU-only and the LLM defaults to a local model, so data
-      never leaves the machine — the evaluation included — and `evaluate
-      --offline` keeps a retrieval-only CI path without any provider.
-
-      **Business implication:** answers come with citations a reviewer can
-      check — trust is a feature, not a promise — and the SLOs are written
-      down, so acceptance criteria exist before any demo.
-
-  - id: data
-    text_md: |
-      The corpus is a topical slice of the English Wikipedia dump
-      `20231101.en`, streamed from Hugging Face and bounded by construction.
-
-      - **Bounded scope** — five diverse topics (Climate, Renewable energy,
-        Aviation, Machine learning, Photosynthesis), at most 120 articles per
-        topic plus exact-title anchor articles collected outside the pattern
-        quota. Result: 593 articles (≈3.5 MB of text).
-      - **Quality gates** — null-rate and length-range checks halt the
-        pipeline loudly on violation; DVC tracks every artifact for
-        reproducibility.
-
-      The source dataset is registered in the
-      [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/):
-      snapshot `20231101.en` of English Wikipedia, streamed via `datasets`,
-      licensed **CC BY-SA 3.0 / GFDL (attribution required)**. The derived
-      corpus ships with its own sha256-pinned contract at
-      `data/raw/dataset_contract.json`, and every transformation replays via
-      `dvc repro` in the project directory.
-
-      **Business implication:** the data has a license trail, a checksum and
-      a snapshot date — the legal and reproducibility questions procurement
-      always asks are answered in one file.
-
-  - id: eda
-    text_md: |
-      The composition figure `eda_corpus_composition` shows what the bounded
-      scan actually collected, and it shaped the pipeline in one concrete way.
-
-      - **Near-symmetric topic coverage** — ≈102–125 articles per topic, so
-        no single theme dominates retrieval behavior.
-      - **Right-skewed article lengths** — most articles run 500–2,000 words,
-        with a long tail of large articles truncated at 12,000 characters to
-        keep embedding cost predictable.
-
-      The finding that mattered: the Wikipedia dump order is not topical, so
-      naive pattern quotas fill on peripheral articles (journals, albums,
-      lists) long before flagship pages appear in the stream — several famous
-      titles (e.g. "Photosynthesis", "Renewable energy") are entirely absent
-      from this dump. Exact-title anchors and eval questions were verified
-      against the real corpus, not assumed.
-
-      **Business implication:** we scoped the corpus by measuring what is
-      actually in the data rather than assuming — the same habit that catches
-      data-availability surprises before they become project risks.
-    figures:
-      - eda_corpus_composition
-
-  - id: training
-    text_md: |
-      "Training" here is index construction, deliberately classical — no
-      fine-tuning, just chunking and ranking discipline whose trade-offs are
-      measured rather than guessed. The `agent_pipeline` figure maps the whole
-      runtime path — question → retrieval → agent loop → verify loop → cited
-      answer — with the provider seam (ADR-0004) and the hosted-metered phases
-      drawn as first-class lanes.
-
-      Every engine choice is a measured trade-off, not a default:
-
-      | Component | Choice | Why | Measured |
-      |---|---|---|---|
-      | Embeddings | `all-MiniLM-L6-v2` (80 MB, CPU) | smallest encoder that saturates recall on this corpus | recall@5 0.831 — exact tie with BGE-small (`model_comparison`) |
-      | Reranker | `ms-marco-MiniLM` cross-encoder | the reading LLM consumes the top-1 passage, not the top-k | MRR@5 0.718 → 0.808 with rerank on (`retrieval_funnel`) |
-      | Index | FAISS `IndexFlatIP` (exact) | 593 articles: brute force is exact and still milliseconds | recall@5 0.831 at ≈800 input tokens/query (`retrieval_hpo_frontier`) |
-      | Provider | env OpenAI-compatible ⇄ local Ollama (ADR-0004) | one code path, no runtime mock; data never leaves the machine locally | hosted 65-q pass metered $3.58 cloud-equivalent, 79.6% cached reads |
-
-      - **Paragraph-aware chunking** — paragraphs first, then sentence
-        boundaries, then word windows with overlap; guarantees unit-tested at
-        200/400/800 tokens so the size trade-off is measurable.
-
-      **Business implication:** the whole pipeline runs on commodity CPU —
-      no GPU budget, no vendor lock-in, and one seam swaps the LLM provider
-      without touching anything else.
-    figures:
-      - agent_pipeline
-      - retrieval_funnel
-
-  - id: evaluation
-    text_md: |
-      Quality is measured, not demoed. The golden set is 65 graded questions
-      (44 single-hop, 11 multi-hop, 10 unanswerable) with known relevant
-      article ids.
-
-      - **Bounded HPO grid** — chunk sizes × top_k × encoder arm × rerank
-        ablation, with a **seeded uniform-random baseline** as the floor any
-        ranker must beat; `chunk_size_sweep` renders the grid.
-      - **Two judge layers** — a rubric judge (provider model by default,
-        `JUDGE=keyword` as the deterministic CI floor); and, behind
-        `evaluate --ragas`, the RAGAS set scored by the active provider.
-      - **Sealed held-out set** — 15 fresh questions (8 single-hop, 2
-        multi-hop, 5 unanswerable) written after tuning froze, gated
-        programmatically for answerability, unanswerability, and freshness.
-        `evaluate --heldout` scores it separately under `detail.heldout` —
-        retrieval metrics plus one verify-on pass, no RAGAS, so a hosted run
-        costs a fraction of the tuning pass.
-      - **Verify-then-answer loop** — every drafted answer is claim-split and
-        entailment-checked against the full text of its cited chunks;
-        unsupported claims are repaired (≤2 calls) or dropped; answers below
-        min_support (0.6) abstain.
-      - **Operations** — latency and tokens persist to `reports/cost_telemetry.json`
-        (spread: `latency_histogram`); hosted runs add a per-phase meter with a
-        hard USD cap, and schema-invalid output is retried (≤2) before it
-        counts as a format failure. Everything lands in `reports/metrics.json`;
-        `evaluate --offline` keeps a CI-safe retrieval-only path.
-
-      **Business implication:** the offline/keyword path means the quality
-      harness still runs in CI without secrets or GPUs, while the real
-      numbers come from a $0 local run — quality gates survive procurement
-      either way.
-    figures:
-      - chunk_size_sweep
-      - latency_histogram
-    metrics_keys:
-      - retrieval_chunks_200
-      - retrieval_random_chunks_200
-      - retrieval_model_minilm_chunks_200
-      - retrieval_model_bge_small_chunks_200
-      - retrieval_rerank_on_chunks_200
-      - retrieval_rerank_off_chunks_200
-      - rag_agent
-
-  - id: results
-    text_md: |
-      Retrieval first — everything downstream depends on it (65-question
-      golden set, seeded random floor; `retrieval_hpo_frontier` sweep,
-      encoder tie in `model_comparison`):
-
-      | Configuration | recall@5 | recall@10 | MRR@5 |
-      |---|---|---|---|
-      | chunks=200, top_k=10 | 0.831 | 0.846 | 0.808 |
-      | random baseline | 0.031 | 0.046 | 0.018 |
-      | **chosen: MiniLM, chunks=200, top_k=3, rerank ON** | **0.831** | — | **0.808** |
-
-      Provider A/B — local `qwen3.6-q4` (30-q subset) vs hosted
-      `kimi-for-coding` (full 65 q); hosted costs are **cloud-equivalent
-      estimates** at the kimi-k2.8 card (membership quota, never billed):
-
-      | Pass | Taxonomy | RAGAS faithfulness | Verify overhead |
-      |---|---|---|---|
-      | local qwen3.6-q4, verify ON (n=30) | 15 correct / 14 unsupported / 1 format | 0.606 | 33 repair calls |
-      | hosted kimi-for-coding, verify ON (n=65) | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] | 39 repair calls |
-
-      - **Grounding tracks the provider** — hosted faithfulness 0.685
-        [0.605, 0.760] vs 0.606 local (directional, not controlled);
-        relevancy 0.878; refusal accuracy 0.9.
-      - **Verify overhead is calls, not minutes** — hosted p50/p95 latency
-        23 s / 175 s (p95: one runaway tool-loop cut off by the token guard);
-        output-retry recovered the one schema-invalid draft.
-      - **Metered cost (hosted, full 65-q run)** — $3.58 cloud-equivalent over
-        922 calls (agent $1.79 / RAGAS $1.13 / verify $0.47 / judge $0.19);
-        79.6% cache reads; the USD cap is real — a first pass tripped at $3.04.
-      - **Held-out confirmation (sealed 15-question set)** — written after
-        tuning froze, it scores lower, honestly: recall@5 0.600 / MRR@5 0.567
-        vs a 0.022 floor; faithfulness 0.62 [0.45, 0.79]; refusal accuracy 1.0
-        on the unanswerable. Cost $0.25 — cheap enough to run every wave; the
-        recall gap vs tuning (0.831 → 0.600) is the overfitting signal it
-        exists to catch.
-
-      Retrieval is solid; grounding is still the bottleneck (`failure_taxonomy`
-      charts the 44/18/2/1 hosted mix).
-
-      **Business implication:** quality claims carry a provider A/B, a sealed
-      held-out set, and a per-phase cost table — what a client needs to choose
-      where the assistant runs and what to budget.
-    figures:
-      - model_comparison
-      - retrieval_hpo_frontier
-      - failure_taxonomy
-    metrics_keys:
-      - retrieval_chunks_200
-      - retrieval_random_chunks_200
-      - retrieval_model_minilm_chunks_200
-      - retrieval_rerank_on_chunks_200
-      - rag_agent
-
-  - id: conclusions
-    text_md: |
-      Limits first — caveats a client should hear before reuse:
-
-      - **Judge noise is real at n=30** — faithfulness moved 0.651→0.606
-        across runs; small deltas are directional; the wide CIs say so.
-      - **Repair quality at local-model scale is weak** — the levers are
-        claim removal and abstention, not fluent rewriting; a stronger
-        judge may help.
-      - **The HPO grid is small and the corpus homogeneous** — BGE-small
-        tying MiniLM is evidence about *this* scale, not a universal claim;
-        the same harness will show it on noisier corpora.
-      - **Corpus coverage is bounded by the dump** — famous anchor titles
-        verified absent from `20231101.en`, and per-topic quotas saturate
-        with peripheral articles.
-
-      Lessons that transfer:
-
-      - **Typed outputs that fail loudly beat prompt promises.**
-      - **Evidence-only tool access makes grounding enforceable.**
-      - **A seeded random floor quantifies "better" before spend.**
-      - **Verify before you trust** — entailment checking turned "looks
-        grounded" into a measured 18→14 delta.
-
-      **Results quality:** retrieval is strong (recall@5 0.831 vs 0.031
-      random — the headline holds up). Generation grounding is
-      acceptable-with-caveats — hosted faithfulness 0.685 [0.605, 0.760] is
-      real, but judge noise at n=30 makes small deltas directional and the
-      verify loop repairs by removal and abstention, not rewriting. Weak
-      spots are known and measured, not hidden.
-
-      Everything ships as working code — `reports/metrics.json`,
-      `reports/question_traces.json`, `reports/report.html`; see `DESIGN.md`
-      and `README.md`.
-
-      **Business implication:** the same discipline ports to a client dataset
-      in days — bounded scope, measured baselines, and a plain list of
-      unknowns, delivered as working code.
-
+- id: background
+  text_md: "LLM assistants fail silently where it hurts a business: they sound\nconfident while inventing facts. Retrieval-grounded design removes that\nfailure mode by construction — the model speaks only from evidence it\nwas shown, and every claim carries an auditable citation.\n\nThe failure modes this design eliminates:\n\n- **Hallucination by omission** — nothing forces a lookup, so the model\n  answers from memory.\n- **Unverifiable confidence** — fluent answers with no source to check.\n- **Untestable quality** — demos that impress once, with no measurement\n  behind the claim.\n\nThis project builds that assistant as a reproducible pipeline: a\nbounded, checksum-pinned Wikipedia slice, a local embeddings index, and\nan agent whose only window into the corpus is two retrieval tools.\nEvery quality claim below is measured on a graded question set.\n\n**Business implication:** Auditable answers — each claim traces to the\nexact passage it relied on, which is the difference between\
+    \ \"the AI\nsaid so\" and \"here is the evidence\".\n"
+- id: objectives
+  text_md: "The deliverable is a question-answering agent with three hard\nproperties, each enforced rather than prompted:\n\n- **Typed, validated output** — the model must return a structured\n  `AnalysisResult` (summary, citations, confidence); a schema-invalid\n  response fails the run loudly instead of reaching a user.\n- **Evidence grounding** — the only corpus access is\n  `search_documents` / `read_excerpt`; the system prompt forbids outside\n  knowledge.\n- **Operational SLOs** — retrieval recall ≥ 0.60 on the graded set,\n  an end-to-end latency target, and a per-query cost a client can\n  budget against (≤ $0.01).\n\nThe provider fallback chain makes \"works everywhere\" explicit:\n\n```mermaid\nflowchart LR\n    Q[User question] --> A[Agent]\n    A -->|LLM_BASE_URL + LLM_API_KEY set| L[OpenAI-compatible provider]\n    A -->|no credentials| O[Local Ollama<br/>qwen3.6:35b-a3b-q4_K_M]\n    L --> R[Structured AnalysisResult]\n    O --> R\n    A -->|no provider at all| E[Loud error\
+    \ + setup guidance]\n```\n\nRetrieval runs CPU-only and the LLM defaults to a local model, so data\nnever leaves the machine — the evaluation included — and `evaluate\n--offline` keeps a retrieval-only CI path without any provider.\n\n**Business implication:** Citations make trust a feature rather than a\npromise, and the written-down SLOs give acceptance criteria before any\ndemo exists.\n"
+- id: data
+  text_md: "The corpus is a topical slice of the English Wikipedia dump\n`20231101.en`, streamed from Hugging Face and bounded by construction.\n\n- **Bounded scope** — five diverse topics (Climate, Renewable energy,\n  Aviation, Machine learning, Photosynthesis), at most 120 articles per\n  topic plus exact-title anchor articles collected outside the pattern\n  quota. Result: 593 articles (≈3.5 MB of text).\n- **Quality gates** — null-rate and length-range checks halt the\n  pipeline loudly on violation; DVC tracks every artifact for\n  reproducibility.\n\nThe source dataset is registered in the\n[data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/):\nsnapshot `20231101.en` of English Wikipedia, streamed via `datasets`,\nlicensed **CC BY-SA 3.0 / GFDL (attribution required)**. The derived\ncorpus ships with its own sha256-pinned contract at\n`data/raw/dataset_contract.json`, and every transformation replays via\n`dvc repro` in the project directory.\n\n**Business\
+    \ implication:** License trail, checksum and snapshot date sit\nin one file — the legal and reproducibility questions procurement asks,\nanswered up front.\n"
+- id: eda
+  text_md: "The composition figure `eda_corpus_composition` shows what the bounded\nscan actually collected, and it shaped the pipeline in one concrete way.\n\n- **Near-symmetric topic coverage** — ≈102–125 articles per topic, so\n  no single theme dominates retrieval behavior.\n- **Right-skewed article lengths** — most articles run 500–2,000 words,\n  with a long tail of large articles truncated at 12,000 characters to\n  keep embedding cost predictable.\n\nThe finding that mattered: the Wikipedia dump order is not topical, so\nnaive pattern quotas fill on peripheral articles (journals, albums,\nlists) long before flagship pages appear in the stream — several famous\ntitles (e.g. \"Photosynthesis\", \"Renewable energy\") are entirely absent\nfrom this dump. Exact-title anchors and eval questions were verified\nagainst the real corpus, not assumed.\n\n**Business implication:** Corpus scope was set by measuring what is\nactually in the data — the habit that catches data-availability\nsurprises\
+    \ before they become project risks.\n"
+  figures:
+  - eda_corpus_composition
+- id: training
+  text_md: "\"Training\" is index construction — classical chunking and ranking\ndiscipline, measured rather than tuned by feel. The runtime path:\n\n```mermaid\nflowchart LR\n    Q[Question] --> E[Embed MiniLM]\n    E --> F[FAISS top-5k]\n    F --> X[Cross-encoder rerank]\n    X --> A[Agent loop]\n    A --> D[Draft AnalysisResult]\n    D --> S[Claim split]\n    S --> N[Entailment check]\n    N --> P[Repair ≤2 / drop]\n    P --> O[Support floor 0.6]\n    O -->|below floor| B[Abstain]\n    O --> C[Cited answer]\n    A -.-> T{{Corpus access:<br/>tools only}}\n    A <-.->|ADR-0004 env-hosted ⇄ local| L{{Provider seam}}\n```\n\nQuestion in, cited answer out: the only corpus access is two retrieval\ntools, the dotted seam is the only LLM boundary (ADR-0004), and the\nverify loop is a hard gate, not a prompt.\n\nEvery engine choice is a measured trade-off, not a default:\n\n| Component | Choice | Why | Measured |\n|---|---|---|---|\n| Embeddings | `all-MiniLM-L6-v2` (80 MB, CPU) | smallest encoder\
+    \ that saturates recall on this corpus | recall@5 0.831 — exact tie with BGE-small (`model_comparison`) |\n| Reranker | `ms-marco-MiniLM` cross-encoder | the reading LLM consumes the top-1 passage, not the top-k | MRR@5 0.718 → 0.808 with rerank on (`retrieval_funnel`) |\n| Index | FAISS `IndexFlatIP` (exact) | 593 articles: brute force is exact and still milliseconds | recall@5 0.831 at ≈800 input tokens/query (`retrieval_hpo_frontier`) |\n| Provider | env OpenAI-compatible ⇄ local Ollama (ADR-0004) | one code path, no runtime mock; data never leaves the machine locally | hosted 65-q pass metered $3.58 cloud-equivalent, 79.6% cached reads |\n\n- **Paragraph-aware chunking** — paragraphs first, then sentence\n  boundaries, then word windows with overlap; guarantees unit-tested at\n  200/400/800 tokens so the size trade-off is measurable.\n\n**Business implication:** The whole pipeline runs on commodity CPU — no\nGPU budget, no vendor lock-in — and one seam swaps the LLM provider\nwithout\
+    \ touching anything else.\n"
+  figures:
+  - retrieval_funnel
+- id: evaluation
+  text_md: "Quality is measured, not demoed. The golden set is 65 graded questions\n(44 single-hop, 11 multi-hop, 10 unanswerable) with known relevant\narticle ids.\n\n- **Bounded HPO grid** — chunk sizes × top_k × encoder arm × rerank\n  ablation, with a **seeded uniform-random baseline** as the floor any\n  ranker must beat; `chunk_size_sweep` renders the grid.\n- **Two judge layers** — a rubric judge (provider model by default,\n  `JUDGE=keyword` as the deterministic CI floor); and, behind\n  `evaluate --ragas`, the RAGAS set scored by the active provider.\n- **Sealed held-out set** — 15 fresh questions (8 single-hop, 2\n  multi-hop, 5 unanswerable) written after tuning froze, gated\n  programmatically for answerability, unanswerability, and freshness.\n  `evaluate --heldout` scores it separately under `detail.heldout` —\n  retrieval metrics plus one verify-on pass, no RAGAS, so a hosted run\n  costs a fraction of the tuning pass.\n- **Verify-then-answer loop** — every drafted answer\
+    \ is claim-split and\n  entailment-checked against the full text of its cited chunks;\n  unsupported claims are repaired (≤2 calls) or dropped; answers below\n  min_support (0.6) abstain.\n- **Operations** — latency and tokens persist to `reports/cost_telemetry.json`\n  (spread: `latency_histogram`); hosted runs add a per-phase meter with a\n  hard USD cap, and schema-invalid output is retried (≤2) before it\n  counts as a format failure. Everything lands in `reports/metrics.json`;\n  `evaluate --offline` keeps a CI-safe retrieval-only path.\n\n**Business implication:** The quality harness runs in CI with no secrets\nand no GPU, while the real numbers come from a $0 local run — quality\ngates survive procurement either way.\n"
+  figures:
+  - chunk_size_sweep
+  - latency_histogram
+  metrics_keys:
+  - retrieval_chunks_200
+  - retrieval_random_chunks_200
+  - retrieval_model_minilm_chunks_200
+  - retrieval_model_bge_small_chunks_200
+  - retrieval_rerank_on_chunks_200
+  - retrieval_rerank_off_chunks_200
+  - rag_agent
+- id: results
+  text_md: "Retrieval first — everything downstream depends on it (65-question\ngolden set, seeded random floor; `retrieval_hpo_frontier` sweep,\nencoder tie in `model_comparison`):\n\n| Configuration | recall@5 | recall@10 | MRR@5 |\n|---|---|---|---|\n| chunks=200, top_k=10 | 0.831 | 0.846 | 0.808 |\n| random baseline | 0.031 | 0.046 | 0.018 |\n| **chosen: MiniLM, chunks=200, top_k=3, rerank ON** | **0.831** | — | **0.808** |\n\nProvider A/B — local `qwen3.6-q4` (30-q subset) vs hosted\n`kimi-for-coding` (full 65 q); hosted costs are **cloud-equivalent\nestimates** at the kimi-k2.8 card (membership quota, never billed):\n\n| Pass | Taxonomy | RAGAS faithfulness | Verify overhead |\n|---|---|---|---|\n| local qwen3.6-q4, verify ON (n=30) | 15 correct / 14 unsupported / 1 format | 0.606 | 33 repair calls |\n| hosted kimi-for-coding, verify ON (n=65) | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] | 39 repair calls |\n\n- **Grounding tracks the provider**\
+    \ — hosted faithfulness 0.685\n  [0.605, 0.760] vs 0.606 local (directional, not controlled);\n  relevancy 0.878; refusal accuracy 0.9.\n- **Verify overhead is calls, not minutes** — hosted p50/p95 latency\n  23 s / 175 s (p95: one runaway tool-loop cut off by the token guard);\n  output-retry recovered the one schema-invalid draft.\n- **Metered cost (hosted, full 65-q run)** — $3.58 cloud-equivalent over\n  922 calls (agent $1.79 / RAGAS $1.13 / verify $0.47 / judge $0.19);\n  79.6% cache reads; the USD cap is real — a first pass tripped at $3.04.\n- **Held-out confirmation (sealed 15-question set)** — written after\n  tuning froze, it scores lower, honestly: recall@5 0.600 / MRR@5 0.567\n  vs a 0.022 floor; faithfulness 0.62 [0.45, 0.79]; refusal accuracy 1.0\n  on the unanswerable. Cost $0.25 — cheap enough to run every wave; the\n  recall gap vs tuning (0.831 → 0.600) is the overfitting signal it\n  exists to catch.\n\nRetrieval is solid; grounding is still the bottleneck (`failure_taxonomy`\n\
+    charts the 44/18/2/1 hosted mix).\n\n**Business implication:** Every quality claim carries a provider A/B, a\nsealed held-out set and a per-phase cost table — what a client needs to\nchoose where the assistant runs and what to budget.\n"
+  figures:
+  - model_comparison
+  - retrieval_hpo_frontier
+  - failure_taxonomy
+  metrics_keys:
+  - retrieval_chunks_200
+  - retrieval_random_chunks_200
+  - retrieval_model_minilm_chunks_200
+  - retrieval_rerank_on_chunks_200
+  - rag_agent
+- id: conclusions
+  text_md: "Limits first — caveats a client should hear before reuse:\n\n- **Judge noise is real at n=30** — faithfulness moved 0.651→0.606\n  across runs; small deltas are directional; the wide CIs say so.\n- **Repair quality at local-model scale is weak** — the levers are\n  claim removal and abstention, not fluent rewriting; a stronger\n  judge may help.\n- **The HPO grid is small and the corpus homogeneous** — BGE-small\n  tying MiniLM is evidence about *this* scale, not a universal claim;\n  the same harness will show it on noisier corpora.\n- **Corpus coverage is bounded by the dump** — famous anchor titles\n  verified absent from `20231101.en`, and per-topic quotas saturate\n  with peripheral articles.\n\nLessons that transfer:\n\n- **Typed outputs that fail loudly beat prompt promises.**\n- **Evidence-only tool access makes grounding enforceable.**\n- **A seeded random floor quantifies \"better\" before spend.**\n- **Verify before you trust** — entailment checking turned \"looks\n\
+    \  grounded\" into a measured 18→14 delta.\n\n**Results quality:** retrieval is strong (recall@5 0.831 vs 0.031\nrandom — the headline holds up). Generation grounding is\nacceptable-with-caveats — hosted faithfulness 0.685 [0.605, 0.760] is\nreal, but judge noise at n=30 makes small deltas directional and the\nverify loop repairs by removal and abstention, not rewriting. Weak\nspots are known and measured, not hidden.\n\nEverything ships as working code — `reports/metrics.json`,\n`reports/question_traces.json`, `reports/report.html`; see `DESIGN.md`\nand `README.md`.\n\n**Business implication:** The same discipline ports to a client dataset\nin days — bounded scope, measured baselines, a plain list of unknowns,\ndelivered as working code.\n"
 roadmap:
-  - status: delivered
-    text: >-
-      Provider fallback chain (ADR-0004) — one code path, env-configured
-      OpenAI-compatible endpoint first, local Ollama second (default
-      qwen3.6:35b-a3b-q4_K_M); loud LLMProviderUnavailableError plus a
-      retrieval-only --offline CI path; no runtime mock.
-  - status: delivered
-    text: >-
-      Client-corpus onboarding — prepare-corpus --source client runs the full
-      pipeline (chunk, embed, index, evaluate) on client documents with a
-      license flag.
-  - status: delivered
-    text: >-
-      Cost telemetry with a hard USD cap — per-phase metering (agent / judge /
-      verify / RAGAS): the hosted 65-q pass metered $3.58 cloud-equivalent
-      (79.6% of input tokens prompt-cache reads); the cap tripped a first
-      pass at $3.04 and stopped it cleanly; local stays $0 API.
-  - status: delivered
-    text: >-
-      LLM rubric judge + RAGAS on the 65-question golden set — provider-model
-      verdicts by default with per-verdict keyword fallback (CI floor 0.44
-      [0.29, 0.61] on faithfulness); the full RAGAS set scored by the local
-      model at $0 API cost.
-  - status: delivered
-    text: >-
-      Verify-then-answer loop — A/B on the 30-question subset: unsupported
-      claims 18→14, correct answers 12→15, at 33 repair calls (max 2/answer,
-      min_support 0.6); faithfulness 0.651→0.606 sits inside judge noise —
-      on by default.
-  - status: deferred
-    text: >-
-      Interactive deployment demo — /rag/chat API endpoints are live and
-      tested; demo-experience wiring and live-mode cost-model validation need
-      provider credentials and a real engagement to run against.
+- status: delivered
+  text: 'Provider fallback chain (ADR-0004): env OpenAI-compatible endpoint first, local Ollama second — one code path, no runtime mock; loud LLMProviderUnavailableError plus a retrieval-only --offline CI path.'
+- status: delivered
+  text: 'Client-corpus onboarding: prepare-corpus --source client runs the full pipeline (chunk, embed, index, evaluate) on client documents with a license flag.'
+- status: delivered
+  text: 'Cost telemetry with a hard USD cap: per-phase metering; the hosted 65-q pass metered $3.58 cloud-equivalent (79.6% prompt-cache reads), and the cap tripped a first pass at $3.04 and stopped it cleanly.'
+- status: delivered
+  text: 'LLM rubric judge + RAGAS on the 65-question golden set: provider-model verdicts with keyword CI floor (0.44 faithfulness [0.29, 0.61]); the RAGAS set also scored locally at $0 API cost.'
+- status: delivered
+  text: 'Verify-then-answer loop: A/B on 30 questions — unsupported claims 18→14, correct 12→15, 33 repair calls; faithfulness delta sits inside judge noise; on by default.'

@@ -7,7 +7,7 @@ import pytest
 from portfolio_eval.rag import KeywordJudge, RAGEvalResult
 from pydantic_ai.models.function import FunctionModel
 from rag_agent.agent import build_agent
-from rag_agent.config import RAGConfig, RetrievalBest
+from rag_agent.config import RAGConfig
 from rag_agent.evaluate import (
     RAGRun,
     RetrievalScores,
@@ -134,28 +134,6 @@ def test_figures_render(scores_sample: list[RetrievalScores]) -> None:
     assert any("not a missing bar" in (t or "") for t in zero_texts)
     fig2 = latency_figure([0.1, 0.2, 0.3, 0.4])
     assert fig2.data
-
-
-def test_agent_pipeline_figure_renders(config: RAGConfig) -> None:
-    from rag_agent.figures import agent_pipeline_figure
-
-    chosen = RetrievalBest(
-        embedding_model=config.embedding_model,
-        embedding_slug="minilm",
-        chunk_size=200,
-        top_k=3,
-        rerank=True,
-    )
-    fig = agent_pipeline_figure(config, n_articles=593, chosen=chosen)
-    assert len(fig.layout.shapes) >= 13  # one rect per node/banner
-    texts = [a.text or "" for a in fig.layout.annotations]
-    joined = "\n".join(texts)
-    # Provider seam (ADR-0004), metered phases and grounding gates are on-figure.
-    assert "ADR-0004" in joined
-    assert "search_documents" in joined
-    assert "Metered phases" in joined
-    assert "Support floor 0.6" in joined
-    assert "593 articles" in joined
 
 
 def test_random_ranks_are_seeded_and_bounded(config: RAGConfig, retriever: Retriever) -> None:
