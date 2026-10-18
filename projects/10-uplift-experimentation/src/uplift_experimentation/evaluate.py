@@ -417,7 +417,10 @@ def decile_figure(table: dict[str, list[float]], policy: str) -> go.Figure:
     apply_theme(fig)
     style_runs(fig)
     fig.update_layout(
-        title=f"Uplift by decile — {policy}",
+        title=(
+            f"Ordering holds - top decile is the empirical best (1.1pp vs "
+            f"0.3pp), predicted magnitudes run ~2x hot ({policy})"
+        ),
         xaxis_title="decile (1 = highest predicted uplift)",
         yaxis_title="uplift (conversion-rate difference)",
         barmode="group",
@@ -489,6 +492,13 @@ def cuped_figure(reads: dict[str, dict[str, float]]) -> go.Figure:
     conv = reads["conversion"]
     visit = reads["visit"]
     apply_theme(fig, width=1000, height=480)
+    fig.update_layout(
+        title=(
+            f"CUPED removes {conv['variance_reduction'] * 100:.2f}% of conversion "
+            f"variance but {visit['variance_reduction'] * 100:.1f}% of visit "
+            "variance - exactly as good as its covariate"
+        )
+    )
     add_takeaway(
         fig,
         f"CUPED removes {conv['variance_reduction'] * 100:.2f}% of conversion variance — "

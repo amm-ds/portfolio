@@ -20,6 +20,7 @@ from typing import Any
 
 import httpx
 from portfolio_core.logging import get_logger
+from pydantic import ValidationError
 
 from inference_serving.config import BenchConfig, ModelSpec
 from inference_serving.schemas import Answer, BenchPrompt, BenchRun, CellResult, RequestRecord
@@ -106,7 +107,7 @@ def check_output(text: str, prompt: BenchPrompt) -> tuple[bool, bool]:
         cleaned = cleaned.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     try:
         answer = Answer.model_validate_json(cleaned)
-    except Exception:
+    except ValidationError:
         return False, False
     lower = answer.answer.lower()
     quality = not prompt.expected_keywords or any(
@@ -324,7 +325,7 @@ async def run_cell(
 ) -> tuple[CellResult, list[RequestRecord]]:
     """One (model, concurrency) cell: prompts x repeats under a semaphore."""
     semaphore = asyncio.Semaphore(concurrency)
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # noqa: S311 - seeded bench shuffle RNG, not crypto
     jobs = [(p, rep) for rep in range(cfg.repeats) for p in PROMPTS]
     rng.shuffle(jobs)
 

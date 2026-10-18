@@ -177,7 +177,11 @@ def adaptive_stream_figure(
         marker={"color": "#fbbf24", "size": 6},
     )
     fig.update_layout(
-        title=f"{model_name} — adaptive-threshold stream over the test window",
+        title=(
+            f"{model_name} adaptive threshold holds the "
+            f"{config.contamination:.0%} budget here - synthetic calibration "
+            "stays too twitchy for real rarity"
+        ),
         xaxis_title="time",
         yaxis_title="score",
     )

@@ -144,7 +144,10 @@ def per_class_f1_comparison_figure(
     fig.add_bar(x=labels, y=list(f1_sel), name="selected", row=1, col=1)
     fig.add_bar(x=labels, y=list(f1_base), name="tf-idf baseline", row=1, col=2)
     fig.update_layout(
-        title="Per-class F1 — selected model vs TF-IDF baseline",
+        title=(
+            "Business to Sci/Tech confusion is the error floor (14/250) - "
+            "labeling ambiguity more data cannot fix"
+        ),
         yaxis_title="F1",
         yaxis_range=[0, 1],
         showlegend=False,
@@ -231,7 +234,10 @@ def eda_class_balance_figure(
     word_counts = [len(t.split()) for t in train_ds[TEXT_COLUMN]]
     fig.add_histogram(x=word_counts, name="train", row=1, col=2)
     fig.update_layout(
-        title="AG News bounded subsample — class balance and text lengths",
+        title=(
+            "Exactly 25% per class - no run can win by prior; 20-50-word "
+            "texts fit the 128-token cap"
+        ),
         barmode="group",
         xaxis_title="class",
         yaxis_title="rows",
@@ -408,7 +414,7 @@ def _load_study_from_json(study_path: Path) -> Any | None:
                 )
             )
         return study
-    except Exception as exc:
+    except Exception as exc:  # broad: study rebuild is best-effort; figure optional (logged)
         logger.warning("could not rebuild HPO study for figures: %s", exc)
         return None
 

@@ -219,7 +219,7 @@ def _fit_net(
             if patience_left <= 0:
                 logger.info("early stop at epoch %d", epoch + 1)
                 break
-    assert best_state is not None
+    assert best_state is not None  # noqa: S101 - best_val set in the same iteration
     return best_val, best_state
 
 

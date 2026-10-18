@@ -62,7 +62,10 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
             col=3,
         )
     fig.update_layout(
-        title="Churn profile: rates by contract and feature distributions",
+        title=(
+            "Churn concentrates in short contracts - 42.7% month-to-month vs "
+            "2.8% two-year; the outlier charge sits far outside the bulk"
+        ),
         barmode="overlay",
         yaxis_title="churn rate",
         xaxis2_title="monthly_charges",

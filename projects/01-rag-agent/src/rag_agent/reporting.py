@@ -152,7 +152,7 @@ def bootstrap_ci(
     clean = [v for v in values if v == v]
     if not clean:
         return (float("nan"), float("nan"))
-    rng = _random.Random(seed)
+    rng = _random.Random(seed)  # noqa: S311 - seeded bootstrap RNG, not crypto
     means = []
     for _ in range(n_resamples):
         sample = [clean[rng.randrange(len(clean))] for _ in range(len(clean))]

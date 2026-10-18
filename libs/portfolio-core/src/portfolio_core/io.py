@@ -2,6 +2,7 @@
 
 import hashlib
 import shutil
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -10,6 +11,14 @@ from portfolio_core.logging import get_logger
 logger = get_logger(__name__)
 
 _CHUNK = 1 << 20  # 1 MiB
+# Registry downloads are https; tests fetch local snapshots via file://.
+# Anything else (custom schemes) is refused loudly.
+_ALLOWED_SCHEMES = ("https", "http", "file")
+
+
+def _check_scheme(url: str) -> None:
+    if urllib.parse.urlparse(url).scheme.lower() not in _ALLOWED_SCHEMES:
+        raise ValueError(f"refusing to fetch {url!r}: scheme must be one of {_ALLOWED_SCHEMES}")
 
 
 def sha256_of(path: str | Path) -> str:
@@ -32,7 +41,8 @@ def fetch(url: str, dest: str | Path, expected_sha256: str | None = None) -> Pat
         logger.info("cached %s (sha256 ok)", dest)
         return dest
     logger.info("fetching %s -> %s", url, dest)
-    with urllib.request.urlopen(url, timeout=300) as resp, open(dest, "wb") as f:
+    _check_scheme(url)
+    with urllib.request.urlopen(url, timeout=300) as resp, open(dest, "wb") as f:  # noqa: S310
         shutil.copyfileobj(resp, f, length=_CHUNK)
     if expected_sha256:
         actual = sha256_of(dest)

@@ -35,10 +35,12 @@ def ollama_available(base_url: str = "http://localhost:11434") -> bool:
     """True when a local Ollama server answers /api/tags."""
     try:
         import httpx
-
+    except ImportError:  # pragma: no cover - httpx is a dev/prod extra
+        return False
+    try:
         r = httpx.get(f"{base_url.rstrip('/')}/api/tags", timeout=3.0)
         return r.status_code == 200
-    except Exception:
+    except httpx.HTTPError:
         return False
 
 

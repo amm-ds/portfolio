@@ -396,7 +396,10 @@ def nab_figures(
     )
     dist_fig.update_yaxes(type="log", title="count (log scale)")
     dist_fig.update_xaxes(title="anomaly score")
-    dist_fig.update_layout(title="NAB pooled score distribution", barmode="overlay")
+    dist_fig.update_layout(
+        title="Real in-window scores overlap the normal mass - NAB rarity defeats clean separation",
+        barmode="overlay",
+    )
     dist_fig.update_traces(opacity=0.65)
     add_takeaway(
         dist_fig,
@@ -414,7 +417,12 @@ def nab_figures(
         )
     budget_fig.update_xaxes(type="log", title="alert budget (flagged fraction)")
     budget_fig.update_yaxes(title="range-F1", range=[0, 1.05])
-    budget_fig.update_layout(title="NAB range-F1 vs. alert budget")
+    budget_fig.update_layout(
+        title=(
+            "Event-level range-F1 peaks at a small alert budget - "
+            "more pages mostly add false alarms"
+        )
+    )
     add_takeaway(
         budget_fig, "Event-level F1 peaks at a small budget; more alerts mostly add false pages."
     )

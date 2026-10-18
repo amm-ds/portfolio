@@ -333,7 +333,7 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     models = {}
     for key in ("logreg", "selected", "selected_calibrated"):
         with paths[key].open("rb") as fh:
-            models[key] = pickle.load(fh)
+            models[key] = pickle.load(fh)  # noqa: S301 - serving artifact persisted by this pipeline
     holdout = pd.read_parquet(paths["holdout"])
     X_test = holdout[list(dict.fromkeys(feature_cols(cfg) + slice_cols(cfg)))]
     y_test = holdout[TARGET_COL].astype(int)
