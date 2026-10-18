@@ -49,8 +49,24 @@ jobs:
       - name: Build showcase image
         run: docker build -t amm-ds-portfolio .
       - name: Smoke test
+        # Verifies the real deployment surface of the image: the SPA (baked
+        # web build) + the API, including a live forecast from the git-baked
+        # serving artifacts. The forecast assert guards the artifact-baking
+        # regression: it would 503 if the artifacts went missing from git.
         run: |
+          trap "docker rm -f showcase" EXIT
           docker run -d --name showcase -p 8000:8000 amm-ds-portfolio
           sleep 15
           curl -fsS http://localhost:8000/health
-          docker rm -f showcase
+          curl -fsS http://localhost:8000/ | grep -q 'id="root"'
+          curl -fsS -o /dev/null -w '%{http_code}\n' http://localhost:8000/projects
+          # Features from projects/02-demand-forecasting reports/models/serving/meta.json
+          # example_row (series_id excluded) — see apps/showcase-api/SERVING.md.
+          curl -fsS -o /dev/null -w '%{http_code}\n' \
+            -X POST http://localhost:8000/projects/02-demand-forecasting/forecast \
+            -H 'content-type: application/json' \
+            -d '{"series_id": "store_0|product_0",
+                 "features": {"t": 371.5, "dow": 4.0, "is_weekend": 0.0, "month": 7.0,
+                              "week": 27.0, "doy_sin": -0.0312, "doy_cos": -0.0312,
+                              "lag_1": 66.0, "lag_7": 66.0, "lag_14": 65.0}}' \
+            | grep -q '^200$'
