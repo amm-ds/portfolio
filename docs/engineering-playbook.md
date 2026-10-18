@@ -32,11 +32,12 @@ affected?* A PR that cannot answer them is draft.
 
 - [ ] `make test` green (ruff, ruff-format, mypy, pytest with coverage gates)
 - [ ] `dvc repro` reproduces the changed pipeline from a clean state
-- [ ] Deployable artifacts committed: figure specs (`reports/figures/*.json|html`)
-      and `reports/models/serving/` bundles are small by policy and versioned in
-      git, so a fresh clone / CI-built image serves a functional app without
-      `dvc pull`. Bulky raw data and regenerable metrics stay DVC-tracked; the
-      01 RAG index is the opt-in exception (chat needs `dvc repro` in project 01).
+- [ ] Deployable artifacts committed: figure specs (`reports/figures/*.json|html`),
+      `reports/models/serving/` bundles, and runtime-served reports
+      (`reports/metrics.json`, `reports/report.html`) are small by policy and
+      versioned in git, so a fresh clone / CI-built image serves a functional
+      app without `dvc pull`. Bulky raw data stays DVC-tracked; the 01 RAG
+      index is the opt-in exception (chat needs `dvc repro` in project 01).
 - [ ] Dev environment reproduces from a clean clone: `make setup` locally, or
       GitHub Codespaces via `.devcontainer/` (builds the same root Dockerfile)
 - [ ] Contracts unchanged, or all consumers updated + changelog noted in PR

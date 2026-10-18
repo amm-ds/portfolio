@@ -16,5 +16,5 @@ same case studies render live (with interactive figures) in the
 | 06 | [Routing Optimization (VRPTW)](06-routing-optimization.md) | Combinatorial optimization | CVRPLIB Solomon | within 4.23% of best-known solutions on all 56 instances (+3.73 vehicles) | Working showcase |
 | 07 | [Urban Mobility Demand Intelligence](07-open-data-mobility.md) | Data engineering + ML | NYC TLC + NOAA | −28.4% demand error on 41.2M trips; p90 staffing band calibrated at 90.8% | **Flagship — complete** |
 | 08 | [LLM Inference & Serving](08-inference-serving.md) | Model serving | Local Ollama stack (GGUF vs MLX) | measured latency/throughput frontier across engines, quants, concurrency | Working showcase |
-| 09 | [Agentic AI Workflows](09-agentic-workflows.md) | Agentic AI | Deterministic 15-task suite | all 15 graded tasks pass on a hosted model at ≈$0.008/task (cloud-equivalent) | Working showcase |
+| 09 | [Agentic AI Workflows](09-agentic-workflows.md) | Agentic AI | Deterministic 15-task suite | all 15 graded tasks pass on a hosted model — ledger $0.10 of the $2.00 suite cap (cloud-equivalent) | Working showcase |
 | 10 | [Retention Uplift & Experimentation](10-uplift-experimentation.md) | Decision Science | Hillstrom email (MineThatData) | targeting profit advantage established by paired bootstrap; mail-everyone named as the bar | Working showcase |

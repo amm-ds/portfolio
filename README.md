@@ -32,7 +32,7 @@ Real artifacts from the pipelines (interactive versions in each [case study](htt
 
 ## Projects
 
-Nine projects, all working showcases on the same platform.
+Ten projects, all working showcases on the same platform.
 
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
