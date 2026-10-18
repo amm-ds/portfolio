@@ -22,7 +22,7 @@ sections:
       ladder and a metaheuristic share one `RoutePlan` contract, each with a
       stated, verifiable gap to published optima (design in `DESIGN.md`).
 
-    **Business implication:** every percent of distance is fuel, vehicle
+    **Business summary:** every percent of distance is fuel, vehicle
     hours and CO₂, so even single-digit routing improvements compound into a
     material annual saving.
   figures: []
@@ -45,7 +45,7 @@ sections:
     (the benchmark ranks vehicles first, distance second), and every tuning
     loop reports what it found, including negative results.
 
-    **Business implication:** the deliverable is a stated optimality gap
+    **Business summary:** the deliverable is a stated optimality gap
     procurement can hold any future optimizer — ours or a vendor's —
     accountable to.
   figures: []
@@ -67,7 +67,7 @@ sections:
     - **DQ gates** — null rates and ranges vs fleet capacity halt the
       pipeline loudly on any anomaly.
 
-    **Business implication:** a public, citation-backed benchmark lets the
+    **Business summary:** a public, citation-backed benchmark lets the
     client's own team re-check every quality claim against literature values
     — no trust-us slide required.
   figures: []
@@ -89,7 +89,7 @@ sections:
     reason a solver must be checked per family, not on averages (family-gap
     figure in results).
 
-    **Business implication:** territory-drawn routing underperforms because
+    **Business summary:** territory-drawn routing underperforms because
     the binding constraint is the delivery-promise window — tooling must
     optimize the clock and the map together.
   figures: [eda_instance_map]
@@ -133,7 +133,7 @@ sections:
     knobs (all 56 instances) and 12 over the ALNS knobs (6-instance subset);
     winners persist to `params.yaml`.
 
-    **Business implication:** HPO paid for itself in evidence: it proved
+    **Business summary:** HPO paid for itself in evidence: it proved
     randomized restarts don't pay (k=1 chosen) before a single ALNS
     iteration ran — measurement beats intuition.
   figures: []
@@ -161,7 +161,7 @@ sections:
     deterministic distances and gaps are the verdict and times are context.
     Full per-solver runtime tables in `reports/results.md`.
 
-    **Business implication:** evaluation is cheap and fully reproducible, so
+    **Business summary:** evaluation is cheap and fully reproducible, so
     it runs in CI on every change — optimization quality becomes a guarded
     regression metric, not a one-off report.
   figures: [solver_profile, alns_convergence_C101, pareto_gap_runtime]
@@ -205,7 +205,7 @@ sections:
       prefix certified optimal at 191.8 in 2.9 s (2-opt hint: 286.3);
       5-customer instance proved optimal in 0.1 s.
 
-    **Business implication:** the anchor number is a 4.23 % mean distance gap
+    **Business summary:** the anchor number is a 4.23 % mean distance gap
     (with the +3.73-vehicle caveat) against 1987-published optima on every
     family, in auditable seeded code — and the ~0.8 s best case keeps the
     harness usable daily.
@@ -244,7 +244,7 @@ sections:
     chains (C203, C103) — destroy size and operator pool are the next
     levers.
 
-    **Business implication:** the deployable harness runs the whole
+    **Business summary:** the deployable harness runs the whole
     benchmark in minutes with a literature-anchored quality number —
     solver selection under a runtime budget stops being a leap of faith.
   figures: []

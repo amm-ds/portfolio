@@ -27,7 +27,7 @@ sections:
       | base churn rate | 26.5% | never-alarm accuracy: 0.735 |
       | threshold grid | 41 points (0.00–1.00) | where the optimum is searched |
 
-      **Business implication:** retention budget is a cost-minimization
+      **Business summary:** retention budget is a cost-minimization
       problem (FP=1, FN=5), so every artifact below is judged in money
       saved, not in accuracy or leaderboard rank.
   - id: objectives
@@ -48,7 +48,7 @@ sections:
       - Enforce data quality as a gate: null rates and ranges are checked
         before training, and a failure halts the pipeline loudly.
 
-      **Business implication:** the deliverable is an operating decision — a
+      **Business summary:** the deliverable is an operating decision — a
       threshold and an expected cost — with model selection held accountable
       to the business metric it will be judged by.
   - id: data
@@ -78,7 +78,7 @@ sections:
         of train is reserved for calibration only. No time axis exists, so
         random stratification is the correct protocol.
 
-      **Business implication:** the demo runs on the same public dataset a
+      **Business summary:** the demo runs on the same public dataset a
       client's data science team has benchmarked against for years — and the
       CI path proves the contract holds when the columns change.
   - id: eda
@@ -104,7 +104,7 @@ sections:
       NaN-encoded gaps are invisible to a casual `head()` but visible to the
       DQ gates.
 
-      **Business implication:** contract type and bill size are where a
+      **Business summary:** contract type and bill size are where a
       retention budget buys the most — and the outlier/missingness handling
       keeps that budget aimed at real customers instead of data artifacts.
     figures: [eda_churn_profile]
@@ -142,7 +142,7 @@ sections:
       objectives disagreeing is itself a finding (see results). An
       isotonic-calibrated twin is fitted on the calibration split only.
 
-      **Business implication:** the artifact handed to engineering scores raw
+      **Business summary:** the artifact handed to engineering scores raw
       CRM rows as-is — no ETL rewrite, no train/serve skew — and the winning
       config is recorded in versioned config, not in someone's notebook.
   - id: evaluation
@@ -175,7 +175,7 @@ sections:
       threshold × FN-cost plane — where it moves when a client re-prices a
       lost customer.
 
-      **Business implication:** the paired bootstrap CI (−416, 95% CI [−485,
+      **Business summary:** the paired bootstrap CI (−416, 95% CI [−485,
       −343]) makes the saving defensible in a budget meeting — and
       calibration pays here: it improved both ECE (0.028 → 0.016) and the
       cost optimum itself (619 → 601).
@@ -220,7 +220,7 @@ sections:
       - Drivers: `permutation_importance` ranks contract/tenure/charges as
         the signal.
 
-      **Business implication:** −41.9% cost at a defensible CI, with the
+      **Business summary:** −41.9% cost at a defensible CI, with the
       slice report showing exactly who the operating point misses — that is
       the story a client budget conversation needs.
     figures: [business_cost_curve, permutation_importance, fairness_slices]
@@ -250,7 +250,7 @@ sections:
       a business trade-off made explicit on the cost surface rather than a
       silent defect.
 
-      **Business implication:** the framework transfers to a client's CRM
+      **Business summary:** the framework transfers to a client's CRM
       extract unchanged — same gates, same artifact contract, same cost
       curve; only the DatasetContract and the FP/FN costs change. Full
       rationale: `DESIGN.md`; reproduction and client takeaways: `README.md`;

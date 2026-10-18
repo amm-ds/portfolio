@@ -24,7 +24,7 @@ sections:
       embargoed expanding-window backtest. The full design log lives in
       `README.md` and `DESIGN.md`.
 
-      **Business implication:** stockouts and overstock are forecast-shaped
+      **Business summary:** stockouts and overstock are forecast-shaped
       decisions; safety stock cannot be sized on a number nobody validated
       against the simplest alternatives.
 
@@ -49,7 +49,7 @@ sections:
       - **Hierarchy-consistent forecasts** — MinT-lite reconciliation with a
         property-tested coherence guarantee.
 
-      **Business implication:** the deliverable is a defensible number, not a
+      **Business summary:** the deliverable is a defensible number, not a
       model file — a planning meeting can act on "we beat the strongest
       naive floor on real transactions, and here is the protocol that proves
       it."
@@ -87,7 +87,7 @@ sections:
           S3 --> S3P[6 products]
       ```
 
-      **Business implication:** results regenerate from a clean clone in
+      **Business summary:** results regenerate from a clean clone in
       minutes — synthetic offline by default, real transactions one flag
       away.
 
@@ -107,7 +107,7 @@ sections:
       the intermittent-demand problem is visible in the distribution long
       before any accuracy number is computed.
 
-      **Business implication:** trend and weekly rhythm — the two things
+      **Business summary:** trend and weekly rhythm — the two things
       that break naive forecasting — are visible in the raw data, so the
       case for better-than-naive forecasting rests on a chart, not a
       promise.
@@ -150,7 +150,7 @@ sections:
       embargoed previous fold) adjusts store-product forecasts toward the
       store level by a data-chosen weight `w`.
 
-      **Business implication:** every candidate faces the same
+      **Business summary:** every candidate faces the same
       leakage-proof protocol, so the model that ships won on evidence, not
       novelty.
     figures: [hpo_history, hpo_importance]
@@ -179,7 +179,7 @@ sections:
       instability stay visible before deployment; `reports/report.html`
       collects the full run.
 
-      **Business implication:** the embargoed backtest prices in drift
+      **Business summary:** the embargoed backtest prices in drift
       before deployment — it answers whether the model survives next
       quarter, not just last week.
     figures: [fold_stability]
@@ -228,7 +228,7 @@ sections:
         synthetic / 0.92 UCI, conformal degenerating to q80 = 0 on
         zero-heavy residuals (`probabilistic_band`).
 
-      **Business implication:** switching replenishment to the tuned HGB
+      **Business summary:** switching replenishment to the tuned HGB
       cuts absolute error 8.8% versus the "same day last week" rule — less
       safety stock at the same service level. But re-tune on your own panel
       first: the winning config does not port across demand regimes.
@@ -263,7 +263,7 @@ sections:
       a monitored retraining trigger rather than a surprise. Full detail:
       `README.md`, `DESIGN.md`, `reports/report.html`.
 
-      **Business implication:** the value delivered is knowing precisely
+      **Business summary:** the value delivered is knowing precisely
       which model wins, by how much, and where it stops winning; the
       forecast-vs-actual and fold-stability views are the first two charts
       to show a client.

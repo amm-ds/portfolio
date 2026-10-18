@@ -4,19 +4,24 @@ import { BusinessImplication } from "./BusinessImplication";
 import { StoryMetricsTable } from "./StoryMetricsTable";
 import { PlotlyFigure } from "./PlotlyFigure";
 
-const BI_MARKER = "**Business implication:**";
+// Repo story.yaml files now use `**Business summary:**`; the old marker is
+// still matched as a fallback for one transition window (new marker wins).
+const BI_MARKERS = ["**Business summary:**", "**Business implication:**"];
 
 /**
- * Split off the trailing `**Business implication:** ...` paragraph (rendered
+ * Split off the trailing `**Business summary:** ...` paragraph (rendered
  * as its own card) from the rest of the section prose. Sections without the
  * marker return the text unchanged with a null tail.
  */
 function splitBusinessImplication(md: string): [string, string | null] {
-  const idx = md.lastIndexOf(BI_MARKER);
-  if (idx === -1) return [md, null];
-  const tail = md.slice(idx + BI_MARKER.length).trim();
-  if (tail === "") return [md, null];
-  return [md.slice(0, idx).trimEnd(), tail];
+  for (const marker of BI_MARKERS) {
+    const idx = md.lastIndexOf(marker);
+    if (idx === -1) continue;
+    const tail = md.slice(idx + marker.length).trim();
+    if (tail === "") return [md, null];
+    return [md.slice(0, idx).trimEnd(), tail];
+  }
+  return [md, null];
 }
 
 /** One case-study section: markdown prose + results table left, native plotly figures right. */
