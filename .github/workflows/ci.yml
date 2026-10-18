@@ -64,10 +64,13 @@ jobs:
           curl -fsS http://localhost:8000/health
           curl -fsS http://localhost:8000/ | grep -q 'id="root"'
           # Deep links must return the SPA shell (client-side routing fallback).
-          for route in /projects /projects/06-routing-optimization /services; do
+          # NB: bare /projects is a JSON API route (project index), not the SPA.
+          for route in /projects/06-routing-optimization /services; do
             test "$(curl -fsS -o /dev/null -w '%{http_code}' "http://localhost:8000$route")" = "200"
             curl -fsS "http://localhost:8000$route" | grep -q 'id="root"'
           done
+          # Project-index API answers JSON.
+          curl -fsS http://localhost:8000/projects | grep -q '"project_id"'
           # Story/metrics APIs must answer JSON for a real project.
           curl -fsS http://localhost:8000/projects/05-ml-pipeline-churn/metrics \
             | grep -q 'selected_model_calibrated'
