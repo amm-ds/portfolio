@@ -1,7 +1,7 @@
 /history.json
-/metrics.json
-/report.html
-/figures
+/figures/*
+!/figures/*.json
+!/figures/*.html
 /hpo_study.json
 /hpo_best.json
 /history_tuned.json

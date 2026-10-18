@@ -1,0 +1,39 @@
+{
+  "feature_names": [
+    "tenure_months",
+    "monthly_charges",
+    "contract",
+    "internet_service"
+  ],
+  "n_features": 4,
+  "built_at": "2026-10-17T19:14:33.291401+00:00",
+  "model_selection": {
+    "family": "xgboost",
+    "params": {
+      "n_estimators": 211.0,
+      "learning_rate": 0.030921572415730004,
+      "max_depth": 3.0,
+      "subsample": 0.5186934422187627
+    },
+    "objective": "cost",
+    "best_score": -2416.0,
+    "n_trials": 25,
+    "family_scores": {
+      "logreg": 2519.0,
+      "histgb": 2495.75,
+      "xgboost": 2447.5,
+      "lightgbm": 2498.6666666666665
+    }
+  },
+  "threshold_selection": {
+    "threshold": 0.175,
+    "holdout_min_cost": 601.0,
+    "rule": "argmin of FP\u00b7fp_cost + FN\u00b7fn_cost over the params.yaml threshold_grid on the persisted holdout, scored by the isotonic-calibrated model \u2014 the same cost curve the evaluate stage reports"
+  },
+  "example_row": {
+    "tenure_months": 29.0,
+    "monthly_charges": 69.05,
+    "contract": "one-year",
+    "internet_service": "DSL"
+  }
+}

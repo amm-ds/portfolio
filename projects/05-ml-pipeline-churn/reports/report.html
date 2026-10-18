@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Churn Modeling — Holdout Evaluation — evaluation report</title>
+<style>
+body { font-family: Inter, system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
+       max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+h1 { color: #2dd4bf; } h2 { color: #38bdf8; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid #334155; padding: 0.4rem 0.8rem; text-align: left; }
+th { background: #1e293b; }
+code { background: #1e293b; padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style></head><body>
+<h1>Churn Modeling — Holdout Evaluation</h1>
+<h2>Metrics</h2><table><tr><th>run</th><th>accuracy</th><th>business_cost</th><th>ece</th><th>f1_macro</th><th>precision_macro</th><th>recall_macro</th><th>roc_auc</th></tr><tr><td>naive_majority</td><td>0.2654</td><td>1035.0000</td><td>-</td><td>0.2098</td><td>0.1327</td><td>0.5000</td><td>0.5000</td></tr><tr><td>logreg_threshold_0.5</td><td>0.7310</td><td>691.0000</td><td>-</td><td>0.7022</td><td>0.6999</td><td>0.7503</td><td>0.8292</td></tr><tr><td>logreg_threshold_0.300</td><td>0.6203</td><td>611.0000</td><td>-</td><td>0.6151</td><td>0.6861</td><td>0.7253</td><td>0.8292</td></tr><tr><td>selected_model</td><td>0.6629</td><td>619.0000</td><td>0.0283</td><td>0.6512</td><td>0.6890</td><td>0.7398</td><td>0.8387</td></tr><tr><td>selected_model_calibrated</td><td>0.6899</td><td>601.0000</td><td>0.0164</td><td>0.6745</td><td>0.6982</td><td>0.7539</td><td>0.8317</td></tr></table>
+<h2>Calibration Curve</h2><p><a href="figures/calibration_curve.html">interactive figure</a> (<code>calibration_curve.html</code>)</p>
+<h2>Permutation Importance</h2><p><a href="figures/permutation_importance.html">interactive figure</a> (<code>permutation_importance.html</code>)</p>
+<h2>Precision Recall Curve</h2><p><a href="figures/precision_recall_curve.html">interactive figure</a> (<code>precision_recall_curve.html</code>)</p>
+<h2>Decision Curve</h2><p><a href="figures/decision_curve.html">interactive figure</a> (<code>decision_curve.html</code>)</p>
+<h2>Business Cost Curve</h2><p><a href="figures/business_cost_curve.html">interactive figure</a> (<code>business_cost_curve.html</code>)</p>
+<h2>Bootstrap Ci</h2><p><a href="figures/bootstrap_ci.html">interactive figure</a> (<code>bootstrap_ci.html</code>)</p>
+<h2>Fairness Slices</h2><p><a href="figures/fairness_slices.html">interactive figure</a> (<code>fairness_slices.html</code>)</p>
+<h2>Cost Surface</h2><p><a href="figures/cost_surface.html">interactive figure</a> (<code>cost_surface.html</code>)</p>
+</body></html>

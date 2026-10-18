@@ -1,0 +1,3513 @@
+{
+  "summary": {
+    "alns": {
+      "mean_gap_pct": 4.2322,
+      "mean_runtime_s": 2.769791,
+      "mean_n_vehicles": 10.96,
+      "mean_vehicle_delta": 3.73
+    },
+    "clarke_wright": {
+      "mean_gap_pct": 18.3138,
+      "mean_runtime_s": 0.011329,
+      "mean_n_vehicles": 13.02,
+      "mean_vehicle_delta": 5.79
+    },
+    "nearest_neighbor": {
+      "mean_gap_pct": 71.6395,
+      "mean_runtime_s": 0.00406,
+      "mean_n_vehicles": 13.98,
+      "mean_vehicle_delta": 6.75
+    },
+    "ortools_cp": {
+      "mean_gap_pct": 4.2322,
+      "mean_runtime_s": 13.554744,
+      "mean_n_vehicles": 10.96,
+      "mean_vehicle_delta": 3.73
+    },
+    "randomized": {
+      "mean_gap_pct": 316.9487,
+      "mean_runtime_s": 0.002362,
+      "mean_n_vehicles": 18.32,
+      "mean_vehicle_delta": 11.09
+    },
+    "two_opt": {
+      "mean_gap_pct": 13.7535,
+      "mean_runtime_s": 0.014958,
+      "mean_n_vehicles": 13.02,
+      "mean_vehicle_delta": 5.79
+    },
+    "two_opt_tuned": {
+      "mean_gap_pct": 13.6272,
+      "mean_runtime_s": 0.036306,
+      "mean_n_vehicles": 13.02,
+      "mean_vehicle_delta": 5.79
+    }
+  },
+  "instances": {
+    "C101": {
+      "best_known": 828.94,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 860.2051,
+      "best_gap_pct": 3.7717,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1464.3377,
+          "n_vehicles": 20,
+          "gap_pct": 76.6518,
+          "vehicle_delta": 10,
+          "runtime_s": 0.003269
+        },
+        "clarke_wright": {
+          "distance": 1127.4833,
+          "n_vehicles": 15,
+          "gap_pct": 36.0151,
+          "vehicle_delta": 5,
+          "runtime_s": 0.008529
+        },
+        "randomized": {
+          "distance": 4147.4248,
+          "n_vehicles": 27,
+          "gap_pct": 400.3287,
+          "vehicle_delta": 17,
+          "runtime_s": 0.003381
+        },
+        "two_opt": {
+          "distance": 1046.5304,
+          "n_vehicles": 15,
+          "gap_pct": 26.2492,
+          "vehicle_delta": 5,
+          "runtime_s": 0.023491
+        },
+        "two_opt_tuned": {
+          "distance": 1046.5304,
+          "n_vehicles": 15,
+          "gap_pct": 26.2492,
+          "vehicle_delta": 5,
+          "runtime_s": 0.040404
+        },
+        "alns": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 1.607194
+        },
+        "ortools_cp": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 9.670743
+        }
+      }
+    },
+    "C102": {
+      "best_known": 828.94,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 898.0456,
+      "best_gap_pct": 8.3366,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1482.2049,
+          "n_vehicles": 17,
+          "gap_pct": 78.8073,
+          "vehicle_delta": 7,
+          "runtime_s": 0.004832
+        },
+        "clarke_wright": {
+          "distance": 1118.967,
+          "n_vehicles": 15,
+          "gap_pct": 34.9877,
+          "vehicle_delta": 5,
+          "runtime_s": 0.008747
+        },
+        "randomized": {
+          "distance": 4162.4299,
+          "n_vehicles": 24,
+          "gap_pct": 402.1389,
+          "vehicle_delta": 14,
+          "runtime_s": 0.001878
+        },
+        "two_opt": {
+          "distance": 1080.9912,
+          "n_vehicles": 15,
+          "gap_pct": 30.4064,
+          "vehicle_delta": 5,
+          "runtime_s": 0.009368
+        },
+        "two_opt_tuned": {
+          "distance": 1071.3472,
+          "n_vehicles": 15,
+          "gap_pct": 29.243,
+          "vehicle_delta": 5,
+          "runtime_s": 0.028506
+        },
+        "alns": {
+          "distance": 898.0456,
+          "n_vehicles": 12,
+          "gap_pct": 8.3366,
+          "vehicle_delta": 2,
+          "runtime_s": 1.658334
+        },
+        "ortools_cp": {
+          "distance": 898.0456,
+          "n_vehicles": 12,
+          "gap_pct": 8.3366,
+          "vehicle_delta": 2,
+          "runtime_s": 12.447662
+        }
+      }
+    },
+    "C103": {
+      "best_known": 828.06,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 924.6978,
+      "best_gap_pct": 11.6704,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1464.6304,
+          "n_vehicles": 15,
+          "gap_pct": 76.8749,
+          "vehicle_delta": 5,
+          "runtime_s": 0.003091
+        },
+        "clarke_wright": {
+          "distance": 1081.2959,
+          "n_vehicles": 14,
+          "gap_pct": 30.5818,
+          "vehicle_delta": 4,
+          "runtime_s": 0.072264
+        },
+        "randomized": {
+          "distance": 4253.4452,
+          "n_vehicles": 19,
+          "gap_pct": 413.6639,
+          "vehicle_delta": 9,
+          "runtime_s": 0.00182
+        },
+        "two_opt": {
+          "distance": 1001.9941,
+          "n_vehicles": 14,
+          "gap_pct": 21.005,
+          "vehicle_delta": 4,
+          "runtime_s": 0.029815
+        },
+        "two_opt_tuned": {
+          "distance": 994.2455,
+          "n_vehicles": 14,
+          "gap_pct": 20.0693,
+          "vehicle_delta": 4,
+          "runtime_s": 0.062685
+        },
+        "alns": {
+          "distance": 924.6978,
+          "n_vehicles": 12,
+          "gap_pct": 11.6704,
+          "vehicle_delta": 2,
+          "runtime_s": 1.68415
+        },
+        "ortools_cp": {
+          "distance": 924.6978,
+          "n_vehicles": 12,
+          "gap_pct": 11.6704,
+          "vehicle_delta": 2,
+          "runtime_s": 13.063528
+        }
+      }
+    },
+    "C104": {
+      "best_known": 824.78,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 868.1095,
+      "best_gap_pct": 5.2535,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1456.0777,
+          "n_vehicles": 14,
+          "gap_pct": 76.5413,
+          "vehicle_delta": 4,
+          "runtime_s": 0.003446
+        },
+        "clarke_wright": {
+          "distance": 996.7845,
+          "n_vehicles": 13,
+          "gap_pct": 20.8546,
+          "vehicle_delta": 3,
+          "runtime_s": 0.010012
+        },
+        "randomized": {
+          "distance": 4168.2091,
+          "n_vehicles": 17,
+          "gap_pct": 405.3722,
+          "vehicle_delta": 7,
+          "runtime_s": 0.004426
+        },
+        "two_opt": {
+          "distance": 963.2997,
+          "n_vehicles": 13,
+          "gap_pct": 16.7947,
+          "vehicle_delta": 3,
+          "runtime_s": 0.009597
+        },
+        "two_opt_tuned": {
+          "distance": 963.2997,
+          "n_vehicles": 13,
+          "gap_pct": 16.7947,
+          "vehicle_delta": 3,
+          "runtime_s": 0.024465
+        },
+        "alns": {
+          "distance": 868.1095,
+          "n_vehicles": 11,
+          "gap_pct": 5.2535,
+          "vehicle_delta": 1,
+          "runtime_s": 1.929414
+        },
+        "ortools_cp": {
+          "distance": 868.1095,
+          "n_vehicles": 11,
+          "gap_pct": 5.2535,
+          "vehicle_delta": 1,
+          "runtime_s": 13.835852
+        }
+      }
+    },
+    "C105": {
+      "best_known": 828.94,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 860.2051,
+      "best_gap_pct": 3.7717,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1580.0204,
+          "n_vehicles": 19,
+          "gap_pct": 90.6073,
+          "vehicle_delta": 9,
+          "runtime_s": 0.003972
+        },
+        "clarke_wright": {
+          "distance": 1122.0507,
+          "n_vehicles": 15,
+          "gap_pct": 35.3597,
+          "vehicle_delta": 5,
+          "runtime_s": 0.017235
+        },
+        "randomized": {
+          "distance": 4301.0832,
+          "n_vehicles": 25,
+          "gap_pct": 418.8654,
+          "vehicle_delta": 15,
+          "runtime_s": 0.001877
+        },
+        "two_opt": {
+          "distance": 1047.5414,
+          "n_vehicles": 15,
+          "gap_pct": 26.3712,
+          "vehicle_delta": 5,
+          "runtime_s": 0.030589
+        },
+        "two_opt_tuned": {
+          "distance": 1047.5414,
+          "n_vehicles": 15,
+          "gap_pct": 26.3712,
+          "vehicle_delta": 5,
+          "runtime_s": 0.04115
+        },
+        "alns": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 1.651451
+        },
+        "ortools_cp": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 13.74464
+        }
+      }
+    },
+    "C106": {
+      "best_known": 828.94,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 860.2051,
+      "best_gap_pct": 3.7717,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1469.8905,
+          "n_vehicles": 17,
+          "gap_pct": 77.3217,
+          "vehicle_delta": 7,
+          "runtime_s": 0.003416
+        },
+        "clarke_wright": {
+          "distance": 1033.861,
+          "n_vehicles": 13,
+          "gap_pct": 24.7208,
+          "vehicle_delta": 3,
+          "runtime_s": 0.008456
+        },
+        "randomized": {
+          "distance": 4254.4345,
+          "n_vehicles": 24,
+          "gap_pct": 413.2379,
+          "vehicle_delta": 14,
+          "runtime_s": 0.00221
+        },
+        "two_opt": {
+          "distance": 968.6866,
+          "n_vehicles": 13,
+          "gap_pct": 16.8585,
+          "vehicle_delta": 3,
+          "runtime_s": 0.021568
+        },
+        "two_opt_tuned": {
+          "distance": 968.6866,
+          "n_vehicles": 13,
+          "gap_pct": 16.8585,
+          "vehicle_delta": 3,
+          "runtime_s": 0.03976
+        },
+        "alns": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 1.548586
+        },
+        "ortools_cp": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 9.10476
+        }
+      }
+    },
+    "C107": {
+      "best_known": 828.94,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 860.2051,
+      "best_gap_pct": 3.7717,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1656.532,
+          "n_vehicles": 17,
+          "gap_pct": 99.8374,
+          "vehicle_delta": 7,
+          "runtime_s": 0.00374
+        },
+        "clarke_wright": {
+          "distance": 1088.5537,
+          "n_vehicles": 14,
+          "gap_pct": 31.3188,
+          "vehicle_delta": 4,
+          "runtime_s": 0.008878
+        },
+        "randomized": {
+          "distance": 4346.9476,
+          "n_vehicles": 20,
+          "gap_pct": 424.3983,
+          "vehicle_delta": 10,
+          "runtime_s": 0.001753
+        },
+        "two_opt": {
+          "distance": 1012.0124,
+          "n_vehicles": 14,
+          "gap_pct": 22.0851,
+          "vehicle_delta": 4,
+          "runtime_s": 0.020762
+        },
+        "two_opt_tuned": {
+          "distance": 1012.0124,
+          "n_vehicles": 14,
+          "gap_pct": 22.0851,
+          "vehicle_delta": 4,
+          "runtime_s": 0.023987
+        },
+        "alns": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 1.726272
+        },
+        "ortools_cp": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 10.709029
+        }
+      }
+    },
+    "C108": {
+      "best_known": 828.94,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 828.9369,
+      "best_gap_pct": -0.0004,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1521.075,
+          "n_vehicles": 15,
+          "gap_pct": 83.4964,
+          "vehicle_delta": 5,
+          "runtime_s": 0.004728
+        },
+        "clarke_wright": {
+          "distance": 909.202,
+          "n_vehicles": 11,
+          "gap_pct": 9.6825,
+          "vehicle_delta": 1,
+          "runtime_s": 0.007038
+        },
+        "randomized": {
+          "distance": 4012.8326,
+          "n_vehicles": 19,
+          "gap_pct": 384.092,
+          "vehicle_delta": 9,
+          "runtime_s": 0.002339
+        },
+        "two_opt": {
+          "distance": 861.2358,
+          "n_vehicles": 11,
+          "gap_pct": 3.896,
+          "vehicle_delta": 1,
+          "runtime_s": 0.005328
+        },
+        "two_opt_tuned": {
+          "distance": 861.2358,
+          "n_vehicles": 11,
+          "gap_pct": 3.896,
+          "vehicle_delta": 1,
+          "runtime_s": 0.034164
+        },
+        "alns": {
+          "distance": 828.9369,
+          "n_vehicles": 10,
+          "gap_pct": -0.0004,
+          "vehicle_delta": 0,
+          "runtime_s": 1.842508
+        },
+        "ortools_cp": {
+          "distance": 828.9369,
+          "n_vehicles": 10,
+          "gap_pct": -0.0004,
+          "vehicle_delta": 0,
+          "runtime_s": 10.884936
+        }
+      }
+    },
+    "C109": {
+      "best_known": 828.94,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 828.9369,
+      "best_gap_pct": -0.0004,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1640.5414,
+          "n_vehicles": 14,
+          "gap_pct": 97.9083,
+          "vehicle_delta": 4,
+          "runtime_s": 0.003756
+        },
+        "clarke_wright": {
+          "distance": 898.223,
+          "n_vehicles": 11,
+          "gap_pct": 8.358,
+          "vehicle_delta": 1,
+          "runtime_s": 0.008231
+        },
+        "randomized": {
+          "distance": 4302.1828,
+          "n_vehicles": 16,
+          "gap_pct": 418.9981,
+          "vehicle_delta": 6,
+          "runtime_s": 0.001732
+        },
+        "two_opt": {
+          "distance": 879.0968,
+          "n_vehicles": 11,
+          "gap_pct": 6.0507,
+          "vehicle_delta": 1,
+          "runtime_s": 0.007198
+        },
+        "two_opt_tuned": {
+          "distance": 879.0968,
+          "n_vehicles": 11,
+          "gap_pct": 6.0507,
+          "vehicle_delta": 1,
+          "runtime_s": 0.028013
+        },
+        "alns": {
+          "distance": 828.9369,
+          "n_vehicles": 10,
+          "gap_pct": -0.0004,
+          "vehicle_delta": 0,
+          "runtime_s": 1.958278
+        },
+        "ortools_cp": {
+          "distance": 828.9369,
+          "n_vehicles": 10,
+          "gap_pct": -0.0004,
+          "vehicle_delta": 0,
+          "runtime_s": 12.566316
+        }
+      }
+    },
+    "C201": {
+      "best_known": 591.56,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 636.267,
+      "best_gap_pct": 7.5575,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1547.9601,
+          "n_vehicles": 10,
+          "gap_pct": 161.6742,
+          "vehicle_delta": 7,
+          "runtime_s": 0.004258
+        },
+        "clarke_wright": {
+          "distance": 1029.6628,
+          "n_vehicles": 9,
+          "gap_pct": 74.0589,
+          "vehicle_delta": 6,
+          "runtime_s": 0.011008
+        },
+        "randomized": {
+          "distance": 4197.3978,
+          "n_vehicles": 15,
+          "gap_pct": 609.5473,
+          "vehicle_delta": 12,
+          "runtime_s": 0.001741
+        },
+        "two_opt": {
+          "distance": 889.2116,
+          "n_vehicles": 9,
+          "gap_pct": 50.3164,
+          "vehicle_delta": 6,
+          "runtime_s": 0.044978
+        },
+        "two_opt_tuned": {
+          "distance": 889.2116,
+          "n_vehicles": 9,
+          "gap_pct": 50.3164,
+          "vehicle_delta": 6,
+          "runtime_s": 0.05007
+        },
+        "alns": {
+          "distance": 636.267,
+          "n_vehicles": 4,
+          "gap_pct": 7.5575,
+          "vehicle_delta": 1,
+          "runtime_s": 4.528178
+        },
+        "ortools_cp": {
+          "distance": 636.267,
+          "n_vehicles": 4,
+          "gap_pct": 7.5575,
+          "vehicle_delta": 1,
+          "runtime_s": 11.681766
+        }
+      }
+    },
+    "C202": {
+      "best_known": 591.56,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 621.6367,
+      "best_gap_pct": 5.0843,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1308.7073,
+          "n_vehicles": 9,
+          "gap_pct": 121.2298,
+          "vehicle_delta": 6,
+          "runtime_s": 0.003541
+        },
+        "clarke_wright": {
+          "distance": 824.2928,
+          "n_vehicles": 7,
+          "gap_pct": 39.3422,
+          "vehicle_delta": 4,
+          "runtime_s": 0.010533
+        },
+        "randomized": {
+          "distance": 4101.8291,
+          "n_vehicles": 12,
+          "gap_pct": 593.3919,
+          "vehicle_delta": 9,
+          "runtime_s": 0.003465
+        },
+        "two_opt": {
+          "distance": 784.6626,
+          "n_vehicles": 7,
+          "gap_pct": 32.6429,
+          "vehicle_delta": 4,
+          "runtime_s": 0.023425
+        },
+        "two_opt_tuned": {
+          "distance": 784.6626,
+          "n_vehicles": 7,
+          "gap_pct": 32.6429,
+          "vehicle_delta": 4,
+          "runtime_s": 0.028987
+        },
+        "alns": {
+          "distance": 621.6367,
+          "n_vehicles": 4,
+          "gap_pct": 5.0843,
+          "vehicle_delta": 1,
+          "runtime_s": 1.710205
+        },
+        "ortools_cp": {
+          "distance": 621.6367,
+          "n_vehicles": 4,
+          "gap_pct": 5.0843,
+          "vehicle_delta": 1,
+          "runtime_s": 11.185353
+        }
+      }
+    },
+    "C203": {
+      "best_known": 591.17,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 706.354,
+      "best_gap_pct": 19.4841,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1366.6654,
+          "n_vehicles": 8,
+          "gap_pct": 131.1798,
+          "vehicle_delta": 5,
+          "runtime_s": 0.004287
+        },
+        "clarke_wright": {
+          "distance": 805.8357,
+          "n_vehicles": 6,
+          "gap_pct": 36.312,
+          "vehicle_delta": 3,
+          "runtime_s": 0.010616
+        },
+        "randomized": {
+          "distance": 4369.8753,
+          "n_vehicles": 12,
+          "gap_pct": 639.191,
+          "vehicle_delta": 9,
+          "runtime_s": 0.002434
+        },
+        "two_opt": {
+          "distance": 780.8523,
+          "n_vehicles": 6,
+          "gap_pct": 32.0859,
+          "vehicle_delta": 3,
+          "runtime_s": 0.003889
+        },
+        "two_opt_tuned": {
+          "distance": 780.8523,
+          "n_vehicles": 6,
+          "gap_pct": 32.0859,
+          "vehicle_delta": 3,
+          "runtime_s": 0.013095
+        },
+        "alns": {
+          "distance": 706.354,
+          "n_vehicles": 6,
+          "gap_pct": 19.4841,
+          "vehicle_delta": 3,
+          "runtime_s": 4.354545
+        },
+        "ortools_cp": {
+          "distance": 706.354,
+          "n_vehicles": 6,
+          "gap_pct": 19.4841,
+          "vehicle_delta": 3,
+          "runtime_s": 11.145134
+        }
+      }
+    },
+    "C204": {
+      "best_known": 590.6,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 643.5437,
+      "best_gap_pct": 8.9644,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1500.1036,
+          "n_vehicles": 9,
+          "gap_pct": 153.9965,
+          "vehicle_delta": 6,
+          "runtime_s": 0.002458
+        },
+        "clarke_wright": {
+          "distance": 734.2916,
+          "n_vehicles": 4,
+          "gap_pct": 24.3298,
+          "vehicle_delta": 1,
+          "runtime_s": 0.006331
+        },
+        "randomized": {
+          "distance": 4249.6537,
+          "n_vehicles": 10,
+          "gap_pct": 619.5485,
+          "vehicle_delta": 7,
+          "runtime_s": 0.003433
+        },
+        "two_opt": {
+          "distance": 681.663,
+          "n_vehicles": 4,
+          "gap_pct": 15.4187,
+          "vehicle_delta": 1,
+          "runtime_s": 0.012489
+        },
+        "two_opt_tuned": {
+          "distance": 668.4562,
+          "n_vehicles": 4,
+          "gap_pct": 13.1826,
+          "vehicle_delta": 1,
+          "runtime_s": 0.037259
+        },
+        "alns": {
+          "distance": 643.5437,
+          "n_vehicles": 4,
+          "gap_pct": 8.9644,
+          "vehicle_delta": 1,
+          "runtime_s": 6.428864
+        },
+        "ortools_cp": {
+          "distance": 643.5437,
+          "n_vehicles": 4,
+          "gap_pct": 8.9644,
+          "vehicle_delta": 1,
+          "runtime_s": 10.085858
+        }
+      }
+    },
+    "C205": {
+      "best_known": 588.88,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 620.4184,
+      "best_gap_pct": 5.3557,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1439.5837,
+          "n_vehicles": 9,
+          "gap_pct": 144.4613,
+          "vehicle_delta": 6,
+          "runtime_s": 0.00332
+        },
+        "clarke_wright": {
+          "distance": 678.5058,
+          "n_vehicles": 4,
+          "gap_pct": 15.2197,
+          "vehicle_delta": 1,
+          "runtime_s": 0.009764
+        },
+        "randomized": {
+          "distance": 3977.3408,
+          "n_vehicles": 11,
+          "gap_pct": 575.4077,
+          "vehicle_delta": 8,
+          "runtime_s": 0.001934
+        },
+        "two_opt": {
+          "distance": 630.625,
+          "n_vehicles": 4,
+          "gap_pct": 7.0889,
+          "vehicle_delta": 1,
+          "runtime_s": 0.020021
+        },
+        "two_opt_tuned": {
+          "distance": 630.544,
+          "n_vehicles": 4,
+          "gap_pct": 7.0751,
+          "vehicle_delta": 1,
+          "runtime_s": 0.028638
+        },
+        "alns": {
+          "distance": 620.4184,
+          "n_vehicles": 4,
+          "gap_pct": 5.3557,
+          "vehicle_delta": 1,
+          "runtime_s": 5.263072
+        },
+        "ortools_cp": {
+          "distance": 620.4184,
+          "n_vehicles": 4,
+          "gap_pct": 5.3557,
+          "vehicle_delta": 1,
+          "runtime_s": 12.280198
+        }
+      }
+    },
+    "C206": {
+      "best_known": 588.49,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 621.0136,
+      "best_gap_pct": 5.5266,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1393.3752,
+          "n_vehicles": 7,
+          "gap_pct": 136.7713,
+          "vehicle_delta": 4,
+          "runtime_s": 0.003246
+        },
+        "clarke_wright": {
+          "distance": 719.3955,
+          "n_vehicles": 5,
+          "gap_pct": 22.2443,
+          "vehicle_delta": 2,
+          "runtime_s": 0.010599
+        },
+        "randomized": {
+          "distance": 4053.5117,
+          "n_vehicles": 10,
+          "gap_pct": 588.7987,
+          "vehicle_delta": 7,
+          "runtime_s": 0.002574
+        },
+        "two_opt": {
+          "distance": 672.959,
+          "n_vehicles": 5,
+          "gap_pct": 14.3535,
+          "vehicle_delta": 2,
+          "runtime_s": 0.012411
+        },
+        "two_opt_tuned": {
+          "distance": 682.8006,
+          "n_vehicles": 5,
+          "gap_pct": 16.0259,
+          "vehicle_delta": 2,
+          "runtime_s": 0.027757
+        },
+        "alns": {
+          "distance": 621.0136,
+          "n_vehicles": 4,
+          "gap_pct": 5.5266,
+          "vehicle_delta": 1,
+          "runtime_s": 5.053101
+        },
+        "ortools_cp": {
+          "distance": 621.0136,
+          "n_vehicles": 4,
+          "gap_pct": 5.5266,
+          "vehicle_delta": 1,
+          "runtime_s": 12.405408
+        }
+      }
+    },
+    "C207": {
+      "best_known": 588.29,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 588.2863,
+      "best_gap_pct": -0.0006,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1303.3549,
+          "n_vehicles": 7,
+          "gap_pct": 121.5497,
+          "vehicle_delta": 4,
+          "runtime_s": 0.003336
+        },
+        "clarke_wright": {
+          "distance": 718.4426,
+          "n_vehicles": 5,
+          "gap_pct": 22.1239,
+          "vehicle_delta": 2,
+          "runtime_s": 0.013811
+        },
+        "randomized": {
+          "distance": 4163.5235,
+          "n_vehicles": 10,
+          "gap_pct": 607.7332,
+          "vehicle_delta": 7,
+          "runtime_s": 0.001565
+        },
+        "two_opt": {
+          "distance": 660.5476,
+          "n_vehicles": 5,
+          "gap_pct": 12.2826,
+          "vehicle_delta": 2,
+          "runtime_s": 0.009242
+        },
+        "two_opt_tuned": {
+          "distance": 660.3411,
+          "n_vehicles": 5,
+          "gap_pct": 12.2475,
+          "vehicle_delta": 2,
+          "runtime_s": 0.028968
+        },
+        "alns": {
+          "distance": 588.2863,
+          "n_vehicles": 3,
+          "gap_pct": -0.0006,
+          "vehicle_delta": 0,
+          "runtime_s": 5.428069
+        },
+        "ortools_cp": {
+          "distance": 588.2863,
+          "n_vehicles": 3,
+          "gap_pct": -0.0006,
+          "vehicle_delta": 0,
+          "runtime_s": 12.189838
+        }
+      }
+    },
+    "C208": {
+      "best_known": 588.32,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 588.3238,
+      "best_gap_pct": 0.0006,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1145.2293,
+          "n_vehicles": 6,
+          "gap_pct": 94.6609,
+          "vehicle_delta": 3,
+          "runtime_s": 0.004246
+        },
+        "clarke_wright": {
+          "distance": 702.2481,
+          "n_vehicles": 4,
+          "gap_pct": 19.365,
+          "vehicle_delta": 1,
+          "runtime_s": 0.008365
+        },
+        "randomized": {
+          "distance": 4008.2711,
+          "n_vehicles": 8,
+          "gap_pct": 581.308,
+          "vehicle_delta": 5,
+          "runtime_s": 0.001628
+        },
+        "two_opt": {
+          "distance": 636.7616,
+          "n_vehicles": 4,
+          "gap_pct": 8.2339,
+          "vehicle_delta": 1,
+          "runtime_s": 0.011475
+        },
+        "two_opt_tuned": {
+          "distance": 636.7616,
+          "n_vehicles": 4,
+          "gap_pct": 8.2339,
+          "vehicle_delta": 1,
+          "runtime_s": 0.034913
+        },
+        "alns": {
+          "distance": 588.3238,
+          "n_vehicles": 3,
+          "gap_pct": 0.0006,
+          "vehicle_delta": 0,
+          "runtime_s": 5.836617
+        },
+        "ortools_cp": {
+          "distance": 588.3238,
+          "n_vehicles": 3,
+          "gap_pct": 0.0006,
+          "vehicle_delta": 0,
+          "runtime_s": 11.872992
+        }
+      }
+    },
+    "R101": {
+      "best_known": 1650.8,
+      "best_known_vehicles": 19,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1687.3625,
+      "best_gap_pct": 2.2148,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2464.0005,
+          "n_vehicles": 33,
+          "gap_pct": 49.261,
+          "vehicle_delta": 14,
+          "runtime_s": 0.003481
+        },
+        "clarke_wright": {
+          "distance": 2141.6808,
+          "n_vehicles": 31,
+          "gap_pct": 29.7359,
+          "vehicle_delta": 12,
+          "runtime_s": 0.014049
+        },
+        "randomized": {
+          "distance": 3544.7403,
+          "n_vehicles": 41,
+          "gap_pct": 114.7286,
+          "vehicle_delta": 22,
+          "runtime_s": 0.002404
+        },
+        "two_opt": {
+          "distance": 2032.0041,
+          "n_vehicles": 31,
+          "gap_pct": 23.0921,
+          "vehicle_delta": 12,
+          "runtime_s": 0.023764
+        },
+        "two_opt_tuned": {
+          "distance": 2029.1428,
+          "n_vehicles": 31,
+          "gap_pct": 22.9188,
+          "vehicle_delta": 12,
+          "runtime_s": 0.064857
+        },
+        "alns": {
+          "distance": 1687.3625,
+          "n_vehicles": 22,
+          "gap_pct": 2.2148,
+          "vehicle_delta": 3,
+          "runtime_s": 1.792087
+        },
+        "ortools_cp": {
+          "distance": 1687.3625,
+          "n_vehicles": 22,
+          "gap_pct": 2.2148,
+          "vehicle_delta": 3,
+          "runtime_s": 10.603284
+        }
+      }
+    },
+    "R102": {
+      "best_known": 1486.12,
+      "best_known_vehicles": 17,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1594.8893,
+      "best_gap_pct": 7.319,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2201.2774,
+          "n_vehicles": 28,
+          "gap_pct": 48.1225,
+          "vehicle_delta": 11,
+          "runtime_s": 0.004349
+        },
+        "clarke_wright": {
+          "distance": 1835.8,
+          "n_vehicles": 27,
+          "gap_pct": 23.5297,
+          "vehicle_delta": 10,
+          "runtime_s": 0.010583
+        },
+        "randomized": {
+          "distance": 3357.3369,
+          "n_vehicles": 34,
+          "gap_pct": 125.9129,
+          "vehicle_delta": 17,
+          "runtime_s": 0.002229
+        },
+        "two_opt": {
+          "distance": 1798.7025,
+          "n_vehicles": 27,
+          "gap_pct": 21.0335,
+          "vehicle_delta": 10,
+          "runtime_s": 0.023398
+        },
+        "two_opt_tuned": {
+          "distance": 1790.9974,
+          "n_vehicles": 27,
+          "gap_pct": 20.515,
+          "vehicle_delta": 10,
+          "runtime_s": 0.045008
+        },
+        "alns": {
+          "distance": 1594.8893,
+          "n_vehicles": 20,
+          "gap_pct": 7.319,
+          "vehicle_delta": 3,
+          "runtime_s": 1.884718
+        },
+        "ortools_cp": {
+          "distance": 1594.8893,
+          "n_vehicles": 20,
+          "gap_pct": 7.319,
+          "vehicle_delta": 3,
+          "runtime_s": 15.398975
+        }
+      }
+    },
+    "R103": {
+      "best_known": 1292.68,
+      "best_known_vehicles": 13,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1325.4983,
+      "best_gap_pct": 2.5388,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1893.3315,
+          "n_vehicles": 23,
+          "gap_pct": 46.4656,
+          "vehicle_delta": 10,
+          "runtime_s": 0.004499
+        },
+        "clarke_wright": {
+          "distance": 1565.9205,
+          "n_vehicles": 22,
+          "gap_pct": 21.1375,
+          "vehicle_delta": 9,
+          "runtime_s": 0.012458
+        },
+        "randomized": {
+          "distance": 3489.0863,
+          "n_vehicles": 28,
+          "gap_pct": 169.9111,
+          "vehicle_delta": 15,
+          "runtime_s": 0.003275
+        },
+        "two_opt": {
+          "distance": 1498.1272,
+          "n_vehicles": 22,
+          "gap_pct": 15.8931,
+          "vehicle_delta": 9,
+          "runtime_s": 0.039117
+        },
+        "two_opt_tuned": {
+          "distance": 1516.3282,
+          "n_vehicles": 22,
+          "gap_pct": 17.3011,
+          "vehicle_delta": 9,
+          "runtime_s": 0.051354
+        },
+        "alns": {
+          "distance": 1325.4983,
+          "n_vehicles": 17,
+          "gap_pct": 2.5388,
+          "vehicle_delta": 4,
+          "runtime_s": 2.087316
+        },
+        "ortools_cp": {
+          "distance": 1325.4983,
+          "n_vehicles": 17,
+          "gap_pct": 2.5388,
+          "vehicle_delta": 4,
+          "runtime_s": 18.232302
+        }
+      }
+    },
+    "R104": {
+      "best_known": 1007.31,
+      "best_known_vehicles": 9,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1060.9348,
+      "best_gap_pct": 5.3236,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1515.2545,
+          "n_vehicles": 17,
+          "gap_pct": 50.4258,
+          "vehicle_delta": 8,
+          "runtime_s": 0.003893
+        },
+        "clarke_wright": {
+          "distance": 1239.0883,
+          "n_vehicles": 16,
+          "gap_pct": 23.0096,
+          "vehicle_delta": 7,
+          "runtime_s": 0.01072
+        },
+        "randomized": {
+          "distance": 3292.936,
+          "n_vehicles": 24,
+          "gap_pct": 226.9039,
+          "vehicle_delta": 15,
+          "runtime_s": 0.002122
+        },
+        "two_opt": {
+          "distance": 1209.1593,
+          "n_vehicles": 16,
+          "gap_pct": 20.0384,
+          "vehicle_delta": 7,
+          "runtime_s": 0.012022
+        },
+        "two_opt_tuned": {
+          "distance": 1203.8216,
+          "n_vehicles": 16,
+          "gap_pct": 19.5086,
+          "vehicle_delta": 7,
+          "runtime_s": 0.029813
+        },
+        "alns": {
+          "distance": 1060.9348,
+          "n_vehicles": 13,
+          "gap_pct": 5.3236,
+          "vehicle_delta": 4,
+          "runtime_s": 2.205825
+        },
+        "ortools_cp": {
+          "distance": 1060.9348,
+          "n_vehicles": 13,
+          "gap_pct": 5.3236,
+          "vehicle_delta": 4,
+          "runtime_s": 17.777159
+        }
+      }
+    },
+    "R105": {
+      "best_known": 1377.11,
+      "best_known_vehicles": 14,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1457.2429,
+      "best_gap_pct": 5.8189,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2197.7101,
+          "n_vehicles": 26,
+          "gap_pct": 59.5886,
+          "vehicle_delta": 12,
+          "runtime_s": 0.003715
+        },
+        "clarke_wright": {
+          "distance": 1650.68,
+          "n_vehicles": 21,
+          "gap_pct": 19.8655,
+          "vehicle_delta": 7,
+          "runtime_s": 0.013109
+        },
+        "randomized": {
+          "distance": 3210.8414,
+          "n_vehicles": 32,
+          "gap_pct": 133.1579,
+          "vehicle_delta": 18,
+          "runtime_s": 0.003031
+        },
+        "two_opt": {
+          "distance": 1598.7508,
+          "n_vehicles": 21,
+          "gap_pct": 16.0946,
+          "vehicle_delta": 7,
+          "runtime_s": 0.024352
+        },
+        "two_opt_tuned": {
+          "distance": 1597.3613,
+          "n_vehicles": 21,
+          "gap_pct": 15.9937,
+          "vehicle_delta": 7,
+          "runtime_s": 0.053895
+        },
+        "alns": {
+          "distance": 1457.2429,
+          "n_vehicles": 18,
+          "gap_pct": 5.8189,
+          "vehicle_delta": 4,
+          "runtime_s": 1.827014
+        },
+        "ortools_cp": {
+          "distance": 1457.2429,
+          "n_vehicles": 18,
+          "gap_pct": 5.8189,
+          "vehicle_delta": 4,
+          "runtime_s": 12.825206
+        }
+      }
+    },
+    "R106": {
+      "best_known": 1252.03,
+      "best_known_vehicles": 12,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1318.8271,
+      "best_gap_pct": 5.3351,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1797.8277,
+          "n_vehicles": 20,
+          "gap_pct": 43.593,
+          "vehicle_delta": 8,
+          "runtime_s": 0.007553
+        },
+        "clarke_wright": {
+          "distance": 1497.5936,
+          "n_vehicles": 20,
+          "gap_pct": 19.6132,
+          "vehicle_delta": 8,
+          "runtime_s": 0.011734
+        },
+        "randomized": {
+          "distance": 3147.963,
+          "n_vehicles": 28,
+          "gap_pct": 151.4287,
+          "vehicle_delta": 16,
+          "runtime_s": 0.004221
+        },
+        "two_opt": {
+          "distance": 1483.3503,
+          "n_vehicles": 20,
+          "gap_pct": 18.4756,
+          "vehicle_delta": 8,
+          "runtime_s": 0.020869
+        },
+        "two_opt_tuned": {
+          "distance": 1484.2357,
+          "n_vehicles": 20,
+          "gap_pct": 18.5463,
+          "vehicle_delta": 8,
+          "runtime_s": 0.02403
+        },
+        "alns": {
+          "distance": 1318.8271,
+          "n_vehicles": 16,
+          "gap_pct": 5.3351,
+          "vehicle_delta": 4,
+          "runtime_s": 2.009729
+        },
+        "ortools_cp": {
+          "distance": 1318.8271,
+          "n_vehicles": 16,
+          "gap_pct": 5.3351,
+          "vehicle_delta": 4,
+          "runtime_s": 16.213981
+        }
+      }
+    },
+    "R107": {
+      "best_known": 1104.66,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1170.619,
+      "best_gap_pct": 5.971,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1678.8358,
+          "n_vehicles": 18,
+          "gap_pct": 51.9776,
+          "vehicle_delta": 8,
+          "runtime_s": 0.003468
+        },
+        "clarke_wright": {
+          "distance": 1350.1265,
+          "n_vehicles": 17,
+          "gap_pct": 22.221,
+          "vehicle_delta": 7,
+          "runtime_s": 0.009608
+        },
+        "randomized": {
+          "distance": 3259.7785,
+          "n_vehicles": 24,
+          "gap_pct": 195.0934,
+          "vehicle_delta": 14,
+          "runtime_s": 0.002068
+        },
+        "two_opt": {
+          "distance": 1315.1734,
+          "n_vehicles": 17,
+          "gap_pct": 19.0569,
+          "vehicle_delta": 7,
+          "runtime_s": 0.00828
+        },
+        "two_opt_tuned": {
+          "distance": 1315.1734,
+          "n_vehicles": 17,
+          "gap_pct": 19.0569,
+          "vehicle_delta": 7,
+          "runtime_s": 0.037043
+        },
+        "alns": {
+          "distance": 1170.619,
+          "n_vehicles": 14,
+          "gap_pct": 5.971,
+          "vehicle_delta": 4,
+          "runtime_s": 2.057894
+        },
+        "ortools_cp": {
+          "distance": 1170.619,
+          "n_vehicles": 14,
+          "gap_pct": 5.971,
+          "vehicle_delta": 4,
+          "runtime_s": 16.289303
+        }
+      }
+    },
+    "R108": {
+      "best_known": 960.88,
+      "best_known_vehicles": 9,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1012.2835,
+      "best_gap_pct": 5.3496,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1526.4912,
+          "n_vehicles": 16,
+          "gap_pct": 58.8639,
+          "vehicle_delta": 7,
+          "runtime_s": 0.003462
+        },
+        "clarke_wright": {
+          "distance": 1141.7516,
+          "n_vehicles": 14,
+          "gap_pct": 18.8235,
+          "vehicle_delta": 5,
+          "runtime_s": 0.007951
+        },
+        "randomized": {
+          "distance": 3444.1884,
+          "n_vehicles": 24,
+          "gap_pct": 258.4411,
+          "vehicle_delta": 15,
+          "runtime_s": 0.002678
+        },
+        "two_opt": {
+          "distance": 1086.9221,
+          "n_vehicles": 14,
+          "gap_pct": 13.1174,
+          "vehicle_delta": 5,
+          "runtime_s": 0.011694
+        },
+        "two_opt_tuned": {
+          "distance": 1087.0583,
+          "n_vehicles": 14,
+          "gap_pct": 13.1315,
+          "vehicle_delta": 5,
+          "runtime_s": 0.032337
+        },
+        "alns": {
+          "distance": 1012.2835,
+          "n_vehicles": 12,
+          "gap_pct": 5.3496,
+          "vehicle_delta": 3,
+          "runtime_s": 1.278174
+        },
+        "ortools_cp": {
+          "distance": 1012.2835,
+          "n_vehicles": 12,
+          "gap_pct": 5.3496,
+          "vehicle_delta": 3,
+          "runtime_s": 14.760699
+        }
+      }
+    },
+    "R109": {
+      "best_known": 1194.73,
+      "best_known_vehicles": 11,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1213.7108,
+      "best_gap_pct": 1.5887,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1751.1575,
+          "n_vehicles": 18,
+          "gap_pct": 46.5735,
+          "vehicle_delta": 7,
+          "runtime_s": 0.004953
+        },
+        "clarke_wright": {
+          "distance": 1352.5825,
+          "n_vehicles": 17,
+          "gap_pct": 13.2124,
+          "vehicle_delta": 6,
+          "runtime_s": 0.008086
+        },
+        "randomized": {
+          "distance": 2774.6246,
+          "n_vehicles": 25,
+          "gap_pct": 132.2386,
+          "vehicle_delta": 14,
+          "runtime_s": 0.001397
+        },
+        "two_opt": {
+          "distance": 1330.321,
+          "n_vehicles": 17,
+          "gap_pct": 11.3491,
+          "vehicle_delta": 6,
+          "runtime_s": 0.009631
+        },
+        "two_opt_tuned": {
+          "distance": 1330.321,
+          "n_vehicles": 17,
+          "gap_pct": 11.3491,
+          "vehicle_delta": 6,
+          "runtime_s": 0.010492
+        },
+        "alns": {
+          "distance": 1213.7108,
+          "n_vehicles": 14,
+          "gap_pct": 1.5887,
+          "vehicle_delta": 3,
+          "runtime_s": 0.803867
+        },
+        "ortools_cp": {
+          "distance": 1213.7108,
+          "n_vehicles": 14,
+          "gap_pct": 1.5887,
+          "vehicle_delta": 3,
+          "runtime_s": 12.195298
+        }
+      }
+    },
+    "R110": {
+      "best_known": 1118.84,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1156.2277,
+      "best_gap_pct": 3.3416,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1714.0772,
+          "n_vehicles": 18,
+          "gap_pct": 53.2013,
+          "vehicle_delta": 8,
+          "runtime_s": 0.005027
+        },
+        "clarke_wright": {
+          "distance": 1193.3959,
+          "n_vehicles": 14,
+          "gap_pct": 6.6637,
+          "vehicle_delta": 4,
+          "runtime_s": 0.011031
+        },
+        "randomized": {
+          "distance": 3285.0229,
+          "n_vehicles": 25,
+          "gap_pct": 193.6097,
+          "vehicle_delta": 15,
+          "runtime_s": 0.00415
+        },
+        "two_opt": {
+          "distance": 1179.1197,
+          "n_vehicles": 14,
+          "gap_pct": 5.3877,
+          "vehicle_delta": 4,
+          "runtime_s": 0.00753
+        },
+        "two_opt_tuned": {
+          "distance": 1179.1197,
+          "n_vehicles": 14,
+          "gap_pct": 5.3877,
+          "vehicle_delta": 4,
+          "runtime_s": 0.027012
+        },
+        "alns": {
+          "distance": 1156.2277,
+          "n_vehicles": 14,
+          "gap_pct": 3.3416,
+          "vehicle_delta": 4,
+          "runtime_s": 2.148156
+        },
+        "ortools_cp": {
+          "distance": 1156.2277,
+          "n_vehicles": 14,
+          "gap_pct": 3.3416,
+          "vehicle_delta": 4,
+          "runtime_s": 16.861668
+        }
+      }
+    },
+    "R111": {
+      "best_known": 1096.72,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1121.8358,
+      "best_gap_pct": 2.2901,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1800.4296,
+          "n_vehicles": 18,
+          "gap_pct": 64.1649,
+          "vehicle_delta": 8,
+          "runtime_s": 0.004621
+        },
+        "clarke_wright": {
+          "distance": 1249.3019,
+          "n_vehicles": 15,
+          "gap_pct": 13.9126,
+          "vehicle_delta": 5,
+          "runtime_s": 0.008624
+        },
+        "randomized": {
+          "distance": 3389.8661,
+          "n_vehicles": 24,
+          "gap_pct": 209.0913,
+          "vehicle_delta": 14,
+          "runtime_s": 0.001395
+        },
+        "two_opt": {
+          "distance": 1214.8968,
+          "n_vehicles": 15,
+          "gap_pct": 10.7755,
+          "vehicle_delta": 5,
+          "runtime_s": 0.005299
+        },
+        "two_opt_tuned": {
+          "distance": 1214.8968,
+          "n_vehicles": 15,
+          "gap_pct": 10.7755,
+          "vehicle_delta": 5,
+          "runtime_s": 0.034203
+        },
+        "alns": {
+          "distance": 1121.8358,
+          "n_vehicles": 13,
+          "gap_pct": 2.2901,
+          "vehicle_delta": 3,
+          "runtime_s": 2.546826
+        },
+        "ortools_cp": {
+          "distance": 1121.8358,
+          "n_vehicles": 13,
+          "gap_pct": 2.2901,
+          "vehicle_delta": 3,
+          "runtime_s": 17.095951
+        }
+      }
+    },
+    "R112": {
+      "best_known": 982.14,
+      "best_known_vehicles": 9,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1003.1855,
+      "best_gap_pct": 2.1428,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1422.7791,
+          "n_vehicles": 13,
+          "gap_pct": 44.8652,
+          "vehicle_delta": 4,
+          "runtime_s": 0.003655
+        },
+        "clarke_wright": {
+          "distance": 1043.9086,
+          "n_vehicles": 12,
+          "gap_pct": 6.2892,
+          "vehicle_delta": 3,
+          "runtime_s": 0.01129
+        },
+        "randomized": {
+          "distance": 3316.8071,
+          "n_vehicles": 22,
+          "gap_pct": 237.7123,
+          "vehicle_delta": 13,
+          "runtime_s": 0.002469
+        },
+        "two_opt": {
+          "distance": 1030.7765,
+          "n_vehicles": 12,
+          "gap_pct": 4.9521,
+          "vehicle_delta": 3,
+          "runtime_s": 0.005285
+        },
+        "two_opt_tuned": {
+          "distance": 1030.7765,
+          "n_vehicles": 12,
+          "gap_pct": 4.9521,
+          "vehicle_delta": 3,
+          "runtime_s": 0.01643
+        },
+        "alns": {
+          "distance": 1003.1855,
+          "n_vehicles": 11,
+          "gap_pct": 2.1428,
+          "vehicle_delta": 2,
+          "runtime_s": 2.497306
+        },
+        "ortools_cp": {
+          "distance": 1003.1855,
+          "n_vehicles": 11,
+          "gap_pct": 2.1428,
+          "vehicle_delta": 2,
+          "runtime_s": 17.35596
+        }
+      }
+    },
+    "R201": {
+      "best_known": 1252.37,
+      "best_known_vehicles": 4,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 1296.9195,
+      "best_gap_pct": 3.5572,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1856.9122,
+          "n_vehicles": 13,
+          "gap_pct": 48.2719,
+          "vehicle_delta": 9,
+          "runtime_s": 0.002722
+        },
+        "clarke_wright": {
+          "distance": 1401.2702,
+          "n_vehicles": 15,
+          "gap_pct": 11.8895,
+          "vehicle_delta": 11,
+          "runtime_s": 0.013369
+        },
+        "randomized": {
+          "distance": 3524.7372,
+          "n_vehicles": 14,
+          "gap_pct": 181.4454,
+          "vehicle_delta": 10,
+          "runtime_s": 0.001772
+        },
+        "two_opt": {
+          "distance": 1329.5266,
+          "n_vehicles": 15,
+          "gap_pct": 6.1608,
+          "vehicle_delta": 11,
+          "runtime_s": 0.029155
+        },
+        "two_opt_tuned": {
+          "distance": 1339.2194,
+          "n_vehicles": 15,
+          "gap_pct": 6.9348,
+          "vehicle_delta": 11,
+          "runtime_s": 0.052658
+        },
+        "alns": {
+          "distance": 1296.9195,
+          "n_vehicles": 14,
+          "gap_pct": 3.5572,
+          "vehicle_delta": 10,
+          "runtime_s": 2.222978
+        },
+        "ortools_cp": {
+          "distance": 1296.9195,
+          "n_vehicles": 14,
+          "gap_pct": 3.5572,
+          "vehicle_delta": 10,
+          "runtime_s": 10.049281
+        }
+      }
+    },
+    "R202": {
+      "best_known": 1191.7,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1179.4209,
+      "best_gap_pct": -1.0304,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1748.2916,
+          "n_vehicles": 13,
+          "gap_pct": 46.7057,
+          "vehicle_delta": 10,
+          "runtime_s": 0.003127
+        },
+        "clarke_wright": {
+          "distance": 1259.85,
+          "n_vehicles": 14,
+          "gap_pct": 5.7187,
+          "vehicle_delta": 11,
+          "runtime_s": 0.009822
+        },
+        "randomized": {
+          "distance": 3612.2327,
+          "n_vehicles": 13,
+          "gap_pct": 203.1159,
+          "vehicle_delta": 10,
+          "runtime_s": 0.003066
+        },
+        "two_opt": {
+          "distance": 1237.5569,
+          "n_vehicles": 14,
+          "gap_pct": 3.848,
+          "vehicle_delta": 11,
+          "runtime_s": 0.005356
+        },
+        "two_opt_tuned": {
+          "distance": 1237.5569,
+          "n_vehicles": 14,
+          "gap_pct": 3.848,
+          "vehicle_delta": 11,
+          "runtime_s": 0.025653
+        },
+        "alns": {
+          "distance": 1179.4209,
+          "n_vehicles": 13,
+          "gap_pct": -1.0304,
+          "vehicle_delta": 10,
+          "runtime_s": 2.394188
+        },
+        "ortools_cp": {
+          "distance": 1179.4209,
+          "n_vehicles": 13,
+          "gap_pct": -1.0304,
+          "vehicle_delta": 10,
+          "runtime_s": 15.729533
+        }
+      }
+    },
+    "R203": {
+      "best_known": 939.5,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 962.8493,
+      "best_gap_pct": 2.4853,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1459.2263,
+          "n_vehicles": 9,
+          "gap_pct": 55.3195,
+          "vehicle_delta": 6,
+          "runtime_s": 0.00597
+        },
+        "clarke_wright": {
+          "distance": 1109.1498,
+          "n_vehicles": 12,
+          "gap_pct": 18.0575,
+          "vehicle_delta": 9,
+          "runtime_s": 0.008751
+        },
+        "randomized": {
+          "distance": 3651.3897,
+          "n_vehicles": 10,
+          "gap_pct": 288.6524,
+          "vehicle_delta": 7,
+          "runtime_s": 0.001872
+        },
+        "two_opt": {
+          "distance": 1070.5706,
+          "n_vehicles": 12,
+          "gap_pct": 13.9511,
+          "vehicle_delta": 9,
+          "runtime_s": 0.015341
+        },
+        "two_opt_tuned": {
+          "distance": 1073.8577,
+          "n_vehicles": 12,
+          "gap_pct": 14.301,
+          "vehicle_delta": 9,
+          "runtime_s": 0.037307
+        },
+        "alns": {
+          "distance": 962.8493,
+          "n_vehicles": 9,
+          "gap_pct": 2.4853,
+          "vehicle_delta": 6,
+          "runtime_s": 3.630374
+        },
+        "ortools_cp": {
+          "distance": 962.8493,
+          "n_vehicles": 9,
+          "gap_pct": 2.4853,
+          "vehicle_delta": 6,
+          "runtime_s": 15.528429
+        }
+      }
+    },
+    "R204": {
+      "best_known": 825.52,
+      "best_known_vehicles": 2,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 839.6703,
+      "best_gap_pct": 1.7141,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1118.8656,
+          "n_vehicles": 6,
+          "gap_pct": 35.5346,
+          "vehicle_delta": 4,
+          "runtime_s": 0.004267
+        },
+        "clarke_wright": {
+          "distance": 867.2488,
+          "n_vehicles": 8,
+          "gap_pct": 5.0549,
+          "vehicle_delta": 6,
+          "runtime_s": 0.008456
+        },
+        "randomized": {
+          "distance": 3578.3296,
+          "n_vehicles": 8,
+          "gap_pct": 333.4637,
+          "vehicle_delta": 6,
+          "runtime_s": 0.001584
+        },
+        "two_opt": {
+          "distance": 857.8224,
+          "n_vehicles": 8,
+          "gap_pct": 3.913,
+          "vehicle_delta": 6,
+          "runtime_s": 0.006373
+        },
+        "two_opt_tuned": {
+          "distance": 857.8224,
+          "n_vehicles": 8,
+          "gap_pct": 3.913,
+          "vehicle_delta": 6,
+          "runtime_s": 0.022348
+        },
+        "alns": {
+          "distance": 839.6703,
+          "n_vehicles": 8,
+          "gap_pct": 1.7141,
+          "vehicle_delta": 6,
+          "runtime_s": 4.078466
+        },
+        "ortools_cp": {
+          "distance": 839.6703,
+          "n_vehicles": 8,
+          "gap_pct": 1.7141,
+          "vehicle_delta": 6,
+          "runtime_s": 15.040919
+        }
+      }
+    },
+    "R205": {
+      "best_known": 994.43,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 1071.3509,
+      "best_gap_pct": 7.7352,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1571.5931,
+          "n_vehicles": 8,
+          "gap_pct": 58.0396,
+          "vehicle_delta": 5,
+          "runtime_s": 0.006713
+        },
+        "clarke_wright": {
+          "distance": 1150.3753,
+          "n_vehicles": 12,
+          "gap_pct": 15.6819,
+          "vehicle_delta": 9,
+          "runtime_s": 0.010904
+        },
+        "randomized": {
+          "distance": 3539.4313,
+          "n_vehicles": 9,
+          "gap_pct": 255.9256,
+          "vehicle_delta": 6,
+          "runtime_s": 0.00161
+        },
+        "two_opt": {
+          "distance": 1120.6603,
+          "n_vehicles": 12,
+          "gap_pct": 12.6937,
+          "vehicle_delta": 9,
+          "runtime_s": 0.008035
+        },
+        "two_opt_tuned": {
+          "distance": 1120.6603,
+          "n_vehicles": 12,
+          "gap_pct": 12.6937,
+          "vehicle_delta": 9,
+          "runtime_s": 0.030528
+        },
+        "alns": {
+          "distance": 1071.3509,
+          "n_vehicles": 11,
+          "gap_pct": 7.7352,
+          "vehicle_delta": 8,
+          "runtime_s": 2.929414
+        },
+        "ortools_cp": {
+          "distance": 1071.3509,
+          "n_vehicles": 11,
+          "gap_pct": 7.7352,
+          "vehicle_delta": 8,
+          "runtime_s": 10.660943
+        }
+      }
+    },
+    "R206": {
+      "best_known": 906.14,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 968.5962,
+      "best_gap_pct": 6.8926,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1666.0348,
+          "n_vehicles": 8,
+          "gap_pct": 83.8606,
+          "vehicle_delta": 5,
+          "runtime_s": 0.004012
+        },
+        "clarke_wright": {
+          "distance": 1065.7418,
+          "n_vehicles": 10,
+          "gap_pct": 17.6134,
+          "vehicle_delta": 7,
+          "runtime_s": 0.012503
+        },
+        "randomized": {
+          "distance": 3582.4483,
+          "n_vehicles": 8,
+          "gap_pct": 295.3526,
+          "vehicle_delta": 5,
+          "runtime_s": 0.002045
+        },
+        "two_opt": {
+          "distance": 1039.9251,
+          "n_vehicles": 10,
+          "gap_pct": 14.7643,
+          "vehicle_delta": 7,
+          "runtime_s": 0.015005
+        },
+        "two_opt_tuned": {
+          "distance": 1035.524,
+          "n_vehicles": 10,
+          "gap_pct": 14.2786,
+          "vehicle_delta": 7,
+          "runtime_s": 0.061136
+        },
+        "alns": {
+          "distance": 968.5962,
+          "n_vehicles": 9,
+          "gap_pct": 6.8926,
+          "vehicle_delta": 6,
+          "runtime_s": 2.673312
+        },
+        "ortools_cp": {
+          "distance": 968.5962,
+          "n_vehicles": 9,
+          "gap_pct": 6.8926,
+          "vehicle_delta": 6,
+          "runtime_s": 12.213956
+        }
+      }
+    },
+    "R207": {
+      "best_known": 890.61,
+      "best_known_vehicles": 2,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 859.3454,
+      "best_gap_pct": -3.5105,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1378.2537,
+          "n_vehicles": 7,
+          "gap_pct": 54.7539,
+          "vehicle_delta": 5,
+          "runtime_s": 0.003481
+        },
+        "clarke_wright": {
+          "distance": 927.0165,
+          "n_vehicles": 8,
+          "gap_pct": 4.0878,
+          "vehicle_delta": 6,
+          "runtime_s": 0.008627
+        },
+        "randomized": {
+          "distance": 3513.5758,
+          "n_vehicles": 8,
+          "gap_pct": 294.5134,
+          "vehicle_delta": 6,
+          "runtime_s": 0.001898
+        },
+        "two_opt": {
+          "distance": 882.752,
+          "n_vehicles": 8,
+          "gap_pct": -0.8823,
+          "vehicle_delta": 6,
+          "runtime_s": 0.015413
+        },
+        "two_opt_tuned": {
+          "distance": 891.7074,
+          "n_vehicles": 8,
+          "gap_pct": 0.1232,
+          "vehicle_delta": 6,
+          "runtime_s": 0.039164
+        },
+        "alns": {
+          "distance": 859.3454,
+          "n_vehicles": 7,
+          "gap_pct": -3.5105,
+          "vehicle_delta": 5,
+          "runtime_s": 3.768575
+        },
+        "ortools_cp": {
+          "distance": 859.3454,
+          "n_vehicles": 7,
+          "gap_pct": -3.5105,
+          "vehicle_delta": 5,
+          "runtime_s": 13.278667
+        }
+      }
+    },
+    "R208": {
+      "best_known": 726.82,
+      "best_known_vehicles": 2,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 761.1891,
+      "best_gap_pct": 4.7287,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1079.8163,
+          "n_vehicles": 5,
+          "gap_pct": 48.5672,
+          "vehicle_delta": 3,
+          "runtime_s": 0.004394
+        },
+        "clarke_wright": {
+          "distance": 778.3352,
+          "n_vehicles": 5,
+          "gap_pct": 7.0878,
+          "vehicle_delta": 3,
+          "runtime_s": 0.008473
+        },
+        "randomized": {
+          "distance": 3521.4017,
+          "n_vehicles": 8,
+          "gap_pct": 384.4943,
+          "vehicle_delta": 6,
+          "runtime_s": 0.001578
+        },
+        "two_opt": {
+          "distance": 776.9121,
+          "n_vehicles": 5,
+          "gap_pct": 6.892,
+          "vehicle_delta": 3,
+          "runtime_s": 0.005585
+        },
+        "two_opt_tuned": {
+          "distance": 776.9121,
+          "n_vehicles": 5,
+          "gap_pct": 6.892,
+          "vehicle_delta": 3,
+          "runtime_s": 0.009422
+        },
+        "alns": {
+          "distance": 761.1891,
+          "n_vehicles": 5,
+          "gap_pct": 4.7287,
+          "vehicle_delta": 3,
+          "runtime_s": 5.869858
+        },
+        "ortools_cp": {
+          "distance": 761.1891,
+          "n_vehicles": 5,
+          "gap_pct": 4.7287,
+          "vehicle_delta": 3,
+          "runtime_s": 11.619329
+        }
+      }
+    },
+    "R209": {
+      "best_known": 909.16,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 960.5779,
+      "best_gap_pct": 5.6555,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1347.6079,
+          "n_vehicles": 7,
+          "gap_pct": 48.2256,
+          "vehicle_delta": 4,
+          "runtime_s": 0.003146
+        },
+        "clarke_wright": {
+          "distance": 1029.036,
+          "n_vehicles": 10,
+          "gap_pct": 13.1854,
+          "vehicle_delta": 7,
+          "runtime_s": 0.013111
+        },
+        "randomized": {
+          "distance": 3369.0981,
+          "n_vehicles": 10,
+          "gap_pct": 270.5726,
+          "vehicle_delta": 7,
+          "runtime_s": 0.00154
+        },
+        "two_opt": {
+          "distance": 991.1282,
+          "n_vehicles": 10,
+          "gap_pct": 9.0158,
+          "vehicle_delta": 7,
+          "runtime_s": 0.012985
+        },
+        "two_opt_tuned": {
+          "distance": 991.1282,
+          "n_vehicles": 10,
+          "gap_pct": 9.0158,
+          "vehicle_delta": 7,
+          "runtime_s": 0.040083
+        },
+        "alns": {
+          "distance": 960.5779,
+          "n_vehicles": 9,
+          "gap_pct": 5.6555,
+          "vehicle_delta": 6,
+          "runtime_s": 3.444151
+        },
+        "ortools_cp": {
+          "distance": 960.5779,
+          "n_vehicles": 9,
+          "gap_pct": 5.6555,
+          "vehicle_delta": 6,
+          "runtime_s": 11.877515
+        }
+      }
+    },
+    "R210": {
+      "best_known": 939.37,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "randomized",
+      "best_distance": 1020.0141,
+      "best_gap_pct": 8.5849,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1661.9206,
+          "n_vehicles": 9,
+          "gap_pct": 76.9186,
+          "vehicle_delta": 6,
+          "runtime_s": 0.003347
+        },
+        "clarke_wright": {
+          "distance": 1074.3245,
+          "n_vehicles": 12,
+          "gap_pct": 14.3665,
+          "vehicle_delta": 9,
+          "runtime_s": 0.009606
+        },
+        "randomized": {
+          "distance": 3485.2371,
+          "n_vehicles": 8,
+          "gap_pct": 271.0186,
+          "vehicle_delta": 5,
+          "runtime_s": 0.002379
+        },
+        "two_opt": {
+          "distance": 1046.2995,
+          "n_vehicles": 12,
+          "gap_pct": 11.3831,
+          "vehicle_delta": 9,
+          "runtime_s": 0.012063
+        },
+        "two_opt_tuned": {
+          "distance": 1039.1588,
+          "n_vehicles": 12,
+          "gap_pct": 10.6229,
+          "vehicle_delta": 9,
+          "runtime_s": 0.067017
+        },
+        "alns": {
+          "distance": 1020.0141,
+          "n_vehicles": 11,
+          "gap_pct": 8.5849,
+          "vehicle_delta": 8,
+          "runtime_s": 1.786081
+        },
+        "ortools_cp": {
+          "distance": 1020.0141,
+          "n_vehicles": 11,
+          "gap_pct": 8.5849,
+          "vehicle_delta": 8,
+          "runtime_s": 15.642659
+        }
+      }
+    },
+    "R211": {
+      "best_known": 885.71,
+      "best_known_vehicles": 2,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 855.3503,
+      "best_gap_pct": -3.4277,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1291.2456,
+          "n_vehicles": 4,
+          "gap_pct": 45.7865,
+          "vehicle_delta": 2,
+          "runtime_s": 0.003566
+        },
+        "clarke_wright": {
+          "distance": 889.6808,
+          "n_vehicles": 8,
+          "gap_pct": 0.4483,
+          "vehicle_delta": 6,
+          "runtime_s": 0.007722
+        },
+        "randomized": {
+          "distance": 3381.8107,
+          "n_vehicles": 7,
+          "gap_pct": 281.8192,
+          "vehicle_delta": 5,
+          "runtime_s": 0.001865
+        },
+        "two_opt": {
+          "distance": 864.9075,
+          "n_vehicles": 8,
+          "gap_pct": -2.3487,
+          "vehicle_delta": 6,
+          "runtime_s": 0.007512
+        },
+        "two_opt_tuned": {
+          "distance": 863.079,
+          "n_vehicles": 8,
+          "gap_pct": -2.5551,
+          "vehicle_delta": 6,
+          "runtime_s": 0.037195
+        },
+        "alns": {
+          "distance": 855.3503,
+          "n_vehicles": 8,
+          "gap_pct": -3.4277,
+          "vehicle_delta": 6,
+          "runtime_s": 3.511717
+        },
+        "ortools_cp": {
+          "distance": 855.3503,
+          "n_vehicles": 8,
+          "gap_pct": -3.4277,
+          "vehicle_delta": 6,
+          "runtime_s": 13.384483
+        }
+      }
+    },
+    "RC101": {
+      "best_known": 1696.95,
+      "best_known_vehicles": 14,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1701.2479,
+      "best_gap_pct": 0.2533,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2599.1713,
+          "n_vehicles": 27,
+          "gap_pct": 53.1672,
+          "vehicle_delta": 13,
+          "runtime_s": 0.004563
+        },
+        "clarke_wright": {
+          "distance": 1999.3504,
+          "n_vehicles": 23,
+          "gap_pct": 17.8202,
+          "vehicle_delta": 9,
+          "runtime_s": 0.010054
+        },
+        "randomized": {
+          "distance": 4203.2406,
+          "n_vehicles": 36,
+          "gap_pct": 147.6938,
+          "vehicle_delta": 22,
+          "runtime_s": 0.003163
+        },
+        "two_opt": {
+          "distance": 1933.5652,
+          "n_vehicles": 23,
+          "gap_pct": 13.9436,
+          "vehicle_delta": 9,
+          "runtime_s": 0.017997
+        },
+        "two_opt_tuned": {
+          "distance": 1928.2187,
+          "n_vehicles": 23,
+          "gap_pct": 13.6285,
+          "vehicle_delta": 9,
+          "runtime_s": 0.046785
+        },
+        "alns": {
+          "distance": 1701.2479,
+          "n_vehicles": 17,
+          "gap_pct": 0.2533,
+          "vehicle_delta": 3,
+          "runtime_s": 1.868231
+        },
+        "ortools_cp": {
+          "distance": 1701.2479,
+          "n_vehicles": 17,
+          "gap_pct": 0.2533,
+          "vehicle_delta": 3,
+          "runtime_s": 10.939781
+        }
+      }
+    },
+    "RC102": {
+      "best_known": 1554.75,
+      "best_known_vehicles": 12,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1587.0051,
+      "best_gap_pct": 2.0746,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2302.7683,
+          "n_vehicles": 21,
+          "gap_pct": 48.1118,
+          "vehicle_delta": 9,
+          "runtime_s": 0.005055
+        },
+        "clarke_wright": {
+          "distance": 1876.2027,
+          "n_vehicles": 21,
+          "gap_pct": 20.6755,
+          "vehicle_delta": 9,
+          "runtime_s": 0.013149
+        },
+        "randomized": {
+          "distance": 3757.3119,
+          "n_vehicles": 28,
+          "gap_pct": 141.6666,
+          "vehicle_delta": 16,
+          "runtime_s": 0.002221
+        },
+        "two_opt": {
+          "distance": 1847.9091,
+          "n_vehicles": 21,
+          "gap_pct": 18.8557,
+          "vehicle_delta": 9,
+          "runtime_s": 0.010848
+        },
+        "two_opt_tuned": {
+          "distance": 1831.0439,
+          "n_vehicles": 21,
+          "gap_pct": 17.771,
+          "vehicle_delta": 9,
+          "runtime_s": 0.037836
+        },
+        "alns": {
+          "distance": 1587.0051,
+          "n_vehicles": 16,
+          "gap_pct": 2.0746,
+          "vehicle_delta": 4,
+          "runtime_s": 2.017885
+        },
+        "ortools_cp": {
+          "distance": 1587.0051,
+          "n_vehicles": 16,
+          "gap_pct": 2.0746,
+          "vehicle_delta": 4,
+          "runtime_s": 15.774162
+        }
+      }
+    },
+    "RC103": {
+      "best_known": 1261.67,
+      "best_known_vehicles": 11,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1404.873,
+      "best_gap_pct": 11.3503,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2141.0149,
+          "n_vehicles": 20,
+          "gap_pct": 69.6969,
+          "vehicle_delta": 9,
+          "runtime_s": 0.003388
+        },
+        "clarke_wright": {
+          "distance": 1508.1599,
+          "n_vehicles": 15,
+          "gap_pct": 19.5368,
+          "vehicle_delta": 4,
+          "runtime_s": 0.009282
+        },
+        "randomized": {
+          "distance": 4123.1983,
+          "n_vehicles": 27,
+          "gap_pct": 226.8048,
+          "vehicle_delta": 16,
+          "runtime_s": 0.004334
+        },
+        "two_opt": {
+          "distance": 1480.1956,
+          "n_vehicles": 15,
+          "gap_pct": 17.3203,
+          "vehicle_delta": 4,
+          "runtime_s": 0.009338
+        },
+        "two_opt_tuned": {
+          "distance": 1480.1956,
+          "n_vehicles": 15,
+          "gap_pct": 17.3203,
+          "vehicle_delta": 4,
+          "runtime_s": 0.031916
+        },
+        "alns": {
+          "distance": 1404.873,
+          "n_vehicles": 14,
+          "gap_pct": 11.3503,
+          "vehicle_delta": 3,
+          "runtime_s": 1.833628
+        },
+        "ortools_cp": {
+          "distance": 1404.873,
+          "n_vehicles": 14,
+          "gap_pct": 11.3503,
+          "vehicle_delta": 3,
+          "runtime_s": 14.221019
+        }
+      }
+    },
+    "RC104": {
+      "best_known": 1135.48,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1213.2966,
+      "best_gap_pct": 6.8532,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1778.1778,
+          "n_vehicles": 15,
+          "gap_pct": 56.6014,
+          "vehicle_delta": 5,
+          "runtime_s": 0.004264
+        },
+        "clarke_wright": {
+          "distance": 1296.0497,
+          "n_vehicles": 13,
+          "gap_pct": 14.1411,
+          "vehicle_delta": 3,
+          "runtime_s": 0.007224
+        },
+        "randomized": {
+          "distance": 4013.26,
+          "n_vehicles": 25,
+          "gap_pct": 253.4417,
+          "vehicle_delta": 15,
+          "runtime_s": 0.002037
+        },
+        "two_opt": {
+          "distance": 1236.9906,
+          "n_vehicles": 13,
+          "gap_pct": 8.9399,
+          "vehicle_delta": 3,
+          "runtime_s": 0.012127
+        },
+        "two_opt_tuned": {
+          "distance": 1236.9906,
+          "n_vehicles": 13,
+          "gap_pct": 8.9399,
+          "vehicle_delta": 3,
+          "runtime_s": 0.088948
+        },
+        "alns": {
+          "distance": 1213.2966,
+          "n_vehicles": 12,
+          "gap_pct": 6.8532,
+          "vehicle_delta": 2,
+          "runtime_s": 1.826674
+        },
+        "ortools_cp": {
+          "distance": 1213.2966,
+          "n_vehicles": 12,
+          "gap_pct": 6.8532,
+          "vehicle_delta": 2,
+          "runtime_s": 17.266871
+        }
+      }
+    },
+    "RC105": {
+      "best_known": 1629.44,
+      "best_known_vehicles": 13,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1584.1476,
+      "best_gap_pct": -2.7796,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2544.3532,
+          "n_vehicles": 26,
+          "gap_pct": 56.1489,
+          "vehicle_delta": 13,
+          "runtime_s": 0.004745
+        },
+        "clarke_wright": {
+          "distance": 1984.787,
+          "n_vehicles": 23,
+          "gap_pct": 21.8079,
+          "vehicle_delta": 10,
+          "runtime_s": 0.010604
+        },
+        "randomized": {
+          "distance": 3916.2449,
+          "n_vehicles": 30,
+          "gap_pct": 140.343,
+          "vehicle_delta": 17,
+          "runtime_s": 0.001566
+        },
+        "two_opt": {
+          "distance": 1920.2732,
+          "n_vehicles": 23,
+          "gap_pct": 17.8487,
+          "vehicle_delta": 10,
+          "runtime_s": 0.028631
+        },
+        "two_opt_tuned": {
+          "distance": 1901.1774,
+          "n_vehicles": 23,
+          "gap_pct": 16.6767,
+          "vehicle_delta": 10,
+          "runtime_s": 0.046292
+        },
+        "alns": {
+          "distance": 1584.1476,
+          "n_vehicles": 16,
+          "gap_pct": -2.7796,
+          "vehicle_delta": 3,
+          "runtime_s": 2.079538
+        },
+        "ortools_cp": {
+          "distance": 1584.1476,
+          "n_vehicles": 16,
+          "gap_pct": -2.7796,
+          "vehicle_delta": 3,
+          "runtime_s": 14.379543
+        }
+      }
+    },
+    "RC106": {
+      "best_known": 1424.73,
+      "best_known_vehicles": 11,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1481.8056,
+      "best_gap_pct": 4.0061,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2111.6623,
+          "n_vehicles": 19,
+          "gap_pct": 48.2149,
+          "vehicle_delta": 8,
+          "runtime_s": 0.003686
+        },
+        "clarke_wright": {
+          "distance": 1598.2084,
+          "n_vehicles": 17,
+          "gap_pct": 12.1762,
+          "vehicle_delta": 6,
+          "runtime_s": 0.012107
+        },
+        "randomized": {
+          "distance": 3894.4379,
+          "n_vehicles": 28,
+          "gap_pct": 173.3457,
+          "vehicle_delta": 17,
+          "runtime_s": 0.002699
+        },
+        "two_opt": {
+          "distance": 1543.2265,
+          "n_vehicles": 17,
+          "gap_pct": 8.3171,
+          "vehicle_delta": 6,
+          "runtime_s": 0.020183
+        },
+        "two_opt_tuned": {
+          "distance": 1543.2265,
+          "n_vehicles": 17,
+          "gap_pct": 8.3171,
+          "vehicle_delta": 6,
+          "runtime_s": 0.055892
+        },
+        "alns": {
+          "distance": 1481.8056,
+          "n_vehicles": 15,
+          "gap_pct": 4.0061,
+          "vehicle_delta": 4,
+          "runtime_s": 1.994506
+        },
+        "ortools_cp": {
+          "distance": 1481.8056,
+          "n_vehicles": 15,
+          "gap_pct": 4.0061,
+          "vehicle_delta": 4,
+          "runtime_s": 11.399293
+        }
+      }
+    },
+    "RC107": {
+      "best_known": 1230.48,
+      "best_known_vehicles": 11,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1345.5724,
+      "best_gap_pct": 9.3535,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1817.6742,
+          "n_vehicles": 16,
+          "gap_pct": 47.7207,
+          "vehicle_delta": 5,
+          "runtime_s": 0.003818
+        },
+        "clarke_wright": {
+          "distance": 1406.3211,
+          "n_vehicles": 14,
+          "gap_pct": 14.2904,
+          "vehicle_delta": 3,
+          "runtime_s": 0.008744
+        },
+        "randomized": {
+          "distance": 3869.1926,
+          "n_vehicles": 27,
+          "gap_pct": 214.4458,
+          "vehicle_delta": 16,
+          "runtime_s": 0.002141
+        },
+        "two_opt": {
+          "distance": 1385.8399,
+          "n_vehicles": 14,
+          "gap_pct": 12.626,
+          "vehicle_delta": 3,
+          "runtime_s": 0.012595
+        },
+        "two_opt_tuned": {
+          "distance": 1382.4572,
+          "n_vehicles": 14,
+          "gap_pct": 12.351,
+          "vehicle_delta": 3,
+          "runtime_s": 0.036184
+        },
+        "alns": {
+          "distance": 1345.5724,
+          "n_vehicles": 13,
+          "gap_pct": 9.3535,
+          "vehicle_delta": 2,
+          "runtime_s": 1.664441
+        },
+        "ortools_cp": {
+          "distance": 1345.5724,
+          "n_vehicles": 13,
+          "gap_pct": 9.3535,
+          "vehicle_delta": 2,
+          "runtime_s": 15.254484
+        }
+      }
+    },
+    "RC108": {
+      "best_known": 1139.82,
+      "best_known_vehicles": 10,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1218.7896,
+      "best_gap_pct": 6.9283,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1841.8983,
+          "n_vehicles": 15,
+          "gap_pct": 61.5955,
+          "vehicle_delta": 5,
+          "runtime_s": 0.003726
+        },
+        "clarke_wright": {
+          "distance": 1279.5645,
+          "n_vehicles": 13,
+          "gap_pct": 12.2602,
+          "vehicle_delta": 3,
+          "runtime_s": 0.011469
+        },
+        "randomized": {
+          "distance": 3714.9643,
+          "n_vehicles": 24,
+          "gap_pct": 225.9255,
+          "vehicle_delta": 14,
+          "runtime_s": 0.003131
+        },
+        "two_opt": {
+          "distance": 1273.3673,
+          "n_vehicles": 13,
+          "gap_pct": 11.7165,
+          "vehicle_delta": 3,
+          "runtime_s": 0.00402
+        },
+        "two_opt_tuned": {
+          "distance": 1269.0954,
+          "n_vehicles": 13,
+          "gap_pct": 11.3417,
+          "vehicle_delta": 3,
+          "runtime_s": 0.011442
+        },
+        "alns": {
+          "distance": 1218.7896,
+          "n_vehicles": 12,
+          "gap_pct": 6.9283,
+          "vehicle_delta": 2,
+          "runtime_s": 1.807012
+        },
+        "ortools_cp": {
+          "distance": 1218.7896,
+          "n_vehicles": 12,
+          "gap_pct": 6.9283,
+          "vehicle_delta": 2,
+          "runtime_s": 17.317989
+        }
+      }
+    },
+    "RC201": {
+      "best_known": 1406.94,
+      "best_known_vehicles": 4,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "randomized",
+      "best_distance": 1550.4691,
+      "best_gap_pct": 10.2015,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2397.8282,
+          "n_vehicles": 14,
+          "gap_pct": 70.4286,
+          "vehicle_delta": 10,
+          "runtime_s": 0.003809
+        },
+        "clarke_wright": {
+          "distance": 1654.1322,
+          "n_vehicles": 16,
+          "gap_pct": 17.5695,
+          "vehicle_delta": 12,
+          "runtime_s": 0.009386
+        },
+        "randomized": {
+          "distance": 4677.9434,
+          "n_vehicles": 13,
+          "gap_pct": 232.4906,
+          "vehicle_delta": 9,
+          "runtime_s": 0.001648
+        },
+        "two_opt": {
+          "distance": 1619.4823,
+          "n_vehicles": 16,
+          "gap_pct": 15.1067,
+          "vehicle_delta": 12,
+          "runtime_s": 0.020725
+        },
+        "two_opt_tuned": {
+          "distance": 1616.1761,
+          "n_vehicles": 16,
+          "gap_pct": 14.8717,
+          "vehicle_delta": 12,
+          "runtime_s": 0.038765
+        },
+        "alns": {
+          "distance": 1550.4691,
+          "n_vehicles": 15,
+          "gap_pct": 10.2015,
+          "vehicle_delta": 11,
+          "runtime_s": 2.391809
+        },
+        "ortools_cp": {
+          "distance": 1550.4691,
+          "n_vehicles": 15,
+          "gap_pct": 10.2015,
+          "vehicle_delta": 11,
+          "runtime_s": 14.739714
+        }
+      }
+    },
+    "RC202": {
+      "best_known": 1365.65,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "randomized",
+      "best_distance": 1313.1028,
+      "best_gap_pct": -3.8478,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2246.2485,
+          "n_vehicles": 12,
+          "gap_pct": 64.482,
+          "vehicle_delta": 9,
+          "runtime_s": 0.003365
+        },
+        "clarke_wright": {
+          "distance": 1446.375,
+          "n_vehicles": 14,
+          "gap_pct": 5.9111,
+          "vehicle_delta": 11,
+          "runtime_s": 0.010061
+        },
+        "randomized": {
+          "distance": 4511.5502,
+          "n_vehicles": 11,
+          "gap_pct": 230.3592,
+          "vehicle_delta": 8,
+          "runtime_s": 0.001918
+        },
+        "two_opt": {
+          "distance": 1436.3184,
+          "n_vehicles": 14,
+          "gap_pct": 5.1747,
+          "vehicle_delta": 11,
+          "runtime_s": 0.011419
+        },
+        "two_opt_tuned": {
+          "distance": 1436.3184,
+          "n_vehicles": 14,
+          "gap_pct": 5.1747,
+          "vehicle_delta": 11,
+          "runtime_s": 0.027936
+        },
+        "alns": {
+          "distance": 1313.1028,
+          "n_vehicles": 12,
+          "gap_pct": -3.8478,
+          "vehicle_delta": 9,
+          "runtime_s": 2.663496
+        },
+        "ortools_cp": {
+          "distance": 1313.1028,
+          "n_vehicles": 12,
+          "gap_pct": -3.8478,
+          "vehicle_delta": 9,
+          "runtime_s": 15.247824
+        }
+      }
+    },
+    "RC203": {
+      "best_known": 1049.62,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 1070.0327,
+      "best_gap_pct": 1.9448,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1647.7967,
+          "n_vehicles": 10,
+          "gap_pct": 56.9898,
+          "vehicle_delta": 7,
+          "runtime_s": 0.00325
+        },
+        "clarke_wright": {
+          "distance": 1120.1316,
+          "n_vehicles": 9,
+          "gap_pct": 6.7178,
+          "vehicle_delta": 6,
+          "runtime_s": 0.010139
+        },
+        "randomized": {
+          "distance": 4356.5472,
+          "n_vehicles": 11,
+          "gap_pct": 315.0595,
+          "vehicle_delta": 8,
+          "runtime_s": 0.002057
+        },
+        "two_opt": {
+          "distance": 1106.6844,
+          "n_vehicles": 9,
+          "gap_pct": 5.4367,
+          "vehicle_delta": 6,
+          "runtime_s": 0.012946
+        },
+        "two_opt_tuned": {
+          "distance": 1106.6844,
+          "n_vehicles": 9,
+          "gap_pct": 5.4367,
+          "vehicle_delta": 6,
+          "runtime_s": 0.019176
+        },
+        "alns": {
+          "distance": 1070.0327,
+          "n_vehicles": 9,
+          "gap_pct": 1.9448,
+          "vehicle_delta": 6,
+          "runtime_s": 3.143288
+        },
+        "ortools_cp": {
+          "distance": 1070.0327,
+          "n_vehicles": 9,
+          "gap_pct": 1.9448,
+          "vehicle_delta": 6,
+          "runtime_s": 12.482404
+        }
+      }
+    },
+    "RC204": {
+      "best_known": 798.46,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "alns",
+      "best_distance": 832.0166,
+      "best_gap_pct": 4.2027,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1440.0115,
+          "n_vehicles": 7,
+          "gap_pct": 80.3486,
+          "vehicle_delta": 4,
+          "runtime_s": 0.004679
+        },
+        "clarke_wright": {
+          "distance": 842.112,
+          "n_vehicles": 5,
+          "gap_pct": 5.467,
+          "vehicle_delta": 2,
+          "runtime_s": 0.00903
+        },
+        "randomized": {
+          "distance": 4545.3678,
+          "n_vehicles": 11,
+          "gap_pct": 469.2668,
+          "vehicle_delta": 8,
+          "runtime_s": 0.002033
+        },
+        "two_opt": {
+          "distance": 841.6688,
+          "n_vehicles": 5,
+          "gap_pct": 5.4115,
+          "vehicle_delta": 2,
+          "runtime_s": 0.004798
+        },
+        "two_opt_tuned": {
+          "distance": 841.6688,
+          "n_vehicles": 5,
+          "gap_pct": 5.4115,
+          "vehicle_delta": 2,
+          "runtime_s": 0.006438
+        },
+        "alns": {
+          "distance": 832.0166,
+          "n_vehicles": 5,
+          "gap_pct": 4.2027,
+          "vehicle_delta": 2,
+          "runtime_s": 5.209639
+        },
+        "ortools_cp": {
+          "distance": 832.0166,
+          "n_vehicles": 5,
+          "gap_pct": 4.2027,
+          "vehicle_delta": 2,
+          "runtime_s": 13.124618
+        }
+      }
+    },
+    "RC205": {
+      "best_known": 1297.65,
+      "best_known_vehicles": 4,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 1308.7245,
+      "best_gap_pct": 0.8534,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 2248.193,
+          "n_vehicles": 11,
+          "gap_pct": 73.2511,
+          "vehicle_delta": 7,
+          "runtime_s": 0.004008
+        },
+        "clarke_wright": {
+          "distance": 1412.745,
+          "n_vehicles": 13,
+          "gap_pct": 8.8695,
+          "vehicle_delta": 9,
+          "runtime_s": 0.013216
+        },
+        "randomized": {
+          "distance": 4624.5605,
+          "n_vehicles": 13,
+          "gap_pct": 256.3796,
+          "vehicle_delta": 9,
+          "runtime_s": 0.002112
+        },
+        "two_opt": {
+          "distance": 1353.2769,
+          "n_vehicles": 13,
+          "gap_pct": 4.2867,
+          "vehicle_delta": 9,
+          "runtime_s": 0.022862
+        },
+        "two_opt_tuned": {
+          "distance": 1347.0559,
+          "n_vehicles": 13,
+          "gap_pct": 3.8073,
+          "vehicle_delta": 9,
+          "runtime_s": 0.077211
+        },
+        "alns": {
+          "distance": 1308.7245,
+          "n_vehicles": 13,
+          "gap_pct": 0.8534,
+          "vehicle_delta": 9,
+          "runtime_s": 2.824696
+        },
+        "ortools_cp": {
+          "distance": 1308.7245,
+          "n_vehicles": 13,
+          "gap_pct": 0.8534,
+          "vehicle_delta": 9,
+          "runtime_s": 15.378641
+        }
+      }
+    },
+    "RC206": {
+      "best_known": 1146.32,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 1182.5365,
+      "best_gap_pct": 3.1594,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1854.9804,
+          "n_vehicles": 8,
+          "gap_pct": 61.8205,
+          "vehicle_delta": 5,
+          "runtime_s": 0.006501
+        },
+        "clarke_wright": {
+          "distance": 1264.2706,
+          "n_vehicles": 11,
+          "gap_pct": 10.2895,
+          "vehicle_delta": 8,
+          "runtime_s": 0.00926
+        },
+        "randomized": {
+          "distance": 4378.7822,
+          "n_vehicles": 10,
+          "gap_pct": 281.986,
+          "vehicle_delta": 7,
+          "runtime_s": 0.002804
+        },
+        "two_opt": {
+          "distance": 1250.4722,
+          "n_vehicles": 11,
+          "gap_pct": 9.0858,
+          "vehicle_delta": 8,
+          "runtime_s": 0.009838
+        },
+        "two_opt_tuned": {
+          "distance": 1248.508,
+          "n_vehicles": 11,
+          "gap_pct": 8.9144,
+          "vehicle_delta": 8,
+          "runtime_s": 0.02014
+        },
+        "alns": {
+          "distance": 1182.5365,
+          "n_vehicles": 10,
+          "gap_pct": 3.1594,
+          "vehicle_delta": 7,
+          "runtime_s": 2.91011
+        },
+        "ortools_cp": {
+          "distance": 1182.5365,
+          "n_vehicles": 10,
+          "gap_pct": 3.1594,
+          "vehicle_delta": 7,
+          "runtime_s": 13.557037
+        }
+      }
+    },
+    "RC207": {
+      "best_known": 1061.14,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 1127.8949,
+      "best_gap_pct": 6.2909,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1658.6886,
+          "n_vehicles": 7,
+          "gap_pct": 56.3119,
+          "vehicle_delta": 4,
+          "runtime_s": 0.003708
+        },
+        "clarke_wright": {
+          "distance": 1246.8631,
+          "n_vehicles": 11,
+          "gap_pct": 17.5022,
+          "vehicle_delta": 8,
+          "runtime_s": 0.009335
+        },
+        "randomized": {
+          "distance": 4386.6878,
+          "n_vehicles": 11,
+          "gap_pct": 313.3939,
+          "vehicle_delta": 8,
+          "runtime_s": 0.003865
+        },
+        "two_opt": {
+          "distance": 1186.9,
+          "n_vehicles": 11,
+          "gap_pct": 11.8514,
+          "vehicle_delta": 8,
+          "runtime_s": 0.013365
+        },
+        "two_opt_tuned": {
+          "distance": 1189.6613,
+          "n_vehicles": 11,
+          "gap_pct": 12.1116,
+          "vehicle_delta": 8,
+          "runtime_s": 0.039013
+        },
+        "alns": {
+          "distance": 1127.8949,
+          "n_vehicles": 10,
+          "gap_pct": 6.2909,
+          "vehicle_delta": 7,
+          "runtime_s": 2.98768
+        },
+        "ortools_cp": {
+          "distance": 1127.8949,
+          "n_vehicles": 10,
+          "gap_pct": 6.2909,
+          "vehicle_delta": 7,
+          "runtime_s": 16.195586
+        }
+      }
+    },
+    "RC208": {
+      "best_known": 828.14,
+      "best_known_vehicles": 3,
+      "best_solver": "alns",
+      "best_solver_benchmark_convention": "nearest_neighbor",
+      "best_distance": 838.2573,
+      "best_gap_pct": 1.2217,
+      "solvers": {
+        "nearest_neighbor": {
+          "distance": 1360.3606,
+          "n_vehicles": 5,
+          "gap_pct": 64.267,
+          "vehicle_delta": 2,
+          "runtime_s": 0.004433
+        },
+        "clarke_wright": {
+          "distance": 865.0696,
+          "n_vehicles": 6,
+          "gap_pct": 4.4593,
+          "vehicle_delta": 3,
+          "runtime_s": 0.010344
+        },
+        "randomized": {
+          "distance": 4322.0558,
+          "n_vehicles": 8,
+          "gap_pct": 421.8992,
+          "vehicle_delta": 5,
+          "runtime_s": 0.001721
+        },
+        "two_opt": {
+          "distance": 856.9467,
+          "n_vehicles": 6,
+          "gap_pct": 3.4785,
+          "vehicle_delta": 3,
+          "runtime_s": 0.006269
+        },
+        "two_opt_tuned": {
+          "distance": 845.6742,
+          "n_vehicles": 6,
+          "gap_pct": 2.1173,
+          "vehicle_delta": 3,
+          "runtime_s": 0.027381
+        },
+        "alns": {
+          "distance": 838.2573,
+          "n_vehicles": 6,
+          "gap_pct": 1.2217,
+          "vehicle_delta": 3,
+          "runtime_s": 4.228811
+        },
+        "ortools_cp": {
+          "distance": 838.2573,
+          "n_vehicles": 6,
+          "gap_pct": 1.2217,
+          "vehicle_delta": 3,
+          "runtime_s": 12.277162
+        }
+      }
+    }
+  },
+  "ranking": {
+    "by_distance": {
+      "alns": 56,
+      "clarke_wright": 0,
+      "nearest_neighbor": 0,
+      "ortools_cp": 0,
+      "randomized": 0,
+      "two_opt": 0,
+      "two_opt_tuned": 0
+    },
+    "by_vehicles_then_distance": {
+      "alns": 43,
+      "clarke_wright": 0,
+      "nearest_neighbor": 10,
+      "ortools_cp": 0,
+      "randomized": 3,
+      "two_opt": 0,
+      "two_opt_tuned": 0
+    }
+  },
+  "tuning": {
+    "solver_best": {
+      "max_iterations": 50,
+      "acceptance": "best",
+      "tail_exchange": true,
+      "restarts": 1
+    },
+    "hpo": {
+      "trials": 24,
+      "best_mean_distance": 1156.9221
+    },
+    "alns_best": {
+      "segment_length": 100,
+      "reaction_factor": 0.5,
+      "init_weights": "uniform"
+    },
+    "alns_hpo": {
+      "trials": 12,
+      "subset": [
+        "C101",
+        "C104",
+        "R104",
+        "R108",
+        "RC104",
+        "RC105"
+      ],
+      "best_mean_distance": 1099.8295
+    }
+  },
+  "families": {
+    "C1": {
+      "alns": 4.4829,
+      "clarke_wright": 25.7643,
+      "nearest_neighbor": 84.2274,
+      "ortools_cp": 4.4829,
+      "randomized": 409.0106,
+      "two_opt": 18.8574,
+      "two_opt_tuned": 18.6242
+    },
+    "C2": {
+      "alns": 6.4966,
+      "clarke_wright": 31.6245,
+      "nearest_neighbor": 133.1905,
+      "ortools_cp": 6.4966,
+      "randomized": 601.8658,
+      "two_opt": 21.5529,
+      "two_opt_tuned": 21.4763
+    },
+    "R1": {
+      "alns": 4.1028,
+      "clarke_wright": 18.1678,
+      "nearest_neighbor": 51.4252,
+      "ortools_cp": 4.1028,
+      "randomized": 179.0191,
+      "two_opt": 14.9388,
+      "two_opt_tuned": 14.953
+    },
+    "R2": {
+      "alns": 3.035,
+      "clarke_wright": 10.2901,
+      "nearest_neighbor": 54.7258,
+      "ortools_cp": 3.035,
+      "randomized": 278.2158,
+      "two_opt": 7.2173,
+      "two_opt_tuned": 7.2789
+    },
+    "RC1": {
+      "alns": 4.7549,
+      "clarke_wright": 16.5886,
+      "nearest_neighbor": 55.1572,
+      "ortools_cp": 4.7549,
+      "randomized": 190.4584,
+      "two_opt": 13.696,
+      "two_opt_tuned": 13.2933
+    },
+    "RC2": {
+      "alns": 3.0033,
+      "clarke_wright": 9.5983,
+      "nearest_neighbor": 65.9874,
+      "ortools_cp": 3.0033,
+      "randomized": 315.1044,
+      "two_opt": 7.479,
+      "two_opt_tuned": 7.2307
+    }
+  },
+  "family_vehicle_deltas": {
+    "C1": {
+      "alns": 1.0,
+      "clarke_wright": 3.44,
+      "nearest_neighbor": 6.44,
+      "ortools_cp": 1.0,
+      "randomized": 11.22,
+      "two_opt": 3.44,
+      "two_opt_tuned": 3.44
+    },
+    "C2": {
+      "alns": 1.0,
+      "clarke_wright": 2.5,
+      "nearest_neighbor": 5.12,
+      "ortools_cp": 1.0,
+      "randomized": 8.0,
+      "two_opt": 2.5,
+      "two_opt_tuned": 2.5
+    },
+    "R1": {
+      "alns": 3.42,
+      "clarke_wright": 6.92,
+      "nearest_neighbor": 8.75,
+      "ortools_cp": 3.42,
+      "randomized": 15.67,
+      "two_opt": 6.92,
+      "two_opt_tuned": 6.92
+    },
+    "R2": {
+      "alns": 6.73,
+      "clarke_wright": 7.64,
+      "nearest_neighbor": 5.36,
+      "ortools_cp": 6.73,
+      "randomized": 6.64,
+      "two_opt": 7.64,
+      "two_opt_tuned": 7.64
+    },
+    "RC1": {
+      "alns": 2.88,
+      "clarke_wright": 5.88,
+      "nearest_neighbor": 8.38,
+      "ortools_cp": 2.88,
+      "randomized": 16.62,
+      "two_opt": 5.88,
+      "two_opt_tuned": 5.88
+    },
+    "RC2": {
+      "alns": 6.75,
+      "clarke_wright": 7.38,
+      "nearest_neighbor": 6.0,
+      "ortools_cp": 6.75,
+      "randomized": 7.75,
+      "two_opt": 7.38,
+      "two_opt_tuned": 7.38
+    }
+  }
+}

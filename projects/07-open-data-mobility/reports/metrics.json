@@ -1,0 +1,104 @@
+{
+  "naive_lag24": {
+    "mae": 6.517490660078139,
+    "rmse": 23.367095942143067,
+    "mape_pct": 89.37153613289871,
+    "mase": 1.0630163744363401
+  },
+  "gbm_mean": {
+    "mae": 4.666971566759038,
+    "rmse": 15.095766691070935,
+    "mape_pct": 62.000979055419094,
+    "mase": 0.7611928352858122
+  },
+  "gbm_tuned": {
+    "mae": 4.676299418090131,
+    "rmse": 15.189477545785435,
+    "mape_pct": 61.60162017665745,
+    "mase": 0.7627142273706518
+  },
+  "gbm_xgb_tuned": {
+    "mae": 4.48669629670443,
+    "rmse": 14.784694673459502,
+    "mape_pct": 58.164016500202585,
+    "mase": 0.7317895612392815
+  },
+  "gbm_lgbm_tuned": {
+    "mae": 4.582459610351361,
+    "rmse": 14.794171751752106,
+    "mape_pct": 59.8688318452462,
+    "mase": 0.7474087582257103
+  },
+  "temporal_net": {
+    "mae": 5.510157721780189,
+    "rmse": 19.685578252297105,
+    "mape_pct": 54.462252160203896,
+    "mase": 0.898718262821255
+  },
+  "temporal_net_tuned": {
+    "mae": 5.1780663598352294,
+    "rmse": 21.580343470925765,
+    "mape_pct": 57.52802897888972,
+    "mase": 0.8445534662809674
+  },
+  "_meta": {
+    "split": "temporal holdout from 2024-10-01",
+    "p90_coverage": 0.9079498337194689,
+    "p90_coverage_by_borough": {
+      "N/A": 0.8473,
+      "Brooklyn": 0.8856,
+      "Queens": 0.8958,
+      "Bronx": 0.9136,
+      "Manhattan": 0.9139,
+      "Unknown": 0.9375,
+      "EWR": 0.9447,
+      "Staten Island": 0.9848,
+      "OVERALL": 0.9079
+    },
+    "n_test_rows": 584855,
+    "mae_ranking": [
+      "gbm_xgb_tuned",
+      "gbm_lgbm_tuned",
+      "gbm_mean",
+      "gbm_tuned",
+      "temporal_net_tuned",
+      "temporal_net",
+      "naive_lag24"
+    ]
+  },
+  "deltas": {
+    "baseline": "naive_lag24",
+    "gbm_mean": {
+      "mae_reduction_pct": 28.39,
+      "mape_pct_reduction_pct": 30.63
+    },
+    "gbm_tuned": {
+      "mae_reduction_pct": 28.25,
+      "mape_pct_reduction_pct": 31.07,
+      "mae_reduction_pct_vs_gbm_mean": -0.2,
+      "mape_pct_reduction_pct_vs_gbm_mean": 0.64
+    },
+    "gbm_xgb_tuned": {
+      "mae_reduction_pct": 31.16,
+      "mape_pct_reduction_pct": 34.92,
+      "mae_reduction_pct_vs_gbm_tuned": 4.05,
+      "mape_pct_reduction_pct_vs_gbm_tuned": 5.58
+    },
+    "gbm_lgbm_tuned": {
+      "mae_reduction_pct": 29.69,
+      "mape_pct_reduction_pct": 33.01,
+      "mae_reduction_pct_vs_gbm_tuned": 2.01,
+      "mape_pct_reduction_pct_vs_gbm_tuned": 2.81
+    },
+    "temporal_net": {
+      "mae_reduction_pct": 15.46,
+      "mape_pct_reduction_pct": 39.06
+    },
+    "temporal_net_tuned": {
+      "mae_reduction_pct": 20.55,
+      "mape_pct_reduction_pct": 35.63,
+      "mae_reduction_pct_vs_temporal_net": 6.03,
+      "mape_pct_reduction_pct_vs_temporal_net": -5.63
+    }
+  }
+}

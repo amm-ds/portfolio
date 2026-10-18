@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<title>Retention Uplift & Experimentation — evaluation — evaluation report</title>
+<style>
+body { font-family: Inter, system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
+       max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+h1 { color: #2dd4bf; } h2 { color: #38bdf8; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid #334155; padding: 0.4rem 0.8rem; text-align: left; }
+th { background: #1e293b; }
+code { background: #1e293b; padding: 0.1rem 0.35rem; border-radius: 4px; }
+</style></head><body>
+<h1>Retention Uplift & Experimentation — evaluation</h1>
+<h2>Experiment read (conversion)</h2><table><tr><th>read</th><th>value</th></tr><tr><td>treated / control</td><td>21,306 / 21,306</td></tr><tr><td>conversion rate, treated</td><td>0.0125</td></tr><tr><td>conversion rate, control</td><td>0.0057</td></tr><tr><td>ATE (difference in means)</td><td>+0.00681</td></tr><tr><td>ATE standard error (naive)</td><td>0.00092</td></tr></table>
+<h2>CUPED (covariate: log_history = log1p prior-year spend)</h2><table><tr><th>outcome</th><th>ATE (naive -> CUPED)</th><th>SE (naive -> CUPED)</th><th>variance reduction</th></tr><tr><td>conversion</td><td>+0.00681 -> +0.00681</td><td>0.00092 -> 0.00092</td><td>0.08%</td></tr><tr><td>visit</td><td>+0.07659 -> +0.07662</td><td>0.00339 -> 0.00338</td><td>0.52%</td></tr></table>
+<h2>CUPED verdict</h2><p>The adjustment is unbiased by construction — both ATEs are essentially identical and only the variance moves. On conversion it removes <b>0.08%</b> of variance: prior-year spend barely predicts a ~1% event. On visit, where history is informative, the same machinery removes <b>0.5%</b>. CUPED is exactly as good as its covariate — covariate selection is the design decision, not the formula.</p>
+<h2>Power analysis (two-sided two-proportion)</h2><table><tr><th>quantity</th><th>value</th></tr><tr><td>measured effect</td><td>+0.00681</td></tr><tr><td>alpha / power</td><td>0.05 / 0.8</td></tr><tr><td>required n per arm</td><td>3,063</td></tr><tr><td>required n total</td><td>6,126</td></tr><tr><td>available per arm</td><td>21,306</td></tr><tr><td>sufficient?</td><td>yes</td></tr></table>
+<h2>Policy ladder (out-of-fold)</h2><table><tr><th>policy</th><th>Qini [95% CI]</th><th>profit @ 25% budget [95% CI]</th><th>delta vs random</th></tr><tr><td>response</td><td>13.01 [1.83, 24.36]</td><td>$4,881 [2245.58, 7385.90]</td><td>$856</td></tr><tr><td>t_learner</td><td>12.03 [0.77, 24.39]</td><td>$6,838 [4430.17, 9370.23]</td><td>$2,812</td></tr><tr><td>x_learner</td><td>5.90 [-5.45, 17.48]</td><td>$4,564 [2149.88, 7306.29]</td><td>$539</td></tr><tr><td>random</td><td>0.00 —</td><td>$4,026 —</td><td>$0</td></tr><tr><td>treat-everyone</td><td>0.00 —</td><td>$nan —</td><td>—</td></tr></table>
+<h2>Model ranking, with intervals</h2><p>The response model's Qini area is nominally higher, but the 95% CI on the Qini difference (response - T-learner) [-8.18, 9.52] spans zero — the curve-area ranking is <b>not established</b>; at the 25% budget, the profit difference CI [-3,617, -48] excludes zero — T-learner's budget-profit advantage is established (the individual profit CIs overlap; the paired difference is the honest read). The recommendation stands on the money, and the curve-area ranking is stated with its interval rather than asserted.</p>
+<h2>Cost sensitivity (t_learner)</h2><table><tr><th>cost/email</th><th>best fraction</th><th>profit (best)</th><th>profit (mail everyone)</th><th>top-k wins?</th></tr><tr><td>$0.005</td><td>100%</td><td>$16,316</td><td>$16,316</td><td>no</td></tr><tr><td>$0.010</td><td>100%</td><td>$16,103</td><td>$16,103</td><td>no</td></tr><tr><td>$0.020</td><td>100%</td><td>$15,677</td><td>$15,677</td><td>no</td></tr><tr><td>$0.050</td><td>100%</td><td>$14,399</td><td>$14,399</td><td>no</td></tr><tr><td>$0.100</td><td>100%</td><td>$12,268</td><td>$12,268</td><td>no</td></tr><tr><td>$0.200</td><td>90%</td><td>$8,065</td><td>$8,007</td><td>yes</td></tr><tr><td>$0.300</td><td>90%</td><td>$4,230</td><td>$3,745</td><td>yes</td></tr><tr><td>$0.500</td><td>25%</td><td>$1,618</td><td>$-4,777</td><td>yes</td></tr></table>
+<h2>Cost sensitivity verdict</h2><p>Mail-everyone is the profit maximum at the current $0.01 per email. The top-25% policy overtakes it once sends cost more than <b>$0.30</b> each — the fatigue / list-wear regime — because every marginal email below the cut costs more than the conversions it recovers.</p>
+<h2>Recommended policy</h2><p>Target the top 25% of customers by <b>t_learner</b> score. Expected incremental profit vs random targeting at that budget: <b>$2,812</b> per campaign wave over 10 deciles scored out-of-fold.</p><p>Predicting churn or conversion is not changing it — see Project 05's fairness finding for the same lesson on the retention side: a response model ranks likely buyers; only an uplift read separates persuadables from sure things and from customers the campaign actively annoys.</p>
+<h2>Qini Curves</h2><p><a href="figures/qini_curves.html">interactive figure</a> (<code>qini_curves.html</code>)</p>
+<h2>Uplift By Decile</h2><p><a href="figures/uplift_by_decile.html">interactive figure</a> (<code>uplift_by_decile.html</code>)</p>
+<h2>Profit Frontier</h2><p><a href="figures/profit_frontier.html">interactive figure</a> (<code>profit_frontier.html</code>)</p>
+<h2>Cuped Variance</h2><p><a href="figures/cuped_variance.html">interactive figure</a> (<code>cuped_variance.html</code>)</p>
+<h2>Cost Sensitivity</h2><p><a href="figures/cost_sensitivity.html">interactive figure</a> (<code>cost_sensitivity.html</code>)</p>
+</body></html>

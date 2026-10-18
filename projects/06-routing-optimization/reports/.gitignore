@@ -1,6 +1,6 @@
 /solutions.json
 /dq.md
 /results.md
-/metrics.json
-/report.html
-/figures
+/figures/*
+!/figures/*.json
+!/figures/*.html

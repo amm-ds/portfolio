@@ -1,0 +1,130 @@
+{
+  "naive_majority": {
+    "roc_auc": 0.5,
+    "accuracy": 0.2654364797728886,
+    "precision_macro": 0.1327182398864443,
+    "recall_macro": 0.5,
+    "f1_macro": 0.20975883342680876,
+    "business_cost": 1035.0
+  },
+  "logreg_threshold_0.5": {
+    "roc_auc": 0.8292218863830116,
+    "accuracy": 0.7310149041873669,
+    "precision_macro": 0.699876641004695,
+    "recall_macro": 0.7503112971143662,
+    "f1_macro": 0.7022415618725386,
+    "business_cost": 691.0
+  },
+  "logreg_threshold_0.300": {
+    "roc_auc": 0.8292218863830116,
+    "accuracy": 0.6202980837473385,
+    "precision_macro": 0.6861307559998122,
+    "recall_macro": 0.7253235681624428,
+    "f1_macro": 0.615083346737235,
+    "business_cost": 611.0
+  },
+  "selected_model": {
+    "roc_auc": 0.8387183859050866,
+    "accuracy": 0.6628814762242725,
+    "precision_macro": 0.6890222048449897,
+    "recall_macro": 0.7397943630680204,
+    "f1_macro": 0.6511861832672562,
+    "business_cost": 619.0,
+    "ece": 0.02834723480283749
+  },
+  "selected_model_calibrated": {
+    "roc_auc": 0.8316928879588726,
+    "accuracy": 0.6898509581263307,
+    "precision_macro": 0.6982480029048657,
+    "recall_macro": 0.7538828179493141,
+    "f1_macro": 0.6744986506453379,
+    "business_cost": 601.0,
+    "ece": 0.016433436691568028
+  },
+  "_meta": {
+    "cost_delta_ci": {
+      "point": -416.0,
+      "lo": -485.0,
+      "hi": -343.0,
+      "n_boot": 2000,
+      "significant_95": true,
+      "note": "negative delta = A costs less than B"
+    },
+    "selected_opt": 0.15,
+    "naive_opt": 0.0,
+    "slices": {
+      "gender=Female": {
+        "n": 687,
+        "n_pos": 193,
+        "precision": 0.4566929133858268,
+        "recall": 0.9015544041450777,
+        "f1": 0.6062717770034843,
+        "business_cost": 302.0,
+        "small_sample": false
+      },
+      "gender=Male": {
+        "n": 722,
+        "n_pos": 181,
+        "precision": 0.41414141414141414,
+        "recall": 0.9060773480662984,
+        "f1": 0.5684575389948007,
+        "business_cost": 317.0,
+        "small_sample": false
+      },
+      "senior_citizen=no": {
+        "n": 1187,
+        "n_pos": 276,
+        "precision": 0.40365448504983387,
+        "recall": 0.8804347826086957,
+        "f1": 0.5535307517084282,
+        "business_cost": 524.0,
+        "small_sample": false
+      },
+      "senior_citizen=yes": {
+        "n": 222,
+        "n_pos": 98,
+        "precision": 0.5428571428571428,
+        "recall": 0.9693877551020408,
+        "f1": 0.6959706959706959,
+        "business_cost": 95.0,
+        "small_sample": false
+      },
+      "contract=month-to-month": {
+        "n": 773,
+        "n_pos": 329,
+        "precision": 0.45988538681948427,
+        "recall": 0.9756838905775076,
+        "f1": 0.6251217137293087,
+        "business_cost": 417.0,
+        "small_sample": false
+      },
+      "contract=one-year": {
+        "n": 300,
+        "n_pos": 36,
+        "precision": 0.22972972972972974,
+        "recall": 0.4722222222222222,
+        "f1": 0.3090909090909091,
+        "business_cost": 152.0,
+        "small_sample": false
+      },
+      "contract=two-year": {
+        "n": 336,
+        "n_pos": 9,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "business_cost": 50.0,
+        "small_sample": false
+      },
+      "overall": {
+        "n": 1409,
+        "n_pos": 374,
+        "precision": 0.435006435006435,
+        "recall": 0.9037433155080213,
+        "f1": 0.5873153779322329,
+        "business_cost": 619.0,
+        "small_sample": false
+      }
+    }
+  }
+}
