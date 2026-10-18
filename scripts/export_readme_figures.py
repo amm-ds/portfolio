@@ -92,8 +92,9 @@ def main() -> None:
             if not src.exists():
                 print(f"SKIP {project}/{stem} — artifact missing (run the project's pipeline)")
                 continue
-            render_png(src, out_dir / f"{stem}.png")
-            print(f"wrote {out_dir / f'{stem}.png'}")
+            dest = out_dir / f"{Path(stem).name}.png"
+            render_png(src, dest)
+            print(f"wrote {dest}")
 
 
 if __name__ == "__main__":
