@@ -94,7 +94,7 @@ def run_hpo(
         p.name: restart_plans(p, seed=cfg.seed, restarts=max_restarts) for p in problems
     }
 
-    rng = random.Random(cfg.seed)
+    rng = random.Random(cfg.seed)  # noqa: S311 - seeded HPO RNG, not crypto
     result = HpoResult(best=HpoTrial(TwoOptTuning(), float("inf")))
     for _ in range(cfg.hpo_trials):
         tuning = TwoOptTuning(
@@ -146,7 +146,7 @@ def run_alns_hpo(
     (seed offset) keeps the search reproducible and independent of the
     two-opt HPO stream.
     """
-    rng = random.Random(cfg.seed + 10_000)
+    rng = random.Random(cfg.seed + 10_000)  # noqa: S311 - seeded ALNS HPO RNG, not crypto
     names = [n for n in cfg.alns_hpo_instances if n in starts]
     if not names:
         names = list(starts)

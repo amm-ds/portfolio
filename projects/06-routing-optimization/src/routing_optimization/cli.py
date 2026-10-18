@@ -7,6 +7,7 @@ see DESIGN.md) and extracts the configured subset into ``data/raw``.
 
 import json
 import shutil
+import urllib.parse
 import urllib.request
 import zipfile
 from datetime import date
@@ -36,8 +37,13 @@ def _fetch_archive(url: str, dest: Path) -> Path:
         logger.info("cached %s", dest)
         return dest
     logger.info("fetching %s -> %s", url, dest)
-    request = urllib.request.Request(url, headers={"User-Agent": _UA})
-    with urllib.request.urlopen(request, timeout=300) as resp, open(dest, "wb") as fh:
+    # http(s) for the registry mirror, file for local-archive mirrors (a
+    # supported download config; see test_download_instances_from_local_archive)
+    if urllib.parse.urlparse(url).scheme.lower() not in ("https", "http", "file"):
+        raise ValueError(f"refusing to fetch {url!r}: scheme must be http(s) or file")
+    # scheme allowlisted above; cfg.download_url is a pinned in-repo registry URL
+    request = urllib.request.Request(url, headers={"User-Agent": _UA})  # noqa: S310
+    with urllib.request.urlopen(request, timeout=300) as resp, open(dest, "wb") as fh:  # noqa: S310
         shutil.copyfileobj(resp, fh, length=1 << 20)
     return dest
 

@@ -63,6 +63,112 @@ def _extract_routes(
     return routes or None
 
 
+def _build_arc_literals(
+    model: cp_model.CpModel,
+    arcs: dict[tuple[int, int, int], cp_model.IntVar],
+    allowed: list[list[int]],
+    fleet: int,
+    n: int,
+) -> None:
+    """Per-vehicle arc booleans (travel arcs + self-loops) and circuit constraints."""
+    for v in range(fleet):
+        arc_literals = []
+        for i in range(n + 1):
+            for j in allowed[i]:
+                lit = model.new_bool_var(f"x_{v}_{i}_{j}")
+                arcs[(v, i, j)] = lit
+                arc_literals.append((i, j, lit))
+        for i in range(n + 1):  # self-loops: node not on v's circuit
+            lit = model.new_bool_var(f"x_{v}_{i}_{i}")
+            arcs[(v, i, i)] = lit
+            arc_literals.append((i, i, lit))
+        model.add_circuit(arc_literals)
+
+
+def _add_vehicle_constraints(
+    model: cp_model.CpModel,
+    arcs: dict[tuple[int, int, int], cp_model.IntVar],
+    allowed: list[list[int]],
+    preds: list[list[int]],
+    horizon: float,
+    capacity: float,
+    big_m: int,
+    dist: list[list[float]],
+    ready: list[float],
+    due: list[float],
+    serv: list[float],
+    demand: list[float],
+    fleet: int,
+    n: int,
+) -> None:
+    """Time/capacity propagation along arcs + per-node visit windows.
+
+    Window bounds are posted once per (vehicle, node) via the node's single
+    incoming arc, not per arc.
+    """
+    times: dict[tuple[int, int], cp_model.IntVar] = {}
+    loads: dict[tuple[int, int], cp_model.IntVar] = {}
+    returns = [model.new_int_var(0, int(horizon), f"end_{v}") for v in range(fleet)]
+    for v in range(fleet):
+        for j in range(n + 1):
+            times[(v, j)] = model.new_int_var(0, int(horizon), f"t_{v}_{j}")
+            loads[(v, j)] = model.new_int_var(0, int(capacity), f"l_{v}_{j}")
+        served: list[cp_model.IntVar] = []
+        for i in range(n + 1):
+            for j in allowed[i]:
+                lit = arcs[(v, i, j)]
+                travel = round(dist[i][j])
+                if j == 0:
+                    # return leg: separate timestamp — depot departure
+                    # (times[(v, 0)]) and arrival back (returns[v]) must not
+                    # share a variable, or every route is a t >= t cycle.
+                    model.add(
+                        returns[v] >= times[(v, i)] + int(serv[i]) + travel - big_m * (1 - lit)
+                    )
+                else:
+                    model.add(
+                        times[(v, j)] >= times[(v, i)] + int(serv[i]) + travel - big_m * (1 - lit)
+                    )
+                    model.add(
+                        loads[(v, j)] >= loads[(v, i)] + int(demand[j]) - int(capacity) * (1 - lit)
+                    )
+                    served.append(lit)
+        # a vehicle serving any customer must leave the depot (its depot
+        # self-loop off), keeping customers off depot-less fake circuits
+        model.add(sum(served) <= n * (1 - arcs[(v, 0, 0)]))
+        for j in range(1, n + 1):
+            in_sum = sum(arcs[(v, i, j)] for i in preds[j] if i != j)
+            # visit windows: enforced exactly when j is on v's circuit
+            model.add(times[(v, j)] >= int(ready[j]) - big_m * (1 - in_sum))
+            model.add(times[(v, j)] <= int(due[j]) + big_m * (1 - in_sum))
+
+
+def _add_solution_hint(
+    model: cp_model.CpModel,
+    arcs: dict[tuple[int, int, int], cp_model.IntVar],
+    hint: RoutePlan,
+    fleet: int,
+    n: int,
+) -> None:
+    """Hint the construction plan: used vehicles get their chains (self-loops
+    at unvisited nodes); unused vehicles self-loop everywhere. Zero-hints
+    for the remaining travel arcs are omitted — partial hints are enough."""
+    assigned: set[tuple[int, int, int]] = set()
+    for v in range(fleet):
+        if v < hint.n_vehicles:
+            chain = [0, *hint.routes[v], 0]
+            for i in range(n + 1):
+                if i not in chain:
+                    assigned.add((v, i, i))
+            for a, b in pairwise(chain):
+                assigned.add((v, a, b))
+        else:
+            for i in range(n + 1):
+                assigned.add((v, i, i))
+    for key in assigned:
+        model.add_hint(arcs[key], 1)
+
+
 def ortools_cp(
     problem: Problem,
     hint: RoutePlan,
@@ -103,80 +209,34 @@ def ortools_cp(
 
     model = cp_model.CpModel()
     arcs: dict[tuple[int, int, int], cp_model.IntVar] = {}
-    for v in range(fleet):
-        arc_literals = []
-        for i in range(n + 1):
-            for j in allowed[i]:
-                lit = model.new_bool_var(f"x_{v}_{i}_{j}")
-                arcs[(v, i, j)] = lit
-                arc_literals.append((i, j, lit))
-        for i in range(n + 1):  # self-loops: node not on v's circuit
-            lit = model.new_bool_var(f"x_{v}_{i}_{i}")
-            arcs[(v, i, i)] = lit
-            arc_literals.append((i, i, lit))
-        model.add_circuit(arc_literals)
+    _build_arc_literals(model, arcs, allowed, fleet, n)
 
     # predecessors of each node, for exactly-once and window constraints
     preds: list[list[int]] = [[i for i in range(n + 1) if j in allowed[i]] for j in range(n + 1)]
 
-    times: dict[tuple[int, int], cp_model.IntVar] = {}
-    loads: dict[tuple[int, int], cp_model.IntVar] = {}
-    returns = [model.new_int_var(0, int(horizon), f"end_{v}") for v in range(fleet)]
-    for v in range(fleet):
-        for j in range(n + 1):
-            times[(v, j)] = model.new_int_var(0, int(horizon), f"t_{v}_{j}")
-            loads[(v, j)] = model.new_int_var(0, int(capacity), f"l_{v}_{j}")
-        served: list[cp_model.IntVar] = []
-        for i in range(n + 1):
-            for j in allowed[i]:
-                lit = arcs[(v, i, j)]
-                travel = round(dist[i][j])
-                if j == 0:
-                    # return leg: separate timestamp — depot departure
-                    # (times[(v, 0)]) and arrival back (returns[v]) must not
-                    # share a variable, or every route is a t >= t cycle.
-                    model.add(
-                        returns[v] >= times[(v, i)] + int(serv[i]) + travel - big_m * (1 - lit)
-                    )
-                else:
-                    model.add(
-                        times[(v, j)] >= times[(v, i)] + int(serv[i]) + travel - big_m * (1 - lit)
-                    )
-                    model.add(
-                        loads[(v, j)] >= loads[(v, i)] + int(demand[j]) - int(capacity) * (1 - lit)
-                    )
-                    served.append(lit)
-        # a vehicle serving any customer must leave the depot (its depot
-        # self-loop off), keeping customers off depot-less fake circuits
-        model.add(sum(served) <= n * (1 - arcs[(v, 0, 0)]))
-        for j in range(1, n + 1):
-            in_sum = sum(arcs[(v, i, j)] for i in preds[j] if i != j)
-            # visit windows: enforced exactly when j is on v's circuit
-            model.add(times[(v, j)] >= int(ready[j]) - big_m * (1 - in_sum))
-            model.add(times[(v, j)] <= int(due[j]) + big_m * (1 - in_sum))
+    _add_vehicle_constraints(
+        model,
+        arcs,
+        allowed,
+        preds,
+        horizon,
+        capacity,
+        big_m,
+        dist,
+        ready,
+        due,
+        serv,
+        demand,
+        fleet,
+        n,
+    )
 
     for j in range(1, n + 1):  # every customer served exactly once
         model.add(sum(arcs[(v, i, j)] for v in range(fleet) for i in preds[j] if i != j) == 1)
 
     model.minimize(sum(round(dist[i][j]) * lit for (v, i, j), lit in arcs.items() if i != j))
 
-    # Hint: the construction plan. Used vehicles get their chains (self-loops
-    # at unvisited nodes); unused vehicles self-loop everywhere. Zero-hints
-    # for the remaining travel arcs are omitted — partial hints are enough.
-    assigned: set[tuple[int, int, int]] = set()
-    for v in range(fleet):
-        if v < hint.n_vehicles:
-            chain = [0, *hint.routes[v], 0]
-            for i in range(n + 1):
-                if i not in chain:
-                    assigned.add((v, i, i))
-            for a, b in pairwise(chain):
-                assigned.add((v, a, b))
-        else:
-            for i in range(n + 1):
-                assigned.add((v, i, i))
-    for key in assigned:
-        model.add_hint(arcs[key], 1)
+    _add_solution_hint(model, arcs, hint, fleet, n)
 
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_s

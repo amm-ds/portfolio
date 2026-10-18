@@ -108,7 +108,7 @@ def randomized(problem: Problem, seed: int = 42) -> RoutePlan:
     """
     dist = distance_matrix(problem)
     depot = problem.depot
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # noqa: S311 - seeded construction heuristic RNG, not crypto
     pool = [c.id for c in problem.customers[1:]]
     rng.shuffle(pool)
     routes: list[list[int]] = []

@@ -11,8 +11,10 @@ compatibility.
 import csv
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import plotly.graph_objects as go
 import polars as pl
@@ -482,16 +484,38 @@ def _solver_gaps(evaln: InstanceEvaluation) -> dict[str, float | None]:
     return gaps
 
 
-def run_evaluate(cfg: VRPConfig) -> Path:
-    """Compute gaps, build figures and write all evaluation artifacts."""
-    solutions_path = cfg.reports_dir / "solutions.json"
-    if not solutions_path.exists():
-        raise FileNotFoundError(
-            f"{solutions_path} missing — run `routing_optimization solve` first"
-        )
-    solutions = json.loads(solutions_path.read_text())
-    references = load_references(cfg.best_known_path, cfg.best_known_supplement_path)
+@dataclass(frozen=True)
+class GapTables:
+    """Per-run Polars frames feeding the gap, runtime and profile figures."""
 
+    gap_rows: pl.DataFrame
+    runtime_rows: pl.DataFrame
+    distance_rows: pl.DataFrame
+
+
+@dataclass(frozen=True)
+class SolverStats:
+    """Mean gap/runtime/vehicle aggregates for one solver across instances."""
+
+    mean_gap_pct: float
+    mean_runtime_s: float
+    mean_n_vehicles: float
+    mean_veh_delta: float
+
+
+@dataclass(frozen=True)
+class MarkdownReports:
+    """The three markdown sections shared by ``results.md`` and ``report.html``."""
+
+    detail: str
+    summary: str
+    family: str
+
+
+def _load_evaluations(
+    solutions: dict[str, Any], references: dict[str, "Reference"]
+) -> list[InstanceEvaluation]:
+    """Rehydrate typed per-instance evaluations from ``solutions.json`` runs."""
     evaluations: list[InstanceEvaluation] = []
     for inst, data in solutions["instances"].items():
         solvers = [
@@ -516,7 +540,11 @@ def run_evaluate(cfg: VRPConfig) -> Path:
                 best_routes=data["best"]["routes"],
             )
         )
+    return evaluations
 
+
+def _gap_tables(evaluations: list[InstanceEvaluation]) -> GapTables:
+    """Per-run frames: gaps (reference-gated), runtimes and distances."""
     gap_rows = pl.DataFrame(
         {
             "instance": ev.instance,
@@ -537,19 +565,90 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         for ev in evaluations
         for r in ev.runs
     )
+    return GapTables(gap_rows=gap_rows, runtime_rows=runtime_rows, distance_rows=distance_rows)
 
-    figures: dict[str, go.Figure] = {
-        "gap_pct": gap_figure(gap_rows),
-        "runtime": runtime_figure(runtime_rows),
-        "solver_profile": solver_profile_figure(distance_rows),
+
+def _family_rows(evaluations: list[InstanceEvaluation]) -> pl.DataFrame:
+    """Per (family, solver) gap and vehicle-delta frame for the family figure."""
+    return pl.DataFrame(
+        {
+            "family": family_of(ev.instance),
+            "solver": r.solver,
+            "gap_pct": round(gap_pct(r.total_distance, ev.best_known), 4),
+            "veh_delta": (
+                r.n_vehicles - ev.best_known_vehicles
+                if ev.best_known_vehicles is not None
+                else None
+            ),
+        }
+        for ev in evaluations
+        if ev.best_known is not None
+        for r in ev.runs
+    )
+
+
+def _one_solver_stats(evaluations: list[InstanceEvaluation], solver: str) -> SolverStats:
+    """Mean aggregates of one solver; reference-gated means over the gated rows only."""
+    runs = [(ev, r) for ev in evaluations for r in ev.runs if r.solver == solver]
+    n = max(len(runs), 1)
+    gap_vals = [
+        gap_pct(r.total_distance, ev.best_known) for ev, r in runs if ev.best_known is not None
+    ]
+    veh_deltas = [
+        r.n_vehicles - ev.best_known_vehicles
+        for ev, r in runs
+        if ev.best_known_vehicles is not None
+    ]
+    return SolverStats(
+        mean_gap_pct=sum(gap_vals) / max(len(gap_vals), 1),
+        mean_runtime_s=sum(r.runtime_s for _ev, r in runs) / n,
+        mean_n_vehicles=sum(r.n_vehicles for _ev, r in runs) / n,
+        mean_veh_delta=sum(veh_deltas) / max(len(veh_deltas), 1),
+    )
+
+
+def _solver_stats(evaluations: list[InstanceEvaluation]) -> dict[str, SolverStats]:
+    """Mean aggregates for every solver, keyed in sorted-solver order."""
+    solvers = sorted({r.solver for ev in evaluations for r in ev.runs})
+    return {solver: _one_solver_stats(evaluations, solver) for solver in solvers}
+
+
+def _pareto_rows(stats: dict[str, SolverStats]) -> pl.DataFrame:
+    """One unrounded row per solver: mean runtime, gap and vehicle delta."""
+    return pl.DataFrame(
+        {
+            "solver": solver,
+            "mean_runtime_s": s.mean_runtime_s,
+            "mean_gap_pct": s.mean_gap_pct,
+            "mean_veh_delta": s.mean_veh_delta,
+        }
+        for solver, s in stats.items()
+    )
+
+
+def _convergence_figures(solutions: dict[str, Any]) -> dict[str, go.Figure]:
+    """2-opt convergence figures for every traced instance."""
+    return {
+        f"convergence_{inst}": convergence_figure(history, inst)
+        for inst, history in solutions.get("convergence", {}).items()
     }
-    for inst, history in solutions.get("convergence", {}).items():
-        figures[f"convergence_{inst}"] = convergence_figure(history, inst)
+
+
+def _alns_convergence_figures(solutions: dict[str, Any]) -> dict[str, go.Figure]:
+    """ALNS convergence figures for every traced instance."""
+    return {
+        f"alns_convergence_{inst}": alns_convergence_figure(history, inst)
+        for inst, history in solutions.get("alns_convergence", {}).items()
+    }
+
+
+def _map_figures(cfg: VRPConfig, evaluations: list[InstanceEvaluation]) -> dict[str, go.Figure]:
+    """EDA instance map plus the best-route map for the configured instance."""
     map_eval = next((ev for ev in evaluations if ev.instance == cfg.map_instance), evaluations[0])
     map_problem = parse_solomon_file(
         cfg.raw_dir / f"{map_eval.instance}.txt", name=map_eval.instance
     )
-    figures["eda_instance_map"] = eda_instance_map_figure(map_problem)
+    figures = {"eda_instance_map": eda_instance_map_figure(map_problem)}
     if map_eval.best_routes is not None:
         best = map_eval.best()
         gap = (
@@ -565,73 +664,32 @@ def run_evaluate(cfg: VRPConfig) -> Path:
                 f"(capacity + time windows{gap})"
             ),
         )
+    return figures
 
-    family_rows = pl.DataFrame(
-        {
-            "family": family_of(ev.instance),
-            "solver": r.solver,
-            "gap_pct": round(gap_pct(r.total_distance, ev.best_known), 4),
-            "veh_delta": (
-                r.n_vehicles - ev.best_known_vehicles
-                if ev.best_known_vehicles is not None
-                else None
-            ),
-        }
-        for ev in evaluations
-        if ev.best_known is not None
-        for r in ev.runs
-    )
-    figures["family_gap"] = family_gap_figure(family_rows)
 
-    pareto_rows = pl.DataFrame(
-        {
-            "solver": solver,
-            "mean_runtime_s": (
-                sum(r.runtime_s for ev in evaluations for r in ev.runs if r.solver == solver)
-                / max(sum(1 for ev in evaluations for r in ev.runs if r.solver == solver), 1)
-            ),
-            "mean_gap_pct": (
-                sum(
-                    gap_pct(r.total_distance, ev.best_known)
-                    for ev in evaluations
-                    for r in ev.runs
-                    if r.solver == solver and ev.best_known is not None
-                )
-                / max(
-                    sum(
-                        1
-                        for ev in evaluations
-                        for r in ev.runs
-                        if r.solver == solver and ev.best_known is not None
-                    ),
-                    1,
-                )
-            ),
-            "mean_veh_delta": (
-                sum(
-                    r.n_vehicles - ev.best_known_vehicles
-                    for ev in evaluations
-                    for r in ev.runs
-                    if r.solver == solver and ev.best_known_vehicles is not None
-                )
-                / max(
-                    sum(
-                        1
-                        for ev in evaluations
-                        for r in ev.runs
-                        if r.solver == solver and ev.best_known_vehicles is not None
-                    ),
-                    1,
-                )
-            ),
-        }
-        for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
-    )
-    figures["pareto_gap_runtime"] = pareto_figure(pareto_rows)
-    for inst, history in solutions.get("alns_convergence", {}).items():
-        figures[f"alns_convergence_{inst}"] = alns_convergence_figure(history, inst)
+def _build_figures(
+    cfg: VRPConfig,
+    evaluations: list[InstanceEvaluation],
+    solutions: dict[str, Any],
+    tables: GapTables,
+    stats: dict[str, SolverStats],
+) -> dict[str, go.Figure]:
+    """Every figure of the evaluation report, in report-order."""
+    figures: dict[str, go.Figure] = {
+        "gap_pct": gap_figure(tables.gap_rows),
+        "runtime": runtime_figure(tables.runtime_rows),
+        "solver_profile": solver_profile_figure(tables.distance_rows),
+    }
+    figures.update(_convergence_figures(solutions))
+    figures.update(_map_figures(cfg, evaluations))
+    figures["family_gap"] = family_gap_figure(_family_rows(evaluations))
+    figures["pareto_gap_runtime"] = pareto_figure(_pareto_rows(stats))
+    figures.update(_alns_convergence_figures(solutions))
+    return figures
 
-    figures_dir = cfg.reports_dir / "figures"
+
+def _write_figures(figures: dict[str, go.Figure], figures_dir: Path) -> None:
+    """Persist figure payloads, dropping stale ones from previous runs."""
     figures_dir.mkdir(parents=True, exist_ok=True)
     # drop stale figure payloads from previous runs (e.g. changed instance lists)
     for stale in figures_dir.iterdir():
@@ -641,195 +699,33 @@ def run_evaluate(cfg: VRPConfig) -> Path:
         save_html(fig, figures_dir / f"{name}.html")
         save_json(fig, figures_dir / f"{name}.json")
 
-    detail_md = results_markdown(evaluations)
-    summary_md = summary_markdown(evaluations)
-    family_md = family_markdown(evaluations)
-    (cfg.reports_dir / "results.md").write_text(
-        f"# Routing optimization — evaluation results\n\n## Summary (mean over instances)\n\n"
-        f"{summary_md}\n\n## Per-family results\n\n{family_md}\n\n"
-        f"## Per-instance results\n\n{detail_md}\n"
+
+def _markdown_reports(evaluations: list[InstanceEvaluation]) -> MarkdownReports:
+    """Summary, per-family and per-instance markdown sections."""
+    return MarkdownReports(
+        detail=results_markdown(evaluations),
+        summary=summary_markdown(evaluations),
+        family=family_markdown(evaluations),
     )
 
-    metrics = {
-        "summary": {
-            solver: {
-                "mean_gap_pct": round(
-                    sum(
-                        gap_pct(r.total_distance, ev.best_known)
-                        for ev in evaluations
-                        for r in ev.runs
-                        if r.solver == solver and ev.best_known is not None
-                    )
-                    / max(
-                        sum(
-                            1
-                            for ev in evaluations
-                            for r in ev.runs
-                            if r.solver == solver and ev.best_known is not None
-                        ),
-                        1,
-                    ),
-                    4,
-                ),
-                "mean_runtime_s": round(
-                    sum(r.runtime_s for ev in evaluations for r in ev.runs if r.solver == solver)
-                    / max(sum(1 for ev in evaluations for r in ev.runs if r.solver == solver), 1),
-                    6,
-                ),
-                "mean_n_vehicles": round(
-                    sum(r.n_vehicles for ev in evaluations for r in ev.runs if r.solver == solver)
-                    / max(sum(1 for ev in evaluations for r in ev.runs if r.solver == solver), 1),
-                    2,
-                ),
-                "mean_vehicle_delta": (
-                    round(
-                        sum(
-                            r.n_vehicles - ev.best_known_vehicles
-                            for ev in evaluations
-                            for r in ev.runs
-                            if r.solver == solver and ev.best_known_vehicles is not None
-                        )
-                        / max(
-                            sum(
-                                1
-                                for ev in evaluations
-                                for r in ev.runs
-                                if r.solver == solver and ev.best_known_vehicles is not None
-                            ),
-                            1,
-                        ),
-                        2,
-                    )
-                ),
-            }
-            for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
-        },
-        "instances": {
-            ev.instance: {
-                "best_known": ev.best_known,
-                "best_known_vehicles": ev.best_known_vehicles,
-                "best_solver": ev.best().solver,
-                "best_solver_benchmark_convention": ev.best_by_benchmark_convention().solver,
-                "best_distance": round(ev.best().total_distance, 4),
-                "best_gap_pct": (
-                    None
-                    if ev.best_known is None
-                    else round(gap_pct(ev.best().total_distance, ev.best_known), 4)
-                ),
-                "solvers": {
-                    r.solver: {
-                        "distance": round(r.total_distance, 4),
-                        "n_vehicles": r.n_vehicles,
-                        "gap_pct": (
-                            None
-                            if ev.best_known is None
-                            else round(gap_pct(r.total_distance, ev.best_known), 4)
-                        ),
-                        "vehicle_delta": (
-                            None
-                            if ev.best_known_vehicles is None
-                            else r.n_vehicles - ev.best_known_vehicles
-                        ),
-                        "runtime_s": round(r.runtime_s, 6),
-                    }
-                    for r in ev.runs
-                },
-            }
-            for ev in evaluations
-        },
-        "ranking": {
-            "by_distance": dict(
-                sorted(
-                    {
-                        solver: sum(
-                            1
-                            for ev in evaluations
-                            if ev.best().solver == solver and ev.best_known is not None
-                        )
-                        for solver in {r.solver for ev in evaluations for r in ev.runs}
-                    }.items()
-                )
-            ),
-            "by_vehicles_then_distance": dict(
-                sorted(
-                    {
-                        solver: sum(
-                            1
-                            for ev in evaluations
-                            if ev.best_by_benchmark_convention().solver == solver
-                            and ev.best_known is not None
-                        )
-                        for solver in {r.solver for ev in evaluations for r in ev.runs}
-                    }.items()
-                )
-            ),
-        },
-        "tuning": {
-            "solver_best": solutions.get("solver_best"),
-            "hpo": solutions.get("hpo"),
-            "alns_best": solutions.get("alns_best"),
-            "alns_hpo": solutions.get("alns_hpo"),
-        },
-        "families": {
-            fam: {
-                solver: round(
-                    sum(
-                        gap_pct(r.total_distance, ev.best_known)
-                        for ev in evaluations
-                        if family_of(ev.instance) == fam and ev.best_known is not None
-                        for r in ev.runs
-                        if r.solver == solver
-                    )
-                    / max(
-                        sum(
-                            1
-                            for ev in evaluations
-                            if family_of(ev.instance) == fam and ev.best_known is not None
-                            for r in ev.runs
-                            if r.solver == solver
-                        ),
-                        1,
-                    ),
-                    4,
-                )
-                for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
-            }
-            for fam in sorted({family_of(ev.instance) for ev in evaluations})
-        },
-        "family_vehicle_deltas": {
-            fam: {
-                solver: round(
-                    sum(
-                        r.n_vehicles - ev.best_known_vehicles
-                        for ev in evaluations
-                        if family_of(ev.instance) == fam and ev.best_known_vehicles is not None
-                        for r in ev.runs
-                        if r.solver == solver
-                    )
-                    / max(
-                        sum(
-                            1
-                            for ev in evaluations
-                            if family_of(ev.instance) == fam and ev.best_known_vehicles is not None
-                            for r in ev.runs
-                            if r.solver == solver
-                        ),
-                        1,
-                    ),
-                    2,
-                )
-                for solver in sorted({r.solver for ev in evaluations for r in ev.runs})
-            }
-            for fam in sorted({family_of(ev.instance) for ev in evaluations})
-        },
-    }
-    metrics_path = cfg.reports_dir / "metrics.json"
-    metrics_path.write_text(json.dumps(metrics, indent=2))
 
+def _write_results_md(cfg: VRPConfig, reports: MarkdownReports) -> None:
+    """Write ``reports/results.md`` from the three markdown sections."""
+    (cfg.reports_dir / "results.md").write_text(
+        f"# Routing optimization — evaluation results\n\n## Summary (mean over instances)\n\n"
+        f"{reports.summary}\n\n## Per-family results\n\n{reports.family}\n\n"
+        f"## Per-instance results\n\n{reports.detail}\n"
+    )
+
+
+def _write_report_html(
+    cfg: VRPConfig, figures: dict[str, go.Figure], reports: MarkdownReports
+) -> None:
+    """Write the self-contained HTML report with figure links."""
     report = EvalReport(title="Routing Optimization — Solomon VRPTW benchmark")
-    report.add_markdown_table("Summary (mean over instances)", summary_md)
-    report.add_markdown_table("Per-family results", family_md)
-    report.add_markdown_table("Per-instance results", detail_md)
+    report.add_markdown_table("Summary (mean over instances)", reports.summary)
+    report.add_markdown_table("Per-family results", reports.family)
+    report.add_markdown_table("Per-instance results", reports.detail)
     for name in figures:
         report.add_html(
             name.replace("_", " ").title(),
@@ -837,6 +733,173 @@ def run_evaluate(cfg: VRPConfig) -> Path:
             f"(<code>figures/{name}.html</code>)</p>",
         )
     report.write(cfg.reports_dir / "report.html")
+
+
+def _summary_metrics(stats: dict[str, SolverStats]) -> dict[str, dict[str, float]]:
+    """Rounded per-solver means for the ``summary`` block of ``metrics.json``."""
+    return {
+        solver: {
+            "mean_gap_pct": round(s.mean_gap_pct, 4),
+            "mean_runtime_s": round(s.mean_runtime_s, 6),
+            "mean_n_vehicles": round(s.mean_n_vehicles, 2),
+            "mean_vehicle_delta": round(s.mean_veh_delta, 2),
+        }
+        for solver, s in stats.items()
+    }
+
+
+def _instance_metrics(evaluations: list[InstanceEvaluation]) -> dict[str, Any]:
+    """Per-instance best solver, gaps, vehicle deltas and per-solver detail."""
+    return {
+        ev.instance: {
+            "best_known": ev.best_known,
+            "best_known_vehicles": ev.best_known_vehicles,
+            "best_solver": ev.best().solver,
+            "best_solver_benchmark_convention": ev.best_by_benchmark_convention().solver,
+            "best_distance": round(ev.best().total_distance, 4),
+            "best_gap_pct": (
+                None
+                if ev.best_known is None
+                else round(gap_pct(ev.best().total_distance, ev.best_known), 4)
+            ),
+            "solvers": {
+                r.solver: {
+                    "distance": round(r.total_distance, 4),
+                    "n_vehicles": r.n_vehicles,
+                    "gap_pct": (
+                        None
+                        if ev.best_known is None
+                        else round(gap_pct(r.total_distance, ev.best_known), 4)
+                    ),
+                    "vehicle_delta": (
+                        None
+                        if ev.best_known_vehicles is None
+                        else r.n_vehicles - ev.best_known_vehicles
+                    ),
+                    "runtime_s": round(r.runtime_s, 6),
+                }
+                for r in ev.runs
+            },
+        }
+        for ev in evaluations
+    }
+
+
+def _ranking_counts(
+    evaluations: list[InstanceEvaluation], key: Callable[[InstanceEvaluation], str]
+) -> dict[str, int]:
+    """Win count per solver under ``key`` (best-known-gated), sorted by solver."""
+    return dict(
+        sorted(
+            {
+                solver: sum(
+                    1 for ev in evaluations if key(ev) == solver and ev.best_known is not None
+                )
+                for solver in {r.solver for ev in evaluations for r in ev.runs}
+            }.items()
+        )
+    )
+
+
+def _ranking_metrics(evaluations: list[InstanceEvaluation]) -> dict[str, Any]:
+    """Instance-win rankings by cheapest run and by benchmark convention."""
+    return {
+        "by_distance": _ranking_counts(evaluations, lambda ev: ev.best().solver),
+        "by_vehicles_then_distance": _ranking_counts(
+            evaluations, lambda ev: ev.best_by_benchmark_convention().solver
+        ),
+    }
+
+
+def _family_solver_mean(
+    evaluations: list[InstanceEvaluation], fam: str, solver: str, *, vehicles: bool
+) -> float:
+    """Mean gap (or vehicle delta) of ``solver`` on family ``fam``.
+
+    Gap means are gated on instances with a best-known distance, vehicle-delta
+    means on instances with a best-known vehicle count; empty sets average to 0.
+    """
+    vals: list[float] = []
+    for ev in evaluations:
+        if family_of(ev.instance) != fam:
+            continue
+        if vehicles:
+            if ev.best_known_vehicles is None:
+                continue
+        elif ev.best_known is None:
+            continue
+        for r in ev.runs:
+            if r.solver != solver:
+                continue
+            value = (
+                None
+                if (known := ev.best_known_vehicles if vehicles else ev.best_known) is None
+                else r.n_vehicles - known
+                if vehicles
+                else gap_pct(r.total_distance, known)
+            )
+            if value is not None:
+                vals.append(value)
+    return round(sum(vals) / max(len(vals), 1), 2 if vehicles else 4)
+
+
+def _family_metrics(
+    evaluations: list[InstanceEvaluation], *, vehicles: bool
+) -> dict[str, dict[str, float]]:
+    """Per-family per-solver means (gaps or vehicle deltas), sorted keys."""
+    fams = sorted({family_of(ev.instance) for ev in evaluations})
+    solvers = sorted({r.solver for ev in evaluations for r in ev.runs})
+    return {
+        fam: {
+            solver: _family_solver_mean(evaluations, fam, solver, vehicles=vehicles)
+            for solver in solvers
+        }
+        for fam in fams
+    }
+
+
+def _metrics_payload(
+    evaluations: list[InstanceEvaluation],
+    solutions: dict[str, Any],
+    stats: dict[str, SolverStats],
+) -> dict[str, Any]:
+    """Assemble the ``metrics.json`` document (keys in write order)."""
+    return {
+        "summary": _summary_metrics(stats),
+        "instances": _instance_metrics(evaluations),
+        "ranking": _ranking_metrics(evaluations),
+        "tuning": {
+            "solver_best": solutions.get("solver_best"),
+            "hpo": solutions.get("hpo"),
+            "alns_best": solutions.get("alns_best"),
+            "alns_hpo": solutions.get("alns_hpo"),
+        },
+        "families": _family_metrics(evaluations, vehicles=False),
+        "family_vehicle_deltas": _family_metrics(evaluations, vehicles=True),
+    }
+
+
+def run_evaluate(cfg: VRPConfig) -> Path:
+    """Compute gaps, build figures and write all evaluation artifacts."""
+    solutions_path = cfg.reports_dir / "solutions.json"
+    if not solutions_path.exists():
+        raise FileNotFoundError(
+            f"{solutions_path} missing — run `routing_optimization solve` first"
+        )
+    solutions = json.loads(solutions_path.read_text())
+    references = load_references(cfg.best_known_path, cfg.best_known_supplement_path)
+    evaluations = _load_evaluations(solutions, references)
+
+    tables = _gap_tables(evaluations)
+    stats = _solver_stats(evaluations)
+    figures = _build_figures(cfg, evaluations, solutions, tables, stats)
+    _write_figures(figures, cfg.reports_dir / "figures")
+    reports = _markdown_reports(evaluations)
+    _write_results_md(cfg, reports)
+    metrics = _metrics_payload(evaluations, solutions, stats)
+    metrics_path = cfg.reports_dir / "metrics.json"
+    metrics_path.write_text(json.dumps(metrics, indent=2))
+    _write_report_html(cfg, figures, reports)
     return metrics_path
 
 
