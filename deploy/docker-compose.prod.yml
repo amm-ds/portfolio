@@ -1,6 +1,6 @@
-# Production compose for the showcase app (Hetzner VPS).
-# Usage: docker compose -f deploy/docker-compose.prod.yml up -d   (from repo root
-# or copy deploy/ files next to a loaded image on the server — see deploy/DEPLOY.md)
+# Production compose for the showcase app (reference VPS: Hetzner — see deploy/DEPLOY.md).
+# Usage: DOMAIN=example.com docker compose -f deploy/docker-compose.prod.yml up -d
+# (from repo root, or copy deploy/ files next to a loaded image on the server)
 services:
   api:
     image: amm-ds-portfolio:latest
@@ -15,15 +15,34 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
+    extra_hosts:
+      # host.docker.internal is not resolved on Linux by default; this lets the
+      # api reach an Ollama sidecar running on the Docker host (see DEPLOY.md).
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"]
       interval: 30s
       timeout: 5s
       start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    environment:
+      # Public hostname; the Caddyfile uses {$DOMAIN} as its site address and
+      # Caddy provisions TLS for it automatically. Fallback default is the
+      # same placeholder as in deploy/Caddyfile — always set DOMAIN for real.
+      DOMAIN: ${DOMAIN:-your-domain.com}
     ports:
       - "80:80"
       - "443:443"
@@ -33,6 +52,16 @@ services:
       - caddy-config:/config
     depends_on:
       - api
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
 
 volumes:
   caddy-data:

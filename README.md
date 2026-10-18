@@ -6,7 +6,7 @@ project ships with its design record, reproducible pipeline, and evaluation
 harness.
 
 📚 **Docs (GitHub Pages):** https://amm-ds.github.io/portfolio/ ·
-🖥️ **Showcase app:** `make docker-up` → http://localhost:8000
+🖥️ **Showcase app:** `make docker-up` → http://localhost:8000 (public deploy: `deploy/DEPLOY.md`)
 
 ## Stack
 
@@ -96,8 +96,10 @@ Artifact-backed endpoints return **503 until the artifacts exist** — each 503 
 the exact rebuild command, and the artifacts regenerate from a clean clone with
 `dvc repro`.
 
-Public deployment is pending a hosting decision (see `deploy/DEPLOY.md`); the docs
-site is always live: https://amm-ds.github.io/portfolio/
+Public deploy in minutes: set `DOMAIN` in `deploy/` and
+`docker compose -f deploy/docker-compose.prod.yml up -d` (Caddy provisions TLS
+automatically) — see `deploy/DEPLOY.md`. The docs site is always live:
+https://amm-ds.github.io/portfolio/
 
 ## Reproduce in 3 commands
 

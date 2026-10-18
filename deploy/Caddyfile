@@ -1,14 +1,26 @@
 # Caddy reverse proxy — automatic TLS via Let's Encrypt (DNS via Cloudflare).
-# Replace the domain below (also in docker-compose.prod.yml).
+# Domain comes from the DOMAIN env var (docker-compose.prod.yml passes it through):
+#   DOMAIN=example.com docker compose -f deploy/docker-compose.prod.yml up -d
+# Fallback without env: hardcode the domain instead of the placeholder, e.g.
+#   example.com {
 
-your-domain.com {
+{$DOMAIN} {
     encode zstd gzip
 
-    # Security headers (frame denial, minimal exposure)
+    # Security headers
     header {
+        # HSTS for 1 year incl. subdomains. `preload` is a conscious opt-out:
+        # it requires submitting the domain to the browser preload list, which
+        # is hard to undo, so it stays off until deliberately enabled.
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        # Conservative CSP for the SPA — everything same-origin. Plotly writes
+        # inline `style` attributes on its rendered elements, so style-src keeps
+        # 'unsafe-inline'; img-src data: covers plotly data-URI images.
+        Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
         X-Content-Type-Options nosniff
         X-Frame-Options DENY
         Referrer-Policy strict-origin-when-cross-origin
+        Permissions-Policy "geolocation=(), camera=(), microphone=()"
         -Server
     }
 
