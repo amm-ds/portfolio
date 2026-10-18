@@ -125,6 +125,18 @@ holds), MPS has no OOM recovery so the batch is probed with a synthetic
 forward+backward before training, and single-process tokenization of the
 120k split is CPU-bound (~10 s — batched HF tokenizer, not a bottleneck).
 
+**Why two epochs?** Because the third and fourth are measured to buy nothing.
+A probe re-ran the full fine-tune with the budget raised to 4 epochs and
+early stopping disabled (`uv run python -m nlp_classification.epochs_probe`,
+same hypers, seed 42, ~13 min/epoch with the machine quieter than during the
+headline run): val macro-F1 goes 0.9407 → 0.9474 → **0.9477** → 0.9471 —
+epochs 3-4 add **+0.0003 / −0.0003** over epoch 2, inside run-to-run noise,
+while val loss rises again (0.1566 → 0.1609 → 0.1774) and train loss keeps
+falling (0.1425 → 0.0959 → 0.0634): textbook overfitting onset, ~27 extra
+minutes for no quality. (Probe epochs 1-2 don't bit-match the shipped run —
+the LR schedule depends on the total step count.) History:
+`reports/history_probe4.json`; figure: `reports/figures/epochs_probe.*`.
+
 Scaling story (all on the same untouched 1000-row test split, seed 42):
 
 | Train rows | Run | Test macro-F1 | Δ vs 3.6k |

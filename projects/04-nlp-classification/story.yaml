@@ -108,14 +108,20 @@ sections:
         (~3x epoch speedup at the fixed 128 cap).
       - **Headline run:** the full 120k fine-tune on Apple-Silicon MPS,
         measured at ~18–27 min/epoch.
+      - **Why two epochs?** a 4-epoch probe of the headline run (early
+        stopping disabled, same hypers, seed 42) peaks at val macro-F1
+        0.9477 in epoch 3 — +0.0003 over epoch 2, −0.0003 by epoch 4, with
+        val loss rising again while train loss keeps falling: extra epochs
+        overfit, not improve (`reports/history_probe4.json`).
 
-      The `training_curve`, `hpo_history` and `hpo_importance` figures
-      track loss, per-trial validation F1 and parameter importance.
+      The `training_curve`, `epochs_probe`, `hpo_history` and
+      `hpo_importance` figures track loss, the epoch-budget probe,
+      per-trial validation F1 and parameter importance.
 
       **Business implication:** every training detail a buyer would audit —
       optimizer, schedule, stopping rule, seeds — is hand-written, visible,
       and unit-tested.
-    figures: [training_curve, hpo_history, hpo_importance]
+    figures: [training_curve, epochs_probe, hpo_history, hpo_importance]
 
   - id: evaluation
     text_md: |
