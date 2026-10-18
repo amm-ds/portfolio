@@ -70,7 +70,7 @@ jobs:
             curl -fsS "http://localhost:8000$route" | grep -q 'id="root"'
           done
           # Project-index API answers JSON.
-          curl -fsS http://localhost:8000/projects | grep -q '"project_id"'
+          curl -fsS http://localhost:8000/projects | grep -q '"id":"01-rag-agent"'
           # Story/metrics APIs must answer JSON for a real project.
           curl -fsS http://localhost:8000/projects/05-ml-pipeline-churn/metrics \
             | grep -q 'selected_model_calibrated'
