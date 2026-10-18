@@ -443,7 +443,10 @@ def _shrink_until_fits(probe: Callable[[int], None], start: int) -> int:
             if "out of memory" not in str(exc).lower() or batch <= 1:
                 raise
             batch //= 2
-            torch.mps.empty_cache()
+            # empty_cache is MPS-only; calling it off-MPS raises and would
+            # mask the OOM handling (CI runs on Linux).
+            if torch.backends.mps.is_available():
+                torch.mps.empty_cache()
 
 
 def mps_safe_batch_size(
