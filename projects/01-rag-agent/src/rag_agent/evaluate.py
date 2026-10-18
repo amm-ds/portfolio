@@ -50,7 +50,6 @@ from rag_agent.agent import build_agent
 from rag_agent.config import RAGConfig, RetrievalBest
 from rag_agent.corpus import load_corpus
 from rag_agent.figures import (
-    agent_pipeline_figure,
     corpus_eda_figure,
     frontier_figure,
     hpo_frontier_figure,
@@ -103,7 +102,6 @@ __all__ = [
     "RAGRun",
     "RetrievalScores",
     "TopkData",
-    "agent_pipeline_figure",
     "choose_retrieval_config",
     "corpus_eda_figure",
     "cost_telemetry",
@@ -996,7 +994,6 @@ def _build_figures(
     """Every report figure, in report order (latency/taxonomy appended last)."""
     figures: dict[str, go.Figure] = {
         "eda_corpus_composition": corpus_eda_figure(articles),
-        "agent_pipeline": agent_pipeline_figure(config, len(articles), hpo.chosen),
         "chunk_size_sweep": hpo.sweep_fig,
         "model_comparison": model_comparison_figure(hpo.model_scores, hpo.chosen.embedding_slug),
         "retrieval_funnel": retrieval_funnel_figure(config, questions, hpo.topk, hpo.chosen),

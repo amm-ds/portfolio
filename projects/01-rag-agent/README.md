@@ -34,8 +34,9 @@ cross-encoder (`ms-marco-MiniLM-L-6-v2`) rerank of the top 5×k →
 `AnalysisResult(summary, citations, confidence)`. Provider behaviour follows
 ADR-0004 (amended wave 10): env-configured OpenAI-compatible endpoint first,
 local Ollama second (default `qwen3.6:35b-a3b-q4_K_M`). There is no runtime mock.
-The `agent_pipeline` figure (`reports/figures/`) maps the path end to end —
-retrieval lanes, provider seam, verify loop, metered phases. See
+The runtime path is drawn as a mermaid diagram in the
+[case study](https://amm-ds.github.io/portfolio/projects/01-rag-agent/) —
+retrieval lanes, provider seam, verify loop. See
 [DESIGN.md](DESIGN.md) for options considered and SLOs.
 
 ## Results
@@ -195,7 +196,6 @@ minutes of wall clock.
 
 | Figure | File |
 |---|---|
-| Agent pipeline — retrieval → agent → verify → cited answer, with the ADR-0004 provider seam and metered phases | [reports/figures/agent_pipeline.html](reports/figures/agent_pipeline.html) |
 | Corpus composition (EDA) | [reports/figures/eda_corpus_composition.html](reports/figures/eda_corpus_composition.html) |
 | Retrieval quality vs chunk size (with random baseline) | [reports/figures/chunk_size_sweep.html](reports/figures/chunk_size_sweep.html) |
 | Embedding model comparison | [reports/figures/model_comparison.html](reports/figures/model_comparison.html) |

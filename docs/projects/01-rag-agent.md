@@ -13,20 +13,37 @@
 
 A grounded question-answering agent over a curated topical slice of English
 Wikipedia. A `pydantic-ai` agent answers **only** from retrieved evidence and
-returns a structured `AnalysisResult` — summary, per-claim citations, and a
-calibrated confidence — with no LLM SDK in the project (provider abstraction
-per ADR-0004, as amended: env-configured OpenAI-compatible endpoint
-first, local Ollama second — default `qwen3.6:35b-a3b-q4_K_M`; no runtime
-mock, `--offline` keeps a retrieval-only CI path).
+returns a structured `AnalysisResult` — summary, per-claim citations,
+calibrated confidence. Per ADR-0004 (amended): env-configured
+OpenAI-compatible endpoint first, local Ollama second (default
+`qwen3.6:35b-a3b-q4_K_M`); no LLM SDK in the project, no runtime mock, and
+`--offline` keeps a retrieval-only CI path.
 
-![One pipeline, two seams: the provider swap (ADR-0004) and the verify-then-answer loop enforce grounding by construction](../assets/projects/01-rag-agent/agent_pipeline.png){ width="100%" }
+The full runtime path, drawn as a graph — the dotted seam is the only LLM
+boundary (ADR-0004), and the verify loop is a hard gate, not a prompt:
 
-The diagram maps the full runtime path: retrieval runs CPU-only and unmetered
-(embed → FAISS exact search → cross-encoder rerank), every LLM call passes
-through the ADR-0004 provider seam (env-hosted, metered ⇄ local Ollama, $0),
-the agent's only corpus access is `search_documents` / `read_excerpt`, and
-each drafted answer is claim-split, entailment-checked, repaired (≤2 calls) or
-dropped before it may ship — below the 0.6 support floor the agent abstains.
+```mermaid
+flowchart LR
+    Q[Question] --> E[Embed MiniLM]
+    E --> F[FAISS top-5k]
+    F --> X[Cross-encoder rerank]
+    X --> A[Agent loop]
+    A --> D[Draft AnalysisResult]
+    D --> S[Claim split]
+    S --> N[Entailment check]
+    N --> P[Repair ≤2 / drop]
+    P --> O[Support floor 0.6]
+    O -->|below floor| B[Abstain]
+    O --> C[Cited answer]
+    A -.-> T{{Corpus access:<br/>tools only}}
+    A <-.->|ADR-0004 env-hosted ⇄ local| L{{Provider seam}}
+```
+
+Retrieval runs CPU-only and unmetered (embed → FAISS exact search →
+cross-encoder rerank); the agent's only corpus access is `search_documents` /
+`read_excerpt`, and each drafted answer is claim-split, entailment-checked,
+repaired (≤2 calls) or dropped before it ships — below the 0.6 support floor
+the agent abstains.
 
 ## Pipeline
 
@@ -41,8 +58,8 @@ dropped before it may ship — below the 0.6 support floor the agent abstains.
    access; output schema is validated on every run and fails loudly.
 4. **Evaluation** — 65 graded questions (44 single-hop, 11 multi-hop, 10
    unanswerable): recall@5/10 + MRR@5 sweep over chunk sizes, RAGAS +
-   rubric-judge quality runs, a verify-then-answer A/B, and per-query latency
-   + estimated cost, all written to `reports/`.
+   rubric-judge runs, a verify-then-answer A/B, per-query latency and
+   estimated cost — all written to `reports/`.
 
 ## Key results (2026-10-17, provider A/B)
 
@@ -86,15 +103,14 @@ token-guard trip on the runaway question, not schema noise — the wave-15
 output-retry recovered the run's one schema-invalid draft (1 retry).
 
 Takeaway: retrieval is solid (recall@5 0.831 vs 0.031 random), so
-**generation grounding is the bottleneck**, and grounding tracks the provider
-— hosted faithfulness +0.08 over local (directional: different denominators,
-30 vs 65 questions). The verify-then-answer loop stays worth its repair
-calls on high-stakes corpora: unsupported-claim share fell from the
-verify-off baseline (60% → 47% locally) and stays bounded hosted, at 39
-repair calls and 2 support-floor abstentions over 64 verified answers.
-Figures: corpus composition, chunk-size sweep with random baseline,
-embedding model comparison, retrieval funnel, HPO frontier (chosen config
-starred), latency histogram, failure taxonomy (all in
+**generation grounding is the bottleneck** — and grounding tracks the
+provider (hosted faithfulness +0.08 over local; directional: 30 vs 65
+questions). The verify loop stays worth its repair calls on high-stakes
+corpora: unsupported-claim share fell from 60% → 47% locally and stays
+bounded hosted, at 39 repair calls and 2 support-floor abstentions over 64
+verified answers. Figures: corpus composition, chunk-size sweep with random
+baseline, embedding model comparison, retrieval funnel, HPO frontier (chosen
+config starred), latency histogram, failure taxonomy (all in
 `projects/01-rag-agent/reports/figures/`).
 
 ### Held-out confirmation
