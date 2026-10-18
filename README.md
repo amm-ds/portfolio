@@ -128,9 +128,12 @@ conclusions, each with a naive baseline and the honest delta).
 
 ## Contact & availability
 
+- **Start an engagement:** [open an inquiry](https://github.com/amm-ds/portfolio/issues/new?title=Inquiry%3A%20&body=%2A%2AContext%2A%2A%3A%20) —
+  discovery call first, written scope after (details on the
+  [Services page](https://amm-ds.github.io/portfolio/site/contact/)).
 - GitHub: [@amm-ds](https://github.com/amm-ds)
-- Freelance/consulting: open to engagements — details on the
-  [About/Services page](https://amm-ds.github.io/portfolio/site/about/).
 - Languages: English, Spanish.
 
 MIT licensed. Datasets carry their own licenses — see the dataset cards.
+Security vulnerabilities: [SECURITY.md](SECURITY.md) — never open a public
+issue for them.
