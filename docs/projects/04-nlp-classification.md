@@ -64,6 +64,15 @@ quantization buys memory, not speed, here. Data:
 
 ![The full 120k DistilBERT fine-tune climbs to 0.946 macro-F1 on the test split within two epochs](../assets/projects/04-nlp-classification/training_curve.png){ width="100%" }
 
+Two epochs is a measured budget, not an assumption: a 4-epoch probe with
+early stopping disabled (same hypers, seed 42;
+`projects/04-nlp-classification/reports/history_probe4.json`) peaks at val
+macro-F1 0.9477 in epoch 3 — +0.0003 over epoch 2, −0.0003 by epoch 4 —
+while validation loss climbs again and train loss keeps falling. Epochs 3-4
+overfit rather than improve.
+
+![4-epoch probe: validation macro-F1 plateaus after epoch 2 while train loss keeps falling](../assets/projects/04-nlp-classification/epochs_probe.png){ width="100%" }
+
 Temperature
 scaling cuts test ECE 0.047 → 0.013 for free. The dominant confusion pair,
 Business → Sci/Tech (24/250 → 15/250 → 14/250 across the curve), is a
