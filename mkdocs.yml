@@ -6,6 +6,7 @@ repo_name: amm-ds/portfolio
 
 theme:
   name: material
+  custom_dir: docs/overrides
   palette:
     scheme: slate
     primary: teal
@@ -33,6 +34,13 @@ markdown_extensions:
 exclude_docs: |
   repository_setup_report_senior_data_scientist.md
   portfolio_audit_amm-ds.md
+
+extra:
+  seo:
+    title: "amm-ds — ML/AI Engineering Portfolio"
+    description: "End-to-end ML/AI systems — agentic AI, forecasting, optimization, serving — every claim reproducible."
+    card_url: https://amm-ds.github.io/portfolio/assets/social-card.png
+    page_url: https://amm-ds.github.io/portfolio/
 
 plugins:
   - search

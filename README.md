@@ -1,5 +1,7 @@
 # amm-ds / portfolio
 
+[![ci](https://github.com/amm-ds/portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/amm-ds/portfolio/actions/workflows/ci.yml)
+
 **Data Scientist & ML Engineer.**
 End-to-end systems from data engineering and classical ML to agentic AI: every
 project ships with its design record, reproducible pipeline, and evaluation
