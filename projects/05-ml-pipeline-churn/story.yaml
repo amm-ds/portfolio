@@ -245,6 +245,13 @@ sections:
       - Uncertainty has a number: paired bootstrap CIs turn "the model saves
         money" into "the model saves 416 cost units, 95% CI [343, 485], at alpha 0.05".
 
+      **Results quality:** the headline is strong — −41.9% decision cost
+      with a bootstrap CI that excludes zero, at ECE 0.016 after isotonic
+      calibration. The one weak spot is known and stated openly: two-year-
+      contract recall is 0.00 at FN=5 (45 missed churners in the holdout),
+      a business trade-off made explicit on the cost surface rather than a
+      silent defect.
+
       **Business implication:** the framework transfers to a client's CRM
       extract unchanged — same gates, same artifact contract, same cost
       curve — only the DatasetContract and the FP/FN costs change. Full
@@ -253,44 +260,36 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      Serving endpoint shipped — showcase-API artifact (reports/models/serving)
-      built without retraining: the isotonic-calibrated XGBoost champion plus
+      Real-data telco track is the default — IBM telco churn (7,043 rows,
+      sha256-pinned) behind the same DQ gates and DatasetContract as the CI
+      path; fairness slice report and cost-surface figure added; headline
+      −41.9% decision cost vs naive at a significant bootstrap CI.
+  - status: delivered
+    text: >-
+      Cost-aware Optuna HPO across four arms (logistic, HistGB, XGBoost,
+      LightGBM) — trials scored by CV business cost at per-trial
+      cost-optimal thresholds; picked XGBoost on telco (best CV cost 2,416)
+      vs a logistic on synthetic (1,220): the winner tracks the data; config
+      written back to params.yaml.
+  - status: delivered
+    text: >-
+      Calibration verdict on both tracks — on synthetic the cost optimum was
+      unchanged by isotonic (322 vs 283); on telco calibration improves both
+      ECE (0.028 → 0.016) and cost (619 → 601): per-regime, not universal,
+      and now measured rather than assumed.
+  - status: delivered
+    text: >-
+      Paired bootstrap CIs — 2,000-resample CI on the cost delta vs naive:
+      −416 [−485, −343] on telco (was −157 [−236, −86] on the synthetic CI
+      track), significant at 95 %.
+  - status: delivered
+    text: >-
+      Serving endpoint — showcase-API artifact (reports/models/serving)
+      built without retraining: the isotonic-calibrated XGBoost champion at
       its cost-optimal threshold t=0.175 (holdout cost 601 at FP=1/FN=5),
       re-derived from data/holdout.parquet; contract in SERVING.md.
-  - status: delivered
-    text: >-
-      Cost-aware HPO — shipped, verified: Optuna study on CV business cost with
-      per-trial threshold tuning changed the winner; the cost-HPO model holds the
-      holdout cost optimum (601 at t=0.175 after isotonic calibration; four arms raced).
-  - status: delivered
-    text: >-
-      CRM client onboarding — shipped, verified: `prepare --input client.csv`
-      ingests a client extract through the same DQ gates and DatasetContract
-      as the synthetic data.
-  - status: delivered
-    text: >-
-      Bootstrap CIs — shipped, verified: paired 2,000-resample CI on the cost
-      delta vs naive is −416 [−485, −343] on telco (was −157 [−236, −86] on the
-      synthetic CI track), significant at 95 %.
-  - status: delivered
-    text: >-
-      Calibration verdict — shipped, verified on BOTH tracks: on synthetic the
-      cost optimum was unchanged by isotonic (322 vs 283); on telco calibration
-      improves both ECE (0.028 → 0.016) and cost (619 → 601) - the verdict is
-      per-regime, not universal.
-  - status: delivered
-    text: >-
-      Gradient-boosted arms — shipped, verified across both tracks: on synthetic
-      the logistic won (best trial CV cost 1,220); on telco XGBoost won (2,416)
-      and holds the holdout optimum after isotonic calibration - the winner
-      tracks the data.
-  - status: delivered
-    text: >-
-      Real-data telco track — shipped, verified: IBM telco churn (7,043 rows,
-      sha256-pinned) is the default data_source behind the same DQ gates and
-      DatasetContract; fairness slice report and cost-surface figure added;
-      −41.9% cost vs naive at a significant CI.
   - status: remaining
     text: >-
-      Client-engagement onboarding — the path exists (`prepare --input`), but a
-      real client extract needs an engagement and a signed data agreement.
+      Client-engagement onboarding — the path exists (`prepare --input
+      client.csv` runs the same DQ gates and DatasetContract), but scoring
+      a real client extract needs an engagement and a signed data agreement.

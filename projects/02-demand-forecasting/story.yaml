@@ -140,9 +140,8 @@ sections:
       - `hgb` / `hgb_tuned` / `xgb_tuned` / `lgbm_tuned` — gradient boosting,
         HPO-tuned by seeded Optuna studies (56 trials for the sklearn HGB, 25
         each for the mirrors), objective = CV MAE over the same folds;
-        `hpo_history` and `hpo_importance` (per-arm `hpo_history_xgb` /
-        `hpo_history_lgbm`) show the search converging on regularised,
-        smaller-tree configs.
+        `hpo_history` and `hpo_importance` show the search converging on
+        regularised, smaller-tree configs.
       - `temporal_net` — a hand-written PyTorch model (series embeddings +
         MLP, own Adam, gradient clipping, early stopping).
 
@@ -155,7 +154,7 @@ sections:
       gamble — every candidate faces the same leakage-proof protocol, so the
       model that ships is the one that won on evidence, not the one that was
       newest.
-    figures: [hpo_history, hpo_importance, hpo_history_xgb, hpo_history_lgbm]
+    figures: [hpo_history, hpo_importance]
 
   - id: evaluation
     text_md: |
@@ -190,8 +189,7 @@ sections:
     text_md: |
       Headline numbers are the real UCI track (1,084 intermittent series, 4
       folds; MAE/MASE lead, MAPE is not decision-grade at 89% zeros).
-      `forecast_vs_actual` and the real-track `forecast_fan` show the
-      champion against the strongest naive:
+      `forecast_vs_actual` shows the champion against the strongest naive:
 
       | run | MAE | MASE |
       |---|---|---|
@@ -225,9 +223,8 @@ sections:
         (`hpo_history`).
       - **Reconciliation pays off on the real hierarchy** — w=0.70,
         incoherence 384.0 → 115.2 (×(1−w) exactly, property-tested), store
-        MAE 746.9 → 737.9 (`coherence_heatmap`, `reconciliation_coherence`);
-        synthetic chose w=0.05 — the fold-4-drifting parent is barely
-        trusted.
+        MAE 746.9 → 737.9; synthetic chose w=0.05 — the fold-4-drifting
+        parent is barely trusted.
       - **Probabilistic bands miss the target** — 80% coverage 0.73
         synthetic / 0.92 UCI, conformal degenerating to q80 = 0 on
         zero-heavy residuals (`probabilistic_band`).
@@ -237,61 +234,59 @@ sections:
       week" rule — less safety stock for the same service level — but
       re-tune on your own panel first: this winning config does not port
       across demand regimes.
-    figures: [metrics_bars, forecast_vs_actual, forecast_fan, coherence_heatmap, reconciliation_coherence, probabilistic_band]
+    figures: [metrics_bars, forecast_vs_actual, probabilistic_band]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 
   - id: conclusions
     text_md: |
       - **Global models with series identity work** — one deployable
-        artefact covers the whole hierarchy, with shared seasonality and
-        trend effects transferring across series.
+        artefact covers the hierarchy; shared seasonality and trend transfer
+        across series.
       - **Leakage-proof features and validation are the real product** —
         shift-only lags, calendar encodings, and an embargoed backtest with
         naive floors make every claim auditable.
       - **Seeded Optuna HPO is a repeatable production step** (`cli hpo`,
-        resumable storage) — but configs tuned on one demand regime do not
-        transfer to another; re-tune on the target panel before shipping.
+        resumable) — configs tuned on one demand regime do not transfer;
+        re-tune on the target panel before shipping.
       - **Reconciliation guarantees coherence, not accuracy** — the gain is
         bounded by how much the parent model can be trusted (w=0.05
         synthetic vs 0.70 on UCI).
 
-      Limits: gains over persistence are stable but bounded by
-      day-over-day noise (~8.5 units residual MAE on the synthetic ladder);
-      the neural model does not pay off on small tabular lag features; later
-      folds drift upward for every model, which the
-      `docs/runbooks/drift-response.md` runbook turns into a monitored
-      retraining trigger rather than a surprise. Full detail in `README.md`,
-      `DESIGN.md` and `reports/report.html`.
+      **Results quality:** the headline is acceptable-with-caveats — the
+      8.8% MAE gain over seasonal naive is real (the only MASE < 1 run), but
+      it is bounded by day-over-day noise, the 80% bands under-cover at 0.73
+      on synthetic, and the winning config does not transfer across demand
+      regimes. Each caveat is measured above, not suspected.
+
+      Limits: gains over persistence are stable but bounded (~8.5 units
+      residual MAE on the synthetic ladder); the neural model does not pay
+      off on small tabular lag features; later folds drift upward for every
+      model — the `docs/runbooks/drift-response.md` runbook turns that into
+      a monitored retraining trigger rather than a surprise. Full detail:
+      `README.md`, `DESIGN.md`, `reports/report.html`.
 
       **Business implication:** the value delivered is knowing precisely
-      which model wins, by how much, and where it stops winning — with
-      the forecast-vs-actual and fold-stability figures from the sections
-      above the two charts to show a client first, and a clean-clone
-      reproduction behind every number.
+      which model wins, by how much, and where it stops winning —
+      forecast-vs-actual and fold-stability are the two charts to show a
+      client first, and every number reproduces from a clean clone.
     figures: []
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
+    text: UCI Online Retail II is the primary headline — checksum-pinned fetch, 405k-row intermittent panel (89% zeros); hgb_tuned wins (MAE 8.99, MASE 0.980, the only run below 1.0) where ridge collapses (16.73) and ETS loses to its own seasonal naive (11.26 vs 9.86).
+  - status: delivered
+    text: Full 10-rung ladder on both tracks through the identical embargoed backtest — naive floors, seasonal naive, per-series ETS, ridge, HGB default + tuned, XGB / LGBM mirrors, temporal net; ETS wins synthetic outright (8.110), the NN trails the linear baseline — both reported.
+  - status: delivered
+    text: Seeded Optuna HPO — 56 trials on the sklearn HGB (25 each on the XGB / LGBM mirrors), objective = CV MAE over the same folds; −1.0% MAE over defaults (8.619 → 8.529), best configs persisted to data/hpo_best*.json and served without retraining.
+  - status: delivered
+    text: MinT-lite hierarchical reconciliation — data-chosen shrinkage w (0.05 synthetic / 0.70 UCI) with a property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI, ×(1−w) exactly); store MAE 746.9 → 737.9 on the real track.
+  - status: delivered
+    text: Probabilistic 80% bands shipped and stress-tested — quantile HGB p10/p50/p90 + split-conformal; empirical coverage 0.73 synthetic / 0.92 UCI against the 0.80 target, conformal degenerating to q80 = 0 on zero-heavy residuals — the miss that defines the open item below.
+  - status: delivered
     text: >-
-      Serving endpoint shipped — showcase-API artifact (reports/models/serving)
-      built without retraining: champion lgbm_tuned selected by lowest HPO CV
-      MAE (8.413 vs hgb 8.529 / xgb 8.539) from data/hpo_best*.json, loaded
-      fitted from data/models.pkl; contract in SERVING.md.
-  - status: delivered
-    text: XGBoost + LightGBM arms — 25-trial seeded HPO each through the identical backtest. On the synthetic ladder lgbm_tuned tops the ML runs (MAE 8.413 vs hgb_tuned 8.529; xgb_tuned a wash), ETS still best overall (8.110); on the primary UCI track hgb_tuned wins (8.99) and lgbm_tuned falls to 9.60.
-  - status: delivered
-    text: Optuna HPO (56 seeded trials) — production hgb_tuned config shipped, -1.0% MAE over defaults (8.619 → 8.529 on the synthetic folds), reproducible from data/hpo_best.json.
-  - status: delivered
-    text: UCI Online Retail II real-data track is now the primary headline — checksum-pinned fetch, 405k-row intermittent panel (89% zeros); hgb_tuned wins (MAE 8.99, MASE 0.980) where ridge collapses (16.73).
-  - status: delivered
-    text: Probabilistic forecasts shipped — quantile HGB p10/p50/p90 + split-conformal band, empirical coverage vs the 80% target (0.73 synthetic / 0.92 UCI) with the probabilistic_band figure.
-  - status: delivered
-    text: Hierarchical reconciliation (MinT-lite) shipped — data-chosen shrinkage w (0.05 synthetic, 0.70 UCI), property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI); accuracy effect reported alongside.
-  - status: delivered
-    text: Statistical baselines + MASE (audit-driven) — seasonal_naive (lag-7) and per-series damped Holt-Winters ETS with documented fallbacks on both tracks; MASE on every run; fan/coherence figures. ETS wins synthetic outright (8.110), loses to its own seasonal naive on UCI (11.26 vs 9.86) — both reported.
-  - status: deferred
-    text: Calibrated intervals for intermittent demand — per-series conformal / zero-inflated bands; engagement-dependent (global bands under-cover at 73% on synthetic and degenerate to q80 = 0 on real data).
-  - status: deferred
-    text: Returns-aware demand — model cancellations and returns as their own flow for net-demand forecasting; engagement-dependent (needs a net-vs-gross demand decision and returns labelling from the retailer).
-  - status: deferred
-    text: Full MinT covariance projection — parked until a deeper real hierarchy exists; the UCI track provides product depth once a category tree is built over stock codes.
+      Serving endpoint — showcase-API artifact (reports/models/serving)
+      built without retraining: champion lgbm_tuned selected by lowest HPO
+      CV MAE (8.413) from data/hpo_best*.json, loaded fitted from
+      data/models.pkl; contract in SERVING.md.
+  - status: remaining
+    text: Calibrated per-series intervals for intermittent demand — global bands under-cover (0.73 synthetic) and degenerate on real zeros; a forward engagement item once a client panel with a category tree exists (also unlocks full MinT covariance projection).

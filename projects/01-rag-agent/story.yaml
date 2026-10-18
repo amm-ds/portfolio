@@ -251,19 +251,16 @@ sections:
 
   - id: conclusions
     text_md: |
-      Limits first — the numbers above come with caveats a client
-      should hear before reuse:
+      Limits first — caveats a client should hear before reuse:
 
-      - **Judge noise is real at n=30** — RAGAS faithfulness moved
-        0.651→0.606 across runs; small deltas are directional, not
-        significant, and the wide CIs say so.
-      - **Repair quality at local-model scale is weak** — the loop's
-        measured levers are claim removal and abstention, not fluent
-        rewriting; a stronger provider judge may move faithfulness further.
+      - **Judge noise is real at n=30** — faithfulness moved 0.651→0.606
+        across runs; small deltas are directional; the wide CIs say so.
+      - **Repair quality at local-model scale is weak** — the levers are
+        claim removal and abstention, not fluent rewriting; a stronger
+        judge may help.
       - **The HPO grid is small and the corpus homogeneous** — BGE-small
         tying MiniLM is evidence about *this* scale, not a universal claim;
-        on noisier corpora the stronger encoder may pay off, and the same
-        harness will show it.
+        the same harness will show it on noisier corpora.
       - **Corpus coverage is bounded by the dump** — famous anchor titles
         verified absent from `20231101.en`, and per-topic quotas saturate
         with peripheral articles.
@@ -271,57 +268,58 @@ sections:
       Lessons that transfer:
 
       - **Typed outputs that fail loudly beat prompt promises.**
-      - **Evidence-only tool access makes grounding enforceable, not hopeful.**
-      - **A seeded random floor plus ablations in every sweep means "better"
-        is always quantified before spend.**
-      - **Verify before you trust** — claim-level entailment checking turned
-        "the answers look grounded" into a measured 18→14 unsupported-claim
-        delta.
+      - **Evidence-only tool access makes grounding enforceable.**
+      - **A seeded random floor quantifies "better" before spend.**
+      - **Verify before you trust** — entailment checking turned "looks
+        grounded" into a measured 18→14 delta.
 
-      Everything ships as working code with `reports/metrics.json`,
-      `reports/question_traces.json` and the rendered `reports/report.html`;
-      rationale in `DESIGN.md`, reproduction steps in `README.md`.
+      **Results quality:** retrieval is strong (recall@5 0.831 vs 0.031
+      random — the headline holds up). Generation grounding is
+      acceptable-with-caveats — hosted faithfulness 0.685 [0.605, 0.760] is
+      real, but judge noise at n=30 makes small deltas directional and the
+      verify loop repairs by removal and abstention, not rewriting. Weak
+      spots are known and measured, not hidden.
+
+      Everything ships as working code — `reports/metrics.json`,
+      `reports/question_traces.json`, `reports/report.html`; see `DESIGN.md`
+      and `README.md`.
 
       **Business implication:** the same discipline ports to a client dataset
-      in days, not months — bounded scope, measured baselines, and a plain
-      list of what we do not yet know, delivered as working code.
+      in days — bounded scope, measured baselines, and a plain list of
+      unknowns, delivered as working code.
 
 roadmap:
   - status: delivered
     text: >-
-      Provider fallback chain — shipped, verified: one code path, env-configured
+      Provider fallback chain (ADR-0004) — one code path, env-configured
       OpenAI-compatible endpoint first, local Ollama second (default
       qwen3.6:35b-a3b-q4_K_M); loud LLMProviderUnavailableError plus a
-      retrieval-only --offline CI path; no runtime mock (ADR-0004).
+      retrieval-only --offline CI path; no runtime mock.
   - status: delivered
     text: >-
-      Client-corpus onboarding — shipped, verified: prepare-corpus --source
-      client runs the full pipeline (chunk, embed, index, evaluate) on client
-      documents with a license flag.
+      Client-corpus onboarding — prepare-corpus --source client runs the full
+      pipeline (chunk, embed, index, evaluate) on client documents with a
+      license flag.
   - status: delivered
     text: >-
-      Cost telemetry — shipped, verified: per-query token usage and wall time
-      in reports/cost_telemetry.json; wave 15 adds per-phase metering
-      (agent/judge/verify/ragas) with a hard USD cap per run — the hosted
-      65-q pass metered $3.58 (79.6% of input tokens cache reads); local
-      stays $0 API.
+      Cost telemetry with a hard USD cap — per-phase metering (agent / judge /
+      verify / RAGAS): the hosted 65-q pass metered $3.58 cloud-equivalent
+      (79.6% of input tokens prompt-cache reads); the cap tripped a first
+      pass at $3.04 and stopped it cleanly; local stays $0 API.
   - status: delivered
     text: >-
-      LLM rubric judge + RAGAS on the 65-question golden set — shipped,
-      verified: provider-model verdicts by default with per-verdict keyword
-      fallback (CI floor 0.44 [0.29, 0.61] on faithfulness); the full RAGAS
-      set scored by the local model at $0 API cost.
+      LLM rubric judge + RAGAS on the 65-question golden set — provider-model
+      verdicts by default with per-verdict keyword fallback (CI floor 0.44
+      [0.29, 0.61] on faithfulness); the full RAGAS set scored by the local
+      model at $0 API cost.
   - status: delivered
     text: >-
-      Verify-then-answer loop — shipped, verified A/B on the 30-question
-      subset: unsupported claims 18→14, correct answers 12→15, at 33 repair
-      calls (max 2/answer, min_support 0.6); RAGAS faithfulness 0.651→0.606
-      is within judge noise — on by default.
+      Verify-then-answer loop — A/B on the 30-question subset: unsupported
+      claims 18→14, correct answers 12→15, at 33 repair calls (max 2/answer,
+      min_support 0.6); faithfulness 0.651→0.606 sits inside judge noise —
+      on by default.
   - status: deferred
     text: >-
-      Interactive deployment demo — deferred: /rag/chat API endpoints are live
-      and tested; the demo-experience wiring is engagement-dependent.
-  - status: deferred
-    text: >-
-      Live-mode telemetry accumulation — deferred: needs provider credentials
-      and a real bill to validate the cost model against.
+      Interactive deployment demo — /rag/chat API endpoints are live and
+      tested; demo-experience wiring and live-mode cost-model validation need
+      provider credentials and a real engagement to run against.

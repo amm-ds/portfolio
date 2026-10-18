@@ -13,23 +13,13 @@ roadmap:
     text: >-
       Quality-vs-quantization check (Q8_0 vs QAT-int4 on one runner) with a
       cost-per-1M-token section built on declared electricity assumptions.
-  - status: remaining
-    text: >-
-      Second serving stack comparison (vLLM or raw llama.cpp server) — tests
-      whether the bandwidth-bound findings are Ollama-specific or hold across
-      serving stacks.
-  - status: remaining
-    text: >-
-      Repeat runs with intervals on the same hardware to quantify run-to-run
-      variance; current numbers are a single author run, not a distribution.
-  - status: remaining
-    text: >-
-      Concurrency > 8 sweep to find where the p95-vs-concurrency slope bends
-      past the interactive SLO on bandwidth-bound unified memory.
   - status: deferred
     text: >-
-      KV-cache quantization (q8 KV) — the runner does not expose it on this
-      Ollama build; would need a raw llama.cpp server to measure.
+      Measurement hardening — engagement-dependent: a second serving
+      stack (vLLM or raw llama.cpp server), repeated runs for run-to-run
+      variance (current numbers are a single author run), a concurrency
+      >8 sweep, and KV-cache quantization (not exposed on this Ollama
+      build).
 sections:
   - id: background
     text_md: |
@@ -215,6 +205,12 @@ sections:
       - **Bounded structured tasks make models comparable:** schema-valid
         rate collapses "it usually works" into a number, and per-model
         reasoning-effort defaults are a serving concern, not a modeling one.
+
+      **Results quality: acceptable with caveats.** The cells are internally
+      consistent — 0 failures, quality 1.00 everywhere — but this is one
+      author run on one machine; a practitioner re-runs `bench --full` on
+      their own hardware and treats these numbers as a worked example, not
+      a guarantee.
 
       **Business implication:** the framework transfers to a client decision
       unchanged — same task, same protocol, same declared-assumption labels —
