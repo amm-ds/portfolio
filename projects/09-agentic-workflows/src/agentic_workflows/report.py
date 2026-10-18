@@ -2,7 +2,7 @@
 
 The offline half of the evaluate stage: per-grader averages, the trajectory
 decomposition behind ``detail.tooling``, and the report builder that writes
-``reports/metrics.json`` (+ ``detail``), the five figures (via
+``reports/metrics.json`` (+ ``detail``), the four figures (via
 :mod:`agentic_workflows.figures`), and ``report.html``.
 """
 

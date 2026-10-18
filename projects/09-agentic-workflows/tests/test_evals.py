@@ -87,6 +87,13 @@ class TestGraders:
         assert evals.LatencyBudget().evaluate(_ctx(task, _record(task.id, duration=10.0))) is True
         assert evals.LatencyBudget().evaluate(_ctx(task, _record(task.id, duration=999.0))) is False
 
+    def test_latency_budget_default_is_60s(self) -> None:
+        """The suite config pins an honest 60 s ceiling (durations 11.5-31.6 s)."""
+        task = evals.TASK_SUITE[0]
+        assert task.latency_budget_s == 60.0
+        assert evals.LatencyBudget().evaluate(_ctx(task, _record(task.id, duration=60.0))) is True
+        assert evals.LatencyBudget().evaluate(_ctx(task, _record(task.id, duration=60.1))) is False
+
 
 class TestSuiteIntegrity:
     def test_unique_ids_and_categories(self) -> None:
@@ -158,15 +165,15 @@ class TestOfflineEvaluation:
         assert "tooling" in metrics["detail"]
         assert (config.reports_dir / "report.html").exists()
         for name in (
-            "per_task_grading",
+            "suite_summary",
             "cost_latency_bars",
             "tool_usage_matrix",
             "node_waterfall",
-            "agent_architecture",
         ):
             assert (config.reports_dir / "figures" / f"{name}.html").exists()
             assert (config.reports_dir / "figures" / f"{name}.json").exists()
-        assert not (config.reports_dir / "figures" / "category_success.json").exists()
+        for dropped in ("per_task_grading", "agent_architecture", "category_success"):
+            assert not (config.reports_dir / "figures" / f"{dropped}.json").exists()
 
     def test_records_round_trip(self, tmp_path: Path) -> None:
         records = [_record(task.id) for task in evals.TASK_SUITE[:3]]

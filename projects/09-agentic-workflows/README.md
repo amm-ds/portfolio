@@ -19,7 +19,7 @@
 | `workflow.py` | pydantic-graph `Plan → Execute → Critique → End` workflow with typed state, a bounded repair path on validation failure, a one-shot critique loop-back (now auditing tools used against the plan), per-node step traces, and hosted/local model presets |
 | `hitl.py` | Human-in-the-loop checkpoint: plan, pause with a typed `ApprovalRequest`, serialize to `data/checkpoint.json`, resume via CLI (approve / reject-with-feedback) |
 | `evals.py` | 15-task tuning suite + 10-task held-out set (3 designed-to-fail refusal probes) with exact ground truths, `pydantic-evals` graders (answer success, tool selection, step budget, latency budget, refusal success), spend-ledger budget wiring, per-call tool-trace capture |
-| `figures.py` / `report.py` | The five story figure builders and the report/metrics assembly (`reports/metrics.json` + `detail.tooling` + `detail.heldout`, HTML report) — split out of `evals.py` (audit P1), re-exported for import stability |
+| `figures.py` / `report.py` | The four story figure builders and the report/metrics assembly (`reports/metrics.json` + `detail.tooling` + `detail.heldout`, HTML report) — split out of `evals.py` (audit P1), re-exported for import stability |
 | `cli.py` | `prepare [--heldout]` / `run` / `run-all [--heldout]` / `evaluate [--heldout]` / `checkpoint request|approve|reject` |
 
 ## Results
@@ -84,12 +84,12 @@ conversion docstrings now forbid invented factors. Details in
 `metrics.json detail.heldout`.
 
 Figures (in `reports/figures/`, `.html` + `.json` per figure):
-`per_task_grading` (answers vs exact-set tool selection),
-`tool_usage_matrix` (captured calls per task × tool), `node_waterfall`
-(latency stacked per graph visit), `cost_latency_bars` (tokens, cost,
-latency per task), `agent_architecture` (the graph itself: nodes, retry
-bound, revise loop, HITL lane). Every record's `tool_calls` trace shows
-each tool invocation with args, latency, result size, and success.
+`suite_summary` (outcomes by split: tuning × 4 graders, held-out answers,
+should-fail probes), `tool_usage_matrix` (captured calls per task × tool),
+`node_waterfall` (latency stacked per graph visit), `cost_latency_bars`
+(tokens, cost, latency per task). The workflow graph itself is a mermaid
+diagram in `story.yaml` and the docs page. Every record's `tool_calls` trace
+shows each tool invocation with args, latency, result size, and success.
 
 ## Cost
 
