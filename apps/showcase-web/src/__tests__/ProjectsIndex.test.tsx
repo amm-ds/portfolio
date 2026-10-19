@@ -3,7 +3,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Project } from "../api";
-import { ProjectsIndex, groupByTopic, groupByUmbrella } from "../pages/ProjectsIndex";
+import { ProjectsIndex, groupByTopic, groupByRow, TOPIC_ROWS } from "../pages/ProjectsIndex";
 
 const stylesCss = readFileSync("src/styles.css", "utf8");
 
@@ -28,7 +28,7 @@ function project(over: Partial<Project>): Project {
   };
 }
 
-/** The seven real projects with their manifest topics/orders. */
+/** The seven real projects with their manifest topics/orders (07 now "Data Engineering"). */
 const ALL_PROJECTS: Project[] = [
   project({ id: "01-rag-agent", topic: "Agentic AI & LLM", order: 1 }),
   project({ id: "02-demand-forecasting", title: "Demand Forecasting", topic: "Forecasting & Time Series", order: 2 }),
@@ -36,7 +36,7 @@ const ALL_PROJECTS: Project[] = [
   project({ id: "04-nlp-classification", title: "NLP Classification", topic: "NLP & Transformers", order: 4 }),
   project({ id: "05-ml-pipeline-churn", title: "Churn", topic: "ML Systems & Decisioning", order: 5 }),
   project({ id: "06-routing-optimization", title: "Routing", topic: "Optimization", order: 6 }),
-  project({ id: "07-open-data-mobility", title: "Mobility", topic: "Large-Scale Data Engineering", order: 7 }),
+  project({ id: "07-open-data-mobility", title: "Mobility", topic: "Data Engineering", order: 7 }),
 ];
 
 afterEach(() => {
@@ -44,86 +44,102 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("groupByUmbrella", () => {
-  it("nests topics under umbrellas in display order (AI, ML, Data Engineering)", () => {
-    const umbrellas = groupByUmbrella(ALL_PROJECTS);
-    expect(umbrellas.map((u) => u.name)).toEqual(["AI", "Machine Learning", "Data Engineering"]);
-    expect(umbrellas[0].topics.map((t) => t.topic)).toEqual([
+describe("groupByRow", () => {
+  it("nests topics under impact-ordered rows (Agentic AI & LLM … Data Engineering)", () => {
+    const rows = groupByRow(ALL_PROJECTS);
+    expect(rows.map((r) => r.name)).toEqual([
       "Agentic AI & LLM",
-      "NLP & Transformers",
+      "Machine Learning",
+      "Optimization",
+      "Data Engineering",
     ]);
-    expect(umbrellas[1].topics.map((t) => t.topic)).toEqual([
+    expect(rows[0].topics.map((t) => t.topic)).toEqual(["Agentic AI & LLM"]);
+    expect(rows[1].topics.map((t) => t.topic)).toEqual([
       "Forecasting & Time Series",
       "Anomaly Detection",
+      "NLP & Transformers",
       "ML Systems & Decisioning",
-      "Optimization",
-    ]);
-    expect(umbrellas[2].topics.map((t) => t.topic)).toEqual([
-      "Large-Scale Data Engineering",
     ]);
     // every project is placed exactly once
-    expect(umbrellas.flatMap((u) => u.topics.flatMap((t) => t.projects))).toHaveLength(7);
+    expect(rows.flatMap((r) => r.topics.flatMap((t) => t.projects))).toHaveLength(7);
   });
 
-  it("drops umbrellas with no projects and orders topics by earliest project", () => {
+  it("places 07 under the Data Engineering row", () => {
+    const rows = groupByRow(ALL_PROJECTS);
+    const de = rows.find((r) => r.name === "Data Engineering")!;
+    expect(de.topics.flatMap((t) => t.projects).map((p) => p.id)).toEqual([
+      "07-open-data-mobility",
+    ]);
+  });
+
+  it("drops empty rows and maps unmapped topics to their own trailing row", () => {
     const partial = ALL_PROJECTS.filter((p) =>
       ["06-routing-optimization", "01-rag-agent"].includes(p.id),
     );
-    const umbrellas = groupByUmbrella(partial);
-    expect(umbrellas.map((u) => u.name)).toEqual(["AI", "Machine Learning"]);
-    expect(umbrellas[1].topics.map((t) => t.topic)).toEqual(["Optimization"]);
+    const rows = groupByRow(partial);
+    expect(rows.map((r) => r.name)).toEqual(["Agentic AI & LLM", "Optimization"]);
+
+    const withUnknown = [...partial, project({ id: "99-x", topic: "Something New", order: 9 })];
+    const rows2 = groupByRow(withUnknown);
+    expect(rows2[rows2.length - 1].name).toBe("Something New");
   });
 
   it("groupByTopic stays available and unchanged", () => {
     const topics = groupByTopic([ALL_PROJECTS[6], ALL_PROJECTS[0]]);
-    expect(topics.map((t) => t.topic)).toEqual(["Agentic AI & LLM", "Large-Scale Data Engineering"]);
+    expect(topics.map((t) => t.topic)).toEqual(["Agentic AI & LLM", "Data Engineering"]);
+  });
+
+  it("TOPIC_ROWS lists every topic used by the ten portfolio.yaml manifests", () => {
+    const mapped = new Set(TOPIC_ROWS.flatMap((r) => r.topics));
+    for (const topic of [
+      "Agentic AI & LLM",
+      "Forecasting & Time Series",
+      "Anomaly Detection",
+      "NLP & Transformers",
+      "ML Systems & Decisioning",
+      "Optimization",
+      "Decision Science",
+      "Data Engineering",
+    ]) {
+      expect(mapped.has(topic)).toBe(true);
+    }
   });
 });
 
 describe("ProjectsIndex", () => {
-  it("places cards under the right umbrella/topic and keeps topic subheadings only for multi-topic umbrellas", async () => {
+  it("renders the Experiments heading and places cards under the right topic rows", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByText("AI")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("experiments"),
+    );
     expect(screen.getByText("Machine Learning")).toBeInTheDocument();
-    expect(screen.getByText("Data Engineering")).toBeInTheDocument();
+    // row heading plus 07's sub-topic chip both carry the name
+    expect(screen.getAllByText("Data Engineering").length).toBeGreaterThan(0);
 
-    // AI has 2 topics → topic subheadings
-    expect(screen.getByText("Agentic AI & LLM")).toBeInTheDocument();
-    expect(screen.getByText("NLP & Transformers")).toBeInTheDocument();
-    // ML has 4 topics → subheadings
-    expect(screen.getByText("Optimization")).toBeInTheDocument();
-    // Data Engineering has 1 topic → no topic subheading
-    expect(screen.queryByText("Large-Scale Data Engineering")).toBeNull();
-
-    // card-per-topic placement: 01 under AI, 06 under ML/Optimization, 07 under Data Engineering
     const cardOf = (title: string) =>
-      [...document.querySelectorAll(".project-card")].find((c) =>
-        c.querySelector("h3")?.textContent === title,
+      [...document.querySelectorAll(".project-card")].find(
+        (c) => c.querySelector("h3")?.textContent === title,
       )!;
-    const sectionOf = (el: Element, cls: string): Element | null => {
+    const rowOf = (el: Element): Element => {
       let cur: Element | null = el;
-      while (cur && !cur.classList.contains(cls)) cur = cur.parentElement;
-      return cur;
+      while (cur && !cur.classList.contains("topic-row")) cur = cur.parentElement;
+      return cur!;
     };
-    const routing = cardOf("Routing");
-    const mlSection = sectionOf(routing, "umbrella")!;
-    expect(mlSection.querySelector("h2")!.textContent).toBe("Machine Learning");
-    expect(sectionOf(routing, "topic-group")!.querySelector("h3")!.textContent).toBe("Optimization");
-
-    const rag = cardOf("RAG Agent");
-    expect(sectionOf(rag, "umbrella")!.querySelector("h2")!.textContent).toBe("AI");
-
-    const mobility = cardOf("Mobility");
-    const deGroup = sectionOf(mobility, "topic-group")!;
-    expect(deGroup.querySelector(":scope > h3")).toBeNull(); // single-topic umbrella: no subheading
+    // 07 must sit under Data Engineering, 06 under Optimization, 01+04 under their rows
+    expect(rowOf(cardOf("Mobility")).querySelector("h2")!.textContent).toBe("Data Engineering");
+    expect(rowOf(cardOf("Routing")).querySelector("h2")!.textContent).toBe("Optimization");
+    expect(rowOf(cardOf("RAG Agent")).querySelector("h2")!.textContent).toBe("Agentic AI & LLM");
+    expect(rowOf(cardOf("NLP Classification")).querySelector("h2")!.textContent).toBe(
+      "Machine Learning",
+    );
   });
 
-  it("renders every topic's cards inside the responsive project-grid", async () => {
+  it("renders every row's cards inside a responsive 2-column project-grid", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
     render(
       <MemoryRouter>
@@ -131,36 +147,70 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(7));
-    const grids = document.querySelectorAll(".project-grid");
-    expect(grids).toHaveLength(7); // one grid per topic group
+    const grids = document.querySelectorAll(".topic-row .project-grid");
+    expect(grids).toHaveLength(4); // one grid per non-empty row (Decision Science has no fixture project)
     grids.forEach((g) => expect(g.querySelectorAll(".project-card").length).toBeGreaterThan(0));
-    // no status badges
-    expect(document.querySelector(".badge")).toBeNull();
   });
 
-  it("ships responsive layouts: umbrellas side-by-side, stacked cards within", () => {
-    expect(stylesCss).toContain("grid-template-columns: 1fr;");
+  it("ships a 1-column grid on mobile and 2 columns from 720px up", () => {
     expect(stylesCss).toContain("@media (min-width: 720px)");
     expect(stylesCss).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
-    expect(stylesCss).toContain("@media (min-width: 1100px)");
-    expect(stylesCss).toContain("grid-template-columns: repeat(3, minmax(0, 1fr));");
     expect(stylesCss).toContain("align-items: stretch;");
-    // umbrella columns sit side by side and force stacked cards inside
-    expect(stylesCss).toContain(".umbrellas {");
-    expect(stylesCss).toContain(".umbrella .project-grid {\n  grid-template-columns: 1fr;\n}");
+    // project cards top out at 2 columns; no 3-column project-grid rule remains
+    const projectGridRules = [...stylesCss.matchAll(/\.project-grid\s*\{[^}]*\}/g)].map((m) => m[0]);
+    expect(projectGridRules.join("\n")).not.toContain("repeat(3");
+    expect(projectGridRules.join("\n")).toContain("grid-template-columns: 1fr;");
+    // rows are full-width sections; cards never straddle them
+    expect(stylesCss).toContain(".topic-row {");
   });
 
-  it("renders the umbrellas container with one column per umbrella", async () => {
+  it("renders a demos placeholder above the topic rows with coming-soon cards", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByText("AI")).toBeInTheDocument());
-    const umbrellas = document.querySelector(".umbrellas")!;
-    expect(umbrellas).not.toBeNull();
-    expect(umbrellas.querySelectorAll(":scope > .umbrella")).toHaveLength(3);
+    await waitFor(() => expect(screen.getByText("Machine Learning")).toBeInTheDocument());
+    expect(screen.getByText("Demos — interactive experiments")).toBeInTheDocument();
+    expect(screen.getByText("play with the live systems behind the experiments")).toBeInTheDocument();
+    const demos = document.querySelector(".demos")!;
+    expect(demos).not.toBeNull();
+    const demoCards = demos.querySelectorAll(".demo-card");
+    expect(demoCards).toHaveLength(3);
+    demoCards.forEach((c) => expect(c.textContent).toContain("coming soon"));
+    expect(demos.textContent).toContain("RAG ask-a-question");
+    expect(demos.textContent).toContain("churn threshold sandbox");
+    expect(demos.textContent).toContain("uplift policy simulator");
+    // demos section renders before the first topic row
+    const demosSection = document.querySelector("section.demos")!;
+    const firstRow = document.querySelector(".topic-row")!;
+    expect(
+      demosSection.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("renders a what-it-achieves summary plus sub-topic, dataset, and status chips on each card", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(document.querySelectorAll(".project-card .summary")).toHaveLength(7));
+    const cardOf = (title: string) =>
+      [...document.querySelectorAll(".project-card")].find(
+        (c) => c.querySelector("h3")?.textContent === title,
+      )!;
+    const rag = cardOf("RAG Agent");
+    expect(rag.querySelector(".summary")!.textContent).toContain("retrieval-augmented agent");
+    // sub-topic chip, dataset tag, status chip
+    expect(rag.textContent).toContain("Agentic AI & LLM");
+    expect(rag.textContent).toContain("data: docs");
+    expect(rag.querySelector(".chip-status")!.textContent).toBe("flagship");
+    const mobility = cardOf("Mobility");
+    expect(mobility.querySelector(".chip-status")!.textContent).toBe("flagship");
+    expect(mobility.textContent).toContain("Data Engineering");
   });
 
   it("renders a live key number from metrics (first non-baseline run)", async () => {

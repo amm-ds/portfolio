@@ -11,7 +11,7 @@ export function Nav() {
           <NavLink to="/" end>
             Home
           </NavLink>
-          <NavLink to="/projects">Projects</NavLink>
+          <NavLink to="/projects">Experiments</NavLink>
           <NavLink to="/services">Services</NavLink>
           <NavLink to="/contact">Contact</NavLink>
           <a
