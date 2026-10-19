@@ -229,24 +229,17 @@ sections:
     metrics_keys: [distilbert_full_120k]
 roadmap:
   - status: delivered
-    text: >-
-      Full 120k fine-tune — the headline: DistilBERT on Apple-Silicon MPS
-      reached 0.9460 test macro-F1 (val 0.9433 → 0.9464, ~18–27
-      min/epoch); earlier rungs 0.9021 (bounded) → 0.9270 (20k) are
-      historical evidence on the same test split.
+    text: Full 120k fine-tune — 0.9460 test macro-F1 (val 0.9433→0.9464), ~18–27 min/epoch on Apple-Silicon MPS.
   - status: delivered
-    text: >-
-      Multi-seed HPO reported as a null result: best val macro-F1 0.8953 /
-      0.8852 / 0.8926 (mean 0.8910 ± 0.0042); the gain over defaults
-      (0.8880) sits inside seed noise and did not transfer to test — the
-      audit rule kept the original artifact as `distilbert_tuned`.
+    text: Multi-seed HPO null result — 0.8953/0.8852/0.8926 (mean 0.8910±0.0042), inside seed noise; artifact kept.
   - status: delivered
-    text: >-
-      Temperature scaling — T = 0.843 fitted on validation cuts test ECE
-      from 0.0467 to 0.0133 (−71 %) with zero change to predictions — a
-      free reliability upgrade for confidence-thresholded routing.
+    text: Temperature scaling — T=0.843 on validation cuts test ECE 0.0467→0.0133 (−71%) with zero change to predictions.
   - status: delivered
-    text: >-
-      20k evidence rung of the scaling ladder — 0.9270 test macro-F1 (+2.5 pp
-      over the bounded 0.9021) on CPU via the full-data path; superseded by
-      the full-120k 0.9460 headline.
+    text: 20k scaling rung — 0.9270 test macro-F1 (+2.5 pp over bounded 0.9021); superseded by the full-120k headline.
+figure_captions:
+  eda_class_balance: The bounded subsample mirrors the source corpus exactly — every split is uniformly 25% World / Sports / Business / Sci/Tech (left), and train texts cluster at 20–50 words (right). No run can win by class prior, and the 128-token cap truncates almost nothing.
+  training_curve: Train/validation loss and validation macro-F1 per epoch for the full-120k headline run. Val macro-F1 plateaus within two epochs while train loss keeps falling — extra epochs overfit, not improve.
+  epochs_probe: "The 4-epoch probe of the full-120k run (seed 42, early stopping disabled): train loss falls while val macro-F1 peaks at 0.9477 in epoch 3 (+0.0003 over epoch 2, −0.0003 by epoch 4). The measured gain does not materialize — a plateau, not progress."
+  hpo_history: Validation macro-F1 of every trial in the seeded 12-trial Optuna study, with the running best overlaid. Best val 0.8953 — but the gain over defaults sits inside seed noise and did not transfer to test.
+  confusion_matrix_selected: Confusion matrix of the selected model on the untouched 1,000-row stratified test split. Business → Sci/Tech stays the dominant off-diagonal pair — hybrid tech-business headlines, a labeling-ambiguity floor that more data shrinks in frequency but does not remove.
+  per_class_f1_comparison: Per-class F1 of the selected model against the TF-IDF baseline on the bounded test split. The encoder lead is broad, and the residual gap concentrates in Business/Sci-Tech — the same labeling-ambiguity floor the confusion matrix shows.

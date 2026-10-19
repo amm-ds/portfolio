@@ -1,7 +1,9 @@
 """Plotly figure builders for the evaluation report.
 
-Every figure is themed via ``portfolio_core.plotting`` and carries a one-line
-takeaway where the insight is not obvious. Builders are pure: they take
+Every figure is themed via ``portfolio_core.plotting`` and carries a
+descriptive second title line (what is plotted, units, sample/scope) — the
+conclusion lives in the story's ``figure_captions``, not in the chart.
+Builders are pure: they take
 measurements (from :mod:`rag_agent.reporting`) and return ``go.Figure`` objects;
 writing to disk happens in :mod:`rag_agent.reporting`.
 """
@@ -174,7 +176,7 @@ def sweep_figure(
             )
     fig.update_layout(
         barmode="group",
-        title="Chunk size, not model size, sets retrieval recall",
+        title="Retrieval recall vs chunk size",
         xaxis={
             "type": "category",
             "categoryorder": "array",
@@ -214,8 +216,8 @@ def sweep_figure(
     fig = _finish_themed(
         fig,
         takeaway=(
-            "200-token chunks hold full recall@5 at 65% lower context cost — "
-            "smaller chunks rank sharper (MRR); every bar clears both floors."
+            "recall@5, recall@10, MRR@5 — 65 golden questions; "
+            "seeded random + lexical (word-match) floors dashed"
         ),
     )
     # Exceptional margins: the caption annotation sits ABOVE the two-line
@@ -256,13 +258,14 @@ def model_comparison_figure(model_scores: dict[str, RetrievalScores], best_slug:
     )
     style_runs(fig, best=best_slug)
     fig.update_layout(
-        title="MiniLM and BGE-small tie at recall@5 0.831",
+        title="Retrieval metrics by encoder",
         yaxis_title="score",
     )
     return _finish_themed(
         fig,
         takeaway=(
-            "the cheaper encoder wins — both saturate recall@5; ranking sharpness (MRR) decides."
+            "recall@5 / recall@10 / MRR@5 per encoder — 65 golden questions; "
+            "best run accent, chance-style floors grey"
         ),
     )
 
@@ -298,15 +301,15 @@ def hpo_frontier_figure(
         )
     )
     fig.update_layout(
-        title="Retrieval HPO finds the quality-cost knee",
+        title="Retrieval recall@k vs estimated input tokens",
         xaxis_title="estimated input tokens per query",
         yaxis_title="recall@k",
     )
     return _finish_themed(
         fig,
         takeaway=(
-            f"recall {chosen_y:.3f} at ≈{chosen_x:.0f} input tokens/query — "
-            f"chosen: {chosen.embedding_slug}, chunks={chosen.chunk_size}, "
+            f"one curve per chunk size across top_k — ★ chosen config: "
+            f"{chosen.embedding_slug}, chunks={chosen.chunk_size}, "
             f"top_k={chosen.top_k}, rerank={'on' if chosen.rerank else 'off'}."
         ),
     )
@@ -334,14 +337,13 @@ def retrieval_funnel_figure(
             textinfo="value+percent initial",
         )
     )
-    fig.update_layout(
-        title=(f"{relevant}/{n} questions keep a relevant article ({relevant / max(n, 1):.0%})")
-    )
+    fig.update_layout(title="Retrieval funnel: candidates → reranked → relevant")
     return _finish_themed(
         fig,
         takeaway=(
-            f"reranking funnels {n * n_candidates} embedding hits down to "
-            f"{chosen.top_k} citations per question"
+            f"aggregate over {n} questions at the chosen config — "
+            f"top-{n_candidates} embedding candidates → top-{chosen.top_k} after rerank "
+            f"→ {relevant} with a relevant article"
         ),
         showlegend=False,  # single unnamed trace → no "trace 0" chip
     ).update_layout(margin={"l": 240})  # long funnel stage labels need left room
@@ -363,13 +365,14 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
     fig.add_trace(go.Bar(x=topics, y=counts, name="articles"), row=1, col=1)
     fig.add_trace(go.Histogram(x=lengths, nbinsx=40, name="article length"), row=1, col=2)
     fig.update_layout(
-        title="Five topics stay near-balanced",
+        title="Corpus composition",
         showlegend=False,
     )
     return _finish_themed(
         fig,
         takeaway=(
-            f"({len(articles)} articles total); the long article tail is capped at 12k chars"
+            f"articles per topic (left) + word-count distribution (right) — "
+            f"{len(articles)} articles, tail capped at 12k chars"
         ),
     )
 
@@ -390,15 +393,15 @@ def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
         ]
     )
     fig.update_layout(
-        title="Verify-then-answer cuts unsupported claims",
+        title="Answer verdicts by category",
         xaxis_title="verdict",
         yaxis_title="questions",
     )
     return _finish_themed(
         fig,
         takeaway=(
-            f"from 60% to 47% of answers — {counts['correct']}/{len(traces)} "
-            "questions fully correct."
+            f"counts per deterministic verdict class — hosted run, {len(traces)} "
+            "questions (correct / retrieval-miss / unsupported-claim / format-failure)"
         ),
         showlegend=False,  # single unnamed trace → no "trace 0" chip
     )
@@ -409,13 +412,13 @@ def latency_figure(latencies_s: list[float]) -> go.Figure:
     p50 = float(np.percentile(latencies_s, 50))
     p95 = float(np.percentile(latencies_s, 95))
     fig.update_layout(
-        title=f"Answers land at p50 {p50:.0f} s",
+        title="Answer latency distribution",
         xaxis_title="latency (s)",
         yaxis_title="queries",
     )
     return _finish_themed(
         fig,
-        takeaway=f"the p95 {p95:.0f} s tail is one runaway tool loop",
+        takeaway=f"per-query latency, hosted 65-question run — p50 {p50:.0f} s, p95 {p95:.0f} s",
         showlegend=False,  # single unnamed trace
     )
 

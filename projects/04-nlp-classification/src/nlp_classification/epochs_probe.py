@@ -108,7 +108,7 @@ def epochs_probe_figure(history: TrainingHistory) -> go.Figure:
     fig.add_scatter(x=epochs, y=losses, name="train loss")
     fig.add_scatter(x=epochs, y=f1s, name="val macro-F1", yaxis="y2")
     fig.update_layout(
-        title="Val macro-F1 plateaus while train loss keeps falling",
+        title="Epoch-budget probe — 4 epochs, full 120k",
         xaxis_title="epoch",
         yaxis_title="train loss",
         yaxis2={"title": "val macro-F1", "overlaying": "y", "side": "right"},
@@ -142,7 +142,8 @@ def epochs_probe_figure(history: TrainingHistory) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"4-epoch probe (full 120k, seed 42) — plateau at ~{max(f1s):.4f}",
+        "train loss (left y) vs val macro-F1 (right y) per epoch — shipped "
+        f"2-epoch run annotated; probe at seed 42, peak val {max(f1s):.4f}",
     )
     # Deliberate legend exception: the overlaid y2 axis puts its tick labels in
     # the right margin, so the standard right-vertical legend collides with

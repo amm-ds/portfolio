@@ -256,10 +256,20 @@ sections:
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
 roadmap:
   - status: delivered
-    text: NAB real-data primary track — 12 checksum-pinned series with event-based metrics; headline PR-AUC 0.527 / range-F1 0.157 (16/17 events found at 0.107 range precision, 1,609 alerts) versus synthetic 0.916 — the synthetic-to-real drop is itself the headline evidence.
+    text: NAB real-data track — 12 series, event metrics; PR-AUC 0.527 / range-F1 0.157 (16/17 events, 0.107 precision).
   - status: delivered
-    text: Adaptive-threshold streaming — drift-aware simulation on synthetic (zero false recalibrations) and NAB (31/120 chunks trigger recalibration); machinery unit-tested, trigger calibrated on synthetic flagged as too twitchy on real data.
+    text: Adaptive streaming — unit-tested; synthetic calibration fired 31/120 NAB chunks (too twitchy), fixed budget stays.
   - status: delivered
-    text: Rolling-median residual features — residual probe lifts IsolationForest 0.9158 → 0.9999 ROC-AUC (PR-AUC 0.996) by de-clustering the self-similar anomaly blob the EDA predicted.
+    text: Rolling-median residuals — de-cluster the anomaly blob the EDA predicted; IsolationForest ROC-AUC 0.9158→0.9999.
   - status: delivered
-    text: NSL-KDD real-data transfer probe — checksum-pinned fetch of 125,973 network-flow records; the champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC behind the same DatasetContract.
+    text: NSL-KDD transfer probe — 125,973 checksum-pinned records; champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC.
+figure_captions:
+  eda_signals_overview: Two days (2,880 minutes) of the seeded synthetic telemetry stream. CPU, memory and latency follow clean daily seasonality; the injected anomalies appear as simultaneous CPU+latency spikes while memory keeps its seasonal path.
+  telemetry_flags: The champion detector's flags (pink crosses) on the synthetic test window against the ground-truth anomaly strip, at the fixed 2% alert budget. Flags track the simultaneous CPU+latency spikes; memory stays on its seasonal path.
+  hpo_importance: Parameter importance and trial history for the One-Class SVM HPO study. gamma carries 99% of the importance — the search replaced the failing gamma="scale" default with gamma=0.0131 (best val PR-AUC 0.126 at nu=0.0598).
+  pr_curves: Precision-recall curves for every detector plus the seeded random baseline on the synthetic test window, with the 1.9% prevalence floor dashed. Tuned runs separate from the floor (best AP 0.136); untuned runs hug it.
+  threshold_sweep: The champion's precision and recall traced across alert budgets on the synthetic test window, with the fixed 2% operating point marked — recall 15% and precision 14% there, 17 of 120 flags hitting real incidents. The operating point is a staffing dial, not a mystery.
+  adaptive_stream: The anomaly-score stream under adaptive (dashed) vs fixed (dotted) thresholding in streaming simulation. The rolling median/IQR trigger re-anchors on drift; calibrated on synthetic it fired on 31 of 120 real NAB chunks — too twitchy for real rarity, so headline metrics stay on the fixed budget curve.
+  nab_timelines: Six representative NAB series (2×3 panels) over the test window — amber bands are the labelled anomaly windows, pink crosses are the champion's alerts. 897 alerts across these panels mostly miss the windows; nyc_taxi misses one labelled event, the other five detect theirs.
+  nab_score_distribution: The champion's anomaly scores pooled over all evaluable NAB series, split by in-window vs outside-window minutes (log-count y axis). In-window scores overlap the normal mass — at NAB rarity no threshold separates them cleanly.
+  nab_alert_budget: Event-level range-F1 of each detector family across alert budgets (flagged fraction of the window, log x). Range-F1 peaks at a small budget; more pages mostly add false alarms — the budget curve, not AUC, is where the next dollar goes.

@@ -63,7 +63,7 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
             col=3,
         )
     fig.update_layout(
-        title="Churn concentrates in short contracts",
+        title="Churn profile by contract, charges and tenure",
         barmode="overlay",
         yaxis_title="churn rate",
         xaxis2_title="monthly_charges",
@@ -71,5 +71,9 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
         xaxis3_title="tenure_months",
         yaxis3_title="density",
     )
-    add_takeaway(fig, "42.7% month-to-month vs 2.8% two-year churn")
+    add_takeaway(
+        fig,
+        "7,043-customer telco panel — churn rate by contract (left), charges and "
+        "tenure densities split by outcome",
+    )
     return apply_theme(fig)

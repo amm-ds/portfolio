@@ -175,15 +175,15 @@ def adaptive_stream_figure(
         marker={"color": "#fbbf24", "size": 6},
     )
     fig.update_layout(
-        title=f"Adaptive threshold holds the {config.contamination:.0%} budget",
+        title="Adaptive vs fixed threshold on the score stream",
         xaxis_title="time",
         yaxis_title="score",
     )
     add_takeaway(
         fig,
-        "synthetic calibration stays too twitchy for real rarity — "
-        f"{len(drift_events)} drift event(s) re-anchored the threshold while "
-        "the score distribution shifted.",
+        "rolling median/IQR re-anchors the threshold per chunk — "
+        f"{len(drift_events)} drift trigger(s) on this stream; the dotted line "
+        "is the fixed threshold",
     )
     return apply_theme(fig, height=620)
 

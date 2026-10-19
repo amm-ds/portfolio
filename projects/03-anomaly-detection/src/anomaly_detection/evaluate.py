@@ -167,15 +167,15 @@ def pr_figure(
         fig.add_scatter(
             x=recall, y=precision, mode="lines", name=f"{run.name} (AP={metric.value:.3f})"
         )
-    best_ap = max(m.value for run in runs if (m := run.get("pr_auc")) is not None)
     fig.update_layout(
-        title=f"At {baseline:.1%} prevalence the no-skill floor is {baseline:.3f}",
+        title="Precision-recall curves — test window",
         xaxis_title="recall",
         yaxis_title="precision",
     )
     add_takeaway(
         fig,
-        f"tuned runs separate (best AP {best_ap:.3f}); untuned hug the floor",
+        f"one curve per detector (AP in legend) + prevalence floor (dashed) — "
+        f"{baseline:.2%} prevalence, test window",
     )
     return apply_theme(fig)
 
@@ -212,11 +212,11 @@ def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
         marker={"color": "#fbbf24", "size": 6},
     )
     fig.update_layout(
-        title="Champion flags track simultaneous CPU+latency spikes",
+        title="Champion flags on the test window",
         xaxis_title="time",
         yaxis_title="value",
     )
-    add_takeaway(fig, "at the fixed 2% budget — memory holds its seasonal path")
+    add_takeaway(fig, "test window at the fixed 2% alert budget — flags vs the ground-truth strip")
     return apply_theme(fig, height=620)
 
 
@@ -241,11 +241,15 @@ def eda_signals_overview(raw: pl.DataFrame, max_rows: int = 2_880) -> go.Figure:
         marker={"color": "#f472b6", "size": 7, "symbol": "x"},
     )
     fig.update_layout(
-        title="Clean daily seasonality; incidents spike CPU and latency",
+        title="Raw telemetry — first 48 hours",
         xaxis_title="time",
         yaxis_title="value",
     )
-    add_takeaway(fig, f"memory holds its path (first {window.height:,} minutes)")
+    add_takeaway(
+        fig,
+        f"CPU, memory and latency, first {window.height:,} minutes — "
+        "pink crosses mark injected anomalies",
+    )
     return apply_theme(fig, height=620)
 
 
@@ -269,9 +273,6 @@ def threshold_sweep_figure(
     op_flags = predict_at_contamination(scores, config.contamination) == 1
     op_tp = int((op_flags & (y_true == 1)).sum())
     op_fp = int((op_flags & (y_true == 0)).sum())
-    op_fn = int(((~op_flags) & (y_true == 1)).sum())
-    op_prec = op_tp / (op_tp + op_fp) if op_tp + op_fp else 0.0
-    op_rec = op_tp / (op_tp + op_fn) if op_tp + op_fn else 0.0
 
     fig = go.Figure()
     fig.add_scatter(x=rates, y=recalls, mode="lines", name="recall (TPR)")
@@ -280,15 +281,13 @@ def threshold_sweep_figure(
     fig.update_xaxes(type="log", title="alert budget (flagged fraction of test window)")
     fig.update_yaxes(title="rate", range=[0, 1.05])
     fig.update_layout(
-        title=(
-            f"Recall {op_rec:.0%} and precision {op_prec:.0%} at the "
-            f"{config.contamination:.0%} budget"
-        )
+        title="Precision and recall vs alert budget",
     )
     add_takeaway(
         fig,
-        f"{name}: a staffing dial, not a mystery — {op_tp} of {op_tp + op_fp} "
-        "flags are real incidents.",
+        f"{name} — precision/recall traced over the flagged fraction of the test "
+        f"window (log x); the fixed 2% operating point is marked "
+        f"({op_tp} of {op_tp + op_fp} flags hit real incidents)",
     )
     return apply_theme(fig)
 
@@ -372,12 +371,12 @@ def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | Non
     )
     top = max(importances, key=importances.get)
     fig.update_layout(
-        title=f"{family} HPO rides on {top}",
+        title=f"{family} HPO — importance and trial history",
     )
     add_takeaway(
         fig,
-        f"{importances[top]:.0%} importance — {payload['n_trials']} seeded TPE "
-        f"trials, best val PR-AUC {payload['best_value']:.3f} at {best_txt}.",
+        f"{importances[top]:.0%} of importance on {top} — {payload['n_trials']} seeded TPE "
+        f"trials; best val PR-AUC {payload['best_value']:.3f} at {best_txt}.",
     )
     return apply_theme(fig)
 

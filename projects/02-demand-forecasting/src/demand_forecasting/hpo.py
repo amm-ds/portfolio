@@ -147,10 +147,13 @@ def figure_hpo_history(study: optuna.Study) -> go.Figure:
         bests.append(best)
     fig.add_scatter(x=numbers, y=bests, name="best so far", mode="lines")
     fig.update_layout(
-        title=f"{len(trials)} seeded trials buy a modest, real gain",
+        title="HPO optimization history",
         xaxis_title="trial",
     )
-    add_takeaway(fig, f"best CV MAE {best:.3f}, converging on regularised small trees")
+    add_takeaway(
+        fig,
+        f"{len(trials)} seeded TPE trials — CV MAE per trial, best-so-far line; best {best:.3f}",
+    )
     return apply_theme(fig)
 
 
@@ -175,13 +178,15 @@ def figure_hpo_importance(study: optuna.Study) -> go.Figure:
     )
     top2 = sum(sorted(importances.values(), reverse=True)[:2])
     fig.update_layout(
-        title="Regularisation knobs dominate",
+        title="HPO parameter importance",
         # Horizontal bars put the parameter names on the y-axis; automargin
         # sizes the left margin to the longest tick label instead of trimming
         # it ("min_samples_leaf" → "ples_leaf").
         yaxis={"automargin": True},
     )
-    add_takeaway(fig, f"top two params carry {top2:.0%} of the search importance")
+    add_takeaway(
+        fig, f"fANOVA importance over {len(study.trials)} trials — top two params {top2:.0%}"
+    )
     return apply_theme(fig)
 
 
