@@ -1,0 +1,12 @@
+/* Mermaid diagrams on the docs site: centered and roomy. */
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 1.5rem auto;
+  padding: 1rem;
+  overflow-x: auto;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  font-size: 15px;
+}
