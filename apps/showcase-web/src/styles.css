@@ -1394,18 +1394,42 @@ button:disabled {
   width: 100%;
 }
 
-/* --- Figure cards: chart + commentary footer --- */
+/* --- Figure cards: chart + commentary band as one integrated tile --- */
 
 .figure-card {
   margin-bottom: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
+/* the chart region merges into the card: strip the standalone frame's
+   border, radius, padding and margins so it sits flush above the band */
 .figure-card .figure-frame {
-  margin-bottom: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
 }
 
-.figure-card-footer {
-  padding: 0 0.25rem;
+.figure-card .plotly-wrap,
+.figure-card .frame-wrap {
+  border: none;
+  border-radius: 0;
+}
+
+.figure-card .plotly-wrap {
+  /* breathing room at the top/sides; flush against the band below */
+  padding: 0.5rem 0.5rem 0;
+}
+
+.figure-card-band {
+  /* attached commentary plate: slightly darker tone, divided by a hairline */
+  padding: 0.75rem 1rem 0.9rem;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
 }
 
 .figure-id {
@@ -1448,7 +1472,8 @@ button:disabled {
   .story-figs {
     margin-top: 1.5rem;
   }
-  .story-figs .figure-frame {
+  /* spacing between figures belongs to the card, not the bare frame */
+  .story-figs > .figure-frame {
     margin-bottom: 1.5rem;
   }
 }
