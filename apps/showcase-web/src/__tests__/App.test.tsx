@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
@@ -22,5 +22,29 @@ describe("App routing", () => {
     expect(projects.getAttribute("href")).toBe("/projects");
     // the project grid is not rendered on the 404 page
     expect(document.querySelector(".project-grid")).toBeNull();
+  });
+
+  it("renders the Experiments index at both /projects and /experiments", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    for (const path of ["/projects", "/experiments"]) {
+      cleanup();
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+        </MemoryRouter>,
+      );
+      await waitFor(() =>
+        expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("experiments"),
+      );
+      expect(screen.getByText("Demos — interactive experiments")).toBeInTheDocument();
+    }
   });
 });

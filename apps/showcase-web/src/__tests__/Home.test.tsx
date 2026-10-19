@@ -72,8 +72,12 @@ describe("Home (lean, wave 6)", () => {
       expect(h3.textContent).toMatch(/^\$ \w+ →$/);
       expect(card.querySelector("p")!.textContent!.length).toBeGreaterThan(10);
     });
-    for (const to of ["/projects", "/services", "/contact"]) {
-      const link = screen.getByRole("link", { name: new RegExp(`\\$ ${to.slice(1)}`, "i") });
+    for (const { to, label } of [
+      { to: "/projects", label: "experiments" },
+      { to: "/services", label: "services" },
+      { to: "/contact", label: "contact" },
+    ]) {
+      const link = screen.getByRole("link", { name: new RegExp(`\\$ ${label}`, "i") });
       expect(link).toHaveAttribute("href", to);
     }
   });

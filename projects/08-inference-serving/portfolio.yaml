@@ -1,7 +1,7 @@
 id: 08-inference-serving
 title: LLM Inference & Serving
 domain: Model serving & inference optimization
-topic: ML Systems & Decisioning
+topic: Inference & Serving
 techniques:
 - Ollama serving (OpenAI-compatible)
 - llama.cpp vs MLX runners
