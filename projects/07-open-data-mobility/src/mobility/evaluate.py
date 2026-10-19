@@ -558,6 +558,94 @@ def fig_gbm_feature_importance(
     )
 
 
+def fig_gbm_vs_nn(runs: list[RunResult]) -> go.Figure:
+    """Two-panel run ladder: (a) MAE + MASE (1.0 = lag-24 parity line),
+    (b) MAPE on its own % axis.
+
+    MAPE is unit-incompatible with pickup-scale errors, so it gets a separate
+    panel instead of sharing an axis with MAE.
+    """
+    names = [r.name for r in runs]
+
+    def _value(run: RunResult, metric: str) -> float:
+        m = run.get(metric)
+        return m.value if m is not None else float("nan")
+
+    mae = [_value(r, "mae") for r in runs]
+    mase = [_value(r, "mase") for r in runs]
+    mape = [_value(r, "mape_pct") for r in runs]
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        specs=[[{"secondary_y": True}, {}]],
+        subplot_titles=("MAE (pickups) bars + MASE line", "MAPE (%)"),
+    )
+    base_grey, accent = "#64748b", "#38bdf8"
+    fig.add_bar(
+        x=names,
+        y=mae,
+        name="mae",
+        row=1,
+        col=1,
+        marker_color=[base_grey if "naive" in n else accent for n in names],
+    )
+    # MASE on the secondary axis as a line: bars on different y-axes do not
+    # group in plotly and would paint over each other
+    fig.add_scatter(
+        x=names,
+        y=mase,
+        name="mase",
+        row=1,
+        col=1,
+        secondary_y=True,
+        mode="lines+markers",
+        line={"color": "#a78bfa", "width": 2.5},
+        marker={"size": 9},
+    )
+    fig.add_bar(
+        x=names,
+        y=mape,
+        name="mape_pct",
+        row=1,
+        col=2,
+        showlegend=False,
+        marker_color=[base_grey if "naive" in n else "#f472b6" for n in names],
+    )
+    fig.add_shape(
+        type="line",
+        xref="x domain",
+        x0=0,
+        x1=1,
+        yref="y2",
+        y0=1.0,
+        y1=1.0,
+        line={"dash": "dot", "color": "#fbbf24"},
+    )
+    fig.add_annotation(
+        text="1.0 = 'same hour last week' parity",
+        xref="x domain",
+        x=1.0,
+        xanchor="right",
+        yref="y2",
+        y=1.0,
+        yanchor="bottom",
+        showarrow=False,
+        font={"size": 12, "color": "#fbbf24"},
+    )
+    fig.update_layout(
+        title=(
+            "The served GBM removes 28.4% of forecast error vs last-week "
+            "persistence — the neural challenger wins MAPE only"
+        ),
+        yaxis_title="MAE (pickups)",
+        yaxis2_title="MASE",
+        yaxis3_title="MAPE (%)",
+    )
+    fig.update_xaxes(tickangle=-30)
+    return apply_theme(fig)
+
+
 # --------------------------------------------------------------------------
 # Report assembly
 # --------------------------------------------------------------------------
@@ -620,18 +708,14 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "p90_band": fig_p90_band(preds),
         "p90_calibration": fig_p90_calibration(coverage_borough),
         "gbm_vs_nn": add_takeaway(
-            RunComparison(runs)
-            .figure(metric_names=["mae", "rmse", "mape_pct"])
-            .update_layout(
-                title=(
-                    "The served GBM removes 28.4% of forecast error vs last-week "
-                    "persistence — the neural challenger wins MAPE only"
-                )
-            ),
+            fig_gbm_vs_nn(runs),
             f"Best run: {ranking['ranking'][0]} "
             f"(MAE {best_mae:.2f}); naive_lag24 is the grey persistence reference.",
         ),
     }
+    # two-line title + legend need more headroom than add_takeaway's default;
+    # the rotated run-name ticks need the deeper bottom margin
+    figures["gbm_vs_nn"].update_layout(margin={"t": 125, "l": 60, "r": 30, "b": 90})
     if importance_fig is not None:
         figures["gbm_feature_importance"] = importance_fig
     figures["zone_fan"] = fig_zone_fan(preds)

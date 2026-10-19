@@ -406,6 +406,7 @@ def write_reports(
     extra_metrics: dict[str, Any],
     rag_input_tokens_override: float | None = None,
     random_scores: list[RetrievalScores] | None = None,
+    lexical_scores: list[RetrievalScores] | None = None,
     model_scores: dict[str, RetrievalScores] | None = None,
     rerank_scores: dict[str, RetrievalScores] | None = None,
     topk_runs: list[RunResult] | None = None,
@@ -423,6 +424,8 @@ def write_reports(
         builder.add_run(s.as_run())
     for s in random_scores or []:
         builder.add_run(s.as_run(f"retrieval_random_chunks_{s.chunk_size}"))
+    for s in lexical_scores or []:
+        builder.add_run(s.as_run(f"retrieval_lexical_chunks_{s.chunk_size}"))
     for slug, s in (model_scores or {}).items():
         builder.add_run(s.as_run(f"retrieval_model_{slug}_chunks_{s.chunk_size}"))
     for label, s in (rerank_scores or {}).items():

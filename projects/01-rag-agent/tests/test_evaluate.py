@@ -110,6 +110,13 @@ def test_figures_render(scores_sample: list[RetrievalScores]) -> None:
     fig_random = sweep_figure(scores_sample, scores_sample)  # reuse as random baseline
     assert len(fig_random.data) == 5  # 3 bars + 2 dashed reference series
     assert any("random" in trace.name for trace in fig_random.data)
+    # Legend contract (viewer report "legend unreadable on the title"): below
+    # the plot, bottom-center — never top-pinned over the two-line title.
+    legend = fig_random.layout.legend.to_plotly_json()
+    assert legend["orientation"] == "h" and legend["y"] < 0 and legend["x"] == 0.5
+    fig_lex = sweep_figure(scores_sample, scores_sample, scores_sample)
+    assert len(fig_lex.data) == 7  # + 2 lexical (word match) reference series
+    assert any("lexical (word match)" in (trace.name or "") for trace in fig_lex.data)
     # Readability contract (viewer report "chunk size 600 has no bars"):
     # categorical axis (no implied 600 gap), value labels on every bar, an
     # explicit sizes-tested caption, and zero floor points annotated not voided.

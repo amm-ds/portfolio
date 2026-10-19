@@ -66,7 +66,10 @@ the agent abstains.
 **Golden set: 65 graded questions** — 44 single-hop, 11 multi-hop, 10
 unanswerable (expected behavior: abstain). Retrieval is provider-independent
 (embeddings-only): recall@5 **0.831** / recall@10 0.846, MRR@5 0.808 vs a
-0.031 random floor; the chosen config (MiniLM, chunks=200, top_k=3, rerank ON)
+0.031 random floor and a **0.677 word-match (lexical) floor** — word-matching
+is the fair naive comparator (no model, yet it finds two-thirds of answers),
+and embeddings beat it by **+0.154 recall@5**, which is the priced value of
+the index. The chosen config (MiniLM, chunks=200, top_k=3, rerank ON)
 holds full recall at −65% context cost.
 
 ![Chunk size, not model size, sets retrieval recall — 200-token chunks hold full recall@5 at 65% lower context cost](../assets/projects/01-rag-agent/chunk_size_sweep.png){ width="100%" }
@@ -109,7 +112,8 @@ questions). The verify loop stays worth its repair calls on high-stakes
 corpora: unsupported-claim share fell from 60% → 47% locally and stays
 bounded hosted, at 39 repair calls and 2 support-floor abstentions over 64
 verified answers. Figures: corpus composition, chunk-size sweep with random
-baseline, embedding model comparison, retrieval funnel, HPO frontier (chosen
+and lexical (word-match) baselines, embedding model comparison, retrieval
+funnel, HPO frontier (chosen
 config starred), latency histogram, failure taxonomy (all in
 `projects/01-rag-agent/reports/figures/`).
 

@@ -13,11 +13,12 @@ from pathlib import Path
 import numpy as np
 import plotly.graph_objects as go
 import polars as pl
+from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json, style_runs
 from portfolio_core.timecv import TimeSeriesCV
 from portfolio_eval.metrics import MetricResult, RunResult
-from portfolio_eval.ml import RunComparison, regression_metrics
+from portfolio_eval.ml import regression_metrics
 from portfolio_eval.report import ReportBuilder
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
@@ -204,23 +205,75 @@ def _mae(result: BacktestResult, name: str) -> float:
     return m.value if m is not None else float("nan")
 
 
+def _is_naive(name: str) -> bool:
+    """Naive floors: ``naive_mean`` / ``naive_last`` / ``seasonal_naive``.
+
+    Substring match (same hint list as :func:`portfolio_core.plotting.style_runs`):
+    ``name.startswith("naive_")`` silently dropped ``seasonal_naive`` from the
+    floor candidates.
+    """
+    return "naive" in name
+
+
 def best_model(result: BacktestResult) -> str:
     """The non-naive model with the lowest pooled MAE."""
-    candidates = [r.name for r in result.runs if not r.name.startswith("naive_")]
+    candidates = [r.name for r in result.runs if not _is_naive(r.name)]
     return min(candidates, key=lambda n: _mae(result, n))
 
 
 def strongest_naive(result: BacktestResult) -> str:
     """The naive baseline with the lowest pooled MAE (the honest floor)."""
-    candidates = [r.name for r in result.runs if r.name.startswith("naive_")]
+    candidates = [r.name for r in result.runs if _is_naive(r.name)]
     return min(candidates, key=lambda n: _mae(result, n))
 
 
+def _example_series(series: np.ndarray, y: np.ndarray, n: int, fallback: list[str]) -> list[str]:
+    """Pick ``n`` representative series: ``fallback`` showcase ids when present
+    in the data, topped up (or replaced) by the most active series — most
+    non-zero days, ties broken by total volume.
+
+    The synthetic panel uses the hard-coded ``store_k|product_k`` showcase
+    picks; the UCI track names series ``country|stock_code``, which those ids
+    never match — the activity ranking is what keeps the figure non-empty
+    there.
+    """
+    picked: list[str] = []
+    present = set(np.unique(series).tolist()) if series.size else set()
+    picked.extend(s for s in fallback if s in present)
+    if len(picked) < n:
+        uniques, inv = np.unique(series, return_inverse=True)
+        nonzero = np.bincount(inv, weights=(y > 0).astype(float))
+        totals = np.bincount(inv, weights=np.asarray(y, dtype=float))
+        order = np.lexsort((totals, nonzero))[::-1]
+        for i in order:
+            sid = str(uniques[i])
+            if sid not in picked:
+                picked.append(sid)
+            if len(picked) >= n:
+                break
+    return picked[:n]
+
+
+def _display_series(sids: list[str]) -> dict[str, str]:
+    """Short legend labels: strip a shared ``store|`` prefix (on the UCI track
+    every example series sits in the same top country, so the prefix carries
+    no information but doubles the label length)."""
+    if not (sids and all("|" in s for s in sids)):
+        return {s: s for s in sids}
+    prefix = sids[0]
+    for sid in sids[1:]:
+        while prefix and not sid.startswith(prefix):
+            prefix = prefix[:-1]
+    if prefix.endswith("|") and len(prefix) < min(len(s) for s in sids):
+        return {s: s[len(prefix) :] for s in sids}
+    return {s: s for s in sids}
+
+
 def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
-    """Best model vs strongest naive on two example series, last fold.
+    """Best model vs strongest naive on two representative series, last fold.
 
     Overlaying the naive floor on the same axes makes the improvement
-    (and where it comes from — weekday structure the naive cannot see)
+    (and where it comes from — structure the naive floor cannot see)
     visible at a glance.
     """
     model = best_model(result)
@@ -229,20 +282,25 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
     rec_n = result.last_fold(naive)
     reduction = 1.0 - rec.mae / max(rec_n.mae, 1e-12)
     fig = go.Figure()
-    for sid in EXAMPLE_SERIES:
+    sids = _example_series(rec.series, rec.y_true, len(EXAMPLE_SERIES), EXAMPLE_SERIES)
+    short = _display_series(sids)
+    for sid in sids:
         mask = rec.series == sid
-        fig.add_scatter(x=rec.dates[mask], y=rec.y_true[mask], name=f"{sid} actual", mode="lines")
+        if not mask.any():
+            continue
+        label = short[sid]
+        fig.add_scatter(x=rec.dates[mask], y=rec.y_true[mask], name=f"{label} actual", mode="lines")
         fig.add_scatter(
             x=rec.dates[mask],
             y=rec.y_pred[mask],
-            name=f"{sid} {model}",
+            name=f"{label} {model}",
             mode="lines",
             line={"dash": "dash"},
         )
         fig.add_scatter(
             x=rec.dates[mask],
             y=rec_n.y_pred[mask],
-            name=f"{sid} {naive} (naive)",
+            name=f"{label} {naive} (naive)",
             mode="lines",
             line={"dash": "dot"},
         )
@@ -256,23 +314,83 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
         f"takeaway: {model} beats the {naive} floor by {reduction:.0%} MAE "
         "on this fold; the residual gap is day-over-day noise",
     )
+    # six legend entries need a vertical legend on the right, not the theme's
+    # horizontal strip (it would wrap over the two-line title)
+    fig.update_layout(
+        legend={"orientation": "v", "x": 1.01, "xanchor": "left", "y": 1.0, "yanchor": "top"},
+        margin={"r": 200},
+    )
     return apply_theme(fig)
 
 
 def figure_metrics_bars(result: BacktestResult) -> go.Figure:
-    """Grouped bar chart of MAE / RMSE / MAPE across all runs (naives included)."""
-    fig = RunComparison(result.runs).figure()
-    n_below = sum(
-        1
-        for r in result.runs
-        if (m := next((x for x in r.metrics if x.name == "mase"), None)) is not None and m.value < 1
+    """Two-panel metric ladder: (a) MAE + RMSE in units; (b) MASE vs parity.
+
+    MAPE stays off the chart: its % scale is unit-incompatible with MAE/RMSE
+    (and not decision-grade on zero-heavy demand) — it is reported in
+    metrics.json and the docs results table instead.
+    """
+    runs = result.runs
+    names = [r.name for r in runs]
+
+    def _value(run: RunResult, metric: str) -> float:
+        m = run.get(metric)
+        return m.value if m is not None else float("nan")
+
+    mae = [_value(r, "mae") for r in runs]
+    rmse = [_value(r, "rmse") for r in runs]
+    mase = [_value(r, "mase") for r in runs]
+    below = [r.name for r in runs if (m := r.get("mase")) is not None and m.value < 1]
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("MAE + RMSE (units)", "MASE — 1.0 = seasonal-naive parity"),
+    )
+    fig.add_bar(x=names, y=mae, name="mae", row=1, col=1)
+    fig.add_bar(x=names, y=rmse, name="rmse", row=1, col=1)
+    fig.add_bar(
+        x=names,
+        y=mase,
+        name="mase",
+        row=1,
+        col=2,
+        showlegend=False,
+        marker_color=["#2dd4bf" if v < 1 else "#64748b" for v in mase],
+        text=[f"{v:.3f}" for v in mase],
+        textposition="outside",
+    )
+    fig.add_shape(
+        type="line",
+        xref="x2 domain",
+        x0=0,
+        x1=1,
+        yref="y2",
+        y0=1.0,
+        y1=1.0,
+        line={"dash": "dot", "color": "#fbbf24"},
+    )
+    head = (
+        f"Only {below[0]} clears the seasonal-naive floor (MASE < 1)"
+        if len(below) == 1
+        else f"{len(below)} runs clear the seasonal-naive floor (MASE < 1)"
     )
     fig.update_layout(
-        title=(
-            f"{n_below} run(s) clear the seasonal-naive floor (MASE < 1) — "
-            "pooled out-of-fold ladder"
-        )
+        title=f"{head} — pooled out-of-fold ladder",
+        barmode="group",
+        yaxis_title="units",
+        yaxis2_title="MASE",
     )
+    fig.update_xaxes(tickangle=-30)
+    apply_theme(fig)
+    add_takeaway(
+        fig,
+        "takeaway: MAPE omitted here — its % scale is unit-incompatible with "
+        "unit-scaled errors (and not decision-grade at 89% zeros); see metrics.json",
+    )
+    # two-line title + legend need more headroom than add_takeaway's default;
+    # the rotated run-name ticks need the deeper bottom margin
+    fig.update_layout(margin={"t": 125, "l": 60, "r": 30, "b": 90})
     return fig
 
 
@@ -304,12 +422,18 @@ def figure_eda_series_overview(panel: pl.DataFrame) -> go.Figure:
     """Sample of raw store-product daily series — trend and weekly seasonality."""
     df = panel.with_columns((pl.col("store") + "|" + pl.col("product")).alias("series_id"))
     fig = go.Figure()
-    for sid in EDA_SERIES:
+    sids = _example_series(
+        df["series_id"].to_numpy(), df["units"].to_numpy(), len(EDA_SERIES), EDA_SERIES
+    )
+    for sid in sids:
         sub = df.filter(pl.col("series_id") == sid).sort("date")
         fig.add_scatter(x=sub["date"].to_numpy(), y=sub["units"].to_numpy(), name=sid, mode="lines")
     fig.update_layout(
         title="Trend and a clear weekly cycle are visible in raw units before any model runs",
         yaxis_title="units",
+        # four full-length series ids wrap the theme's horizontal legend into
+        # the title — give it its own row
+        margin={"t": 100, "l": 60, "r": 30, "b": 50},
     )
     return apply_theme(fig)
 

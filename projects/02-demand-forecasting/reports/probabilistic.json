@@ -29,7 +29,18 @@
   },
   "split_conformal": {
     "q80": 13.245742869546909,
-    "coverage_last_fold": 0.7573877068557919
+    "bin_definition": "p50 <= 0 (model predicts zero) vs p50 > 0",
+    "zero_bin": {
+      "q80": 13.245742869546909,
+      "n_calibration": 0
+    },
+    "nonzero_bin": {
+      "q80": 13.245742869546909,
+      "n_calibration": 10152
+    },
+    "coverage_last_fold": 0.7573877068557919,
+    "coverage_last_fold_zero_bin": null,
+    "coverage_last_fold_nonzero_bin": 0.7573877068557919
   },
   "mae_p50_pooled": 8.706214863940453
 }

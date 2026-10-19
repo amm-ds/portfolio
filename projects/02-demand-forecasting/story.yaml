@@ -24,7 +24,7 @@ sections:
       embargoed expanding-window backtest. The full design log lives in
       `README.md` and `DESIGN.md`.
 
-      **Business summary:** stockouts and overstock are forecast-shaped
+      **Business summary:** Stockouts and overstock are forecast-shaped
       decisions; safety stock cannot be sized on a number nobody validated
       against the simplest alternatives.
 
@@ -49,7 +49,7 @@ sections:
       - **Hierarchy-consistent forecasts** — MinT-lite reconciliation with a
         property-tested coherence guarantee.
 
-      **Business summary:** the deliverable is a defensible number, not a
+      **Business summary:** The deliverable is a defensible number, not a
       model file — a planning meeting can act on "we beat the strongest
       naive floor on real transactions, and here is the protocol that proves
       it."
@@ -87,7 +87,7 @@ sections:
           S3 --> S3P[6 products]
       ```
 
-      **Business summary:** results regenerate from a clean clone in
+      **Business summary:** Results regenerate from a clean clone in
       minutes — synthetic offline by default, real transactions one flag
       away.
 
@@ -107,7 +107,7 @@ sections:
       the intermittent-demand problem is visible in the distribution long
       before any accuracy number is computed.
 
-      **Business summary:** trend and weekly rhythm — the two things
+      **Business summary:** Trend and weekly rhythm — the two things
       that break naive forecasting — are visible in the raw data, so the
       case for better-than-naive forecasting rests on a chart, not a
       promise.
@@ -150,7 +150,7 @@ sections:
       embargoed previous fold) adjusts store-product forecasts toward the
       store level by a data-chosen weight `w`.
 
-      **Business summary:** every candidate faces the same
+      **Business summary:** Every candidate faces the same
       leakage-proof protocol, so the model that ships won on evidence, not
       novelty.
     figures: [hpo_history, hpo_importance]
@@ -180,7 +180,7 @@ sections:
       instability stay visible before deployment; `reports/report.html`
       collects the full run.
 
-      **Business summary:** the embargoed backtest prices in drift
+      **Business summary:** The embargoed backtest prices in drift
       before deployment — it answers whether the model survives next
       quarter, not just last week.
     figures: [fold_stability]
@@ -191,20 +191,23 @@ sections:
       folds; MAE/MASE lead, MAPE is not decision-grade at 89% zeros).
       `forecast_vs_actual` shows the champion against the strongest naive:
 
-      | run | MAE | MASE |
-      |---|---|---|
-      | naive_mean | 10.84 | 1.132 |
-      | naive_last | 10.29 | 1.168 |
-      | seasonal_naive | 9.86 | 1.117 |
-      | ets | 11.26 | 1.361 |
-      | ridge | 16.73 | 1.560 |
-      | hgb | 9.09 | 1.002 |
-      | **hgb_tuned** | **8.99** | **0.980** |
-      | xgb_tuned | 9.39 | 1.042 |
-      | lgbm_tuned | 9.60 | 1.055 |
-      | temporal_net | 12.70 | 1.232 |
+      | run | MAE | MASE | Δ MAE vs sn | Δ MASE vs sn |
+      |---|---|---|---|---|
+      | naive_mean | 10.84 | 1.132 | +0.98 | +0.015 |
+      | naive_last | 10.29 | 1.168 | +0.43 | +0.051 |
+      | seasonal_naive | 9.86 | 1.117 | 0.00 | 0.000 |
+      | ets | 11.26 | 1.361 | +1.40 | +0.244 |
+      | ridge | 16.73 | 1.560 | +6.87 | +0.443 |
+      | hgb | 9.09 | 1.002 | −0.77 | −0.115 |
+      | **hgb_tuned ← best** | **8.99** | **0.980** | **−0.87** | **−0.137** |
+      | xgb_tuned | 9.39 | 1.042 | −0.47 | −0.075 |
+      | lgbm_tuned | 9.60 | 1.055 | −0.26 | −0.062 |
+      | temporal_net | 12.70 | 1.232 | +2.84 | +0.115 |
 
-      The synthetic CI ladder (`metrics_bars` ranks both) is the mirror
+      Δ vs seasonal_naive (sn) per row — negative beats "same day last week".
+
+      The synthetic CI ladder (`metrics_bars` ranks both tracks, split into
+      MAE+RMSE and MASE-parity panels; MAPE stays tabulated) is the mirror
       image: ETS wins outright (MAE 8.11, MASE 0.891) — clean trend plus
       weekly seasonality is exactly its class; among ML runs `lgbm_tuned`
       leads (8.413, −41.9% vs persistence), `hgb_tuned` 8.529, `xgb_tuned` a
@@ -225,11 +228,15 @@ sections:
         incoherence 384.0 → 115.2 (×(1−w) exactly, property-tested), store
         MAE 746.9 → 737.9; synthetic chose w=0.05 — the fold-4-drifting
         parent is barely trusted.
-      - **Probabilistic bands miss the target** — 80% coverage 0.73
-        synthetic / 0.92 UCI, conformal degenerating to q80 = 0 on
-        zero-heavy residuals (`probabilistic_band`).
+      - **Probabilistic bands** — the quantile band covers 0.73
+        synthetic / 0.92 UCI (pooled); the conformal band is now calibrated
+        per predicted-zero bin and covers **0.76 synthetic / 0.86 UCI on the
+        last fold** (target 0.80). On UCI the champion's median forecast is 0
+        on ~100% of rows, so the band collapses to the point forecast exactly
+        where demand is nonzero — stated on the figure, whose buttons drop
+        the band (`probabilistic_band`).
 
-      **Business summary:** switching replenishment to the tuned HGB
+      **Business summary:** Switching replenishment to the tuned HGB
       cuts absolute error 8.8% versus the "same day last week" rule — less
       safety stock at the same service level. But re-tune on your own panel
       first: the winning config does not port across demand regimes.
@@ -253,9 +260,10 @@ sections:
 
       **Results quality:** acceptable-with-caveats — the 8.8% MAE gain over
       seasonal naive is real (the only MASE < 1 run), but it is bounded by
-      day-over-day noise, the 80% bands under-cover at 0.73 on synthetic,
-      and the winning config does not transfer across demand regimes. Each
-      caveat is measured above, not suspected.
+      day-over-day noise, the 80% bands land at 0.76 synthetic / 0.86 UCI
+      last-fold coverage rather than the 0.80 target, and the winning config
+      does not transfer across demand regimes. Each caveat is measured above,
+      not suspected.
 
       Limits: gains over persistence are stable but bounded (~8.5 units
       residual MAE on the synthetic ladder); the neural model does not pay
@@ -264,7 +272,7 @@ sections:
       a monitored retraining trigger rather than a surprise. Full detail:
       `README.md`, `DESIGN.md`, `reports/report.html`.
 
-      **Business summary:** the value delivered is knowing precisely
+      **Business summary:** The value delivered is knowing precisely
       which model wins, by how much, and where it stops winning; the
       forecast-vs-actual and fold-stability views are the first two charts
       to show a client.
@@ -280,7 +288,11 @@ roadmap:
   - status: delivered
     text: MinT-lite hierarchical reconciliation — data-chosen shrinkage w (0.05 synthetic / 0.70 UCI) with a property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI, ×(1−w) exactly); store MAE 746.9 → 737.9 on the real track.
   - status: delivered
-    text: Probabilistic 80% bands shipped and stress-tested — quantile HGB p10/p50/p90 + split-conformal; empirical coverage 0.73 synthetic / 0.92 UCI against the 0.80 target, conformal degenerating to q80 = 0 on zero-heavy residuals.
+    text: >-
+      Probabilistic 80% bands shipped and stress-tested — quantile HGB
+      p10/p50/p90 + zero-aware split-conformal (per predicted-zero bin);
+      last-fold coverage 0.76 synthetic / 0.86 UCI vs 0.80 target; UCI band
+      collapses where the median is 0 — stated on the figure, band removable.
   - status: delivered
     text: >-
       Serving endpoint — showcase-API artifact (reports/models/serving)

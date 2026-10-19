@@ -29,6 +29,21 @@
     "recall@10": 0.03076923076923077,
     "mrr@5": 0.003076923076923077
   },
+  "retrieval_lexical_chunks_200": {
+    "recall@5": 0.676923076923077,
+    "recall@10": 0.7538461538461538,
+    "mrr@5": 0.49974358974358973
+  },
+  "retrieval_lexical_chunks_400": {
+    "recall@5": 0.6615384615384615,
+    "recall@10": 0.7538461538461538,
+    "mrr@5": 0.5471794871794873
+  },
+  "retrieval_lexical_chunks_800": {
+    "recall@5": 0.6461538461538462,
+    "recall@10": 0.7384615384615385,
+    "mrr@5": 0.493076923076923
+  },
   "retrieval_model_minilm_chunks_200": {
     "recall@5": 0.8307692307692308,
     "recall@10": 0.8461538461538461,
@@ -96,7 +111,11 @@
         "est_input_tokens_per_query": 1199.3,
         "random_recall@5": 0.03076923076923077,
         "random_mrr@5": 0.01846153846153846,
-        "delta_mrr@5_vs_random": 0.7892307692307693
+        "delta_mrr@5_vs_random": 0.7892307692307693,
+        "lexical_recall@5": 0.676923076923077,
+        "lexical_recall@10": 0.7538461538461538,
+        "lexical_mrr@5": 0.49974358974358973,
+        "delta_recall@5_vs_lexical": 0.15384615384615385
       },
       "400": {
         "recall@5": 0.8307692307692308,
@@ -105,7 +124,11 @@
         "est_input_tokens_per_query": 2361.7599999999998,
         "random_recall@5": 0.0,
         "random_mrr@5": 0.0,
-        "delta_mrr@5_vs_random": 0.7915384615384616
+        "delta_mrr@5_vs_random": 0.7915384615384616,
+        "lexical_recall@5": 0.6615384615384615,
+        "lexical_recall@10": 0.7538461538461538,
+        "lexical_mrr@5": 0.5471794871794873,
+        "delta_recall@5_vs_lexical": 0.1692307692307693
       },
       "800": {
         "recall@5": 0.8307692307692308,
@@ -114,7 +137,11 @@
         "est_input_tokens_per_query": 4242.700000000002,
         "random_recall@5": 0.015384615384615385,
         "random_mrr@5": 0.003076923076923077,
-        "delta_mrr@5_vs_random": 0.7884615384615385
+        "delta_mrr@5_vs_random": 0.7884615384615385,
+        "lexical_recall@5": 0.6461538461538462,
+        "lexical_recall@10": 0.7384615384615385,
+        "lexical_mrr@5": 0.493076923076923,
+        "delta_recall@5_vs_lexical": 0.18461538461538463
       }
     },
     "hpo": {

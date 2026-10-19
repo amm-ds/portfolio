@@ -31,20 +31,23 @@ Real-data track — UCI Online Retail II (top 8 countries × top 200 products,
 not decision-grade at this zero share). *How to read: lower is better everywhere;
 MASE below 1.0 means the run beats "same day last week"; bold = shipped champion.*
 
-| run | MAE | RMSE | MAPE | MASE |
-|---|---|---|---|---|
-| naive_mean (floor) | 10.838 | 97.607 | 91.3% | 1.132 |
-| naive_last (persistence) | 10.288 | 135.674 | 356.2% | 1.168 |
-| seasonal_naive (lag-7) | 9.859 | 135.298 | 439.0% | 1.117 |
-| ETS (Holt-Winters, damped+weekly) | 11.256 | 116.865 | 352.3% | 1.361 |
-| ridge (collapses) | 16.734 | 98.531 | 236.2% | 1.560 |
-| hgb (default sklearn) | 9.085 | 97.256 | 245.9% | 1.002 |
-| **hgb_tuned (Optuna, 56 trials)** | **8.989** | **96.688** | 228.6% | **0.980** |
-| xgb_tuned (Optuna, 25 trials) | 9.385 | 98.136 | 275.2% | 1.042 |
-| lgbm_tuned (Optuna, 25 trials) | 9.600 | 96.535 | 287.9% | 1.055 |
-| temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 |
+| run | MAE | RMSE | MAPE | MASE | Δ MAE vs sn | Δ MASE vs sn |
+|---|---|---|---|---|---|---|
+| naive_mean (floor) | 10.838 | 97.607 | 91.3% | 1.132 | +0.979 | +0.015 |
+| naive_last (persistence) | 10.288 | 135.674 | 356.2% | 1.168 | +0.429 | +0.051 |
+| seasonal_naive (lag-7) | 9.859 | 135.298 | 439.0% | 1.117 | 0.000 | 0.000 |
+| ETS (Holt-Winters, damped+weekly) | 11.256 | 116.865 | 352.3% | 1.361 | +1.397 | +0.244 |
+| ridge (collapses) | 16.734 | 98.531 | 236.2% | 1.560 | +6.875 | +0.443 |
+| hgb (default sklearn) | 9.085 | 97.256 | 245.9% | 1.002 | −0.774 | −0.115 |
+| **hgb_tuned (Optuna, 56 trials) ← best** | **8.989** | **96.688** | **228.6%** | **0.980** | **−0.870** | **−0.137** |
+| xgb_tuned (Optuna, 25 trials) | 9.385 | 98.136 | 275.2% | 1.042 | −0.474 | −0.075 |
+| lgbm_tuned (Optuna, 25 trials) | 9.600 | 96.535 | 287.9% | 1.055 | −0.259 | −0.062 |
+| temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 | +2.845 | +0.115 |
 
-![The tuned HGB run tracks real intermittent demand where the statistical baselines overshoot](../assets/projects/02-demand-forecasting/forecast_vs_actual.png){ width="100%" }
+*Δ vs seasonal_naive (sn) per row — negative means the run beats "same day
+last week" on that metric; the best row is marked ← best.*
+
+![The tuned HGB run tracks two representative UCI series day by day and clears the seasonal-naive floor on the last CV fold](../assets/projects/02-demand-forecasting/forecast_vs_actual.png){ width="100%" }
 
 Synthetic track — seeded CI fast path (24 series × 4 folds, seed 42; note what
 clean data does to the statistical baselines). *How to read: same metrics on clean
@@ -73,16 +76,19 @@ seeded data; bold = track winners (ETS overall, lgbm_tuned best among ML runs).*
   smooth-seasonality assumption. Both verdicts reported.
 - HPO improved on hgb in **every** fold on synthetic (8.619 → 8.529, −1.0%);
   the NN trails the linear baseline on both tracks — reported, not hidden.
-- Probabilistic 80% band coverage: synthetic 0.727 (quantile) / 0.757
-  (conformal); UCI 0.919 / 0.858, with a degenerate q80 = 0 calibration on
-  zero-heavy residuals.
+- Probabilistic 80% band coverage: quantile band 0.727 synthetic / 0.919
+  UCI (pooled); zero-aware split-conformal **0.757 / 0.858 on the last fold**
+  (target 0.80), widths calibrated per predicted-zero bin. On UCI the
+  champion's median forecast is 0 on ~100% of rows, so the band collapses to
+  the point forecast — the honest limit, stated on the figure, whose buttons
+  drop the band interactively.
 - UCI reconciliation: w=0.70, incoherence 384.0 → 115.2 (coherence property
   exact); store MAE 746.9 → 737.9. Synthetic: w=0.05, accuracy effect near
   null and reported as such.
 - 6/6 DQ gates on both tracks; synthetic pipeline ≈ 4 min, UCI ≈ 25 min;
   58 offline tests.
 
-![Only the tuned HGB run beats the seasonal-naive floor on real data — the sole MASE below 1 in the ladder](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
+![Only the tuned HGB run beats the seasonal-naive floor on real data — left: MAE and RMSE per run in units; right: MASE against the 1.0 seasonal-naive parity line, with MAPE omitted as unit-incompatible (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 
 ## Artifacts
 

@@ -38,7 +38,10 @@ FIGURES: dict[str, tuple[str, str, str]] = {
 # (docs/projects/<id>.md): project dir → figure stems, in page order.
 DOCS_FIGURES: dict[str, tuple[str, ...]] = {
     "01-rag-agent": ("chunk_size_sweep", "failure_taxonomy"),
-    "02-demand-forecasting": ("reports_uci/figures/forecast_vs_actual", "metrics_bars"),
+    "02-demand-forecasting": (
+        "reports_uci/figures/forecast_vs_actual",
+        "reports_uci/figures/metrics_bars",
+    ),
     "03-anomaly-detection": ("nab_timelines",),
     "04-nlp-classification": ("confusion_matrix_selected", "training_curve", "epochs_probe"),
     "05-ml-pipeline-churn": ("business_cost_curve", "bootstrap_ci", "cost_surface"),
