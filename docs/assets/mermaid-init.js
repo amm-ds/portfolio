@@ -5,7 +5,7 @@ mermaid.initialize({
   securityLevel: "loose",
   theme: "base",
   themeVariables: {
-    fontSize: "18px",
+    fontSize: "20px",
     fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
     primaryColor: "#1e293b",
     primaryTextColor: "#f1f5f9",
@@ -17,9 +17,10 @@ mermaid.initialize({
     edgeLabelBackground: "#0f172a",
   },
   flowchart: {
-    nodeSpacing: 45,
-    rankSpacing: 65,
-    padding: 14,
+    useMaxWidth: true,
+    nodeSpacing: 55,
+    rankSpacing: 85,
+    padding: 20,
     curve: "basis",
     htmlLabels: true,
   },
