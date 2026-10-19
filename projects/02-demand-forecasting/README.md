@@ -193,16 +193,18 @@ What the audit-driven statistical baselines reveal on **real** data:
   stated plainly).
 - **Probabilistic (target 80% band)**:
 
-  | track | quantile band coverage | split-conformal coverage |
+  | track | quantile band coverage | zero-aware split-conformal (last fold) |
   |---|---|---|
-  | synthetic | 0.727 (under-covers) | 0.757 (q80 = 13.25) |
-  | UCI real | 0.919 (over-covers) | 0.858 (q80 = 0.0 — degenerate) |
+  | synthetic | 0.727 (under-covers) | 0.757 (no zero-predicted rows — band stays global) |
+  | UCI real | 0.919 (over-covers) | 0.858 (collapses to the point forecast where the median is 0) |
 
   Coverage is **h=1 only** — the frame is one-day-ahead; multi-horizon bands
-  (h ∈ {1, 7}) need a horizon-stacked frame (roadmap). Honest reading: global
-  bands under-cover on clean data and degenerate on intermittent data
-  (80% of residuals are exact zeros → q80 = 0); per-series conformal is the
-  fix direction.
+  (h ∈ {1, 7}) need a horizon-stacked frame (roadmap). Honest reading: the
+  quantile band under-covers on clean data; on intermittent demand the median
+  sits on the zero atom (~89% zeros), so any band around the p50 collapses
+  there — per-bin calibration is now explicit in `probabilistic.json` and the
+  figure states the achieved coverage, with buttons to drop the band;
+  per-series conformal remains the fix direction.
 
 Figures (HTML + JSON per track, `reports/figures/` synthetic,
 `reports_uci/figures/` real) — the audit list:

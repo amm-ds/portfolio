@@ -168,13 +168,24 @@ def figure_hpo_importance(study: optuna.Study) -> go.Figure:
         importances = {k: float(v) for k, v in counts.items()}
     fig = go.Figure()
     names = list(importances)
-    fig.add_bar(x=[importances[n] for n in names], y=names, orientation="h", name="importance")
+    fig.add_bar(
+        x=[importances[n] for n in names],
+        y=names,
+        orientation="h",
+        name="importance",
+        showlegend=False,  # single trace → no "importance" chip over the title
+    )
     top2 = sum(sorted(importances.values(), reverse=True)[:2])
     fig.update_layout(
         title=(
             f"Regularisation knobs dominate - top two params carry {top2:.0%} "
             "of the search importance"
-        )
+        ),
+        # Horizontal bars put the parameter names on the y-axis; the theme's
+        # 60 px left margin trims them ("min_samples_leaf" → "ples_leaf").
+        # automargin sizes the margin to the longest tick label instead.
+        yaxis={"automargin": True},
+        margin={"l": 60, "r": 30, "t": 60, "b": 50},
     )
     return apply_theme(fig)
 

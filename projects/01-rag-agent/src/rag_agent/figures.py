@@ -51,9 +51,11 @@ def _finish_themed(
 
 
 def sweep_figure(
-    scores: list[RetrievalScores], random_scores: list[RetrievalScores] | None = None
+    scores: list[RetrievalScores],
+    random_scores: list[RetrievalScores] | None = None,
+    lexical_scores: list[RetrievalScores] | None = None,
 ) -> go.Figure:
-    """Chunk-size sweep: grouped bars with value labels + the seeded random floor.
+    """Chunk-size sweep: grouped bars with value labels + the two retrieval floors.
 
     Readability contract (wave 16, viewer report "chunk size 600 has no bars"):
     the x-axis is **categorical** — chunk sizes are a deliberate 2x grid
@@ -61,6 +63,11 @@ def sweep_figure(
     continuous axis left a suggestive void between bars. Every bar carries its
     value label, the chosen size is starred, and zero-valued random-floor points
     are labelled and annotated as measurements rather than left as empty space.
+
+    Legend contract (wave 17, viewer report "legend unreadable on the title"):
+    with the two-line title + subtitle annotation, the theme's top-pinned
+    horizontal legend collides with the text — so the legend sits **below**
+    the plot, bottom-center, and the top margin carries only title+subtitle.
     """
     sizes = [s.chunk_size for s in scores]
     labels = [str(s) for s in sizes]
@@ -90,6 +97,33 @@ def sweep_figure(
             ),
         ]
     )
+    if lexical_scores:
+        # Deterministic word-match floor: the fair naive comparator a client
+        # would ask about before buying embeddings (chance → lexical → embeddings).
+        lex_recall = [s.recall_at_5 for s in lexical_scores]
+        lex_mrr = [s.mrr_at_5 for s in lexical_scores]
+        fig.add_trace(
+            go.Scatter(
+                name="lexical (word match) recall@5",
+                x=labels,
+                y=lex_recall,
+                mode="lines+markers+text",
+                text=[f"{v:.3f}" for v in lex_recall],
+                textposition="top center",
+                line={"dash": "dash", "color": "#a78bfa", "width": 2},
+            )
+        )
+        fig.add_trace(
+            go.Scatter(
+                name="lexical (word match) mrr@5",
+                x=labels,
+                y=lex_mrr,
+                mode="lines+markers+text",
+                text=[f"{v:.3f}" for v in lex_mrr],
+                textposition="bottom center",
+                line={"dash": "dot", "color": "#34d399", "width": 2},
+            )
+        )
     if random_scores:
         # Flat dashed reference series so the embedding gain is visible.
         rnd_recall = [s.recall_at_5 for s in random_scores]
@@ -163,7 +197,9 @@ def sweep_figure(
         xref="paper",
         yref="paper",
         x=0.02,
-        y=1.16,
+        # Above the two-line title: the deep bottom margin (legend below the
+        # plot) shrinks the plot area, so 1.16 would land inside the title.
+        y=1.30,
         xanchor="left",
         yanchor="bottom",
         showarrow=False,
@@ -184,9 +220,23 @@ def sweep_figure(
         fig,
         takeaway=(
             "Recall saturates at every size; smaller chunks rank sharper (MRR) at "
-            "half the context cost — every bar clears the seeded random floor."
+            "half the context cost — every bar clears both the seeded random floor "
+            "and the word-match baseline."
         ),
-        margin_t=128,  # subtitle (y=1.16) above the title needs headroom
+        margin_t=160,  # caption above the two-line title needs headroom
+        margin_b=115,  # bottom-center legend below the axis title
+    )
+    # The legend moves below the plot (bottom-center): with a two-line title
+    # plus the subtitle annotation, the theme's top-pinned legend overlaps the
+    # text and is unreadable.
+    fig.update_layout(
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.24,
+            "x": 0.5,
+            "xanchor": "center",
+        }
     )
     return fig
 

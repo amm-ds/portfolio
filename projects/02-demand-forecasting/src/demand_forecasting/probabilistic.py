@@ -1,16 +1,26 @@
-"""Probabilistic forecasts: quantile HGB + split-conformal band (wave 7).
+"""Probabilistic forecasts: quantile HGB + zero-aware split-conformal band.
+
+Wave 7 shipped the quantile + global split-conformal pair; wave 17 replaced
+the global conformal width with per predicted-zero-bin calibration (the
+global q80 degenerates on zero-heavy demand).
 
 Two complementary 80% bands on top of the tuned HGB config:
 
 - **quantile band** — three ``HistGradientBoostingRegressor(loss="quantile")``
   models (p10 / p50 / p90) trained per fold on the same date-aligned windows;
-- **split-conformal band** — the p50 residuals of all *earlier* folds define a
-  symmetric ±q80 correction, applied to the last fold only (classic
-  split-conformal: coverage is marginal and exchangeability-based).
+- **zero-aware split-conformal band** — the p50 residuals of all *earlier*
+  folds define the ±q80 correction **per predicted-zero bin** (rows the model
+  predicts as zero have a different residual law than rows it predicts
+  nonzero). A *global* width degenerates on zero-heavy demand — with >80% of
+  residuals exactly 0 the global q80 collapses to 0 (UCI wave-7 artefact).
+  The band is applied to the last fold only (classic split-conformal:
+  coverage is marginal and exchangeability-based).
 
 Outputs ``reports/probabilistic.json`` (empirical coverages) and
-``figures/probabilistic_band`` (two high-volume example series, last fold).
-Honest reporting: coverage is empirical out-of-fold, never in-sample.
+``figures/probabilistic_band`` (two high-volume example series, last fold;
+an updatemenu toggles the band off — "actual only"). Honest reporting:
+coverage is empirical out-of-fold, never in-sample, and the achieved number
+is stated in the figure subtitle.
 """
 
 import json
@@ -70,6 +80,36 @@ def coverage(y_true: np.ndarray, lo: np.ndarray, hi: np.ndarray) -> float:
     return float(np.mean((y_true >= lo) & (y_true <= hi)))
 
 
+def _zero_bin_widths(
+    p50_cal: np.ndarray, abs_resid_cal: np.ndarray, p50_apply: np.ndarray
+) -> tuple[np.ndarray, dict[str, Any]]:
+    """Per predicted-zero-bin ±q80 widths (split-conformal calibration).
+
+    Bins are defined by the *prediction* (p50 ≤ 0 vs p50 > 0) — usable at
+    forecast time, unlike conditioning on the realised y. Each bin gets its
+    own |residual| q80 from the calibration rows; a bin with no calibration
+    rows falls back to the pooled q80. Returns one width per ``p50_apply``
+    row plus the calibration summary for the metrics JSON.
+    """
+    zero_cal = p50_cal <= 0
+    q80_zero = _bin_q80(abs_resid_cal[zero_cal], abs_resid_cal)
+    q80_nonzero = _bin_q80(abs_resid_cal[~zero_cal], abs_resid_cal)
+    widths = np.where(p50_apply <= 0, q80_zero, q80_nonzero)
+    summary = {
+        "bin_definition": "p50 <= 0 (model predicts zero) vs p50 > 0",
+        "zero_bin": {"q80": q80_zero, "n_calibration": int(zero_cal.sum())},
+        "nonzero_bin": {"q80": q80_nonzero, "n_calibration": int((~zero_cal).sum())},
+    }
+    return widths, summary
+
+
+def _bin_q80(bin_resid: np.ndarray, pooled_resid: np.ndarray) -> float:
+    """q80 of a bin's |residuals|, falling back to the pooled q80 when empty."""
+    if len(bin_resid) == 0:
+        return float(np.quantile(pooled_resid, TARGET_COVERAGE))
+    return float(np.quantile(bin_resid, TARGET_COVERAGE))
+
+
 def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[str, Any]:
     """Backtest the quantile models and evaluate both bands on the last fold."""
     features = pl.read_parquet(settings.data_dir / "features.parquet")
@@ -77,7 +117,8 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
     folds = cv_row_folds(features, config)
 
     per_fold: list[dict[str, float]] = []
-    residuals_early: list[np.ndarray] = []
+    cal_p50: list[np.ndarray] = []  # calibration (all earlier folds) p50 + |resid|
+    cal_absres: list[np.ndarray] = []
     for k, (train_rows, val_rows) in enumerate(folds):
         models = _fit_quantile_models(x[train_rows], y[train_rows], config)
         preds = {q: models[q].predict(x[val_rows]) for q in QUANTILES}
@@ -90,7 +131,8 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
             }
         )
         if k < len(folds) - 1:
-            residuals_early.append(np.abs(y[val_rows] - preds[0.5]))
+            cal_p50.append(preds[0.5])
+            cal_absres.append(np.abs(y[val_rows] - preds[0.5]))
         if k == len(folds) - 1:
             last = {
                 "dates": features["date"].to_numpy()[val_rows],
@@ -101,12 +143,22 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
                 "p90": preds[0.9],
             }
 
-    # split-conformal: calibrate on all earlier folds, apply to the last fold
-    q80 = float(np.quantile(np.concatenate(residuals_early), TARGET_COVERAGE))
-    last["conf_lo"] = last["p50"] - q80
-    last["conf_hi"] = last["p50"] + q80
+    # zero-aware split-conformal: calibrate per predicted-zero bin on all
+    # earlier folds, apply per bin on the last fold; demand floors at 0
+    widths, bin_summary = _zero_bin_widths(
+        np.concatenate(cal_p50), np.concatenate(cal_absres), last["p50"]
+    )
+    last["conf_lo"] = np.maximum(last["p50"] - widths, 0.0)
+    last["conf_hi"] = last["p50"] + widths
     conformal_cov = coverage(last["y_true"], last["conf_lo"], last["conf_hi"])
+    zero_mask = last["p50"] <= 0
     quantile_cov_pooled = float(np.mean([f["quantile_band_coverage"] for f in per_fold]))
+
+    def _bin_coverage(mask: np.ndarray) -> float | None:
+        """Coverage within one bin; None when the fold has no rows in it."""
+        if not mask.any():
+            return None
+        return coverage(last["y_true"][mask], last["conf_lo"][mask], last["conf_hi"][mask])
 
     result: dict[str, Any] = {
         "target_coverage": TARGET_COVERAGE,
@@ -120,8 +172,13 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
             "per_fold": per_fold,
         },
         "split_conformal": {
-            "q80": q80,
+            # global q80 kept for reference: on zero-heavy demand it
+            # degenerates (UCI: q80 = 0), which is why the band is per-bin.
+            "q80": float(np.quantile(np.concatenate(cal_absres), TARGET_COVERAGE)),
+            **bin_summary,
             "coverage_last_fold": conformal_cov,
+            "coverage_last_fold_zero_bin": _bin_coverage(zero_mask),
+            "coverage_last_fold_nonzero_bin": _bin_coverage(~zero_mask),
         },
         "mae_p50_pooled": float(np.mean([f["mae_p50"] for f in per_fold])),
     }
@@ -129,11 +186,13 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2))
     logger.info(
-        "probabilistic: quantile band coverage %.3f (target %.2f), conformal %.3f (q80=%.3f)",
+        "probabilistic: quantile band coverage %.3f (target %.2f), zero-aware "
+        "conformal %.3f (zero bin %s / nonzero bin %s)",
         quantile_cov_pooled,
         TARGET_COVERAGE,
         conformal_cov,
-        q80,
+        _fmt_bin(result["split_conformal"]["coverage_last_fold_zero_bin"]),
+        _fmt_bin(result["split_conformal"]["coverage_last_fold_nonzero_bin"]),
     )
 
     fig = figure_probabilistic_band(features, last, result)
@@ -148,7 +207,14 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
 def figure_probabilistic_band(
     features: pl.DataFrame, last: dict[str, np.ndarray], result: dict[str, Any]
 ) -> go.Figure:
-    """Actual vs p50 with the p10-p90 band for two high-volume example series."""
+    """Actual vs p50 with the zero-aware conformal band for two example series.
+
+    The band is the per predicted-zero-bin split-conformal band (see
+    :func:`_zero_bin_widths`) — the quantile p10/p90 band stays in
+    ``probabilistic.json`` but is not drawn: its global coverage is the number
+    the old figure complained about. An updatemenu toggles the band off
+    ("actual only"); the achieved last-fold coverage is stated in the subtitle.
+    """
     volume = (
         features.group_by("series_id")
         .agg(pl.col("y").sum().alias("vol"))
@@ -169,31 +235,78 @@ def figure_probabilistic_band(
         )
         fig.add_scatter(
             x=x,
-            y=last["p90"][mask],
-            name=f"{sid} p90",
+            y=last["conf_hi"][mask],
+            name=f"{sid} band upper",
             mode="lines",
             line={"width": 0},
             showlegend=False,
         )
         fig.add_scatter(
             x=x,
-            y=last["p10"][mask],
-            name=f"{sid} p10",
+            y=last["conf_lo"][mask],
+            name=f"{sid} band lower",
             mode="lines",
             fill="tonexty",
+            fillcolor="rgba(45, 212, 191, 0.15)",
             line={"width": 0},
             showlegend=False,
         )
-    cov = result["quantile_band"]["coverage_pooled"]
+    conf = result["split_conformal"]
+    cov = conf["coverage_last_fold"]
     fig.update_layout(
         title=(
-            f"The 80% band covers only {cov:.0%} here - zero-heavy residuals "
-            "break the conformal width"
-        )
+            f"Zero-aware conformal band: {cov:.0%} last-fold coverage "
+            f"(target {TARGET_COVERAGE:.0%}) — widths calibrated per "
+            "predicted-zero bin, not one global q80"
+        ),
+        # updatemenu: the band can be removed interactively ("actual only").
+        # Buttons sit in the free band between the two-line title and the plot;
+        # the legend drops below the plot.
+        updatemenus=[
+            {
+                "type": "buttons",
+                "direction": "right",
+                "showactive": True,
+                "x": 0.02,
+                "xanchor": "left",
+                "y": 1.10,
+                "yanchor": "top",
+                "buttons": [
+                    {
+                        "label": "with band",
+                        "method": "update",
+                        "args": [{"visible": [True] * len(fig.data)}],
+                    },
+                    {
+                        "label": "actual only",
+                        "method": "update",
+                        "args": [
+                            {"visible": ["actual" in (trace.name or "") for trace in fig.data]}
+                        ],
+                    },
+                ],
+            }
+        ],
     )
     add_takeaway(
         fig,
-        f"takeaway: empirical band coverage {cov:.0%} (target {TARGET_COVERAGE:.0%}); "
-        "width priced from backtest residuals",
+        f"takeaway: empirical band coverage {cov:.1%} on the last fold "
+        f"(target {TARGET_COVERAGE:.0%}"
+        + (
+            f"; zero-predicted rows {_fmt_bin(conf['coverage_last_fold_zero_bin'])}, "
+            f"nonzero-predicted rows {_fmt_bin(conf['coverage_last_fold_nonzero_bin'])}"
+            if conf["coverage_last_fold_zero_bin"] is not None
+            or conf["coverage_last_fold_nonzero_bin"] is not None
+            else ""
+        )
+        + ") — widths calibrated per predicted-zero bin on earlier folds",
     )
+    # add_takeaway resets the margins; re-apply ours afterwards (buttons above
+    # the plot need the deep top margin, the below-plot legend the bottom one).
+    fig.update_layout(margin={"t": 185, "l": 60, "r": 30, "b": 120})
     return apply_theme(fig)
+
+
+def _fmt_bin(value: float | None) -> str:
+    """Per-bin coverage for the subtitle; 'n/a' when the fold has no such rows."""
+    return "n/a" if value is None else f"{value:.1%}"

@@ -70,6 +70,7 @@ from rag_agent.index import (
     chunk_articles,
 )
 from rag_agent.judge import RubricJudge, build_judge
+from rag_agent.lexical import lexical_ranks
 from rag_agent.metering import get_meter, start_metering
 from rag_agent.ragas_eval import RagasRow, ensure_ragas_importable, run_ragas
 from rag_agent.reporting import (
@@ -431,15 +432,18 @@ def run_retrieval_sweep(
     questions: list[EvalQuestion],
     embed_fn: EmbedFn,
     rerank_fn: RerankFn | None,
-) -> tuple[list[RetrievalScores], list[RetrievalScores], go.Figure]:
-    """Score every chunk-size index on the graded question set + random baseline.
+) -> tuple[list[RetrievalScores], list[RetrievalScores], list[RetrievalScores], go.Figure]:
+    """Score every chunk-size index on the graded question set + both floors.
 
-    Returns (embedding scores, random-baseline scores, figure). The baseline is
-    computed per chunk size (different chunk counts → different draws), so it
-    is reported as one row per size rather than a single size-invariant row.
+    Returns (embedding scores, random-baseline scores, lexical-baseline
+    scores, figure). Both baselines are computed per chunk size (different
+    chunk counts → different granularity/draws): the seeded uniform-random
+    floor quantifies chance, the deterministic word-matching floor
+    (:mod:`rag_agent.lexical`) is the fair naive comparator embeddings must beat.
     """
     scores: list[RetrievalScores] = []
     random_scores: list[RetrievalScores] = []
+    lexical_scores: list[RetrievalScores] = []
     for size in config.chunk_sizes:
         retriever = Retriever.from_index_dir(config, config.index_path(size), embed_fn, rerank_fn)
         ranks = [
@@ -449,17 +453,26 @@ def run_retrieval_sweep(
         scores.append(_score_ranks(ranks, len(questions), size))
         rnd = random_ranks(config, questions, retriever.chunks)
         random_scores.append(_score_ranks(rnd, len(questions), size))
+        lex = lexical_ranks(retriever.chunks, questions)
+        lexical_scores.append(_score_ranks(lex, len(questions), size))
         logger.info(
             "chunk_size=%d recall@5=%.3f recall@10=%.3f mrr@5=%.3f | "
-            "random recall@5=%.3f mrr@5=%.3f",
+            "random recall@5=%.3f mrr@5=%.3f | lexical recall@5=%.3f mrr@5=%.3f",
             size,
             scores[-1].recall_at_5,
             scores[-1].recall_at_10,
             scores[-1].mrr_at_5,
             random_scores[-1].recall_at_5,
             random_scores[-1].mrr_at_5,
+            lexical_scores[-1].recall_at_5,
+            lexical_scores[-1].mrr_at_5,
         )
-    return scores, random_scores, sweep_figure(scores, random_scores)
+    return (
+        scores,
+        random_scores,
+        lexical_scores,
+        sweep_figure(scores, random_scores, lexical_scores),
+    )
 
 
 def run_rag_eval(
@@ -811,6 +824,7 @@ class RetrievalHpoResult:
 
     scores: list[RetrievalScores]
     random_scores: list[RetrievalScores]
+    lexical_scores: list[RetrievalScores]
     sweep_fig: go.Figure
     model_scores: dict[str, RetrievalScores]
     rerank_scores: dict[str, RetrievalScores]
@@ -836,8 +850,10 @@ def _run_retrieval_hpo(
     embed_fn: EmbedFn,
     rerank_fn: RerankFn,
 ) -> RetrievalHpoResult:
-    """Chunk sweep + random floor + model/rerank/top-k ablations → chosen config."""
-    scores, random_scores, sweep_fig = run_retrieval_sweep(config, questions, embed_fn, rerank_fn)
+    """Chunk sweep + random/lexical floors + model/rerank/top-k ablations → chosen config."""
+    scores, random_scores, lexical_scores, sweep_fig = run_retrieval_sweep(
+        config, questions, embed_fn, rerank_fn
+    )
     model_scores = model_comparison(config, questions, articles, rerank_fn, embed_fn=embed_fn)
     rerank_scores = rerank_ablation(config, questions, embed_fn, rerank_fn)
     topk = topk_sweep(config, questions, embed_fn, rerank_fn)
@@ -850,6 +866,7 @@ def _run_retrieval_hpo(
     return RetrievalHpoResult(
         scores=scores,
         random_scores=random_scores,
+        lexical_scores=lexical_scores,
         sweep_fig=sweep_fig,
         model_scores=model_scores,
         rerank_scores=rerank_scores,
@@ -1052,6 +1069,7 @@ def _extra_payload(
     default_data = hpo.topk[default_size]
     default_recall = recall_at_k_from(default_data, config.top_k)
     random_by_size = {s.chunk_size: s for s in hpo.random_scores}
+    lexical_by_size = {s.chunk_size: s for s in hpo.lexical_scores}
     return {
         "n_questions": len(questions),
         "rag_n_questions": len(rag_questions),
@@ -1065,6 +1083,11 @@ def _extra_payload(
                 "random_recall@5": random_by_size[s.chunk_size].recall_at_5,
                 "random_mrr@5": random_by_size[s.chunk_size].mrr_at_5,
                 "delta_mrr@5_vs_random": s.mrr_at_5 - random_by_size[s.chunk_size].mrr_at_5,
+                "lexical_recall@5": lexical_by_size[s.chunk_size].recall_at_5,
+                "lexical_mrr@5": lexical_by_size[s.chunk_size].mrr_at_5,
+                "delta_recall@5_vs_lexical": (
+                    s.recall_at_5 - lexical_by_size[s.chunk_size].recall_at_5
+                ),
             }
             for s in hpo.scores
         },
@@ -1138,6 +1161,7 @@ def _write_reports_stage(
         extra,
         rag_input_tokens_override=chosen_tokens if rag_run is not None else None,
         random_scores=hpo.random_scores,
+        lexical_scores=hpo.lexical_scores,
         model_scores=hpo.model_scores,
         rerank_scores=hpo.rerank_scores,
         topk_runs=topk_runs,
