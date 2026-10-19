@@ -50,7 +50,7 @@ describe("RoadmapBlock", () => {
     expect(document.querySelector(".roadmap")!.classList.contains("accent-card")).toBe(true);
   });
 
-  it("shows the n/n delivered counter once everything is delivered", () => {
+  it("never renders a delivered counter (redundant with the all-delivered dots)", () => {
     render(
       <RoadmapBlock
         roadmap={[
@@ -59,7 +59,8 @@ describe("RoadmapBlock", () => {
         ]}
       />,
     );
-    expect(screen.getByText("2/2 delivered")).toBeInTheDocument();
+    expect(screen.queryByText(/delivered$/)).toBeNull();
+    expect(document.querySelectorAll(".roadmap-node.delivered")).toHaveLength(2);
   });
 
   it("hides the counter while work remains", () => {
