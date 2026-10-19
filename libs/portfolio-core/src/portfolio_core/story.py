@@ -80,6 +80,16 @@ class ProjectStory(PortfolioBaseModel):
         default_factory=list,
         description="Finalized roadmap: delivered/deferred/remaining, no history.",
     )
+    figure_captions: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Programmatically-linked commentary for figures, keyed by figure id "
+            "(as listed in sections' `figures:`). Rendered as a footer under each "
+            "chart in the showcase app — the chart itself stays clean (short "
+            "descriptive title), the 'so what' lives here. Convention: caption "
+            "every rendered figure, 1-2 plain-language sentences, numbers exact."
+        ),
+    )
 
     @model_validator(mode="after")
     def _unique_sections(self) -> "ProjectStory":
@@ -87,6 +97,16 @@ class ProjectStory(PortfolioBaseModel):
         if len(ids) != len(set(ids)):
             dupes = sorted({i for i in ids if ids.count(i) > 1})
             raise ValueError(f"duplicate story sections: {', '.join(dupes)}")
+        return self
+
+    @model_validator(mode="after")
+    def _captions_match_rendered_figures(self) -> "ProjectStory":
+        rendered = {f for s in self.sections for f in (s.figures or [])}
+        strays = sorted(set(self.figure_captions) - rendered)
+        if strays:
+            raise ValueError(
+                f"figure_captions keys without a rendered figure: {', '.join(strays)}"
+            )
         return self
 
     def section(self, section_id: str) -> StorySection | None:
