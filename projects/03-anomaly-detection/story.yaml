@@ -149,7 +149,7 @@ sections:
       operating point is a staffing dial, not a mystery.
 
       ```mermaid
-      flowchart TD
+      flowchart LR
           A[anomaly score] --> B{score >= threshold?}
           B -->|yes| C[page on-call]
           B -->|no| D[stay silent]

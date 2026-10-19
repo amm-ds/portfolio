@@ -9,7 +9,7 @@ import plotly.io as pio
 _TEMPLATE: dict[str, Any] = {
     "layout": {
         "template": "plotly_dark",
-        "font": {"family": "Inter, system-ui, sans-serif", "size": 14},
+        "font": {"family": "Inter, system-ui, sans-serif", "size": 14, "color": "#e2e8f0"},
         "colorway": [
             "#2dd4bf",  # teal
             "#38bdf8",  # sky
@@ -29,9 +29,29 @@ _TEMPLATE: dict[str, Any] = {
             "font": {"color": "#f1f5f9", "size": 17},
         },
         # Axis text must read on the dark canvas — both primary and secondary.
-        "xaxis": {"tickfont": {"color": "#cbd5e1"}, "title": {"font": {"color": "#cbd5e1"}}},
-        "yaxis": {"tickfont": {"color": "#cbd5e1"}, "title": {"font": {"color": "#cbd5e1"}}},
-        "yaxis2": {"tickfont": {"color": "#cbd5e1"}, "title": {"font": {"color": "#cbd5e1"}}},
+        # Gridlines are deliberately visible slate (not near-black): "contrast"
+        # audit found grids/ticks illegible at embedded size.
+        "xaxis": {
+            "tickfont": {"color": "#e2e8f0"},
+            "title": {"font": {"color": "#e2e8f0"}},
+            "gridcolor": "#293548",
+            "zerolinecolor": "#3b4a61",
+            "linecolor": "#3b4a61",
+        },
+        "yaxis": {
+            "tickfont": {"color": "#e2e8f0"},
+            "title": {"font": {"color": "#e2e8f0"}},
+            "gridcolor": "#293548",
+            "zerolinecolor": "#3b4a61",
+            "linecolor": "#3b4a61",
+        },
+        "yaxis2": {
+            "tickfont": {"color": "#e2e8f0"},
+            "title": {"font": {"color": "#e2e8f0"}},
+            "gridcolor": "#293548",
+            "zerolinecolor": "#3b4a61",
+            "linecolor": "#3b4a61",
+        },
         "hovermode": "x unified",
         # Hover cards must read on any background: light card, dark text.
         "hoverlabel": {

@@ -79,7 +79,7 @@ sections:
       The hierarchy the models forecast over:
 
       ```mermaid
-      graph TD
+      graph LR
           T[Total demand] --> S0[store_0] & S1[store_1] & S2[store_2] & S3[store_3]
           S0 --> S0P[6 products]
           S1 --> S1P[6 products]

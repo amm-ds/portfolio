@@ -131,7 +131,7 @@ sections:
       split, decision persisted in `reports/selection.json`.
 
       ```mermaid
-      flowchart TD
+      flowchart LR
           A[Untouched test split] --> B[Predict all runs]
           B --> C[Metrics + macro-F1]
           C --> D{HPO vs artifact}

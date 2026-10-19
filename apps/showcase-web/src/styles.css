@@ -1479,3 +1479,22 @@ button:disabled {
 .muted {
   color: var(--muted);
 }
+
+/* Mermaid diagrams: centered, generously sized, readable (audit: diagrams
+   must be "visible big and centered, related to the text"). */
+.mermaid-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 1.4rem auto;
+  padding: 1rem 0.75rem;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.mermaid-wrap .mermaid {
+  min-width: min(720px, 96%);
+  text-align: center;
+  font-size: 15px;
+}
