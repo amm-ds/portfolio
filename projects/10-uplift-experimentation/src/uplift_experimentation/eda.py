@@ -53,11 +53,11 @@ def eda_segment_profile_figure(df: pl.DataFrame) -> go.Figure:
     style_runs(fig)
     fig.update_layout(
         barmode="group",
-        title="Randomization holds: arms near-identical at ~$242 spend",
+        title="Three-arm profile: sizes, outcome rates, prior spend",
     )
     add_takeaway(
         fig,
-        "only Mens E-Mail moves conversion (0.57% -> 1.25%); outcome rates separate the "
-        "arms only slightly — conversion is rare (~1%) and needs variance reduction.",
+        "Hillstrom March 2008: Mens E-Mail vs Womens E-Mail vs No E-Mail, "
+        "64,000 customers; visit + conversion rates and mean pre-period spend per arm",
     )
     return fig

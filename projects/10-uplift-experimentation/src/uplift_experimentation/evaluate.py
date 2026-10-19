@@ -330,32 +330,21 @@ def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figur
         )
     apply_theme(fig)
     style_runs(fig, best=read["best_policy"])
-    title = (
-        f"Top-{read['policy_budget']:.0%} beats mail-everyone above "
-        f"≈{read['breakeven_cost_per_email']:.2f} USD/email"
-    )
-    half = next((r for r in read["rows"] if abs(r["cost_per_email"] - 0.5) < 1e-9), None)
-
-    def _signed(v: float) -> str:
-        return f"-{abs(v):,.0f}" if v < 0 else f"{v:,.0f}"
-
-    half_txt = ""
-    if half is not None:
-        half_txt = (
-            f"at 0.50 USD/email: {_signed(half['profit_at_max'])} vs "
-            f"{_signed(half['profit_mail_everyone'])} USD; "
-        )
     fig.update_layout(
-        title=title,
+        title=(
+            f"Profit vs send cost: mail-everyone vs top-{read['policy_budget']:.0%} "
+            f"({read['best_policy']})"
+        ),
         xaxis_title="cost per email (USD, log scale)",
         yaxis_title="profit (USD)",
         xaxis_type="log",
     )
     add_takeaway(
         fig,
-        f"{half_txt}at {cfg.cost_per_email:.2f} USD/email mail-everyone wins on raw "
-        f"profit — top-{read['policy_budget']:.0%} overtakes once sends cost more than "
-        f"≈{read['breakeven_cost_per_email']:.2f} USD each (fatigue/list-wear pricing).",
+        f"profit at the best targeting fraction vs mailing everyone, across send "
+        f"costs {costs[0]:.2f}-{costs[-1]:.2f} USD (log scale); dotted line = analytic "
+        f"break-even at {read['breakeven_cost_per_email']:.2f} USD/email; amber ticks "
+        "= reference send costs",
     )
     return fig
 
@@ -485,15 +474,14 @@ def qini_figure(
                 hoverinfo="skip",
             )
     fig.update_layout(
-        title="The Qini ranking is not established",
+        title="Qini curves by targeted fraction",
         xaxis_title="fraction of customers targeted (top scores first)",
         yaxis_title="incremental conversions",
     )
     add_takeaway(
         fig,
-        "response posts the highest Qini area but its paired difference CI spans zero; "
-        "random and treat-everyone collapse onto the diagonal; bands are 95% "
-        "paired-bootstrap intervals.",
+        "incremental conversions, policies + random/treat-everyone references "
+        "— 95% paired-bootstrap bands",
     )
     return fig
 
@@ -506,15 +494,15 @@ def decile_figure(table: dict[str, list[float]], policy: str) -> go.Figure:
     apply_theme(fig)
     style_runs(fig)
     fig.update_layout(
-        title="Top decile is the empirical best",
+        title=f"Predicted vs empirical uplift by decile ({policy})",
         xaxis_title="decile (1 = highest predicted uplift)",
         yaxis_title="uplift (conversion-rate difference)",
         barmode="group",
     )
     add_takeaway(
         fig,
-        f"ordering holds (1.1pp vs 0.3pp top decile) but predicted magnitudes run ~2x "
-        f"hot ({policy}); flat bars would mean ranking noise, not persuadables.",
+        f"mean predicted score vs empirical treated-control contrast per decile, "
+        f"{policy} scores; decile 1 = highest predicted uplift",
     )
     return fig
 
@@ -590,16 +578,15 @@ def profit_figure(
         font={"size": 13, "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="Top-25% T-learner beats random by +2,812 USD (+69%)",
+        title="Incremental profit vs budget fraction by policy",
         xaxis_title="budget fraction (share of customers emailed)",
         yaxis_title=f"profit (revenue {cfg.revenue_per_conversion:.0f} USD/conversion, "
         f"{cfg.cost_per_email:.2f} USD/email)",
     )
     add_takeaway(
         fig,
-        "mail-everyone is the profit maximum at 0.01 USD/email; profit = conversions x "
-        "revenue - emails x cost — a model pays only when its curve sits above the "
-        "random line.",
+        "profit = incremental conversions x 114 USD revenue - emails x 0.01 USD; "
+        "star = recommended policy at the 25% budget; dotted line = no campaign",
     )
     return fig
 
@@ -622,15 +609,12 @@ def cuped_figure(reads: dict[str, dict[str, float]]) -> go.Figure:
             col=col,
         )
         fig.update_yaxes(title_text="var(Y)", row=1, col=col)
-    conv = reads["conversion"]
-    visit = reads["visit"]
     apply_theme(fig, width=1000, height=480)
-    fig.update_layout(title="CUPED is exactly as good as its covariate")
+    fig.update_layout(title="Outcome variance: naive vs CUPED-adjusted")
     add_takeaway(
         fig,
-        f"CUPED removes {conv['variance_reduction'] * 100:.2f}% of conversion variance — "
-        f"prior spend barely predicts a ~1% event — but {visit['variance_reduction'] * 100:.1f}% "
-        "of visit variance.",
+        "var(Y) before vs after CUPED adjustment, per outcome; covariate = log1p "
+        "prior-year spend (strictly pre-treatment)",
     )
     return fig
 

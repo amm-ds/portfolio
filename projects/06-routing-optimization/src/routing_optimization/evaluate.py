@@ -659,8 +659,8 @@ def _map_figures(cfg: VRPConfig, evaluations: list[InstanceEvaluation]) -> dict[
         figures[f"route_map_{map_eval.instance}"] = route_map_figure(
             map_problem,
             map_eval.best_routes,
-            title=f"ALNS routes all 100 {map_eval.instance} customers",
-            takeaway=f"feasible under capacity + time windows{gap}",
+            title=f"Best ALNS route plan for {map_eval.instance}",
+            takeaway=f"all 100 customers served; feasible under capacity + time windows{gap}",
         )
     return figures
 

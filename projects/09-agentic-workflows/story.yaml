@@ -1,13 +1,46 @@
 project_id: 09-agentic-workflows
+figure_captions:
+  suite_summary: >-
+    Graded outcomes (passed/total) across the three splits: the 15-task
+    tuning suite on four graders, 7 held-out answer tasks on two, and 3
+    should-fail probes on refusal grade. Everything passes — 15/15 on
+    every tuning grader, 7/7 held-out answers with exact tool sets, 3/3
+    graceful refusals.
+  node_waterfall: >-
+    Per-task stacked bars of node visits (plan / execute / critique);
+    each segment is one visit, its width that visit's latency, with the
+    60 s budget marked by the arrow. Median run is 18.2 s and p95 31.1 s
+    — all 15 tasks finish far under budget; retries appear as new
+    labelled segments (#2, #3), never as one stretched visit.
+  tool_usage_matrix: >-
+    Captured calls per task (columns) per tool (rows); a bright cell is a
+    planned call, a bright column under a rarely-expected tool is the
+    exact-set miss driver. This run is clean — 30 captured calls, 100%
+    call precision and tool recall, zero unplanned invocations (the
+    previous run had 8).
+  cost_latency_bars: >-
+    Stacked input/output tokens per task (bars, left axis), the
+    cloud-equivalent cost labelled above each bar, and latency against
+    the dashed 60 s budget line (right axis). The whole 15-task suite
+    cost $0.086 of the $2.00 cap (~$0.009 per task) at a labelled rate
+    card — a cost estimate, never a billed amount.
 roadmap:
 - status: delivered
-  text: 'Multi-step agent graphs — shipped, verified: Plan→Execute→Critique on pydantic-graph over typed WorkflowState with bounded retries and one Critique loop-back; the graph machinery is covered by 73 offline tests.'
+  text: >-
+    Plan→Execute→Critique graphs on pydantic-graph, typed WorkflowState,
+    bounded retries, critique loop-back — 73 tests.
 - status: delivered
-  text: 'Workflow evaluation harness — shipped, verified: 15-task tuning suite plus a 10-task held-out set (3 designed-to-fail refusal probes), all graded by deterministic evaluators; evaluate runs fully offline from data/run_records.json.'
+  text: >-
+    Evaluation harness: 15 tuning + 10 held-out tasks (3 refusal probes),
+    deterministic graders, fully offline.
 - status: delivered
-  text: 'Human-in-the-loop checkpointing — shipped, verified: typed ApprovalRequest plus full state serialize to data/checkpoint.json; CLI resumes with approve or reject-with-feedback (re-plan, then Execute).'
+  text: >-
+    HITL checkpointing: typed ApprovalRequest + full state serialize; CLI
+    resumes approve or reject-with-feedback.
 - status: delivered
-  text: 'Cross-project agent evaluation on real retrieval corpora — shipped, verified: search_documents queries 01''s Wikipedia FAISS index read-only; suite task t15 grades a two-article multi-hop lookup with the same deterministic graders.'
+  text: >-
+    Cross-project retrieval: search_documents on 01's FAISS index
+    read-only; t15 grades a two-article multi-hop lookup.
 sections:
 - id: background
   text_md: "Single-shot agents are the demo; workflows are the product. A one-shot answer can impress in a demo, but real work is a chain of dependent steps — a mistake in the middle corrupts everything after it, which is why unsupervised runs need grading, budgets, and checkpoints. This project\nturns the agentic-AI flagship into multi-step, stateful workflows —\nplanning, tool orchestration, bounded retries, self-critique, and human\ncheckpoints — under the same typed contracts and evaluation discipline as\nthe rest of the platform. The question is not whether an LLM can answer,\nbut whether it can be trusted through a multi-step procedure.\n\n- **Explicit graphs over free-form loops** — a pydantic-graph\n  Plan→Execute→Critique workflow makes every transition, retry bound, and\n  loop-back auditable code, not prompt folklore.\n- **Deterministic grading** — a 15-task tuning suite graded by offline,\n  code-level evaluators turns \"the agent works\" into per-task pass rates a\n  client can inspect; a 10-task held-out set guards against prompt\n  overfitting.\n- **Bounded autonomy** — retries are capped, latency and cost budgets are\n  enforced per task and per suite by the spend ledger, and consequential\n\

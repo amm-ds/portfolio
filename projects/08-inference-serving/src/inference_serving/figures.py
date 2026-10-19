@@ -31,7 +31,7 @@ def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
             name=next((_label(c) for c in subset), model),
         )
     fig.update_layout(
-        title="p95 latency grows linearly with concurrency",
+        title="p95 latency vs concurrency by model",
         xaxis_title="concurrency (semaphore)",
         yaxis_title="p95 latency (s)",
         xaxis={"dtick": 1},
@@ -39,8 +39,8 @@ def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "aggregate tok/s stays flat — decode is memory-bandwidth bound; single-user p95 "
-        "is the honest SLO baseline; concurrency headroom is what serving adds.",
+        "primary models only; c = asyncio semaphore level; p95 over the cell's "
+        "40 requests (8-prompt suite x 5 repeats)",
     )
     return style_runs(fig)
 
@@ -61,7 +61,7 @@ def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         ]
         fig.add_bar(x=models, y=y, name=f"c={level}")
     fig.update_layout(
-        title="Throughput is flat-to-declining in concurrency",
+        title="Aggregate output tok/s by model and concurrency",
         xaxis_title="model",
         yaxis_title="output tokens/s",
         barmode="group",
@@ -69,8 +69,8 @@ def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "the 3B-active MoE serves ~7x dense tok/s — decode is memory-bandwidth bound on "
-        "unified memory, so batching buys latency hiding, not free throughput.",
+        "primary models; aggregate tokens over cell wall time, per concurrency "
+        "level; single author run on Apple Silicon",
     )
     return fig
 
@@ -95,7 +95,7 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         ]
     )
     fig.update_layout(
-        title="Schema-valid rate holds at 1.00 across quant arms",
+        title="Schema-valid and keyword quality rate by quantization arm",
         xaxis_title="quantization arm (model / runner)",
         yaxis_title="rate",
         yaxis={"range": [0, 1.05]},
@@ -104,8 +104,8 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "4-bit and Q8_0 arms — quantization costs headroom, not quality; structured-output "
-        "reliability sits near ceiling (any quality gap is in citations).",
+        "quantization + engine arms at c=1; rates over the cell's 40 requests; "
+        "keyword quality = expected-answer terms present",
     )
     return fig
 
@@ -128,7 +128,7 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     fig.add_bar(x=labels, y=[c.agg_tok_per_s for c in cells], row=1, col=2)
     hw = "Apple Silicon (macOS arm64)" if "arm64" in run.platform else run.platform
     fig.update_layout(
-        title="MLX 4-bit beats llama.cpp Q8_0 by 2.9x tok/s",
+        title="Engine panel: p95 latency and tok/s (gemma4:31b)",
         barmode="group",
         showlegend=False,
     )
@@ -141,8 +141,8 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     fig.update_annotations(font_size=15)
     add_takeaway(
         fig,
-        f"18.8 vs 6.4 tok/s, p95 2.47 s vs 7.12 s at c=1 — same gemma4:31b weights on "
-        f"{hw}. Quant is confounded with packaging, not a pure runner race.",
+        f"same gemma4:31b weights on {hw} — 18.8 vs 6.4 tok/s, p95 2.47 s vs "
+        "7.12 s at c=1; quant is confounded with packaging, not a pure runner race.",
     )
     return fig
 

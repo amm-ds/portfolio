@@ -35,7 +35,7 @@ def gap_figure(rows: pl.DataFrame) -> go.Figure:
         y="gap_pct",
         color="solver",
         barmode="group",
-        title="ALNS gaps cluster in single digits",
+        title="Distance gap to best-known per instance",
         labels={"gap_pct": "gap %", "instance": "instance", "solver": "solver"},
     )
     fig.add_hline(y=0.0, line_color="#94a3b8", line_width=1)
@@ -149,13 +149,13 @@ def eda_instance_map_figure(problem: Problem) -> go.Figure:
         )
     )
     fig.update_layout(
-        title="The clock dictates routing, not the map",
+        title="C101 customers colored by time-window width",
         showlegend=True,
     )
     add_takeaway(
         fig,
-        f"{problem.name} customers cluster tight geographically, but their time "
-        "windows are narrow and scattered (color = window width)",
+        f"{problem.name}: coordinates of the 100 customers + depot (star); "
+        "color = window width (due - ready)",
     )
     fig.update_yaxes(scaleanchor="x", scaleratio=1)
     return apply_theme(fig, width=900, height=760)
@@ -239,7 +239,7 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
         color="solver",
         barmode="group",
         log_y=True,
-        title="ALNS lands within a few percent of best-known",
+        title="Total route distance per instance by solver",
         labels={
             "distance": "total distance (log scale)",
             "instance": "instance",
@@ -249,9 +249,8 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
     _style_runs_safe(fig, best="two_opt_tuned")
     add_takeaway(
         fig,
-        "the solver ladder spans orders of magnitude — constraint-aware construction "
-        "(savings) removes most of the randomized floor; tuned 2-opt closes a "
-        "further few percent",
+        "all 56 Solomon instances, one group per instance; baselines greyed, "
+        "tuned 2-opt promoted; seeded, deterministic distances",
     )
     return apply_theme(fig)
 
@@ -318,14 +317,13 @@ def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
         )
     fig.update_layout(
         barmode="group",
-        title="HPO-tuned ALNS: single-digit gaps on every Solomon family",
+        title="Distance gap and vehicle delta by Solomon family",
         xaxis2_title="family",
     )
     add_takeaway(
         fig,
-        "ALNS leads on both criteria — single-digit distance gaps and the fewest "
-        "vehicles of our ladder; every solver still uses more vehicles than the "
-        "hierarchical-optimizing references",
+        "mean gap % (top) and mean vehicle delta (bottom) vs best-known over all "
+        "56 instances; the benchmark ranks vehicles first, distance second",
     )
     return apply_theme(fig, height=720)
 
@@ -344,7 +342,7 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
         y="mean_gap_pct",
         color="solver",
         log_x=True,
-        title="The hand-written ALNS ladder dominates the Pareto",
+        title="Mean runtime vs mean distance gap by solver",
         labels={
             "mean_runtime_s": "mean runtime (s, log)",
             "mean_gap_pct": "mean gap to best-known (%)",
@@ -369,8 +367,8 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
     style_runs(fig, best="alns")
     add_takeaway(
         fig,
-        "hinted CP-SAT buys little quality at ~5x the runtime — only orders of "
-        "magnitude more time, and never fewer vehicles",
+        "means over all 56 instances; each marker annotated with its mean vehicle "
+        "delta vs best-known; lower-left is better",
     )
     return apply_theme(fig, height=640)
 
