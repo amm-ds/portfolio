@@ -31,10 +31,7 @@ def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
             name=next((_label(c) for c in subset), model),
         )
     fig.update_layout(
-        title=(
-            "p95 latency grows roughly linearly with concurrency while aggregate tok/s "
-            "stays flat — decode is memory-bandwidth bound"
-        ),
+        title="p95 latency grows linearly with concurrency",
         xaxis_title="concurrency (semaphore)",
         yaxis_title="p95 latency (s)",
         xaxis={"dtick": 1},
@@ -42,8 +39,8 @@ def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "Latency grows with concurrency but stays in the low seconds — single-user p95 "
-        "is the honest baseline for interactive SLOs; concurrency headroom is what serving adds.",
+        "aggregate tok/s stays flat — decode is memory-bandwidth bound; single-user p95 "
+        "is the honest SLO baseline; concurrency headroom is what serving adds.",
     )
     return style_runs(fig)
 
@@ -64,10 +61,7 @@ def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         ]
         fig.add_bar(x=models, y=y, name=f"c={level}")
     fig.update_layout(
-        title=(
-            "Throughput is flat-to-declining in concurrency - decode is "
-            "bandwidth-bound; the 3B-active MoE serves ~7x dense tok/s"
-        ),
+        title="Throughput is flat-to-declining in concurrency",
         xaxis_title="model",
         yaxis_title="output tokens/s",
         barmode="group",
@@ -75,7 +69,7 @@ def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "MoE arms scale sub-linearly with concurrency — decode is memory-bandwidth bound on "
+        "the 3B-active MoE serves ~7x dense tok/s — decode is memory-bandwidth bound on "
         "unified memory, so batching buys latency hiding, not free throughput.",
     )
     return fig
@@ -101,10 +95,7 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         ]
     )
     fig.update_layout(
-        title=(
-            "Schema-valid rate holds at 1.00 across 4-bit and Q8_0 arms - "
-            "quantization costs headroom, not quality"
-        ),
+        title="Schema-valid rate holds at 1.00 across quant arms",
         xaxis_title="quantization arm (model / runner)",
         yaxis_title="rate",
         yaxis={"range": [0, 1.05]},
@@ -113,8 +104,8 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "4-bit arms hold schema validity near ceiling — at this task size quantization costs "
-        "almost nothing in structured-output reliability (quality gap, if any, is in citations).",
+        "4-bit and Q8_0 arms — quantization costs headroom, not quality; structured-output "
+        "reliability sits near ceiling (any quality gap is in citations).",
     )
     return fig
 
@@ -137,10 +128,7 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     fig.add_bar(x=labels, y=[c.agg_tok_per_s for c in cells], row=1, col=2)
     hw = "Apple Silicon (macOS arm64)" if "arm64" in run.platform else run.platform
     fig.update_layout(
-        title=(
-            "MLX 4-bit beats GGUF Q8_0 on llama.cpp by 2.9x on tok/s (18.8 vs 6.4) "
-            "with p95 2.47 s vs 7.12 s at concurrency 1"
-        ),
+        title="MLX 4-bit beats llama.cpp Q8_0 by 2.9x tok/s",
         barmode="group",
         showlegend=False,
     )
@@ -153,8 +141,8 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     fig.update_annotations(font_size=15)
     add_takeaway(
         fig,
-        f"Same gemma4:31b weights on {hw}, c=1 — GGUF Q8_0 via llama.cpp vs "
-        "4-bit MLX. Quant is confounded with packaging, not a pure runner race.",
+        f"18.8 vs 6.4 tok/s, p95 2.47 s vs 7.12 s at c=1 — same gemma4:31b weights on "
+        f"{hw}. Quant is confounded with packaging, not a pure runner race.",
     )
     return fig
 

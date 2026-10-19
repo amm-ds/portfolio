@@ -35,13 +35,14 @@ def gap_figure(rows: pl.DataFrame) -> go.Figure:
         y="gap_pct",
         color="solver",
         barmode="group",
-        title=(
-            f"ALNS gaps cluster in single digits and undercut best-known on "
-            f"{n_under} of {n_inst} instances"
-        ),
+        title="ALNS gaps cluster in single digits",
         labels={"gap_pct": "gap %", "instance": "instance", "solver": "solver"},
     )
     fig.add_hline(y=0.0, line_color="#94a3b8", line_width=1)
+    add_takeaway(
+        fig,
+        f"{n_inst} Solomon instances; {n_under} undercut best-known (convention-mixed references)",
+    )
     return apply_theme(fig)
 
 
@@ -60,7 +61,9 @@ def runtime_figure(rows: pl.DataFrame) -> go.Figure:
     return apply_theme(fig)
 
 
-def route_map_figure(problem: Problem, routes: list[list[int]], title: str) -> go.Figure:
+def route_map_figure(
+    problem: Problem, routes: list[list[int]], title: str, takeaway: str | None = None
+) -> go.Figure:
     """Depot + customer scatter with route polylines colored per vehicle."""
     customers = problem.customers
     depot = problem.depot
@@ -103,10 +106,9 @@ def route_map_figure(problem: Problem, routes: list[list[int]], title: str) -> g
     fig.update_layout(
         title=title,
         showlegend=True,
-        # 12 entries wrap into two rows and would cover the title — pin the
-        # legend below the map instead.
-        legend={"orientation": "h", "yanchor": "top", "y": -0.08, "x": 0.02, "xanchor": "left"},
     )
+    if takeaway is not None:
+        add_takeaway(fig, takeaway)
     fig.update_yaxes(scaleanchor="x", scaleratio=1)
     return apply_theme(fig, width=900, height=760)
 
@@ -147,11 +149,13 @@ def eda_instance_map_figure(problem: Problem) -> go.Figure:
         )
     )
     fig.update_layout(
-        title=(
-            f"{problem.name} clusters tight, but narrow scattered windows - "
-            "the clock dictates routing, not the map"
-        ),
+        title="The clock dictates routing, not the map",
         showlegend=True,
+    )
+    add_takeaway(
+        fig,
+        f"{problem.name} customers cluster tight geographically, but their time "
+        "windows are narrow and scattered (color = window width)",
     )
     fig.update_yaxes(scaleanchor="x", scaleratio=1)
     return apply_theme(fig, width=900, height=760)
@@ -235,10 +239,7 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
         color="solver",
         barmode="group",
         log_y=True,
-        title=(
-            "The ladder spans orders of magnitude - ALNS lands within a few "
-            "percent of best-known on every instance"
-        ),
+        title="ALNS lands within a few percent of best-known",
         labels={
             "distance": "total distance (log scale)",
             "instance": "instance",
@@ -248,8 +249,9 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
     _style_runs_safe(fig, best="two_opt_tuned")
     add_takeaway(
         fig,
-        "constraint-aware construction (savings) removes most of the randomized floor; "
-        "tuned 2-opt closes a further few percent",
+        "the solver ladder spans orders of magnitude — constraint-aware construction "
+        "(savings) removes most of the randomized floor; tuned 2-opt closes a "
+        "further few percent",
     )
     return apply_theme(fig)
 
@@ -316,10 +318,7 @@ def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
         )
     fig.update_layout(
         barmode="group",
-        title=(
-            "HPO-tuned ALNS closes the gap to best-known optima into single "
-            "digits on every Solomon family"
-        ),
+        title="HPO-tuned ALNS: single-digit gaps on every Solomon family",
         xaxis2_title="family",
     )
     add_takeaway(
@@ -345,10 +344,7 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
         y="mean_gap_pct",
         color="solver",
         log_x=True,
-        title=(
-            "The hand-written ALNS ladder dominates the speed-quality Pareto; "
-            "hinted CP-SAT buys little quality at ~5x the runtime"
-        ),
+        title="The hand-written ALNS ladder dominates the Pareto",
         labels={
             "mean_runtime_s": "mean runtime (s, log)",
             "mean_gap_pct": "mean gap to best-known (%)",
@@ -373,8 +369,8 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
     style_runs(fig, best="alns")
     add_takeaway(
         fig,
-        "the hand-written ladder dominates on speed; CP-SAT buys quality only "
-        "with orders of magnitude more time — and never fewer vehicles",
+        "hinted CP-SAT buys little quality at ~5x the runtime — only orders of "
+        "magnitude more time, and never fewer vehicles",
     )
     return apply_theme(fig, height=640)
 
@@ -440,10 +436,7 @@ def alns_convergence_figure(history: AlnsConvergenceHistory, instance: str) -> g
             col=1,
         )
     fig.update_layout(
-        title=(
-            f"Destroy+repair descends {instance} from {best[0]:.1f} to "
-            f"{best[-1]:.1f} (-{reduction:.1f}%)"
-        ),
+        title=f"Destroy+repair convergence on {instance}",
         xaxis2_title="segment",
         yaxis_title="total distance",
         yaxis2_title="operator weight",

@@ -124,7 +124,7 @@ def fig_green_transfer(result: dict[str, Any]) -> go.Figure:
     else:
         takeaway = "Transfer metrics unavailable."
     fig.update_layout(
-        title="Cross-service transfer: yellow-trained GBM on green-taxi demand (March 2024)",
+        title="Cross-service transfer: yellow GBM on green demand",
         yaxis_title="MAE (pickups/hour)",
     )
     return add_takeaway(apply_theme(fig), takeaway)

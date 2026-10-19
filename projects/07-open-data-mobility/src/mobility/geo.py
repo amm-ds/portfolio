@@ -84,10 +84,7 @@ def fig_zone_demand_map(demand: pl.DataFrame) -> go.Figure:
     fig = _choropleth(
         gdf,
         means,
-        (
-            "Zone-hour demand concentrates in Midtown/Manhattan cores and the "
-            "JFK/EWR airports — the 265-zone grid is far from flat"
-        ),
+        "Demand concentrates in Midtown and the airports",
         "Teal",
         "pickups/h",
     )

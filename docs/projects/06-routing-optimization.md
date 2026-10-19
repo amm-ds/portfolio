@@ -14,7 +14,7 @@
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
 
-![ALNS plans feasible, capacity- and time-window-valid routes for all 100 C101 customers on the clustered family, within 4.48% of best-known distance.](../assets/projects/06-routing-optimization/route_map_C101.png){ width="100%" }
+![ALNS plans feasible, capacity- and time-window-valid routes for all 100 C101 customers on the clustered family, within 3.77% of best-known distance.](../assets/projects/06-routing-optimization/route_map_C101.png){ width="100%" }
 
 Fleet operators routing last-mile and field-service vehicles leave fuel,
 driver hours and CO₂ on the table every day. This project answers with a
