@@ -151,11 +151,6 @@ code {
   text-shadow: none;
 }
 
-.roadmap-count {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--ok);
-}
 
 .roadmap-track {
   position: relative;

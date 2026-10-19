@@ -14,24 +14,16 @@ export function shortMilestone(text: string): string {
 /**
  * Story roadmap as a visual timeline: one node per milestone on a horizontal
  * progress line (delivered = accent-filled dot, open/deferred = hollow dot),
- * short label under each node, full text on hover. A "n/n delivered" counter
- * shows next to the title once everything is delivered. Renders nothing when
+ * short label under each node, full text on hover. Renders nothing when
  * the story has no roadmap yet.
  */
 export function RoadmapBlock({ roadmap }: { roadmap: RoadmapItemData[] | undefined }) {
   if (!roadmap || roadmap.length === 0) return null;
-  const delivered = roadmap.filter((r) => r.status === "delivered").length;
-  const allDelivered = delivered === roadmap.length;
 
   return (
     <Card className="roadmap">
       <div className="roadmap-head">
         <h2 className="roadmap-title">roadmap</h2>
-        {allDelivered && (
-          <span className="roadmap-count">
-            {delivered}/{roadmap.length} delivered
-          </span>
-        )}
       </div>
       <ol className="roadmap-track" style={{ "--n": roadmap.length } as React.CSSProperties}>
         {roadmap.map((r, i) => (
