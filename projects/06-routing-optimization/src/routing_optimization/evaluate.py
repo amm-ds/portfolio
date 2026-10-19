@@ -652,7 +652,7 @@ def _map_figures(cfg: VRPConfig, evaluations: list[InstanceEvaluation]) -> dict[
     if map_eval.best_routes is not None:
         best = map_eval.best()
         gap = (
-            f" — within {gap_pct(best.total_distance, map_eval.best_known):.2f}% of best-known"
+            f" — {gap_pct(best.total_distance, map_eval.best_known):.2f}% from best-known"
             if map_eval.best_known is not None
             else ""
         )

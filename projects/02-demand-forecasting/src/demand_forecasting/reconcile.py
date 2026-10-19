@@ -249,12 +249,7 @@ def figure_reconciliation(result: ReconciliationResult, hold: pl.DataFrame) -> g
             showlegend=(i == 0),
             **common,
         )
-    fig.update_layout(
-        title=(
-            f"Reconciliation coherence — fold {result.eval_fold + 1}, "
-            f"shrinkage w={result.shrinkage:.2f}"
-        )
-    )
+    fig.update_layout(title=f"Reconciliation coherence — fold {result.eval_fold + 1}")
     return apply_theme(fig, width=1100, height=800)
 
 
@@ -282,8 +277,7 @@ def figure_coherence_heatmap(result: ReconciliationResult, hold: pl.DataFrame) -
     fig.update_layout(title="Hierarchy coherence heatmap")
     add_takeaway(
         fig,
-        "mean |parent - sum(children)| per store — incoherence shrinks by "
-        "exactly (1-w) everywhere; coherence is a guarantee, not a hope",
+        "mean |parent - sum(children)| per store — incoherence shrinks by exactly (1-w)",
     )
     return apply_theme(fig, width=900, height=420)
 

@@ -53,11 +53,11 @@ def eda_segment_profile_figure(df: pl.DataFrame) -> go.Figure:
     style_runs(fig)
     fig.update_layout(
         barmode="group",
-        title="Three-arm profile: sizes, outcome rates, prior spend",
+        title="Three arms: sizes, outcome rates, prior spend",
     )
     add_takeaway(
         fig,
-        "Hillstrom March 2008: Mens E-Mail vs Womens E-Mail vs No E-Mail, "
-        "64,000 customers; visit + conversion rates and mean pre-period spend per arm",
+        "Hillstrom March 2008 — 64,000 customers, three arms; "
+        "visit + conversion rates, prior spend",
     )
     return fig

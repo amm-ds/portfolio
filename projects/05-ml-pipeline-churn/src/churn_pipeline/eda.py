@@ -73,7 +73,6 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
     )
     add_takeaway(
         fig,
-        "7,043-customer telco panel — churn rate by contract (left), charges and "
-        "tenure densities split by outcome",
+        "7,043 customers — churn rate by contract (left); charges & tenure densities by outcome",
     )
     return apply_theme(fig)

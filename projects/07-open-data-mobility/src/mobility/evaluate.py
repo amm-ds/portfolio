@@ -280,7 +280,7 @@ def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> g
     else:
         takeaway = f"day over day on the {days}-day holdout window"
     fig.update_layout(
-        title=f"Actual vs predicted demand, top {top_n} busiest zones",
+        title=f"Actual vs predicted demand, top {top_n} zones",
         hovermode="x unified",
     )
     return add_takeaway(apply_theme(fig, height=300 * len(top_zones)), takeaway)
@@ -368,8 +368,7 @@ def fig_weather_elasticity(by_borough: pl.DataFrame) -> go.Figure:
     obs = by_borough.drop_nulls("rain_vs_dry_ratio")
     if obs.height > 0:
         takeaway = (
-            "ratio of mean pickups on rain (≥1 mm) vs dry hours; directional, not "
-            "causal — hour-of-week mix unnormalised."
+            "mean pickup ratio, rain (≥1 mm) vs dry hours; directional — hour-of-week unnormalised"
         )
     else:
         takeaway = "No rainy hours in the window — elasticity not applicable."
@@ -420,8 +419,8 @@ def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
     fig.update_layout(title="City-wide actual vs GBM mean + p90 band")
     return add_takeaway(
         apply_theme(fig),
-        f"city-wide sums over 265 zones, {days} days from {WEEK_START.date()}; "
-        f"target coverage 90% (empirical {coverage:.1f}%)",
+        f"city-wide over 265 zones, {days} days from {WEEK_START.date()}; "
+        f"target 90% (empirical {coverage:.1f}%)",
     )
 
 
@@ -476,7 +475,7 @@ def fig_zone_fan(preds: pl.DataFrame, top_n: int = 2, days: int = 14) -> go.Figu
             col=1,
         )
     fig.update_layout(
-        title="Per-zone forecast fan: actual, GBM mean, p90 band",
+        title="Zone forecast fan: actual, GBM mean, p90 band",
         hovermode="x unified",
     )
     return add_takeaway(
@@ -533,7 +532,7 @@ def fig_p90_calibration(coverage: pl.DataFrame) -> go.Figure:
     return add_takeaway(
         apply_theme(fig),
         f"target 90% — overall {overall:.1%}; tightest borough {worst['borough']} at "
-        f"{worst['coverage']:.1%} — bands usable for staffing buffers.",
+        f"{worst['coverage']:.1%}",
     )
 
 
@@ -578,8 +577,7 @@ def fig_gbm_feature_importance(
     top = FEATURE_COLUMNS[int(np.argmax(result.importances_mean))]
     return add_takeaway(
         apply_theme(fig),
-        f"{model_path.stem} on a test slice (n={n:,}); {top} is the dominant driver — "
-        "recent-hour momentum matters more than weather.",
+        f"{model_path.stem} on a test slice (n={n:,}); dominant driver: {top}",
     )
 
 
@@ -659,7 +657,7 @@ def fig_gbm_vs_nn(runs: list[RunResult]) -> go.Figure:
         font={"size": 12, "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="Holdout run ladder: MAE + MASE (left), MAPE (right)",
+        title="Run ladder: MAE + MASE (left), MAPE (right)",
         yaxis_title="MAE (pickups)",
         yaxis2_title="MASE",
         yaxis3_title="MAPE (%)",
@@ -713,7 +711,6 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     p90_col = "y_p90_tuned" if "y_p90_tuned" in preds.columns else "y_p90"
     coverage = p90_coverage(preds, p90_col)
     coverage_borough = p90_coverage_by_borough(preds, p90_col)
-    best_mae = float(min(m.value for r in runs if (m := r.get("mae")) is not None))
     importance_fig = None
     has_gbm_model = (cfg.models_dir / "gbm_tuned.joblib").exists() or (
         cfg.models_dir / "gbm_mean.joblib"
@@ -731,9 +728,8 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "p90_calibration": fig_p90_calibration(coverage_borough),
         "gbm_vs_nn": add_takeaway(
             fig_gbm_vs_nn(runs),
-            f"MASE 1.0 = persistence parity (dotted line); naive_lag24 in grey; "
-            f"holdout from {cfg.train_cutoff} ({preds.height:,} zone-hours); "
-            f"best run by MAE: {ranking['ranking'][0]} ({best_mae:.2f}).",
+            f"MASE 1.0 = persistence parity (dotted); grey = naive_lag24; "
+            f"{preds.height:,} zone-hour holdout",
         ),
     }
     if importance_fig is not None:

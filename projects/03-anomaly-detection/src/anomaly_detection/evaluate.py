@@ -174,8 +174,7 @@ def pr_figure(
     )
     add_takeaway(
         fig,
-        f"one curve per detector (AP in legend) + prevalence floor (dashed) — "
-        f"{baseline:.2%} prevalence, test window",
+        f"one curve per detector (AP in legend); dashed = {baseline:.2%} prevalence floor",
     )
     return apply_theme(fig)
 
@@ -285,9 +284,8 @@ def threshold_sweep_figure(
     )
     add_takeaway(
         fig,
-        f"{name} — precision/recall traced over the flagged fraction of the test "
-        f"window (log x); the fixed 2% operating point is marked "
-        f"({op_tp} of {op_tp + op_fp} flags hit real incidents)",
+        f"{name}; dashed = fixed 2% operating point — {op_tp}/{op_tp + op_fp} "
+        "flags hit real incidents",
     )
     return apply_theme(fig)
 
@@ -317,8 +315,8 @@ def score_distribution_figure(
     fig.update_traces(opacity=0.65)
     add_takeaway(
         fig,
-        f"Median anomaly score {np.median(anomaly):.2f} vs. {np.median(normal):.2f} for normal "
-        f"minutes — the operating threshold (amber) keeps the masses apart.",
+        f"median anomaly score {np.median(anomaly):.2f} vs. {np.median(normal):.2f} "
+        "normal minutes; amber = operating threshold",
     )
     return apply_theme(fig)
 
@@ -365,10 +363,6 @@ def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | Non
             row=1,
             col=2,
         )
-    best = payload["best_params"]
-    best_txt = ", ".join(
-        f"{k}={v:.3g}" if isinstance(v, float) else f"{k}={v}" for k, v in best.items()
-    )
     top = max(importances, key=importances.get)
     fig.update_layout(
         title=f"{family} HPO — importance and trial history",
@@ -376,7 +370,7 @@ def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | Non
     add_takeaway(
         fig,
         f"{importances[top]:.0%} of importance on {top} — {payload['n_trials']} seeded TPE "
-        f"trials; best val PR-AUC {payload['best_value']:.3f} at {best_txt}.",
+        f"trials; best val PR-AUC {payload['best_value']:.3f}",
     )
     return apply_theme(fig)
 

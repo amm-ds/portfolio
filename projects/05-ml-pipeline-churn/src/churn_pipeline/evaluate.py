@@ -199,8 +199,8 @@ def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) 
     style_runs(fig)
     add_takeaway(
         fig,
-        f"holdout at t={threshold:.3f} — classification metrics per slice (left), "
-        f"slice business cost (right); dashed line = overall F1 {overall['f1']:.3f}",
+        f"holdout at t={threshold:.3f} — per-slice metrics (left) and cost (right); "
+        f"dashed = overall F1 {overall['f1']:.3f}",
     )
     return apply_theme(fig)
 
@@ -250,10 +250,7 @@ def cost_surface_figure(
     )
     add_takeaway(
         fig,
-        f"isotonic-calibrated model on the 1,409-row holdout — cost heatmap over "
-        f"the 41-point threshold grid, FN cost 1-10; star marks the chosen "
-        f"operating point (t={cfg.threshold_grid[col]:.3f}, "
-        f"cost {z[row, col]:.0f} at FN={cfg.fn_cost:g})",
+        "1,409-row holdout — cost over 41 thresholds x FN cost 1-10; star = chosen operating point",
     )
     # The colorbar title ("cost") sits above the colorbar at the legend's
     # default top-right slot — drop the single-entry legend just below it.
@@ -363,8 +360,8 @@ def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.F
     )
     add_takeaway(
         fig,
-        f"{delta['n_boot']:,} seeded resamples of the holdout — 95% CI shaded "
-        f"[{delta['lo']:.0f}, {delta['hi']:.0f}], zero bold, point starred",
+        f"{delta['n_boot']:,} seeded resamples — 95% CI shaded "
+        f"[{delta['lo']:.0f}, {delta['hi']:.0f}]; zero bold, point starred",
     )
     return apply_theme(fig)
 
@@ -559,15 +556,14 @@ def decision_curve_figure(
         nb = [net_benefit(y_true, proba, float(pt)) for pt in pt_grid]
         fig.add_scatter(x=pt_grid.tolist(), y=nb, mode="lines", name=name)
     fig.update_layout(
-        title="The selected model beats treat-all and treat-none",
+        title="Net benefit vs threshold by strategy",
         xaxis_title="Threshold probability pt",
         yaxis_title="Net benefit (per customer)",
     )
     style_runs(fig, best="selected model")
     add_takeaway(
         fig,
-        "the alarm pays — net benefit stays above both reference lines in the "
-        "low-threshold range where churn is actionable",
+        "net benefit per customer vs threshold; dashed = treat-none, dotted = treat-all",
     )
     return apply_theme(fig)
 
@@ -692,8 +688,7 @@ def evaluate_holdout(
         ),
     }
     takeaway = (
-        "holdout, 1,409 rows at FP=1/FN=5 — cost per candidate vs threshold; "
-        "stars mark each run's cost-optimal operating point"
+        "1,409-row holdout (FP=1, FN=5) — cost per candidate vs threshold; star = optimum per run"
     )
     figures = {
         "calibration_curve": calibration_figure(

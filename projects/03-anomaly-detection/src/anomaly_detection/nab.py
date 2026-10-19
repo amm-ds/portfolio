@@ -397,9 +397,7 @@ def nab_figures(
     )
     add_takeaway(
         fig,
-        f"six representative series (id per panel), test window only — amber "
-        f"bands are the labelled windows, pink crosses are the "
-        f"{n_alerts:,} alerts; nyc_taxi misses one window",
+        f"six series — amber = labelled windows, pink crosses = {n_alerts:,} alerts",
     )
     timelines = apply_theme(fig, height=820)
 
@@ -423,8 +421,7 @@ def nab_figures(
     dist_fig.update_traces(opacity=0.65)
     add_takeaway(
         dist_fig,
-        "scores pooled over all evaluable series — in-window vs outside-window "
-        "minutes, log-count y axis",
+        "scores pooled over evaluable series — in-window vs outside-window minutes",
     )
     distribution = apply_theme(dist_fig)
 

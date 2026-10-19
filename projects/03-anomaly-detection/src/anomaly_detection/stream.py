@@ -181,9 +181,8 @@ def adaptive_stream_figure(
     )
     add_takeaway(
         fig,
-        "rolling median/IQR re-anchors the threshold per chunk — "
-        f"{len(drift_events)} drift trigger(s) on this stream; the dotted line "
-        "is the fixed threshold",
+        "rolling median/IQR re-anchors per chunk — "
+        f"{len(drift_events)} drift trigger(s); dotted = fixed threshold",
     )
     return apply_theme(fig, height=620)
 

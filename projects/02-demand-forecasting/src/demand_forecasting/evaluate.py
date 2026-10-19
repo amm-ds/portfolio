@@ -303,7 +303,7 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
             mode="lines",
             line={"dash": "dot"},
         )
-    fig.update_layout(title="Forecast vs actual — champion and strongest naive")
+    fig.update_layout(title="Forecast vs actual — champion vs strongest naive")
     # platform storytelling convention: naive floor demoted, best run promoted
     style_runs(fig, best=model)
     add_takeaway(
@@ -369,9 +369,7 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "pooled out-of-fold ladder over all series and folds; MASE vs the 1.0 "
-        "seasonal-naive parity line — MAPE omitted (unit-incompatible % scale, "
-        "not decision-grade at 89% zeros); see metrics.json",
+        "pooled out-of-fold ladder — MASE vs 1.0 seasonal-naive parity; MAPE omitted (89% zeros)",
     )
     return fig
 
