@@ -10,7 +10,7 @@ const MERMAID_THEME = {
   fontFamily: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
   themeVariables: {
     background: "transparent",
-    fontSize: "18px",
+    fontSize: "20px",
     primaryColor: "#1e293b",
     primaryTextColor: "#f1f5f9",
     primaryBorderColor: "#2dd4bf",
@@ -33,9 +33,10 @@ const MERMAID_THEME = {
   // Bigger boxes + generous spacing so labels stay readable; matches
   // docs/assets/mermaid-init.js.
   flowchart: {
-    nodeSpacing: 45,
-    rankSpacing: 65,
-    padding: 14,
+    useMaxWidth: true,
+    nodeSpacing: 55,
+    rankSpacing: 85,
+    padding: 20,
     htmlLabels: true,
     curve: "basis" as const,
   },
