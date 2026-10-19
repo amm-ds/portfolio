@@ -32,7 +32,7 @@ detector-failure and real-vs-synthetic analysis.
 whole events; "events" = detected/total with the alert count at a fixed 2%
 budget; bold = overall champion.*
 
-![Real NAB telemetry hides labelled incidents in noisy baselines — most of the 1,609 alerts miss the event windows](../assets/projects/03-anomaly-detection/nab_timelines.png){ width="100%" }
+![Six representative NAB series (2×3 panels, series id per panel): most of the 897 alerts miss the amber event windows — nyc_taxi misses one labelled event, the other five detect theirs](../assets/projects/03-anomaly-detection/nab_timelines.png){ width="100%" }
 
 | family | PR-AUC | range-F1 | range prec./rec. | events |
 |---|---|---|---|---|

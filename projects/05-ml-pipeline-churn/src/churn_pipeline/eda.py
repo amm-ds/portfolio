@@ -37,6 +37,7 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
     fig.add_bar(
         x=by_contract["contract"].to_list(),
         y=by_contract["rate"].to_list(),
+        name="churn rate",
         marker={"color": "#2dd4bf"},
         row=1,
         col=1,
@@ -62,15 +63,21 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
             col=3,
         )
     fig.update_layout(
-        title=(
-            "Churn concentrates in short contracts - 42.7% month-to-month vs "
-            "2.8% two-year; the outlier charge sits far outside the bulk"
-        ),
+        title=("Churn concentrates in short contracts - 42.7% month-to-month vs 2.8% two-year"),
         barmode="overlay",
         yaxis_title="churn rate",
         xaxis2_title="monthly_charges",
         yaxis2_title="density",
         xaxis3_title="tenure_months",
         yaxis3_title="density",
+        # top-right: the left-anchored title occupies the top-left band
+        legend={
+            "orientation": "v",
+            "yanchor": "top",
+            "y": 1.0,
+            "x": 1.0,
+            "xanchor": "right",
+        },
+        margin={"t": 80},
     )
     return apply_theme(fig)
