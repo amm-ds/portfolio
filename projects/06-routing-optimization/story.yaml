@@ -110,8 +110,9 @@ sections:
     - **two_opt** — 2-opt reversals + 2-opt* tail exchanges on the better
       construction plan, feasibility-preserving moves only.
     - **alns** — Ropke–Pisinger adaptive large-neighborhood search:
-      random / worst / Shaw removal, regret-2 repair, segment-adapted
-      operator weights, SA acceptance; starts from the tuned 2-opt plan.
+      repeatedly destroy part of the route and repair it (random / worst /
+      Shaw removal, regret-2 repair), with segment-adapted operator
+      weights and SA acceptance; starts from the tuned 2-opt plan.
     - **ortools_cp** — ALNS-hinted CP-SAT cross-check: the ALNS plan is
       injected as the hint under a 10 s/instance budget; an
       incumbent-improvement probe, **not an independent baseline**. If the
@@ -158,17 +159,17 @@ sections:
 
     All seven solvers run on all 56 instances against the published
     best-known values (registry table + SINTEF TOP supplement), reported per
-    instance and per family. `solver_profile` shows the full ladder per
-    instance, `alns_convergence_C101` the winning metaheuristic's descent,
-    and `pareto_gap_runtime` places every solver on the runtime-vs-gap
-    plane. Runtimes are load-sensitive (shared machine), so the seeded,
+    instance and per family. `pareto_gap_runtime` places every solver on
+    the runtime-vs-gap plane, `solver_profile` shows the full ladder per
+    instance, and `alns_convergence_C101` the winning metaheuristic's
+    descent. Runtimes are load-sensitive (shared machine), so the seeded,
     deterministic distances and gaps are the verdict and times are context.
     Full per-solver runtime tables in `reports/results.md`.
 
     **Business summary:** evaluation is cheap and fully reproducible, so
     it runs in CI on every change — optimization quality becomes a guarded
     regression metric, not a one-off report.
-  figures: [solver_profile, alns_convergence_C101, pareto_gap_runtime]
+  figures: [pareto_gap_runtime, solver_profile, alns_convergence_C101]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: results
   text_md: |

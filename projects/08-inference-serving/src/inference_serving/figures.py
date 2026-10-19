@@ -135,6 +135,7 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     )
     fig.add_bar(x=labels, y=[c.p95_latency_s for c in cells], row=1, col=1)
     fig.add_bar(x=labels, y=[c.agg_tok_per_s for c in cells], row=1, col=2)
+    hw = "Apple Silicon (macOS arm64)" if "arm64" in run.platform else run.platform
     fig.update_layout(
         title=(
             "MLX 4-bit beats GGUF Q8_0 on llama.cpp by 2.9x on tok/s (18.8 vs 6.4) "
@@ -144,10 +145,16 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         showlegend=False,
     )
     apply_theme(fig)
+    # Embedded-size readability (audit): bigger tick + panel-title fonts, and
+    # the subtitle states hardware + quantization explicitly — not only in
+    # the cryptic series names.
+    fig.update_xaxes(tickfont={"size": 15})
+    fig.update_yaxes(tickfont={"size": 14})
+    fig.update_annotations(font_size=15)
     add_takeaway(
         fig,
-        "Same weights through two runners on Apple Silicon. Quant is confounded (Q8_0 vs 4-bit), "
-        "so read this as engine+packaging, not a pure runner race.",
+        f"Same gemma4:31b weights on {hw}, c=1 — GGUF Q8_0 via llama.cpp vs "
+        "4-bit MLX. Quant is confounded with packaging, not a pure runner race.",
     )
     return fig
 

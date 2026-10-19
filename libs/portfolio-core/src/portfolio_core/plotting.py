@@ -142,6 +142,11 @@ def add_takeaway(fig: go.Figure, takeaway: str) -> go.Figure:
     Implemented as a second line of the title itself (small, muted span) —
     a separate annotation collides with the title on the dark template
     because both anchor just above the plot area.
+
+    The takeaway makes the title two lines, so the template's top-pinned
+    horizontal legend would overlap it; the legend drops below the plot
+    instead (the house convention for crowded figures, cf. 09/10) unless
+    the figure already positioned its legend explicitly.
     """
     title = fig.layout.title
     head = title.text if title.text else ""
@@ -154,6 +159,22 @@ def add_takeaway(fig: go.Figure, takeaway: str) -> go.Figure:
         title={**title.to_plotly_json(), "text": combined},
         margin={"t": 90, "l": 60, "r": 30, "b": 50},
     )
+    # An untouched legend has no explicit position in the figure layout (the
+    # template default applies at render time) — only then move it; figures
+    # that positioned their own legend keep it. Reading ``fig.layout.legend``
+    # materializes an empty Legend, so test the serialized dict, not the obj.
+    legend_pos = fig.layout.legend.to_plotly_json() if fig.layout.legend is not None else {}
+    if "y" not in legend_pos and "orientation" not in legend_pos:
+        fig.update_layout(
+            legend={
+                **legend_pos,
+                "orientation": "h",
+                "yanchor": "top",
+                "y": -0.15,
+                "x": 0.02,
+                "xanchor": "left",
+            },
+        )
     return fig
 
 

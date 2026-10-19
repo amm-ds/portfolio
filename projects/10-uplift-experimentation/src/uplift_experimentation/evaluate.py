@@ -8,13 +8,21 @@ analysis — plus the five themed figures (HTML + JSON).
 """
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import plotly.graph_objects as go
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import add_takeaway, apply_theme, save_html, save_json, style_runs
+from portfolio_core.plotting import (
+    add_takeaway,
+    apply_theme,
+    is_baseline_run,
+    save_html,
+    save_json,
+    style_runs,
+)
 from portfolio_eval.report import EvalReport
 
 from uplift_experimentation.config import UpliftConfig, pd
@@ -300,6 +308,26 @@ def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figur
         annotation_text=f"break-even {read['breakeven_cost_per_email']:.2f} USD/email",
         annotation_position="top left",
     )
+    # Label the reference send costs directly on the chart (audit: the grid
+    # values lived only in the axis ticks). The break-even reference is
+    # highlighted in amber — it is the decision threshold (the dotted vline
+    # carries the full text).
+    reference_costs = (0.01, 0.20, 0.30, 0.50)
+    for cost in reference_costs:
+        if not any(abs(r["cost_per_email"] - cost) < 1e-9 for r in read["rows"]):
+            continue
+        is_breakeven = abs(cost - read["breakeven_cost_per_email"]) < 0.02
+        fig.add_annotation(
+            # Log axis: plotly reads annotation x as log10(position).
+            x=math.log10(cost),
+            y=1.0,
+            yref="paper",
+            text=f"{cost:.2f}",
+            showarrow=False,
+            yanchor="bottom",
+            yshift=4,
+            font={"size": 12, "color": "#fbbf24" if is_breakeven else "#cbd5e1"},
+        )
     apply_theme(fig)
     style_runs(fig, best=read["best_policy"])
     title = (
@@ -406,6 +434,9 @@ def qini_figure(
 
     ``bands`` carries per-policy 95% bootstrap ribbons (interpolated onto
     ``band_grid``); added after styling so the grey/demote pass skips them.
+    Each policy gets an explicit, hue-separated color — the colorway's
+    teal/sky are indistinguishable on overlapping curves — and the ribbons
+    stay deliberately faint so the lines read through them.
     """
     fig = go.Figure()
     for policy, (fr, inc) in curves.items():
@@ -418,6 +449,20 @@ def qini_figure(
         )
     apply_theme(fig)
     style_runs(fig, best=best)
+    # Rotate/darken policy colors so response / T / X-learner + the two
+    # non-model references are separable at a glance (audit: overlapping
+    # bands/curves). Unknown policies keep the colorway.
+    policy_style = {
+        "response": {"color": "#2dd4bf"},
+        "t_learner": {"color": "#fbbf24"},
+        "x_learner": {"color": "#f472b6"},
+        "random": {"color": "#64748b", "dash": "dash"},
+        "treat-everyone": {"color": "#94a3b8", "dash": "dot"},
+    }
+    for trace in fig.data:
+        style = policy_style.get(str(getattr(trace, "name", "") or ""))
+        if style is not None:
+            trace.update(line=style)
     if bands and band_grid is not None:
         for policy, (lo, hi) in bands.items():
             fig.add_scatter(
@@ -433,7 +478,7 @@ def qini_figure(
                 y=lo,
                 mode="lines",
                 fill="tonexty",
-                fillcolor="rgba(45, 212, 191, 0.12)",
+                fillcolor="rgba(45, 212, 191, 0.08)",
                 line={"width": 0},
                 name=f"{policy} 95% band",
                 hoverinfo="skip",
@@ -495,11 +540,62 @@ def profit_figure(
             y=profit,
             mode="lines",
             name=policy,
-            line={"width": 3.5 if policy == "x_learner" else 2.0},
+            line={"width": 3.5 if policy == "t_learner" else 2.0},
         )
     fig.add_hline(y=0.0, line_dash="dot", line_color="#64748b", name="no campaign")
     apply_theme(fig)
-    style_runs(fig, best="x_learner")
+    style_runs(fig, best="t_learner")
+    # The recommended operating point is whichever policy maximizes profit at
+    # the configured budget — mark it prominently (audit: the 25% recommendation
+    # was not visible on the frontier).
+    budget_profits = {
+        policy: float(
+            profit_curve(
+                np.array([cfg.policy_budget]),
+                np.array([float(np.interp(cfg.policy_budget, fr, inc))]),
+                n_total,
+                cfg.revenue_per_conversion,
+                cfg.cost_per_email,
+            )[0]
+        )
+        for policy, (fr, inc) in curves.items()
+    }
+    # The recommendation is among the ranking policies only: random and
+    # treat-everyone are reference curves, not budgetable targeting strategies
+    # (treat-everyone realizes full incremental conversions at any fraction,
+    # so it would otherwise always "win" the max).
+    candidates = {
+        policy: profit
+        for policy, profit in budget_profits.items()
+        if not is_baseline_run(policy) and policy != "treat-everyone"
+    }
+    recommended = max(candidates, key=lambda policy: candidates[policy])
+    recommended_profit = budget_profits[recommended]
+    fig.add_scatter(
+        x=[cfg.policy_budget],
+        y=[recommended_profit],
+        mode="markers",
+        name=f"recommended top-{cfg.policy_budget:.0%} ({recommended})",
+        marker={
+            "symbol": "star",
+            "size": 18,
+            "color": "#fbbf24",
+            "line": {"width": 1.5, "color": "#0f172a"},
+        },
+    )
+    fig.add_annotation(
+        x=cfg.policy_budget,
+        y=recommended_profit,
+        text=(
+            f"recommended top-{cfg.policy_budget:.0%} budget<br>"
+            f"${recommended_profit:,.0f} ({recommended})"
+        ),
+        showarrow=True,
+        arrowhead=2,
+        ax=-10,
+        ay=55,
+        font={"size": 13, "color": "#fbbf24"},
+    )
     fig.update_layout(
         title=(
             "Top-25% T-learner beats random by +2,812 USD (+69%); "
