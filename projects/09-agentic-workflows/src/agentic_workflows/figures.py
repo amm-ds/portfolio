@@ -10,7 +10,6 @@ diagram in the story/docs, not a plotly figure.
 
 from __future__ import annotations
 
-import statistics
 from typing import Any
 
 import plotly.graph_objects as go
@@ -160,8 +159,7 @@ def _fig_suite_summary(
     )
     add_takeaway(
         fig,
-        "tuning graded by four deterministic graders, held-out answers by two, "
-        "probes by refusal grade.",
+        "tuning graded by 4 deterministic graders; held-out answers by 2; probes by refusal grade",
     )
     return fig
 
@@ -214,10 +212,6 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
         )
         for tool in SUITE_TOOLS
     }
-    expected_by_tool = {
-        tool: sum(1 for case in cases if tool in case.inputs.expected_tools) for tool in SUITE_TOOLS
-    }
-    totals = {tool: sum(row) for tool, row in zip(SUITE_TOOLS, matrix, strict=True)}
     fig.update_layout(
         title="Tool calls per task x tool",
         # Margin exception (house standard l=70): tool names ("search_handbook")
@@ -227,9 +221,7 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
     if sum(extra_totals.values()) == 0:
         add_takeaway(
             fig,
-            "captured calls per task (columns) x tool (rows); zero calls fall "
-            f"outside a task's expected tool set this run; search_handbook is "
-            f"the busiest row at {totals.get('search_handbook', 0)} calls.",
+            "calls per task (columns) x tool (rows); zero out-of-set calls this run",
         )
         return fig
     loudest = max(SUITE_TOOLS, key=lambda t: extra_totals[t])
@@ -241,10 +233,8 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"captured calls per task x tool; unplanned calls sit outside a task's "
-        f"expected set — loudest column: {loudest} x{extra_totals[loudest]} across "
-        f"{loudest_tasks}/{len(cases)} tasks (only {expected_by_tool[loudest]} "
-        "task(s) plan for it).",
+        f"calls outside a task's expected set are unplanned; loudest: {loudest} "
+        f"x{extra_totals[loudest]} across {loudest_tasks}/{len(cases)} tasks",
     )
     return fig
 
@@ -352,9 +342,8 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
         task_name, label, latency = widest
         add_takeaway(
             fig,
-            f"one stacked bar per task; segment = a single node visit, width = "
-            f"latency; #2/#3 mark repeat visits; widest segment: {task_name} "
-            f"{label} at {latency:.0f}s.",
+            f"segment = one node visit (width = latency); #2/#3 = repeats; "
+            f"widest: {task_name} {label} {latency:.0f}s",
         )
     else:
         add_takeaway(fig, "no node visits recorded.")
@@ -433,17 +422,13 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
     # "0.12cloud-equivalent" mess. Single-$ strings (title, bar labels) are
     # safe; multi-amount prose uses "USD".
     fig.update_layout(
-        title="Tokens, cloud-equivalent cost and latency per task",
+        title="Tokens, cloud-equivalent cost, latency per task",
         margin={"b": 110},
     )
-    held = sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)
     add_takeaway(
         fig,
-        f"stacked tokens (left axis) + cloud-equivalent cost labels (rate card "
-        f"1.00/4.00 USD per Mtok in/out; labelled estimate); latency vs the dashed "
-        f"{budgets[0]:.0f}s budget line (right axis) — {held}/{len(durations)} tasks "
-        f"at or under it; total {sum(costs):.4f} USD, median "
-        f"{statistics.median(costs):.4f} per task.",
+        f"tokens (left) + cloud-cost labels (1.00/4.00 USD/Mtok); "
+        f"latency vs dashed {budgets[0]:.0f}s budget",
     )
     return fig
 

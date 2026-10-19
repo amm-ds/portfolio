@@ -142,8 +142,7 @@ def epochs_probe_figure(history: TrainingHistory) -> go.Figure:
     )
     add_takeaway(
         fig,
-        "train loss (left y) vs val macro-F1 (right y) per epoch — shipped "
-        f"2-epoch run annotated; probe at seed 42, peak val {max(f1s):.4f}",
+        f"loss (left), val macro-F1 (right) per epoch — probe at seed 42; peak val {max(f1s):.4f}",
     )
     # Deliberate legend exception: the overlaid y2 axis puts its tick labels in
     # the right margin, so the standard right-vertical legend collides with

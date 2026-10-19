@@ -309,7 +309,7 @@ def fig_drift_bars(result: DriftResult) -> go.Figure:
         annotation_text=f"regression ceiling (+{result.tolerance:.0%})",
     )
     fig.update_layout(
-        title=f"Drift check {result.month}: serving-model MAE vs pinned baseline",
+        title=f"Drift check {result.month}: MAE vs pinned baseline",
         yaxis_title="MAE (pickups/hour)",
         yaxis={"range": [0, max(ceiling, result.month_mae, result.month_naive_mae) * 1.2]},
     )

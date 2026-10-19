@@ -254,7 +254,6 @@ def figure_probabilistic_band(
             showlegend=False,
         )
     conf = result["split_conformal"]
-    cov = conf["coverage_last_fold"]
     fig.update_layout(
         title="Actual vs p50 with the zero-aware conformal band",
         # updatemenu: the band can be removed interactively ("actual only").
@@ -286,16 +285,15 @@ def figure_probabilistic_band(
         ],
     )
     bins = (
-        f"; zero-predicted rows {_fmt_bin(conf['coverage_last_fold_zero_bin'])}, "
-        f"nonzero-predicted rows {_fmt_bin(conf['coverage_last_fold_nonzero_bin'])}"
+        f"; zero-bin {_fmt_bin(conf['coverage_last_fold_zero_bin'])}, "
+        f"nonzero-bin {_fmt_bin(conf['coverage_last_fold_nonzero_bin'])}"
         if conf["coverage_last_fold_zero_bin"] is not None
         or conf["coverage_last_fold_nonzero_bin"] is not None
         else ""
     )
     add_takeaway(
         fig,
-        f"two highest-volume series, last fold — 80% band (target {TARGET_COVERAGE:.0%}), "
-        f"widths calibrated per predicted-zero bin; empirical coverage {cov:.1%}{bins}.",
+        f"last fold, two highest-volume series — {TARGET_COVERAGE:.0%} target{bins}",
     )
     # Exceptional top margin: the updatemenu buttons sit above the plot
     # (y=1.10) in the band below the two-line title.

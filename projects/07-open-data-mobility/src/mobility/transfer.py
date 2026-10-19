@@ -116,15 +116,13 @@ def fig_green_transfer(result: dict[str, Any]) -> go.Figure:
         mae_delta = (base["mae"] - tuned["mae"]) / base["mae"] * 100
         rmse_delta = (base["rmse"] - tuned["rmse"]) / base["rmse"] * 100
         takeaway = (
-            f"Mixed transfer: yellow-trained GBM loses on MAE ({tuned['mae']:.2f} vs naive "
-            f"{base['mae']:.2f}, {mae_delta:+.0f}%) but wins on RMSE ({rmse_delta:+.0f}%) and "
-            "MAPE — green demand is too sparse/burst-light for yellow's burst-tuned patterns; "
-            "per-service retraining is advised before production use."
+            f"Mixed transfer: MAE {tuned['mae']:.2f} vs naive {base['mae']:.2f} "
+            f"({mae_delta:+.0f}%), but wins on RMSE ({rmse_delta:+.0f}%) and MAPE"
         )
     else:
         takeaway = "Transfer metrics unavailable."
     fig.update_layout(
-        title="Cross-service transfer: yellow GBM on green demand",
+        title="Transfer: yellow-trained GBM on green demand",
         yaxis_title="MAE (pickups/hour)",
     )
     return add_takeaway(apply_theme(fig), takeaway)

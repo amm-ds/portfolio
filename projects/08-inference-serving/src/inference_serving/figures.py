@@ -39,8 +39,7 @@ def fig_latency_concurrency(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "primary models only; c = asyncio semaphore level; p95 over the cell's "
-        "40 requests (8-prompt suite x 5 repeats)",
+        "primary models; c = semaphore level; p95 per 40-request cell (8 prompts x 5 repeats)",
     )
     return style_runs(fig)
 
@@ -61,7 +60,7 @@ def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         ]
         fig.add_bar(x=models, y=y, name=f"c={level}")
     fig.update_layout(
-        title="Aggregate output tok/s by model and concurrency",
+        title="Output tok/s by model and concurrency",
         xaxis_title="model",
         yaxis_title="output tokens/s",
         barmode="group",
@@ -69,8 +68,7 @@ def fig_toks_per_s(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "primary models; aggregate tokens over cell wall time, per concurrency "
-        "level; single author run on Apple Silicon",
+        "aggregate tok/s over cell wall time per concurrency; single Apple-Silicon run",
     )
     return fig
 
@@ -95,7 +93,7 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
         ]
     )
     fig.update_layout(
-        title="Schema-valid and keyword quality rate by quantization arm",
+        title="Schema & keyword quality by quantization arm",
         xaxis_title="quantization arm (model / runner)",
         yaxis_title="rate",
         yaxis={"range": [0, 1.05]},
@@ -104,8 +102,7 @@ def fig_quality_quant(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "quantization + engine arms at c=1; rates over the cell's 40 requests; "
-        "keyword quality = expected-answer terms present",
+        "quantization + engine arms at c=1; keyword quality = expected-answer terms present",
     )
     return fig
 
@@ -126,23 +123,22 @@ def fig_engine_panel(run: BenchRun, cfg: BenchConfig) -> go.Figure:
     )
     fig.add_bar(x=labels, y=[c.p95_latency_s for c in cells], row=1, col=1)
     fig.add_bar(x=labels, y=[c.agg_tok_per_s for c in cells], row=1, col=2)
-    hw = "Apple Silicon (macOS arm64)" if "arm64" in run.platform else run.platform
+    hw = "Apple Silicon" if "arm64" in run.platform else run.platform
     fig.update_layout(
-        title="Engine panel: p95 latency and tok/s (gemma4:31b)",
+        title="Engine panel: p95 latency & tok/s (gemma4:31b)",
         barmode="group",
         showlegend=False,
     )
     apply_theme(fig)
     # Embedded-size readability (audit): bigger tick + panel-title fonts, and
-    # the subtitle states hardware + quantization explicitly — not only in
-    # the cryptic series names.
+    # the subtitle states hardware explicitly — not only in the cryptic
+    # series names.
     fig.update_xaxes(tickfont={"size": 15})
     fig.update_yaxes(tickfont={"size": 14})
     fig.update_annotations(font_size=15)
     add_takeaway(
         fig,
-        f"same gemma4:31b weights on {hw} — 18.8 vs 6.4 tok/s, p95 2.47 s vs "
-        "7.12 s at c=1; quant is confounded with packaging, not a pure runner race.",
+        f"same gemma4:31b weights on {hw} at c=1 — 18.8 vs 6.4 tok/s, p95 2.47 vs 7.12 s",
     )
     return fig
 

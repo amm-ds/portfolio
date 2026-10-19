@@ -90,8 +90,8 @@ def fig_zone_demand_map(demand: pl.DataFrame) -> go.Figure:
     )
     return add_takeaway(
         fig,
-        f"all 265 TLC zones over the full-year curated grid; "
-        f"busiest zone averages {means[top]:.1f} pickups/hour.",
+        f"all 265 TLC zones, full-year curated grid; "
+        f"busiest zone averages {means[top]:.1f} pickups/hour",
     )
 
 
@@ -110,12 +110,12 @@ def fig_zone_residual_map(preds: pl.DataFrame, col: str = "y_gbm_tuned") -> go.F
     fig = _choropleth(
         gdf,
         mape,
-        "Where the model struggles — per-zone MAPE (%), served GBM",
+        "Per-zone MAPE (%) — served GBM",
         "Reds",
         "MAPE %",
     )
     return add_takeaway(
         fig,
-        f"Highest relative error ({mape[worst]:.0f}% MAPE) sits in the thinnest-demand "
-        "zones — relative error, not absolute: Manhattan dominates absolute MAE.",
+        f"relative error ({mape[worst]:.0f}% MAPE) peaks in thinnest-demand "
+        "zones; Manhattan leads on MAE",
     )

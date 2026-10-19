@@ -332,8 +332,7 @@ def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figur
     style_runs(fig, best=read["best_policy"])
     fig.update_layout(
         title=(
-            f"Profit vs send cost: mail-everyone vs top-{read['policy_budget']:.0%} "
-            f"({read['best_policy']})"
+            f"Profit vs send cost: all vs top-{read['policy_budget']:.0%} ({read['best_policy']})"
         ),
         xaxis_title="cost per email (USD, log scale)",
         yaxis_title="profit (USD)",
@@ -341,10 +340,8 @@ def cost_sensitivity_figure(read: dict[str, Any], cfg: UpliftConfig) -> go.Figur
     )
     add_takeaway(
         fig,
-        f"profit at the best targeting fraction vs mailing everyone, across send "
-        f"costs {costs[0]:.2f}-{costs[-1]:.2f} USD (log scale); dotted line = analytic "
-        f"break-even at {read['breakeven_cost_per_email']:.2f} USD/email; amber ticks "
-        "= reference send costs",
+        f"best fraction vs mail-everyone, send cost {costs[0]:.2f}-{costs[-1]:.2f} "
+        f"USD (log x); dotted = break-even {read['breakeven_cost_per_email']:.2f}",
     )
     return fig
 
@@ -480,8 +477,7 @@ def qini_figure(
     )
     add_takeaway(
         fig,
-        "incremental conversions, policies + random/treat-everyone references "
-        "— 95% paired-bootstrap bands",
+        "incremental conversions, policies + random/treat-everyone refs — 95% bootstrap bands",
     )
     return fig
 
@@ -494,15 +490,14 @@ def decile_figure(table: dict[str, list[float]], policy: str) -> go.Figure:
     apply_theme(fig)
     style_runs(fig)
     fig.update_layout(
-        title=f"Predicted vs empirical uplift by decile ({policy})",
+        title="Predicted vs empirical uplift by decile",
         xaxis_title="decile (1 = highest predicted uplift)",
         yaxis_title="uplift (conversion-rate difference)",
         barmode="group",
     )
     add_takeaway(
         fig,
-        f"mean predicted score vs empirical treated-control contrast per decile, "
-        f"{policy} scores; decile 1 = highest predicted uplift",
+        f"mean predicted score vs empirical treated-control contrast per decile ({policy})",
     )
     return fig
 
@@ -578,14 +573,13 @@ def profit_figure(
         font={"size": 13, "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="Incremental profit vs budget fraction by policy",
+        title="Incremental profit vs budget fraction",
         xaxis_title="budget fraction (share of customers emailed)",
         yaxis_title=f"profit (revenue {cfg.revenue_per_conversion:.0f} USD/conversion, "
         f"{cfg.cost_per_email:.2f} USD/email)",
     )
     add_takeaway(
         fig,
-        "profit = incremental conversions x 114 USD revenue - emails x 0.01 USD; "
         "star = recommended policy at the 25% budget; dotted line = no campaign",
     )
     return fig
@@ -613,8 +607,7 @@ def cuped_figure(reads: dict[str, dict[str, float]]) -> go.Figure:
     fig.update_layout(title="Outcome variance: naive vs CUPED-adjusted")
     add_takeaway(
         fig,
-        "var(Y) before vs after CUPED adjustment, per outcome; covariate = log1p "
-        "prior-year spend (strictly pre-treatment)",
+        "var(Y) before vs after CUPED, per outcome; covariate = log1p prior spend (pre-treatment)",
     )
     return fig
 

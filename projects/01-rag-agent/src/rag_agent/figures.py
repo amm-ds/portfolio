@@ -216,8 +216,7 @@ def sweep_figure(
     fig = _finish_themed(
         fig,
         takeaway=(
-            "recall@5, recall@10, MRR@5 — 65 golden questions; "
-            "seeded random + lexical (word-match) floors dashed"
+            "recall@5, recall@10, MRR@5 — 65 golden questions; random + lexical floors dashed"
         ),
     )
     # Exceptional margins: the caption annotation sits ABOVE the two-line
@@ -264,8 +263,8 @@ def model_comparison_figure(model_scores: dict[str, RetrievalScores], best_slug:
     return _finish_themed(
         fig,
         takeaway=(
-            "recall@5 / recall@10 / MRR@5 per encoder — 65 golden questions; "
-            "best run accent, chance-style floors grey"
+            "recall@5, recall@10, MRR@5 per encoder — 65 golden questions; "
+            "grey = floors, accent = best"
         ),
     )
 
@@ -308,9 +307,8 @@ def hpo_frontier_figure(
     return _finish_themed(
         fig,
         takeaway=(
-            f"one curve per chunk size across top_k — ★ chosen config: "
-            f"{chosen.embedding_slug}, chunks={chosen.chunk_size}, "
-            f"top_k={chosen.top_k}, rerank={'on' if chosen.rerank else 'off'}."
+            f"★ = chosen config: {chosen.embedding_slug}, chunks={chosen.chunk_size}, "
+            f"top_k={chosen.top_k}, rerank {'on' if chosen.rerank else 'off'}"
         ),
     )
 
@@ -337,13 +335,12 @@ def retrieval_funnel_figure(
             textinfo="value+percent initial",
         )
     )
-    fig.update_layout(title="Retrieval funnel: candidates → reranked → relevant")
+    fig.update_layout(title="Retrieval funnel: candidates→reranked→relevant")
     return _finish_themed(
         fig,
         takeaway=(
-            f"aggregate over {n} questions at the chosen config — "
-            f"top-{n_candidates} embedding candidates → top-{chosen.top_k} after rerank "
-            f"→ {relevant} with a relevant article"
+            f"aggregate over {n} questions — top-{n_candidates} candidates → "
+            f"top-{chosen.top_k} after rerank → {relevant} relevant"
         ),
         showlegend=False,  # single unnamed trace → no "trace 0" chip
     ).update_layout(margin={"l": 240})  # long funnel stage labels need left room
@@ -371,8 +368,8 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
     return _finish_themed(
         fig,
         takeaway=(
-            f"articles per topic (left) + word-count distribution (right) — "
-            f"{len(articles)} articles, tail capped at 12k chars"
+            f"articles per topic (left), word counts (right) — "
+            f"{len(articles)} articles; tail capped at 12k chars"
         ),
     )
 
@@ -399,10 +396,7 @@ def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
     )
     return _finish_themed(
         fig,
-        takeaway=(
-            f"counts per deterministic verdict class — hosted run, {len(traces)} "
-            "questions (correct / retrieval-miss / unsupported-claim / format-failure)"
-        ),
+        takeaway=(f"counts per deterministic verdict class — hosted {len(traces)}-question run"),
         showlegend=False,  # single unnamed trace → no "trace 0" chip
     )
 

@@ -154,8 +154,7 @@ def eda_instance_map_figure(problem: Problem) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"{problem.name}: coordinates of the 100 customers + depot (star); "
-        "color = window width (due - ready)",
+        f"{problem.name}: 100 customers + depot (star); color = window width (due - ready)",
     )
     fig.update_yaxes(scaleanchor="x", scaleratio=1)
     return apply_theme(fig, width=900, height=760)
@@ -249,8 +248,7 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
     _style_runs_safe(fig, best="two_opt_tuned")
     add_takeaway(
         fig,
-        "all 56 Solomon instances, one group per instance; baselines greyed, "
-        "tuned 2-opt promoted; seeded, deterministic distances",
+        "all 56 Solomon instances, one group per instance; grey = baselines, accent = tuned 2-opt",
     )
     return apply_theme(fig)
 
@@ -322,8 +320,7 @@ def family_gap_figure(rows: pl.DataFrame) -> go.Figure:
     )
     add_takeaway(
         fig,
-        "mean gap % (top) and mean vehicle delta (bottom) vs best-known over all "
-        "56 instances; the benchmark ranks vehicles first, distance second",
+        "mean gap % (top) and mean vehicle delta (bottom) vs best-known over all 56 instances",
     )
     return apply_theme(fig, height=720)
 
@@ -367,8 +364,7 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
     style_runs(fig, best="alns")
     add_takeaway(
         fig,
-        "means over all 56 instances; each marker annotated with its mean vehicle "
-        "delta vs best-known; lower-left is better",
+        "means over 56 instances; annotation = mean vehicle delta vs best-known; lower-left better",
     )
     return apply_theme(fig, height=640)
 

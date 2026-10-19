@@ -268,7 +268,7 @@ def hpo_importance_figure(study: optuna.Study) -> go.Figure:
     completed = [t for t in study.trials if t.value is not None and t.state.name == "COMPLETE"]
     if len(completed) < 2:
         fig = go.Figure()
-        fig.update_layout(title="HPO parameter importance (needs ≥2 completed trials)")
+        fig.update_layout(title="HPO parameter importance (needs ≥2 trials)")
         return apply_theme(fig)
     importances = optuna.importance.get_param_importances(study)
     names = list(importances)
