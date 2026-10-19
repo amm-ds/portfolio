@@ -26,7 +26,7 @@ afterEach(() => {
 });
 
 describe("FigureCard", () => {
-  it("renders the chart with a footer holding the id line and the caption", async () => {
+  it("renders one container with the chart and a commentary band inside it", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -41,38 +41,47 @@ describe("FigureCard", () => {
       />,
     );
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
-    const footer = document.querySelector(".figure-card-footer")!;
-    expect(footer).not.toBeNull();
-    expect(footer.querySelector(".figure-id")!.textContent).toBe(
+    // a single .figure-card holds both the chart and the band — one tile
+    const cards = document.querySelectorAll(".figure-card");
+    expect(cards).toHaveLength(1);
+    const card = cards[0];
+    expect(card.querySelector(".plotly-host")).not.toBeNull();
+    const band = card.querySelector("footer.figure-card-band")!;
+    expect(band).not.toBeNull();
+    expect(band.querySelector(".figure-id")!.textContent).toBe(
       "fig :: retrieval_funnel",
     );
-    expect(footer.querySelector(".figure-comment")!.textContent).toBe(
+    expect(band.querySelector(".figure-comment")!.textContent).toBe(
       "Retrieval recall@5 reaches 0.83 once claims are verified.",
     );
   });
 
-  it("falls back to an id-only footer when no caption exists", async () => {
+  it("falls back to an id-only band when no caption exists", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no" }, 404)));
     render(<FigureCard pid="01-rag-agent" name="latency_histogram" />);
     await waitFor(() => expect(screen.getByTitle("Figure: latency_histogram")).toBeInTheDocument());
-    const footer = document.querySelector(".figure-card-footer")!;
-    expect(footer.querySelector(".figure-id")!.textContent).toBe(
+    const band = document.querySelector(".figure-card footer.figure-card-band")!;
+    expect(band.querySelector(".figure-id")!.textContent).toBe(
       "fig :: latency_histogram",
     );
-    // no commentary paragraph, but the footer itself is still there
-    expect(footer.querySelector(".figure-comment")).toBeNull();
+    // no commentary paragraph, but the band itself is still there
+    expect(band.querySelector(".figure-comment")).toBeNull();
   });
 
-  it("keeps the footer next to the iframe fallback chart", async () => {
+  it("keeps the band inside the container on the iframe fallback chart", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no" }, 404)));
     render(
       <FigureCard pid="05-ml-pipeline-churn" name="pr_curve" caption="Precision dominates above a 0.31 threshold." />,
     );
     await waitFor(() => expect(screen.getByTitle("Figure: pr_curve")).toBeInTheDocument());
+    // chart (iframe) and band are siblings within the single card container
     const card = document.querySelector(".figure-card")!;
     expect(card.querySelector("iframe")).not.toBeNull();
-    expect(card.querySelector(".figure-comment")!.textContent).toContain(
+    const band = card.querySelector("footer.figure-card-band")!;
+    expect(band).not.toBeNull();
+    expect(band.querySelector(".figure-comment")!.textContent).toContain(
       "Precision dominates above a 0.31 threshold.",
     );
+    expect(band.querySelector(".figure-id")!.textContent).toBe("fig :: pr_curve");
   });
 });

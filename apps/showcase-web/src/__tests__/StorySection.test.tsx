@@ -38,7 +38,7 @@ describe("StorySection figure layout (wave 4)", () => {
     await waitFor(() =>
       expect(document.querySelectorAll(".figure-card")).toHaveLength(1),
     );
-    const footer = document.querySelector(".figure-card-footer")!;
+    const footer = document.querySelector(".figure-card-band")!;
     expect(footer.querySelector(".figure-id")!.textContent).toBe(
       "fig :: retrieval_funnel",
     );
