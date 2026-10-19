@@ -12,7 +12,7 @@ export function Footer() {
           </p>
         </div>
         <nav className="footer-nav" aria-label="Footer">
-          <Link to="/projects">Experiments</Link>
+          <Link to="/projects">Projects</Link>
           <Link to="/services">Services</Link>
           <Link to="/contact">Contact</Link>
           <a href="https://github.com/amm-ds/portfolio" target="_blank" rel="noreferrer">

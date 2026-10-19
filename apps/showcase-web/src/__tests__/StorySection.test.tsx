@@ -24,7 +24,7 @@ const BASE: StorySectionData = {
 };
 
 describe("StorySection figure layout (wave 4)", () => {
-  it("renders a single figure full-width with a 1/1 caption (no grid)", async () => {
+  it("renders a single figure full-width with an id-only footer (no grid)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
       <StorySection
@@ -36,12 +36,16 @@ describe("StorySection figure layout (wave 4)", () => {
     );
     expect(document.querySelector(".figure-grid")).toBeNull();
     await waitFor(() =>
-      expect(document.querySelectorAll(".figure-frame")).toHaveLength(1),
+      expect(document.querySelectorAll(".figure-card")).toHaveLength(1),
     );
-    expect(document.querySelector(".figure-caption")?.textContent).toContain("1/1");
+    const footer = document.querySelector(".figure-card-footer")!;
+    expect(footer.querySelector(".figure-id")!.textContent).toBe(
+      "fig :: retrieval_funnel",
+    );
+    expect(footer.querySelector(".figure-comment")).toBeNull();
   });
 
-  it("stacks 2+ figures in a single column with positional captions", async () => {
+  it("stacks 2+ figures in a single column, each with its own footer", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
       <StorySection
@@ -55,16 +59,44 @@ describe("StorySection figure layout (wave 4)", () => {
       />,
     );
     await waitFor(() =>
-      expect(document.querySelectorAll(".figure-frame")).toHaveLength(3),
+      expect(document.querySelectorAll(".figure-card")).toHaveLength(3),
     );
     expect(document.querySelector(".figure-grid")).toBeNull();
-    const captions = [...document.querySelectorAll(".figure-caption")].map(
+    const ids = [...document.querySelectorAll(".figure-id")].map(
       (el) => el.textContent,
     );
-    expect(captions).toHaveLength(3);
-    expect(captions[0]).toContain("1/3");
-    expect(captions[1]).toContain("2/3");
-    expect(captions[2]).toContain("3/3");
+    expect(ids).toEqual([
+      "fig :: retrieval_funnel",
+      "fig :: latency_histogram",
+      "fig :: model_comparison",
+    ]);
+  });
+
+  it("renders the story figure_captions as commentary in the footers", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(
+      <StorySection
+        projectId="01-rag-agent"
+        section={{ ...BASE, figures: ["retrieval_funnel", "latency_histogram"] }}
+        index={4}
+        metrics={null}
+        figureCaptions={{
+          retrieval_funnel: "Recall@5 doubles after reranking.",
+        }}
+      />,
+    );
+    await waitFor(() =>
+      expect(document.querySelectorAll(".figure-card")).toHaveLength(2),
+    );
+    const cards = document.querySelectorAll(".figure-card");
+    expect(cards[0].querySelector(".figure-comment")!.textContent).toBe(
+      "Recall@5 doubles after reranking.",
+    );
+    // no caption authored for the second figure → id-only footer
+    expect(cards[1].querySelector(".figure-comment")).toBeNull();
+    expect(cards[1].querySelector(".figure-id")!.textContent).toBe(
+      "fig :: latency_histogram",
+    );
   });
 
   it("renders no figure markup when the section references none", () => {

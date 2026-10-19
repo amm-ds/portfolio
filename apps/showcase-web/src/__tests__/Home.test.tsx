@@ -73,7 +73,7 @@ describe("Home (lean, wave 6)", () => {
       expect(card.querySelector("p")!.textContent!.length).toBeGreaterThan(10);
     });
     for (const { to, label } of [
-      { to: "/projects", label: "experiments" },
+      { to: "/projects", label: "projects" },
       { to: "/services", label: "services" },
       { to: "/contact", label: "contact" },
     ]) {

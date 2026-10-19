@@ -2,7 +2,7 @@ import type { Metrics, StorySectionData } from "../api";
 import { renderMarkdown } from "../lib/markdown";
 import { BusinessImplication } from "./BusinessImplication";
 import { StoryMetricsTable } from "./StoryMetricsTable";
-import { PlotlyFigure } from "./PlotlyFigure";
+import { FigureCard } from "./FigureCard";
 
 // Repo story.yaml files now use `**Business summary:**`; the old marker is
 // still matched as a fallback for one transition window (new marker wins).
@@ -30,21 +30,22 @@ export function StorySection({
   section,
   index,
   metrics,
+  figureCaptions = {},
 }: {
   projectId: string;
   section: StorySectionData;
   index: number;
   metrics: Metrics | null;
+  /** Story `figure_captions`, keyed by figure name. */
+  figureCaptions?: Record<string, string>;
 }) {
-  const total = section.figures.length;
   const [proseMd, implication] = splitBusinessImplication(section.text_md);
-  const figures = section.figures.map((name, i) => (
-    <PlotlyFigure
+  const figures = section.figures.map((name) => (
+    <FigureCard
       key={name}
       pid={projectId}
       name={name}
-      caption={`fig :: ${section.id} · ${i + 1}/${total} — ${section.title}`}
-      sectionId={section.id}
+      caption={figureCaptions[name]}
     />
   ));
 
@@ -62,7 +63,7 @@ export function StorySection({
           )}
           {metrics && <StoryMetricsTable metrics={metrics} metricsKeys={section.metrics_keys} />}
         </div>
-        {total > 0 && <div className="story-figs">{figures}</div>}
+        {section.figures.length > 0 && <div className="story-figs">{figures}</div>}
       </div>
     </section>
   );

@@ -12,7 +12,7 @@ export const HERO_SCRIPT = [
 const GO_LINKS = [
   {
     to: "/projects",
-    label: "experiments",
+    label: "projects",
     line: "10 reproducible experiments — metrics, interactive figures, published pipelines.",
   },
   {

@@ -24,7 +24,7 @@ describe("Footer", () => {
       href: a.getAttribute("href"),
     }));
     expect(links).toEqual([
-      { text: "Experiments", href: "/projects" },
+      { text: "Projects", href: "/projects" },
       { text: "Services", href: "/services" },
       { text: "Contact", href: "/contact" },
       { text: "GitHub", href: "https://github.com/amm-ds/portfolio" },

@@ -50,6 +50,9 @@ describe("ProjectDetail story handling", () => {
         return Promise.resolve(
           jsonResponse({
             project_id: "01-rag-agent",
+            figure_captions: {
+              retrieval_eval: "Verified answers beat the naive baseline on faithfulness.",
+            },
             roadmap: [
               { status: "delivered", text: "Baseline retrieval with citations" },
               { status: "remaining", text: "Streaming UX polish" },
@@ -94,11 +97,15 @@ describe("ProjectDetail story handling", () => {
     expect(screen.getByText(/\+50% vs naive_last/)).toBeInTheDocument();
     // figures: story 200 case fetches plotly JSON (404 in this mock) → iframe fallback renders async
     await waitFor(() => expect(document.querySelector("iframe")).not.toBeNull());
-    // roadmap renders at the end of the case study, grouped by status
+    // roadmap renders at the end of the case study as a timeline with one node per item
     expect(screen.getByText("Baseline retrieval with citations")).toBeInTheDocument();
     expect(screen.getByText("Streaming UX polish")).toBeInTheDocument();
     expect(screen.getByText(/Multilingual corpus/)).toBeInTheDocument();
-    expect(document.querySelectorAll(".roadmap-mark.delivered")).toHaveLength(1);
+    expect(document.querySelectorAll(".roadmap-node.delivered .roadmap-dot")).toHaveLength(1);
+    // figure_captions from the story payload thread through to the figure footer
+    expect(document.querySelector(".figure-comment")!.textContent).toContain(
+      "Verified answers beat the naive baseline on faithfulness.",
+    );
   });
 
   it("falls back to the metrics table + figures view when /story returns 404", async () => {

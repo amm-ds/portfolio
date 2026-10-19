@@ -125,15 +125,22 @@ code {
   font-size: 0.9rem;
 }
 
-/* --- Roadmap block --- */
+/* --- Roadmap block: visual timeline --- */
 
 .roadmap {
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.5rem;
 }
 
+.roadmap-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
 .roadmap-title {
-  margin: 0 0 1rem;
+  margin: 0;
   font-size: 1.15rem;
   text-shadow: 0 0 14px var(--accent-glow);
 }
@@ -144,54 +151,91 @@ code {
   text-shadow: none;
 }
 
-.roadmap-group {
-  margin-bottom: 1rem;
-}
-
-.roadmap-group:last-child {
-  margin-bottom: 0;
-}
-
-.roadmap-group h3 {
-  margin: 0 0 0.5rem;
-  font-size: 0.82rem;
+.roadmap-count {
   font-family: var(--mono);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--secondary);
+  font-size: 0.78rem;
+  color: var(--ok);
 }
 
-.roadmap-group ul {
+.roadmap-track {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.roadmap-group li {
+/* horizontal progress line behind the dots */
+.roadmap-track::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: calc(100% / (2 * var(--n, 4)));
+  right: calc(100% / (2 * var(--n, 4)));
+  height: 2px;
+  background: var(--border);
+}
+
+.roadmap-node {
+  flex: 1;
+  min-width: 0;
   display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
-  padding: 0.3rem 0;
-  color: var(--text);
-  opacity: 0.92;
-  font-size: 0.94rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
 }
 
-.roadmap-mark {
-  font-family: var(--mono);
+.roadmap-dot {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  background: var(--surface);
 }
 
-.roadmap-mark.delivered {
-  color: var(--ok);
+.roadmap-node.delivered .roadmap-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
-.roadmap-mark.remaining {
-  color: var(--muted);
+.roadmap-node.deferred .roadmap-dot {
+  border-color: var(--danger);
 }
 
-.roadmap-mark.deferred {
-  color: var(--danger);
+.roadmap-label {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--text);
+  opacity: 0.85;
+}
+
+/* narrow screens: the timeline wraps into a vertical list */
+@media (max-width: 640px) {
+  .roadmap-track {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .roadmap-track::before {
+    top: 10px;
+    bottom: 10px;
+    left: 5px;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+
+  .roadmap-node {
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+  }
 }
 
 /* --- Shared utilities --- */
@@ -460,7 +504,7 @@ code {
   text-shadow: 0 0 14px var(--accent-glow);
 }
 
-/* --- Demos placeholder (Experiments page, above the topic rows) --- */
+/* --- Demos placeholder (projects page, above the experiments rows) --- */
 
 .demo-grid {
   display: grid;
@@ -1353,6 +1397,40 @@ button:disabled {
 
 .plotly-host {
   width: 100%;
+}
+
+/* --- Figure cards: chart + commentary footer --- */
+
+.figure-card {
+  margin-bottom: 1.5rem;
+}
+
+.figure-card .figure-frame {
+  margin-bottom: 0.5rem;
+}
+
+.figure-card-footer {
+  padding: 0 0.25rem;
+}
+
+.figure-id {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.figure-id::before {
+  content: "$ ";
+  color: var(--accent);
+}
+
+.figure-comment {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  opacity: 0.92;
 }
 
 /* --- Case study layout: prose and figures share the full-width container --- */
