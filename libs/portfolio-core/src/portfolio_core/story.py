@@ -104,9 +104,7 @@ class ProjectStory(PortfolioBaseModel):
         rendered = {f for s in self.sections for f in (s.figures or [])}
         strays = sorted(set(self.figure_captions) - rendered)
         if strays:
-            raise ValueError(
-                f"figure_captions keys without a rendered figure: {', '.join(strays)}"
-            )
+            raise ValueError(f"figure_captions keys without a rendered figure: {', '.join(strays)}")
         return self
 
     def section(self, section_id: str) -> StorySection | None:
