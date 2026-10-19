@@ -41,7 +41,7 @@ DOCS_FIGURES: dict[str, tuple[str, ...]] = {
     "02-demand-forecasting": ("reports_uci/figures/forecast_vs_actual", "metrics_bars"),
     "03-anomaly-detection": ("nab_timelines",),
     "04-nlp-classification": ("confusion_matrix_selected", "training_curve", "epochs_probe"),
-    "05-ml-pipeline-churn": ("business_cost_curve", "cost_surface"),
+    "05-ml-pipeline-churn": ("business_cost_curve", "bootstrap_ci", "cost_surface"),
     "06-routing-optimization": ("route_map_C101", "family_gap"),
     "07-open-data-mobility": ("zone_demand_map", "gbm_vs_nn", "weather_elasticity"),
     "08-inference-serving": ("latency_concurrency", "engine_panel"),

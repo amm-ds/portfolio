@@ -151,7 +151,7 @@ on the property clients care about — precision at real anomaly rarity. On NAB
 the champion finds most events (range recall 0.73) but fires 1 609 alerts to
 catch 16 windows (range precision 0.11): the real problem is the
 false-positive firehose, exactly what the synthetic track could never show.
-Figures: `nab_timelines` (per-series true vs. detected windows), `nab_score_distribution`, `nab_alert_budget`; artifact `reports/nab_metrics.json`.
+Figures: `nab_timelines` (six representative series, true vs. detected windows), `nab_score_distribution`, `nab_alert_budget`; artifact `reports/nab_metrics.json`.
 
 ## Wave-7 additions: streaming, residuals, real data
 

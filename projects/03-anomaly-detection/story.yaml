@@ -187,7 +187,9 @@ sections:
 
       The champion finds most real events (range recall 0.729), but the
       firehose is the finding: 1 609 alerts for 16 windows, range precision
-      0.107. `nab_timelines` shows per-series true vs. detected windows;
+      0.107. `nab_timelines` shows six representative series (2x3 panels,
+      series id per panel) with true vs. detected windows — nyc_taxi misses
+      one labelled event, the other five detect theirs;
       `nab_score_distribution` and `nab_alert_budget` show the budget curve.
 
       The seeded synthetic stream stays the CI / fast path, and the

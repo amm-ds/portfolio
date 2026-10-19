@@ -52,6 +52,8 @@ threshold.
 - Cost-aware HPO selected **XGBoost** on real data (synthetic track's winner
   was a logistic) — the winner tracks the data. Deliverable vs naive:
   **cost −41.9% (1,035 -> 601), bootstrap −416, 95% CI [-485, -343]**.
+
+![Paired-bootstrap distribution of the cost delta: all 2,000 resamples sit below zero — the −416 saving's 95% CI excludes zero](../assets/projects/05-ml-pipeline-churn/bootstrap_ci.png){ width="100%" }
 - Base rate 26.5% (vs 8.8% synthetic): the operating point does NOT transfer
   (t*=0.175 vs 0.700) - the cost-curve procedure does. Calibration verdict
   flips too: isotonic improves both ECE and cost on telco.

@@ -201,6 +201,17 @@ def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) 
     )
     style_runs(fig)
     add_takeaway(fig, f"overall F1 {overall['f1']:.3f} - read slice gaps against this line")
+    # legend below the plot, centered and clear of the rotated slice labels
+    fig.update_layout(
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.28,
+            "x": 0.5,
+            "xanchor": "center",
+        },
+        margin={"b": 150},
+    )
     return apply_theme(fig)
 
 
@@ -231,6 +242,16 @@ def cost_surface_figure(
         mode="markers",
         name="chosen operating point",
         marker={"size": 13, "symbol": "star", "color": "#fbbf24"},
+    )
+    fig.add_annotation(
+        x=cfg.threshold_grid[col],
+        y=fn_grid[row],
+        text=f"selected: t={cfg.threshold_grid[col]:.3f},<br>cost {z[row, col]:,.0f}",
+        showarrow=True,
+        arrowhead=2,
+        ax=55,
+        ay=-35,
+        font={"size": 13, "color": "#fbbf24"},
     )
     fig.update_layout(
         title=(
@@ -282,44 +303,85 @@ def paired_bootstrap_cost_delta(
         "n_boot": n_boot,
         "significant_95": bool(lo > 0 or hi < 0),
         "note": "negative delta = A costs less than B",
+        # the full resample distribution, so the figure can histogram it
+        # without re-running the bootstrap (seeded -> reproducible)
+        "deltas": deltas.tolist(),
     }
 
 
 def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.Figure:
-    """Interval plot of the paired bootstrap cost delta (A minus B)."""
+    """Histogram of the paired-bootstrap cost deltas (A minus B).
+
+    A single interval line is information-free; the resample distribution
+    shows how far from zero the saving sits. The 95% CI region is shaded,
+    zero is a bold reference line, and the point estimate is starred.
+    """
+    deltas = np.asarray(delta["deltas"], dtype=float)
     label = f"{name_a} - {name_b}"
+    counts, edges = np.histogram(deltas, bins=50)
+    centers = (edges[:-1] + edges[1:]) / 2
+    widths = np.diff(edges)
     fig = go.Figure()
+    fig.add_bar(
+        x=centers.tolist(),
+        y=counts.tolist(),
+        width=widths.tolist(),
+        name="bootstrap deltas",
+        marker={"color": "#38bdf8", "opacity": 0.75},
+    )
+    in_ci = (deltas >= delta["lo"]) & (deltas <= delta["hi"])
+    ci_counts, _ = np.histogram(deltas[in_ci], bins=edges)
+    fig.add_bar(
+        x=centers.tolist(),
+        y=ci_counts.tolist(),
+        width=widths.tolist(),
+        name="inside 95% CI",
+        marker={"color": "#2dd4bf", "opacity": 0.85},
+    )
+    fig.add_vline(
+        x=0,
+        line_width=3,
+        line_color="#f472b6",
+        annotation_text="no effect",
+        annotation_position="top left",
+        annotation_font_color="#f472b6",
+    )
     fig.add_scatter(
         x=[delta["point"]],
-        y=[label],
+        y=[float(counts.max()) * 1.05],
         mode="markers",
         name="point delta",
-        marker={"size": 12, "symbol": "star", "color": "#fbbf24"},
+        marker={"size": 14, "symbol": "star", "color": "#fbbf24"},
     )
-    fig.add_scatter(
-        x=[delta["lo"], delta["hi"]],
-        y=[label] * 2,
-        mode="lines",
-        name="95% CI",
-        line={"color": "#2dd4bf", "width": 4},
-    )
-    fig.add_scatter(
-        x=[0],
-        y=[label],
-        mode="markers",
-        name="no effect",
-        marker={"size": 10, "symbol": "line-ns", "color": "#64748b"},
+    fig.add_annotation(
+        x=delta["point"],
+        y=float(counts.max()) * 1.05,
+        text=f"point: {delta['point']:.0f}",
+        showarrow=True,
+        arrowhead=2,
+        ax=0,
+        ay=-35,
+        font={"size": 13, "color": "#fbbf24"},
     )
     verdict = "significant" if delta["significant_95"] else "not significant"
+    if delta["hi"] < 0:
+        spread = "every resample sits below zero"
+    elif delta["lo"] > 0:
+        spread = "every resample sits above zero"
+    else:
+        spread = "resamples straddle zero"
     fig.update_layout(
         title=(
-            f"Paired bootstrap: the {delta['point']:.0f} cost delta's 95% CI "
-            f"[{delta['lo']:.0f}, {delta['hi']:.0f}] excludes zero "
-            f"({delta['n_boot']} resamples)"
+            f"the {delta['point']:.0f} saving's 95% CI excludes zero — {delta['n_boot']} resamples"
         ),
-        xaxis_title="cost delta (negative = saves money)",
+        xaxis_title=f"cost delta, {label} (negative = saves money)",
+        yaxis_title="resamples",
+        barmode="overlay",
     )
-    add_takeaway(fig, f"95% CI [{delta['lo']:.1f}, {delta['hi']:.1f}] - {verdict} at alpha 0.05")
+    add_takeaway(
+        fig,
+        f"95% CI [{delta['lo']:.0f}, {delta['hi']:.0f}] — {verdict} at alpha 0.05; {spread}",
+    )
     return apply_theme(fig)
 
 
@@ -416,6 +478,15 @@ def calibration_figure(
         title="Isotonic improves both ECE (0.028 -> 0.016) and holdout cost (619 -> 601)",
         xaxis_title="Mean predicted probability",
         yaxis_title="Observed churn frequency",
+        # legend below the plot (bottom-center): on top it collides with the title
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.18,
+            "x": 0.5,
+            "xanchor": "center",
+        },
+        margin={"b": 120},
     )
     style_runs(fig, best="isotonic")
     return apply_theme(fig)
@@ -475,6 +546,15 @@ def precision_recall_figure(
         ),
         xaxis_title="Recall",
         yaxis_title="Precision",
+        # legend below the plot (bottom-center): on top it collides with the title
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.18,
+            "x": 0.5,
+            "xanchor": "center",
+        },
+        margin={"b": 120},
     )
     style_runs(fig, best="selected model")
     return apply_theme(fig)
@@ -508,14 +588,16 @@ def decision_curve_figure(
         nb = [net_benefit(y_true, proba, float(pt)) for pt in pt_grid]
         fig.add_scatter(x=pt_grid.tolist(), y=nb, mode="lines", name=name)
     fig.update_layout(
-        title=(
-            "The selected model beats treat-all and treat-none across the "
-            "low-threshold range - the alarm pays"
-        ),
+        title="The selected model beats treat-all and treat-none - the alarm pays",
         xaxis_title="Threshold probability pt",
         yaxis_title="Net benefit (per customer)",
     )
     style_runs(fig, best="selected model")
+    add_takeaway(
+        fig,
+        "net benefit stays above both reference lines in the low-threshold "
+        "range where churn is actionable",
+    )
     return apply_theme(fig)
 
 
@@ -530,13 +612,27 @@ def cost_figure(
     for name, costs in cost_map.items():
         fig.add_scatter(x=list(cfg.threshold_grid), y=costs.tolist(), mode="lines", name=name)
         opt = opt_map[name]
+        opt_cost = float(costs[int(np.argmin(costs))])
         fig.add_scatter(
             x=[opt],
-            y=[float(costs[int(np.argmin(costs))])],
+            y=[opt_cost],
             mode="markers",
             name=f"{name} optimum",
             marker={"size": 11, "symbol": "star"},
         )
+        if name == "selected model isotonic":
+            # The deployed operating point per the story: isotonic-calibrated
+            # cost optimum (t=0.175, cost 601 on telco at FP=1/FN=5).
+            fig.add_annotation(
+                x=opt,
+                y=opt_cost,
+                text=f"selected operating point<br>t={opt:.3f}, cost {opt_cost:,.0f}",
+                showarrow=True,
+                arrowhead=2,
+                ax=-30,
+                ay=-45,
+                font={"size": 13, "color": "#fbbf24"},
+            )
     fig.update_layout(
         title=(
             "Cost-aware selection plus isotonic calibration cuts business "
@@ -547,6 +643,18 @@ def cost_figure(
     )
     style_runs(fig, best="selected model")
     add_takeaway(fig, takeaway)
+    # two legend rows below the plot, centered (the takeaway moved the legend
+    # off the title; centering keeps it clear of the axis labels)
+    fig.update_layout(
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.22,
+            "x": 0.5,
+            "xanchor": "center",
+        },
+        margin={"b": 130},
+    )
     return apply_theme(fig)
 
 
@@ -679,7 +787,7 @@ def evaluate_holdout(
         ),
         "bootstrap_ci": bootstrap_ci_figure(summary["cost_delta_ci"], "selected model", "naive"),
         "fairness_slices": fairness_slices_figure(summary["slices"], selected_opt),
-        "cost_surface": cost_surface_figure(cfg, y_true, proba["selected"]),
+        "cost_surface": cost_surface_figure(cfg, y_true, proba["selected_calibrated"]),
     }
     return runs, figures, summary
 

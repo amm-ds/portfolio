@@ -125,7 +125,16 @@ def confusion_matrix_figure(
             colorscale="Teal",
         )
     )
-    fig.update_layout(title=title, xaxis_title="predicted", yaxis_title="true")
+    fig.update_layout(
+        title={"text": title, "pad": {"t": 20}},
+        xaxis_title="predicted",
+        yaxis_title="true",
+        # class names ("Sci/Tech") plus the axis title need more left room
+        # than the theme default, or kaleido clips the y tick labels; the
+        # generous top band keeps the title clear of the heatmap and of the
+        # page edge at the embedded render size
+        margin={"l": 120, "t": 110, "b": 80},
+    )
     return apply_theme(fig)
 
 
@@ -156,24 +165,43 @@ def per_class_f1_comparison_figure(
 
 
 def training_curve_figure(history: TrainingHistory) -> go.Figure:
-    """Train/val loss and validation macro-F1 across epochs.
+    """Train/val loss (left) and validation macro-F1 (right) across epochs.
 
-    Charts the full-120k headline run when its history is available (the
-    bounded-run history is the fallback for the no-GPU CI path).
+    Two aligned panels with their own y-axes: loss and F1 have incompatible
+    scales, so they must not share one axis. Charts the full-120k headline
+    run when its history is available (the bounded-run history is the
+    fallback for the no-GPU CI path).
     """
     epochs = [e.epoch for e in history.epochs]
     best = max((e.val_f1_macro for e in history.epochs), default=0.0)
-    fig = go.Figure()
-    fig.add_scatter(x=epochs, y=[e.train_loss for e in history.epochs], name="train loss")
-    fig.add_scatter(x=epochs, y=[e.val_loss for e in history.epochs], name="val loss")
-    fig.add_scatter(x=epochs, y=[e.val_f1_macro for e in history.epochs], name="val macro-F1")
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("train / val loss", "val macro-F1"),
+    )
+    fig.add_scatter(
+        x=epochs, y=[e.train_loss for e in history.epochs], name="train loss", row=1, col=1
+    )
+    fig.add_scatter(x=epochs, y=[e.val_loss for e in history.epochs], name="val loss", row=1, col=1)
+    fig.add_scatter(
+        x=epochs,
+        y=[e.val_f1_macro for e in history.epochs],
+        name="val macro-F1",
+        row=1,
+        col=2,
+        showlegend=False,
+    )
     fig.update_layout(
         title=(
             f"Fine-tuning saturates within two epochs — val macro-F1 plateaus "
             f"at ~{best:.3f} while train loss keeps falling"
         ),
         xaxis_title="epoch",
-        yaxis_title="value",
+        xaxis2_title="epoch",
+        yaxis_title="loss",
+        yaxis2_title="val macro-F1",
+        # the theme's horizontal legend row needs its own band above the plot
+        margin={"t": 100, "l": 60, "r": 30, "b": 50},
     )
     return apply_theme(fig)
 

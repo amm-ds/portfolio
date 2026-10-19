@@ -90,6 +90,18 @@ NAB_SERIES: dict[str, list[tuple[str, str]]] = {
     ],
 }
 
+# The timeline matrix is embedded as a single PNG, so it shows six curated
+# panels (2x3) instead of all twelve: two per family, spanning the outcomes -
+# nyc_taxi misses one labelled event while the other five detect theirs.
+TIMELINE_SELECTION: tuple[str, ...] = (
+    "realAWSCloudwatch/ec2_cpu_utilization_24ae8d",
+    "realAWSCloudwatch/elb_request_count_8c0756",
+    "realKnownCause/nyc_taxi",
+    "realKnownCause/machine_temperature_system_failure",
+    "realTraffic/occupancy_t4013",
+    "realTraffic/speed_7578",
+)
+
 
 def nab_dir(config: AnomalyConfig) -> Path:
     return config.data_path / "nab"
@@ -335,21 +347,24 @@ def alert_budget_curve(
 def nab_figures(
     results: dict[str, dict[str, Any]], budget_curve: dict[str, list[dict[str, float]]]
 ) -> dict[str, go.Figure]:
-    """Per-series timeline panel, pooled score distributions, alert-budget curve."""
-    order = [(fam, name) for fam, series in NAB_SERIES.items() for name, _ in series]
-    titles = [f"{fam.removeprefix('real')}/{name}" for fam, name in order]
-    cols = min(3, len(order))
-    n_grid_rows = int(np.ceil(len(order) / cols))
-    fig = make_subplots(rows=n_grid_rows, cols=cols, subplot_titles=titles)
-    for idx, (fam, name) in enumerate(order):
-        row, col = idx // cols + 1, idx % cols + 1
-        r = results[f"{fam}/{name}"]
+    """Per-series timeline panel, pooled score distributions, alert-budget curve.
+
+    The timeline figure is the one embedded in the docs, so it shows six
+    curated series (2 rows x 3 cols) rather than all twelve - large enough
+    for timestamps and alert markers to read at the embedded size.
+    """
+    keys = [k for k in TIMELINE_SELECTION if k in results] or list(results)[:6]
+    titles = [k.split("/", 1)[1] for k in keys]
+    fig = make_subplots(rows=2, cols=3, subplot_titles=titles)
+    for idx, key in enumerate(keys):
+        row, col = idx // 3 + 1, idx % 3 + 1
+        r = results[key]
         fig.add_scatter(
             x=r["ts_test"],
             y=r["values"],
             mode="lines",
             showlegend=False,
-            line={"width": 1},
+            line={"width": 1.5},
             row=row,
             col=col,
         )
@@ -368,20 +383,30 @@ def nab_figures(
             y=r["values"][r["alerts"]],
             mode="markers",
             showlegend=False,
-            marker={"color": "#f472b6", "size": 5, "symbol": "x"},
+            marker={"color": "#f472b6", "size": 9, "symbol": "x", "line": {"width": 2}},
             row=row,
             col=col,
         )
-    n_alerts = sum(int(r["alerts_fired"]) for r in results.values())
+    n_alerts = sum(int(results[k]["alerts_fired"]) for k in keys)
+    fig.update_annotations(font_size=15)
+    fig.update_xaxes(tickformat="%b %d", nticks=4)
+    fig.update_yaxes(tickfont_size=13)
+    fig.update_xaxes(tickfont_size=13)
     fig.update_layout(
-        title=(
-            "Real NAB telemetry hides labelled incidents in noisy baselines — "
-            f"most of the {n_alerts:,} alerts miss the event windows"
-        ),
-        height=1100,
+        title={
+            "text": (
+                "Real NAB telemetry hides labelled incidents in noisy baselines — "
+                f"most of the {n_alerts:,} alerts miss the event windows"
+            ),
+            "font": {"size": 19},
+        },
     )
-    add_takeaway(fig, "One panel per series: real anomaly windows are contextual, not just spikes.")
-    timelines = apply_theme(fig)
+    add_takeaway(
+        fig,
+        "Six representative series (id per panel): amber bands are the labelled "
+        "windows, pink crosses are alerts - nyc_taxi misses one window.",
+    )
+    timelines = apply_theme(fig, height=820)
 
     scores = np.concatenate([r["scores"] for r in results.values()])
     y = np.concatenate([r["y_test"] for r in results.values()])
