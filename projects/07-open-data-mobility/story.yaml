@@ -30,7 +30,7 @@ sections:
       future holdout the model removes 28.4% of forecast error vs "same hour
       last week".
 
-      **Business summary:** an hour-ahead, zone-level demand signal
+      **Business summary:** An hour-ahead, zone-level demand signal
       turns fleet staging and driver shifts from guesswork into a
       scheduled decision.
     figures: []
@@ -44,9 +44,9 @@ sections:
       last week" do modern models get, and what does rain do to curb
       demand?
 
-      - **Point forecast plus buffer:** a GBM mean plus a calibrated
-        **p90 upper band** per zone-hour — the number a dispatcher can
-        staff against.
+      - **Point forecast plus buffer:** a gradient-boosted (GBM) mean
+        plus a calibrated **p90 (90th-percentile) upper band** per
+        zone-hour — the number a dispatcher can staff against.
       - **Weather claims:** every weather statement is labelled
         directional, not causal.
       - **Success gates:**
@@ -61,7 +61,7 @@ sections:
       The deliverable is a forecast plus a defensible buffer size, not a
       leaderboard entry.
 
-      **Business summary:** the client gets a staffing decision —
+      **Business summary:** The client gets a staffing decision —
       expected demand plus how many extra vehicles to hold each hour —
       and a straight read on what rain does and does not tell you.
     figures: []
@@ -88,7 +88,7 @@ sections:
       declared laptop-friendly boundary: large enough to be credible at real
       scale, small enough to re-run in minutes.
 
-      **Business summary:** every input is licensed for commercial use
+      **Business summary:** Every input is licensed for commercial use
       and re-obtainable by one command, so the analysis reproduces inside
       your own environment — no proprietary data dependency.
     figures: []
@@ -113,8 +113,8 @@ sections:
 
       Demand is hour-and-borough driven, not evenly spread.
 
-      **Business summary:** staff the 18:00 Manhattan peak and the
-      airport flatness very differently — this EDA is what turns a
+      **Business summary:** Staff the 18:00 Manhattan peak and the
+      airport flatness very differently — this analysis is what turns a
       city-wide average into per-zone staffing plans.
     figures: [eda_trips_profile, zone_hour_heatmap, zone_demand_map]
     metrics_keys: []
@@ -154,7 +154,7 @@ sections:
       The method section is the audit trail: no leakage inflates the
       numbers before the headline error rates are trusted.
 
-      **Business summary:** a client can verify the protocol and re-run
+      **Business summary:** A client can verify the protocol and re-run
       the whole fit on a laptop before betting a fleet plan on the model.
     figures: []
     metrics_keys: []
@@ -190,7 +190,7 @@ sections:
       wiring check; the observatory's real value starts with the first
       unseen month.
 
-      **Business summary:** the client inherits a monitoring contract,
+      **Business summary:** The client inherits a monitoring contract,
       not just a model — regression opens a tracked issue with a response
       runbook instead of waiting for the next quarterly review.
     figures: [actual_vs_pred_top5, borough_mae, zone_fan]
@@ -198,17 +198,19 @@ sections:
 
   - id: results
     text_md: |
-      Q4 holdout run ladder (pickups/hour):
+      Q4 holdout run ladder (pickups/hour); lower is better, ΔMAE vs the
+      naive lag-24 floor, bold row = ladder's best, ← served marks the
+      incumbent:
 
       | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
       |---|---|---|---|---|---|
       | naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | 1.063 | — |
-      | gbm_mean | 4.667 | **15.096** | 62.0% | 0.761 | −28.4% |
+      | gbm_mean ← served | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
       | gbm_tuned (30 trials) | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
-      | gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | 0.732 | −31.2% |
+      | **gbm_xgb_tuned (15 trials) ← best** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
       | gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
-      | temporal_net | 5.510 | 19.686 | **54.5%** | 0.899 | −15.5% |
-      | temporal_net_tuned (10 trials) | **5.178** | 21.580 | 57.5% | 0.845 | −20.5% |
+      | temporal_net | 5.510 | 19.686 | 54.5% | 0.899 | −15.5% |
+      | temporal_net_tuned (10 trials) | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
 
       MASE 1.0 = persistence parity; served GBM 0.76 (`gbm_vs_nn`).
 
@@ -233,10 +235,10 @@ sections:
       - **Serving is live:** the showcase API returned JFK (zone 132):
         223.827 point / 251.811 p90.
 
-      **Business summary:** ~28% of forecast error is removed vs "same
-      hour last week"; the 90.8%-calibrated p90 band yields a defensible
-      buffer of extra vehicles per hour — except flagged sparse N/A zones,
-      where bands run too tight.
+      **Business summary:** About 28% of forecast error is removed vs
+      "same hour last week"; the 90.8%-calibrated p90 band yields a
+      defensible buffer of extra vehicles per hour — except in flagged
+      sparse zones with no borough assignment, where bands run too tight.
     figures: [gbm_vs_nn, p90_band, weather_elasticity]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
@@ -269,7 +271,7 @@ sections:
       flagged N/A zones under-cover at 84.7% — staff from the band in
       dense boroughs, fall back to persistence rules in flagged zones.
 
-      **Business summary:** this quality of analysis runs on a laptop
+      **Business summary:** This quality of analysis runs on a laptop
       and re-runs in minutes — 41.2M rows, a strict temporal holdout and a
       sub-3 GB footprint deliver enterprise-grade rigour without
       enterprise-grade infrastructure.

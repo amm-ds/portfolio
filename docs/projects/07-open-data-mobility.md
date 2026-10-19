@@ -26,18 +26,20 @@ the signal: 30 trials of HPO moved MAE by 0.2%. Tuned challengers (xgb/lgbm)
 won on the Q4 test window but lost on the embargoed validation window, so the
 serving rule kept the incumbent — switching on test results would be test-set
 selection. MASE normalises by last-week persistence error (1.0 = no better
-than "same hour last week"); lower is better; bold marks each column's best,
-and the served model is the `gbm_mean` incumbent.
+than "same hour last week"); lower is better; ΔMAE vs naive is the error
+change vs the naive lag-24 floor. The bold row is the ladder's best
+(MAE/RMSE/MASE), and the served model is the `gbm_mean` incumbent, marked
+← served.
 
 | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
 |---|---|---|---|---|---|
 | naive lag-24 (persistence) | 6.52 | 23.37 | 89.4% | 1.063 | — |
-| GBM mean | 4.667 | **15.096** | 62.0% | 0.761 | −28.4% |
+| GBM mean ← served | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
 | GBM tuned (30 Optuna trials) | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
-| GBM xgb tuned (15 trials) | **4.487** | 14.785 | 58.2% | 0.732 | **−31.2%** |
+| **GBM xgb tuned (15 trials) ← best** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
 | GBM lgbm tuned (15 trials) | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
-| TemporalNet (torch, log1p target) | 5.510 | 19.686 | **54.5%** | 0.899 | −15.5% |
-| TemporalNet tuned (10 trials) | 5.178 | 21.580 | 57.5% | **0.845** | −20.5% |
+| TemporalNet (torch, log1p target) | 5.510 | 19.686 | 54.5% | 0.899 | −15.5% |
+| TemporalNet tuned (10 trials) | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
 
 ![The served GBM removes 28.4% of forecast error vs last-week persistence while tuned challengers that won the Q4 test window lose on the embargoed validation window.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
 

@@ -14,7 +14,10 @@ working showcase on the standard platform
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows)
 
-Single-shot agents are the demo; workflows are the product. This project is
+Single-shot agents are the demo; workflows are the product. A one-shot
+answer can impress in a demo, but real work is a chain of dependent steps —
+a mistake in the middle corrupts everything after it, which is why
+unsupervised runs need grading, budgets, and checkpoints. This project is
 the platform's dedicated agentic-AI-workflows showcase: multi-step, stateful
 LLM workflows as explicit typed graphs — planning, tool orchestration,
 bounded retries, self-critique, and human-in-the-loop checkpoints — graded by

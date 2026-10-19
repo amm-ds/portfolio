@@ -23,7 +23,8 @@ best-known optima on the full Solomon benchmark — and states exactly what the
 remaining gap costs:
 
 A seeded solver ladder for the vehicle routing problem with time windows —
-randomized floor, nearest neighbor, Clarke–Wright savings, HPO-tuned 2-opt/2-opt*,
+randomized floor, nearest neighbor, Clarke–Wright savings,
+hyperparameter-tuned (HPO) 2-opt/2-opt*,
 and adaptive large-neighborhood search (ALNS: random/worst/Shaw destroy +
 regret-2 repair, segment-adapted operator weights, SA acceptance) — benchmarked
 against published best-known solutions. Every solution is machine-validated
@@ -33,15 +34,17 @@ against published best-known solutions. Every solution is machine-validated
 
 Mean gap to published best-known distance, lower is better; the benchmark's
 vehicles-first ranking is reported alongside the gap (see the story results).
+Δ gap is the change in mean gap vs `nearest_neighbor` (the construction
+incumbent), in percentage points; the bold row is the ladder's best.
 
-| solver | mean gap to best-known | mean runtime |
-|---|---|---|
-| randomized (feasible floor) | 316.95 % | <10 ms/instance |
-| nearest_neighbor | 71.64 % | <10 ms/instance |
-| clarke_wright | 18.31 % | <10 ms/instance |
-| two_opt_tuned (HPO) | 13.63 % | <10 ms/instance |
-| **alns (HPO-tuned)** | **4.23 %** | ~0.8–2.8 s/instance |
-| ortools_cp (ALNS-hinted cross-check, 10 s budget) | 4.23 % | 13.6 s/instance |
+| solver | mean gap to best-known | Δ gap vs nn | mean runtime |
+|---|---|---|---|
+| randomized (feasible floor) | 316.95 % | +245.31 pp | <10 ms/instance |
+| nearest_neighbor | 71.64 % | — | <10 ms/instance |
+| clarke_wright | 18.31 % | −53.33 pp | <10 ms/instance |
+| two_opt_tuned (HPO) | 13.63 % | −58.01 pp | <10 ms/instance |
+| **alns (HPO-tuned) ← best** | **4.23 %** | **−67.41 pp** | **~0.8–2.8 s/instance** |
+| ortools_cp (ALNS-hinted cross-check, 10 s budget) | 4.23 % | −67.41 pp | 13.6 s/instance |
 
 Two criteria throughout: ALNS wins 56/56 instances on distance (13.63 % →
 4.23 %, single digits on every family: C1 4.48 %, C2 6.50 %, R1 4.10 %, R2

@@ -14,7 +14,7 @@ sections:
       - **The benchmark:** AG News, a real, public, widely studied
         four-topic corpus.
 
-      **Business summary:** framing this as a cost-vs-delivery
+      **Business summary:** Framing this as a cost-vs-delivery
       trade-off, not a technology contest, is what makes the ladder below
       actionable for a routing decision.
 
@@ -33,7 +33,7 @@ sections:
       | Reproducibility | seeded end-to-end, CPU-feasible | bit-exact validation scores on re-run |
       | Headline scale | full 120k fine-tune on laptop GPU (MPS) | test macro-F1, wall-clock documented |
 
-      **Business summary:** a small, reproducible, rigorously selected
+      **Business summary:** A small, reproducible, rigorously selected
       model beats a larger undocumented one — every number here can be
       audited in an afternoon.
 
@@ -55,7 +55,7 @@ sections:
         after the same stratified carve-out), behind an accelerator gate
         described in `README.md`.
 
-      **Business summary:** real data, a documented license posture,
+      **Business summary:** Real data, a documented license posture,
       pinned seeds, and a sha256 snapshot contract are exactly what a
       compliance review asks for before a model touches production data.
 
@@ -74,7 +74,7 @@ sections:
       - **Consequence:** metric differences between runs are model
         effects, not artifacts of class priors or truncation.
 
-      **Business summary:** on balanced data the macro-F1 claim
+      **Business summary:** On balanced data the macro-F1 claim
       survives a shift in the production class mix — though per-class
       monitoring stays mandatory for deployment.
     figures: [eda_class_balance]
@@ -115,7 +115,7 @@ sections:
       The `training_curve`, `epochs_probe` and `hpo_history` figures track
       loss, the epoch-budget probe, and per-trial validation F1.
 
-      **Business summary:** every training detail a buyer would audit —
+      **Business summary:** Every training detail a buyer would audit —
       optimizer, schedule, stopping rule, seeds — is hand-written, visible,
       and unit-tested.
     figures: [training_curve, epochs_probe, hpo_history]
@@ -145,7 +145,7 @@ sections:
       `confusion_matrix_selected` figure shows where the selected model
       still errs.
 
-      **Business summary:** one untouched test split for every run is
+      **Business summary:** One untouched test split for every run is
       an anti-marketing device — no cherry-picking, no test-set leakage
       through tuning; the numbers survive a skeptical re-run.
     figures: [confusion_matrix_selected]
@@ -192,7 +192,7 @@ sections:
         hybrid tech-business headlines; more data shrinks the frequency,
         not the pair (labeling-ambiguity floor).
 
-      **Business summary:** fund the full-data fine-tune when ~7.5 pp
+      **Business summary:** Fund the full-data fine-tune when ~7.5 pp
       macro-F1 over TF-IDF is worth ~$0.07 per 1k items; only wins
       surviving all three checks ship.
     figures: [per_class_f1_comparison]
@@ -222,7 +222,7 @@ sections:
       result) and the Business → Sci/Tech labeling floor — both stated
       above, not left for a client to discover.
 
-      **Business summary:** treat this as the auditable lower bound of
+      **Business summary:** Treat this as the auditable lower bound of
       a scaling decision — the 0.9460 headline gives a concrete basis for
       funding full-scale training, and TF-IDF remains the right answer
       where latency or interpretability dominates.

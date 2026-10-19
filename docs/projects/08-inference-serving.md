@@ -29,11 +29,12 @@ committed to the repo** and not universal. Regenerate on your hardware with
 `bench --full && report` and compare cell-for-cell.
 
 Each cell shows p95 latency in seconds / aggregate output tok/s for that
-model at the given concurrency.
+model at the given concurrency; the bold row is the fastest arm at every
+concurrency — this is a cross-model grid, not a run ladder, so no Δ column.
 
 | model | runner | c=1 | c=4 | c=8 |
 |---|---|---|---|---|
-| qwen3.6:35b-a3b-q4_K_M (MoE) | llamacpp | 0.81 s / 67.7 | 3.86 s / 52.3 | 7.80 s / 50.2 |
+| **qwen3.6:35b-a3b-q4_K_M (MoE) ← best** | **llamacpp** | **0.81 s / 67.7** | **3.86 s / 52.3** | **7.80 s / 50.2** |
 | gpt-oss:20b (MXFP4) | llamacpp | 1.64 s / 36.8 | 4.80 s / 39.5 | 9.04 s / 40.0 |
 | gemma4:31b (dense) | mlx | 2.52 s / 17.6 | 8.28 s / 18.4 | 16.06 s / 18.5 |
 | qwen3:32b (dense, --full) | llamacpp | 5.06 s / 9.6 | 16.31 s / 9.6 | 31.27 s / 9.4 |
@@ -43,7 +44,10 @@ model at the given concurrency.
 Engine panel (gemma4:31b family, concurrency 1): **MLX 4-bit beats GGUF Q8_0
 on llama.cpp 2.9x on tok/s** (18.8 vs 6.4) with p95 2.47 s vs 7.12 s — but
 quant is confounded (the registry has no same-quant cross-runner pair), so
-this reads as engine+packaging, not a pure runner race.
+this reads as engine+packaging, not a pure runner race. In plain words: the
+two engines were tested on differently compressed model files, so the
+number bundles the engine with the file format — it identifies the best
+combination, not which engine is intrinsically faster.
 
 ![MLX 4-bit beats GGUF Q8_0 on llama.cpp by 2.9x on tok/s (18.8 vs 6.4) with p95 2.47 s vs 7.12 s at concurrency 1.](../assets/projects/08-inference-serving/engine_panel.png){ width="100%" }
 

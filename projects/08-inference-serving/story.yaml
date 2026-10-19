@@ -20,8 +20,9 @@ sections:
       a modeling problem: latency percentiles, throughput, memory footprint,
       and cost per token decide whether a use case ships at all. The headline
       from measuring the portfolio's real serving stack instead of quoting
-      vendor numbers: the 4-bit MoE arm serves locally at ~$0.12 per 1M
-      output tokens with single-digit-second p95 through concurrency 8.
+      vendor numbers: the 4-bit mixture-of-experts (MoE) arm serves locally
+      at ~$0.12 per 1M output tokens with single-digit-second p95 through
+      concurrency 8.
 
       - **Measured, not quoted:** the benchmark target is the same local
         Ollama OpenAI-compatible endpoint every LLM project ships against
@@ -29,13 +30,13 @@ sections:
         no redundant gateway), so the numbers describe real traffic, not a
         lab proxy.
       - **Decisions it feeds:** local-vs-cloud serving economics, model and
-        quantization choice under a latency SLO, and concurrency sizing for
-        interactive workloads.
+        quantization choice under a latency target (SLO), and concurrency
+        sizing for interactive workloads.
 
       The task is fixed and bounded so the benchmark can be re-run, not just
       read.
 
-      **Business summary:** a client weighing local inference against a
+      **Business summary:** A client weighing local inference against a
       cloud API starts from measured latency and cost on the stack that
       would actually run — not vendor rate cards or leaderboard claims.
   - id: objectives
@@ -54,7 +55,7 @@ sections:
       Success is a reproducible set of numbers tied to serving
       configurations, not a leaderboard rank.
 
-      **Business summary:** the deliverable is an operating decision —
+      **Business summary:** The deliverable is an operating decision —
       which model/quant arm meets a latency SLO at what cost — with every
       metric traceable to a configuration a client could actually deploy.
   - id: data
@@ -74,7 +75,7 @@ sections:
 
       A fixed task is what makes different models directly comparable.
 
-      **Business summary:** a client can re-run the identical task on
+      **Business summary:** A client can re-run the identical task on
       their own hardware and get numbers comparable cell-for-cell with these
       — the benchmark is portable, not a one-off demo.
   - id: eda
@@ -95,7 +96,7 @@ sections:
 
       These are facts about the serving layer, not about model intelligence.
 
-      **Business summary:** a naive harness would have reported qwen3.6
+      **Business summary:** A naive harness would have reported qwen3.6
       as a broken model; per-model reasoning defaults are part of the true
       cost of serving.
     figures:
@@ -138,7 +139,7 @@ sections:
       Rationale lives in `DESIGN.md`; stages are `prepare` → `bench` →
       `report`.
 
-      **Business summary:** swapping engine or quantization is a manifest
+      **Business summary:** Swapping engine or quantization is a manifest
       pull, not a re-architecture — the table maps one-to-one onto
       deployment options.
   - id: evaluation
@@ -160,7 +161,7 @@ sections:
       finishes in under 45 minutes; `--full` adds the dense qwen3:32b
       baseline, concurrency 2, and the quant/engine cells.
 
-      **Business summary:** the protocol is short and deterministic
+      **Business summary:** The protocol is short and deterministic
       enough to run inside a client proof-of-concept — SLO verification
       becomes an afternoon task, not a project.
     figures:
@@ -176,7 +177,9 @@ sections:
 
       - **Engine:** MLX ≈ 2.9× GGUF tok/s on this machine (gemma4:31b, c=1);
         quant confounded, so `engine_panel` reads as engine+packaging, not a
-        pure runner race.
+        pure runner race. In plain words: the two engines ran on differently
+        compressed model files, so the figure names the best
+        engine-plus-format combination, not the faster engine alone.
       - **Latency:** MoE arms keep single-digit-second p95 that grows
         gracefully — qwen3.6 goes 0.81 s (c=1) → 7.80 s (c=8) — with p95
         ≈ linear in concurrency on every arm.
@@ -188,7 +191,7 @@ sections:
         rate as Q8_0 — quantization costs serving headroom, not
         structured-output reliability.
 
-      **Business summary:** under a single-digit-second interactive SLO,
+      **Business summary:** Under a single-digit-second interactive SLO,
       the 4-bit MoE arm serves locally at roughly $0.12 per 1M output tokens
       (declared 100 W, $0.30/kWh) — quantization is a latency and cost lever,
       not a quality risk, at this task size.
@@ -216,6 +219,6 @@ sections:
       their own hardware and treats these numbers as a worked example, not
       a guarantee.
 
-      **Business summary:** the framework transfers to a client decision
+      **Business summary:** The framework transfers to a client decision
       unchanged — same task, same protocol, same declared-assumption labels —
       only the hardware and the latency SLO change.
