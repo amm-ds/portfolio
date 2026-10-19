@@ -191,10 +191,7 @@ def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) 
         col=1,
     )
     fig.update_layout(
-        title=(
-            f"Recall uniform across gender (0.90) but 0.00 on two-year "
-            f"contracts at t={threshold:.3f}"
-        ),
+        title="Fairness slices — recall, precision, F1 and cost",
         barmode="group",
         yaxis_title="metric value",
         yaxis2_title="cost (FP·1 + FN·5)",
@@ -202,8 +199,8 @@ def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) 
     style_runs(fig)
     add_takeaway(
         fig,
-        f"45 churners missed by choice — overall F1 {overall['f1']:.3f}; "
-        "read slice gaps against this line",
+        f"holdout at t={threshold:.3f} — classification metrics per slice (left), "
+        f"slice business cost (right); dashed line = overall F1 {overall['f1']:.3f}",
     )
     return apply_theme(fig)
 
@@ -247,15 +244,16 @@ def cost_surface_figure(
         font={"size": 13, "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="The cost-optimal threshold moves with the base rate",
+        title="Cost surface over decision threshold and FN cost",
         xaxis_title="Decision threshold",
         yaxis_title="FN cost (FP cost = 1)",
     )
     add_takeaway(
         fig,
-        "0.175 on telco vs 0.700 on synthetic — the procedure transfers; "
-        f"at FN={cfg.fn_cost:g}, t={cfg.threshold_grid[col]:.3f} minimizes cost "
-        f"({z[row, col]:.0f}); the ridge bends left as FN cost rises",
+        f"isotonic-calibrated model on the 1,409-row holdout — cost heatmap over "
+        f"the 41-point threshold grid, FN cost 1-10; star marks the chosen "
+        f"operating point (t={cfg.threshold_grid[col]:.3f}, "
+        f"cost {z[row, col]:.0f} at FN={cfg.fn_cost:g})",
     )
     # The colorbar title ("cost") sits above the colorbar at the legend's
     # default top-right slot — drop the single-entry legend just below it.
@@ -357,24 +355,16 @@ def bootstrap_ci_figure(delta: dict[str, Any], name_a: str, name_b: str) -> go.F
         ay=-35,
         font={"size": 13, "color": "#fbbf24"},
     )
-    verdict = "significant" if delta["significant_95"] else "not significant"
-    if delta["hi"] < 0:
-        spread = "every resample sits below zero"
-    elif delta["lo"] > 0:
-        spread = "every resample sits above zero"
-    else:
-        spread = "resamples straddle zero"
     fig.update_layout(
-        title=(
-            f"the {delta['point']:.0f} saving's 95% CI excludes zero — {delta['n_boot']} resamples"
-        ),
+        title="Paired-bootstrap cost deltas",
         xaxis_title=f"cost delta, {label} (negative = saves money)",
         yaxis_title="resamples",
         barmode="overlay",
     )
     add_takeaway(
         fig,
-        f"95% CI [{delta['lo']:.0f}, {delta['hi']:.0f}] — {verdict} at alpha 0.05; {spread}",
+        f"{delta['n_boot']:,} seeded resamples of the holdout — 95% CI shaded "
+        f"[{delta['lo']:.0f}, {delta['hi']:.0f}], zero bold, point starred",
     )
     return apply_theme(fig)
 
@@ -469,11 +459,13 @@ def calibration_figure(
             name=f"{name} (ece={ece:.3f})",
         )
     fig.update_layout(
-        title="Isotonic improves both ECE and holdout cost",
+        title="Reliability diagram — raw vs isotonic-calibrated",
         xaxis_title="Mean predicted probability",
         yaxis_title="Observed churn frequency",
     )
-    add_takeaway(fig, "ECE 0.028 → 0.016, holdout cost 619 → 601")
+    add_takeaway(
+        fig, "holdout, 10 bins — ECE per candidate in the legend; perfect calibration dashed"
+    )
     style_runs(fig, best="isotonic")
     return apply_theme(fig)
 
@@ -500,7 +492,7 @@ def importance_figure(
         marker={"color": "#38bdf8"},
     )
     fig.update_layout(
-        title="Contract, tenure and monthly charges carry the churn signal",
+        title="Permutation importance (holdout F1, 5 repeats)",
         xaxis_title="Mean F1 decrease",
         # horizontal bars: automargin sizes the left margin to the longest
         # feature name ("tenure_months"), which the standard 70 px trims
@@ -528,11 +520,13 @@ def precision_recall_figure(
         prec, rec, _ = precision_recall_curve(y_true, proba)
         fig.add_scatter(x=rec, y=prec, mode="lines", name=name)
     fig.update_layout(
-        title=f"The dashed floor is the {base_rate:.1%} base rate",
+        title="Precision-recall curves — holdout",
         xaxis_title="Recall",
         yaxis_title="Precision",
     )
-    add_takeaway(fig, "ranked probabilities are what buy precision above it")
+    add_takeaway(
+        fig, "ranked probabilities per candidate; the dashed line is the 26.5% base-rate floor"
+    )
     style_runs(fig, best="selected model")
     return apply_theme(fig)
 
@@ -611,7 +605,7 @@ def cost_figure(
                 font={"size": 13, "color": "#fbbf24"},
             )
     fig.update_layout(
-        title="Cost-aware selection plus isotonic cuts business cost 41.9%",
+        title="Business cost vs decision threshold",
         xaxis_title="Decision threshold",
         yaxis_title=f"Total cost (FP·{cfg.fp_cost:g} + FN·{cfg.fn_cost:g})",
     )
@@ -697,12 +691,9 @@ def evaluate_holdout(
             },
         ),
     }
-    naive_total = _cost(naive_run)
-    savings = naive_total - _cost(selected_run)
     takeaway = (
-        f"Selected model at t={selected_opt:.3f} costs {_cost(selected_run):.0f} vs naive "
-        f"{naive_total:.0f} (-{100 * savings / naive_total:.1f}%); isotonic variant "
-        f"{_cost(calib_run):.0f}."
+        "holdout, 1,409 rows at FP=1/FN=5 — cost per candidate vs threshold; "
+        "stars mark each run's cost-optimal operating point"
     )
     figures = {
         "calibration_curve": calibration_figure(

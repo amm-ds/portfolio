@@ -280,7 +280,6 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
     naive = strongest_naive(result)
     rec = result.last_fold(model)
     rec_n = result.last_fold(naive)
-    reduction = 1.0 - rec.mae / max(rec_n.mae, 1e-12)
     fig = go.Figure()
     sids = _example_series(rec.series, rec.y_true, len(EXAMPLE_SERIES), EXAMPLE_SERIES)
     short = _display_series(sids)
@@ -304,10 +303,13 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
             mode="lines",
             line={"dash": "dot"},
         )
-    fig.update_layout(title=f"{model} clears the {naive} floor by {reduction:.0%} MAE")
+    fig.update_layout(title="Forecast vs actual — champion and strongest naive")
     # platform storytelling convention: naive floor demoted, best run promoted
     style_runs(fig, best=model)
-    add_takeaway(fig, "last CV fold — the residual gap is day-over-day noise")
+    add_takeaway(
+        fig,
+        "two example series, last CV fold — units/day; actual solid, champion dashed, naive dotted",
+    )
     return apply_theme(fig)
 
 
@@ -328,7 +330,6 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     mae = [_value(r, "mae") for r in runs]
     rmse = [_value(r, "rmse") for r in runs]
     mase = [_value(r, "mase") for r in runs]
-    below = [r.name for r in runs if (m := r.get("mase")) is not None and m.value < 1]
 
     fig = make_subplots(
         rows=1,
@@ -358,13 +359,8 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
         y1=1.0,
         line={"dash": "dot", "color": "#fbbf24"},
     )
-    head = (
-        f"Only {below[0]} clears the seasonal-naive floor"
-        if len(below) == 1
-        else f"{len(below)} runs clear the seasonal-naive floor"
-    )
     fig.update_layout(
-        title=head,
+        title="MAE, RMSE and MASE by run",
         barmode="group",
         yaxis_title="units",
         yaxis2_title="MASE",
@@ -373,8 +369,9 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "(MASE < 1) — pooled out-of-fold ladder; MAPE omitted (unit-incompatible "
-        "% scale, not decision-grade at 89% zeros) — see metrics.json",
+        "pooled out-of-fold ladder over all series and folds; MASE vs the 1.0 "
+        "seasonal-naive parity line — MAPE omitted (unit-incompatible % scale, "
+        "not decision-grade at 89% zeros); see metrics.json",
     )
     return fig
 
@@ -388,13 +385,13 @@ def figure_fold_stability(result: BacktestResult) -> go.Figure:
             x=list(range(1, len(values) + 1)), y=values, name=model, mode="lines+markers"
         )
     fig.update_layout(
-        title="Every run degrades on later folds",
+        title="MAE per CV fold, by run",
         xaxis_title="fold",
     )
     style_runs(fig, best=best_model(result))
     add_takeaway(
         fig,
-        "trend drift the honest backtest prices in (expanding-window CV with embargo)",
+        "expanding-window CV with 7-day embargo — 4 folds, pooled over series; one line per run",
     )
     return apply_theme(fig)
 
@@ -413,10 +410,10 @@ def figure_eda_series_overview(panel: pl.DataFrame) -> go.Figure:
         sub = df.filter(pl.col("series_id") == sid).sort("date")
         fig.add_scatter(x=sub["date"].to_numpy(), y=sub["units"].to_numpy(), name=sid, mode="lines")
     fig.update_layout(
-        title="Trend and a clear weekly cycle are visible in raw units",
+        title="Example store-product daily series",
         yaxis_title="units",
     )
-    add_takeaway(fig, "before any model runs — example store-product daily series")
+    add_takeaway(fig, "raw units before any model runs — 4 example series across stores")
     return apply_theme(fig)
 
 
@@ -425,10 +422,10 @@ def figure_eda_units_distribution(panel: pl.DataFrame) -> go.Figure:
     fig = go.Figure()
     fig.add_histogram(x=panel["units"].to_numpy(), nbinsx=60, name="units")
     fig.update_layout(
-        title="Store-product levels differ by design",
+        title="Daily-units distribution across the hierarchy",
         xaxis_title="units",
     )
-    add_takeaway(fig, "a single global mean posts MAE 31.8")
+    add_takeaway(fig, "all store-product series pooled — right-skewed levels differ by design")
     return apply_theme(fig)
 
 

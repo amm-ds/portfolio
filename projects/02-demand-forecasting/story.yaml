@@ -280,22 +280,23 @@ sections:
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
-    text: UCI Online Retail II is the primary headline — checksum-pinned fetch, 405k-row intermittent panel (89% zeros); hgb_tuned wins (MAE 8.99, MASE 0.980, the only run below 1.0) where ridge collapses (16.73) and ETS loses to its own seasonal naive (11.26 vs 9.86).
+    text: UCI real-data headline — 405k rows, 89% zeros; hgb_tuned wins (MAE 8.99, MASE 0.980, the only run below 1.0).
   - status: delivered
-    text: Full 10-rung ladder on both tracks through the identical embargoed backtest — naive floors, seasonal naive, per-series ETS, ridge, HGB default + tuned, XGB / LGBM mirrors, temporal net; ETS wins synthetic outright (8.110), the NN trails the linear baseline — both reported.
+    text: 10-rung ladder on both tracks — ETS wins synthetic (8.110), NN trails the linear baseline; both reported.
   - status: delivered
-    text: Seeded Optuna HPO — 56 trials on the sklearn HGB (25 each on the XGB / LGBM mirrors), objective = CV MAE over the same folds; −1.0% MAE over defaults (8.619 → 8.529), best configs persisted to data/hpo_best*.json and served without retraining.
+    text: Seeded Optuna HPO — 56 trials sklearn HGB (25 per mirror), −1.0% MAE (8.619→8.529); best configs persisted.
   - status: delivered
-    text: MinT-lite hierarchical reconciliation — data-chosen shrinkage w (0.05 synthetic / 0.70 UCI) with a property-tested coherence guarantee (incoherence 384.0 → 115.2 on UCI, ×(1−w) exactly); store MAE 746.9 → 737.9 on the real track.
+    text: MinT-lite reconciliation — w 0.05 synth / 0.70 UCI; incoherence 384.0→115.2 (×(1−w)); store MAE 746.9→737.9.
   - status: delivered
-    text: >-
-      Probabilistic 80% bands shipped and stress-tested — quantile HGB
-      p10/p50/p90 + zero-aware split-conformal (per predicted-zero bin);
-      last-fold coverage 0.76 synthetic / 0.86 UCI vs 0.80 target; UCI band
-      collapses where the median is 0 — stated on the figure, band removable.
+    text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; coverage 0.76 synth / 0.86 UCI vs 0.80 target.
   - status: delivered
-    text: >-
-      Serving endpoint — showcase-API artifact (reports/models/serving)
-      built without retraining: champion lgbm_tuned selected by lowest HPO
-      CV MAE (8.413) from data/hpo_best*.json, loaded fitted from
-      data/models.pkl; contract in SERVING.md.
+    text: Serving — showcase-API artifact without retraining; champion lgbm_tuned (CV MAE 8.413); contract in SERVING.md.
+figure_captions:
+  eda_series_overview: Four representative store-product daily series from the seeded synthetic hierarchy. Each carries a slow upward trend plus a regular weekly cycle — the two structures any model must capture.
+  eda_units_distribution: Histogram of daily units pooled over all 24 store-product series of the synthetic panel. The wide, right-skewed spread is why one global mean predicts poorly (MAE 31.8) and why models receive a series-identity feature.
+  hpo_history: Objective value (CV MAE) of every trial in the 56-trial seeded Optuna study on the sklearn HGB, with the running best overlaid. The search converges on regularised small-tree configs and buys a modest, real gain (best 8.529 vs 8.619 default).
+  hpo_importance: Hyperparameter importance (fANOVA) over the same seeded study. Regularisation knobs dominate — the top two parameters carry 66% of the search importance.
+  fold_stability: Out-of-fold MAE per CV fold for every run in the ladder. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
+  metrics_bars: The synthetic-CI run ladder in two panels — MAE + RMSE in units (left) and MASE against the 1.0 seasonal-naive parity line (right), pooled out-of-fold over all series. Five runs clear parity here; on the UCI track (docs PNG) only hgb_tuned does.
+  forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, last CV fold — on UCI hgb_tuned clears seasonal_naive by 16% MAE. The residual gap after the naive floor is day-over-day noise.
+  probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, last fold. The per-zero-bin calibration covers 0.86 on UCI (target 0.80) and collapses to the point forecast exactly where the median predicts zero.

@@ -54,12 +54,20 @@ sections:
     \  grounded\" into a measured 18→14 delta.\n\n**Results quality:** retrieval is strong (recall@5 0.831 vs 0.031\nrandom — the headline holds up). Generation grounding is\nacceptable-with-caveats — hosted faithfulness 0.685 [0.605, 0.760] is\nreal, but judge noise at n=30 makes small deltas directional and the\nverify loop repairs by removal and abstention, not rewriting. Weak\nspots are known and measured, not hidden.\n\nEverything ships as working code — `reports/metrics.json`,\n`reports/question_traces.json`, `reports/report.html`; see `DESIGN.md`\nand `README.md`.\n\n**Business summary:** The same discipline ports to a client dataset\nin days — bounded scope, measured baselines, a plain list of unknowns,\ndelivered as working code.\n"
 roadmap:
 - status: delivered
-  text: 'Provider fallback chain (ADR-0004): env OpenAI-compatible endpoint first, local Ollama second — one code path, no runtime mock; loud LLMProviderUnavailableError plus a retrieval-only --offline CI path.'
+  text: 'Provider fallback (ADR-0004): hosted ⇄ local Ollama, one code path, loud error + --offline CI path.'
 - status: delivered
-  text: 'Client-corpus onboarding: prepare-corpus --source client runs the full pipeline (chunk, embed, index, evaluate) on client documents with a license flag.'
+  text: 'Client onboarding: prepare-corpus --source client runs chunk→embed→index→evaluate with a license flag.'
 - status: delivered
-  text: 'Cost telemetry with a hard USD cap: per-phase metering; the hosted 65-q pass metered $3.58 cloud-equivalent (79.6% prompt-cache reads), and the cap tripped a first pass at $3.04 and stopped it cleanly.'
+  text: 'Cost telemetry + hard USD cap: hosted 65-q pass $3.58 (79.6% cache); cap stopped a first pass at $3.04.'
 - status: delivered
-  text: 'LLM rubric judge + RAGAS on the 65-question golden set: provider-model verdicts with keyword CI floor (0.44 faithfulness [0.29, 0.61]); the RAGAS set also scored locally at $0 API cost.'
+  text: 'LLM rubric judge + RAGAS on 65 questions: keyword CI floor 0.44 [0.29, 0.61]; RAGAS also scored local at $0.'
 - status: delivered
-  text: 'Verify-then-answer loop: A/B on 30 questions — unsupported claims 18→14, correct 12→15, 33 repair calls; faithfulness delta sits inside judge noise; on by default.'
+  text: 'Verify-then-answer loop: A/B on 30 q — unsupported 18→14, correct 12→15, 33 repairs; on by default.'
+figure_captions:
+  eda_corpus_composition: What the bounded Wikipedia scan actually collected — articles per topic (left) and the word-length distribution of all 593 articles (right). Coverage is near-balanced (≈102–125 articles per topic) and most articles run 500–2,000 words, with the long tail truncated at 12,000 characters.
+  retrieval_funnel: The aggregate retrieval funnel at the chosen configuration across the 65 golden questions — 975 embedding candidates (15 per question) narrow to 195 after reranking (3 per question), and 54 of 65 questions keep a relevant article in the final top-k. Reranking is what turns candidate volume into a citable top-3.
+  chunk_size_sweep: Retrieval recall across the three tested chunk sizes (200/400/800 tokens) with the seeded random and lexical word-matching floors. 200-token chunks hold full recall@5 at the lowest context cost — chunk size, not model size, sets retrieval quality.
+  latency_histogram: Per-answer latency across the hosted 65-question run. Typical answers land near the p50 of 23 s, while the long tail (p95 ≈160 s) is a single runaway tool loop cut off by the token guard.
+  model_comparison: recall@5, recall@10 and MRR@5 for the two candidate encoders on the 65-question golden set. MiniLM and BGE-small tie exactly at recall@5 0.831, so the cheaper 80 MB CPU MiniLM ships — the encoder choice is a price decision, not a quality one.
+  retrieval_hpo_frontier: Retrieval recall@k against estimated input tokens per query, one curve per chunk size across the tested top_k values; the star marks the chosen configuration. That point (chunks=200, top_k=3, rerank on) reaches recall 0.831 at ≈800 input tokens per query — the quality-cost knee of the grid.
+  failure_taxonomy: How the hosted 65-question run scored per answer — 44 fully correct, 18 unsupported-claim, 2 retrieval-miss, 1 format failure. Retrieval is solid; grounding is the bottleneck the verify loop exists to shrink.

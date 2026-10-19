@@ -149,12 +149,14 @@ def per_class_f1_comparison_figure(
     fig.add_bar(x=labels, y=list(f1_sel), name="selected", row=1, col=1)
     fig.add_bar(x=labels, y=list(f1_base), name="tf-idf baseline", row=1, col=2)
     fig.update_layout(
-        title="Business to Sci/Tech confusion is the error floor (14/250)",
+        title="Per-class F1 — selected model vs TF-IDF baseline",
         yaxis_title="F1",
         yaxis_range=[0, 1],
         showlegend=False,
     )
-    add_takeaway(fig, "labeling ambiguity more data cannot fix")
+    add_takeaway(
+        fig, "per-class F1 on the 1,000-row test split — selected model (left), TF-IDF (right)"
+    )
     return apply_theme(fig)
 
 
@@ -186,7 +188,7 @@ def training_curve_figure(history: TrainingHistory) -> go.Figure:
         showlegend=False,
     )
     fig.update_layout(
-        title="Fine-tuning saturates within two epochs",
+        title="Train/val loss and validation macro-F1",
         xaxis_title="epoch",
         xaxis2_title="epoch",
         yaxis_title="loss",
@@ -194,7 +196,8 @@ def training_curve_figure(history: TrainingHistory) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"val macro-F1 plateaus at ~{best:.3f} while train loss keeps falling",
+        f"per epoch — loss (left), val macro-F1 (right); full-120k headline run, "
+        f"best val {best:.4f}",
     )
     return apply_theme(fig)
 
@@ -255,14 +258,16 @@ def eda_class_balance_figure(
     word_counts = [len(t.split()) for t in train_ds[TEXT_COLUMN]]
     fig.add_histogram(x=word_counts, name="train", row=1, col=2)
     fig.update_layout(
-        title="Exactly 25% per class - no run can win by prior",
+        title="Class balance and text length",
         barmode="group",
         xaxis_title="class",
         yaxis_title="rows",
         xaxis2_title="words per text",
         yaxis2_title="rows",
     )
-    add_takeaway(fig, "20-50-word texts fit the 128-token cap")
+    add_takeaway(
+        fig, "rows per class across train/val/test (left) + train text length in words (right)"
+    )
     return apply_theme(fig)
 
 
@@ -351,8 +356,8 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
             y_true,
             y_pred_selected,
             labels,
-            "Business → Sci/Tech stays the dominant confusion pair",
-            "a labeling-ambiguity floor, not a data-scale problem",
+            "Confusion matrix — selected model",
+            "counts on the untouched 1,000-row test split; true on y, predicted on x",
         ),
         "per_class_f1_comparison": per_class_f1_comparison_figure(
             y_true, y_pred_selected, y_pred_base.tolist(), labels

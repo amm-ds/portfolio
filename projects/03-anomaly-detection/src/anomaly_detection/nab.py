@@ -393,13 +393,13 @@ def nab_figures(
     fig.update_yaxes(tickfont_size=13)
     fig.update_xaxes(tickfont_size=13)
     fig.update_layout(
-        title="Real NAB telemetry hides labelled incidents in noisy baselines",
+        title="NAB test windows vs champion alerts",
     )
     add_takeaway(
         fig,
-        f"most of the {n_alerts:,} alerts miss the event windows — six "
-        "representative series (id per panel): amber bands are the labelled "
-        "windows, pink crosses are alerts; nyc_taxi misses one window.",
+        f"six representative series (id per panel), test window only — amber "
+        f"bands are the labelled windows, pink crosses are the "
+        f"{n_alerts:,} alerts; nyc_taxi misses one window",
     )
     timelines = apply_theme(fig, height=820)
 
@@ -417,14 +417,14 @@ def nab_figures(
     dist_fig.update_yaxes(type="log", title="count (log scale)")
     dist_fig.update_xaxes(title="anomaly score")
     dist_fig.update_layout(
-        title="Real in-window scores overlap the normal mass",
+        title="NAB anomaly-score distribution",
         barmode="overlay",
     )
     dist_fig.update_traces(opacity=0.65)
     add_takeaway(
         dist_fig,
-        "NAB rarity defeats clean separation — the overlap is far wider than "
-        "with synthetic anomalies.",
+        "scores pooled over all evaluable series — in-window vs outside-window "
+        "minutes, log-count y axis",
     )
     distribution = apply_theme(dist_fig)
 
@@ -438,8 +438,11 @@ def nab_figures(
         )
     budget_fig.update_xaxes(type="log", title="alert budget (flagged fraction)")
     budget_fig.update_yaxes(title="range-F1", range=[0, 1.05])
-    budget_fig.update_layout(title="Event-level range-F1 peaks at a small alert budget")
-    add_takeaway(budget_fig, "more pages mostly add false alarms.")
+    budget_fig.update_layout(title="Range-F1 vs alert budget")
+    add_takeaway(
+        budget_fig,
+        "one curve per detector family — budget = flagged fraction of the window (log x)",
+    )
     return {
         "nab_timelines": timelines,
         "nab_score_distribution": distribution,

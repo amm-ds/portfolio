@@ -251,11 +251,15 @@ def hpo_history_figure(study: optuna.Study) -> go.Figure:
         name="best so far",
     )
     fig.update_layout(
-        title=f"HPO null result: {len(trials)} trials lift best val macro-F1 to {running:.4f}",
+        title="HPO optimization history",
         xaxis_title="trial",
         yaxis_title="val macro-F1",
     )
-    add_takeaway(fig, "inside seed noise — test prefers the artifact")
+    add_takeaway(
+        fig,
+        f"{len(trials)} seeded TPE trials — val macro-F1 per trial + "
+        f"best-so-far; best {running:.4f}",
+    )
     return apply_theme(fig)
 
 

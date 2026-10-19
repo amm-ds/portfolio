@@ -256,7 +256,7 @@ def figure_probabilistic_band(
     conf = result["split_conformal"]
     cov = conf["coverage_last_fold"]
     fig.update_layout(
-        title=f"Zero-aware conformal band: {cov:.0%} last-fold coverage",
+        title="Actual vs p50 with the zero-aware conformal band",
         # updatemenu: the band can be removed interactively ("actual only").
         # Buttons sit in the free band between the two-line title and the plot.
         updatemenus=[
@@ -294,8 +294,8 @@ def figure_probabilistic_band(
     )
     add_takeaway(
         fig,
-        f"(target {TARGET_COVERAGE:.0%}) — widths calibrated per predicted-zero "
-        f"bin, not one global q80; empirical coverage {cov:.1%} on the last fold{bins}.",
+        f"two highest-volume series, last fold — 80% band (target {TARGET_COVERAGE:.0%}), "
+        f"widths calibrated per predicted-zero bin; empirical coverage {cov:.1%}{bins}.",
     )
     # Exceptional top margin: the updatemenu buttons sit above the plot
     # (y=1.10) in the band below the two-line title.

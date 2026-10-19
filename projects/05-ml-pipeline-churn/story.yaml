@@ -261,32 +261,21 @@ sections:
     figures: [bootstrap_ci]
 roadmap:
   - status: delivered
-    text: >-
-      Real-data telco track is the default — IBM telco churn (7,043 rows,
-      sha256-pinned) behind the same DQ gates and DatasetContract as the CI
-      path; fairness slice report and cost-surface figure added; headline
-      −41.9% decision cost vs naive at a significant bootstrap CI.
+    text: Telco track — 7,043 rows sha256-pinned behind DQ gates; fairness slices + cost surface; −41.9% cost vs naive.
   - status: delivered
-    text: >-
-      Cost-aware Optuna HPO across four arms (logistic, HistGB, XGBoost,
-      LightGBM) — trials scored by CV business cost at per-trial
-      cost-optimal thresholds; picked XGBoost on telco (best CV cost 2,416)
-      vs a logistic on synthetic (1,220): the winner tracks the data; config
-      written back to params.yaml.
+    text: Cost-aware HPO (4 arms, CV business cost) — XGBoost wins telco (2,416), logistic wins synthetic (1,220).
   - status: delivered
-    text: >-
-      Calibration verdict on both tracks — on synthetic the cost optimum was
-      unchanged by isotonic (322 vs 283); on telco calibration improves both
-      ECE (0.028 → 0.016) and cost (619 → 601): per-regime, not universal,
-      and now measured rather than assumed.
+    text: Calibration per regime — neutral on synthetic (322 vs 283); improves telco ECE 0.028→0.016, cost 619→601.
   - status: delivered
-    text: >-
-      Paired bootstrap CIs — 2,000-resample CI on the cost delta vs naive:
-      −416 [−485, −343] on telco (was −157 [−236, −86] on the synthetic CI
-      track), significant at 95 %.
+    text: 'Paired bootstrap CI — 2,000 resamples on the cost delta vs naive: telco −416 [−485, −343], significant at 95%.'
   - status: delivered
-    text: >-
-      Serving endpoint — showcase-API artifact (reports/models/serving)
-      built without retraining: the isotonic-calibrated XGBoost champion at
-      its cost-optimal threshold t=0.175 (holdout cost 601 at FP=1/FN=5),
-      re-derived from data/holdout.parquet; contract in SERVING.md.
+    text: Serving — isotonic XGBoost at t=0.175 (holdout cost 601) as showcase-API artifact; contract in SERVING.md.
+figure_captions:
+  eda_churn_profile: The churn profile of the 7,043-customer telco panel — churn rate by contract type (left), monthly-charges and tenure densities split by outcome (center/right). Churn concentrates in short contracts (42.7% month-to-month vs 2.8% two-year), and churners pay more (~74 vs ~61) with much shorter tenure (~18 vs ~38 months).
+  calibration_curve: Reliability diagram of the selected model, raw vs isotonic-calibrated, on the 1,409-row holdout (10 bins; ECE per candidate in the legend). On the real track isotonic improves both ECE (0.028 → 0.016) and the cost optimum (619 → 601) — a per-regime verdict, measured rather than assumed.
+  precision_recall_curve: Precision-recall curves of the logistic and selected models on the holdout, with the 26.5% base-rate floor dashed. Ranked probabilities are what buy precision above the floor; a no-skill policy cannot leave it.
+  cost_surface: Business cost across the threshold × FN-cost plane for the isotonic-calibrated model (41-point threshold grid, FN cost 1–10), with the chosen operating point starred. The cost-optimal threshold moves with how a lost customer is priced — 0.175 on telco vs 0.700 on synthetic — while the cost-curve procedure transfers.
+  business_cost_curve: Total decision cost (FP·1 + FN·5) against the alarm threshold for each candidate on the 1,409-row holdout; stars mark each run's cost-optimal operating point. The isotonic-calibrated selected model holds the optimum at 601 vs the naive majority's 1,035 — a −41.9% decision cost with a bootstrap CI that excludes zero.
+  permutation_importance: Permutation importance of the raw CRM columns (holdout F1 decrease, 5 repeats, error bars). Contract type, tenure and monthly charges carry the churn signal — the same segments the EDA flagged as high-churn.
+  fairness_slices: Recall, precision, F1 and business cost per fairness slice at the operating threshold t=0.150. Recall is uniform across gender (0.90 both) but 0.00 on two-year contracts — 45 long-contract churners missed by choice at FN=5, stated openly and movable on the cost surface.
+  bootstrap_ci: The paired-bootstrap distribution of the cost delta (selected model minus naive) over 2,000 seeded resamples of the holdout. The 95% CI [−485, −343] excludes zero — the −416 saving is significant at alpha 0.05.
