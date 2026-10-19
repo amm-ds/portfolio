@@ -27,26 +27,23 @@ def _finish_themed(
     fig: go.Figure,
     *,
     takeaway: str | None = None,
-    margin_t: int = 125,
-    margin_l: int = 60,
-    margin_b: int = 50,
     showlegend: bool | None = None,
 ) -> go.Figure:
-    """Apply the shared theme: takeaway as a second title line + margins.
+    """Apply the shared theme; the takeaway rides as a second title line.
 
     ``add_takeaway`` renders the takeaway as a muted second line of the title
     itself (a separate annotation collides with the top-pinned title). Where a
     title already states the takeaway, callers pass no ``takeaway``. Margins
-    are explicit because the pinned legend above the plot needs top headroom
-    and some figures have long axis labels. Single-trace figures pass
-    ``showlegend=False`` so the legend does not render a "trace 0" chip.
+    and legend placement are the house standard's job (``apply_theme`` fills
+    them); only genuinely exceptional figures set their own afterwards.
+    Single-trace figures pass ``showlegend=False`` so the legend does not
+    render a "trace 0" chip.
     """
     if takeaway:
         fig = add_takeaway(fig, takeaway)
     fig = apply_theme(fig)
     if showlegend is not None:
         fig.update_layout(showlegend=showlegend)
-    fig.update_layout(margin={"t": margin_t, "l": margin_l, "r": 30, "b": margin_b})
     return fig
 
 
@@ -66,8 +63,10 @@ def sweep_figure(
 
     Legend contract (wave 17, viewer report "legend unreadable on the title"):
     with the two-line title + subtitle annotation, the theme's top-pinned
-    horizontal legend collides with the text — so the legend sits **below**
-    the plot, bottom-center, and the top margin carries only title+subtitle.
+    horizontal legend collides with the text — and the seven long series names
+    ("random baseline recall@5 (seeded floor)") cannot fit the standard's
+    140 px right margin. Deliberate exception: the legend stays **below**
+    the plot, bottom-center, and the bottom margin carries it.
     """
     sizes = [s.chunk_size for s in scores]
     labels = [str(s) for s in sizes]
@@ -175,10 +174,7 @@ def sweep_figure(
             )
     fig.update_layout(
         barmode="group",
-        title=(
-            "Chunk size, not model size, sets retrieval recall — 200-token chunks "
-            "hold full recall@5 at 65% lower context cost"
-        ),
+        title="Chunk size, not model size, sets retrieval recall",
         xaxis={
             "type": "category",
             "categoryorder": "array",
@@ -186,7 +182,6 @@ def sweep_figure(
             "title": "chunk size (tokens)",
         },
         yaxis={"title": "score", "range": [0, 1.0]},
-        margin={"t": 128, "l": 60, "r": 30, "b": 50},
     )
     tested = " / ".join(labels)
     fig.add_annotation(
@@ -219,16 +214,16 @@ def sweep_figure(
     fig = _finish_themed(
         fig,
         takeaway=(
-            "Recall saturates at every size; smaller chunks rank sharper (MRR) at "
-            "half the context cost — every bar clears both the seeded random floor "
-            "and the word-match baseline."
+            "200-token chunks hold full recall@5 at 65% lower context cost — "
+            "smaller chunks rank sharper (MRR); every bar clears both floors."
         ),
-        margin_t=160,  # caption above the two-line title needs headroom
-        margin_b=115,  # bottom-center legend below the axis title
     )
-    # The legend moves below the plot (bottom-center): with a two-line title
-    # plus the subtitle annotation, the theme's top-pinned legend overlaps the
-    # text and is unreadable.
+    # Exceptional margins: the caption annotation sits ABOVE the two-line
+    # title (deep bottom margin for the below-plot legend shrinks the plot
+    # area, so y=1.30 would land inside the title) and the bottom-center
+    # legend (deliberate exception — seven long series names cannot fit the
+    # standard 140 px right margin) needs the deeper bottom band.
+    fig.update_layout(margin={"t": 160, "b": 115})
     fig.update_layout(
         legend={
             "orientation": "h",
@@ -261,11 +256,14 @@ def model_comparison_figure(model_scores: dict[str, RetrievalScores], best_slug:
     )
     style_runs(fig, best=best_slug)
     fig.update_layout(
-        title="MiniLM and BGE-small tie at recall@5 0.831 - the cheaper encoder wins",
+        title="MiniLM and BGE-small tie at recall@5 0.831",
         yaxis_title="score",
     )
     return _finish_themed(
-        fig, takeaway="Both encoders saturate recall@5; ranking sharpness (MRR) decides."
+        fig,
+        takeaway=(
+            "the cheaper encoder wins — both saturate recall@5; ranking sharpness (MRR) decides."
+        ),
     )
 
 
@@ -300,19 +298,16 @@ def hpo_frontier_figure(
         )
     )
     fig.update_layout(
-        title=(
-            "Retrieval HPO finds the quality-cost knee: recall@5 0.831 at "
-            "≈800 input tokens per query"
-        ),
+        title="Retrieval HPO finds the quality-cost knee",
         xaxis_title="estimated input tokens per query",
         yaxis_title="recall@k",
     )
     return _finish_themed(
         fig,
         takeaway=(
-            f"Chosen: {chosen.embedding_slug}, chunks={chosen.chunk_size}, "
-            f"top_k={chosen.top_k}, rerank={'on' if chosen.rerank else 'off'} — "
-            f"recall {chosen_y:.3f} at ≈{chosen_x:.0f} tokens."
+            f"recall {chosen_y:.3f} at ≈{chosen_x:.0f} input tokens/query — "
+            f"chosen: {chosen.embedding_slug}, chunks={chosen.chunk_size}, "
+            f"top_k={chosen.top_k}, rerank={'on' if chosen.rerank else 'off'}."
         ),
     )
 
@@ -340,17 +335,16 @@ def retrieval_funnel_figure(
         )
     )
     fig.update_layout(
-        title=(
-            f"Reranking funnels {n * n_candidates} embedding hits down to "
-            f"{chosen.top_k} citations per question - {relevant}/{n} questions "
-            f"({relevant / max(n, 1):.0%}) keep a relevant article"
-        )
+        title=(f"{relevant}/{n} questions keep a relevant article ({relevant / max(n, 1):.0%})")
     )
     return _finish_themed(
         fig,
-        margin_l=240,  # long funnel stage labels
+        takeaway=(
+            f"reranking funnels {n * n_candidates} embedding hits down to "
+            f"{chosen.top_k} citations per question"
+        ),
         showlegend=False,  # single unnamed trace → no "trace 0" chip
-    )
+    ).update_layout(margin={"l": 240})  # long funnel stage labels need left room
 
 
 def corpus_eda_figure(articles: list[Article]) -> go.Figure:
@@ -369,13 +363,15 @@ def corpus_eda_figure(articles: list[Article]) -> go.Figure:
     fig.add_trace(go.Bar(x=topics, y=counts, name="articles"), row=1, col=1)
     fig.add_trace(go.Histogram(x=lengths, nbinsx=40, name="article length"), row=1, col=2)
     fig.update_layout(
-        title=(
-            f"Five topics stay near-balanced ({len(articles)} articles total); "
-            "the long article tail is capped at 12k chars"
-        ),
+        title="Five topics stay near-balanced",
         showlegend=False,
     )
-    return _finish_themed(fig, margin_b=90)  # rotated topic labels need bottom headroom
+    return _finish_themed(
+        fig,
+        takeaway=(
+            f"({len(articles)} articles total); the long article tail is capped at 12k chars"
+        ),
+    )
 
 
 def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
@@ -394,13 +390,16 @@ def taxonomy_figure(traces: list[QuestionTrace]) -> go.Figure:
         ]
     )
     fig.update_layout(
-        title="Verify-then-answer cuts unsupported claims from 60% to 47% of answers",
+        title="Verify-then-answer cuts unsupported claims",
         xaxis_title="verdict",
         yaxis_title="questions",
     )
     return _finish_themed(
         fig,
-        takeaway=f"{counts['correct']}/{len(traces)} questions fully correct.",
+        takeaway=(
+            f"from 60% to 47% of answers — {counts['correct']}/{len(traces)} "
+            "questions fully correct."
+        ),
         showlegend=False,  # single unnamed trace → no "trace 0" chip
     )
 
@@ -410,13 +409,15 @@ def latency_figure(latencies_s: list[float]) -> go.Figure:
     p50 = float(np.percentile(latencies_s, 50))
     p95 = float(np.percentile(latencies_s, 95))
     fig.update_layout(
-        title=(
-            f"Answers land at p50 {p50:.0f} s; the p95 {p95:.0f} s tail is one runaway tool loop"
-        ),
+        title=f"Answers land at p50 {p50:.0f} s",
         xaxis_title="latency (s)",
         yaxis_title="queries",
     )
-    return _finish_themed(fig, showlegend=False)  # single unnamed trace
+    return _finish_themed(
+        fig,
+        takeaway=f"the p95 {p95:.0f} s tail is one runaway tool loop",
+        showlegend=False,  # single unnamed trace
+    )
 
 
 def frontier_figure(

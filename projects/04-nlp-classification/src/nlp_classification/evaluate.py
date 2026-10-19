@@ -22,7 +22,7 @@ import plotly.graph_objects as go
 import torch
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_json
+from portfolio_core.plotting import add_takeaway, apply_theme, save_json
 from portfolio_eval.metrics import MetricResult, RunResult
 from portfolio_eval.ml import classification_metrics
 from portfolio_eval.report import ReportBuilder
@@ -111,7 +111,7 @@ def select_tuned_run(
 
 
 def confusion_matrix_figure(
-    y_true: list[int], y_pred: list[int], labels: list[str], title: str
+    y_true: list[int], y_pred: list[int], labels: list[str], title: str, takeaway: str
 ) -> go.Figure:
     """Plotly heatmap of the selected model's confusion matrix (counts)."""
     cm = skm.confusion_matrix(y_true, y_pred)
@@ -129,12 +129,8 @@ def confusion_matrix_figure(
         title={"text": title, "pad": {"t": 20}},
         xaxis_title="predicted",
         yaxis_title="true",
-        # class names ("Sci/Tech") plus the axis title need more left room
-        # than the theme default, or kaleido clips the y tick labels; the
-        # generous top band keeps the title clear of the heatmap and of the
-        # page edge at the embedded render size
-        margin={"l": 120, "t": 110, "b": 80},
     )
+    add_takeaway(fig, takeaway)
     return apply_theme(fig)
 
 
@@ -153,14 +149,12 @@ def per_class_f1_comparison_figure(
     fig.add_bar(x=labels, y=list(f1_sel), name="selected", row=1, col=1)
     fig.add_bar(x=labels, y=list(f1_base), name="tf-idf baseline", row=1, col=2)
     fig.update_layout(
-        title=(
-            "Business to Sci/Tech confusion is the error floor (14/250) - "
-            "labeling ambiguity more data cannot fix"
-        ),
+        title="Business to Sci/Tech confusion is the error floor (14/250)",
         yaxis_title="F1",
         yaxis_range=[0, 1],
         showlegend=False,
     )
+    add_takeaway(fig, "labeling ambiguity more data cannot fix")
     return apply_theme(fig)
 
 
@@ -192,16 +186,15 @@ def training_curve_figure(history: TrainingHistory) -> go.Figure:
         showlegend=False,
     )
     fig.update_layout(
-        title=(
-            f"Fine-tuning saturates within two epochs — val macro-F1 plateaus "
-            f"at ~{best:.3f} while train loss keeps falling"
-        ),
+        title="Fine-tuning saturates within two epochs",
         xaxis_title="epoch",
         xaxis2_title="epoch",
         yaxis_title="loss",
         yaxis2_title="val macro-F1",
-        # the theme's horizontal legend row needs its own band above the plot
-        margin={"t": 100, "l": 60, "r": 30, "b": 50},
+    )
+    add_takeaway(
+        fig,
+        f"val macro-F1 plateaus at ~{best:.3f} while train loss keeps falling",
     )
     return apply_theme(fig)
 
@@ -262,16 +255,14 @@ def eda_class_balance_figure(
     word_counts = [len(t.split()) for t in train_ds[TEXT_COLUMN]]
     fig.add_histogram(x=word_counts, name="train", row=1, col=2)
     fig.update_layout(
-        title=(
-            "Exactly 25% per class - no run can win by prior; 20-50-word "
-            "texts fit the 128-token cap"
-        ),
+        title="Exactly 25% per class - no run can win by prior",
         barmode="group",
         xaxis_title="class",
         yaxis_title="rows",
         xaxis2_title="words per text",
         yaxis2_title="rows",
     )
+    add_takeaway(fig, "20-50-word texts fit the 128-token cap")
     return apply_theme(fig)
 
 
@@ -360,7 +351,7 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
             y_true,
             y_pred_selected,
             labels,
-            "Business → Sci/Tech stays the dominant confusion pair — "
+            "Business → Sci/Tech stays the dominant confusion pair",
             "a labeling-ambiguity floor, not a data-scale problem",
         ),
         "per_class_f1_comparison": per_class_f1_comparison_figure(

@@ -304,22 +304,10 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
             mode="lines",
             line={"dash": "dot"},
         )
-    fig.update_layout(
-        title=f"{model} clears the {naive} floor by {reduction:.0%} MAE — last CV fold"
-    )
+    fig.update_layout(title=f"{model} clears the {naive} floor by {reduction:.0%} MAE")
     # platform storytelling convention: naive floor demoted, best run promoted
     style_runs(fig, best=model)
-    add_takeaway(
-        fig,
-        f"takeaway: {model} beats the {naive} floor by {reduction:.0%} MAE "
-        "on this fold; the residual gap is day-over-day noise",
-    )
-    # six legend entries need a vertical legend on the right, not the theme's
-    # horizontal strip (it would wrap over the two-line title)
-    fig.update_layout(
-        legend={"orientation": "v", "x": 1.01, "xanchor": "left", "y": 1.0, "yanchor": "top"},
-        margin={"r": 200},
-    )
+    add_takeaway(fig, "last CV fold — the residual gap is day-over-day noise")
     return apply_theme(fig)
 
 
@@ -371,12 +359,12 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
         line={"dash": "dot", "color": "#fbbf24"},
     )
     head = (
-        f"Only {below[0]} clears the seasonal-naive floor (MASE < 1)"
+        f"Only {below[0]} clears the seasonal-naive floor"
         if len(below) == 1
-        else f"{len(below)} runs clear the seasonal-naive floor (MASE < 1)"
+        else f"{len(below)} runs clear the seasonal-naive floor"
     )
     fig.update_layout(
-        title=f"{head} — pooled out-of-fold ladder",
+        title=head,
         barmode="group",
         yaxis_title="units",
         yaxis2_title="MASE",
@@ -385,12 +373,9 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "takeaway: MAPE omitted here — its % scale is unit-incompatible with "
-        "unit-scaled errors (and not decision-grade at 89% zeros); see metrics.json",
+        "(MASE < 1) — pooled out-of-fold ladder; MAPE omitted (unit-incompatible "
+        "% scale, not decision-grade at 89% zeros) — see metrics.json",
     )
-    # two-line title + legend need more headroom than add_takeaway's default;
-    # the rotated run-name ticks need the deeper bottom margin
-    fig.update_layout(margin={"t": 125, "l": 60, "r": 30, "b": 90})
     return fig
 
 
@@ -403,14 +388,13 @@ def figure_fold_stability(result: BacktestResult) -> go.Figure:
             x=list(range(1, len(values) + 1)), y=values, name=model, mode="lines+markers"
         )
     fig.update_layout(
-        title="Every run degrades on later folds - trend drift the honest backtest prices in",
+        title="Every run degrades on later folds",
         xaxis_title="fold",
     )
     style_runs(fig, best=best_model(result))
     add_takeaway(
         fig,
-        "takeaway: every run degrades on later folds (trend drift) — the honest "
-        "backtest prices in drift a random split would hide",
+        "trend drift the honest backtest prices in (expanding-window CV with embargo)",
     )
     return apply_theme(fig)
 
@@ -429,12 +413,10 @@ def figure_eda_series_overview(panel: pl.DataFrame) -> go.Figure:
         sub = df.filter(pl.col("series_id") == sid).sort("date")
         fig.add_scatter(x=sub["date"].to_numpy(), y=sub["units"].to_numpy(), name=sid, mode="lines")
     fig.update_layout(
-        title="Trend and a clear weekly cycle are visible in raw units before any model runs",
+        title="Trend and a clear weekly cycle are visible in raw units",
         yaxis_title="units",
-        # four full-length series ids wrap the theme's horizontal legend into
-        # the title — give it its own row
-        margin={"t": 100, "l": 60, "r": 30, "b": 50},
     )
+    add_takeaway(fig, "before any model runs — example store-product daily series")
     return apply_theme(fig)
 
 
@@ -443,9 +425,10 @@ def figure_eda_units_distribution(panel: pl.DataFrame) -> go.Figure:
     fig = go.Figure()
     fig.add_histogram(x=panel["units"].to_numpy(), nbinsx=60, name="units")
     fig.update_layout(
-        title="Store-product levels differ by design - a single global mean posts MAE 31.8",
+        title="Store-product levels differ by design",
         xaxis_title="units",
     )
+    add_takeaway(fig, "a single global mean posts MAE 31.8")
     return apply_theme(fig)
 
 

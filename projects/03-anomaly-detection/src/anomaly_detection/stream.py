@@ -130,7 +130,6 @@ def simulate_stream(
                 drift_events,
                 fixed_threshold,
                 config,
-                model_name,
                 chunk_rows,
             ),
             config.figures_dir / "adaptive_stream.json",
@@ -147,7 +146,6 @@ def adaptive_stream_figure(
     drift_events: list[int],
     fixed_threshold: float,
     config: AnomalyConfig,
-    model_name: str,
     chunk_rows: int,
 ) -> go.Figure:
     """Score stream with threshold updates and drift markers."""
@@ -177,18 +175,15 @@ def adaptive_stream_figure(
         marker={"color": "#fbbf24", "size": 6},
     )
     fig.update_layout(
-        title=(
-            f"{model_name} adaptive threshold holds the "
-            f"{config.contamination:.0%} budget here - synthetic calibration "
-            "stays too twitchy for real rarity"
-        ),
+        title=f"Adaptive threshold holds the {config.contamination:.0%} budget",
         xaxis_title="time",
         yaxis_title="score",
     )
     add_takeaway(
         fig,
-        f"{len(drift_events)} drift event(s) re-anchored the threshold to hold the "
-        f"{config.contamination:.0%} alert budget while the score distribution shifted.",
+        "synthetic calibration stays too twitchy for real rarity — "
+        f"{len(drift_events)} drift event(s) re-anchored the threshold while "
+        "the score distribution shifted.",
     )
     return apply_theme(fig, height=620)
 

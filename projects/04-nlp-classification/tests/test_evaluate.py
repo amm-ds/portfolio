@@ -18,7 +18,7 @@ CLASS_NAMES = ["World", "Sports", "Business", "Sci/Tech"]
 def test_confusion_matrix_figure_smoke() -> None:
     y_true = [0, 1, 2, 3, 0, 1]
     y_pred = [0, 1, 2, 2, 0, 3]
-    fig = confusion_matrix_figure(y_true, y_pred, ["a", "b", "c", "d"], "cm")
+    fig = confusion_matrix_figure(y_true, y_pred, ["a", "b", "c", "d"], "cm", "takeaway")
     assert len(fig.data) == 1
     assert list(fig.data[0].z[0]) == [2, 0, 0, 0]  # class 'a': 2 correct
 

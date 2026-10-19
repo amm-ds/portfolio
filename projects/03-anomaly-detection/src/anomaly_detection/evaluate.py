@@ -169,12 +169,13 @@ def pr_figure(
         )
     best_ap = max(m.value for run in runs if (m := run.get("pr_auc")) is not None)
     fig.update_layout(
-        title=(
-            f"At {baseline:.1%} prevalence the no-skill floor is {baseline:.3f} - "
-            f"tuned runs separate (best AP {best_ap:.3f}), untuned hug the floor"
-        ),
+        title=f"At {baseline:.1%} prevalence the no-skill floor is {baseline:.3f}",
         xaxis_title="recall",
         yaxis_title="precision",
+    )
+    add_takeaway(
+        fig,
+        f"tuned runs separate (best AP {best_ap:.3f}); untuned hug the floor",
     )
     return apply_theme(fig)
 
@@ -211,13 +212,11 @@ def telemetry_figure(config: AnomalyConfig, scores: np.ndarray) -> go.Figure:
         marker={"color": "#fbbf24", "size": 6},
     )
     fig.update_layout(
-        title=(
-            "Champion flags at the fixed 2% budget track simultaneous "
-            "CPU+latency spikes - memory holds its seasonal path"
-        ),
+        title="Champion flags track simultaneous CPU+latency spikes",
         xaxis_title="time",
         yaxis_title="value",
     )
+    add_takeaway(fig, "at the fixed 2% budget — memory holds its seasonal path")
     return apply_theme(fig, height=620)
 
 
@@ -242,13 +241,11 @@ def eda_signals_overview(raw: pl.DataFrame, max_rows: int = 2_880) -> go.Figure:
         marker={"color": "#f472b6", "size": 7, "symbol": "x"},
     )
     fig.update_layout(
-        title=(
-            f"Clean daily seasonality; incidents spike CPU and latency together "
-            f"while memory holds its path (first {window.height:,} minutes)"
-        ),
+        title="Clean daily seasonality; incidents spike CPU and latency",
         xaxis_title="time",
         yaxis_title="value",
     )
+    add_takeaway(fig, f"memory holds its path (first {window.height:,} minutes)")
     return apply_theme(fig, height=620)
 
 
@@ -284,14 +281,14 @@ def threshold_sweep_figure(
     fig.update_yaxes(title="rate", range=[0, 1.05])
     fig.update_layout(
         title=(
-            f"{name} at the fixed {config.contamination:.0%} alert budget: recall "
-            f"{op_rec:.0%}, precision {op_prec:.0%} - a staffing dial, not a mystery"
+            f"Recall {op_rec:.0%} and precision {op_prec:.0%} at the "
+            f"{config.contamination:.0%} budget"
         )
     )
     add_takeaway(
         fig,
-        f"At the fixed {config.contamination:.0%} alert budget: recall {op_rec:.0%}, "
-        f"precision {op_prec:.0%} ({op_tp} of {op_tp + op_fp} flags are real incidents).",
+        f"{name}: a staffing dial, not a mystery — {op_tp} of {op_tp + op_fp} "
+        "flags are real incidents.",
     )
     return apply_theme(fig)
 
@@ -375,16 +372,12 @@ def hpo_importance_figure(config: AnomalyConfig, family: str) -> go.Figure | Non
     )
     top = max(importances, key=importances.get)
     fig.update_layout(
-        title=(
-            f"{family} HPO rides on {top} ({importances[top]:.0%} importance) - "
-            f"{payload['n_trials']} seeded TPE trials, best val PR-AUC "
-            f"{payload['best_value']:.3f}"
-        )
+        title=f"{family} HPO rides on {top}",
     )
     add_takeaway(
         fig,
-        f"Best val PR-AUC {payload['best_value']:.3f} at {best_txt}. "
-        f"Most influential knob: {max(importances, key=importances.get)}.",
+        f"{importances[top]:.0%} importance — {payload['n_trials']} seeded TPE "
+        f"trials, best val PR-AUC {payload['best_value']:.3f} at {best_txt}.",
     )
     return apply_theme(fig)
 
