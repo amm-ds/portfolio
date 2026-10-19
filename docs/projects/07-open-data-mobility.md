@@ -41,7 +41,7 @@ change vs the naive lag-24 floor. The bold row is the ladder's best
 | TemporalNet (torch, log1p target) | 5.510 | 19.686 | 54.5% | 0.899 | −15.5% |
 | TemporalNet tuned (10 trials) | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
 
-![The served GBM removes 28.4% of forecast error vs last-week persistence while tuned challengers that won the Q4 test window lose on the embargoed validation window.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
+![The served GBM removes 28.3% of forecast error vs last-week persistence while tuned challengers that won the Q4 test window lose on the embargoed validation window.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
 
 p90 band calibration **90.8%** overall (target 90%; sparse N/A
 zones under-cover at 84.7%, flagged). Per-borough GBM MAE peaks in Manhattan

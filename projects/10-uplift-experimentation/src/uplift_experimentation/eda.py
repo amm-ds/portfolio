@@ -51,17 +51,13 @@ def eda_segment_profile_figure(df: pl.DataFrame) -> go.Figure:
     fig.update_yaxes(title_text="USD (prior year)", row=1, col=3)
     apply_theme(fig, width=1240, height=520)
     style_runs(fig)
-    add_takeaway(
-        fig,
-        "Randomization holds: arms are near-identical on pre-period spend; outcome rates "
-        "separate the arms only slightly — conversion is rare (~1%) and needs variance reduction.",
-    )
     fig.update_layout(
         barmode="group",
-        title=(
-            "Randomization holds: arms near-identical at ~$242 prior spend; "
-            "only Mens E-Mail moves conversion (0.57% -> 1.25%)"
-        ),
-        legend={"orientation": "h", "y": -0.18},
+        title="Randomization holds: arms near-identical at ~$242 spend",
+    )
+    add_takeaway(
+        fig,
+        "only Mens E-Mail moves conversion (0.57% -> 1.25%); outcome rates separate the "
+        "arms only slightly — conversion is rare (~1%) and needs variance reduction.",
     )
     return fig

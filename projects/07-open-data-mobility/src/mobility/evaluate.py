@@ -157,7 +157,7 @@ def fig_eda_trips_profile(demand: pl.DataFrame) -> go.Figure:
             mode="lines+markers",
         )
     fig.update_layout(
-        title="Twin-peaked weekday rush flattens on weekends - demand is hour-and-borough driven",
+        title="Twin-peaked weekday rush flattens on weekends",
         xaxis_title="hour of day",
         yaxis_title="mean pickups per zone-hour",
         xaxis={"dtick": 1},
@@ -210,10 +210,7 @@ def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
         )
     )
     fig.update_layout(
-        title=(
-            f"The 18:00 Manhattan peak dominates; outer boroughs run sparse "
-            f"(week of {WEEK_START.date()})"
-        ),
+        title="The 18:00 Manhattan peak dominates",
         xaxis_title="hour of week (Mon → Sun)",
         yaxis_title="zone (grouped by borough)",
     )
@@ -222,7 +219,10 @@ def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
         tickvals=[f"D{h // 24 + 1} {h % 24:02d}h" for h in hours][::6],
         tickangle=-45,
     )
-    return apply_theme(fig, height=760)
+    return add_takeaway(
+        apply_theme(fig, height=760),
+        f"outer boroughs run sparse; top {top_n} zones by volume, week of {WEEK_START.date()}",
+    )
 
 
 def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> go.Figure:
@@ -267,14 +267,24 @@ def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> g
             row=i,
             col=1,
         )
+
+    def _mae(col: str) -> float | None:
+        if col not in preds.columns:
+            return None
+        return cast(float, (preds[col] - preds["y_true"]).abs().mean())
+
+    gbm_mae, naive_mae = _mae(gbm_col), _mae("y_naive")
+    if gbm_mae is not None and naive_mae is not None:
+        takeaway = (
+            f"day over day on the {days}-day holdout — MAE {gbm_mae:.2f} vs naive {naive_mae:.2f}"
+        )
+    else:
+        takeaway = f"day over day on the {days}-day holdout window"
     fig.update_layout(
-        title=(
-            f"Served GBM tracks the top {top_n} busiest zones day over day - "
-            f"holdout MAE 4.67 vs naive 6.52"
-        ),
+        title=f"Served GBM tracks the top {top_n} busiest zones",
         hovermode="x unified",
     )
-    return apply_theme(fig, height=300 * len(top_zones))
+    return add_takeaway(apply_theme(fig, height=300 * len(top_zones)), takeaway)
 
 
 def fig_borough_mae(preds: pl.DataFrame) -> go.Figure:
@@ -288,12 +298,29 @@ def fig_borough_mae(preds: pl.DataFrame) -> go.Figure:
             .sort("borough")
         )
         fig.add_bar(name=name, x=mae["borough"].to_list(), y=mae["abs_err"].to_list())
+    takeaway = "persistence (naive_lag24) is the grey reference across boroughs"
+    if "y_naive" in preds.columns and "y_gbm" in preds.columns:
+        bronx = preds.filter(pl.col("borough") == "Bronx").select(
+            [
+                (pl.col("y_naive") - pl.col("y_true")).abs().mean().alias("naive_mae"),
+                (pl.col("y_gbm") - pl.col("y_true")).abs().mean().alias("gbm_mae"),
+            ]
+        )
+        if bronx.height > 0:
+            row = bronx.row(0, named=True)
+            if row["naive_mae"] is not None and row["gbm_mae"] is not None:
+                winner, w_mae, l_mae = (
+                    ("persistence", row["naive_mae"], row["gbm_mae"])
+                    if row["naive_mae"] < row["gbm_mae"]
+                    else ("the GBM", row["gbm_mae"], row["naive_mae"])
+                )
+                takeaway = f"in the Bronx {winner} still wins ({w_mae:.2f} vs {l_mae:.2f})"
     fig.update_layout(
         barmode="group",
-        title="Manhattan drives absolute MAE; in the Bronx persistence still wins (0.48 vs 0.52)",
+        title="Manhattan drives absolute MAE",
         yaxis_title="MAE (pickups/hour)",
     )
-    return apply_theme(fig)
+    return add_takeaway(apply_theme(fig), takeaway)
 
 
 def weather_elasticity(preds: pl.DataFrame, demand: pl.DataFrame) -> pl.DataFrame:
@@ -325,6 +352,7 @@ def fig_weather_elasticity(by_borough: pl.DataFrame) -> go.Figure:
         data=go.Bar(
             x=by_borough["borough"].to_list(),
             y=by_borough["rain_vs_dry_ratio"].to_list(),
+            name="rain / dry ratio",
             marker_color="#38bdf8",
             text=[
                 f"{v:.3f}" if v is not None else "-"
@@ -335,18 +363,14 @@ def fig_weather_elasticity(by_borough: pl.DataFrame) -> go.Figure:
     )
     fig.add_hline(y=1.0, line_dash="dash", line_color="#f472b6")
     fig.update_layout(
-        title=(
-            "Rain cuts outer-borough curb demand 7-10% — Queens 0.92x, Staten Island 0.93x — "
-            "while Manhattan holds at 0.97x and EWR rises 1.08x"
-        ),
+        title="Rain cuts outer-borough curb demand 7-10%",
         yaxis_title="rain / dry ratio",
     )
     obs = by_borough.drop_nulls("rain_vs_dry_ratio")
     if obs.height > 0:
-        wettest = obs.sort("rain_vs_dry_ratio").row(0, named=True)
         takeaway = (
-            f"{wettest['borough']} drops to {wettest['rain_vs_dry_ratio']:.2f}x of dry-hour "
-            "demand in rain — directional, not causal (hour-of-week mix unnormalised)."
+            "Queens 0.92x, Staten Island 0.93x — Manhattan holds at 0.97x, EWR rises "
+            "1.08x; directional, not causal (hour-of-week mix unnormalised)."
         )
     else:
         takeaway = "No rainy hours in the window — elasticity not applicable."
@@ -393,13 +417,12 @@ def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
             line={"color": "#f472b6"},
         )
     )
-    fig.update_layout(
-        title=(
-            f"p90 band calibrated at 90.8% city-wide (target 90%) - a staffable "
-            f"buffer, {days} days from {WEEK_START.date()}"
-        )
+    coverage = p90_coverage(preds, p90_col) * 100
+    fig.update_layout(title=f"p90 band calibrated at {coverage:.1f}% city-wide")
+    return add_takeaway(
+        apply_theme(fig),
+        f"target 90% — a staffable buffer; {days} days from {WEEK_START.date()}",
     )
-    return apply_theme(fig)
 
 
 def fig_zone_fan(preds: pl.DataFrame, top_n: int = 2, days: int = 14) -> go.Figure:
@@ -453,13 +476,13 @@ def fig_zone_fan(preds: pl.DataFrame, top_n: int = 2, days: int = 14) -> go.Figu
             col=1,
         )
     fig.update_layout(
-        title=(
-            f"Per-zone mean + p90 fans carry the same calibrated band - the "
-            f"buffer a dispatcher staffs (top {top_n} zones)"
-        ),
+        title="Per-zone fans carry the same calibrated band",
         hovermode="x unified",
     )
-    return apply_theme(fig, height=340 * top_n)
+    return add_takeaway(
+        apply_theme(fig, height=340 * top_n),
+        f"mean + p90 for the top {top_n} busiest zones — the buffer a dispatcher staffs",
+    )
 
 
 def p90_coverage(preds: pl.DataFrame, col: str = "y_p90") -> float:
@@ -500,7 +523,7 @@ def fig_p90_calibration(coverage: pl.DataFrame) -> go.Figure:
     fig.add_hline(y=0.9, line_dash="dash", line_color="#fbbf24")
     fig.add_annotation(x=0, y=0.905, text="target 90%", showarrow=False, yref="y")
     fig.update_layout(
-        title="p90 uncertainty band: empirical coverage by borough (target 90%)",
+        title="p90 band coverage by borough",
         yaxis_title="share of zone-hours at or below the p90 band",
         yaxis={"range": [0, 1]},
     )
@@ -508,7 +531,7 @@ def fig_p90_calibration(coverage: pl.DataFrame) -> go.Figure:
     worst = coverage.filter(pl.col("borough") != "OVERALL").sort("coverage").row(0, named=True)
     return add_takeaway(
         apply_theme(fig),
-        f"Overall {overall:.1%} vs 90% target; tightest borough {worst['borough']} at "
+        f"target 90% — overall {overall:.1%}; tightest borough {worst['borough']} at "
         f"{worst['coverage']:.1%} — bands usable for staffing buffers.",
     )
 
@@ -547,14 +570,15 @@ def fig_gbm_feature_importance(
         )
     )
     fig.update_layout(
-        title=f"Permutation importance (MAE increase, {model_path.stem}, test slice n={n:,})",
+        title="Permutation importance (MAE increase)",
         xaxis_title="mean MAE increase when shuffled",
         yaxis_title="feature",
     )
     top = FEATURE_COLUMNS[int(np.argmax(result.importances_mean))]
     return add_takeaway(
         apply_theme(fig),
-        f"{top} is the dominant driver — recent-hour momentum matters more than weather.",
+        f"{model_path.stem} on a test slice (n={n:,}); {top} is the dominant driver — "
+        "recent-hour momentum matters more than weather.",
     )
 
 
@@ -633,11 +657,15 @@ def fig_gbm_vs_nn(runs: list[RunResult]) -> go.Figure:
         showarrow=False,
         font={"size": 12, "color": "#fbbf24"},
     )
+    by_name = {r.name: r for r in runs}
+    naive, served = by_name.get("naive_lag24"), by_name.get("gbm_tuned") or by_name.get("gbm_mean")
+    reduction = ""
+    if naive is not None and served is not None:
+        naive_mae, served_mae = _value(naive, "mae"), _value(served, "mae")
+        if naive_mae > 0:
+            reduction = f" removes {(naive_mae - served_mae) / naive_mae * 100:.1f}% of error"
     fig.update_layout(
-        title=(
-            "The served GBM removes 28.4% of forecast error vs last-week "
-            "persistence — the neural challenger wins MAPE only"
-        ),
+        title=f"The served GBM{reduction} vs last-week persistence",
         yaxis_title="MAE (pickups)",
         yaxis2_title="MASE",
         yaxis3_title="MAPE (%)",
@@ -709,13 +737,10 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "p90_calibration": fig_p90_calibration(coverage_borough),
         "gbm_vs_nn": add_takeaway(
             fig_gbm_vs_nn(runs),
-            f"Best run: {ranking['ranking'][0]} "
+            f"the neural challenger wins MAPE only — best run {ranking['ranking'][0]} "
             f"(MAE {best_mae:.2f}); naive_lag24 is the grey persistence reference.",
         ),
     }
-    # two-line title + legend need more headroom than add_takeaway's default;
-    # the rotated run-name ticks need the deeper bottom margin
-    figures["gbm_vs_nn"].update_layout(margin={"t": 125, "l": 60, "r": 30, "b": 90})
     if importance_fig is not None:
         figures["gbm_feature_importance"] = importance_fig
     figures["zone_fan"] = fig_zone_fan(preds)

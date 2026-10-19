@@ -14,7 +14,7 @@ import statistics
 from typing import Any
 
 import plotly.graph_objects as go
-from portfolio_core.plotting import apply_theme
+from portfolio_core.plotting import add_takeaway, apply_theme
 from pydantic_evals.reporting import EvaluationReport
 
 from agentic_workflows.config import EvalConfig
@@ -28,22 +28,6 @@ SUITE_TOOLS: tuple[str, ...] = (
     "unit_convert",
     "note_store",
 )
-
-
-def _takeaway_title(fig: go.Figure, headline: str, takeaway: str) -> None:
-    """Two-line title: headline plus a dim takeaway line.
-
-    Used instead of ``add_takeaway`` here: the plotly title anchors a fixed
-    distance above the plot area, so a separate ``y > 1`` takeaway annotation
-    lands on top of it; a ``<br>``-joined span lays out deterministically.
-    """
-    fig.update_layout(
-        title={
-            "text": (f"{headline}<br><span style='font-size:13px;color:#cbd5e1'>{takeaway}</span>"),
-            "font": {"size": 16},
-        },
-        margin={"t": 100, "r": 30, "b": 50},
-    )
 
 
 def _score(
@@ -170,28 +154,16 @@ def _fig_suite_summary(
         bargap=0.3,
     )
     apply_theme(fig)
-    _takeaway_title(
-        fig,
-        f"All {n_passed}/{n_total} graded outcomes pass across the three splits",
-        "Tuning graded by four deterministic graders, held-out answers by two, "
-        "probes by refusal grade.",
-    )
-    # Legend below the plot (the pinned top legend would crowd the title);
-    # clear of the centered x-axis title. Bordered + larger font so the three
-    # split groups stand apart from the canvas (audit: legend contrast).
     fig.update_layout(
-        legend={
-            "orientation": "h",
-            "yanchor": "top",
-            "y": -0.16,
-            "x": 0,
-            "xanchor": "left",
-            "font": {"size": 15},
-            "bgcolor": "#16213a",
-            "bordercolor": "#3b4a61",
-            "borderwidth": 1,
-        },
-        margin={"l": 135, "b": 100},
+        title=f"All {n_passed}/{n_total} graded outcomes pass across the three splits",
+        # Margin exception (house standard l=70): the row labels ("graceful
+        # refusals", "exact tool set", ...) need the deeper left margin.
+        margin={"l": 135},
+    )
+    add_takeaway(
+        fig,
+        "tuning graded by four deterministic graders, held-out answers by two, "
+        "probes by refusal grade.",
     )
     return fig
 
@@ -248,13 +220,18 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
         tool: sum(1 for case in cases if tool in case.inputs.expected_tools) for tool in SUITE_TOOLS
     }
     totals = {tool: sum(row) for tool, row in zip(SUITE_TOOLS, matrix, strict=True)}
-    headline = "Tool calls per task x tool — the behavioral x-ray the exact-set grader reads"
+    fig.update_layout(
+        title="Tool calls per task x tool",
+        # Margin exception (house standard l=70): tool names ("search_handbook")
+        # on the y-axis need the deeper left margin.
+        margin={"l": 135},
+    )
     if sum(extra_totals.values()) == 0:
-        _takeaway_title(
+        add_takeaway(
             fig,
-            headline,
-            "Zero unplanned calls this run — every invocation lands in a task's expected "
-            f"tool set; {totals.get('search_handbook', 0)} handbook reads are the busiest row.",
+            "the behavioral x-ray the exact-set grader reads — zero unplanned calls this run; "
+            f"every invocation lands in a task's expected tool set; "
+            f"{totals.get('search_handbook', 0)} handbook reads are the busiest row.",
         )
         return fig
     loudest = max(SUITE_TOOLS, key=lambda t: extra_totals[t])
@@ -264,12 +241,12 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
         if any(c.name == loudest for c in case.output.tool_calls)
         or loudest in case.output.tools_used
     )
-    _takeaway_title(
+    add_takeaway(
         fig,
-        headline,
-        f"{extra_totals[loudest]} unplanned {loudest} call(s) across "
-        f"{loudest_tasks}/{len(cases)} tasks — only {expected_by_tool[loudest]} task(s) "
-        "plan for it; a bright column here is an unplanned habit, not a need.",
+        f"the behavioral x-ray the exact-set grader reads — {extra_totals[loudest]} unplanned "
+        f"{loudest} call(s) across {loudest_tasks}/{len(cases)} tasks; only "
+        f"{expected_by_tool[loudest]} task(s) plan for it — a bright column here is an "
+        "unplanned habit, not a need.",
     )
     return fig
 
@@ -367,9 +344,8 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
     )
     apply_theme(fig)
     # Lead with the widest single segment: the "one giant visit" story.
-    headline = (
-        f"Slowest task finishes in {slowest:.0f} s — far under the {budget:.0f} s "
-        "budget; a retry appears as an extra labelled segment, never one long visit"
+    fig.update_layout(
+        title=f"Slowest task finishes in {slowest:.0f} s — far under the {budget:.0f} s budget"
     )
     widest: tuple[str, str, float] | None = None
     for label, per_task in segments.items():
@@ -378,19 +354,13 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
                 widest = (task_name, label, latency)
     if widest is not None:
         task_name, label, latency = widest
-        _takeaway_title(
+        add_takeaway(
             fig,
-            headline,
-            f"Widest single segment: {task_name} {label} at {latency:.0f}s — retries add "
+            f"widest single segment: {task_name} {label} at {latency:.0f}s — retries add "
             "new labelled segments (#2, #3), they never stretch one visit.",
         )
     else:
-        _takeaway_title(fig, headline, "No node visits recorded.")
-    # Legend below the plot (the pinned top legend would crowd the title).
-    fig.update_layout(
-        legend={"orientation": "h", "yanchor": "top", "y": -0.10, "x": 0, "xanchor": "left"},
-        margin={"l": 60, "b": 90},
-    )
+        add_takeaway(fig, "no node visits recorded.")
     return fig
 
 
@@ -455,8 +425,9 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
             "side": "right",
             "range": [0, budget * 1.15],
         },
-        # Legend below the plot (restacked): it used to overlap the title and
-        # takeaway when pinned to the top-right.
+        # Legend exception (house standard is right-side): the secondary
+        # "seconds" axis title already occupies the right margin, so the
+        # legend sits below the plot; the deeper bottom margin fits it.
         legend={"orientation": "h", "yanchor": "top", "y": -0.16, "x": 0, "xanchor": "left"},
     )
     apply_theme(fig)
@@ -464,17 +435,18 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
     # TeX math (escapes do not help), which rendered the amounts as an italic
     # "0.12cloud-equivalent" mess. Single-$ strings (title, bar labels) are
     # safe; multi-amount prose uses "USD".
-    _takeaway_title(
-        fig,
-        f"Tokens, cloud-equivalent cost and latency per task — all inside "
-        f"the $0.25 and {budget:.0f} s budgets",
-        f"Total {sum(costs):.4f} USD cloud-equivalent (rate card 1.00/4.00 USD per Mtok "
-        f"in/out; labelled estimate, membership-quota key); median {statistics.median(costs):.4f} "
-        f"per task; latency budget {budgets[0]:.0f}s held for "
-        f"{sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)}/{len(durations)}.",
+    fig.update_layout(
+        title=f"All tasks inside the $0.25 and {budget:.0f} s budgets",
+        margin={"b": 110},
     )
-    # Bottom space for the restacked legend.
-    fig.update_layout(margin={"l": 60, "b": 110})
+    held = sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)
+    add_takeaway(
+        fig,
+        f"total {sum(costs):.4f} USD cloud-equivalent (rate card 1.00/4.00 USD per Mtok "
+        f"in/out; labelled estimate, membership-quota key); median "
+        f"{statistics.median(costs):.4f} per task; latency budget {budgets[0]:.0f}s held "
+        f"for {held}/{len(durations)}.",
+    )
     return fig
 
 
