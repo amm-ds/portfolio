@@ -133,7 +133,9 @@ def _fig_suite_summary(
 
     splits = list(dict.fromkeys(split for split, _, _, _ in entries))
     rows = list(dict.fromkeys(row for _, row, _, _ in entries))
-    color_cycle = ["#2dd4bf", "#38bdf8", "#a78bfa"]
+    # Hue-separated triad (audit: the three split groups must be unmistakable
+    # at embedded size — teal/sky read as one).
+    color_cycle = ["#2dd4bf", "#fbbf24", "#a78bfa"]
 
     fig = go.Figure()
     for index, split in enumerate(splits):
@@ -146,6 +148,7 @@ def _fig_suite_summary(
             orientation="h",
             marker={"color": color_cycle[index % len(color_cycle)]},
             textposition="inside",
+            textfont={"size": 14},
             hovertemplate="%{y} — " + split + ": %{x:.0f} passed<extra></extra>",
         )
 
@@ -153,8 +156,17 @@ def _fig_suite_summary(
     n_total = sum(total for _, _, _, total in entries)
     fig.update_layout(
         barmode="group",
-        xaxis={"title": "tasks passed", "range": [0, max(t for _, _, _, t in entries) + 1]},
-        yaxis={"title": "", "categoryorder": "array", "categoryarray": rows},
+        xaxis={
+            "title": {"text": "tasks passed", "font": {"size": 15}},
+            "range": [0, max(t for _, _, _, t in entries) + 1],
+            "tickfont": {"size": 14},
+        },
+        yaxis={
+            "title": "",
+            "categoryorder": "array",
+            "categoryarray": rows,
+            "tickfont": {"size": 14},
+        },
         bargap=0.3,
     )
     apply_theme(fig)
@@ -165,9 +177,20 @@ def _fig_suite_summary(
         "probes by refusal grade.",
     )
     # Legend below the plot (the pinned top legend would crowd the title);
-    # clear of the centered x-axis title.
+    # clear of the centered x-axis title. Bordered + larger font so the three
+    # split groups stand apart from the canvas (audit: legend contrast).
     fig.update_layout(
-        legend={"orientation": "h", "yanchor": "top", "y": -0.16, "x": 0, "xanchor": "left"},
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.16,
+            "x": 0,
+            "xanchor": "left",
+            "font": {"size": 15},
+            "bgcolor": "#16213a",
+            "bordercolor": "#3b4a61",
+            "borderwidth": 1,
+        },
         margin={"l": 135, "b": 100},
     )
     return fig

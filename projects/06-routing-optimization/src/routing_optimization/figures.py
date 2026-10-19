@@ -8,6 +8,7 @@ polars DataFrames / problem models so tests can exercise them without the
 pipeline.
 """
 
+import math
 from typing import TypedDict
 
 import plotly.express as px
@@ -99,7 +100,13 @@ def route_map_figure(problem: Problem, routes: list[list[int]], title: str) -> g
                 marker_size=4,
             )
         )
-    fig.update_layout(title=title, showlegend=True)
+    fig.update_layout(
+        title=title,
+        showlegend=True,
+        # 12 entries wrap into two rows and would cover the title — pin the
+        # legend below the map instead.
+        legend={"orientation": "h", "yanchor": "top", "y": -0.08, "x": 0.02, "xanchor": "left"},
+    )
     fig.update_yaxes(scaleanchor="x", scaleratio=1)
     return apply_theme(fig, width=900, height=760)
 
@@ -232,7 +239,11 @@ def solver_profile_figure(rows: pl.DataFrame) -> go.Figure:
             "The ladder spans orders of magnitude - ALNS lands within a few "
             "percent of best-known on every instance"
         ),
-        labels={"distance": "total distance", "instance": "instance", "solver": "solver"},
+        labels={
+            "distance": "total distance (log scale)",
+            "instance": "instance",
+            "solver": "solver",
+        },
     )
     _style_runs_safe(fig, best="two_opt_tuned")
     add_takeaway(
@@ -350,7 +361,9 @@ def pareto_figure(rows: pl.DataFrame) -> go.Figure:
         delta = row["mean_veh_delta"]
         delta_txt = f"{delta:+.2f}" if delta is not None else "n/a"
         fig.add_annotation(
-            x=row["mean_runtime_s"],
+            # On a log axis plotly interprets annotation x as log10(position)
+            # — pass log10(runtime) so the label lands on its marker.
+            x=math.log10(row["mean_runtime_s"]),
             y=row["mean_gap_pct"],
             text=f"{row['solver']} (veh Δ {delta_txt})",
             showarrow=False,
