@@ -93,18 +93,43 @@ _AXIS_VISIBLE: dict[str, Any] = {
     "linecolor": "#3b4a61",
 }
 
+# House layout standard (user-specified): short title + smaller subtitle as a
+# second title line, legend at the RIGHT outside the plot, margins that always
+# show both axis labels. Anything the figure set explicitly still wins — these
+# only fill unset values, and they are serialized so served JSON carries them.
+_TITLE_FONT = {"color": "#f1f5f9", "size": 16}
+_SUBTITLE_SIZE = "12.5px"
+_MARGINS = {"l": 70, "r": 140, "t": 110, "b": 70}
+_LEGEND_RIGHT = {
+    "orientation": "v",
+    "x": 1.02,
+    "xanchor": "left",
+    "y": 1,
+    "yanchor": "top",
+    "font": {"size": 13, "color": "#e2e8f0"},
+    "bgcolor": "rgba(0,0,0,0)",
+}
+
+
+def _legend_is_positioned(layout: Any) -> bool:
+    """True when the figure deliberately placed its legend (any non-default)."""
+    leg = layout.legend
+    orient = getattr(leg, "orientation", None)
+    y = getattr(leg, "y", None)
+    x = getattr(leg, "x", None)
+    return orient is not None or y is not None or x is not None
+
 
 def apply_theme(
     fig: go.Figure, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
 ) -> go.Figure:
     """Apply the portfolio theme in place and return the figure.
 
-    ``hoverlabel`` and the visible-axis defaults (tick/grid/zeroline colors,
-    title color) are set EXPLICITLY, not only via the template: template
+    Theme defaults are set EXPLICITLY (not only via the template): template
     defaults do not serialize into figure JSON, and the showcase app serves
-    the JSON — so anything left only in the template never reaches the
-    rendered chart and every regeneration silently drops it. Per-figure
-    overrides still win (we only fill what the figure left unset).
+    the JSON — anything left only in the template never reaches the rendered
+    chart and every regeneration silently drops it. Per-figure overrides
+    still win (we only fill what the figure left unset).
     """
     fig.update_layout(
         width=width,
@@ -113,9 +138,24 @@ def apply_theme(
         hoverlabel=dict(_HOVERLABEL),
     )
     layout = fig.layout
+    # Title: standard font when unset.
     title_font = layout.title.font
-    if title_font.color is None:
-        fig.update_layout(title={"font": {"color": "#f1f5f9", "size": 17}})
+    if title_font.color is None and title_font.size is None:
+        fig.update_layout(title={"font": dict(_TITLE_FONT)})
+    elif title_font.color is None:
+        fig.update_layout(title={"font": {"color": _TITLE_FONT["color"]}})
+    # Margins: fill to the house standard (never shrink a figure's own).
+    m = layout.margin
+    patch_m = {
+        key: val
+        for key, val in _MARGINS.items()
+        if getattr(m, key, None) is None or getattr(m, key) < val
+    }
+    if patch_m:
+        fig.update_layout(margin=patch_m)
+    # Legend: right-vertical unless the figure placed it deliberately.
+    if layout.showlegend is not False and not _legend_is_positioned(layout):
+        fig.update_layout(legend=dict(_LEGEND_RIGHT))
     for ax_name in ("xaxis", "yaxis", "yaxis2"):
         ax = getattr(layout, ax_name, None)
         if ax is None:
@@ -170,44 +210,34 @@ def is_baseline_run(name: str) -> bool:
 
 
 def add_takeaway(fig: go.Figure, takeaway: str) -> go.Figure:
-    """Render a one-line insight under the title (the figure's 'so what').
+    """Render the figure's longer explanation as a second, smaller title line.
 
-    Implemented as a second line of the title itself (small, muted span) —
-    a separate annotation collides with the title on the dark template
-    because both anchor just above the plot area.
-
-    The takeaway makes the title two lines, so the template's top-pinned
-    horizontal legend would overlap it; the legend drops below the plot
-    instead (the house convention for crowded figures, cf. 09/10) unless
-    the figure already positioned its legend explicitly.
+    House layout: short headline title + 12.5px muted subtitle; the legend
+    sits at the RIGHT, so the two-line title never collides with it, and the
+    top margin (110) fits both lines without clipping. A figure that
+    positioned its own legend keeps it.
     """
     title = fig.layout.title
     head = title.text if title.text else ""
-    combined = (
-        f"{head}<br><span style='font-size:13px;color:#cbd5e1'>{takeaway}</span>"
-        if head
-        else f"<span style='font-size:13px;color:#cbd5e1'>{takeaway}</span>"
-    )
+    span = f"<span style='font-size:{_SUBTITLE_SIZE};color:#cbd5e1'>"
+    combined = f"{head}<br>{span}{takeaway}</span>" if head else f"{span}{takeaway}</span>"
+    m = fig.layout.margin
     fig.update_layout(
         title={**title.to_plotly_json(), "text": combined},
-        margin={"t": 90, "l": 60, "r": 30, "b": 50},
+        margin={
+            "l": m.l if m.l is not None else _MARGINS["l"],
+            "r": m.r if m.r is not None else _MARGINS["r"],
+            "t": max(m.t or 0, _MARGINS["t"]),
+            "b": m.b if m.b is not None else _MARGINS["b"],
+        },
     )
     # An untouched legend has no explicit position in the figure layout (the
-    # template default applies at render time) — only then move it; figures
-    # that positioned their own legend keep it. Reading ``fig.layout.legend``
-    # materializes an empty Legend, so test the serialized dict, not the obj.
+    # template default applies at render time) — only then move it to the
+    # right; figures that positioned their own legend keep it. Reading
+    # ``fig.layout.legend`` materializes an empty Legend, so test the dict.
     legend_pos = fig.layout.legend.to_plotly_json() if fig.layout.legend is not None else {}
-    if "y" not in legend_pos and "orientation" not in legend_pos:
-        fig.update_layout(
-            legend={
-                **legend_pos,
-                "orientation": "h",
-                "yanchor": "top",
-                "y": -0.15,
-                "x": 0.02,
-                "xanchor": "left",
-            },
-        )
+    if "y" not in legend_pos and "orientation" not in legend_pos and "x" not in legend_pos:
+        fig.update_layout(legend=dict(_LEGEND_RIGHT))
     return fig
 
 
