@@ -55,7 +55,7 @@ def _fig_suite_summary(
     set), and the should-fail probes (graceful refusals). Held-out counts
     are graded offline from ``data/heldout_records.json`` when present;
     when the held-out artifacts are absent (e.g. a bare synthetic report
-    in tests) those bars are simply omitted. The title carries the takeaway.
+    in tests) those bars are simply omitted.
     """
     entries: list[tuple[str, str, int, int]] = []
 
@@ -136,8 +136,6 @@ def _fig_suite_summary(
             hovertemplate="%{y} — " + split + ": %{x:.0f} passed<extra></extra>",
         )
 
-    n_passed = sum(passed for _, _, passed, _ in entries)
-    n_total = sum(total for _, _, _, total in entries)
     fig.update_layout(
         barmode="group",
         xaxis={
@@ -155,7 +153,7 @@ def _fig_suite_summary(
     )
     apply_theme(fig)
     fig.update_layout(
-        title=f"All {n_passed}/{n_total} graded outcomes pass across the three splits",
+        title="Graded outcomes by split and grader",
         # Margin exception (house standard l=70): the row labels ("graceful
         # refusals", "exact tool set", ...) need the deeper left margin.
         margin={"l": 135},
@@ -229,9 +227,9 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
     if sum(extra_totals.values()) == 0:
         add_takeaway(
             fig,
-            "the behavioral x-ray the exact-set grader reads — zero unplanned calls this run; "
-            f"every invocation lands in a task's expected tool set; "
-            f"{totals.get('search_handbook', 0)} handbook reads are the busiest row.",
+            "captured calls per task (columns) x tool (rows); zero calls fall "
+            f"outside a task's expected tool set this run; search_handbook is "
+            f"the busiest row at {totals.get('search_handbook', 0)} calls.",
         )
         return fig
     loudest = max(SUITE_TOOLS, key=lambda t: extra_totals[t])
@@ -243,10 +241,10 @@ def _fig_tool_usage_matrix(cases: list[Any]) -> go.Figure:
     )
     add_takeaway(
         fig,
-        f"the behavioral x-ray the exact-set grader reads — {extra_totals[loudest]} unplanned "
-        f"{loudest} call(s) across {loudest_tasks}/{len(cases)} tasks; only "
-        f"{expected_by_tool[loudest]} task(s) plan for it — a bright column here is an "
-        "unplanned habit, not a need.",
+        f"captured calls per task x tool; unplanned calls sit outside a task's "
+        f"expected set — loudest column: {loudest} x{extra_totals[loudest]} across "
+        f"{loudest_tasks}/{len(cases)} tasks (only {expected_by_tool[loudest]} "
+        "task(s) plan for it).",
     )
     return fig
 
@@ -313,7 +311,6 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
             textposition="inside",
         )
     budget = max((case.inputs.latency_budget_s for case in cases), default=60.0)
-    slowest = max((case.output.duration_s for case in cases), default=0.0)
     # x-range follows the data, not the budget: widest stacked task x 1.15.
     task_totals = [sum(trace.latency_s for trace in case.output.steps) for case in cases]
     data_max = max(task_totals, default=0.0)
@@ -343,9 +340,8 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
         annotations=[budget_annotation],
     )
     apply_theme(fig)
-    # Lead with the widest single segment: the "one giant visit" story.
     fig.update_layout(
-        title=f"Slowest task finishes in {slowest:.0f} s — far under the {budget:.0f} s budget"
+        title="Per-task node visits stacked by latency",
     )
     widest: tuple[str, str, float] | None = None
     for label, per_task in segments.items():
@@ -356,8 +352,9 @@ def _fig_node_waterfall(cases: list[Any]) -> go.Figure:
         task_name, label, latency = widest
         add_takeaway(
             fig,
-            f"widest single segment: {task_name} {label} at {latency:.0f}s — retries add "
-            "new labelled segments (#2, #3), they never stretch one visit.",
+            f"one stacked bar per task; segment = a single node visit, width = "
+            f"latency; #2/#3 mark repeat visits; widest segment: {task_name} "
+            f"{label} at {latency:.0f}s.",
         )
     else:
         add_takeaway(fig, "no node visits recorded.")
@@ -436,16 +433,17 @@ def _fig_cost_latency_bars(cases: list[Any], config: EvalConfig | None) -> go.Fi
     # "0.12cloud-equivalent" mess. Single-$ strings (title, bar labels) are
     # safe; multi-amount prose uses "USD".
     fig.update_layout(
-        title=f"All tasks inside the $0.25 and {budget:.0f} s budgets",
+        title="Tokens, cloud-equivalent cost and latency per task",
         margin={"b": 110},
     )
     held = sum(1 for d, b in zip(durations, budgets, strict=True) if d <= b)
     add_takeaway(
         fig,
-        f"total {sum(costs):.4f} USD cloud-equivalent (rate card 1.00/4.00 USD per Mtok "
-        f"in/out; labelled estimate, membership-quota key); median "
-        f"{statistics.median(costs):.4f} per task; latency budget {budgets[0]:.0f}s held "
-        f"for {held}/{len(durations)}.",
+        f"stacked tokens (left axis) + cloud-equivalent cost labels (rate card "
+        f"1.00/4.00 USD per Mtok in/out; labelled estimate); latency vs the dashed "
+        f"{budgets[0]:.0f}s budget line (right axis) — {held}/{len(durations)} tasks "
+        f"at or under it; total {sum(costs):.4f} USD, median "
+        f"{statistics.median(costs):.4f} per task.",
     )
     return fig
 

@@ -1,18 +1,39 @@
 project_id: 08-inference-serving
+figure_captions:
+  quality_quant: >-
+    Schema-valid rate and keyword quality rate for every quantization and
+    engine arm (4-bit, QAT-int4, Q8_0) at concurrency 1. All arms hold
+    schema validity at 1.00 — quantization costs serving headroom, not
+    structured-output reliability.
+  latency_concurrency: >-
+    p95 latency vs concurrency (1/2/4/8) for the primary models on the
+    local Ollama endpoint, one line per model+runner. The MoE arm stays in
+    single-digit seconds through c=8 (qwen3.6: 0.81 s → 7.80 s), with p95
+    ≈ linear in concurrency.
+  toks_per_s: >-
+    Aggregate output tok/s per model and concurrency level. Throughput is
+    flat-to-declining as concurrency rises — decode is memory-bandwidth
+    bound — and the 3B-active MoE still serves ~7× the tok/s of dense
+    qwen3:32b.
+  engine_panel: >-
+    p95 latency and output tok/s for the two engine-plus-packaging arms of
+    gemma4:31b at c=1 (llama.cpp Q8_0 vs MLX 4-bit) on Apple Silicon. MLX
+    runs 2.9× the tok/s (18.8 vs 6.4) at a third of the p95 (2.47 s vs
+    7.12 s) — quant is confounded with packaging, so this names the best
+    combination, not the faster engine alone.
 roadmap:
   - status: delivered
     text: >-
-      Reproducible async benchmark harness over the local Ollama serving layer
-      (ADR-0004 endpoint): fixed structured-output task, per-cell
-      latency/TTFT/tok/s/schema-valid metrics, bounded default under 45 min.
+      Async benchmark harness on the local Ollama endpoint (ADR-0004):
+      per-cell latency/TTFT/tok/s, <45 min default.
   - status: delivered
     text: >-
-      Engine comparison on Apple Silicon — llama.cpp vs MLX on the same model
-      family, runner auto-detected via /api/ps; quant confound labelled.
+      llama.cpp vs MLX on Apple Silicon (same model family; runner
+      auto-detected via /api/ps); quant confound labelled.
   - status: delivered
     text: >-
-      Quality-vs-quantization check (Q8_0 vs QAT-int4 on one runner) with a
-      cost-per-1M-token section built on declared electricity assumptions.
+      Quant quality check (Q8_0 vs QAT-int4, one runner) + cost-per-1M-token
+      view on declared electricity assumptions.
 sections:
   - id: background
     text_md: |

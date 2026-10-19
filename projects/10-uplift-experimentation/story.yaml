@@ -1,4 +1,40 @@
 project_id: 10-uplift-experimentation
+figure_captions:
+  eda_segment_profile: >-
+    Arm sizes, visit/conversion rates and mean pre-period spend for the
+    three Hillstrom arms (Mens E-Mail 21,307 / Womens E-Mail 21,387 /
+    No E-Mail 21,306 of 64,000). Randomization holds — mean prior spend is
+    ~$242 in every arm — and the emails lift visits in both arms but
+    conversion only in the Mens arm (0.57% → 1.25% on a ~0.9% base).
+  uplift_by_decile: >-
+    Mean predicted uplift vs the empirical treated−control conversion
+    contrast per decile for the T-learner (decile 1 = highest scores). The
+    broad ordering holds — top decile 1.1pp vs 0.3pp at the bottom — but
+    predicted magnitudes run about 2× hot and the empirical curve is
+    non-monotone, so treat the ranking as coarse.
+  cost_sensitivity: >-
+    Profit of the best targeting fraction vs mail-everyone as the send cost
+    sweeps $0.01–$0.50 (log scale); the dotted line is the analytic
+    break-even at ≈$0.30/email. At $0.01 mail-everyone wins on raw profit;
+    above ≈$0.30 the top-25% policy overtakes (at $0.50: $1,618 vs
+    −$4,777).
+  qini_curves: >-
+    Incremental conversions vs the fraction of customers targeted, per
+    policy, with 95% paired-bootstrap bands. The response model's curve
+    area leads, but its paired difference CI spans zero — the ranking is
+    not established; T-learner's profit advantage is.
+  profit_frontier: >-
+    Incremental profit vs the share of customers emailed, per policy,
+    under the cost model ($114 revenue per conversion, $0.01 per email);
+    the star marks the recommended top-25% point. Mail-everyone is the
+    profit maximum at $0.01/email ($16,103); at a 25% budget the T-learner
+    beats random by +$2,812 (+69%).
+  cuped_variance: >-
+    Outcome variance before and after CUPED adjustment with the log1p
+    prior-year-spend covariate, for conversion (primary) and visit
+    (secondary). CUPED leaves the ATE unchanged but removes only 0.08% of
+    conversion variance vs 0.52% for visit — prior spend barely predicts a
+    ~1% event.
 sections:
   - id: background
     text_md: |
@@ -257,31 +293,21 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      CUPED variance reduction — shipped, verified: measured on the snapshot
-      with the strictly pre-period log_history covariate (conversion 0.08%,
-      visit 0.52%); ATE unchanged by construction; synthetic-covariate unit
-      tests prove the machinery (theta exactness, mean preservation).
+      CUPED: 0.08% conversion / 0.52% visit variance removed on the
+      snapshot; ATE unchanged; unit-tested machinery.
   - status: delivered
     text: >-
-      Power analysis — shipped, verified: analytic two-proportion formula
-      (stdlib z-quantiles, no scipy) requires 3,063 per arm for the measured
-      +0.68pp at alpha 0.05 / power 0.8 vs 21,306 available; exactness unit-
-      tested against a hand calculation.
+      Power analysis (analytic two-proportion): 3,063 customers/arm needed
+      at alpha 0.05 / power 0.8 vs 21,306 available.
   - status: delivered
     text: >-
-      Uplift meta-learners — shipped, verified: T-learner beats the response
-      baseline (+$2,812 vs +$856 profit delta at 25% budget) and the X-learner
-      (+$539) on out-of-fold scores; T/X rank a synthetic uplift segment
-      correctly in unit tests.
+      Uplift meta-learners (out-of-fold): T-learner +$2,812 profit delta
+      @25% budget; response +$856; X-learner +$539.
   - status: delivered
     text: >-
-      Real Hillstrom snapshot — shipped, verified: author's-site CSV
-      sha256-pinned through portfolio_core.io.fetch, DQ gates (nulls, ranges,
-      segment vocabulary), DatasetContract, dataset card + dvc import-url
-      manifest in the registry.
+      Hillstrom snapshot sha256-pinned via portfolio_core.io.fetch, with DQ
+      gates, DatasetContract and registry card.
   - status: delivered
     text: >-
-      Bootstrap CIs + cost sensitivity — shipped, verified: paired row
-      bootstrap (n=1000, seeded) over out-of-fold scores; per-policy 95% CIs
-      on Qini and profit, paired difference CIs (profit ranking established,
-      Qini not), Qini bands, cost sweep with ≈$0.30/email break-even.
+      Paired row bootstrap (n=1000, seeded): 95% CIs on Qini + profit,
+      paired-difference CIs, ≈$0.30/email break-even.

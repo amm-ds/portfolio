@@ -157,15 +157,14 @@ def fig_eda_trips_profile(demand: pl.DataFrame) -> go.Figure:
             mode="lines+markers",
         )
     fig.update_layout(
-        title="Twin-peaked weekday rush flattens on weekends",
+        title="Mean pickups by hour of day and borough",
         xaxis_title="hour of day",
         yaxis_title="mean pickups per zone-hour",
         xaxis={"dtick": 1},
     )
     return add_takeaway(
         apply_theme(fig),
-        "Twin weekday peaks (08h, 18h) flatten on weekends; Manhattan dominates volume "
-        "while outer boroughs run sparse — hence the zero-filled zone x hour grid.",
+        "full-year 2024 curated zone-hour grid; one series per borough.",
     )
 
 
@@ -210,7 +209,7 @@ def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
         )
     )
     fig.update_layout(
-        title="The 18:00 Manhattan peak dominates",
+        title="Hour-of-week demand, top zones",
         xaxis_title="hour of week (Mon → Sun)",
         yaxis_title="zone (grouped by borough)",
     )
@@ -281,7 +280,7 @@ def fig_actual_vs_pred(preds: pl.DataFrame, top_n: int = 5, days: int = 14) -> g
     else:
         takeaway = f"day over day on the {days}-day holdout window"
     fig.update_layout(
-        title=f"Served GBM tracks the top {top_n} busiest zones",
+        title=f"Actual vs predicted demand, top {top_n} busiest zones",
         hovermode="x unified",
     )
     return add_takeaway(apply_theme(fig, height=300 * len(top_zones)), takeaway)
@@ -314,10 +313,10 @@ def fig_borough_mae(preds: pl.DataFrame) -> go.Figure:
                     if row["naive_mae"] < row["gbm_mae"]
                     else ("the GBM", row["gbm_mae"], row["naive_mae"])
                 )
-                takeaway = f"in the Bronx {winner} still wins ({w_mae:.2f} vs {l_mae:.2f})"
+                takeaway = f"naive_lag24 in grey; Bronx — {winner} {w_mae:.2f} vs {l_mae:.2f} MAE"
     fig.update_layout(
         barmode="group",
-        title="Manhattan drives absolute MAE",
+        title="Test MAE by borough and run",
         yaxis_title="MAE (pickups/hour)",
     )
     return add_takeaway(apply_theme(fig), takeaway)
@@ -363,14 +362,14 @@ def fig_weather_elasticity(by_borough: pl.DataFrame) -> go.Figure:
     )
     fig.add_hline(y=1.0, line_dash="dash", line_color="#f472b6")
     fig.update_layout(
-        title="Rain cuts outer-borough curb demand 7-10%",
+        title="Rain vs dry demand ratio by borough",
         yaxis_title="rain / dry ratio",
     )
     obs = by_borough.drop_nulls("rain_vs_dry_ratio")
     if obs.height > 0:
         takeaway = (
-            "Queens 0.92x, Staten Island 0.93x — Manhattan holds at 0.97x, EWR rises "
-            "1.08x; directional, not causal (hour-of-week mix unnormalised)."
+            "ratio of mean pickups on rain (≥1 mm) vs dry hours; directional, not "
+            "causal — hour-of-week mix unnormalised."
         )
     else:
         takeaway = "No rainy hours in the window — elasticity not applicable."
@@ -418,10 +417,11 @@ def fig_p90_band(preds: pl.DataFrame, days: int = 14) -> go.Figure:
         )
     )
     coverage = p90_coverage(preds, p90_col) * 100
-    fig.update_layout(title=f"p90 band calibrated at {coverage:.1f}% city-wide")
+    fig.update_layout(title="City-wide actual vs GBM mean + p90 band")
     return add_takeaway(
         apply_theme(fig),
-        f"target 90% — a staffable buffer; {days} days from {WEEK_START.date()}",
+        f"city-wide sums over 265 zones, {days} days from {WEEK_START.date()}; "
+        f"target coverage 90% (empirical {coverage:.1f}%)",
     )
 
 
@@ -476,12 +476,13 @@ def fig_zone_fan(preds: pl.DataFrame, top_n: int = 2, days: int = 14) -> go.Figu
             col=1,
         )
     fig.update_layout(
-        title="Per-zone fans carry the same calibrated band",
+        title="Per-zone forecast fan: actual, GBM mean, p90 band",
         hovermode="x unified",
     )
     return add_takeaway(
         apply_theme(fig, height=340 * top_n),
-        f"mean + p90 for the top {top_n} busiest zones — the buffer a dispatcher staffs",
+        f"mean + p90 for the top {top_n} busiest zones; same {days}-day window as the "
+        "city-wide band",
     )
 
 
@@ -657,15 +658,8 @@ def fig_gbm_vs_nn(runs: list[RunResult]) -> go.Figure:
         showarrow=False,
         font={"size": 12, "color": "#fbbf24"},
     )
-    by_name = {r.name: r for r in runs}
-    naive, served = by_name.get("naive_lag24"), by_name.get("gbm_tuned") or by_name.get("gbm_mean")
-    reduction = ""
-    if naive is not None and served is not None:
-        naive_mae, served_mae = _value(naive, "mae"), _value(served, "mae")
-        if naive_mae > 0:
-            reduction = f" removes {(naive_mae - served_mae) / naive_mae * 100:.1f}% of error"
     fig.update_layout(
-        title=f"The served GBM{reduction} vs last-week persistence",
+        title="Holdout run ladder: MAE + MASE (left), MAPE (right)",
         yaxis_title="MAE (pickups)",
         yaxis2_title="MASE",
         yaxis3_title="MAPE (%)",
@@ -737,8 +731,9 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         "p90_calibration": fig_p90_calibration(coverage_borough),
         "gbm_vs_nn": add_takeaway(
             fig_gbm_vs_nn(runs),
-            f"the neural challenger wins MAPE only — best run {ranking['ranking'][0]} "
-            f"(MAE {best_mae:.2f}); naive_lag24 is the grey persistence reference.",
+            f"MASE 1.0 = persistence parity (dotted line); naive_lag24 in grey; "
+            f"holdout from {cfg.train_cutoff} ({preds.height:,} zone-hours); "
+            f"best run by MAE: {ranking['ranking'][0]} ({best_mae:.2f}).",
         ),
     }
     if importance_fig is not None:

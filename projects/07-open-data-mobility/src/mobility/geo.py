@@ -84,13 +84,13 @@ def fig_zone_demand_map(demand: pl.DataFrame) -> go.Figure:
     fig = _choropleth(
         gdf,
         means,
-        "Demand concentrates in Midtown and the airports",
+        "Mean pickups per zone-hour, 2024",
         "Teal",
         "pickups/h",
     )
     return add_takeaway(
         fig,
-        f"Demand concentrates in Midtown/Manhattan cores and JFK/EWR airports; "
+        f"all 265 TLC zones over the full-year curated grid; "
         f"busiest zone averages {means[top]:.1f} pickups/hour.",
     )
 

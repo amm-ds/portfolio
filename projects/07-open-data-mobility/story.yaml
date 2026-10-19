@@ -1,4 +1,46 @@
 project_id: 07-open-data-mobility
+figure_captions:
+  eda_trips_profile: >-
+    Mean pickups per zone-hour by hour of day, one line per borough, over the
+    full-year 2024 curated grid. Weekdays are twin-peaked (08:00 and 18:00)
+    while weekend profiles flatten — and Manhattan dominates the volume every
+    hour.
+  zone_hour_heatmap: >-
+    Hour-of-week pickup demand for the top 30 zones by volume, grouped by
+    borough, for the week of 2024-10-07 (first full Monday of the test
+    window). Midtown's 18:00 weekday peak stands out while the airports run
+    flat around the clock.
+  zone_demand_map: >-
+    Mean pickups per zone-hour for all 265 TLC zones across 2024, on official
+    TLC boundaries. Demand concentrates in the Midtown/Manhattan cores and at
+    JFK/EWR; the busiest zone averages 213.9 pickups/hour.
+  actual_vs_pred_top5: >-
+    Day-over-day actual (pink), GBM (teal) and TemporalNet (sky) pickups for
+    the five busiest zones on a 14-day test slice. Both models track the
+    daily shape; city-wide the served GBM scores MAE 4.67 vs 6.52 for "same
+    hour last week".
+  borough_mae: >-
+    Test MAE by borough for every run, naive lag-24 persistence in grey.
+    Manhattan drives the absolute error simply because its volume is highest
+    — in the Bronx persistence still edges the GBM.
+  zone_fan: >-
+    Per-zone forecast fans for the two busiest zones: GBM mean with the p90
+    band (shaded) against actuals, over the same 14-day window as the
+    city-wide band. The band carries the same 90.8% calibration.
+  gbm_vs_nn: >-
+    Holdout run ladder — MAE bars with a MASE parity line (left) and MAPE
+    (right), naive lag-24 in grey. The served GBM removes 28.4% of error vs
+    persistence (MASE 0.76); the tuned xGB variant is best (−31.2%), and the
+    neural net wins MAPE only.
+  p90_band: >-
+    City-wide actual vs GBM mean and p90 upper band over 14 days of the test
+    window, summed across 265 zones. The band covers 90.8% of realized
+    zone-hours against a 90% target.
+  weather_elasticity: >-
+    Ratio of mean pickups on rain (≥1 mm) vs dry hours, by borough, on the
+    test window. Rain cuts outer-borough demand 7–10% (Queens 0.92×, Staten
+    Island 0.93×) while Manhattan holds at 0.97× and EWR rises to 1.08× —
+    directional, not causal.
 sections:
   - id: background
     text_md: |
@@ -281,29 +323,25 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      Streaming Polars pipeline, raw 41.2M trips → zero-filled 265 × 8,784
-      zone×hour grid — shipped, verified (<3 GB peak RAM).
+      Streaming Polars pipeline: 41.2M raw trips → zero-filled 265 × 8,784
+      zone×hour grid (<3 GB peak RAM).
   - status: delivered
     text: >-
-      Temporal holdout run ladder (naive vs GBM vs TemporalNet) with tuned
-      variants and calibrated p90 band (90.8% coverage) — shipped, verified.
+      Temporal holdout run ladder (naive vs GBM vs TemporalNet, tuned
+      variants) with p90 band calibrated at 90.8%.
   - status: delivered
     text: >-
-      Serving artifact per SERVING.md (tuned GBM + p90 + zones) with the
-      showcase API forecast endpoint verified live — shipped, verified.
+      Serving artifact (tuned GBM + p90 + zones) per SERVING.md — showcase
+      API forecast endpoint verified live.
   - status: delivered
     text: >-
-      Green-taxi cross-service transfer study (bounded 2024-01..03 slice) —
-      shipped, verified; per-service retraining recommendation documented.
+      Green-taxi transfer study: GBM loses MAE to persistence, wins RMSE —
+      per-service retraining recommended.
   - status: delivered
     text: >-
-      Drift observatory — shipped, verified: the scheduled Thursday
-      workflow scores each published TLC month against the persisted
-      serving model (drift-check; reports in reports/drift/); regression
-      opens an issue per docs/runbooks/drift-response.md. First month
-      2024-11: +8.2%, within tolerance.
+      Drift observability: weekly scoring of new TLC months vs the pinned
+      model; 2024-11 +8.2%, within ±15%.
   - status: delivered
     text: >-
-      Zone-level geo views on official TLC boundaries — shipped, verified:
-      demand choropleth, per-zone MAPE residual choropleth, and a per-zone
-      forecast fan chart (zone_fan) for dispatcher drill-down.
+      Zone-level geo views on TLC boundaries: demand choropleth, per-zone
+      MAPE residual map, per-zone forecast fan.

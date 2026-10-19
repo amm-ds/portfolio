@@ -1,4 +1,41 @@
 project_id: 06-routing-optimization
+figure_captions:
+  eda_instance_map: >-
+    Customer locations on C101 colored by time-window width (due − ready);
+    the star marks the depot. The customers form one tight geographic
+    cluster, but the narrowest windows are scattered across it — the
+    delivery clock, not the map, dictates visit order.
+  pareto_gap_runtime: >-
+    Mean runtime (s, log scale) against mean distance gap to best-known (%)
+    per solver, each marker annotated with its mean vehicle delta. ALNS owns
+    the lower-left; the hinted CP-SAT cross-check ties its gap and vehicle
+    delta at ~5× the runtime.
+  solver_profile: >-
+    Total route distance per Solomon instance for all seven solvers (log
+    scale), baselines greyed and tuned 2-opt promoted. The ladder spans
+    orders of magnitude — savings construction removes most of the
+    randomized floor, and ALNS lands every instance in single-digit gap.
+  alns_convergence_C101: >-
+    ALNS best-found distance vs iteration on C101 (top panel), with
+    destroy-operator weights per adapted segment below. Distance falls
+    1,046.5 → 860.2 (−17.8%) over 120 iterations while the operator
+    weights re-balance every segment.
+  gap_pct: >-
+    Distance gap to published best-known (%) for every solver on all 56
+    Solomon instances, grouped per instance. ALNS wins all 56 on distance
+    (mean 4.23% vs 13.63% for tuned 2-opt) and undercuts the references on
+    8 instances.
+  family_gap: >-
+    Mean distance gap (top) and mean vehicle-count delta (bottom) vs
+    best-known for each Solomon family, per solver. Tuned ALNS holds
+    single-digit distance gaps on every family and the fewest vehicles of
+    the ladder — though every solver still runs +1.0 to +6.75 vehicles over
+    the hierarchical-optimizing references.
+  route_map_C101: >-
+    The winning ALNS plan on C101: 11 vehicle routes (colored polylines)
+    serving all 100 customers exactly once, depot marked with a star. The
+    plan is feasible under capacity and time windows at 860.21 total
+    distance — 3.77% above the published best-known of 828.94.
 sections:
 - id: background
   text_md: |
@@ -259,25 +296,17 @@ sections:
 roadmap:
 - status: delivered
   text: >-
-    ALNS solver behind the `RoutePlan` contract — shipped, verified: destroy
-    (random/worst/Shaw) + regret-2 repair, segment-adapted weights, SA
-    acceptance; 4.23 % mean distance gap over all 56 instances, dual
-    criteria reported, HPO-tuned (winners persisted to `params.yaml`).
+    ALNS solver on the RoutePlan contract: 4.23% mean distance gap over
+    all 56 instances, HPO-tuned.
 - status: delivered
   text: >-
-    Full 56-instance Solomon benchmark with per-family dual-criteria
-    reporting — shipped: distance gap AND vehicle delta vs best-known
-    (C1 4.48 %, C2 6.50 %, R1 4.10 %, R2 3.04 %, RC1 4.75 %, RC2 3.00 %);
-    vehicles-first ranking: ALNS wins 43/56 intra-ladder.
+    Full 56-instance Solomon benchmark with per-family dual-criteria gaps
+    (C1 4.48% … RC2 3.00%).
 - status: delivered
   text: >-
-    Hierarchical-objective reporting per the SINTEF convention (vehicles
-    first, distance second) — landed; the dual-gap audit quantified the
-    stakes: ALNS averages +3.73 vehicles over best-known, up to +6-8 on
-    R2/RC2 where hierarchical optima run 2-4 vehicles.
+    Vehicles-first (SINTEF) reporting — caveat quantified: +3.73 mean
+    vehicles over best-known (+6–8 on R2/RC2).
 - status: delivered
   text: >-
-    CP-SAT hinted cross-check arm (`ortools_cp`) — shipped: 10 s/instance
-    budget with the ALNS plan injected as the hint; an incumbent-improvement
-    probe, not an independent baseline. Ties ALNS 56/56 at ~5x runtime;
-    certifies the 25-customer C101 prefix optimal (191.8) in 2.9 s.
+    Hinted CP-SAT check: ties ALNS 56/56 at ~5× runtime; certifies the
+    25-customer C101 prefix optimal in 2.9 s.
