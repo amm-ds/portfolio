@@ -39,16 +39,17 @@ send cost where targeted mail beats mailing everyone.
 
 Qini is the curve area above random in conversion units (higher is
 better); profit is expected incremental profit from mailing the top 25% by
-score under the cost model; Δ vs random is at the same 25% budget, with 95%
+score under the cost model; the Δ columns are at the same 25% budget vs
+random — Δ Qini in incremental conversions, Δ profit in dollars — with 95%
 CIs from a paired row bootstrap.
 
-| policy | Qini [95% CI] | profit @ 25% budget [95% CI] | Δ vs random |
-|---|---|---|---|
-| response model | 13.01 [1.83, 24.36] | $4,881 [$2,246, $7,386] | +$856 |
-| **T-learner (recommended)** | **12.03 [0.77, 24.39]** | **$6,838 [$4,430, $9,370]** | **+$2,812** |
-| X-learner | 5.90 [−5.45, 17.48] | $4,564 [$2,150, $7,306] | +$539 |
-| random | 0.0 | $4,026 | — |
-| treat-everyone | 0.0 | — (full-mail $16,103) | — |
+| policy | Qini [95% CI] | profit @ 25% budget [95% CI] | Δ Qini vs random | Δ profit vs random |
+|---|---|---|---|---|
+| response model | 13.01 [1.83, 24.36] | $4,881 [$2,246, $7,386] | +13.01 | +$856 |
+| **T-learner (recommended) ← best** | **12.03 [0.77, 24.39]** | **$6,838 [$4,430, $9,370]** | **+12.03** | **+$2,812** |
+| X-learner | 5.90 [−5.45, 17.48] | $4,564 [$2,150, $7,306] | +5.90 | +$539 |
+| random | 0.0 | $4,026 | — | — |
+| treat-everyone | 0.0 | — (full-mail $16,103) | — | — |
 
 ![The response model posts the highest Qini area but the paired difference CI spans zero — the curve-area ranking is not established while T-learner's profit advantage is.](../assets/projects/10-uplift-experimentation/qini_curves.png){ width="100%" }
 

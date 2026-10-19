@@ -8,7 +8,8 @@ sections:
       *persuadables*, the only people a campaign can actually create. The
       decision is not "who will buy?" but "who buys *because of us*?" — a
       counterfactual question that only a randomized design plus an uplift
-      model can answer.
+      model (one scoring the *extra* conversions a campaign causes per
+      customer, not who would convert anyway) can answer.
 
       This project runs the full experimentation stack on the canonical
       Hillstrom email benchmark: a 2008 randomized campaign of 64,000
@@ -23,10 +24,10 @@ sections:
       | policy budget | 25% | share of customers the targeting policy may mail |
       | base conversion rate | ~0.9% | the regime where naive targeting wastes budget |
 
-      **Business summary:** campaign profit is a concentration problem —
+      **Business summary:** Campaign profit is a concentration problem —
       spend the fixed budget on the customers with the highest incremental
       conversion probability; the deliverable is a targeting list plus a
-      defensible dollar figure, not a leaderboard AUC.
+      defensible dollar figure, not a leaderboard score.
   - id: objectives
     text_md: |
       - **Read the experiment before modeling:** arm sizes, balance on
@@ -47,7 +48,7 @@ sections:
         incremental-profit delta vs random and the real limits of
         predicting conversions at a 1% base rate.
 
-      **Business summary:** every artifact answers a question a campaign
+      **Business summary:** Every artifact answers a question a campaign
       owner actually asks: is the effect real, is the sample big enough,
       who do I mail, and what do I get for it.
   - id: data
@@ -75,7 +76,7 @@ sections:
       | recency, mens, womens, newbie | same | numeric/binary features |
       | channel, zip_code | same | categorical features |
 
-      **Business summary:** this is the dataset every uplift paper
+      **Business summary:** This is the dataset every uplift paper
       benchmarks against — a client can replicate every number here on
       their own randomized holdout with the same code.
   - id: eda
@@ -95,7 +96,7 @@ sections:
       | Womens E-Mail | 21,387 | 0.151 | 0.0088 | ~$243 |
       | No E-Mail | 21,306 | 0.106 | 0.0057 | ~$241 |
 
-      **Business summary:** balance is verified, not assumed — and a ~1%
+      **Business summary:** Balance is verified, not assumed — and a ~1%
       conversion base rate makes the money question ("who converts because
       of us?") statistically hard, which is exactly why the
       variance-reduction and power machinery comes next.
@@ -129,7 +130,7 @@ sections:
       overfitting — the standard mistake that makes in-sample Qini curves
       look informative when they are not.
 
-      **Business summary:** the models are auditable line-by-line;
+      **Business summary:** The models are auditable line-by-line;
       nothing in the targeting policy is a black box a client cannot
       interrogate.
   - id: evaluation
@@ -162,7 +163,7 @@ sections:
         figure cross-checks predicted ordering against the empirical arm
         contrast slice by slice.
 
-      **Business summary:** the evaluation answers "who do I mail and
+      **Business summary:** The evaluation answers "who do I mail and
       what is it worth" in conversions and dollars, not abstract scores.
     figures: [uplift_by_decile, cost_sensitivity]
   - id: results
@@ -177,15 +178,17 @@ sections:
       available — decisive; it plans the next campaign.
 
       Policy ladder (out-of-fold, `revenue_per_conversion` $114,
-      $0.01/email; 95% CIs from a paired row bootstrap, n=1000, seeded):
+      $0.01/email; 95% CIs from a paired row bootstrap, n=1000, seeded; Δ
+      columns vs random at the same 25% budget — Qini in conversions,
+      profit in dollars; bold row = recommended policy):
 
-      | policy | Qini [95% CI] | profit @ 25% budget [95% CI] | delta vs random |
-      |---|---|---|---|
-      | response model | 13.01 [1.83, 24.36] | $4,881 [$2,246, $7,386] | +$856 |
-      | **T-learner** | **12.03 [0.77, 24.39]** | **$6,838 [$4,430, $9,370]** | **+$2,812** |
-      | X-learner | 5.90 [−5.45, 17.48] | $4,564 [$2,150, $7,306] | +$539 |
-      | random | 0.0 | $4,026 | — |
-      | treat-everyone | 0.0 | — (full-mail $16,103) | — |
+      | policy | Qini [95% CI] | profit @ 25% budget [95% CI] | Δ Qini vs random | Δ profit vs random |
+      |---|---|---|---|---|
+      | response model | 13.01 [1.83, 24.36] | $4,881 [$2,246, $7,386] | +13.01 | +$856 |
+      | **T-learner ← best** | **12.03 [0.77, 24.39]** | **$6,838 [$4,430, $9,370]** | **+12.03** | **+$2,812** |
+      | X-learner | 5.90 [−5.45, 17.48] | $4,564 [$2,150, $7,306] | +5.90 | +$539 |
+      | random | 0.0 | $4,026 | — | — |
+      | treat-everyone | 0.0 | — (full-mail $16,103) | — | — |
 
       Findings (`qini_curves`, `profit_frontier`):
 
@@ -208,9 +211,13 @@ sections:
         leave its second stage only variance to recover — regime-specific,
         not general.
 
-      **Business summary:** the deliverable is a defensible targeting
-      list with a dollar figure and paired-bootstrap intervals, plus the
+      **Business summary:** The deliverable is a defensible targeting
+      list with a dollar figure and honest uncertainty ranges, plus the
       machinery to re-derive it on the client's own randomized holdout.
+      In plain terms: at $0.01 per email, mailing everyone is still the
+      profit maximum because extra sends are nearly free; the targeting
+      list earns its keep once the send cost passes roughly $0.30 — or
+      wherever untargeted mail starts wearing the list.
     figures: [qini_curves, profit_frontier, cuped_variance]
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
@@ -240,7 +247,7 @@ sections:
       practitioner re-runs the stack on their own randomized holdout and
       picks the policy on profit CIs, not curve area.
 
-      **Business summary:** hand this framework a client's randomized
+      **Business summary:** Hand this framework a client's randomized
       campaign extract and it returns a targeting policy, its expected
       dollar delta, and the sample-size math for the next experiment —
       with only the cost model and the fetch URL to change. Full

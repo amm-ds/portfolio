@@ -22,7 +22,7 @@ sections:
       ladder and a metaheuristic share one `RoutePlan` contract, each with a
       stated, verifiable gap to published optima (design in `DESIGN.md`).
 
-    **Business summary:** every percent of distance is fuel, vehicle
+    **Business summary:** Every percent of distance is fuel, vehicle
     hours and CO₂, so even single-digit routing improvements compound into a
     material annual saving.
   figures: []
@@ -38,16 +38,16 @@ sections:
     | feasibility | every customer served exactly once, capacity + time windows respected | `RoutePlan` validator + per-route time simulation |
     | quality | dual gap vs published best-known: distance % **and** vehicle Δ | registry table + SINTEF TOP-derived supplement |
     | transparency | seeded, deterministic, auditable solvers | fixed seed, stdlib-only search, no hidden state |
-    | speed | full 56-instance benchmark incl. both HPO searches in ~90 s | per-solver wall time |
+    | speed | full 56-instance benchmark incl. both hyperparameter (HPO) searches in ~90 s | per-solver wall time |
     | legibility | a feasible randomized floor in every chart | construction/metaheuristic deltas stay readable |
 
     Two reporting rules hold: the dual criteria are always reported together
     (the benchmark ranks vehicles first, distance second), and every tuning
     loop reports what it found, including negative results.
 
-    **Business summary:** the deliverable is a stated optimality gap
-    procurement can hold any future optimizer — ours or a vendor's —
-    accountable to.
+    **Business summary:** The deliverable is a stated optimality gap
+    (distance from the best published routes) that procurement can hold any
+    future optimizer — ours or a vendor's — accountable to.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: data
@@ -67,7 +67,7 @@ sections:
     - **DQ gates** — null rates and ranges vs fleet capacity halt the
       pipeline loudly on any anomaly.
 
-    **Business summary:** a public, citation-backed benchmark lets the
+    **Business summary:** A public, citation-backed benchmark lets the
     client's own team re-check every quality claim against literature values
     — no trust-us slide required.
   figures: []
@@ -89,7 +89,7 @@ sections:
     reason a solver must be checked per family, not on averages (family-gap
     figure in results).
 
-    **Business summary:** territory-drawn routing underperforms because
+    **Business summary:** Territory-drawn routing underperforms because
     the binding constraint is the delivery-promise window — tooling must
     optimize the clock and the map together.
   figures: [eda_instance_map]
@@ -166,24 +166,26 @@ sections:
     deterministic distances and gaps are the verdict and times are context.
     Full per-solver runtime tables in `reports/results.md`.
 
-    **Business summary:** evaluation is cheap and fully reproducible, so
-    it runs in CI on every change — optimization quality becomes a guarded
-    regression metric, not a one-off report.
+    **Business summary:** Evaluation is cheap and fully reproducible, so
+    it runs in continuous integration (CI) on every change — optimization
+    quality becomes a guarded regression metric, not a one-off report.
   figures: [pareto_gap_runtime, solver_profile, alns_convergence_C101]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: results
   text_md: |
     Real run, seed 42, all 56 instances — **both criteria reported**:
     distance gap % and vehicle delta (veh Δ) vs published best-known.
+    Δ gap is the change in mean gap vs nearest_neighbor (nn), in percentage
+    points; the bold row is the ladder's best.
 
-    | solver | mean gap | mean veh Δ | mean runtime |
-    |---|---|---|---|
-    | randomized (floor) | 316.95 % | +11.09 | <10 ms |
-    | nearest_neighbor | 71.64 % | +6.75 | <10 ms |
-    | clarke_wright | 18.31 % | +5.79 | <10 ms |
-    | two_opt_tuned (HPO) | 13.63 % | +5.79 | <10 ms |
-    | **alns (HPO-tuned)** | **4.23 %** | **+3.73** | 0.8–2.8 s |
-    | ortools_cp (hinted cross-check, 10 s) | 4.23 % | +3.73 | 13.6 s |
+    | solver | mean gap | mean veh Δ | Δ gap vs nn | mean runtime |
+    |---|---|---|---|---|
+    | randomized (floor) | 316.95 % | +11.09 | +245.31 pp | <10 ms |
+    | nearest_neighbor | 71.64 % | +6.75 | — | <10 ms |
+    | clarke_wright | 18.31 % | +5.79 | −53.33 pp | <10 ms |
+    | two_opt_tuned (HPO) | 13.63 % | +5.79 | −58.01 pp | <10 ms |
+    | **alns (HPO-tuned) ← best** | **4.23 %** | **+3.73** | **−67.41 pp** | **0.8–2.8 s** |
+    | ortools_cp (hinted cross-check, 10 s) | 4.23 % | +3.73 | −67.41 pp | 13.6 s |
 
     `gap_pct` shows the per-instance spread (runtimes load-inflated, gaps
     seeded and deterministic):
@@ -210,7 +212,7 @@ sections:
       prefix certified optimal at 191.8 in 2.9 s (2-opt hint: 286.3);
       5-customer instance proved optimal in 0.1 s.
 
-    **Business summary:** the anchor number is a 4.23 % mean distance gap
+    **Business summary:** The anchor number is a 4.23 % mean distance gap
     (with the +3.73-vehicle caveat) against 1987-published optima on every
     family, in auditable seeded code — and the ~0.8 s best case keeps the
     harness usable daily.
@@ -249,7 +251,7 @@ sections:
     chains (C203, C103) — destroy size and operator pool are the next
     levers.
 
-    **Business summary:** the deployable harness runs the whole
+    **Business summary:** The deployable harness runs the whole
     benchmark in minutes with a literature-anchored quality number —
     solver selection under a runtime budget stops being a leap of faith.
   figures: []
