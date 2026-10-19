@@ -19,8 +19,8 @@ export function groupByTopic(projects: Project[]): TopicGroup[] {
   return [...groups.entries()].map(([topic, ps]) => ({ topic, projects: ps }));
 }
 
-/** Row (section) definitions for the Experiments page, in display order by
- * impact. Each row aggregates one or more `topic` values from portfolio.yaml;
+/** Row (section) definitions for the experiments block of the Projects page,
+ * in display order by impact. Each row aggregates one or more `topic` values from portfolio.yaml;
  * the card keeps its own topic as a sub-topic chip. Unmapped topics fall back
  * to a row named after themselves, so no card is ever dropped. */
 export const TOPIC_ROWS: { name: string; description: string; topics: string[] }[] = [
@@ -103,8 +103,9 @@ function DemosSection() {
   );
 }
 
-/** Experiments index: demos placeholder on top, then topic rows as full-width
- * sections with their cards in a responsive 2-column grid. */
+/** Projects index: a "demos" block on top, then an "experiments" block with
+ * topic rows as full-width sections and their cards in a responsive 2-column
+ * grid. Both blocks live inside /projects (`/experiments` is an alias). */
 export function ProjectsIndex() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,7 +118,7 @@ export function ProjectsIndex() {
 
   return (
     <>
-      <h1 className="page-title">experiments</h1>
+      <h1 className="page-title">projects</h1>
       {error && <div className="state-box error">{error}</div>}
       {!error && projects === null && <p className="loading">loading projects…</p>}
       {projects !== null && projects.length === 0 && (
@@ -125,7 +126,9 @@ export function ProjectsIndex() {
       )}
       <DemosSection />
       {projects !== null && projects.length > 0 && (
-        <div className="topic-rows">
+        <div className="experiments-block">
+          <h2 className="section-title">experiments</h2>
+          <div className="topic-rows">
           {groupByRow(projects).map((row) => (
             <section key={row.name} className="topic-row" aria-label={row.name}>
               <h2 className="section-title">{row.name}</h2>
@@ -137,6 +140,7 @@ export function ProjectsIndex() {
               </div>
             </section>
           ))}
+          </div>
         </div>
       )}
     </>

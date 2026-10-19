@@ -67,6 +67,8 @@ export interface ProjectStoryData {
   sections: StorySectionData[];
   /** Finalized roadmap (optional while stories are being authored). */
   roadmap?: RoadmapItemData[];
+  /** Commentary per figure id, rendered as the footer under each chart. */
+  figure_captions?: Record<string, string>;
 }
 
 /** 404 means "story not authored yet" — callers fall back to the raw artifacts view. */

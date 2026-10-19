@@ -107,7 +107,7 @@ describe("groupByRow", () => {
 });
 
 describe("ProjectsIndex", () => {
-  it("renders the Experiments heading and places cards under the right topic rows", async () => {
+  it("renders the projects heading and places cards under the right topic rows", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
     render(
       <MemoryRouter>
@@ -115,8 +115,14 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("experiments"),
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
     );
+    // the experiments block label sits above the topic rows
+    const experimentsBlock = document.querySelector(".experiments-block")!;
+    expect(experimentsBlock).not.toBeNull();
+    expect(
+      experimentsBlock.querySelector(":scope > .section-title")!.textContent,
+    ).toBe("experiments");
     expect(screen.getByText("Machine Learning")).toBeInTheDocument();
     // row heading plus 07's sub-topic chip both carry the name
     expect(screen.getAllByText("Data Engineering").length).toBeGreaterThan(0);
@@ -182,12 +188,18 @@ describe("ProjectsIndex", () => {
     expect(demos.textContent).toContain("RAG ask-a-question");
     expect(demos.textContent).toContain("churn threshold sandbox");
     expect(demos.textContent).toContain("uplift policy simulator");
-    // demos section renders before the first topic row
+    // demos block renders before the experiments block with the topic rows
     const demosSection = document.querySelector("section.demos")!;
+    const experimentsBlock = document.querySelector(".experiments-block")!;
+    expect(
+      demosSection.compareDocumentPosition(experimentsBlock) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     const firstRow = document.querySelector(".topic-row")!;
     expect(
       demosSection.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
+    // and the experiments block wraps all topic rows
+    expect(experimentsBlock.querySelectorAll(".topic-row")).toHaveLength(4);
   });
 
   it("renders a what-it-achieves summary plus sub-topic, dataset, and status chips on each card", async () => {

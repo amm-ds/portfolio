@@ -30,7 +30,7 @@ export function impactLine(projectId: string): string | undefined {
 
 /** 1–2 sentence "what it achieves" summaries per project, keyed by project id.
  * Static (not served by the API — portfolio.yaml carries no summary field);
- * shown on the Experiments index cards above the impact metric line. */
+ * shown on the projects index cards above the impact metric line. */
 export const SUMMARIES: Record<string, string> = {
   "01-rag-agent":
     "A retrieval-augmented agent that answers questions over a Wikipedia corpus, retrieves evidence with hybrid search, and verifies each claim against its sources before answering.",

@@ -1,5 +1,5 @@
-/** Interactive demo placeholders for the Experiments page. Rendered as
- * non-interactive cards above the topic rows; swap `href` in later and mark
+/** Interactive demo placeholders for the projects page (demos block). Rendered as
+ * non-interactive cards above the experiments rows; swap `href` in later and mark
  * `status: "live"` — the layout reads from this list, so demos drop in
  * without page changes. */
 export interface Demo {

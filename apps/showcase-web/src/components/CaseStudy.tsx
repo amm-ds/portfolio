@@ -35,7 +35,14 @@ export function CaseStudy({
       </nav>
       <div>
         {story.sections.map((s, i) => (
-          <StorySection key={s.id} projectId={projectId} section={s} index={i} metrics={metrics} />
+          <StorySection
+            key={s.id}
+            projectId={projectId}
+            section={s}
+            index={i}
+            metrics={metrics}
+            figureCaptions={story.figure_captions}
+          />
         ))}
         <RoadmapBlock roadmap={story.roadmap} />
       </div>

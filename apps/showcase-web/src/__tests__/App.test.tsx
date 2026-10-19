@@ -24,7 +24,7 @@ describe("App routing", () => {
     expect(document.querySelector(".project-grid")).toBeNull();
   });
 
-  it("renders the Experiments index at both /projects and /experiments", async () => {
+  it("renders the Projects index at both /projects and /experiments", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -42,7 +42,7 @@ describe("App routing", () => {
         </MemoryRouter>,
       );
       await waitFor(() =>
-        expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("experiments"),
+        expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
       );
       expect(screen.getByText("Demos — interactive experiments")).toBeInTheDocument();
     }
