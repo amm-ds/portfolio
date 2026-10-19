@@ -37,7 +37,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.preprocessing import OneHotEncoder
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
-from demand_forecasting.evaluate import cv_row_folds
+from demand_forecasting.evaluate import _display_series, cv_row_folds
 from demand_forecasting.model import NUMERIC_FEATURES, model_specs, to_xy
 
 logger = get_logger(__name__)
@@ -221,22 +221,24 @@ def figure_probabilistic_band(
         .sort("vol", descending=True)
     )
     examples = volume.head(EXAMPLE_N)["series_id"].to_list()
+    short = _display_series(examples)  # strip the shared country prefix (long legend names clip)
     fig = go.Figure()
     for sid in examples:
         mask = last["series"] == sid
         x = last["dates"][mask]
-        fig.add_scatter(x=x, y=last["y_true"][mask], name=f"{sid} actual", mode="lines")
+        label = short[sid]
+        fig.add_scatter(x=x, y=last["y_true"][mask], name=f"{label} actual", mode="lines")
         fig.add_scatter(
             x=x,
             y=last["p50"][mask],
-            name=f"{sid} p50",
+            name=f"{label} p50",
             mode="lines",
             line={"dash": "dash"},
         )
         fig.add_scatter(
             x=x,
             y=last["conf_hi"][mask],
-            name=f"{sid} band upper",
+            name=f"{label} band upper",
             mode="lines",
             line={"width": 0},
             showlegend=False,
@@ -244,7 +246,7 @@ def figure_probabilistic_band(
         fig.add_scatter(
             x=x,
             y=last["conf_lo"][mask],
-            name=f"{sid} band lower",
+            name=f"{label} band lower",
             mode="lines",
             fill="tonexty",
             fillcolor="rgba(45, 212, 191, 0.15)",
@@ -254,14 +256,9 @@ def figure_probabilistic_band(
     conf = result["split_conformal"]
     cov = conf["coverage_last_fold"]
     fig.update_layout(
-        title=(
-            f"Zero-aware conformal band: {cov:.0%} last-fold coverage "
-            f"(target {TARGET_COVERAGE:.0%}) — widths calibrated per "
-            "predicted-zero bin, not one global q80"
-        ),
+        title=f"Zero-aware conformal band: {cov:.0%} last-fold coverage",
         # updatemenu: the band can be removed interactively ("actual only").
-        # Buttons sit in the free band between the two-line title and the plot;
-        # the legend drops below the plot.
+        # Buttons sit in the free band between the two-line title and the plot.
         updatemenus=[
             {
                 "type": "buttons",
@@ -288,22 +285,21 @@ def figure_probabilistic_band(
             }
         ],
     )
+    bins = (
+        f"; zero-predicted rows {_fmt_bin(conf['coverage_last_fold_zero_bin'])}, "
+        f"nonzero-predicted rows {_fmt_bin(conf['coverage_last_fold_nonzero_bin'])}"
+        if conf["coverage_last_fold_zero_bin"] is not None
+        or conf["coverage_last_fold_nonzero_bin"] is not None
+        else ""
+    )
     add_takeaway(
         fig,
-        f"takeaway: empirical band coverage {cov:.1%} on the last fold "
-        f"(target {TARGET_COVERAGE:.0%}"
-        + (
-            f"; zero-predicted rows {_fmt_bin(conf['coverage_last_fold_zero_bin'])}, "
-            f"nonzero-predicted rows {_fmt_bin(conf['coverage_last_fold_nonzero_bin'])}"
-            if conf["coverage_last_fold_zero_bin"] is not None
-            or conf["coverage_last_fold_nonzero_bin"] is not None
-            else ""
-        )
-        + ") — widths calibrated per predicted-zero bin on earlier folds",
+        f"(target {TARGET_COVERAGE:.0%}) — widths calibrated per predicted-zero "
+        f"bin, not one global q80; empirical coverage {cov:.1%} on the last fold{bins}.",
     )
-    # add_takeaway resets the margins; re-apply ours afterwards (buttons above
-    # the plot need the deep top margin, the below-plot legend the bottom one).
-    fig.update_layout(margin={"t": 185, "l": 60, "r": 30, "b": 120})
+    # Exceptional top margin: the updatemenu buttons sit above the plot
+    # (y=1.10) in the band below the two-line title.
+    fig.update_layout(margin={"t": 185})
     return apply_theme(fig)
 
 

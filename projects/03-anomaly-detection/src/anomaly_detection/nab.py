@@ -393,18 +393,13 @@ def nab_figures(
     fig.update_yaxes(tickfont_size=13)
     fig.update_xaxes(tickfont_size=13)
     fig.update_layout(
-        title={
-            "text": (
-                "Real NAB telemetry hides labelled incidents in noisy baselines — "
-                f"most of the {n_alerts:,} alerts miss the event windows"
-            ),
-            "font": {"size": 19},
-        },
+        title="Real NAB telemetry hides labelled incidents in noisy baselines",
     )
     add_takeaway(
         fig,
-        "Six representative series (id per panel): amber bands are the labelled "
-        "windows, pink crosses are alerts - nyc_taxi misses one window.",
+        f"most of the {n_alerts:,} alerts miss the event windows — six "
+        "representative series (id per panel): amber bands are the labelled "
+        "windows, pink crosses are alerts; nyc_taxi misses one window.",
     )
     timelines = apply_theme(fig, height=820)
 
@@ -422,13 +417,14 @@ def nab_figures(
     dist_fig.update_yaxes(type="log", title="count (log scale)")
     dist_fig.update_xaxes(title="anomaly score")
     dist_fig.update_layout(
-        title="Real in-window scores overlap the normal mass - NAB rarity defeats clean separation",
+        title="Real in-window scores overlap the normal mass",
         barmode="overlay",
     )
     dist_fig.update_traces(opacity=0.65)
     add_takeaway(
         dist_fig,
-        "Real in-window scores overlap the normal mass far more than synthetic anomalies do.",
+        "NAB rarity defeats clean separation — the overlap is far wider than "
+        "with synthetic anomalies.",
     )
     distribution = apply_theme(dist_fig)
 
@@ -442,15 +438,8 @@ def nab_figures(
         )
     budget_fig.update_xaxes(type="log", title="alert budget (flagged fraction)")
     budget_fig.update_yaxes(title="range-F1", range=[0, 1.05])
-    budget_fig.update_layout(
-        title=(
-            "Event-level range-F1 peaks at a small alert budget - "
-            "more pages mostly add false alarms"
-        )
-    )
-    add_takeaway(
-        budget_fig, "Event-level F1 peaks at a small budget; more alerts mostly add false pages."
-    )
+    budget_fig.update_layout(title="Event-level range-F1 peaks at a small alert budget")
+    add_takeaway(budget_fig, "more pages mostly add false alarms.")
     return {
         "nab_timelines": timelines,
         "nab_score_distribution": distribution,

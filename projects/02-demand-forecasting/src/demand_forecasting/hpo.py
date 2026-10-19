@@ -22,7 +22,7 @@ import optuna
 import plotly.graph_objects as go
 import polars as pl
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_html, save_json
+from portfolio_core.plotting import add_takeaway, apply_theme, save_html, save_json
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.preprocessing import OneHotEncoder
@@ -147,12 +147,10 @@ def figure_hpo_history(study: optuna.Study) -> go.Figure:
         bests.append(best)
     fig.add_scatter(x=numbers, y=bests, name="best so far", mode="lines")
     fig.update_layout(
-        title=(
-            f"{len(trials)} seeded trials buy a modest, real gain - best CV "
-            f"MAE {best:.3f}, converging on regularised small trees"
-        ),
+        title=f"{len(trials)} seeded trials buy a modest, real gain",
         xaxis_title="trial",
     )
+    add_takeaway(fig, f"best CV MAE {best:.3f}, converging on regularised small trees")
     return apply_theme(fig)
 
 
@@ -177,16 +175,13 @@ def figure_hpo_importance(study: optuna.Study) -> go.Figure:
     )
     top2 = sum(sorted(importances.values(), reverse=True)[:2])
     fig.update_layout(
-        title=(
-            f"Regularisation knobs dominate - top two params carry {top2:.0%} "
-            "of the search importance"
-        ),
-        # Horizontal bars put the parameter names on the y-axis; the theme's
-        # 60 px left margin trims them ("min_samples_leaf" → "ples_leaf").
-        # automargin sizes the margin to the longest tick label instead.
+        title="Regularisation knobs dominate",
+        # Horizontal bars put the parameter names on the y-axis; automargin
+        # sizes the left margin to the longest tick label instead of trimming
+        # it ("min_samples_leaf" → "ples_leaf").
         yaxis={"automargin": True},
-        margin={"l": 60, "r": 30, "t": 60, "b": 50},
     )
+    add_takeaway(fig, f"top two params carry {top2:.0%} of the search importance")
     return apply_theme(fig)
 
 

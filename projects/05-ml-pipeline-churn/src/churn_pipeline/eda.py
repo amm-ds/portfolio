@@ -7,7 +7,7 @@ the evaluation figures so the showcase app can render the full story.
 import plotly.graph_objects as go
 import polars as pl
 from plotly.subplots import make_subplots
-from portfolio_core.plotting import apply_theme
+from portfolio_core.plotting import add_takeaway, apply_theme
 
 
 def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
@@ -63,21 +63,13 @@ def eda_churn_profile_figure(df: pl.DataFrame) -> go.Figure:
             col=3,
         )
     fig.update_layout(
-        title=("Churn concentrates in short contracts - 42.7% month-to-month vs 2.8% two-year"),
+        title="Churn concentrates in short contracts",
         barmode="overlay",
         yaxis_title="churn rate",
         xaxis2_title="monthly_charges",
         yaxis2_title="density",
         xaxis3_title="tenure_months",
         yaxis3_title="density",
-        # top-right: the left-anchored title occupies the top-left band
-        legend={
-            "orientation": "v",
-            "yanchor": "top",
-            "y": 1.0,
-            "x": 1.0,
-            "xanchor": "right",
-        },
-        margin={"t": 80},
     )
+    add_takeaway(fig, "42.7% month-to-month vs 2.8% two-year churn")
     return apply_theme(fig)

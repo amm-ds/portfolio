@@ -25,7 +25,7 @@ from pathlib import Path
 
 import plotly.graph_objects as go
 from portfolio_core.logging import get_logger
-from portfolio_core.plotting import apply_theme, save_html, save_json
+from portfolio_core.plotting import add_takeaway, apply_theme, save_html, save_json
 
 from nlp_classification.config import NLPConfig
 from nlp_classification.data import label_names, load_full_train, tokenize_dataset
@@ -108,15 +108,10 @@ def epochs_probe_figure(history: TrainingHistory) -> go.Figure:
     fig.add_scatter(x=epochs, y=losses, name="train loss")
     fig.add_scatter(x=epochs, y=f1s, name="val macro-F1", yaxis="y2")
     fig.update_layout(
-        title=(
-            f"4-epoch probe (full 120k, seed 42): val macro-F1 plateaus at "
-            f"~{max(f1s):.4f} while train loss keeps falling"
-        ),
+        title="Val macro-F1 plateaus while train loss keeps falling",
         xaxis_title="epoch",
         yaxis_title="train loss",
         yaxis2={"title": "val macro-F1", "overlaying": "y", "side": "right"},
-        # wider right margin so the overlaid axis title is not clipped
-        margin={"l": 60, "r": 70, "t": 60, "b": 50},
         annotations=[
             {
                 "x": 2,
@@ -144,6 +139,23 @@ def epochs_probe_figure(history: TrainingHistory) -> go.Figure:
                 "font": {"size": 12},
             },
         ],
+    )
+    add_takeaway(
+        fig,
+        f"4-epoch probe (full 120k, seed 42) — plateau at ~{max(f1s):.4f}",
+    )
+    # Deliberate legend exception: the overlaid y2 axis puts its tick labels in
+    # the right margin, so the standard right-vertical legend collides with
+    # them at every height — the two-entry legend goes below the plot instead.
+    fig.update_layout(
+        legend={
+            "orientation": "h",
+            "yanchor": "top",
+            "y": -0.18,
+            "x": 0.5,
+            "xanchor": "center",
+        },
+        margin={"b": 110},
     )
     return apply_theme(fig)
 

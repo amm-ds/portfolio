@@ -193,24 +193,17 @@ def fairness_slices_figure(report: dict[str, dict[str, Any]], threshold: float) 
     fig.update_layout(
         title=(
             f"Recall uniform across gender (0.90) but 0.00 on two-year "
-            f"contracts at t={threshold:.3f} - 45 churners missed by choice"
+            f"contracts at t={threshold:.3f}"
         ),
         barmode="group",
         yaxis_title="metric value",
         yaxis2_title="cost (FP·1 + FN·5)",
     )
     style_runs(fig)
-    add_takeaway(fig, f"overall F1 {overall['f1']:.3f} - read slice gaps against this line")
-    # legend below the plot, centered and clear of the rotated slice labels
-    fig.update_layout(
-        legend={
-            "orientation": "h",
-            "yanchor": "top",
-            "y": -0.28,
-            "x": 0.5,
-            "xanchor": "center",
-        },
-        margin={"b": 150},
+    add_takeaway(
+        fig,
+        f"45 churners missed by choice — overall F1 {overall['f1']:.3f}; "
+        "read slice gaps against this line",
     )
     return apply_theme(fig)
 
@@ -254,18 +247,19 @@ def cost_surface_figure(
         font={"size": 13, "color": "#fbbf24"},
     )
     fig.update_layout(
-        title=(
-            "The cost-optimal threshold moves with the base rate — 0.175 on telco "
-            "vs 0.700 on synthetic — while the procedure transfers"
-        ),
+        title="The cost-optimal threshold moves with the base rate",
         xaxis_title="Decision threshold",
         yaxis_title="FN cost (FP cost = 1)",
     )
     add_takeaway(
         fig,
+        "0.175 on telco vs 0.700 on synthetic — the procedure transfers; "
         f"at FN={cfg.fn_cost:g}, t={cfg.threshold_grid[col]:.3f} minimizes cost "
         f"({z[row, col]:.0f}); the ridge bends left as FN cost rises",
     )
+    # The colorbar title ("cost") sits above the colorbar at the legend's
+    # default top-right slot — drop the single-entry legend just below it.
+    fig.update_layout(legend={"y": 0.94, "yanchor": "top"})
     return apply_theme(fig)
 
 
@@ -475,19 +469,11 @@ def calibration_figure(
             name=f"{name} (ece={ece:.3f})",
         )
     fig.update_layout(
-        title="Isotonic improves both ECE (0.028 -> 0.016) and holdout cost (619 -> 601)",
+        title="Isotonic improves both ECE and holdout cost",
         xaxis_title="Mean predicted probability",
         yaxis_title="Observed churn frequency",
-        # legend below the plot (bottom-center): on top it collides with the title
-        legend={
-            "orientation": "h",
-            "yanchor": "top",
-            "y": -0.18,
-            "x": 0.5,
-            "xanchor": "center",
-        },
-        margin={"b": 120},
     )
+    add_takeaway(fig, "ECE 0.028 → 0.016, holdout cost 619 → 601")
     style_runs(fig, best="isotonic")
     return apply_theme(fig)
 
@@ -516,7 +502,9 @@ def importance_figure(
     fig.update_layout(
         title="Contract, tenure and monthly charges carry the churn signal",
         xaxis_title="Mean F1 decrease",
-        yaxis_title="",
+        # horizontal bars: automargin sizes the left margin to the longest
+        # feature name ("tenure_months"), which the standard 70 px trims
+        yaxis={"title": "", "automargin": True},
     )
     return apply_theme(fig)
 
@@ -540,22 +528,11 @@ def precision_recall_figure(
         prec, rec, _ = precision_recall_curve(y_true, proba)
         fig.add_scatter(x=rec, y=prec, mode="lines", name=name)
     fig.update_layout(
-        title=(
-            f"The dashed floor is the {base_rate:.1%} base rate - ranked "
-            "probabilities are what buy precision above it"
-        ),
+        title=f"The dashed floor is the {base_rate:.1%} base rate",
         xaxis_title="Recall",
         yaxis_title="Precision",
-        # legend below the plot (bottom-center): on top it collides with the title
-        legend={
-            "orientation": "h",
-            "yanchor": "top",
-            "y": -0.18,
-            "x": 0.5,
-            "xanchor": "center",
-        },
-        margin={"b": 120},
     )
+    add_takeaway(fig, "ranked probabilities are what buy precision above it")
     style_runs(fig, best="selected model")
     return apply_theme(fig)
 
@@ -588,15 +565,15 @@ def decision_curve_figure(
         nb = [net_benefit(y_true, proba, float(pt)) for pt in pt_grid]
         fig.add_scatter(x=pt_grid.tolist(), y=nb, mode="lines", name=name)
     fig.update_layout(
-        title="The selected model beats treat-all and treat-none - the alarm pays",
+        title="The selected model beats treat-all and treat-none",
         xaxis_title="Threshold probability pt",
         yaxis_title="Net benefit (per customer)",
     )
     style_runs(fig, best="selected model")
     add_takeaway(
         fig,
-        "net benefit stays above both reference lines in the low-threshold "
-        "range where churn is actionable",
+        "the alarm pays — net benefit stays above both reference lines in the "
+        "low-threshold range where churn is actionable",
     )
     return apply_theme(fig)
 
@@ -634,27 +611,12 @@ def cost_figure(
                 font={"size": 13, "color": "#fbbf24"},
             )
     fig.update_layout(
-        title=(
-            "Cost-aware selection plus isotonic calibration cuts business "
-            "cost 41.9% vs doing nothing"
-        ),
+        title="Cost-aware selection plus isotonic cuts business cost 41.9%",
         xaxis_title="Decision threshold",
         yaxis_title=f"Total cost (FP·{cfg.fp_cost:g} + FN·{cfg.fn_cost:g})",
     )
     style_runs(fig, best="selected model")
     add_takeaway(fig, takeaway)
-    # two legend rows below the plot, centered (the takeaway moved the legend
-    # off the title; centering keeps it clear of the axis labels)
-    fig.update_layout(
-        legend={
-            "orientation": "h",
-            "yanchor": "top",
-            "y": -0.22,
-            "x": 0.5,
-            "xanchor": "center",
-        },
-        margin={"b": 130},
-    )
     return apply_theme(fig)
 
 

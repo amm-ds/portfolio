@@ -279,11 +279,11 @@ def figure_coherence_heatmap(result: ReconciliationResult, hold: pl.DataFrame) -
         colorscale="Blues",
         showscale=False,
     )
-    fig.update_layout(title="Hierarchy coherence heatmap — mean |parent - sum(children)| per store")
+    fig.update_layout(title="Hierarchy coherence heatmap")
     add_takeaway(
         fig,
-        "takeaway: reconciliation shrinks cross-level incoherence by exactly "
-        f"(1-w)={1 - result.shrinkage:.2f} everywhere — coherence is a guarantee, not a hope",
+        "mean |parent - sum(children)| per store — incoherence shrinks by "
+        "exactly (1-w) everywhere; coherence is a guarantee, not a hope",
     )
     return apply_theme(fig, width=900, height=420)
 
