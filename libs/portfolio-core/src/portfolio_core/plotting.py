@@ -86,15 +86,25 @@ _HOVERLABEL: dict[str, Any] = {
 }
 
 
+_AXIS_VISIBLE: dict[str, Any] = {
+    "tickfont": {"color": "#e2e8f0"},
+    "gridcolor": "#293548",
+    "zerolinecolor": "#3b4a61",
+    "linecolor": "#3b4a61",
+}
+
+
 def apply_theme(
     fig: go.Figure, width: int = DEFAULT_WIDTH, height: int = DEFAULT_HEIGHT
 ) -> go.Figure:
     """Apply the portfolio theme in place and return the figure.
 
-    ``hoverlabel`` is set explicitly (not only via the template): template
+    ``hoverlabel`` and the visible-axis defaults (tick/grid/zeroline colors,
+    title color) are set EXPLICITLY, not only via the template: template
     defaults do not serialize into figure JSON, and the showcase app serves
-    the JSON — so anything only in the template never reaches the rendered
-    chart.
+    the JSON — so anything left only in the template never reaches the
+    rendered chart and every regeneration silently drops it. Per-figure
+    overrides still win (we only fill what the figure left unset).
     """
     fig.update_layout(
         width=width,
@@ -102,6 +112,29 @@ def apply_theme(
         template="portfolio",
         hoverlabel=dict(_HOVERLABEL),
     )
+    layout = fig.layout
+    title_font = layout.title.font
+    if title_font.color is None:
+        fig.update_layout(title={"font": {"color": "#f1f5f9", "size": 17}})
+    for ax_name in ("xaxis", "yaxis", "yaxis2"):
+        ax = getattr(layout, ax_name, None)
+        if ax is None:
+            continue
+        patch: dict[str, Any] = {}
+        tf = ax.tickfont
+        if not (tf and tf.color):
+            patch["tickfont"] = _AXIS_VISIBLE["tickfont"]
+        if ax.gridcolor is None:
+            patch["gridcolor"] = _AXIS_VISIBLE["gridcolor"]
+        if ax.zerolinecolor is None:
+            patch["zerolinecolor"] = _AXIS_VISIBLE["zerolinecolor"]
+        if ax.linecolor is None:
+            patch["linecolor"] = _AXIS_VISIBLE["linecolor"]
+        at = ax.title.font
+        if not (at and at.color):
+            patch.setdefault("title", {})["font"] = {"color": "#e2e8f0"}
+        if patch:
+            fig.update_layout({ax_name: patch})
     return fig
 
 
