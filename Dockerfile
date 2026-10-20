@@ -35,8 +35,9 @@ WORKDIR /app
 
 # libgomp1: lightgbm/xgboost native libs link OpenMP — without it the serving
 # artifacts (joblib pickles) fail to unpickle in the image (OSError libgomp).
+# git: uv resolves the tape-forecast git dependency at sync time.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgomp1 \
+    && apt-get install -y --no-install-recommends libgomp1 git \
     && rm -rf /var/lib/apt/lists/*
 
 ENV UV_LINK_MODE=copy \
