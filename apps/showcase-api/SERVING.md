@@ -104,3 +104,31 @@ curl -s localhost:8000/projects/07-open-data-mobility/forecast \
   -H 'content-type: application/json' \
   -d '{"zone_id": 132, "features": {"lag_24": 5.0, "lag_168": 4.0, "hour": 8.0}}'
 ```
+
+## `GET /demos/tape-forecast/` — mounted demo app
+
+The [tape-forecast demo](https://github.com/amm-ds/tape-forecast-demo) is
+mounted as a self-contained sub-application (its own lookup routes + SPA) at
+`/demos/tape-forecast/`. The `tape-forecast` package is a pinned git
+dependency of this app; the payload it serves (serving parquets, Phase 1
+reports, built demo SPA) is not in the wheel, so the mount is conditional:
+
+- **Docker image**: a `tape-demo` build stage clones the pinned tag
+  (`v0.1.2`), builds the demo web and bakes `data/`, `reports/` and
+  `web/dist/` into `/opt/tape-forecast/`; the `TAPE_FORECAST_*` env vars are
+  set in the image and the mount registers at startup.
+- **Local dev**: point the env vars at a local clone and restart uvicorn:
+
+  ```bash
+  TAPE_FORECAST_SERVING_DIR=../tape-forecast-demo/data/serving \
+  TAPE_FORECAST_REPORTS_DIR=../tape-forecast-demo/reports \
+  TAPE_FORECAST_WEB_DIST=../tape-forecast-demo/web/dist \
+    uv run uvicorn showcase_api.main:app --reload
+  ```
+
+- **Absent payload** (unit tests, slim checkouts): the mount is skipped with
+  an INFO log and the route 404s; the projects page demo card is the only
+  entry point, so nothing user-facing breaks.
+
+The canonical URL carries a trailing slash — the demo SPA uses relative
+asset/API paths; `/demos/tape-forecast` (no slash) 307-redirects to it.

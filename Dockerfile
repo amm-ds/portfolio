@@ -18,6 +18,18 @@ RUN npm ci --no-audit --no-fund
 COPY apps/showcase-web/ ./
 RUN npm run build
 
+# tape-forecast demo payload (separate repo, pinned tag). The Python package
+# itself arrives via the git dependency in apps/showcase-api (uv sync below);
+# this stage only supplies what git does not carry into the wheel: the serving
+# parquets, Phase 1 reports and the built demo SPA. Mounted by showcase_api
+# main at /demos/tape-forecast via TAPE_FORECAST_* env vars.
+FROM node:22-alpine AS tape-demo
+WORKDIR /tape
+RUN apk add --no-cache git \
+    && git clone --depth 1 --branch v0.1.2 https://github.com/amm-ds/tape-forecast-demo.git .
+WORKDIR /tape/web
+RUN npm ci --no-audit --no-fund && npm run build
+
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS runtime
 WORKDIR /app
 
@@ -40,6 +52,14 @@ COPY apps/showcase-api apps/showcase-api
 RUN uv sync --all-packages --no-dev
 
 COPY --from=web /web/dist apps/showcase-web/dist
+
+# tape-forecast demo payload (data + reports + built SPA — see tape-demo stage)
+COPY --from=tape-demo /tape/data /opt/tape-forecast/data
+COPY --from=tape-demo /tape/reports /opt/tape-forecast/reports
+COPY --from=tape-demo /tape/web/dist /opt/tape-forecast/web/dist
+ENV TAPE_FORECAST_SERVING_DIR=/opt/tape-forecast/data/serving \
+    TAPE_FORECAST_REPORTS_DIR=/opt/tape-forecast/reports \
+    TAPE_FORECAST_WEB_DIST=/opt/tape-forecast/web/dist
 
 # Non-root runtime user
 RUN useradd --system --create-home app && chown -R app /app

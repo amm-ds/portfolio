@@ -17,7 +17,7 @@ export const DEMOS: Demo[] = [
     title: "tape forecast replay",
     line: "Scrub a real 4h crypto tape and watch models forecast the next seconds — persistence wins on MAE, and the page shows exactly why.",
     status: "live",
-    href: "https://github.com/amm-ds/tape-forecast-demo",
+    href: "/demos/tape-forecast/",
   },
   {
     id: "rag-ask",
