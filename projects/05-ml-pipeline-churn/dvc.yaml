@@ -83,3 +83,17 @@ stages:
       - threshold_grid
     outs:
       - reports/models/serving
+
+  demo_payload:
+    cmd: uv run --python 3.12.9 python -m churn_pipeline.cli demo-payload --params-file params.yaml
+    deps:
+      - src/churn_pipeline/
+      - data/selected_model_calibrated.pkl
+      - data/holdout.parquet
+      - reports/metrics.json
+    params:
+      - fp_cost
+      - fn_cost
+      - calibration_bins
+    outs:
+      - reports/demo_payload.json
