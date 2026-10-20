@@ -114,7 +114,7 @@ dependency of this app; the payload it serves (serving parquets, Phase 1
 reports, built demo SPA) is not in the wheel, so the mount is conditional:
 
 - **Docker image**: a `tape-demo` build stage clones the pinned tag
-  (`v0.1.2`), builds the demo web and bakes `data/`, `reports/` and
+  (`v0.2.0`), builds the demo web and bakes `data/`, `reports/` and
   `web/dist/` into `/opt/tape-forecast/`; the `TAPE_FORECAST_*` env vars are
   set in the image and the mount registers at startup.
 - **Local dev**: point the env vars at a local clone and restart uvicorn:
@@ -123,6 +123,7 @@ reports, built demo SPA) is not in the wheel, so the mount is conditional:
   TAPE_FORECAST_SERVING_DIR=../tape-forecast-demo/data/serving \
   TAPE_FORECAST_REPORTS_DIR=../tape-forecast-demo/reports \
   TAPE_FORECAST_WEB_DIST=../tape-forecast-demo/web/dist \
+  TAPE_FORECAST_LAB_DIR=../tape-forecast-demo/data/lab \
     uv run uvicorn showcase_api.main:app --reload
   ```
 

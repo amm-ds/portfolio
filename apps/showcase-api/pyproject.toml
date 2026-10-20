@@ -28,7 +28,7 @@ showcase-api = "showcase_api.main:app"
 05-ml-pipeline-churn = { workspace = true }
 portfolio-core = { workspace = true }
 portfolio-eval = { workspace = true }
-tape-forecast = { git = "https://github.com/amm-ds/tape-forecast-demo.git", rev = "v0.1.2" }
+tape-forecast = { git = "https://github.com/amm-ds/tape-forecast-demo.git", rev = "v0.2.0" }
 
 [build-system]
 requires = ["hatchling"]

@@ -184,7 +184,7 @@ describe("ProjectsIndex", () => {
     expect(demos).not.toBeNull();
     const demoCards = demos.querySelectorAll(".demo-card");
     expect(demoCards).toHaveLength(4);
-    expect(demoCards[0].textContent).toContain("tape forecast replay");
+    expect(demoCards[0].textContent).toContain("btc orderflow lab");
     expect(demoCards[0].textContent).toContain("live");
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe(
       "/demos/tape-forecast/",
