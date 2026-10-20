@@ -17,10 +17,10 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from portfolio_core.logging import get_logger, setup_logging
-from portfolio_core.manifest import ProjectInfo, load_index
+from portfolio_core.manifest import load_index
 from portfolio_core.story import ProjectStory, load_story
 from pydantic import BaseModel, Field
 from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
@@ -68,8 +68,19 @@ def health() -> dict[str, str]:
 
 
 @app.get("/projects")
-def projects() -> list[ProjectInfo]:
-    return list(load_index(PROJECTS_ROOT))
+def projects(request: Request) -> Response:
+    """Project index JSON — unless a browser navigates here directly (refresh /
+    deep link), in which case serve the SPA and let the client-side router
+    render the projects page. API clients (curl, fetch with an explicit JSON
+    accept) get the payload."""
+    accept = request.headers.get("accept", "")
+    if "text/html" in accept:
+        return (
+            HTMLResponse(_index_html())
+            if WEB_DIST.exists()
+            else JSONResponse({"detail": "web build not found"}, status_code=503)
+        )
+    return JSONResponse([m.model_dump() for m in load_index(PROJECTS_ROOT)])
 
 
 @app.get("/projects/{pid}/metrics")
@@ -533,15 +544,16 @@ if _RAG_CHAT_ENABLED:
         return EventSourceResponse(gen())
 
 
+def _index_html() -> str:
+    """The built SPA shell, read per request: rebuilds replace hashed asset
+    names, so a cached copy at import time would point at deleted files."""
+    return (WEB_DIST / "index.html").read_text()
+
+
 if WEB_DIST.exists():
     from starlette.responses import Response
 
     _WEB_DIST_RESOLVED = WEB_DIST.resolve()
-
-    def _index_html() -> str:
-        # Read per request: rebuilds replace hashed asset names, so a cached
-        # copy at import time would point at deleted files.
-        return (WEB_DIST / "index.html").read_text()
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str) -> Response:
