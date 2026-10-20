@@ -24,6 +24,7 @@ from sklearn.calibration import CalibratedClassifierCV
 from sklearn.model_selection import train_test_split
 
 from churn_pipeline.config import ChurnConfig, pd, threadpool_limits, yaml
+from churn_pipeline.demo_payload import write_demo_payload
 from churn_pipeline.eda import eda_churn_profile_figure
 from churn_pipeline.evaluate import artifact_paths, evaluate_holdout
 from churn_pipeline.hpo import ModelSelection, build_estimator, run_study
@@ -425,6 +426,16 @@ def build_serving(
 ) -> Path:
     """Build the showcase-API serving artifact (loads pickles; no retraining)."""
     return build_serving_artifact(load_config(params_file, n, seed))
+
+
+@app.command("demo-payload")
+def demo_payload(
+    n: OptN = None,
+    seed: OptSeed = None,
+    params_file: OptParams = Path("params.yaml"),
+) -> Path:
+    """Build the churn-sandbox demo payload (loads pickles; no retraining)."""
+    return write_demo_payload(load_config(params_file, n, seed))
 
 
 @app.command("all")
