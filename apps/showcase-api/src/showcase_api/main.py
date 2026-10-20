@@ -550,6 +550,37 @@ def _index_html() -> str:
     return (WEB_DIST / "index.html").read_text()
 
 
+def _mount_tape_forecast() -> None:
+    """Mount the tape-forecast demo (separate repo, installed as a git dep).
+
+    The demo app is self-contained: lookup routes + its own SPA, with payload
+    dirs resolved from TAPE_FORECAST_* env vars — set by the Dockerfile (baked
+    clone of the tagged demo repo) or by a local dev shell pointing at a local
+    clone. When the payload is absent (unit tests, slim checkouts) the mount
+    is skipped and /demos/tape-forecast simply isn't served.
+    """
+    serving_dir = os.environ.get("TAPE_FORECAST_SERVING_DIR")
+    if not serving_dir or not Path(serving_dir).is_dir():
+        logger.info("tape-forecast payload absent - /demos/tape-forecast not mounted")
+        return
+    from tape_forecast.serving.app import create_app as create_tape_app
+
+    app.mount("/demos/tape-forecast", create_tape_app())
+    logger.info("mounted tape-forecast demo at /demos/tape-forecast")
+
+
+@app.get("/demos/tape-forecast", include_in_schema=False)
+def _tape_forecast_redirect() -> Response:
+    """Canonical URL carries the trailing slash: the demo SPA uses relative
+    asset/API paths, which only resolve correctly from the directory URL."""
+    from fastapi.responses import RedirectResponse
+
+    return RedirectResponse("/demos/tape-forecast/")
+
+
+_mount_tape_forecast()
+
+
 if WEB_DIST.exists():
     from starlette.responses import Response
 

@@ -187,7 +187,7 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].textContent).toContain("tape forecast replay");
     expect(demoCards[0].textContent).toContain("live");
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe(
-      "https://github.com/amm-ds/tape-forecast-demo",
+      "/demos/tape-forecast/",
     );
     demoCards.forEach((c) => expect(c.textContent).toMatch(/live|coming soon/));
     expect(demos.textContent).toContain("RAG ask-a-question");

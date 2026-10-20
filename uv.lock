@@ -5954,6 +5954,7 @@ dependencies = [
     { name = "portfolio-eval" },
     { name = "pydantic" },
     { name = "sse-starlette" },
+    { name = "tape-forecast" },
     { name = "uvicorn" },
 ]
 
@@ -5967,6 +5968,7 @@ requires-dist = [
     { name = "portfolio-eval", editable = "libs/portfolio-eval" },
     { name = "pydantic", specifier = ">=2.9" },
     { name = "sse-starlette", specifier = ">=2.1" },
+    { name = "tape-forecast", git = "https://github.com/amm-ds/tape-forecast-demo.git?rev=v0.1.2" },
     { name = "uvicorn", specifier = ">=0.30" },
 ]
 
@@ -6294,6 +6296,27 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/46/58/8c37dea7bbf769b20d58e7ace7e5edfe65b849442b00ffcdd56be88697c6/tabulate-0.10.0.tar.gz", hash = "sha256:e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d", size = 91754 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/99/55/db07de81b5c630da5cbf5c7df646580ca26dfaefa593667fc6f2fe016d2e/tabulate-0.10.0-py3-none-any.whl", hash = "sha256:f0b0622e567335c8fabaaa659f1b33bcb6ddfe2e496071b743aa113f8774f2d3", size = 39814 },
+]
+
+[[package]]
+name = "tape-forecast"
+version = "0.1.0"
+source = { git = "https://github.com/amm-ds/tape-forecast-demo.git?rev=v0.1.2#1d566ec3e0ef4e228923f33ef5c07822015bbc0a" }
+dependencies = [
+    { name = "fastapi" },
+    { name = "joblib" },
+    { name = "kaleido" },
+    { name = "lightgbm" },
+    { name = "numpy" },
+    { name = "optuna" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "polars" },
+    { name = "pydantic" },
+    { name = "rich" },
+    { name = "scikit-learn" },
+    { name = "typer" },
+    { name = "uvicorn" },
 ]
 
 [[package]]
