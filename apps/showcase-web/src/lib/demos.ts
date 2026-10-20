@@ -14,8 +14,8 @@ export interface Demo {
 export const DEMOS: Demo[] = [
   {
     id: "tape-forecast",
-    title: "tape forecast replay",
-    line: "Scrub a real 4h crypto tape and watch models forecast the next seconds — persistence wins on MAE, and the page shows exactly why.",
+    title: "btc orderflow lab",
+    line: "Replay a $3.5B liquidation flush on the BTC tape — volume candles, CVD, volume profile — and see ML beat GARCH at volatility forecasting, with honest numbers where it doesn't.",
     status: "live",
     href: "/demos/tape-forecast/",
   },

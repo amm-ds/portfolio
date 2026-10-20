@@ -26,7 +26,7 @@ RUN npm run build
 FROM node:22-alpine AS tape-demo
 WORKDIR /tape
 RUN apk add --no-cache git \
-    && git clone --depth 1 --branch v0.1.2 https://github.com/amm-ds/tape-forecast-demo.git .
+    && git clone --depth 1 --branch v0.2.0 https://github.com/amm-ds/tape-forecast-demo.git .
 WORKDIR /tape/web
 RUN npm ci --no-audit --no-fund && npm run build
 
@@ -60,7 +60,8 @@ COPY --from=tape-demo /tape/reports /opt/tape-forecast/reports
 COPY --from=tape-demo /tape/web/dist /opt/tape-forecast/web/dist
 ENV TAPE_FORECAST_SERVING_DIR=/opt/tape-forecast/data/serving \
     TAPE_FORECAST_REPORTS_DIR=/opt/tape-forecast/reports \
-    TAPE_FORECAST_WEB_DIST=/opt/tape-forecast/web/dist
+    TAPE_FORECAST_WEB_DIST=/opt/tape-forecast/web/dist \
+    TAPE_FORECAST_LAB_DIR=/opt/tape-forecast/data/lab
 
 # Non-root runtime user
 RUN useradd --system --create-home app && chown -R app /app
