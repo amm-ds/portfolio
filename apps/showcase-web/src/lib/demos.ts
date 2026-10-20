@@ -13,6 +13,13 @@ export interface Demo {
 
 export const DEMOS: Demo[] = [
   {
+    id: "churn-sandbox",
+    title: "churn threshold sandbox",
+    line: "Move the alarm threshold and the false-alarm cost — watch the optimal cutoff and the saved budget change on a real churn model.",
+    status: "live",
+    href: "/demos/churn-sandbox",
+  },
+  {
     id: "tape-forecast",
     title: "btc orderflow lab",
     line: "Replay a $3.5B liquidation flush on the BTC tape — volume candles, CVD, volume profile — and see ML beat GARCH at volatility forecasting, with honest numbers where it doesn't.",
@@ -26,12 +33,6 @@ export const DEMOS: Demo[] = [
     status: "coming soon",
   },
   {
-    id: "churn-threshold",
-    title: "churn threshold sandbox",
-    line: "Move the campaign cutoff and see cost per retained customer update live.",
-    status: "coming soon",
-  },
-  {
     id: "uplift-policy",
     title: "uplift policy simulator",
     line: "Compare targeting policies against mail-everyone on the Hillstrom outcome data.",
@@ -40,3 +41,9 @@ export const DEMOS: Demo[] = [
 ];
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";
+
+/** Project id → live demo route, for the "try the live demo" link on a
+ *  project detail page. Add an entry here when a demo goes live. */
+export const DEMO_LINKS: Record<string, string> = {
+  "05-ml-pipeline-churn": "/demos/churn-sandbox",
+};

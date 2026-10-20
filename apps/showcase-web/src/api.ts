@@ -28,7 +28,7 @@ export class ApiError extends Error {
     public readonly path: string,
     public readonly status: number,
   ) {
-    super(`GET ${path} failed with ${status}`);
+    super(`request to ${path} failed with ${status}`);
     this.name = "ApiError";
   }
 }
@@ -87,4 +87,37 @@ export function getFigures(projectId: string): Promise<string[]> {
 
 export function figureUrl(projectId: string, name: string): string {
   return `/projects/${projectId}/figures/${name}`;
+}
+
+// --- Interactive demos ---------------------------------------------------------
+
+/** Precomputed lookup data for an interactive demo (`/demos/{demo_id}/payload`). */
+export function getDemoPayload<T>(demoId: string): Promise<T> {
+  return getJson<T>(`/demos/${demoId}/payload`);
+}
+
+export interface ChurnScoreResult {
+  churn_probability: number;
+  decision: {
+    alarm: boolean;
+    threshold: number;
+    expected_cost_note: string;
+  };
+}
+
+/** Live scoring for the churn demo; 503 means serving artifacts are not built. */
+export async function scoreChurn(
+  projectId: string,
+  features: Record<string, number | string>,
+): Promise<ChurnScoreResult> {
+  const path = `/projects/${projectId}/score`;
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ features }),
+  });
+  if (!res.ok) {
+    throw new ApiError(path, res.status);
+  }
+  return (await res.json()) as ChurnScoreResult;
 }

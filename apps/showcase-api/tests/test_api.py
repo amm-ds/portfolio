@@ -116,6 +116,26 @@ def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[n
     assert r.status_code == 200 and "report" in r.text
 
 
+def test_demo_payload_route(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    pid = main.DEMO_PAYLOADS["churn-sandbox"]
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 404  # payload not built yet
+
+    reports = tmp_path / pid / "reports"
+    reports.mkdir(parents=True)
+    payload = {"demo": "churn-threshold-sandbox", "thresholds": [0.1]}
+    (reports / "demo_payload.json").write_text(json.dumps(payload))
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 200
+    assert r.json() == payload
+
+    assert client.get("/demos/nope/payload").status_code == 404
+
+
 def test_forecast_503_without_artifacts(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from showcase_api import main
 

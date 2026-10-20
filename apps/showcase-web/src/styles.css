@@ -1641,3 +1641,361 @@ button:disabled {
 .demo-card .demo-link:hover {
   text-decoration: underline;
 }
+
+.chip-link.demo-cta {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* --- Interactive demos (DemoShell + churn sandbox) --- */
+
+.demo-shell {
+  max-width: 900px;
+}
+
+.demo-topbar {
+  margin-bottom: 1rem;
+}
+
+.demo-back {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.demo-back:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.demo-header {
+  margin-bottom: 1.5rem;
+}
+
+.demo-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.7rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+.demo-hook {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.demo-experiment-strip {
+  display: inline-block;
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.demo-experiment-strip a {
+  color: var(--accent);
+}
+
+.demo-footer {
+  margin-top: 2rem;
+}
+
+.demo-footer .figure-card-band {
+  border-top: none;
+}
+
+.demo-footer-line {
+  margin: 0.15rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.demo-footer-line:first-child {
+  margin-top: 0;
+  color: var(--text);
+}
+
+/* controls row */
+
+.demo-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  align-items: flex-end;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.demo-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.demo-control label,
+.demo-control-label {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--secondary);
+}
+
+.demo-control input[type="range"] {
+  width: 260px;
+  accent-color: var(--accent);
+}
+
+.demo-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+button.chip.demo-preset {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--secondary);
+  font-weight: 400;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button.chip.demo-preset:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* readout chips + charts */
+
+.demo-readouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem 0;
+}
+
+.demo-readout.good {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.demo-readout.bad {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.demo-chart {
+  padding: 0.5rem 0.5rem 0.75rem;
+}
+
+.demo-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.demo-axis-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.demo-star {
+  font-size: 16px;
+  fill: var(--accent);
+}
+
+.demo-hint {
+  margin: 0.5rem 1rem 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* stacked outcome bar */
+
+.demo-stack-bar {
+  display: flex;
+  height: 26px;
+  margin: 0.75rem 1rem 0.5rem;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.demo-stack-bar span {
+  display: block;
+  height: 100%;
+}
+
+.demo-outcome-legend {
+  list-style: none;
+  margin: 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+}
+
+.demo-outcome-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.demo-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* contract slices */
+
+.demo-slice-list {
+  list-style: none;
+  margin: 0.75rem 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.demo-slice-list li {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 90px;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.demo-slice-label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--secondary);
+}
+
+.demo-slice-bar {
+  height: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.demo-slice-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  opacity: 0.8;
+}
+
+.demo-slice-count {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* two-column demo panels */
+
+@media (min-width: 800px) {
+  .demo-two-col {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+
+/* scorer form */
+
+.demo-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 1rem 0.5rem;
+}
+
+.demo-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--secondary);
+}
+
+.demo-form input,
+.demo-form select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.55rem;
+}
+
+.demo-form button {
+  align-self: end;
+}
+
+.demo-score-result {
+  margin: 0.75rem 1rem 0;
+}
+
+.demo-prob-bar {
+  height: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.demo-prob-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.demo-prob-line {
+  margin: 0.4rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.demo-alarm {
+  margin: 0.25rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.demo-alarm.alarm {
+  color: var(--accent);
+}
+
+.demo-alarm.calm {
+  color: var(--muted);
+}
+
+.demo-score-note {
+  margin: 0.75rem 1rem 0;
+  font-size: 0.85rem;
+}

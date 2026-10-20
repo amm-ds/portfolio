@@ -8,6 +8,7 @@ import {
   type Metrics,
   type ProjectStoryData,
 } from "../api";
+import { DEMO_LINKS } from "../lib/demos";
 import { CaseStudy } from "../components/CaseStudy";
 import { FigureFrame } from "../components/FigureFrame";
 import { MetricsTable } from "../components/MetricsTable";
@@ -123,6 +124,11 @@ export function ProjectDetail() {
             ))}
           </div>
           <div className="meta-links">
+            {DEMO_LINKS[id] && (
+              <Link className="chip-link demo-cta" to={DEMO_LINKS[id]}>
+                ▶ try the live demo
+              </Link>
+            )}
             <a
               className="chip-link"
               href={`https://github.com/amm-ds/portfolio/tree/main/projects/${id}`}
