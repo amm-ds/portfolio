@@ -125,6 +125,32 @@ def figure(pid: str, name: str) -> str:
     return f.read_text()
 
 
+# --- Interactive demos ( Wave 1: churn threshold sandbox, project 05 ) -------
+# Each demo serves a compact precomputed payload (built by its project's
+# pipeline) plus the live POST endpoints under /projects/<pid>/. The UI lives
+# in showcase-web at /demos/<id>.
+
+DEMO_PAYLOADS = {
+    "churn-sandbox": "05-ml-pipeline-churn",
+}
+
+
+@app.get("/demos/{demo_id}/payload")
+def demo_payload(demo_id: str) -> dict[str, Any]:
+    """Precomputed lookup data for an interactive demo (see DEMO_PAYLOADS)."""
+    pid = DEMO_PAYLOADS.get(demo_id)
+    if pid is None:
+        raise HTTPException(status_code=404, detail=f"unknown demo: {demo_id}")
+    f = PROJECTS_ROOT / pid / "reports" / "demo_payload.json"
+    if not f.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"demo payload not built for {pid} — run its demo-payload stage",
+        )
+    data: dict[str, Any] = json.loads(f.read_text())
+    return data
+
+
 @app.get("/projects/{pid}/report", response_class=HTMLResponse)
 def report(pid: str) -> str:
     """The project's full evaluation report (reports/report.html)."""

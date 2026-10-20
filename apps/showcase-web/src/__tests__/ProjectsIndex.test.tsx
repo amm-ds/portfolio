@@ -170,7 +170,7 @@ describe("ProjectsIndex", () => {
     expect(stylesCss).toContain(".topic-row {");
   });
 
-  it("renders a demos block above the topic rows with the live tape demo first", async () => {
+  it("renders a demos block above the topic rows with the churn sandbox first", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
     render(
       <MemoryRouter>
@@ -184,12 +184,13 @@ describe("ProjectsIndex", () => {
     expect(demos).not.toBeNull();
     const demoCards = demos.querySelectorAll(".demo-card");
     expect(demoCards).toHaveLength(4);
-    expect(demoCards[0].textContent).toContain("btc orderflow lab");
+    expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].textContent).toContain("live");
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe(
-      "/demos/tape-forecast/",
+      "/demos/churn-sandbox",
     );
     demoCards.forEach((c) => expect(c.textContent).toMatch(/live|coming soon/));
+    expect(demos.textContent).toContain("btc orderflow lab");
     expect(demos.textContent).toContain("RAG ask-a-question");
     expect(demos.textContent).toContain("churn threshold sandbox");
     expect(demos.textContent).toContain("uplift policy simulator");

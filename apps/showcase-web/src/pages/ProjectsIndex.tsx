@@ -87,7 +87,7 @@ export function groupByRow(projects: Project[]): TopicRow[] {
 /** Placeholder demos rendered above the topic rows; real demos drop in via lib/demos.ts. */
 function DemosSection() {
   return (
-    <section className="demos" aria-label="Demos">
+    <section className="demos" id="demos" aria-label="Demos">
       <h2 className="section-title">Demos — interactive experiments</h2>
       <p className="section-intro">{DEMOS_INTRO}</p>
       <div className="demo-grid">
