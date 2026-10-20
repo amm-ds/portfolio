@@ -92,10 +92,15 @@ function DemosSection() {
       <p className="section-intro">{DEMOS_INTRO}</p>
       <div className="demo-grid">
         {DEMOS.map((d) => (
-          <div key={d.id} className="demo-card" aria-label={`${d.title} (coming soon)`}>
+          <div key={d.id} className="demo-card" aria-label={`${d.title} (${d.status})`}>
             <h3>{d.title}</h3>
             <p>{d.line}</p>
             <span className="chip demo-status">{d.status}</span>
+            {d.href ? (
+              <a className="demo-link" href={d.href}>
+                open demo →
+              </a>
+            ) : null}
           </div>
         ))}
       </div>

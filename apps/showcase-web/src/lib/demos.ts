@@ -13,6 +13,13 @@ export interface Demo {
 
 export const DEMOS: Demo[] = [
   {
+    id: "tape-forecast",
+    title: "tape forecast replay",
+    line: "Scrub a real 4h crypto tape and watch models forecast the next seconds — persistence wins on MAE, and the page shows exactly why.",
+    status: "live",
+    href: "https://github.com/amm-ds/tape-forecast-demo",
+  },
+  {
     id: "rag-ask",
     title: "RAG ask-a-question",
     line: "Query the retrieval corpus and watch the agent verify claims against sources.",
