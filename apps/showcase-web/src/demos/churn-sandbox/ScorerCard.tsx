@@ -17,13 +17,11 @@ type ScoreState =
  */
 export function ScorerCard({
   payload,
-  cursorT,
   form,
   setForm,
   onScore,
 }: {
   payload: ChurnPayload;
-  cursorT: number;
   form: Record<string, number | string>;
   setForm: (f: Record<string, number | string>) => void;
   onScore: (probability: number) => void;
@@ -48,17 +46,6 @@ export function ScorerCard({
         }
       });
   };
-
-  const alarm = score.status === "ok" && score.probability >= cursorT;
-  const nearestPreset =
-    score.status === "ok"
-      ? payload.customers.reduce((best, c) =>
-          Math.abs(c.churn_probability - score.probability) <
-          Math.abs(best.churn_probability - score.probability)
-            ? c
-            : best,
-        )
-      : null;
 
   return (
     <div className="demo-control wb-scorer">
@@ -116,25 +103,6 @@ export function ScorerCard({
           </select>
         </label>
         <div className="wb-scorer-foot">
-          {score.status === "ok" && (
-            <div className="demo-score-result">
-              <div className="demo-prob-bar">
-                <span style={{ width: `${score.probability * 100}%` }} />
-              </div>
-              <p className="demo-prob-line">Churn probability {(score.probability * 100).toFixed(1)}%</p>
-              <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
-                {alarm
-                  ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
-                  : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
-              </p>
-              {nearestPreset && (
-                <p className="demo-hint">
-                  Closest preset band: {nearestPreset.label} (p ={" "}
-                  {nearestPreset.churn_probability.toFixed(2)})
-                </p>
-              )}
-            </div>
-          )}
           <button type="submit" form="wb-scorer-form" disabled={score.status === "loading"}>
             {score.status === "loading" ? "scoring…" : "score live"}
           </button>

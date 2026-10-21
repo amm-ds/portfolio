@@ -173,11 +173,12 @@ describe("DemoWorkbench", () => {
     expect(under.compareDocumentPosition(band) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("gives the evidence drawer an internal-scroll body", () => {
+  it("renders more information under the header with the two-column body", () => {
     renderWorkbench();
-    const drawer = document.querySelector(".wb-evidence")!;
-    expect(drawer).not.toBeNull();
-    const body = drawer.querySelector(".wb-evidence-body")!;
-    expect(body.classList.contains("wb-internal-scroll")).toBe(true);
+    const more = document.querySelector(".wb-more")!;
+    expect(more).not.toBeNull();
+    expect(more.querySelector("summary")!.textContent).toContain("more information");
+    expect(more.querySelectorAll(".wb-evidence-col")).toHaveLength(2);
+    expect(more.querySelector(".wb-evidence-cols")).not.toBeNull();
   });
 });

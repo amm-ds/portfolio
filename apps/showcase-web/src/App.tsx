@@ -12,7 +12,9 @@ import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 
 export function App() {
   const location = useLocation();
-  const fluid = location.pathname.startsWith("/demos/");
+  const isDemo = location.pathname.startsWith("/demos/");
+  // demo dashboards and project detail case studies both get the fluid layout
+  const fluid = isDemo || /^\/projects\/[^/]+/.test(location.pathname);
   return (
     <>
       <Nav />
@@ -36,7 +38,7 @@ export function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {!fluid && <Footer />}
+      {!isDemo && <Footer />}
     </>
   );
 }

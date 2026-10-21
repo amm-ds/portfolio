@@ -382,21 +382,21 @@ describe("ChurnSandbox", () => {
     // preset chip fills the form; score live calls the serving endpoint
     fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
     fireEvent.click(screen.getByRole("button", { name: "score live" }));
-    await waitFor(() => expect(screen.getByText("Churn probability 64.0%")).toBeInTheDocument());
+    // the result renders in the full-width strip below the main row, outside
+    // the scorer box (the preset chip remounts the card via key={presetKey})
+    await waitFor(() => {
+      const strip = document.querySelector(".wb-score-result")!;
+      expect(strip).not.toBeNull();
+      expect(strip.textContent).toContain("64.0%");
+      expect(strip.textContent).toContain("Alarm at t = 0.30 — this customer gets contacted");
+      expect(strip.textContent).toContain("Closest preset band: at-risk fiber customer");
+    });
+    const scorerBox = document.querySelector(".wb-scorer")!;
+    expect(scorerBox.querySelector(".demo-score-result")).toBeNull();
+    const mainRow = document.querySelector(".wb-main")!;
+    const strip = document.querySelector(".wb-score-result")!;
     expect(
-      screen.getByText("Alarm at t = 0.30 — this customer gets contacted"),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Closest preset band: at-risk fiber customer/)).toBeInTheDocument();
-    // the result block renders in the foot row, at the bottom, after the fields
-    // (re-query: the preset chip remounts the card via key={presetKey})
-    const scored = document.querySelector(".wb-scorer")!;
-    const result = scored.querySelector(".demo-score-result")!;
-    expect(result).not.toBeNull();
-    const scoredFoot = scored.querySelector(".wb-scorer-foot")!;
-    expect(scoredFoot).toContain(result);
-    const firstField = scored.querySelector("label")!;
-    expect(
-      result.compareDocumentPosition(firstField) & Node.DOCUMENT_POSITION_PRECEDING,
+      mainRow.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
@@ -498,28 +498,27 @@ describe("ChurnSandbox", () => {
     expect(Number(cursorX())).toBeCloseTo(543.5, 5);
   });
 
-  it("moves the calibration scatter into the evidence drawer, out of the band", async () => {
+  it("keeps the calibration chart out of the demo (results use metric tags)", async () => {
     mockFetch(payloadFetch());
     renderDemo();
     await screen.findByText("cost at t: 335");
     const band = document.querySelector(".wb-secondary")!;
     expect(band.querySelector('svg[aria-label="calibration scatter"]')).toBeNull();
-    const drawer = document.querySelector(".wb-evidence")!;
-    expect(drawer.querySelector('svg[aria-label="calibration scatter"]')).not.toBeNull();
-    expect(drawer.textContent).toContain("Calibration — static model-quality reference");
-    expect(drawer.textContent).toContain("ece 0.0200");
+    const more = document.querySelector(".wb-more")!;
+    expect(more.querySelector('svg[aria-label="calibration scatter"]')).toBeNull();
+    expect(more.querySelectorAll(".wb-tag").length).toBeGreaterThanOrEqual(3);
     // evidence content is organized in two labeled columns: models used left,
     // metrics results right; the linked experiment sits on top, full width
-    const cols = drawer.querySelectorAll(".wb-evidence-col");
+    const cols = more.querySelectorAll(".wb-evidence-col");
     expect(cols).toHaveLength(2);
     expect(cols[0].textContent).toContain("interpretation");
     expect(cols[1].textContent).toContain("models used");
     expect(cols[1].textContent).toContain("metrics results");
     expect(cols[1].textContent).toContain("$335");
-    expect(drawer.querySelector(".wb-evidence-linked")!.textContent).toContain(
+    expect(more.querySelector(".wb-evidence-linked")!.textContent).toContain(
       "05-ml-pipeline-churn",
     );
-    expect(drawer.textContent).toContain("more information");
+    expect(more.textContent).toContain("more information");
   });
 });
 
