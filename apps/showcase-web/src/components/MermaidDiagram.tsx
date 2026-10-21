@@ -2,6 +2,24 @@ import { useEffect, useRef, useState } from "react";
 
 let initialized = false;
 let diagramCounter = 0;
+// mermaid.render mutates shared temp DOM internally and is not safely
+// reentrant: concurrent renders (multiple diagrams on one page) throw
+// intermittently in Safari. Serialize every render through this queue.
+let renderQueue: Promise<unknown> = Promise.resolve();
+
+function renderQueued(id: string, code: string): Promise<{ svg: string }> {
+  const run = async (): Promise<{ svg: string }> => {
+    const mermaid = (await import("mermaid")).default;
+    if (!initialized) {
+      mermaid.initialize(MERMAID_THEME);
+      initialized = true;
+    }
+    return mermaid.render(id, code);
+  };
+  const result = renderQueue.then(run, run);
+  renderQueue = result.catch(() => undefined);
+  return result;
+}
 
 const MERMAID_THEME = {
   startOnLoad: false,
@@ -55,19 +73,20 @@ export function MermaidDiagram({ code }: { code: string }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      try {
-        const mermaid = (await import("mermaid")).default;
-        if (!initialized) {
-          mermaid.initialize(MERMAID_THEME);
-          initialized = true;
+      // one retry before falling back: transient failures (observer timing,
+      // chunk still warming) should not dump raw source on the page
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const { svg } = await renderQueued(`mmd-${diagramCounter++}`, code);
+          if (cancelled || !hostRef.current) return;
+          hostRef.current.innerHTML = svg;
+          setReady(true);
+          return;
+        } catch {
+          if (cancelled) return;
         }
-        const { svg } = await mermaid.render(`mmd-${diagramCounter++}`, code);
-        if (cancelled || !hostRef.current) return;
-        hostRef.current.innerHTML = svg;
-        setReady(true);
-      } catch {
-        if (!cancelled) setFailed(true);
       }
+      if (!cancelled) setFailed(true);
     })();
     return () => {
       cancelled = true;

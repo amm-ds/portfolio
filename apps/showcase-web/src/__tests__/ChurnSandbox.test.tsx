@@ -393,10 +393,12 @@ describe("ChurnSandbox", () => {
     });
     const scorerBox = document.querySelector(".wb-scorer")!;
     expect(scorerBox.querySelector(".demo-score-result")).toBeNull();
-    const mainRow = document.querySelector(".wb-main")!;
-    const strip = document.querySelector(".wb-score-result")!;
+    // the result lives in the controls rail, below the scorer box
+    const rail = document.querySelector(".wb-controls")!;
+    const strip = rail.querySelector(".wb-score-result")!;
+    expect(strip).not.toBeNull();
     expect(
-      mainRow.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
+      scorerBox.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
