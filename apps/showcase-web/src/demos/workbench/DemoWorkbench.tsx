@@ -41,10 +41,10 @@ function EvidenceDrawer({
 }) {
   return (
     <details className="wb-evidence">
-      <summary>evidence & provenance</summary>
+      <summary>Evidence & provenance</summary>
       <div className="wb-evidence-body wb-internal-scroll">
         <p className="wb-evidence-line">
-          linked experiment → <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
+          Linked experiment → <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
         </p>
         {manifest.skills.length > 0 && (
           <div className="wb-skills">
@@ -97,9 +97,10 @@ function EvidenceDrawer({
  * );
  * ```
  *
- * The root is a fixed-height (100dvh) grid: opening the evidence drawer
- * steals space from the `minmax(0, 1fr)` chart row instead of growing the
- * page, so the workbench never scrolls at desktop widths.
+ * The root sizes to content (`height: auto`, `min-height: 100dvh`-ish): rows
+ * hold their natural height and the page scrolls when the workbench exceeds
+ * the viewport, so panels can be given real dimensions instead of shrinking
+ * to fit a fixed screen.
  */
 export function DemoWorkbench({
   manifest,

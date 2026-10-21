@@ -5,7 +5,7 @@ import { MiniBars } from "../charts/MiniBars";
 import { SegmentLegend, StackedHBar, type HBarSegment } from "../charts/StackedHBar";
 import type { ChurnPayload, ConfusionRow, DemoManifest } from "../types";
 import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
-import { contactCount, costAt, nearestIndex, noticeText, recallAt, savings } from "./kpis";
+import { contactCount, costAt, nearestIndex, noticeText, optimalityText, recallAt, savings } from "./kpis";
 import { CostCompositionPanel } from "./CostCompositionPanel";
 import { fetchChurnPayload, fetchManifest } from "./payload";
 import { ScorerCard } from "./ScorerCard";
@@ -52,20 +52,11 @@ const FALLBACK_MANIFEST: DemoManifest = {
 };
 
 /** Card with the shared figure-card chrome (chart region + commentary band). */
-function Figure({
-  id,
-  comment,
-  children,
-}: {
-  id: string;
-  comment: ReactNode;
-  children: ReactNode;
-}) {
+function Figure({ comment, children }: { comment: ReactNode; children: ReactNode }) {
   return (
     <div className="figure-card">
       <div className="demo-chart">{children}</div>
       <footer className="figure-card-band">
-        <span className="figure-id">fig :: churn-sandbox/{id}</span>
         <p className="figure-comment">{comment}</p>
       </footer>
     </div>
@@ -113,7 +104,6 @@ function CostCurvePanel({
 
   return (
     <Figure
-      id="cost-curve"
       comment={
         <>
           Cost = FP + N×FN on the untouched holdout; drag the cursor and the curve refits
@@ -157,7 +147,6 @@ function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number 
   ];
   return (
     <Figure
-      id="outcomes"
       comment={
         <>
           The pink slice is churners the campaign misses at the cursor; every amber contact
@@ -183,7 +172,6 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
   });
   return (
     <Figure
-      id="contract-slices"
       comment={
         <>
           Alarm burden by contract at the cursor — most of it lands on month-to-month
@@ -276,48 +264,60 @@ function ChurnSandboxWorkbench({
       state={state}
       controls={
         <>
-          <div className="demo-control">
-            <label htmlFor="fn-ratio">missed churner = {fnRatio}× a false alarm</label>
-            <input
-              id="fn-ratio"
-              type="range"
-              min={1}
-              max={10}
-              step={1}
-              value={fnRatio}
-              onChange={(e) => setControl("fn_ratio", Number(e.target.value))}
-            />
+          <div className="wb-control-group wb-group-slider">
+            <label className="wb-rail-title" htmlFor="fn-ratio">
+              Churn ratio
+            </label>
+            <div className="demo-control">
+              <div className="wb-slider-row">
+                <input
+                  id="fn-ratio"
+                  type="range"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={fnRatio}
+                  onChange={(e) => setControl("fn_ratio", Number(e.target.value))}
+                />
+                <span className="chip wb-value-badge">{fnRatio}×</span>
+              </div>
+            </div>
           </div>
-          <div className="demo-control">
-            <span className="demo-control-label">preset customers</span>
-            <div className="demo-presets">
-              {payload.customers.map((c) => (
-                <button
-                  key={c.label}
-                  type="button"
-                  className="chip demo-preset"
-                  onClick={() => {
-                    setForm({ ...c.features });
-                    setPresetKey((k) => k + 1);
-                    setCustomer({ label: shortLabel(c.label), probability: c.churn_probability });
-                  }}
-                >
-                  {c.label}
-                </button>
-              ))}
+          <div className="wb-control-group wb-group-presets">
+            <span className="wb-rail-title">Preset customers</span>
+            <div className="demo-control">
+              <div className="demo-presets">
+                {payload.customers.map((c) => (
+                  <button
+                    key={c.label}
+                    type="button"
+                    className="chip demo-preset"
+                    onClick={() => {
+                      setForm({ ...c.features });
+                      setPresetKey((k) => k + 1);
+                      setCustomer({ label: shortLabel(c.label), probability: c.churn_probability });
+                    }}
+                  >
+                    {c.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           {form !== null && (
-            <ScorerCard
-              key={presetKey}
-              payload={payload}
-              cursorT={cursorT}
-              form={form}
-              setForm={setForm}
-              onScore={(probability) =>
-                setCustomer({ label: nearestPresetLabel(probability), probability })
-              }
-            />
+            <div className="wb-control-group wb-group-scorer">
+              <span className="wb-rail-title">Score a customer</span>
+              <ScorerCard
+                key={presetKey}
+                payload={payload}
+                cursorT={cursorT}
+                form={form}
+                setForm={setForm}
+                onScore={(probability) =>
+                  setCustomer({ label: nearestPresetLabel(probability), probability })
+                }
+              />
+            </div>
           )}
         </>
       }
@@ -355,7 +355,12 @@ function ChurnSandboxWorkbench({
           />
         </>
       }
-      notice={<Notice>{noticeText(cursorRow, laxerRow, fnRatio)}</Notice>}
+      notice={
+        <>
+          <Notice>{noticeText(cursorRow, laxerRow, fnRatio)}</Notice>
+          <Notice>{optimalityText(payload.overall, cursorIdx, fnRatio)}</Notice>
+        </>
+      }
       secondary={
         <>
           <div className="wb-secondary-panel">
@@ -381,7 +386,7 @@ function ChurnSandboxWorkbench({
         <>
           <div className="wb-evidence-fig">
             <p className="wb-evidence-line">
-              static model-quality reference — isotonic-calibrated, ECE{" "}
+              Static model-quality reference — isotonic-calibrated, ECE{" "}
               {payload.model.ece.toFixed(4)}
             </p>
             <div className="wb-evidence-calibration">
@@ -397,12 +402,14 @@ function ChurnSandboxWorkbench({
           </div>
           <div className="wb-evidence-notes demo-footer">
             <p className="wb-evidence-line demo-footer-line">
-              {`model: ${payload.model.name} · holdout n = ${payload.holdout_n} · roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)}`}
+              {`Model: ${payload.model.name} · holdout n = ${payload.holdout_n} · roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)}`}
             </p>
             <p className="wb-evidence-line">
-              {`committed bootstrap CI on cost savings: ${Math.round(delta_ci.point)} [${Math.round(delta_ci.lo)}, ${Math.round(delta_ci.hi)}] per ${payload.holdout_n} customers (95% significant: ${delta_ci.significant_95 ? "yes" : "no"})`}
+              {`Committed bootstrap CI on cost savings: ${Math.round(delta_ci.point)} [${Math.round(delta_ci.lo)}, ${Math.round(delta_ci.hi)}] per ${payload.holdout_n} customers (95% significant: ${delta_ci.significant_95 ? "yes" : "no"})`}
             </p>
-            <p className="wb-evidence-line">{payload.cost_model.note}</p>
+            <p className="wb-evidence-line">
+              {payload.cost_model.note.charAt(0).toUpperCase() + payload.cost_model.note.slice(1)}
+            </p>
           </div>
         </>
       }

@@ -217,10 +217,83 @@ describe("ChurnSandbox", () => {
     renderDemo();
     await waitFor(() => expect(screen.getByText("cost at t: 335")).toBeInTheDocument());
     // fn_ratio 5 → 1: cost = fp + fn; at t = 0.3 → 210 + 25 = 235 vs 0.5 → 140 + 45 = 185
-    fireEvent.change(screen.getByLabelText(/missed churner =/), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText(/churn ratio/i), { target: { value: "1" } });
     expect(screen.getByText("cost at t: 235")).toBeInTheDocument();
     expect(screen.getByText("cost at 0.5: 185")).toBeInTheDocument();
     expect(screen.getByText("costs 50 vs 0.5")).toBeInTheDocument();
+  });
+
+  it("renders two capitalized notice tiles that both react to the FN slider", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("cost at t: 335");
+    const strip = document.querySelector(".wb-notice-strip")!;
+    expect(strip).not.toBeNull();
+    const tiles = strip.querySelectorAll(".wb-notice");
+    expect(tiles).toHaveLength(2);
+    // cursor starts at the committed threshold t = 0.3, which is cost-optimal
+    // at fn = 5 in the fixture
+    expect(tiles[0].textContent).toContain(
+      "At 5× a miss, catching one more churner here costs ~7 extra false alarms",
+    );
+    expect(tiles[1].textContent).toContain("This is the cheapest cutoff for a 5× miss cost");
+    for (const tile of Array.from(tiles)) {
+      expect(tile.textContent!.replace("▸", "").trim()[0]).toMatch(/[A-Z]/);
+    }
+    // fn 5 → 1 moves the optimum to t = 0.9 and rewrites both tiles
+    fireEvent.change(screen.getByLabelText(/churn ratio/i), { target: { value: "1" } });
+    const after = strip.querySelectorAll(".wb-notice");
+    expect(after[0].textContent).toContain(
+      "At 1× a miss, catching one more churner here costs ~7 extra false alarms",
+    );
+    expect(after[1].textContent).toContain(
+      "The cheapest cutoff at 1× is t = 0.90 — above your cursor by 0.60",
+    );
+    for (const tile of Array.from(after)) {
+      expect(tile.textContent!.replace("▸", "").trim()[0]).toMatch(/[A-Z]/);
+    }
+  });
+
+  it("keeps control group labels outside the input boxes, ahead of them in the DOM", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("cost at t: 335");
+    const groups = document.querySelectorAll(".wb-control-group");
+    expect(groups).toHaveLength(3);
+    const labelTexts: string[] = [];
+    for (const group of Array.from(groups)) {
+      const label = group.querySelector(".wb-rail-title");
+      const box = group.querySelector(".demo-control");
+      expect(label).not.toBeNull();
+      expect(box).not.toBeNull();
+      // label element precedes the input box in the DOM
+      expect(
+        label!.compareDocumentPosition(box!) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      labelTexts.push(label!.textContent!);
+    }
+    expect(labelTexts).toEqual(["Churn ratio", "Preset customers", "Score a customer"]);
+    for (const text of labelTexts) {
+      expect(text[0]).toMatch(/[A-Z]/);
+    }
+    // the slider box holds the range input plus the live multiplier badge
+    const sliderBox = document.querySelector(".wb-group-slider .demo-control")!;
+    expect(sliderBox.querySelector('input[type="range"]')).not.toBeNull();
+    expect(sliderBox.querySelector(".wb-value-badge")!.textContent).toBe("5×");
+  });
+
+  it("renders the canvas chart footer with full commentary and no fig id or clamp", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("cost at t: 335");
+    const band = document.querySelector(".wb-canvas-slot footer.figure-card-band")!;
+    expect(band).not.toBeNull();
+    expect(band.querySelector(".figure-id")).toBeNull();
+    const comment = band.querySelector(".figure-comment")!;
+    expect(comment.className).not.toContain("line-clamp");
+    // the full two-sentence commentary renders untrimmed
+    expect(comment.textContent).toContain("Cost = FP + N×FN on the untouched holdout");
+    expect(comment.textContent).toContain("the star marks the threshold the pipeline committed to");
   });
 
   it("moves the threshold via pointer events and updates the outcome counts", async () => {
@@ -260,11 +333,11 @@ describe("ChurnSandbox", () => {
     // preset chip fills the form; score live calls the serving endpoint
     fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
     fireEvent.click(screen.getByRole("button", { name: "score live" }));
-    await waitFor(() => expect(screen.getByText("churn probability 64.0%")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Churn probability 64.0%")).toBeInTheDocument());
     expect(
-      screen.getByText("alarm at t = 0.30 — this customer gets contacted"),
+      screen.getByText("Alarm at t = 0.30 — this customer gets contacted"),
     ).toBeInTheDocument();
-    expect(screen.getByText(/closest preset band: at-risk fiber customer/)).toBeInTheDocument();
+    expect(screen.getByText(/Closest preset band: at-risk fiber customer/)).toBeInTheDocument();
   });
 
   it("shows a graceful notice when live scoring returns 503", async () => {
@@ -279,7 +352,7 @@ describe("ChurnSandbox", () => {
     fireEvent.click(screen.getByRole("button", { name: "score live" }));
     await waitFor(() =>
       expect(
-        screen.getByText("live scoring unavailable — showing precomputed presets only"),
+        screen.getByText("Live scoring unavailable — showing precomputed presets only"),
       ).toBeInTheDocument(),
     );
   });
@@ -323,7 +396,7 @@ describe("ChurnSandbox", () => {
     expect(document.querySelector(".wb-scorer-strip")).toBeNull();
   });
 
-  it("gives all three secondary panels a figure footer with commentary", async () => {
+  it("gives all three secondary panels a figure footer with full commentary, no fig id", async () => {
     mockFetch(payloadFetch());
     renderDemo();
     await screen.findByText("cost at t: 335");
@@ -332,14 +405,15 @@ describe("ChurnSandbox", () => {
     for (const panel of panels) {
       const band = panel.querySelector("footer.figure-card-band");
       expect(band).not.toBeNull();
-      expect(band!.querySelector(".figure-id")).not.toBeNull();
-      expect(band!.querySelector(".figure-comment")).not.toBeNull();
+      // no `fig ::` id line, no line-clamp trimming — commentary renders full
+      expect(band!.querySelector(".figure-id")).toBeNull();
+      const comment = band!.querySelector(".figure-comment")!;
+      expect(comment).not.toBeNull();
+      expect(comment.textContent!.length).toBeGreaterThan(40);
+      expect(comment.className).not.toContain("line-clamp");
     }
-    // the cost-composition panel replaced the static calibration panel
+    // the cost-composition panel is the third one and still labeled
     expect(screen.getByText("cost composition")).toBeInTheDocument();
-    expect(
-      screen.getByText(/fig :: churn-sandbox\/cost-composition/),
-    ).toBeInTheDocument();
   });
 
   it("cost-composition panel rescales with the FN slider and tracks the cursor", async () => {
@@ -354,7 +428,7 @@ describe("ChurnSandbox", () => {
     const fnBefore = fnPath();
     expect(fnBefore).not.toBeNull();
     // FN slider 5 → 9 rescales the stacked FN area
-    fireEvent.change(screen.getByLabelText(/missed churner =/), { target: { value: "9" } });
+    fireEvent.change(screen.getByLabelText(/churn ratio/i), { target: { value: "9" } });
     expect(fnPath()).not.toBe(fnBefore);
     // dragging the main chart cursor to t = 0.7 moves the marker
     const mainSvg = screen.getByRole("img", { name: "campaign cost over alarm threshold" });
@@ -371,7 +445,7 @@ describe("ChurnSandbox", () => {
     expect(band.querySelector('svg[aria-label="calibration scatter"]')).toBeNull();
     const drawer = document.querySelector(".wb-evidence")!;
     expect(drawer.querySelector('svg[aria-label="calibration scatter"]')).not.toBeNull();
-    expect(drawer.textContent).toContain("static model-quality reference");
+    expect(drawer.textContent).toContain("Static model-quality reference");
     expect(drawer.textContent).toContain("ECE 0.0200");
   });
 });
