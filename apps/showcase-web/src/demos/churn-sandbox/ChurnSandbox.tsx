@@ -432,32 +432,8 @@ function ChurnSandboxWorkbench({
           </div>
         </>
       }
-      canvas={
-        <>
-          <h2 className="section-title">cost curve</h2>
-          <CostCurvePanel payload={payload} fnRatio={fnRatio} cursorIdx={cursorIdx} onCursor={moveCursor} />
-
-          <div className="demo-two-col">
-            <div>
-              <h2 className="section-title">decision outcomes</h2>
-              <OutcomesPanel row={cursorRow} holdoutN={payload.holdout_n} />
-            </div>
-            <div>
-              <h2 className="section-title">alarm burden by contract</h2>
-              <SlicesPanel slices={payload.slices.contract} cursorT={cursorT} />
-            </div>
-          </div>
-
-          <h2 className="section-title">probability calibration</h2>
-          <CalibrationPanel payload={payload} />
-
-          <h2 className="section-title">score a customer</h2>
-          {form !== null && (
-            <ScorerCard key={presetKey} payload={payload} cursorT={cursorT} form={form} setForm={setForm} />
-          )}
-        </>
-      }
-      insight={
+      canvas={<CostCurvePanel payload={payload} fnRatio={fnRatio} cursorIdx={cursorIdx} onCursor={moveCursor} />}
+      kpis={
         <>
           <KpiTile
             label="cost at t"
@@ -481,6 +457,28 @@ function ChurnSandboxWorkbench({
             sub={`of ${cursorRow.tp + cursorRow.fn} churners caught`}
           />
           <Notice>{noticeText(cursorRow, laxerRow, fnRatio)}</Notice>
+        </>
+      }
+      details={
+        <>
+          <div className="wb-detail-panel">
+            <h3 className="wb-rail-title">decision outcomes</h3>
+            <OutcomesPanel row={cursorRow} holdoutN={payload.holdout_n} />
+          </div>
+          <div className="wb-detail-panel">
+            <h3 className="wb-rail-title">alarm burden by contract</h3>
+            <SlicesPanel slices={payload.slices.contract} cursorT={cursorT} />
+          </div>
+          <div className="wb-detail-panel">
+            <h3 className="wb-rail-title">probability calibration</h3>
+            <CalibrationPanel payload={payload} />
+          </div>
+          <div className="wb-detail-panel">
+            <h3 className="wb-rail-title">score a customer</h3>
+            {form !== null && (
+              <ScorerCard key={presetKey} payload={payload} cursorT={cursorT} form={form} setForm={setForm} />
+            )}
+          </div>
         </>
       }
       evidence={

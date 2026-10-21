@@ -47,7 +47,17 @@ function ScenarioPicker({
   );
 }
 
-/** Collapsible evidence drawer below the workbench body. */
+/** Collapsible details band between the main row and the evidence drawer. */
+function DetailsBand({ children }: { children?: ReactNode }) {
+  return (
+    <details className="wb-details">
+      <summary>details</summary>
+      <div className="wb-details-body wb-internal-scroll">{children}</div>
+    </details>
+  );
+}
+
+/** Collapsible evidence drawer at the foot of the workbench. */
 function EvidenceDrawer({
   manifest,
   children,
@@ -58,7 +68,7 @@ function EvidenceDrawer({
   return (
     <details className="wb-evidence">
       <summary>evidence & provenance</summary>
-      <div className="wb-evidence-body">
+      <div className="wb-evidence-body wb-internal-scroll">
         <p className="wb-evidence-line">
           linked experiment → <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
         </p>
@@ -93,8 +103,8 @@ function EvidenceDrawer({
  * Shared chrome for a manifest-driven demo workbench.
  *
  * Usage pattern — the demo owns its control state and shares it between its
- * slots; `DemoWorkbench` renders chrome (top bar, rails, evidence drawer)
- * around whatever each slot needs the state for:
+ * slots; `DemoWorkbench` renders chrome (header, KPI band, main row, details
+ * band, evidence drawer) around whatever each slot needs the state for:
  *
  * ```tsx
  * const state = useControlState({ fn_ratio: 5, threshold: 0.175 }, manifest.scenarios);
@@ -102,30 +112,38 @@ function EvidenceDrawer({
  *   <DemoWorkbench
  *     manifest={manifest}
  *     state={state}
- *     controls={<FnSlider state={state} />}
+ *     kpis={<KpiTiles state={state} payload={payload} />}
  *     canvas={<CostCurve state={state} payload={payload} />}
- *     insight={<KpiTiles state={state} payload={payload} />}
+ *     controls={<FnSlider state={state} />}
+ *     details={<SecondaryPanels payload={payload} />}
  *     evidence={<p>method notes…</p>}
  *   />
  * );
  * ```
+ *
+ * The root is a fixed-height (100dvh) grid: opening the details band or the
+ * evidence drawer steals space from the `minmax(0, 1fr)` chart row instead of
+ * growing the page, so the workbench never scrolls at desktop widths.
  */
 export function DemoWorkbench({
   manifest,
   state,
-  controls,
+  kpis,
   canvas,
-  insight,
+  controls,
+  details,
   evidence,
 }: {
   manifest: DemoManifest;
   state: ControlState;
-  /** Left control rail content (state consumers). */
-  controls: ReactNode;
-  /** Center canvas content. */
+  /** KPI band content: KpiTiles + (last) Notice. */
+  kpis: ReactNode;
+  /** Dominant chart; flex-grows to fill the main row. */
   canvas: ReactNode;
-  /** Right insight rail content (KPIs, notice). */
-  insight: ReactNode;
+  /** Investigation controls; fixed-width right column. */
+  controls: ReactNode;
+  /** Secondary panels shown in the collapsible details band. */
+  details?: ReactNode;
   /** Extra content for the evidence drawer (method, caveats…). */
   evidence?: ReactNode;
 }) {
@@ -145,13 +163,13 @@ export function DemoWorkbench({
   };
 
   return (
-    <div className="wb-shell">
-      <nav className="demo-topbar">
-        <Link to="/projects#demos" className="demo-back">
-          ← demos
-        </Link>
-      </nav>
+    <div className="wb-root">
       <header className="wb-header">
+        <nav className="demo-topbar">
+          <Link to="/projects#demos" className="demo-back">
+            ← demos
+          </Link>
+        </nav>
         <div className="wb-heading">
           <h1 className="demo-title">{manifest.title}</h1>
           <p className="demo-hook">{manifest.hook}</p>
@@ -178,17 +196,17 @@ export function DemoWorkbench({
         </div>
       </header>
 
-      <div className="wb-body">
-        <aside className="wb-rail wb-rail-controls">
+      <div className="wb-kpi-band">{kpis}</div>
+
+      <div className="wb-main">
+        <section className="wb-canvas-slot">{canvas}</section>
+        <aside className="wb-controls">
           <h2 className="wb-rail-title">controls</h2>
           {controls}
         </aside>
-        <section className="wb-canvas">{canvas}</section>
-        <aside className="wb-rail wb-rail-insight">
-          <h2 className="wb-rail-title">readout</h2>
-          {insight}
-        </aside>
       </div>
+
+      {details !== undefined && <DetailsBand>{details}</DetailsBand>}
 
       <EvidenceDrawer manifest={manifest}>{evidence}</EvidenceDrawer>
     </div>

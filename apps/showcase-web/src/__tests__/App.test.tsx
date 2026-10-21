@@ -47,4 +47,34 @@ describe("App routing", () => {
       expect(screen.getByText("Demos — interactive experiments")).toBeInTheDocument();
     }
   });
+
+  it("uses the fluid full-width layout on demo routes only", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const { container, unmount } = render(
+      <MemoryRouter initialEntries={["/demos/churn-sandbox"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    const main = container.querySelector("main")!;
+    expect(main.className).toContain("app-main--fluid");
+    unmount();
+
+    const { container: projectsContainer } = render(
+      <MemoryRouter initialEntries={["/projects"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+    );
+    expect(projectsContainer.querySelector("main")!.className).not.toContain("app-main--fluid");
+  });
 });
