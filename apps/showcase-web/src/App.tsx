@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { Home } from "./pages/Home";
@@ -10,10 +10,12 @@ import { NotFound } from "./pages/NotFound";
 import ChurnSandbox from "./demos/churn-sandbox/ChurnSandbox";
 
 export function App() {
+  const location = useLocation();
+  const fluid = location.pathname.startsWith("/demos/");
   return (
     <>
       <Nav />
-      <main className="app-main">
+      <main className={fluid ? "app-main app-main--fluid" : "app-main"}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<ProjectsIndex />} />
@@ -26,7 +28,7 @@ export function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      <Footer />
+      {!fluid && <Footer />}
     </>
   );
 }

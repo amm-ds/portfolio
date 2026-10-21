@@ -89,6 +89,25 @@ code {
   padding: 2rem 1.25rem 3rem;
 }
 
+/* demo workbenches are dashboards: fluid width, no page-level cap */
+.app-main--fluid {
+  max-width: none;
+  /* Dashboard demos size to the viewport below the 58px sticky nav (footer is
+     not rendered on /demos/* routes). flex:0 0 auto + min-height:0 stop the
+     column shell from growing the flex item past the explicit height. */
+  flex: 0 0 auto;
+  min-height: 0;
+  height: calc(100dvh - 58px);
+  padding: 0.5rem 1.25rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+}
+.app-main--fluid .wb-root {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
 
 
 /* --- Home "where to go" trio --- */
@@ -2000,22 +2019,39 @@ button.chip.demo-preset:hover {
   font-size: 0.85rem;
 }
 
-/* --- Demo workbench: top bar + rails + evidence drawer ---------------------- */
+/* --- Demo workbench: scroll-free dashboard layout -----------------------------
+   Root is a fixed-height grid (header / KPI band / main row / details /
+   evidence). Opening the details band or evidence drawer grows those auto
+   rows and steals space from the minmax(0, 1fr) chart row — the page itself
+   never scrolls at desktop widths. */
 
-.wb-shell {
-  max-width: 1100px;
+.wb-root {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 0.75rem;
+  height: 100vh;
+  height: 100dvh;
 }
 
 .wb-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+}
+
+.demo-topbar {
+  margin: 0;
+}
+
+.wb-heading {
+  flex: 1 1 420px;
+  min-width: 0;
 }
 
 .wb-heading .demo-title {
-  margin: 0 0 0.4rem;
-  font-size: 1.7rem;
+  margin: 0 0 0.15rem;
+  font-size: 1.35rem;
   text-shadow: 0 0 14px var(--accent-glow);
 }
 
@@ -2023,6 +2059,7 @@ button.chip.demo-preset:hover {
   margin: 0;
   color: var(--muted);
   max-width: 720px;
+  font-size: 0.9rem;
 }
 
 .wb-actions {
@@ -2079,16 +2116,74 @@ button.chip.wb-scenario.active {
   margin-left: auto;
 }
 
-/* body: control rail | canvas | insight rail */
+/* KPI band: equal-width tiles across the top, Notice as the wider last tile */
 
-.wb-body {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 260px;
-  gap: 1.25rem;
-  align-items: start;
+.wb-kpi-band {
+  display: flex;
+  gap: 0.75rem;
+  min-height: 0;
 }
 
-.wb-rail {
+.wb-kpi-band .wb-kpi {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.wb-kpi-band .wb-notice {
+  flex: 1.8 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+/* main row: dominant chart + fixed right-hand controls column */
+
+.wb-main {
+  display: flex;
+  gap: 1rem;
+  min-height: 0;
+}
+
+.wb-canvas-slot {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* the canvas figure card grows to fill the row; the chart svg fills the card */
+.wb-canvas-slot .figure-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-canvas-slot .demo-chart {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-canvas-slot .demo-chart svg {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wb-controls {
+  flex: 0 0 300px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -2097,6 +2192,45 @@ button.chip.wb-scenario.active {
   border-radius: var(--radius);
   padding: 1rem 1.1rem;
 }
+
+/* each control group is its own card inside the column */
+.wb-controls .demo-control {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.7rem 0.8rem;
+  min-width: 0;
+}
+
+/* range slider stays boxed: 10px side padding ≥ thumb radius, so the handle
+   never crosses the card border at min/max */
+.wb-controls input[type="range"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 10px;
+  margin: 0;
+  accent-color: var(--accent);
+  background: transparent;
+  cursor: pointer;
+}
+
+.wb-controls input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.wb-controls input[type="range"]::-webkit-slider-thumb {
+  margin-top: -5px;
+}
+
+.wb-controls input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+/* KPI tiles + notice */
 
 .wb-rail-title {
   margin: 0;
@@ -2107,20 +2241,6 @@ button.chip.wb-scenario.active {
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.45rem;
 }
-
-.wb-canvas {
-  min-width: 0;
-}
-
-.wb-canvas .section-title {
-  margin-top: 1.75rem;
-}
-
-.wb-canvas .section-title:first-child {
-  margin-top: 0;
-}
-
-/* KPI tiles + notice (insight rail) */
 
 .wb-kpi {
   display: flex;
@@ -2175,10 +2295,76 @@ button.chip.wb-scenario.active {
   color: var(--accent);
 }
 
+/* details band: collapsible row of secondary panels */
+
+.wb-details {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.wb-details summary {
+  cursor: pointer;
+  padding: 0.5rem 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.wb-details summary::before {
+  content: "$ ";
+  color: var(--accent);
+}
+
+.wb-details summary:hover {
+  color: var(--accent);
+}
+
+.wb-details-body {
+  height: 230px;
+  padding: 0 0.9rem 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.wb-detail-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.wb-detail-panel .wb-rail-title {
+  flex-shrink: 0;
+}
+
+/* secondary panels reuse the figure-card chrome at reduced padding */
+.wb-details-body .figure-card {
+  margin-bottom: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.wb-details-body .figure-card-band {
+  padding: 0.5rem 0.7rem 0.6rem;
+}
+
+.wb-details-body .figure-comment {
+  font-size: 0.78rem;
+}
+
+/* internal scroll regions: drawers scroll their own bodies, not the page */
+.wb-internal-scroll {
+  overflow: auto;
+  min-height: 0;
+}
+
 /* evidence drawer */
 
 .wb-evidence {
-  margin-top: 1.5rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2203,6 +2389,7 @@ button.chip.wb-scenario.active {
 }
 
 .wb-evidence-body {
+  max-height: 30vh;
   padding: 0 1.1rem 1rem;
   display: flex;
   flex-direction: column;
@@ -2264,57 +2451,41 @@ button.chip.wb-scenario.active {
   color: var(--muted);
 }
 
-/* narrow screens: rails collapse into bottom sheets (details/summary) */
+/* narrow screens: the dashboard reflows and the page may scroll */
 
 @media (max-width: 900px) {
-  .wb-body {
-    grid-template-columns: minmax(0, 1fr);
+  .wb-root {
+    height: auto;
   }
 
-  .wb-rail {
-    border: none;
-    background: transparent;
-    padding: 0;
+  .wb-kpi-band {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .wb-rail-title {
-    display: none;
+  .wb-main {
+    flex-direction: column;
   }
 
-  .wb-rail-controls,
-  .wb-rail-insight {
-    display: block;
+  .wb-canvas-slot {
+    overflow: visible;
   }
 
-  .wb-rail-controls > *,
-  .wb-rail-insight > * {
-    margin-bottom: 0.6rem;
+  .wb-canvas-slot .demo-chart svg {
+    height: auto;
+    min-height: 240px;
   }
 
-  .wb-rail-controls::before {
-    content: "controls";
-    display: block;
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.45rem;
-    margin-bottom: 0.9rem;
+  .wb-controls {
+    flex: 0 0 auto;
+    width: 100%;
+    overflow-y: visible;
   }
 
-  .wb-rail-insight::before {
-    content: "readout";
-    display: block;
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.45rem;
-    margin: 1.5rem 0 0.9rem;
+  .wb-details-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    height: auto;
+    max-height: none;
   }
 
   .wb-buttons {
