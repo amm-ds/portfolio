@@ -96,7 +96,7 @@ code {
      /demos/* routes); content taller than the viewport scrolls the page, which
      the workbench uses for bigger chart/panel sizes. */
   min-height: calc(100dvh - 58px);
-  padding: 0.5rem 1.25rem 0.5rem;
+  padding: 0.5rem 1.25rem;
 }
 
 
@@ -2065,15 +2065,15 @@ button.chip.demo-preset:hover {
      space below the workbench; content taller than the viewport overflows
      the 1fr row and scrolls the page */
   grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-rows: auto auto auto minmax(400px, 1fr) auto auto auto;
+  grid-template-rows: auto auto auto auto minmax(460px, 1fr) auto auto;
   grid-template-areas:
     "header header"
+    "more more"
     "kpi kpi"
     "notice notice"
     "canvas controls"
     "under under"
-    "secondary secondary"
-    "evidence evidence";
+    "secondary secondary";
   gap: 0.5rem;
   height: auto;
   min-height: calc(100dvh - 58px - 1rem);
@@ -2114,7 +2114,7 @@ button.chip.demo-preset:hover {
 }
 
 .wb-evidence {
-  grid-area: evidence;
+  grid-area: more;
 }
 
 .wb-header {
@@ -2166,12 +2166,6 @@ button.chip.demo-preset:hover {
   align-items: center;
   gap: 0.5rem 0.9rem;
   padding-top: 0.25rem;
-}
-
-.wb-scenarios {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
 }
 
 button.chip.wb-scenario,
@@ -2236,7 +2230,7 @@ button.chip.wb-scenario.active {
 
 .wb-canvas-slot {
   min-width: 0;
-  min-height: 400px;
+  min-height: 460px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2294,9 +2288,9 @@ button.chip.wb-scenario.active {
 
 .wb-controls {
   min-width: 0;
-  /* the rail sizes to its content; on short viewports the 1fr chart row can
-     shrink below the rail's content — the rail scrolls internally rather
-     than overflowing (tall viewports absorb the extra height in the chart) */
+  height: 100%;
+  /* the rail fills the chart's track; it scrolls internally only when a
+     short viewport squeezes the 460px floor — never because of its content */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -2671,7 +2665,6 @@ button.chip.wb-scenario.active {
 }
 
 .wb-evidence-body {
-  max-height: 34vh;
   padding: 0 1.1rem 1rem;
   display: flex;
   flex-direction: column;
@@ -2755,13 +2748,6 @@ button.chip.wb-scenario.active {
 }
 
 /* calibration reference moved into the drawer: compact fixed-height figure */
-.wb-evidence-calibration svg {
-  display: block;
-  width: 100%;
-  max-width: 360px;
-  height: 180px;
-}
-
 .wb-skills {
   display: flex;
   flex-wrap: wrap;
@@ -2896,4 +2882,61 @@ button.chip.wb-scenario.active {
 .wb-evidence-body strong {
   color: var(--accent);
   font-weight: 600;
+}
+
+/* --- Fluid project-detail pages (/projects/:id): full-width case study --- */
+
+/* story container (was implicitly capped by .app-main's 1100px) */
+.app-main--fluid .story-cols,
+.app-main--fluid .story-section {
+  max-width: none;
+  width: 100%;
+}
+
+/* figure column: drop the 1200px cap and the centering so charts span wide */
+.app-main--fluid .story-figs {
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* keep prose line lengths readable on very wide viewports */
+.app-main--fluid .story-section .prose p,
+.app-main--fluid .story-section .prose ul,
+.app-main--fluid .story-section .prose ol {
+  max-width: 70ch;
+}
+
+/* live score result: full-width strip under the main row, outside the
+   scorer box — same components (tags, prob bar, alarm line) as the rail */
+.wb-score-result {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.3rem 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.wb-score-result .wb-evidence-tag {
+  grid-row: span 3;
+}
+
+.wb-score-result .demo-prob-bar {
+  grid-column: 2;
+  width: 100%;
+  max-width: 420px;
+}
+
+.wb-score-result .demo-prob-line,
+.wb-score-result .demo-alarm,
+.wb-score-result .demo-hint {
+  grid-column: 2;
+  margin: 0;
+}
+
+.wb-more summary {
+  font-size: 0.85rem;
 }

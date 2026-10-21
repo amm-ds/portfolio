@@ -48,7 +48,7 @@ describe("App routing", () => {
     }
   });
 
-  it("uses the fluid full-width layout on demo routes only", async () => {
+  it("uses the fluid full-width layout on demo and project detail routes", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -65,6 +65,8 @@ describe("App routing", () => {
     );
     const main = container.querySelector("main")!;
     expect(main.className).toContain("app-main--fluid");
+    // dashboards have no footer
+    expect(container.querySelector(".footer")).toBeNull();
     unmount();
 
     const { container: projectsContainer } = render(
@@ -76,5 +78,18 @@ describe("App routing", () => {
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
     );
     expect(projectsContainer.querySelector("main")!.className).not.toContain("app-main--fluid");
+    // the index keeps its footer
+    expect(projectsContainer.querySelector(".footer")).not.toBeNull();
+    projectsContainer.remove();
+    cleanup();
+
+    const { container: detailContainer } = render(
+      <MemoryRouter initialEntries={["/projects/05-ml-pipeline-churn"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    // project detail is fluid too, but keeps the footer
+    expect(detailContainer.querySelector("main")!.className).toContain("app-main--fluid");
+    expect(detailContainer.querySelector(".footer")).not.toBeNull();
   });
 });

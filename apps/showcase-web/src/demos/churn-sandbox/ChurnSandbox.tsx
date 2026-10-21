@@ -1,5 +1,4 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { CalibrationScatter } from "../charts/CalibrationScatter";
 import { LineChart, type LineMarker } from "../charts/LineChart";
 import { SegmentLegend, type HBarSegment } from "../charts/StackedHBar";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
@@ -90,6 +89,39 @@ function OptimalityText({
       The cheapest cutoff at <strong>{fnRatio}×</strong> is <strong>t = {optimal.t.toFixed(2)}</strong>{" "}
       — {direction} your cursor by <strong>{gap}</strong>
     </>
+  );
+}
+
+/** Live score result: rendered in the full-width strip below the main row —
+ * outside the scorer box, in the space reserved below it. */
+function ScoreResultPanel({
+  probability,
+  cursorT,
+  nearestPreset,
+}: {
+  probability: number;
+  cursorT: number;
+  nearestPreset: { label: string; churn_probability: number };
+}) {
+  const alarm = probability >= cursorT;
+  return (
+    <div className="wb-score-result" data-testid="score-result">
+      <span className="wb-evidence-tag">score result</span>
+      <div className="demo-prob-bar">
+        <span style={{ width: `${probability * 100}%` }} />
+      </div>
+      <p className="demo-prob-line">
+        Churn probability <strong>{(probability * 100).toFixed(1)}%</strong>
+      </p>
+      <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
+        {alarm
+          ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
+          : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
+      </p>
+      <p className="demo-hint">
+        Closest preset band: {nearestPreset.label} (p = {nearestPreset.churn_probability.toFixed(2)})
+      </p>
+    </div>
   );
 }
 
@@ -280,10 +312,11 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
     return { label, value: row.tp + row.fp, unit: "alarms" };
   });
   const max = Math.max(...rows.map((r) => r.value), 1);
+  const pad = 14;
   const labelW = Math.min(120, W * 0.35);
   const countW = 64;
-  const barX = labelW + 8;
-  const barW = Math.max(W - barX - countW - 8, 0);
+  const barX = pad + labelW + 8;
+  const barW = Math.max(W - barX - countW - pad, 0);
   const rowH = rows.length > 0 ? H / rows.length : H;
   return (
     <Figure
@@ -308,7 +341,7 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
             const w = (r.value / max) * barW;
             return (
               <g key={r.label}>
-                <text x={0} y={cy + 3} className="demo-axis-label">
+                <text x={pad} y={cy + 3} className="demo-axis-label">
                   {r.label}
                 </text>
                 <rect
@@ -327,7 +360,7 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
                   fill="var(--accent)"
                   opacity={0.8}
                 />
-                <text x={W} y={cy + 3} textAnchor="end" className="demo-axis-label">
+                <text x={W - pad} y={cy + 3} textAnchor="end" className="demo-axis-label">
                   {r.value} {r.unit}
                 </text>
               </g>
@@ -392,6 +425,8 @@ function ChurnSandboxWorkbench({
   const [presetKey, setPresetKey] = useState(0);
   // customer pinned on the cost curve: set by preset chips and live scores
   const [customer, setCustomer] = useState<CustomerMarker | null>(null);
+  // latest live score, rendered in the strip below the main row
+  const [score, setScore] = useState<number | null>(null);
 
   const cursorIdx = nearestIndex(payload.thresholds, controls.threshold);
   const cursorT = payload.thresholds[cursorIdx];
@@ -467,16 +502,29 @@ function ChurnSandboxWorkbench({
               <ScorerCard
                 key={presetKey}
                 payload={payload}
-                cursorT={cursorT}
                 form={form}
                 setForm={setForm}
-                onScore={(probability) =>
-                  setCustomer({ label: nearestPresetLabel(probability), probability })
-                }
+                onScore={(probability) => {
+                  setCustomer({ label: nearestPresetLabel(probability), probability });
+                  setScore(probability);
+                }}
               />
             </div>
           )}
         </>
+      }
+      under={
+        score !== null ? (
+          <ScoreResultPanel
+            probability={score}
+            cursorT={cursorT}
+            nearestPreset={payload.customers.reduce((best, c) =>
+              Math.abs(c.churn_probability - score) < Math.abs(best.churn_probability - score)
+                ? c
+                : best,
+            )}
+          />
+        ) : undefined
       }
       canvas={
         <CostCurvePanel
@@ -583,21 +631,6 @@ function ChurnSandboxWorkbench({
               <span className="wb-tag">ece {payload.model.ece.toFixed(4)}</span>
               <span className="wb-tag">threshold {payload.model.threshold_selected}</span>
             </p>
-            <div className="wb-evidence-fig">
-              <p className="wb-evidence-line">
-                Calibration — static model-quality reference (isotonic-calibrated)
-              </p>
-              <div className="wb-evidence-calibration">
-                <CalibrationScatter
-                  points={payload.calibration.map((b) => ({
-                    x: b.mean_predicted,
-                    y: b.observed,
-                    n: b.n,
-                  }))}
-                  height={180}
-                />
-              </div>
-            </div>
           </div>
         </>
       }

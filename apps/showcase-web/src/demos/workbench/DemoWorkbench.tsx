@@ -3,21 +3,22 @@ import { Link } from "react-router-dom";
 import type { DemoManifest } from "../types";
 import type { ControlState } from "./useControlState";
 
-/** Collapsible evidence drawer at the foot of the workbench. */
-function EvidenceDrawer({
+/** Collapsible "more information" block under the header: linked experiment,
+ * interpretation | results columns, and a tagged skills/endpoints footer. */
+function MoreInformation({
   manifest,
   about,
   children,
 }: {
   manifest: DemoManifest;
-  /** "How to interpret" content — rendered full width under the linked experiment. */
+  /** "How to interpret" content — the interpretation column. */
   about?: ReactNode;
   children?: ReactNode;
 }) {
   return (
-    <details className="wb-evidence">
+    <details className="wb-evidence wb-more">
       <summary>more information</summary>
-      <div className="wb-evidence-body wb-internal-scroll">
+      <div className="wb-evidence-body">
         <p className="wb-evidence-linked">
           <span className="wb-evidence-tag">linked experiment</span> →{" "}
           <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
@@ -145,6 +146,10 @@ export function DemoWorkbench({
         </div>
       </header>
 
+      <MoreInformation manifest={manifest} about={about}>
+        {evidence}
+      </MoreInformation>
+
       <div className="wb-kpi-band">{kpis}</div>
 
       {notice !== undefined && <div className="wb-notice-strip">{notice}</div>}
@@ -160,10 +165,6 @@ export function DemoWorkbench({
       {under !== undefined && <div className="wb-under">{under}</div>}
 
       {secondary !== undefined && <div className="wb-secondary">{secondary}</div>}
-
-      <EvidenceDrawer manifest={manifest} about={about}>
-        {evidence}
-      </EvidenceDrawer>
     </div>
   );
 }
