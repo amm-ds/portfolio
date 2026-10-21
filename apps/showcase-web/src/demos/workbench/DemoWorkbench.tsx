@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { DemoManifest } from "../types";
@@ -34,42 +35,54 @@ function ScenarioPicker({
 /** Collapsible evidence drawer at the foot of the workbench. */
 function EvidenceDrawer({
   manifest,
+  about,
   children,
 }: {
   manifest: DemoManifest;
+  /** "How to interpret" content — rendered full width under the linked experiment. */
+  about?: ReactNode;
   children?: ReactNode;
 }) {
   return (
     <details className="wb-evidence">
       <summary>Evidence & provenance</summary>
       <div className="wb-evidence-body wb-internal-scroll">
-        <div className="wb-evidence-chrome">
-          <p className="wb-evidence-line">
-            Linked experiment → <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
-          </p>
-          {manifest.skills.length > 0 && (
-            <div className="wb-skills">
-              {manifest.skills.map((skill) => (
-                <span key={skill} className="chip">
-                  {skill}
-                </span>
-              ))}
-            </div>
-          )}
-          {manifest.live_endpoints.length > 0 && (
-            <div className="wb-endpoints">
-              {manifest.live_endpoints.map((e) => (
-                <div key={`${e.method} ${e.path}`} className="wb-endpoint">
-                  <span className={`wb-method wb-method-${e.method.toLowerCase()}`}>{e.method}</span>
-                  <code>{e.path}</code>
-                  <span className="wb-endpoint-label">{e.label}</span>
-                  <span className="wb-endpoint-cost">{e.cost}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        {children}
+        <p className="wb-evidence-linked">
+          <span className="wb-evidence-tag">linked experiment</span> →{" "}
+          <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
+        </p>
+        {about !== undefined && (
+          <div className="wb-evidence-about">
+            <h3 className="wb-evidence-tag">how to interpret</h3>
+            {about}
+          </div>
+        )}
+        <div className="wb-evidence-cols">{children}</div>
+        {(manifest.skills.length > 0 || manifest.live_endpoints.length > 0) && (
+          <div className="wb-evidence-chrome">
+            {manifest.skills.length > 0 && (
+              <div className="wb-skills">
+                {manifest.skills.map((skill) => (
+                  <span key={skill} className="chip">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
+            {manifest.live_endpoints.length > 0 && (
+              <div className="wb-endpoints">
+                {manifest.live_endpoints.map((e) => (
+                  <div key={`${e.method} ${e.path}`} className="wb-endpoint">
+                    <span className={`wb-method wb-method-${e.method.toLowerCase()}`}>{e.method}</span>
+                    <code>{e.path}</code>
+                    <span className="wb-endpoint-label">{e.label}</span>
+                    <span className="wb-endpoint-cost">{e.cost}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </details>
   );
@@ -120,9 +133,9 @@ export function DemoWorkbench({
   state: ControlState;
   /** KPI band content: KpiTiles only (the Notice renders in its own strip). */
   kpis: ReactNode;
-  /** Dominant chart; flex-grows to fill the main row. */
+  /** Dominant chart; sized to match the controls rail's natural height. */
   canvas: ReactNode;
-  /** Investigation controls; fixed-width right column. */
+  /** Investigation controls; fixed-width right column, sizes the main row. */
   controls: ReactNode;
   /** State-aware one-sentence takeaway; slim strip under the KPI band. */
   notice?: ReactNode;
@@ -137,6 +150,24 @@ export function DemoWorkbench({
   /** Optional "how to interpret" body for the collapsible under the header hook. */
   about?: ReactNode;
 }) {
+  // The rail sizes the main row with its natural content height; the chart is
+  // set to the same explicit pixel height. CSS-only approaches loop here:
+  // percentage heights against an auto row, or the measured SVG viewBox
+  // feeding its intrinsic height back into layout, grow without bound.
+  const controlsRef = useRef<HTMLElement | null>(null);
+  const [railH, setRailH] = useState(0);
+  useEffect(() => {
+    const el = controlsRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const h = Math.round(el.getBoundingClientRect().height);
+      setRailH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const canvasHeight = Math.max(400, railH) || undefined;
+
   return (
     <div className="wb-root">
       <header className="wb-header">
@@ -146,12 +177,6 @@ export function DemoWorkbench({
           </Link>
           <h1 className="demo-title">{manifest.title}</h1>
           <p className="demo-hook">{manifest.hook}</p>
-          {about !== undefined && (
-            <details className="wb-about">
-              <summary>how to interpret</summary>
-              <div className="wb-about-body">{about}</div>
-            </details>
-          )}
         </div>
         <div className="wb-actions">
           <ScenarioPicker
@@ -170,8 +195,10 @@ export function DemoWorkbench({
       {notice !== undefined && <div className="wb-notice-strip">{notice}</div>}
 
       <div className="wb-main">
-        <section className="wb-canvas-slot">{canvas}</section>
-        <aside className="wb-controls">
+        <section className="wb-canvas-slot" style={{ height: canvasHeight }}>
+          {canvas}
+        </section>
+        <aside className="wb-controls" ref={controlsRef}>
           <h2 className="wb-rail-title">controls</h2>
           {controls}
         </aside>
@@ -181,7 +208,9 @@ export function DemoWorkbench({
 
       {secondary !== undefined && <div className="wb-secondary">{secondary}</div>}
 
-      <EvidenceDrawer manifest={manifest}>{evidence}</EvidenceDrawer>
+      <EvidenceDrawer manifest={manifest} about={about}>
+        {evidence}
+      </EvidenceDrawer>
     </div>
   );
 }

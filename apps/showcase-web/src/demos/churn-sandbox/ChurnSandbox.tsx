@@ -1,5 +1,4 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import { Link } from "react-router-dom";
 import { CalibrationScatter } from "../charts/CalibrationScatter";
 import { LineChart, type LineMarker } from "../charts/LineChart";
 import { SegmentLegend, type HBarSegment } from "../charts/StackedHBar";
@@ -351,7 +350,7 @@ function ChurnSandboxWorkbench({
         <>
           <div className="wb-control-group wb-group-slider">
             <label className="wb-rail-title" htmlFor="fn-ratio">
-              Churn ratio
+              FP/FN cost ratio
             </label>
             <div className="demo-control">
               <div className="wb-slider-row">
@@ -476,32 +475,33 @@ function ChurnSandboxWorkbench({
       evidence={
         <>
           <div className="wb-evidence-col">
+            <h3 className="wb-evidence-tag">models used</h3>
             <p className="wb-evidence-line">
-              {`Headline: $${Math.round(payload.headline.cost_selected)} vs $${Math.round(payload.headline.cost_naive)} naive per ${payload.holdout_n} customers — paired bootstrap CI [${Math.round(payload.headline.delta_ci.lo)}, ${Math.round(payload.headline.delta_ci.hi)}]${payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}`}
+              {`${payload.model.name} — isotonic-calibrated champion (holdout n = ${payload.holdout_n}).`}
             </p>
-            <div className="wb-evidence-notes demo-footer">
-              <p className="wb-evidence-line demo-footer-line">
-                {`Model: ${payload.model.name} · holdout n = ${payload.holdout_n} · roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)}`}
-              </p>
-              <p className="wb-evidence-line">
-                {`Committed bootstrap CI on cost savings: ${Math.round(delta_ci.point)} [${Math.round(delta_ci.lo)}, ${Math.round(delta_ci.hi)}] per ${payload.holdout_n} customers (95% significant: ${delta_ci.significant_95 ? "yes" : "no"})`}
-              </p>
-            </div>
+            <p className="wb-evidence-line">
+              {`Alarm rule: contact when predicted churn probability ≥ ${payload.model.threshold_selected} (pipeline-selected; default threshold ${payload.model.threshold_default}).`}
+            </p>
             <p className="wb-evidence-line">
               {payload.cost_model.note.charAt(0).toUpperCase() + payload.cost_model.note.slice(1)}
             </p>
-            <p className="wb-evidence-line">
-              {`Models used: ${payload.model.name} (isotonic-calibrated champion) — alarm rule: contact a customer when the predicted churn probability is at or above ${payload.model.threshold_selected} (default threshold ${payload.model.threshold_default}).`}
-            </p>
+            {payload.report && (
+              <p className="wb-evidence-line">
+                <a href={payload.report}>Read the project report</a>
+              </p>
+            )}
           </div>
           <div className="wb-evidence-col">
+            <h3 className="wb-evidence-tag">metrics results</h3>
             <p className="wb-evidence-line">
-              Linked experiment → <Link to={`/projects/${payload.project}`}>{payload.project}</Link>
+              {`Decision cost $${Math.round(payload.headline.cost_selected)} vs $${Math.round(payload.headline.cost_naive)} naive per ${payload.holdout_n} customers — paired bootstrap CI [${Math.round(payload.headline.delta_ci.lo)}, ${Math.round(payload.headline.delta_ci.hi)}]${payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}.`}
+            </p>
+            <p className="wb-evidence-line">
+              {`roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)} (lower is better)`}
             </p>
             <div className="wb-evidence-fig">
               <p className="wb-evidence-line">
-                Static model-quality reference — isotonic-calibrated, ECE{" "}
-                {payload.model.ece.toFixed(4)}
+                Calibration — static model-quality reference (isotonic-calibrated)
               </p>
               <div className="wb-evidence-calibration">
                 <CalibrationScatter
@@ -514,11 +514,6 @@ function ChurnSandboxWorkbench({
                 />
               </div>
             </div>
-            {payload.report && (
-              <p className="wb-evidence-line">
-                <a href={payload.report}>read the project report</a>
-              </p>
-            )}
           </div>
         </>
       }

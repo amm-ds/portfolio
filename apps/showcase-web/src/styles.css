@@ -2155,46 +2155,7 @@ button.chip.demo-preset:hover {
   /* full hook renders untrimmed — no one-line ellipsis cut */
 }
 
-/* collapsible "how to interpret" note under the hook */
-.wb-about {
-  max-width: 720px;
-}
-
-.wb-about summary {
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--muted);
-  list-style: none;
-}
-
-.wb-about summary::before {
-  content: "? ";
-  color: var(--accent);
-}
-
-.wb-about summary:hover {
-  color: var(--accent);
-}
-
-.wb-about-body {
-  margin-top: 0.4rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--bg);
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: var(--secondary);
-}
-
-.wb-about-body p {
-  margin: 0 0 0.4rem;
-}
-
-.wb-about-body p:last-child {
-  margin-bottom: 0;
-}
+/* "how to interpret" moved into the evidence drawer — see .wb-evidence-about */
 
 .wb-actions {
   margin-left: auto;
@@ -2273,7 +2234,7 @@ button.chip.wb-scenario.active {
 
 .wb-canvas-slot {
   min-width: 0;
-  height: 400px;
+  min-height: 400px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2281,8 +2242,12 @@ button.chip.wb-scenario.active {
 
 /* the canvas figure card grows to fill the row; the chart svg fills the card */
 .wb-canvas-slot .figure-card {
-  flex: 1 1 auto;
-  min-height: 0;
+  /* fill the slot (whose height the rail defines): the definite chain keeps
+     the measured viewBox from feeding back into layout (an auto-height chain
+     grew the row without bound). */
+  flex: none;
+  height: 100%;
+  min-height: 400px;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
@@ -2324,8 +2289,10 @@ button.chip.wb-scenario.active {
 .wb-controls {
   flex: 0 0 300px;
   min-width: 0;
-  height: 400px;
-  overflow-y: auto;
+  /* the rail sizes to its content — nothing inside scrolls; when the rail is
+     taller than the chart's 400px minimum the shared grid row grows and both
+     boxes stay equal (page scrolls, which the workbench allows) */
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
@@ -2352,15 +2319,15 @@ button.chip.wb-scenario.active {
 }
 
 .wb-group-slider {
-  flex: 55 1 0;
+  flex: 0 0 auto;
 }
 
 .wb-group-presets {
-  flex: 110 1 0;
+  flex: 0 0 auto;
 }
 
 .wb-group-scorer {
-  flex: 195 1 0;
+  flex: 1 1 auto;
 }
 
 /* group labels sit above the box, styled like the panel headers */
@@ -2374,7 +2341,7 @@ button.chip.wb-scenario.active {
 .wb-control-group .demo-control {
   flex: 1 1 auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2429,20 +2396,14 @@ button.chip.wb-scenario.active {
   padding: 0.6rem 0.7rem;
 }
 
-.wb-controls .wb-scorer .wb-scorer-head {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
 .wb-controls .wb-scorer .wb-scorer-label {
+  display: block;
   font-family: var(--mono);
   font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
+  margin-bottom: 0.3rem;
 }
 
 .wb-controls .wb-scorer .demo-form {
@@ -2464,14 +2425,24 @@ button.chip.wb-scenario.active {
   line-height: 1.25;
 }
 
-.wb-controls .wb-scorer .demo-form button {
-  padding: 0.2rem 0.5rem;
-  font-size: 0.78rem;
+/* bottom row: the score result sits above the full-width score-live button */
+.wb-controls .wb-scorer .wb-scorer-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
 }
 
-.wb-controls .wb-scorer .demo-score-result {
-  grid-column: 1 / -1;
-  margin: 0.15rem 0 0.25rem;
+.wb-controls .wb-scorer .wb-scorer-foot .demo-score-result {
+  margin: 0;
+}
+
+.wb-controls .wb-scorer .wb-scorer-foot button {
+  width: 100%;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
 }
 
 .wb-controls .wb-scorer .demo-prob-bar {
@@ -2704,17 +2675,66 @@ button.chip.wb-scenario.active {
 }
 
 .wb-evidence-body {
-  max-height: 30vh;
+  max-height: 34vh;
   padding: 0 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* linked experiment always on top, full width */
+.wb-evidence-linked {
+  margin: 0.6rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--secondary);
+}
+
+.wb-evidence-linked a {
+  color: var(--accent);
+}
+
+/* CAPS labels for the drawer's sections */
+.wb-evidence-tag {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--secondary);
+}
+
+/* "how to interpret": full width under the linked experiment */
+.wb-evidence-about {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+
+.wb-evidence-about .wb-evidence-tag {
+  margin-bottom: 0.4rem;
+}
+
+.wb-evidence-about p {
+  margin: 0 0 0.4rem;
+}
+
+.wb-evidence-about p:last-child {
+  margin-bottom: 0;
+}
+
+/* the two content columns (models used | metrics results) */
+.wb-evidence-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-/* the drawer's own chrome (linked experiment, skills, endpoints) spans both
-   columns; demo content flows into the two-column grid below it */
 .wb-evidence-chrome {
-  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
@@ -2724,7 +2744,7 @@ button.chip.wb-scenario.active {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.7rem;
+  gap: 0.45rem;
 }
 
 .wb-evidence-line {
@@ -2827,6 +2847,10 @@ button.chip.wb-scenario.active {
   .wb-secondary {
     grid-template-columns: 1fr;
     height: auto;
+  }
+
+  .wb-evidence-cols {
+    grid-template-columns: 1fr;
   }
 
   .wb-evidence-body {
