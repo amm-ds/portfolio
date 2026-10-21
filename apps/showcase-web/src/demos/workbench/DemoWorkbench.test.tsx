@@ -55,6 +55,7 @@ function Harness() {
           </div>
         }
         notice={<Notice>the takeaway</Notice>}
+        under={<div className="wb-under-content">under strip</div>}
         secondary={
           <>
             <div className="wb-secondary-panel">
@@ -156,6 +157,20 @@ describe("DemoWorkbench", () => {
     // the old collapsible details element is gone
     expect(document.querySelector(".wb-details")).toBeNull();
     expect(screen.queryByText("details")).toBeNull();
+  });
+
+  it("renders the optional under strip below the main row when provided", () => {
+    renderWorkbench();
+    const root = document.querySelector(".wb-root")!;
+    const under = root.querySelector(".wb-under")!;
+    expect(under.textContent).toContain("under strip");
+    // sits after the canvas slot, before the secondary band
+    const canvas = root.querySelector(".wb-canvas-slot")!;
+    const band = root.querySelector(".wb-secondary")!;
+    expect(
+      canvas.compareDocumentPosition(under) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(under.compareDocumentPosition(band) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("gives the evidence drawer an internal-scroll body", () => {

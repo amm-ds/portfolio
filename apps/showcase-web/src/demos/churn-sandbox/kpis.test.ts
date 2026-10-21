@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ConfusionRow } from "../types";
-import { contactCount, costAt, nearestIndex, noticeText, recallAt, savings } from "./kpis";
+import { contactCount, costAt, fnCostSeries, fpCostSeries, nearestIndex, noticeText, recallAt, savings } from "./kpis";
 
 // 5-threshold fixture, holdout n = 1,000 (per-1,000 counts are the raw counts).
 const OVERALL: ConfusionRow[] = [
@@ -27,6 +27,21 @@ describe("savings", () => {
   it("flips positive when the multiplier makes the cursor worse", () => {
     // fn_ratio 1: cursor cost 235 vs default 185 → +50 (costs)
     expect(savings(OVERALL[1], OVERALL[2], 1)).toBe(235 - 185);
+  });
+});
+
+describe("cost component series", () => {
+  it("fpCostSeries is the raw FP counts (fp_cost = 1)", () => {
+    expect(fpCostSeries(OVERALL)).toEqual([300, 210, 140, 80, 30]);
+  });
+  it("fnCostSeries scales FN by the miss multiplier", () => {
+    expect(fnCostSeries(OVERALL, 5)).toEqual([50, 125, 225, 325, 425]);
+    expect(fnCostSeries(OVERALL, 1)).toEqual([10, 25, 45, 65, 85]);
+  });
+  it("fp + fn reconstructs the total cost curve", () => {
+    const fp = fpCostSeries(OVERALL);
+    const fn = fnCostSeries(OVERALL, 5);
+    expect(fp.map((v, i) => v + fn[i])).toEqual(OVERALL.map((r) => costAt(r, 5)));
   });
 });
 
