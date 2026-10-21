@@ -1,23 +1,7 @@
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { DemoManifest } from "../types";
 import type { ControlState } from "./useControlState";
-
-const MODE_LABELS: Record<string, string> = {
-  browser: "in your browser",
-  live: "live",
-  replay: "replay",
-};
-
-function ModeBadge({ mode, manifest }: { mode: string; manifest: DemoManifest }) {
-  const cost = manifest.live_endpoints.find((e) => e.method === "POST")?.cost;
-  return (
-    <span className="chip wb-mode" data-mode={mode}>
-      {MODE_LABELS[mode] ?? mode}
-      {mode === "live" && cost ? ` · ${cost}` : ""}
-    </span>
-  );
-}
 
 /** Top-bar scenario chips; `active` is the scenario matching current controls. */
 function ScenarioPicker({
@@ -44,16 +28,6 @@ function ScenarioPicker({
         </button>
       ))}
     </div>
-  );
-}
-
-/** Collapsible details band between the main row and the evidence drawer. */
-function DetailsBand({ children }: { children?: ReactNode }) {
-  return (
-    <details className="wb-details">
-      <summary>details</summary>
-      <div className="wb-details-body wb-internal-scroll">{children}</div>
-    </details>
   );
 }
 
@@ -103,8 +77,9 @@ function EvidenceDrawer({
  * Shared chrome for a manifest-driven demo workbench.
  *
  * Usage pattern — the demo owns its control state and shares it between its
- * slots; `DemoWorkbench` renders chrome (header, KPI band, main row, details
- * band, evidence drawer) around whatever each slot needs the state for:
+ * slots; `DemoWorkbench` renders chrome (header, KPI band, notice strip, main
+ * row, secondary band, evidence drawer) around whatever each slot needs the
+ * state for:
  *
  * ```tsx
  * const state = useControlState({ fn_ratio: 5, threshold: 0.175 }, manifest.scenarios);
@@ -115,15 +90,16 @@ function EvidenceDrawer({
  *     kpis={<KpiTiles state={state} payload={payload} />}
  *     canvas={<CostCurve state={state} payload={payload} />}
  *     controls={<FnSlider state={state} />}
- *     details={<SecondaryPanels payload={payload} />}
+ *     notice={<Notice>the takeaway…</Notice>}
+ *     secondary={<SecondaryPanels payload={payload} />}
  *     evidence={<p>method notes…</p>}
  *   />
  * );
  * ```
  *
- * The root is a fixed-height (100dvh) grid: opening the details band or the
- * evidence drawer steals space from the `minmax(0, 1fr)` chart row instead of
- * growing the page, so the workbench never scrolls at desktop widths.
+ * The root is a fixed-height (100dvh) grid: opening the evidence drawer
+ * steals space from the `minmax(0, 1fr)` chart row instead of growing the
+ * page, so the workbench never scrolls at desktop widths.
  */
 export function DemoWorkbench({
   manifest,
@@ -131,72 +107,54 @@ export function DemoWorkbench({
   kpis,
   canvas,
   controls,
-  details,
+  notice,
+  secondary,
+  under,
   evidence,
 }: {
   manifest: DemoManifest;
   state: ControlState;
-  /** KPI band content: KpiTiles + (last) Notice. */
+  /** KPI band content: KpiTiles only (the Notice renders in its own strip). */
   kpis: ReactNode;
   /** Dominant chart; flex-grows to fill the main row. */
   canvas: ReactNode;
   /** Investigation controls; fixed-width right column. */
   controls: ReactNode;
-  /** Secondary panels shown in the collapsible details band. */
-  details?: ReactNode;
+  /** State-aware one-sentence takeaway; slim strip under the KPI band. */
+  notice?: ReactNode;
+  /** Secondary panels; always-visible band between the main row and the drawer. */
+  secondary?: ReactNode;
+  /** Optional full-width strip directly under the main row (below canvas +
+   * controls), e.g. a horizontal scorer form. */
+  under?: ReactNode;
   /** Extra content for the evidence drawer (method, caveats…). */
   evidence?: ReactNode;
 }) {
-  const [copied, setCopied] = useState(false);
-
-  const share = () => {
-    const url = state.shareUrl;
-    const done = () => {
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
-    };
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url).then(done, () => window.prompt("copy demo link", url));
-    } else {
-      window.prompt("copy demo link", url);
-    }
-  };
-
   return (
     <div className="wb-root">
       <header className="wb-header">
-        <nav className="demo-topbar">
-          <Link to="/projects#demos" className="demo-back">
-            ← demos
-          </Link>
-        </nav>
         <div className="wb-heading">
+          <Link to="/projects#demos" className="demo-back wb-back">
+            ← back to demos
+          </Link>
           <h1 className="demo-title">{manifest.title}</h1>
           <p className="demo-hook">{manifest.hook}</p>
         </div>
         <div className="wb-actions">
-          <div className="wb-modes">
-            {manifest.modes.map((mode) => (
-              <ModeBadge key={mode} mode={mode} manifest={manifest} />
-            ))}
-          </div>
           <ScenarioPicker
             manifest={manifest}
             active={state.activeScenario}
             onApply={state.applyScenario}
           />
-          <div className="wb-buttons">
-            <button type="button" className="chip wb-share" onClick={share}>
-              {copied ? "copied ✓" : "copy link"}
-            </button>
-            <button type="button" className="chip wb-reset" onClick={state.reset}>
-              reset
-            </button>
-          </div>
+          <button type="button" className="chip wb-reset" onClick={state.reset}>
+            reset
+          </button>
         </div>
       </header>
 
       <div className="wb-kpi-band">{kpis}</div>
+
+      {notice !== undefined && <div className="wb-notice-strip">{notice}</div>}
 
       <div className="wb-main">
         <section className="wb-canvas-slot">{canvas}</section>
@@ -206,7 +164,9 @@ export function DemoWorkbench({
         </aside>
       </div>
 
-      {details !== undefined && <DetailsBand>{details}</DetailsBand>}
+      {under !== undefined && <div className="wb-under">{under}</div>}
+
+      {secondary !== undefined && <div className="wb-secondary">{secondary}</div>}
 
       <EvidenceDrawer manifest={manifest}>{evidence}</EvidenceDrawer>
     </div>

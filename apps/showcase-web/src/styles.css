@@ -2020,38 +2020,131 @@ button.chip.demo-preset:hover {
 }
 
 /* --- Demo workbench: scroll-free dashboard layout -----------------------------
-   Root is a fixed-height grid (header / KPI band / main row / details /
-   evidence). Opening the details band or evidence drawer grows those auto
-   rows and steals space from the minmax(0, 1fr) chart row — the page itself
-   never scrolls at desktop widths. */
+   Root is a fixed-height grid (header / KPI band / notice strip / main row /
+   secondary band / evidence). Opening the evidence drawer grows that auto row
+   and steals space from the minmax(0, 1fr) chart row — the page itself never
+   scrolls at desktop widths. */
 
 .wb-root {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
-  gap: 0.75rem;
+  /* the controls rail sits right of the chart; an optional full-width strip
+     (e.g. scorer form) sits below them; secondary panels band below that */
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas:
+    "header header"
+    "kpi kpi"
+    "notice notice"
+    "canvas controls"
+    "under under"
+    "secondary secondary"
+    "evidence evidence";
+  gap: 0.5rem;
   height: 100vh;
   height: 100dvh;
 }
 
 .wb-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1.5rem;
+  grid-area: header;
 }
 
-.demo-topbar {
+.wb-kpi-band {
+  grid-area: kpi;
+}
+
+.wb-notice-strip {
+  grid-area: notice;
+}
+
+/* children (.wb-canvas-slot / .wb-controls) become direct grid items */
+.wb-main {
+  display: contents;
+}
+
+.wb-canvas-slot {
+  grid-area: canvas;
+}
+
+.wb-controls {
+  grid-area: controls;
+}
+
+.wb-secondary {
+  grid-area: secondary;
+}
+
+.wb-under {
+  grid-area: under;
+  min-height: 0;
+}
+
+/* horizontal scorer strip under the main row: fields in one row */
+.wb-scorer-strip .demo-control {
+  padding: 0.45rem 0.9rem;
+}
+
+.wb-scorer-strip .demo-form {
+  margin: 0.35rem 0 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.wb-scorer-strip .demo-form label {
+  gap: 0.15rem;
+  font-size: 0.7rem;
+}
+
+.wb-scorer-strip .demo-form input,
+.wb-scorer-strip .demo-form select {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.78rem;
+}
+
+.wb-scorer-strip .demo-score-result {
+  margin: 0.35rem 0 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.wb-scorer-strip .demo-prob-line,
+.wb-scorer-strip .demo-alarm {
   margin: 0;
 }
 
+.wb-evidence {
+  grid-area: evidence;
+}
+
+.wb-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem 2rem;
+}
+
 .wb-heading {
-  flex: 1 1 420px;
+  flex: 1 1 480px;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* small, unobtrusive way back — always above the title, never beside it */
+.wb-back {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.wb-back:hover {
+  color: var(--accent);
 }
 
 .wb-heading .demo-title {
-  margin: 0 0 0.15rem;
-  font-size: 1.35rem;
+  margin: 0;
+  font-size: 1.6rem;
   text-shadow: 0 0 14px var(--accent-glow);
 }
 
@@ -2060,23 +2153,21 @@ button.chip.demo-preset:hover {
   color: var(--muted);
   max-width: 720px;
   font-size: 0.9rem;
+  line-height: 1.45;
+  /* one line in the dashboard header — full hook remains in the manifest and
+     evidence drawer; this buys the chart and controls rail vertical room */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .wb-actions {
+  margin-left: auto;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 0.9rem;
-}
-
-.wb-modes {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.wb-mode {
-  color: var(--accent);
-  border-color: var(--accent);
+  padding-top: 0.25rem;
 }
 
 .wb-scenarios {
@@ -2086,7 +2177,6 @@ button.chip.demo-preset:hover {
 }
 
 button.chip.wb-scenario,
-button.chip.wb-share,
 button.chip.wb-reset {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -2098,7 +2188,6 @@ button.chip.wb-reset {
 }
 
 button.chip.wb-scenario:hover,
-button.chip.wb-share:hover,
 button.chip.wb-reset:hover {
   border-color: var(--accent);
   color: var(--accent);
@@ -2110,13 +2199,7 @@ button.chip.wb-scenario.active {
   box-shadow: 0 0 8px var(--accent-glow);
 }
 
-.wb-buttons {
-  display: flex;
-  gap: 0.4rem;
-  margin-left: auto;
-}
-
-/* KPI band: equal-width tiles across the top, Notice as the wider last tile */
+/* KPI band: equal-width dynamic tiles across the top */
 
 .wb-kpi-band {
   display: flex;
@@ -2129,11 +2212,11 @@ button.chip.wb-scenario.active {
   min-width: 0;
 }
 
-.wb-kpi-band .wb-notice {
-  flex: 1.8 1 0;
-  min-width: 0;
-  display: flex;
-  align-items: center;
+/* notice strip: slim full-width accent line directly under the KPI band */
+
+.wb-notice-strip .wb-notice {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius);
@@ -2142,13 +2225,12 @@ button.chip.wb-scenario.active {
 /* main row: dominant chart + fixed right-hand controls column */
 
 .wb-main {
-  display: flex;
-  gap: 1rem;
+  /* display is set to contents in the .wb-root grid block above so the
+     canvas and controls become direct grid items (controls spans two rows) */
   min-height: 0;
 }
 
 .wb-canvas-slot {
-  flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -2172,6 +2254,29 @@ button.chip.wb-scenario.active {
   flex-direction: column;
 }
 
+.wb-canvas-slot .demo-chart > div {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* slim the main chart's commentary band: one clamped line so the curve keeps
+   the height; full commentary remains in the evidence drawer */
+.wb-canvas-slot .figure-card-band {
+  padding: 0.45rem 0.85rem;
+}
+
+.wb-canvas-slot .figure-card-band .figure-comment {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0.15rem 0 0;
+}
+
+.wb-canvas-slot .demo-readouts {
+  margin-bottom: 0.35rem;
+}
+
 .wb-canvas-slot .demo-chart svg {
   flex: 1 1 auto;
   min-height: 0;
@@ -2186,11 +2291,11 @@ button.chip.wb-scenario.active {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
+  gap: 0.45rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1rem 1.1rem;
+  padding: 0.7rem 1rem;
 }
 
 /* each control group is its own card inside the column */
@@ -2198,8 +2303,20 @@ button.chip.wb-scenario.active {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0.7rem 0.8rem;
+  padding: 0.6rem 0.8rem;
   min-width: 0;
+}
+
+/* preset chips stay on one line each — long labels ellipsis instead of
+   wrapping, so the presets card stays compact */
+.wb-controls .demo-control .chip {
+  display: block;
+  font-size: 0.74rem;
+  padding: 0.3rem 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
 }
 
 /* range slider stays boxed: 10px side padding ≥ thumb radius, so the handle
@@ -2249,20 +2366,22 @@ button.chip.wb-scenario.active {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0.6rem 0.75rem;
+  padding: 0.4rem 0.85rem;
 }
 
 .wb-kpi-label {
   font-family: var(--mono);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   color: var(--muted);
 }
 
 .wb-kpi-value {
   font-family: var(--mono);
-  font-size: 1.15rem;
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.15;
   color: var(--text);
 }
 
@@ -2274,6 +2393,7 @@ button.chip.wb-scenario.active {
 
 .wb-kpi-good .wb-kpi-value {
   color: var(--accent);
+  text-shadow: 0 0 12px var(--accent-glow);
 }
 
 .wb-kpi-bad .wb-kpi-value {
@@ -2295,41 +2415,28 @@ button.chip.wb-scenario.active {
   color: var(--accent);
 }
 
-/* details band: collapsible row of secondary panels */
+/* secondary band: permanent row of three panels between the main row and the
+   evidence drawer — fixed height, panels fill it, nothing scrolls */
 
-.wb-details {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.wb-details summary {
-  cursor: pointer;
-  padding: 0.5rem 1.1rem;
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  color: var(--muted);
-  list-style: none;
-}
-
-.wb-details summary::before {
-  content: "$ ";
-  color: var(--accent);
-}
-
-.wb-details summary:hover {
-  color: var(--accent);
-}
-
-.wb-details-body {
-  height: 230px;
-  padding: 0 0.9rem 0.9rem;
+.wb-secondary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
+  height: 140px;
+  min-height: 0;
 }
 
-.wb-detail-panel {
+/* compact band: keep the fig id line, drop the paragraph commentary (it
+   lives in the evidence drawer and the project report) */
+.wb-secondary .figure-card-band {
+  padding: 0.3rem 0.75rem;
+}
+
+.wb-secondary .figure-card-band .figure-comment {
+  display: none;
+}
+
+.wb-secondary-panel {
   min-width: 0;
   min-height: 0;
   display: flex;
@@ -2337,23 +2444,24 @@ button.chip.wb-scenario.active {
   gap: 0.4rem;
 }
 
-.wb-detail-panel .wb-rail-title {
+.wb-secondary-panel .wb-rail-title {
   flex-shrink: 0;
 }
 
 /* secondary panels reuse the figure-card chrome at reduced padding */
-.wb-details-body .figure-card {
+.wb-secondary .figure-card {
+  flex: 1 1 auto;
   margin-bottom: 0;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
-.wb-details-body .figure-card-band {
-  padding: 0.5rem 0.7rem 0.6rem;
+.wb-secondary .figure-card-band {
+  padding: 0.4rem 0.7rem 0.5rem;
 }
 
-.wb-details-body .figure-comment {
-  font-size: 0.78rem;
+.wb-secondary .figure-comment {
+  font-size: 0.75rem;
 }
 
 /* internal scroll regions: drawers scroll their own bodies, not the page */
@@ -2372,9 +2480,9 @@ button.chip.wb-scenario.active {
 
 .wb-evidence summary {
   cursor: pointer;
-  padding: 0.75rem 1.1rem;
+  padding: 0.5rem 1.1rem;
   font-family: var(--mono);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--muted);
   list-style: none;
 }
@@ -2456,15 +2564,20 @@ button.chip.wb-scenario.active {
 @media (max-width: 900px) {
   .wb-root {
     height: auto;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "kpi"
+      "notice"
+      "canvas"
+      "controls"
+      "secondary"
+      "evidence";
   }
 
   .wb-kpi-band {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .wb-main {
-    flex-direction: column;
   }
 
   .wb-canvas-slot {
@@ -2477,18 +2590,15 @@ button.chip.wb-scenario.active {
   }
 
   .wb-controls {
-    flex: 0 0 auto;
-    width: 100%;
     overflow-y: visible;
   }
 
-  .wb-details-body {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .wb-secondary {
+    grid-template-columns: 1fr;
     height: auto;
-    max-height: none;
   }
 
-  .wb-buttons {
-    margin-left: 0;
+  .wb-secondary .figure-card {
+    overflow: visible;
   }
 }

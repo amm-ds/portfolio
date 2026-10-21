@@ -1,18 +1,29 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ApiError, scoreChurn } from "../../api";
 import { CalibrationScatter } from "../charts/CalibrationScatter";
-import { LineChart } from "../charts/LineChart";
+import { LineChart, type LineMarker } from "../charts/LineChart";
 import { MiniBars } from "../charts/MiniBars";
 import { SegmentLegend, StackedHBar, type HBarSegment } from "../charts/StackedHBar";
 import type { ChurnPayload, ConfusionRow, DemoManifest } from "../types";
 import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import { contactCount, costAt, nearestIndex, noticeText, recallAt, savings } from "./kpis";
 import { fetchChurnPayload, fetchManifest } from "./payload";
+import { ScorerCard } from "./ScorerCard";
 
 const C_TEAL = "#2dd4bf";
 const C_PINK = "#f472b6";
 const C_AMBER = "#fbbf24";
 const C_GRAY = "#64748b";
+
+/** A customer pinned on the cost curve: label (short form) + scored probability. */
+interface CustomerMarker {
+  label: string;
+  probability: number;
+}
+
+/** Short form of a preset label for chart annotation ("at-risk fiber customer" → "at-risk fiber"). */
+function shortLabel(label: string): string {
+  return label.split(" ").slice(0, 2).join(" ");
+}
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
 const FALLBACK_MANIFEST: DemoManifest = {
@@ -66,11 +77,13 @@ function CostCurvePanel({
   payload,
   fnRatio,
   cursorIdx,
+  customer,
   onCursor,
 }: {
   payload: ChurnPayload;
   fnRatio: number;
   cursorIdx: number;
+  customer: CustomerMarker | null;
   onCursor: (idx: number) => void;
 }) {
   const { thresholds, overall, model } = payload;
@@ -83,6 +96,19 @@ function CostCurvePanel({
   const defaultCost = costs[defaultIdx];
   const delta = cursorCost - defaultCost;
   const cursorRow = overall[cursorIdx];
+
+  const markers: LineMarker[] = [
+    { xIndex: defaultIdx, label: "default 0.5", style: "dashed" },
+    { xIndex: selectedIdx, style: "star" },
+  ];
+  if (customer) {
+    markers.push({
+      xIndex: nearestIndex(thresholds, customer.probability),
+      label: customer.label,
+      style: "solid",
+      color: customer.probability >= cursorT ? C_TEAL : C_GRAY,
+    });
+  }
 
   return (
     <Figure
@@ -110,10 +136,7 @@ function CostCurvePanel({
         series={[{ name: "cost", color: C_TEAL, values: costs }]}
         cursor={cursorIdx}
         onCursorChange={onCursor}
-        markers={[
-          { xIndex: defaultIdx, label: "default 0.5", style: "dashed" },
-          { xIndex: selectedIdx, style: "star" },
-        ]}
+        markers={markers}
         ariaLabel="campaign cost over alarm threshold"
       />
       <p className="demo-hint">drag the chart to move the threshold</p>
@@ -193,146 +216,6 @@ function CalibrationPanel({ payload }: { payload: ChurnPayload }) {
   );
 }
 
-// --- customer scorer card -------------------------------------------------------------
-
-type ScoreState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "ok"; probability: number }
-  | { status: "unavailable" }
-  | { status: "error" };
-
-function ScorerCard({
-  payload,
-  cursorT,
-  form,
-  setForm,
-}: {
-  payload: ChurnPayload;
-  cursorT: number;
-  form: Record<string, number | string>;
-  setForm: (f: Record<string, number | string>) => void;
-}) {
-  const d = payload.feature_domains;
-  const [score, setScore] = useState<ScoreState>({ status: "idle" });
-
-  const set = (key: string, value: number | string) => setForm({ ...form, [key]: value });
-
-  const scoreLive = () => {
-    setScore({ status: "loading" });
-    scoreChurn(payload.project, form)
-      .then((r) => setScore({ status: "ok", probability: r.churn_probability }))
-      .catch((e) => {
-        if (e instanceof ApiError && e.status === 503) {
-          setScore({ status: "unavailable" });
-        } else {
-          setScore({ status: "error" });
-        }
-      });
-  };
-
-  const alarm = score.status === "ok" && score.probability >= cursorT;
-  const nearestPreset =
-    score.status === "ok"
-      ? payload.customers.reduce((best, c) =>
-          Math.abs(c.churn_probability - score.probability) <
-          Math.abs(best.churn_probability - score.probability)
-            ? c
-            : best,
-        )
-      : null;
-
-  return (
-    <Figure
-      id="scorer"
-      comment={
-        <>
-          The form drives the same serving artifact the experiment reports on; the alarm
-          verdict uses the threshold under the cursor, not the committed one.
-        </>
-      }
-    >
-      <div className="demo-scorer">
-        <div className="demo-form">
-          <label>
-            tenure (months)
-            <input
-              type="number"
-              min={d.tenure_months.min}
-              max={d.tenure_months.max}
-              value={Number(form.tenure_months)}
-              onChange={(e) => set("tenure_months", Number(e.target.value))}
-            />
-          </label>
-          <label>
-            monthly charges
-            <input
-              type="number"
-              min={d.monthly_charges.min}
-              max={d.monthly_charges.max}
-              value={Number(form.monthly_charges)}
-              onChange={(e) => set("monthly_charges", Number(e.target.value))}
-            />
-          </label>
-          <label>
-            contract
-            <select value={String(form.contract)} onChange={(e) => set("contract", e.target.value)}>
-              {d.contract.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            internet service
-            <select
-              value={String(form.internet_service)}
-              onChange={(e) => set("internet_service", e.target.value)}
-            >
-              {d.internet_service.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" onClick={scoreLive} disabled={score.status === "loading"}>
-            {score.status === "loading" ? "scoring…" : "score live"}
-          </button>
-        </div>
-        {score.status === "ok" && (
-          <div className="demo-score-result">
-            <div className="demo-prob-bar">
-              <span style={{ width: `${score.probability * 100}%` }} />
-            </div>
-            <p className="demo-prob-line">churn probability {(score.probability * 100).toFixed(1)}%</p>
-            <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
-              {alarm
-                ? `alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
-                : `no alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
-            </p>
-            {nearestPreset && (
-              <p className="demo-hint">
-                closest preset band: {nearestPreset.label} (p ={" "}
-                {nearestPreset.churn_probability.toFixed(2)})
-              </p>
-            )}
-          </div>
-        )}
-        {score.status === "unavailable" && (
-          <p className="state-box demo-score-note">
-            live scoring unavailable — showing precomputed presets only
-          </p>
-        )}
-        {score.status === "error" && (
-          <p className="state-box error demo-score-note">scoring request failed — try again</p>
-        )}
-      </div>
-    </Figure>
-  );
-}
-
 // --- demo ------------------------------------------------------------------------------
 
 export default function ChurnSandbox() {
@@ -384,6 +267,8 @@ function ChurnSandboxWorkbench({
     ...payload.customers[0].features,
   }));
   const [presetKey, setPresetKey] = useState(0);
+  // customer pinned on the cost curve: set by preset chips and live scores
+  const [customer, setCustomer] = useState<CustomerMarker | null>(null);
 
   const cursorIdx = nearestIndex(payload.thresholds, controls.threshold);
   const cursorT = payload.thresholds[cursorIdx];
@@ -391,8 +276,19 @@ function ChurnSandboxWorkbench({
   const defaultRow = payload.overall[nearestIndex(payload.thresholds, payload.model.threshold_default)];
   const laxerRow = cursorIdx > 0 ? payload.overall[cursorIdx - 1] : null;
   const { delta_ci } = payload.headline;
+  const saved = savings(cursorRow, defaultRow, fnRatio);
 
   const moveCursor = (idx: number) => setControl("threshold", payload.thresholds[idx]);
+
+  /** Label a live-scored probability with its nearest preset band. */
+  const nearestPresetLabel = (probability: number) =>
+    shortLabel(
+      payload.customers.reduce((best, c) =>
+        Math.abs(c.churn_probability - probability) < Math.abs(best.churn_probability - probability)
+          ? c
+          : best,
+      ).label,
+    );
 
   return (
     <DemoWorkbench
@@ -413,7 +309,7 @@ function ChurnSandboxWorkbench({
             />
           </div>
           <div className="demo-control">
-            <span className="demo-control-label">preset customers (fill the scorer form)</span>
+            <span className="demo-control-label">preset customers</span>
             <div className="demo-presets">
               {payload.customers.map((c) => (
                 <button
@@ -423,6 +319,7 @@ function ChurnSandboxWorkbench({
                   onClick={() => {
                     setForm({ ...c.features });
                     setPresetKey((k) => k + 1);
+                    setCustomer({ label: shortLabel(c.label), probability: c.churn_probability });
                   }}
                 >
                   {c.label}
@@ -432,52 +329,70 @@ function ChurnSandboxWorkbench({
           </div>
         </>
       }
-      canvas={<CostCurvePanel payload={payload} fnRatio={fnRatio} cursorIdx={cursorIdx} onCursor={moveCursor} />}
+      under={
+        form !== null ? (
+          <div className="wb-scorer-strip">
+            <ScorerCard
+              key={presetKey}
+              payload={payload}
+              cursorT={cursorT}
+              form={form}
+              setForm={setForm}
+              onScore={(probability) =>
+                setCustomer({ label: nearestPresetLabel(probability), probability })
+              }
+            />
+          </div>
+        ) : undefined
+      }
+      canvas={
+        <CostCurvePanel
+          payload={payload}
+          fnRatio={fnRatio}
+          cursorIdx={cursorIdx}
+          customer={customer}
+          onCursor={moveCursor}
+        />
+      }
       kpis={
         <>
           <KpiTile
             label="cost at t"
             value={String(Math.round(costAt(cursorRow, fnRatio)))}
-            sub={`at t = ${cursorT.toFixed(2)}`}
+            sub={`at threshold ${cursorT.toFixed(2)} · FP·1 + FN·${fnRatio}`}
           />
           <KpiTile
-            label="vs 0.5 default"
-            value={`${savings(cursorRow, defaultRow, fnRatio) < 0 ? "saves" : "costs"} ${Math.abs(Math.round(savings(cursorRow, defaultRow, fnRatio)))}`}
-            sub={delta_ci.significant_95 ? "95% significant" : "not significant"}
-            tone={savings(cursorRow, defaultRow, fnRatio) < 0 ? "good" : "bad"}
+            label="saves vs 0.5"
+            value={`${saved < 0 ? "saves" : "costs"} ${Math.abs(Math.round(saved))}`}
+            sub={`paired bootstrap CI${delta_ci.significant_95 ? " · 95% significant" : " · not significant"}`}
+            tone={saved < 0 ? "good" : "bad"}
           />
           <KpiTile
             label="contacts"
-            value={`${contactCount(cursorRow)} of ${payload.holdout_n}`}
-            sub="holdout customers contacted"
+            value={String(contactCount(cursorRow))}
+            sub={`of ${payload.holdout_n} holdout customers`}
           />
           <KpiTile
             label="recall at t"
             value={`${Math.round(recallAt(cursorRow) * 100)}%`}
             sub={`of ${cursorRow.tp + cursorRow.fn} churners caught`}
           />
-          <Notice>{noticeText(cursorRow, laxerRow, fnRatio)}</Notice>
         </>
       }
-      details={
+      notice={<Notice>{noticeText(cursorRow, laxerRow, fnRatio)}</Notice>}
+      secondary={
         <>
-          <div className="wb-detail-panel">
+          <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">decision outcomes</h3>
             <OutcomesPanel row={cursorRow} holdoutN={payload.holdout_n} />
           </div>
-          <div className="wb-detail-panel">
+          <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">alarm burden by contract</h3>
             <SlicesPanel slices={payload.slices.contract} cursorT={cursorT} />
           </div>
-          <div className="wb-detail-panel">
+          <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">probability calibration</h3>
             <CalibrationPanel payload={payload} />
-          </div>
-          <div className="wb-detail-panel">
-            <h3 className="wb-rail-title">score a customer</h3>
-            {form !== null && (
-              <ScorerCard key={presetKey} payload={payload} cursorT={cursorT} form={form} setForm={setForm} />
-            )}
           </div>
         </>
       }
