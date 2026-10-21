@@ -19,6 +19,7 @@ from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from portfolio_core.demo import DemoManifest, load_demo_index, to_registry_entry
 from portfolio_core.logging import get_logger, setup_logging
 from portfolio_core.manifest import load_index
 from portfolio_core.story import ProjectStory, load_story
@@ -125,30 +126,64 @@ def figure(pid: str, name: str) -> str:
     return f.read_text()
 
 
-# --- Interactive demos ( Wave 1: churn threshold sandbox, project 05 ) -------
-# Each demo serves a compact precomputed payload (built by its project's
-# pipeline) plus the live POST endpoints under /projects/<pid>/. The UI lives
-# in showcase-web at /demos/<id>.
+# --- Interactive demos (Wave 1: churn threshold sandbox, project 05) ---------
+# Demos are declared by each project's demo.yaml (see portfolio_core.demo) and
+# served here generically: the registry index, the manifest, and the compact
+# precomputed payload (built by the project's pipeline, validated against the
+# manifest's required_keys / schema_version). Live POST endpoints live under
+# /projects/<pid>/; the UI lives in showcase-web at /demos/<id>.
 
-DEMO_PAYLOADS = {
-    "churn-sandbox": "05-ml-pipeline-churn",
-}
+
+def _demo_or_404(demo_id: str) -> DemoManifest:
+    for m in load_demo_index(PROJECTS_ROOT):
+        if m.id == demo_id:
+            return m
+    raise HTTPException(status_code=404, detail=f"unknown demo: {demo_id}")
+
+
+@app.get("/demos")
+def demos_index() -> list[dict[str, Any]]:
+    """Registry entries for the frontend demos index (sorted by group, id)."""
+    return [to_registry_entry(m) for m in load_demo_index(PROJECTS_ROOT)]
+
+
+@app.get("/demos/{demo_id}/manifest")
+def demo_manifest(demo_id: str) -> dict[str, Any]:
+    """The demo's manifest as JSON (scenarios, live endpoints, payload ref)."""
+    return _demo_or_404(demo_id).model_dump()
 
 
 @app.get("/demos/{demo_id}/payload")
-def demo_payload(demo_id: str) -> dict[str, Any]:
-    """Precomputed lookup data for an interactive demo (see DEMO_PAYLOADS)."""
-    pid = DEMO_PAYLOADS.get(demo_id)
-    if pid is None:
-        raise HTTPException(status_code=404, detail=f"unknown demo: {demo_id}")
-    f = PROJECTS_ROOT / pid / "reports" / "demo_payload.json"
+def demo_payload(demo_id: str) -> JSONResponse:
+    """The demo's committed payload JSON, cached 5 min by clients/CDN.
+
+    404 when the demo is unknown or its payload file hasn't been built yet;
+    409 when the payload violates the manifest contract (missing required keys
+    or a schema_version mismatch).
+    """
+    m = _demo_or_404(demo_id)
+    f = PROJECTS_ROOT / m.project / m.payload.path
     if not f.exists():
         raise HTTPException(
             status_code=404,
-            detail=f"demo payload not built for {pid} — run its demo-payload stage",
+            detail=f"demo payload not built for {m.project} — run its demo-payload "
+            f"stage to write {m.payload.path}",
         )
     data: dict[str, Any] = json.loads(f.read_text())
-    return data
+    missing = [k for k in m.payload.required_keys if k not in data]
+    if missing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"payload for {demo_id} is missing required keys: {', '.join(missing)}",
+        )
+    payload_sv = data.get("schema_version")
+    if payload_sv is not None and payload_sv != m.payload.schema_version:
+        raise HTTPException(
+            status_code=409,
+            detail=f"payload schema_version {payload_sv} does not match manifest "
+            f"schema_version {m.payload.schema_version}",
+        )
+    return JSONResponse(data, headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/projects/{pid}/report", response_class=HTMLResponse)
@@ -574,37 +609,6 @@ def _index_html() -> str:
     """The built SPA shell, read per request: rebuilds replace hashed asset
     names, so a cached copy at import time would point at deleted files."""
     return (WEB_DIST / "index.html").read_text()
-
-
-def _mount_tape_forecast() -> None:
-    """Mount the tape-forecast demo (separate repo, installed as a git dep).
-
-    The demo app is self-contained: lookup routes + its own SPA, with payload
-    dirs resolved from TAPE_FORECAST_* env vars — set by the Dockerfile (baked
-    clone of the tagged demo repo) or by a local dev shell pointing at a local
-    clone. When the payload is absent (unit tests, slim checkouts) the mount
-    is skipped and /demos/tape-forecast simply isn't served.
-    """
-    serving_dir = os.environ.get("TAPE_FORECAST_SERVING_DIR")
-    if not serving_dir or not Path(serving_dir).is_dir():
-        logger.info("tape-forecast payload absent - /demos/tape-forecast not mounted")
-        return
-    from tape_forecast.serving.app import create_app as create_tape_app
-
-    app.mount("/demos/tape-forecast", create_tape_app())
-    logger.info("mounted tape-forecast demo at /demos/tape-forecast")
-
-
-@app.get("/demos/tape-forecast", include_in_schema=False)
-def _tape_forecast_redirect() -> Response:
-    """Canonical URL carries the trailing slash: the demo SPA uses relative
-    asset/API paths, which only resolve correctly from the directory URL."""
-    from fastapi.responses import RedirectResponse
-
-    return RedirectResponse("/demos/tape-forecast/")
-
-
-_mount_tape_forecast()
 
 
 if WEB_DIST.exists():

@@ -116,24 +116,150 @@ def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[n
     assert r.status_code == 200 and "report" in r.text
 
 
-def test_demo_payload_route(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+# --- Demo platform: registry / manifest / payload ----------------------------
+
+_DEMO_YAML = """\
+id: churn-sandbox
+title: churn threshold sandbox
+hook: Move the alarm threshold and watch the cost curve move.
+project: 05-ml-pipeline-churn
+group: retain customers
+skills: [calibration]
+modes: [browser, live]
+hero:
+  label: decision cost per 1,400 customers
+  value: "$601 vs $1,035 naive"
+  ci: paired bootstrap CI [-485, -343]
+scenarios:
+  - name: base
+    controls: {fn_ratio: 5, threshold: 0.175}
+live_endpoints:
+  - method: POST
+    path: /projects/05-ml-pipeline-churn/score
+    label: live customer scoring
+    cost: free-local
+payload:
+  path: reports/demo_payload.json
+  schema_version: 1
+  required_keys: [demo, thresholds, overall]
+"""
+
+_DEMO_PAYLOAD = {"demo": "churn-threshold-sandbox", "thresholds": [0.1], "overall": {}}
+
+
+def _write_demo_project(root: Path) -> None:
+    """One project dir with portfolio.yaml + demo.yaml + built payload."""
+    proj = root / "05-ml-pipeline-churn"
+    reports = proj / "reports"
+    reports.mkdir(parents=True)
+    (proj / "portfolio.yaml").write_text(
+        "id: 05-ml-pipeline-churn\ntitle: Churn\ndomain: x\ntopic: T\n"
+        "techniques: [t]\ndata: s\norder: 5\n"
+    )
+    (proj / "demo.yaml").write_text(_DEMO_YAML)
+    (reports / "demo_payload.json").write_text(json.dumps(_DEMO_PAYLOAD))
+
+
+def test_demos_registry_entry_shape(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from showcase_api import main
 
-    pid = main.DEMO_PAYLOADS["churn-sandbox"]
+    _write_demo_project(tmp_path)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos")
+    assert r.status_code == 200
+    (entry,) = r.json()
+    assert entry == {
+        "id": "churn-sandbox",
+        "title": "churn threshold sandbox",
+        "hook": "Move the alarm threshold and watch the cost curve move.",
+        "group": "retain customers",
+        "href": "/demos/churn-sandbox",
+        "project": "05-ml-pipeline-churn",
+        "status": "live",
+        "hero": {
+            "label": "decision cost per 1,400 customers",
+            "value": "$601 vs $1,035 naive",
+            "ci": "paired bootstrap CI [-485, -343]",
+        },
+    }
+
+
+def test_demo_manifest_round_trip(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    _write_demo_project(tmp_path)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/manifest")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["id"] == "churn-sandbox"
+    assert body["scenarios"][0] == {"name": "base", "controls": {"fn_ratio": 5, "threshold": 0.175}}
+    assert body["live_endpoints"][0] == {
+        "method": "POST",
+        "path": "/projects/05-ml-pipeline-churn/score",
+        "label": "live customer scoring",
+        "cost": "free-local",
+    }
+    assert body["payload"] == {
+        "path": "reports/demo_payload.json",
+        "schema_version": 1,
+        "required_keys": ["demo", "thresholds", "overall"],
+    }
+
+    assert client.get("/demos/nope/manifest").status_code == 404
+
+
+def test_demo_payload_200_and_cache_header(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    _write_demo_project(tmp_path)
     monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
 
     r = client.get("/demos/churn-sandbox/payload")
-    assert r.status_code == 404  # payload not built yet
-
-    reports = tmp_path / pid / "reports"
-    reports.mkdir(parents=True)
-    payload = {"demo": "churn-threshold-sandbox", "thresholds": [0.1]}
-    (reports / "demo_payload.json").write_text(json.dumps(payload))
-    r = client.get("/demos/churn-sandbox/payload")
     assert r.status_code == 200
-    assert r.json() == payload
+    assert r.json() == _DEMO_PAYLOAD
+    assert r.headers["Cache-Control"] == "public, max-age=300"
+
+
+def test_demo_payload_404_unknown_demo(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    _write_demo_project(tmp_path)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
 
     assert client.get("/demos/nope/payload").status_code == 404
+
+
+def test_demo_payload_404_when_not_built(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    proj = tmp_path / "05-ml-pipeline-churn"
+    proj.mkdir(parents=True)
+    (proj / "demo.yaml").write_text(_DEMO_YAML)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 404
+    assert "demo-payload" in r.json()["detail"]
+
+
+def test_demo_payload_409_on_missing_required_key(
+    tmp_path: Path, monkeypatch  # type: ignore[no-untyped-def]
+) -> None:
+    from showcase_api import main
+
+    _write_demo_project(tmp_path)
+    bad = dict(_DEMO_PAYLOAD)
+    del bad["overall"]
+    payload_file = tmp_path / "05-ml-pipeline-churn" / "reports" / "demo_payload.json"
+    payload_file.write_text(json.dumps(bad))
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 409
+    assert "overall" in r.json()["detail"]
 
 
 def test_forecast_503_without_artifacts(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]

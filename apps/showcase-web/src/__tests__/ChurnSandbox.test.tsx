@@ -3,7 +3,8 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Project } from "../api";
 import { App } from "../App";
-import { ChurnSandbox, type ChurnSandboxPayload } from "../demos/ChurnSandbox";
+import ChurnSandbox from "../demos/churn-sandbox/ChurnSandbox";
+import type { ChurnPayload } from "../demos/types";
 import { ProjectDetail } from "../pages/ProjectDetail";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -23,7 +24,48 @@ const OVERALL = [
   { t: 0.9, tn: 870, fp: 30, fn: 85, tp: 15 },
 ];
 
-const PAYLOAD: ChurnSandboxPayload = {
+/** Manifest fixture mirroring projects/05-ml-pipeline-churn/demo.yaml. */
+const MANIFEST = {
+  id: "churn-sandbox",
+  title: "churn threshold sandbox",
+  hook: "Move the alarm threshold and the missed-churner cost — watch the saved budget change.",
+  project: "05-ml-pipeline-churn",
+  group: "retain customers",
+  skills: ["classification economics", "calibration", "decision science"],
+  modes: ["browser", "live"],
+  hero: null,
+  scenarios: [
+    { name: "base", controls: { fn_ratio: 5, threshold: 0.175 } },
+    { name: "high-cost-miss", controls: { fn_ratio: 9, threshold: 0.12 } },
+  ],
+  live_endpoints: [
+    {
+      method: "POST",
+      path: "/projects/05-ml-pipeline-churn/score",
+      label: "live customer scoring",
+      cost: "free-local",
+    },
+  ],
+  payload: {
+    path: "reports/demo_payload.json",
+    schema_version: 1,
+    required_keys: ["demo", "project", "holdout_n", "model", "cost_model", "headline", "thresholds", "overall", "slices", "calibration", "customers", "feature_domains", "roc_auc"],
+  },
+};
+
+/** Registry entry for the demo CTA tests (fixed /demos contract). */
+const CHURN_DEMO_ENTRY = {
+  id: "churn-sandbox",
+  title: "churn threshold sandbox",
+  hook: "Move the alarm threshold — watch the saved budget change.",
+  group: "retain customers",
+  href: "/demos/churn-sandbox",
+  project: "05-ml-pipeline-churn",
+  status: "live",
+  hero: null,
+};
+
+const PAYLOAD: ChurnPayload = {
   demo: "churn-threshold-sandbox",
   project: "05-ml-pipeline-churn",
   holdout_n: 1000,
@@ -102,10 +144,11 @@ function mockFetch(handler: (path: string, init?: RequestInit) => Response | Pro
 }
 
 function payloadFetch() {
-  return (path: string) =>
-    path.endsWith("/demos/churn-sandbox/payload")
-      ? jsonResponse(PAYLOAD)
-      : jsonResponse({}, 404);
+  return (path: string) => {
+    if (path.endsWith("/demos/churn-sandbox/manifest")) return jsonResponse(MANIFEST);
+    if (path.endsWith("/demos/churn-sandbox/payload")) return jsonResponse(PAYLOAD);
+    return jsonResponse({}, 404);
+  };
 }
 
 function renderDemo() {
@@ -198,6 +241,7 @@ describe("ChurnSandbox", () => {
 
   it("scores a customer live and alarms against the cursor threshold", async () => {
     mockFetch((path, init) => {
+      if (path.endsWith("/demos/churn-sandbox/manifest")) return jsonResponse(MANIFEST);
       if (path.endsWith("/demos/churn-sandbox/payload")) return jsonResponse(PAYLOAD);
       if (path.endsWith("/projects/05-ml-pipeline-churn/score")) {
         expect(init?.method).toBe("POST");
@@ -225,6 +269,7 @@ describe("ChurnSandbox", () => {
 
   it("shows a graceful notice when live scoring returns 503", async () => {
     mockFetch((path) => {
+      if (path.endsWith("/demos/churn-sandbox/manifest")) return jsonResponse(MANIFEST);
       if (path.endsWith("/demos/churn-sandbox/payload")) return jsonResponse(PAYLOAD);
       if (path.endsWith("/score")) return jsonResponse({ detail: "serving artifacts not built" }, 503);
       return jsonResponse({}, 404);
@@ -275,6 +320,7 @@ describe("churn sandbox routing & links", () => {
   it("shows the live-demo link on the 05 project detail page", async () => {
     mockFetch((path) => {
       if (path.endsWith("/projects")) return jsonResponse([CHURN_PROJECT]);
+      if (path.endsWith("/demos")) return jsonResponse([CHURN_DEMO_ENTRY]);
       return jsonResponse({ detail: "no story" }, 404);
     });
     render(
@@ -290,5 +336,38 @@ describe("churn sandbox routing & links", () => {
         "/demos/churn-sandbox",
       ),
     );
+  });
+
+  it("omits the live-demo link when the registry has no demo for the project", async () => {
+    mockFetch((path) => {
+      if (path.endsWith("/projects")) return jsonResponse([CHURN_PROJECT]);
+      if (path.endsWith("/demos")) return jsonResponse([]);
+      return jsonResponse({ detail: "no story" }, 404);
+    });
+    render(
+      <MemoryRouter initialEntries={["/projects/05-ml-pipeline-churn"]}>
+        <Routes>
+          <Route path="/projects/:id" element={<ProjectDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByRole("link", { name: "[code]" })).toBeInTheDocument());
+    expect(screen.queryByRole("link", { name: "▶ try the live demo" })).toBeNull();
+  });
+
+  it("omits the live-demo link when the registry fetch fails", async () => {
+    mockFetch((path) => {
+      if (path.endsWith("/projects")) return jsonResponse([CHURN_PROJECT]);
+      return jsonResponse({ detail: "registry down" }, 503);
+    });
+    render(
+      <MemoryRouter initialEntries={["/projects/05-ml-pipeline-churn"]}>
+        <Routes>
+          <Route path="/projects/:id" element={<ProjectDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByRole("link", { name: "[code]" })).toBeInTheDocument());
+    expect(screen.queryByRole("link", { name: "▶ try the live demo" })).toBeNull();
   });
 });

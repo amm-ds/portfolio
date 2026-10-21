@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  getDemoRegistry,
   getFigures,
   getMetrics,
   getProjects,
@@ -8,7 +9,6 @@ import {
   type Metrics,
   type ProjectStoryData,
 } from "../api";
-import { DEMO_LINKS } from "../lib/demos";
 import { CaseStudy } from "../components/CaseStudy";
 import { FigureFrame } from "../components/FigureFrame";
 import { MetricsTable } from "../components/MetricsTable";
@@ -36,6 +36,22 @@ export function ProjectDetail() {
   const [storyLoading, setStoryLoading] = useState(true);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [figures, setFigures] = useState<string[]>([]);
+  const [demoHref, setDemoHref] = useState<string | null>(null);
+
+  // Live-demo CTA: match this project against the demo registry (fetched once
+  // per mount, shared across re-renders via component state).
+  useEffect(() => {
+    let cancelled = false;
+    setDemoHref(null);
+    getDemoRegistry()
+      .then((entries) => {
+        if (!cancelled) setDemoHref(entries.find((e) => e.project === id)?.href ?? null);
+      })
+      .catch(() => !cancelled && setDemoHref(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,8 +140,8 @@ export function ProjectDetail() {
             ))}
           </div>
           <div className="meta-links">
-            {DEMO_LINKS[id] && (
-              <Link className="chip-link demo-cta" to={DEMO_LINKS[id]}>
+            {demoHref && (
+              <Link className="chip-link demo-cta" to={demoHref}>
                 ▶ try the live demo
               </Link>
             )}

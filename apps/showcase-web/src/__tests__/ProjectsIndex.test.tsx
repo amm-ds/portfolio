@@ -14,6 +14,27 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
+/** Fetch stub that answers /projects and 404s everything else (e.g. /demos → static fallback). */
+function projectsOnlyFetch(): ReturnType<typeof vi.fn> {
+  return vi.fn((input: RequestInfo | URL) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
+    return Promise.resolve(jsonResponse({ detail: "no" }, 404));
+  });
+}
+
+/** One registry entry, shaped per the fixed /demos contract. */
+const CHURN_DEMO_ENTRY = {
+  id: "churn-sandbox",
+  title: "churn threshold sandbox",
+  hook: "Move the alarm threshold and the missed-churner cost — watch the saved budget change.",
+  group: "retain customers",
+  href: "/demos/churn-sandbox",
+  project: "05-ml-pipeline-churn",
+  status: "live",
+  hero: { label: "decision cost per 1,400 customers", value: "$601 vs $1,035 naive" },
+};
+
 function project(over: Partial<Project>): Project {
   return {
     id: "01-rag-agent",
@@ -108,7 +129,7 @@ describe("groupByRow", () => {
 
 describe("ProjectsIndex", () => {
   it("renders the projects heading and places cards under the right topic rows", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+    vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
@@ -146,7 +167,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("renders every row's cards inside a responsive 2-column project-grid", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+    vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
@@ -170,8 +191,14 @@ describe("ProjectsIndex", () => {
     expect(stylesCss).toContain(".topic-row {");
   });
 
-  it("renders a demos block above the topic rows with the churn sandbox first", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+  it("renders the demos block from the registry with group heading, hero line, and href", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
     render(
       <MemoryRouter>
         <ProjectsIndex />
@@ -182,34 +209,51 @@ describe("ProjectsIndex", () => {
     expect(screen.getByText("play with the live systems behind the experiments")).toBeInTheDocument();
     const demos = document.querySelector(".demos")!;
     expect(demos).not.toBeNull();
+    // one card from the registry, under its group heading
     const demoCards = demos.querySelectorAll(".demo-card");
-    expect(demoCards).toHaveLength(4);
+    expect(demoCards).toHaveLength(1);
+    expect(demos.textContent).toContain("retain customers");
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].textContent).toContain("live");
-    expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe(
-      "/demos/churn-sandbox",
-    );
-    demoCards.forEach((c) => expect(c.textContent).toMatch(/live|coming soon/));
-    expect(demos.textContent).toContain("btc orderflow lab");
-    expect(demos.textContent).toContain("RAG ask-a-question");
-    expect(demos.textContent).toContain("churn threshold sandbox");
-    expect(demos.textContent).toContain("uplift policy simulator");
+    // hero line rendered from the registry entry
+    expect(demoCards[0].textContent).toContain("decision cost per 1,400 customers");
+    expect(demoCards[0].textContent).toContain("$601 vs $1,035 naive");
+    expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
     // demos block renders before the experiments block with the topic rows
-    const demosSection = document.querySelector("section.demos")!;
     const experimentsBlock = document.querySelector(".experiments-block")!;
     expect(
-      demosSection.compareDocumentPosition(experimentsBlock) & Node.DOCUMENT_POSITION_FOLLOWING,
+      demos.compareDocumentPosition(experimentsBlock) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     const firstRow = document.querySelector(".topic-row")!;
     expect(
-      demosSection.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING,
+      demos.compareDocumentPosition(firstRow) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    // and the experiments block wraps all topic rows
     expect(experimentsBlock.querySelectorAll(".topic-row")).toHaveLength(4);
   });
 
+  it("falls back to the static demo card when the registry fetch fails", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
+      return Promise.resolve(jsonResponse({ detail: "registry down" }, 503));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText("Machine Learning")).toBeInTheDocument());
+    const demos = document.querySelector(".demos")!;
+    const demoCards = demos.querySelectorAll(".demo-card");
+    expect(demoCards).toHaveLength(1);
+    expect(demoCards[0].textContent).toContain("churn threshold sandbox");
+    expect(demoCards[0].textContent).toContain("live");
+    expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
+  });
+
   it("renders a what-it-achieves summary plus sub-topic, dataset, and status chips on each card", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+    vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
@@ -268,7 +312,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("renders a one-line impact statement on each card (wording from docs/projects/index.md)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(ALL_PROJECTS)));
+    vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
@@ -291,7 +335,14 @@ describe("ProjectsIndex", () => {
   });
 
   it("shows an empty state when /projects returns []", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([]));
+        return Promise.resolve(jsonResponse({ detail: "no" }, 404));
+      }),
+    );
     render(
       <MemoryRouter>
         <ProjectsIndex />
