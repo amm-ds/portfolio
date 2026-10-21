@@ -43,30 +43,32 @@ function EvidenceDrawer({
     <details className="wb-evidence">
       <summary>Evidence & provenance</summary>
       <div className="wb-evidence-body wb-internal-scroll">
-        <p className="wb-evidence-line">
-          Linked experiment → <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
-        </p>
-        {manifest.skills.length > 0 && (
-          <div className="wb-skills">
-            {manifest.skills.map((skill) => (
-              <span key={skill} className="chip">
-                {skill}
-              </span>
-            ))}
-          </div>
-        )}
-        {manifest.live_endpoints.length > 0 && (
-          <div className="wb-endpoints">
-            {manifest.live_endpoints.map((e) => (
-              <div key={`${e.method} ${e.path}`} className="wb-endpoint">
-                <span className={`wb-method wb-method-${e.method.toLowerCase()}`}>{e.method}</span>
-                <code>{e.path}</code>
-                <span className="wb-endpoint-label">{e.label}</span>
-                <span className="wb-endpoint-cost">{e.cost}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="wb-evidence-chrome">
+          <p className="wb-evidence-line">
+            Linked experiment → <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
+          </p>
+          {manifest.skills.length > 0 && (
+            <div className="wb-skills">
+              {manifest.skills.map((skill) => (
+                <span key={skill} className="chip">
+                  {skill}
+                </span>
+              ))}
+            </div>
+          )}
+          {manifest.live_endpoints.length > 0 && (
+            <div className="wb-endpoints">
+              {manifest.live_endpoints.map((e) => (
+                <div key={`${e.method} ${e.path}`} className="wb-endpoint">
+                  <span className={`wb-method wb-method-${e.method.toLowerCase()}`}>{e.method}</span>
+                  <code>{e.path}</code>
+                  <span className="wb-endpoint-label">{e.label}</span>
+                  <span className="wb-endpoint-cost">{e.cost}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
         {children}
       </div>
     </details>
@@ -112,6 +114,7 @@ export function DemoWorkbench({
   secondary,
   under,
   evidence,
+  about,
 }: {
   manifest: DemoManifest;
   state: ControlState;
@@ -128,8 +131,11 @@ export function DemoWorkbench({
   /** Optional full-width strip directly under the main row (below canvas +
    * controls), e.g. a horizontal scorer form. */
   under?: ReactNode;
-  /** Extra content for the evidence drawer (method, caveats…). */
+  /** Extra content for the evidence drawer (method, caveats…). Demos can pass
+   * two `.wb-evidence-col` blocks to lay it out in two columns. */
   evidence?: ReactNode;
+  /** Optional "how to interpret" body for the collapsible under the header hook. */
+  about?: ReactNode;
 }) {
   return (
     <div className="wb-root">
@@ -140,6 +146,12 @@ export function DemoWorkbench({
           </Link>
           <h1 className="demo-title">{manifest.title}</h1>
           <p className="demo-hook">{manifest.hook}</p>
+          {about !== undefined && (
+            <details className="wb-about">
+              <summary>how to interpret</summary>
+              <div className="wb-about-body">{about}</div>
+            </details>
+          )}
         </div>
         <div className="wb-actions">
           <ScenarioPicker

@@ -1081,6 +1081,34 @@ a.figure-caption:hover {
   color: var(--danger);
 }
 
+/* demo error-boundary fallback: reload + way out */
+.demo-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.demo-error-actions button {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.demo-error-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.demo-error-actions a {
+  color: var(--accent);
+}
+
 .not-found-code {
   font-family: var(--mono);
   color: var(--accent);
@@ -1389,19 +1417,33 @@ button:disabled {
 
 /* --- Native plotly figures --- */
 
+/* Restored verbatim from 01a7d77: without these the host div collapses and
+   the IntersectionObserver gate in PlotlyFigure never fires (figures stuck
+   at "loading…"). */
 .plotly-wrap {
   position: relative;
   width: 100%;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
-  /* Transparent re-skin (PlotlyFigure): the chart floats on the page. */
-  background: transparent;
-  padding: 0.5rem;
+  background: #fff;
 }
 
 .plotly-host {
   width: 100%;
+  /* pre-render height: the IntersectionObserver gate needs a visible box, and
+     the skeleton (position:absolute) contributes none. Plotly sets an
+     explicit height on render (>= MIN_SCALED_HEIGHT), so this never distorts
+     the final figure. */
+  min-height: 360px;
+}
+
+/* Dark-theme adaptation: PlotlyFigure re-skins figures to the site palette
+   (transparent paper, light text), so the frame stays transparent — a white
+   background would swallow the light axis text. */
+.plotly-wrap {
+  background: transparent;
+  padding: 0.5rem;
 }
 
 /* --- Figure cards: chart + commentary band as one integrated tile --- */
@@ -2110,11 +2152,48 @@ button.chip.demo-preset:hover {
   max-width: 720px;
   font-size: 0.9rem;
   line-height: 1.45;
-  /* one line in the dashboard header — full hook remains in the manifest and
-     evidence drawer; this buys the chart and controls rail vertical room */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* full hook renders untrimmed — no one-line ellipsis cut */
+}
+
+/* collapsible "how to interpret" note under the hook */
+.wb-about {
+  max-width: 720px;
+}
+
+.wb-about summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.wb-about summary::before {
+  content: "? ";
+  color: var(--accent);
+}
+
+.wb-about summary:hover {
+  color: var(--accent);
+}
+
+.wb-about-body {
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+
+.wb-about-body p {
+  margin: 0 0 0.4rem;
+}
+
+.wb-about-body p:last-child {
+  margin-bottom: 0;
 }
 
 .wb-actions {
@@ -2344,9 +2423,26 @@ button.chip.wb-scenario.active {
   gap: 0.25rem;
 }
 
-/* scorer card: 2×2 form grid, full-width submit, compact result block */
+/* scorer card: header row (label + submit) on top of a 2×2 field grid; the
+   result block sits directly under the header, above the fields */
 .wb-controls .wb-scorer {
   padding: 0.6rem 0.7rem;
+}
+
+.wb-controls .wb-scorer .wb-scorer-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.wb-controls .wb-scorer .wb-scorer-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
 .wb-controls .wb-scorer .demo-form {
@@ -2369,13 +2465,13 @@ button.chip.wb-scenario.active {
 }
 
 .wb-controls .wb-scorer .demo-form button {
-  grid-column: 1 / -1;
   padding: 0.2rem 0.5rem;
   font-size: 0.78rem;
 }
 
 .wb-controls .wb-scorer .demo-score-result {
-  margin: 0.4rem 0 0;
+  grid-column: 1 / -1;
+  margin: 0.15rem 0 0.25rem;
 }
 
 .wb-controls .wb-scorer .demo-prob-bar {
@@ -2396,31 +2492,45 @@ button.chip.wb-scenario.active {
   margin: 0.25rem 0 0;
 }
 
-.wb-controls input[type="range"] {
+/* filled slider track: --fill (inline style, 0–100%) paints the accent part.
+   No side padding on the input — the thumb center must reach both track ends. */
+.wb-slider {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
   box-sizing: border-box;
-  padding: 0 10px;
   margin: 0;
   height: 16px;
-  accent-color: var(--accent);
   background: transparent;
   cursor: pointer;
 }
 
-.wb-controls input[type="range"]::-webkit-slider-runnable-track {
+.wb-slider::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 3px;
-  background: var(--border);
+  background: linear-gradient(90deg, var(--accent) 0 var(--fill), var(--border) var(--fill) 100%);
 }
 
-.wb-controls input[type="range"]::-webkit-slider-thumb {
+.wb-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
   margin-top: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
 }
 
-.wb-controls input[type="range"]::-moz-range-track {
+.wb-slider::-moz-range-track {
   height: 6px;
   border-radius: 3px;
   background: var(--border);
+}
+
+.wb-slider::-moz-range-progress {
+  background: var(--accent);
+  height: 6px;
+  border-radius: 3px;
 }
 
 /* KPI tiles + notice */
@@ -2554,6 +2664,13 @@ button.chip.wb-scenario.active {
   height: 100%;
 }
 
+/* container-measured svg panels (outcomes stack, contract burden) fill the
+   box left over after the footer commentary band */
+.wb-secondary .wb-panel-viz {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* internal scroll regions: drawers scroll their own bodies, not the page */
 .wb-internal-scroll {
   overflow: auto;
@@ -2589,6 +2706,22 @@ button.chip.wb-scenario.active {
 .wb-evidence-body {
   max-height: 30vh;
   padding: 0 1.1rem 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* the drawer's own chrome (linked experiment, skills, endpoints) spans both
+   columns; demo content flows into the two-column grid below it */
+.wb-evidence-chrome {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.wb-evidence-col {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
@@ -2694,6 +2827,10 @@ button.chip.wb-scenario.active {
   .wb-secondary {
     grid-template-columns: 1fr;
     height: auto;
+  }
+
+  .wb-evidence-body {
+    grid-template-columns: 1fr;
   }
 
   .wb-secondary .figure-card {

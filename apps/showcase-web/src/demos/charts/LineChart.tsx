@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
+import { useMeasuredSize } from "./useMeasuredSize";
 
 export interface LineSeries {
   name: string;
@@ -75,23 +76,10 @@ export function LineChart({
 }) {
   const fmtX = formatX ?? ((v: number) => v.toFixed(2));
   const fmtY = formatY ?? ((v: number) => String(Math.round(v)));
-  const wrapRef = useRef<HTMLDivElement | null>(null);
   // The chart fills its grid cell; measure the container so the viewBox aspect
   // matches the box — otherwise preserveAspectRatio letterboxes the curve
   // (fixed 720x280 viewBox in a wide, short cell renders tiny).
-  const [measured, setMeasured] = useState<{ w: number; h: number } | null>(null);
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      const r = entries[0]?.contentRect;
-      if (r && r.width > 0 && r.height > 0) {
-        setMeasured({ w: Math.round(r.width), h: Math.round(r.height) });
-      }
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const { ref: wrapRef, size: measured } = useMeasuredSize<HTMLDivElement>();
   const width = measured?.w ?? widthProp;
   const height = measured?.h ?? heightProp;
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -109,6 +97,9 @@ export function LineChart({
   const pick = (clientX: number) => {
     const el = svgRef.current;
     if (!el || !onCursorChange) return;
+    // no measurement yet (jsdom, hidden tab) or degenerate plot — dragging
+    // can't map to data coordinates, so ignore rather than guess out of range
+    if (measured === null || plotW <= 0 || x.length === 0) return;
     const rect = el.getBoundingClientRect();
     const vx = ((clientX - rect.left) / rect.width) * width;
     const frac = (vx - pad.l) / plotW;
@@ -117,7 +108,7 @@ export function LineChart({
     for (let i = 1; i < x.length; i++) {
       if (Math.abs(x[i] - t) < Math.abs(x[best] - t)) best = i;
     }
-    onCursorChange(best);
+    onCursorChange(Math.min(x.length - 1, Math.max(0, best)));
   };
 
   const xTickValues = Array.from(

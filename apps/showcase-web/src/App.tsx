@@ -8,6 +8,7 @@ import { Services } from "./pages/Services";
 import { Contact } from "./pages/Contact";
 import { NotFound } from "./pages/NotFound";
 import ChurnSandbox from "./demos/churn-sandbox/ChurnSandbox";
+import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 
 export function App() {
   const location = useLocation();
@@ -21,7 +22,14 @@ export function App() {
           <Route path="/projects" element={<ProjectsIndex />} />
           <Route path="/experiments" element={<ProjectsIndex />} />
           <Route path="/projects/:id" element={<ProjectDetail />} />
-          <Route path="/demos/churn-sandbox" element={<ChurnSandbox />} />
+          <Route
+            path="/demos/churn-sandbox"
+            element={
+              <DemoErrorBoundary>
+                <ChurnSandbox />
+              </DemoErrorBoundary>
+            }
+          />
           <Route path="/services" element={<Services />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/about" element={<Navigate to="/services" replace />} />

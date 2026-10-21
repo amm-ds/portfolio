@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { CalibrationScatter } from "../charts/CalibrationScatter";
 import { LineChart, type LineMarker } from "../charts/LineChart";
-import { MiniBars } from "../charts/MiniBars";
-import { SegmentLegend, StackedHBar, type HBarSegment } from "../charts/StackedHBar";
+import { SegmentLegend, type HBarSegment } from "../charts/StackedHBar";
+import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { ChurnPayload, ConfusionRow, DemoManifest } from "../types";
 import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import { contactCount, costAt, nearestIndex, noticeText, optimalityText, recallAt, savings } from "./kpis";
@@ -138,6 +139,11 @@ function CostCurvePanel({
 // --- decision outcomes panel ------------------------------------------------------
 
 function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number }) {
+  // fill the panel box: measure the wrapper and draw the bar on a matching
+  // viewBox (same pattern as the cost-composition panel)
+  const { ref, size } = useMeasuredSize<HTMLDivElement>();
+  const W = size?.w ?? 360;
+  const H = size?.h ?? 90;
   const perK = (v: number) => Math.round((v * 1000) / holdoutN);
   const segments: HBarSegment[] = [
     { label: "TP", value: perK(row.tp), color: C_TEAL },
@@ -145,6 +151,8 @@ function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number 
     { label: "FN", value: perK(row.fn), color: C_PINK },
     { label: "TN", value: perK(row.tn), color: C_GRAY },
   ];
+  const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
+  let x = 0;
   return (
     <Figure
       comment={
@@ -154,7 +162,34 @@ function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number 
         </>
       }
     >
-      <StackedHBar segments={segments} ariaLabel="outcome mix at the cursor threshold" />
+      <div ref={ref} className="wb-panel-viz">
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="outcome mix at the cursor threshold"
+        >
+          {segments.map((s) => {
+            const w = (s.value / total) * W;
+            const rect = (
+              <rect
+                key={s.label}
+                x={x.toFixed(1)}
+                y={0}
+                width={Math.max(w, 0).toFixed(1)}
+                height={H}
+                fill={s.color}
+              >
+                <title>{`${s.label}: ${s.value}`}</title>
+              </rect>
+            );
+            x += w;
+            return rect;
+          })}
+        </svg>
+      </div>
       <SegmentLegend segments={segments} />
       <p className="demo-hint">
         confusion-matrix counts at t = {row.t.toFixed(2)}, normalized per 1,000 customers
@@ -166,10 +201,20 @@ function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number 
 // --- contract slices panel ----------------------------------------------------------
 
 function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[]>; cursorT: number }) {
+  // container-measured like the other panels: the bars fill the whole box
+  const { ref, size } = useMeasuredSize<HTMLDivElement>();
+  const W = size?.w ?? 360;
+  const H = size?.h ?? 90;
   const rows = Object.entries(slices).map(([label, rowsForSlice]) => {
     const row = rowsForSlice[nearestIndex(rowsForSlice.map((r) => r.t), cursorT)];
     return { label, value: row.tp + row.fp, unit: "alarms" };
   });
+  const max = Math.max(...rows.map((r) => r.value), 1);
+  const labelW = Math.min(120, W * 0.35);
+  const countW = 64;
+  const barX = labelW + 8;
+  const barW = Math.max(W - barX - countW - 8, 0);
+  const rowH = rows.length > 0 ? H / rows.length : H;
   return (
     <Figure
       comment={
@@ -179,7 +224,47 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
         </>
       }
     >
-      <MiniBars rows={rows} ariaLabel="alarm burden by contract" />
+      <div ref={ref} className="wb-panel-viz">
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="alarm burden by contract"
+        >
+          {rows.map((r, i) => {
+            const cy = rowH * i + rowH / 2;
+            const w = (r.value / max) * barW;
+            return (
+              <g key={r.label}>
+                <text x={0} y={cy + 3} className="demo-axis-label">
+                  {r.label}
+                </text>
+                <rect
+                  x={barX}
+                  y={cy - 7}
+                  width={barW}
+                  height={14}
+                  fill="var(--bg)"
+                  stroke="var(--border)"
+                />
+                <rect
+                  x={barX}
+                  y={cy - 7}
+                  width={w}
+                  height={14}
+                  fill="var(--accent)"
+                  opacity={0.8}
+                />
+                <text x={W} y={cy + 3} textAnchor="end" className="demo-axis-label">
+                  {r.value} {r.unit}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
     </Figure>
   );
 }
@@ -273,10 +358,12 @@ function ChurnSandboxWorkbench({
                 <input
                   id="fn-ratio"
                   type="range"
+                  className="wb-slider"
                   min={1}
                   max={10}
                   step={1}
                   value={fnRatio}
+                  style={{ "--fill": `${((fnRatio - 1) / 9) * 100}%` } as CSSProperties}
                   onChange={(e) => setControl("fn_ratio", Number(e.target.value))}
                 />
                 <span className="chip wb-value-badge">{fnRatio}×</span>
@@ -339,9 +426,13 @@ function ChurnSandboxWorkbench({
           />
           <KpiTile
             label="saves vs 0.5"
-            value={`${saved < 0 ? "saves" : "costs"} ${Math.abs(Math.round(saved))}`}
+            value={
+              Math.round(saved) === 0
+                ? "even with 0.5"
+                : `${saved < 0 ? "saves" : "costs"} ${Math.abs(Math.round(saved))}`
+            }
             sub={`paired bootstrap CI${delta_ci.significant_95 ? " · 95% significant" : " · not significant"}`}
-            tone={saved < 0 ? "good" : "bad"}
+            tone={saved < 0 ? "good" : Math.round(saved) === 0 ? "neutral" : "bad"}
           />
           <KpiTile
             label="contacts"
@@ -384,33 +475,72 @@ function ChurnSandboxWorkbench({
       }
       evidence={
         <>
-          <div className="wb-evidence-fig">
+          <div className="wb-evidence-col">
             <p className="wb-evidence-line">
-              Static model-quality reference — isotonic-calibrated, ECE{" "}
-              {payload.model.ece.toFixed(4)}
+              {`Headline: $${Math.round(payload.headline.cost_selected)} vs $${Math.round(payload.headline.cost_naive)} naive per ${payload.holdout_n} customers — paired bootstrap CI [${Math.round(payload.headline.delta_ci.lo)}, ${Math.round(payload.headline.delta_ci.hi)}]${payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}`}
             </p>
-            <div className="wb-evidence-calibration">
-              <CalibrationScatter
-                points={payload.calibration.map((b) => ({
-                  x: b.mean_predicted,
-                  y: b.observed,
-                  n: b.n,
-                }))}
-                height={180}
-              />
+            <div className="wb-evidence-notes demo-footer">
+              <p className="wb-evidence-line demo-footer-line">
+                {`Model: ${payload.model.name} · holdout n = ${payload.holdout_n} · roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)}`}
+              </p>
+              <p className="wb-evidence-line">
+                {`Committed bootstrap CI on cost savings: ${Math.round(delta_ci.point)} [${Math.round(delta_ci.lo)}, ${Math.round(delta_ci.hi)}] per ${payload.holdout_n} customers (95% significant: ${delta_ci.significant_95 ? "yes" : "no"})`}
+              </p>
             </div>
-          </div>
-          <div className="wb-evidence-notes demo-footer">
-            <p className="wb-evidence-line demo-footer-line">
-              {`Model: ${payload.model.name} · holdout n = ${payload.holdout_n} · roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)}`}
-            </p>
-            <p className="wb-evidence-line">
-              {`Committed bootstrap CI on cost savings: ${Math.round(delta_ci.point)} [${Math.round(delta_ci.lo)}, ${Math.round(delta_ci.hi)}] per ${payload.holdout_n} customers (95% significant: ${delta_ci.significant_95 ? "yes" : "no"})`}
-            </p>
             <p className="wb-evidence-line">
               {payload.cost_model.note.charAt(0).toUpperCase() + payload.cost_model.note.slice(1)}
             </p>
+            <p className="wb-evidence-line">
+              {`Models used: ${payload.model.name} (isotonic-calibrated champion) — alarm rule: contact a customer when the predicted churn probability is at or above ${payload.model.threshold_selected} (default threshold ${payload.model.threshold_default}).`}
+            </p>
           </div>
+          <div className="wb-evidence-col">
+            <p className="wb-evidence-line">
+              Linked experiment → <Link to={`/projects/${payload.project}`}>{payload.project}</Link>
+            </p>
+            <div className="wb-evidence-fig">
+              <p className="wb-evidence-line">
+                Static model-quality reference — isotonic-calibrated, ECE{" "}
+                {payload.model.ece.toFixed(4)}
+              </p>
+              <div className="wb-evidence-calibration">
+                <CalibrationScatter
+                  points={payload.calibration.map((b) => ({
+                    x: b.mean_predicted,
+                    y: b.observed,
+                    n: b.n,
+                  }))}
+                  height={180}
+                />
+              </div>
+            </div>
+            {payload.report && (
+              <p className="wb-evidence-line">
+                <a href={payload.report}>read the project report</a>
+              </p>
+            )}
+          </div>
+        </>
+      }
+      about={
+        <>
+          <p>
+            <strong>What this shows.</strong> The campaign cost curve trades false alarms against
+            missed churners as the alarm threshold moves — the cheapest cutoff shifts with the
+            missed-churner cost, which is what the slider changes.
+          </p>
+          <p>
+            <strong>The experiment.</strong> A calibrated classifier on the IBM Telco churn
+            holdout; the target is to minimize decision cost FP·1 + FN·
+            {payload.cost_model.fn_cost} per {payload.holdout_n} holdout customers.
+          </p>
+          <p>
+            <strong>Key outcome.</strong> ${Math.round(payload.headline.cost_selected)} vs $
+            {Math.round(payload.headline.cost_naive)} naive per {payload.holdout_n} customers —
+            paired bootstrap CI [{Math.round(payload.headline.delta_ci.lo)},{" "}
+            {Math.round(payload.headline.delta_ci.hi)}]
+            {payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}.
+          </p>
         </>
       }
     />

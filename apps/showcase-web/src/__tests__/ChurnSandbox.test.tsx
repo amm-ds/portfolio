@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Project } from "../api";
 import { App } from "../App";
 import ChurnSandbox from "../demos/churn-sandbox/ChurnSandbox";
@@ -174,6 +174,37 @@ function stubSvgRect() {
   } as DOMRect);
 }
 
+/** jsdom lacks ResizeObserver; derive the measurement from the (possibly
+ * stubbed) layout box so pointer tests exercise the measured code path.
+ * Elements with a zero box (default jsdom layout) stay on the static
+ * fallback sizes. */
+function stubResizeObserver() {
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      private cb: ResizeObserverCallback;
+      constructor(cb: ResizeObserverCallback) {
+        this.cb = cb;
+      }
+      observe(el: Element) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          this.cb(
+            [{ target: el, contentRect: rect } as unknown as ResizeObserverEntry],
+            this as unknown as ResizeObserver,
+          );
+        }
+      }
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+}
+
+beforeEach(() => {
+  stubResizeObserver();
+});
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -221,6 +252,20 @@ describe("ChurnSandbox", () => {
     expect(screen.getByText("cost at t: 235")).toBeInTheDocument();
     expect(screen.getByText("cost at 0.5: 185")).toBeInTheDocument();
     expect(screen.getByText("costs 50 vs 0.5")).toBeInTheDocument();
+  });
+
+  it("drives the filled slider track through the inline --fill style", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("cost at t: 335")).toBeInTheDocument());
+    const slider = screen.getByLabelText(/churn ratio/i) as HTMLInputElement;
+    // fn 5 on the 1–10 range → (5−1)/9 of the track filled
+    expect(slider.style.getPropertyValue("--fill")).toBe(`${((5 - 1) / 9) * 100}%`);
+    // extremes reach the very ends of the track
+    fireEvent.change(slider, { target: { value: "1" } });
+    expect(slider.style.getPropertyValue("--fill")).toBe("0%");
+    fireEvent.change(slider, { target: { value: "10" } });
+    expect(slider.style.getPropertyValue("--fill")).toBe("100%");
   });
 
   it("renders two capitalized notice tiles that both react to the FN slider", async () => {
@@ -330,6 +375,12 @@ describe("ChurnSandbox", () => {
     });
     renderDemo();
     await screen.findByText("cost at t: 335");
+    // the submit button sits in the scorer card header row, next to its label
+    const scorer = document.querySelector(".wb-scorer")!;
+    expect(scorer).not.toBeNull();
+    const head = scorer.querySelector(".wb-scorer-head")!;
+    expect(head.textContent).toContain("score a customer");
+    expect(head).toContain(screen.getByRole("button", { name: "score live" }));
     // preset chip fills the form; score live calls the serving endpoint
     fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
     fireEvent.click(screen.getByRole("button", { name: "score live" }));
@@ -338,6 +389,17 @@ describe("ChurnSandbox", () => {
       screen.getByText("Alarm at t = 0.30 — this customer gets contacted"),
     ).toBeInTheDocument();
     expect(screen.getByText(/Closest preset band: at-risk fiber customer/)).toBeInTheDocument();
+    // the result block renders directly below the header, above the form fields
+    // (re-query: the preset chip remounts the card via key={presetKey})
+    const scored = document.querySelector(".wb-scorer")!;
+    const result = scored.querySelector(".demo-score-result")!;
+    expect(result).not.toBeNull();
+    const scoredHead = scored.querySelector(".wb-scorer-head")!;
+    expect(result.compareDocumentPosition(scoredHead) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    const firstField = scored.querySelector("label")!;
+    expect(
+      result.compareDocumentPosition(firstField) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("shows a graceful notice when live scoring returns 503", async () => {
@@ -423,8 +485,9 @@ describe("ChurnSandbox", () => {
     const svg = await screen.findByRole("img", { name: "cost composition over alarm threshold" });
     const fnPath = () => svg.querySelector('[data-layer="fn"]')!.getAttribute("d");
     const cursorX = () => svg.querySelector('[data-layer="cursor"]')!.getAttribute("x1");
-    // cursor starts at the committed threshold 0.3 (marker x in viewBox coords)
-    expect(Number(cursorX())).toBeCloseTo(121.5, 5);
+    // cursor starts at the committed threshold 0.3 (stubbed 720px box:
+    // 38 + 0.25 × 674 = 206.5 in viewBox coords)
+    expect(Number(cursorX())).toBeCloseTo(206.5, 5);
     const fnBefore = fnPath();
     expect(fnBefore).not.toBeNull();
     // FN slider 5 → 9 rescales the stacked FN area
@@ -434,7 +497,7 @@ describe("ChurnSandbox", () => {
     const mainSvg = screen.getByRole("img", { name: "campaign cost over alarm threshold" });
     fireEvent(mainSvg, new MouseEvent("pointerdown", { bubbles: true, clientX: 518, buttons: 1 }));
     expect(screen.getByText("threshold t = 0.70")).toBeInTheDocument();
-    expect(Number(cursorX())).toBeCloseTo(288.5, 5);
+    expect(Number(cursorX())).toBeCloseTo(543.5, 5);
   });
 
   it("moves the calibration scatter into the evidence drawer, out of the band", async () => {
@@ -447,6 +510,12 @@ describe("ChurnSandbox", () => {
     expect(drawer.querySelector('svg[aria-label="calibration scatter"]')).not.toBeNull();
     expect(drawer.textContent).toContain("Static model-quality reference");
     expect(drawer.textContent).toContain("ECE 0.0200");
+    // evidence content is organized in two columns: scores & models left,
+    // references & plots right
+    const cols = drawer.querySelectorAll(".wb-evidence-col");
+    expect(cols).toHaveLength(2);
+    expect(cols[0].textContent).toContain("Models used");
+    expect(cols[1].textContent).toContain("Linked experiment");
   });
 });
 
@@ -463,15 +532,17 @@ describe("churn sandbox routing & links", () => {
         screen.getByRole("heading", { level: 1, name: "churn threshold sandbox" }),
       ).toBeInTheDocument(),
     );
-    // shell chrome: back link, linked experiment, footer band
+    // shell chrome: back link, linked experiment, footer band — the experiment
+    // link appears both in the drawer chrome and in the evidence column
     expect(screen.getByRole("link", { name: "← back to demos" })).toHaveAttribute(
       "href",
       "/projects#demos",
     );
-    expect(screen.getByRole("link", { name: "05-ml-pipeline-churn" })).toHaveAttribute(
-      "href",
-      "/projects/05-ml-pipeline-churn",
-    );
+    const experimentLinks = screen.getAllByRole("link", { name: "05-ml-pipeline-churn" });
+    expect(experimentLinks.length).toBeGreaterThanOrEqual(1);
+    for (const link of experimentLinks) {
+      expect(link).toHaveAttribute("href", "/projects/05-ml-pipeline-churn");
+    }
   });
 
   it("shows the live-demo link on the 05 project detail page", async () => {
