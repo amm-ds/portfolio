@@ -62,7 +62,39 @@ export function ScorerCard({
 
   return (
     <div className="demo-control wb-scorer">
-      <div className="demo-form">
+      <form
+        id="wb-scorer-form"
+        className="demo-form"
+        onSubmit={(e) => {
+          e.preventDefault();
+          scoreLive();
+        }}
+      >
+        <div className="wb-scorer-head">
+          <span className="wb-scorer-label">score a customer</span>
+          <button type="submit" form="wb-scorer-form" disabled={score.status === "loading"}>
+            {score.status === "loading" ? "scoring…" : "score live"}
+          </button>
+        </div>
+        {score.status === "ok" && (
+          <div className="demo-score-result">
+            <div className="demo-prob-bar">
+              <span style={{ width: `${score.probability * 100}%` }} />
+            </div>
+            <p className="demo-prob-line">Churn probability {(score.probability * 100).toFixed(1)}%</p>
+            <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
+              {alarm
+                ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
+                : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
+            </p>
+            {nearestPreset && (
+              <p className="demo-hint">
+                Closest preset band: {nearestPreset.label} (p ={" "}
+                {nearestPreset.churn_probability.toFixed(2)})
+              </p>
+            )}
+          </div>
+        )}
         <label>
           tenure (mo)
           <input
@@ -106,29 +138,7 @@ export function ScorerCard({
             ))}
           </select>
         </label>
-        <button type="button" onClick={scoreLive} disabled={score.status === "loading"}>
-          {score.status === "loading" ? "scoring…" : "score live"}
-        </button>
-      </div>
-      {score.status === "ok" && (
-        <div className="demo-score-result">
-          <div className="demo-prob-bar">
-            <span style={{ width: `${score.probability * 100}%` }} />
-          </div>
-          <p className="demo-prob-line">Churn probability {(score.probability * 100).toFixed(1)}%</p>
-          <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
-            {alarm
-              ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
-              : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
-          </p>
-          {nearestPreset && (
-            <p className="demo-hint">
-              Closest preset band: {nearestPreset.label} (p ={" "}
-              {nearestPreset.churn_probability.toFixed(2)})
-            </p>
-          )}
-        </div>
-      )}
+      </form>
       {score.status === "unavailable" && (
         <p className="state-box demo-score-note">
           Live scoring unavailable — showing precomputed presets only

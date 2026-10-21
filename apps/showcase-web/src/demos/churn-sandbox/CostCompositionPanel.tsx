@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
 import type { ConfusionRow } from "../types";
+import { useMeasuredSize } from "../charts/useMeasuredSize";
 import { fnCostSeries, fpCostSeries } from "./kpis";
 
 const C_FP = "#fbbf24";
@@ -24,23 +24,10 @@ export function CostCompositionPanel({
   fnRatio: number;
   cursorIdx: number;
 }) {
-  const wrapRef = useRef<HTMLDivElement | null>(null);
   // The panel fills its grid cell; measure the container so the viewBox aspect
   // matches the box — a fixed viewBox + preserveAspectRatio would letterbox
   // the stacked areas inside the wide, short secondary panel.
-  const [measured, setMeasured] = useState<{ w: number; h: number } | null>(null);
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver((entries) => {
-      const r = entries[0]?.contentRect;
-      if (r && r.width > 0 && r.height > 0) {
-        setMeasured({ w: Math.round(r.width), h: Math.round(r.height) });
-      }
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const { ref: wrapRef, size: measured } = useMeasuredSize<HTMLDivElement>();
   const W = measured?.w ?? 380;
   const H = measured?.h ?? 120;
   const pad = { l: 38, r: 8, t: 8, b: 20 };
