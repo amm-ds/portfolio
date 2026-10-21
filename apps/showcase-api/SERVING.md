@@ -105,31 +105,32 @@ curl -s localhost:8000/projects/07-open-data-mobility/forecast \
   -d '{"zone_id": 132, "features": {"lag_24": 5.0, "lag_168": 4.0, "hour": 8.0}}'
 ```
 
-## `GET /demos/tape-forecast/` — mounted demo app
+## Interactive demos (`GET /demos`, `/demos/{id}/manifest`, `/demos/{id}/payload`)
 
-The [tape-forecast demo](https://github.com/amm-ds/tape-forecast-demo) is
-mounted as a self-contained sub-application (its own lookup routes + SPA) at
-`/demos/tape-forecast/`. The `tape-forecast` package is a pinned git
-dependency of this app; the payload it serves (serving parquets, Phase 1
-reports, built demo SPA) is not in the wheel, so the mount is conditional:
+Manifest-driven demo platform. A demo is declared by a `demo.yaml` in its
+project directory (`projects/<pid>/demo.yaml`) and validated against
+`portfolio_core.demo.DemoManifest`:
 
-- **Docker image**: a `tape-demo` build stage clones the pinned tag
-  (`v0.2.0`), builds the demo web and bakes `data/`, `reports/` and
-  `web/dist/` into `/opt/tape-forecast/`; the `TAPE_FORECAST_*` env vars are
-  set in the image and the mount registers at startup.
-- **Local dev**: point the env vars at a local clone and restart uvicorn:
+- `id` (`^[a-z0-9-]+$`), `title`, `hook` (one-line pitch), `project`
+  (`^\\d{2}-[a-z0-9-]+$`), `group` (business-problem grouping key),
+  `skills` (optional), `modes` (non-empty: `browser` | `live` | `replay`),
+  `hero` (optional `{label, value, ci?}` headline metric),
+  `scenarios` (optional named control presets, e.g.
+  `{name: base, controls: {threshold: 0.175, fn_ratio: 5}}`),
+  `live_endpoints` (optional `{method: GET|POST, path, label, cost}` — `cost`
+  is free-form: `free-local` or a $-per-call note).
+- `payload`: `{path, schema_version, required_keys}` — `path` is relative to
+  the project dir and points at the committed `reports/demo_payload.json`;
+  `required_keys` (non-empty) and `schema_version` are validated on serve.
 
-  ```bash
-  TAPE_FORECAST_SERVING_DIR=../tape-forecast-demo/data/serving \
-  TAPE_FORECAST_REPORTS_DIR=../tape-forecast-demo/reports \
-  TAPE_FORECAST_WEB_DIST=../tape-forecast-demo/web/dist \
-  TAPE_FORECAST_LAB_DIR=../tape-forecast-demo/data/lab \
-    uv run uvicorn showcase_api.main:app --reload
-  ```
+Routes:
 
-- **Absent payload** (unit tests, slim checkouts): the mount is skipped with
-  an INFO log and the route 404s; the projects page demo card is the only
-  entry point, so nothing user-facing breaks.
-
-The canonical URL carries a trailing slash — the demo SPA uses relative
-asset/API paths; `/demos/tape-forecast` (no slash) 307-redirects to it.
+- `GET /demos` — the demo registry: one entry per discovered `demo.yaml`,
+  sorted by `(group, id)`, shaped exactly
+  `{id, title, hook, href, group, project, status, hero}` where `href` is
+  `/demos/{id}` and `status` is `live`.
+- `GET /demos/{id}/manifest` — the validated `DemoManifest` as JSON.
+- `GET /demos/{id}/payload` — the project's committed payload JSON. The
+  response carries `Cache-Control: max-age=300`. Errors: 404 for an unknown
+  demo id or when the payload file is missing, 409 when the payload's keys or
+  `schema_version` don't satisfy the manifest's `payload` ref.

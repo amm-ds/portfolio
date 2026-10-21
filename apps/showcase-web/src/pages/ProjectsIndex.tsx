@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProjects, type Project } from "../api";
+import { getDemoRegistry, getProjects, type DemoRegistryEntry, type Project } from "../api";
 import { ProjectCard } from "../components/ProjectCard";
 import { DEMOS, DEMOS_INTRO } from "../lib/demos";
 
@@ -84,28 +84,99 @@ export function groupByRow(projects: Project[]): TopicRow[] {
   return [...rows, ...extras];
 }
 
-/** Placeholder demos rendered above the topic rows; real demos drop in via lib/demos.ts. */
+/** Demo card content, from the live registry or the static fallback list. */
+function DemoCard({
+  title,
+  line,
+  status,
+  href,
+  hero,
+}: {
+  title: string;
+  line: string;
+  status: string;
+  href?: string;
+  hero?: DemoRegistryEntry["hero"];
+}) {
+  return (
+    <div className="demo-card" aria-label={`${title} (${status})`}>
+      <h3>{title}</h3>
+      <p>{line}</p>
+      {hero && (
+        <p className="demo-hero">
+          {hero.label}: {hero.value}
+          {hero.ci ? ` — ${hero.ci}` : ""}
+        </p>
+      )}
+      <span className="chip demo-status">{status}</span>
+      {href ? (
+        <a className="demo-link" href={href}>
+          open demo →
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+/** Demos block rendered above the topic rows. Cards come from the demo registry
+ * (`GET /demos`), grouped by the manifest's `group` key; on any fetch failure the
+ * static `DEMOS` list is rendered instead (it doubles as the loading state). */
 function DemosSection() {
+  const [entries, setEntries] = useState<DemoRegistryEntry[] | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getDemoRegistry()
+      .then((list) => !cancelled && setEntries(list))
+      .catch(() => !cancelled && setEntries(null));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className="demos" id="demos" aria-label="Demos">
       <h2 className="section-title">Demos — interactive experiments</h2>
       <p className="section-intro">{DEMOS_INTRO}</p>
-      <div className="demo-grid">
-        {DEMOS.map((d) => (
-          <div key={d.id} className="demo-card" aria-label={`${d.title} (${d.status})`}>
-            <h3>{d.title}</h3>
-            <p>{d.line}</p>
-            <span className="chip demo-status">{d.status}</span>
-            {d.href ? (
-              <a className="demo-link" href={d.href}>
-                open demo →
-              </a>
-            ) : null}
+      {entries === null ? (
+        <div className="demo-grid">
+          {DEMOS.map((d) => (
+            <DemoCard key={d.id} title={d.title} line={d.line} status={d.status} href={d.href} />
+          ))}
+        </div>
+      ) : (
+        groupByDemoGroup(entries).map(({ group, demos }) => (
+          <div key={group} className="demo-group">
+            <h3 className="section-title demo-group-title">{group}</h3>
+            <div className="demo-grid">
+              {demos.map((d) => (
+                <DemoCard
+                  key={d.id}
+                  title={d.title}
+                  line={d.hook}
+                  status={d.status}
+                  href={d.href}
+                  hero={d.hero}
+                />
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+        ))
+      )}
     </section>
   );
+}
+
+/** Group registry entries by `group`, preserving first-seen order (the API
+ * already sorts by (group, id), so this is a stable partition). */
+export function groupByDemoGroup(entries: DemoRegistryEntry[]): { group: string; demos: DemoRegistryEntry[] }[] {
+  const groups = new Map<string, DemoRegistryEntry[]>();
+  for (const e of entries) {
+    const list = groups.get(e.group) ?? [];
+    list.push(e);
+    groups.set(e.group, list);
+  }
+  return [...groups.entries()].map(([group, demos]) => ({ group, demos }));
 }
 
 /** Projects index: a "demos" block on top, then an "experiments" block with

@@ -7,7 +7,7 @@ import { ProjectDetail } from "./pages/ProjectDetail";
 import { Services } from "./pages/Services";
 import { Contact } from "./pages/Contact";
 import { NotFound } from "./pages/NotFound";
-import { ChurnSandbox } from "./demos/ChurnSandbox";
+import ChurnSandbox from "./demos/churn-sandbox/ChurnSandbox";
 
 export function App() {
   return (

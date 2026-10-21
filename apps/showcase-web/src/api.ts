@@ -91,6 +91,28 @@ export function figureUrl(projectId: string, name: string): string {
 
 // --- Interactive demos ---------------------------------------------------------
 
+// Demo platform types live in ./demos/types (mirror of portfolio_core.demo);
+// re-exported here so API callers have a single import site.
+import type { DemoManifest, DemoRegistryEntry } from "./demos/types";
+
+export type {
+  DemoManifest,
+  DemoRegistryEntry,
+  HeroMetric,
+  LiveEndpoint,
+  PayloadRef,
+  Scenario,
+} from "./demos/types";
+
+/** Live demo registry served by the API; falls back to the static list on error. */
+export function getDemoRegistry(): Promise<DemoRegistryEntry[]> {
+  return getJson<DemoRegistryEntry[]>("/demos");
+}
+
+export function getDemoManifest(demoId: string): Promise<DemoManifest> {
+  return getJson<DemoManifest>(`/demos/${demoId}/manifest`);
+}
+
 /** Precomputed lookup data for an interactive demo (`/demos/{demo_id}/payload`). */
 export function getDemoPayload<T>(demoId: string): Promise<T> {
   return getJson<T>(`/demos/${demoId}/payload`);

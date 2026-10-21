@@ -1999,3 +1999,325 @@ button.chip.demo-preset:hover {
   margin: 0.75rem 1rem 0;
   font-size: 0.85rem;
 }
+
+/* --- Demo workbench: top bar + rails + evidence drawer ---------------------- */
+
+.wb-shell {
+  max-width: 1100px;
+}
+
+.wb-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.wb-heading .demo-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.7rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+.wb-heading .demo-hook {
+  margin: 0;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.wb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+}
+
+.wb-modes {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.wb-mode {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wb-scenarios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+button.chip.wb-scenario,
+button.chip.wb-share,
+button.chip.wb-reset {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--secondary);
+  font-weight: 400;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button.chip.wb-scenario:hover,
+button.chip.wb-share:hover,
+button.chip.wb-reset:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.chip.wb-scenario.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.wb-buttons {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+/* body: control rail | canvas | insight rail */
+
+.wb-body {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 260px;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.wb-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+}
+
+.wb-rail-title {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.45rem;
+}
+
+.wb-canvas {
+  min-width: 0;
+}
+
+.wb-canvas .section-title {
+  margin-top: 1.75rem;
+}
+
+.wb-canvas .section-title:first-child {
+  margin-top: 0;
+}
+
+/* KPI tiles + notice (insight rail) */
+
+.wb-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+}
+
+.wb-kpi-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.wb-kpi-value {
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.wb-kpi-sub {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.wb-kpi-good .wb-kpi-value {
+  color: var(--accent);
+}
+
+.wb-kpi-bad .wb-kpi-value {
+  color: var(--danger);
+}
+
+.wb-notice {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.wb-notice-mark {
+  color: var(--accent);
+}
+
+/* evidence drawer */
+
+.wb-evidence {
+  margin-top: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.wb-evidence summary {
+  cursor: pointer;
+  padding: 0.75rem 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.wb-evidence summary::before {
+  content: "$ ";
+  color: var(--accent);
+}
+
+.wb-evidence summary:hover {
+  color: var(--accent);
+}
+
+.wb-evidence-body {
+  padding: 0 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.wb-evidence-line {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.wb-evidence-line a {
+  color: var(--accent);
+}
+
+.wb-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.wb-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.wb-endpoint {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.wb-method {
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--secondary);
+}
+
+.wb-method-post {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wb-endpoint-label {
+  color: var(--muted);
+}
+
+.wb-endpoint-cost {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+/* narrow screens: rails collapse into bottom sheets (details/summary) */
+
+@media (max-width: 900px) {
+  .wb-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wb-rail {
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  .wb-rail-title {
+    display: none;
+  }
+
+  .wb-rail-controls,
+  .wb-rail-insight {
+    display: block;
+  }
+
+  .wb-rail-controls > *,
+  .wb-rail-insight > * {
+    margin-bottom: 0.6rem;
+  }
+
+  .wb-rail-controls::before {
+    content: "controls";
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .wb-rail-insight::before {
+    content: "readout";
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.45rem;
+    margin: 1.5rem 0 0.9rem;
+  }
+
+  .wb-buttons {
+    margin-left: 0;
+  }
+}
