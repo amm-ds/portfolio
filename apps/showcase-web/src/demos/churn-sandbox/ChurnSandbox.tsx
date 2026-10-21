@@ -97,16 +97,16 @@ function OptimalityText({
 function ScoreResultPanel({
   probability,
   cursorT,
-  nearestPreset,
+  label,
 }: {
   probability: number;
   cursorT: number;
-  nearestPreset: { label: string; churn_probability: number };
+  label: string;
 }) {
   const alarm = probability >= cursorT;
   return (
     <div className="wb-score-result" data-testid="score-result">
-      <span className="wb-evidence-tag">score result</span>
+      <span className="wb-evidence-tag">score result · {label}</span>
       <div className="demo-prob-bar">
         <span style={{ width: `${probability * 100}%` }} />
       </div>
@@ -117,9 +117,6 @@ function ScoreResultPanel({
         {alarm
           ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
           : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
-      </p>
-      <p className="demo-hint">
-        Closest preset band: {nearestPreset.label} (p = {nearestPreset.churn_probability.toFixed(2)})
       </p>
     </div>
   );
@@ -425,10 +422,19 @@ function ChurnSandboxWorkbench({
     ...payload.customers[0].features,
   }));
   const [presetKey, setPresetKey] = useState(0);
-  // customer pinned on the cost curve: set by preset chips and live scores
-  const [customer, setCustomer] = useState<CustomerMarker | null>(null);
-  // latest live score, rendered in the strip below the main row
-  const [score, setScore] = useState<number | null>(null);
+  // selected customer: defaults to the first preset (marker + result visible
+  // on load); preset chips and live scores change it
+  const [customer, setCustomer] = useState<CustomerMarker | null>(() =>
+    payload.customers.length > 0
+      ? {
+          label: shortLabel(payload.customers[0].label),
+          probability: payload.customers[0].churn_probability,
+        }
+      : null,
+  );
+  const [score, setScore] = useState<number | null>(
+    payload.customers.length > 0 ? payload.customers[0].churn_probability : null,
+  );
 
   const cursorIdx = nearestIndex(payload.thresholds, controls.threshold);
   const cursorT = payload.thresholds[cursorIdx];
@@ -513,16 +519,8 @@ function ChurnSandboxWorkbench({
               />
             </div>
           )}
-          {score !== null && (
-            <ScoreResultPanel
-              probability={score}
-              cursorT={cursorT}
-              nearestPreset={payload.customers.reduce((best, c) =>
-                Math.abs(c.churn_probability - score) < Math.abs(best.churn_probability - score)
-                  ? c
-                  : best,
-              )}
-            />
+          {score !== null && customer !== null && (
+            <ScoreResultPanel probability={score} cursorT={cursorT} label={customer.label} />
           )}
         </>
       }

@@ -19,9 +19,15 @@ sections:
       | false page | engineer minutes × alert fatigue, erodes trust until real pages get ignored |
       | detector retraining | cheap here — the full pipeline with 90 HPO trials runs in ~80 s |
 
-      **Business summary:** Every missed incident has a cost and every
-      false page has one too — the question is which detector minimizes the
-      total at a fixed alert budget.
+      **Business summary:** Operations telemetry exists to catch
+      incidents before users notice, and both kinds of error carry real
+      money. A missed incident is paid for later, in outage minutes and
+      recovery, in multiples of the warning window that was wasted; a
+      false page burns engineer time and erodes trust until real alerts
+      start being ignored. So the buying question is not which detector
+      has the highest score, but which one minimizes the total bill at a
+      fixed alert budget — the number of pages on-call can actually
+      absorb.
 
   - id: objectives
     text_md: |
@@ -43,9 +49,14 @@ sections:
         lead — a labelled window counts as detected when at least one alert
         falls inside it.
 
-      **Business summary:** These rules make the comparison shoppable —
-      a client can re-run the same harness on their own telemetry and get
-      numbers that mean the same thing.
+      **Business summary:** The evaluation rules exist to make the
+      comparison between detector families fair and portable. Detectors
+      train only on the past, alert at a fixed threshold that is never
+      tuned against the answers, and must beat a coin-flip baseline
+      before they are allowed to page anyone. A client can re-run the
+      identical harness on their own telemetry and get numbers that mean
+      the same thing, which turns a vendor shoot-out into a repeatable
+      procurement test.
     metrics_keys: [random, isolation_forest]
 
   - id: data
@@ -75,9 +86,14 @@ sections:
       Ground-truth labels are used for **evaluation only** — no detector
       ever sees them.
 
-      **Business summary:** Real data headlines and the synthetic stream
-      is labelled the fast path — a client sees both the real-world numbers
-      and the reproducible harness that produced them.
+      **Business summary:** The headline numbers come from a public
+      benchmark of real system telemetry with labelled incident windows,
+      so they reflect real anomaly rarity rather than a lab setup. A
+      synthetic stream — regenerated identically on every run, with 2%
+      injected anomalies — serves as the fast offline path for testing
+      pipeline changes. Its anomalies are trivially easy to separate, so
+      it is labelled as a mechanics check and is never used to rank
+      detectors for a buying decision.
 
   - id: eda
     text_md: |
@@ -94,9 +110,14 @@ sections:
       uniform spacing *among themselves* — a compact, self-similar cluster.
       Hold that fact; it predicts the results.
 
-      **Business summary:** This single EDA fact predicts which detector
-      families fail before any training budget is spent — analysis that
-      saves a client from deploying the wrong tool.
+      **Business summary:** Exploratory analysis answered the one
+      question that decides this project: are anomalies spread out, or
+      clustered together? They sit far from normal points but tightly
+      packed among themselves — a compact, self-similar group. That
+      single fact predicts which detector families will fail before any
+      training budget is spent, because methods that assume anomalies
+      are sparse and unusual cannot see a blob of similar ones. Catching
+      that early is what saves a client from deploying the wrong tool.
     figures: [eda_signals_overview]
 
   - id: training
@@ -129,9 +150,15 @@ sections:
           G --> H
       ```
 
-      **Business summary:** Tuning and validation run entirely on past
-      data with leakage-proof splits — the detector you deploy is the
-      detector you measured.
+      **Business summary:** Every detector is tuned and validated
+      strictly on past data: the timeline is split in time order, the
+      test window is never touched during tuning, and each family gets a
+      seeded search over its own knobs. Leakage — letting future
+      information into training — is how detectors end up impressive in
+      testing and disappointing in production, and it is excluded by
+      construction here. The detector you would deploy is exactly the
+      detector that was measured, with no gap between the lab number and
+      the operational reality.
     figures: [telemetry_flags, hpo_importance]
 
   - id: evaluation
@@ -166,10 +193,14 @@ sections:
       (`adaptive_stream`) — too twitchy as calibrated, so headline metrics
       stay on the fixed budget curve.
 
-      **Business summary:** Reporting AUC *and* precision/recall at a
-      stated alert budget makes the numbers negotiable — "at 120 pages per
-      window you catch ~15% of incidents" is a staffing conversation, not a
-      vanity metric.
+      **Business summary:** A single accuracy score hides the trade-off
+      a buyer actually faces, so the report pairs ranking quality with
+      precision and recall at a stated alert budget — the fraction of
+      minutes allowed to page. That makes the numbers negotiable in plain
+      terms: at 120 pages per window you catch about 15% of incidents,
+      and the curve shows what a bigger or smaller budget buys. It turns
+      a vanity metric into a staffing conversation — how many engineer
+      interruptions per week is this level of coverage worth?
     figures: [pr_curves, threshold_sweep, adaptive_stream]
 
   - id: results
@@ -210,9 +241,15 @@ sections:
       0.9999 ROC-AUC). Exact values in `reports/metrics.json`,
       `reports/nab_metrics.json`, and `reports/report.html`.
 
-      **Business summary:** The champion finds most real events, so the
-      next dollar goes to alert budgeting and event deduplication — at
-      1 609 alerts for 16 windows, more AUC is not the problem to solve.
+      **Business summary:** On real data the champion finds 16 of 17
+      labelled incident windows, which is the good news. The finding is
+      the firehose: those 16 windows required 1 609 alerts, because the
+      detector's scores for real incidents overlap the normal traffic and
+      no threshold separates them cleanly. Buying a more accurate
+      detector is not the next dollar here — the next dollar goes to
+      alert budgeting (choosing the page volume on-call can absorb) and
+      to deduplicating alerts into incidents, which is where a client
+      would actually feel the improvement.
     figures:
       - nab_timelines
       - nab_score_distribution
@@ -249,10 +286,14 @@ sections:
 
       Detail: `DESIGN.md`, `README.md`.
 
-      **Business summary:** The deliverable is not "a model with 0.92
-      AUC" but an evaluation harness that says when to distrust the model
-      and what an alert budget buys — that is what de-risks it on a
-      client's critical path.
+      **Business summary:** The deliverable is not a model with a
+      flattering accuracy number — point-in-time scores collapsed once
+      scoring counted incident windows instead of minutes. It is an
+      evaluation harness that says when to distrust the model, which
+      detector bets suit which failure pattern, and what an alert budget
+      buys in incidents caught. That is what de-risks deployment on a
+      client's critical path: the known limits are measured and stated,
+      so nobody discovers them during an outage.
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
 roadmap:
   - status: delivered
