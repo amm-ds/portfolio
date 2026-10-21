@@ -246,7 +246,8 @@ def test_demo_payload_404_when_not_built(tmp_path: Path, monkeypatch) -> None:  
 
 
 def test_demo_payload_409_on_missing_required_key(
-    tmp_path: Path, monkeypatch  # type: ignore[no-untyped-def]
+    tmp_path: Path,
+    monkeypatch,  # type: ignore[no-untyped-def]
 ) -> None:
     from showcase_api import main
 

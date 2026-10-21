@@ -55,8 +55,7 @@ def test_demo_index_sorted_by_group_and_id(tmp_path: Path) -> None:
     (tmp_path / "02-no-demo").mkdir()
     (tmp_path / "03-alpha").mkdir()
     (tmp_path / "03-alpha" / "demo.yaml").write_text(
-        _VALID.replace("retain customers", "aaa-group")
-        .replace("05-ml-pipeline-churn", "03-alpha")
+        _VALID.replace("retain customers", "aaa-group").replace("05-ml-pipeline-churn", "03-alpha")
     )
     idx = load_demo_index(tmp_path)
     assert [d.id for d in idx] == ["churn-sandbox", "zz-demo"]
