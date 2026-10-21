@@ -92,20 +92,11 @@ code {
 /* demo workbenches are dashboards: fluid width, no page-level cap */
 .app-main--fluid {
   max-width: none;
-  /* Dashboard demos size to the viewport below the 58px sticky nav (footer is
-     not rendered on /demos/* routes). flex:0 0 auto + min-height:0 stop the
-     column shell from growing the flex item past the explicit height. */
-  flex: 0 0 auto;
-  min-height: 0;
-  height: calc(100dvh - 58px);
+  /* Dashboard demos flow below the 58px sticky nav (footer is not rendered on
+     /demos/* routes); content taller than the viewport scrolls the page, which
+     the workbench uses for bigger chart/panel sizes. */
+  min-height: calc(100dvh - 58px);
   padding: 0.5rem 1.25rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-}
-.app-main--fluid .wb-root {
-  flex: 1;
-  min-height: 0;
-  height: auto;
 }
 
 
@@ -2019,18 +2010,18 @@ button.chip.demo-preset:hover {
   font-size: 0.85rem;
 }
 
-/* --- Demo workbench: scroll-free dashboard layout -----------------------------
-   Root is a fixed-height grid (header / KPI band / notice strip / main row /
-   secondary band / evidence). Opening the evidence drawer grows that auto row
-   and steals space from the minmax(0, 1fr) chart row — the page itself never
-   scrolls at desktop widths. */
+/* --- Demo workbench: dashboard layout, page scroll allowed --------------------
+   Root sizes to content (height: auto, min-height just under the viewport):
+   rows hold their natural height, the chart row and controls rail are pinned
+   to a fixed 400px, and the page scrolls when the workbench exceeds the
+   viewport — so panels get real dimensions instead of shrinking to fit. */
 
 .wb-root {
   display: grid;
   /* the controls rail sits right of the chart; an optional full-width strip
      (e.g. scorer form) sits below them; secondary panels band below that */
   grid-template-columns: minmax(0, 1fr) 300px;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-rows: none;
   grid-template-areas:
     "header header"
     "kpi kpi"
@@ -2040,8 +2031,8 @@ button.chip.demo-preset:hover {
     "secondary secondary"
     "evidence evidence";
   gap: 0.5rem;
-  height: 100vh;
-  height: 100dvh;
+  height: auto;
+  min-height: calc(100dvh - 58px);
 }
 
 .wb-header {
@@ -2177,7 +2168,13 @@ button.chip.wb-scenario.active {
   min-width: 0;
 }
 
-/* notice strip: slim full-width accent line directly under the KPI band */
+/* notice strip: two dynamic tiles side by side under the KPI band */
+
+.wb-notice-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
 
 .wb-notice-strip .wb-notice {
   padding: 0.4rem 0.75rem;
@@ -2197,7 +2194,7 @@ button.chip.wb-scenario.active {
 
 .wb-canvas-slot {
   min-width: 0;
-  min-height: 0;
+  height: 400px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2224,18 +2221,14 @@ button.chip.wb-scenario.active {
   min-height: 0;
 }
 
-/* slim the main chart's commentary band: one clamped line so the curve keeps
-   the height; full commentary remains in the evidence drawer */
+/* the canvas commentary band keeps its padding; the paragraph renders in
+   full — no clamping — so the footer grows to fit the text */
 .wb-canvas-slot .figure-card-band {
   padding: 0.45rem 0.85rem;
 }
 
 .wb-canvas-slot .figure-card-band .figure-comment {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin: 0.15rem 0 0;
+  margin: 0;
 }
 
 .wb-canvas-slot .demo-readouts {
@@ -2252,11 +2245,11 @@ button.chip.wb-scenario.active {
 .wb-controls {
   flex: 0 0 300px;
   min-width: 0;
-  min-height: 0;
+  height: 400px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.3rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2269,8 +2262,40 @@ button.chip.wb-scenario.active {
   line-height: 1.25;
 }
 
-/* each control group is its own card inside the column */
-.wb-controls .demo-control {
+/* a control group = small-caps label above a box holding only the input(s);
+   groups split the rail height in a ~55 / 110 / 195 ratio (slider / presets /
+   scorer) so the rail content totals ≈ the 400px chart card */
+.wb-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+.wb-group-slider {
+  flex: 55 1 0;
+}
+
+.wb-group-presets {
+  flex: 110 1 0;
+}
+
+.wb-group-scorer {
+  flex: 195 1 0;
+}
+
+/* group labels sit above the box, styled like the panel headers */
+.wb-control-group > .wb-rail-title {
+  flex-shrink: 0;
+  padding-bottom: 0.2rem;
+  line-height: 1.25;
+}
+
+/* each control box spans the full rail width and fills its group */
+.wb-control-group .demo-control {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -2279,15 +2304,26 @@ button.chip.wb-scenario.active {
   gap: 0.3rem;
 }
 
-/* slider card: single-line label at compact size */
-.wb-controls .demo-control > label,
-.wb-controls .demo-control-label {
-  font-size: 0.74rem;
-  line-height: 1.25;
+/* slider box: tight vertical padding so the track centers in a short box */
+.wb-group-slider .demo-control {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
 }
 
-.wb-controls .demo-control > label {
-  white-space: nowrap;
+/* slider row: track + live multiplier badge at the end */
+.wb-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+}
+
+.wb-controls .demo-control .wb-value-badge {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 /* preset chips stay on one line each — long labels ellipsis instead of
@@ -2456,23 +2492,14 @@ button.chip.wb-scenario.active {
 }
 
 /* secondary band: permanent row of three panels between the main row and the
-   evidence drawer — fixed height, panels fill it, nothing scrolls */
+   evidence drawer — 280px tall, panels fill it, nothing scrolls */
 
 .wb-secondary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.9rem;
-  height: 160px;
+  height: 280px;
   min-height: 0;
-}
-
-/* band footers stay visible but commentary clamps to one line */
-.wb-secondary .figure-comment {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: 0.75rem;
 }
 
 .wb-secondary-panel {
@@ -2512,7 +2539,8 @@ button.chip.wb-scenario.active {
 }
 
 .wb-secondary .figure-card-band .figure-comment {
-  margin: 0.15rem 0 0;
+  margin: 0;
+  font-size: 0.78rem;
 }
 
 /* cost-composition chart fills its figure-card cell (svg keeps aspect) */

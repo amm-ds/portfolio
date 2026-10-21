@@ -62,8 +62,33 @@ export function noticeText(
     const extraAlarms = Math.max(laxer.fp + laxer.tp - (cursorRow.fp + cursorRow.tp), 0);
     const per = extraAlarms / gained;
     const rounded = per >= 10 ? Math.round(per) : Math.round(per * 10) / 10;
-    return `at ${fnRatio}× a miss, catching one more churner here costs ~${rounded} extra false alarms`;
+    return `At ${fnRatio}× a miss, catching one more churner here costs ~${rounded} extra false alarms`;
   }
   const recall = Math.round(recallAt(cursorRow) * 100);
-  return `at ${fnRatio}× a miss this threshold already catches ${recall}% of churners — every additional alarm is a false one`;
+  return `At ${fnRatio}× a miss this threshold already catches ${recall}% of churners — every additional alarm is a false one`;
+}
+
+/**
+ * Where the cost-optimal cutoff sits at the current miss multiplier, relative
+ * to the cursor. When the cursor is at the minimum the sentence affirms it;
+ * otherwise it names the optimal threshold and the gap to the cursor, above or
+ * below.
+ */
+export function optimalityText(
+  overall: ConfusionRow[],
+  cursorIdx: number,
+  fnRatio: number,
+): string {
+  let bestIdx = 0;
+  for (let i = 1; i < overall.length; i++) {
+    if (rowCost(overall[i], fnRatio) < rowCost(overall[bestIdx], fnRatio)) bestIdx = i;
+  }
+  if (bestIdx === cursorIdx) {
+    return `This is the cheapest cutoff for a ${fnRatio}× miss cost`;
+  }
+  const optimalT = overall[bestIdx].t;
+  const cursorT = overall[cursorIdx].t;
+  const direction = optimalT > cursorT ? "above" : "below";
+  const gap = Math.abs(optimalT - cursorT).toFixed(2);
+  return `The cheapest cutoff at ${fnRatio}× is t = ${optimalT.toFixed(2)} — ${direction} your cursor by ${gap}`;
 }

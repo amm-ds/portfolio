@@ -62,7 +62,6 @@ export function ScorerCard({
 
   return (
     <div className="demo-control wb-scorer">
-      <span className="demo-control-label">score a customer</span>
       <div className="demo-form">
         <label>
           tenure (mo)
@@ -116,15 +115,15 @@ export function ScorerCard({
           <div className="demo-prob-bar">
             <span style={{ width: `${score.probability * 100}%` }} />
           </div>
-          <p className="demo-prob-line">churn probability {(score.probability * 100).toFixed(1)}%</p>
+          <p className="demo-prob-line">Churn probability {(score.probability * 100).toFixed(1)}%</p>
           <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
             {alarm
-              ? `alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
-              : `no alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
+              ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
+              : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
           </p>
           {nearestPreset && (
             <p className="demo-hint">
-              closest preset band: {nearestPreset.label} (p ={" "}
+              Closest preset band: {nearestPreset.label} (p ={" "}
               {nearestPreset.churn_probability.toFixed(2)})
             </p>
           )}
@@ -132,11 +131,11 @@ export function ScorerCard({
       )}
       {score.status === "unavailable" && (
         <p className="state-box demo-score-note">
-          live scoring unavailable — showing precomputed presets only
+          Live scoring unavailable — showing precomputed presets only
         </p>
       )}
       {score.status === "error" && (
-        <p className="state-box error demo-score-note">scoring request failed — try again</p>
+        <p className="state-box error demo-score-note">Scoring request failed — try again</p>
       )}
     </div>
   );

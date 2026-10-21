@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ConfusionRow } from "../types";
 import { fnCostSeries, fpCostSeries } from "./kpis";
 
@@ -23,8 +24,25 @@ export function CostCompositionPanel({
   fnRatio: number;
   cursorIdx: number;
 }) {
-  const W = 380;
-  const H = 120;
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  // The panel fills its grid cell; measure the container so the viewBox aspect
+  // matches the box — a fixed viewBox + preserveAspectRatio would letterbox
+  // the stacked areas inside the wide, short secondary panel.
+  const [measured, setMeasured] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r && r.width > 0 && r.height > 0) {
+        setMeasured({ w: Math.round(r.width), h: Math.round(r.height) });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const W = measured?.w ?? 380;
+  const H = measured?.h ?? 120;
   const pad = { l: 38, r: 8, t: 8, b: 20 };
   const plotW = W - pad.l - pad.r;
   const plotH = H - pad.t - pad.b;
@@ -50,10 +68,12 @@ export function CostCompositionPanel({
 
   return (
     <div className="figure-card">
-      <div className="demo-chart cost-composition">
+      <div className="demo-chart cost-composition" ref={wrapRef}>
         <svg
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="none"
           role="img"
           aria-label="cost composition over alarm threshold"
         >
@@ -97,7 +117,6 @@ export function CostCompositionPanel({
         </svg>
       </div>
       <footer className="figure-card-band">
-        <span className="figure-id">fig :: churn-sandbox/cost-composition</span>
         <p className="figure-comment">
           FN cost (pink) dominates at low thresholds, FP cost (amber) at high — the minimum is
           where they cross.
