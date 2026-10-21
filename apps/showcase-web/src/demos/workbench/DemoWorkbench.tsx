@@ -1,36 +1,7 @@
-import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { DemoManifest } from "../types";
 import type { ControlState } from "./useControlState";
-
-/** Top-bar scenario chips; `active` is the scenario matching current controls. */
-function ScenarioPicker({
-  manifest,
-  active,
-  onApply,
-}: {
-  manifest: DemoManifest;
-  active: string | null;
-  onApply: (name: string) => void;
-}) {
-  if (manifest.scenarios.length === 0) return null;
-  return (
-    <div className="wb-scenarios" role="group" aria-label="scenarios">
-      {manifest.scenarios.map((s) => (
-        <button
-          key={s.name}
-          type="button"
-          className={`chip wb-scenario${active === s.name ? " active" : ""}`}
-          aria-pressed={active === s.name}
-          onClick={() => onApply(s.name)}
-        >
-          {s.name}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /** Collapsible evidence drawer at the foot of the workbench. */
 function EvidenceDrawer({
@@ -45,19 +16,26 @@ function EvidenceDrawer({
 }) {
   return (
     <details className="wb-evidence">
-      <summary>Evidence & provenance</summary>
+      <summary>more information</summary>
       <div className="wb-evidence-body wb-internal-scroll">
         <p className="wb-evidence-linked">
           <span className="wb-evidence-tag">linked experiment</span> →{" "}
           <Link to={`/projects/${manifest.project}`}>{manifest.project}</Link>
         </p>
-        {about !== undefined && (
-          <div className="wb-evidence-about">
-            <h3 className="wb-evidence-tag">how to interpret</h3>
-            {about}
+        <div className="wb-evidence-cols">
+          <div className="wb-evidence-col">
+            <h3 className="wb-evidence-tag">interpretation</h3>
+            {about !== undefined ? (
+              <div className="wb-evidence-about">{about}</div>
+            ) : (
+              <p className="wb-evidence-line">No interpretation notes for this demo yet.</p>
+            )}
           </div>
-        )}
-        <div className="wb-evidence-cols">{children}</div>
+          <div className="wb-evidence-col">
+            <h3 className="wb-evidence-tag">results</h3>
+            {children}
+          </div>
+        </div>
         {(manifest.skills.length > 0 || manifest.live_endpoints.length > 0) && (
           <div className="wb-evidence-chrome">
             {manifest.skills.length > 0 && (
@@ -150,24 +128,6 @@ export function DemoWorkbench({
   /** Optional "how to interpret" body for the collapsible under the header hook. */
   about?: ReactNode;
 }) {
-  // The rail sizes the main row with its natural content height; the chart is
-  // set to the same explicit pixel height. CSS-only approaches loop here:
-  // percentage heights against an auto row, or the measured SVG viewBox
-  // feeding its intrinsic height back into layout, grow without bound.
-  const controlsRef = useRef<HTMLElement | null>(null);
-  const [railH, setRailH] = useState(0);
-  useEffect(() => {
-    const el = controlsRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    const ro = new ResizeObserver(() => {
-      const h = Math.round(el.getBoundingClientRect().height);
-      setRailH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  const canvasHeight = Math.max(400, railH) || undefined;
-
   return (
     <div className="wb-root">
       <header className="wb-header">
@@ -179,11 +139,6 @@ export function DemoWorkbench({
           <p className="demo-hook">{manifest.hook}</p>
         </div>
         <div className="wb-actions">
-          <ScenarioPicker
-            manifest={manifest}
-            active={state.activeScenario}
-            onApply={state.applyScenario}
-          />
           <button type="button" className="chip wb-reset" onClick={state.reset}>
             reset
           </button>
@@ -195,10 +150,8 @@ export function DemoWorkbench({
       {notice !== undefined && <div className="wb-notice-strip">{notice}</div>}
 
       <div className="wb-main">
-        <section className="wb-canvas-slot" style={{ height: canvasHeight }}>
-          {canvas}
-        </section>
-        <aside className="wb-controls" ref={controlsRef}>
+        <section className="wb-canvas-slot">{canvas}</section>
+        <aside className="wb-controls">
           <h2 className="wb-rail-title">controls</h2>
           {controls}
         </aside>

@@ -22,9 +22,16 @@ export function useMeasuredSize<T extends HTMLElement>(): {
     const el = ref.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
-      const r = entries[0]?.contentRect;
-      if (r && r.width > 0 && r.height > 0) {
-        setSize({ w: Math.round(r.width), h: Math.round(r.height) });
+      try {
+        const r = entries[0]?.contentRect;
+        if (!r || r.width <= 0 || r.height <= 0) return;
+        const next: MeasuredSize = { w: Math.round(r.width), h: Math.round(r.height) };
+        // Bail on identical sizes: Safari re-fires the observer during scroll
+        // (scrollbar overlay shifts the content box) and an unconditional
+        // setState storms renders into an error boundary.
+        setSize((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+      } catch {
+        // never let an observer callback reach the error boundary
       }
     });
     ro.observe(el);
