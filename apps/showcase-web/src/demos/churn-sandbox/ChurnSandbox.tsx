@@ -5,7 +5,7 @@ import { SegmentLegend, type HBarSegment } from "../charts/StackedHBar";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { ChurnPayload, ConfusionRow, DemoManifest } from "../types";
 import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
-import { contactCount, costAt, nearestIndex, noticeText, optimalityText, recallAt, savings } from "./kpis";
+import { contactCount, costAt, nearestIndex, recallAt, rowCost, savings } from "./kpis";
 import { CostCompositionPanel } from "./CostCompositionPanel";
 import { fetchChurnPayload, fetchManifest } from "./payload";
 import { ScorerCard } from "./ScorerCard";
@@ -24,6 +24,73 @@ interface CustomerMarker {
 /** Short form of a preset label for chart annotation ("at-risk fiber customer" → "at-risk fiber"). */
 function shortLabel(label: string): string {
   return label.split(" ").slice(0, 2).join(" ");
+}
+
+/** Trade-off tile: dynamic values (multiplier, alarms per catch, recall) in bold. */
+function TradeoffText({
+  row,
+  laxer,
+  fnRatio,
+}: {
+  row: ConfusionRow;
+  laxer: ConfusionRow | null;
+  fnRatio: number;
+}) {
+  if (laxer && laxer.tp > row.tp) {
+    const gained = laxer.tp - row.tp;
+    const extraAlarms = Math.max(laxer.fp + laxer.tp - (row.fp + row.tp), 0);
+    const per = extraAlarms / gained;
+    const rounded = per >= 10 ? Math.round(per) : Math.round(per * 10) / 10;
+    return (
+      <>
+        At <strong>{fnRatio}×</strong> a miss, catching one more churner here costs ~
+        <strong>{rounded}</strong> extra false alarms
+      </>
+    );
+  }
+  const recall = Math.round((row.tp / Math.max(row.tp + row.fn, 1)) * 100);
+  return (
+    <>
+      At <strong>{fnRatio}×</strong> a miss this threshold already catches{" "}
+      <strong>{recall}%</strong> of churners — every additional alarm is a false one
+    </>
+    );
+}
+
+/** Optimality tile: names the cheapest cutoff and the gap, dynamics in bold. */
+function OptimalityText({
+  overall,
+  cursorIdx,
+  fnRatio,
+}: {
+  overall: ConfusionRow[];
+  cursorIdx: number;
+  fnRatio: number;
+}) {
+  const cursor = overall[cursorIdx];
+  if (!cursor || overall.length === 0) {
+    return <>Move the cursor to compare against the cheapest cutoff.</>;
+  }
+  let bestIdx = 0;
+  for (let i = 1; i < overall.length; i++) {
+    if (rowCost(overall[i], fnRatio) < rowCost(overall[bestIdx], fnRatio)) bestIdx = i;
+  }
+  if (bestIdx === cursorIdx) {
+    return (
+      <>
+        This is the cheapest cutoff for a <strong>{fnRatio}×</strong> miss cost
+      </>
+    );
+  }
+  const optimal = overall[bestIdx];
+  const direction = optimal.t > cursor.t ? "above" : "below";
+  const gap = Math.abs(optimal.t - cursor.t).toFixed(2);
+  return (
+    <>
+      The cheapest cutoff at <strong>{fnRatio}×</strong> is <strong>t = {optimal.t.toFixed(2)}</strong>{" "}
+      — {direction} your cursor by <strong>{gap}</strong>
+    </>
+  );
 }
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
@@ -51,11 +118,13 @@ const FALLBACK_MANIFEST: DemoManifest = {
   payload: { path: "reports/demo_payload.json", schema_version: 1, required_keys: [] },
 };
 
-/** Card with the shared figure-card chrome (chart region + commentary band). */
+/** Card with the shared figure-card chrome (chart region + commentary band).
+ * The chart region is position:relative and its only child is the chart, so
+ * an absolutely-filled chart can never overlay sibling chrome. */
 function Figure({ comment, children }: { comment: ReactNode; children: ReactNode }) {
   return (
     <div className="figure-card">
-      <div className="demo-chart">{children}</div>
+      {children}
       <footer className="figure-card-band">
         <p className="figure-comment">{comment}</p>
       </footer>
@@ -122,14 +191,16 @@ function CostCurvePanel({
           contact {cursorRow.fp + cursorRow.tp} of {payload.holdout_n}
         </span>
       </div>
-      <LineChart
-        x={thresholds}
-        series={[{ name: "cost", color: C_TEAL, values: costs }]}
-        cursor={cursorIdx}
-        onCursorChange={onCursor}
-        markers={markers}
-        ariaLabel="campaign cost over alarm threshold"
-      />
+      <div className="demo-chart">
+        <LineChart
+          x={thresholds}
+          series={[{ name: "cost", color: C_TEAL, values: costs }]}
+          cursor={cursorIdx}
+          onCursorChange={onCursor}
+          markers={markers}
+          ariaLabel="campaign cost over alarm threshold"
+        />
+      </div>
       <p className="demo-hint">drag the chart to move the threshold</p>
     </Figure>
   );
@@ -447,8 +518,12 @@ function ChurnSandboxWorkbench({
       }
       notice={
         <>
-          <Notice>{noticeText(cursorRow, laxerRow, fnRatio)}</Notice>
-          <Notice>{optimalityText(payload.overall, cursorIdx, fnRatio)}</Notice>
+          <Notice>
+            <TradeoffText row={cursorRow} laxer={laxerRow} fnRatio={fnRatio} />
+          </Notice>
+          <Notice>
+            <OptimalityText overall={payload.overall} cursorIdx={cursorIdx} fnRatio={fnRatio} />
+          </Notice>
         </>
       }
       secondary={
@@ -474,13 +549,16 @@ function ChurnSandboxWorkbench({
       }
       evidence={
         <>
-          <div className="wb-evidence-col">
-            <h3 className="wb-evidence-tag">models used</h3>
+          <div className="wb-result-block">
+            <h4 className="wb-evidence-tag">models used</h4>
             <p className="wb-evidence-line">
-              {`${payload.model.name} — isotonic-calibrated champion (holdout n = ${payload.holdout_n}).`}
+              <code className="wb-tag">{payload.model.name}</code> — isotonic-calibrated
+              champion, holdout n = {payload.holdout_n}.
             </p>
             <p className="wb-evidence-line">
-              {`Alarm rule: contact when predicted churn probability ≥ ${payload.model.threshold_selected} (pipeline-selected; default threshold ${payload.model.threshold_default}).`}
+              Alarm rule: contact when predicted churn probability ≥{" "}
+              <strong>{payload.model.threshold_selected}</strong> (pipeline-selected; default{" "}
+              {payload.model.threshold_default}).
             </p>
             <p className="wb-evidence-line">
               {payload.cost_model.note.charAt(0).toUpperCase() + payload.cost_model.note.slice(1)}
@@ -491,13 +569,19 @@ function ChurnSandboxWorkbench({
               </p>
             )}
           </div>
-          <div className="wb-evidence-col">
-            <h3 className="wb-evidence-tag">metrics results</h3>
+          <div className="wb-result-block">
+            <h4 className="wb-evidence-tag">metrics results</h4>
             <p className="wb-evidence-line">
-              {`Decision cost $${Math.round(payload.headline.cost_selected)} vs $${Math.round(payload.headline.cost_naive)} naive per ${payload.holdout_n} customers — paired bootstrap CI [${Math.round(payload.headline.delta_ci.lo)}, ${Math.round(payload.headline.delta_ci.hi)}]${payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}.`}
+              Decision cost <strong>${Math.round(payload.headline.cost_selected)}</strong> vs{" "}
+              <strong>${Math.round(payload.headline.cost_naive)}</strong> naive per{" "}
+              {payload.holdout_n} customers — paired bootstrap CI [
+              {Math.round(payload.headline.delta_ci.lo)}, {Math.round(payload.headline.delta_ci.hi)}
+              ]{payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}.
             </p>
-            <p className="wb-evidence-line">
-              {`roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)} (lower is better)`}
+            <p className="wb-evidence-line wb-metric-tags">
+              <span className="wb-tag">roc-auc {payload.model.roc_auc.toFixed(4)}</span>
+              <span className="wb-tag">ece {payload.model.ece.toFixed(4)}</span>
+              <span className="wb-tag">threshold {payload.model.threshold_selected}</span>
             </p>
             <div className="wb-evidence-fig">
               <p className="wb-evidence-line">

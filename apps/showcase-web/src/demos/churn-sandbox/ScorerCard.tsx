@@ -62,7 +62,6 @@ export function ScorerCard({
 
   return (
     <div className="demo-control wb-scorer">
-      <span className="wb-scorer-label">score a customer</span>
       <form
         id="wb-scorer-form"
         className="demo-form"

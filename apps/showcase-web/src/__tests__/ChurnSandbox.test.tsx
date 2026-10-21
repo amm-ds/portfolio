@@ -512,12 +512,14 @@ describe("ChurnSandbox", () => {
     // metrics results right; the linked experiment sits on top, full width
     const cols = drawer.querySelectorAll(".wb-evidence-col");
     expect(cols).toHaveLength(2);
-    expect(cols[0].textContent).toContain("models used");
+    expect(cols[0].textContent).toContain("interpretation");
+    expect(cols[1].textContent).toContain("models used");
     expect(cols[1].textContent).toContain("metrics results");
+    expect(cols[1].textContent).toContain("$335");
     expect(drawer.querySelector(".wb-evidence-linked")!.textContent).toContain(
       "05-ml-pipeline-churn",
     );
-    expect(drawer.textContent).toContain("how to interpret");
+    expect(drawer.textContent).toContain("more information");
   });
 });
 

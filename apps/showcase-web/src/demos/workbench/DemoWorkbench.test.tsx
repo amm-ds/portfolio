@@ -101,10 +101,10 @@ describe("DemoWorkbench", () => {
     expect(screen.queryByRole("button", { name: "copy link" })).toBeNull();
   });
 
-  it("keeps scenario chips and reset in the header actions", () => {
+  it("keeps only the reset action in the header (scenarios live in URL state)", () => {
     renderWorkbench();
-    expect(screen.getByRole("button", { name: "base" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "reset" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "base" })).toBeNull();
   });
 
   it("renders the KPI band with exactly the four tiles, no notice inside", () => {

@@ -2060,10 +2060,12 @@ button.chip.demo-preset:hover {
 
 .wb-root {
   display: grid;
-  /* the controls rail sits right of the chart; an optional full-width strip
-     (e.g. scorer form) sits below them; secondary panels band below that */
-  grid-template-columns: minmax(0, 1fr) 300px;
-  grid-template-rows: none;
+  /* the controls rail sits right of the chart; the main row absorbs free
+     viewport height (minmax floor 400px) so big screens don't leave dead
+     space below the workbench; content taller than the viewport overflows
+     the 1fr row and scrolls the page */
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: auto auto auto minmax(400px, 1fr) auto auto auto;
   grid-template-areas:
     "header header"
     "kpi kpi"
@@ -2074,7 +2076,7 @@ button.chip.demo-preset:hover {
     "evidence evidence";
   gap: 0.5rem;
   height: auto;
-  min-height: calc(100dvh - 58px);
+  min-height: calc(100dvh - 58px - 1rem);
 }
 
 .wb-header {
@@ -2253,15 +2255,19 @@ button.chip.wb-scenario.active {
   flex-direction: column;
 }
 
+/* the chart region holds ONLY the chart (readouts/hint are siblings), so an
+   absolutely-filled chart can never overlay them; the absolute fill also
+   breaks the auto-height feedback loop (measured viewBox → intrinsic height
+   → layout → re-measure) that grew the row without bound */
 .wb-canvas-slot .demo-chart {
+  position: relative;
   flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 .wb-canvas-slot .demo-chart > div {
-  flex: 1 1 auto;
+  position: absolute;
+  inset: 0;
   min-height: 0;
 }
 
@@ -2287,19 +2293,18 @@ button.chip.wb-scenario.active {
 }
 
 .wb-controls {
-  flex: 0 0 300px;
   min-width: 0;
-  /* the rail sizes to its content — nothing inside scrolls; when the rail is
-     taller than the chart's 400px minimum the shared grid row grows and both
-     boxes stay equal (page scrolls, which the workbench allows) */
-  overflow: visible;
+  /* the rail sizes to its content; on short viewports the 1fr chart row can
+     shrink below the rail's content — the rail scrolls internally rather
+     than overflowing (tall viewports absorb the extra height in the chart) */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.4rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 0.55rem 1rem;
+  padding: 0.6rem 1.1rem;
 }
 
 /* slim the rail title so slider + presets + scorer fit the chart row */
@@ -2382,28 +2387,19 @@ button.chip.wb-scenario.active {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: left;
+  text-align: center;
 }
 
 .wb-controls .demo-presets {
   flex-direction: column;
-  gap: 0.25rem;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 /* scorer card: header row (label + submit) on top of a 2×2 field grid; the
    result block sits directly under the header, above the fields */
 .wb-controls .wb-scorer {
   padding: 0.6rem 0.7rem;
-}
-
-.wb-controls .wb-scorer .wb-scorer-label {
-  display: block;
-  font-family: var(--mono);
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin-bottom: 0.3rem;
 }
 
 .wb-controls .wb-scorer .demo-form {
@@ -2860,4 +2856,44 @@ button.chip.wb-scenario.active {
   .wb-secondary .figure-card {
     overflow: visible;
   }
+}
+
+/* --- result tags: small mono chips for metric values in the drawer --- */
+
+.wb-tag {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.wb-metric-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.wb-result-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-result-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* dynamic values in the notice tiles stand out */
+.wb-notice-strip strong,
+.wb-evidence-body strong {
+  color: var(--accent);
+  font-weight: 600;
 }
