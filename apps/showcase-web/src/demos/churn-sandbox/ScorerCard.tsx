@@ -62,6 +62,7 @@ export function ScorerCard({
 
   return (
     <div className="demo-control wb-scorer">
+      <span className="wb-scorer-label">score a customer</span>
       <form
         id="wb-scorer-form"
         className="demo-form"
@@ -70,37 +71,13 @@ export function ScorerCard({
           scoreLive();
         }}
       >
-        <div className="wb-scorer-head">
-          <span className="wb-scorer-label">score a customer</span>
-          <button type="submit" form="wb-scorer-form" disabled={score.status === "loading"}>
-            {score.status === "loading" ? "scoring…" : "score live"}
-          </button>
-        </div>
-        {score.status === "ok" && (
-          <div className="demo-score-result">
-            <div className="demo-prob-bar">
-              <span style={{ width: `${score.probability * 100}%` }} />
-            </div>
-            <p className="demo-prob-line">Churn probability {(score.probability * 100).toFixed(1)}%</p>
-            <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
-              {alarm
-                ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
-                : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
-            </p>
-            {nearestPreset && (
-              <p className="demo-hint">
-                Closest preset band: {nearestPreset.label} (p ={" "}
-                {nearestPreset.churn_probability.toFixed(2)})
-              </p>
-            )}
-          </div>
-        )}
         <label>
           tenure (mo)
           <input
             type="number"
             min={d.tenure_months.min}
             max={d.tenure_months.max}
+            step="any"
             value={Number(form.tenure_months)}
             onChange={(e) => set("tenure_months", Number(e.target.value))}
           />
@@ -111,6 +88,7 @@ export function ScorerCard({
             type="number"
             min={d.monthly_charges.min}
             max={d.monthly_charges.max}
+            step="any"
             value={Number(form.monthly_charges)}
             onChange={(e) => set("monthly_charges", Number(e.target.value))}
           />
@@ -138,6 +116,30 @@ export function ScorerCard({
             ))}
           </select>
         </label>
+        <div className="wb-scorer-foot">
+          {score.status === "ok" && (
+            <div className="demo-score-result">
+              <div className="demo-prob-bar">
+                <span style={{ width: `${score.probability * 100}%` }} />
+              </div>
+              <p className="demo-prob-line">Churn probability {(score.probability * 100).toFixed(1)}%</p>
+              <p className={`demo-alarm ${alarm ? "alarm" : "calm"}`}>
+                {alarm
+                  ? `Alarm at t = ${cursorT.toFixed(2)} — this customer gets contacted`
+                  : `No alarm at t = ${cursorT.toFixed(2)} — below the cursor`}
+              </p>
+              {nearestPreset && (
+                <p className="demo-hint">
+                  Closest preset band: {nearestPreset.label} (p ={" "}
+                  {nearestPreset.churn_probability.toFixed(2)})
+                </p>
+              )}
+            </div>
+          )}
+          <button type="submit" form="wb-scorer-form" disabled={score.status === "loading"}>
+            {score.status === "loading" ? "scoring…" : "score live"}
+          </button>
+        </div>
       </form>
       {score.status === "unavailable" && (
         <p className="state-box demo-score-note">

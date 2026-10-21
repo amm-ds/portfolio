@@ -236,11 +236,10 @@ describe("ChurnSandbox", () => {
     // slices at t = 0.3: month-to-month TP 75 + FP 250 = 325; two-year TP 90 + FP 180 = 270
     expect(screen.getByText("325 alarms")).toBeInTheDocument();
     expect(screen.getByText("270 alarms")).toBeInTheDocument();
-    // footer honest-numbers lines
-    expect(document.querySelector(".demo-footer")!.textContent).toContain(
-      "selected_model_calibrated",
-    );
-    expect(document.querySelector(".demo-footer")!.textContent).toContain("-30 [-40, -20]");
+    // honest-numbers lines in the evidence drawer (models used column)
+    const drawer = document.querySelector(".wb-evidence")!;
+    expect(drawer.textContent).toContain("selected_model_calibrated");
+    expect(drawer.textContent).toContain("roc-auc 0.8300");
   });
 
   it("flips the cost math when the FN slider moves", async () => {
@@ -248,7 +247,7 @@ describe("ChurnSandbox", () => {
     renderDemo();
     await waitFor(() => expect(screen.getByText("cost at t: 335")).toBeInTheDocument());
     // fn_ratio 5 → 1: cost = fp + fn; at t = 0.3 → 210 + 25 = 235 vs 0.5 → 140 + 45 = 185
-    fireEvent.change(screen.getByLabelText(/churn ratio/i), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText(/FP\/FN cost ratio/i), { target: { value: "1" } });
     expect(screen.getByText("cost at t: 235")).toBeInTheDocument();
     expect(screen.getByText("cost at 0.5: 185")).toBeInTheDocument();
     expect(screen.getByText("costs 50 vs 0.5")).toBeInTheDocument();
@@ -258,7 +257,7 @@ describe("ChurnSandbox", () => {
     mockFetch(payloadFetch());
     renderDemo();
     await waitFor(() => expect(screen.getByText("cost at t: 335")).toBeInTheDocument());
-    const slider = screen.getByLabelText(/churn ratio/i) as HTMLInputElement;
+    const slider = screen.getByLabelText(/FP\/FN cost ratio/i) as HTMLInputElement;
     // fn 5 on the 1–10 range → (5−1)/9 of the track filled
     expect(slider.style.getPropertyValue("--fill")).toBe(`${((5 - 1) / 9) * 100}%`);
     // extremes reach the very ends of the track
@@ -286,7 +285,7 @@ describe("ChurnSandbox", () => {
       expect(tile.textContent!.replace("▸", "").trim()[0]).toMatch(/[A-Z]/);
     }
     // fn 5 → 1 moves the optimum to t = 0.9 and rewrites both tiles
-    fireEvent.change(screen.getByLabelText(/churn ratio/i), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText(/FP\/FN cost ratio/i), { target: { value: "1" } });
     const after = strip.querySelectorAll(".wb-notice");
     expect(after[0].textContent).toContain(
       "At 1× a miss, catching one more churner here costs ~7 extra false alarms",
@@ -317,7 +316,7 @@ describe("ChurnSandbox", () => {
       ).toBeTruthy();
       labelTexts.push(label!.textContent!);
     }
-    expect(labelTexts).toEqual(["Churn ratio", "Preset customers", "Score a customer"]);
+    expect(labelTexts).toEqual(["FP/FN cost ratio", "Preset customers", "Score a customer"]);
     for (const text of labelTexts) {
       expect(text[0]).toMatch(/[A-Z]/);
     }
@@ -375,12 +374,11 @@ describe("ChurnSandbox", () => {
     });
     renderDemo();
     await screen.findByText("cost at t: 335");
-    // the submit button sits in the scorer card header row, next to its label
+    // the submit button sits at the bottom of the scorer card, in the foot row
     const scorer = document.querySelector(".wb-scorer")!;
     expect(scorer).not.toBeNull();
-    const head = scorer.querySelector(".wb-scorer-head")!;
-    expect(head.textContent).toContain("score a customer");
-    expect(head).toContain(screen.getByRole("button", { name: "score live" }));
+    const foot = scorer.querySelector(".wb-scorer-foot")!;
+    expect(foot).toContain(screen.getByRole("button", { name: "score live" }));
     // preset chip fills the form; score live calls the serving endpoint
     fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
     fireEvent.click(screen.getByRole("button", { name: "score live" }));
@@ -389,16 +387,16 @@ describe("ChurnSandbox", () => {
       screen.getByText("Alarm at t = 0.30 — this customer gets contacted"),
     ).toBeInTheDocument();
     expect(screen.getByText(/Closest preset band: at-risk fiber customer/)).toBeInTheDocument();
-    // the result block renders directly below the header, above the form fields
+    // the result block renders in the foot row, at the bottom, after the fields
     // (re-query: the preset chip remounts the card via key={presetKey})
     const scored = document.querySelector(".wb-scorer")!;
     const result = scored.querySelector(".demo-score-result")!;
     expect(result).not.toBeNull();
-    const scoredHead = scored.querySelector(".wb-scorer-head")!;
-    expect(result.compareDocumentPosition(scoredHead) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    const scoredFoot = scored.querySelector(".wb-scorer-foot")!;
+    expect(scoredFoot).toContain(result);
     const firstField = scored.querySelector("label")!;
     expect(
-      result.compareDocumentPosition(firstField) & Node.DOCUMENT_POSITION_FOLLOWING,
+      result.compareDocumentPosition(firstField) & Node.DOCUMENT_POSITION_PRECEDING,
     ).toBeTruthy();
   });
 
@@ -491,7 +489,7 @@ describe("ChurnSandbox", () => {
     const fnBefore = fnPath();
     expect(fnBefore).not.toBeNull();
     // FN slider 5 → 9 rescales the stacked FN area
-    fireEvent.change(screen.getByLabelText(/churn ratio/i), { target: { value: "9" } });
+    fireEvent.change(screen.getByLabelText(/FP\/FN cost ratio/i), { target: { value: "9" } });
     expect(fnPath()).not.toBe(fnBefore);
     // dragging the main chart cursor to t = 0.7 moves the marker
     const mainSvg = screen.getByRole("img", { name: "campaign cost over alarm threshold" });
@@ -508,14 +506,18 @@ describe("ChurnSandbox", () => {
     expect(band.querySelector('svg[aria-label="calibration scatter"]')).toBeNull();
     const drawer = document.querySelector(".wb-evidence")!;
     expect(drawer.querySelector('svg[aria-label="calibration scatter"]')).not.toBeNull();
-    expect(drawer.textContent).toContain("Static model-quality reference");
-    expect(drawer.textContent).toContain("ECE 0.0200");
-    // evidence content is organized in two columns: scores & models left,
-    // references & plots right
+    expect(drawer.textContent).toContain("Calibration — static model-quality reference");
+    expect(drawer.textContent).toContain("ece 0.0200");
+    // evidence content is organized in two labeled columns: models used left,
+    // metrics results right; the linked experiment sits on top, full width
     const cols = drawer.querySelectorAll(".wb-evidence-col");
     expect(cols).toHaveLength(2);
-    expect(cols[0].textContent).toContain("Models used");
-    expect(cols[1].textContent).toContain("Linked experiment");
+    expect(cols[0].textContent).toContain("models used");
+    expect(cols[1].textContent).toContain("metrics results");
+    expect(drawer.querySelector(".wb-evidence-linked")!.textContent).toContain(
+      "05-ml-pipeline-churn",
+    );
+    expect(drawer.textContent).toContain("how to interpret");
   });
 });
 
