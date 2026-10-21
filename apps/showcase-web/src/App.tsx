@@ -13,12 +13,10 @@ import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 export function App() {
   const location = useLocation();
   const isDemo = location.pathname.startsWith("/demos/");
-  // demo dashboards and project detail case studies both get the fluid layout
-  const fluid = isDemo || /^\/projects\/[^/]+/.test(location.pathname);
   return (
     <>
       <Nav />
-      <main className={fluid ? "app-main app-main--fluid" : "app-main"}>
+      <main className="app-main app-main--fluid">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/projects" element={<ProjectsIndex />} />

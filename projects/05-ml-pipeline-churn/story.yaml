@@ -27,9 +27,17 @@ sections:
       | base churn rate | 26.5% | never-alarm accuracy: 0.735 |
       | threshold grid | 41 points (0.00–1.00) | where the optimum is searched |
 
-      **Business summary:** Retention budget is a cost-minimization
-      problem (FP=1, FN=5), so every artifact below is judged in money
-      saved, not in accuracy or leaderboard rank.
+      **Business summary:** A subscription business churning about one
+      customer in four is losing customers it could have saved, and the
+      retention budget is a cost-minimization problem, not a
+      model-quality contest. The asymmetry is the point: a missed
+      churner costs roughly five times a false alarm — a lost customer
+      versus one retention voucher — so accuracy, which rewards staying
+      silent, is the wrong yardstick. Every artifact below is therefore
+      judged in money saved against an explicit cost model (FP=1,
+      FN=5), and the headline result is a 41.9% cut in decision cost
+      versus doing nothing, with a confidence interval that survives a
+      budget meeting (bootstrap −416, 95% CI [−485, −343]).
   - id: objectives
     text_md: |
       - Rank customers by churn risk on deliberately messy tabular data, with
@@ -48,9 +56,15 @@ sections:
       - Enforce data quality as a gate: null rates and ranges are checked
         before training, and a failure halts the pipeline loudly.
 
-      **Business summary:** The deliverable is an operating decision — a
-      threshold and an expected cost — with model selection held accountable
-      to the business metric it will be judged by.
+      **Business summary:** The deliverable is an operating decision,
+      not a model file: a threshold for who gets a retention call and
+      the expected cost of running that policy. Model selection is held
+      accountable to the same business metric the deployment will be
+      judged by — total cost of false alarms plus missed churners — so
+      the model that wins the study is the model that wins in
+      production. Preprocessing ships inside the fitted artifact so
+      engineering can hand it raw CRM rows, and data quality is a gate
+      that halts the pipeline loudly rather than a hope.
   - id: data
     text_md: |
       The primary track is the real IBM telco churn dataset — 7,043 customers
@@ -78,9 +92,17 @@ sections:
         of train is reserved for calibration only. No time axis exists, so
         random stratification is the correct protocol.
 
-      **Business summary:** The demo runs on the same public dataset a
-      client's data science team has benchmarked against for years — and the
-      CI path proves the contract holds when the columns change.
+      **Business summary:** The primary track is a real, public telco
+      churn dataset — 7,043 customers with demographics, services, and
+      account fields at a 26.5% churn rate — loaded through a
+      checksum-pinned contract, the same dataset many data science teams
+      have benchmarked against for years. A documented quirk is
+      disclosed in the repo: the dataset id cited in planning does not
+      exist, and the raw file from the canonical mirror is what actually
+      runs. A seeded synthetic twin with deliberately injected mess —
+      missing values and an outlier charge — serves as the offline CI
+      path and proves the pipeline contract holds when the columns
+      change.
   - id: eda
     text_md: |
       Churn is concentrated where contracts are short: month-to-month
@@ -104,9 +126,15 @@ sections:
       NaN-encoded gaps are invisible to a casual `head()` but visible to the
       DQ gates.
 
-      **Business summary:** Contract type and bill size are where a
-      retention budget buys the most — and the outlier/missingness handling
-      keeps that budget aimed at real customers instead of data artifacts.
+      **Business summary:** Churn is concentrated where contracts are
+      short: month-to-month customers churn at 42.7% against 11.3% on
+      one-year and 2.8% on two-year contracts — the single strongest
+      split in the data. Seniors (41.7%) and fiber-optic customers
+      (41.9%) also over-index, and churners pay more per month (~74 vs
+      ~61) with much shorter tenure. For a retention budget, that is
+      where each voucher buys the most, and the outlier and
+      missing-value handling keeps that budget aimed at real customers
+      instead of data artifacts.
     figures: [eda_churn_profile]
   - id: training
     text_md: |
@@ -145,9 +173,16 @@ sections:
       objectives disagreeing is itself a finding (see results). An
       isotonic-calibrated twin is fitted on the calibration split only.
 
-      **Business summary:** The artifact handed to engineering scores raw
-      CRM rows as-is — no ETL rewrite, no train/serve skew — and the winning
-      config is recorded in versioned config, not in someone's notebook.
+      **Business summary:** Everything a deployment needs is inside one
+      fitted pipeline artifact: capping extreme values, flagging and
+      imputing missing data, encoding categories, and scoring.
+      Engineering's contract is hand us the raw CRM row — no ETL rewrite,
+      and no train/serve skew, the classic failure where the
+      preprocessing at serving time quietly differs from training.
+      Model selection runs a seeded search across four candidate
+      families scored on business cost, not accuracy, and the winning
+      configuration lands in versioned config rather than someone's
+      notebook.
   - id: evaluation
     text_md: |
       Every candidate is scored through the same decision procedure, so
@@ -178,10 +213,15 @@ sections:
       threshold × FN-cost plane — where it moves when a client re-prices a
       lost customer.
 
-      **Business summary:** The paired bootstrap CI (−416, 95% CI [−485,
-      −343]) makes the saving defensible in a budget meeting — and
-      calibration pays here: it improved both ECE (0.028 → 0.016) and the
-      cost optimum itself (619 → 601).
+      **Business summary:** Every candidate is scored through the same
+      decision procedure — the same holdout, the same 41-point threshold
+      grid, the same cost model — so models compare like-for-like in
+      money. The saving carries a paired bootstrap confidence interval
+      (−416, 95% CI [−485, −343]), which is what turns the model saves
+      money into a defensible line in a budget meeting. Calibration pays
+      on this dataset: it improved both the calibration error (ECE,
+      0.028 → 0.016) and the cost optimum itself (619 → 601), and both
+      effects are reported with the numbers.
     figures: [calibration_curve, precision_recall_curve, cost_surface]
   - id: results
     text_md: |
@@ -223,9 +263,17 @@ sections:
       - Drivers: `permutation_importance` ranks contract/tenure/charges as
         the signal.
 
-      **Business summary:** −41.9% cost at a defensible CI, with the
-      slice report showing exactly who the operating point misses — that is
-      the story a client budget conversation needs.
+      **Business summary:** The headline: decision cost drops 41.9%
+      versus the do-nothing policy (1,035 → 601 on the holdout), with a
+      bootstrap CI that excludes zero — significant, not hopeful. The
+      operating point is a business choice made visible: at the chosen
+      threshold the policy catches nearly all short-contract churners
+      (recall 0.98 on month-to-month) but misses almost all long-contract
+      ones (0.47 on one-year, 0.00 on two-year — 45 churners in the
+      holdout), and that trade-off is stated openly and movable on the
+      cost surface. The procedure transfers even though the operating
+      point does not: re-deriving the threshold per regime is part of
+      the deliverable, not an afterthought.
     figures: [business_cost_curve, permutation_importance, fairness_slices]
     metrics_keys: [naive_majority, logreg_threshold_0.300, selected_model, selected_model_calibrated]
   - id: conclusions
@@ -253,11 +301,15 @@ sections:
       a business trade-off made explicit on the cost surface rather than a
       silent defect.
 
-      **Business summary:** The framework transfers to a client's CRM
-      extract unchanged — same gates, same artifact contract, same cost
-      curve; only the DatasetContract and the FP/FN costs change. Full
-      rationale: `DESIGN.md`; reproduction and client takeaways: `README.md`;
-      the rendered run: `reports/report.html`.
+      **Business summary:** The framework transfers to a client's own
+      CRM extract unchanged — the same data-quality gates, the same
+      raw-rows-in artifact contract, the same cost-curve procedure; only
+      the data contract and the FP/FN cost assumptions change. The one
+      weak spot is known and stated: two-year-contract recall is 0.00 at
+      the chosen cost trade-off — a business decision made explicit,
+      movable by re-pricing a lost customer, not a silent defect. Full
+      rationale lives in `DESIGN.md`, reproduction and client takeaways
+      in `README.md`, and the rendered run in `reports/report.html`.
     figures: [bootstrap_ci]
 roadmap:
   - status: delivered

@@ -59,9 +59,15 @@ sections:
       ladder and a metaheuristic share one `RoutePlan` contract, each with a
       stated, verifiable gap to published optima (design in `DESIGN.md`).
 
-    **Business summary:** Every percent of distance is fuel, vehicle
-    hours and CO₂, so even single-digit routing improvements compound into a
-    material annual saving.
+    **Business summary:** Last-mile routing converts directly into
+    money: every percent of travel distance is fuel, driver hours, and
+    CO₂, repeated daily on every route in the fleet. At 100 customers
+    the planning problem is beyond brute-force check, so quality is
+    measured against the best published solutions rather than a guess.
+    Even single-digit distance improvements compound into a material
+    annual saving, and this project states its distance from those
+    published optima openly — 4.23% on average — so the remaining gap
+    has a price tag, not a shrug.
   figures: []
   metrics_keys: []
 - id: objectives
@@ -82,9 +88,14 @@ sections:
     (the benchmark ranks vehicles first, distance second), and every tuning
     loop reports what it found, including negative results.
 
-    **Business summary:** The deliverable is a stated optimality gap
-    (distance from the best published routes) that procurement can hold any
-    future optimizer — ours or a vendor's — accountable to.
+    **Business summary:** Success is a verifiable quality number, not a
+    route plan that merely looks reasonable. The deliverable is a stated
+    optimality gap — how far our routes sit from the best published
+    solutions on a standard public benchmark — plus the vehicle-count
+    difference, since the industry ranks fleets first and distance
+    second. That number becomes procurement leverage: any future
+    optimizer, ours or a vendor's, can be held accountable to the same
+    published bar on the same instances.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: data
@@ -104,9 +115,15 @@ sections:
     - **DQ gates** — null rates and ranges vs fleet capacity halt the
       pipeline loudly on any anomaly.
 
-    **Business summary:** A public, citation-backed benchmark lets the
-    client's own team re-check every quality claim against literature values
-    — no trust-us slide required.
+    **Business summary:** The benchmark is the complete Solomon
+    100-customer set, the reference standard in this literature since
+    1987 — 56 instances across six problem families, free with citation
+    and checksum-pinned. Reference values come from a curated best-known
+    table, with a documented supplement for the instances the registry
+    omits, so no quality claim rests on a private number. Because the
+    benchmark is public and citation-backed, the client's own team can
+    re-check every claim against literature values — no trust-us slide
+    required.
   figures: []
   metrics_keys: []
 - id: eda
@@ -126,9 +143,15 @@ sections:
     reason a solver must be checked per family, not on averages (family-gap
     figure in results).
 
-    **Business summary:** Territory-drawn routing underperforms because
-    the binding constraint is the delivery-promise window — tooling must
-    optimize the clock and the map together.
+    **Business summary:** On the map, customers form tight geographic
+    clusters, which tempts planners to draw territories and sweep each
+    one. The data says that fails: the narrowest delivery-promise
+    windows are scattered across the whole cluster, so the clock, not
+    the map, dictates visit order — a route can be geographically tidy
+    and still infeasible. Different customer families bind on different
+    constraints, which is why routing tooling must optimize the clock
+    and the map together, and why a solver must be checked per family
+    rather than on averages.
   figures: [eda_instance_map]
   metrics_keys: []
 - id: training
@@ -171,9 +194,14 @@ sections:
     knobs (all 56 instances) and 12 over the ALNS knobs (6-instance subset);
     winners persist to `params.yaml`.
 
-    **Business summary:** HPO paid for itself in evidence: it proved
-    randomized restarts don't pay (k=1 chosen) before a single ALNS
-    iteration ran — measurement beats intuition.
+    **Business summary:** Here training means tuning the solvers, and
+    the tuning loops were required to report negative results as well as
+    positive ones. The searches paid for themselves in evidence before
+    the expensive search even started: randomized restarts demonstrably
+    do not pay (the search chose k=1) and the 2-opt tuning budget bought
+    only 13.75% → 13.63% mean gap. That is the habit a client is buying —
+    measurement beats intuition, and a tuning loop that finds nothing
+    says so.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: evaluation
@@ -203,9 +231,15 @@ sections:
     deterministic distances and gaps are the verdict and times are context.
     Full per-solver runtime tables in `reports/results.md`.
 
-    **Business summary:** Evaluation is cheap and fully reproducible, so
-    it runs in continuous integration (CI) on every change — optimization
-    quality becomes a guarded regression metric, not a one-off report.
+    **Business summary:** Every candidate solver passes the same hard
+    validator — every customer served exactly once, capacity and time
+    windows respected — before any number is published, and an
+    infeasible plan halts the pipeline loudly. The full 56-instance
+    benchmark with all quality numbers regenerates deterministically
+    from a fixed seed, cheaply enough to run in continuous integration
+    on every code change. Optimization quality becomes a guarded
+    regression metric — a solver that silently gets worse breaks the
+    build — not a one-off report attached to a sales deck.
   figures: [pareto_gap_runtime, solver_profile, alns_convergence_C101]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: results
@@ -249,10 +283,16 @@ sections:
       prefix certified optimal at 191.8 in 2.9 s (2-opt hint: 286.3);
       5-customer instance proved optimal in 0.1 s.
 
-    **Business summary:** The anchor number is a 4.23 % mean distance gap
-    (with the +3.73-vehicle caveat) against 1987-published optima on every
-    family, in auditable seeded code — and the ~0.8 s best case keeps the
-    harness usable daily.
+    **Business summary:** The anchor number: a 4.23% mean distance gap
+    against 1987-published optima, on every problem family, in auditable
+    seeded code — the winner beats the best published solutions outright
+    on 8 of the 56 instances. The caveat is stated with it: the routes
+    use +3.73 vehicles on average versus the hierarchical-optimizing
+    references (+6–8 on the hardest families), and since the industry
+    prices fleets first, that trade must be visible in the contract.
+    The harness stays practical — roughly 0.8 seconds in the best case,
+    minutes for the whole benchmark — so this quality check can run
+    daily rather than annually.
   figures: [gap_pct, family_gap, route_map_C101]
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 - id: conclusions
@@ -288,9 +328,15 @@ sections:
     chains (C203, C103) — destroy size and operator pool are the next
     levers.
 
-    **Business summary:** The deployable harness runs the whole
-    benchmark in minutes with a literature-anchored quality number —
-    solver selection under a runtime budget stops being a leap of faith.
+    **Business summary:** The ladder told a clear story: feasibility is
+    cheap, constraint-aware construction is the first big lever, local
+    polish adds a little, and the metaheuristic closes the rest — with
+    every step's gain and its negative results recorded. What a client
+    takes away is the deployable harness: it runs the whole benchmark in
+    minutes and returns a literature-anchored quality number on both
+    criteria, distance and vehicles. Choosing a solver under a runtime
+    budget stops being a leap of faith or a vendor promise, because the
+    comparison is seeded, public, and repeatable.
   figures: []
   metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, ortools_cp]
 roadmap:

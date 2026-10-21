@@ -389,7 +389,7 @@ describe("ChurnSandbox", () => {
       expect(strip).not.toBeNull();
       expect(strip.textContent).toContain("64.0%");
       expect(strip.textContent).toContain("Alarm at t = 0.30 — this customer gets contacted");
-      expect(strip.textContent).toContain("Closest preset band: at-risk fiber customer");
+      expect(strip.textContent).toContain("score result · at-risk fiber");
     });
     const scorerBox = document.querySelector(".wb-scorer")!;
     expect(scorerBox.querySelector(".demo-score-result")).toBeNull();
@@ -433,8 +433,8 @@ describe("ChurnSandbox", () => {
     const svg = await screen.findByRole("img", { name: "campaign cost over alarm threshold" });
     const markerTexts = () =>
       Array.from(svg.querySelectorAll("text")).map((el) => el.textContent);
-    // no customer active by default — only the default-threshold marker label
-    expect(markerTexts()).not.toContain("at-risk fiber");
+    // one customer is selected by default — the first preset is marked
+    expect(markerTexts()).toContain("at-risk fiber");
     fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
     // marker line labeled with the short preset form appears in the SVG
     expect(markerTexts()).toContain("at-risk fiber");

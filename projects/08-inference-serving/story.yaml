@@ -57,9 +57,18 @@ sections:
       The task is fixed and bounded so the benchmark can be re-run, not just
       read.
 
-      **Business summary:** A client weighing local inference against a
-      cloud API starts from measured latency and cost on the stack that
-      would actually run — not vendor rate cards or leaderboard claims.
+      **Business summary:** Running a language model in production is a
+      serving decision before it is a modeling one: latency percentiles,
+      throughput, and cost per token decide whether a use case ships at
+      all. A client weighing local hardware against a cloud API should
+      start from measurements on the stack that would actually run the
+      workload — not vendor rate cards, and not leaderboard claims about
+      model quality. The headline from measuring this portfolio's real
+      serving stack: the 4-bit mixture-of-experts arm (a model that
+      activates only a few billion of its parameters per request) serves
+      locally at about $0.12 per 1M output tokens, with
+      single-digit-second p95 latency (the slowest 5% of requests)
+      holding through concurrency 8.
   - id: objectives
     text_md: |
       - **Characterize the frontier:** per-cell p50/p95/p99 latency, TTFT,
@@ -76,9 +85,15 @@ sections:
       Success is a reproducible set of numbers tied to serving
       configurations, not a leaderboard rank.
 
-      **Business summary:** The deliverable is an operating decision —
-      which model/quant arm meets a latency SLO at what cost — with every
-      metric traceable to a configuration a client could actually deploy.
+      **Business summary:** The deliverable is an operating decision,
+      not a leaderboard rank: which model and compression (quantization)
+      arm meets the client's latency target — the service-level
+      objective, the maximum response time users will tolerate — at what
+      cost per token. Every metric is traceable to a concrete serving
+      configuration: model, engine, concurrency level, and declared cost
+      assumptions. The table reads as a menu of deployment options, each
+      with its own measured price and latency, rather than an abstract
+      quality contest.
   - id: data
     text_md: |
       No dataset is downloaded: the benchmark task is fixed and synthetic — 8
@@ -96,9 +111,16 @@ sections:
 
       A fixed task is what makes different models directly comparable.
 
-      **Business summary:** A client can re-run the identical task on
-      their own hardware and get numbers comparable cell-for-cell with these
-      — the benchmark is portable, not a one-off demo.
+      **Business summary:** No proprietary dataset is involved: the
+      benchmark task is fixed and small — 8 general-knowledge prompts,
+      each with a keyword checklist for answer quality — and every model
+      answers under an identical output contract (same schema,
+      temperature 0, bounded length). A fixed, synthetic task is what
+      makes different models directly comparable, because nothing about
+      the input can favor one over another. A client can re-run the
+      identical task on their own hardware and get numbers comparable
+      cell-for-cell with these — the benchmark is portable, not a
+      one-off demo.
   - id: eda
     text_md: |
       Exploratory analysis is the smoke pass that keeps the harness from
@@ -117,9 +139,15 @@ sections:
 
       These are facts about the serving layer, not about model intelligence.
 
-      **Business summary:** A naive harness would have reported qwen3.6
-      as a broken model; per-model reasoning defaults are part of the true
-      cost of serving.
+      **Business summary:** Before any timing starts, the harness
+      verifies it is measuring what it thinks: that the endpoint honors
+      structured-output schemas, and that the quality check parses every
+      answer the same way. That smoke pass caught a real trap — one
+      model silently defaults to extended reasoning mode, which exhausted
+      the bounded token budget and produced zero valid answers. A naive
+      harness would have reported that model as broken; in fact
+      per-model reasoning defaults are part of the true cost of serving,
+      and accounting for them is what makes the latency numbers honest.
     figures:
       - quality_quant
   - id: training
@@ -160,9 +188,15 @@ sections:
       Rationale lives in `DESIGN.md`; stages are `prepare` → `bench` →
       `report`.
 
-      **Business summary:** Swapping engine or quantization is a manifest
-      pull, not a re-architecture — the table maps one-to-one onto
-      deployment options.
+      **Business summary:** There is no model training here — the
+      "methods" are the serving configurations, and each row of the
+      table is one deployment option: model file, compression format,
+      and inference engine. Swapping engine or quantization is a
+      manifest change, not a re-architecture, so switching arms costs
+      hours, not a project. Where an arm does not exist — there is no
+      MLX build for the MoE model — that is recorded as a data point
+      rather than silently skipped, because a missing option is
+      information a buyer needs.
   - id: evaluation
     text_md: |
       Cells are (model, engine, concurrency) with concurrency 1/2/4/8 under
@@ -182,9 +216,15 @@ sections:
       finishes in under 45 minutes; `--full` adds the dense qwen3:32b
       baseline, concurrency 2, and the quant/engine cells.
 
-      **Business summary:** The protocol is short and deterministic
-      enough to run inside a client proof-of-concept — SLO verification
-      becomes an afternoon task, not a project.
+      **Business summary:** Each measurement cell — one model, one
+      engine, one concurrency level — repeats the fixed prompt suite
+      five times and records latency percentiles, throughput, and answer
+      quality per cell. The bounded default benchmark finishes in under
+      45 minutes, and the full grid in a few hours, on a single machine.
+      That makes the protocol cheap enough to run inside a client
+      proof-of-concept: verifying a latency target on the client's actual
+      hardware becomes an afternoon task, not a project, and it can be
+      repeated after any infrastructure change.
     figures:
       - latency_concurrency
   - id: results
@@ -212,10 +252,18 @@ sections:
         rate as Q8_0 — quantization costs serving headroom, not
         structured-output reliability.
 
-      **Business summary:** Under a single-digit-second interactive SLO,
-      the 4-bit MoE arm serves locally at roughly $0.12 per 1M output tokens
-      (declared 100 W, $0.30/kWh) — quantization is a latency and cost lever,
-      not a quality risk, at this task size.
+      **Business summary:** The decision this supports is local versus
+      cloud serving under an interactive latency target, and the numbers
+      answer it directly: the 4-bit MoE arm keeps single-digit-second
+      p95 through concurrency 8, going from 0.81 s at one concurrent
+      user to 7.80 s at eight. Cost sits at roughly $0.12 per 1M output
+      tokens on declared electricity assumptions (100 W draw,
+      $0.30 per kWh) — zero API spend. And compression is not the risk
+      it is often assumed to be: the 4-bit arms hold answer quality at
+      essentially the same rate as the uncompressed baseline, so
+      quantization trades headroom, not reliability. The honest caveat:
+      these are a single author run on one machine — a worked example to
+      regenerate on your own hardware, not a guarantee.
     figures:
       - toks_per_s
       - engine_panel
@@ -241,5 +289,12 @@ sections:
       a guarantee.
 
       **Business summary:** The framework transfers to a client decision
-      unchanged — same task, same protocol, same declared-assumption labels —
-      only the hardware and the latency SLO change.
+      unchanged: same fixed task, same measurement protocol, same
+      declared-assumption cost labels — only the hardware and the
+      latency target change. What the client inherits is a way of
+      deciding, not a set of answers: measure the endpoint that will
+      actually be shipped, label what is confounded (engine versus
+      compression), and record missing options as data points. The
+      caveat travels with it — the published numbers are one machine's
+      run, so the first step on client hardware is always to regenerate
+      them, which the harness is built to make easy.

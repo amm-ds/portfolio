@@ -2,13 +2,10 @@ import type React from "react";
 import type { RoadmapItemData } from "../api";
 import { Card } from "./Card";
 
-/** Short display label for a milestone: the first sentence (or clause) of the
- * text, truncated to ~60 chars. The full text stays available via the node's
- * title attribute. */
+/** Display label for a milestone: the full text (roadmap nodes wrap — nothing
+ * is truncated). Exported for tests. */
 export function shortMilestone(text: string): string {
-  const end = text.search(/[.!?]/);
-  const first = (end === -1 ? text : text.slice(0, end + 1)).trim();
-  return first.length > 60 ? `${first.slice(0, 59).trimEnd()}…` : first;
+  return text.trim();
 }
 
 /**

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import type { DemoManifest } from "../types";
@@ -129,6 +130,23 @@ export function DemoWorkbench({
   /** Optional "how to interpret" body for the collapsible under the header hook. */
   about?: ReactNode;
 }) {
+  // The chart matches the controls rail's natural height (including the live
+  // result panel). Safe to measure: the chart is absolutely filled, so its
+  // measured viewBox cannot feed intrinsic height back into the rail.
+  const controlsRef = useRef<HTMLElement | null>(null);
+  const [railH, setRailH] = useState(460);
+  useEffect(() => {
+    const el = controlsRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => {
+      const h = Math.round(el.getBoundingClientRect().height);
+      setRailH((prev) => (Math.abs(prev - h) > 1 ? h : prev));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const canvasHeight = Math.max(460, railH);
+
   return (
     <div className="wb-root">
       <header className="wb-header">
@@ -155,8 +173,10 @@ export function DemoWorkbench({
       {notice !== undefined && <div className="wb-notice-strip">{notice}</div>}
 
       <div className="wb-main">
-        <section className="wb-canvas-slot">{canvas}</section>
-        <aside className="wb-controls">
+        <section className="wb-canvas-slot" style={{ height: canvasHeight }}>
+          {canvas}
+        </section>
+        <aside className="wb-controls" ref={controlsRef}>
           <h2 className="wb-rail-title">controls</h2>
           {controls}
         </aside>

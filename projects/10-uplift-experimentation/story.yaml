@@ -60,10 +60,18 @@ sections:
       | policy budget | 25% | share of customers the targeting policy may mail |
       | base conversion rate | ~0.9% | the regime where naive targeting wastes budget |
 
-      **Business summary:** Campaign profit is a concentration problem —
-      spend the fixed budget on the customers with the highest incremental
-      conversion probability; the deliverable is a targeting list plus a
-      defensible dollar figure, not a leaderboard score.
+      **Business summary:** Marketing analytics has a seductive failure
+      mode: build the best model of who will convert, then market to its
+      top scorers — which targets the sure things who would convert
+      anyway and ignores the persuadables, the only people a campaign
+      can actually create. The real question is counterfactual — who
+      buys because of us? — and answering it needs a randomized
+      experiment plus an uplift model that scores the extra conversions
+      a campaign causes per customer. Campaign profit is then a
+      concentration problem: spend the fixed budget on the customers
+      with the highest incremental conversion probability. The
+      deliverable is a targeting list plus a defensible dollar figure,
+      not a leaderboard score.
   - id: objectives
     text_md: |
       - **Read the experiment before modeling:** arm sizes, balance on
@@ -84,9 +92,15 @@ sections:
         incremental-profit delta vs random and the real limits of
         predicting conversions at a 1% base rate.
 
-      **Business summary:** Every artifact answers a question a campaign
-      owner actually asks: is the effect real, is the sample big enough,
-      who do I mail, and what do I get for it.
+      **Business summary:** Every artefact in this project answers a
+      question a campaign owner actually asks. Is the effect real — read
+      directly from the randomized design with its standard error before
+      any modeling. Is the sample big enough — a power calculation
+      sized against the customers actually available. Who do I mail —
+      three targeting policies compared honestly, each with paired
+      confidence intervals. And what do I get for it — the
+      recommendation is the profit maximum at the budget, chosen on
+      money with the ranking diagnostic secondary.
   - id: data
     text_md: |
       Hillstrom email marketing dataset (Kevin Hillstrom's MineThatData
@@ -112,9 +126,15 @@ sections:
       | recency, mens, womens, newbie | same | numeric/binary features |
       | channel, zip_code | same | categorical features |
 
-      **Business summary:** This is the dataset every uplift paper
-      benchmarks against — a client can replicate every number here on
-      their own randomized holdout with the same code.
+      **Business summary:** The dataset is the canonical Hillstrom email
+      benchmark: 64,000 customers from a 2008 randomized campaign,
+      fetched checksum-pinned so any drift in the upstream snapshot
+      fails loudly. The primary read uses the two clearest arms — the
+      Mens E-Mail treatment versus the no-email control, 42,613
+      customers — keeping every estimate unambiguous. Because this is
+      the dataset every uplift paper benchmarks against, the results are
+      directly comparable to the literature, and a client can replicate
+      every number on their own randomized holdout with the same code.
   - id: eda
     text_md: |
       Randomization holds: the three arms are near-identical on pre-period
@@ -132,9 +152,15 @@ sections:
       | Womens E-Mail | 21,387 | 0.151 | 0.0088 | ~$243 |
       | No E-Mail | 21,306 | 0.106 | 0.0057 | ~$241 |
 
-      **Business summary:** Balance is verified, not assumed — and a ~1%
-      conversion base rate makes the money question ("who converts because
-      of us?") statistically hard, which is exactly why the
+      **Business summary:** Randomization holds: the arms are
+      near-identical on pre-period spend (~$242 mean in each arm), so
+      outcome contrasts attribute to the campaign rather than to
+      assignment bias — and that balance is verified, not assumed. The
+      outcome pattern is the classic one for this benchmark: emails move
+      visits strongly (10.6% control vs 18.3% Mens) but conversions only
+      in the Mens arm (0.57% vs 1.25%) on a base rate of roughly 1%.
+      That rarity is what makes the money question — who converts
+      because of us? — statistically hard, and it is exactly why the
       variance-reduction and power machinery comes next.
     figures: [eda_segment_profile]
   - id: training
@@ -166,9 +192,15 @@ sections:
       overfitting — the standard mistake that makes in-sample Qini curves
       look informative when they are not.
 
-      **Business summary:** The models are auditable line-by-line;
-      nothing in the targeting policy is a black box a client cannot
-      interrogate.
+      **Business summary:** Three targeting policies are fit entirely
+      on standard, hand-written code — no black-box causal libraries —
+      so every step is auditable line by line. Each policy scores the
+      extra conversions a campaign causes per customer, and every score
+      is out-of-fold: produced by a model that never saw the customer it
+      scores, so policy comparisons cannot be flattered by
+      overfitting. Nothing in the targeting policy is a black box a
+      client cannot interrogate, which matters because these lists
+      drive real send decisions.
   - id: evaluation
     text_md: |
       All 42,613 customers scored out-of-fold; three policies plus the
@@ -199,8 +231,18 @@ sections:
         figure cross-checks predicted ordering against the empirical arm
         contrast slice by slice.
 
-      **Business summary:** The evaluation answers "who do I mail and
-      what is it worth" in conversions and dollars, not abstract scores.
+      **Business summary:** Policies are judged two ways: the Qini
+      curve — incremental conversions at each targeted fraction, the
+      uplift analogue of a ranking quality score — and the profit
+      frontier, which prices each targeting level under the campaign
+      cost model ($114 revenue per conversion, $0.01 per email). The
+      recommendation comes from the profit frontier at the 25% budget,
+      with the Qini curve as the diagnostic, and every number carries a
+      95% confidence interval from a paired bootstrap. A
+      cost-sensitivity sweep answers the practical question — at what
+      send cost does targeting beat mailing everyone? So the evaluation
+      answers who do I mail and what is it worth in conversions and
+      dollars, not abstract scores.
     figures: [uplift_by_decile, cost_sensitivity]
   - id: results
     text_md: |
@@ -247,13 +289,20 @@ sections:
         leave its second stage only variance to recover — regime-specific,
         not general.
 
-      **Business summary:** The deliverable is a defensible targeting
-      list with a dollar figure and honest uncertainty ranges, plus the
-      machinery to re-derive it on the client's own randomized holdout.
-      In plain terms: at $0.01 per email, mailing everyone is still the
-      profit maximum because extra sends are nearly free; the targeting
-      list earns its keep once the send cost passes roughly $0.30 — or
-      wherever untargeted mail starts wearing the list.
+      **Business summary:** The campaign effect is real but small — +0.68
+      percentage points on conversion with a standard error of 0.09 —
+      exactly the regime where targeting discipline pays. The honest
+      headline on ranking: the curve-quality ranking between models is
+      not established (its confidence interval spans zero), but the
+      profit ranking is — the T-learner's targeting beats random mailing
+      by +$2,812 at the 25% budget, a paired difference entirely below
+      zero. And the decision pivots on send cost: at $0.01 per email,
+      mailing everyone remains the profit maximum ($16,103) because
+      extra sends are nearly free, while above roughly $0.30 per email
+      the top-25% targeting list overtakes it. So the deliverable is a
+      defensible targeting list with dollar figures, honest uncertainty
+      ranges, and the machinery to re-derive all of it on the client's
+      own randomized campaign.
     figures: [qini_curves, profit_frontier, cuped_variance]
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
@@ -286,9 +335,14 @@ sections:
       **Business summary:** Hand this framework a client's randomized
       campaign extract and it returns a targeting policy, its expected
       dollar delta, and the sample-size math for the next experiment —
-      with only the cost model and the fetch URL to change. Full
-      rationale: `DESIGN.md`; reproduction: `README.md`; the rendered
-      run: `reports/report.html`; machine-readable numbers:
+      only the cost model and the data source change. The caveats travel
+      with it: the effect must be read from the design before any model
+      is trusted, out-of-fold scoring is non-negotiable, and only the
+      profit ranking — not the curve-quality ranking — is claimed as
+      established. Choosing policies on the money, with paired
+      confidence intervals, is the habit that transfers. Full rationale
+      lives in `DESIGN.md`, reproduction in `README.md`, the rendered
+      run in `reports/report.html`, and the machine-readable numbers in
       `reports/metrics.json`.
 roadmap:
   - status: delivered

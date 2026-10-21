@@ -24,9 +24,15 @@ sections:
       embargoed expanding-window backtest. The full design log lives in
       `README.md` and `DESIGN.md`.
 
-      **Business summary:** Stockouts and overstock are forecast-shaped
-      decisions; safety stock cannot be sized on a number nobody validated
-      against the simplest alternatives.
+      **Business summary:** Every replenishment decision — how much to
+      order, when, and for which store — is only as good as the demand
+      forecast behind it, and this retailer plans 24 store-product
+      combinations daily. Size safety stock on an unvalidated number and
+      the error surfaces as stockouts (lost sales) or overstock (cash
+      sitting on shelves). That is why the forecast is validated against
+      the simplest alternatives a planner could use by hand before any
+      model is trusted, so the number that drives orders has evidence
+      behind it.
 
   - id: objectives
     text_md: |
@@ -50,9 +56,12 @@ sections:
         property-tested coherence guarantee.
 
       **Business summary:** The deliverable is a defensible number, not a
-      model file — a planning meeting can act on "we beat the strongest
-      naive floor on real transactions, and here is the protocol that proves
-      it."
+      model file. A planning meeting should be able to act on one sentence —
+      we beat the strongest simple baseline on real transactions, and here
+      is the exact protocol that proves it — because every objective is
+      tied to a concrete artefact in the repository that anyone can re-run.
+      If the evidence cannot survive a skeptical reviewer, the engagement
+      has not succeeded, however sophisticated the model.
 
   - id: data
     text_md: |
@@ -87,9 +96,13 @@ sections:
           S3 --> S3P[6 products]
       ```
 
-      **Business summary:** Results regenerate from a clean clone in
-      minutes — synthetic offline by default, real transactions one flag
-      away.
+      **Business summary:** Any result quoted here can be regenerated from
+      a clean copy of the repository in minutes, on an ordinary laptop. A
+      synthetic dataset with the same shape as the retail problem is the
+      default, so the whole pipeline runs offline with no network or
+      licenses involved. The real transaction data sits one flag away
+      behind a checksum-pinned download, so the demo path and the
+      production path are literally the same code.
 
   - id: eda
     text_md: |
@@ -107,10 +120,14 @@ sections:
       the intermittent-demand problem is visible in the distribution long
       before any accuracy number is computed.
 
-      **Business summary:** Trend and weekly rhythm — the two things
-      that break naive forecasting — are visible in the raw data, so the
-      case for better-than-naive forecasting rests on a chart, not a
-      promise.
+      **Business summary:** The two patterns that break naive forecasting
+      — a steady upward trend and a weekly rhythm, where weekdays and
+      weekends differ systematically — are visible in the raw data before
+      any model is built. On the real transaction track the picture is
+      sharper still: 89% of rows are zero, so demand arrives in bursts
+      that a simple average cannot anticipate. The commercial case for a
+      better forecast therefore rests on a chart a client can see, not on
+      a promise in a slide deck.
     figures: [eda_series_overview, eda_units_distribution]
 
   - id: training
@@ -150,9 +167,14 @@ sections:
       embargoed previous fold) adjusts store-product forecasts toward the
       store level by a data-chosen weight `w`.
 
-      **Business summary:** Every candidate faces the same
-      leakage-proof protocol, so the model that ships won on evidence, not
-      novelty.
+      **Business summary:** Ten candidate models, from a simple average
+      to a hand-built neural network, were compared under one identical
+      evaluation protocol designed so no model can peek at the future.
+      Leakage — letting information from after the forecast date slip into
+      training — is the most common way forecasting projects flatter
+      themselves, and it is ruled out here by construction and by unit
+      tests. The model that ships won on measured evidence under that
+      protocol, not on novelty or fashion.
     figures: [hpo_history, hpo_importance]
 
   - id: evaluation
@@ -180,9 +202,14 @@ sections:
       instability stay visible before deployment; `reports/report.html`
       collects the full run.
 
-      **Business summary:** The embargoed backtest prices in drift
-      before deployment — it answers whether the model survives next
-      quarter, not just last week.
+      **Business summary:** The evaluation mimics real use: the model is
+      trained only on past data, then asked to forecast the next block of
+      days, four times over, with a 7-day embargo gap so no date straddles
+      both sides. This answers the question a buyer should actually ask —
+      will the model survive next quarter, not just last week — because it
+      prices in drift, the slow change in demand patterns over time.
+      Stability is reported per fold, so a model that wins on average but
+      wobbles on recent data is visible before it reaches production.
     figures: [fold_stability]
 
   - id: results
@@ -236,10 +263,17 @@ sections:
         where demand is nonzero — stated on the figure, whose buttons drop
         the band (`probabilistic_band`).
 
-      **Business summary:** Switching replenishment to the tuned HGB
-      cuts absolute error 8.8% versus the "same day last week" rule — less
-      safety stock at the same service level. But re-tune on your own panel
-      first: the winning config does not port across demand regimes.
+      **Business summary:** The decision this informs is whether to
+      replace the "same day last week" planning rule with a tuned
+      gradient-boosting model (the hgb_tuned run in the table above). On
+      real transactions it cuts absolute forecast error by 8.8% against
+      that rule — less safety stock to hold at the same service level,
+      which is working capital released. The caveat matters: the winning
+      configuration does not transfer across demand regimes, so it must be
+      re-tuned on the buyer's own data before it is trusted. The 80%
+      uncertainty band also lands off its 0.80 target on the last fold —
+      0.76 on synthetic data, 0.86 on real — which is stated openly rather
+      than smoothed over.
     figures: [metrics_bars, forecast_vs_actual, probabilistic_band]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 
@@ -272,10 +306,15 @@ sections:
       a monitored retraining trigger rather than a surprise. Full detail:
       `README.md`, `DESIGN.md`, `reports/report.html`.
 
-      **Business summary:** The value delivered is knowing precisely
-      which model wins, by how much, and where it stops winning; the
-      forecast-vs-actual and fold-stability views are the first two charts
-      to show a client.
+      **Business summary:** The value delivered is precision about the
+      decision, not a model file: which model wins, by exactly how much,
+      and — just as important — where it stops winning, since the
+      champion's edge is bounded by day-over-day noise. Every caveat in
+      the conclusions is measured, from the uncertainty band missing its
+      target to the winning configuration failing to transfer across
+      demand regimes. For a client, the forecast-versus-actual and
+      fold-stability charts are the first two things to look at, because
+      they show both the gain and its limits in a single view.
     figures: []
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:

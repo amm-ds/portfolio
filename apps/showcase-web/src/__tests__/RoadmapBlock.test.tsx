@@ -13,19 +13,13 @@ const ROADMAP: RoadmapItemData[] = [
 ];
 
 describe("shortMilestone", () => {
-  it("keeps the first sentence when the text is short", () => {
+  it("returns the full milestone text — roadmap nodes never truncate", () => {
     expect(shortMilestone("Baseline retrieval with citations.")).toBe(
       "Baseline retrieval with citations.",
     );
-    expect(shortMilestone("No punctuation at all")).toBe("No punctuation at all");
-  });
-
-  it("truncates long text to about 60 chars with an ellipsis", () => {
     const long =
       "End-to-end agentic workflow with retrieval, verification loops, tool use and full traceability across every single turn of the conversation";
-    const label = shortMilestone(long);
-    expect(label.length).toBeLessThanOrEqual(61);
-    expect(label.endsWith("…")).toBe(true);
+    expect(shortMilestone(long)).toBe(long);
   });
 });
 

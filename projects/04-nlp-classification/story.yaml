@@ -14,9 +14,14 @@ sections:
       - **The benchmark:** AG News, a real, public, widely studied
         four-topic corpus.
 
-      **Business summary:** Framing this as a cost-vs-delivery
-      trade-off, not a technology contest, is what makes the ladder below
-      actionable for a routing decision.
+      **Business summary:** Newsrooms and compliance teams face the same
+      scaling problem: a continuous stream of short items that someone
+      must route to the right desk, and manual triage does not scale.
+      The trap in this purchase is comparing technologies instead of
+      outcomes — keyword rules break on the first unfamiliar headline,
+      and bigger models cost more per item routed. So the ladder below
+      is framed as a cost-versus-delivery trade-off on a fixed budget,
+      which is what makes it actionable for an actual routing decision.
 
   - id: objectives
     text_md: |
@@ -33,9 +38,15 @@ sections:
       | Reproducibility | seeded end-to-end, CPU-feasible | bit-exact validation scores on re-run |
       | Headline scale | full 120k fine-tune on laptop GPU (MPS) | test macro-F1, wall-clock documented |
 
-      **Business summary:** A small, reproducible, rigorously selected
-      model beats a larger undocumented one — every number here can be
-      audited in an afternoon.
+      **Business summary:** The working rule: a small, reproducible,
+      rigorously selected model is worth more than a larger undocumented
+      one, because a number you cannot audit cannot justify a budget.
+      Every run is seeded so it reproduces exactly on a laptop, the
+      simple classical baseline is always reported alongside the neural
+      models, and selection is disciplined — a tuned model ships only if
+      it beats the existing artifact on the held-out test set. Every
+      number in this project can be re-derived in an afternoon, which is
+      precisely what a skeptical reviewer needs.
 
   - id: data
     text_md: |
@@ -55,9 +66,14 @@ sections:
         after the same stratified carve-out), behind an accelerator gate
         described in `README.md`.
 
-      **Business summary:** Real data, a documented license posture,
-      pinned seeds, and a sha256 snapshot contract are exactly what a
-      compliance review asks for before a model touches production data.
+      **Business summary:** The corpus is a real, public collection of
+      127,600 news items, and its license posture is documented honestly
+      as unknown rather than assumed — the kind of candor a legal review
+      checks first. Every subsample is seeded and class-stratified, and
+      the snapshot carries a sha256 checksum contract, so the exact data
+      any model saw can be reconstructed bit-for-bit. These are exactly
+      the artefacts a compliance review asks for before a model is
+      allowed near production data.
 
   - id: eda
     text_md: |
@@ -74,9 +90,15 @@ sections:
       - **Consequence:** metric differences between runs are model
         effects, not artifacts of class priors or truncation.
 
-      **Business summary:** On balanced data the macro-F1 claim
+      **Business summary:** Headline metric first: macro-F1 is the
+      average per-topic score, the measure accuracy can hide behind —
+      a model can score well on accuracy simply by guessing the most
+      common topic. Every split here is exactly 25% per topic, so no run
+      can win by exploiting class imbalance, and texts are short enough
+      that the length cap truncates almost nothing. The claim therefore
       survives a shift in the production class mix — though per-class
-      monitoring stays mandatory for deployment.
+      monitoring stays mandatory once the model is deployed, because
+      real traffic will not stay this tidy.
     figures: [eda_class_balance]
 
   - id: training
@@ -115,9 +137,15 @@ sections:
       The `training_curve`, `epochs_probe` and `hpo_history` figures track
       loss, the epoch-budget probe, and per-trial validation F1.
 
-      **Business summary:** Every training detail a buyer would audit —
-      optimizer, schedule, stopping rule, seeds — is hand-written, visible,
-      and unit-tested.
+      **Business summary:** The neural models train through one
+      hand-written loop rather than a black-box framework trainer: the
+      optimizer, the learning-rate schedule, the early-stopping rule,
+      and every seed are visible code, not defaults. A buyer auditing
+      the training process can read each decision and its test instead
+      of trusting a vendor's summary. The epoch budget was set by
+      measurement — a four-epoch probe showed validation quality peaks
+      at epoch 3 within noise, so extra epochs overfit rather than
+      improve.
     figures: [training_curve, epochs_probe, hpo_history]
 
   - id: evaluation
@@ -145,9 +173,15 @@ sections:
       `confusion_matrix_selected` figure shows where the selected model
       still errs.
 
-      **Business summary:** One untouched test split for every run is
-      an anti-marketing device — no cherry-picking, no test-set leakage
-      through tuning; the numbers survive a skeptical re-run.
+      **Business summary:** Every candidate — baseline, tuned, and
+      retrained alike — is scored on the same untouched test split, and
+      that split is used for nothing else. This is an anti-marketing
+      device: nobody can cherry-pick the test set that flatters their
+      model, and no tuning decision leaks through it. Selection is
+      explicit and persisted — when validation-time tuning gains did
+      not transfer to test (a documented null result), the earlier
+      artifact kept the title. The numbers survive a skeptical re-run,
+      which is the point.
     figures: [confusion_matrix_selected]
 
   - id: results
@@ -192,9 +226,18 @@ sections:
         hybrid tech-business headlines; more data shrinks the frequency,
         not the pair (labeling-ambiguity floor).
 
-      **Business summary:** Fund the full-data fine-tune when ~7.5 pp
-      macro-F1 over TF-IDF is worth ~$0.07 per 1k items; only wins
-      surviving all three checks ship.
+      **Business summary:** The decision here is funding: a full-data
+      fine-tune of the neural model beats the classical TF-IDF approach
+      by about 7.5 percentage points of macro-F1 (0.9460 vs 0.8714 on
+      the held-out test set) at roughly $0.07 per 1,000 items scored
+      under the reference pricing card. That trade is worth it when
+      routing accuracy pays — misrouted items reach the wrong desk — and
+      not when latency or interpretability dominates, where TF-IDF at
+      0.2 milliseconds per item remains the right answer. Two honest
+      caveats ship with the number: the compressed int8 variant halves
+      model size with no measured quality loss but is actually slower
+      at batch size 1, and the tuning gains over defaults sat inside
+      seed noise — only wins surviving all three checks are reported.
     figures: [per_class_f1_comparison]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_full_120k]
 
@@ -222,10 +265,17 @@ sections:
       result) and the Business → Sci/Tech labeling floor — both stated
       above, not left for a client to discover.
 
-      **Business summary:** Treat this as the auditable lower bound of
-      a scaling decision — the 0.9460 headline gives a concrete basis for
-      funding full-scale training, and TF-IDF remains the right answer
-      where latency or interpretability dominates.
+      **Business summary:** Treat this project as the auditable lower
+      bound of a scaling decision, not as the ceiling. The 0.9460
+      headline on an untouched test split, with a monotone ladder behind
+      it (0.9021 at bounded scale, 0.9270 at 20k, 0.9460 at full data),
+      gives a concrete basis for funding full-scale training — more
+      data demonstrably keeps paying. The known weaknesses are stated,
+      not buried: tuning gains that did not transfer to test, and a
+      Business-versus-Sci/Tech confusion floor caused by genuinely
+      ambiguous headlines. And TF-IDF remains the right answer where
+      latency or interpretability dominates — that is a routing
+      decision, not a research verdict.
     metrics_keys: [distilbert_full_120k]
 roadmap:
   - status: delivered

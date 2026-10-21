@@ -72,9 +72,16 @@ sections:
       future holdout the model removes 28.4% of forecast error vs "same hour
       last week".
 
-      **Business summary:** An hour-ahead, zone-level demand signal
-      turns fleet staging and driver shifts from guesswork into a
-      scheduled decision.
+      **Business summary:** Fleets must be staged and drivers shifted
+      before demand arrives, so every staging choice is an hour-ahead
+      bet on where pickups will happen — a wrong one is either an idle
+      fleet or missed revenue. The signal that de-risks that bet is a
+      demand forecast for each of the city's 265 taxi zones, hour by
+      hour, with an uncertainty band a dispatcher can staff against. On
+      real, messy public data — 41.2M trips joined with weather — this
+      project turns that guesswork into a scheduled decision, cutting
+      forecast error by 28.4% against the "same hour last week" rule on
+      a strict future holdout.
     figures: []
     metrics_keys: []
 
@@ -103,9 +110,16 @@ sections:
       The deliverable is a forecast plus a defensible buffer size, not a
       leaderboard entry.
 
-      **Business summary:** The client gets a staffing decision —
-      expected demand plus how many extra vehicles to hold each hour —
-      and a straight read on what rain does and does not tell you.
+      **Business summary:** The deliverable is a staffing decision, not
+      a leaderboard entry: expected demand per zone and hour, plus a
+      calibrated p90 upper band — the 90th percentile, the demand level
+      exceeded only about one hour in ten — which sizes how many extra
+      vehicles to hold. The targets are set to be decision-grade: beat
+      "same hour last week" by at least 20% on error, keep the band
+      within two points of its 90% target, and stay under an 8 GB memory
+      footprint so it runs on a laptop. A second question is answered
+      with care: what rain does and does not tell you — every weather
+      claim is labelled directional, not causal.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
@@ -130,9 +144,17 @@ sections:
       declared laptop-friendly boundary: large enough to be credible at real
       scale, small enough to re-run in minutes.
 
-      **Business summary:** Every input is licensed for commercial use
-      and re-obtainable by one command, so the analysis reproduces inside
-      your own environment — no proprietary data dependency.
+      **Business summary:** Both inputs are public and licensed for
+      commercial use: a full year of New York yellow-taxi trip records —
+      41.2M trips across 12 monthly files — and a public-domain weather
+      station's daily precipitation and temperature. Each is
+      checksum-pinned, so any upstream republication that changes the
+      data fails loudly rather than silently shifting the results. The
+      whole analysis re-obtains by a single command and reproduces
+      inside a client's own environment, with no proprietary data
+      dependency; the bounded slice (one vehicle class, one city, one
+      year) is deliberate — credible at real scale, small enough to
+      re-run in minutes.
     figures: []
     metrics_keys: []
 
@@ -155,9 +177,16 @@ sections:
 
       Demand is hour-and-borough driven, not evenly spread.
 
-      **Business summary:** Staff the 18:00 Manhattan peak and the
-      airport flatness very differently — this analysis is what turns a
-      city-wide average into per-zone staffing plans.
+      **Business summary:** Demand is sharply structured: weekdays are
+      twin-peaked (morning and evening rush), weekends flatten, and
+      Manhattan dominates volume in every hour. The trap is sparsity —
+      many zone-hours have zero pickups — so the data is rebuilt on a
+      complete zone-by-hour grid with explicit zeros before any feature
+      is computed; without that, "last hour" silently means the wrong
+      thing in quiet zones. The staffing consequence: the 18:00
+      Manhattan peak and the flat, around-the-clock airports need very
+      different plans, and this analysis is what turns a city-wide
+      average into per-zone staffing decisions.
     figures: [eda_trips_profile, zone_hour_heatmap, zone_demand_map]
     metrics_keys: []
 
@@ -196,8 +225,14 @@ sections:
       The method section is the audit trail: no leakage inflates the
       numbers before the headline error rates are trusted.
 
-      **Business summary:** A client can verify the protocol and re-run
-      the whole fit on a laptop before betting a fleet plan on the model.
+      **Business summary:** The pipeline streams the raw data month by
+      month, never materialising the full 41.2M trips, with a memory
+      peak around 2 GB — it fits on a laptop, not a cluster.
+      Data-quality contracts run per month and halt the pipeline loudly
+      on violation, and tuning follows a leak-proof protocol: temporal
+      splits only, with the test window never touched. So a client can
+      read the method as an audit trail, verify the protocol, and re-run
+      the entire fit before betting a fleet plan on the model.
     figures: []
     metrics_keys: []
 
@@ -232,9 +267,17 @@ sections:
       wiring check; the observatory's real value starts with the first
       unseen month.
 
-      **Business summary:** The client inherits a monitoring contract,
-      not just a model — regression opens a tracked issue with a response
-      runbook instead of waiting for the next quarterly review.
+      **Business summary:** Evaluation mimics deployment: models are
+      scored on a pure future quarter rather than a random shuffle, so
+      drift is priced in by design, and every model is compared against
+      the "same hour last week" rule. Just as important is what happens
+      after delivery: a scheduled workflow scores each newly published
+      month of data against the persisted serving model, with light
+      quality gates and a ±15% tolerance. Breach the tolerance and the
+      check fails and opens a tracked issue with a response runbook —
+      the client inherits a monitoring contract, not just a model,
+      instead of waiting for the next quarterly review to find out the
+      forecast has gone stale.
     figures: [actual_vs_pred_top5, borough_mae, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 
@@ -277,10 +320,16 @@ sections:
       - **Serving is live:** the showcase API returned JFK (zone 132):
         223.827 point / 251.811 p90.
 
-      **Business summary:** About 28% of forecast error is removed vs
-      "same hour last week"; the 90.8%-calibrated p90 band yields a
-      defensible buffer of extra vehicles per hour — except in flagged
-      sparse zones with no borough assignment, where bands run too tight.
+      **Business summary:** The served model removes 28.4% of forecast
+      error versus "same hour last week" on a strict future quarter, and
+      the challenger that scored better on the test window was kept out
+      of serving because it lost on embargoed validation — serving keys
+      on validation, not on the flattering split. The p90 band is
+      calibrated where it matters: 90.8% coverage overall against the
+      90% target, which yields a defensible buffer of extra vehicles per
+      hour. The exception is stated, not hidden: sparse zones with no
+      borough assignment under-cover at 84.7%, so staff from the band in
+      dense boroughs and fall back to simple rules in the flagged zones.
     figures: [gbm_vs_nn, p90_band, weather_elasticity]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
@@ -313,10 +362,17 @@ sections:
       flagged N/A zones under-cover at 84.7% — staff from the band in
       dense boroughs, fall back to persistence rules in flagged zones.
 
-      **Business summary:** This quality of analysis runs on a laptop
-      and re-runs in minutes — 41.2M rows, a strict temporal holdout and a
-      sub-3 GB footprint deliver enterprise-grade rigour without
-      enterprise-grade infrastructure.
+      **Business summary:** The lesson for a buyer is about procurement
+      leverage: this level of rigour — 41.2M rows, a strict temporal
+      holdout, calibrated uncertainty bands, and an automated drift
+      monitor — runs on a laptop under a 3 GB memory footprint and
+      re-runs in minutes. Enterprise-grade discipline does not require
+      enterprise-grade infrastructure, and the re-runnability is the
+      guarantee: the client's own team can reproduce every number rather
+      than take them on trust. The known limits ship with the results —
+      sparse zones under-cover, and per-service retraining is
+      recommended when transferring to a different fleet — so the honest
+      caveats are part of the deliverable.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 

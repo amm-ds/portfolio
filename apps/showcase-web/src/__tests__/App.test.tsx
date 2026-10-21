@@ -48,7 +48,7 @@ describe("App routing", () => {
     }
   });
 
-  it("uses the fluid full-width layout on demo and project detail routes", async () => {
+  it("uses the full-width layout everywhere; only demos drop the footer", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -77,7 +77,7 @@ describe("App routing", () => {
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
     );
-    expect(projectsContainer.querySelector("main")!.className).not.toContain("app-main--fluid");
+    expect(projectsContainer.querySelector("main")!.className).toContain("app-main--fluid");
     // the index keeps its footer
     expect(projectsContainer.querySelector(".footer")).not.toBeNull();
     projectsContainer.remove();
@@ -88,7 +88,7 @@ describe("App routing", () => {
         <App />
       </MemoryRouter>,
     );
-    // project detail is fluid too, but keeps the footer
+    // project detail is app-main--fluid too, but keeps the footer
     expect(detailContainer.querySelector("main")!.className).toContain("app-main--fluid");
     expect(detailContainer.querySelector(".footer")).not.toBeNull();
   });
