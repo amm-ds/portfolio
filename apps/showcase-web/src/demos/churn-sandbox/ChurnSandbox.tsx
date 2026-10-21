@@ -6,6 +6,7 @@ import { SegmentLegend, StackedHBar, type HBarSegment } from "../charts/StackedH
 import type { ChurnPayload, ConfusionRow, DemoManifest } from "../types";
 import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import { contactCount, costAt, nearestIndex, noticeText, recallAt, savings } from "./kpis";
+import { CostCompositionPanel } from "./CostCompositionPanel";
 import { fetchChurnPayload, fetchManifest } from "./payload";
 import { ScorerCard } from "./ScorerCard";
 
@@ -195,27 +196,6 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
   );
 }
 
-// --- calibration panel ---------------------------------------------------------------
-
-function CalibrationPanel({ payload }: { payload: ChurnPayload }) {
-  const { calibration, model } = payload;
-  return (
-    <Figure
-      id="calibration"
-      comment={
-        <>
-          Bins of predicted probability track the diagonal — the model is calibrated,
-          with ECE = {model.ece.toFixed(4)} on the holdout.
-        </>
-      }
-    >
-      <CalibrationScatter
-        points={calibration.map((b) => ({ x: b.mean_predicted, y: b.observed, n: b.n }))}
-      />
-    </Figure>
-  );
-}
-
 // --- demo ------------------------------------------------------------------------------
 
 export default function ChurnSandbox() {
@@ -297,7 +277,7 @@ function ChurnSandboxWorkbench({
       controls={
         <>
           <div className="demo-control">
-            <label htmlFor="fn-ratio">a missed churner costs {fnRatio}× a false alarm</label>
+            <label htmlFor="fn-ratio">missed churner = {fnRatio}× a false alarm</label>
             <input
               id="fn-ratio"
               type="range"
@@ -327,11 +307,7 @@ function ChurnSandboxWorkbench({
               ))}
             </div>
           </div>
-        </>
-      }
-      under={
-        form !== null ? (
-          <div className="wb-scorer-strip">
+          {form !== null && (
             <ScorerCard
               key={presetKey}
               payload={payload}
@@ -342,8 +318,8 @@ function ChurnSandboxWorkbench({
                 setCustomer({ label: nearestPresetLabel(probability), probability })
               }
             />
-          </div>
-        ) : undefined
+          )}
+        </>
       }
       canvas={
         <CostCurvePanel
@@ -391,21 +367,44 @@ function ChurnSandboxWorkbench({
             <SlicesPanel slices={payload.slices.contract} cursorT={cursorT} />
           </div>
           <div className="wb-secondary-panel">
-            <h3 className="wb-rail-title">probability calibration</h3>
-            <CalibrationPanel payload={payload} />
+            <h3 className="wb-rail-title">cost composition</h3>
+            <CostCompositionPanel
+              overall={payload.overall}
+              thresholds={payload.thresholds}
+              fnRatio={fnRatio}
+              cursorIdx={cursorIdx}
+            />
           </div>
         </>
       }
       evidence={
-        <div className="wb-evidence-notes demo-footer">
-          <p className="wb-evidence-line demo-footer-line">
-            {`model: ${payload.model.name} · holdout n = ${payload.holdout_n} · roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)}`}
-          </p>
-          <p className="wb-evidence-line">
-            {`committed bootstrap CI on cost savings: ${Math.round(delta_ci.point)} [${Math.round(delta_ci.lo)}, ${Math.round(delta_ci.hi)}] per ${payload.holdout_n} customers (95% significant: ${delta_ci.significant_95 ? "yes" : "no"})`}
-          </p>
-          <p className="wb-evidence-line">{payload.cost_model.note}</p>
-        </div>
+        <>
+          <div className="wb-evidence-fig">
+            <p className="wb-evidence-line">
+              static model-quality reference — isotonic-calibrated, ECE{" "}
+              {payload.model.ece.toFixed(4)}
+            </p>
+            <div className="wb-evidence-calibration">
+              <CalibrationScatter
+                points={payload.calibration.map((b) => ({
+                  x: b.mean_predicted,
+                  y: b.observed,
+                  n: b.n,
+                }))}
+                height={180}
+              />
+            </div>
+          </div>
+          <div className="wb-evidence-notes demo-footer">
+            <p className="wb-evidence-line demo-footer-line">
+              {`model: ${payload.model.name} · holdout n = ${payload.holdout_n} · roc-auc ${payload.model.roc_auc.toFixed(4)} · ece ${payload.model.ece.toFixed(4)}`}
+            </p>
+            <p className="wb-evidence-line">
+              {`committed bootstrap CI on cost savings: ${Math.round(delta_ci.point)} [${Math.round(delta_ci.lo)}, ${Math.round(delta_ci.hi)}] per ${payload.holdout_n} customers (95% significant: ${delta_ci.significant_95 ? "yes" : "no"})`}
+            </p>
+            <p className="wb-evidence-line">{payload.cost_model.note}</p>
+          </div>
+        </>
       }
     />
   );

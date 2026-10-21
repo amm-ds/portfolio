@@ -10,6 +10,16 @@ export function costAt(row: ConfusionRow, fnRatio: number): number {
   return rowCost(row, fnRatio);
 }
 
+/** FP-cost component across the threshold grid (fp_cost = 1 per the cost model). */
+export function fpCostSeries(overall: ConfusionRow[]): number[] {
+  return overall.map((r) => r.fp);
+}
+
+/** FN-cost component across the threshold grid, scaled by the miss multiplier. */
+export function fnCostSeries(overall: ConfusionRow[], fnRatio: number): number[] {
+  return overall.map((r) => fnRatio * r.fn);
+}
+
 /** Cost delta vs the default 0.5 threshold (negative = savings). */
 export function savings(row: ConfusionRow, defaultRow: ConfusionRow, fnRatio: number): number {
   return rowCost(row, fnRatio) - rowCost(defaultRow, fnRatio);

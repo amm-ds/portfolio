@@ -217,7 +217,7 @@ describe("ChurnSandbox", () => {
     renderDemo();
     await waitFor(() => expect(screen.getByText("cost at t: 335")).toBeInTheDocument());
     // fn_ratio 5 → 1: cost = fp + fn; at t = 0.3 → 210 + 25 = 235 vs 0.5 → 140 + 45 = 185
-    fireEvent.change(screen.getByLabelText(/a missed churner costs/), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText(/missed churner =/), { target: { value: "1" } });
     expect(screen.getByText("cost at t: 235")).toBeInTheDocument();
     expect(screen.getByText("cost at 0.5: 185")).toBeInTheDocument();
     expect(screen.getByText("costs 50 vs 0.5")).toBeInTheDocument();
@@ -306,6 +306,73 @@ describe("ChurnSandbox", () => {
     // switching presets moves the marker to the other customer
     fireEvent.click(screen.getByRole("button", { name: "sticky dsl customer" }));
     expect(markerTexts()).toContain("sticky dsl");
+  });
+
+  it("keeps the scorer form in the controls column, with no under strip", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("cost at t: 335");
+    const controls = document.querySelector(".wb-controls")!;
+    expect(controls).not.toBeNull();
+    // scorer card (and its live button) live in the rail, below the presets
+    const scorer = controls.querySelector(".wb-scorer")!;
+    expect(scorer).not.toBeNull();
+    expect(controls.contains(screen.getByRole("button", { name: "score live" }))).toBe(true);
+    // the full-width under strip is gone (workbench keeps the slot as optional API)
+    expect(document.querySelector(".wb-under")).toBeNull();
+    expect(document.querySelector(".wb-scorer-strip")).toBeNull();
+  });
+
+  it("gives all three secondary panels a figure footer with commentary", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("cost at t: 335");
+    const panels = document.querySelectorAll(".wb-secondary-panel");
+    expect(panels).toHaveLength(3);
+    for (const panel of panels) {
+      const band = panel.querySelector("footer.figure-card-band");
+      expect(band).not.toBeNull();
+      expect(band!.querySelector(".figure-id")).not.toBeNull();
+      expect(band!.querySelector(".figure-comment")).not.toBeNull();
+    }
+    // the cost-composition panel replaced the static calibration panel
+    expect(screen.getByText("cost composition")).toBeInTheDocument();
+    expect(
+      screen.getByText(/fig :: churn-sandbox\/cost-composition/),
+    ).toBeInTheDocument();
+  });
+
+  it("cost-composition panel rescales with the FN slider and tracks the cursor", async () => {
+    mockFetch(payloadFetch());
+    stubSvgRect();
+    renderDemo();
+    const svg = await screen.findByRole("img", { name: "cost composition over alarm threshold" });
+    const fnPath = () => svg.querySelector('[data-layer="fn"]')!.getAttribute("d");
+    const cursorX = () => svg.querySelector('[data-layer="cursor"]')!.getAttribute("x1");
+    // cursor starts at the committed threshold 0.3 (marker x in viewBox coords)
+    expect(Number(cursorX())).toBeCloseTo(121.5, 5);
+    const fnBefore = fnPath();
+    expect(fnBefore).not.toBeNull();
+    // FN slider 5 → 9 rescales the stacked FN area
+    fireEvent.change(screen.getByLabelText(/missed churner =/), { target: { value: "9" } });
+    expect(fnPath()).not.toBe(fnBefore);
+    // dragging the main chart cursor to t = 0.7 moves the marker
+    const mainSvg = screen.getByRole("img", { name: "campaign cost over alarm threshold" });
+    fireEvent(mainSvg, new MouseEvent("pointerdown", { bubbles: true, clientX: 518, buttons: 1 }));
+    expect(screen.getByText("threshold t = 0.70")).toBeInTheDocument();
+    expect(Number(cursorX())).toBeCloseTo(288.5, 5);
+  });
+
+  it("moves the calibration scatter into the evidence drawer, out of the band", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("cost at t: 335");
+    const band = document.querySelector(".wb-secondary")!;
+    expect(band.querySelector('svg[aria-label="calibration scatter"]')).toBeNull();
+    const drawer = document.querySelector(".wb-evidence")!;
+    expect(drawer.querySelector('svg[aria-label="calibration scatter"]')).not.toBeNull();
+    expect(drawer.textContent).toContain("static model-quality reference");
+    expect(drawer.textContent).toContain("ECE 0.0200");
   });
 });
 
