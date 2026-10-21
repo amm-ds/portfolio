@@ -2065,7 +2065,7 @@ button.chip.demo-preset:hover {
      space below the workbench; content taller than the viewport overflows
      the 1fr row and scrolls the page */
   grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-rows: auto auto auto auto minmax(460px, 1fr) auto auto;
+  grid-template-rows: auto auto auto auto auto auto auto;
   grid-template-areas:
     "header header"
     "more more"
@@ -2230,7 +2230,8 @@ button.chip.wb-scenario.active {
 
 .wb-canvas-slot {
   min-width: 0;
-  min-height: 460px;
+  align-self: start;
+  height: 460px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -2238,12 +2239,12 @@ button.chip.wb-scenario.active {
 
 /* the canvas figure card grows to fill the row; the chart svg fills the card */
 .wb-canvas-slot .figure-card {
-  /* fill the slot (whose height the rail defines): the definite chain keeps
-     the measured viewBox from feeding back into layout (an auto-height chain
-     grew the row without bound). */
+  /* definite 460px card: the measured viewBox cannot feed back into layout
+     (an auto-height chain grew the row without bound), and the chart never
+     resizes because the controls rail grew */
   flex: none;
   height: 100%;
-  min-height: 400px;
+  min-height: 460px;
   margin-bottom: 0;
   display: flex;
   flex-direction: column;
@@ -2288,10 +2289,12 @@ button.chip.wb-scenario.active {
 
 .wb-controls {
   min-width: 0;
-  height: 100%;
-  /* the rail fills the chart's track; it scrolls internally only when a
-     short viewport squeezes the 460px floor — never because of its content */
-  overflow-y: auto;
+  align-self: start;
+  /* natural height, top-aligned: the rail grows below the chart when its
+     content needs more room — the chart never resizes because of it. The
+     fr row only absorbs free viewport space (big screens fill via the
+     chart), never rail content. */
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
@@ -2899,41 +2902,26 @@ button.chip.wb-scenario.active {
   margin-inline: 0;
 }
 
-/* keep prose line lengths readable on very wide viewports */
-.app-main--fluid .story-section .prose p,
-.app-main--fluid .story-section .prose ul,
-.app-main--fluid .story-section .prose ol {
-  max-width: 70ch;
-}
-
-/* live score result: full-width strip under the main row, outside the
-   scorer box — same components (tags, prob bar, alarm line) as the rail */
+/* live score result: panel in the controls rail, directly below the scorer
+   box — the chart keeps its fixed size; only the rail grows */
 .wb-score-result {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 0.3rem 1rem;
-  padding: 0.6rem 1rem;
-  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
-  border-radius: var(--radius);
-}
-
-.wb-score-result .wb-evidence-tag {
-  grid-row: span 3;
+  border-radius: 8px;
 }
 
 .wb-score-result .demo-prob-bar {
-  grid-column: 2;
   width: 100%;
-  max-width: 420px;
 }
 
 .wb-score-result .demo-prob-line,
 .wb-score-result .demo-alarm,
 .wb-score-result .demo-hint {
-  grid-column: 2;
   margin: 0;
 }
 

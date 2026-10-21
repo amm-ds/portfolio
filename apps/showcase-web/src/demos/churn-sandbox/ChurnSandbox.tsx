@@ -314,9 +314,11 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
   const max = Math.max(...rows.map((r) => r.value), 1);
   const pad = 14;
   const labelW = Math.min(120, W * 0.35);
-  const countW = 64;
+  const countW = 92;
   const barX = pad + labelW + 8;
-  const barW = Math.max(W - barX - countW - pad, 0);
+  // reserve generous right margin so the count ("675 alarms") never touches
+  // the bar end
+  const barW = Math.max(W - barX - countW - pad - 12, 0);
   const rowH = rows.length > 0 ? H / rows.length : H;
   return (
     <Figure
@@ -511,20 +513,18 @@ function ChurnSandboxWorkbench({
               />
             </div>
           )}
+          {score !== null && (
+            <ScoreResultPanel
+              probability={score}
+              cursorT={cursorT}
+              nearestPreset={payload.customers.reduce((best, c) =>
+                Math.abs(c.churn_probability - score) < Math.abs(best.churn_probability - score)
+                  ? c
+                  : best,
+              )}
+            />
+          )}
         </>
-      }
-      under={
-        score !== null ? (
-          <ScoreResultPanel
-            probability={score}
-            cursorT={cursorT}
-            nearestPreset={payload.customers.reduce((best, c) =>
-              Math.abs(c.churn_probability - score) < Math.abs(best.churn_probability - score)
-                ? c
-                : best,
-            )}
-          />
-        ) : undefined
       }
       canvas={
         <CostCurvePanel
@@ -636,23 +636,32 @@ function ChurnSandboxWorkbench({
       }
       about={
         <>
-          <p>
-            <strong>What this shows.</strong> The campaign cost curve trades false alarms against
-            missed churners as the alarm threshold moves — the cheapest cutoff shifts with the
-            missed-churner cost, which is what the slider changes.
-          </p>
-          <p>
-            <strong>The experiment.</strong> A calibrated classifier on the IBM Telco churn
-            holdout; the target is to minimize decision cost FP·1 + FN·
-            {payload.cost_model.fn_cost} per {payload.holdout_n} holdout customers.
-          </p>
-          <p>
-            <strong>Key outcome.</strong> ${Math.round(payload.headline.cost_selected)} vs $
-            {Math.round(payload.headline.cost_naive)} naive per {payload.holdout_n} customers —
-            paired bootstrap CI [{Math.round(payload.headline.delta_ci.lo)},{" "}
-            {Math.round(payload.headline.delta_ci.hi)}]
-            {payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}.
-          </p>
+          <div className="wb-result-block">
+            <h4 className="wb-evidence-tag">what this shows</h4>
+            <p className="wb-evidence-line">
+              The campaign cost curve trades false alarms against missed churners as the alarm
+              threshold moves — the cheapest cutoff shifts with the{" "}
+              <strong>FP/FN cost ratio</strong>, which is what the slider changes.
+            </p>
+          </div>
+          <div className="wb-result-block">
+            <h4 className="wb-evidence-tag">the experiment</h4>
+            <p className="wb-evidence-line">
+              A calibrated classifier on the IBM Telco churn holdout; the target is to minimize
+              decision cost <span className="wb-tag">FP·1 + FN·{payload.cost_model.fn_cost}</span>{" "}
+              per {payload.holdout_n} holdout customers.
+            </p>
+          </div>
+          <div className="wb-result-block">
+            <h4 className="wb-evidence-tag">key outcome</h4>
+            <p className="wb-evidence-line">
+              <strong>${Math.round(payload.headline.cost_selected)}</strong> vs{" "}
+              <strong>${Math.round(payload.headline.cost_naive)}</strong> naive per{" "}
+              {payload.holdout_n} customers — paired bootstrap CI [
+              {Math.round(payload.headline.delta_ci.lo)}, {Math.round(payload.headline.delta_ci.hi)}
+              ]{payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}.
+            </p>
+          </div>
         </>
       }
     />

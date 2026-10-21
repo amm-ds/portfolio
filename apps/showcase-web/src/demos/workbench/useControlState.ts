@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Scenario } from "../types";
 
 export type ControlValues = Record<string, number>;
@@ -58,18 +58,42 @@ export function useControlState(
 
   const writeQuery = useCallback(
     (next: ControlValues) => {
-      const params = readQuery();
-      for (const [key, value] of Object.entries(next)) {
-        if (value !== defaults[key]) params.set(key, String(value));
-        else params.delete(key);
+      try {
+        const params = readQuery();
+        for (const [key, value] of Object.entries(next)) {
+          if (value !== defaults[key]) params.set(key, String(value));
+          else params.delete(key);
+        }
+        const qs = params.toString();
+        const url = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
+        window.history.replaceState(null, "", url);
+      } catch {
+        // URL state is a nicety, never a crash: Safari can throw on history
+        // churn (e.g. replaceState during a drag) — state still works.
       }
-      const qs = params.toString();
-      const url = window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash;
-      window.history.replaceState(null, "", url);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [defaultsKey],
   );
+
+  // Coalesce URL writes: drags fire setControl per pointermove, and Safari is
+  // strict about replaceState churn. State updates immediately; the query
+  // string follows at most every 300ms and once more on the trailing edge.
+  const pendingRef = useRef<ControlValues | null>(null);
+  const timerRef = useRef(0);
+  const writeQueryThrottled = useCallback(
+    (next: ControlValues) => {
+      pendingRef.current = next;
+      if (timerRef.current) return;
+      writeQuery(next);
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = 0;
+        if (pendingRef.current) writeQuery(pendingRef.current);
+      }, 300);
+    },
+    [writeQuery],
+  );
+  useEffect(() => () => window.clearTimeout(timerRef.current), []);
 
   // Drop the control keys on unmount so a later mount (or another demo) does
   // not inherit a previous session's params.
@@ -88,11 +112,11 @@ export function useControlState(
     (key: string, value: number) => {
       setControls((prev) => {
         const next = { ...prev, [key]: value };
-        writeQuery(next);
+        writeQueryThrottled(next);
         return next;
       });
     },
-    [writeQuery],
+    [writeQueryThrottled],
   );
 
   const activeScenario = useMemo(() => {
@@ -114,19 +138,19 @@ export function useControlState(
         for (const [key, value] of Object.entries(scenario.controls)) {
           if (key in defaults && typeof value === "number") next[key] = value;
         }
-        writeQuery(next);
+        writeQueryThrottled(next);
         return next;
       });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [scenariosKey, defaultsKey, writeQuery],
+    [scenariosKey, defaultsKey, writeQueryThrottled],
   );
 
   const reset = useCallback(() => {
     setControls({ ...defaults });
-    writeQuery(defaults);
+    writeQueryThrottled(defaults);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultsKey, writeQuery]);
+  }, [defaultsKey, writeQueryThrottled]);
 
   const shareUrl = useMemo(() => {
     const params = new URLSearchParams();
