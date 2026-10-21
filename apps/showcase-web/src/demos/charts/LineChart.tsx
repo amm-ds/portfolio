@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface LineSeries {
   name: string;
@@ -36,8 +36,8 @@ const C_CURSOR = "#f472b6";
  * to its container.
  */
 export function LineChart({
-  width = 720,
-  height = 280,
+  width: widthProp = 720,
+  height: heightProp = 280,
   pad = { l: 52, r: 18, t: 16, b: 32 },
   x,
   series,
@@ -75,6 +75,25 @@ export function LineChart({
 }) {
   const fmtX = formatX ?? ((v: number) => v.toFixed(2));
   const fmtY = formatY ?? ((v: number) => String(Math.round(v)));
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+  // The chart fills its grid cell; measure the container so the viewBox aspect
+  // matches the box — otherwise preserveAspectRatio letterboxes the curve
+  // (fixed 720x280 viewBox in a wide, short cell renders tiny).
+  const [measured, setMeasured] = useState<{ w: number; h: number } | null>(null);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r && r.width > 0 && r.height > 0) {
+        setMeasured({ w: Math.round(r.width), h: Math.round(r.height) });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const width = measured?.w ?? widthProp;
+  const height = measured?.h ?? heightProp;
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   const xMin = x[0];
@@ -127,10 +146,14 @@ export function LineChart({
   const draggable = cursor !== undefined && onCursorChange !== undefined;
 
   return (
-    <svg
-      ref={svgRef}
-      viewBox={`0 0 ${width} ${height}`}
-      role="img"
+    <div ref={wrapRef} style={{ width: "100%", height: "100%", minHeight: 0 }}>
+      <svg
+        ref={svgRef}
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="none"
+        role="img"
       aria-label={ariaLabel}
       onPointerDown={(e) => {
         if (!draggable) return;
@@ -240,6 +263,7 @@ export function LineChart({
       )}
 
       {children}
-    </svg>
+      </svg>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import type { DemoManifest } from "../types";
@@ -7,7 +7,7 @@ import { KpiTile } from "./KpiTile";
 import { Notice } from "./Notice";
 import { useControlState } from "./useControlState";
 
-/** Minimal manifest: two modes, one scenario, one live endpoint, one skill. */
+/** Minimal manifest: one scenario, one live endpoint, one skill. */
 const MANIFEST: DemoManifest = {
   id: "test-demo",
   title: "test demo",
@@ -36,7 +36,8 @@ function Harness() {
           <>
             <KpiTile label="alpha" value="1" />
             <KpiTile label="beta" value="2" />
-            <Notice>the takeaway</Notice>
+            <KpiTile label="gamma" value="3" />
+            <KpiTile label="delta" value="4" />
           </>
         }
         canvas={<div>canvas body</div>}
@@ -53,7 +54,23 @@ function Harness() {
             />
           </div>
         }
-        details={<div>secondary panels</div>}
+        notice={<Notice>the takeaway</Notice>}
+        secondary={
+          <>
+            <div className="wb-secondary-panel">
+              <h3 className="wb-rail-title">panel one</h3>
+              <div>first panel</div>
+            </div>
+            <div className="wb-secondary-panel">
+              <h3 className="wb-rail-title">panel two</h3>
+              <div>second panel</div>
+            </div>
+            <div className="wb-secondary-panel">
+              <h3 className="wb-rail-title">panel three</h3>
+              <div>third panel</div>
+            </div>
+          </>
+        }
         evidence={<p>method notes</p>}
       />
     </MemoryRouter>
@@ -65,32 +82,52 @@ function renderWorkbench() {
 }
 
 describe("DemoWorkbench", () => {
-  it("renders the header with badges, scenario chips and actions", () => {
+  it("renders a small back link above the title, then the title and hook summary", () => {
     renderWorkbench();
-    expect(
-      screen.getByRole("heading", { level: 1, name: "test demo" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("a hook line")).toBeInTheDocument();
-    expect(screen.getByText("← demos")).toHaveAttribute("href", "/projects#demos");
-    // mode badges + scenario chips
-    expect(screen.getByText("in your browser")).toBeInTheDocument();
-    expect(screen.getByText("live · free-local")).toBeInTheDocument();
+    const back = screen.getByRole("link", { name: "← back to demos" });
+    expect(back).toHaveAttribute("href", "/projects#demos");
+    // back link sits in the heading, before the title — never beside it
+    const heading = document.querySelector(".wb-heading")!;
+    expect(heading.firstElementChild).toBe(back);
+    const title = screen.getByRole("heading", { level: 1, name: "test demo" });
+    expect(back.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // hook renders as the muted summary paragraph under the title
+    const summary = document.querySelector(".wb-heading .demo-hook")!;
+    expect(summary.textContent).toContain("a hook line");
+    // the dropped chrome stays gone: no mode badges, no copy-link button
+    expect(screen.queryByText("in your browser")).toBeNull();
+    expect(screen.queryByText(/live · free-local/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "copy link" })).toBeNull();
+  });
+
+  it("keeps scenario chips and reset in the header actions", () => {
+    renderWorkbench();
     expect(screen.getByRole("button", { name: "base" })).toBeInTheDocument();
-    // actions
-    expect(screen.getByRole("button", { name: "copy link" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "reset" })).toBeInTheDocument();
   });
 
-  it("renders the KPI band with the tiles in order and the notice last", () => {
+  it("renders the KPI band with exactly the four tiles, no notice inside", () => {
     renderWorkbench();
     const band = document.querySelector(".wb-kpi-band")!;
     expect(band).not.toBeNull();
     const labels = Array.from(band.querySelectorAll(".wb-kpi-label")).map(
       (el) => el.textContent,
     );
-    expect(labels).toEqual(["alpha", "beta"]);
-    expect(band.querySelector(".wb-notice")).not.toBeNull();
-    expect(band.lastElementChild!.classList.contains("wb-notice")).toBe(true);
+    expect(labels).toEqual(["alpha", "beta", "gamma", "delta"]);
+    expect(band.querySelectorAll(".wb-kpi")).toHaveLength(4);
+    expect(band.querySelector(".wb-notice")).toBeNull();
+  });
+
+  it("renders the notice as a slim strip directly under the KPI band", () => {
+    renderWorkbench();
+    const strip = document.querySelector(".wb-notice-strip")!;
+    expect(strip).not.toBeNull();
+    expect(strip.textContent).toContain("the takeaway");
+    const root = document.querySelector(".wb-root")!;
+    const band = root.querySelector(".wb-kpi-band")!;
+    expect(
+      band.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("keeps the slider inside the fixed controls column", () => {
@@ -102,16 +139,23 @@ describe("DemoWorkbench", () => {
     expect(controls.querySelector(".wb-rail-title")!.textContent).toBe("controls");
   });
 
-  it("opens the details band from a closed-by-default state", () => {
+  it("renders the secondary band always-visible with three panels (no details toggle)", () => {
     renderWorkbench();
-    const details = document.querySelector(".wb-details")!;
-    expect(details).not.toBeNull();
-    expect(details.hasAttribute("open")).toBe(false);
-    fireEvent.click(screen.getByText("details"));
-    expect(details.hasAttribute("open")).toBe(true);
-    expect(details.querySelector(".wb-details-body")!.textContent).toContain(
-      "secondary panels",
+    const band = document.querySelector(".wb-secondary")!;
+    expect(band).not.toBeNull();
+    const panels = band.querySelectorAll(".wb-secondary-panel");
+    expect(panels).toHaveLength(3);
+    expect(band.textContent).toContain("first panel");
+    expect(band.textContent).toContain("second panel");
+    expect(band.textContent).toContain("third panel");
+    // panel headers are CAPITALS rail titles
+    const titles = Array.from(band.querySelectorAll(".wb-rail-title")).map(
+      (el) => el.textContent,
     );
+    expect(titles).toEqual(["panel one", "panel two", "panel three"]);
+    // the old collapsible details element is gone
+    expect(document.querySelector(".wb-details")).toBeNull();
+    expect(screen.queryByText("details")).toBeNull();
   });
 
   it("gives the evidence drawer an internal-scroll body", () => {
@@ -120,7 +164,5 @@ describe("DemoWorkbench", () => {
     expect(drawer).not.toBeNull();
     const body = drawer.querySelector(".wb-evidence-body")!;
     expect(body.classList.contains("wb-internal-scroll")).toBe(true);
-    fireEvent.click(screen.getByText("evidence & provenance"));
-    expect(drawer.hasAttribute("open")).toBe(true);
   });
 });

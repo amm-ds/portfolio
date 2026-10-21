@@ -291,6 +291,22 @@ describe("ChurnSandbox", () => {
       expect(screen.getByText(/could not load the demo payload/i)).toBeInTheDocument(),
     );
   });
+
+  it("pins a labeled customer marker on the cost curve when a preset is selected", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    const svg = await screen.findByRole("img", { name: "campaign cost over alarm threshold" });
+    const markerTexts = () =>
+      Array.from(svg.querySelectorAll("text")).map((el) => el.textContent);
+    // no customer active by default — only the default-threshold marker label
+    expect(markerTexts()).not.toContain("at-risk fiber");
+    fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
+    // marker line labeled with the short preset form appears in the SVG
+    expect(markerTexts()).toContain("at-risk fiber");
+    // switching presets moves the marker to the other customer
+    fireEvent.click(screen.getByRole("button", { name: "sticky dsl customer" }));
+    expect(markerTexts()).toContain("sticky dsl");
+  });
 });
 
 describe("churn sandbox routing & links", () => {
@@ -307,7 +323,7 @@ describe("churn sandbox routing & links", () => {
       ).toBeInTheDocument(),
     );
     // shell chrome: back link, linked experiment, footer band
-    expect(screen.getByRole("link", { name: "← demos" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "← back to demos" })).toHaveAttribute(
       "href",
       "/projects#demos",
     );
