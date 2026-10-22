@@ -1,0 +1,31 @@
+id: uplift-simulator
+title: uplift policy simulator
+hook: Move the send cost and the targeting budget — watch when personalized
+  targeting beats mailing everyone, and which email each customer should get.
+project: 10-uplift-experimentation
+group: spend marketing budget
+skills: [causal inference, uplift modeling, experimentation]
+modes: [browser]
+hero:
+  label: best-arm profit @25% vs random
+  value: "$35.5k vs $16.6k"
+  ci: paired bootstrap, 95%
+scenarios:
+  - name: base
+    controls: {cost: 0.05, budget: 0.25}
+  - name: break-even-discovery
+    controls: {cost: 0.31, budget: 0.5}
+  - name: high-cost
+    controls: {cost: 0.5, budget: 0.35}
+payload:
+  path: reports/demo_payload.json
+  schema_version: 1
+  required_keys:
+    - schema_version
+    - demo
+    - project
+    - n_customers
+    - scalars
+    - profit_grid
+    - qini_points
+    - segments

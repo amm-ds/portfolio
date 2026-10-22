@@ -31,6 +31,10 @@ cost_grid:
 
 # CUPED
 cuped_covariate: log_history
+# Additional strictly pre-treatment covariates for the multivariate CUPED read
+# (additive; the univariate read above keeps its current metrics keys/values)
+cuped_extra_covariates:
+- recency
 
 # Uplift models (5-fold cross-fitting gives out-of-fold scores for the Qini read)
 cv_folds: 5

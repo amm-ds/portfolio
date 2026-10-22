@@ -18,6 +18,13 @@ export const DEMOS: Demo[] = [
     status: "live",
     href: "/demos/churn-sandbox",
   },
+  {
+    id: "uplift-simulator",
+    title: "uplift policy simulator",
+    line: "Move the send cost and the targeting budget — watch when personalized targeting beats mailing everyone, and which email each customer should get.",
+    status: "live",
+    href: "/demos/uplift-simulator",
+  },
 ];
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";

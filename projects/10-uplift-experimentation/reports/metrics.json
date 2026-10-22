@@ -39,6 +39,326 @@
     "profit_random_at_budget": 4025.804306533372,
     "profit_delta_vs_random": NaN
   },
+  "multi_arm": {
+    "frame": {
+      "n_rows": 64000,
+      "n_mens": 21307,
+      "n_womens": 21387,
+      "n_control": 21306
+    },
+    "recommended_arm_shares": {
+      "mens": 0.76040625,
+      "womens": 0.201796875,
+      "none": 0.037796875
+    },
+    "estimated_incremental_conversions_full_send": {
+      "all": 586.7832434549532,
+      "mens": 442.62046094922243,
+      "womens": 192.3417635589292
+    },
+    "per_arm": {
+      "mens": {
+        "n_rows": 42613,
+        "n_arm": 21307,
+        "n_control": 21306,
+        "qini_coefficient": 12.0251517639593,
+        "incremental_conversions_full": 144.99427391345162,
+        "qini_ci": [
+          -0.472562408598825,
+          24.208211842158867
+        ],
+        "incremental_conversions_full_ci": [
+          107.96511267005768,
+          181.87785171446544
+        ],
+        "deciles": {
+          "decile": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0
+          ],
+          "mean_score": [
+            0.025015767431366208,
+            0.011787771089289086,
+            0.009351961491473845,
+            0.008073652745630672,
+            0.0069248251641884076,
+            0.005808695905683627,
+            0.004788385968143243,
+            0.003661590925768355,
+            0.00236010435082419,
+            -0.008260073327478232
+          ],
+          "empirical_uplift": [
+            0.011127649721054164,
+            0.012044540210891819,
+            0.00558271933780621,
+            0.007416362771523704,
+            0.00450040303761229,
+            0.006694004963548937,
+            0.0030633875409905396,
+            0.00694592546244481,
+            0.007371675387179304,
+            0.003256442418135311
+          ],
+          "n_treated": [
+            2143.0,
+            2145.0,
+            2082.0,
+            2142.0,
+            2162.0,
+            2112.0,
+            2098.0,
+            2141.0,
+            2148.0,
+            2134.0
+          ],
+          "n_control": [
+            2118.0,
+            2116.0,
+            2179.0,
+            2120.0,
+            2099.0,
+            2149.0,
+            2164.0,
+            2120.0,
+            2113.0,
+            2128.0
+          ]
+        }
+      },
+      "womens": {
+        "n_rows": 42693,
+        "n_arm": 21387,
+        "n_control": 21306,
+        "qini_coefficient": 3.366973033649735,
+        "incremental_conversions_full": 66.53618698958041,
+        "qini_ci": [
+          -6.775030717007282,
+          13.747096344508849
+        ],
+        "incremental_conversions_full_ci": [
+          33.09635475006315,
+          104.69421591450585
+        ],
+        "deciles": {
+          "decile": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0,
+            6.0,
+            7.0,
+            8.0,
+            9.0,
+            10.0
+          ],
+          "mean_score": [
+            0.01995770252591441,
+            0.006548632347450589,
+            0.004720618273354414,
+            0.003770950608980815,
+            0.0029307525056752725,
+            0.0021186670776445343,
+            0.0013316740508161503,
+            0.0004970794466281215,
+            -0.0008482225721357592,
+            -0.011240001896314508
+          ],
+          "empirical_uplift": [
+            0.002976400875554082,
+            0.0034967829245812843,
+            0.0022530373419427574,
+            0.006557377049180329,
+            0.004668482846233739,
+            4.587296918828927e-05,
+            0.0036180760263451236,
+            0.004548130761722995,
+            0.0004650917782572338,
+            0.002494304641807451
+          ],
+          "n_treated": [
+            2170.0,
+            2098.0,
+            2156.0,
+            2135.0,
+            2137.0,
+            2129.0,
+            2091.0,
+            2163.0,
+            2135.0,
+            2173.0
+          ],
+          "n_control": [
+            2099.0,
+            2171.0,
+            2113.0,
+            2135.0,
+            2132.0,
+            2140.0,
+            2179.0,
+            2106.0,
+            2134.0,
+            2097.0
+          ]
+        }
+      },
+      "binary_t_learner": {
+        "qini_coefficient": 12.0251517639593,
+        "incremental_conversions_full": 144.99427391345162,
+        "note": "committed two-arm Mens-vs-control T-learner read (empirical, unchanged)"
+      }
+    },
+    "policies": {
+      "best_arm": {
+        "qini_coefficient": 121.20182518922996,
+        "incremental_conversions_full": 586.7832434549576,
+        "profit_full": 66253.28975386517,
+        "profit_at_budget": 35514.37142956731,
+        "profit_random_at_budget": 16563.322438466166,
+        "profit_delta_vs_random": 18951.048991101146,
+        "profit_at_budget_ci": [
+          35060.48354969038,
+          35972.610907454975
+        ],
+        "model_estimated": true,
+        "qini_ci": [
+          119.41604644465376,
+          123.01594902754435
+        ]
+      },
+      "single_arm": {
+        "qini_coefficient": 131.73319740098168,
+        "incremental_conversions_full": 442.6204609492148,
+        "profit_full": 49818.732548210486,
+        "profit_at_budget": 29486.861391839502,
+        "profit_random_at_budget": 16563.322438466166,
+        "profit_delta_vs_random": 12923.538953373336,
+        "profit_at_budget_ci": [
+          29158.394606853166,
+          29799.732261319303
+        ],
+        "model_estimated": true,
+        "qini_ci": [
+          129.77950917938003,
+          133.8668131568808
+        ],
+        "two_arm_reference": {
+          "qini_coefficient": 12.0251517639593,
+          "incremental_conversions_full": 144.99427391345162,
+          "profit_full": 16103.217226133487,
+          "profit_at_budget": 6838.146818950931,
+          "profit_random_at_budget": 4025.804306533372,
+          "profit_delta_vs_random": 2812.3425124175596,
+          "policy": "t_learner"
+        }
+      },
+      "random": {
+        "qini_coefficient": 0.0,
+        "incremental_conversions_full": 586.7832434549576,
+        "profit_full": 66253.28975386517,
+        "profit_at_budget": 16563.322438466294,
+        "profit_random_at_budget": 16563.322438466166,
+        "profit_delta_vs_random": 1.2732925824820995e-10,
+        "profit_at_budget_ci": [
+          16429.490028184235,
+          16698.73560829579
+        ],
+        "model_estimated": true,
+        "two_arm_reference": {
+          "qini_coefficient": 0.0,
+          "incremental_conversions_full": 144.99427391345162,
+          "profit_full": 16103.217226133487,
+          "profit_at_budget": 4025.804306533372,
+          "profit_random_at_budget": 4025.804306533372,
+          "profit_delta_vs_random": 0.0
+        }
+      },
+      "mail_everyone_mens": {
+        "qini_coefficient": 0.0,
+        "incremental_conversions_full": 442.62046094922243,
+        "profit_full": 49818.73254821136,
+        "profit_at_budget": 12454.68313705284,
+        "profit_random_at_budget": 16563.322438466166,
+        "profit_delta_vs_random": -4108.639301413326,
+        "profit_at_budget_ci": [
+          12312.184682070825,
+          12595.467067671412
+        ],
+        "model_estimated": true
+      },
+      "mail_everyone_womens": {
+        "qini_coefficient": 0.0,
+        "incremental_conversions_full": 192.3417635589292,
+        "profit_full": 21286.961045717926,
+        "profit_at_budget": 5321.7402614294815,
+        "profit_random_at_budget": 16563.322438466166,
+        "profit_delta_vs_random": -11241.582177036686,
+        "profit_at_budget_ci": [
+          5190.583508464459,
+          5457.944436009189
+        ],
+        "model_estimated": true
+      }
+    },
+    "ci": {
+      "method": "paired row bootstrap of per-arm uplift scores, percentile interval; policy-level reads are model-estimated, arm-level reads empirical",
+      "n_boot": 1000,
+      "seed": 2041,
+      "pairs": {
+        "best_arm - single_arm": {
+          "profit_at_budget_diff_ci": [
+            5741.795945912413,
+            6346.5620197019125
+          ],
+          "spans_zero": false
+        },
+        "best_arm - random": {
+          "profit_at_budget_diff_ci": [
+            18619.116771266163,
+            19269.03290345234
+          ],
+          "spans_zero": false
+        },
+        "best_arm - mail_everyone_mens": {
+          "profit_at_budget_diff_ci": [
+            22658.239609029708,
+            23466.344951242303
+          ],
+          "spans_zero": false
+        },
+        "best_arm - mail_everyone_womens": {
+          "profit_at_budget_diff_ci": [
+            29808.5142912479,
+            30581.28389334718
+          ],
+          "spans_zero": false
+        },
+        "best_arm - single_arm_qini": {
+          "qini_diff_ci": [
+            -12.478424809338577,
+            -8.630894736589426
+          ],
+          "qini_diff_spans_zero": false
+        }
+      }
+    },
+    "best_arm_break_even": {
+      "vs": "mail_everyone_mens",
+      "cost_per_email": 0.30800752330508424,
+      "policy_budget": 0.25,
+      "formula": "c* = revenue * (inc_mens(1) - inc_best(budget)) / (N * (1 - budget)); incremental conversions are model-estimated (summed predicted uplift)"
+    },
+    "note": "Multi-arm read is MODEL-ESTIMATED at the policy level: incremental conversions are summed predicted uplift over the targeted set, not observed counterfactuals. Only the per-arm Qini/A-B contrasts on the randomized arm-vs-control pairs are empirical causal reads."
+  },
   "_meta": {
     "best_policy": "t_learner",
     "cuped": {
@@ -63,6 +383,44 @@
         "se_reduction": 0.002631151160416123,
         "var_naive": 0.12359631171449637,
         "var_adjusted": 0.1229556026135413
+      }
+    },
+    "cuped_multivariate": {
+      "conversion": {
+        "covariates": [
+          "log_history",
+          "recency"
+        ],
+        "theta": [
+          0.0022599725473248307,
+          -0.0005497172815421418
+        ],
+        "variance_reduction": 0.0012188787547956492,
+        "ate_naive": 0.006805006519615695,
+        "ate_se_naive": 0.0009208727857351216,
+        "ate_cuped": 0.006820863045578788,
+        "ate_se_cuped": 0.0009203079271517886,
+        "se_reduction": 0.0006133948055399019,
+        "var_naive": 0.00904554931719428,
+        "var_adjusted": 0.009034523889306095
+      },
+      "visit": {
+        "covariates": [
+          "log_history",
+          "recency"
+        ],
+        "theta": [
+          0.019598393961288343,
+          -0.006749612476520381
+        ],
+        "variance_reduction": 0.009484060098090996,
+        "ate_naive": 0.07658956365153125,
+        "ate_se_naive": 0.0033858878117283653,
+        "ate_cuped": 0.07677454648742367,
+        "ate_se_cuped": 0.0033695010755290565,
+        "se_reduction": 0.004839716231160085,
+        "var_naive": 0.12359631171449637,
+        "var_adjusted": 0.12242411686629369
       }
     },
     "power": {

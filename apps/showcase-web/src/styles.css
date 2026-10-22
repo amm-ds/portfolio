@@ -2656,7 +2656,6 @@ button.chip.wb-scenario.active {
   font-size: 0.82rem;
   color: var(--muted);
   list-style: none;
-  text-align: center;
 }
 
 .wb-evidence summary::before {

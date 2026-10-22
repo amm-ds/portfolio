@@ -53,6 +53,14 @@ class PolicyScore(PortfolioBaseModel):
     response: float = Field(description="Response-model score P(convert | X, treated).")
     t_learner: float = Field(description="T-learner uplift score mu1(X) - mu0(X).")
     x_learner: float = Field(description="X-learner uplift score.")
+    uplift_mens: float | None = Field(
+        default=None,
+        description="Per-arm T-learner score, Mens E-Mail vs control (multi-arm read).",
+    )
+    uplift_womens: float | None = Field(
+        default=None,
+        description="Per-arm T-learner score, Womens E-Mail vs control (multi-arm read).",
+    )
 
 
 class PolicyResult(PortfolioBaseModel):

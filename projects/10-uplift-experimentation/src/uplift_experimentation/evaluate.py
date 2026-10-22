@@ -3,8 +3,10 @@
 Reads the cross-fitted scores from the train stage and produces every artifact
 the report needs: per-policy Qini coefficients with paired-bootstrap CIs,
 decile checks, profit under the campaign cost model (frontier + cost
-sensitivity), the CUPED variance-reduction panel, and the analytic power
-analysis — plus the five themed figures (HTML + JSON).
+sensitivity), the CUPED variance-reduction panel (univariate + multivariate),
+the analytic power analysis, and the secondary multi-arm read (per-arm Qini,
+best-arm policy, recommended-arm distribution) — plus the eight themed
+figures (HTML + JSON).
 """
 
 import json
@@ -28,11 +30,24 @@ from portfolio_eval.report import EvalReport
 from uplift_experimentation.config import UpliftConfig, pd
 from uplift_experimentation.cuped import (
     cuped_adjust,
+    cuped_adjust_multi,
     cuped_theta,
+    cuped_theta_multi,
     effect_and_se,
     variance_reduction,
 )
 from uplift_experimentation.models import SCORE_POLICIES
+from uplift_experimentation.multiarm import (
+    ARMS,
+    MULTI_ARM_POLICIES,
+    arm_shares,
+    assigned_uplift,
+    bootstrap_multi_arm_stats,
+    estimated_qini_coefficient,
+    multi_arm_policy_curves,
+    per_arm_qini_read,
+    recommend_arm,
+)
 from uplift_experimentation.power import power_read
 from uplift_experimentation.qini import (
     bootstrap_policy_stats,
@@ -383,6 +398,226 @@ def cuped_read(cfg: UpliftConfig, df: pd.DataFrame) -> dict[str, dict[str, float
     }
 
 
+def cuped_multivariate_outcome_read(
+    cfg: UpliftConfig, df: pd.DataFrame, outcome: str
+) -> dict[str, Any]:
+    """CUPED with several pre-treatment covariates (adds cfg.cuped_extra_covariates).
+
+    Additive read: the univariate ``cuped_outcome_read`` (and its ``_meta.cuped``
+    metrics keys) is untouched; this sibling measures how much the extra
+    covariates (e.g. ``recency``) remove on top of the primary covariate.
+    """
+    covariates = [cfg.cuped_covariate, *cfg.cuped_extra_covariates]
+    y = df[outcome].to_numpy(dtype=float)
+    x = df[covariates].to_numpy(dtype=float)
+    treatment = df["treatment"].to_numpy(dtype=int)
+    theta = cuped_theta_multi(y, x)
+    y_adj = cuped_adjust_multi(y, x, theta, x.mean(axis=0))
+    ate_naive, se_naive = effect_and_se(y, treatment)
+    ate_adj, se_adj = effect_and_se(y_adj, treatment)
+    return {
+        "covariates": covariates,
+        "theta": [float(t) for t in theta],
+        "variance_reduction": variance_reduction(y, y_adj),
+        "ate_naive": ate_naive,
+        "ate_se_naive": se_naive,
+        "ate_cuped": ate_adj,
+        "ate_se_cuped": se_adj,
+        "se_reduction": 1.0 - se_adj / se_naive,
+        "var_naive": float(np.var(y, ddof=1)),
+        "var_adjusted": float(np.var(y_adj, ddof=1)),
+    }
+
+
+def cuped_multivariate_read(cfg: UpliftConfig, df: pd.DataFrame) -> dict[str, Any]:
+    """Multivariate CUPED reads for the primary and secondary outcomes."""
+    return {
+        "conversion": cuped_multivariate_outcome_read(cfg, df, "conversion"),
+        "visit": cuped_multivariate_outcome_read(cfg, df, "visit"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Multi-arm read (secondary, model-estimated — see multiarm.py for conventions)
+# ---------------------------------------------------------------------------
+
+
+def multi_arm_read(
+    cfg: UpliftConfig,
+    df_multi: pd.DataFrame,
+    two_arm_metrics: dict[str, dict[str, float]],
+) -> tuple[dict[str, Any], dict[str, tuple[np.ndarray, np.ndarray]]]:
+    """Assemble the ``multi_arm`` metrics block from the three-arm scored frame.
+
+    Combines: the recommended-arm distribution, per-arm EMPIRICAL Qini reads on
+    the randomized pairs, the MODEL-ESTIMATED policy comparison (best-arm vs
+    single-arm/random/mail-everyone) with paired-bootstrap CIs, and the best-arm
+    break-even send cost vs mail-everyone-mens. The committed two-arm numbers
+    are embedded unchanged under each policy's ``two_arm_reference`` where
+    applicable. Returns (json-serializable block, per-arm figure curves).
+    """
+    u_m = df_multi["uplift_mens"].to_numpy(dtype=float)
+    u_w = df_multi["uplift_womens"].to_numpy(dtype=float)
+    seg = df_multi["segment"].to_numpy()
+    y = df_multi["conversion"].to_numpy(dtype=float)
+    n_total = len(df_multi)
+
+    recommended = recommend_arm(u_m, u_w)
+    shares = arm_shares(recommended)
+    est = assigned_uplift(u_m, u_w, recommended)
+    curves = multi_arm_policy_curves(u_m, u_w)
+
+    arm_reads = per_arm_qini_read(seg, y, u_m, u_w)
+
+    boot_seed = cfg.seed + 1999  # distinct stream from the two-arm bootstrap (seed + 999)
+    stats = bootstrap_multi_arm_stats(
+        u_m,
+        u_w,
+        seg,
+        y,
+        budget=cfg.policy_budget,
+        n_total=n_total,
+        revenue_per_conversion=cfg.revenue_per_conversion,
+        cost_per_email=cfg.cost_per_email,
+        n_boot=cfg.bootstrap_reps,
+        seed=boot_seed,
+    )
+
+    per_arm: dict[str, Any] = {}
+    arm_curves: dict[str, tuple[np.ndarray, np.ndarray]] = {}
+    for arm, seg_name in ARMS:
+        read = arm_reads[arm]
+        fr, inc = read.pop("curve")
+        arm_curves[arm] = (fr, inc)
+        pair_mask = np.isin(seg, [seg_name, "No E-Mail"])
+        score = u_m if arm == "mens" else u_w
+        deciles = uplift_by_decile(
+            (seg[pair_mask] == seg_name).astype(int),
+            y[pair_mask],
+            score[pair_mask],
+            cfg.n_deciles,
+        )
+        per_arm[arm] = {
+            **read,
+            "qini_ci": list(percentile_ci(stats["arm_qini"][arm])),
+            "incremental_conversions_full_ci": list(
+                percentile_ci(stats["arm_incremental_full"][arm])
+            ),
+            "deciles": {k: [float(v) for v in arr] for k, arr in deciles.items()},
+        }
+    per_arm["binary_t_learner"] = {
+        "qini_coefficient": two_arm_metrics["t_learner"]["qini_coefficient"],
+        "incremental_conversions_full": two_arm_metrics["t_learner"][
+            "incremental_conversions_full"
+        ],
+        "note": "committed two-arm Mens-vs-control T-learner read (empirical, unchanged)",
+    }
+
+    random_budget_point = float(
+        cfg.policy_budget * est.sum() * cfg.revenue_per_conversion
+        - cfg.policy_budget * n_total * cfg.cost_per_email
+    )
+    policies: dict[str, Any] = {}
+    for policy in MULTI_ARM_POLICIES:
+        fr, inc = curves[policy]
+        profit_full = float(inc[-1] * cfg.revenue_per_conversion - n_total * cfg.cost_per_email)
+        if policy in ("best_arm", "single_arm"):
+            # Curving policies: read the curve at the grid point nearest the budget.
+            k = int(np.argmin(np.abs(fr - cfg.policy_budget)))
+            inc_budget = float(inc[k])
+            mailed_budget = float(fr[k]) * n_total
+            qini = estimated_qini_coefficient(est if policy == "best_arm" else u_m)
+        else:
+            # Straight-line policies: profit is linear in the mailed fraction, so
+            # the budget point is exact (a 2-point curve would land on f=0).
+            inc_budget = cfg.policy_budget * float(inc[-1])
+            mailed_budget = cfg.policy_budget * n_total
+            qini = 0.0  # on the random line by construction
+        profit_budget = float(
+            inc_budget * cfg.revenue_per_conversion - mailed_budget * cfg.cost_per_email
+        )
+        entry: dict[str, Any] = {
+            "qini_coefficient": qini,
+            "incremental_conversions_full": float(inc[-1]),
+            "profit_full": profit_full,
+            "profit_at_budget": profit_budget,
+            "profit_random_at_budget": random_budget_point,
+            "profit_delta_vs_random": profit_budget - random_budget_point,
+            "profit_at_budget_ci": list(percentile_ci(stats["profit_at_budget"][policy])),
+            "model_estimated": True,
+        }
+        if policy in ("best_arm", "single_arm"):
+            entry["qini_ci"] = list(percentile_ci(stats["qini"][policy]))
+        policies[policy] = entry
+    # The committed two-arm numbers ride along, unchanged, for continuity.
+    policies["single_arm"]["two_arm_reference"] = dict(two_arm_metrics["t_learner"])
+    policies["single_arm"]["two_arm_reference"]["policy"] = "t_learner"
+    policies["random"]["two_arm_reference"] = dict(two_arm_metrics["random"])
+
+    pairs: dict[str, Any] = {}
+    for other in ("single_arm", "random", "mail_everyone_mens", "mail_everyone_womens"):
+        diff = stats["profit_at_budget"]["best_arm"] - stats["profit_at_budget"][other]
+        ci = percentile_ci(diff)
+        pairs[f"best_arm - {other}"] = {
+            "profit_at_budget_diff_ci": list(ci),
+            "spans_zero": ci_spans_zero(ci),
+        }
+    qini_diff = stats["qini"]["best_arm"] - stats["qini"]["single_arm"]
+    qini_ci = percentile_ci(qini_diff)
+    pairs["best_arm - single_arm_qini"] = {
+        "qini_diff_ci": list(qini_ci),
+        "qini_diff_spans_zero": ci_spans_zero(qini_ci),
+    }
+
+    # Best-arm break-even vs mail-everyone-mens at the policy budget (the
+    # model-estimated mirror of the two-arm formula):
+    #   c* = revenue * (inc_mens(1) - inc_best(budget)) / (N * (1 - budget))
+    fr_b, inc_b = curves["best_arm"]
+    k_b = int(np.argmin(np.abs(fr_b - cfg.policy_budget)))
+    inc_budget = float(inc_b[k_b])
+    inc_mens_full = float(u_m.sum())
+    n_mail_budget = n_total * (1.0 - cfg.policy_budget)
+    breakeven = cfg.revenue_per_conversion * (inc_mens_full - inc_budget) / n_mail_budget
+
+    seg_names, seg_n = np.unique(seg, return_counts=True)
+    seg_counts = {name: int(count) for name, count in zip(seg_names, seg_n, strict=True)}
+    block: dict[str, Any] = {
+        "frame": {
+            "n_rows": n_total,
+            "n_mens": seg_counts.get("Mens E-Mail", 0),
+            "n_womens": seg_counts.get("Womens E-Mail", 0),
+            "n_control": seg_counts.get("No E-Mail", 0),
+        },
+        "recommended_arm_shares": shares,
+        "estimated_incremental_conversions_full_send": {
+            "all": float(est.sum()),
+            "mens": float(u_m.sum()),
+            "womens": float(u_w.sum()),
+        },
+        "per_arm": per_arm,
+        "policies": policies,
+        "ci": {
+            "method": "paired row bootstrap of per-arm uplift scores, percentile interval; "
+            "policy-level reads are model-estimated, arm-level reads empirical",
+            "n_boot": cfg.bootstrap_reps,
+            "seed": boot_seed,
+            "pairs": pairs,
+        },
+        "best_arm_break_even": {
+            "vs": "mail_everyone_mens",
+            "cost_per_email": float(breakeven),
+            "policy_budget": cfg.policy_budget,
+            "formula": "c* = revenue * (inc_mens(1) - inc_best(budget)) / (N * (1 - budget)); "
+            "incremental conversions are model-estimated (summed predicted uplift)",
+        },
+        "note": "Multi-arm read is MODEL-ESTIMATED at the policy level: incremental "
+        "conversions are summed predicted uplift over the targeted set, not observed "
+        "counterfactuals. Only the per-arm Qini/A-B contrasts on the randomized "
+        "arm-vs-control pairs are empirical causal reads.",
+    }
+    return block, arm_curves
+
+
 def power_analysis(cfg: UpliftConfig, df: pd.DataFrame) -> dict[str, float]:
     """Analytic required sample size for the measured conversion effect."""
     treatment = df["treatment"].to_numpy(dtype=int)
@@ -613,6 +848,129 @@ def cuped_figure(reads: dict[str, dict[str, float]]) -> go.Figure:
 
 
 # ---------------------------------------------------------------------------
+# Multi-arm figures (model-estimated frontier + empirical per-arm Qini)
+# ---------------------------------------------------------------------------
+
+
+def qini_per_arm_figure(
+    arm_curves: dict[str, tuple[np.ndarray, np.ndarray]],
+    binary_curve: tuple[np.ndarray, np.ndarray],
+) -> go.Figure:
+    """Empirical Qini curves per arm on the randomized pairs (+ committed binary read)."""
+    fig = go.Figure()
+    arm_style = {"mens": {"color": "#fbbf24"}, "womens": {"color": "#f472b6"}}
+    for arm in ("mens", "womens"):
+        fr, inc = arm_curves[arm]
+        fig.add_scatter(x=fr, y=inc, mode="lines", name=f"uplift_{arm}")
+    fr_b, inc_b = binary_curve
+    fig.add_scatter(
+        x=fr_b,
+        y=inc_b,
+        mode="lines",
+        name="binary t_learner (two-arm, committed)",
+        line={"color": "#2dd4bf", "dash": "dash"},
+    )
+    apply_theme(fig)
+    style_runs(fig)
+    for trace in fig.data:
+        style = arm_style.get(str(getattr(trace, "name", "") or "").replace("uplift_", ""))
+        if style is not None:
+            trace.update(line=style)
+    fig.update_layout(
+        title="Per-arm Qini curves (randomized arm vs control pairs)",
+        xaxis_title="fraction of pair rows targeted (top scores first)",
+        yaxis_title="incremental conversions (empirical arm contrast)",
+    )
+    add_takeaway(
+        fig,
+        "each arm scored by its own cross-fitted T-learner; dashed = committed two-arm T-learner",
+    )
+    return fig
+
+
+def profit_frontier_multi_arm_figure(
+    cfg: UpliftConfig,
+    curves: dict[str, tuple[np.ndarray, np.ndarray]],
+    n_total: int,
+) -> go.Figure:
+    """MODEL-ESTIMATED profit frontier: best-arm vs the single-arm/mail-everyone strategies."""
+    fig = go.Figure()
+    for policy, (fr, inc) in curves.items():
+        profit = profit_curve(fr, inc, n_total, cfg.revenue_per_conversion, cfg.cost_per_email)
+        fig.add_scatter(
+            x=fr,
+            y=profit,
+            mode="lines",
+            name=policy,
+            line={"width": 3.5 if policy == "best_arm" else 2.0},
+        )
+    fig.add_hline(y=0.0, line_dash="dot", line_color="#64748b", name="no campaign")
+    apply_theme(fig)
+    style_runs(fig, best="best_arm")
+    # Mark the best-arm operating point at the configured budget.
+    fr_b, inc_b = curves["best_arm"]
+    k = int(np.argmin(np.abs(fr_b - cfg.policy_budget)))
+    point = float(
+        profit_curve(
+            np.array([fr_b[k]]),
+            np.array([inc_b[k]]),
+            n_total,
+            cfg.revenue_per_conversion,
+            cfg.cost_per_email,
+        )[0]
+    )
+    fig.add_scatter(
+        x=[fr_b[k]],
+        y=[point],
+        mode="markers",
+        name=f"best-arm @ {cfg.policy_budget:.0%}",
+        marker={
+            "symbol": "star",
+            "size": 18,
+            "color": "#fbbf24",
+            "line": {"width": 1.5, "color": "#0f172a"},
+        },
+    )
+    fig.update_layout(
+        title="Multi-arm profit frontier (model-estimated incremental conversions)",
+        xaxis_title="budget fraction (share of customers emailed)",
+        yaxis_title=f"profit (revenue {cfg.revenue_per_conversion:.0f} USD/conversion, "
+        f"{cfg.cost_per_email:.2f} USD/email)",
+    )
+    add_takeaway(
+        fig,
+        "star = best-arm policy at the configured budget; incremental conversions are "
+        "summed predicted uplift (model-estimated, not counterfactual)",
+    )
+    return fig
+
+
+def recommended_arm_figure(shares: dict[str, float]) -> go.Figure:
+    """Distribution of the per-customer recommended arm (shares sum to 1)."""
+    labels = ["mens", "womens", "none"]
+    fig = go.Figure()
+    fig.add_bar(
+        x=labels,
+        y=[shares[label] for label in labels],
+        marker_color=["#fbbf24", "#f472b6", "#64748b"],
+        text=[f"{shares[label]:.1%}" for label in labels],
+        textposition="outside",
+    )
+    apply_theme(fig)
+    style_runs(fig)
+    fig.update_layout(
+        title="Recommended arm per customer (argmax of per-arm uplift vs no send)",
+        xaxis_title="recommended arm",
+        yaxis_title="share of customers",
+    )
+    add_takeaway(
+        fig,
+        "argmax(uplift_mens, uplift_womens, 0); ties and non-positive scores -> none",
+    )
+    return fig
+
+
+# ---------------------------------------------------------------------------
 # Report assembly
 # ---------------------------------------------------------------------------
 
@@ -629,6 +987,105 @@ def _ci_str(ci: list[float]) -> str:
     return f"[{ci[0]:.2f}, {ci[1]:.2f}]"
 
 
+def _add_multi_arm_section(
+    report: EvalReport, cfg: UpliftConfig, multi_arm: dict[str, Any]
+) -> None:
+    """Report the multi-arm read: policy ladder, per-arm Qini, arm shares, verdict."""
+    ma_rows = [
+        f"| policy | Qini [95% CI] | profit @ {cfg.policy_budget * 100:.0f}% budget "
+        "[95% CI] | Δ vs random |",
+        "|---|---|---|---|",
+    ]
+    for policy in MULTI_ARM_POLICIES:
+        m = multi_arm["policies"][policy]
+        qini_ci_s = _ci_str(m["qini_ci"]) if "qini_ci" in m else "—"
+        ma_rows.append(
+            f"| {policy} | {m['qini_coefficient']:.2f} {qini_ci_s} "
+            f"| {_money(m['profit_at_budget'])} {_ci_str(m['profit_at_budget_ci'])} "
+            f"| {_money(m['profit_delta_vs_random'])} |"
+        )
+    report.add_markdown_table("Multi-arm policy ladder (model-estimated)", "\n".join(ma_rows))
+    # Per-arm empirical Qini on the randomized pairs (the causal arm-level read).
+    pa_rows = [
+        "| arm | n (arm + control) | Qini [95% CI] | incremental conv. @ full send [95% CI] |",
+        "|---|---|---|---|",
+    ]
+    for arm in ("mens", "womens"):
+        read = multi_arm["per_arm"][arm]
+        pa_rows.append(
+            f"| {arm} | {read['n_arm']:,} + {read['n_control']:,} "
+            f"| {read['qini_coefficient']:.2f} {_ci_str(read['qini_ci'])} "
+            f"| {read['incremental_conversions_full']:.1f} "
+            f"{_ci_str(read['incremental_conversions_full_ci'])} |"
+        )
+    binary = multi_arm["per_arm"]["binary_t_learner"]
+    pa_rows.append(
+        f"| binary t_learner (two-arm, committed) | — | {binary['qini_coefficient']:.2f} "
+        f"| {binary['incremental_conversions_full']:.1f} |"
+    )
+    report.add_markdown_table("Per-arm Qini (randomized pairs)", "\n".join(pa_rows))
+
+    shares = multi_arm["recommended_arm_shares"]
+    share_rows = [
+        "| recommended arm | share |",
+        "|---|---|",
+        f"| Mens E-Mail | {shares['mens']:.1%} |",
+        f"| Womens E-Mail | {shares['womens']:.1%} |",
+        f"| none (both scores ≤ 0 or tied) | {shares['none']:.1%} |",
+    ]
+    report.add_markdown_table("Recommended-arm distribution", "\n".join(share_rows))
+
+    pair_lines = []
+    for name, pair in multi_arm["ci"]["pairs"].items():
+        if "profit_at_budget_diff_ci" in pair:
+            lo, hi = pair["profit_at_budget_diff_ci"]
+            note = "spans zero" if pair["spans_zero"] else "excludes zero"
+            pair_lines.append(f"<li>{name}: [{_money_signed(lo)}, {_money_signed(hi)}] {note}</li>")
+    q_pair = multi_arm["ci"]["pairs"].get("best_arm - single_arm_qini")
+    qini_line = ""
+    if q_pair is not None:
+        q_lo, q_hi = q_pair["qini_diff_ci"]
+        verdict = (
+            "spans zero — not established" if q_pair["qini_diff_spans_zero"] else "excludes zero"
+        )
+        qini_line = (
+            f" The paired Qini difference (best-arm - single-arm) is "
+            f"[{q_lo:.2f}, {q_hi:.2f}] and {verdict}."
+        )
+    ba = multi_arm["policies"]["best_arm"]
+    be = multi_arm["best_arm_break_even"]
+    report.add_html(
+        "Multi-arm read, honestly stated",
+        "<p>This block upgrades the experiment to a multi-treatment read: each arm "
+        "is scored against the shared control with a cross-fitted T-learner, and a "
+        "<b>best-arm policy</b> recommends the arm with the highest estimated uplift "
+        "per customer (no send when both scores are ≤ 0 or tied). Because no "
+        "randomized assignment realizes the recommended arm mix, every policy-level "
+        "number here is <b>model-estimated</b> — incremental conversions are the "
+        "summed predicted uplift over the targeted set, not observed counterfactuals. "
+        "Only the per-arm Qini/A-B contrasts above are empirical causal reads. Two "
+        "caveats travel with every figure: predicted magnitudes run hot (the decile "
+        "check shows ~2x inflation, and the full-base sums include deployment-style "
+        "scores for the other arm's customers), so the dollar LEVELS are optimistic "
+        "planning numbers — use them to RANK policies, not to forecast revenue; and "
+        "the bootstrap resamples rows, not models, so the intervals are "
+        "within-model precision (the two-arm ranking verdict shows how wide Qini "
+        "gets across refits).</p>"
+        f"<p>At the {cfg.policy_budget:.0%} budget the best-arm policy earns "
+        f"<b>{_money(ba['profit_at_budget'])}</b> (model-estimated) vs "
+        f"{_money(multi_arm['policies']['single_arm']['profit_at_budget'])} for "
+        "single-arm Mens targeting and "
+        f"{_money(multi_arm['policies']['mail_everyone_mens']['profit_full'])} for "
+        "mailing everyone the Mens email. Paired-bootstrap differences (best-arm "
+        "minus comparator, n=1000, seeded):</p><ul>" + "".join(pair_lines) + "</ul>"
+        f"<p>Break-even vs mail-everyone-mens: the best-arm policy overtakes full "
+        f"mailing above ≈<b>${be['cost_per_email']:.2f}</b> per email "
+        f"({be['formula']}).{qini_line} The committed two-arm numbers are unchanged "
+        "and remain the primary read; this block is the new per-customer "
+        "channel-choice capability.</p>",
+    )
+
+
 def build_report(
     cfg: UpliftConfig,
     policy_metrics: dict[str, dict[str, float]],
@@ -638,6 +1095,8 @@ def build_report(
     best: str,
     ci: dict[str, Any] | None = None,
     cost_sens: dict[str, Any] | None = None,
+    cuped_multi: dict[str, dict[str, Any]] | None = None,
+    multi_arm: dict[str, Any] | None = None,
 ) -> EvalReport:
     """Assemble the HTML report: experiment read, CUPED, power, policy ladder."""
     report = EvalReport(title="Retention Uplift & Experimentation — evaluation")
@@ -681,6 +1140,20 @@ def build_report(
         "exactly as good as its covariate — covariate selection is the design decision, "
         "not the formula.</p>",
     )
+    if cuped_multi is not None:
+        m_conv = cuped_multi["conversion"]
+        m_visit = cuped_multi["visit"]
+        report.add_html(
+            "CUPED, second covariate",
+            "<p>Adding <b>recency</b> alongside log_history (multivariate CUPED, additive "
+            "read under <code>_meta.cuped_multivariate</code>): conversion variance "
+            f"reduction moves from {conv['variance_reduction'] * 100:.2f}% to "
+            f"<b>{m_conv['variance_reduction'] * 100:.2f}%</b>, visit from "
+            f"{visit['variance_reduction'] * 100:.2f}% to "
+            f"<b>{m_visit['variance_reduction'] * 100:.2f}%</b> — recency adds almost "
+            "nothing here either. The univariate read above is unchanged; the demo "
+            "carries both so covariate selection stays measurable, not assumed.</p>",
+        )
 
     power_rows = [
         "| quantity | value |",
@@ -811,6 +1284,9 @@ def build_report(
             "costs more than the conversions it recovers.</p>",
         )
 
+    if multi_arm is not None:
+        _add_multi_arm_section(report, cfg, multi_arm)
+
     top_share = cfg.policy_budget
     report.add_html(
         "Recommended policy",
@@ -833,17 +1309,30 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
         raise FileNotFoundError(
             f"{scores_path} missing — run `uv run python -m uplift_experimentation.cli train` first"
         )
+    scores_multi_path = cfg.data_dir / "scores_multi.parquet"
+    if not scores_multi_path.exists():
+        raise FileNotFoundError(
+            f"{scores_multi_path} missing — run the train stage first "
+            "(uv run python -m uplift_experimentation.cli train)"
+        )
     df = pd.read_parquet(scores_path)
+    df_multi = pd.read_parquet(scores_multi_path)
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     figures_dir = cfg.reports_dir / "figures"
 
     policy_metrics, curves = evaluate_policies(cfg, df)
     cuped = cuped_read(cfg, df)
+    cuped_multi = cuped_multivariate_read(cfg, df)
     power = power_analysis(cfg, df)
     best = max(SCORE_POLICIES, key=lambda p: policy_metrics[p]["profit_delta_vs_random"])
     deciles = decile_table(cfg, df, best)
     ci_meta, bands, band_grid = bootstrap_ci_read(cfg, df)
     cost_sens = cost_sensitivity_read(cfg, curves, best, len(df))
+    multi_arm, arm_curves = multi_arm_read(cfg, df_multi, policy_metrics)
+    curves_multi = multi_arm_policy_curves(
+        df_multi["uplift_mens"].to_numpy(dtype=float),
+        df_multi["uplift_womens"].to_numpy(dtype=float),
+    )
 
     figures = {
         "qini_curves": qini_figure(curves, best, bands, band_grid),
@@ -851,12 +1340,19 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
         "profit_frontier": profit_figure(cfg, curves, len(df)),
         "cuped_variance": cuped_figure(cuped),
         "cost_sensitivity": cost_sensitivity_figure(cost_sens, cfg),
+        "qini_per_arm": qini_per_arm_figure(arm_curves, curves["t_learner"]),
+        "profit_frontier_multi_arm": profit_frontier_multi_arm_figure(
+            cfg, curves_multi, len(df_multi)
+        ),
+        "recommended_arm_distribution": recommended_arm_figure(multi_arm["recommended_arm_shares"]),
     }
     for name, fig in figures.items():
         save_html(fig, figures_dir / f"{name}.html")
         save_json(fig, figures_dir / f"{name}.json")
 
-    report = build_report(cfg, policy_metrics, cuped, power, deciles, best, ci_meta, cost_sens)
+    report = build_report(
+        cfg, policy_metrics, cuped, power, deciles, best, ci_meta, cost_sens, cuped_multi, multi_arm
+    )
     for name in figures:
         report.add_html(
             name.replace("_", " ").title(),
@@ -866,9 +1362,11 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
     report.write(cfg.reports_dir / "report.html")
 
     metrics: dict[str, Any] = {policy: dict(vals) for policy, vals in policy_metrics.items()}
+    metrics["multi_arm"] = multi_arm
     metrics["_meta"] = {
         "best_policy": best,
         "cuped": cuped,
+        "cuped_multivariate": cuped_multi,
         "power": power,
         "ci": ci_meta,
         "cost_sensitivity": cost_sens,
@@ -882,7 +1380,7 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
 
     log.info(
         "evaluate: best=%s qini=%.4f profit@%.0f%%=%.0f (random %.0f) | CUPED var "
-        "reduction %.1f%% | power sufficient=%s",
+        "reduction %.1f%% | power sufficient=%s | multi-arm best-arm profit@%.0f%%=%.0f",
         best,
         policy_metrics[best]["qini_coefficient"],
         cfg.policy_budget * 100,
@@ -890,5 +1388,7 @@ def evaluate_core(cfg: UpliftConfig) -> Path:
         policy_metrics[best]["profit_random_at_budget"],
         cuped["conversion"]["variance_reduction"] * 100,
         power["sufficient"],
+        cfg.policy_budget * 100,
+        multi_arm["policies"]["best_arm"]["profit_at_budget"],
     )
     return cfg.reports_dir / "report.html"

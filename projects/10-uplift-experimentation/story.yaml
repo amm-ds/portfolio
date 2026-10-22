@@ -34,7 +34,26 @@ figure_captions:
     prior-year-spend covariate, for conversion (primary) and visit
     (secondary). CUPED leaves the ATE unchanged but removes only 0.08% of
     conversion variance vs 0.52% for visit — prior spend barely predicts a
-    ~1% event.
+    ~1% event. Adding recency alongside (multivariate read) reaches 0.12% /
+    0.95% — covariate selection is the design decision.
+  qini_per_arm: >-
+    Empirical Qini curves for the per-arm cross-fitted T-learners on the
+    randomized arm-vs-control pairs, with the committed two-arm T-learner
+    curve (dashed — the Mens-arm fit reproduces it exactly). Mens ranks
+    (Qini 12.03); the Womens arm's conversion ranking (3.37, CI spanning
+    zero) is not established.
+  profit_frontier_multi_arm: >-
+    Multi-arm profit frontier at $114 revenue per conversion and $0.01 per
+    email, model-estimated: incremental conversions are summed predicted
+    uplift over the targeted set (no counterfactual claim). The best-arm
+    policy (star, 25% budget) earns $35.5k vs $29.5k single-arm Mens and
+    $16.6k random; mail-everyone-mens leads on raw profit ($49.8k) until
+    sends cost ≈$0.31/email.
+  recommended_arm_distribution: >-
+    Per-customer recommended arm under argmax(uplift_mens, uplift_womens, 0):
+    Mens 76.0%, Womens 20.2%, none 3.8% (both scores ≤ 0 or tied). The
+    Womens email is chosen only where its estimated uplift beats the Mens
+    alternative — a channel-choice list, not a second broadcast.
 sections:
   - id: background
     text_md: |
@@ -114,8 +133,11 @@ sections:
 
       The primary read is the two-arm frame — Mens E-Mail (treatment) vs
       No E-Mail (control), 42,613 customers after dropping the Womens E-Mail
-      arm, which stays in EDA and could later back a per-customer channel
-      choice. A two-arm treatment keeps every estimand unambiguous.
+      arm from the modeling frame. A two-arm treatment keeps every estimand
+      unambiguous. The full three-arm frame (64,000 customers, per-arm
+      assignment indicators) is also prepared and backs the secondary
+      multi-treatment read — per-arm uplift scores and the best-arm
+      channel-choice policy.
 
       | project column | Hillstrom source | role |
       |---|---|---|
@@ -131,7 +153,11 @@ sections:
       fetched checksum-pinned so any drift in the upstream snapshot
       fails loudly. The primary read uses the two clearest arms — the
       Mens E-Mail treatment versus the no-email control, 42,613
-      customers — keeping every estimate unambiguous. Because this is
+      customers — keeping every estimate unambiguous. The full three-arm
+      frame is prepared alongside and powers the multi-arm read: per-arm
+      uplift scores against the shared control and a per-customer
+      channel-choice policy, presented as a secondary, model-estimated
+      capability. Because this is
       the dataset every uplift paper benchmarks against, the results are
       directly comparable to the literature, and a client can replicate
       every number on their own randomized holdout with the same code.
@@ -289,6 +315,24 @@ sections:
         leave its second stage only variance to recover — regime-specific,
         not general.
 
+      Multi-arm read (`qini_per_arm`, `profit_frontier_multi_arm`,
+      `recommended_arm_distribution`) — the new channel-choice capability,
+      secondary to the committed two-arm comparison. Each arm is scored
+      against the shared control with a cross-fitted T-learner, and a
+      best-arm policy recommends argmax(uplift_mens, uplift_womens, 0) per
+      customer (no send on ties or non-positive scores: Mens 76.0% /
+      Womens 20.2% / none 3.8%). Policy-level numbers are MODEL-ESTIMATED —
+      summed predicted uplift, planning values that rank policies rather
+      than forecast dollars (predicted magnitudes run ~2× hot); only the
+      per-arm Qini contrasts are empirical. Per-arm Qini: Mens 12.03
+      (identical to the committed binary T-learner by construction),
+      Womens 3.37 [−6.78, 13.75] — spans zero, not established, consistent
+      with the weak Womens conversion lift in EDA. Best-arm profit at the
+      25% budget: $35.5k [35.1k, 36.0k] model-estimated vs $29.5k
+      single-arm and $16.6k random (paired differences exclude zero);
+      mail-everyone-mens still leads on raw profit ($49.8k) until sends
+      cost ≈$0.31/email — the same fatigue threshold as the two-arm read.
+
       **Business summary:** The campaign effect is real but small — +0.68
       percentage points on conversion with a standard error of 0.09 —
       exactly the regime where targeting discipline pays. The honest
@@ -302,8 +346,15 @@ sections:
       the top-25% targeting list overtakes it. So the deliverable is a
       defensible targeting list with dollar figures, honest uncertainty
       ranges, and the machinery to re-derive all of it on the client's
-      own randomized campaign.
-    figures: [qini_curves, profit_frontier, cuped_variance]
+      own randomized campaign. The multi-arm extension adds the
+      channel-choice question — which email, per customer — with the same
+      honesty: its profit figures are model-estimated planning numbers,
+      anchored on the per-arm randomized contrasts, and the per-customer
+      recommendation (Mens for 76% of the list, Womens for 20%, no send
+      for 4%) is the deliverable a campaign owner can act on directly.
+    figures:
+      [qini_curves, profit_frontier, cuped_variance, qini_per_arm,
+       profit_frontier_multi_arm, recommended_arm_distribution]
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
     text_md: |
@@ -325,6 +376,11 @@ sections:
       - **Predicting is not changing:** response ranking targets sure
         things; uplift ranking targets persuadables. At a 1% base rate
         the difference is noise management.
+      - **Channel choice is a model-estimated extension:** the multi-arm
+        read composes the same per-arm learners into a best-arm policy,
+        but with no randomized assignment realizing the recommended mix,
+        its money figures are planning numbers — the per-arm randomized
+        contrasts (Mens established, Womens not) are the causal anchor.
 
       **Results quality: acceptable with caveats.** The ATE is precise
       (SE 0.09pp) and the profit ranking is established by paired CIs; the
@@ -345,6 +401,14 @@ sections:
       run in `reports/report.html`, and the machine-readable numbers in
       `reports/metrics.json`.
 roadmap:
+  - status: delivered
+    text: >-
+      Multi-treatment uplift (secondary, model-estimated): per-arm
+      cross-fitted T-learners (Mens Qini 12.03 = committed binary read;
+      Womens 3.37, CI spans zero), best-arm policy $35.5k @25% budget vs
+      $29.5k single-arm (paired CI excludes zero), recommended arms
+      76.0/20.2/3.8% Mens/Womens/none, break-even ≈$0.31/email vs
+      mail-everyone-mens.
   - status: delivered
     text: >-
       CUPED: 0.08% conversion / 0.52% visit variance removed on the

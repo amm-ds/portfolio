@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
 import yaml  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
 from portfolio_core.schemas import PortfolioBaseModel
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]  # re-exported
 
 __all__ = [
@@ -61,6 +61,12 @@ class UpliftConfig(PortfolioBaseModel):
         pattern="^(log_history|history)$",
         description="Pre-period covariate.",
     )
+    cuped_extra_covariates: list[str] = Field(
+        default_factory=lambda: ["recency"],
+        description="Additional strictly pre-treatment covariates adjusted alongside "
+        "``cuped_covariate`` in the multivariate CUPED read (additive read; the "
+        "univariate ``_meta.cuped`` metrics keep their current meaning and values).",
+    )
 
     # Uplift models
     cv_folds: int = Field(default=5, ge=2, le=10, description="Cross-fitting folds for OOF scores.")
@@ -109,6 +115,19 @@ class UpliftConfig(PortfolioBaseModel):
     # Artifact locations
     data_dir: Path = Path("data")
     reports_dir: Path = Path("reports")
+
+    @field_validator("cuped_extra_covariates")
+    @classmethod
+    def _extra_covariates_valid(cls, v: list[str]) -> list[str]:
+        if not v or any(not c for c in v):
+            raise ValueError("cuped_extra_covariates must be non-empty names")
+        return v
+
+    @model_validator(mode="after")
+    def _cuped_covariates_distinct(self) -> "UpliftConfig":
+        if self.cuped_covariate in self.cuped_extra_covariates:
+            raise ValueError("cuped_extra_covariates must not repeat cuped_covariate")
+        return self
 
     @field_validator("budget_fractions")
     @classmethod
