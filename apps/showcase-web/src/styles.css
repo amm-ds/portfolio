@@ -1148,7 +1148,7 @@ button:disabled {
 /* --- Services --- */
 
 .services-hero {
-  max-width: 780px;
+  max-width: none;
   margin-bottom: 1rem;
 }
 
@@ -1301,7 +1301,7 @@ button:disabled {
 }
 
 .cloud-plain {
-  max-width: 860px;
+  max-width: none;
 }
 
 .cloud-plain > p {
@@ -1314,7 +1314,7 @@ button:disabled {
 }
 
 .providers-grid {
-  max-width: 640px;
+  max-width: none;
 }
 
 /* --- Footer --- */
@@ -2656,6 +2656,7 @@ button.chip.wb-scenario.active {
   font-size: 0.82rem;
   color: var(--muted);
   list-style: none;
+  text-align: center;
 }
 
 .wb-evidence summary::before {
@@ -2708,7 +2709,11 @@ button.chip.wb-scenario.active {
 }
 
 .wb-evidence-about .wb-evidence-tag {
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.wb-result-block .wb-evidence-tag {
+  margin-bottom: 0.15rem;
 }
 
 .wb-evidence-about p {
@@ -2870,7 +2875,7 @@ button.chip.wb-scenario.active {
 .wb-result-block {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
   padding-bottom: 0.6rem;
   border-bottom: 1px solid var(--border);
 }

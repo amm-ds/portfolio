@@ -196,7 +196,7 @@ function CostCurvePanel({
       xIndex: nearestIndex(thresholds, customer.probability),
       label: customer.label,
       style: "solid",
-      color: customer.probability >= cursorT ? C_TEAL : C_GRAY,
+      color: C_TEAL,
     });
   }
 
@@ -308,7 +308,12 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
     const row = rowsForSlice[nearestIndex(rowsForSlice.map((r) => r.t), cursorT)];
     return { label, value: row.tp + row.fp, unit: "alarms" };
   });
-  const max = Math.max(...rows.map((r) => r.value), 1);
+  // scale against the busiest threshold seen per contract (static max): the
+  // top segment is not pinned at 100% and every bar moves with the cursor
+  const max = Math.max(
+    ...Object.values(slices).flatMap((rs) => rs.map((r) => r.tp + r.fp)),
+    1,
+  );
   const pad = 14;
   const labelW = Math.min(120, W * 0.35);
   const countW = 92;
@@ -648,16 +653,6 @@ function ChurnSandboxWorkbench({
               A calibrated classifier on the IBM Telco churn holdout; the target is to minimize
               decision cost <span className="wb-tag">FP·1 + FN·{payload.cost_model.fn_cost}</span>{" "}
               per {payload.holdout_n} holdout customers.
-            </p>
-          </div>
-          <div className="wb-result-block">
-            <h4 className="wb-evidence-tag">key outcome</h4>
-            <p className="wb-evidence-line">
-              <strong>${Math.round(payload.headline.cost_selected)}</strong> vs{" "}
-              <strong>${Math.round(payload.headline.cost_naive)}</strong> naive per{" "}
-              {payload.holdout_n} customers — paired bootstrap CI [
-              {Math.round(payload.headline.delta_ci.lo)}, {Math.round(payload.headline.delta_ci.hi)}
-              ]{payload.headline.delta_ci.significant_95 ? ", 95% significant" : ""}.
             </p>
           </div>
         </>
