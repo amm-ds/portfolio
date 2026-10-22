@@ -18,10 +18,13 @@ fully offline in CI.
 ## What runs
 
 ```
-prepare   fetch Hillstrom (sha256-pinned) → DQ gates → two-arm frame + EDA
+prepare   fetch Hillstrom (sha256-pinned) → DQ gates → two-arm frame (+ three-arm
+          frame for the multi-arm read) + EDA
 train     5-fold cross-fitting → out-of-fold scores per policy:
-          response model | T-learner | X-learner
+          response model | T-learner | X-learner | per-arm T-learners
+          (uplift_mens, uplift_womens vs the shared control)
 evaluate  Qini coefficients, profit frontier, CUPED, power analysis, policy
+          + multi-arm best-arm policy (model-estimated), per-arm Qini
 ```
 
 ```bash
@@ -40,8 +43,10 @@ pre-treatment): the adjusted ATE is unchanged by construction (+0.00680 vs
 +0.00681), but the variance story is the lesson — prior spend explains almost
 none of conversion variance: **0.08% variance reduction**. On the secondary
 `visit` outcome, where history is informative, the same machinery removes
-**0.52%**. CUPED is exactly as good as its covariate; covariate selection is
-the design decision.
+**0.52%**. Adding `recency` as a second covariate (multivariate read,
+`_meta.cuped_multivariate`) moves conversion only to 0.12% and visit to
+**0.95%** — recency roughly doubles the (still small) visit read. CUPED is
+exactly as good as its covariate; covariate selection is the design decision.
 
 **Power.** For the measured +0.68pp effect at α=0.05, power 0.8 (two-sided
 two-proportion, Fleiss variance form): **3,063 customers per arm required**;
@@ -102,6 +107,61 @@ Qini area and profit-at-budget disagree for the response model (highest
 area, lowest budget profit): the policy is chosen on the money, the curve
 explains why.
 
+## Multi-arm read (three-arm frame, model-estimated — new capability)
+
+The experiment is upgraded to a multi-treatment read while the two-arm results
+above stay the primary, committed comparison. Each arm is scored against the
+shared No E-Mail control with a cross-fitted T-learner (`uplift_mens`,
+`uplift_womens`; the Mens-arm fit reuses the binary run's seed stream, so its
+per-arm scores reproduce the committed T-learner exactly). A **best-arm
+policy** then recommends, per customer, the arm with the highest estimated
+uplift — no send when both scores are ≤ 0 or tied.
+
+Because no randomized assignment realizes the recommended arm mix, every
+policy-level number here is **model-estimated** (incremental conversions =
+summed predicted uplift over the targeted set — planning numbers, not
+counterfactual claims; predicted magnitudes run ~2× hot per the decile check,
+so use the levels to rank policies, not to forecast revenue). Only the
+per-arm Qini contrasts below are empirical causal reads.
+
+**Per-arm Qini** (randomized arm-vs-control pairs; 95% CIs from the paired
+bootstrap, n=1000, seeded):
+
+| arm | Qini [95% CI] | incremental conversions @ full send |
+|---|---|---|
+| Mens (per-arm = committed binary T-learner) | 12.03 [−0.47, 24.21] | 145.0 |
+| Womens | 3.37 [−6.78, 13.75] — spans zero, not established | 66.5 |
+| binary T-learner (two-arm, committed) | 12.03 | 145.0 |
+
+The Womens arm's conversion lift is small and its ranking signal is not
+established — consistent with the EDA read (0.88% vs 0.57% conversions).
+
+**Recommended-arm distribution** (argmax per customer): Mens 76.0% /
+Womens 20.2% / none 3.8%.
+
+**Policy ladder** (model-estimated profit, $114 revenue / $0.01 per email;
+95% CIs from a paired row bootstrap of the per-arm scores, n=1000,
+seed 2041):
+
+| policy | Qini (model-est.) | profit @ 25% budget [95% CI] |
+|---|---|---|
+| **best-arm** | 121.20 | **$35,514 [$35,060, $35,973]** |
+| single-arm (Mens only) | 131.73 | $29,487 [$29,158, $29,800] |
+| random | 0.0 | $16,563 [$16,429, $16,699] |
+| mail-everyone-mens | 0.0 | — (full-mail $49,819) |
+| mail-everyone-womens | 0.0 | — (full-mail $21,287) |
+
+Paired differences (best-arm minus comparator) exclude zero across the board:
+vs single-arm **[+$5,742, +$6,347]**, vs random **[+$18,619, +$19,269]**.
+Break-even vs mail-everyone-mens: the best-arm policy overtakes full mailing
+above **≈$0.31/email** — essentially the same fatigue threshold as the
+two-arm read (≈$0.30). The model-estimated Qini area ranks single-arm above
+best-arm (paired diff [−12.48, −8.63]) while the budget profit ranks
+best-arm higher — same lesson as the two-arm ladder: Qini explains, profit
+decides. Caveat: these intervals resample rows, not models; within-model
+precision only (the two-arm ranking verdict shows how wide Qini gets across
+refits). Full numbers in `reports/metrics.json` under `multi_arm`.
+
 **The honest caveat:** predicting conversions ≠ changing them — same lesson
 as Project 05's fairness finding on the retention side. The decile check
 (`uplift_by_decile`) shows predicted ordering only roughly tracking the
@@ -113,10 +173,16 @@ is noisy, and the X-learner's second stage adds variance without signal here
 
 - Figures (`reports/figures/`, `.html` + `.json`): `eda_segment_profile`,
   `qini_curves` (with 95% bootstrap bands), `uplift_by_decile`,
-  `profit_frontier`, `cost_sensitivity`, `cuped_variance`
+  `profit_frontier`, `cost_sensitivity`, `cuped_variance`, plus the multi-arm
+  set: `qini_per_arm`, `profit_frontier_multi_arm`,
+  `recommended_arm_distribution`
 - Metrics: `reports/metrics.json` (policy ladder + `_meta.cuped/power/deciles`
-  + `_meta.ci` bootstrap intervals and `_meta.cost_sensitivity` sweep)
+  + `_meta.ci` bootstrap intervals and `_meta.cost_sensitivity` sweep +
+  `_meta.cuped_multivariate`; the multi-arm read lives in the top-level
+  `multi_arm` block)
 - Report: `reports/report.html` · Segment summary: `reports/segment_summary.json`
+- Scores: `data/scores.parquet` (two-arm + per-arm uplift columns) ·
+  `data/scores_multi.parquet` (three-arm scored frame)
 - Dataset identity: `data/dataset_contract.json` ·
   [dataset card](../../docs/data-registry/hillstrom.md)
 

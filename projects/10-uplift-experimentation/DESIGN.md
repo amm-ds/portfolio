@@ -18,7 +18,7 @@
 | causallib / causalml for T/X-learners | Rejected | Extra deps (causallib pulls statsmodels) for ~80 lines of code; hand-rolling on sklearn keeps the platform dependency-light and the method auditable line-by-line. |
 | Causal forests (grf / econml DML) | Deferred | Stronger non-parametrics, but heavyweight deps and weaker interpretability for a showcase; noted in roadmap as forward work. |
 | In-sample uplift scores | Rejected | Meta-learners overfit; Qini on training rows flatters every model. 5-fold cross-fitting gives honest out-of-fold scores. |
-| Multi-arm (Mens + Womens vs control) | Rejected for the primary read | A two-arm treatment keeps every estimand unambiguous; the Womens arm is retained in EDA and could back a per-customer channel choice later. |
+| Multi-arm (Mens + Womens vs control) | Rejected for the primary read | A two-arm treatment keeps every estimand unambiguous; the Womens arm is retained in EDA and could back a per-customer channel choice later. **Delivered 2026-10-22 as a secondary read** (`multiarm.py`): per-arm cross-fitted T-learners + a best-arm policy, evaluated model-estimated; the two-arm read stays primary and unchanged. |
 | Qini vs AUUC (uplift ROC) | Qini | Qini counts incremental conversions directly (money-relevant units); AUUC is rate-based and needs careful tie handling at this base rate (~0.9%). |
 | Normalized Qini (Radcliffe Q) | Rejected for the headline | Requires a "perfect model" curve definition that is unstable at rare-binary outcomes; the unnormalized coefficient (conversions × fraction) plus the profit frontier is the decision-relevant read. |
 | scipy for power analysis | Rejected | `statistics.NormalDist.inv_cdf` gives z-quantiles in the stdlib; one less dependency for a closed-form formula. |
@@ -62,6 +62,18 @@
    recommended policy is recomputed against the mail-everyone profit, plus the
    analytic break-even send cost at the policy budget,
    `c* = revenue·(inc(1) − inc(budget)) / (N·(1 − budget))`.
+10. **Multi-treatment uplift is a secondary, model-estimated read**
+    (2026-10-22). Each arm is scored against the shared control with a
+    cross-fitted T-learner; the arm matching `treatment_segment` reuses the
+    binary run's seed stream, so its scores reproduce the committed T-learner
+    exactly (continuity by construction). The best-arm policy recommends
+    argmax(uplift_mens, uplift_womens, 0) per customer ("none" on ties or
+    non-positive scores). Because no randomized assignment realizes the
+    recommended arm mix, all policy-level multi-arm numbers are
+    model-estimated (summed predicted uplift); only per-arm Qini/A-B contrasts
+    on the randomized pairs are empirical. Predicted magnitudes run hot
+    (~2×, see the decile check), so multi-arm dollar levels are planning
+    numbers for ranking policies; the bootstrap resamples rows, not models.
 
 ## Cost model rationale
 
@@ -79,6 +91,18 @@ revenue/cost pair is a first-class config surface, swept by `cost_grid`.
 
 ## Changelog
 
+- 2026-10-22 — multi-treatment upgrade (secondary read): three-arm frame
+  (`hillstrom_multi.parquet`) with per-arm assignment indicators; per-arm
+  cross-fitted T-learner scores (`uplift_mens`, `uplift_womens`) persisted to
+  `scores.parquet` (new columns; existing columns and the committed two-arm
+  metrics unchanged) and `scores_multi.parquet`; best-arm policy
+  (argmax per customer, ties/none on non-positive) with model-estimated profit
+  frontier + paired bootstrap (seed `seed + 1999`); per-arm empirical Qini on
+  the randomized pairs; recommended-arm distribution; best-arm break-even vs
+  mail-everyone-mens (≈$0.31/email); multivariate CUPED read adding `recency`
+  alongside `log_history` (additive `_meta.cuped_multivariate`; the univariate
+  read keeps its keys/values). New figures: `qini_per_arm`,
+  `profit_frontier_multi_arm`, `recommended_arm_distribution`.
 - 2026-10-16 — audit pass 2: bootstrap CIs (paired row resampling, n=1000,
   seeded) on per-policy Qini + profit-at-budget and on policy-pair
   differences; Qini figure bands; cost-sensitivity sweep with mail-everyone

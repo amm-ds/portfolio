@@ -115,3 +115,86 @@ export interface ChurnPayload {
   report?: string;
   roc_auc: number;
 }
+
+// --- uplift policy simulator payload (`projects/10-uplift-experimentation/reports/demo_payload.json`) ---
+
+/** Policy profit matrix over the (cost × fraction) lattice: [costIdx][fracIdx],
+ * values in total campaign profit ($). `ci` present for best_arm and random. */
+export interface GridPolicy {
+  profit: number[][];
+  ci?: { lo: number[][]; hi: number[][] };
+}
+
+export type GridPolicyName = "best_arm" | "single_arm" | "random";
+
+export interface ProfitGrid {
+  costs: number[];
+  fractions: number[];
+  policies: Record<GridPolicyName, GridPolicy>;
+  n_boot: number;
+  seed: number;
+  alpha: number;
+  model_estimated: boolean;
+  note: string;
+}
+
+/** Empirical per-arm Qini curve on the randomized arm-vs-control pairs,
+ * downsampled to ≤100 points, with the arm's random line and coefficient. */
+export interface QiniArmPoints {
+  fractions: number[];
+  incremental: number[];
+  random_fractions: number[];
+  random_incremental: number[];
+  qini_coefficient: number;
+  qini_ci: [number, number];
+}
+
+export interface UpliftSegmentStats {
+  n: number;
+  visit_rate: number;
+  conversion_rate: number;
+  mean_spend: number;
+  incremental_conversions_full_send_model_estimated: { mens: number; womens: number };
+}
+
+export interface UpliftPayload {
+  schema_version: number;
+  demo: string;
+  project: string;
+  n_customers: number;
+  scalars: {
+    n_customers: number;
+    revenue_per_conversion: number;
+    cost_default: number;
+    policy_budget: number;
+    incremental_conversions_full_send_model_estimated: { mens: number; womens: number };
+    incremental_conversions_full_send_best_arm: number;
+    per_arm_qini: Record<
+      "mens" | "womens",
+      {
+        qini_coefficient: number;
+        qini_ci: [number, number];
+        incremental_conversions_full: number;
+        incremental_conversions_full_ci: [number, number];
+        n_arm: number;
+        n_control: number;
+      }
+    >;
+    recommended_arm_shares: { mens: number; womens: number; none: number };
+    break_even: {
+      two_arm_committed: { cost_per_email: number; source: string };
+      multi_arm_best_arm: { cost_per_email: number; vs: string; policy_budget: number; source: string };
+    };
+    /** Mail-everyone total profit per arm, keyed by cost with two-decimal
+     * string keys ("0.01"…"0.50"). */
+    mail_everyone_profit: { mens: Record<string, number>; womens: Record<string, number> };
+    model_estimated_note: string;
+  };
+  profit_grid: ProfitGrid;
+  qini_points: {
+    mens: QiniArmPoints;
+    womens: QiniArmPoints;
+    random: { fractions: number[]; incremental: number[]; note: string };
+  };
+  segments: Record<"Mens E-Mail" | "Womens E-Mail" | "No E-Mail", UpliftSegmentStats>;
+}

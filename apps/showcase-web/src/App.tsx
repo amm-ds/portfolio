@@ -8,6 +8,7 @@ import { Services } from "./pages/Services";
 import { Contact } from "./pages/Contact";
 import { NotFound } from "./pages/NotFound";
 import ChurnSandbox from "./demos/churn-sandbox/ChurnSandbox";
+import UpliftSimulator from "./demos/uplift-simulator/UpliftSimulator";
 import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 
 export function App() {
@@ -27,6 +28,14 @@ export function App() {
             element={
               <DemoErrorBoundary>
                 <ChurnSandbox />
+              </DemoErrorBoundary>
+            }
+          />
+          <Route
+            path="/demos/uplift-simulator"
+            element={
+              <DemoErrorBoundary>
+                <UpliftSimulator />
               </DemoErrorBoundary>
             }
           />

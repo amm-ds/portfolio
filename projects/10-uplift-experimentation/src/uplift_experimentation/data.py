@@ -1,8 +1,11 @@
-"""Data layer: checksum-pinned fetch, schema mapping, DQ gates, experiment frame.
+"""Data layer: checksum-pinned fetch, schema mapping, DQ gates, experiment frames.
 
 Primary analysis arm: one campaign (default ``Mens E-Mail``) vs the ``No E-Mail``
-control. The third arm (``Womens E-Mail``) is excluded from the modeling frame
-and reported in EDA — a two-arm read keeps the causal estimands unambiguous.
+control. The third arm (``Womens E-Mail``) is excluded from the primary modeling
+frame and reported in EDA — a two-arm read keeps the causal estimands
+unambiguous. ``load_experiment_frame_multi`` additionally retains all three
+arms with per-arm assignment indicators; it backs the secondary multi-treatment
+uplift read (see ``multiarm``).
 """
 
 from datetime import date
@@ -36,6 +39,8 @@ RAW_COLS = [
 
 SEGMENTS = ["Mens E-Mail", "Womens E-Mail", "No E-Mail"]
 
+BINARY_FLAG_COLS = ("mens", "womens", "newbie", "visit", "conversion")
+
 
 def fetch_hillstrom(cfg: UpliftConfig) -> Path:
     """Fetch the pinned CSV (idempotent: cached when the sha256 matches)."""
@@ -51,6 +56,20 @@ def fetch_hillstrom(cfg: UpliftConfig) -> Path:
     return dest
 
 
+def _gate_and_select(raw: pl.DataFrame) -> pl.DataFrame:
+    """Column presence + DQ gates + 0/1 flag sanity, shared by both frame builders."""
+    missing = [c for c in RAW_COLS if c not in raw.columns]
+    if missing:
+        raise ValueError(f"hillstrom source is missing required columns: {', '.join(missing)}")
+    df = raw.select(RAW_COLS)
+    run_dq_gates(df)
+    for col in BINARY_FLAG_COLS:
+        bad = df[col].is_not_null() & ~df[col].is_in([0, 1])
+        if bad.sum() > 0:
+            raise ValueError(f"column {col} has non-binary values")
+    return df
+
+
 def load_experiment_frame(cfg: UpliftConfig, raw_path: Path | None = None) -> pl.DataFrame:
     """Load the raw CSV, gate it, and build the two-arm modeling frame.
 
@@ -63,11 +82,7 @@ def load_experiment_frame(cfg: UpliftConfig, raw_path: Path | None = None) -> pl
     # spend starts with many zero rows: polars would infer Int64 and fail on
     # the first decimal value later in the file.
     raw = pl.read_csv(path, schema_overrides={"spend": pl.Float64})
-    missing = [c for c in RAW_COLS if c not in raw.columns]
-    if missing:
-        raise ValueError(f"hillstrom source is missing required columns: {', '.join(missing)}")
-    df = raw.select(RAW_COLS)
-    run_dq_gates(df)
+    df = _gate_and_select(raw)
 
     two_arm = df.filter(
         pl.col("segment").is_in([cfg.treatment_segment, cfg.control_segment])
@@ -75,11 +90,6 @@ def load_experiment_frame(cfg: UpliftConfig, raw_path: Path | None = None) -> pl
         (pl.col("segment") == cfg.treatment_segment).cast(pl.Int8).alias("treatment"),
         pl.col("history").log1p().alias("log_history"),
     )
-    # Feature sanity: mens/womens/newbie/visit/conversion must be 0/1.
-    for col in ("mens", "womens", "newbie", "visit", "conversion"):
-        bad = two_arm[col].is_not_null() & ~two_arm[col].is_in([0, 1])
-        if bad.sum() > 0:
-            raise ValueError(f"column {col} has non-binary values")
     log.info(
         "load: %d rows (%s arm: %d, control: %d)",
         two_arm.height,
@@ -88,6 +98,32 @@ def load_experiment_frame(cfg: UpliftConfig, raw_path: Path | None = None) -> pl
         int((1 - two_arm["treatment"]).sum()),
     )
     return two_arm
+
+
+def load_experiment_frame_multi(cfg: UpliftConfig, raw_path: Path | None = None) -> pl.DataFrame:
+    """Build the three-arm frame backing the multi-treatment uplift read.
+
+    Retains every row and adds ``treated_mens`` / ``treated_womens`` (1 =
+    assigned to that campaign arm, 0 otherwise) so each arm can be scored
+    against the shared ``No E-Mail`` control. The primary two-arm frame
+    (``load_experiment_frame``) is unchanged.
+    """
+    path = raw_path or fetch_hillstrom(cfg)
+    raw = pl.read_csv(path, schema_overrides={"spend": pl.Float64})
+    df = _gate_and_select(raw)
+    multi = df.with_columns(
+        (pl.col("segment") == "Mens E-Mail").cast(pl.Int8).alias("treated_mens"),
+        (pl.col("segment") == "Womens E-Mail").cast(pl.Int8).alias("treated_womens"),
+        pl.col("history").log1p().alias("log_history"),
+    )
+    log.info(
+        "load_multi: %d rows (mens: %d, womens: %d, control: %d)",
+        multi.height,
+        int(multi["treated_mens"].sum()),
+        int(multi["treated_womens"].sum()),
+        int(((multi["treated_mens"] + multi["treated_womens"]) == 0).sum()),
+    )
+    return multi
 
 
 def run_dq_gates(df: pl.DataFrame) -> None:

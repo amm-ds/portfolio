@@ -8,11 +8,17 @@
   combine them propensity-weighted: tau = g(x)*tau0(x) + (1-g(x))*tau1(x).
   With a ~50/50 randomization g is near-constant, but we fit it anyway — the
   weighting is part of the method and matters for covariate shift.
+- Per-arm T-learners (multi-treatment read, ``multiarm``): each campaign arm
+  vs the shared control via ``cross_fit_arm_uplift``; the configured treatment
+  arm reuses the binary seed stream and reproduces the committed T-learner.
 
 All scores are out-of-fold (cross-fitted): Qini/profit reads never see
 in-sample predictions, so model-vs-model comparisons are not confounded by
 overfitting.
 """
+
+from collections.abc import Callable
+from typing import cast
 
 import numpy as np
 from portfolio_core.logging import get_logger
@@ -158,3 +164,66 @@ def cross_fit_scores(
     if out.isnull().any().any():
         raise ValueError("cross-fitting left un-scored rows")
     return out
+
+
+# ---------------------------------------------------------------------------
+# Per-arm T-learners (multi-treatment uplift, secondary read)
+# ---------------------------------------------------------------------------
+
+
+def fit_arm_uplift(
+    X: pd.DataFrame,
+    treatment_arm: np.ndarray,
+    y: np.ndarray,
+    seed: int,
+) -> Callable[[pd.DataFrame], np.ndarray]:
+    """Fit a T-learner for one arm vs control and return a scorer for new rows.
+
+    Used by the multi-treatment read: out-of-fold scores cover the arm/control
+    rows, and rows of the third arm are scored by this pair model refit on all
+    its rows — a deployment-style prediction for unseen customers, never an
+    in-sample score. ``treatment_arm`` is 1 on the campaign arm, 0 on control.
+    """
+    t = treatment_arm == 1
+    X1, X0, y1, y0 = X[t], X[~t], y[t], y[~t]
+    mu1_model = make_classifier(seed)
+    mu1_model.fit(X1, y1)
+    mu0_model = make_classifier(seed + 1)
+    mu0_model.fit(X0, y0)
+
+    def score(Xs: pd.DataFrame) -> np.ndarray:
+        uplift = mu1_model.predict_proba(Xs)[:, 1] - mu0_model.predict_proba(Xs)[:, 1]
+        return cast(np.ndarray, np.asarray(uplift, dtype=float))
+
+    return score
+
+
+def cross_fit_arm_uplift(
+    X: pd.DataFrame,
+    treatment_arm: np.ndarray,
+    y: np.ndarray,
+    folds: int,
+    seed: int,
+) -> np.ndarray:
+    """Out-of-fold T-learner uplift scores for an arm-vs-control frame.
+
+    Reuses the ``cross_fit_scores`` convention (``KFold(shuffle=True)`` with
+    ``seed + 10 * fold``) so per-arm scores are comparable across arms, but
+    fits only the two T-learner arm models per fold — the response/X-learner
+    machinery is not needed per arm. Callers pick a seed offset distinct from
+    the binary run so the streams do not collide.
+    """
+    kfold = KFold(n_splits=folds, shuffle=True, random_state=seed)
+    scores = np.full(len(y), np.nan)
+    for fold, (train_idx, test_idx) in enumerate(kfold.split(X)):
+        fold_scores = fit_arm_uplift(
+            X.iloc[train_idx],
+            treatment_arm[train_idx],
+            y[train_idx],
+            seed + 10 * fold,
+        )
+        scores[test_idx] = fold_scores(X.iloc[test_idx])
+        log.info("cross-fit arm: fold %d/%d scored", fold + 1, folds)
+    if np.isnan(scores).any():
+        raise ValueError("cross-fitting left un-scored rows")
+    return scores
