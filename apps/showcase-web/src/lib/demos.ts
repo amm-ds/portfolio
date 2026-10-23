@@ -21,7 +21,7 @@ export const DEMOS: Demo[] = [
   {
     id: "forecast-workbench",
     title: "demand forecast workbench",
-    line: "Pick a store-product series, stretch the horizon, and stress the recent demand — watch the forecast, the band, and the baseline respond on real intermittent retail demand.",
+    line: "Pick a store-product series, pick a rolling origin — early, middle, or the frozen test window — stretch the horizon, and stress the recent demand; watch the champion, the challenger, the band, and the baseline respond on real intermittent retail demand.",
     status: "live",
     href: "/demos/forecast-workbench",
   },

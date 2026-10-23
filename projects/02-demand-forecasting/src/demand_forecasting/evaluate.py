@@ -1,14 +1,24 @@
-"""Honest backtest: expanding-window time CV + platform metrics + figures.
+"""Honest backtest: expanding-window time CV + frozen final holdout + figures.
 
 Leakage control (playbook: random splits mask drift):
 - splits come from :class:`portfolio_core.timecv.TimeSeriesCV` (train strictly
   before validation, plus an embargo ``gap``),
 - features were built with ``shift`` only (see features.py),
 - metrics are pooled out-of-fold predictions — never in-sample readings.
+
+Frozen holdout protocol (``rolling_origin_holdout_v1``, audit hardening):
+the LAST chronological rolling-origin window is the **test window** — every
+candidate model is scored on it exactly once and those are the committed
+headline numbers. Model/feature selection (``best_model``, the champion pick)
+is computed from folds 1..n-1 ONLY, so the test window can never influence
+which model is promoted. The previous all-fold pooled headline is retained
+per model under ``legacy_pooled_*`` for comparison.
 """
 
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import plotly.graph_objects as go
@@ -27,6 +37,35 @@ from demand_forecasting.model import ModelSpec, model_specs, to_xy
 logger = get_logger(__name__)
 
 EXAMPLE_SERIES = ["store_0|product_0", "store_3|product_5"]
+
+# Per-horizon metrics are reported over the final EVAL_HORIZON_DAYS of the
+# test window: horizon h = the h-th day of that block per series (chronological
+# rank), matching the demo payload's committed forecast window (14 days).
+EVAL_HORIZON_DAYS = 14
+
+METRIC_DEFINITIONS: dict[str, str] = {
+    "mae": "mean |actual - forecast| over the test window (all series pooled)",
+    "rmse": "root mean squared error over the test window",
+    "mape_pct": "mean absolute percentage error over non-zero actuals only, in % — "
+    "inflated by near-zero demand on intermittent series; not decision-grade",
+    "mase": "MAE scaled by the per-series in-sample seasonal-naive-7 error of the "
+    "test fold's training window; < 1 beats 'same day last week'",
+    "bias": "mean(forecast - actual) over the test window — systematic over- or under-forecasting",
+    "wape": "sum|actual - forecast| / sum|actual| over the test window "
+    "(weighted absolute percentage error; null when the denominator is 0)",
+    "fold_maes": "per-fold pooled MAE, folds 1..n (fold n is the test window)",
+    "fold_mae_std": "population std of fold_maes across all folds",
+    "fold_mae_range": "max - min of fold_maes across all folds",
+    "horizon_mae": "per-horizon (h=1..14) mean |error| over the final 14 days "
+    "of the test window, pooled over series",
+    "horizon_mase": "per-horizon (h=1..14) mean |error|/seasonal scale over the "
+    "final 14 days of the test window",
+    "legacy_pooled_mae": "pre-holdout headline: pooled MAE over ALL folds "
+    "(selection + test), kept for comparison",
+    "legacy_pooled_rmse": "pre-holdout headline: pooled RMSE over all folds",
+    "legacy_pooled_mape_pct": "pre-holdout headline: pooled MAPE over all folds",
+    "legacy_pooled_mase": "pre-holdout headline: pooled MASE over all folds",
+}
 
 
 def _date_positions(features: pl.DataFrame) -> np.ndarray:
@@ -77,10 +116,18 @@ class FoldRecord:
 
 @dataclass
 class BacktestResult:
-    """All runs, all folds, and the figures for the report."""
+    """All runs, all folds, and the figures for the report.
+
+    Holdout protocol: folds ``0..n-2`` are the *selection* folds, the last
+    fold is the *test window*. ``runs`` carry the test-window metrics as the
+    headline (plus ``legacy_pooled_*``); champion selection only ever reads
+    the selection folds.
+    """
 
     runs: list[RunResult] = field(default_factory=list)
     folds: list[FoldRecord] = field(default_factory=list)
+    horizon_mae: dict[str, list[float]] = field(default_factory=dict)
+    horizon_mase: dict[str, list[float]] = field(default_factory=dict)
 
     def last_fold(self, model: str) -> FoldRecord:
         recs = [f for f in self.folds if f.model == model]
@@ -91,6 +138,27 @@ class BacktestResult:
         for f in self.folds:
             out.setdefault(f.model, []).append(f.mae)
         return out
+
+    def selection_fold_ids(self) -> list[int]:
+        """Folds 1..n-1 (0-based 0..n-2) — the only folds selection may read."""
+        ids = sorted({f.fold for f in self.folds})
+        return ids[:-1]
+
+    def test_fold_id(self) -> int:
+        """The final rolling-origin window — scored once, never read for selection."""
+        return max(f.fold for f in self.folds)
+
+    def _records(self, model: str, fold_ids: set[int] | None = None) -> list[FoldRecord]:
+        return [
+            f for f in self.folds if f.model == model and (fold_ids is None or f.fold in fold_ids)
+        ]
+
+    def pooled_mae(self, model: str, fold_ids: set[int] | None = None) -> float:
+        """Pooled MAE over the given folds (default: all) from out-of-fold records."""
+        recs = self._records(model, fold_ids)
+        total = sum(float(np.abs(r.y_true - r.y_pred).sum()) for r in recs)
+        count = sum(r.y_true.size for r in recs)
+        return total / count if count else float("nan")
 
 
 def _mase_scale(
@@ -138,6 +206,51 @@ def _fold_mase_parts(
     return float(np.abs(err_val[mask]).sum()), float(val_scale[mask].sum())
 
 
+def _horizon_metrics(
+    dates: np.ndarray,
+    series: np.ndarray,
+    err: np.ndarray,
+    scales: dict[str, float],
+    n_horizons: int = EVAL_HORIZON_DAYS,
+) -> tuple[list[float], list[float]]:
+    """Per-horizon MAE/MASE over the final ``n_horizons`` days of a window.
+
+    Horizon h = the h-th day of the evaluation block for each series
+    (chronological rank within the block, rows arrive in date order) —
+    identical to the demo payload's forecast-window convention. MASE divides
+    each row's |error| by its series' in-sample seasonal scale (rows without
+    a scale are excluded); a horizon with no rows yields NaN.
+    """
+    mae = [float("nan")] * n_horizons
+    mase = [float("nan")] * n_horizons
+    if dates.size == 0:
+        return mae, mase
+    block_start = dates.max() - np.timedelta64(n_horizons - 1, "D")
+    position: dict[str, int] = {}
+    err_sum = np.zeros(n_horizons)
+    err_cnt = np.zeros(n_horizons)
+    ratio_sum = np.zeros(n_horizons)
+    ratio_cnt = np.zeros(n_horizons)
+    for i in np.flatnonzero(dates >= block_start):
+        sid = str(series[i])
+        h = position.get(sid, 0)
+        if h >= n_horizons:
+            continue
+        position[sid] = h + 1
+        err_sum[h] += abs(float(err[i]))
+        err_cnt[h] += 1
+        scale = scales.get(sid, 0.0)
+        if scale > 0:
+            ratio_sum[h] += abs(float(err[i])) / scale
+            ratio_cnt[h] += 1
+    for h in range(n_horizons):
+        if err_cnt[h]:
+            mae[h] = float(err_sum[h] / err_cnt[h])
+        if ratio_cnt[h]:
+            mase[h] = float(ratio_sum[h] / ratio_cnt[h])
+    return mae, mase
+
+
 def backtest(
     features: pl.DataFrame, config: ForecastConfig, specs: list[ModelSpec] | None = None
 ) -> BacktestResult:
@@ -146,24 +259,37 @@ def backtest(
     Splits are computed on *dates* (one expanding window shared by all series)
     and then mapped to row indices, so no date block is ever split across
     train/validation and the embargo ``gap`` holds at day granularity.
-    Reports MAE/RMSE/MAPE (platform metrics) plus MASE — MAE scaled by the
-    fold's in-sample seasonal-naive error per series.
+
+    Frozen holdout: the last rolling-origin window is the test window. Each
+    run's headline metrics (mae/rmse/mape_pct/mase, plus bias/wape and the
+    fold/horizon suite) are computed on that window only; the pre-holdout
+    all-fold pooled values are kept as ``legacy_pooled_*``. Champion selection
+    (:func:`best_model`) pools folds 1..n-1 only — never the test window.
     """
     result = BacktestResult()
     folds = cv_row_folds(features, config)
-    logger.info("backtest: %d folds over the shared date grid (gap=%d)", len(folds), config.gap)
+    n_folds = len(folds)
+    logger.info("backtest: %d folds over the shared date grid (gap=%d)", n_folds, config.gap)
 
     for spec in specs if specs is not None else model_specs():
         x, y, dates, series = to_xy(features, config, spec)
         pooled_true: list[np.ndarray] = []
         pooled_pred: list[np.ndarray] = []
+        fold_maes: list[float] = []
         mase_num, mase_den = 0.0, 0.0
+        test_true: np.ndarray | None = None
+        test_pred: np.ndarray | None = None
+        test_dates: np.ndarray | None = None
+        test_series: np.ndarray | None = None
+        test_num, test_den = 0.0, 0.0
+        test_scales: dict[str, float] = {}
         for k, (train_rows, val_rows) in enumerate(folds):
             model = spec.build(config)
             model.fit(x[train_rows], y[train_rows])
             y_pred = model.predict(x[val_rows])
             pooled_true.append(y[val_rows])
             pooled_pred.append(y_pred)
+            fold_maes.append(float(np.mean(np.abs(y[val_rows] - y_pred))))
             num, den = _fold_mase_parts(
                 y[train_rows],
                 series[train_rows],
@@ -173,6 +299,12 @@ def backtest(
             )
             mase_num += num
             mase_den += den
+            if k == n_folds - 1:
+                test_true, test_pred = y[val_rows], y_pred
+                test_dates, test_series = dates[val_rows], series[val_rows]
+                test_num, test_den = num, den
+                uniq, sc = _mase_scale(y[train_rows], series[train_rows])
+                test_scales = {str(s): float(v) for s, v in zip(uniq, sc, strict=True)}
             result.folds.append(
                 FoldRecord(
                     model=spec.name,
@@ -183,26 +315,60 @@ def backtest(
                     y_pred=y_pred,
                 )
             )
-        metrics = regression_metrics(
+        if test_true is None or test_pred is None or test_dates is None or test_series is None:
+            raise ValueError("backtest produced no test fold — n_splits must be >= 2")
+        err_test = test_pred - test_true
+
+        # Headline: test-window metrics (+ bias/wape), then the legacy pooled set.
+        headline = regression_metrics(test_true.tolist(), test_pred.tolist())
+        by_name = {m.name: m for m in headline}
+        test_mase = test_num / test_den if test_den > 0 else float("nan")
+        abs_actual = float(np.abs(test_true).sum())
+        wape = float(np.abs(err_test).sum() / abs_actual) if abs_actual > 0 else float("nan")
+        legacy = regression_metrics(
             np.concatenate(pooled_true).tolist(), np.concatenate(pooled_pred).tolist()
         )
-        mase = mase_num / mase_den if mase_den > 0 else float("nan")
-        metrics.append(MetricResult("mase", mase, higher_is_better=False))
+        legacy_by_name = {m.name: m for m in legacy}
+        legacy_mase = mase_num / mase_den if mase_den > 0 else float("nan")
+        metrics = [
+            by_name["mae"],
+            by_name["rmse"],
+            by_name["mape_pct"],
+            MetricResult("mase", test_mase, higher_is_better=False),
+            MetricResult("bias", float(np.mean(err_test)), higher_is_better=False),
+            MetricResult("wape", wape, higher_is_better=False),
+            MetricResult("fold_mae_std", float(np.std(fold_maes)), higher_is_better=False),
+            MetricResult(
+                "fold_mae_range",
+                float(max(fold_maes) - min(fold_maes)),
+                higher_is_better=False,
+            ),
+            MetricResult("legacy_pooled_mae", legacy_by_name["mae"].value, higher_is_better=False),
+            MetricResult(
+                "legacy_pooled_rmse", legacy_by_name["rmse"].value, higher_is_better=False
+            ),
+            MetricResult(
+                "legacy_pooled_mape_pct", legacy_by_name["mape_pct"].value, higher_is_better=False
+            ),
+            MetricResult("legacy_pooled_mase", legacy_mase, higher_is_better=False),
+        ]
         result.runs.append(RunResult(name=spec.name, metrics=metrics))
+        h_mae, h_mase = _horizon_metrics(test_dates, test_series, err_test, test_scales)
+        result.horizon_mae[spec.name] = h_mae
+        result.horizon_mase[spec.name] = h_mase
         logger.info(
-            "%s: MAE=%.3f RMSE=%.3f MAPE=%.2f%% MASE=%.3f",
+            "%s: test MAE=%.3f RMSE=%.3f MAPE=%.2f%% MASE=%.3f bias=%.3f wape=%.4f "
+            "(legacy pooled MAE=%.3f)",
             spec.name,
-            metrics[0].value,
-            metrics[1].value,
-            metrics[2].value,
-            mase,
+            by_name["mae"].value,
+            by_name["rmse"].value,
+            by_name["mape_pct"].value,
+            test_mase,
+            float(np.mean(err_test)),
+            wape,
+            legacy_by_name["mae"].value,
         )
     return result
-
-
-def _mae(result: BacktestResult, name: str) -> float:
-    m = next((r.get("mae") for r in result.runs if r.name == name), None)
-    return m.value if m is not None else float("nan")
 
 
 def _is_naive(name: str) -> bool:
@@ -216,15 +382,22 @@ def _is_naive(name: str) -> bool:
 
 
 def best_model(result: BacktestResult) -> str:
-    """The non-naive model with the lowest pooled MAE."""
+    """The non-naive model with the lowest pooled MAE over folds 1..n-1.
+
+    Selection reads ONLY the selection folds — the test window never
+    influences which model is promoted (frozen protocol, tested by shuffling
+    the test fold's actuals and asserting the pick is unchanged).
+    """
+    selection = set(result.selection_fold_ids())
     candidates = [r.name for r in result.runs if not _is_naive(r.name)]
-    return min(candidates, key=lambda n: _mae(result, n))
+    return min(candidates, key=lambda n: result.pooled_mae(n, selection))
 
 
 def strongest_naive(result: BacktestResult) -> str:
-    """The naive baseline with the lowest pooled MAE (the honest floor)."""
+    """The naive baseline with the lowest pooled MAE over folds 1..n-1."""
+    selection = set(result.selection_fold_ids())
     candidates = [r.name for r in result.runs if _is_naive(r.name)]
-    return min(candidates, key=lambda n: _mae(result, n))
+    return min(candidates, key=lambda n: result.pooled_mae(n, selection))
 
 
 def _example_series(series: np.ndarray, y: np.ndarray, n: int, fallback: list[str]) -> list[str]:
@@ -270,11 +443,12 @@ def _display_series(sids: list[str]) -> dict[str, str]:
 
 
 def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
-    """Best model vs strongest naive on two representative series, last fold.
+    """Best model vs strongest naive on two representative series, test window.
 
     Overlaying the naive floor on the same axes makes the improvement
     (and where it comes from — structure the naive floor cannot see)
-    visible at a glance.
+    visible at a glance. Both picks come from the selection folds only;
+    the plotted window is the final holdout they never saw.
     """
     model = best_model(result)
     naive = strongest_naive(result)
@@ -308,7 +482,8 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
     style_runs(fig, best=model)
     add_takeaway(
         fig,
-        "two example series, last CV fold — units/day; actual solid, champion dashed, naive dotted",
+        "two example series, final holdout window — units/day; actual solid, champion dashed, "
+        "naive dotted; champion picked on folds 1..n-1 only",
     )
     return apply_theme(fig)
 
@@ -360,7 +535,7 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
         line={"dash": "dot", "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="MAE, RMSE and MASE by run",
+        title="MAE, RMSE and MASE by run — final holdout window",
         barmode="group",
         yaxis_title="units",
         yaxis2_title="MASE",
@@ -369,19 +544,45 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "pooled out-of-fold ladder — MASE vs 1.0 seasonal-naive parity; MAPE omitted (89% zeros)",
+        "bars = final holdout window (last origin), one score per run — MASE vs 1.0 "
+        "seasonal-naive parity; MAPE omitted: with ~89% zero-demand days, near-zero "
+        "actuals inflate it (hundreds of %), so it is not decision-grade here",
     )
     return fig
 
 
 def figure_fold_stability(result: BacktestResult) -> go.Figure:
-    """MAE per CV fold per model — exposes drift/instability a mean would hide."""
+    """MAE per CV fold per model — exposes drift/instability a mean would hide.
+
+    The vertical line separates the selection folds (1..n-1 — the only folds
+    the champion pick may read) from the final holdout window (fold n).
+    """
     fig = go.Figure()
     maes = result.fold_maes()
+    n_folds = max(len(values) for values in maes.values())
     for model, values in maes.items():
         fig.add_scatter(
             x=list(range(1, len(values) + 1)), y=values, name=model, mode="lines+markers"
         )
+    fig.add_shape(
+        type="line",
+        xref="x",
+        x0=n_folds - 0.5,
+        x1=n_folds - 0.5,
+        yref="paper",
+        y0=0,
+        y1=1,
+        line={"dash": "dash", "color": "#fbbf24"},
+    )
+    fig.add_annotation(
+        x=n_folds - 0.4,
+        y=1,
+        xref="x",
+        yref="paper",
+        text="test window",
+        showarrow=False,
+        yanchor="bottom",
+    )
     fig.update_layout(
         title="MAE per CV fold, by run",
         xaxis_title="fold",
@@ -389,7 +590,8 @@ def figure_fold_stability(result: BacktestResult) -> go.Figure:
     style_runs(fig, best=best_model(result))
     add_takeaway(
         fig,
-        "expanding-window CV with 7-day embargo — 4 folds, pooled over series; one line per run",
+        "expanding-window CV with 7-day embargo — folds 1..n-1 select the champion, "
+        "the final fold is the one-shot test window",
     )
     return apply_theme(fig)
 
@@ -427,6 +629,104 @@ def figure_eda_units_distribution(panel: pl.DataFrame) -> go.Figure:
     return apply_theme(fig)
 
 
+def _json_safe(value: Any) -> Any:
+    """Recursively replace non-finite floats with None for strict-JSON output."""
+    if isinstance(value, float) and not np.isfinite(value):
+        return None
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+def _finalize_metrics_json(settings: DemandSettings, result: BacktestResult) -> None:
+    """Augment the ReportBuilder's metrics.json with the metric-suite extras.
+
+    Adds the list-valued metrics (``fold_maes``, ``horizon_mae``, ``horizon_mase``)
+    that the platform MetricResult (float-only) cannot carry, plus the machine-
+    checkable ``_meta`` protocol block. Existing float keys written by the
+    ReportBuilder (headline test-window metrics + ``legacy_pooled_*``) stay.
+    """
+    path = Path(settings.reports_dir) / "metrics.json"
+    metrics: dict[str, Any] = json.loads(path.read_text())
+    fold_maes = result.fold_maes()
+    for run in result.runs:
+        block = metrics[run.name]
+        block["fold_maes"] = fold_maes[run.name]
+        block["horizon_mae"] = result.horizon_mae[run.name]
+        block["horizon_mase"] = result.horizon_mase[run.name]
+    n_folds = max(f.fold for f in result.folds) + 1
+    metrics["_meta"] = {
+        "protocol": "rolling_origin_holdout_v1",
+        "best_model": best_model(result),
+        "strongest_naive": strongest_naive(result),
+        "selection_rule": "best_model = lowest pooled MAE over the selection folds "
+        "(origins 1..n-1) only; the test window never influences selection",
+        "selection_used_origins": list(range(1, n_folds)),
+        "test_origin": n_folds,
+        "horizon_days": EVAL_HORIZON_DAYS,
+        "headline_semantics": "per-model mae/rmse/mape_pct/mase are final-holdout-window "
+        "numbers (origin n, scored once); legacy_pooled_* retains the previous "
+        "all-fold pooled headline for comparison",
+    }
+    path.write_text(json.dumps(_json_safe(metrics), indent=2))
+
+
+def write_evaluation_metadata(
+    settings: DemandSettings, config: ForecastConfig, result: BacktestResult
+) -> Path:
+    """Persist the frozen evaluation protocol as machine-checkable JSON.
+
+    ``reports*/evaluation_metadata.json`` states the rolling-origin spec, the
+    holdout designation, the exact origins used for selection vs the single
+    test origin, the within-train-window preprocessing guarantee, and every
+    metric definition — the audit anchor for the headline numbers.
+    """
+    n_folds = max(f.fold for f in result.folds) + 1
+    test_rec = result.last_fold(best_model(result))
+    test_dates = np.sort(np.unique(test_rec.dates))
+    origin_spacing = (
+        int((np.datetime64(test_dates[-1]) - np.datetime64(test_dates[0])) / np.timedelta64(1, "D"))
+        + 1
+    )
+    meta: dict[str, Any] = {
+        "protocol": "rolling_origin_holdout_v1",
+        "rolling_origin": {
+            "n_origins": n_folds,
+            "origin_spacing_days": origin_spacing,
+            "horizon_days": EVAL_HORIZON_DAYS,
+            "embargo_gap_days": config.gap,
+            "min_train_size_dates": config.min_train_size,
+            "test_window": {
+                "origin": n_folds,
+                "start": str(test_dates[0])[:10],
+                "end": str(test_dates[-1])[:10],
+                "n_days": origin_spacing,
+            },
+        },
+        "holdout_designation": "last origin = test; selection used origins 1..n-1 only",
+        "selection_used_origins": list(range(1, n_folds)),
+        "test_origin": n_folds,
+        "selection_rule": "champion (best_model) = lowest pooled MAE over origins 1..n-1; "
+        "all candidates are then scored exactly once on the test window and those "
+        "are the committed headline metrics",
+        "preprocessing_statement": "Feature engineering uses shift-only lags and "
+        "deterministic calendar encodings (no statistic is estimated on future rows); "
+        "every model, the ridge StandardScaler, the MASE seasonal denominator and the "
+        "conformal calibration widths are fit within the training window of each fold; "
+        "the test window is scored once and never read for selection",
+        "metric_definitions": METRIC_DEFINITIONS,
+        "best_model": best_model(result),
+        "strongest_naive": strongest_naive(result),
+    }
+    out = Path(settings.reports_dir) / "evaluation_metadata.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(_json_safe(meta), indent=2))
+    logger.info("evaluation metadata -> %s", out)
+    return out
+
+
 def evaluate(
     settings: DemandSettings, config: ForecastConfig, features_path: Path | None = None
 ) -> BacktestResult:
@@ -450,9 +750,12 @@ def evaluate(
     for run in result.runs:
         builder.add_run(run)
     builder.build(settings.reports_dir, figures=figures)
+    _finalize_metrics_json(settings, result)
+    write_evaluation_metadata(settings, config, result)
     for name, fig in figures.items():
         save_json(fig, Path(settings.reports_dir) / "figures" / f"{name}.json")
     logger.info(
-        "report -> %s (metrics.json, report.html, figures/*.html+json)", settings.reports_dir
+        "report -> %s (metrics.json, evaluation_metadata.json, report.html, figures/*.html+json)",
+        settings.reports_dir,
     )
     return result

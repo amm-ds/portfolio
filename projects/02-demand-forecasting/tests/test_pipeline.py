@@ -81,10 +81,15 @@ def test_evaluate_writes_report_and_figures(
         "xgb_tuned",
         "lgbm_tuned",
         "temporal_net",
+        "_meta",
     }
+    assert metrics["_meta"]["protocol"] == "rolling_origin_holdout_v1"
+    assert metrics["_meta"]["test_origin"] not in metrics["_meta"]["selection_used_origins"]
     for run in result.runs:
         for m in run.metrics:
             assert metrics[run.name][m.name] == pytest.approx(m.value)
+        assert len(metrics[run.name]["fold_maes"]) == config.n_splits
+        assert len(metrics[run.name]["horizon_mae"]) == 14
 
     assert (settings.reports_dir / "report.html").exists()
     assert (settings.reports_dir / "reconciliation.json").exists()

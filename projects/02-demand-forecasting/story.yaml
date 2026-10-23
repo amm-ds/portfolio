@@ -180,154 +180,195 @@ sections:
   - id: evaluation
     text_md: |
       Validation uses the platform's `TimeSeriesCV`: four expanding-window
-      folds with a 7-day purge (embargo) gap between each training window
+      origins with a 7-day purge (embargo) gap between each training window
       and its validation block, so no date block straddles train and
-      validation. Metrics are the platform regression standard (MAE, RMSE,
-      MAPE) plus MASE — MAE scaled by the fold's per-series in-sample
-      seasonal-naive-7 error — pooled over all out-of-fold predictions
-      across folds and all series; nothing is reported in-sample.
-      The lag-feature table `features.parquet` holds 17,184 rows.
+      validation. The protocol is a frozen holdout
+      (`rolling_origin_holdout_v1`, audit hardening): the LAST origin is the
+      test window (2010-10-01..2010-12-09 on the UCI track) — the champion
+      is selected on origins 1..n-1 only, every candidate is scored exactly
+      once on the test window, and the committed headline metrics are those
+      test-window numbers. Preprocessing is fit within each fold's training
+      window (models, scaler, MASE seasonal denominator, conformal widths);
+      the full protocol — including the machine-checkable
+      `selection_used_origins` vs `test_origin` — is emitted to
+      `evaluation_metadata.json`, and the pre-holdout pooled values are kept
+      under `legacy_pooled_*`. Metrics are MAE, RMSE, MAPE (reported, not
+      decision-grade at ~89% zeros), MASE, bias, zero-safe WAPE, per-fold
+      MAEs and per-horizon (h=1..14) MAE/MASE; nothing is reported
+      in-sample. The lag-feature table `features.parquet` holds 17,184 rows.
 
       ```mermaid
       flowchart LR
-          F[features.parquet] --> C[date-aligned folds]
-          C --> T[fit window k]
-          T --> G[7-day embargo gap]
-          G --> V[predict block k]
-          V --> M[pooled out-of-fold metrics]
+          F[features.parquet] --> C[date-aligned origins]
+          C --> T[fit origins 1..n-1]
+          T --> S[select champion]
+          S --> G[7-day embargo gap]
+          G --> V[score test window once]
+          V --> M[committed headline metrics]
           M --> P[per-fold stability check]
       ```
 
-      Per-fold MAE is tracked in the `fold_stability` figure so drift and
-      instability stay visible before deployment; `reports/report.html`
-      collects the full run.
+      Per-fold MAE is tracked in the `fold_stability` figure (the test
+      window is marked) so drift and instability stay visible before
+      deployment; `reports/report.html` collects the full run. A property
+      test shuffles the test window's actuals and asserts the selection
+      result does not move — the protocol is enforced, not just documented.
 
       **Business summary:** The evaluation mimics real use: the model is
       trained only on past data, then asked to forecast the next block of
       days, four times over, with a 7-day embargo gap so no date straddles
-      both sides. This answers the question a buyer should actually ask —
-      will the model survive next quarter, not just last week — because it
-      prices in drift, the slow change in demand patterns over time.
-      Stability is reported per fold, so a model that wins on average but
-      wobbles on recent data is visible before it reaches production.
+      both sides — and the final block is kept strictly out of the model
+      choice, exactly as a held-back quarter would be. This answers the
+      question a buyer should actually ask — will the model survive next
+      quarter, not just last week — because it prices in drift, the slow
+      change in demand patterns over time, and it prices it in without
+      letting the answer leak into which model gets shipped. Stability is
+      reported per fold, so a model that wins on average but wobbles on
+      recent data is visible before it reaches production.
     figures: [fold_stability]
 
   - id: results
     text_md: |
-      Headline numbers are the real UCI track (1,084 intermittent series, 4
-      folds; MAE/MASE lead, MAPE is not decision-grade at 89% zeros).
-      `forecast_vs_actual` shows the champion against the strongest naive:
+      Headline numbers are the real UCI track (1,084 intermittent series),
+      scored on the frozen test window — 2010-10-01..2010-12-09, the holiday
+      quarter; MAE/MASE lead, MAPE is not decision-grade at 89% zeros. The
+      champion was selected on origins 1..3 only. `forecast_vs_actual` shows
+      the champion against the strongest naive:
 
       | run | MAE | MASE | Δ MAE vs sn | Δ MASE vs sn |
       |---|---|---|---|---|
-      | naive_mean | 10.84 | 1.132 | +0.98 | +0.015 |
-      | naive_last | 10.29 | 1.168 | +0.43 | +0.051 |
-      | seasonal_naive | 9.86 | 1.117 | 0.00 | 0.000 |
-      | ets | 11.26 | 1.361 | +1.40 | +0.244 |
-      | ridge | 16.73 | 1.560 | +6.87 | +0.443 |
-      | hgb | 9.09 | 1.002 | −0.77 | −0.115 |
-      | **hgb_tuned ← best** | **8.99** | **0.980** | **−0.87** | **−0.137** |
-      | xgb_tuned | 9.39 | 1.042 | −0.47 | −0.075 |
-      | lgbm_tuned | 9.60 | 1.055 | −0.26 | −0.062 |
-      | temporal_net | 12.70 | 1.232 | +2.84 | +0.115 |
+      | naive_mean | 12.48 | 1.382 | +1.15 | +0.072 |
+      | naive_last | 11.51 | 1.331 | +0.18 | +0.021 |
+      | seasonal_naive | 11.32 | 1.310 | 0.00 | 0.000 |
+      | ets | 11.47 | 1.338 | +0.15 | +0.028 |
+      | ridge | 12.38 | 1.395 | +1.06 | +0.085 |
+      | hgb | 9.57 | 1.085 | −1.76 | −0.225 |
+      | **hgb_tuned ← best** | **9.55** | **1.078** | **−1.78** | **−0.232** |
+      | xgb_tuned | 9.80 | 1.118 | −1.52 | −0.192 |
+      | lgbm_tuned | 9.41 | 1.076 | −1.91 | −0.234 |
+      | temporal_net | 11.77 | 1.305 | +0.45 | −0.005 |
 
       Δ vs seasonal_naive (sn) per row — negative beats "same day last week".
+      No run clears MASE 1.0 on this window: the holiday quarter's bulk
+      spikes lift every model above seasonal-naive parity, which is itself a
+      finding (last-fold drift, priced in and visible in `fold_stability`).
 
-      The synthetic CI ladder (`metrics_bars` ranks both tracks, split into
-      MAE+RMSE and MASE-parity panels; MAPE stays tabulated) is the mirror
-      image: ETS wins outright (MAE 8.11, MASE 0.891) — clean trend plus
-      weekly seasonality is exactly its class; among ML runs `lgbm_tuned`
-      leads (8.413, −41.9% vs persistence), `hgb_tuned` 8.529, `xgb_tuned` a
-      wash.
+      The synthetic CI ladder (`metrics_bars`, split into MAE+RMSE and
+      MASE-parity panels so unit-mixing metrics never share an axis; MAPE
+      stays tabulated with its zero-demand caveat) is the mirror image: ETS
+      wins outright on the synthetic test window (MAE 8.92, MASE 0.932) —
+      clean trend plus weekly seasonality is exactly its class; among ML
+      runs `temporal_net` edges `lgbm_tuned` (9.244 vs 9.341, noise-level),
+      `hgb_tuned` 9.472.
 
-      - **Tuned configs do not transfer** — synthetic ML champion
-        `lgbm_tuned` drops to fourth on UCI (9.60); `hgb_tuned` generalises
-        best (8.99, the only MASE < 1 — reliably beating "same day last
-        week").
-      - **ETS breaks on intermittent demand** — it loses to its own
-        seasonal naive on UCI (11.26 vs 9.86); 89% zeros violate its
-        smooth-seasonality assumption. Ridge collapses (16.73, behind every
-        floor).
+      - **The ranking reversal survived revalidation — in both directions.**
+        The old pooled ladder claimed the synthetic ML champion dropped to
+        fourth on real data; on the one-shot test window `lgbm_tuned` posts
+        the best MAE of all runs (9.409, ahead of the selection champion
+        9.545 — a 1.4% gap inside the fold spread, so the protocol's pick
+        stands), while the synthetic overall champion `ets` ranks 6th on
+        real data (11.471). Neither pooled nor single-window rankings should
+        be read as more than what they are.
+      - **ETS breaks on intermittent demand** — it loses to its own seasonal
+        naive on UCI (11.47 vs 11.32); 89% zeros violate its
+        smooth-seasonality assumption (fallback chain documented and tested).
       - **HPO earns a modest, real gain** — 56 seeded trials moved the
-        sklearn HGB 8.619 → 8.529 (−1.0%) on synthetic folds
-        (`hpo_history`).
-      - **Reconciliation pays off on the real hierarchy** — w=0.70,
-        incoherence 384.0 → 115.2 (×(1−w) exactly, property-tested), store
-        MAE 746.9 → 737.9; synthetic chose w=0.05 — the fold-4-drifting
-        parent is barely trusted.
-      - **Probabilistic bands** — the quantile band covers 0.73
-        synthetic / 0.92 UCI (pooled); the conformal band is now calibrated
-        per predicted-zero bin and covers **0.76 synthetic / 0.86 UCI on the
-        last fold** (target 0.80). On UCI the champion's median forecast is 0
-        on ~100% of rows, so the band collapses to the point forecast exactly
-        where demand is nonzero — stated on the figure, whose buttons drop
-        the band (`probabilistic_band`).
+        sklearn HGB 8.619 → 8.529 (−1.0%) pooled over all folds (legacy,
+        `hpo_history`).
+      - **Reconciliation pays off on the real hierarchy** — w=0.60,
+        incoherence 500.0 → 200.0 (×(1−w) exactly, property-tested), store
+        MAE 738.7 → 676.4; synthetic chose w=0.00 — the fold-4-drifting
+        parent is not trusted at all.
+      - **Probabilistic bands — coverage AND width on the test window**
+        (target 80%): the quantile band covers 0.73 synthetic / 0.92 UCI
+        (pooled); the zero-aware conformal band covers the h=1..14 horizon
+        set at 0.741 on synthetic (avg width 26.5 units — verdict
+        *optimistic*, it under-covers) and 0.861 on UCI — but with avg width
+        0.00 units, because the champion's median sits on the zero atom for
+        ~100% of test rows: the "conservative" UCI verdict is a degenerate
+        band, not a useful one, stated on the figure whose buttons drop it
+        (`probabilistic_band`).
 
-      **Business summary:** The decision this informs is whether to
-      replace the "same day last week" planning rule with a tuned
-      gradient-boosting model (the hgb_tuned run in the table above). On
-      real transactions it cuts absolute forecast error by 8.8% against
-      that rule — less safety stock to hold at the same service level,
-      which is working capital released. The caveat matters: the winning
-      configuration does not transfer across demand regimes, so it must be
-      re-tuned on the buyer's own data before it is trusted. The 80%
-      uncertainty band also lands off its 0.80 target on the last fold —
-      0.76 on synthetic data, 0.86 on real — which is stated openly rather
-      than smoothed over.
+      **Business summary:** The decision this informs is whether to replace
+      the "same day last week" planning rule with a tuned gradient-boosting
+      model. On the held-back quarter the selection champion cuts absolute
+      forecast error by 15.7% against that rule (9.55 vs 11.32 MAE) — the
+      number a planning review can act on, because the champion was chosen
+      before the quarter was ever scored. The caveats matter exactly as much
+      as the gain: the margin over the next-best run is inside fold noise,
+      so this is evidence for a pilot on the buyer's own data, not a
+      guarantee; the 80% band is not yet usable for intermittent series
+      (zero width on real data); and inventory planning still needs
+      calibrated intervals, stockout/promo modelling and product-level
+      effects before any safety-stock policy can rest on these numbers. No
+      savings are claimed here — what is delivered is an honest measurement
+      and its limits.
     figures: [metrics_bars, forecast_vs_actual, probabilistic_band]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
-
   - id: conclusions
     text_md: |
       - **Global models with series identity work** — one deployable
         artefact covers the hierarchy; shared seasonality and trend transfer
         across series.
-      - **Leakage-proof features and validation are the real product** —
-        shift-only lags, calendar encodings, and an embargoed backtest with
-        naive floors make every claim auditable.
+      - **Leakage-proof features and a frozen holdout are the real product**
+        — shift-only lags, calendar encodings, an embargoed rolling-origin
+        backtest, and a final window that is scored once and never read for
+        selection make every claim auditable (the property test shuffles the
+        test window and asserts the pick does not move).
       - **Seeded Optuna HPO is a repeatable production step** (`cli hpo`,
-        resumable) — configs tuned on one demand regime do not transfer;
-        re-tune on the target panel before shipping.
+        resumable) — configs tuned on one demand regime behave differently
+        on another; re-tune on the target panel and judge on a held-back
+        window before shipping.
       - **Reconciliation guarantees coherence, not accuracy** — the gain is
-        bounded by how much the parent model can be trusted (w=0.05
-        synthetic vs 0.70 on UCI).
+        bounded by how much the parent model can be trusted (w=0.00
+        synthetic vs 0.60 on UCI).
+      - **The honest limit for inventory planning**: the 80% band is not yet
+        usable on intermittent demand (zero-width conformal band on the real
+        test window), stockouts and promotions are not modelled, and
+        product-level effects are pooled into a global model — so these
+        numbers support a pilot decision, not a safety-stock policy, and no
+        savings claim is made from them.
 
-      **Results quality:** acceptable-with-caveats — the 8.8% MAE gain over
-      seasonal naive is real (the only MASE < 1 run), but it is bounded by
-      day-over-day noise, the 80% bands land at 0.76 synthetic / 0.86 UCI
-      last-fold coverage rather than the 0.80 target, and the winning config
-      does not transfer across demand regimes. Each caveat is measured above,
-      not suspected.
+      **Results quality:** acceptable-with-caveats — the champion beats the
+      strongest floor by 15.7% MAE on the frozen test window, but no run
+      clears MASE 1.0 there (the holiday window is harder than the average
+      fold), the margin over the next-best run is inside fold noise, the 80%
+      bands land at 0.741 (synthetic, too narrow) and 0.861-with-zero-width
+      (UCI, degenerate) against the 0.80 target, and the winning config does
+      not transfer across demand regimes. Each caveat is measured above, not
+      suspected.
 
-      Limits: gains over persistence are stable but bounded (~8.5 units
-      residual MAE on the synthetic ladder); the neural model does not pay
-      off on small tabular lag features; later folds drift upward for every
-      model — the `docs/runbooks/drift-response.md` runbook turns that into
-      a monitored retraining trigger rather than a surprise. Full detail:
+      Limits: gains over persistence are stable but bounded (~9 units
+      residual test-window MAE on the synthetic ladder); the neural model is
+      competitive but not champion on small tabular lag features; later
+      folds drift upward for every model — the
+      `docs/runbooks/drift-response.md` runbook turns that into a monitored
+      retraining trigger rather than a surprise. Full detail:
       `README.md`, `DESIGN.md`, `reports/report.html`.
 
       **Business summary:** The value delivered is precision about the
       decision, not a model file: which model wins, by exactly how much,
-      and — just as important — where it stops winning, since the
-      champion's edge is bounded by day-over-day noise. Every caveat in
-      the conclusions is measured, from the uncertainty band missing its
-      target to the winning configuration failing to transfer across
-      demand regimes. For a client, the forecast-versus-actual and
+      against a window it never saw — and, just as important, where it stops
+      winning, since the champion's edge is bounded by day-over-day noise and
+      its uncertainty band is not yet production-grade for intermittent
+      demand. Every caveat in the conclusions is measured, from the band
+      missing its target to the winning configuration failing to transfer
+      across demand regimes. For a client, the forecast-versus-actual and
       fold-stability charts are the first two things to look at, because
       they show both the gain and its limits in a single view.
     figures: []
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
-    text: UCI real-data headline — 405k rows, 89% zeros; hgb_tuned wins (MAE 8.99, MASE 0.980, the only run below 1.0).
+    text: UCI real-data headline — 405k rows, 89% zeros; frozen holdout (rolling_origin_holdout_v1), champion selected on origins 1..n-1, test window scored once.
   - status: delivered
-    text: 10-rung ladder on both tracks — ETS wins synthetic (8.110), NN trails the linear baseline; both reported.
+    text: 10-rung ladder on both tracks — ETS wins the synthetic test window (8.924); on the UCI test window hgb_tuned is selection champion (9.545) with lgbm_tuned best MAE (9.409) inside fold noise.
   - status: delivered
-    text: Seeded Optuna HPO — 56 trials sklearn HGB (25 per mirror), −1.0% MAE (8.619→8.529); best configs persisted.
+    text: Seeded Optuna HPO — 56 trials sklearn HGB (25 per mirror), −1.0% MAE (8.619→8.529) pooled; best configs persisted.
   - status: delivered
-    text: MinT-lite reconciliation — w 0.05 synth / 0.70 UCI; incoherence 384.0→115.2 (×(1−w)); store MAE 746.9→737.9.
+    text: MinT-lite reconciliation — w 0.00 synth / 0.60 UCI; incoherence 500.0→200.0 (×(1−w)); store MAE 738.7→676.4.
   - status: delivered
-    text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; coverage 0.76 synth / 0.86 UCI vs 0.80 target.
+    text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; test-window horizon set coverage 0.741 (synthetic, width 26.5, optimistic) / 0.861 (UCI, width 0.00, degenerate) vs 0.80 target.
   - status: delivered
     text: Serving — showcase-API artifact without retraining; champion lgbm_tuned (CV MAE 8.413); contract in SERVING.md.
 figure_captions:
@@ -335,7 +376,7 @@ figure_captions:
   eda_units_distribution: Histogram of daily units pooled over all 24 store-product series of the synthetic panel. The wide, right-skewed spread is why one global mean predicts poorly (MAE 31.8) and why models receive a series-identity feature.
   hpo_history: Objective value (CV MAE) of every trial in the 56-trial seeded Optuna study on the sklearn HGB, with the running best overlaid. The search converges on regularised small-tree configs and buys a modest, real gain (best 8.529 vs 8.619 default).
   hpo_importance: Hyperparameter importance (fANOVA) over the same seeded study. Regularisation knobs dominate — the top two parameters carry 66% of the search importance.
-  fold_stability: Out-of-fold MAE per CV fold for every run in the ladder. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
-  metrics_bars: The synthetic-CI run ladder in two panels — MAE + RMSE in units (left) and MASE against the 1.0 seasonal-naive parity line (right), pooled out-of-fold over all series. Five runs clear parity here; on the UCI track (docs PNG) only hgb_tuned does.
-  forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, last CV fold — on UCI hgb_tuned clears seasonal_naive by 16% MAE. The residual gap after the naive floor is day-over-day noise.
-  probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, last fold. The per-zero-bin calibration covers 0.86 on UCI (target 0.80) and collapses to the point forecast exactly where the median predicts zero.
+  fold_stability: Out-of-fold MAE per CV origin for every run in the ladder, with the test window marked after the dashed line. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
+  metrics_bars: "The run ladder in two panels — MAE + RMSE in units (left) and MASE against the 1.0 seasonal-naive parity line (right) — scored on the final holdout window, so unit-mixing metrics never share an axis. MAPE stays tabulated (not drawn): with ~89% zero-demand days near-zero actuals inflate it. On the UCI test window no run clears parity; on synthetic only ETS does."
+  forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, test window — on UCI hgb_tuned clears seasonal_naive by 15.7% MAE. The residual gap after the naive floor is day-over-day noise.
+  probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, test window. The band covers the h=1..14 horizon set at 0.861 on UCI (target 0.80) but with zero width — the median sits on the zero atom — while on synthetic it covers 0.741 at 26.5 units average width (under-covering); the figure states coverage and width.

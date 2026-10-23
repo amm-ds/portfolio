@@ -63,79 +63,132 @@ Summary:
   (top 8 countries as stores × top 200 stock codes as products, 374 days,
   405,416 rows, 89% zero share — genuinely intermittent demand). Sales lines
   only (returns/cancellations excluded, documented). Synthetic stays the
-  default so CI runs offline.
+  default so CI runs offline. The full data-generating process — filtering,
+  aggregation, geography, caveats — is documented in
+  [reports_uci/dataset_metadata.json](reports_uci/dataset_metadata.json)
+  (emitted by `prepare`) and summarised under **Data-generating process**
+  below. The forecast target is **the next 14 days of daily units per
+  country-product series** (top 8 countries × top 200 products by volume),
+  aggregated from cleaned Online Retail II transactions (cancellations removed).
 - **Probabilistic forecasts** (`probabilistic.py`): quantile HGB (p10/p50/p90)
   on the tuned config plus a split-conformal band calibrated on the early
   folds; empirical coverage reported against the 80% target, with a band
   figure for the two highest-volume series.
 - **Validation** (`evaluate.py`): `TimeSeriesCV` (4 expanding-window folds,
   7-day embargo gap) over the dated feature rows, folds mapped to rows so
-  no date block straddles train/validation. Metrics from
-  `portfolio_eval.ml.regression_metrics` on pooled out-of-fold predictions.
+  no date block straddles train/validation. **Frozen holdout protocol**
+  (`rolling_origin_holdout_v1`): the last origin is the test window — model
+  selection (champion pick) pools folds 1..n-1 only, every candidate is
+  scored once on the test window, and the committed headline metrics are the
+  test-window numbers. The protocol, the exact `selection_used_origins` vs
+  `test_origin`, the within-train-window preprocessing guarantee and every
+  metric definition are emitted to
+  [reports_uci/evaluation_metadata.json](reports_uci/evaluation_metadata.json);
+  the previous all-fold pooled headline is retained per model under
+  `legacy_pooled_*` in metrics.json. Metrics from
+  `portfolio_eval.ml.regression_metrics` (MAE/RMSE/MAPE) plus MASE, bias,
+  zero-safe WAPE, per-fold MAEs (std/range) and per-horizon (h=1..14)
+  MAE/MASE on the test window's final 14 days.
+
+## Data-generating process (UCI track)
+
+`reports_uci/dataset_metadata.json` is the machine-readable audit anchor;
+the summary (all of it implemented in `uci.py` — the doc exists because the
+review demanded the pipeline's data contract be stated explicitly):
+
+- **Source**: UCI Online Retail II, `online+retail+ii.zip`
+  (https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip),
+  sha256-pinned in `params.yaml`, sheet *Year 2009-2010*, free for research
+  (Chen, Gallino & Li 2012, *Management Science*).
+- **Cancellation filtering**: sales lines only — rows with `Quantity > 0`;
+  cancellations/returns (negative-quantity lines) are removed, blank stock
+  codes dropped. Returns are a separate business process; net-of-returns
+  demand would double-count reverse logistics.
+- **Quantity handling**: daily sum of line quantities per
+  (date, country, stock_code) → the panel's integer `units`; `price` is the
+  mean line price of the day (carried for reference, not a model target).
+- **Geography / products**: top 8 countries by unit volume become `stores`,
+  top 200 stock codes become `products`; everything else is dropped.
+- **Daily aggregation**: one row per (date, country, stock_code), reindexed
+  to the complete daily calendar between first and last observed dates;
+  missing day-series combinations are zero-filled (price forward-filled).
+  Observed range: 2009-12-01..2010-12-09 (374 days → 405,416 rows after the
+  top-N bounding, 89% zero share).
+- **Caveat — zeros**: zero-sales days may be missing rather than true zero
+  demand: the source has **no trading calendar**, so a zero-filled day can
+  mean "closed or not trading" as easily as "no demand". Models must live
+  with that ambiguity; it is also why MAPE is not decision-grade here.
 
 ## Synthetic track — CI fast path (`data_source: synthetic`, seed 42)
 
 The synthetic hierarchy (24 series, clean trend + weekly seasonality) is the
 **CI/offline path**: fully seedable, byte-reproducible, no network. It exists
 so every gate in this repo runs hermetically; the headline results live on the
-real-data track below. Pooled out-of-fold ladder through the identical
-backtest — note what clean data does to the statistical baselines:
+real-data track below. Ladder below is scored on the **final holdout
+window** (last rolling origin), champion selected on origins 1..n-1 only —
+note what clean data does to the statistical baselines:
 
 | model | MAE (units) | RMSE (units) | MAPE (%) | MASE |
 |---|---|---|---|---|
-| naive_mean (global train mean) | 31.762 | 42.543 | 49.02 | 3.490 |
-| naive_last (persistence, y(t-1)) | 14.476 | 19.881 | 19.28 | 1.591 |
-| seasonal_naive (lag-7) | 10.387 | 14.741 | 13.78 | 1.141 |
-| **ETS (Holt-Winters, damped+weekly)** | **8.110** | **11.510** | **10.45** | **0.891** |
-| ridge (linear baseline) | 9.116 | 12.705 | 12.44 | 1.002 |
-| hgb (default HGB) | 8.619 | 12.178 | 11.43 | 0.947 |
-| hgb_tuned (Optuna, 56 trials) | 8.529 | 12.071 | 11.34 | 0.937 |
-| xgb_tuned (Optuna, 25 trials) | 8.539 | 12.086 | 11.32 | 0.938 |
-| lgbm_tuned (Optuna, 25 trials) | 8.413 | 11.905 | 11.16 | 0.924 |
-| temporal_net (PyTorch emb+MLP) | 9.341 | 12.756 | 13.41 | 1.026 |
+| naive_mean (global train mean) | 35.946 | 48.639 | 48.26 | 3.755 |
+| naive_last (persistence, y(t-1)) | 16.223 | 22.238 | 19.47 | 1.695 |
+| seasonal_naive (lag-7) | 11.780 | 16.689 | 13.98 | 1.231 |
+| **ETS (Holt-Winters, damped+weekly)** | **8.924** | **12.691** | **10.37** | **0.932** |
+| ridge (linear baseline) | 9.705 | 13.706 | 11.92 | 1.014 |
+| hgb (default HGB) | 9.549 | 13.380 | 11.58 | 0.998 |
+| hgb_tuned (Optuna, 56 trials) | 9.472 | 13.269 | 11.51 | 0.990 |
+| xgb_tuned (Optuna, 25 trials) | 9.525 | 13.372 | 11.59 | 0.995 |
+| lgbm_tuned (Optuna, 25 trials) | 9.341 | 13.101 | 11.31 | 0.976 |
+| temporal_net (PyTorch emb+MLP) | 9.244 | 12.908 | 11.38 | 0.966 |
 
-On clean synthetic data **ETS wins outright** (MASE 0.891) — a correctly
+On clean synthetic data **ETS wins outright** (MASE 0.932) — a correctly
 specified Holt-Winters model is exactly the right class for smooth
 trend + weekly seasonality, and the boosters only approximate it. This is the
 deliberate counterpoint to the real track, where intermittency flips the
-ordering. On synthetic, `lgbm_tuned` is the best ML model (MAE 8.413).
+ordering. Two honest notes from the frozen holdout: on this one test window
+`temporal_net` posts the lowest ML MAE (9.244, a hair ahead of `lgbm_tuned`
+9.341 — a gap well inside the fold-to-fold spread), and every run's
+test-window MAE is higher than its pooled legacy number because the last fold
+carries the most trend drift; both are one-window estimates, not new
+champions.
 
 Key findings:
 
-- Against the stronger naive floor (`naive_last`), the champion cuts MAE by
-  **41.9%** (14.48 → 8.41 units) and MAPE by 8.1 points (19.28% → 11.16%);
-  against `naive_mean` the reduction is 73.5%. Persistence loses because
-  demand has strong weekly seasonality and a rising trend: yesterday's value
-  systematically misses weekday effects and never anticipates the trend — the
-  lag/calendar features plus a nonlinear model capture exactly those two
-  structure components.
-- **LightGBM edges out the incumbent**: `lgbm_tuned` (25 seeded trials; 217
-  trees × 18 leaves, min_child_samples 139, lr 0.156) beats `hgb_tuned` by
-  1.4% MAE (8.529 → 8.413) and takes RMSE and MAPE too. `xgb_tuned` (482
-  shallow trees, max_depth 4) is a statistical wash vs hgb_tuned (+0.1% MAE).
-  Three independent boosting libraries land within 1.5% of each other —
-  on this panel the marginal value of further model-family search is small,
-  and honest reporting says so.
+- Against the stronger naive floor (`naive_last`), the champion cuts test-window
+  MAE by **45.0%** (16.22 → 8.92 units); against `naive_mean` the reduction is
+  75.2%. Persistence loses because demand has strong weekly seasonality and a
+  rising trend: yesterday's value systematically misses weekday effects and
+  never anticipates the trend — the lag/calendar features plus a nonlinear
+  model capture exactly those two structure components.
+- **LightGBM edges out the incumbent HGB config** on the pooled selection folds
+  (legacy pooled MAE 8.413 vs 8.529) and stays the best ML run on the
+  synthetic test window (9.341 vs 9.472). `xgb_tuned` is a statistical wash vs
+  `hgb_tuned`. Three independent boosting libraries land within 1.5% of each
+  other — on this panel the marginal value of further model-family search is
+  small, and honest reporting says so.
 - **HPO earned a modest but real gain** across arms: 56 seeded trials improved
-  the sklearn HGB from 8.619 to 8.529 (-1.0%); see the `hpo_history` /
-  `hpo_importance` figures (per-arm variants for xgb/lgbm).
-- **The neural model did not win.** `temporal_net` lands behind even the
-  linear ridge baseline (MAE 9.34 vs 9.12). On small tabular lag features
-  with 730 days of history, gradient-boosted trees remain the right tool;
-  reported honestly rather than tuned until it wins.
-- **Reconciliation (MinT-lite, last fold, store level)**: the grid estimator
-  chose w=0.05 — the parent-level model suffers the same fold-4 drift as the
-  children, so barely any trust is placed in it. Store-level MAE improved
-  24.048 → 23.925 and incoherence |parent forecast − Σ children| fell
-  23.146 → 21.989 (exactly ×(1−w), the tested coherence property). Structural
-  coherence is guaranteed; accuracy gains from reconciliation need a
-  drift-robust parent model — a documented, quantified caveat.
+  the sklearn HGB from 8.619 to 8.529 (-1.0%) pooled over all folds (legacy
+  numbers); see the `hpo_history` / `hpo_importance` figures (per-arm
+  variants for xgb/lgbm).
+- **The neural model is competitive but not the champion.** `temporal_net`
+  tracks ridge on the selection folds and lands the best ML test-window MAE
+  (9.244) — but ETS, selected on origins 1..n-1, still wins outright. On small
+  tabular lag features, gradient-boosted trees and a well-specified
+  Holt-Winters remain the tools to beat; reported honestly.
+- **Reconciliation (MinT-lite, test window, store level)**: the grid estimator
+  chose w=0.00 this run — the parent-level model suffers the same fold-4 drift
+  as the children, so no trust is placed in it. Store-level MAE stayed
+  23.814 and incoherence |parent forecast − Σ children| stayed 27.340
+  (exactly ×(1−w), the tested coherence property). Structural coherence is
+  guaranteed; accuracy gains from reconciliation need a drift-robust parent
+  model — a documented, quantified caveat.
 - Where the gains plateau: all runs degrade on the last fold as the injected
   trend lifts demand, but the improvement ratio over persistence is stable
-  across folds. The residual ~8.5-unit pooled MAE is mostly day-over-day
+  across folds. The residual ~9-unit test-window MAE is mostly day-over-day
   noise, which no lag feature can remove.
 
-Per-fold MAE (see the `fold_stability` figure for the full six-run view):
+Per-fold MAE (see the `fold_stability` figure for the full ten-run view;
+fold 4 is the holdout window):
 
 | fold | naive_mean | naive_last | ridge | hgb | hgb_tuned | temporal_net |
 |---|---|---|---|---|---|---|
@@ -144,67 +197,86 @@ Per-fold MAE (see the `fold_stability` figure for the full six-run view):
 | 3 | 33.086 | 15.029 | 8.907 | 8.916 | 8.834 | 9.053 |
 | 4 | 35.946 | 16.223 | 9.705 | 9.549 | 9.472 | 9.244 |
 
-hgb_tuned improves on hgb in **every** fold; temporal_net tracks ridge but
-never leads.
+hgb_tuned improves on hgb in **every** fold; on the holdout window
+temporal_net finally leads the ML pack (9.244) without threatening ETS.
 
 ## Headline results — real data (UCI Online Retail II, `cli all --data-source uci`)
 
-Real transactions, same pipeline, same embargoed backtest: 525,461 sales lines
-parsed from the 2009-2010 sheet → top 8 countries × top 200 products, 374 days
-(2009-12-01..2010-12-09), 405,416 panel rows, **89.2% zero share** — classical
-intermittent demand. Pooled out-of-fold ladder, **MAE/MASE lead; MAPE is
-reported but not decision-grade here** (near-zero actuals inflate it to
-220–440% for every run — the wave-7 finding stands):
+Real transactions, same pipeline, same embargoed rolling-origin backtest with
+the frozen holdout: 525,461 sales lines parsed from the 2009-2010 sheet → top
+8 countries × top 200 products, 374 days (2009-12-01..2010-12-09), 405,416
+panel rows, **89.2% zero share** — classical intermittent demand. The table
+below is scored on the **test window** (final origin, 2010-10-01..2010-12-09,
+70 days); the champion was selected on origins 1..3 only. **MAE/MASE lead;
+MAPE is reported but not decision-grade here** (near-zero actuals inflate it
+to 184–328% for every run; the zero-demand caveat is in the
+data-generating-process section above and in the figure captions):
 
 | run | MAE | RMSE | MAPE | MASE |
 |---|---|---|---|---|
-| naive_mean | 10.838 | 97.607 | 91.3% | 1.132 |
-| naive_last (persistence) | 10.288 | 135.674 | 356.2% | 1.168 |
-| seasonal_naive (lag-7) | 9.859 | 135.298 | 439.0% | 1.117 |
-| ETS (Holt-Winters, damped+weekly) | 11.256 | 116.865 | 352.3% | 1.361 |
-| ridge (linear baseline) | 16.734 | 98.531 | 236.2% | 1.560 |
-| hgb (default sklearn) | 9.085 | 97.256 | 245.9% | 1.002 |
-| **hgb_tuned (Optuna, 56 trials)** | **8.989** | **96.688** | 228.6% | **0.980** |
-| xgb_tuned (Optuna, 25 trials) | 9.385 | 98.136 | 275.2% | 1.042 |
-| lgbm_tuned (Optuna, 25 trials) | 9.600 | 96.535 | 287.9% | 1.055 |
-| temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 |
+| naive_mean | 12.475 | 74.699 | 90.3% | 1.382 |
+| naive_last (persistence) | 11.505 | 99.548 | 327.6% | 1.331 |
+| seasonal_naive (lag-7) | 11.323 | 114.921 | 305.4% | 1.310 |
+| ETS (Holt-Winters, damped+weekly) | 11.471 | 80.827 | 302.7% | 1.338 |
+| ridge (linear baseline) | 12.384 | 72.680 | 221.7% | 1.395 |
+| hgb (default sklearn) | 9.565 | 71.700 | 260.3% | 1.085 |
+| **hgb_tuned (Optuna, 56 trials) ← best** | **9.545** | **71.847** | 230.0% | **1.078** |
+| xgb_tuned (Optuna, 25 trials) | 9.804 | 73.287 | 277.2% | 1.118 |
+| lgbm_tuned (Optuna, 25 trials) | 9.409 | 71.360 | 272.3% | 1.076 |
+| temporal_net (PyTorch emb+MLP) | 11.770 | 71.849 | 183.6% | 1.305 |
 
 What the audit-driven statistical baselines reveal on **real** data:
 
 - **They do not beat the boosters here** — the mirror image of the synthetic
-  track, where ETS wins outright. `seasonal_naive` (9.859) is the strongest
-  floor and a serious contender (it beats ridge, the NN and both tuned
-  GBM arms), but `hgb_tuned` is the only run with MASE < 1 — the only model
-  reliably better than "same day last week". ETS *loses* to its own seasonal
-  naive (11.256 vs 9.859, MASE 1.361): Holt-Winters assumes every series is
-  smooth and seasonal, and 89% zeros plus bulk spikes break that assumption
-  (the fallback chain is documented and unit-tested).
-- **Cross-track transfer is the honest punchline**: `lgbm_tuned`, the
-  synthetic champion (MAE 8.413), drops to 9.600 on UCI — fourth place.
-  Configs tuned on clean synthetic data do not transfer to intermittent real
-  demand; the tuned HGB config generalizes best. This is why both tracks stay
-  in the repo side by side.
-- **Ridge collapses** (16.734, behind every floor) and **MAPE/RMSE are not
-  decision metrics** on this data (356–439% MAPE; RMSE ≫ MAE from wholesale
-  spikes). MAE and MASE are the numbers to plan with.
-- **Reconciliation pays off**: w=0.70 — incoherence 384.0 → 115.2 (exactly
-  ×(1−w), property-tested); store-level MAE 746.9 → 737.9 (−1.2% this run —
-  coherence is a guarantee, accuracy gains depend on parent-model quality,
-  stated plainly).
-- **Probabilistic (target 80% band)**:
+  track, where ETS wins outright. `seasonal_naive` (11.323 test MAE, 1.310
+  MASE) is the strongest floor and a serious contender — no run clears MASE 1
+  on this test window: it covers the holiday quarter (Oct–Dec 2010), where
+  bulk spikes lift every model above seasonal-naive parity. ETS *loses* to
+  its own seasonal naive (11.471 vs 11.323, MASE 1.338): Holt-Winters assumes
+  every series is smooth and seasonal, and 89% zeros plus bulk spikes break
+  that assumption (the fallback chain is documented and unit-tested).
+- **Cross-track transfer is the honest punchline, and it reversed under the
+  frozen protocol**: the old pooled ladder claimed the synthetic ML champion
+  `lgbm_tuned` "drops to fourth on real data" (9.600). On the one-shot test
+  window `lgbm_tuned` actually posts the **best** MAE of all runs (9.409,
+  ahead of the selection champion `hgb_tuned` at 9.545 — a 1.4% gap inside
+  the fold-to-fold spread, so one window cannot dethrone the protocol's
+  pick), while the synthetic overall champion `ets` ranks 6th on real data
+  (11.471). Configs tuned on clean synthetic data still behave differently on
+  intermittent real demand; neither pooled nor single-window rankings should
+  be read as more than what they are. This is why both tracks stay in the
+  repo side by side.
+- **Ridge is no longer the collapse story** (12.384 test MAE — mid-pack on
+  this window, though its pooled legacy 16.734 was behind every floor) and
+  **MAPE/RMSE are not decision metrics** on this data (184–328% MAPE; RMSE ≫
+  MAE from wholesale spikes). MAE, MASE, bias and WAPE are the numbers to
+  plan with — the champion's test-window bias is −1.444 units (mild
+  over-forecasting) with WAPE 1.142.
+- **Reconciliation pays off on the test window**: w=0.60 — incoherence 500.0 →
+  200.0 (exactly ×(1−w), property-tested); store-level MAE 738.7 → 676.4
+  (−8.4% this run — coherence is a guarantee, accuracy gains depend on
+  parent-model quality, stated plainly; the shrinkage grid is estimated on
+  origin 2 and the store-level backtest re-fits HGB, so w jitters
+  run-to-run within the documented OpenMP tolerance).
+- **Probabilistic (target 80% band)** — coverage AND average width on the
+  test window's final 14 days (h=1..14):
 
-  | track | quantile band coverage | zero-aware split-conformal (last fold) |
-  |---|---|---|
-  | synthetic | 0.727 (under-covers) | 0.757 (no zero-predicted rows — band stays global) |
-  | UCI real | 0.919 (over-covers) | 0.858 (collapses to the point forecast where the median is 0) |
+  | track | quantile band (pooled over folds) | zero-aware split-conformal, horizon set | avg width | verdict |
+  |---|---|---|---|---|
+  | synthetic | 0.727 | 0.741 | 26.49 units | optimistic (under-covers) |
+  | UCI real | 0.919 | 0.861 | 0.00 units | conservative — but degenerate |
 
-  Coverage is **h=1 only** — the frame is one-day-ahead; multi-horizon bands
-  (h ∈ {1, 7}) need a horizon-stacked frame (roadmap). Honest reading: the
-  quantile band under-covers on clean data; on intermittent demand the median
-  sits on the zero atom (~89% zeros), so any band around the p50 collapses
-  there — per-bin calibration is now explicit in `probabilistic.json` and the
-  figure states the achieved coverage, with buttons to drop the band;
-  per-series conformal remains the fix direction.
+  Honest reading: on clean synthetic data the band under-covers (0.741 vs
+  0.80 target → optimistic). On intermittent demand the champion's median
+  sits on the zero atom for ~100% of test-window rows, so the zero-aware
+  band collapses to the point forecast (avg width 0.00 units) and its 0.861
+  "coverage" only means 86.1% of actuals were exactly zero — the conservative
+  verdict is a degenerate band, not a useful one. The quantile band covers
+  0.919 pooled precisely because it is wide where the conformal band is
+  empty. Per-bin calibration is explicit in `probabilistic.json` (per-horizon
+  coverage and width arrays, `calibration_verdict`) and the figure states the
+  achieved coverage and width; per-series (or clustered) conformal remains
+  the fix direction.
 
 Figures (HTML + JSON per track, `reports/figures/` synthetic,
 `reports_uci/figures/` real) — the audit list:
@@ -219,18 +291,22 @@ Figures (HTML + JSON per track, `reports/figures/` synthetic,
   `hpo_history` / `hpo_importance` / `reconciliation_coherence` /
   `probabilistic_band` as before
 
-Artifacts: per track, `reports/metrics.json` (10 runs incl. MASE),
-`report.html`, `reconciliation.json`, `probabilistic.json`; `data_uci/` (panel
-405,416 rows, contract, models) and `data/` (synthetic). Runtime: synthetic
-≈ **4 min** with probabilistic; UCI ≈ **25 min** (ETS fits 1,084 series per
-fold); 6/6 DQ gates pass on both tracks.
+Artifacts: per track, `reports*/metrics.json` (10 runs: test-window MAE/RMSE/
+MAPE/MASE + bias/WAPE + fold MAEs + per-horizon arrays + `legacy_pooled_*`,
+and a `_meta` protocol block), `evaluation_metadata.json`, `report.html`,
+`reconciliation.json`, `probabilistic.json` (coverage AND width per horizon,
+`calibration_verdict`); the UCI track also emits `dataset_metadata.json`.
+`data_uci/` (panel 405,416 rows, contract, models) and `data/` (synthetic).
+Runtime (this machine, `cli evaluate`): synthetic ≈ **1.5 min** with
+probabilistic; UCI ≈ **7 min** (ETS fits 1,084 series per fold); 6/6 DQ gates
+pass on both tracks.
 
 ## Reproduce
 
 ```bash
 # from the repo root, inside the workspace venv
-uv run python -m demand_forecasting.cli all            # synthetic pipeline (~4 min)
-uv run python -m demand_forecasting.cli all --data-source uci   # real-data track (~25 min, fetches once)
+uv run python -m demand_forecasting.cli all            # synthetic pipeline (~2 min)
+uv run python -m demand_forecasting.cli all --data-source uci   # real-data track (~8 min, fetches once)
 uv run python -m demand_forecasting.cli hpo            # Optuna HPO (minutes; resumable; --model xgb|lgbm)
 uv run dvc metrics show                                 # declared metrics (reports/metrics.json)
 # or stage by stage (mirrors dvc.yaml)
@@ -256,13 +332,15 @@ uv run pytest projects/02-demand-forecasting -q
   visible before it hurts.
 - **Baseline-first modelling**: naive floors (global mean, persistence,
   weekly seasonal-naive) and a per-series ETS anchor every claim; the trained
-  models must *earn* their complexity — on real data the champion beats the
-  strongest floor (`seasonal_naive`) by 8.8% MAE, an honest, quantified
-  trade-off.
+  models must *earn* their complexity — on the real-data test window the
+  selection champion `hgb_tuned` beats the strongest floor (`seasonal_naive`)
+  by 15.7% MAE (9.545 vs 11.323), and the frozen protocol is precisely what
+  makes that number a measurement instead of a hope.
 - **Model selection as an engineering discipline**: HPO optimises on the same
-  embargoed folds it is judged on, the un-tuned model stays in the ladder for
-  comparison, and the neural candidate is reported with its honest verdict
-  rather than silently dropped.
+  embargoed folds it is judged on, the champion is picked on origins 1..n-1
+  and scored once on the final holdout, the un-tuned model stays in the
+  ladder for comparison, and the neural candidate is reported with its honest
+  verdict rather than silently dropped.
 - **Hierarchy handling without a per-series zoo**: one global model with
   series identity captures 24 series in a single deployable artefact.
 - **Contract-governed data**: every dataset carries a versioned identity card
@@ -280,10 +358,13 @@ damped Holt-Winters ETS with documented fallbacks) and **MASE** on both tracks,
 plus the fan-chart/coherence-heatmap/error-by-fold figure set. What remains:
 
 1. **Calibrated intervals for intermittent demand**: per-series (or clustered)
-   conformal calibration and zero-inflated interval models — global bands
-   under-cover on synthetic (73%) and degenerate on real data (q80 = 0).
-2. **Multi-horizon coverage (h ∈ {1, 7})**: the frame is one-day-ahead today;
-   horizon-stacked conformal needs a re-engineered target frame.
+   conformal calibration and zero-inflated interval models — the zero-aware
+   band under-covers on synthetic (0.741 coverage at 0.80 target) and is
+   degenerate on real data (avg width 0.00 on the test window: the median
+   sits on the zero atom).
+2. **Origin-stacked multi-horizon bands**: per-horizon coverage/width is now
+   reported descriptively on the test window (h=1..14); *separately
+   calibrated* per-origin bands still need a horizon-stacked target frame.
 3. **Full MinT reconciliation**: covariance projection once the UCI track grows
    a product-category hierarchy.
 4. **Returns-aware demand**: model cancellations/returns as their own flow

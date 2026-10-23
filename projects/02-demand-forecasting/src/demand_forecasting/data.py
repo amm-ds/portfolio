@@ -126,4 +126,8 @@ def prepare(settings: DemandSettings, config: ForecastConfig) -> Path:
     logger.info(
         "dataset contract -> %s (sha256=%s...)", contract_path, contract.checksum_sha256[:12]
     )
+    if config.data_source == "uci":
+        from demand_forecasting.uci import write_dataset_metadata
+
+        write_dataset_metadata(settings, config, df)
     return out

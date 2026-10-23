@@ -17,6 +17,7 @@ transactions to a daily store-product panel matching the synthetic schema:
 The synthetic track stays the default so CI remains fully offline.
 """
 
+import json
 import re
 import zipfile
 from datetime import date, datetime, timedelta
@@ -281,3 +282,79 @@ def build_uci_panel(settings: DemandSettings, config: ForecastConfig) -> pl.Data
         }
     )
     return transactions_to_panel(transactions, config.uci_n_stores, config.uci_n_products)
+
+
+def dataset_metadata(panel: pl.DataFrame, config: ForecastConfig) -> dict[str, Any]:
+    """The data-generating process, documented as machine-readable JSON.
+
+    Emitted to ``reports*/dataset_metadata.json`` by ``prepare`` — this is the
+    audit anchor for what the UCI panel actually is: what was filtered, how
+    quantities were aggregated, which geography survives, and the explicit
+    zero-demand caveat. Keep in sync with :func:`transactions_to_panel`.
+    """
+    n_series = panel["store"].n_unique() * panel["product"].n_unique()
+    zero_share = float(cast(float, (panel["units"] == 0).mean()))
+    return {
+        "dataset": "UCI Online Retail II",
+        "source": {
+            "url": UCI_URL,
+            "sha256": config.uci_checksum_sha256,
+            "sheet": UCI_SHEET,
+            "license": "free for research (Chen, Gallino & Li 2012, Management Science)",
+        },
+        "cancellation_filtering": (
+            "Sales lines only: rows with Quantity > 0 are kept; cancellations and "
+            "returns (negative-quantity lines) are removed — returns are a separate "
+            "business process and net-of-returns demand would double-count reverse "
+            "logistics. Blank stock codes are dropped."
+        ),
+        "quantity_handling": (
+            "Daily sum of line Quantity per (date, country, stock_code); the panel's "
+            "'units' column is that daily total (integer). 'price' is the mean line "
+            "price of the day (carried for reference, not a model target)."
+        ),
+        "geography": (
+            f"Top {config.uci_n_stores} countries by total unit volume are kept as "
+            "'stores'; all other countries are dropped."
+        ),
+        "products": (
+            f"Top {config.uci_n_products} stock codes by total unit volume are kept as "
+            "'products'; the rest are dropped."
+        ),
+        "daily_aggregation": (
+            "Transactions are aggregated to one row per (date, country, stock_code); "
+            "the panel is reindexed to the complete daily calendar between the first "
+            "and last observed dates, and missing day-series combinations are "
+            "zero-filled (forward-filled price, 0 where never observed)."
+        ),
+        "observed_panel": {
+            "date_start": str(panel["date"].min()),
+            "date_end": str(panel["date"].max()),
+            "n_days": panel["date"].n_unique(),
+            "n_rows": panel.height,
+            "n_series": n_series,
+            "zero_share": zero_share,
+        },
+        "zero_sales_caveat": (
+            "Zero-sales days may be missing rather than true zero demand: the source "
+            "has no trading calendar, so a zero-filled day can mean 'closed or not "
+            "trading' as easily as 'no demand'."
+        ),
+        "target_definition": (
+            "The forecast target is the next 14 days of daily units per "
+            "country-product series (top 8 countries x top 200 products by volume), "
+            "aggregated from cleaned Online Retail II transactions (cancellations "
+            "removed)."
+        ),
+    }
+
+
+def write_dataset_metadata(
+    settings: DemandSettings, config: ForecastConfig, panel: pl.DataFrame
+) -> Path:
+    """Persist :func:`dataset_metadata` next to the track's reports."""
+    out = settings.reports_dir / "dataset_metadata.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(dataset_metadata(panel, config), indent=2))
+    logger.info("dataset metadata -> %s", out)
+    return out

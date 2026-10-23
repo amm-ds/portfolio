@@ -106,3 +106,42 @@ def test_fetch_uci_cache_hit(settings: DemandSettings) -> None:
         data_source="uci", uci_checksum_sha256=sha256_of(raw / "online_retail_ii.zip")
     )
     assert fetch_uci(settings, config).exists()
+
+
+def test_dataset_metadata_documents_the_generating_process(
+    settings: DemandSettings,
+) -> None:
+    """dataset_metadata.json states the filtering/aggregation/caveat, and the
+    doc agrees with what transactions_to_panel actually does (P4 hardening)."""
+    from demand_forecasting.uci import dataset_metadata, write_dataset_metadata
+
+    config = ForecastConfig(data_source="uci")
+    panel = transactions_to_panel(_transactions(), n_stores=1, n_products=1)
+    meta = dataset_metadata(panel, config)
+
+    # source + pin
+    assert meta["source"]["url"].startswith("https://archive.ics.uci.edu")
+    assert meta["source"]["sha256"] == config.uci_checksum_sha256
+    assert meta["source"]["sheet"] == "Year 2009-2010"
+    # the material doc/code agreement: sales lines only, cancellations removed
+    assert "Quantity > 0" in meta["cancellation_filtering"]
+    assert panel["units"].to_list() == [8, 0, 4]  # returns line (-9) excluded
+    # geography + products bounded by config
+    assert "Top 8 countries" in meta["geography"]
+    assert "Top 200 stock codes" in meta["products"]
+    # observed panel stats are computed from the frame itself
+    assert meta["observed_panel"]["n_rows"] == panel.height
+    assert meta["observed_panel"]["date_start"] == "2010-01-01"
+    assert meta["observed_panel"]["date_end"] == "2010-01-03"
+    # the explicit zero-demand caveat and the one-sentence target definition
+    assert "no trading calendar" in meta["zero_sales_caveat"]
+    target = meta["target_definition"]
+    assert target.startswith("The forecast target is the next 14 days of daily units")
+    assert "cancellations removed" in target
+
+    out = write_dataset_metadata(settings, config, panel)
+    assert out.exists()
+    import json
+
+    persisted = json.loads(out.read_text())
+    assert persisted["source"]["sha256"] == config.uci_checksum_sha256
