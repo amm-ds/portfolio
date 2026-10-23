@@ -250,9 +250,9 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].textContent).toContain("live");
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
-    expect(demoCards[1].textContent).toContain("uplift policy simulator");
+    expect(demoCards[1].textContent).toContain("demand forecast workbench");
     expect(demoCards[1].textContent).toContain("live");
-    expect(demoCards[1].querySelector("a")!.getAttribute("href")).toBe("/demos/uplift-simulator");
+    expect(demoCards[1].querySelector("a")!.getAttribute("href")).toBe("/demos/forecast-workbench");
   });
 
   it("renders a what-it-achieves summary plus sub-topic, dataset, and status chips on each card", async () => {

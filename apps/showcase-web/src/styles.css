@@ -2932,3 +2932,180 @@ button.chip.wb-scenario.active {
 .wb-more summary {
   font-size: 0.85rem;
 }
+
+/* --- forecast workbench (forecast-workbench) -------------------------------- */
+
+/* fan chart: LineChart + absolutely-aligned p10/p90 band overlay */
+.wb-fan {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.wb-fan-band {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* series picker: search + class filter + scrollable list */
+.wb-series-search {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 0.3rem 0.5rem;
+  font-size: 0.82rem;
+}
+
+.wb-series-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.wb-class-filter {
+  flex-wrap: wrap;
+}
+
+.wb-class-filter .demo-preset.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wb-series-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.wb-series-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.22rem 0.4rem;
+  color: var(--secondary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.wb-series-row:hover {
+  border-color: var(--accent);
+}
+
+.wb-series-row.active {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.wb-series-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-series-class {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+  padding: 0.05rem 0.4rem;
+}
+
+.wb-series-empty {
+  padding: 0.5rem 0.6rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* legend swatches under the grouped-bar panels */
+.wb-legend-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 2px;
+  margin: 0 0.15rem 0 0.4rem;
+  vertical-align: -1px;
+}
+
+/* class explorer tiles */
+.wb-class-tiles {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-content: stretch;
+}
+
+.wb-class-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.5rem;
+  color: var(--secondary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.wb-class-tile:hover {
+  border-color: var(--accent);
+}
+
+.wb-class-tile.active {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.wb-class-tile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.wb-class-tile-mase {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.wb-class-tile-label {
+  font-size: 0.72rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-spark {
+  flex-shrink: 0;
+  opacity: 0.9;
+}
+
+/* a disabled spike lever greys out like the churn scorer's unavailable state */
+.wb-slider:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

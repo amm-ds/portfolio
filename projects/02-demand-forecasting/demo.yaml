@@ -1,0 +1,33 @@
+id: forecast-workbench
+title: demand forecast workbench
+hook: Pick a store-product series, stretch the horizon, and stress the recent
+  demand — watch the forecast, the band, and the baseline respond.
+project: 02-demand-forecasting
+group: plan operations
+skills: [time series forecasting, prediction intervals, demand classification]
+modes: [browser, live]
+hero:
+  label: MASE on real intermittent demand (1.0 = seasonal-naive parity)
+  value: 0.980 vs 1.117 naive
+  ci: only the tuned HGB clears MASE 1
+live_endpoints:
+  - method: POST
+    path: /projects/02-demand-forecasting/forecast
+    label: live what-if scoring
+    cost: free-local
+scenarios:
+  - name: base
+    controls: {series: "United Kingdom|85123A", horizon: 7, spike: 1.0}
+  - name: sparse-series
+    controls: {series: "United Kingdom|84077", horizon: 7, spike: 1.0}
+  - name: spike
+    controls: {series: "United Kingdom|85123A", horizon: 7, spike: 1.5}
+payload:
+  path: reports/demo_payload.json
+  schema_version: 1
+  required_keys:
+    - demo
+    - project
+    - track
+    - catalog
+    - scalars
