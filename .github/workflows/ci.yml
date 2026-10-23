@@ -76,13 +76,18 @@ jobs:
           # Story/metrics APIs must answer JSON for a real project.
           curl -fsS http://localhost:8000/projects/05-ml-pipeline-churn/metrics \
             | grep -q 'selected_model_calibrated'
-          # Features from projects/02-demand-forecasting reports/models/serving/meta.json
-          # example_row (series_id excluded) — see apps/showcase-api/SERVING.md.
+          # Live forecast endpoint: build the request from the serving artifact's
+          # example_row so the smoke test tracks whichever track the artifact
+          # was built from (UCI as of the forecast-workbench demo).
+          body=$(python3 -c "
+          import json
+          meta = json.load(open('projects/02-demand-forecasting/reports/models/serving/meta.json'))
+          row = dict(meta['example_row'])
+          sid = row.pop('series_id')
+          print(json.dumps({'series_id': sid, 'features': row}))
+          ")
           curl -fsS -o /dev/null -w '%{http_code}\n' \
             -X POST http://localhost:8000/projects/02-demand-forecasting/forecast \
             -H 'content-type: application/json' \
-            -d '{"series_id": "store_0|product_0",
-                 "features": {"t": 371.5, "dow": 4.0, "is_weekend": 0.0, "month": 7.0,
-                              "week": 27.0, "doy_sin": -0.0312, "doy_cos": -0.0312,
-                              "lag_1": 66.0, "lag_7": 66.0, "lag_14": 65.0}}' \
+            -d "$body" \
             | grep -q '^200$'
