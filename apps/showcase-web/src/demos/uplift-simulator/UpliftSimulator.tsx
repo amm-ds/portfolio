@@ -4,6 +4,7 @@ import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { DemoManifest, UpliftPayload } from "../types";
 import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import {
+  armMixAt,
   crossoverCost,
   incrementalAt,
   mailEveryoneAt,
@@ -11,6 +12,7 @@ import {
   peakFractionAt,
   policyProfitAt,
   profitAt,
+  qiniCaptureAt,
   winnerAt,
 } from "./kpis";
 import { fetchManifest, fetchUpliftPayload } from "./payload";
@@ -203,13 +205,19 @@ function ciCaveat(lo: number, hi: number): string {
   return lo < 0 && hi > 0 ? " (95% CI spans zero: ranking not established)" : "";
 }
 
-function QiniPanel({ payload }: { payload: UpliftPayload }) {
+function QiniPanel({ payload, budget }: { payload: UpliftPayload; budget: number }) {
   const qm = payload.qini_points.mens;
   const qw = payload.qini_points.womens;
   const fr = qm.fractions;
   // random baseline is a straight line to the best-arm full-send total
   // (payload note); resampling a line onto the shared grid is exact.
   const randomLine = fr.map((f) => f * payload.scalars.incremental_conversions_full_send_best_arm);
+  // the readout interpolates the mens arm curve — the strongest empirical
+  // line — against the model-estimated random baseline, both at the cursor
+  const markerIdx = nearestIndex(fr, budget);
+  const captureM = qiniCaptureAt(qm, budget);
+  const captureR = qiniCaptureAt(payload.qini_points.random, budget);
+  const gain = captureM - captureR;
   return (
     <Figure
       comment={
@@ -219,10 +227,18 @@ function QiniPanel({ payload }: { payload: UpliftPayload }) {
           {ciCaveat(qm.qini_ci[0], qm.qini_ci[1])}, womens{" "}
           {qw.qini_coefficient.toFixed(2)}
           {ciCaveat(qw.qini_ci[0], qw.qini_ci[1])}; dashed is the model-estimated random line to
-          the best-arm full-send total.
+          the best-arm full-send total. The capture readout follows the budget cursor and
+          interpolates the mens arm curve against that random line.
         </>
       }
     >
+      <div className="demo-readouts">
+        <span className="chip demo-readout" data-testid="qini-capture">
+          at {fmtPct(budget)} targeting: mens captures {captureM.toFixed(1)} vs random's{" "}
+          {captureR.toFixed(1)} ({gain >= 0 ? "+" : "−"}
+          {Math.abs(gain).toFixed(1)})
+        </span>
+      </div>
       <div className="demo-chart">
         <LineChart
           x={fr}
@@ -231,6 +247,7 @@ function QiniPanel({ payload }: { payload: UpliftPayload }) {
             { name: "womens", color: C_PINK, values: qw.incremental },
             { name: "random", color: C_GRAY, dashed: true, values: randomLine },
           ]}
+          markers={[{ xIndex: markerIdx, style: "dashed" }]}
           formatX={fmtPct}
           ariaLabel="empirical qini curve per arm"
         />
@@ -301,49 +318,61 @@ const SEGMENT_COLORS: Record<(typeof SEGMENT_KEYS)[number], string> = {
   "Womens E-Mail": C_PINK,
   "No E-Mail": C_GRAY,
 };
+const MIX_KEYS = ["mens", "womens", "none"] as const;
+const MIX_COLORS: Record<(typeof MIX_KEYS)[number], string> = {
+  mens: C_TEAL,
+  womens: C_PINK,
+  none: C_GRAY,
+};
+type ArmMix = Record<(typeof MIX_KEYS)[number], number>;
 
-function ArmMixPanel({ payload }: { payload: UpliftPayload }) {
+function ArmMixPanel({ payload, budget }: { payload: UpliftPayload; budget: number }) {
   // container-measured like the churn panels: the bars fill the whole box
   const { ref, size } = useMeasuredSize<HTMLDivElement>();
   const W = size?.w ?? 360;
   const H = size?.h ?? 180;
 
-  const shares = SEGMENT_KEYS.map((name) => ({
-    label: name,
-    value: payload.scalars.recommended_arm_shares[name === "Mens E-Mail" ? "mens" : name === "Womens E-Mail" ? "womens" : "none"],
-    color: SEGMENT_COLORS[name],
-  }));
+  // the mix among the targeted top-budget% follows the cursor; the full-send
+  // mix rides along as a faint reference row
+  const targeted = armMixAt(payload.arm_mix_by_fraction, budget);
+  const full = payload.scalars.recommended_arm_shares;
+  const budgetLabel = fmtPct(budget);
+  const mixRows: { label: string; mix: ArmMix; opacity: number }[] = [
+    { label: `targeted top ${budgetLabel}`, mix: targeted, opacity: 0.9 },
+    { label: "full send", mix: full, opacity: 0.3 },
+  ];
+
   const conv = SEGMENT_KEYS.map((name) => ({
     label: name,
     value: payload.segments[name].conversion_rate,
     color: SEGMENT_COLORS[name],
   }));
   // static maxima (never 1.0): both bar groups keep a stable scale
-  const shareMax = Math.max(...shares.map((s) => s.value), 0.01);
   const convMax = Math.max(...conv.map((s) => s.value), 0.001);
 
   const pad = 12;
   const labelW = Math.min(104, W * 0.34);
-  const valueW = 46;
   const barX = pad + labelW + 6;
-  const barW = Math.max(W - barX - valueW - pad - 10, 0);
-  const rowH = H / (shares.length + conv.length);
-
-  const rows = [
-    ...shares.map((s) => ({ ...s, frac: s.value / shareMax, text: fmtPct(s.value) })),
-    ...conv.map((s) => ({ ...s, frac: s.value / convMax, text: `${(s.value * 100).toFixed(2)}%` })),
-  ];
+  const barW = Math.max(W - barX - pad - 10, 0);
+  const rowH = H / (mixRows.length + conv.length);
 
   return (
     <Figure
       comment={
         <>
-          Arm assignment from the per-customer uplift scores — {fmtPct(shares[0].value)} get the
-          men's creative, {fmtPct(shares[1].value)} the women's, {fmtPct(shares[2].value)} no
-          email; the lower bars are each segment's observed conversion rate in the experiment.
+          Mix of the top-N% by predicted uplift — the stacked bars follow the budget cursor; the
+          faint row is the full-send mix for reference. The lower bars are experiment facts:
+          each segment's observed conversion rate in the randomized trial, independent of the
+          controls.
         </>
       }
     >
+      <div className="demo-readouts">
+        <span className="chip demo-readout" data-testid="arm-mix-targeted">
+          top {budgetLabel}: {fmtPct(targeted.mens)} mens · {fmtPct(targeted.womens)} womens ·{" "}
+          {fmtPct(targeted.none)} none
+        </span>
+      </div>
       <div ref={ref} className="wb-panel-viz">
         <svg
           width="100%"
@@ -351,15 +380,71 @@ function ArmMixPanel({ payload }: { payload: UpliftPayload }) {
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
           role="img"
-          aria-label="recommended arm shares and segment conversion rates"
+          aria-label="recommended arm mix among the targeted top fraction"
         >
-          {rows.map((r, i) => {
+          {mixRows.map((row, i) => {
             const cy = rowH * i + rowH / 2;
-            const isConv = i >= shares.length;
+            let x = barX;
+            const total = MIX_KEYS.reduce((sum, k) => sum + row.mix[k], 0) || 1;
             return (
-              <g key={`${r.label}-${i}`}>
+              <g key={row.label}>
                 <text x={pad} y={cy + 3} className="demo-axis-label">
-                  {isConv ? `${r.label} conv.` : r.label}
+                  {row.label}
+                </text>
+                {MIX_KEYS.map((k) => {
+                  const w = (row.mix[k] / total) * barW;
+                  const segW = Math.max(w, 0);
+                  const rect = (
+                    <rect
+                      key={k}
+                      x={x}
+                      y={cy - 8}
+                      width={segW}
+                      height={16}
+                      fill={MIX_COLORS[k]}
+                      opacity={row.opacity}
+                    >
+                      <title>{`${k}: ${fmtPct(row.mix[k])}`}</title>
+                    </rect>
+                  );
+                  x += w;
+                  return rect;
+                })}
+                <rect
+                  x={barX}
+                  y={cy - 8}
+                  width={barW}
+                  height={16}
+                  fill="none"
+                  stroke="var(--border)"
+                />
+                {MIX_KEYS.map((k) => {
+                  const w = (row.mix[k] / total) * barW;
+                  const cx = barX + MIX_KEYS.slice(0, MIX_KEYS.indexOf(k)).reduce(
+                    (sum, j) => sum + (row.mix[j] / total) * barW,
+                    0,
+                  );
+                  return w >= 24 ? (
+                    <text
+                      key={k}
+                      x={cx + w / 2}
+                      y={cy + 3}
+                      textAnchor="middle"
+                      className="demo-axis-label"
+                    >
+                      {fmtPct(row.mix[k])}
+                    </text>
+                  ) : null;
+                })}
+              </g>
+            );
+          })}
+          {conv.map((r, i) => {
+            const cy = rowH * (mixRows.length + i) + rowH / 2;
+            return (
+              <g key={`${r.label}-conv`}>
+                <text x={pad} y={cy + 3} className="demo-axis-label">
+                  {r.label} conv.
                 </text>
                 <rect
                   x={barX}
@@ -372,13 +457,13 @@ function ArmMixPanel({ payload }: { payload: UpliftPayload }) {
                 <rect
                   x={barX}
                   y={cy - 7}
-                  width={Math.max(r.frac * barW, 0)}
+                  width={Math.max((r.value / convMax) * barW, 0)}
                   height={14}
                   fill={r.color}
                   opacity={0.85}
                 />
                 <text x={W - pad} y={cy + 3} textAnchor="end" className="demo-axis-label">
-                  {r.text}
+                  {(r.value * 100).toFixed(2)}%
                 </text>
               </g>
             );
@@ -526,8 +611,8 @@ function UpliftSimulatorWorkbench({
             <span className="wb-rail-title">Targeting budget</span>
             <div className="demo-control">
               <p className="demo-hint">
-                Drag the pink cursor on the frontier — the budget chip, the KPIs and both notice
-                tiles follow. Scenario presets load via the URL (?cost=&budget=).
+                Drag the pink cursor on the frontier — the budget chip, the KPIs, the notice tiles
+                and the qini/mix panels follow. Scenario presets load via the URL (?cost=&budget=).
               </p>
             </div>
           </div>
@@ -579,7 +664,7 @@ function UpliftSimulatorWorkbench({
         <>
           <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">qini curves per arm</h3>
-            <QiniPanel payload={payload} />
+            <QiniPanel payload={payload} budget={budget} />
           </div>
           <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">cost sensitivity at budget</h3>
@@ -587,7 +672,7 @@ function UpliftSimulatorWorkbench({
           </div>
           <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">recommended-arm mix</h3>
-            <ArmMixPanel payload={payload} />
+            <ArmMixPanel payload={payload} budget={budget} />
           </div>
         </>
       }

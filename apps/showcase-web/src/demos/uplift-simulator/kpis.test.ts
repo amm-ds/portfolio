@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { ProfitGrid } from "../types";
+import type { ArmMixByFraction, ProfitGrid } from "../types";
 import {
+  armMixAt,
   crossoverCost,
   incrementalAt,
   mailEveryoneAt,
@@ -8,6 +9,8 @@ import {
   peakFractionAt,
   policyProfitAt,
   profitAt,
+  qiniCaptureAt,
+  sampleCurveAt,
   winnerAt,
 } from "./kpis";
 
@@ -132,5 +135,60 @@ describe("nearestIndex", () => {
   });
   it("degrades to 0 on an empty grid", () => {
     expect(nearestIndex([], 0.5)).toBe(0);
+  });
+});
+
+describe("sampleCurveAt", () => {
+  const CURVE = { fractions: [0.1, 0.5, 1.0], values: [10, 30, 60] };
+  it("interpolates linearly between samples", () => {
+    expect(sampleCurveAt(CURVE, 0.3)).toBe(20);
+    expect(sampleCurveAt(CURVE, 0.75)).toBe(45);
+  });
+  it("hits exact samples and clamps to the domain", () => {
+    expect(sampleCurveAt(CURVE, 0.5)).toBe(30);
+    expect(sampleCurveAt(CURVE, 0.0)).toBe(10);
+    expect(sampleCurveAt(CURVE, 2.0)).toBe(60);
+  });
+  it("degrades on degenerate input", () => {
+    expect(sampleCurveAt({ fractions: [], values: [] }, 0.5)).toBe(0);
+    expect(sampleCurveAt({ fractions: [0.5], values: [7] }, Number.NaN)).toBe(7);
+  });
+});
+
+describe("qiniCaptureAt", () => {
+  it("interpolates the mens fixture curve at the budget", () => {
+    const mens = { fractions: [0, 0.5, 1], incremental: [0, 80, 145] };
+    expect(qiniCaptureAt(mens, 0.25)).toBe(40);
+    expect(qiniCaptureAt(mens, 1.0)).toBe(145);
+  });
+  it("interpolates the two-point random baseline (a straight line)", () => {
+    const random = { fractions: [0, 1], incremental: [0, 586.78] };
+    expect(qiniCaptureAt(random, 0.25)).toBeCloseTo(146.695);
+  });
+});
+
+describe("armMixAt", () => {
+  // 1% lattice, mens share rising 0.55 → 0.76, womens falling, none entering late
+  const MIX: ArmMixByFraction = {
+    fractions: Array.from({ length: 100 }, (_, i) => (i + 1) / 100),
+    shares: {
+      mens: Array.from({ length: 100 }, (_, i) => 0.55 + 0.21 * ((i + 1) / 100)),
+      womens: Array.from({ length: 100 }, (_, i) => 0.45 - 0.25 * ((i + 1) / 100)),
+      none: Array.from({ length: 100 }, (_, i) => 0.04 * ((i + 1) / 100)),
+    },
+  };
+  it("interpolates every share at the budget", () => {
+    const mix = armMixAt(MIX, 0.25);
+    expect(mix.mens).toBeCloseTo(0.6025);
+    expect(mix.womens).toBeCloseTo(0.3875);
+    expect(mix.none).toBeCloseTo(0.01);
+  });
+  it("hits exact lattice points", () => {
+    const mix = armMixAt(MIX, 1.0);
+    expect(mix.mens).toBeCloseTo(0.76);
+    expect(mix.none).toBeCloseTo(0.04);
+  });
+  it("degrades to zeros when the block is missing", () => {
+    expect(armMixAt(undefined, 0.25)).toEqual({ mens: 0, womens: 0, none: 0 });
   });
 });
