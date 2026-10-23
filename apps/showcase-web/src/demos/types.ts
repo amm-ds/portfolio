@@ -207,3 +207,77 @@ export interface UpliftPayload {
   arm_mix_by_fraction: ArmMixByFraction;
   segments: Record<"Mens E-Mail" | "Womens E-Mail" | "No E-Mail", UpliftSegmentStats>;
 }
+
+// --- demand forecast workbench payload (`projects/02-demand-forecasting/reports/demo_payload.json`) ---
+
+/** One catalog series: committed history, the last-fold backtest window with
+ * champion/naive forecasts and the p10/p90 band, and the per-horizon errors.
+ * `mase` entries are null for all-zero-history (sparse) series, whose
+ * seasonal-naive scale is 0 — callers must render "n/a", never NaN. */
+export interface CatalogSeries {
+  series_id: string;
+  label: string;
+  demand_class: "smooth" | "intermittent" | "sparse";
+  history: { dates: string[]; y: number[] };
+  forecast: {
+    dates: string[];
+    y_pred: number[];
+    p10: number[];
+    p90: number[];
+    naive: number[];
+  };
+  errors: {
+    /** In-sample seasonal-naive scale of the stored history (0 → MASE undefined). */
+    scale: number;
+    champion: { mae: number[]; mase: (number | null)[] };
+    naive: { mae: number[]; mase: (number | null)[] };
+  };
+}
+
+export interface ForecastPayload {
+  schema_version: number;
+  demo: string;
+  project: string;
+  track: string;
+  catalog: CatalogSeries[];
+  scalars: {
+    headline: {
+      claim: string;
+      champion: string;
+      champion_mase: number;
+      champion_mae: number;
+      naive_mase: number;
+      only_champion_below_mase_1: boolean;
+      mase_by_model: Record<string, number>;
+    };
+    band: {
+      target_coverage: number;
+      quantile_coverage_pooled: number;
+      split_conformal_coverage_last_fold: number;
+      note: string;
+    } | null;
+    models: {
+      champion: string;
+      global: string;
+      naive: string;
+      selection_rule: string;
+    };
+    feature_schema: {
+      calendar: string[];
+      lags: string[];
+      series: string;
+      note: string;
+    };
+    catalog_summary: {
+      n_series: number;
+      by_class: { smooth: number; intermittent: number; sparse: number };
+      history_days: number;
+      horizon_days: number;
+      forecast_window: [string, string];
+      class_thresholds: {
+        zero_frac_smooth_max: number;
+        zero_frac_intermittent_max: number;
+      };
+    };
+  };
+}

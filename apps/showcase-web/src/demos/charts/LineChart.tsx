@@ -86,7 +86,9 @@ export function LineChart({
 
   const xMin = x[0];
   const xMax = x[x.length - 1];
-  const computedMax = Math.max(...series.flatMap((s) => s.values), 1) * 1.08;
+  const finiteMax = (vals: number[]) =>
+    vals.reduce((m, v) => (Number.isFinite(v) && v > m ? v : m), 0);
+  const computedMax = Math.max(finiteMax(series.flatMap((s) => s.values)), 1) * 1.08;
   const cMax = yMax ?? computedMax;
   const plotW = width - pad.l - pad.r;
   const plotH = height - pad.t - pad.b;
@@ -188,16 +190,35 @@ export function LineChart({
         <path d={bandPath} fill={band!.color} fillOpacity={band!.opacity ?? 0.15} stroke="none" />
       )}
 
-      {series.map((s) => (
-        <polyline
-          key={s.name}
-          points={x.map((t, i) => `${px(t).toFixed(1)},${py(s.values[i]).toFixed(1)}`).join(" ")}
-          fill="none"
-          stroke={s.color}
-          strokeWidth={2}
-          strokeDasharray={s.dashed ? "4 4" : undefined}
-        />
-      ))}
+      {series.map((s) => {
+        // split into contiguous runs of finite values so gapped series
+        // (forecast lines that start at the origin) render as separate
+        // segments — NaN coordinates would log parser errors and draw
+        // nothing in strict engines
+        const runs: Array<[number, number]> = [];
+        let runStart = -1;
+        for (let i = 0; i <= s.values.length; i++) {
+          const ok = i < s.values.length && i < x.length && Number.isFinite(s.values[i]);
+          if (ok && runStart < 0) runStart = i;
+          if (!ok && runStart >= 0) {
+            runs.push([runStart, i]);
+            runStart = -1;
+          }
+        }
+        return runs.map(([a, b]) => (
+          <polyline
+            key={`${s.name}-${a}`}
+            points={x
+              .slice(a, b)
+              .map((t, i) => `${px(t).toFixed(1)},${py(s.values[a + i]).toFixed(1)}`)
+              .join(" ")}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={2}
+            strokeDasharray={s.dashed ? "4 4" : undefined}
+          />
+        ));
+      })}
 
       {markers.map((m, i) => {
         const mx = x[m.xIndex];

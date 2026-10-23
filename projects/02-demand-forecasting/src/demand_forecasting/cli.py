@@ -17,6 +17,7 @@ import typer
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.data import prepare
+from demand_forecasting.demo_payload import write_demo_payload
 from demand_forecasting.evaluate import evaluate
 from demand_forecasting.features import build_features, save_features
 from demand_forecasting.model import fit_all, save_models
@@ -147,6 +148,28 @@ def build_serving(
     """Build the showcase-API serving artifact (loads pickles; no retraining)."""
     settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     return build_serving_artifact(settings, config)
+
+
+@app.command("demo-payload")
+def demo_payload_cmd(
+    data_dir: Annotated[Path | None, typer.Option(help="Override data dir.")] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="Override payload output dir.")] = None,
+    metrics_dir: Annotated[
+        Path | None,
+        typer.Option(help="Dir with committed metrics.json + probabilistic.json."),
+    ] = None,
+    data_source: Annotated[
+        Literal["synthetic", "uci"], typer.Option(help="Panel track (the demo ships UCI).")
+    ] = "synthetic",
+) -> Path:
+    """Build the showcase-API demo payload (forecast workbench catalog).
+
+    The demo ships the UCI track (real intermittent demand) but the payload
+    lands in ``reports/`` next to the demo contract, so the committed metrics
+    come from the track's own reports dir via ``--metrics-dir``.
+    """
+    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
+    return write_demo_payload(settings, config, metrics_dir=metrics_dir)
 
 
 @app.command()

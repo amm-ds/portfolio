@@ -19,11 +19,11 @@ export const DEMOS: Demo[] = [
     href: "/demos/churn-sandbox",
   },
   {
-    id: "uplift-simulator",
-    title: "uplift policy simulator",
-    line: "Move the send cost and the targeting budget — watch when personalized targeting beats mailing everyone, and which email each customer should get.",
+    id: "forecast-workbench",
+    title: "demand forecast workbench",
+    line: "Pick a store-product series, stretch the horizon, and stress the recent demand — watch the forecast, the band, and the baseline respond on real intermittent retail demand.",
     status: "live",
-    href: "/demos/uplift-simulator",
+    href: "/demos/forecast-workbench",
   },
 ];
 

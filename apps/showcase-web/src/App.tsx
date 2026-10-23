@@ -8,7 +8,7 @@ import { Services } from "./pages/Services";
 import { Contact } from "./pages/Contact";
 import { NotFound } from "./pages/NotFound";
 import ChurnSandbox from "./demos/churn-sandbox/ChurnSandbox";
-import UpliftSimulator from "./demos/uplift-simulator/UpliftSimulator";
+import ForecastWorkbench from "./demos/forecast-workbench/ForecastWorkbench";
 import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 
 export function App() {
@@ -32,10 +32,10 @@ export function App() {
             }
           />
           <Route
-            path="/demos/uplift-simulator"
+            path="/demos/forecast-workbench"
             element={
               <DemoErrorBoundary>
-                <UpliftSimulator />
+                <ForecastWorkbench />
               </DemoErrorBoundary>
             }
           />
