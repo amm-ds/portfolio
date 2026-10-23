@@ -28,4 +28,5 @@ payload:
     - scalars
     - profit_grid
     - qini_points
+    - arm_mix_by_fraction
     - segments

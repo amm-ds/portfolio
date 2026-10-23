@@ -157,6 +157,14 @@ export interface UpliftSegmentStats {
   incremental_conversions_full_send_model_estimated: { mens: number; womens: number };
 }
 
+/** Cumulative recommended-arm mix along the best-uplift ranking, sampled on
+ * the same 1% lattice as `profit_grid.fractions`: shares of
+ * mens/womens/none among the top-fraction of ranked customers. */
+export interface ArmMixByFraction {
+  fractions: number[];
+  shares: { mens: number[]; womens: number[]; none: number[] };
+}
+
 export interface UpliftPayload {
   schema_version: number;
   demo: string;
@@ -196,5 +204,6 @@ export interface UpliftPayload {
     womens: QiniArmPoints;
     random: { fractions: number[]; incremental: number[]; note: string };
   };
+  arm_mix_by_fraction: ArmMixByFraction;
   segments: Record<"Mens E-Mail" | "Womens E-Mail" | "No E-Mail", UpliftSegmentStats>;
 }

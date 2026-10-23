@@ -130,6 +130,7 @@ def test_payload_shape(payload: dict) -> None:
         "scalars",
         "profit_grid",
         "qini_points",
+        "arm_mix_by_fraction",
         "segments",
     }
     grid = payload["profit_grid"]
@@ -213,6 +214,59 @@ def test_payload_mail_everyone_profit_formula(payload: dict) -> None:
             cost = float(cost_str)
             expected = totals[arm] * rev - n * cost
             assert profits[cost_str] == pytest.approx(expected, abs=0.01)
+
+
+def test_payload_arm_mix_by_fraction(
+    demo_context: tuple[UpliftConfig, pd.DataFrame], payload: dict
+) -> None:
+    """Top-k arm mix rides the same lattice; shares sum to 1 at every point."""
+    mix = payload["arm_mix_by_fraction"]
+    assert mix["fractions"] == DEMO_FRACTIONS and len(DEMO_FRACTIONS) == 100
+    assert set(mix["shares"]) == {"mens", "womens", "none"}
+    for series in mix["shares"].values():
+        assert len(series) == 100
+        assert all(0.0 <= s <= 1.0 for s in series)
+        assert all(s == round(s, 6) for s in series)
+    for i in range(100):
+        total = sum(mix["shares"][label][i] for label in ("mens", "womens", "none"))
+        assert total == pytest.approx(1.0, abs=2e-6)
+    # the k = 100 endpoint is the full-send mix, and the ranking top is more
+    # mens-heavy than the full send on this fixture (mens scores dominate)
+    for label in ("mens", "womens", "none"):
+        assert mix["shares"][label][-1] == pytest.approx(
+            payload["scalars"]["recommended_arm_shares"][label], abs=2e-6
+        )
+    assert mix["shares"]["mens"][4] > mix["shares"]["mens"][99]
+    # "none" recommendations sit at score 0, i.e. strictly below every positive
+    # score, so the none-share is non-decreasing along the ranking
+    none = mix["shares"]["none"]
+    assert all(none[i + 1] >= none[i] - 1e-9 for i in range(99))
+
+
+def test_payload_arm_mix_matches_ranking(
+    demo_context: tuple[UpliftConfig, pd.DataFrame], payload: dict
+) -> None:
+    """Shares reproduce the cumulated recommendation counts over the ranking."""
+    _cfg, scores = demo_context
+    u_m = scores["uplift_mens"].to_numpy(dtype=float)
+    u_w = scores["uplift_womens"].to_numpy(dtype=float)
+    recommended = recommend_arm(u_m, u_w)
+    best = np.maximum(np.maximum(u_m, u_w), 0.0)
+    rec_sorted = recommended[np.argsort(-best, kind="stable")]
+    k = int(np.rint(0.25 * len(best)))
+    for label in ("mens", "womens", "none"):
+        expected = float(np.mean(rec_sorted[:k] == label))
+        assert payload["arm_mix_by_fraction"]["shares"][label][24] == pytest.approx(
+            expected, abs=2e-6
+        )
+
+
+def test_payload_arm_mix_deterministic(
+    demo_context: tuple[UpliftConfig, pd.DataFrame], payload: dict
+) -> None:
+    cfg, _scores = demo_context
+    again = build_demo_payload(cfg)["arm_mix_by_fraction"]
+    assert again == payload["arm_mix_by_fraction"]
 
 
 def test_payload_per_arm_qini_matches_recomputed(

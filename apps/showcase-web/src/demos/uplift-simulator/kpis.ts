@@ -1,4 +1,4 @@
-import type { GridPolicyName, ProfitGrid } from "../types";
+import type { ArmMixByFraction, GridPolicyName, ProfitGrid } from "../types";
 
 /** A zeroed policy row for out-of-range indices: every kpi function must
  * degrade to safe values instead of throwing mid-drag. */
@@ -96,4 +96,56 @@ export function nearestIndex(grid: number[], v: number): number {
     if (Math.abs(grid[i] - v) < Math.abs(grid[best] - v)) best = i;
   }
   return best;
+}
+
+/** Sampled (fractions, values) curve — the Qini payloads and the arm-mix
+ * lattice all share this shape; linear interpolation reads between samples. */
+interface SampledCurve {
+  fractions: number[];
+  values: number[];
+}
+
+/**
+ * Linear interpolation of a sampled curve at `budget`, clamped to the sampled
+ * domain. Degrades to the nearest endpoint when the curve has < 2 points or
+ * the budget is non-finite (mid-drag states).
+ */
+export function sampleCurveAt(points: SampledCurve, budget: number): number {
+  const { fractions, values } = points;
+  if (fractions.length === 0 || values.length === 0) return 0;
+  if (fractions.length === 1 || values.length === 1 || !Number.isFinite(budget)) {
+    return values[nearestIndex(fractions, budget)] ?? 0;
+  }
+  if (budget <= fractions[0]) return values[0];
+  const last = fractions.length - 1;
+  if (budget >= fractions[last]) return values[last];
+  let hi = 1;
+  while (hi < fractions.length && fractions[hi] < budget) hi++;
+  const lo = hi - 1;
+  const w = (budget - fractions[lo]) / (fractions[hi] - fractions[lo]);
+  return values[lo] + w * (values[hi] - values[lo]);
+}
+
+/** Incremental conversions captured at a targeted fraction, interpolated
+ * linearly on a (downsampled) Qini curve. */
+export function qiniCaptureAt(
+  points: { fractions: number[]; incremental: number[] },
+  budget: number,
+): number {
+  return sampleCurveAt({ fractions: points.fractions, values: points.incremental }, budget);
+}
+
+/** Recommended-arm shares among the top-`budget` of the best-uplift ranking,
+ * interpolated at the budget on the arm-mix lattice. */
+export function armMixAt(
+  mix: ArmMixByFraction | undefined,
+  budget: number,
+): { mens: number; womens: number; none: number } {
+  const shares = mix?.shares;
+  if (!mix || !shares) return { mens: 0, womens: 0, none: 0 };
+  return {
+    mens: sampleCurveAt({ fractions: mix.fractions, values: shares.mens }, budget),
+    womens: sampleCurveAt({ fractions: mix.fractions, values: shares.womens }, budget),
+    none: sampleCurveAt({ fractions: mix.fractions, values: shares.none }, budget),
+  };
 }

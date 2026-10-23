@@ -28,6 +28,18 @@ const BEST_ROWS = [
 const offsetRows = (rows: number[][], delta: number): number[][] =>
   rows.map((row) => row.map((v) => v + delta));
 
+// 1% arm-mix lattice: top of the ranking is mens-heavy, the full-send endpoint
+// matches scalars.recommended_arm_shares (mens .76 / womens .20 / none .04).
+const MIX_FRACTIONS = Array.from({ length: 100 }, (_, i) => (i + 1) / 100);
+const ARM_MIX = {
+  fractions: MIX_FRACTIONS,
+  shares: {
+    mens: MIX_FRACTIONS.map((f) => 0.95 - 0.19 * f),
+    womens: MIX_FRACTIONS.map((f) => 0.03 + 0.17 * f),
+    none: MIX_FRACTIONS.map((f) => 0.02 + 0.02 * f),
+  },
+};
+
 /** Payload fixture mirroring the real `demo_payload.json` contract (small grid). */
 const PAYLOAD: UpliftPayload = {
   schema_version: 1,
@@ -160,6 +172,7 @@ const PAYLOAD: UpliftPayload = {
     },
     random: { fractions: [0, 1], incremental: [0, 586.78], note: "fixture" },
   },
+  arm_mix_by_fraction: ARM_MIX,
   segments: {
     "Mens E-Mail": {
       n: 334,
@@ -212,6 +225,7 @@ const MANIFEST: DemoManifest = {
       "scalars",
       "profit_grid",
       "qini_points",
+      "arm_mix_by_fraction",
       "segments",
     ],
   },
@@ -366,11 +380,23 @@ describe("UpliftSimulator", () => {
     stubSvgRect();
     renderDemo();
     const svg = await screen.findByRole("img", { name: "campaign profit over targeted fraction" });
+    // qini capture + arm-mix readouts start at the 25% default
+    const qiniChip = screen.getByTestId("qini-capture");
+    const mixChip = screen.getByTestId("arm-mix-targeted");
+    expect(qiniChip.textContent).toBe(
+      "at 25% targeting: mens captures 40.0 vs random's 146.7 (−106.7)",
+    );
+    expect(mixChip.textContent).toBe("top 25%: 90% mens · 7% womens · 3% none");
     // stubbed 720px box, PAD.l 56, plot 646 wide: clientX 343 → fraction 0.5
     fireEvent(svg, new MouseEvent("pointerdown", { bubbles: true, clientX: 343, buttons: 1 }));
     expect(screen.getByText("budget 50%")).toBeInTheDocument();
     expect(screen.getByText("500")).toBeInTheDocument(); // 1000 × 0.5 targeted
     expect(screen.getByText("best arm $280.0k")).toBeInTheDocument();
+    // both secondary-panel readouts follow the cursor
+    expect(qiniChip.textContent).toBe(
+      "at 50% targeting: mens captures 80.0 vs random's 293.4 (−213.4)",
+    );
+    expect(mixChip.textContent).toBe("top 50%: 86% mens · 12% womens · 3% none");
   });
 
   it("applies scenario presets from the URL query string", async () => {
@@ -509,5 +535,19 @@ describe("uplift payload contract", () => {
       "No E-Mail",
     ]);
     expect(typeof payload.scalars.model_estimated_note).toBe("string");
+    // arm-mix lattice: 100 shares per arm, summing to 1, endpoint = full send
+    const mix = payload.arm_mix_by_fraction;
+    expect(mix.fractions).toHaveLength(100);
+    for (const key of ["mens", "womens", "none"] as const) {
+      expect(mix.shares[key]).toHaveLength(100);
+    }
+    for (let i = 0; i < 100; i++) {
+      const total = mix.shares.mens[i] + mix.shares.womens[i] + mix.shares.none[i];
+      expect(total).toBeCloseTo(1, 5);
+    }
+    const shares = payload.scalars.recommended_arm_shares;
+    expect(mix.shares.mens[99]).toBeCloseTo(shares.mens, 4);
+    expect(mix.shares.womens[99]).toBeCloseTo(shares.womens, 4);
+    expect(mix.shares.none[99]).toBeCloseTo(shares.none, 4);
   });
 });

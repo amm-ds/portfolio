@@ -12,6 +12,8 @@ serving model inference:
   bootstrap);
 - the empirical per-arm Qini curves on the randomized arm-vs-control pairs
   (downsampled) and the experiment-segment rates;
+- the cumulative recommended-arm mix along the best-uplift ranking at every
+  targeted fraction (top-k composition of mens/womens/none recommendations);
 - the committed scalars: revenue/cost model, full-send incrementals, arm
   shares, per-arm Qini coefficients + CIs, both committed break-even reads
   (two-arm cost sensitivity and the multi-arm best-arm ≈ $0.31), and the
@@ -115,6 +117,37 @@ def bootstrap_profit_grid(
     return {
         "best_arm": {"lo": lo_best, "hi": hi_best},
         "random": {"lo": lo_rand, "hi": hi_rand},
+    }
+
+
+def _arm_mix_by_fraction(
+    uplift_mens: NDArray[np.float64], uplift_womens: NDArray[np.float64]
+) -> dict[str, Any]:
+    """Cumulative recommended-arm mix along the best-uplift ranking.
+
+    Customers rank by their best-arm uplift ``max(u_m, u_w, 0)`` descending
+    (the same score ``estimated_qini_curve`` sorts by); at each lattice
+    fraction k/100 the shares are the {mens, womens, none} composition of the
+    top ``rint(f·N)`` customers. Stable tie-break on the frame order keeps it
+    deterministic — ties only occur at score 0, where the recommendation is
+    "none", so the none-share is non-decreasing along the grid and the k = 100
+    endpoint reproduces the full-send ``recommended_arm_shares``.
+    """
+    recommended = recommend_arm(uplift_mens, uplift_womens)
+    best = np.maximum(np.maximum(uplift_mens, uplift_womens), 0.0)
+    order = np.argsort(-best, kind="stable")
+    rec_sorted = recommended[order]
+    k = np.rint(np.asarray(DEMO_FRACTIONS) * len(best)).astype(np.int64)
+    counts = {
+        label: np.cumsum(rec_sorted == label, dtype=np.float64)
+        for label in ("mens", "womens", "none")
+    }
+    return {
+        "fractions": DEMO_FRACTIONS,
+        "shares": {
+            label: [round(float(c / kk), 6) for c, kk in zip(counts[label][k - 1], k, strict=True)]
+            for label in counts
+        },
     }
 
 
@@ -313,6 +346,7 @@ def build_demo_payload(cfg: UpliftConfig) -> dict[str, Any]:
             "row bootstrap (one shared resample per replication), percentile 95%",
         },
         "qini_points": qini_points,
+        "arm_mix_by_fraction": _arm_mix_by_fraction(u_m, u_w),
         "segments": segments,
     }
 
