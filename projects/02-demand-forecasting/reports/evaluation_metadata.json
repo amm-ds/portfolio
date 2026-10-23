@@ -1,0 +1,44 @@
+{
+  "protocol": "rolling_origin_holdout_v1",
+  "rolling_origin": {
+    "n_origins": 4,
+    "origin_spacing_days": 141,
+    "horizon_days": 14,
+    "embargo_gap_days": 7,
+    "min_train_size_dates": 60,
+    "test_window": {
+      "origin": 4,
+      "start": "2024-08-12",
+      "end": "2024-12-30",
+      "n_days": 141
+    }
+  },
+  "holdout_designation": "last origin = test; selection used origins 1..n-1 only",
+  "selection_used_origins": [
+    1,
+    2,
+    3
+  ],
+  "test_origin": 4,
+  "selection_rule": "champion (best_model) = lowest pooled MAE over origins 1..n-1; all candidates are then scored exactly once on the test window and those are the committed headline metrics",
+  "preprocessing_statement": "Feature engineering uses shift-only lags and deterministic calendar encodings (no statistic is estimated on future rows); every model, the ridge StandardScaler, the MASE seasonal denominator and the conformal calibration widths are fit within the training window of each fold; the test window is scored once and never read for selection",
+  "metric_definitions": {
+    "mae": "mean |actual - forecast| over the test window (all series pooled)",
+    "rmse": "root mean squared error over the test window",
+    "mape_pct": "mean absolute percentage error over non-zero actuals only, in % \u2014 inflated by near-zero demand on intermittent series; not decision-grade",
+    "mase": "MAE scaled by the per-series in-sample seasonal-naive-7 error of the test fold's training window; < 1 beats 'same day last week'",
+    "bias": "mean(forecast - actual) over the test window \u2014 systematic over- or under-forecasting",
+    "wape": "sum|actual - forecast| / sum|actual| over the test window (weighted absolute percentage error; null when the denominator is 0)",
+    "fold_maes": "per-fold pooled MAE, folds 1..n (fold n is the test window)",
+    "fold_mae_std": "population std of fold_maes across all folds",
+    "fold_mae_range": "max - min of fold_maes across all folds",
+    "horizon_mae": "per-horizon (h=1..14) mean |error| over the final 14 days of the test window, pooled over series",
+    "horizon_mase": "per-horizon (h=1..14) mean |error|/seasonal scale over the final 14 days of the test window",
+    "legacy_pooled_mae": "pre-holdout headline: pooled MAE over ALL folds (selection + test), kept for comparison",
+    "legacy_pooled_rmse": "pre-holdout headline: pooled RMSE over all folds",
+    "legacy_pooled_mape_pct": "pre-holdout headline: pooled MAPE over all folds",
+    "legacy_pooled_mase": "pre-holdout headline: pooled MASE over all folds"
+  },
+  "best_model": "ets",
+  "strongest_naive": "seasonal_naive"
+}

@@ -3109,3 +3109,123 @@ button.chip.wb-scenario.active {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* --- demand intelligence (forecast-workbench v2) ---------------------------- */
+
+/* tabbed secondary band: one wide panel replaces the three-panel row */
+.wb-secondary-wide {
+  grid-column: 1 / -1;
+}
+
+.wb-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.wb-tab {
+  cursor: pointer;
+}
+
+.wb-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.wb-tab-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* tab chart regions must never select text (Safari drag-selects svg text) */
+.wb-tab-viz {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* model comparison: compact metric table + fold-spread strip side by side */
+.wb-cmp-wrap {
+  display: flex;
+  gap: 0.9rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.wb-cmp-table-scroll {
+  flex: 1 1 58%;
+  min-width: 0;
+}
+
+.wb-cmp-table th,
+.wb-cmp-table td {
+  padding: 0.2rem 0.5rem;
+  font-size: 0.72rem;
+  vertical-align: top;
+}
+
+.wb-cmp-cell {
+  display: inline-block;
+  margin-right: 0.55rem;
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.wb-cmp-active th {
+  color: var(--accent);
+}
+
+.wb-model-pick {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  text-transform: inherit;
+}
+
+.wb-model-pick.active {
+  color: var(--accent);
+}
+
+.wb-fold-strip {
+  flex: 1 1 42%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+.wb-fold-strip svg {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* origin slider stop labels under the track */
+.wb-origin-stops {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.3rem;
+}
+
+.wb-origin-stop {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.wb-origin-stop.active {
+  color: var(--accent);
+}
+
+.wb-origin-holdout {
+  font-size: 0.62rem;
+  padding: 0 0.35rem;
+}

@@ -209,15 +209,61 @@ export interface UpliftPayload {
 }
 
 // --- demand forecast workbench payload (`projects/02-demand-forecasting/reports/demo_payload.json`) ---
+// Schema v2: multi-origin backtest bundle on the rolling_origin_holdout_v1
+// protocol — every catalog series carries the v1 window block PLUS three
+// rolling origins (early / middle / test), each with its own as-of-origin
+// history, the 14 horizon days of actuals, and per-model curves + window
+// metrics. Built by `demand_forecasting.demo_payload`.
 
-/** One catalog series: committed history, the last-fold backtest window with
- * champion/naive forecasts and the p10/p90 band, and the per-horizon errors.
- * `mase` entries are null for all-zero-history (sparse) series, whose
- * seasonal-naive scale is 0 — callers must render "n/a", never NaN. */
+export type DemandClass = "smooth" | "intermittent" | "sparse";
+
+/** The three showcased rolling origins; `test` is the frozen holdout window. */
+export type OriginLabel = "early" | "middle" | "test";
+
+/** Model candidates; `naive` is the weekly seasonal-naive floor. */
+export type ModelKey = "naive" | "champion" | "challenger";
+
+/** One model's 14-day window metrics at one origin. `mase` is null when the
+ * origin history's seasonal-naive scale is 0 (zero-scale sparse series);
+ * `wape` is null when the window has zero total demand. */
+export interface OriginWindowMetrics {
+  mae: number;
+  mase: number | null;
+  /** Mean signed error, pred − actual (committed sign convention). */
+  bias: number;
+  wape: number | null;
+}
+
+/** One model's committed curve at one origin: the 14 point forecasts plus,
+ * for the champion only, the p10/p90 band. */
+export interface OriginModelBlock extends OriginWindowMetrics {
+  y_pred: number[];
+  p10?: number[];
+  p90?: number[];
+}
+
+/** One series at one rolling origin: the as-of-origin history (≤60 days,
+ * nothing after the origin date — the embargo gap is real and the canvas
+ * must not bridge it), the 14 horizon days of actuals, and every model's
+ * curve + window metrics. */
+export interface OriginBlock {
+  origin_date: string;
+  history: { dates: string[]; y: number[] };
+  actuals: { dates: string[]; y: number[] };
+  /** In-sample seasonal-naive scale of the origin history (0 → MASE undefined). */
+  scale: number;
+  models: Record<ModelKey, OriginModelBlock>;
+}
+
+/** One catalog series: committed history, the last-fold (test-window)
+ * backtest block with champion/naive forecasts and the p10/p90 band, the
+ * per-horizon errors, and the multi-origin bundle. `mase` entries are null
+ * for all-zero-history (sparse) series, whose seasonal-naive scale is 0 —
+ * callers must render "n/a", never NaN. */
 export interface CatalogSeries {
   series_id: string;
   label: string;
-  demand_class: "smooth" | "intermittent" | "sparse";
+  demand_class: DemandClass;
   history: { dates: string[]; y: number[] };
   forecast: {
     dates: string[];
@@ -232,6 +278,7 @@ export interface CatalogSeries {
     champion: { mae: number[]; mase: (number | null)[] };
     naive: { mae: number[]; mase: (number | null)[] };
   };
+  origins: Record<OriginLabel, OriginBlock>;
 }
 
 export interface ForecastPayload {
@@ -244,20 +291,34 @@ export interface ForecastPayload {
     headline: {
       claim: string;
       champion: string;
+      challenger: string;
       champion_mase: number;
       champion_mae: number;
       naive_mase: number;
+      strongest_naive: string;
+      strongest_naive_mae: number;
+      champion_mae_edge_vs_strongest_naive_pct: number;
       only_champion_below_mase_1: boolean;
+      /** Model names with a committed MASE < 1 — empty on this dataset (the
+       * honest headline: no run clears MASE 1 on the frozen test window). */
+      runs_below_mase_1: string[];
       mase_by_model: Record<string, number>;
     };
     band: {
       target_coverage: number;
       quantile_coverage_pooled: number;
       split_conformal_coverage_last_fold: number;
+      calibration_verdict: string | null;
+      /** Per-horizon empirical coverage of the split-conformal band. */
+      horizon_coverage: number[];
+      /** Per-horizon mean band width — all-zero on this dataset (the UCI
+       * conformal band is degenerate: zero width on zero-demand days). */
+      horizon_avg_width: number[];
       note: string;
     } | null;
     models: {
       champion: string;
+      challenger: string;
       global: string;
       naive: string;
       selection_rule: string;
@@ -270,7 +331,7 @@ export interface ForecastPayload {
     };
     catalog_summary: {
       n_series: number;
-      by_class: { smooth: number; intermittent: number; sparse: number };
+      by_class: Record<DemandClass, number>;
       history_days: number;
       horizon_days: number;
       forecast_window: [string, string];
@@ -278,6 +339,68 @@ export interface ForecastPayload {
         zero_frac_smooth_max: number;
         zero_frac_intermittent_max: number;
       };
+      origins: Record<
+        OriginLabel,
+        {
+          origin: number;
+          fold_index: number;
+          origin_date: string;
+          horizon_window: [string, string];
+          history_days: number;
+        }
+      >;
     };
+  };
+  origins_meta: {
+    origins: Array<{
+      label: OriginLabel;
+      origin: number;
+      fold_index: number;
+      origin_date: string;
+      horizon_window: [string, string];
+      /** Present only on the frozen test window. */
+      holdout?: string;
+    }>;
+    selection_used_origins: number[];
+    horizon_days: number;
+  };
+  evaluation_metadata: {
+    protocol: string;
+    rolling_origin: {
+      n_origins: number;
+      origin_spacing_days: number;
+      horizon_days: number;
+      embargo_gap_days: number;
+      min_train_size_dates: number;
+      test_window: { origin: number; start: string; end: string; n_days: number };
+    };
+    holdout_designation: string;
+    selection_used_origins: number[];
+    test_origin: number;
+    selection_rule: string;
+    preprocessing_statement: string;
+    metric_definitions: Record<string, string>;
+    best_model: string;
+    strongest_naive: string;
+    target_definition: string;
+  };
+  dataset_metadata: {
+    dataset: string;
+    source: { url: string; sha256: string; sheet: string; license: string };
+    cancellation_filtering: string;
+    quantity_handling: string;
+    geography: string;
+    products: string;
+    daily_aggregation: string;
+    observed_panel: {
+      date_start: string;
+      date_end: string;
+      n_days: number;
+      n_rows: number;
+      n_series: number;
+      zero_share: number;
+    };
+    zero_sales_caveat: string;
+    target_definition: string;
   };
 }

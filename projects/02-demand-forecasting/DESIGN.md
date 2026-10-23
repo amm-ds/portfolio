@@ -123,6 +123,29 @@ small tabular lag problems; a sequence model is the roadmap answer).
   for comparison). Coherence after reconciliation is exactly `(1-w)` times
   the incoherence before (property-tested).
 
+### H. Final holdout + frozen selection protocol (wave 18, audit hardening)
+
+- **Status quo (waves 1–13)**: all folds pooled into one headline number, and
+  the champion pick read the same pooled numbers — selection and final
+  judgement were the same data, so the headline was optimistically biased and
+  the "test" was not a test.
+- **Last-block holdout without rolling origins**: a single final block is
+  honest but gives one (possibly lucky) reading and no stability signal.
+- **Decision: rolling-origin holdout (`rolling_origin_holdout_v1`)** — the
+  existing expanding-window folds stay, but the LAST origin becomes the test
+  window: model/feature selection (`best_model`, champion) pools folds
+  1..n-1 ONLY, every candidate is then scored exactly once on the test
+  window, and the committed headline metrics are the test-window numbers.
+  The pre-holdout all-fold pooled values are kept per model under
+  `legacy_pooled_*` (nothing silently dropped). Property-tested: shuffling
+  the test fold's actuals leaves the selection result unchanged. The
+  protocol is emitted machine-readably in `evaluation_metadata.json`
+  (`selection_used_origins` vs `test_origin`), and metric suite extended
+  (bias, zero-safe WAPE, fold MAEs + std/range, per-horizon h=1..14 MAE/MASE
+  over the test window's final 14 days). The uncertainty band is evaluated on
+  the test window too: per-horizon coverage AND average width, with a
+  calibrated/conservative/optimistic verdict at the 0.05 tolerance.
+
 ## Pipeline
 
 ```mermaid
@@ -150,6 +173,9 @@ flowchart LR
 3. Backtest row masks are date-aligned: newest training date < earliest
    validation date.
 4. Metrics are computed on pooled **out-of-fold** predictions only.
+5. Frozen holdout: the last origin is the test window; selection pools
+   origins 1..n-1 only — property-tested by shuffling the test fold's
+   actuals and asserting the champion pick is unchanged.
 
 ## Experiment versioning (ADR-0007 worked example)
 
@@ -199,6 +225,38 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.7.0 (2026-10-23)** — wave 18 (senior-review hardening): frozen holdout
+  protocol `rolling_origin_holdout_v1` — the last rolling-origin window is the
+  test window; `best_model`/champion selection pools folds 1..n-1 only
+  (property-tested: shuffling the test window's actuals leaves the pick
+  unchanged); all candidates are scored once on the test window and those are
+  the committed headline numbers. The pre-holdout all-fold pooled values are
+  retained per model as `legacy_pooled_*` in metrics.json (the old quoted
+  numbers live on there — README/story now quote only regenerated values, and
+  `tests/test_readme_numbers.py` drift-guards the README tables against the
+  committed metrics). `reports*/evaluation_metadata.json` states the protocol
+  machine-readably (selection_used_origins vs test_origin, within-train-window
+  preprocessing guarantee, metric definitions). Metric suite extended: bias,
+  zero-safe WAPE, `fold_maes`/`fold_mae_std`/`fold_mae_range`, per-horizon
+  (h=1..14) `horizon_mae`/`horizon_mase` over the test window's final 14 days
+  (demo-payload window convention); the metrics figure keeps unit-mixing
+  metrics on separate axes and carries the zero-demand MAPE caveat.
+  Uncertainty evaluation on the test window: per-horizon empirical coverage
+  AND average width plus a `calibration_verdict` (|coverage−target| ≤ 0.05)
+  in probabilistic.json. UCI data-generating process documented in
+  `reports_uci/dataset_metadata.json` (+ README/DESIGN section, emitted by
+  `prepare`), including the "zero-sales days may be missing rather than true
+  zero demand (no trading calendar)" caveat and the one-sentence target
+  definition. Regenerated canonical run, headline moves (test window =
+  holiday quarter): UCI champion still `hgb_tuned` by selection (9.545 MAE /
+  1.078 MASE) but no run clears MASE 1.0 and `lgbm_tuned` posts the best
+  test-window MAE (9.409) — the old "synthetic champion ranks 4th on real
+  data" claim was a pooled artifact and is corrected; synthetic test window
+  still led by ETS (8.924), `temporal_net` best ML (9.244); reconciliation
+  w=0.60 UCI (store MAE 738.7→676.4) / w=0.00 synthetic; band verdicts
+  optimistic (synthetic, 0.741 @ 26.5u) and degenerate-conservative (UCI,
+  0.861 @ 0.00u). dvc repro remains broken repo-wide (07 overlap) — stages
+  were executed via their `cmd`s directly.
 - **0.6.0 (2026-10-15)** — wave 13 (external-audit driven): UCI Online Retail
   II promoted to the headline track (README/story lead with real numbers;
   synthetic explicitly the CI fast path — and a CLI bug fixed where the

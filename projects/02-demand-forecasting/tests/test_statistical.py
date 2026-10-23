@@ -90,7 +90,7 @@ def test_ets_fit_and_forecast() -> None:
 
 def test_ets_in_backtest_ladder(features, config: ForecastConfig) -> None:
     """ETS runs through the identical backtest and produces a sane MASE."""
-    from demand_forecasting.evaluate import _mae, backtest
+    from demand_forecasting.evaluate import backtest
     from demand_forecasting.model import NUMERIC_FEATURES, ModelSpec
 
     spec = ModelSpec(name="ets", numeric=NUMERIC_FEATURES, categorical=["series_id"])
@@ -98,4 +98,4 @@ def test_ets_in_backtest_ladder(features, config: ForecastConfig) -> None:
     run = result.runs[0]
     mase = run.get("mase")
     assert mase is not None and np.isfinite(mase.value)
-    assert _mae(result, "ets") > 0
+    assert result.pooled_mae("ets") > 0

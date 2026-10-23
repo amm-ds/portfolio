@@ -6,9 +6,11 @@ real track; seeded synthetic hierarchy as the labelled CI fast path) ·
 
 > A retailer stocking 200 products across 8 countries needs daily unit
 > forecasts it can trust for replenishment — every point of error is working
-> capital or lost sales. On real transactions the tuned gradient-boosting
-> model beats the strongest naive floor (seasonal naive) by 8.8% MAE
-> (8.989 vs 9.859) — the only run with MASE < 1.
+> capital or lost sales. On real transactions, under a frozen holdout
+> protocol (champion selected on origins 1..n-1, final quarter scored once),
+> the tuned gradient-boosting model beats the strongest naive floor (seasonal
+> naive) by 15.7% MAE on the held-back quarter (9.545 vs 11.323); no run
+> clears MASE 1.0 on that window — stated, not smoothed over.
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -24,78 +26,91 @@ PyTorch embedding+MLP, all through the identical embargoed expanding-window
 checkpointed), MinT-lite hierarchical reconciliation with a tested coherence
 guarantee, and probabilistic 80% bands.
 
-## Key results (pooled out-of-fold)
+## Key results (frozen holdout: test window scored once)
 
 Real-data track — UCI Online Retail II (top 8 countries × top 200 products,
 374 days, 405,416 panel rows, 89% zero share; MAE/MASE lead, MAPE reported but
-not decision-grade at this zero share). *How to read: lower is better everywhere;
-MASE below 1.0 means the run beats "same day last week"; bold = shipped champion.*
+not decision-grade at this zero share). The table is scored on the final
+rolling-origin window (2010-10-01..2010-12-09, the holiday quarter); the
+champion was selected on origins 1..3 only and every run is scored exactly
+once on the test window. *How to read: lower is better everywhere; MASE below
+1.0 means the run beats "same day last week"; bold = selected champion.*
 
 | run | MAE | RMSE | MAPE | MASE | Δ MAE vs sn | Δ MASE vs sn |
 |---|---|---|---|---|---|---|
-| naive_mean (floor) | 10.838 | 97.607 | 91.3% | 1.132 | +0.979 | +0.015 |
-| naive_last (persistence) | 10.288 | 135.674 | 356.2% | 1.168 | +0.429 | +0.051 |
-| seasonal_naive (lag-7) | 9.859 | 135.298 | 439.0% | 1.117 | 0.000 | 0.000 |
-| ETS (Holt-Winters, damped+weekly) | 11.256 | 116.865 | 352.3% | 1.361 | +1.397 | +0.244 |
-| ridge (collapses) | 16.734 | 98.531 | 236.2% | 1.560 | +6.875 | +0.443 |
-| hgb (default sklearn) | 9.085 | 97.256 | 245.9% | 1.002 | −0.774 | −0.115 |
-| **hgb_tuned (Optuna, 56 trials) ← best** | **8.989** | **96.688** | **228.6%** | **0.980** | **−0.870** | **−0.137** |
-| xgb_tuned (Optuna, 25 trials) | 9.385 | 98.136 | 275.2% | 1.042 | −0.474 | −0.075 |
-| lgbm_tuned (Optuna, 25 trials) | 9.600 | 96.535 | 287.9% | 1.055 | −0.259 | −0.062 |
-| temporal_net (PyTorch emb+MLP) | 12.704 | 96.813 | 215.8% | 1.232 | +2.845 | +0.115 |
+| naive_mean (floor) | 12.475 | 74.699 | 90.3% | 1.382 | +1.152 | +0.072 |
+| naive_last (persistence) | 11.505 | 99.548 | 327.6% | 1.331 | +0.182 | +0.021 |
+| seasonal_naive (lag-7) | 11.323 | 114.921 | 305.4% | 1.310 | 0.000 | 0.000 |
+| ETS (Holt-Winters, damped+weekly) | 11.471 | 80.827 | 302.7% | 1.338 | +0.148 | +0.028 |
+| ridge | 12.384 | 72.680 | 221.7% | 1.395 | +1.061 | +0.085 |
+| hgb (default sklearn) | 9.565 | 71.700 | 260.3% | 1.085 | −1.758 | −0.225 |
+| **hgb_tuned (Optuna, 56 trials) ← best** | **9.545** | **71.847** | **230.0%** | **1.078** | **−1.778** | **−0.232** |
+| xgb_tuned (Optuna, 25 trials) | 9.804 | 73.287 | 277.2% | 1.118 | −1.519 | −0.192 |
+| lgbm_tuned (Optuna, 25 trials) | 9.409 | 71.360 | 272.3% | 1.076 | −1.914 | −0.234 |
+| temporal_net (PyTorch emb+MLP) | 11.770 | 71.849 | 183.6% | 1.305 | +0.447 | −0.005 |
 
 *Δ vs seasonal_naive (sn) per row — negative means the run beats "same day
 last week" on that metric; the best row is marked ← best.*
 
-![The tuned HGB run tracks two representative UCI series day by day and clears the seasonal-naive floor on the last CV fold](../assets/projects/02-demand-forecasting/forecast_vs_actual.png){ width="100%" }
+![The tuned HGB run tracks two representative UCI series day by day and clears the seasonal-naive floor on the test window](../assets/projects/02-demand-forecasting/forecast_vs_actual.png){ width="100%" }
 
-Synthetic track — seeded CI fast path (24 series × 4 folds, seed 42; note what
-clean data does to the statistical baselines). *How to read: same metrics on clean
-seeded data; bold = track winners (ETS overall, lgbm_tuned best among ML runs).*
+Synthetic track — seeded CI fast path (24 series × 4 origins, seed 42; note
+what clean data does to the statistical baselines). Same frozen protocol: bars
+are test-window numbers, champion selected on origins 1..3. *How to read: same
+metrics on clean seeded data; bold = track champion (ETS overall; temporal_net
+edges the ML pack on this window by 0.1 units — fold-noise level).*
 
 | run | MAE | RMSE | MAPE | MASE |
 |---|---|---|---|---|
-| naive_mean (floor) | 31.762 | 42.543 | 49.02% | 3.490 |
-| naive_last (persistence) | 14.476 | 19.881 | 19.28% | 1.591 |
-| seasonal_naive (lag-7) | 10.387 | 14.741 | 13.78% | 1.141 |
-| **ETS (Holt-Winters, damped+weekly)** | **8.110** | **11.510** | 10.45% | **0.891** |
-| ridge | 9.116 | 12.705 | 12.44% | 1.002 |
-| hgb | 8.619 | 12.178 | 11.43% | 0.947 |
-| hgb_tuned (Optuna, 56 trials) | 8.529 | 12.071 | 11.34% | 0.937 |
-| xgb_tuned (Optuna, 25 trials) | 8.539 | 12.086 | 11.32% | 0.938 |
-| **lgbm_tuned (Optuna, 25 trials)** | **8.413** | **11.905** | 11.16% | **0.924** |
-| temporal_net (PyTorch emb+MLP) | 9.341 | 12.756 | 13.41% | 1.026 |
+| naive_mean (floor) | 35.946 | 48.639 | 48.26% | 3.755 |
+| naive_last (persistence) | 16.223 | 22.238 | 19.47% | 1.695 |
+| seasonal_naive (lag-7) | 11.780 | 16.689 | 13.98% | 1.231 |
+| **ETS (Holt-Winters, damped+weekly)** | **8.924** | **12.691** | 10.37% | **0.932** |
+| ridge | 9.705 | 13.706 | 11.92% | 1.014 |
+| hgb | 9.549 | 13.380 | 11.58% | 0.998 |
+| hgb_tuned (Optuna, 56 trials) | 9.472 | 13.269 | 11.51% | 0.990 |
+| xgb_tuned (Optuna, 25 trials) | 9.525 | 13.372 | 11.59% | 0.995 |
+| lgbm_tuned (Optuna, 25 trials) | 9.341 | 13.101 | 11.31% | 0.976 |
+| temporal_net (PyTorch emb+MLP) | 9.244 | 12.908 | 11.38% | 0.966 |
 
-- **Cross-track transfer is the honest punchline**: `lgbm_tuned`, best ML run
-  on synthetic (MAE 8.413, −41.9% vs persistence), drops to fourth on UCI
-  (9.600); `hgb_tuned` generalises best on real data (8.989, the only run with
-  MASE < 1). Configs tuned on clean synthetic demand do not transfer to
-  intermittent real demand.
-- ETS wins the synthetic ladder outright (MASE 0.891) and loses to its own
-  seasonal naive on UCI (11.256 vs 9.859, MASE 1.361) — 89% zeros break the
-  smooth-seasonality assumption. Both verdicts reported.
-- HPO improved on hgb in **every** fold on synthetic (8.619 → 8.529, −1.0%);
-  the NN trails the linear baseline on both tracks — reported, not hidden.
-- Probabilistic 80% band coverage: quantile band 0.727 synthetic / 0.919
-  UCI (pooled); zero-aware split-conformal **0.757 / 0.858 on the last fold**
-  (target 0.80), widths calibrated per predicted-zero bin. On UCI the
+- **Cross-track rankings reversed under the frozen protocol — in both
+  directions**: the old pooled ladder claimed `lgbm_tuned` (best synthetic ML
+  run) "drops to fourth on real data"; on the one-shot test window
+  `lgbm_tuned` posts the best MAE of all runs (9.409, ahead of the selection
+  champion 9.545 — a 1.4% gap inside fold noise), while the synthetic overall
+  champion `ets` ranks 6th on UCI (11.471). Configs tuned on clean synthetic
+  demand behave differently on intermittent real demand; neither pooled nor
+  single-window rankings should be read as more than what they are.
+- ETS wins the synthetic test window outright (MASE 0.932) and loses to its
+  own seasonal naive on UCI (11.471 vs 11.323, MASE 1.338) — 89% zeros break
+  the smooth-seasonality assumption. Both verdicts reported.
+- HPO improved on hgb in **every** fold on synthetic (8.619 → 8.529, −1.0%
+  pooled legacy); on the synthetic test window the NN edges every ML run
+  (9.244) without threatening ETS — reported, not hidden.
+- Probabilistic 80% band, coverage AND width on the test window: quantile
+  band 0.727 synthetic / 0.919 UCI (pooled); zero-aware split-conformal
+  horizon set **0.741 synthetic (avg width 26.5 units, under-covers) / 0.861
+  UCI (avg width 0.00 — degenerate)** against the 0.80 target. On UCI the
   champion's median forecast is 0 on ~100% of rows, so the band collapses to
   the point forecast — the honest limit, stated on the figure, whose buttons
   drop the band interactively.
-- UCI reconciliation: w=0.70, incoherence 384.0 → 115.2 (coherence property
-  exact); store MAE 746.9 → 737.9. Synthetic: w=0.05, accuracy effect near
-  null and reported as such.
-- 6/6 DQ gates on both tracks; synthetic pipeline ≈ 4 min, UCI ≈ 25 min;
-  58 offline tests.
+- UCI reconciliation: w=0.60, incoherence 500.0 → 200.0 (coherence property
+  exact); store MAE 738.7 → 676.4. Synthetic: w=0.00, accuracy effect null
+  and reported as such.
+- 6/6 DQ gates on both tracks; synthetic evaluate ≈ 1.5 min, UCI ≈ 7 min;
+  78 offline tests.
 
-![Only the tuned HGB run beats the seasonal-naive floor on real data — left: MAE and RMSE per run in units; right: MASE against the 1.0 seasonal-naive parity line, with MAPE omitted as unit-incompatible (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
+![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE against the 1.0 seasonal-naive parity line, with MAPE omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 
 ## Artifacts
 
 - Figures: interactive versions live in the [showcase app case study](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting);
   static artifacts (`.html` + `.json`, per track) in `reports/figures/` and `reports_uci/figures/`
-- Metrics: `reports/metrics.json` (+ `_uci`) · Report: `report.html` ·
-  Reconciliation: `reconciliation.json` · Probabilistic: `probabilistic.json`
+- Metrics: `reports/metrics.json` (+ `_uci`, with `_meta` protocol block and
+  `legacy_pooled_*`) · Protocol: `evaluation_metadata.json` · Report:
+  `report.html` · Reconciliation: `reconciliation.json` · Probabilistic:
+  `probabilistic.json` (per-horizon coverage/width + verdict) ·
+  Data-generating process: `dataset_metadata.json` (UCI)
 - Dataset cards: `data/dataset.json`, `data_uci/dataset.json` · HPO:
   `data/hpo_best.json` (+ `hpo_study.db`) · Story: `story.yaml`
 

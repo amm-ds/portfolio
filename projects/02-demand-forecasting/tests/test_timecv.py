@@ -4,7 +4,7 @@ import numpy as np
 import polars as pl
 import pytest
 from demand_forecasting.config import ForecastConfig
-from demand_forecasting.evaluate import _date_positions, _mae, backtest, best_model
+from demand_forecasting.evaluate import _date_positions, backtest, best_model
 from portfolio_core.timecv import TimeSeriesCV
 
 
@@ -71,10 +71,13 @@ def test_naive_baselines_are_sane(features: pl.DataFrame, config: ForecastConfig
 
 
 def test_learners_beat_naives(features: pl.DataFrame, config: ForecastConfig) -> None:
-    """The trained models must clear the naive floor on pooled out-of-fold MAE."""
+    """The trained models must clear the naive floor on the selection folds' pooled MAE."""
     result = backtest(features, config)
-    naive_floor = min(_mae(result, n) for n in ("naive_mean", "naive_last", "seasonal_naive"))
-    assert _mae(result, best_model(result)) < naive_floor
+    selection = set(result.selection_fold_ids())
+    naive_floor = min(
+        result.pooled_mae(n, selection) for n in ("naive_mean", "naive_last", "seasonal_naive")
+    )
+    assert result.pooled_mae(best_model(result), selection) < naive_floor
 
 
 def test_cv_rejects_impossible_config() -> None:

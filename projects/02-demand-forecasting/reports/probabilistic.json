@@ -1,7 +1,7 @@
 {
   "target_coverage": 0.8,
   "horizon": 1,
-  "horizons_note": "The modelling frame is one-day-ahead (h=1 only). Multi-horizon coverage (h in {1, 7}) needs a horizon-stacked frame \u2014 roadmap.",
+  "horizons_note": "The modelling frame is one-day-ahead per origin (each row's forecast uses only information available the day before). Per-horizon statistics group the test window's final 14 days by day-offset (h=1..14) \u2014 descriptive coverage/width by horizon position, not separately calibrated bands. Origin-stacked multi-horizon conformal remains roadmap.",
   "quantile_band": {
     "coverage_pooled": 0.7273936170212766,
     "per_fold": [
@@ -40,7 +40,43 @@
     },
     "coverage_last_fold": 0.7573877068557919,
     "coverage_last_fold_zero_bin": null,
-    "coverage_last_fold_nonzero_bin": 0.7573877068557919
+    "coverage_last_fold_nonzero_bin": 0.7573877068557919,
+    "horizon_coverage": [
+      0.7916666666666666,
+      0.625,
+      0.7083333333333334,
+      0.7083333333333334,
+      0.75,
+      0.7916666666666666,
+      0.7916666666666666,
+      0.625,
+      0.5416666666666666,
+      0.75,
+      0.8333333333333334,
+      0.875,
+      0.75,
+      0.8333333333333334
+    ],
+    "horizon_avg_width": [
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909382,
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909382,
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909383,
+      26.49148573909383
+    ],
+    "coverage_horizon_set": 0.7410714285714286,
+    "avg_width_horizon_set": 26.49148573909382,
+    "calibration_verdict": "optimistic",
+    "calibration_verdict_rule": "coverage pooled over horizons 1..14 of the test window: |coverage - target| <= 0.05 -> calibrated; above target -> conservative; below -> optimistic"
   },
   "mae_p50_pooled": 8.706214863940453
 }

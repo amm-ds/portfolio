@@ -35,6 +35,11 @@ def test_run_probabilistic_on_fixture(
 
     persisted = json.loads((settings.reports_dir / "probabilistic.json").read_text())
     assert persisted["target_coverage"] == 0.8
+    conf = persisted["split_conformal"]
+    assert len(conf["horizon_coverage"]) == 14 == len(conf["horizon_avg_width"])
+    assert conf["calibration_verdict"] in {"calibrated", "conservative", "optimistic"}
+    assert 0.0 <= conf["coverage_horizon_set"] <= 1.0
+    assert conf["avg_width_horizon_set"] >= 0.0
     assert (settings.reports_dir / "figures" / "probabilistic_band.html").exists()
     assert (settings.reports_dir / "figures" / "probabilistic_band.json").exists()
 

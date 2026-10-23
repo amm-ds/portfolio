@@ -16,8 +16,9 @@ Two complementary 80% bands on top of the tuned HGB config:
   The band is applied to the last fold only (classic split-conformal:
   coverage is marginal and exchangeability-based).
 
-Outputs ``reports/probabilistic.json`` (empirical coverages) and
-``figures/probabilistic_band`` (two high-volume example series, last fold;
+Outputs ``reports/probabilistic.json`` (empirical coverages, per-horizon
+coverage AND average width on the test window, calibration verdict) and
+``figures/probabilistic_band`` (two high-volume example series, test window;
 an updatemenu toggles the band off — "actual only"). Honest reporting:
 coverage is empirical out-of-fold, never in-sample, and the achieved number
 is stated in the figure subtitle.
@@ -37,7 +38,7 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.preprocessing import OneHotEncoder
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
-from demand_forecasting.evaluate import _display_series, cv_row_folds
+from demand_forecasting.evaluate import EVAL_HORIZON_DAYS, _display_series, cv_row_folds
 from demand_forecasting.model import NUMERIC_FEATURES, model_specs, to_xy
 
 logger = get_logger(__name__)
@@ -45,6 +46,9 @@ logger = get_logger(__name__)
 QUANTILES = (0.1, 0.5, 0.9)
 TARGET_COVERAGE = 0.8
 EXAMPLE_N = 2
+# |coverage - target| within this tolerance at the evaluation horizon set
+# counts as calibrated; above the target is conservative, below is optimistic.
+CALIBRATION_TOL = 0.05
 
 
 def _design_matrix(features: pl.DataFrame, config: ForecastConfig) -> tuple[np.ndarray, np.ndarray]:
@@ -78,6 +82,60 @@ def _fit_quantile_models(
 def coverage(y_true: np.ndarray, lo: np.ndarray, hi: np.ndarray) -> float:
     """Empirical coverage of a prediction band."""
     return float(np.mean((y_true >= lo) & (y_true <= hi)))
+
+
+def calibration_verdict(empirical: float, target: float = TARGET_COVERAGE) -> str:
+    """Classify band calibration: calibrated / conservative / optimistic.
+
+    ``conservative`` = the band covers MORE than targeted (wider than needed),
+    ``optimistic`` = it covers less. Tolerance per CALIBRATION_TOL.
+    """
+    if abs(empirical - target) <= CALIBRATION_TOL:
+        return "calibrated"
+    return "conservative" if empirical > target else "optimistic"
+
+
+def horizon_band_stats(
+    last: dict[str, np.ndarray], n_horizons: int = EVAL_HORIZON_DAYS
+) -> dict[str, Any]:
+    """Per-horizon empirical coverage and average band width on the test window.
+
+    Horizons are day-offsets within the final ``n_horizons`` days of the test
+    window (per-series chronological rank — the same convention as
+    ``evaluate._horizon_metrics`` and the demo payload's forecast window).
+    Reported alongside the pooled horizon-set numbers so a band that covers
+    on average can still be seen missing at specific horizons.
+    """
+    dates = last["dates"]
+    block_start = dates.max() - np.timedelta64(n_horizons - 1, "D")
+    block = np.flatnonzero(dates >= block_start)
+    covered = (last["y_true"] >= last["conf_lo"]) & (last["y_true"] <= last["conf_hi"])
+    width = last["conf_hi"] - last["conf_lo"]
+    position: dict[str, int] = {}
+    cov = [float("nan")] * n_horizons
+    avg_width = [float("nan")] * n_horizons
+    cov_sum = np.zeros(n_horizons)
+    width_sum = np.zeros(n_horizons)
+    cnt = np.zeros(n_horizons)
+    for i in block:
+        sid = str(last["series"][i])
+        h = position.get(sid, 0)
+        if h >= n_horizons:
+            continue
+        position[sid] = h + 1
+        cov_sum[h] += float(covered[i])
+        width_sum[h] += float(width[i])
+        cnt[h] += 1
+    for h in range(n_horizons):
+        if cnt[h]:
+            cov[h] = float(cov_sum[h] / cnt[h])
+            avg_width[h] = float(width_sum[h] / cnt[h])
+    return {
+        "horizon_coverage": cov,
+        "horizon_avg_width": avg_width,
+        "coverage_horizon_set": float(np.mean(covered[block])) if block.size else float("nan"),
+        "avg_width_horizon_set": float(np.mean(width[block])) if block.size else float("nan"),
+    }
 
 
 def _zero_bin_widths(
@@ -154,6 +212,11 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
     zero_mask = last["p50"] <= 0
     quantile_cov_pooled = float(np.mean([f["quantile_band_coverage"] for f in per_fold]))
 
+    # test-window band evaluation: per-horizon (h=1..14) coverage AND average
+    # width over the final 14 days, plus a calibration verdict for the champion.
+    horizon = horizon_band_stats(last)
+    verdict = calibration_verdict(horizon["coverage_horizon_set"])
+
     def _bin_coverage(mask: np.ndarray) -> float | None:
         """Coverage within one bin; None when the fold has no rows in it."""
         if not mask.any():
@@ -164,8 +227,11 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
         "target_coverage": TARGET_COVERAGE,
         "horizon": 1,
         "horizons_note": (
-            "The modelling frame is one-day-ahead (h=1 only). Multi-horizon "
-            "coverage (h in {1, 7}) needs a horizon-stacked frame — roadmap."
+            "The modelling frame is one-day-ahead per origin (each row's forecast uses "
+            "only information available the day before). Per-horizon statistics group "
+            "the test window's final 14 days by day-offset (h=1..14) — descriptive "
+            "coverage/width by horizon position, not separately calibrated bands. "
+            "Origin-stacked multi-horizon conformal remains roadmap."
         ),
         "quantile_band": {
             "coverage_pooled": quantile_cov_pooled,
@@ -179,6 +245,12 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
             "coverage_last_fold": conformal_cov,
             "coverage_last_fold_zero_bin": _bin_coverage(zero_mask),
             "coverage_last_fold_nonzero_bin": _bin_coverage(~zero_mask),
+            # frozen-holdout evaluation of the band applied to the test window
+            **horizon,
+            "calibration_verdict": verdict,
+            "calibration_verdict_rule": "coverage pooled over horizons 1..14 of the test "
+            "window: |coverage - target| <= 0.05 -> calibrated; above target -> "
+            "conservative; below -> optimistic",
         },
         "mae_p50_pooled": float(np.mean([f["mae_p50"] for f in per_fold])),
     }
@@ -187,12 +259,16 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
     out.write_text(json.dumps(result, indent=2))
     logger.info(
         "probabilistic: quantile band coverage %.3f (target %.2f), zero-aware "
-        "conformal %.3f (zero bin %s / nonzero bin %s)",
+        "conformal %.3f (zero bin %s / nonzero bin %s); test window h=1..14: "
+        "coverage %.3f, avg width %.2f -> %s",
         quantile_cov_pooled,
         TARGET_COVERAGE,
         conformal_cov,
         _fmt_bin(result["split_conformal"]["coverage_last_fold_zero_bin"]),
         _fmt_bin(result["split_conformal"]["coverage_last_fold_nonzero_bin"]),
+        horizon["coverage_horizon_set"],
+        horizon["avg_width_horizon_set"],
+        verdict,
     )
 
     fig = figure_probabilistic_band(features, last, result)
@@ -293,7 +369,10 @@ def figure_probabilistic_band(
     )
     add_takeaway(
         fig,
-        f"last fold, two highest-volume series — {TARGET_COVERAGE:.0%} target{bins}",
+        f"test window, two highest-volume series — {TARGET_COVERAGE:.0%} target{bins}; "
+        f"h=1..14: coverage {conf['coverage_horizon_set']:.2f}, "
+        f"avg width {conf['avg_width_horizon_set']:.1f} units "
+        f"({conf['calibration_verdict']})",
     )
     # Exceptional top margin: the updatemenu buttons sit above the plot
     # (y=1.10) in the band below the two-line title.

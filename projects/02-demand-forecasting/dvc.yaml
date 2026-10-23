@@ -44,6 +44,7 @@ stages:
     outs:
       - reports/report.html
       - reports/figures
+      - reports/evaluation_metadata.json
 
     metrics:
       - reports/metrics.json
@@ -69,5 +70,7 @@ stages:
       - data_uci/features.parquet
       - reports_uci/metrics.json
       - reports_uci/probabilistic.json
+      - reports_uci/evaluation_metadata.json
+      - reports_uci/dataset_metadata.json
     outs:
       - reports/demo_payload.json
