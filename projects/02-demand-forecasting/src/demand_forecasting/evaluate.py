@@ -121,13 +121,17 @@ class BacktestResult:
     Holdout protocol: folds ``0..n-2`` are the *selection* folds, the last
     fold is the *test window*. ``runs`` carry the test-window metrics as the
     headline (plus ``legacy_pooled_*``); champion selection only ever reads
-    the selection folds.
+    the selection folds. ``multistep`` optionally carries the direct
+    multi-horizon track result (protocol ``direct_multihorizon_v1``) — the
+    primary headline; the nowcast ladder above stays frozen and is never
+    mixed into the multi-step leaderboard.
     """
 
     runs: list[RunResult] = field(default_factory=list)
     folds: list[FoldRecord] = field(default_factory=list)
     horizon_mae: dict[str, list[float]] = field(default_factory=dict)
     horizon_mase: dict[str, list[float]] = field(default_factory=dict)
+    multistep: Any | None = None
 
     def last_fold(self, model: str) -> FoldRecord:
         recs = [f for f in self.folds if f.model == model]
@@ -730,11 +734,29 @@ def write_evaluation_metadata(
 def evaluate(
     settings: DemandSettings, config: ForecastConfig, features_path: Path | None = None
 ) -> BacktestResult:
-    """Run the full backtest, persist metrics.json + report.html + figures."""
+    """Run the full backtest, persist metrics.json + report.html + figures.
+
+    Runs both tracks: the frozen nowcast ladder (rolling_origin_holdout_v1)
+    and the primary direct multi-horizon track (direct_multihorizon_v1,
+    multihorizon.py) — merged into the same artifact files under ``_multistep``
+    / ``multi_horizon`` keys so the nowcast numbers stay intact and the demo
+    payload keeps working.
+    """
     path = features_path or (settings.data_dir / "features.parquet")
     features = pl.read_parquet(path)
     panel = pl.read_parquet(settings.data_dir / "panel.parquet")
     result = backtest(features, config)
+
+    # Primary multi-step track: direct per-horizon models on weekly origins.
+    from demand_forecasting.multihorizon import (
+        merge_evaluation_metadata,
+        merge_metrics_json,
+        run_multistep,
+        save_multistep_figures,
+    )
+
+    ms_result = run_multistep(settings, config, panel)
+    result.multistep = ms_result
 
     figures = {
         "eda_series_overview": figure_eda_series_overview(panel),
@@ -742,6 +764,7 @@ def evaluate(
         "forecast_vs_actual": figure_forecast_vs_actual(result),
         "metrics_bars": figure_metrics_bars(result),
         "fold_stability": figure_fold_stability(result),
+        **ms_result.figures,
     }
     builder = ReportBuilder(
         title="Hierarchical Demand Forecasting — evaluation",
@@ -751,7 +774,10 @@ def evaluate(
         builder.add_run(run)
     builder.build(settings.reports_dir, figures=figures)
     _finalize_metrics_json(settings, result)
+    merge_metrics_json(settings, ms_result)
     write_evaluation_metadata(settings, config, result)
+    merge_evaluation_metadata(settings, ms_result)
+    save_multistep_figures(settings, ms_result)
     for name, fig in figures.items():
         save_json(fig, Path(settings.reports_dir) / "figures" / f"{name}.json")
     logger.info(

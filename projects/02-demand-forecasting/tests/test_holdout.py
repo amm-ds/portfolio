@@ -134,6 +134,12 @@ def test_evaluate_writes_metadata_and_metric_suite(
     assert "fit within the training window of each fold" in meta["preprocessing_statement"]
     for name in ("mae", "mase", "bias", "wape", "horizon_mae"):
         assert name in meta["metric_definitions"]
+    # the multi-step protocol block rides along (direct_multihorizon_v1)
+    ms = meta["multi_horizon"]
+    assert ms["protocol"] == "direct_multihorizon_v1"
+    assert len(ms["origins"]["test_dates"]) == config.multistep_test_origins
+    assert set(ms["origins"]["test_dates"]).isdisjoint(ms["origins"]["selection_dates"])
+    assert ms["origins"]["gap_days"] == 0
 
     metrics = json.loads((settings.reports_dir / "metrics.json").read_text())
     assert metrics["_meta"]["protocol"] == "rolling_origin_holdout_v1"

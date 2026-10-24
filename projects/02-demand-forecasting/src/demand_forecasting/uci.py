@@ -294,7 +294,7 @@ def dataset_metadata(panel: pl.DataFrame, config: ForecastConfig) -> dict[str, A
     """
     n_series = panel["store"].n_unique() * panel["product"].n_unique()
     zero_share = float(cast(float, (panel["units"] == 0).mean()))
-    return {
+    meta = {
         "dataset": "UCI Online Retail II",
         "source": {
             "url": UCI_URL,
@@ -346,6 +346,46 @@ def dataset_metadata(panel: pl.DataFrame, config: ForecastConfig) -> dict[str, A
             "aggregated from cleaned Online Retail II transactions (cancellations "
             "removed)."
         ),
+    }
+    meta["intermittency"] = intermittency_block(panel)
+    return meta
+
+
+def intermittency_block(panel: pl.DataFrame) -> dict[str, Any]:
+    """Per-series ADI/CV² demand classes (Syntetos-Boylan quadrants).
+
+    Computed over the full panel history per series and emitted with the
+    dataset card — the audit anchor for the multi-step track's routing rule
+    (series with ADI >= 1.32, i.e. the intermittent/lumpy quadrants, route to
+    statistical methods; see multihorizon.py).
+    """
+    from demand_forecasting.intermittent import (
+        ADI_THRESHOLD,
+        CV2_THRESHOLD,
+        classify_demand,
+    )
+
+    p = panel.with_columns((pl.col("store") + "|" + pl.col("product")).alias("series_id"))
+    classes: dict[str, dict[str, Any]] = {}
+    for key, part in p.partition_by("series_id", as_dict=True).items():
+        sid = key[0] if isinstance(key, tuple) else key
+        classes[str(sid)] = classify_demand(part.sort("date")["units"].to_numpy().astype(float))
+    counts: dict[str, int] = {"smooth": 0, "erratic": 0, "intermittent": 0, "lumpy": 0}
+    for entry in classes.values():
+        counts[str(entry["class"])] += 1
+    return {
+        "method": "Syntetos-Boylan quadrants: ADI (avg inter-demand interval) vs CV^2 "
+        "(squared coefficient of variation) over each series' full history",
+        "thresholds": {"adi": ADI_THRESHOLD, "cv2": CV2_THRESHOLD},
+        "class_counts": counts,
+        "sparse_share_adi_ge_threshold": counts["intermittent"] + counts["lumpy"],
+        "routing_rule": "multi-step track: ADI >= 1.32 (intermittent + lumpy) series route "
+        "to the best statistical method chosen on the selection origins only; "
+        "smooth/erratic series use the direct per-horizon boosted model",
+        "series": {
+            sid: {"adi": e["adi"], "cv2": e["cv2"], "class": e["class"]}
+            for sid, e in sorted(classes.items())
+        },
     }
 
 

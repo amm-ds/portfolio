@@ -168,8 +168,16 @@ def _bin_q80(bin_resid: np.ndarray, pooled_resid: np.ndarray) -> float:
     return float(np.quantile(bin_resid, TARGET_COVERAGE))
 
 
-def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[str, Any]:
-    """Backtest the quantile models and evaluate both bands on the last fold."""
+def run_probabilistic(
+    settings: DemandSettings, config: ForecastConfig, multistep: Any | None = None
+) -> dict[str, Any]:
+    """Backtest the quantile models and evaluate both bands on the last fold.
+
+    ``multistep`` optionally carries the multi-step track result
+    (:class:`~demand_forecasting.multihorizon.MultiStepResult`); its
+    per-horizon band block is merged into probabilistic.json under the
+    ``multistep`` key (the nowcast keys are untouched).
+    """
     features = pl.read_parquet(settings.data_dir / "features.parquet")
     x, y = _design_matrix(features, config)
     folds = cv_row_folds(features, config)
@@ -231,7 +239,8 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
             "only information available the day before). Per-horizon statistics group "
             "the test window's final 14 days by day-offset (h=1..14) — descriptive "
             "coverage/width by horizon position, not separately calibrated bands. "
-            "Origin-stacked multi-horizon conformal remains roadmap."
+            "Origin-stacked multi-horizon bands are delivered by the multi-step track "
+            "('multistep' key below, protocol direct_multihorizon_v1)."
         ),
         "quantile_band": {
             "coverage_pooled": quantile_cov_pooled,
@@ -254,6 +263,8 @@ def run_probabilistic(settings: DemandSettings, config: ForecastConfig) -> dict[
         },
         "mae_p50_pooled": float(np.mean([f["mae_p50"] for f in per_fold])),
     }
+    if multistep is not None:
+        result["multistep"] = multistep.probabilistic_block
     out = settings.reports_dir / "probabilistic.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2))

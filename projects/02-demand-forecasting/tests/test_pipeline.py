@@ -67,7 +67,7 @@ def test_evaluate_writes_report_and_figures(
     save_features(frame, settings)
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
-    run_probabilistic(settings, config)
+    run_probabilistic(settings, config, multistep=result.multistep)
 
     metrics = json.loads((settings.reports_dir / "metrics.json").read_text())
     assert set(metrics) == {
@@ -82,18 +82,26 @@ def test_evaluate_writes_report_and_figures(
         "lgbm_tuned",
         "temporal_net",
         "_meta",
+        "_multistep",  # primary multi-step track (direct_multihorizon_v1)
     }
     assert metrics["_meta"]["protocol"] == "rolling_origin_holdout_v1"
+    assert metrics["_multistep"]["protocol"] == "direct_multihorizon_v1"
     assert metrics["_meta"]["test_origin"] not in metrics["_meta"]["selection_used_origins"]
     for run in result.runs:
         for m in run.metrics:
             assert metrics[run.name][m.name] == pytest.approx(m.value)
         assert len(metrics[run.name]["fold_maes"]) == config.n_splits
         assert len(metrics[run.name]["horizon_mae"]) == 14
+    # the multi-step block is wired and self-consistent
+    ms = metrics["_multistep"]
+    assert len(ms["origins"]["test_dates"]) == config.multistep_test_origins
+    assert sum(ms["demand_classes"]["counts"].values()) == ms["demand_classes"]["n_series"]
 
     assert (settings.reports_dir / "report.html").exists()
     assert (settings.reports_dir / "reconciliation.json").exists()
     assert (settings.reports_dir / "probabilistic.json").exists()
+    prob = json.loads((settings.reports_dir / "probabilistic.json").read_text())
+    assert prob["multistep"]["protocol"] == "direct_multihorizon_v1"
     for name in (
         "eda_series_overview",
         "eda_units_distribution",
@@ -104,6 +112,10 @@ def test_evaluate_writes_report_and_figures(
         "coherence_heatmap",
         "probabilistic_band",
         "forecast_fan",
+        "multistep_error_vs_horizon",
+        "multistep_class_scoreboard",
+        "multistep_routing",
+        "multistep_band_calibration",
     ):
         assert (settings.reports_dir / "figures" / f"{name}.html").exists()
         assert (settings.reports_dir / "figures" / f"{name}.json").exists()

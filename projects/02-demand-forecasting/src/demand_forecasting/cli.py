@@ -136,7 +136,7 @@ def evaluate_cmd(
     settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
-    run_probabilistic(settings, config)
+    run_probabilistic(settings, config, multistep=result.multistep)
 
 
 @app.command("build-serving")
@@ -187,7 +187,7 @@ def all(
     save_models(fit_all(frame, config), settings.data_dir / "models.pkl")
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
-    run_probabilistic(settings, config)
+    run_probabilistic(settings, config, multistep=result.multistep)
 
 
 if __name__ == "__main__":

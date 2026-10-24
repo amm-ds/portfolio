@@ -41,3 +41,24 @@ uci_n_stores: 8
 uci_n_products: 200
 uci_checksum_sha256: 572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb
 uci_min_newest_date: "2010-12-01"
+# Multi-step (direct multi-horizon) track — protocol direct_multihorizon_v1:
+# one direct model per horizon h, weekly rolling origins capped at 20 (the
+# last multistep_test_origins are scored once; the earlier ones select).
+multistep_horizons:
+  - 1
+  - 2
+  - 3
+  - 5
+  - 7
+  - 10
+  - 14
+multistep_n_origins: 20
+multistep_test_origins: 4
+multistep_window_days: 14
+service_levels:
+  - 0.8
+  - 0.9
+  - 0.95
+holding_cost: 0.25
+stockout_cost: 4.0
+bootstrap_reps: 2000

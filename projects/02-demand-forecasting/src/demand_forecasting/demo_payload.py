@@ -417,9 +417,7 @@ def _origin_series_entry(
         # reproduces the stored mae/mase/bias/wape bit for bit); demand cannot
         # be negative, so the emitted curve clips the raw backtest at zero
         # (headline metrics in metrics.json remain the raw backtest values)
-        pred = np.clip(
-            np.asarray([round(float(v), 4) for v in win[col].to_numpy()]), 0.0, None
-        )
+        pred = np.clip(np.asarray([round(float(v), 4) for v in win[col].to_numpy()]), 0.0, None)
         block: dict[str, Any] = {
             "y_pred": [float(v) for v in pred],
             **_window_metrics(pred - actual, actual, scale),
@@ -477,9 +475,7 @@ def _catalog_entry(
     # clip at zero like the origin curves (demand cannot be negative); stored
     # errors are computed from the stored curve so the payload stays exactly
     # self-consistent
-    y_pred = [
-        round(float(v), 4) for v in np.clip(win["y_pred"].to_numpy(), 0.0, None)
-    ]
+    y_pred = [round(float(v), 4) for v in np.clip(win["y_pred"].to_numpy(), 0.0, None)]
     naive = [round(float(v), 4) for v in win["naive"]]
     p10, p90 = _emit_band(
         np.asarray(win["p10"].to_numpy(), dtype=float),

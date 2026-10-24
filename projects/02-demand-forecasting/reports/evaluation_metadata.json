@@ -40,5 +40,87 @@
     "legacy_pooled_mase": "pre-holdout headline: pooled MASE over all folds"
   },
   "best_model": "ets",
-  "strongest_naive": "seasonal_naive"
+  "strongest_naive": "seasonal_naive",
+  "multi_horizon": {
+    "protocol": "direct_multihorizon_v1",
+    "track": "multi_step (primary); the top-level rolling_origin_holdout_v1 keys describe the retained frozen nowcast track",
+    "horizons": [
+      1,
+      2,
+      3,
+      5,
+      7,
+      10,
+      14
+    ],
+    "window_days": 14,
+    "origins": {
+      "n_origins": 20,
+      "dates": [
+        "2024-07-31",
+        "2024-08-07",
+        "2024-08-14",
+        "2024-08-21",
+        "2024-08-28",
+        "2024-09-04",
+        "2024-09-11",
+        "2024-09-18",
+        "2024-09-25",
+        "2024-10-02",
+        "2024-10-09",
+        "2024-10-16",
+        "2024-10-23",
+        "2024-10-30",
+        "2024-11-06",
+        "2024-11-13",
+        "2024-11-20",
+        "2024-11-27",
+        "2024-12-04",
+        "2024-12-11"
+      ],
+      "selection_dates": [
+        "2024-07-31",
+        "2024-08-07",
+        "2024-08-14",
+        "2024-08-21",
+        "2024-08-28",
+        "2024-09-04",
+        "2024-09-11",
+        "2024-09-18",
+        "2024-09-25",
+        "2024-10-02",
+        "2024-10-09",
+        "2024-10-16",
+        "2024-10-23",
+        "2024-10-30",
+        "2024-11-06",
+        "2024-11-13"
+      ],
+      "test_dates": [
+        "2024-11-20",
+        "2024-11-27",
+        "2024-12-04",
+        "2024-12-11"
+      ],
+      "spacing_days": 7,
+      "min_train_dates": 60,
+      "gap_days": 0,
+      "cap_note": "weekly origins, capped at 20 by dropping the oldest (exact weekly cadence kept) for runtime; the window starts the day AFTER the origin (no embargo gap)"
+    },
+    "holdout_designation": "last 4 origins = test (scored once); the earlier origins select (routing + conformal calibration) only",
+    "selection_rule": "per-series routing method = lowest summed |error| over the selection origins among zero/seasonal_naive/Croston/SBA/TSB; never reads test actuals (property-tested by shuffling the test origins' actuals)",
+    "feature_semantics": "direct per-horizon models: calendar of the target date + lags lag_h, lag_{h+7}, lag_{h+14} (>= h days old relative to the target \u2014 no actual within h days of the target is referenced); training rows use targets <= the origin only",
+    "uncertainty": "per-horizon split-conformal (learner rows) and P(sale)+quantile ladder (sparse rows), both calibrated on selection origins",
+    "metric_definitions": {
+      "mae": "mean |actual - forecast| over series x scored test origins at horizon h",
+      "mase": "pooled |err| / pooled per-series in-sample seasonal-naive-7 scale (zero-scale rows excluded)",
+      "bias": "mean(forecast - actual) at horizon h",
+      "wape": "sum|err| / sum|actual| at horizon h",
+      "rmsse": "M5-style: per-series sqrt(MSE(err)/MSE(in-sample seasonal-naive-7)), averaged over series (zero-scale excluded)",
+      "wrmsse": "volume-weighted RMSSE (weights = training-window demand)",
+      "pinball_pXX": "mean pinball loss of the learner quantile at level XX",
+      "coverage": "share of actuals inside the per-h band on the scored origins",
+      "calibration_verdict": "|coverage - target| <= 0.05 -> calibrated; above -> conservative; below -> optimistic"
+    }
+  }
 }
