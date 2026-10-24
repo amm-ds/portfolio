@@ -170,9 +170,10 @@ def test_payload_shape(payload: dict) -> None:
         has_champ = "champion_hgb" in e["origins"][0]["models"]
         assert has_champ == (e["demand_class"] == "erratic")
         if has_champ:
-            assert e["origins"][0]["models"]["champion_hgb"]["y_pred"] == e["origins"][0][
-                "models"
-            ]["routed"]["y_pred"]
+            assert (
+                e["origins"][0]["models"]["champion_hgb"]["y_pred"]
+                == e["origins"][0]["models"]["routed"]["y_pred"]
+            )
 
 
 def test_class_quotas_keep_every_erratic_series(payload: dict) -> None:
@@ -184,9 +185,7 @@ def test_class_quotas_keep_every_erratic_series(payload: dict) -> None:
         e["series_id"] for e in payload["catalog"] if e["model_used"] == "direct_hgb"
     }
     assert all(
-        e["model_used"] != "direct_hgb"
-        for e in payload["catalog"]
-        if e["demand_class"] == "lumpy"
+        e["model_used"] != "direct_hgb" for e in payload["catalog"] if e["demand_class"] == "lumpy"
     )
 
 
@@ -225,9 +224,7 @@ def test_origin_contiguity_no_gap(payload: dict, demo_context) -> None:
                 assert hist_all[d] == y
 
 
-def test_origins_are_the_three_most_recent_scored(
-    payload: dict, demo_context
-) -> None:
+def test_origins_are_the_three_most_recent_scored(payload: dict, demo_context) -> None:
     settings, _config, panel = demo_context
     dates, _sids, _units = panel_matrix(panel)
     test = split_origins(multistep_origin_indices(len(dates), MS_CONFIG), MS_CONFIG)[1]
