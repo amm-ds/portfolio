@@ -496,9 +496,7 @@ def build_demo_payload(
 
     # re-run every origin (scored origins also get the shock grid)
     scores = Parallel(n_jobs=-2, backend="loky")(
-        delayed(_score_origin)(
-            units, cal, o, horizons, config, SHOCK_FACTORS if o in test else ()
-        )
+        delayed(_score_origin)(units, cal, o, horizons, config, SHOCK_FACTORS if o in test else ())
         for o in origins
     )
     by_origin = {s.origin: s for s in scores}
@@ -526,7 +524,15 @@ def build_demo_payload(
             "model_used": CHAMPION_HGB if not sparse[i] else method,
             "origins": [
                 _origin_entry(
-                    i, units, dates, o, by_origin[o], method, bool(sparse[i]), horizons, widths,
+                    i,
+                    units,
+                    dates,
+                    o,
+                    by_origin[o],
+                    method,
+                    bool(sparse[i]),
+                    horizons,
+                    widths,
                     origin_history_days,
                 )
                 for o in scored
