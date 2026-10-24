@@ -201,7 +201,7 @@ def test_emit_band_sanitizes_points() -> None:
     # negatives clipped, degenerate quantile outputs clamped around the point
     assert lo == [0.0, 1.0, 0.0, 1.0]
     assert hi == [3.0, 5.0, 0.0, 1.0]
-    assert all(l <= m <= h for l, m, h in zip(lo, p50, hi, strict=True))
+    assert all(lo_v <= m <= h for lo_v, m, h in zip(lo, p50, hi, strict=True))
     # sparse + all-zero window -> band null instead of a degenerate band
     assert _emit_band(p10, p50, p90, zero_window=True, sparse=True) == (None, None)
     # sparse with real demand in the window keeps its band; so does a

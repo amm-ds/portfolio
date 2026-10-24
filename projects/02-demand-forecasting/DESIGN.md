@@ -146,6 +146,67 @@ small tabular lag problems; a sequence model is the roadmap answer).
   the test window too: per-horizon coverage AND average width, with a
   calibrated/conservative/optimistic verdict at the 0.05 tolerance.
 
+### I. Multi-step track: direct multi-horizon protocol (wave 19, fifth-pass audit)
+
+- **The audit finding**: the wave-18 "14-day forecast" was 14 consecutive
+  ONE-day-ahead predictions — every validation row consumed the previous
+  day's true value through precomputed `lag_1/7/14` columns, and origins sat
+  a 7-day embargo + 14-day window + spacing ahead of their windows, leaving a
+  57-day hole between the last training date and the first scored day. Fine
+  for a nowcast; not a multi-step forecast.
+- **Options**: (a) recursive multi-step (feed predictions back as lags) —
+  rejected: error compounding plus a second, subtler leakage path (fitted
+  models consuming their own outputs as features); (b) direct multi-horizon —
+  one model per horizon h with features aged ≥ h days relative to the
+  target, so no actual within h days of the target is referenced by
+  construction; (c) sequence models — same leakage surface as (a) at higher
+  complexity, still deferred (temporal.py verdict stands).
+- **Decision: direct per-horizon models** for h ∈ {1, 2, 3, 5, 7, 10, 14}
+  (champion-config HGB, series id as a native categorical). Features per h:
+  calendar of the target date + lags `lag_h`, `lag_{h+7}`, `lag_{h+14}`
+  (origin-relative: units(t), units(t−7), units(t−14)); training rows use
+  targets ≤ the origin only. Leakage-proof property-tested by tainting every
+  day in (origin, origin+h] and asserting the designs and predictions do not
+  move.
+- **Origins**: weekly rolling origins, origin = last training date, forecast
+  window = the 14 days starting the day AFTER the origin (no embargo gap).
+  Eligible origins are capped at `multistep_n_origins` (20) by dropping the
+  oldest — the exact weekly cadence is preserved (documented cap; UCI has 43
+  eligible). The LAST `multistep_test_origins` (4) origins are scored once;
+  the earlier ones select per-series routing methods and conformal widths.
+- **Intermittent demand**: ADI/CV² classification (Syntetos-Boylan quadrants:
+  smooth / erratic / intermittent / lumpy, thresholds 1.32 / 0.49) is emitted
+  per series in `dataset_metadata.json`. Series with ADI ≥ 1.32 (intermittent
+  + lumpy) are ROUTED to the best statistical method — zero / seasonal_naive /
+  Croston / SBA / TSB, fixed SES α = 0.1, hand-computed unit tests — chosen
+  per series on the selection origins only (property-tested: permuting a test
+  window's actuals leaves every routing choice and conformal width
+  unchanged). Smooth/erratic series stay on the direct HGB. Routed vs
+  unrouted is reported per class with a paired bootstrap CI.
+- **Uncertainty**: per horizon, quantile HGBs (p10/p50/p90; pinball loss
+  reported) plus a ±q80 split-conformal width calibrated on the selection
+  origins, zero-clipped and sorted; empirical coverage AND average width per
+  h with the calibrated/conservative/optimistic verdict (|coverage − 0.80| ≤
+  0.05). Sparse (routed) series get P(any sale) + a quantile ladder of the
+  training history instead of a band that collapses to zero width.
+- **Decision metric**: an order-up-to policy simulation — per series and
+  service level τ, order = quantile_τ(point + calibrated residual
+  quantiles); cost = holding × leftover + stockout × short per scored cell
+  (assumptions in the JSON: holding 0.25/unit, stockout 4.0/unit). Champion
+  policy vs seasonal-naive policy, per class. Labelled a simulation; no
+  savings claims.
+- **Uncertainty on headline comparisons**: every headline comparison (per-
+  class champion-vs-floor / champion-vs-naive at h=7 and h=14, model-rank
+  gaps, routing before/after) carries a 95% paired cluster bootstrap CI over
+  (series × scored test origins) — series resampled with replacement, one
+  shared draw per replication so differences stay paired (the projects/05
+  and /10 pattern).
+- **Nowcast stays**: the one-day-ahead track (section H) remains as the
+  clearly labelled `nowcast` track — its frozen-window numbers stay committed
+  and valid, and it is never mixed into the multi-step leaderboard. The demo
+  payload (schema v2) keeps quoting the nowcast numbers; Phase C owns the
+  schema-3 restructure.
+
 ## Pipeline
 
 ```mermaid
@@ -176,6 +237,13 @@ flowchart LR
 5. Frozen holdout: the last origin is the test window; selection pools
    origins 1..n-1 only — property-tested by shuffling the test fold's
    actuals and asserting the champion pick is unchanged.
+6. Multi-step direct models: features for horizon h reference only actuals
+   ≥ h days older than the target (lags `lag_h`, `lag_{h+7}`, `lag_{h+14}`);
+   training rows use targets ≤ the origin only — property-tested by tainting
+   every day in (origin, origin+h] and asserting the designs, predictions and
+   quantiles do not move. Routing and conformal widths are fit on the
+   selection origins only — property-tested by permuting a test window's
+   actuals and asserting every routing choice and width is unchanged.
 
 ## Experiment versioning (ADR-0007 worked example)
 
@@ -225,6 +293,53 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.8.0 (2026-10-24)** — wave 19 (fifth-pass audit): the experiment is
+  genuinely multi-step. New primary track, protocol
+  `direct_multihorizon_v1` (`multihorizon.py`): direct per-horizon models
+  for h ∈ {1, 2, 3, 5, 7, 10, 14} (champion-config HGB; calendar of the
+  target + lags `lag_h`, `lag_{h+7}`, `lag_{h+14}` — no actual within h days
+  of the target, property-tested by tainting), issued from 20 weekly rolling
+  origins (16 selection + the last 4 scored once; window starts the day
+  after the origin — no embargo gap; the cap drops the oldest origins and is
+  documented). Intermittency: ADI/CV² Syntetos-Boylan classes emitted per
+  series in `dataset_metadata.json`; sparse series (ADI ≥ 1.32 — 1,069 of
+  1,084 UCI series) route to the best statistical method (zero / seasonal_naive
+  / Croston / SBA / TSB — `intermittent.py`, fixed SES α = 0.1, hand-computed
+  unit tests) chosen on selection origins only (property-tested by permuting
+  a test window). Metrics per TRUE horizon: MAE/MASE/bias/WAPE, RMSSE +
+  volume-weighted RMSSE (M5-style), pinball loss for p10/p50/p90; per-h
+  split-conformal bands (zero-clipped, sorted) with empirical coverage AND
+  width and the calibration verdict, plus sparse P(sale)+quantile-ladder
+  bands that cannot collapse. Every headline comparison carries a 95% paired
+  cluster bootstrap CI over (series × scored origins) — per-class
+  champion-vs-floor/naive at h=7/h=14, model-rank gaps, routing before/after
+  (the projects/05 and /10 pattern). Decision metric: an order-up-to policy
+  simulation (service level τ → quantile order; holding 0.25 + stockout 4.0
+  per unit per cell; champion vs seasonal-naive policy per class; labelled a
+  simulation — no savings claims). The nowcast track stays committed and
+  frozen under its v1 protocol and is never mixed into the multi-step
+  leaderboard; the demo payload (schema v2) keeps quoting the nowcast
+  numbers — Phase C owns the schema-3 restructure. UCI regenerated: nowcast
+  numbers bit-stable (hgb_tuned 9.545 / champion pick unchanged);
+  multi-step lumpy champion 6.724 vs floor 11.070 MAE at h=7 (CI
+  [−7.057, −2.258]) and 6.453 vs 10.642 at h=14; routing beats unrouted
+  all-HGB by 4.645 MAE (CI [4.153, 5.135]); error grows with h (pooled MAE
+  2.461 → 7.367); per-h band coverage 0.899–1.000, pooled 0.923
+  (conservative); order-up-to at τ=0.90 favours the champion on erratic
+  (1.058 vs 1.180 cost/unit) and the floor on lumpy (3.260 vs 2.716) —
+  MAE-optimal routing over-orders at high τ on spike-driven demand.
+  Reconciliation refit jittered within the documented OpenMP tolerance on
+  the canonical rerun (w 0.60 → 0.50 UCI, 0.00 → 0.05 synthetic) — quotes
+  follow the latest canonical run, and the over-strong "deterministic"
+  wording is corrected to reference the wave-13 platform note. New figures
+  `multistep_{error_vs_horizon,class_scoreboard,routing,band_calibration}`
+  (unit-incompatible metrics on separate panels); runtime: UCI evaluate
+  ≈ 9 min end-to-end (multi-step ≈ 75 s of it, joblib-parallel), synthetic
+  ≈ 2 min. Tests: +25 (leakage taint proofs, Croston/SBA/TSB hand cases,
+  routing selection-on-train-only proof, pinball/RMSSE/cost math, coverage
+  verdict rules, determinism — two runs byte-identical — and the extended
+  README drift guard now pins every multi-step quoted number). dvc repro
+  remains broken repo-wide (07 overlap) — stages executed via their `cmd`s.
 - **0.7.0 (2026-10-23)** — wave 18 (senior-review hardening): frozen holdout
   protocol `rolling_origin_holdout_v1` — the last rolling-origin window is the
   test window; `best_model`/champion selection pools folds 1..n-1 only

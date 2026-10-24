@@ -8,10 +8,15 @@ real track; seeded synthetic hierarchy as the labelled CI fast path) ·
 > forecasts it can trust for replenishment — every point of error is working
 > capital or lost sales. On real transactions, under a frozen holdout
 > protocol (champion selected on origins 1..n-1, final quarter scored once),
-> the champion runs at **0.843 relative MAE of the seasonal-naive floor**
-> (9.545 vs 11.323 MAE; MASE 1.078 vs the naive's own 1.310 — the MASE scale
-> is the naive's in-sample error from a quieter period, so 1.0 is not parity
-> on this window); no run dips below MASE 1.0 there — stated, not smoothed over.
+> the nowcast champion runs at **0.843 relative MAE of the seasonal-naive
+> floor** (9.545 vs 11.323 MAE; MASE 1.078 vs the naive's own 1.310 — the
+> MASE scale is the naive's in-sample error from a quieter period, so 1.0 is
+> not parity on this window); no run dips below MASE 1.0 there — stated, not
+> smoothed over. The wave-19 rebuild made the experiment genuinely
+> multi-step (direct per-horizon models on weekly origins, protocol
+> `direct_multihorizon_v1`, now the primary headline): on the 98.6% of
+> series that are intermittent/lumpy, routed statistical methods beat the
+> boosted ladder by **4.65 MAE** (95% CI [4.15, 5.15]) — see *Key results*.
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -98,11 +103,28 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   champion's median forecast is 0 on ~100% of rows, so the band collapses to
   the point forecast — the honest limit, stated on the figure, whose buttons
   drop the band interactively.
-- UCI reconciliation: w=0.60, incoherence 500.0 → 200.0 (coherence property
-  exact); store MAE 738.7 → 676.4. Synthetic: w=0.00, accuracy effect null
+- **Multi-step headline (wave 19, PRIMARY — `direct_multihorizon_v1`)**:
+  direct per-horizon models h ∈ {1, 2, 3, 5, 7, 10, 14} on 20 weekly rolling
+  origins (16 selection + 4 scored once, no embargo gap; lags ≥ h days old,
+  taint-tested). ADI/CV² routing: 1,069 of 1,084 series are lumpy and route
+  to statistical methods (zero/SBA/TSB/Croston/seasonal_naive, chosen on the
+  selection origins only). Lumpy champion vs floor: **6.72 vs 11.07 MAE at
+  h=7** (95% paired-bootstrap CI [−7.06, −2.26]), 6.45 vs 10.64 at h=14;
+  routing beats the unrouted all-HGB ladder by 4.65 MAE (CI [4.15, 5.15]);
+  on the 15 erratic series nothing significantly beats the floor. Error
+  grows with the true horizon (pooled 2.46 → 7.37, h=1 → h=14). Per-horizon
+  bands report coverage AND width per h (pooled 0.923, conservative — sparse
+  P(sale)+ladder bands never collapse). Order-up-to simulation at τ=0.90
+  (holding 0.25 / stockout 4.0 per unit): erratic 1.058 vs 1.180 cost/unit
+  for the champion, lumpy 3.260 vs 2.716 against — MAE-optimal routing
+  over-orders at high τ on spike-driven demand; simulation, no savings
+  claims. The nowcast ladder above stays committed as the labelled
+  one-day-ahead track.
+- UCI reconciliation: w=0.50, incoherence 474.3 → 237.2 (coherence property
+  exact); store MAE 746.2 → 743.4. Synthetic: w=0.05, accuracy effect near-null
   and reported as such.
-- 6/6 DQ gates on both tracks; synthetic evaluate ≈ 1.5 min, UCI ≈ 7 min;
-  78 offline tests.
+- 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 9 min;
+  103 offline tests.
 
 ![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run, where the 1.0 gridline is not seasonal-naive parity: the MASE scale is the naive's in-sample error from a quieter period, so the seasonal-naive itself lands at 1.310 on this window. MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 

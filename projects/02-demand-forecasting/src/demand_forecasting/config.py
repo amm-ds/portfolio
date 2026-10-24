@@ -120,12 +120,45 @@ class ForecastConfig(PortfolioBaseModel):
     uci_min_newest_date: str = Field(
         default="2010-12-01", description="DQ freshness floor for the UCI track."
     )
+    # Multi-step (direct multi-horizon) track — protocol direct_multihorizon_v1.
+    multistep_horizons: list[int] = Field(
+        default=[1, 2, 3, 5, 7, 10, 14],
+        description="Direct per-horizon models: one model per horizon h.",
+    )
+    multistep_n_origins: int = Field(
+        default=20, ge=6, description="Weekly rolling origins (capped; evenly spaced)."
+    )
+    multistep_test_origins: int = Field(
+        default=4, ge=1, description="Scored-once test origins (the LAST ones)."
+    )
+    multistep_window_days: int = Field(
+        default=14, ge=1, description="Forecast window length per origin (days)."
+    )
+    service_levels: list[float] = Field(
+        default=[0.8, 0.9, 0.95], description="Order-up-to service levels (decision metric)."
+    )
+    holding_cost: float = Field(
+        default=0.25, gt=0, description="Assumed holding cost per leftover unit per cell."
+    )
+    stockout_cost: float = Field(
+        default=4.0, gt=0, description="Assumed stockout penalty per unit short per cell."
+    )
+    bootstrap_reps: int = Field(
+        default=2000, ge=100, description="Paired-bootstrap replications (multi-step track)."
+    )
 
     @field_validator("lags")
     @classmethod
     def _lags_sorted_positive(cls, v: list[int]) -> list[int]:
         if not v or any(lag < 1 for lag in v):
             raise ValueError("lags must be a non-empty list of positive integers")
+        return sorted(set(v))
+
+    @field_validator("multistep_horizons")
+    @classmethod
+    def _horizons_sorted_positive(cls, v: list[int]) -> list[int]:
+        if not v or any(h < 1 for h in v):
+            raise ValueError("multistep_horizons must be a non-empty list of positive integers")
         return sorted(set(v))
 
     @property

@@ -213,6 +213,11 @@ sections:
       deployment; `reports/report.html` collects the full run. A property
       test shuffles the test window's actuals and asserts the selection
       result does not move — the protocol is enforced, not just documented.
+      Since wave 19 a second, primary protocol rides along:
+      `direct_multihorizon_v1` (see results) — direct per-horizon models on
+      20 weekly origins with the same frozen-holdout discipline (16
+      selection origins, the last 4 scored once, routing and band widths
+      calibrated on the selection origins only).
 
       **Business summary:** The evaluation mimics real use: the model is
       trained only on past data, then asked to forecast the next block of
@@ -277,10 +282,12 @@ sections:
       - **HPO earns a modest, real gain** — 56 seeded trials moved the
         sklearn HGB 8.619 → 8.529 (−1.0%) pooled over all folds (legacy,
         `hpo_history`).
-      - **Reconciliation pays off on the real hierarchy** — w=0.60,
-        incoherence 500.0 → 200.0 (×(1−w) exactly, property-tested), store
-        MAE 738.7 → 676.4; synthetic chose w=0.00 — the fold-4-drifting
-        parent is not trusted at all.
+      - **Reconciliation pays off on the real hierarchy** — w=0.50,
+        incoherence 474.3 → 237.2 (×(1−w) exactly, property-tested), store
+        MAE 746.2 → 743.4; synthetic chose w=0.05 — the fold-4-drifting
+        parent is barely trusted (store-level HGB refit jitters run-to-run
+        within the documented OpenMP tolerance; numbers from the latest
+        canonical run).
       - **Probabilistic bands — coverage AND width on the test window**
         (target 80%): the quantile band covers 0.73 synthetic / 0.92 UCI
         (pooled); the zero-aware conformal band covers the h=1..14 horizon
@@ -290,6 +297,33 @@ sections:
         ~100% of test rows: the "conservative" UCI verdict is a degenerate
         band, not a useful one, stated on the figure whose buttons drop it
         (`probabilistic_band`).
+      - **Multi-step track (wave 19, now the PRIMARY headline,
+        `direct_multihorizon_v1`)**: the nowcast "14-day" number was 14
+        one-day-ahead predictions — the rebuild fits one direct model per
+        horizon h ∈ {1, 2, 3, 5, 7, 10, 14} (lags ≥ h days old by
+        construction, taint-tested) on 20 weekly origins (16 select, 4 scored
+        once, no embargo gap). ADI/CV² classes: 15 erratic + 1,069 lumpy of
+        1,084 series — sparse series route to the best statistical method
+        (zero for 1,027, SBA 30, TSB/Croston/seasonal_naive 4 each) chosen on
+        selection origins only (property-tested). Lumpy champion vs floor:
+        6.72 vs 11.07 MAE at h=7 (95% paired-bootstrap CI [−7.06, −2.26]),
+        6.45 vs 10.64 at h=14 — routing beats the unrouted all-HGB ladder by
+        4.65 MAE (CI [4.15, 5.15]); on the 15 erratic series nothing
+        significantly beats the floor (CIs span zero). Error grows with the
+        true horizon (pooled MAE 2.46 → 7.37, h=1 → h=14; the sawtooth is
+        weekday composition — weekly origins fix each horizon's weekday).
+        Per-horizon bands: coverage AND width per h, pooled 0.923 →
+        *conservative* (sparse P(sale)+ladder bands, no collapsing band).
+        Order-up-to simulation (τ=0.90; holding 0.25, stockout 4.0):
+        erratic 1.058 vs 1.180 cost/unit champion-vs-floor; lumpy 3.260 vs
+        2.716 the other way — MAE-optimal routing over-orders at high τ on
+        spike-driven demand; simulation, no savings claims.
+      - **Model ranking changed vs the nowcast track, as the audit
+        expected**: the multi-step leaderboard is led by the routed pipeline
+        (7.48 pooled MAE), then `zero` (7.70) and `seasonal_naive` (9.49) —
+        the boosted direct HGB serves only the 15 erratic series, where it
+        does not significantly beat the floor. "Mostly zero, sometimes SBA"
+        is the honest sparse champion on this panel.
 
       **Business summary:** The decision this informs is whether to replace
       the "same day last week" planning rule with a tuned gradient-boosting
@@ -305,7 +339,7 @@ sections:
       effects before any safety-stock policy can rest on these numbers. No
       savings are claimed here — what is delivered is an honest measurement
       and its limits.
-    figures: [metrics_bars, forecast_vs_actual, probabilistic_band]
+    figures: [metrics_bars, forecast_vs_actual, probabilistic_band, multistep_error_vs_horizon, multistep_class_scoreboard, multistep_routing, multistep_band_calibration]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
   - id: conclusions
     text_md: |
@@ -369,9 +403,11 @@ roadmap:
   - status: delivered
     text: Seeded Optuna HPO — 56 trials sklearn HGB (25 per mirror), −1.0% MAE (8.619→8.529) pooled; best configs persisted.
   - status: delivered
-    text: MinT-lite reconciliation — w 0.00 synth / 0.60 UCI; incoherence 500.0→200.0 (×(1−w)); store MAE 738.7→676.4.
+    text: MinT-lite reconciliation — w 0.05 synth / 0.50 UCI; incoherence 474.3→237.2 UCI (×(1−w)); store MAE 746.2→743.4.
   - status: delivered
     text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; test-window horizon set coverage 0.741 (synthetic, width 26.5, optimistic) / 0.861 (UCI, width 0.00, degenerate) vs 0.80 target.
+  - status: delivered
+    text: Direct multi-horizon track (direct_multihorizon_v1) — per-h models on 20 weekly origins, ADI/CV² routing (1,069/1,084 series sparse), paired-bootstrap CIs, per-h bands (0.923 pooled, conservative), order-up-to decision simulation; lumpy champion 6.72 vs 11.07 floor MAE at h=7.
   - status: delivered
     text: Serving — showcase-API artifact without retraining; champion lgbm_tuned (CV MAE 8.413); contract in SERVING.md.
 figure_captions:
@@ -382,4 +418,8 @@ figure_captions:
   fold_stability: Out-of-fold MAE per CV origin for every run in the ladder, with the test window marked after the dashed line. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
   metrics_bars: "The run ladder in two panels — MAE + RMSE in units (left) and MASE (right) — scored on the final holdout window, so unit-mixing metrics never share an axis. MAPE stays tabulated (not drawn): with ~89% zero-demand days near-zero actuals inflate it. MASE divides by the seasonal-naive's in-sample error from a quieter period — on the UCI test window the naive itself lands at 1.310, so the 1.0 gridline is not parity (no run dips below it there); on synthetic only ETS does."
   forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, test window — on UCI hgb_tuned clears seasonal_naive by 15.7% MAE. The residual gap after the naive floor is day-over-day noise.
+  multistep_error_vs_horizon: Multi-step error by TRUE horizon (direct per-horizon models, scored origins) — MAE in units on the left panel, MASE on the right, so unit-incompatible metrics never share an axis. Error grows with h; the sawtooth is weekday composition (weekly origins fix each horizon's weekday — h=1 is always a Saturday on the UCI panel).
+  multistep_class_scoreboard: Champion vs floor MAE per demand class at h=7 and h=14 (units) with a second panel for the champion-minus-floor gap and its 95% paired cluster-bootstrap CI — the lumpy gap CIs exclude zero, the erratic ones span it.
+  multistep_routing: Routing effect per class — all-HGB MAE minus routed MAE (units), 95% bootstrap whiskers. Sparse classes sit well above zero; boosted trees overfit intermittent series, statistical methods do not.
+  multistep_band_calibration: Per-horizon band calibration on the scored origins — empirical coverage vs the 80% target on the left, average width in units on the right. Verdicts per h; sparse rows carry P(sale)+quantile-ladder bands that cannot collapse to zero width.
   probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, test window. The band covers the h=1..14 horizon set at 0.861 on UCI (target 0.80) but with zero width — the median sits on the zero atom — while on synthetic it covers 0.741 at 26.5 units average width (under-covering); the figure states coverage and width.

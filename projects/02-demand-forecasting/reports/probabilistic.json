@@ -1,7 +1,7 @@
 {
   "target_coverage": 0.8,
   "horizon": 1,
-  "horizons_note": "The modelling frame is one-day-ahead per origin (each row's forecast uses only information available the day before). Per-horizon statistics group the test window's final 14 days by day-offset (h=1..14) \u2014 descriptive coverage/width by horizon position, not separately calibrated bands. Origin-stacked multi-horizon conformal remains roadmap.",
+  "horizons_note": "The modelling frame is one-day-ahead per origin (each row's forecast uses only information available the day before). Per-horizon statistics group the test window's final 14 days by day-offset (h=1..14) \u2014 descriptive coverage/width by horizon position, not separately calibrated bands. Origin-stacked multi-horizon bands are delivered by the multi-step track ('multistep' key below, protocol direct_multihorizon_v1).",
   "quantile_band": {
     "coverage_pooled": 0.7273936170212766,
     "per_fold": [
@@ -78,5 +78,108 @@
     "calibration_verdict": "optimistic",
     "calibration_verdict_rule": "coverage pooled over horizons 1..14 of the test window: |coverage - target| <= 0.05 -> calibrated; above target -> conservative; below -> optimistic"
   },
-  "mae_p50_pooled": 8.706214863940453
+  "mae_p50_pooled": 8.706214863940453,
+  "multistep": {
+    "protocol": "direct_multihorizon_v1",
+    "target_coverage": 0.8,
+    "calibration_tolerance": 0.05,
+    "band_types": {
+      "learner": "p50 \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted",
+      "sparse": "P(any sale) + quantile ladder of the training history (no collapsing band)"
+    },
+    "conformal_widths_by_h": {
+      "1": 14.943932884603564,
+      "2": 12.120905130383248,
+      "3": 9.997499940926135,
+      "5": 12.73424127017571,
+      "7": 18.26261178169647,
+      "10": 9.982371242477377,
+      "14": 17.19339534537088
+    },
+    "per_horizon": {
+      "1": {
+        "coverage": 0.7916666666666666,
+        "avg_width": 29.88786576920712,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.7916666666666666,
+        "sparse_coverage": NaN,
+        "pinball_p10": 2.2014192981357756,
+        "pinball_p50": 4.475271284738302,
+        "pinball_p90": 2.2874667609252466
+      },
+      "2": {
+        "coverage": 0.8020833333333334,
+        "avg_width": 24.2418102607665,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.8020833333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.7528034491729028,
+        "pinball_p50": 3.702426655175554,
+        "pinball_p90": 1.6669010008875353
+      },
+      "3": {
+        "coverage": 0.78125,
+        "avg_width": 19.994999881852266,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.78125,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.594805633231487,
+        "pinball_p50": 3.3471787788343135,
+        "pinball_p90": 1.581625160180791
+      },
+      "5": {
+        "coverage": 0.8333333333333334,
+        "avg_width": 25.46848254035143,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.8333333333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.9659909187430038,
+        "pinball_p50": 3.86523855564516,
+        "pinball_p90": 1.605487641265464
+      },
+      "7": {
+        "coverage": 0.7708333333333334,
+        "avg_width": 36.52522356339295,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.7708333333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 2.7015603541617588,
+        "pinball_p50": 5.806833015880895,
+        "pinball_p90": 2.8264141290288
+      },
+      "10": {
+        "coverage": 0.7395833333333334,
+        "avg_width": 19.964742484954755,
+        "calibration_verdict": "optimistic",
+        "learner_coverage": 0.7395833333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.6321932226836655,
+        "pinball_p50": 3.5694965815040294,
+        "pinball_p90": 1.8856406734087887
+      },
+      "14": {
+        "coverage": 0.7708333333333334,
+        "avg_width": 34.386790690741755,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.7708333333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 2.7860948805975756,
+        "pinball_p50": 6.065521586187999,
+        "pinball_p90": 2.618216862323631
+      }
+    },
+    "pooled_coverage": 0.7842261904761905,
+    "pooled_verdict": "calibrated",
+    "sparse_band": {
+      "definition": "P(any sale) = share of non-zero demand days in the training history up to the origin; quantile ladder over the same history",
+      "ladder_levels": [
+        0.5,
+        0.8,
+        0.9,
+        0.95
+      ],
+      "series": {}
+    },
+    "verdict_rule": "|coverage - target| <= 0.05 -> calibrated; above target -> conservative; below -> optimistic (per horizon and pooled)"
+  }
 }

@@ -88,7 +88,11 @@ Summary:
   `legacy_pooled_*` in metrics.json. Metrics from
   `portfolio_eval.ml.regression_metrics` (MAE/RMSE/MAPE) plus MASE, bias,
   zero-safe WAPE, per-fold MAEs (std/range) and per-horizon (h=1..14)
-  MAE/MASE on the test window's final 14 days.
+  MAE/MASE on the test window's final 14 days. **Primary multi-step track**
+  (`multihorizon.py`, protocol `direct_multihorizon_v1`): direct per-horizon
+  models on weekly rolling origins with ADI/CV² routing, paired-bootstrap
+  CIs, per-horizon bands and the order-up-to decision metric — see
+  *Multi-step headline* below.
 
 ## Data-generating process (UCI track)
 
@@ -118,6 +122,93 @@ review demanded the pipeline's data contract be stated explicitly):
   demand: the source has **no trading calendar**, so a zero-filled day can
   mean "closed or not trading" as easily as "no demand". Models must live
   with that ambiguity; it is also why MAPE is not decision-grade here.
+
+## Multi-step headline — direct multi-horizon (protocol `direct_multihorizon_v1`, PRIMARY)
+
+The nowcast tables above stay committed and valid, but they answer "tomorrow,
+given today". The track replenishment actually runs is **multi-step** (wave 19,
+fifth-pass audit): direct per-horizon models for h ∈ {1, 2, 3, 5, 7, 10, 14}
+(champion-config HGB; features = calendar of the target date + lags
+`lag_h`, `lag_{h+7}`, `lag_{h+14}` — no actual within h days of the target is
+referenced, by construction and property-tested with tainted panels), issued
+from **20 weekly rolling origins** (16 selection + the last 4 scored once; the
+window starts the day AFTER the origin — the audit's 57-day hole is gone).
+Intermittency is handled by ADI/CV² classification (Syntetos-Boylan
+quadrants): **1,069 of 1,084 series (98.6%) are lumpy** and route to the best
+statistical method (zero / seasonal_naive / Croston / SBA / TSB — chosen per
+series on the selection origins only, property-tested); the 15 erratic series
+stay on the direct HGB. Every headline comparison carries a 95% paired
+cluster bootstrap CI over (series × scored origins). Full detail in
+[reports_uci/evaluation_metadata.json](reports_uci/evaluation_metadata.json)
+(`multi_horizon` block) and `metrics.json` (`_multistep`).
+
+Champion vs floor (seasonal naive) per demand class — MAE in units on the 4
+scored origins, 95% CI on the gap (negative = champion better):
+
+| class | n | champ MAE h=7 | floor MAE h=7 | gap CI h=7 | champ MAE h=14 | floor MAE h=14 | gap CI h=14 |
+|---|---|---|---|---|---|---|---|
+| erratic | 15 | 69.992 | 68.350 | [−33.477, +27.739] | 72.529 | 60.000 | [−5.495, +31.985] |
+| **lumpy** | 1,069 | **6.724** | 11.070 | **[−7.057, −2.258]** | **6.453** | 10.642 | **[−6.792, −2.196]** |
+
+- **Routing is the win**: on the lumpy class the routed champion (zero
+  forecast for 1,027 series, SBA 30, TSB 4, Croston 4, seasonal_naive 4 —
+  selected on training origins) beats the seasonal-naive floor decisively at
+  both h=7 and h=14 (CIs exclude zero) and beats the unrouted all-HGB ladder
+  by **4.645 MAE** (CI [4.153, 5.135]) — the audit's "boosted trees on sparse
+  series" gap, quantified. On the 15 erratic series nothing significantly
+  beats the floor (CIs span zero; wholesale spikes dominate) — reported, not
+  hidden.
+- **Error grows with the true horizon** — pooled MAE (units) on the scored
+  origins:
+
+  | h | 1 | 2 | 3 | 5 | 7 | 10 | 14 |
+  |---|---|---|---|---|---|---|---|
+  | champion | 2.461 | 4.502 | 9.732 | 10.176 | 7.600 | 10.523 | 7.367 |
+  | floor (sn) | 0.000 | 4.846 | 10.922 | 13.213 | 11.863 | 14.275 | 11.325 |
+  | zero | 0.000 | 5.249 | 10.223 | 11.334 | 7.994 | 11.500 | 7.608 |
+
+  The sawtooth is real, not noise: weekly origins fix the weekday of each
+  horizon (h=1 is always a Saturday on this panel — all-zero actuals at h=1,
+  so WAPE is null there by the zero-denominator rule), so the curve is
+  horizon × weekday composition, visible per class in
+  `multistep_error_vs_horizon`. Lumpy-class champion MAE by h: 1.69 / 4.19 /
+  8.66 / 9.18 / 6.72 / 9.52 / 6.45 — growth with h, overlaid with weekday
+  difficulty.
+- **Model ranking vs the nowcast track changed, as expected**: the nowcast
+  champion `hgb_tuned` does not serve sparse series here at all — the
+  multi-step leaderboard is led by the routed pipeline (pooled MAE 7.480),
+  then `zero` (7.701) and `seasonal_naive` (9.492); rank-gap CIs in
+  `metrics.json`. Rank-1 vs rank-2 (`zero`) gap CI [−0.525, +0.068] spans
+  zero — on this panel the honest sparse champion is "mostly zero, sometimes
+  SBA", not a bigger model.
+- **Per-horizon bands** (target 80%; learner rows: ±q80 split-conformal per h
+  calibrated on selection origins, zero-clipped and sorted; sparse rows:
+  P(any sale) + quantile ladder of the training history — no collapsing
+  band). Coverage AND width per h on the scored origins:
+
+  | h | 1 | 2 | 3 | 5 | 7 | 10 | 14 |
+  |---|---|---|---|---|---|---|---|
+  | coverage | 1.000 | 0.926 | 0.910 | 0.912 | 0.903 | 0.899 | 0.908 |
+  | avg width (units) | 4.262 | 5.502 | 5.854 | 5.892 | 5.671 | 5.787 | 5.603 |
+  | verdict | conservative | conservative | conservative | conservative | conservative | conservative | conservative |
+
+  Verdict rule: |coverage − 0.80| ≤ 0.05 calibrated, above conservative,
+  below optimistic. Pooled 0.923 → **conservative**: the sparse history-q90
+  band over-covers (0.90–0.93 per h) — honest width, stated per h in
+  `probabilistic.json` (`multistep` key) and `multistep_band_calibration`.
+  Pinball loss of the learner quantiles (erratic rows) is reported per h
+  alongside (p50 pinball 22.8–55.5 units on the 15 spike-driven series).
+- **Decision metric — order-up-to policy simulation** (service level τ →
+  order = quantile_τ(point + residual quantiles calibrated per class on
+  selection origins); cost = holding 0.25/unit leftover + stockout 4.0/unit
+  short per scored cell; assumptions in the JSON; **simulation — no savings
+  claims**). Per-unit-of-demand cost at τ=0.90: erratic **1.058 champion vs
+  1.180 floor** (−3,087 total on the scored cells); lumpy 3.260 vs 2.716
+  (+113,303). The asymmetry is the finding: the MAE-optimal routed champion
+  over-orders at high τ on spike-driven lumpy demand (its raw-demand residual
+  quantiles are large), while on the erratic series its tighter distribution
+  wins at τ ≤ 0.90. Safety-stock policy and forecast model are different
+  decisions — the metric exists to make that visible.
 
 ## Synthetic track — CI fast path (`data_source: synthetic`, seed 42)
 
@@ -176,13 +267,15 @@ Key findings:
   tabular lag features, gradient-boosted trees and a well-specified
   Holt-Winters remain the tools to beat; reported honestly.
 - **Reconciliation (MinT-lite, test window, store level)**: the grid estimator
-  chose w=0.00 this run — the parent-level model suffers the same fold-4 drift
-  as the children, so no trust is placed in it. Store-level MAE stayed
-  23.895 and incoherence |parent forecast − Σ children| stayed 23.670
-  (exactly ×(1−w), the tested coherence property; the store-level backtest
-  re-fits HGB single-threaded, so these numbers are deterministic). Structural
-  coherence is guaranteed; accuracy gains from reconciliation need a
-  drift-robust parent model — a documented, quantified caveat.
+  chose w=0.05 this run — the parent-level model suffers the same fold-4 drift
+  as the children, so little trust is placed in it. Store-level MAE moved
+  23.885 → 23.813 and incoherence |parent forecast − Σ children| moved
+  24.326 → 23.110 (exactly ×(1−w), the tested coherence property; the
+  store-level backtest re-fits HGB and, per the wave-13 platform note, jitters
+  run-to-run within the OpenMP-reduction tolerance — these are the latest
+  canonical run's numbers). Structural coherence is guaranteed; accuracy gains
+  from reconciliation need a drift-robust parent model — a documented,
+  quantified caveat.
 - Where the gains plateau: all runs degrade on the last fold as the injected
   trend lifts demand, but the improvement ratio over persistence is stable
   across folds. The residual ~9-unit test-window MAE is mostly day-over-day
@@ -201,7 +294,12 @@ fold 4 is the holdout window):
 hgb_tuned improves on hgb in **every** fold; on the holdout window
 temporal_net finally leads the ML pack (9.244) without threatening ETS.
 
-## Headline results — real data (UCI Online Retail II, `cli all --data-source uci`)
+## Nowcast track (one-day-ahead) — real data (UCI Online Retail II, `cli all --data-source uci`)
+
+> **Track label:** this ladder is the retained **nowcast** (one-day-ahead)
+> track, protocol `rolling_origin_holdout_v1` — its frozen-window numbers are
+> valid and stay committed, but they are 14 consecutive one-day-ahead
+> predictions, never mixed into the multi-step leaderboard below.
 
 Real transactions, same pipeline, same embargoed rolling-origin backtest with
 the frozen holdout: 525,461 sales lines parsed from the 2009-2010 sheet → top
@@ -255,12 +353,13 @@ What the audit-driven statistical baselines reveal on **real** data:
   MAE from wholesale spikes). MAE, MASE, bias and WAPE are the numbers to
   plan with — the champion's test-window bias is −1.444 units (mild
   over-forecasting) with WAPE 1.142.
-- **Reconciliation pays off on the test window**: w=0.60 — incoherence 500.0 →
-  200.0 (exactly ×(1−w), property-tested); store-level MAE 738.7 → 676.4
-  (−8.4% this run — coherence is a guarantee, accuracy gains depend on
+- **Reconciliation pays off on the test window**: w=0.50 — incoherence 474.3 →
+  237.2 (exactly ×(1−w), property-tested); store-level MAE 746.2 → 743.4
+  (−0.4% this run — coherence is a guarantee, accuracy gains depend on
   parent-model quality, stated plainly; the shrinkage grid is estimated on
-  origin 2 and the store-level backtest re-fits HGB with its threadpool
-  pinned to one thread, so w is deterministic run-to-run).
+  origin 2 and the store-level backtest re-fits HGB — per the wave-13 platform
+  note its OpenMP reductions jitter run-to-run, so these numbers are the
+  latest canonical run's, not a deterministic constant).
 - **Probabilistic (target 80% band)** — coverage AND average width on the
   test window's final 14 days (h=1..14):
 
@@ -293,20 +392,30 @@ Figures (HTML + JSON per track, `reports/figures/` synthetic,
 - `metrics_bars` / `eda_series_overview` / `eda_units_distribution` /
   `hpo_history` / `hpo_importance` / `reconciliation_coherence` /
   `probabilistic_band` as before
+- multi-step track (wave 19): `multistep_error_vs_horizon` (MAE and MASE on
+  separate panels), `multistep_class_scoreboard` (champion vs floor at h=7/h=14
+  with bootstrap CI on the gap), `multistep_routing` (all-HGB minus routed MAE
+  per class), `multistep_band_calibration` (coverage and width per horizon on
+  separate panels)
 
-Artifacts: per track, `reports*/metrics.json` (10 runs: test-window MAE/RMSE/
+Artifacts: per track, `reports*/metrics.json` (10 nowcast runs: test-window MAE/RMSE/
 MAPE/MASE + bias/WAPE + fold MAEs + per-horizon arrays + `legacy_pooled_*`,
-and a `_meta` protocol block), `evaluation_metadata.json`, `report.html`,
-`reconciliation.json`, `probabilistic.json` (coverage AND width per horizon,
-`calibration_verdict`); the UCI track also emits `dataset_metadata.json`.
-The small `reports_uci/*.json` files are committed as drift-guard anchors;
-the heavy UCI artifacts (`data_uci/`, `reports_uci/figures/`,
-`reports_uci/report.html`) stay local and regenerate via
-`uv run python -m demand_forecasting.cli all --data-source uci`.
+and a `_meta` protocol block — plus the `_multistep` block: protocol
+`direct_multihorizon_v1`, origins, per-class headlines with bootstrap CIs,
+horizon growth, routing, decision metric), `evaluation_metadata.json`
+(nowcast protocol + `multi_horizon` v2 block), `report.html`,
+`reconciliation.json`, `probabilistic.json` (nowcast coverage AND width per
+horizon, `calibration_verdict` — plus the `multistep` per-horizon band table);
+the UCI track also emits `dataset_metadata.json` (including the per-series
+ADI/CV² `intermittency` classes). The small `reports_uci/*.json` files are
+committed as drift-guard anchors; the heavy UCI artifacts (`data_uci/`,
+`reports_uci/figures/`, `reports_uci/report.html`) stay local and regenerate
+via `uv run python -m demand_forecasting.cli all --data-source uci`.
 `data_uci/` (panel 405,416 rows, contract, models) and `data/` (synthetic).
-Runtime (this machine, `cli evaluate`): synthetic ≈ **1.5 min** with
-probabilistic; UCI ≈ **7 min** (ETS fits 1,084 series per fold); 6/6 DQ gates
-pass on both tracks.
+Runtime (this machine, `cli evaluate`): synthetic ≈ **2 min** with
+probabilistic + multi-step; UCI ≈ **9 min** (ETS fits 1,084 series per fold;
+multi-step: 20 origins × 7 horizons × 4 HGB fits, joblib-parallel); 6/6 DQ
+gates pass on both tracks.
 
 ## Reproduce
 
@@ -359,21 +468,29 @@ uv run pytest projects/02-demand-forecasting -q
 
 ## Roadmap
 
-Delivered: UCI real-data track (now the headline), probabilistic forecasts
-(quantile HGB + split-conformal), Optuna HPO across three boosting arms, and
-the wave-13 audit items — statistical baselines (`seasonal_naive` + per-series
+Delivered: UCI real-data track, probabilistic forecasts
+(quantile HGB + split-conformal), Optuna HPO across three boosting arms, the
+wave-13 audit items — statistical baselines (`seasonal_naive` + per-series
 damped Holt-Winters ETS with documented fallbacks) and **MASE** on both tracks,
-plus the fan-chart/coherence-heatmap/error-by-fold figure set. What remains:
+the fan-chart/coherence-heatmap/error-by-fold figure set — and the wave-19
+fifth-pass audit rebuild: the **direct multi-horizon track** (`direct_multihorizon_v1`,
+primary headline), ADI/CV² classification with statistical routing for sparse
+series, Croston/SBA/TSB baselines, paired-bootstrap CIs on every headline
+comparison, per-horizon conformal/sparse bands with coverage AND width, and
+the order-up-to decision-metric simulation. What remains:
 
-1. **Calibrated intervals for intermittent demand**: per-series (or clustered)
-   conformal calibration and zero-inflated interval models — the zero-aware
-   band under-covers on synthetic (0.741 coverage at 0.80 target) and is
-   degenerate on real data (avg width 0.00 on the test window: the median
-   sits on the zero atom).
-2. **Origin-stacked multi-horizon bands**: per-horizon coverage/width is now
-   reported descriptively on the test window (h=1..14); *separately
-   calibrated* per-origin bands still need a horizon-stacked target frame.
+1. ~~Calibrated intervals for intermittent demand~~ — delivered per horizon on
+   the multi-step track (sparse P(sale) + quantile ladder bands, coverage AND
+   width per h; conservative at 0.92 pooled — the remaining gap is *tighter*
+   calibration, not structure). Per-series clustered conformal is still the
+   next refinement.
+2. ~~Origin-stacked multi-horizon bands~~ — delivered as the multi-step track's
+   per-horizon split-conformal (learner rows) and sparse ladder bands, both
+   calibrated on the selection origins.
 3. **Full MinT reconciliation**: covariance projection once the UCI track grows
    a product-category hierarchy.
 4. **Returns-aware demand**: model cancellations/returns as their own flow
    instead of excluding them, for net-demand forecasting.
+5. **Cost-aware routing**: the order-up-to simulation shows MAE-optimal routing
+   can over-order at high service levels on spike-driven series — a
+   cost-aware variant of the routing rule is the natural follow-up.
