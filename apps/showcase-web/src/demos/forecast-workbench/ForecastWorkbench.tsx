@@ -297,7 +297,11 @@ function ExplorerPanel({
           As of <strong>{fmtDay(blk?.origin_date ?? "")}</strong>, only the history left of the
           marker was known — everything right of it was unknown on that date. The{" "}
           <strong>{model}</strong> curve is a historical backtest against the frozen window, not a
-          live prediction{model === "champion" && band ? ", with the committed p10–p90 band" : ""}.
+          live prediction
+          {model === "champion" && band?.p10 && band?.p90
+            ? ", with the committed p10–p90 band"
+            : ""}.
+          The shaded gap is the spacing between rolling origins (the embargo before the window).
           {live.status === "ok" && (
             <> The amber dashes are live re-scores of the first {LIVE_HORIZONS.length} window days
             with the recent-demand spike applied.</>
@@ -1001,8 +1005,9 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 ))}
               </div>
               <p className="demo-hint">
-                pretend today is {fmtDay(originBlk?.origin_date ?? "")} — the explorer refits to what
-                was known then
+                Precomputed one-day-ahead backtest forecasts, issued at the origin (
+                {fmtDay(originBlk?.origin_date ?? "")}) and scored on the frozen window — nothing
+                refits
                 {isFrozenOrigin && "; this origin is the holdout the models were never selected on"}
               </p>
             </div>
@@ -1302,7 +1307,7 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">what this shows</h4>
             <p className="wb-evidence-line">
-              The workbench pretends today is a chosen point in history. The{" "}
+              The workbench replays a chosen point in history — nothing refits. The{" "}
               <strong>forecast origin</strong> slider moves that point across three committed
               rolling origins; the explorer shows only what was known as of that date — the origin's
               own 60-day history — plus the frozen 14-day window that came after, with every

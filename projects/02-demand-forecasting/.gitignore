@@ -2,4 +2,11 @@
 # the checksum-pinned fetch in uci.py; everything downstream is reproducible).
 data/raw/
 data_uci/
-reports_uci/
+# reports_uci/: only the heavy regenerable artifacts stay ignored — the small
+# real-data JSONs (metrics, probabilistic, reconciliation, evaluation_metadata,
+# dataset_metadata) are committed drift-guard anchors and must remain tracked.
+reports_uci/*.parquet
+reports_uci/*.pkl
+reports_uci/models*
+reports_uci/figures/
+reports_uci/report.html

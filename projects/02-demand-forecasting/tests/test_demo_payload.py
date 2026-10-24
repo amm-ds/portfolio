@@ -11,6 +11,7 @@ from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.demo_payload import (
     PAYLOAD_SCHEMA_VERSION,
     SIZE_CAP_BYTES,
+    _emit_band,
     build_demo_payload,
     quantile_band_backtest,
     write_demo_payload,
@@ -175,6 +176,40 @@ def payload(demo_context: tuple[DemandSettings, ForecastConfig, pl.DataFrame]) -
     return build_demo_payload(settings, config, **CATALOG_ARGS)
 
 
+def _assert_band_sane(band: dict, window_actuals: list[int], sparse: bool) -> None:
+    """Emitted band hygiene: no negatives, p10 <= y_pred <= p90, and a sparse
+    all-zero window honestly carries no band at all (None, not a degenerate
+    zero-width interval)."""
+    p10, p50, p90 = band["p10"], band["y_pred"], band["p90"]
+    if sparse and all(v == 0 for v in window_actuals):
+        assert p10 is None and p90 is None
+        return
+    assert p10 is not None and p90 is not None
+    assert len(p10) == 14 == len(p90)
+    for lo, mid, hi in zip(p10, p50, p90, strict=True):
+        assert lo >= 0.0 and hi >= 0.0
+        assert lo <= mid <= hi
+
+
+def test_emit_band_sanitizes_points() -> None:
+    """Clip at zero + clamp around the point curve; sparse zero-window -> no band."""
+    p10 = np.array([-0.5, 2.0, 0.0, 1.0])
+    p50 = np.array([3.0, 1.0, 0.0, 1.0])
+    p90 = np.array([0.0, 5.0, -0.25, 1.0])
+    lo, hi = _emit_band(p10, p50, p90, zero_window=False, sparse=False)
+    assert lo is not None and hi is not None
+    # negatives clipped, degenerate quantile outputs clamped around the point
+    assert lo == [0.0, 1.0, 0.0, 1.0]
+    assert hi == [3.0, 5.0, 0.0, 1.0]
+    assert all(l <= m <= h for l, m, h in zip(lo, p50, hi, strict=True))
+    # sparse + all-zero window -> band null instead of a degenerate band
+    assert _emit_band(p10, p50, p90, zero_window=True, sparse=True) == (None, None)
+    # sparse with real demand in the window keeps its band; so does a
+    # non-sparse series on a zero window (the degenerate band covered it all)
+    assert _emit_band(p10, p50, p90, zero_window=False, sparse=True)[0] is not None
+    assert _emit_band(p10, p50, p90, zero_window=True, sparse=False)[0] is not None
+
+
 def test_payload_shape(payload: dict) -> None:
     assert payload["schema_version"] == PAYLOAD_SCHEMA_VERSION == 2
     assert payload["demo"] == "forecast-workbench"
@@ -188,7 +223,11 @@ def test_payload_shape(payload: dict) -> None:
     assert set(entry["origins"]) == {"early", "middle", "test"}
     assert len(entry["history"]["y"]) == 60 == len(entry["history"]["dates"])
     assert set(entry["forecast"]) == {"dates", "y_pred", "p10", "p90", "naive"}
-    assert all(len(entry["forecast"][k]) == 14 for k in entry["forecast"])
+    for k in ("dates", "y_pred", "naive"):
+        assert len(entry["forecast"][k]) == 14
+    for k in ("p10", "p90"):
+        band = entry["forecast"][k]
+        assert band is None or len(band) == 14  # sparse all-zero windows: no band
     assert set(entry["errors"]) == {"scale", "champion", "naive"}
     for model in ("champion", "naive"):
         assert len(entry["errors"][model]["mae"]) == 14
@@ -199,6 +238,13 @@ def test_payload_shape(payload: dict) -> None:
     first = entry["forecast"]
     assert entry["errors"]["champion"]["mae"][0] == pytest.approx(
         abs(first["y_pred"][0] - entry["history"]["y"][-14]), abs=0.01
+    )
+    # the emitted band is display-sane: clipped at zero, ordered around the
+    # point curve, and absent (not degenerate) on sparse all-zero windows
+    _assert_band_sane(
+        {"p10": first["p10"], "y_pred": first["y_pred"], "p90": first["p90"]},
+        entry["history"]["y"][-14:],
+        entry["demand_class"] == "sparse",
     )
 
 
@@ -227,10 +273,10 @@ def test_origins_shape_and_holdout(payload: dict) -> None:
             for metric in ("mae", "mase", "bias", "wape"):
                 assert metric in block
         band = origin["models"]["champion"]
-        assert len(band["p10"]) == 14 == len(band["p90"])
         # the band is champion-only: challenger and naive are point curves
         assert "p10" not in origin["models"]["challenger"]
         assert "p10" not in origin["models"]["naive"]
+        _assert_band_sane(band, origin["actuals"]["y"], entry["demand_class"] == "sparse")
     # the test origin reproduces the v1 forecast window exactly
     test = entry["origins"]["test"]
     assert test["actuals"]["dates"] == entry["forecast"]["dates"]

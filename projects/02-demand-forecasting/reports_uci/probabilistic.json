@@ -1,0 +1,82 @@
+{
+  "target_coverage": 0.8,
+  "horizon": 1,
+  "horizons_note": "The modelling frame is one-day-ahead per origin (each row's forecast uses only information available the day before). Per-horizon statistics group the test window's final 14 days by day-offset (h=1..14) \u2014 descriptive coverage/width by horizon position, not separately calibrated bands. Origin-stacked multi-horizon conformal remains roadmap.",
+  "quantile_band": {
+    "coverage_pooled": 0.9193331576172904,
+    "per_fold": [
+      {
+        "fold": 1.0,
+        "quantile_band_coverage": 0.8972456510279389,
+        "mae_p50": 6.707024248813917
+      },
+      {
+        "fold": 2.0,
+        "quantile_band_coverage": 0.9598576700052714,
+        "mae_p50": 4.6078618557184985
+      },
+      {
+        "fold": 3.0,
+        "quantile_band_coverage": 0.8849894570374275,
+        "mae_p50": 7.418687401159726
+      },
+      {
+        "fold": 4.0,
+        "quantile_band_coverage": 0.935239852398524,
+        "mae_p50": 8.360740643120717
+      }
+    ]
+  },
+  "split_conformal": {
+    "q80": 0.0,
+    "bin_definition": "p50 <= 0 (model predicts zero) vs p50 > 0",
+    "zero_bin": {
+      "q80": 0.0,
+      "n_calibration": 217101
+    },
+    "nonzero_bin": {
+      "q80": 24.557367519608924,
+      "n_calibration": 10539
+    },
+    "coverage_last_fold": 0.8584343700579863,
+    "coverage_last_fold_zero_bin": 0.8584343700579863,
+    "coverage_last_fold_nonzero_bin": null,
+    "horizon_coverage": [
+      0.8071955719557196,
+      1.0,
+      0.8477859778597786,
+      0.8302583025830258,
+      0.8330258302583026,
+      0.8468634686346863,
+      0.8607011070110702,
+      0.8357933579335793,
+      1.0,
+      0.8339483394833949,
+      0.8413284132841329,
+      0.8450184501845018,
+      0.8560885608856088,
+      0.8099630996309963
+    ],
+    "horizon_avg_width": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "coverage_horizon_set": 0.8605693199789141,
+    "avg_width_horizon_set": 0.0,
+    "calibration_verdict": "conservative",
+    "calibration_verdict_rule": "coverage pooled over horizons 1..14 of the test window: |coverage - target| <= 0.05 -> calibrated; above target -> conservative; below -> optimistic"
+  },
+  "mae_p50_pooled": 6.773578537203215
+}

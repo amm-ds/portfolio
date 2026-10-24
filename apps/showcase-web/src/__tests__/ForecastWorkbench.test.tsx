@@ -155,7 +155,7 @@ const PAYLOAD: ForecastPayload = {
   scalars: {
     headline: {
       claim:
-        "no run clears MASE 1.0 — seasonal-naive parity — on the frozen test window; lgbm_tuned is closest at MASE 1.076",
+        "no run dips below MASE 1.0 on the frozen test window (the naive floor itself scores 1.310 there — the scale is its in-sample error from a quieter period); lgbm_tuned is closest at MASE 1.076",
       champion: "hgb_tuned",
       challenger: "hgb",
       champion_mase: 1.0784,
@@ -410,7 +410,7 @@ describe("ForecastWorkbench", () => {
     expect(screen.getByText("no series matches")).toBeInTheDocument();
   });
 
-  it("refits the explorer when the origin slider moves", async () => {
+  it("replays the committed curves when the origin slider moves", async () => {
     mockFetch(payloadFetch());
     renderDemo();
     await screen.findByText("horizon 7d");

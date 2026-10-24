@@ -249,7 +249,9 @@ pipeline build). The queue commands above are the exact ones to re-run once
   zero demand (no trading calendar)" caveat and the one-sentence target
   definition. Regenerated canonical run, headline moves (test window =
   holiday quarter): UCI champion still `hgb_tuned` by selection (9.545 MAE /
-  1.078 MASE) but no run clears MASE 1.0 and `lgbm_tuned` posts the best
+  1.078 MASE) but no run dips below MASE 1.0 — the seasonal-naive itself
+  scores 1.310 there, its scale being in-sample error from a quieter period,
+  so 1.0 is not parity on this window — and `lgbm_tuned` posts the best
   test-window MAE (9.409) — the old "synthetic champion ranks 4th on real
   data" claim was a pooled artifact and is corrected; synthetic test window
   still led by ETS (8.924), `temporal_net` best ML (9.244); reconciliation

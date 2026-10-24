@@ -8,13 +8,13 @@ same case studies render live (with interactive figures) in the
 
 | # | Project | Domain | Data | Impact in one line | Status |
 |---|---|---|---|---|---|
-| 01 | [RAG & Agentic AI Assistant](01-rag-agent.md) | Agentic AI / LLM | Wikipedia (HF) | retrieval recall@5 0.83 vs 0.03 random; verify loop cuts unsupported claims 18→14 | Flagship — complete |
-| 02 | [Hierarchical Demand Forecasting](02-demand-forecasting.md) | Time series | UCI Retail II (real) + synthetic CI path | only model beating the seasonal floor on real intermittent demand (MASE 0.98) | Working showcase |
+| 01 | [RAG & Agentic AI Assistant](01-rag-agent.md) | Agentic AI / LLM | Wikipedia (HF) | retrieval recall@5 0.83 vs 0.03 random; verify loop cut unsupported-claim share 60%→47% in an on/off A/B (committed hosted 65-q run: 18/65) | Flagship — complete |
+| 02 | [Hierarchical Demand Forecasting](02-demand-forecasting.md) | Time series | UCI Retail II (real) + synthetic CI path | champion runs at 0.843 relative MAE of the seasonal-naive floor on real intermittent demand (MASE 1.078 vs the naive's own 1.310) | Working showcase |
 | 03 | [Anomaly Detection over Telemetry](03-anomaly-detection.md) | Unsupervised ML | NAB (real) + seeded synthetic CI path | catches 73% of real incidents; alert budget quantifies the false-positive cost | Working showcase |
 | 04 | [NLP Classification with Transformers](04-nlp-classification.md) | Deep learning NLP | AG News (HF, full 120k) | full-data fine-tune reaches 0.946 macro-F1 on a laptop GPU | Working showcase |
 | 05 | [Churn Modeling with sklearn Pipelines](05-ml-pipeline-churn.md) | Classical ML | IBM telco churn (real) + synthetic CI path | cuts retention-campaign cost 41.9% vs the naive policy (CI excludes zero) | Working showcase |
 | 06 | [Routing Optimization (VRPTW)](06-routing-optimization.md) | Combinatorial optimization | CVRPLIB Solomon | within 4.23% of best-known solutions on all 56 instances (+3.73 vehicles) | Working showcase |
 | 07 | [Urban Mobility Demand Intelligence](07-open-data-mobility.md) | Data engineering + ML | NYC TLC + NOAA | −28.4% demand error on 41.2M trips; p90 staffing band calibrated at 90.8% | **Flagship — complete** |
 | 08 | [LLM Inference & Serving](08-inference-serving.md) | Model serving | Local Ollama stack (GGUF vs MLX) | measured latency/throughput frontier across engines, quants, concurrency | Working showcase |
-| 09 | [Agentic AI Workflows](09-agentic-workflows.md) | Agentic AI | Deterministic 15-task suite | all 15 graded tasks pass on a hosted model — ledger $0.10 of the $2.00 suite cap (cloud-equivalent) | Working showcase |
+| 09 | [Agentic AI Workflows](09-agentic-workflows.md) | Agentic AI | Deterministic 15-task suite | 15/15 on every grader on a hosted model + held-out 7/7 answers, 3/3 should-fail refusals — ledger $0.086 of the $2.00 suite cap (cloud-equivalent) | Working showcase |
 | 10 | [Retention Uplift & Experimentation](10-uplift-experimentation.md) | Decision Science | Hillstrom email (MineThatData) | targeting profit advantage established by paired bootstrap; mail-everyone named as the bar | Working showcase |

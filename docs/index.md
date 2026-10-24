@@ -21,9 +21,10 @@ baseline, an honest delta, and the code to verify it.
   [−485, −343] — on real IBM telco data.
 - Routing optimization within **4.23% of best-known solutions** on all 56
   Solomon VRPTW instances — hand-written, seeded, machine-validated.
-- An agentic-workflow suite where **77/77 graded outcomes pass** across the
-  tuning set, a held-out set, and should-fail probes — for $0.10 of a
-  metered $2.00 budget cap.
+- An agentic-workflow suite where **15/15 tuning tasks pass every grader**
+  (answers, exact tool set, step + latency budgets) on a hosted model, with a
+  sealed held-out set adding **7/7 answers and 3/3 should-fail refusals** —
+  for $0.086 of a metered $2.00 budget cap.
 
 ## Talk to me
 
