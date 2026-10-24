@@ -204,8 +204,9 @@ small tabular lag problems; a sequence model is the roadmap answer).
 - **Nowcast stays**: the one-day-ahead track (section H) remains as the
   clearly labelled `nowcast` track — its frozen-window numbers stay committed
   and valid, and it is never mixed into the multi-step leaderboard. The demo
-  payload (schema v2) keeps quoting the nowcast numbers; Phase C owns the
-  schema-3 restructure.
+  payload is schema v3 — the direct multi-horizon catalog (Phase C landed:
+  per-series routed curves at the h-lattice on 3 scored origins, scoreboard,
+  growth, decision mapping; no nowcast numbers).
 
 ## Pipeline
 
@@ -318,8 +319,8 @@ pipeline build). The queue commands above are the exact ones to re-run once
   per unit per cell; champion vs seasonal-naive policy per class; labelled a
   simulation — no savings claims). The nowcast track stays committed and
   frozen under its v1 protocol and is never mixed into the multi-step
-  leaderboard; the demo payload (schema v2) keeps quoting the nowcast
-  numbers — Phase C owns the schema-3 restructure. UCI regenerated: nowcast
+  leaderboard; the demo payload is schema v3 — the multi-horizon catalog
+  (Phase C landed). UCI regenerated: nowcast
   numbers bit-stable (hgb_tuned 9.545 / champion pick unchanged);
   multi-step lumpy champion 6.724 vs floor 11.070 MAE at h=7 (CI
   [−7.057, −2.258]) and 6.453 vs 10.642 at h=14; routing beats unrouted

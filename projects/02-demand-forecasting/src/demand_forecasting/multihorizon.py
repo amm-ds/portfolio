@@ -265,20 +265,35 @@ class OriginScore:
     origin: int
     preds: dict[str, np.ndarray]
     quantiles: dict[float, np.ndarray]  # learner p10/p50/p90
+    # Optional what-if predictions under demand shocks: shock factor -> method
+    # -> (n_series x n_horizons). A shock scales the last 7 days before the
+    # origin (the demand signal every candidate reads: the statistical methods
+    # re-fit on the shocked window, the direct HGB re-predicts on its shocked
+    # lag trio, the seasonal naive reads the shocked reference days). Only the
+    # demo payload builder passes shock factors; the committed track never
+    # does, so committed metrics are untouched.
+    shocked: dict[float, dict[str, np.ndarray]] = field(default_factory=dict)
 
 
 def _score_origin(
-    units: np.ndarray, cal: np.ndarray, origin: int, horizons: list[int], config: ForecastConfig
+    units: np.ndarray,
+    cal: np.ndarray,
+    origin: int,
+    horizons: list[int],
+    config: ForecastConfig,
+    shock_factors: tuple[float, ...] = (),
 ) -> OriginScore:
     """Fit every direct model issued at ``origin`` and predict the window."""
     n_series = units.shape[1]
     point_cols: list[np.ndarray] = []
+    point_models: list[HistGradientBoostingRegressor] = []
     quantile_cols: dict[float, list[np.ndarray]] = {q: [] for q in QUANTILES_MS}
     for h in horizons:
         x_train, y_train = _design_train(units, cal, origin, h)
         x_pred = _design_pred(units, cal, origin, h)
         model = _fit_hgb(config, quantile=None)
         model.fit(x_train, y_train)
+        point_models.append(model)
         point_cols.append(np.asarray(model.predict(x_pred), dtype=float))
         for q in QUANTILES_MS:
             qm = _fit_hgb(config, quantile=q)
@@ -290,7 +305,27 @@ def _score_origin(
     preds["zero"] = np.zeros((n_series, len(horizons)))
     for name, mat in _statistical_preds(units, origin, config.multistep_window_days).items():
         preds[name] = np.column_stack([mat[:, h - 1] for h in horizons])
-    return OriginScore(origin=origin, preds=preds, quantiles=quantiles)
+    shocked: dict[float, dict[str, np.ndarray]] = {}
+    for s in shock_factors:
+        if s <= 0:
+            raise ValueError(f"shock factor must be positive, got {s}")
+        if s == 1.0:
+            continue  # the base run IS the 1.0 curve
+        units_s = units.copy()
+        units_s[max(0, origin - 6) : origin + 1] *= s  # the last 7 days before the origin
+        entry: dict[str, np.ndarray] = {
+            "seasonal_naive": _seasonal_naive_pred(units_s, origin, horizons),
+            "zero": np.zeros((n_series, len(horizons))),
+        }
+        for name, mat in _statistical_preds(units_s, origin, config.multistep_window_days).items():
+            entry[name] = np.column_stack([mat[:, h - 1] for h in horizons])
+        hgb_cols = []
+        for j, h in enumerate(horizons):
+            x_s = _design_pred(units_s, cal, origin, h)
+            hgb_cols.append(np.asarray(point_models[j].predict(x_s), dtype=float))
+        entry["direct_hgb"] = np.column_stack(hgb_cols)
+        shocked[float(s)] = entry
+    return OriginScore(origin=origin, preds=preds, quantiles=quantiles, shocked=shocked)
 
 
 # ---------------------------------------------------------------------------

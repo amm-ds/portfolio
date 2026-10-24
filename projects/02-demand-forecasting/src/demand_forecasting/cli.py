@@ -166,7 +166,10 @@ def demo_payload_cmd(
 
     The demo ships the UCI track (real intermittent demand) but the payload
     lands in ``reports/`` next to the demo contract, so the committed metrics
-    come from the track's own reports dir via ``--metrics-dir``.
+    come from the track's own reports dir via ``--metrics-dir``. Schema v3
+    rebuilds the catalog from the committed multi-step (direct_multihorizon_v1)
+    track: it re-scores every rolling origin from ``data_uci/panel.parquet``
+    (slow, ~15 min) and drift-guards the re-run against the committed metrics.
     """
     settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     return write_demo_payload(settings, config, metrics_dir=metrics_dir)
