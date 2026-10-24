@@ -8,9 +8,10 @@ real track; seeded synthetic hierarchy as the labelled CI fast path) ·
 > forecasts it can trust for replenishment — every point of error is working
 > capital or lost sales. On real transactions, under a frozen holdout
 > protocol (champion selected on origins 1..n-1, final quarter scored once),
-> the tuned gradient-boosting model beats the strongest naive floor (seasonal
-> naive) by 15.7% MAE on the held-back quarter (9.545 vs 11.323); no run
-> clears MASE 1.0 on that window — stated, not smoothed over.
+> the champion runs at **0.843 relative MAE of the seasonal-naive floor**
+> (9.545 vs 11.323 MAE; MASE 1.078 vs the naive's own 1.310 — the MASE scale
+> is the naive's in-sample error from a quieter period, so 1.0 is not parity
+> on this window); no run dips below MASE 1.0 there — stated, not smoothed over.
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -33,8 +34,11 @@ Real-data track — UCI Online Retail II (top 8 countries × top 200 products,
 not decision-grade at this zero share). The table is scored on the final
 rolling-origin window (2010-10-01..2010-12-09, the holiday quarter); the
 champion was selected on origins 1..3 only and every run is scored exactly
-once on the test window. *How to read: lower is better everywhere; MASE below
-1.0 means the run beats "same day last week"; bold = selected champion.*
+once on the test window. *How to read: lower is better everywhere; MASE
+divides by the seasonal-naive's in-sample error (fit on a quieter period —
+the naive itself scores 1.310 on this window, so 1.0 is not parity here);
+read Δ MASE vs sn for parity with "same day last week"; bold = selected
+champion.*
 
 | run | MAE | RMSE | MAPE | MASE | Δ MAE vs sn | Δ MASE vs sn |
 |---|---|---|---|---|---|---|
@@ -74,8 +78,8 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
 | temporal_net (PyTorch emb+MLP) | 9.244 | 12.908 | 11.38% | 0.966 |
 
 - **Cross-track rankings reversed under the frozen protocol — in both
-  directions**: the old pooled ladder claimed `lgbm_tuned` (best synthetic ML
-  run) "drops to fourth on real data"; on the one-shot test window
+  directions**: the old pooled ladder claimed the best synthetic ML run
+  ranked fourth on real data; on the one-shot test window
   `lgbm_tuned` posts the best MAE of all runs (9.409, ahead of the selection
   champion 9.545 — a 1.4% gap inside fold noise), while the synthetic overall
   champion `ets` ranks 6th on UCI (11.471). Configs tuned on clean synthetic
@@ -100,7 +104,7 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
 - 6/6 DQ gates on both tracks; synthetic evaluate ≈ 1.5 min, UCI ≈ 7 min;
   78 offline tests.
 
-![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE against the 1.0 seasonal-naive parity line, with MAPE omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
+![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run, where the 1.0 gridline is not seasonal-naive parity: the MASE scale is the naive's in-sample error from a quieter period, so the seasonal-naive itself lands at 1.310 on this window. MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 
 ## Artifacts
 

@@ -26,6 +26,7 @@ import polars as pl
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_html, save_json
+from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import BacktestResult, backtest
@@ -163,7 +164,11 @@ def run_reconciliation(
     panel = pl.read_parquet(settings.data_dir / "panel.parquet")
     store_features = build_features(_store_panel(panel), config)
     store_spec = ModelSpec(name=MODEL, numeric=NUMERIC_FEATURES, categorical=CATEGORICAL_FEATURES)
-    store_result = backtest(store_features, config, specs=[store_spec])
+    # The store-level backtest re-fits HGB and its pooled MAE jittered
+    # run-to-run within the OpenMP-reduction tolerance; a single thread makes
+    # the shrinkage estimate (and the committed reconciliation.json) stable.
+    with threadpool_limits(limits=1):
+        store_result = backtest(store_features, config, specs=[store_spec])
 
     n_folds = len({f.fold for f in child_result.folds})
     eval_fold = n_folds - 1

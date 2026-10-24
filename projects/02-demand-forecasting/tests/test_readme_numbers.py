@@ -18,10 +18,11 @@ PROJECT = Path(__file__).resolve().parents[1]
 
 
 def _load_metrics(path: Path) -> dict:
-    # reports_uci/ is gitignored (local pipeline output): fresh clones and CI
-    # only have the committed synthetic track — skip the UCI assertions there
-    # instead of failing. The local full run (after `cli all --data-source
-    # uci`) keeps the guard live.
+    # reports_uci/*.json are committed drift-guard anchors, so CI runs these
+    # assertions against the tracked files. The skip stays as a safety net for
+    # a genuinely absent file (e.g. a pruned worktree); the local full run
+    # (after `cli all --data-source uci`) keeps the guard live against
+    # regenerated files too.
     if not path.exists():
         pytest.skip(f"{path} missing — run the evaluate stage locally first")
     return json.loads(path.read_text())

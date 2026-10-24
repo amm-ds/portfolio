@@ -14,7 +14,12 @@ top of the hardened ``rolling_origin_holdout_v1`` protocol:
   actuals (daily, with dates — the tail includes the forecast window, so the
   UI can overlay the forecast on actuals), the committed test-window backtest
   block (champion point forecast ``y_pred``, p10/p90 quantile band, the
-  seasonal-naive floor) and the per-horizon error arrays;
+  seasonal-naive floor) and the per-horizon error arrays; emitted curves are
+  display-sanitized — clipped at zero (demand cannot be negative), bands
+  clamped around the point curve, sparse all-zero-window series carrying
+  ``null`` instead of a degenerate band — and the stored window metrics are
+  computed from the stored curves, so the payload is exactly self-consistent
+  (headline metrics in metrics.json remain the raw backtest values);
 - per series, three rolling origins — ``early`` / ``middle`` (two of the
   committed selection folds) and ``test`` (the designated test window, the
   last origin) — each with the as-of-origin history (actuals up to the origin
@@ -31,8 +36,9 @@ top of the hardened ``rolling_origin_holdout_v1`` protocol:
   one-sentence target definition) and ``dataset_metadata`` embeds the
   committed dataset card (source URL + sha256, cleaning rules, the
   zero-sales-day caveat, the observed date range);
-- the committed scalars: the headline MASE ladder (no run clears MASE 1 on
-  the frozen test window — the champion is closest), the champion's MAE edge
+- the committed scalars: the headline MASE ladder (no run dips below MASE 1
+  on the frozen test window — the naive floor itself scores 1.310 there, its
+  scale being in-sample error from a quieter period), the champion's MAE edge
   over the strongest naive floor (~15.7%), the band coverage + calibration
   verdict, the champion/challenger/global/naive model names from the
   committed backtest selection, and the feature-schema note (calendar + lag
@@ -341,6 +347,38 @@ def _window_metrics(err: np.ndarray, actual: np.ndarray, scale: float) -> dict[s
     }
 
 
+def _emit_band(
+    p10: np.ndarray,
+    p50: np.ndarray,
+    p90: np.ndarray,
+    *,
+    zero_window: bool,
+    sparse: bool,
+) -> tuple[list[float] | None, list[float] | None]:
+    """Sanitized p10/p90 curves for the catalog (schema v2; ``None`` = no band).
+
+    The committed quantile band is replayed unchanged except for two
+    display-level sanity rules, applied per point: clip at zero (the quantile
+    HGB emits small negatives on zero-demand days) and clamp the band around
+    the displayed point curve (``p10 <= p50 <= p90``) so the UI never shades
+    a band that contradicts the line inside it. Both rules are no-ops on
+    well-formed points — they only bite on degenerate quantile outputs (the
+    audit found 124/4200 inverted origin-band points, all from negative or
+    collapsed quantiles). A sparse series whose whole window is zero demand
+    honestly carries no band at all (``None``, not a degenerate zero-width
+    interval pretending precision the window does not contain); the point
+    forecast stays the committed backtest value.
+    """
+    if sparse and zero_window:
+        return None, None
+    lo = np.clip(np.minimum(p10, p50), 0.0, None)
+    hi = np.clip(np.maximum(p90, p50), 0.0, None)
+    return (
+        [round(float(v), 4) for v in lo],
+        [round(float(v), 4) for v in hi],
+    )
+
+
 def _origin_series_entry(
     features: pl.DataFrame,
     origin_frame: pl.DataFrame,
@@ -350,6 +388,7 @@ def _origin_series_entry(
     challenger: str,
     horizon: int,
     origin_history_days: int,
+    demand_class: str,
 ) -> dict[str, Any]:
     """One catalog series at one origin: as-of-origin history, actuals, curves.
 
@@ -373,17 +412,26 @@ def _origin_series_entry(
     scale = _seasonal_scale(hist_y)
 
     def _model_block(col: str, with_band: bool = False) -> dict[str, Any]:
-        # metrics are computed from the ROUNDED stored curve so the payload is
-        # exactly self-consistent (a UI recomputation from y_pred reproduces
-        # the stored mae/mase/bias/wape bit for bit)
-        pred = np.asarray([round(float(v), 4) for v in win[col].to_numpy()])
+        # metrics are computed from the CLIPPED-AND-ROUNDED stored curve so the
+        # payload is exactly self-consistent (a UI recomputation from y_pred
+        # reproduces the stored mae/mase/bias/wape bit for bit); demand cannot
+        # be negative, so the emitted curve clips the raw backtest at zero
+        # (headline metrics in metrics.json remain the raw backtest values)
+        pred = np.clip(
+            np.asarray([round(float(v), 4) for v in win[col].to_numpy()]), 0.0, None
+        )
         block: dict[str, Any] = {
             "y_pred": [float(v) for v in pred],
             **_window_metrics(pred - actual, actual, scale),
         }
         if with_band:
-            block["p10"] = [round(float(v), 4) for v in win["p10"].to_numpy()]
-            block["p90"] = [round(float(v), 4) for v in win["p90"].to_numpy()]
+            block["p10"], block["p90"] = _emit_band(
+                np.asarray(win["p10"].to_numpy(), dtype=float),
+                pred,
+                np.asarray(win["p90"].to_numpy(), dtype=float),
+                zero_window=bool(np.all(actual == 0)),
+                sparse=demand_class == "sparse",
+            )
         return block
 
     models: dict[str, Any] = {
@@ -426,6 +474,20 @@ def _catalog_entry(
         }
 
     store, _, product = series_id.partition("|")
+    # clip at zero like the origin curves (demand cannot be negative); stored
+    # errors are computed from the stored curve so the payload stays exactly
+    # self-consistent
+    y_pred = [
+        round(float(v), 4) for v in np.clip(win["y_pred"].to_numpy(), 0.0, None)
+    ]
+    naive = [round(float(v), 4) for v in win["naive"]]
+    p10, p90 = _emit_band(
+        np.asarray(win["p10"].to_numpy(), dtype=float),
+        np.asarray(y_pred, dtype=float),
+        np.asarray(win["p90"].to_numpy(), dtype=float),
+        zero_window=bool(np.all(win_true == 0)),
+        sparse=demand_class == "sparse",
+    )
     return {
         "series_id": series_id,
         "label": f"{store} · {product}",
@@ -436,15 +498,15 @@ def _catalog_entry(
         },
         "forecast": {
             "dates": win["date"].to_list(),
-            "y_pred": [round(float(v), 4) for v in win["y_pred"]],
-            "p10": [round(float(v), 4) for v in win["p10"]],
-            "p90": [round(float(v), 4) for v in win["p90"]],
-            "naive": [round(float(v), 4) for v in win["naive"]],
+            "y_pred": y_pred,
+            "p10": p10,
+            "p90": p90,
+            "naive": naive,
         },
         "errors": {
             "scale": round(scale, 4),
-            "champion": _errors(win["y_pred"].to_numpy()),
-            "naive": _errors(win["naive"].to_numpy()),
+            "champion": _errors(np.asarray(y_pred, dtype=float)),
+            "naive": _errors(np.asarray(naive, dtype=float)),
         },
         "origins": origins,
     }
@@ -464,7 +526,10 @@ def _guard_series(
         sid = entry["series_id"]
         hist, win = _window_and_history(features, fold_frame, sid, history_days, horizon)
         scale = _seasonal_scale(hist["y"].to_numpy())
-        err = float(np.mean(np.abs(win["y_true"].to_numpy() - win["y_pred"].to_numpy())))
+        # the stored curve is the raw backtest clipped at zero — recompute with
+        # the same clip so the guard matches what is emitted
+        clipped = np.clip(win["y_pred"].to_numpy(), 0.0, None)
+        err = float(np.mean(np.abs(win["y_true"].to_numpy() - clipped)))
         recomputed = err / scale if scale > 0 else None
         stored_scale = float(entry["errors"]["scale"])
         stored_maes = entry["errors"]["champion"]["mae"]
@@ -588,6 +653,7 @@ def build_demo_payload(
                 challenger,
                 horizon,
                 origin_history_days,
+                class_by_sid[sid],
             )
             for label, _ in plan
         }
@@ -596,19 +662,26 @@ def build_demo_payload(
 
     runs = _committed_runs(metrics)
     below_one = [k for k, v in runs.items() if float(v["mase"]) < 1.0]
+    naive_mase = float(runs[NAIVE_MODEL]["mase"])
+    # MASE here divides by the seasonal-naive's in-sample error (a quieter
+    # period), so the naive itself scores > 1 on the holiday-quarter test
+    # window — 1.0 is not seasonal-naive parity and must not be worded as such.
     if below_one == [champion]:
         claim = (
-            f"only {champion} clears MASE 1.0 — seasonal-naive parity — on real intermittent demand"
+            f"only {champion} dips below MASE 1.0 on real intermittent demand "
+            f"(the naive floor itself scores {naive_mase:.3f} on this window)"
         )
     elif not below_one:
         closest = min(runs, key=lambda k: float(runs[k]["mase"]))
         claim = (
-            "no run clears MASE 1.0 — seasonal-naive parity — on the frozen test window; "
-            f"{closest} is closest at MASE {float(runs[closest]['mase']):.3f}"
+            "no run dips below MASE 1.0 on the frozen test window (the naive "
+            f"floor itself scores {naive_mase:.3f} there — the scale is its "
+            f"in-sample error from a quieter period); {closest} is closest at "
+            f"MASE {float(runs[closest]['mase']):.3f}"
         )
     else:
         claim = (
-            f"{champion} clears MASE 1.0 on real intermittent demand "
+            f"{champion} dips below MASE 1.0 on real intermittent demand "
             f"({len(below_one)} runs below 1.0)"
         )
 

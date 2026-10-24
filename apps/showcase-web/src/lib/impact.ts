@@ -3,9 +3,9 @@
  * the "Impact in one line" column in docs/projects/index.md. */
 export const IMPACT_LINES: Record<string, string> = {
   "01-rag-agent":
-    "retrieval recall@5 0.83 vs 0.03 random; verify loop cuts unsupported claims 18→14",
+    "retrieval recall@5 0.83 vs 0.03 random; verify loop cut unsupported-claim share 60%→47% in an on/off A/B (committed hosted 65-q run: 18/65)",
   "02-demand-forecasting":
-    "only model beating the seasonal floor on real intermittent demand (MASE 0.98)",
+    "champion runs at 0.843 relative MAE of the seasonal-naive floor on real intermittent demand (MASE 1.078 vs the naive's own 1.310)",
   "03-anomaly-detection":
     "catches 73% of real incidents; alert budget quantifies the false-positive cost",
   "04-nlp-classification": "full-data fine-tune reaches 0.946 macro-F1 on a laptop GPU",
@@ -18,7 +18,7 @@ export const IMPACT_LINES: Record<string, string> = {
   "08-inference-serving":
     "measured latency/throughput frontier across engines, quants, concurrency",
   "09-agentic-workflows":
-    "all 15 graded tasks pass on a hosted model at ≈$0.008/task (cloud-equivalent)",
+    "15/15 on every grader on a hosted model + held-out 7/7 answers, 3/3 should-fail refusals — ledger $0.086 of the $2.00 suite cap (cloud-equivalent)",
   "10-uplift-experimentation":
     "targeting profit advantage established by paired bootstrap; mail-everyone named as the bar",
 };

@@ -249,9 +249,11 @@ sections:
       | temporal_net | 11.77 | 1.305 | +0.45 | −0.005 |
 
       Δ vs seasonal_naive (sn) per row — negative beats "same day last week".
-      No run clears MASE 1.0 on this window: the holiday quarter's bulk
-      spikes lift every model above seasonal-naive parity, which is itself a
-      finding (last-fold drift, priced in and visible in `fold_stability`).
+      No run dips below MASE 1.0 on this window: the MASE scale is the naive's
+      own in-sample error from a quieter period, so the seasonal-naive itself
+      scores 1.310 here and parity must be read on the Δ column, not the 1.0
+      line — itself a finding (last-fold drift, priced in and visible in
+      `fold_stability`).
 
       The synthetic CI ladder (`metrics_bars`, split into MAE+RMSE and
       MASE-parity panels so unit-mixing metrics never share an axis; MAPE
@@ -329,10 +331,11 @@ sections:
         numbers support a pilot decision, not a safety-stock policy, and no
         savings claim is made from them.
 
-      **Results quality:** acceptable-with-caveats — the champion beats the
-      strongest floor by 15.7% MAE on the frozen test window, but no run
-      clears MASE 1.0 there (the holiday window is harder than the average
-      fold), the margin over the next-best run is inside fold noise, the 80%
+      **Results quality:** acceptable-with-caveats — the champion runs at 0.843
+      relative MAE of the seasonal-naive floor (MASE 1.078 vs the naive's own
+      1.310) on the frozen test window, but no run dips below MASE 1.0 there
+      (the holiday window is harder than the average fold), the margin over
+      the next-best run is inside fold noise, the 80%
       bands land at 0.741 (synthetic, too narrow) and 0.861-with-zero-width
       (UCI, degenerate) against the 0.80 target, and the winning config does
       not transfer across demand regimes. Each caveat is measured above, not
@@ -377,6 +380,6 @@ figure_captions:
   hpo_history: Objective value (CV MAE) of every trial in the 56-trial seeded Optuna study on the sklearn HGB, with the running best overlaid. The search converges on regularised small-tree configs and buys a modest, real gain (best 8.529 vs 8.619 default).
   hpo_importance: Hyperparameter importance (fANOVA) over the same seeded study. Regularisation knobs dominate — the top two parameters carry 66% of the search importance.
   fold_stability: Out-of-fold MAE per CV origin for every run in the ladder, with the test window marked after the dashed line. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
-  metrics_bars: "The run ladder in two panels — MAE + RMSE in units (left) and MASE against the 1.0 seasonal-naive parity line (right) — scored on the final holdout window, so unit-mixing metrics never share an axis. MAPE stays tabulated (not drawn): with ~89% zero-demand days near-zero actuals inflate it. On the UCI test window no run clears parity; on synthetic only ETS does."
+  metrics_bars: "The run ladder in two panels — MAE + RMSE in units (left) and MASE (right) — scored on the final holdout window, so unit-mixing metrics never share an axis. MAPE stays tabulated (not drawn): with ~89% zero-demand days near-zero actuals inflate it. MASE divides by the seasonal-naive's in-sample error from a quieter period — on the UCI test window the naive itself lands at 1.310, so the 1.0 gridline is not parity (no run dips below it there); on synthetic only ETS does."
   forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, test window — on UCI hgb_tuned clears seasonal_naive by 15.7% MAE. The residual gap after the naive floor is day-over-day noise.
   probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, test window. The band covers the h=1..14 horizon set at 0.861 on UCI (target 0.80) but with zero width — the median sits on the zero atom — while on synthetic it covers 0.741 at 26.5 units average width (under-covering); the figure states coverage and width.

@@ -325,7 +325,7 @@ describe("ProjectsIndex", () => {
     // exact wording of the "Impact in one line" column for project 01
     expect(
       screen.getByText(
-        "retrieval recall@5 0.83 vs 0.03 random; verify loop cuts unsupported claims 18→14",
+        "retrieval recall@5 0.83 vs 0.03 random; verify loop cut unsupported-claim share 60%→47% in an on/off A/B (committed hosted 65-q run: 18/65)",
       ),
     ).toBeInTheDocument();
     const cardOf = (title: string) =>

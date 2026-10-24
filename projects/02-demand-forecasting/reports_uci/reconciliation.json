@@ -1,0 +1,10 @@
+{
+  "shrinkage": 0.6000000000000001,
+  "store_mae_before": 738.6904406093954,
+  "store_mae_after": 676.3978899958838,
+  "incoherence_before": 500.03026470381053,
+  "incoherence_after": 200.0121058815242,
+  "eval_fold": 3,
+  "n_stores": 4,
+  "n_children": 6
+}

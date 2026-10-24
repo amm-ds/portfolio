@@ -178,10 +178,11 @@ Key findings:
 - **Reconciliation (MinT-lite, test window, store level)**: the grid estimator
   chose w=0.00 this run — the parent-level model suffers the same fold-4 drift
   as the children, so no trust is placed in it. Store-level MAE stayed
-  23.814 and incoherence |parent forecast − Σ children| stayed 27.340
-  (exactly ×(1−w), the tested coherence property). Structural coherence is
-  guaranteed; accuracy gains from reconciliation need a drift-robust parent
-  model — a documented, quantified caveat.
+  23.895 and incoherence |parent forecast − Σ children| stayed 23.670
+  (exactly ×(1−w), the tested coherence property; the store-level backtest
+  re-fits HGB single-threaded, so these numbers are deterministic). Structural
+  coherence is guaranteed; accuracy gains from reconciliation need a
+  drift-robust parent model — a documented, quantified caveat.
 - Where the gains plateau: all runs degrade on the last fold as the injected
   trend lifts demand, but the improvement ratio over persistence is stable
   across folds. The residual ~9-unit test-window MAE is mostly day-over-day
@@ -229,15 +230,17 @@ What the audit-driven statistical baselines reveal on **real** data:
 
 - **They do not beat the boosters here** — the mirror image of the synthetic
   track, where ETS wins outright. `seasonal_naive` (11.323 test MAE, 1.310
-  MASE) is the strongest floor and a serious contender — no run clears MASE 1
-  on this test window: it covers the holiday quarter (Oct–Dec 2010), where
-  bulk spikes lift every model above seasonal-naive parity. ETS *loses* to
+  MASE) is the strongest floor and a serious contender — no run dips below
+  MASE 1.0 on this test window: it covers the holiday quarter (Oct–Dec 2010),
+  and the MASE scale is the naive's own in-sample error from a quieter period,
+  so the naive itself scores 1.310 here and parity with it must be read on
+  the Δ-vs-sn column, not the 1.0 line. ETS *loses* to
   its own seasonal naive (11.471 vs 11.323, MASE 1.338): Holt-Winters assumes
   every series is smooth and seasonal, and 89% zeros plus bulk spikes break
   that assumption (the fallback chain is documented and unit-tested).
 - **Cross-track transfer is the honest punchline, and it reversed under the
   frozen protocol**: the old pooled ladder claimed the synthetic ML champion
-  `lgbm_tuned` "drops to fourth on real data" (9.600). On the one-shot test
+  `lgbm_tuned` ranked fourth on real data (9.600). On the one-shot test
   window `lgbm_tuned` actually posts the **best** MAE of all runs (9.409,
   ahead of the selection champion `hgb_tuned` at 9.545 — a 1.4% gap inside
   the fold-to-fold spread, so one window cannot dethrone the protocol's
@@ -256,8 +259,8 @@ What the audit-driven statistical baselines reveal on **real** data:
   200.0 (exactly ×(1−w), property-tested); store-level MAE 738.7 → 676.4
   (−8.4% this run — coherence is a guarantee, accuracy gains depend on
   parent-model quality, stated plainly; the shrinkage grid is estimated on
-  origin 2 and the store-level backtest re-fits HGB, so w jitters
-  run-to-run within the documented OpenMP tolerance).
+  origin 2 and the store-level backtest re-fits HGB with its threadpool
+  pinned to one thread, so w is deterministic run-to-run).
 - **Probabilistic (target 80% band)** — coverage AND average width on the
   test window's final 14 days (h=1..14):
 
@@ -296,6 +299,10 @@ MAPE/MASE + bias/WAPE + fold MAEs + per-horizon arrays + `legacy_pooled_*`,
 and a `_meta` protocol block), `evaluation_metadata.json`, `report.html`,
 `reconciliation.json`, `probabilistic.json` (coverage AND width per horizon,
 `calibration_verdict`); the UCI track also emits `dataset_metadata.json`.
+The small `reports_uci/*.json` files are committed as drift-guard anchors;
+the heavy UCI artifacts (`data_uci/`, `reports_uci/figures/`,
+`reports_uci/report.html`) stay local and regenerate via
+`uv run python -m demand_forecasting.cli all --data-source uci`.
 `data_uci/` (panel 405,416 rows, contract, models) and `data/` (synthetic).
 Runtime (this machine, `cli evaluate`): synthetic ≈ **1.5 min** with
 probabilistic; UCI ≈ **7 min** (ETS fits 1,084 series per fold); 6/6 DQ gates
@@ -333,9 +340,10 @@ uv run pytest projects/02-demand-forecasting -q
 - **Baseline-first modelling**: naive floors (global mean, persistence,
   weekly seasonal-naive) and a per-series ETS anchor every claim; the trained
   models must *earn* their complexity — on the real-data test window the
-  selection champion `hgb_tuned` beats the strongest floor (`seasonal_naive`)
-  by 15.7% MAE (9.545 vs 11.323), and the frozen protocol is precisely what
-  makes that number a measurement instead of a hope.
+  champion runs at **0.843 relative MAE of the seasonal-naive floor**
+  (MASE 1.078 vs the naive's own 1.310 on the holiday-quarter test window,
+  9.545 vs 11.323 MAE), and the frozen protocol is precisely what makes that
+  number a measurement instead of a hope.
 - **Model selection as an engineering discipline**: HPO optimises on the same
   embargoed folds it is judged on, the champion is picked on origins 1..n-1
   and scored once on the final holdout, the un-tuned model stays in the

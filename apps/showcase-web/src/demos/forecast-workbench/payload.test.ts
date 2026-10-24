@@ -48,13 +48,24 @@ describe("committed demo payload contract (schema v2)", () => {
       const fc = s.forecast;
       expect(fc.dates).toHaveLength(H);
       expect(fc.y_pred).toHaveLength(H);
-      expect(fc.p10).toHaveLength(H);
-      expect(fc.p90).toHaveLength(H);
       expect(fc.naive).toHaveLength(H);
-      for (let h = 1; h <= H; h++) {
-        // quantile HGBs don't clip at zero: near-zero sparse days can invert
-        // the band by a rounding-width — tolerate a hairline inversion only
-        expect(fc.p90[h - 1]).toBeGreaterThanOrEqual(fc.p10[h - 1] - 0.01);
+      if (fc.p10 === null || fc.p90 === null) {
+        // sparse series whose window demand was all zero honestly carry no band
+        expect(fc.p10).toBeNull();
+        expect(fc.p90).toBeNull();
+        expect(s.demand_class).toBe("sparse");
+        expect(s.origins.test.actuals.y.every((v) => v === 0)).toBe(true);
+      } else {
+        expect(fc.p10).toHaveLength(H);
+        expect(fc.p90).toHaveLength(H);
+        for (let h = 1; h <= H; h++) {
+          // the emitted band is display-sane: clipped at zero, ordered around
+          // the point curve (the generator enforces p10 <= y_pred <= p90)
+          expect(fc.p10[h - 1]).toBeGreaterThanOrEqual(0);
+          expect(fc.p90[h - 1]).toBeGreaterThanOrEqual(0);
+          expect(fc.p10[h - 1]).toBeLessThanOrEqual(fc.y_pred[h - 1]);
+          expect(fc.p90[h - 1]).toBeGreaterThanOrEqual(fc.y_pred[h - 1]);
+        }
       }
       // mase nulls exactly where the seasonal scale is zero
       const nulls = s.errors.champion.mase.filter((v) => v === null).length;
@@ -81,8 +92,22 @@ describe("committed demo payload contract (schema v2)", () => {
           expect(blk.mase === null || Number.isFinite(blk.mase)).toBe(true);
           expect(blk.wape === null || Number.isFinite(blk.wape)).toBe(true);
           if (m === "champion") {
-            expect(blk.p10).toHaveLength(H);
-            expect(blk.p90).toHaveLength(H);
+            // null band only for sparse series on an all-zero window
+            if (blk.p10 === null || blk.p90 === null) {
+              expect(blk.p10).toBeNull();
+              expect(blk.p90).toBeNull();
+              expect(s.demand_class).toBe("sparse");
+              expect(o.actuals.y.every((v) => v === 0)).toBe(true);
+            } else {
+              expect(blk.p10).toHaveLength(H);
+              expect(blk.p90).toHaveLength(H);
+              for (let h = 1; h <= H; h++) {
+                expect(blk.p10![h - 1]).toBeGreaterThanOrEqual(0);
+                expect(blk.p90![h - 1]).toBeGreaterThanOrEqual(0);
+                expect(blk.p10![h - 1]).toBeLessThanOrEqual(blk.y_pred[h - 1]);
+                expect(blk.p90![h - 1]).toBeGreaterThanOrEqual(blk.y_pred[h - 1]);
+              }
+            }
           } else {
             // the band is committed for the champion only
             expect(blk.p10).toBeUndefined();

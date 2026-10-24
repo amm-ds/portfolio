@@ -235,11 +235,12 @@ export interface OriginWindowMetrics {
 }
 
 /** One model's committed curve at one origin: the 14 point forecasts plus,
- * for the champion only, the p10/p90 band. */
+ * for the champion only, the p10/p90 band (`null` = honestly no band on
+ * sparse all-zero windows — never a degenerate zero-width interval). */
 export interface OriginModelBlock extends OriginWindowMetrics {
   y_pred: number[];
-  p10?: number[];
-  p90?: number[];
+  p10?: number[] | null;
+  p90?: number[] | null;
 }
 
 /** One series at one rolling origin: the as-of-origin history (≤60 days,
@@ -268,8 +269,9 @@ export interface CatalogSeries {
   forecast: {
     dates: string[];
     y_pred: number[];
-    p10: number[];
-    p90: number[];
+    /** `null` = no band (sparse series whose window demand was all zero). */
+    p10: number[] | null;
+    p90: number[] | null;
     naive: number[];
   };
   errors: {

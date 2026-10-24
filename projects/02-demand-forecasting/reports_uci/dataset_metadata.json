@@ -1,0 +1,24 @@
+{
+  "dataset": "UCI Online Retail II",
+  "source": {
+    "url": "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip",
+    "sha256": "572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb",
+    "sheet": "Year 2009-2010",
+    "license": "free for research (Chen, Gallino & Li 2012, Management Science)"
+  },
+  "cancellation_filtering": "Sales lines only: rows with Quantity > 0 are kept; cancellations and returns (negative-quantity lines) are removed \u2014 returns are a separate business process and net-of-returns demand would double-count reverse logistics. Blank stock codes are dropped.",
+  "quantity_handling": "Daily sum of line Quantity per (date, country, stock_code); the panel's 'units' column is that daily total (integer). 'price' is the mean line price of the day (carried for reference, not a model target).",
+  "geography": "Top 8 countries by total unit volume are kept as 'stores'; all other countries are dropped.",
+  "products": "Top 200 stock codes by total unit volume are kept as 'products'; the rest are dropped.",
+  "daily_aggregation": "Transactions are aggregated to one row per (date, country, stock_code); the panel is reindexed to the complete daily calendar between the first and last observed dates, and missing day-series combinations are zero-filled (forward-filled price, 0 where never observed).",
+  "observed_panel": {
+    "date_start": "2009-12-01",
+    "date_end": "2010-12-09",
+    "n_days": 374,
+    "n_rows": 405416,
+    "n_series": 1600,
+    "zero_share": 0.8918937585097776
+  },
+  "zero_sales_caveat": "Zero-sales days may be missing rather than true zero demand: the source has no trading calendar, so a zero-filled day can mean 'closed or not trading' as easily as 'no demand'.",
+  "target_definition": "The forecast target is the next 14 days of daily units per country-product series (top 8 countries x top 200 products by volume), aggregated from cleaned Online Retail II transactions (cancellations removed)."
+}
