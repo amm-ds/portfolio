@@ -209,78 +209,162 @@ export interface UpliftPayload {
 }
 
 // --- demand forecast workbench payload (`projects/02-demand-forecasting/reports/demo_payload.json`) ---
-// Schema v2: multi-origin backtest bundle on the rolling_origin_holdout_v1
-// protocol — every catalog series carries the v1 window block PLUS three
-// rolling origins (early / middle / test), each with its own as-of-origin
-// history, the 14 horizon days of actuals, and per-model curves + window
-// metrics. Built by `demand_forecasting.demo_payload`.
+// Schema v3: the DIRECT MULTI-HORIZON catalog (protocol direct_multihorizon_v1).
+// Every catalog series carries its ADI/CV² class and committed routing method
+// (`model_used`), plus the 3 most recent scored weekly origins — each with an
+// as-of-origin history (ends the day BEFORE the origin), 14 contiguous days
+// of actuals (starting the day AFTER — no embargo gap), and per-model direct
+// curves on the committed h-lattice {1,2,3,5,7,10,14}. Built by
+// `demand_forecasting.demo_payload`.
 
-export type DemandClass = "smooth" | "intermittent" | "sparse";
+/** Syntetos-Boylan ADI/CV² classes present in the UCI panel. */
+export type DemandClass = "erratic" | "lumpy";
 
-/** The three showcased rolling origins; `test` is the frozen holdout window. */
-export type OriginLabel = "early" | "middle" | "test";
+/** Model chips: `zero` is the naive baseline, `routed` the committed
+ * per-series routing method (the boosted direct HGB on erratic series,
+ * a statistical method on lumpy series), `champion` the boosted per-horizon
+ * HGB (erratic series only — disabled on lumpy, where routing sends it away). */
+export type ModelKey = "zero" | "routed" | "champion";
 
-/** Model candidates; `naive` is the weekly seasonal-naive floor. */
-export type ModelKey = "naive" | "champion" | "challenger";
+/** The committed per-series routing decision: the boosted HGB serves erratic
+ * series; lumpy series get their selection-origin-chosen statistical method. */
+export type RoutedMethod = "direct_hgb" | "zero" | "seasonal_naive" | "croston" | "sba" | "tsb";
 
-/** One model's 14-day window metrics at one origin. `mase` is null when the
- * origin history's seasonal-naive scale is 0 (zero-scale sparse series);
- * `wape` is null when the window has zero total demand. */
-export interface OriginWindowMetrics {
-  mae: number;
-  mase: number | null;
-  /** Mean signed error, pred − actual (committed sign convention). */
-  bias: number;
-  wape: number | null;
-}
-
-/** One model's committed curve at one origin: the 14 point forecasts plus,
- * for the champion only, the p10/p90 band (`null` = honestly no band on
- * sparse all-zero windows — never a degenerate zero-width interval). */
-export interface OriginModelBlock extends OriginWindowMetrics {
+/** One model's direct curve at one origin: one point per horizon h (aligned
+ * with `OriginBlock.horizons`). `shock` carries the precomputed exact
+ * re-scores under a demand shock of the last 7 days (0.5x/1.5x/2x); 1x is
+ * the base `y_pred` itself. */
+export interface DirectModelBlock {
   y_pred: number[];
-  p10?: number[] | null;
-  p90?: number[] | null;
+  /** Learner rows only (erratic): the committed per-h conformal band. */
+  p10?: number[];
+  p90?: number[];
+  /** Sparse rows only (lumpy): P(any sale) + the training-history quantile
+   * ladder — an honest sparse band that cannot collapse to zero width. */
+  band?: { p_sale: number; ladder: Record<string, number> };
+  shock: Record<string, number[]>;
 }
 
-/** One series at one rolling origin: the as-of-origin history (≤60 days,
- * nothing after the origin date — the embargo gap is real and the canvas
- * must not bridge it), the 14 horizon days of actuals, and every model's
- * curve + window metrics. */
+/** One series at one scored origin. The origin marker IS the information
+ * cutoff: `history` ends the day before it, `actuals` start the day after. */
 export interface OriginBlock {
   origin_date: string;
   history: { dates: string[]; y: number[] };
   actuals: { dates: string[]; y: number[] };
-  /** In-sample seasonal-naive scale of the origin history (0 → MASE undefined). */
+  /** The committed h-lattice the direct curves are aligned to. */
+  horizons: number[];
+  /** Seasonal-naive scale of the emitted history (0 → MASE undefined). */
   scale: number;
-  models: Record<ModelKey, OriginModelBlock>;
+  models: {
+    zero: DirectModelBlock;
+    routed: DirectModelBlock;
+    /** Seasonal-naive floor (drives the decision layer). */
+    floor: DirectModelBlock;
+    /** Erratic series only — the boosted per-horizon HGB (== routed there). */
+    champion_hgb?: DirectModelBlock;
+  };
 }
 
-/** One catalog series: committed history, the last-fold (test-window)
- * backtest block with champion/naive forecasts and the p10/p90 band, the
- * per-horizon errors, and the multi-origin bundle. `mase` entries are null
- * for all-zero-history (sparse) series, whose seasonal-naive scale is 0 —
- * callers must render "n/a", never NaN. */
+/** One catalog series. */
 export interface CatalogSeries {
   series_id: string;
   label: string;
+  country: string;
+  product: string;
   demand_class: DemandClass;
-  history: { dates: string[]; y: number[] };
-  forecast: {
-    dates: string[];
-    y_pred: number[];
-    /** `null` = no band (sparse series whose window demand was all zero). */
-    p10: number[] | null;
-    p90: number[] | null;
-    naive: number[];
+  adi: number;
+  /** Squared coefficient of variation (null when infinite — always zero). */
+  cv2: number | null;
+  /** Which model produced the `routed` curve — the committed routing table. */
+  model_used: RoutedMethod;
+  origins: OriginBlock[];
+}
+
+export interface BootstrapResult {
+  diff: number;
+  ci95: [number, number];
+  spans_zero: boolean;
+  n_boot: number;
+  seed: number;
+}
+
+/** Per ADI/CV² class: committed pooled numbers plus the per-series
+ * beats-floor counts recomputed from the drift-guarded re-run cells. */
+export interface ScoreboardClass {
+  n_series: number;
+  beats_floor: Record<string, { count: number; n: number; share: number | null }>;
+  mae: Record<string, { model: number; floor: number }>;
+  gap_bootstrap: Record<string, BootstrapResult>;
+  vs_zero_bootstrap: Record<string, BootstrapResult>;
+  routing_effect: BootstrapResult | null;
+}
+
+/** Pooled error vs the TRUE horizon h (direct per-h models). */
+export interface HorizonGrowth {
+  horizons: number[];
+  pooled: Record<"routed" | "seasonal_naive" | "zero", Record<string, number>>;
+  /** Pooled MASE per h (null where the pooled seasonal scale is zero). */
+  mase: { champion: Record<string, number | null>; floor: Record<string, number | null> };
+  per_class: Record<string, Record<"routed" | "seasonal_naive", Record<string, number>>>;
+  note: string;
+}
+
+/** The committed per-horizon band calibration (pooled over scored origins). */
+export interface BandsBlock {
+  target_coverage: number;
+  band_types: Record<string, string>;
+  conformal_widths_by_h: Record<string, number>;
+  per_horizon: Record<
+    string,
+    {
+      coverage: number;
+      avg_width: number;
+      calibration_verdict: string;
+      learner_coverage: number;
+      sparse_coverage: number;
+      pinball_p10: number;
+      pinball_p50: number;
+      pinball_p90: number;
+    }
+  >;
+  pooled_coverage: number;
+  pooled_verdict: string;
+  sparse_ladder_levels: number[];
+  note: string;
+}
+
+/** The committed order-up-to simulation plus the τ→quantile mapping:
+ * order(origin, h, τ) = max(point + offset, 0) with offsets per
+ * (class, policy, h) from the policy's selection-origin residuals. */
+export interface DecisionBlock {
+  simulation: boolean;
+  label: string;
+  cost_assumptions: {
+    holding_cost_per_unit: number;
+    stockout_cost_per_unit_short: number;
+    cost_basis: string;
   };
-  errors: {
-    /** In-sample seasonal-naive scale of the stored history (0 → MASE undefined). */
-    scale: number;
-    champion: { mae: number[]; mase: (number | null)[] };
-    naive: { mae: number[]; mase: (number | null)[] };
-  };
-  origins: Record<OriginLabel, OriginBlock>;
+  service_levels: number[];
+  per_class: Record<
+    string,
+    Record<
+      string,
+      {
+        champion: number;
+        champion_per_unit_demand: number;
+        floor: number;
+        floor_per_unit_demand: number;
+        delta_champion_minus_floor: number;
+      }
+    >
+  >;
+  /** τ stops as two-decimal strings (JSON keys of the quantile map). */
+  tau_grid: string[];
+  quantile_map: Record<
+    string,
+    Record<"champion" | "floor", Record<string, Record<string, number>>>
+  >;
+  mapping_note: string;
 }
 
 export interface ForecastPayload {
@@ -288,103 +372,56 @@ export interface ForecastPayload {
   demo: string;
   project: string;
   track: string;
+  protocol: string;
   catalog: CatalogSeries[];
-  scalars: {
-    headline: {
-      claim: string;
-      champion: string;
-      challenger: string;
-      champion_mase: number;
-      champion_mae: number;
-      naive_mase: number;
-      strongest_naive: string;
-      strongest_naive_mae: number;
-      champion_mae_edge_vs_strongest_naive_pct: number;
-      only_champion_below_mase_1: boolean;
-      /** Model names with a committed MASE < 1 — empty on this dataset (the
-       * honest headline: no run clears MASE 1 on the frozen test window). */
-      runs_below_mase_1: string[];
-      mase_by_model: Record<string, number>;
-    };
-    band: {
-      target_coverage: number;
-      quantile_coverage_pooled: number;
-      split_conformal_coverage_last_fold: number;
-      calibration_verdict: string | null;
-      /** Per-horizon empirical coverage of the split-conformal band. */
-      horizon_coverage: number[];
-      /** Per-horizon mean band width — all-zero on this dataset (the UCI
-       * conformal band is degenerate: zero width on zero-demand days). */
-      horizon_avg_width: number[];
-      note: string;
-    } | null;
-    models: {
-      champion: string;
-      challenger: string;
-      global: string;
-      naive: string;
-      selection_rule: string;
-    };
-    feature_schema: {
-      calendar: string[];
-      lags: string[];
-      series: string;
-      note: string;
-    };
-    catalog_summary: {
-      n_series: number;
-      by_class: Record<DemandClass, number>;
-      history_days: number;
-      horizon_days: number;
-      forecast_window: [string, string];
-      class_thresholds: {
-        zero_frac_smooth_max: number;
-        zero_frac_intermittent_max: number;
-      };
-      origins: Record<
-        OriginLabel,
-        {
-          origin: number;
-          fold_index: number;
-          origin_date: string;
-          horizon_window: [string, string];
-          history_days: number;
-        }
-      >;
-    };
+  class_scoreboard: Record<DemandClass, ScoreboardClass>;
+  horizon_growth: HorizonGrowth;
+  bands: BandsBlock;
+  decision: DecisionBlock;
+  headline: {
+    claim: string;
+    pooled_mae_by_model: Record<string, number>;
+    routing_win_lumpy: BootstrapResult | null;
+    n_series_experiment: number;
+    class_counts: Record<string, number>;
+    sparse_share: number;
   };
-  origins_meta: {
-    origins: Array<{
-      label: OriginLabel;
-      origin: number;
-      fold_index: number;
-      origin_date: string;
-      horizon_window: [string, string];
-      /** Present only on the frozen test window. */
-      holdout?: string;
-    }>;
-    selection_used_origins: number[];
+  catalog_summary: {
+    n_series: number;
+    by_class: Record<string, number>;
+    countries: Record<string, number>;
+    model_used_counts: Record<string, number>;
+    origins: Array<{ origin_date: string; horizon_window: [string, string] }>;
+    history_days: number;
     horizon_days: number;
+    horizons: number[];
+    shock_factors: number[];
+    shock_note: string;
+    routing_rule: string;
+    class_thresholds: { adi: number; cv2: number };
+    experiment_origins: {
+      n_origins: number;
+      dates: string[];
+      selection_dates: string[];
+      test_dates: string[];
+      spacing_days: number;
+      gap_days: number;
+      cap_note: string;
+    };
   };
   evaluation_metadata: {
     protocol: string;
-    rolling_origin: {
-      n_origins: number;
-      origin_spacing_days: number;
-      horizon_days: number;
-      embargo_gap_days: number;
-      min_train_size_dates: number;
-      test_window: { origin: number; start: string; end: string; n_days: number };
-    };
+    track: string;
+    horizons: number[];
+    window_days: number;
+    origins: ForecastPayload["catalog_summary"]["experiment_origins"];
     holdout_designation: string;
-    selection_used_origins: number[];
-    test_origin: number;
     selection_rule: string;
-    preprocessing_statement: string;
+    feature_semantics: string;
+    uncertainty: string;
     metric_definitions: Record<string, string>;
-    best_model: string;
-    strongest_naive: string;
     target_definition: string;
+    nowcast_track_note: string;
   };
   dataset_metadata: {
     dataset: string;
@@ -404,5 +441,11 @@ export interface ForecastPayload {
     };
     zero_sales_caveat: string;
     target_definition: string;
+    intermittency?: {
+      method: string;
+      thresholds: { adi: number; cv2: number };
+      class_counts: Record<string, number>;
+      routing_rule: string;
+    };
   };
 }

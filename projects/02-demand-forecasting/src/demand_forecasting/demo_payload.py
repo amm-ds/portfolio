@@ -1,549 +1,112 @@
-"""Demo payload for the demand forecast workbench (showcase demo).
+"""Demo payload schema v3 for the demand forecast workbench (showcase demo).
 
-Builds ``reports/demo_payload.json`` — a compact, fully precomputed catalog
-that lets the showcase UI render per-series demand forecasts with a band and
-the seasonal-naive floor client-side, without retraining or serving model
-inference. Schema v2 turns the catalog into a multi-origin backtest bundle on
-top of the hardened ``rolling_origin_holdout_v1`` protocol:
+Builds ``reports/demo_payload.json`` — a compact, fully precomputed catalog for
+the DIRECT MULTI-HORIZON track (protocol ``direct_multihorizon_v1``, the
+primary multi-step headline committed in ``reports_uci/metrics.json`` under
+``_multistep``). Schema v2 carried the retained frozen NOWCAST single-origin
+curves; v3 replaces the catalog with the multi-step experiment:
 
-- ~100 store-product series from the UCI Online Retail II track (real
-  intermittent demand), chosen for demand-class coverage — smooth /
-  intermittent / sparse — derived from the committed per-series
-  zero-fraction with documented thresholds (``SMOOTH_MAX_ZERO_FRAC`` et al.);
-- per series, the v1 keys are unchanged: the last ``HISTORY_DAYS`` committed
-  actuals (daily, with dates — the tail includes the forecast window, so the
-  UI can overlay the forecast on actuals), the committed test-window backtest
-  block (champion point forecast ``y_pred``, p10/p90 quantile band, the
-  seasonal-naive floor) and the per-horizon error arrays; emitted curves are
-  display-sanitized — clipped at zero (demand cannot be negative), bands
-  clamped around the point curve, sparse all-zero-window series carrying
-  ``null`` instead of a degenerate band — and the stored window metrics are
-  computed from the stored curves, so the payload is exactly self-consistent
-  (headline metrics in metrics.json remain the raw backtest values);
-- per series, three rolling origins — ``early`` / ``middle`` (two of the
-  committed selection folds) and ``test`` (the designated test window, the
-  last origin) — each with the as-of-origin history (actuals up to the origin
-  date), the 14 horizon days of actuals, and per-model curves for the
-  champion, the challenger and the seasonal-naive floor: ``y_pred`` for all
-  three, p10/p90 for the champion only. Per origin, per model, the 14-day
-  window metrics are precomputed (``mae`` / ``mase`` / ``bias`` / ``wape``)
-  so the UI's comparison and error views never recompute;
-- ``origins_meta`` records the three origin dates, their fold indices, the
-  ``holdout: "test"`` designation on the last origin and the
-  ``selection_used_origins`` echo from the committed evaluation metadata;
-- ``evaluation_metadata`` embeds the committed protocol block (rolling-origin
-  spec, holdout designation, metric definitions including bias/WAPE, and the
-  one-sentence target definition) and ``dataset_metadata`` embeds the
-  committed dataset card (source URL + sha256, cleaning rules, the
-  zero-sales-day caveat, the observed date range);
-- the committed scalars: the headline MASE ladder (no run dips below MASE 1
-  on the frozen test window — the naive floor itself scores 1.310 there, its
-  scale being in-sample error from a quieter period), the champion's MAE edge
-  over the strongest naive floor (~15.7%), the band coverage + calibration
-  verdict, the champion/challenger/global/naive model names from the
-  committed backtest selection, and the feature-schema note (calendar + lag
-  features).
+- ~100 series from the UCI Online Retail II panel (ALL 15 erratic series are
+  represented — the boosted per-horizon HGB only serves those — plus 85 lumpy
+  series picked with country diversity), each carrying its ADI/CV² class and
+  the committed per-series routing decision (``model_used``);
+- per series, the 3 most recent of the 4 scored test origins (the forecast
+  window starts the day AFTER the origin — no embargo gap): the as-of-origin
+  history (ends the day BEFORE the origin), the 14 contiguous days of
+  actuals, and per-model DIRECT curves on the committed h-lattice
+  {1,2,3,5,7,10,14} — ``zero`` (the naive baseline), ``routed`` (the series'
+  committed routing method; for erratic series this IS the boosted direct
+  HGB), ``floor`` (seasonal-naive, for the decision layer) and, for erratic
+  series only, ``champion_hgb`` — with a per-series ``model_used`` field so
+  the payload is honest about which model produced each curve;
+- bands where the committed protocol emits them: learner rows (erratic) get
+  the per-h split-conformal p10/p90 (zero-clipped, sorted, from the
+  committed conformal widths); sparse rows (lumpy) honestly carry P(any
+  sale) + a small quantile ladder of the training history instead of a
+  collapsing band;
+- a demand-shock what-if, precomputed OFFLINE and exact: each curve is
+  re-scored under {0.5, 1.5, 2.0}x demand in the last 7 days before the
+  origin — the statistical methods re-fit on the shocked window, the boosted
+  models re-predict through their fitted per-horizon trees on the shocked
+  lag trio (units(origin), units(origin-7), units(origin-14) — the only
+  demand features the direct models read, by construction). A static payload
+  cannot re-run trees client-side, so the shock grid is baked in;
+- experiment-wide blocks straight from the committed JSONs: ``class_scoreboard``
+  (per ADI/CV² class: n series, the per-series beats-floor count/share
+  recomputed from the re-run cells, committed pooled MAE model-vs-floor at
+  h=7/h=14 with the paired-bootstrap CIs, the routing effect), ``horizon_growth``
+  (pooled MAE and MASE vs the true horizon h — the error-growth evidence the
+  h-slider demonstrates), ``bands`` (per-h coverage/width/verdict + pinball),
+  and ``decision`` (the committed order-up-to simulation: documented cost
+  assumptions, per-class champion-vs-floor cost at the committed service
+  levels, PLUS the τ→quantile mapping — per-class, per-policy, per-h offsets
+  recomputed exactly as the committed simulation derives them);
+- ``evaluation_metadata`` embeds the committed protocol-v2 block (20 weekly
+  rolling origins, select-16/score-4, per-h direct models, the
+  leakage-by-construction feature semantics) and ``dataset_metadata`` the
+  committed dataset card (cleaning rules, the intermittency class counts).
 
-Champion = the committed ``_meta.best_model`` (selected on the selection
-folds only); challenger = the committed test-window rank-2 non-naive model
-(the runner-up to the champion on the frozen test window, by headline MAE).
-
-Everything is deterministic and drift-guarded: the point backtest is
-``evaluate.backtest`` on the committed features parquet (the same expanding
-windows + embargo that wrote ``reports_uci/metrics.json``), the band reuses
-``probabilistic``'s quantile recipe (the one behind
-``reports_uci/probabilistic.json``), a recomputed pooled MASE or band
-coverage that disagrees with the committed metrics JSONs raises, and the
-origin plan must match the committed ``evaluation_metadata.json`` (test
-origin = last fold, selection origins = folds 1..n-1).
+Drift guards (as v2): the re-run multi-step scoring must reproduce the
+committed pooled MAE per candidate over the scored test cells, the committed
+conformal widths, the committed class assignments, and the committed origin
+plan — any mismatch raises instead of shipping.
 """
 
 import json
-from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import polars as pl
+from joblib import Parallel, delayed
 from portfolio_core.logging import get_logger
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
-from demand_forecasting.evaluate import BacktestResult, _is_naive, backtest, cv_row_folds
-from demand_forecasting.model import NUMERIC_FEATURES, model_specs
-from demand_forecasting.probabilistic import (
-    QUANTILES,
-    _design_matrix,
-    _fit_quantile_models,
-    coverage,
+from demand_forecasting.intermittent import (
+    ADI_THRESHOLD,
+    CV2_THRESHOLD,
+    SPARSE_CLASSES,
+    STATISTICAL_METHODS,
+    classify_panel,
 )
+from demand_forecasting.multihorizon import (
+    LADDER_LEVELS,
+    OriginScore,
+    _calendar_features,
+    _policy_residuals,
+    _score_origin,
+    _test_cells,
+    multistep_origin_indices,
+    panel_matrix,
+    split_origins,
+)
+from demand_forecasting.probabilistic import TARGET_COVERAGE as _TARGET_COVERAGE
 
 logger = get_logger(__name__)
 
 DEMO_PAYLOAD_NAME = "demo_payload.json"
-PAYLOAD_SCHEMA_VERSION = 2
+PAYLOAD_SCHEMA_VERSION = 3
 CATALOG_N = 100
-HISTORY_DAYS = 180
 ORIGIN_HISTORY_DAYS = 60
 HORIZON_DAYS = 14
 SEASON = 7
 SIZE_CAP_BYTES = 3 * 1024 * 1024
-NAIVE_MODEL = "seasonal_naive"
+# Demand-shock what-if stops (1.0x is the committed base curve itself).
+SHOCK_FACTORS = (0.5, 1.5, 2.0)
+# Service-level grid for the decision layer's τ→quantile mapping.
+TAU_GRID = tuple(round(0.50 + 0.01 * k, 2) for k in range(50))
+# Class quotas: every erratic series is represented (the boosted HGB only
+# serves those — the routing story dies without them); lumpy fills the rest.
 
-# Demand classes, derived per series from the committed zero-fraction (share
-# of modelling-frame days with zero demand) — documented thresholds:
-#   smooth:       < 35% zero days — regular, plannable demand
-#   intermittent: 35-90%          — frequent zero gaps between demand bursts
-#   sparse:       >= 90%          — mostly zero days (count-type demand)
-SMOOTH_MAX_ZERO_FRAC = 0.35
-INTERMITTENT_MAX_ZERO_FRAC = 0.90
-# Per-class catalog quotas (coverage-first selection, top-up by volume);
-# ~100 series + 3 origins x 60-day histories keep the indented payload under
-# the 3 MB cap (the v1 180-day per-series history is kept for compat).
-CLASS_QUOTAS = {"smooth": 20, "intermittent": 35, "sparse": 45}
-# The three showcased origins: two selection folds (early/middle) + the test
-# window (the last fold, designated holdout).
-ORIGIN_LABELS = ("early", "middle", "test")
+NAIVE_MODEL = "zero"
+FLOOR_MODEL = "seasonal_naive"
+CHAMPION_HGB = "direct_hgb"
 
 
 def _check_close(name: str, actual: float, committed: float, tol: float = 1e-6) -> None:
     """Guard against drift between the committed metrics JSONs and the frame."""
     if not np.isclose(actual, committed, rtol=tol, atol=tol):
         raise ValueError(f"{name}: recomputed {actual} != committed {committed}")
-
-
-def _committed_runs(metrics: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """The per-model blocks of a committed metrics.json (no ``_meta`` keys)."""
-    return {k: v for k, v in metrics.items() if not k.startswith("_") and isinstance(v, dict)}
-
-
-def _champion_from_metrics(metrics: dict[str, Any]) -> str:
-    """The champion per the committed backtest selection.
-
-    Prefers the protocol-recorded ``_meta.best_model`` (selected on folds
-    1..n-1 only, never the test window); falls back to the lowest committed
-    MAE for metrics files written before the holdout protocol.
-    """
-    meta = metrics.get("_meta")
-    if isinstance(meta, dict) and isinstance(meta.get("best_model"), str):
-        return str(meta["best_model"])
-    runs = _committed_runs(metrics)
-    return min((k for k in runs if not _is_naive(k)), key=lambda k: float(runs[k]["mae"]))
-
-
-def _challenger_from_metrics(metrics: dict[str, Any], champion: str) -> str:
-    """The committed test-window rank-2 non-naive model (the challenger).
-
-    Ranked by the committed headline (test-window) MAE over the non-naive
-    runs, with the champion removed — rank 1 is the strongest rival, rank 2
-    is the runner-up showcased next to the champion in the comparison view.
-    """
-    runs = _committed_runs(metrics)
-    ranked = sorted(
-        (k for k in runs if not _is_naive(k) and k != champion),
-        key=lambda k: float(runs[k]["mae"]),
-    )
-    if len(ranked) < 2:
-        raise ValueError("need >= 2 non-naive runs besides the champion for a challenger")
-    return ranked[1]
-
-
-def _series_stats(features: pl.DataFrame) -> pl.DataFrame:
-    """Committed per-series demand stats: zero-fraction (class source) + volume."""
-    zero_frac = (pl.col("y") == 0).mean()
-    return (
-        features.group_by("series_id")
-        .agg(zero_frac.alias("zero_frac"), pl.col("y").sum().alias("volume"))
-        .with_columns(
-            pl.when(pl.col("zero_frac") < SMOOTH_MAX_ZERO_FRAC)
-            .then(pl.lit("smooth"))
-            .when(pl.col("zero_frac") < INTERMITTENT_MAX_ZERO_FRAC)
-            .then(pl.lit("intermittent"))
-            .otherwise(pl.lit("sparse"))
-            .alias("demand_class")
-        )
-        .sort(["volume", "series_id"], descending=[True, False])
-    )
-
-
-def _select_catalog(stats: pl.DataFrame, catalog_n: int = CATALOG_N) -> list[str]:
-    """Coverage-first catalog: per-class quota by volume (ties by id), then top-up."""
-    picked: list[str] = []
-    for cls, quota in CLASS_QUOTAS.items():
-        pool = stats.filter(pl.col("demand_class") == cls)["series_id"].to_list()
-        picked.extend(pool[: min(quota, catalog_n - len(picked))])
-    if len(picked) < catalog_n:
-        rest = [s for s in stats["series_id"].to_list() if s not in picked]
-        picked.extend(rest[: catalog_n - len(picked)])
-    return picked[:catalog_n]
-
-
-def point_backtest(
-    features: pl.DataFrame,
-    config: ForecastConfig,
-    champion: str,
-    challenger: str | None = None,
-) -> BacktestResult:
-    """The runs the catalog needs: champion (+ challenger) + seasonal-naive floor.
-
-    This is ``evaluate.backtest`` unchanged — same expanding windows, same
-    embargo, pooled out-of-fold — so the recomputed MASEs are directly
-    comparable to the committed ``reports/metrics.json``. ``challenger`` is
-    optional so pre-holdout callers/tests can keep the v1 two-run shape.
-    """
-    names = {champion, challenger or champion, NAIVE_MODEL}
-    specs = [s for s in model_specs() if s.name in names]
-    return backtest(features, config, specs=specs)
-
-
-def quantile_band_backtest(features: pl.DataFrame, config: ForecastConfig) -> dict[str, Any]:
-    """Per-fold p10/p90 quantile band backtest (``probabilistic``'s recipe).
-
-    Fits the tuned-config quantile HGBs on each fold's training window and
-    keeps every fold's predictions (the catalog band per origin); the pooled
-    coverage is recomputed with :func:`probabilistic.coverage` and verified
-    against the committed ``probabilistic.json`` by the caller.
-    """
-    x, y = _design_matrix(features, config)
-    folds = cv_row_folds(features, config)
-    per_fold: list[float] = []
-    by_fold: dict[int, dict[str, Any]] = {}
-    for k, (train_rows, val_rows) in enumerate(folds):
-        models = _fit_quantile_models(x[train_rows], y[train_rows], config)
-        p10 = np.asarray(models[QUANTILES[0]].predict(x[val_rows]), dtype=float)
-        p90 = np.asarray(models[QUANTILES[-1]].predict(x[val_rows]), dtype=float)
-        per_fold.append(coverage(y[val_rows], p10, p90))
-        by_fold[k] = {"rows": val_rows, "p10": p10, "p90": p90}
-    if not by_fold:  # pragma: no cover - n_splits >= 2 guarantees a last fold
-        raise ValueError("backtest produced no folds")
-    last_key = max(by_fold)
-    return {
-        "coverage_pooled": float(np.mean(per_fold)),
-        "per_fold": per_fold,
-        "by_fold": by_fold,
-        "last": {"rows": by_fold[last_key]["rows"], **by_fold[last_key]},
-    }
-
-
-def _last_fold_frame(result: BacktestResult, band: dict[str, Any], champion: str) -> pl.DataFrame:
-    """Last-fold (date, series) rows with champion, naive and band predictions.
-
-    The :class:`~demand_forecasting.evaluate.FoldRecord` arrays and the band
-    predictions share the same val-row order (both come from
-    ``cv_row_folds``), so they join positionally.
-    """
-    rec = result.last_fold(champion)
-    rec_n = result.last_fold(NAIVE_MODEL)
-    last = band["last"]
-    n = rec.dates.size
-    if not (rec_n.y_pred.size == last["p10"].size == n):
-        raise ValueError("last-fold prediction arrays disagree in length")
-    return pl.DataFrame(
-        {
-            "date": [str(d)[:10] for d in rec.dates],
-            "series_id": [str(s) for s in rec.series],
-            "y_true": rec.y_true.astype(float),
-            "y_pred": rec.y_pred.astype(float),
-            "naive": rec_n.y_pred.astype(float),
-            "p10": last["p10"],
-            "p90": last["p90"],
-        }
-    )
-
-
-def _origin_fold_frame(
-    result: BacktestResult,
-    band: dict[str, Any],
-    fold_id: int,
-    champion: str,
-    challenger: str,
-) -> pl.DataFrame:
-    """One origin's (date, series) rows with champion/challenger/naive + band.
-
-    Same positional-join contract as :func:`_last_fold_frame`, for an
-    arbitrary fold and three model curves.
-    """
-    recs = {
-        m: next(f for f in result.folds if f.model == m and f.fold == fold_id)
-        for m in (champion, challenger, NAIVE_MODEL)
-    }
-    b = band["by_fold"][fold_id]
-    rec = recs[champion]
-    n = rec.dates.size
-    if not all(r.dates.size == n for r in recs.values()) or b["p10"].size != n:
-        raise ValueError(f"fold {fold_id} prediction arrays disagree in length")
-    cols: dict[str, Any] = {
-        "date": [str(d)[:10] for d in rec.dates],
-        "series_id": [str(s) for s in rec.series],
-        "y_true": rec.y_true.astype(float),
-        "p10": b["p10"],
-        "p90": b["p90"],
-    }
-    for m, r in recs.items():
-        cols[f"pred__{m}"] = r.y_pred.astype(float)
-    return pl.DataFrame(cols)
-
-
-def _origin_plan(result: BacktestResult) -> list[tuple[str, int]]:
-    """The showcased (label, fold_id) pairs: two selection folds + the test fold."""
-    fold_ids = sorted({f.fold for f in result.folds})
-    if len(fold_ids) < 3:
-        raise ValueError(
-            f"multi-origin payload needs >= 3 folds, got {len(fold_ids)} — "
-            "n_splits must be >= 3 (2 selection folds + the test window)"
-        )
-    return [
-        (ORIGIN_LABELS[0], fold_ids[0]),
-        (ORIGIN_LABELS[1], fold_ids[1]),
-        ("test", fold_ids[-1]),
-    ]
-
-
-def _window_and_history(
-    features: pl.DataFrame,
-    fold_frame: pl.DataFrame,
-    series_id: str,
-    history_days: int,
-    horizon: int,
-) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """The catalog series' forecast window (last ``horizon`` fold dates) and
-    the last ``history_days`` committed actuals.
-
-    The window is the series' tail, so the history's last ``horizon`` points
-    ARE the window actuals — the overlap is verified against the backtest
-    fold's ``y_true`` so a panel/fold mismatch raises instead of shipping.
-    """
-    sub = fold_frame.filter(pl.col("series_id") == series_id).sort("date")
-    if sub.height < horizon:
-        raise ValueError(f"{series_id}: last fold has {sub.height} rows < horizon {horizon}")
-    win = sub.tail(horizon)
-    hist = features.filter(pl.col("series_id") == series_id).sort("date").tail(history_days)
-    if hist.height >= horizon:
-        overlap = hist["y"].to_numpy()[-horizon:]
-        if not np.array_equal(overlap, win["y_true"].to_numpy()):
-            raise ValueError(f"{series_id}: history tail disagrees with the backtest window")
-    return hist, win
-
-
-def _seasonal_scale(hist_y: np.ndarray) -> float:
-    """In-sample seasonal-naive scale: mean |lag-season diff| over the history."""
-    if hist_y.size <= SEASON:
-        return 0.0
-    return float(np.mean(np.abs(hist_y[SEASON:] - hist_y[:-SEASON])))
-
-
-def _window_metrics(err: np.ndarray, actual: np.ndarray, scale: float) -> dict[str, Any]:
-    """The precomputed 14-day window metrics for one model curve.
-
-    ``err = pred - actual`` (the committed bias sign convention); MASE divides
-    by the series' seasonal-naive scale over the origin's history (None when
-    the scale is 0); WAPE is None when the window has zero total demand.
-    """
-    abs_actual = float(np.abs(actual).sum())
-    return {
-        "mae": round(float(np.mean(np.abs(err))), 4),
-        "mase": round(float(np.mean(np.abs(err)) / scale), 4) if scale > 0 else None,
-        "bias": round(float(np.mean(err)), 4),
-        "wape": round(float(np.abs(err).sum() / abs_actual), 4) if abs_actual > 0 else None,
-    }
-
-
-def _emit_band(
-    p10: np.ndarray,
-    p50: np.ndarray,
-    p90: np.ndarray,
-    *,
-    zero_window: bool,
-    sparse: bool,
-) -> tuple[list[float] | None, list[float] | None]:
-    """Sanitized p10/p90 curves for the catalog (schema v2; ``None`` = no band).
-
-    The committed quantile band is replayed unchanged except for two
-    display-level sanity rules, applied per point: clip at zero (the quantile
-    HGB emits small negatives on zero-demand days) and clamp the band around
-    the displayed point curve (``p10 <= p50 <= p90``) so the UI never shades
-    a band that contradicts the line inside it. Both rules are no-ops on
-    well-formed points — they only bite on degenerate quantile outputs (the
-    audit found 124/4200 inverted origin-band points, all from negative or
-    collapsed quantiles). A sparse series whose whole window is zero demand
-    honestly carries no band at all (``None``, not a degenerate zero-width
-    interval pretending precision the window does not contain); the point
-    forecast stays the committed backtest value.
-    """
-    if sparse and zero_window:
-        return None, None
-    lo = np.clip(np.minimum(p10, p50), 0.0, None)
-    hi = np.clip(np.maximum(p90, p50), 0.0, None)
-    return (
-        [round(float(v), 4) for v in lo],
-        [round(float(v), 4) for v in hi],
-    )
-
-
-def _origin_series_entry(
-    features: pl.DataFrame,
-    origin_frame: pl.DataFrame,
-    series_id: str,
-    origin_date: str,
-    champion: str,
-    challenger: str,
-    horizon: int,
-    origin_history_days: int,
-    demand_class: str,
-) -> dict[str, Any]:
-    """One catalog series at one origin: as-of-origin history, actuals, curves.
-
-    The history is cut at the origin date (the day before the fold's val
-    window — the forecast issuance date), so the early/middle origins carry
-    their own context window instead of leaking the test window; the actuals
-    are the last ``horizon`` days of the origin's committed fold window.
-    """
-    sub = origin_frame.filter(pl.col("series_id") == series_id).sort("date")
-    if sub.height < horizon:
-        raise ValueError(f"{series_id}: origin fold has {sub.height} rows < horizon {horizon}")
-    win = sub.tail(horizon)
-    cutoff = date.fromisoformat(origin_date)
-    hist = (
-        features.filter((pl.col("series_id") == series_id) & (pl.col("date") <= cutoff))
-        .sort("date")
-        .tail(origin_history_days)
-    )
-    hist_y = hist["y"].to_numpy()
-    actual = win["y_true"].to_numpy()
-    scale = _seasonal_scale(hist_y)
-
-    def _model_block(col: str, with_band: bool = False) -> dict[str, Any]:
-        # metrics are computed from the CLIPPED-AND-ROUNDED stored curve so the
-        # payload is exactly self-consistent (a UI recomputation from y_pred
-        # reproduces the stored mae/mase/bias/wape bit for bit); demand cannot
-        # be negative, so the emitted curve clips the raw backtest at zero
-        # (headline metrics in metrics.json remain the raw backtest values)
-        pred = np.clip(np.asarray([round(float(v), 4) for v in win[col].to_numpy()]), 0.0, None)
-        block: dict[str, Any] = {
-            "y_pred": [float(v) for v in pred],
-            **_window_metrics(pred - actual, actual, scale),
-        }
-        if with_band:
-            block["p10"], block["p90"] = _emit_band(
-                np.asarray(win["p10"].to_numpy(), dtype=float),
-                pred,
-                np.asarray(win["p90"].to_numpy(), dtype=float),
-                zero_window=bool(np.all(actual == 0)),
-                sparse=demand_class == "sparse",
-            )
-        return block
-
-    models: dict[str, Any] = {
-        "champion": _model_block(f"pred__{champion}", with_band=True),
-        "challenger": _model_block(f"pred__{challenger}"),
-        "naive": _model_block(f"pred__{NAIVE_MODEL}"),
-    }
-    return {
-        "origin_date": origin_date,
-        "history": {
-            "dates": hist["date"].cast(pl.String).to_list(),
-            "y": [int(v) for v in hist_y],
-        },
-        "actuals": {
-            "dates": win["date"].to_list(),
-            "y": [int(v) for v in actual],
-        },
-        "scale": round(scale, 4),
-        "models": models,
-    }
-
-
-def _catalog_entry(
-    series_id: str,
-    demand_class: str,
-    hist: pl.DataFrame,
-    win: pl.DataFrame,
-    origins: dict[str, Any],
-) -> dict[str, Any]:
-    """One catalog series: v1 window block plus the multi-origin bundle."""
-    hist_y = hist["y"].to_numpy()
-    win_true = win["y_true"].to_numpy()
-    scale = _seasonal_scale(hist_y)
-
-    def _errors(pred: np.ndarray) -> dict[str, Any]:
-        mae = np.abs(win_true - pred)
-        return {
-            "mae": [round(float(v), 4) for v in mae],
-            "mase": [round(float(v / scale), 4) if scale > 0 else None for v in mae],
-        }
-
-    store, _, product = series_id.partition("|")
-    # clip at zero like the origin curves (demand cannot be negative); stored
-    # errors are computed from the stored curve so the payload stays exactly
-    # self-consistent
-    y_pred = [round(float(v), 4) for v in np.clip(win["y_pred"].to_numpy(), 0.0, None)]
-    naive = [round(float(v), 4) for v in win["naive"]]
-    p10, p90 = _emit_band(
-        np.asarray(win["p10"].to_numpy(), dtype=float),
-        np.asarray(y_pred, dtype=float),
-        np.asarray(win["p90"].to_numpy(), dtype=float),
-        zero_window=bool(np.all(win_true == 0)),
-        sparse=demand_class == "sparse",
-    )
-    return {
-        "series_id": series_id,
-        "label": f"{store} · {product}",
-        "demand_class": demand_class,
-        "history": {
-            "dates": hist["date"].cast(pl.String).to_list(),
-            "y": [int(v) for v in hist_y],
-        },
-        "forecast": {
-            "dates": win["date"].to_list(),
-            "y_pred": y_pred,
-            "p10": p10,
-            "p90": p90,
-            "naive": naive,
-        },
-        "errors": {
-            "scale": round(scale, 4),
-            "champion": _errors(np.asarray(y_pred, dtype=float)),
-            "naive": _errors(np.asarray(naive, dtype=float)),
-        },
-        "origins": origins,
-    }
-
-
-def _guard_series(
-    catalog: list[dict[str, Any]],
-    fold_frame: pl.DataFrame,
-    features: pl.DataFrame,
-    history_days: int,
-    horizon: int,
-) -> None:
-    """Spot-check two catalog series: window MASE recomputed straight from the
-    committed frame must match the stored per-horizon errors, and the test
-    origin's stored curves must agree with the v1 forecast block."""
-    for entry in (catalog[0], catalog[-1]):
-        sid = entry["series_id"]
-        hist, win = _window_and_history(features, fold_frame, sid, history_days, horizon)
-        scale = _seasonal_scale(hist["y"].to_numpy())
-        # the stored curve is the raw backtest clipped at zero — recompute with
-        # the same clip so the guard matches what is emitted
-        clipped = np.clip(win["y_pred"].to_numpy(), 0.0, None)
-        err = float(np.mean(np.abs(win["y_true"].to_numpy() - clipped)))
-        recomputed = err / scale if scale > 0 else None
-        stored_scale = float(entry["errors"]["scale"])
-        stored_maes = entry["errors"]["champion"]["mae"]
-        stored = float(np.mean(stored_maes)) / stored_scale if stored_scale > 0 else None
-        if recomputed is None or stored is None or not np.isclose(recomputed, stored, atol=1e-3):
-            raise ValueError(
-                f"catalog {sid}: recomputed window MASE {recomputed} != stored {stored}"
-            )
-        test_origin = entry["origins"]["test"]
-        if test_origin["actuals"]["dates"] != entry["forecast"]["dates"]:
-            raise ValueError(f"catalog {sid}: test-origin actuals disagree with the v1 window")
-        for key, _v1_curve in (("champion", "y_pred"), ("naive", "naive")):
-            stored_mae = float(np.mean(test_origin["models"][key]["mae"]))
-            v1_mae = float(np.mean(entry["errors"][key]["mae"]))
-            if not np.isclose(stored_mae, v1_mae, atol=1e-3):
-                raise ValueError(
-                    f"catalog {sid}: test-origin {key} MAE {stored_mae} != v1 window {v1_mae}"
-                )
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -553,243 +116,516 @@ def _load_json(path: Path) -> dict[str, Any]:
     return data
 
 
+# ---------------------------------------------------------------------------
+# Catalog selection
+# ---------------------------------------------------------------------------
+
+
+def _select_catalog(
+    series_ids: list[str], classes: dict[str, dict[str, Any]], catalog_n: int = CATALOG_N
+) -> list[str]:
+    """Coverage-first catalog: ALL erratic series, then lumpy with country
+    diversity (round-robin across countries by total volume, highest-volume
+    series first within each country) — the v2 audit found 64/100 UK series."""
+    erratic = [s for s in series_ids if classes[s]["class"] == "erratic"]
+    lumpy = [s for s in series_ids if classes[s]["class"] == "lumpy"]
+    quota = catalog_n - len(erratic)
+    if quota < 0:  # pragma: no cover - UCI has 15 erratic series
+        erratic = erratic[:catalog_n]
+        quota = 0
+    by_country: dict[str, list[str]] = {}
+    for sid in lumpy:
+        by_country.setdefault(sid.split("|")[0], []).append(sid)
+    countries = sorted(by_country, key=lambda c: (-len(by_country[c]), c))
+    picked: list[str] = []
+    while len(picked) < min(quota, len(lumpy)):
+        for c in countries:
+            pool = by_country[c]
+            if pool and len(picked) < min(quota, len(lumpy)):
+                picked.append(pool.pop(0))
+    return erratic + picked
+
+
+# ---------------------------------------------------------------------------
+# Origin entries
+# ---------------------------------------------------------------------------
+
+
+def _seasonal_scale(hist_y: np.ndarray) -> float:
+    """In-sample seasonal-naive scale: mean |lag-season diff| over the history."""
+    if hist_y.size <= SEASON:
+        return 0.0
+    return float(np.mean(np.abs(hist_y[SEASON:] - hist_y[:-SEASON])))
+
+
+def _round_curve(v: np.ndarray) -> list[float]:
+    """Display-sanitized curve: demand cannot be negative, so clip at zero
+    (headline metrics in the committed JSONs remain the raw backtest)."""
+    return [round(float(x), 4) for x in np.clip(v, 0.0, None)]
+
+
+def _sparse_band(hist: np.ndarray) -> dict[str, Any]:
+    """The honest sparse band: P(any sale) + a quantile ladder of the
+    training history up to the origin — it cannot collapse to zero width."""
+    return {
+        "p_sale": round(float(np.mean(hist > 0)), 4),
+        "ladder": {f"{lvl:.2f}": round(float(np.quantile(hist, lvl)), 4) for lvl in LADDER_LEVELS},
+    }
+
+
+def _origin_entry(
+    i: int,
+    units: np.ndarray,
+    dates: np.ndarray,
+    origin: int,
+    sc: OriginScore,
+    method_of: str,
+    sparse_i: bool,
+    horizons: list[int],
+    widths: dict[int, float],
+    origin_history_days: int,
+) -> dict[str, Any]:
+    """One catalog series at one scored origin: as-of-origin history (ends the
+    day BEFORE the origin), 14 contiguous days of actuals (start the day
+    AFTER — no gap), and the per-model direct curves at the h-lattice. All
+    ``sc`` matrices are already at the h-lattice (one column per horizon), so
+    a series' curve is simply its row.
+    """
+    hist_sl = slice(origin - origin_history_days, origin)  # ends origin-1
+    hist_y = units[hist_sl, i]
+    train_hist = units[: origin + 1, i]  # the window the methods actually fit on
+    hist_dates = [str(d)[:10] for d in dates[hist_sl]]
+    actual_sl = slice(origin + 1, origin + 1 + HORIZON_DAYS)
+    actual_dates = [str(d)[:10] for d in dates[actual_sl]]
+    actual = units[actual_sl, i]
+    scale = _seasonal_scale(hist_y)
+
+    def curve_of(method: str) -> np.ndarray:
+        """The routed pipeline's point curve for this series."""
+        if method == CHAMPION_HGB:
+            return sc.preds["direct_hgb"][i, :]
+        return sc.preds[method][i, :]
+
+    routed = curve_of(method_of)
+    hgb = sc.preds["direct_hgb"][i, :]
+    floor = sc.preds[FLOOR_MODEL][i, :]
+
+    models: dict[str, Any] = {
+        NAIVE_MODEL: {"y_pred": _round_curve(np.zeros(len(horizons)))},
+        "routed": {"y_pred": _round_curve(routed)},
+        "floor": {"y_pred": _round_curve(floor)},
+    }
+    if sparse_i:
+        # sparse rows: P(sale) + quantile ladder instead of a collapsing band
+        models["routed"]["band"] = _sparse_band(train_hist)
+    else:
+        # learner rows: the committed per-h split-conformal band (p50 ± width,
+        # zero-clipped, sorted, clamped around the displayed point curve)
+        p50 = sc.quantiles[0.5][i, :]
+        lo = np.clip(np.minimum(p50 - np.array([widths[h] for h in horizons]), routed), 0.0, None)
+        hi = np.clip(np.maximum(p50 + np.array([widths[h] for h in horizons]), routed), 0.0, None)
+        p10 = [round(float(v), 4) for v in lo]
+        p90 = [round(float(v), 4) for v in hi]
+        models["routed"]["p10"] = p10
+        models["routed"]["p90"] = p90
+        models["champion_hgb"] = {
+            "y_pred": _round_curve(hgb),
+            # the routed curve IS the boosted HGB for erratic series; the
+            # learner band belongs to it either way
+            "p10": list(p10),
+            "p90": list(p90),
+        }
+    # what-if shocks (offline, exact): statistical methods re-fit on the
+    # shocked window, the boosted models re-predict on the shocked lag trio
+    for name, method in (
+        (NAIVE_MODEL, "zero"),
+        ("routed", method_of),
+        ("floor", FLOOR_MODEL),
+        *([("champion_hgb", "direct_hgb")] if not sparse_i else []),
+    ):
+        block: dict[str, list[float]] = {}
+        for s, entry in sc.shocked.items():
+            block[f"{s:g}"] = _round_curve(entry[method][i, :])
+        models[name]["shock"] = block
+
+    return {
+        "origin_date": str(dates[origin])[:10],
+        "history": {"dates": hist_dates, "y": [int(v) for v in hist_y]},
+        "actuals": {"dates": actual_dates, "y": [int(v) for v in actual]},
+        "horizons": list(horizons),
+        "scale": round(scale, 4),
+        "models": models,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Experiment-wide blocks (from the committed metrics)
+# ---------------------------------------------------------------------------
+
+
+def _class_scoreboard(
+    ms: dict[str, Any], cells: dict[str, Any], classes_of: np.ndarray
+) -> dict[str, Any]:
+    """Per-class scoreboard: committed pooled numbers + per-series
+    beats-floor counts recomputed from the (drift-guarded) cells."""
+    board: dict[str, Any] = {}
+    for cls, entry in ms["headline_per_class"].items():
+        cls_mask = classes_of[cells["series"]] == cls
+        n = int(entry["n_series"])
+        beats: dict[str, Any] = {}
+        for h in (7, 14):
+            key = f"h{h}"
+            if key not in entry:
+                continue
+            mask = cls_mask & (cells["h"] == h)
+            per_series: dict[int, tuple[float, float]] = {}
+            for idx in np.flatnonzero(mask):
+                i = int(cells["series"][idx])
+                a, b = per_series.get(i, (0.0, 0.0))
+                per_series[i] = (
+                    a + abs(float(cells["pred"]["routed"][idx] - cells["y"][idx])),
+                    b + abs(float(cells["pred"]["seasonal_naive"][idx] - cells["y"][idx])),
+                )
+            count = sum(1 for a, b in per_series.values() if a < b)
+            beats[key] = {
+                "count": count,
+                "n": n,
+                "share": round(count / n, 4) if n else None,
+            }
+        board[cls] = {
+            "n_series": n,
+            "beats_floor": beats,
+            "mae": {
+                key: {"model": entry[key]["champion_mae"], "floor": entry[key]["floor_mae"]}
+                for key in ("h7", "h14")
+                if key in entry
+            },
+            "gap_bootstrap": {
+                key: entry[key]["champion_vs_floor"] for key in ("h7", "h14") if key in entry
+            },
+            "vs_zero_bootstrap": {
+                key: entry[key]["champion_vs_naive_zero"] for key in ("h7", "h14") if key in entry
+            },
+            "routing_effect": ms["routing"]["per_class"].get(cls),
+        }
+    return board
+
+
+def _horizon_growth(ms: dict[str, Any]) -> dict[str, Any]:
+    """Committed error-vs-horizon curves: pooled MAE per true horizon for the
+    routed pipeline / the floor / zero, the pooled MASE curves, per-class."""
+    per_horizon = ms["per_horizon"]
+
+    def _mase(policy: str, h: int) -> float | None:
+        v = float(per_horizon[str(h)][policy]["mase"])
+        return v if np.isfinite(v) else None
+
+    return {
+        "horizons": ms["horizons"],
+        "pooled": ms["horizon_growth"]["pooled"],
+        "mase": {
+            "champion": {str(h): _mase("champion", h) for h in ms["horizons"]},
+            "floor": {str(h): _mase("floor", h) for h in ms["horizons"]},
+        },
+        "per_class": ms["horizon_growth"]["per_class"],
+        "note": (
+            "pooled over series x scored test origins per TRUE horizon h (direct per-h "
+            "models) — the error-growth curve the horizon slider demonstrates"
+        ),
+    }
+
+
+def _decision_block(
+    ms: dict[str, Any],
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    sparse: np.ndarray,
+    method_of: np.ndarray,
+    classes_of: np.ndarray,
+) -> dict[str, Any]:
+    """The committed order-up-to simulation PLUS the τ→quantile mapping the
+    decision layer needs: per (class, policy, h), the τ-quantile of the
+    policy's selection-origin residuals (the committed simulation's own
+    derivation: order = point forecast + q_τ(residuals), clipped at zero)."""
+    committed = ms["decision_metric"]
+    quantile_map: dict[str, Any] = {}
+    for cls in sorted(set(classes_of.tolist())):
+        class_mask = classes_of == cls
+        per_policy: dict[str, Any] = {}
+        for policy in ("champion", "floor"):
+            per_h: dict[str, Any] = {}
+            for h in horizons:
+                res = _policy_residuals(
+                    by_origin, selection, horizons, h, class_mask, units, sparse, method_of, policy
+                )
+                per_h[str(h)] = {
+                    f"{tau:.2f}": round(float(np.quantile(res, tau)), 4) for tau in TAU_GRID
+                }
+            per_policy[policy] = per_h
+        quantile_map[cls] = per_policy
+    return {
+        **committed,
+        "tau_grid": [f"{tau:.2f}" for tau in TAU_GRID],
+        "quantile_map": quantile_map,
+        "mapping_note": (
+            "order(origin, h, τ) = max(point forecast + offset, 0) with offset = "
+            "quantile_map[class][policy][h][τ]; offsets are τ-quantiles of the policy's "
+            "selection-origin residuals per (class, h) — the committed simulation's own "
+            "τ→quantile mapping, recomputed on the re-run scores"
+        ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Main entry
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# Drift guards
+# ---------------------------------------------------------------------------
+
+
+def _drift_guard(
+    ms: dict[str, Any],
+    prob_ms: dict[str, Any],
+    cells: dict[str, Any],
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    sparse: np.ndarray,
+) -> dict[int, float]:
+    """Assert the re-run reproduces every committed scalar the payload carries
+    (pooled MAE per candidate over the scored cells, the routed per-h MAE,
+    and the conformal widths); return the recomputed widths for band emission."""
+    for name, committed in ms["overall_mae_test"].items():
+        mae = float(np.abs(cells["pred"][name] - cells["y"]).mean())
+        _check_close(f"_multistep.overall_mae_test.{name}", mae, float(committed))
+    for h in horizons:
+        mask = cells["h"] == h
+        mae = float(np.abs(cells["pred"]["routed"][mask] - cells["y"][mask]).mean())
+        _check_close(
+            f"_multistep.per_horizon.{h}.champion.mae",
+            mae,
+            ms["per_horizon"][str(h)]["champion"]["mae"],
+        )
+    # conformal widths, recomputed from the selection origins' p50 residuals
+    widths: dict[int, float] = {}
+    for h in horizons:
+        j = horizons.index(h)
+        res = np.concatenate(
+            [units[o + h][~sparse] - by_origin[o].quantiles[0.5][~sparse, j] for o in selection]
+        )
+        widths[h] = float(np.quantile(np.abs(res), _TARGET_COVERAGE))
+        _check_close(
+            f"probabilistic.multistep.conformal_widths_by_h.{h}",
+            widths[h],
+            float(prob_ms["conformal_widths_by_h"][str(h)]),
+        )
+    return widths
+
+
 def build_demo_payload(
     settings: DemandSettings,
     config: ForecastConfig,
     *,
     metrics_dir: Path | None = None,
     catalog_n: int = CATALOG_N,
-    history_days: int = HISTORY_DAYS,
-    horizon: int = HORIZON_DAYS,
     origin_history_days: int = ORIGIN_HISTORY_DAYS,
 ) -> dict[str, Any]:
-    """Assemble the workbench payload from committed evaluate/train artifacts."""
+    """Assemble the v3 workbench payload from the committed multi-step track.
+
+    Re-runs the direct multi-horizon scoring (same deterministic code path
+    that wrote the committed metrics) to recover the per-origin per-series
+    curves the metrics JSONs do not persist, then drift-guards the re-run
+    against every committed scalar the payload carries.
+    """
     metrics_dir = Path(metrics_dir) if metrics_dir else Path(settings.reports_dir)
     metrics = _load_json(metrics_dir / "metrics.json")
-    probabilistic = (
-        _load_json(metrics_dir / "probabilistic.json")
-        if (metrics_dir / "probabilistic.json").exists()
-        else None
-    )
+    probabilistic = _load_json(metrics_dir / "probabilistic.json")
     eval_meta = _load_json(metrics_dir / "evaluation_metadata.json")
     dataset_meta = _load_json(metrics_dir / "dataset_metadata.json")
 
-    features = pl.read_parquet(settings.data_dir / "features.parquet")
-    champion = _champion_from_metrics(metrics)
-    challenger = _challenger_from_metrics(metrics, champion)
+    ms = metrics.get("_multistep")
+    if not isinstance(ms, dict):
+        raise ValueError("metrics.json has no _multistep block — run the multi-step track first")
+    if ms["protocol"] != "direct_multihorizon_v1":
+        raise ValueError(f"committed protocol {ms['protocol']!r} != direct_multihorizon_v1")
+    prob_ms = probabilistic.get("multistep")
+    if not isinstance(prob_ms, dict):
+        raise ValueError("probabilistic.json has no multistep block")
+    mh_meta = eval_meta.get("multi_horizon")
+    if not isinstance(mh_meta, dict):
+        raise ValueError("evaluation_metadata.json has no multi_horizon block")
 
-    result = point_backtest(features, config, champion, challenger)
-    band = quantile_band_backtest(features, config)
+    panel = pl.read_parquet(settings.data_dir / "panel.parquet")
+    dates, series_ids, units = panel_matrix(panel)
+    cal = _calendar_features(dates)
+    horizons = list(config.multistep_horizons)
+    classes = classify_panel(units, series_ids)
+    classes_of = np.array([classes[s]["class"] for s in series_ids])
+    sparse = np.array([classes[s]["class"] in SPARSE_CLASSES for s in series_ids])
 
-    # Drift guards: the recomputed backtest must reproduce the committed metrics.
-    for model in dict.fromkeys((champion, challenger, NAIVE_MODEL)):
-        run = next(r for r in result.runs if r.name == model)
-        mase = run.get("mase")
-        if mase is None:
-            raise ValueError(f"backtest run {model} has no MASE")
-        _check_close(f"metrics.{model}.mase", mase.value, float(metrics[model]["mase"]))
-    if probabilistic is not None:
-        _check_close(
-            "probabilistic.quantile_band.coverage_pooled",
-            band["coverage_pooled"],
-            float(probabilistic["quantile_band"]["coverage_pooled"]),
+    origins = multistep_origin_indices(len(dates), config)
+    selection, test = split_origins(origins, config)
+    # the origin plan must match the committed block exactly
+    if [str(dates[o])[:10] for o in origins] != ms["origins"]["dates"]:
+        raise ValueError("recomputed origin plan disagrees with committed _multistep.origins")
+    # the class assignments must match the committed table exactly
+    committed_classes = ms["demand_classes"]["series"]
+    if {s: classes[s]["class"] for s in series_ids} != {
+        s: str(c) for s, c in committed_classes.items()
+    }:
+        raise ValueError("recomputed ADI/CV² classes disagree with committed demand_classes")
+
+    # routing per series, from the COMMITTED routing table (chosen on the
+    # selection origins only — property-tested upstream)
+    choices = ms["routing"]["method_choices"]
+    method_of = np.empty(len(series_ids), dtype=object)
+    for i, sid in enumerate(series_ids):
+        if sparse[i]:
+            m = choices.get(sid)
+            if m not in STATISTICAL_METHODS:
+                raise ValueError(f"committed routing table missing method for sparse series {sid}")
+            method_of[i] = m
+        else:
+            method_of[i] = CHAMPION_HGB
+
+    # re-run every origin (scored origins also get the shock grid)
+    scores = Parallel(n_jobs=-2, backend="loky")(
+        delayed(_score_origin)(
+            units, cal, o, horizons, config, SHOCK_FACTORS if o in test else ()
         )
-
-    # The origin plan must match the committed evaluation metadata: the last
-    # fold is the designated test window, folds 1..n-1 are the selection folds.
-    fold_ids = sorted({f.fold for f in result.folds})
-    protocol = str(eval_meta.get("protocol", ""))
-    if protocol != "rolling_origin_holdout_v1":
-        raise ValueError(f"evaluation_metadata protocol {protocol!r} != rolling_origin_holdout_v1")
-    if int(eval_meta.get("test_origin", -1)) != fold_ids[-1] + 1:
-        raise ValueError("evaluation_metadata test_origin disagrees with the backtest folds")
-    if [int(o) for o in eval_meta.get("selection_used_origins", [])] != [
-        f + 1 for f in fold_ids[:-1]
-    ]:
-        raise ValueError("evaluation_metadata selection_used_origins disagrees with the folds")
-
-    plan = _origin_plan(result)
-    origin_frames = {
-        label: _origin_fold_frame(result, band, fold_id, champion, challenger)
-        for label, fold_id in plan
-    }
-    origins_meta: list[dict[str, Any]] = []
-    for label, fold_id in plan:
-        frame = origin_frames[label]
-        fold_dates = sorted(frame["date"].unique().to_list())
-        window = fold_dates[-horizon:]
-        origin_date = (date.fromisoformat(fold_dates[0]) - timedelta(days=1)).isoformat()
-        meta: dict[str, Any] = {
-            "label": label,
-            "origin": fold_id + 1,
-            "fold_index": fold_id,
-            "origin_date": origin_date,
-            "horizon_window": [window[0], window[-1]],
-        }
-        if label == "test":
-            meta["holdout"] = "test"
-        origins_meta.append(meta)
-
-    stats = _series_stats(features)
-    selected = _select_catalog(stats, catalog_n)
-    fold_frame = _last_fold_frame(result, band, champion)
-    class_by_sid = dict(
-        zip(stats["series_id"].to_list(), stats["demand_class"].to_list(), strict=True)
+        for o in origins
     )
+    by_origin = {s.origin: s for s in scores}
+
+    # ---- drift guards: the re-run must reproduce the committed scalars ----
+    cells = _test_cells(by_origin, test, horizons, units, sparse, method_of)
+    widths = _drift_guard(ms, prob_ms, cells, by_origin, selection, horizons, units, sparse)
+
+    # ---- catalog ----
+    scored = test[-3:]  # 3 of the last-4 scored origins (the most recent)
+    selected = _select_catalog(series_ids, classes, catalog_n)
+    sid_idx = {s: i for i, s in enumerate(series_ids)}
     catalog: list[dict[str, Any]] = []
     for sid in selected:
-        hist, win = _window_and_history(features, fold_frame, sid, history_days, horizon)
-        origins = {
-            label: _origin_series_entry(
-                features,
-                origin_frames[label],
-                sid,
-                next(m["origin_date"] for m in origins_meta if m["label"] == label),
-                champion,
-                challenger,
-                horizon,
-                origin_history_days,
-                class_by_sid[sid],
-            )
-            for label, _ in plan
-        }
-        catalog.append(_catalog_entry(sid, class_by_sid[sid], hist, win, origins))
-    _guard_series(catalog, fold_frame, features, history_days, horizon)
-
-    runs = _committed_runs(metrics)
-    below_one = [k for k, v in runs.items() if float(v["mase"]) < 1.0]
-    naive_mase = float(runs[NAIVE_MODEL]["mase"])
-    # MASE here divides by the seasonal-naive's in-sample error (a quieter
-    # period), so the naive itself scores > 1 on the holiday-quarter test
-    # window — 1.0 is not seasonal-naive parity and must not be worded as such.
-    if below_one == [champion]:
-        claim = (
-            f"only {champion} dips below MASE 1.0 on real intermittent demand "
-            f"(the naive floor itself scores {naive_mase:.3f} on this window)"
-        )
-    elif not below_one:
-        closest = min(runs, key=lambda k: float(runs[k]["mase"]))
-        claim = (
-            "no run dips below MASE 1.0 on the frozen test window (the naive "
-            f"floor itself scores {naive_mase:.3f} there — the scale is its "
-            f"in-sample error from a quieter period); {closest} is closest at "
-            f"MASE {float(runs[closest]['mase']):.3f}"
-        )
-    else:
-        claim = (
-            f"{champion} dips below MASE 1.0 on real intermittent demand "
-            f"({len(below_one)} runs below 1.0)"
-        )
-
-    naive_runs = {k: v for k, v in runs.items() if _is_naive(k)}
-    strongest_naive = min(naive_runs, key=lambda k: float(naive_runs[k]["mae"]))
-    mae_edge_pct = round(
-        100.0
-        * (float(runs[strongest_naive]["mae"]) - float(runs[champion]["mae"]))
-        / float(runs[strongest_naive]["mae"]),
-        1,
-    )
-    split_conformal = (
-        probabilistic.get("split_conformal", {}) if isinstance(probabilistic, dict) else {}
-    )
-    scalars: dict[str, Any] = {
-        "headline": {
-            "claim": claim,
-            "champion": champion,
-            "challenger": challenger,
-            "champion_mase": float(runs[champion]["mase"]),
-            "champion_mae": float(runs[champion]["mae"]),
-            "naive_mase": float(runs[NAIVE_MODEL]["mase"]),
-            "strongest_naive": strongest_naive,
-            "strongest_naive_mae": float(runs[strongest_naive]["mae"]),
-            "champion_mae_edge_vs_strongest_naive_pct": mae_edge_pct,
-            "only_champion_below_mase_1": below_one == [champion],
-            "runs_below_mase_1": below_one,
-            "mase_by_model": {k: float(v["mase"]) for k, v in runs.items()},
-        },
-        "band": (
-            {
-                "target_coverage": float(probabilistic["target_coverage"]),
-                "quantile_coverage_pooled": float(
-                    probabilistic["quantile_band"]["coverage_pooled"]
-                ),
-                "split_conformal_coverage_last_fold": float(
-                    probabilistic["split_conformal"]["coverage_last_fold"]
-                ),
-                "calibration_verdict": split_conformal.get("calibration_verdict"),
-                "horizon_coverage": split_conformal.get("horizon_coverage"),
-                "horizon_avg_width": split_conformal.get("horizon_avg_width"),
-                "note": "coverages are empirical out-of-fold; the catalog band is the "
-                "committed quantile p10/p90 backtest (h=1 per origin), replayed per "
-                "origin on the same fold train windows",
-            }
-            if probabilistic is not None
-            else None
-        ),
-        "models": {
-            "champion": champion,
-            "challenger": challenger,
-            "global": champion,
-            "naive": NAIVE_MODEL,
-            "selection_rule": "champion = committed _meta.best_model — lowest pooled MAE over "
-            "the selection folds (origins 1..n-1) of the committed expanding-window "
-            "backtest (evaluate.py); challenger = the committed test-window rank-2 "
-            "non-naive model (runner-up to the champion on the frozen test window, by "
-            "headline MAE); the final holdout window is scored once and never read for "
-            "selection; 'global' = the same single pooled model serves every series "
-            "(one-hot series_id); the naive floor is the weekly seasonal naive",
-        },
-        "feature_schema": {
-            "calendar": NUMERIC_FEATURES,
-            "lags": [f"lag_{lag}" for lag in config.lags],
-            "series": "one-hot series_id (global model, handle_unknown='ignore')",
-            "note": "calendar + lag features only — every feature is computable before "
-            "day t (leakage-safe shifts)",
-        },
-        "catalog_summary": {
-            "n_series": len(catalog),
-            "by_class": {
-                cls: sum(1 for e in catalog if e["demand_class"] == cls) for cls in CLASS_QUOTAS
-            },
-            "history_days": len(catalog[0]["history"]["y"]),
-            "horizon_days": len(catalog[0]["forecast"]["y_pred"]),
-            "forecast_window": [
-                catalog[0]["forecast"]["dates"][0],
-                catalog[0]["forecast"]["dates"][-1],
+        i = sid_idx[sid]
+        method = str(method_of[i])
+        entry: dict[str, Any] = {
+            "series_id": sid,
+            "label": f"{sid.split('|')[0]} · {sid.split('|')[1]}",
+            "country": sid.split("|")[0],
+            "product": sid.split("|")[1],
+            "demand_class": classes[sid]["class"],
+            "adi": round(classes[sid]["adi"], 4),
+            "cv2": round(classes[sid]["cv2"], 4) if np.isfinite(classes[sid]["cv2"]) else None,
+            "model_used": CHAMPION_HGB if not sparse[i] else method,
+            "origins": [
+                _origin_entry(
+                    i, units, dates, o, by_origin[o], method, bool(sparse[i]), horizons, widths,
+                    origin_history_days,
+                )
+                for o in scored
             ],
-            "class_thresholds": {
-                "zero_frac_smooth_max": SMOOTH_MAX_ZERO_FRAC,
-                "zero_frac_intermittent_max": INTERMITTENT_MAX_ZERO_FRAC,
-            },
-            "origins": {
-                m["label"]: {
-                    "origin": m["origin"],
-                    "fold_index": m["fold_index"],
-                    "origin_date": m["origin_date"],
-                    "horizon_window": m["horizon_window"],
-                    "history_days": len(catalog[0]["origins"][m["label"]]["history"]["y"]),
-                }
-                for m in origins_meta
-            },
-        },
+        }
+        catalog.append(entry)
+
+    # ---- experiment-wide blocks ----
+    scoreboard = _class_scoreboard(ms, cells, classes_of)
+    growth = _horizon_growth(ms)
+    decision = _decision_block(
+        ms, by_origin, selection, horizons, units, sparse, method_of, classes_of
+    )
+    routing_win = ms["routing"]["per_class"].get("lumpy", {})
+    win_diff = routing_win.get("diff")
+    win_ci = routing_win.get("ci95")
+    claim = (
+        "the routed pipeline leads the multi-step leaderboard; routing lumpy series away "
+        "from the boosted model wins "
+        f"+{win_diff:.1f} MAE [{win_ci[0]:.1f}, {win_ci[1]:.1f}] over all-HGB "
+        "(95% paired bootstrap over series x scored origins)"
+        if win_diff is not None and win_ci is not None
+        else "the routed pipeline leads the multi-step leaderboard"
+    )
+
+    by_class = {
+        cls: sum(1 for e in catalog if e["demand_class"] == cls) for cls in ("erratic", "lumpy")
     }
+    countries: dict[str, int] = {}
+    for e in catalog:
+        countries[e["country"]] = countries.get(e["country"], 0) + 1
+    model_used_counts: dict[str, int] = {}
+    for e in catalog:
+        model_used_counts[e["model_used"]] = model_used_counts.get(e["model_used"], 0) + 1
 
     target_definition = str(dataset_meta.get("target_definition", ""))
-    evaluation_metadata = {**eval_meta, "target_definition": target_definition}
-
     return {
         "schema_version": PAYLOAD_SCHEMA_VERSION,
         "demo": "forecast-workbench",
         "project": "02-demand-forecasting",
         "track": config.data_source,
+        "protocol": ms["protocol"],
         "catalog": catalog,
-        "scalars": scalars,
-        "origins_meta": {
-            "origins": origins_meta,
-            "selection_used_origins": [int(o) for o in eval_meta["selection_used_origins"]],
-            "horizon_days": horizon,
+        "class_scoreboard": scoreboard,
+        "horizon_growth": growth,
+        "bands": {
+            "target_coverage": prob_ms["target_coverage"],
+            "band_types": prob_ms["band_types"],
+            "conformal_widths_by_h": prob_ms["conformal_widths_by_h"],
+            "per_horizon": prob_ms["per_horizon"],
+            "pooled_coverage": prob_ms["pooled_coverage"],
+            "pooled_verdict": prob_ms["pooled_verdict"],
+            "sparse_ladder_levels": list(LADDER_LEVELS),
+            "note": (
+                "per-h coverage/width are the committed pooled values over the scored test "
+                "origins; per-series panels show the conformal p10/p90 (learner rows) or the "
+                "P(sale)+ladder (sparse rows) instead"
+            ),
         },
-        "evaluation_metadata": evaluation_metadata,
+        "decision": decision,
+        "headline": {
+            "claim": claim,
+            "pooled_mae_by_model": ms["overall_mae_test"],
+            "routing_win_lumpy": routing_win,
+            "n_series_experiment": ms["demand_classes"]["n_series"],
+            "class_counts": ms["demand_classes"]["counts"],
+            "sparse_share": ms["demand_classes"]["sparse_share"],
+        },
+        "catalog_summary": {
+            "n_series": len(catalog),
+            "by_class": by_class,
+            "countries": dict(sorted(countries.items(), key=lambda kv: (-kv[1], kv[0]))),
+            "model_used_counts": dict(sorted(model_used_counts.items())),
+            "origins": [
+                {
+                    "origin_date": str(dates[o])[:10],
+                    "horizon_window": [str(dates[o + 1])[:10], str(dates[o + HORIZON_DAYS])[:10]],
+                }
+                for o in scored
+            ],
+            "history_days": origin_history_days,
+            "horizon_days": HORIZON_DAYS,
+            "horizons": horizons,
+            "shock_factors": list(SHOCK_FACTORS),
+            "shock_note": (
+                "demand shock xs scales the last 7 days before the origin (the demand signal "
+                "every candidate reads): statistical curves are re-fit on the shocked window, "
+                "boosted curves re-predict through the fitted per-horizon trees on the shocked "
+                "lag trio — precomputed offline, exact; bands stay on the unshocked base run"
+            ),
+            "routing_rule": ms["routing"]["rule"],
+            "class_thresholds": {"adi": ADI_THRESHOLD, "cv2": CV2_THRESHOLD},
+            "experiment_origins": ms["origins"],
+        },
+        "evaluation_metadata": {
+            **mh_meta,
+            "target_definition": target_definition,
+            "nowcast_track_note": ms["track_note"],
+        },
         "dataset_metadata": dataset_meta,
     }
 
@@ -800,18 +636,14 @@ def write_demo_payload(
     *,
     metrics_dir: Path | None = None,
     catalog_n: int = CATALOG_N,
-    history_days: int = HISTORY_DAYS,
-    horizon: int = HORIZON_DAYS,
     origin_history_days: int = ORIGIN_HISTORY_DAYS,
 ) -> Path:
-    """Build the payload and persist it to ``reports/demo_payload.json``."""
+    """Build the v3 payload and persist it to ``reports/demo_payload.json``."""
     payload = build_demo_payload(
         settings,
         config,
         metrics_dir=metrics_dir,
         catalog_n=catalog_n,
-        history_days=history_days,
-        horizon=horizon,
         origin_history_days=origin_history_days,
     )
     out = Path(settings.reports_dir) / DEMO_PAYLOAD_NAME
@@ -821,15 +653,12 @@ def write_demo_payload(
     if size > SIZE_CAP_BYTES:
         raise ValueError(f"demo payload is {size} bytes — over the {SIZE_CAP_BYTES}-byte cap")
     out.write_text(text + "\n")
-    summary = payload["scalars"]["catalog_summary"]
-    origins = payload["origins_meta"]["origins"]
+    summary = payload["catalog_summary"]
     logger.info(
-        "demo payload: %d series %s, history %dd x horizon %dd, origins %s -> %s (%d bytes)",
+        "demo payload v3: %d series %s, origins %s -> %s (%d bytes)",
         summary["n_series"],
         summary["by_class"],
-        summary["history_days"],
-        summary["horizon_days"],
-        [(m["label"], m["origin_date"]) for m in origins],
+        [o["origin_date"] for o in summary["origins"]],
         out,
         size,
     )

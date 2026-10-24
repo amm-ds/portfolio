@@ -67,7 +67,7 @@ stages:
     deps:
       - src/demand_forecasting
       - params.yaml
-      - data_uci/features.parquet
+      - data_uci/panel.parquet
       - reports_uci/metrics.json
       - reports_uci/probabilistic.json
       - reports_uci/evaluation_metadata.json

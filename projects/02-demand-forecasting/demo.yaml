@@ -1,17 +1,18 @@
 id: forecast-workbench
 title: demand forecast workbench
-hook: Pick a store-product series, pick a rolling origin — early, middle, or the
-  frozen test window — stretch the horizon, and stress the recent demand;
-  watch the champion, the challenger, the band, and the baseline respond.
+hook: Pick a store-product series, pick one of the three scored weekly origins,
+  slide the true horizon h across the direct h-step forecasts, and shock the
+  recent demand; watch the routed pipeline, the zero baseline, and — on the
+  15 erratic series — the boosted per-horizon model respond.
 project: 02-demand-forecasting
 group: plan operations
 skills: [time series forecasting, prediction intervals, demand classification]
 modes: [browser, live]
 hero:
-  label: frozen test-window MAE (origin-4 holdout), champion vs strongest floor
-  value: 9.54 vs 11.32 seasonal-naive (-15.7%)
-  ci: no run clears MASE 1 on the frozen test window — lgbm_tuned is closest at 1.076,
-    champion hgb_tuned 1.078
+  label: multi-step pooled MAE over the scored origins, routed pipeline vs all-HGB
+  value: 7.48 routed vs 12.06 all-HGB — the routed pipeline leads
+  ci: routing lumpy series away from the boosted model wins +4.6 MAE [4.2, 5.1]
+    (95% paired bootstrap over series x scored origins; 98.6% of series are lumpy)
 live_endpoints:
   - method: POST
     path: /projects/02-demand-forecasting/forecast
@@ -19,22 +20,25 @@ live_endpoints:
     cost: free-local
 scenarios:
   - name: base
-    controls: {series: "United Kingdom|85123A", origin: "test", horizon: 7, spike: 1.0}
-  - name: sparse-series
-    controls: {series: "United Kingdom|84077", origin: "test", horizon: 7, spike: 1.0}
+    controls: {series: "United Kingdom|85123A", origin: "2010-11-19", horizon: 7, shock: 1}
+  - name: lumpy-series
+    controls: {series: "United Kingdom|84077", origin: "2010-11-19", horizon: 7, shock: 1}
   - name: early-origin
-    controls: {series: "United Kingdom|85123A", origin: "early", horizon: 7, spike: 1.0}
-  - name: spike
-    controls: {series: "United Kingdom|85123A", origin: "test", horizon: 7, spike: 1.5}
+    controls: {series: "United Kingdom|85123A", origin: "2010-11-05", horizon: 7, shock: 1}
+  - name: demand-shock
+    controls: {series: "United Kingdom|85123A", origin: "2010-11-19", horizon: 7, shock: 2}
 payload:
   path: reports/demo_payload.json
-  schema_version: 2
+  schema_version: 3
   required_keys:
     - demo
     - project
     - track
     - catalog
-    - scalars
-    - origins_meta
+    - class_scoreboard
+    - horizon_growth
+    - bands
+    - decision
     - evaluation_metadata
     - dataset_metadata
+    - catalog_summary
