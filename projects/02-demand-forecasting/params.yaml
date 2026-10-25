@@ -53,15 +53,24 @@ uci_n_products: 200
 uci_checksum_sha256: 572e36277c2390fbfde10664750731e0a86f55e33470d91919085f0408e67bfb
 uci_min_newest_date: "2010-12-01"
 # Multi-step (direct multi-horizon) track — protocol direct_multihorizon_v1:
-# one direct model per horizon h, weekly rolling origins capped at 20 (the
-# last multistep_test_origins are scored once; the earlier ones select).
+# one direct model per horizon h on the FULL h = 1..14 lattice (every window
+# day is a real direct-h fit — no interpolated display points), weekly
+# rolling origins capped at 20 (the last multistep_test_origins are scored
+# once; the earlier ones select).
 multistep_horizons:
   - 1
   - 2
   - 3
+  - 4
   - 5
+  - 6
   - 7
+  - 8
+  - 9
   - 10
+  - 11
+  - 12
+  - 13
   - 14
 multistep_n_origins: 20
 multistep_test_origins: 4

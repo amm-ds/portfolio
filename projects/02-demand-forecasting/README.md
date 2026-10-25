@@ -127,8 +127,10 @@ review demanded the pipeline's data contract be stated explicitly):
 
 The nowcast tables above stay committed and valid, but they answer "tomorrow,
 given today". The track replenishment actually runs is **multi-step** (wave 19,
-fifth-pass audit; wave 20 adds the peak-capable candidates): direct
-per-horizon models for h ∈ {1, 2, 3, 5, 7, 10, 14} (champion-config HGB;
+fifth-pass audit; wave 20 adds the peak-capable candidates; the lattice now
+spans the full window): direct per-horizon models for every
+h ∈ {1..14} — one real direct-h model per day of the window, no interpolated
+display points (champion-config HGB;
 features = calendar of the target date + a **peak block at target−h** —
 rolling mean AND max over 7/14/28-day windows, days-since-last-nonzero, 28d
 non-zero-day count, 28d peak ratio — + lags `lag_h`, `lag_{h+7}`, `lag_{h+14}`;
@@ -156,64 +158,65 @@ scored origins, 95% CI on the gap (negative = champion better):
 
 | class | n | champ MAE h=7 | floor MAE h=7 | gap CI h=7 | champ MAE h=14 | floor MAE h=14 | gap CI h=14 |
 |---|---|---|---|---|---|---|---|
-| erratic | 15 | 51.909 | 68.350 | [−54.633, +9.711] | 51.554 | 60.000 | [−31.187, +11.599] |
-| **lumpy** | 1,069 | **6.167** | 11.070 | **[−7.673, −2.789]** | **5.883** | 10.642 | **[−7.437, −2.719]** |
+| erratic | 15 | 47.007 | 68.350 | [−58.454, +2.941] | 45.144 | 60.000 | [−36.427, +2.759] |
+| **lumpy** | 1,069 | **6.095** | 11.070 | **[−7.740, −2.866]** | **5.746** | 10.642 | **[−7.597, −2.845]** |
 
 - **Routing is still the win, and it is now peak-aware**: on lumpy the routed
-  champion (zero forecast for 946 series, hurdle_hgb for 105 series,
-  hgb_tweedie for 16, seasonal_naive 2 — selected on training origins) beats
+  champion (zero forecast for 945 series, hurdle_hgb for 108 series,
+  hgb_tweedie for 16 — selected on training origins) beats
   the seasonal-naive floor decisively at both h=7 and h=14 (CIs exclude
-  zero) and beats the unrouted all-HGB ladder by **3.970 MAE** (CI [3.256,
-  4.821]). All 15 erratic series now leave the direct HGB for the
-  peak-capable models (11 hurdle_hgb, 4 hgb_tweedie) — on spike-driven
+  zero) and beats the unrouted all-HGB ladder by **4.071 MAE** (CI [3.409,
+  4.866]). All 15 erratic series now leave the direct HGB for the
+  peak-capable models (14 hurdle_hgb, 1 hgb_tweedie) — on spike-driven
   erratic demand the flat-lag HGB is simply outclassed, and the erratic
-  unrouted-minus-routed gap is +30.9 MAE (CI [16.5, 47.8]) in routing's
+  unrouted-minus-routed gap is +25.5 MAE (CI [13.9, 37.9]) in routing's
   favour.
 - **Where the peak-capable models win — and where they don't** (pooled MAE
-  over all horizons on the scored origins): lumpy hurdle_hgb MAE **6.189**
-  (vs routed +0.402, CI [+0.332, +0.472]), lumpy hgb_tweedie MAE **7.089**
-  (+1.302, CI [+1.096, +1.530]) vs routed 5.787 — the flat methods keep pooled
+  over all horizons on the scored origins): lumpy hurdle_hgb MAE **7.067**
+  (vs routed +0.463, CI [+0.400, +0.525]), lumpy hgb_tweedie MAE **7.783**
+  (+1.179, CI [+0.987, +1.387]) vs routed 6.604 — the flat methods keep pooled
   MAE on lumpy, reported plainly, not hidden. erratic hurdle_hgb MAE
-  **39.530** beats the routed pipeline by −5.174 (CI [−10.315, −0.996]);
-  erratic hgb_tweedie MAE **49.318** (+4.614) — the order flips on
-  spike-driven series. The multi-step leaderboard is led by the routed
-  pipeline (6.326), then hurdle_hgb (6.651), hgb_tweedie (7.674), zero
-  (7.701); the routed-vs-hurdle rank-1-vs-2 gap CI [−0.427, −0.209] now
+  **67.960** comes in −0.707 under the routed pipeline (CI [−2.121, 0.000]);
+  erratic hgb_tweedie MAE **72.999** (+4.333, CI [+1.393, +7.578]) — the
+  order flips on spike-driven series. The multi-step leaderboard is led by
+  the routed pipeline (7.463), then hurdle_hgb (7.910), hgb_tweedie (8.685),
+  zero (9.276); the routed-vs-hurdle rank-1-vs-2 gap CI [−0.515, −0.379] now
   excludes zero.
 - **Error grows with the true horizon** — pooled MAE (units) on the scored
   origins:
 
-  | h | 1 | 2 | 3 | 5 | 7 | 10 | 14 |
-  |---|---|---|---|---|---|---|---|
-  | champion | 0.063 | 3.737 | 8.705 | 9.080 | 6.800 | 9.380 | 6.515 |
-  | floor (sn) | 0.000 | 4.846 | 10.922 | 13.213 | 11.863 | 14.275 | 11.325 |
-  | zero | 0.000 | 5.249 | 10.223 | 11.334 | 7.994 | 11.500 | 7.608 |
+  | h | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | champion | 0.066 | 3.708 | 8.538 | 9.301 | 8.964 | 16.445 | 6.661 | 0.097 | 4.579 | 9.366 | 9.727 | 9.288 | 11.452 | 6.291 |
+  | floor (sn) | 0.000 | 4.846 | 10.922 | 14.072 | 13.213 | 26.871 | 11.863 | 0.000 | 5.522 | 14.275 | 13.795 | 13.223 | 21.272 | 11.325 |
+  | zero | 0.000 | 5.249 | 10.223 | 12.201 | 11.334 | 19.223 | 7.994 | 0.000 | 6.004 | 11.500 | 12.524 | 11.747 | 14.255 | 7.608 |
 
   The sawtooth is real, not noise: weekly origins fix the weekday of each
-  horizon (h=1 is always a Saturday on this panel — near-zero actuals at h=1,
-  which is also why the peak-featured champion now scores 0.063 there instead
-  of the old ladder's 2.461), so the curve is horizon × weekday composition,
-  visible per class in `multistep_error_vs_horizon`.
+  horizon (h ≡ 1 mod 7 — h=1 and h=8 — always lands on the same near-zero
+  Saturday on this panel, which is also why the peak-featured champion now
+  scores 0.066/0.097 there instead of the old ladder's 2.461), so the curve
+  is horizon × weekday composition, visible per class in
+  `multistep_error_vs_horizon`.
 - **Per-horizon bands** (target 80%; learner rows: ±q80 split-conformal per h
   calibrated on selection origins, zero-clipped and sorted; sparse rows:
   P(any sale) + quantile ladder of the training history — no collapsing
   band; the two ML candidates carry their own conformal bands, same rule).
   Coverage AND width per h on the scored origins:
 
-  | h | 1 | 2 | 3 | 5 | 7 | 10 | 14 |
-  |---|---|---|---|---|---|---|---|
-  | coverage | 1.000 | 0.926 | 0.910 | 0.912 | 0.905 | 0.899 | 0.909 |
-  | avg width (units) | 4.262 | 5.502 | 5.854 | 5.892 | 5.981 | 5.787 | 5.945 |
-  | verdict | conservative | conservative | conservative | conservative | conservative | conservative | conservative |
+  | h | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | coverage | 1.000 | 0.926 | 0.910 | 0.888 | 0.912 | 0.893 | 0.905 | 1.000 | 0.925 | 0.899 | 0.885 | 0.913 | 0.900 | 0.909 |
+  | avg width (units) | 4.262 | 5.502 | 5.854 | 6.355 | 5.892 | 6.108 | 5.981 | 4.262 | 5.472 | 5.787 | 6.540 | 5.926 | 6.136 | 5.945 |
+  | verdict | conservative | conservative | conservative | conservative | conservative | conservative | conservative | conservative | conservative | conservative | conservative | conservative | conservative | conservative |
 
   Verdict rule: |coverage − 0.80| ≤ 0.05 calibrated, above conservative,
-  below optimistic. Pooled 0.923 → **conservative**: the sparse history-q90
-  band over-covers (0.90–1.00 per h) — honest width, stated per h in
+  below optimistic. Pooled 0.919 → **conservative**: the sparse history-q90
+  band over-covers (0.89–1.00 per h) — honest width, stated per h in
   `probabilistic.json` (`multistep` key, incl. `candidate_bands` for
-  hgb_tweedie / hurdle_hgb, pooled 0.912 both) and
+  hgb_tweedie / hurdle_hgb, pooled 0.909 both) and
   `multistep_band_calibration`. Pinball loss of the learner quantiles
-  (erratic rows) is reported per h alongside (p50 pinball 0.0–55.5 units —
-  h=1 sits on the zero atom now).
+  (erratic rows) is reported per h alongside (p50 pinball 0.0–113.2 units —
+  the h ≡ 1 mod 7 days sit on the zero atom now).
 - **Peak capture** (the user's headline question — per scored window over the
   scored h-lattice days: `peak_mae` = MAE on the window's top-decile-by-
   actual days; `peak_recall` = share of the window's top-5 actual days ranked
@@ -221,18 +224,18 @@ scored origins, 95% CI on the gap (negative = champion better):
 
   | candidate | lumpy peak_mae | lumpy recall | erratic peak_mae | erratic recall |
   |---|---|---|---|---|
-  | routed | 23.547 | 0.9738 | 124.791 | 0.8367 |
-  | zero | 27.023 | 0.9738 | 184.333 | 0.8467 |
-  | hgb_tweedie | 22.062 | 0.8363 | 122.309 | 0.8467 |
-  | hurdle_hgb | 23.548 | 0.8984 | 123.896 | 0.8267 |
+  | routed | 29.979 | 0.8816 | 291.717 | 0.4967 |
+  | zero | 33.685 | 0.8814 | 367.258 | 0.4933 |
+  | hgb_tweedie | 28.134 | 0.4229 | 280.961 | 0.4467 |
+  | hurdle_hgb | 29.931 | 0.4789 | 294.406 | 0.4967 |
 
   Read honestly: on **erratic** every ML candidate cuts peak-day error by
-  ~60 units vs the zero forecast (routed 124.8 vs zero 184.3, CI excludes
+  ~75 units vs the zero forecast (routed 291.7 vs zero 367.3, CI excludes
   zero) — that is the dramatic error improvement on peak days, delivered by
   routing those series to the peak-capable models. On **lumpy** hgb_tweedie
-  cuts peak-day MAE to 22.06 (vs zero 27.02, vs routed −1.49 with CI
+  cuts peak-day MAE to 28.13 (vs zero 33.69, vs routed −1.84 with CI
   excluding zero) — but it pays for magnitude with timing: its top-5
-  day-ranking recall is 0.836 vs the flat baselines' 0.974 (CI excludes
+  day-ranking recall is 0.423 vs the flat baselines' 0.881 (CI excludes
   zero), because committing to peak days is wrong more often than the flat
   "never predict a peak" strategy on 89%-zero demand. Both facts are in
   `metrics.json` (`peak_capture`) and `multistep_peak_capture` /
@@ -241,9 +244,9 @@ scored origins, 95% CI on the gap (negative = champion better):
   order = quantile_τ(point + residual quantiles calibrated per class on
   selection origins); cost = holding 0.25/unit leftover + stockout 4.0/unit
   short per scored cell; assumptions in the JSON; **simulation — no savings
-  claims**). Per-unit-of-demand cost at τ=0.90: erratic **1.092 champion vs
-  1.180 floor** (−2,229 total on the scored cells); lumpy 2.859 vs 2.716
-  (+29,819). The asymmetry persists: the MAE-optimal routed champion
+  claims**). Per-unit-of-demand cost at τ=0.90: erratic **1.443 champion vs
+  1.510 floor** (−5,383 total on the scored cells); lumpy 2.886 vs 2.777
+  (+52,332). The asymmetry persists: the MAE-optimal routed champion
   over-orders at high τ on spike-driven lumpy demand (its raw-demand residual
   quantiles are large), while on the erratic series its tighter distribution
   wins at τ ≤ 0.90. Safety-stock policy and forecast model are different
@@ -453,7 +456,7 @@ via `uv run python -m demand_forecasting.cli all --data-source uci`.
 `data_uci/` (panel 405,416 rows, contract, models) and `data/` (synthetic).
 Runtime (this machine, `cli evaluate`): synthetic ≈ **2 min** with
 probabilistic + multi-step; UCI ≈ **13 min** (ETS fits 1,084 series per fold;
-multi-step: 20 origins × 7 horizons × 7 HGB fits — point, 3 quantiles,
+multi-step: 20 origins × 14 horizons × 7 HGB fits — point, 3 quantiles,
 tweedie, hurdle classifier + size regressor — joblib-parallel); 6/6 DQ
 gates pass on both tracks.
 

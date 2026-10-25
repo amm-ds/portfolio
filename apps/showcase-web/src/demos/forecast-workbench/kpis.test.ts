@@ -4,6 +4,7 @@ import type {
   DecisionBlock,
   ForecastPayload,
   HorizonGrowth,
+  ModelKey,
   OriginBlock,
   ScoreboardClass,
 } from "../types";
@@ -25,16 +26,19 @@ import {
   originBlock,
   originDates,
   parseDay,
+  plottedPath,
   policyWindow,
   routedLabel,
   scoreboardRow,
   surprisePick,
+  windowAxis,
 } from "./kpis";
 
-const HORIZONS = [1, 2, 3, 5, 7, 10, 14];
+const HORIZONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
 /** One scored origin: history ends the day BEFORE the origin, actuals are the
- * 14 days AFTER it — the protocol-v2 contiguous layout. */
+ * 14 days AFTER it — the protocol-v2 contiguous layout, full h = 1..14
+ * lattice (revision 3.2): the model curve covers every window day. */
 function makeOrigin(over: Partial<OriginBlock> = {}): OriginBlock {
   const originDate = "2010-12-11";
   const histDates = Array.from({ length: 20 }, (_, i) => addDays(originDate, i - 20)); // ..origin-1
@@ -43,7 +47,7 @@ function makeOrigin(over: Partial<OriginBlock> = {}): OriginBlock {
   return {
     origin_date: originDate,
     history: { dates: histDates, y: Array.from({ length: 20 }, (_, i) => i + 1) },
-    // 14 real window days; the model curve stays at the 7 lattice points
+    // 14 real window days; the model curve sits at all 14 direct-h points
     actuals: { dates: actualDates, y: Array.from({ length: 14 }, (_, i) => 30 + ((i + 1) % 3)) },
     horizons: HORIZONS,
     scale: 2,
@@ -212,18 +216,28 @@ describe("latticeErrors + horizonKpi", () => {
     expect(latticeErrors(null, "routed", 1)).toEqual([]);
   });
 
-  it("horizonKpi accumulates over the visible fan h′ ≤ h and nulls safely", () => {
+  it("horizonKpi reads the day-h point exactly and nulls safely", () => {
     const k7 = horizonKpi(o, "routed", 1, 7);
     expect(k7).not.toBeNull();
-    // fan points h ∈ {1,2,3,5,7}: preds 41,42,43,45,47;
-    // actuals of days 1..7: 31,32,30,31,32,30,31 → |err| 10,10,13,13,16
-    const wantAbs = [10, 10, 13, 13, 16];
-    expect(k7!.mae).toBeCloseTo(wantAbs.reduce((a, b) => a + b, 0) / wantAbs.length, 6);
-    expect(k7!.mase).toBeCloseTo(k7!.mae / 2, 6);
+    // exactly h=7: pred 40+7=47 vs actual of day 7 = 30 + (7%3) = 31 → |err| 16
+    expect(k7!.mae).toBeCloseTo(16, 6);
+    expect(k7!.mase).toBeCloseTo(16 / 2, 6);
+    expect(k7!.bias).toBeCloseTo(16, 6);
     expect(k7!.signed).toBeCloseTo(16, 6);
+    expect(k7!.abs).toBeCloseTo(16, 6);
+    // wape at exactly h: |err| / demand of day 7
+    expect(k7!.wape).toBeCloseTo(16 / 31, 6);
+    // h=1: pred 41 vs actual 31 → |err| 10 — every stop grades a different point
+    const k1 = horizonKpi(o, "routed", 1, 1);
+    expect(k1!.mae).toBeCloseTo(10, 6);
+    expect(k1!.bias).toBeCloseTo(10, 6);
+    // a zero-demand day nulls the wape
+    const zeroDay = makeOrigin({ actuals: { dates: o.actuals.dates, y: o.actuals.y.map((v, i) => (i === 6 ? 0 : v)) } });
+    expect(horizonKpi(zeroDay, "routed", 1, 7)!.wape).toBeNull();
     const zero = horizonKpi(o, "zero", 1, 14);
     expect(zero!.wape).not.toBeNull();
     expect(horizonKpi(o, "routed", 1, 0)).toBeNull();
+    expect(horizonKpi(o, "routed", 1, 15)).toBeNull();
     expect(horizonKpi(null, "routed", 1, 7)).toBeNull();
     // zero-scale origin → MASE null
     expect(horizonKpi(makeOrigin({ scale: 0 }), "routed", 1, 7)!.mase).toBeNull();
@@ -233,6 +247,55 @@ describe("latticeErrors + horizonKpi", () => {
     const base = horizonKpi(o, "routed", 1, 7)!.mae;
     const shocked = horizonKpi(o, "routed", 2, 7)!.mae;
     expect(shocked).not.toBe(base); // 60+h curve differs from 40+h
+  });
+});
+
+describe("windowAxis — the explorer's daily axis", () => {
+  it("is contiguous and covers history + origin + the full window", () => {
+    const o = makeOrigin();
+    const axis = windowAxis(o);
+    expect(axis[0]).toBe(o.history.dates[0]);
+    expect(axis[axis.length - 1]).toBe(o.actuals.dates[o.actuals.dates.length - 1]);
+    // 20 history days + the origin slot + 14 window days
+    expect(axis).toHaveLength(20 + 1 + 14);
+    for (let i = 1; i < axis.length; i++) {
+      expect(parseDay(axis[i]).getTime() - parseDay(axis[i - 1]).getTime()).toBe(86400000);
+    }
+    // every actual day (incl. the last) is a real slot — a local-time Date
+    // loop drifts across DST and can drop the final window day
+    for (const d of o.actuals.dates) expect(axis).toContain(d);
+    expect(windowAxis(null)).toEqual([]);
+  });
+});
+
+describe("plottedPath — the explorer's daily curve", () => {
+  const o = makeOrigin();
+
+  it("covers the whole window: 14 contiguous days, one point per direct h", () => {
+    for (const mk of ["zero", "routed", "champion"] as ModelKey[]) {
+      const path = plottedPath(o, mk, 1);
+      expect(path).toHaveLength(14);
+      // the dates are exactly the window's actual days — origin+1 .. origin+14
+      expect(path.map((p) => p.date)).toEqual(o.actuals.dates);
+      // daily-contiguous, no gaps anywhere in the range
+      for (let i = 1; i < path.length; i++) {
+        expect(parseDay(path[i].date).getTime() - parseDay(path[i - 1].date).getTime()).toBe(
+          24 * 3600 * 1000,
+        );
+      }
+      // y values are the model's own curve points
+      expect(path.map((p) => p.y)).toEqual(modelBlock(o, mk)!.y_pred);
+    }
+    expect(plottedPath(null, "routed", 1)).toEqual([]);
+  });
+
+  it("follows the shock lever and resolves candidate aliases", () => {
+    expect(plottedPath(o, "routed", 2).map((p) => p.y)).toEqual(o.models.routed.shock["2"]);
+    const hurdleSeries = makeSeries({ model_used: "hurdle_hgb" });
+    hurdleSeries.origins[0].models.hurdle_hgb = { alias: "routed" };
+    expect(plottedPath(hurdleSeries.origins[0], "hurdle", 1).map((p) => p.y)).toEqual(
+      hurdleSeries.origins[0].models.routed.y_pred,
+    );
   });
 });
 

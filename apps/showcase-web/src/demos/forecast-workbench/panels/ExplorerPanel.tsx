@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { LineChart, type LineMarker } from "../../charts/LineChart";
 import { useMeasuredSize } from "../../charts/useMeasuredSize";
 import type { CatalogSeries, ModelKey, OriginBlock } from "../../types";
-import { curveAt, fmtDay, modelBlock } from "../kpis";
+import { curveAt, fmtDay, modelBlock, plottedPath, windowAxis } from "../kpis";
 import { Figure } from "./common";
 
 const C_TEAL = "#2dd4bf";
@@ -18,34 +18,21 @@ export const MODEL_COLOR: Record<ModelKey, string> = {
   tweedie: "#a78bfa",
 };
 
-/** Contiguous daily axis from the history's first day through the last
- * actual — the origin date sits in it as a real slot (history ends the day
- * before, actuals start the day after; there is no gap to shade). */
+/** The drawn axis + its date→index map (see `windowAxis` in ../kpis — the
+ * axis must be wall-calendar contiguous even across DST transitions). */
 function useAxis(origin: OriginBlock | null): { axis: string[]; idx: Map<string, number> } {
   return useMemo(() => {
-    if (!origin || origin.history.dates.length === 0 || origin.actuals.dates.length === 0) {
-      return { axis: [], idx: new Map() };
-    }
-    const out: string[] = [];
-    const d = new Date(origin.history.dates[0]);
-    const end = new Date(origin.actuals.dates[origin.actuals.dates.length - 1]);
-    while (d <= end) {
-      out.push(
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-          d.getDate(),
-        ).padStart(2, "0")}`,
-      );
-      d.setDate(d.getDate() + 1);
-    }
-    return { axis: out, idx: new Map(out.map((d, i) => [d, i])) };
+    const axis = windowAxis(origin);
+    return { axis, idx: new Map(axis.map((d, i) => [d, i])) };
   }, [origin]);
 }
 
 /** The as-of-origin canvas: history left of the marker (ends the day before
- * it), the selected model's DIRECT h-step forecasts as a fan of lattice
- * points starting the day after, the window's actuals as a ghost overlay —
- * and nothing shaded, because there is no embargo gap: the window abuts the
- * origin. */
+ * it), the selected model's DIRECT h-step forecasts as a contiguous 14-day
+ * curve starting the day after (one real direct-h model per window day on
+ * the committed full h = 1..14 lattice — no gaps, no interpolation), the
+ * window's actuals as a ghost overlay — and nothing shaded, because there is
+ * no embargo gap: the window abuts the origin. */
 export function ExplorerPanel({
   series,
   origin,
@@ -81,16 +68,20 @@ export function ExplorerPanel({
   const histVals = at(hist.dates, hist.y, total);
   const actualVals = at(actuals.dates, actuals.y, total);
 
-  // direct curve: a point per lattice h at day origin+h (actuals[h-1])
+  // direct curve: one point per direct h at day origin+h — the full 1..14
+  // lattice, so the drawn path covers the whole window contiguously
   const predVals = nan(total);
   const p10Vals = nan(total);
   const p90Vals = nan(total);
   const ladderLines: Array<{ level: string; y: number }> = [];
   if (blk && block) {
+    for (const { date, y } of plottedPath(blk, model, shock)) {
+      const j = idx.get(date);
+      if (j !== undefined) predVals[j] = y;
+    }
     blk.horizons.forEach((h, i) => {
       const j = idx.get(actuals.dates[h - 1]);
-      if (j === undefined || pred[i] === undefined) return;
-      predVals[j] = pred[i];
+      if (j === undefined) return;
       if (block.p10 && block.p90) {
         p10Vals[j] = block.p10[i];
         p90Vals[j] = block.p90[i];

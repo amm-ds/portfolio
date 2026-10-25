@@ -540,9 +540,16 @@
       1,
       2,
       3,
+      4,
       5,
+      6,
       7,
+      8,
+      9,
       10,
+      11,
+      12,
+      13,
       14
     ],
     "window_days": 14,
@@ -2609,7 +2616,7 @@
         "United Kingdom|10002": "zero",
         "United Kingdom|15036": "zero",
         "United Kingdom|15056BL": "hurdle_hgb",
-        "United Kingdom|15056N": "zero",
+        "United Kingdom|15056N": "hurdle_hgb",
         "United Kingdom|16014": "zero",
         "United Kingdom|16033": "zero",
         "United Kingdom|16046": "zero",
@@ -2653,9 +2660,9 @@
         "United Kingdom|21175": "hurdle_hgb",
         "United Kingdom|21181": "hgb_tweedie",
         "United Kingdom|21210": "hurdle_hgb",
-        "United Kingdom|21212": "hgb_tweedie",
+        "United Kingdom|21212": "hurdle_hgb",
         "United Kingdom|21213": "hurdle_hgb",
-        "United Kingdom|21231": "hurdle_hgb",
+        "United Kingdom|21231": "hgb_tweedie",
         "United Kingdom|21232": "hurdle_hgb",
         "United Kingdom|21314": "hurdle_hgb",
         "United Kingdom|21326": "hurdle_hgb",
@@ -2663,27 +2670,27 @@
         "United Kingdom|21390": "hurdle_hgb",
         "United Kingdom|21392": "zero",
         "United Kingdom|21495": "zero",
-        "United Kingdom|21497": "zero",
+        "United Kingdom|21497": "hurdle_hgb",
         "United Kingdom|21498": "hgb_tweedie",
-        "United Kingdom|21499": "zero",
+        "United Kingdom|21499": "hurdle_hgb",
         "United Kingdom|21500": "zero",
         "United Kingdom|21704": "hurdle_hgb",
-        "United Kingdom|21731": "hurdle_hgb",
+        "United Kingdom|21731": "zero",
         "United Kingdom|21733": "hurdle_hgb",
-        "United Kingdom|21790": "hurdle_hgb",
+        "United Kingdom|21790": "hgb_tweedie",
         "United Kingdom|21791": "hurdle_hgb",
         "United Kingdom|21829": "zero",
         "United Kingdom|21868": "hurdle_hgb",
-        "United Kingdom|21877": "hurdle_hgb",
+        "United Kingdom|21877": "zero",
         "United Kingdom|21889": "hurdle_hgb",
-        "United Kingdom|21900": "hurdle_hgb",
+        "United Kingdom|21900": "zero",
         "United Kingdom|21915": "zero",
         "United Kingdom|21918": "hurdle_hgb",
         "United Kingdom|21928": "hurdle_hgb",
         "United Kingdom|21929": "hurdle_hgb",
         "United Kingdom|21930": "hurdle_hgb",
         "United Kingdom|21931": "hurdle_hgb",
-        "United Kingdom|21967": "hgb_tweedie",
+        "United Kingdom|21967": "zero",
         "United Kingdom|21975": "hurdle_hgb",
         "United Kingdom|21976": "zero",
         "United Kingdom|21977": "hgb_tweedie",
@@ -2691,12 +2698,12 @@
         "United Kingdom|21981": "zero",
         "United Kingdom|21982": "hurdle_hgb",
         "United Kingdom|21984": "zero",
-        "United Kingdom|21985": "zero",
+        "United Kingdom|21985": "hurdle_hgb",
         "United Kingdom|21986": "zero",
         "United Kingdom|22027": "hurdle_hgb",
         "United Kingdom|22029": "hurdle_hgb",
         "United Kingdom|22030": "hurdle_hgb",
-        "United Kingdom|22045": "hgb_tweedie",
+        "United Kingdom|22045": "hurdle_hgb",
         "United Kingdom|22077": "hgb_tweedie",
         "United Kingdom|22083": "hurdle_hgb",
         "United Kingdom|22086": "hurdle_hgb",
@@ -2706,7 +2713,7 @@
         "United Kingdom|22147": "hurdle_hgb",
         "United Kingdom|22149": "hurdle_hgb",
         "United Kingdom|22151": "hgb_tweedie",
-        "United Kingdom|22178": "hurdle_hgb",
+        "United Kingdom|22178": "hgb_tweedie",
         "United Kingdom|22188": "zero",
         "United Kingdom|22189": "hurdle_hgb",
         "United Kingdom|22197": "hurdle_hgb",
@@ -2721,21 +2728,21 @@
         "United Kingdom|22356": "hurdle_hgb",
         "United Kingdom|22379": "hurdle_hgb",
         "United Kingdom|22382": "hurdle_hgb",
-        "United Kingdom|22383": "hgb_tweedie",
+        "United Kingdom|22383": "hurdle_hgb",
         "United Kingdom|22384": "hurdle_hgb",
         "United Kingdom|22385": "hurdle_hgb",
         "United Kingdom|22386": "hurdle_hgb",
-        "United Kingdom|22411": "hgb_tweedie",
+        "United Kingdom|22411": "hurdle_hgb",
         "United Kingdom|22417": "hurdle_hgb",
         "United Kingdom|22423": "hgb_tweedie",
-        "United Kingdom|22444": "zero",
+        "United Kingdom|22444": "hurdle_hgb",
         "United Kingdom|22469": "hurdle_hgb",
-        "United Kingdom|22470": "hgb_tweedie",
+        "United Kingdom|22470": "hurdle_hgb",
         "United Kingdom|22489": "hurdle_hgb",
         "United Kingdom|22492": "hurdle_hgb",
         "United Kingdom|22528": "zero",
         "United Kingdom|22530": "zero",
-        "United Kingdom|22534": "zero",
+        "United Kingdom|22534": "hurdle_hgb",
         "United Kingdom|22551": "hurdle_hgb",
         "United Kingdom|22556": "hurdle_hgb",
         "United Kingdom|22558": "zero",
@@ -2743,17 +2750,17 @@
         "United Kingdom|22585": "hurdle_hgb",
         "United Kingdom|22616": "hurdle_hgb",
         "United Kingdom|22629": "hurdle_hgb",
-        "United Kingdom|22632": "hurdle_hgb",
+        "United Kingdom|22632": "hgb_tweedie",
         "United Kingdom|22734": "hurdle_hgb",
-        "United Kingdom|22740": "seasonal_naive",
+        "United Kingdom|22740": "hurdle_hgb",
         "United Kingdom|22752": "hurdle_hgb",
         "United Kingdom|22754": "hurdle_hgb",
         "United Kingdom|22755": "hurdle_hgb",
         "United Kingdom|22759": "hurdle_hgb",
-        "United Kingdom|22865": "seasonal_naive",
-        "United Kingdom|22866": "hurdle_hgb",
-        "United Kingdom|22867": "hurdle_hgb",
-        "United Kingdom|22909": "hgb_tweedie",
+        "United Kingdom|22865": "hgb_tweedie",
+        "United Kingdom|22866": "hgb_tweedie",
+        "United Kingdom|22867": "hgb_tweedie",
+        "United Kingdom|22909": "hurdle_hgb",
         "United Kingdom|22910": "hurdle_hgb",
         "United Kingdom|22952": "hurdle_hgb",
         "United Kingdom|35961": "hurdle_hgb",
@@ -2761,11 +2768,11 @@
         "United Kingdom|37410": "zero",
         "United Kingdom|40016": "zero",
         "United Kingdom|47503E": "zero",
-        "United Kingdom|47566": "hurdle_hgb",
+        "United Kingdom|47566": "zero",
         "United Kingdom|71459": "hurdle_hgb",
         "United Kingdom|71477": "hurdle_hgb",
         "United Kingdom|72008": "zero",
-        "United Kingdom|72741": "hgb_tweedie",
+        "United Kingdom|72741": "hurdle_hgb",
         "United Kingdom|75049L": "zero",
         "United Kingdom|79000": "zero",
         "United Kingdom|82482": "hgb_tweedie",
@@ -2794,9 +2801,9 @@
         "United Kingdom|84970L": "hurdle_hgb",
         "United Kingdom|84970S": "hurdle_hgb",
         "United Kingdom|84978": "hurdle_hgb",
-        "United Kingdom|84991": "hgb_tweedie",
+        "United Kingdom|84991": "hurdle_hgb",
         "United Kingdom|84992": "hurdle_hgb",
-        "United Kingdom|85099B": "hgb_tweedie",
+        "United Kingdom|85099B": "hurdle_hgb",
         "United Kingdom|85099C": "hurdle_hgb",
         "United Kingdom|85099F": "hurdle_hgb",
         "United Kingdom|85110": "zero",
@@ -2824,29 +2831,29 @@
       "hurdle_correction": {
         "chosen": "identity",
         "selection_mae": {
-          "identity": 10.25679071599751,
-          "scalar": 14.394023512652927,
-          "isotonic": 14.00754719423224
+          "identity": 9.940423068354091,
+          "scalar": 13.520219365704783,
+          "isotonic": 12.973269591075914
         },
-        "scalar_factor": 2.5483217775964686,
+        "scalar_factor": 2.2386820529698985,
         "note": "identity/scalar/isotonic compared on the selection origins only; the winner is applied to all origins; a series of all-zero training windows has no correction candidate (raw p\u0302=0)"
       },
       "per_class": {
         "erratic": {
-          "diff": 30.94906092373823,
+          "diff": 25.47522794791051,
           "ci95": [
-            16.548762070000606,
-            47.77712441061365
+            13.945678737544045,
+            37.87798870313156
           ],
           "spans_zero": false,
           "n_boot": 2000,
           "seed": 2044
         },
         "lumpy": {
-          "diff": 3.969831000920813,
+          "diff": 4.071154592769441,
           "ci95": [
-            3.255693588068416,
-            4.820689313080051
+            3.4094194532945123,
+            4.866369700033852
           ],
           "spans_zero": false,
           "n_boot": 2000,
@@ -2857,34 +2864,34 @@
     "headline_per_class": {
       "erratic": {
         "h7": {
-          "champion_mae": 51.90903898504971,
+          "champion_mae": 47.006893379092396,
           "floor_mae": 68.35,
           "champion_vs_floor": {
-            "diff": -16.440961014950283,
+            "diff": -21.343106620907598,
             "ci95": [
-              -54.632732619057556,
-              9.71072010391433
+              -58.454191141504204,
+              2.940677812838784
             ],
             "spans_zero": true,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -12.240961014950294,
+            "diff": -17.14310662090761,
             "ci95": [
-              -27.883637470744667,
-              3.3160275062683477
+              -34.56387024469241,
+              -0.2903413101601737
             ],
-            "spans_zero": true,
+            "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           },
           "hgb_tweedie_mae": 52.334170912309816,
           "hgb_tweedie_vs_routed": {
-            "diff": 0.42513192726010374,
+            "diff": 5.327277533217419,
             "ci95": [
-              -6.3425901439051575,
-              5.9578654706444825
+              -3.918161814246257,
+              14.865864596727796
             ],
             "spans_zero": true,
             "n_boot": 2000,
@@ -2902,9 +2909,9 @@
           },
           "hurdle_hgb_mae": 44.1740573218286,
           "hurdle_hgb_vs_routed": {
-            "diff": -7.734981663221113,
+            "diff": -2.8328360572637976,
             "ci95": [
-              -16.959585986147605,
+              -8.498508171791407,
               0.0
             ],
             "spans_zero": true,
@@ -2923,23 +2930,23 @@
           }
         },
         "h14": {
-          "champion_mae": 51.55418291363124,
+          "champion_mae": 45.144290735523256,
           "floor_mae": 60.0,
           "champion_vs_floor": {
-            "diff": -8.445817086368763,
+            "diff": -14.855709264476744,
             "ci95": [
-              -31.18685950271074,
-              11.59891282179247
+              -36.42674232076068,
+              2.759285077230326
             ],
             "spans_zero": true,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -6.079150419702096,
+            "diff": -12.489042597810077,
             "ci95": [
-              -20.14884790906695,
-              8.663456786257607
+              -25.397528085555734,
+              1.8937853391536048
             ],
             "spans_zero": true,
             "n_boot": 2000,
@@ -2947,10 +2954,10 @@
           },
           "hgb_tweedie_mae": 62.489612159117094,
           "hgb_tweedie_vs_routed": {
-            "diff": 10.935429245485857,
+            "diff": 17.345321423593838,
             "ci95": [
-              2.8482863721511955,
-              19.933020103158423
+              6.6926522382355,
+              27.894381750624106
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -2968,9 +2975,9 @@
           },
           "hurdle_hgb_mae": 42.130801148922934,
           "hurdle_hgb_vs_routed": {
-            "diff": -9.423381764708303,
+            "diff": -3.013489586600322,
             "ci95": [
-              -19.821850941545065,
+              -9.040468759800978,
               0.0
             ],
             "spans_zero": true,
@@ -2992,23 +2999,23 @@
       },
       "lumpy": {
         "h7": {
-          "champion_mae": 6.166841179622966,
+          "champion_mae": 6.095144215253248,
           "floor_mae": 11.070392890551918,
           "champion_vs_floor": {
-            "diff": -4.903551710928952,
+            "diff": -4.975248675298671,
             "ci95": [
-              -7.672809923113505,
-              -2.7893810969598025
+              -7.739518853858314,
+              -2.8657456266824797
             ],
             "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -1.0391924967100552,
+            "diff": -1.1108894610797737,
             "ci95": [
-              -1.3981869918323655,
-              -0.7015438799094921
+              -1.5006513986183252,
+              -0.7481384245242899
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3016,10 +3023,10 @@
           },
           "hgb_tweedie_mae": 7.823651407000431,
           "hgb_tweedie_vs_routed": {
-            "diff": 1.6568102273774645,
+            "diff": 1.728507191747183,
             "ci95": [
-              1.309451041293326,
-              2.02362142109421
+              1.3916436661646165,
+              2.0927600258471317
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3037,10 +3044,10 @@
           },
           "hurdle_hgb_mae": 6.61745428299376,
           "hurdle_hgb_vs_routed": {
-            "diff": 0.4506131033707943,
+            "diff": 0.5223100677405128,
             "ci95": [
-              0.32613802050109675,
-              0.5655578247994685
+              0.43141914510617596,
+              0.6139497111825246
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3058,23 +3065,23 @@
           }
         },
         "h14": {
-          "champion_mae": 5.883060048911497,
+          "champion_mae": 5.746323971751673,
           "floor_mae": 10.641721234798878,
           "champion_vs_floor": {
-            "diff": -4.758661185887381,
+            "diff": -4.8953972630472045,
             "ci95": [
-              -7.437331190370174,
-              -2.719031284669585
+              -7.596569245190644,
+              -2.8452494948106457
             ],
             "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -1.0233945815842942,
+            "diff": -1.1601306587441176,
             "ci95": [
-              -1.4280069619717868,
-              -0.6556490105743691
+              -1.647903326297393,
+              -0.7345322481405445
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3082,10 +3089,10 @@
           },
           "hgb_tweedie_mae": 7.552312730998177,
           "hgb_tweedie_vs_routed": {
-            "diff": 1.6692526820866807,
+            "diff": 1.805988759246504,
             "ci95": [
-              1.2125942148883937,
-              2.1824222714954176
+              1.3658614059695335,
+              2.280653987225765
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3103,10 +3110,10 @@
           },
           "hurdle_hgb_mae": 6.411370459063059,
           "hurdle_hgb_vs_routed": {
-            "diff": 0.5283104101515628,
+            "diff": 0.6650464873113862,
             "ci95": [
-              0.39870918006605727,
-              0.6551757194549925
+              0.5126279188283535,
+              0.8345277499163148
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3132,48 +3139,48 @@
       "seed": 6444,
       "per_class": {
         "erratic": {
-          "routed_mae": 44.703938760000014,
-          "zero_mae": 60.25476190476191,
+          "routed_mae": 68.66679527414969,
+          "zero_mae": 96.52380952380952,
           "hgb_tweedie": {
-            "mae": 49.31759156139469,
+            "mae": 72.99941489791979,
             "vs_routed": {
-              "diff": 4.613652801394679,
+              "diff": 4.3326196237701,
               "ci95": [
-                2.1718962393239587,
-                7.592347505564838
+                1.392509458116002,
+                7.5779038730700155
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 6444
             },
             "vs_zero": {
-              "diff": -10.937170343367214,
+              "diff": -23.524394625889727,
               "ci95": [
-                -21.67729463914008,
-                0.2286872202935055
+                -36.33725558580162,
+                -11.071973818004667
               ],
-              "spans_zero": true,
+              "spans_zero": false,
               "n_boot": 2000,
               "seed": 6444
             }
           },
           "hurdle_hgb": {
-            "mae": 39.52985527832462,
+            "mae": 67.95980413730582,
             "vs_routed": {
-              "diff": -5.174083481675396,
+              "diff": -0.7069911368438682,
               "ci95": [
-                -10.315389910178649,
-                -0.9964606490474017
+                -2.1209734105316222,
+                0.0
               ],
-              "spans_zero": false,
+              "spans_zero": true,
               "n_boot": 2000,
               "seed": 6444
             },
             "vs_zero": {
-              "diff": -20.72490662643729,
+              "diff": -28.564005386503695,
               "ci95": [
-                -32.737465182172734,
-                -10.025892295154856
+                -42.994822887096,
+                -15.19180359903357
               ],
               "spans_zero": false,
               "n_boot": 2000,
@@ -3182,25 +3189,25 @@
           }
         },
         "lumpy": {
-          "routed_mae": 5.787140236833562,
-          "zero_mae": 6.963817987438193,
+          "routed_mae": 6.604315816944149,
+          "zero_mae": 8.051600293999734,
           "hgb_tweedie": {
-            "mae": 7.0892088911531745,
+            "mae": 7.782921348968118,
             "vs_routed": {
-              "diff": 1.302068654319613,
+              "diff": 1.178605532023969,
               "ci95": [
-                1.0957895671278235,
-                1.5302220621543314
+                0.9870861901839554,
+                1.3872562466550704
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 6444
             },
             "vs_zero": {
-              "diff": 0.1253909037149814,
+              "diff": -0.26867894503161516,
               "ci95": [
-                -0.2668294284329397,
-                0.5373584048019503
+                -0.7028815087188678,
+                0.16103923809577264
               ],
               "spans_zero": true,
               "n_boot": 2000,
@@ -3208,22 +3215,22 @@
             }
           },
           "hurdle_hgb": {
-            "mae": 6.189437515260333,
+            "mae": 7.067460722466915,
             "vs_routed": {
-              "diff": 0.4022972784267713,
+              "diff": 0.4631449055227659,
               "ci95": [
-                0.33179228135881333,
-                0.47231060393385504
+                0.399640603551154,
+                0.5246577151136603
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 6444
             },
             "vs_zero": {
-              "diff": -0.7743804721778602,
+              "diff": -0.9841395715328183,
               "ci95": [
-                -1.1184859252169708,
-                -0.43457943167108615
+                -1.3461310391783572,
+                -0.6220389922150832
               ],
               "spans_zero": false,
               "n_boot": 2000,
@@ -3234,14 +3241,14 @@
       }
     },
     "peak_capture": {
-      "definition": "per scored window (series x test origin) over the scored h-lattice days: peak_mae = MAE on the window's top-decile-by-actual demand days (k = max(1, ceil(0.1 x 7)) = 1); peak_recall = share of the window's top-5 actual days whose day ranks in the forecast's own top-5",
+      "definition": "per scored window (series x test origin) over the scored h-lattice days: peak_mae = MAE on the window's top-decile-by-actual demand days (k = max(1, ceil(0.1 x 14)) = 2); peak_recall = share of the window's top-5 actual days whose day ranks in the forecast's own top-5",
       "candidates": [
         "routed",
         "zero",
         "hgb_tweedie",
         "hurdle_hgb"
       ],
-      "top_k_days": 1,
+      "top_k_days": 2,
       "top_recall_days": 5,
       "bootstrap": {
         "method": "paired cluster bootstrap over series (windows of a sampled series enter together), percentile 95% CI",
@@ -3252,23 +3259,23 @@
         "erratic": {
           "n_windows": 60,
           "routed": {
-            "peak_mae": 124.7912261659401,
-            "peak_recall": 0.8366666666666664,
+            "peak_mae": 291.7167222251546,
+            "peak_recall": 0.49666666666666676,
             "peak_mae_vs_zero": {
-              "diff": -59.54210716739324,
+              "diff": -75.5416111081787,
               "ci95": [
-                -82.25451933054794,
-                -38.82571755320138
+                -105.759161363043,
+                -47.28727575914326
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_zero": {
-              "diff": -0.010000000000000009,
+              "diff": 0.003333333333333355,
               "ci95": [
-                -0.02666666666666657,
-                0.006666666666666643
+                -0.033333333333333215,
+                0.03999999999999997
               ],
               "spans_zero": true,
               "n_boot": 2000,
@@ -3276,23 +3283,23 @@
             }
           },
           "zero": {
-            "peak_mae": 184.33333333333334,
-            "peak_recall": 0.8466666666666665,
+            "peak_mae": 367.2583333333333,
+            "peak_recall": 0.4933333333333334,
             "peak_mae_vs_routed": {
-              "diff": 59.54210716739324,
+              "diff": 75.5416111081787,
               "ci95": [
-                38.82571755320137,
-                82.25451933054792
+                47.28727575914324,
+                105.759161363043
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_routed": {
-              "diff": 0.010000000000000009,
+              "diff": -0.003333333333333355,
               "ci95": [
-                -0.006666666666666643,
-                0.02666666666666657
+                -0.03999999999999997,
+                0.033333333333333215
               ],
               "spans_zero": true,
               "n_boot": 2000,
@@ -3300,43 +3307,43 @@
             }
           },
           "hgb_tweedie": {
-            "peak_mae": 122.30887889065527,
-            "peak_recall": 0.8466666666666663,
+            "peak_mae": 280.96143349142784,
+            "peak_recall": 0.44666666666666666,
             "peak_mae_vs_routed": {
-              "diff": -2.4823472752848375,
+              "diff": -10.755288733726786,
               "ci95": [
-                -6.234447023373682,
-                0.8948403822342251
+                -20.046271477538706,
+                -2.499526637099253
               ],
-              "spans_zero": true,
+              "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_routed": {
-              "diff": 0.009999999999999898,
+              "diff": -0.0500000000000001,
               "ci95": [
-                -0.003333333333333381,
-                0.02666666666666669
+                -0.1066666666666667,
+                0.016666666666666666
               ],
               "spans_zero": true,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_mae_vs_zero": {
-              "diff": -62.02445444267808,
+              "diff": -86.29689984190549,
               "ci95": [
-                -83.08958663464297,
-                -42.72700617753478
+                -116.44468601222859,
+                -58.42517969407819
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_zero": {
-              "diff": -1.1102230246251565e-16,
+              "diff": -0.046666666666666745,
               "ci95": [
-                -0.013333333333333404,
-                0.013333333333333286
+                -0.09666666666666673,
+                0.010000000000000026
               ],
               "spans_zero": true,
               "n_boot": 2000,
@@ -3344,43 +3351,43 @@
             }
           },
           "hurdle_hgb": {
-            "peak_mae": 123.89570726677051,
-            "peak_recall": 0.8266666666666664,
+            "peak_mae": 294.4062527427757,
+            "peak_recall": 0.4966666666666668,
             "peak_mae_vs_routed": {
-              "diff": -0.8955188991695877,
+              "diff": 2.6895305176210513,
               "ci95": [
-                -3.8431002744677243,
-                1.0530252777844453
+                0.0,
+                8.06859155286323
               ],
               "spans_zero": true,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_routed": {
-              "diff": -0.010000000000000009,
+              "diff": 5.551115123125783e-17,
               "ci95": [
-                -0.02666666666666657,
-                0.006666666666666525
+                0.0,
+                0.0
               ],
               "spans_zero": true,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_mae_vs_zero": {
-              "diff": -60.43762606656283,
+              "diff": -72.85208059055765,
               "ci95": [
-                -83.64061059483261,
-                -38.45498788827001
+                -102.5412112752859,
+                -45.51517589842217
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_zero": {
-              "diff": -0.020000000000000018,
+              "diff": 0.0033333333333334103,
               "ci95": [
-                -0.04333333333333324,
-                0.0033333333333332624
+                -0.033333333333333215,
+                0.03999999999999997
               ],
               "spans_zero": true,
               "n_boot": 2000,
@@ -3391,23 +3398,23 @@
         "lumpy": {
           "n_windows": 4276,
           "routed": {
-            "peak_mae": 23.547291924906155,
-            "peak_recall": 0.9738072965388214,
+            "peak_mae": 29.978902615103667,
+            "peak_recall": 0.8815715622076709,
             "peak_mae_vs_zero": {
-              "diff": -3.475626690622377,
+              "diff": -3.705732557955269,
               "ci95": [
-                -4.268574090584518,
-                -2.7623089156218676
+                -4.503788440595849,
+                -2.956009139432401
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_zero": {
-              "diff": 0.0,
+              "diff": 0.0001403180542564053,
               "ci95": [
-                -0.0010289990645462198,
-                0.0009833956969131602
+                -0.0021983161833489455,
+                0.0025736669784846584
               ],
               "spans_zero": true,
               "n_boot": 2000,
@@ -3415,23 +3422,23 @@
             }
           },
           "zero": {
-            "peak_mae": 27.022918615528532,
-            "peak_recall": 0.9738072965388214,
+            "peak_mae": 33.684635173058936,
+            "peak_recall": 0.8814312441534145,
             "peak_mae_vs_routed": {
-              "diff": 3.475626690622377,
+              "diff": 3.705732557955269,
               "ci95": [
-                2.762308915621867,
-                4.268574090584518
+                2.9560091394324006,
+                4.503788440595848
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_routed": {
-              "diff": 0.0,
+              "diff": -0.0001403180542564053,
               "ci95": [
-                -0.0009833956969131665,
-                0.0010289990645462198
+                -0.002573666978484665,
+                0.0021983161833489455
               ],
               "spans_zero": true,
               "n_boot": 2000,
@@ -3439,43 +3446,43 @@
             }
           },
           "hgb_tweedie": {
-            "peak_mae": 22.062050948651656,
-            "peak_recall": 0.8362956033676333,
+            "peak_mae": 28.13440797998118,
+            "peak_recall": 0.4229186155285314,
             "peak_mae_vs_routed": {
-              "diff": -1.4852409762544987,
+              "diff": -1.8444946351224871,
               "ci95": [
-                -1.9905773820566282,
-                -1.0241674755013086
+                -2.4574720291328083,
+                -1.3258416861980125
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_routed": {
-              "diff": -0.13751169317118805,
+              "diff": -0.4586529466791395,
               "ci95": [
-                -0.14448316183348928,
-                -0.1307764265668849
+                -0.47123479887745545,
+                -0.44518124415341437
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_mae_vs_zero": {
-              "diff": -4.960867666876876,
+              "diff": -5.550227193077756,
               "ci95": [
-                -5.9545957365123074,
-                -4.008417225253662
+                -6.647606987599124,
+                -4.49970703642899
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_zero": {
-              "diff": -0.13751169317118805,
+              "diff": -0.45851262862488307,
               "ci95": [
-                -0.14443521983161842,
-                -0.13082319925163696
+                -0.47086295603367634,
+                -0.44490060804490167
               ],
               "spans_zero": false,
               "n_boot": 2000,
@@ -3483,43 +3490,43 @@
             }
           },
           "hurdle_hgb": {
-            "peak_mae": 23.54825446110449,
-            "peak_recall": 0.8983629560336763,
+            "peak_mae": 29.9309219516699,
+            "peak_recall": 0.47890551917680074,
             "peak_mae_vs_routed": {
-              "diff": 0.0009625361983367497,
+              "diff": -0.047980663433765613,
               "ci95": [
-                -0.22790143214854347,
-                0.22821673078262944
+                -0.24917260824517043,
+                0.1490246055318303
               ],
               "spans_zero": true,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_routed": {
-              "diff": -0.07544434050514504,
+              "diff": -0.4026660430308701,
               "ci95": [
-                -0.07881314312441554,
-                -0.07207670720299363
+                -0.41483161833489235,
+                -0.3905039756782039
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_mae_vs_zero": {
-              "diff": -3.4746641544240404,
+              "diff": -3.7537132213890345,
               "ci95": [
-                -4.238950289644534,
-                -2.763289280008824
+                -4.551841787089963,
+                -3.0137194270281524
               ],
               "spans_zero": false,
               "n_boot": 2000,
               "seed": 4062
             },
             "peak_recall_vs_zero": {
-              "diff": -0.07544434050514504,
+              "diff": -0.4025257249766137,
               "ci95": [
-                -0.07895346117867173,
-                -0.07184284377923289
+                -0.4151543498596819,
+                -0.39031805425631433
               ],
               "spans_zero": false,
               "n_boot": 2000,
@@ -3533,13 +3540,13 @@
       "1": {
         "champion": {
           "n": 4336,
-          "mae": 0.06338867391195158,
-          "rmse": 0.31637129880552894,
-          "mase": 0.0070168119336171545,
-          "bias": 0.06338867391195158,
+          "mae": 0.06550917626677127,
+          "rmse": 0.3330453606082799,
+          "mase": 0.007251541031266834,
+          "bias": 0.06550917626677127,
           "wape": null,
-          "rmsse": 0.0010902345847103158,
-          "wrmsse": 0.004699255878535004
+          "rmsse": 0.001290194767108975,
+          "wrmsse": 0.005077298909911515
         },
         "floor": {
           "n": 4336,
@@ -3553,13 +3560,13 @@
       "2": {
         "champion": {
           "n": 4336,
-          "mae": 3.7366895994001554,
-          "rmse": 15.17644272816146,
-          "mase": 0.41281607530906744,
-          "bias": -1.9248404054900692,
-          "wape": 0.7119067666856661,
-          "rmsse": 0.20089542689362594,
-          "wrmsse": 0.253696950903497
+          "mae": 3.708222055341541,
+          "rmse": 15.031837385648425,
+          "mase": 0.4096648593181995,
+          "bias": -1.8722895207060741,
+          "wape": 0.7064831860785149,
+          "rmsse": 0.19851876336738994,
+          "wrmsse": 0.25029802504701565
         },
         "floor": {
           "n": 4336,
@@ -3573,13 +3580,13 @@
       "3": {
         "champion": {
           "n": 4336,
-          "mae": 8.704647997667795,
-          "rmse": 54.481571564664,
-          "mase": 0.9572301111773642,
-          "bias": -5.280599792171771,
-          "wape": 0.8514370664325285,
-          "rmsse": 0.3786449797700117,
-          "wrmsse": 0.6165789948159804
+          "mae": 8.538419434284826,
+          "rmse": 53.89494976480994,
+          "mase": 0.9388294333390205,
+          "bias": -5.342296595423048,
+          "wape": 0.8351775737566605,
+          "rmsse": 0.372663974089638,
+          "wrmsse": 0.5992907550536437
         },
         "floor": {
           "n": 4336,
@@ -3590,16 +3597,36 @@
           "wape": 1.0683299871416003
         }
       },
+      "4": {
+        "champion": {
+          "n": 4336,
+          "mae": 9.301363408229234,
+          "rmse": 50.56207018515826,
+          "mase": 1.0260407130654225,
+          "bias": -7.013187831000336,
+          "wape": 0.7623520733811306,
+          "rmsse": 0.5784804328969515,
+          "wrmsse": 0.7001927655881711
+        },
+        "floor": {
+          "n": 4336,
+          "mae": 14.072416974169741,
+          "rmse": 65.79292475896996,
+          "mase": 1.554172688880522,
+          "bias": -0.20756457564575645,
+          "wape": 1.1533939474131902
+        }
+      },
       "5": {
         "champion": {
           "n": 4336,
-          "mae": 9.080440859191352,
-          "rmse": 58.38265447294621,
-          "mase": 1.0051597840929978,
-          "bias": -6.9385765902591965,
-          "wape": 0.8011718941366943,
-          "rmsse": 0.3001530071487562,
-          "wrmsse": 0.6180327733741935
+          "mae": 8.963920260740988,
+          "rmse": 58.204310412744725,
+          "mase": 0.9922615315304911,
+          "bias": -6.913876249630839,
+          "wape": 0.7908912227448504,
+          "rmsse": 0.29498364625637513,
+          "wrmsse": 0.607462443617257
         },
         "floor": {
           "n": 4336,
@@ -3610,16 +3637,36 @@
           "wape": 1.1657577730750448
         }
       },
+      "6": {
+        "champion": {
+          "n": 4336,
+          "mae": 16.444794304506864,
+          "rmse": 207.04460056282966,
+          "mase": 1.819438144711567,
+          "bias": -13.795116893674141,
+          "wape": 0.8554639133355141,
+          "rmsse": 0.500874416489178,
+          "wrmsse": 1.1866648396477288
+        },
+        "floor": {
+          "n": 4336,
+          "mae": 26.87130996309963,
+          "rmse": 291.14951428415037,
+          "mase": 2.9736017355272093,
+          "bias": -2.910516605166052,
+          "wape": 1.3978548805067665
+        }
+      },
       "7": {
         "champion": {
           "n": 4336,
-          "mae": 6.799805171395477,
-          "rmse": 44.37562220757167,
-          "mase": 0.745709692356434,
-          "bias": -3.9364384567339545,
-          "wape": 0.8506132139856554,
-          "rmsse": 0.5788990637060526,
-          "wrmsse": 0.504422221207748
+          "mae": 6.661266205527776,
+          "rmse": 44.19720461054246,
+          "mase": 0.7303741156835138,
+          "bias": -4.077988696229371,
+          "wape": 0.8332828534755189,
+          "rmsse": 0.5755366511586607,
+          "wrmsse": 0.4958560006078286
         },
         "floor": {
           "n": 4336,
@@ -3630,16 +3677,56 @@
           "wape": 1.483988229184698
         }
       },
+      "8": {
+        "champion": {
+          "n": 4336,
+          "mae": 0.09742272960414351,
+          "rmse": 0.5417120117313681,
+          "mase": 0.010784213164664786,
+          "bias": 0.09742272960414351,
+          "wape": null,
+          "rmsse": 0.001815800037413428,
+          "wrmsse": 0.007876262900770982
+        },
+        "floor": {
+          "n": 4336,
+          "mae": 0.0,
+          "rmse": 0.0,
+          "mase": 0.0,
+          "bias": 0.0,
+          "wape": null
+        }
+      },
+      "9": {
+        "champion": {
+          "n": 4336,
+          "mae": 4.578610403575751,
+          "rmse": 29.483551474667415,
+          "mase": 0.5060125342554349,
+          "bias": -2.8317356727449297,
+          "wape": 0.7625741226820487,
+          "rmsse": 0.23418499778387394,
+          "wrmsse": 0.2899035422378901
+        },
+        "floor": {
+          "n": 4336,
+          "mae": 5.521909594095941,
+          "rmse": 30.89686823595019,
+          "mase": 0.6104310779562758,
+          "bias": -0.8466328413284133,
+          "wape": 0.9196819543673658
+        }
+      },
       "10": {
         "champion": {
           "n": 4336,
-          "mae": 9.379584918022463,
-          "rmse": 56.66961140783815,
-          "mase": 1.0320954578540351,
-          "bias": -7.126399506213178,
-          "wape": 0.8156160798280403,
-          "rmsse": 0.43269406536966387,
-          "wrmsse": 0.6549659128296447
+          "mae": 9.36617920635352,
+          "rmse": 56.61543494143986,
+          "mase": 1.030611512035135,
+          "bias": -7.169266650695701,
+          "wape": 0.8144503657698714,
+          "rmsse": 0.43499647284346493,
+          "wrmsse": 0.6490013360433008
         },
         "floor": {
           "n": 4336,
@@ -3650,16 +3737,76 @@
           "wape": 1.2412762714583667
         }
       },
+      "11": {
+        "champion": {
+          "n": 4336,
+          "mae": 9.726921052787864,
+          "rmse": 51.305322586603815,
+          "mase": 1.0752412370387237,
+          "bias": -7.759434905672678,
+          "wape": 0.7766920129072259,
+          "rmsse": 0.5301378806654526,
+          "wrmsse": 0.7288234117535641
+        },
+        "floor": {
+          "n": 4336,
+          "mae": 13.795433579335793,
+          "rmse": 64.61411320649115,
+          "mase": 1.5256054028517874,
+          "bias": -0.5302121771217713,
+          "wape": 1.1015616367721262
+        }
+      },
+      "12": {
+        "champion": {
+          "n": 4336,
+          "mae": 9.287550904872463,
+          "rmse": 60.06975723056379,
+          "mase": 1.0280858393394887,
+          "bias": -6.813278223048603,
+          "wape": 0.7906471261539835,
+          "rmsse": 0.24473027686268395,
+          "wrmsse": 0.6502591202508747
+        },
+        "floor": {
+          "n": 4336,
+          "mae": 13.223247232472325,
+          "rmse": 70.7462625980109,
+          "mase": 1.463747910405296,
+          "bias": -2.3154981549815496,
+          "wape": 1.1256920720932972
+        }
+      },
+      "13": {
+        "champion": {
+          "n": 4336,
+          "mae": 11.451917571120617,
+          "rmse": 88.97609419499139,
+          "mase": 1.266751444015363,
+          "bias": -9.165664631287866,
+          "wape": 0.8033832932367816,
+          "rmsse": 0.3473481446479803,
+          "wrmsse": 0.9929292454083519
+        },
+        "floor": {
+          "n": 4336,
+          "mae": 21.272140221402214,
+          "rmse": 215.95805272102115,
+          "mase": 2.3538014046910893,
+          "bias": 2.0581180811808117,
+          "wape": 1.4922987315557856
+        }
+      },
       "14": {
         "champion": {
           "n": 4336,
-          "mae": 6.51504053135688,
-          "rmse": 43.2234589220256,
-          "mase": 0.7180681120194191,
-          "bias": -3.4352953752697615,
-          "wape": 0.8562963244608497,
-          "rmsse": 0.5048669293164884,
-          "wrmsse": 0.46953360604899347
+          "mae": 6.291498788593531,
+          "rmse": 42.87624953222677,
+          "mase": 0.6933231493710097,
+          "bias": -3.5861122651012827,
+          "wape": 0.8269153909470005,
+          "rmsse": 0.4993501054718724,
+          "wrmsse": 0.45511358145495867
         },
         "floor": {
           "n": 4336,
@@ -3674,86 +3821,135 @@
     "horizon_growth": {
       "pooled": {
         "routed": {
-          "1": 0.06338867391195158,
-          "2": 3.7366895994001554,
-          "3": 8.704647997667795,
-          "5": 9.080440859191352,
-          "7": 6.799805171395477,
-          "10": 9.379584918022463,
-          "14": 6.51504053135688
+          "1": 0.06550917626677127,
+          "2": 3.708222055341541,
+          "3": 8.538419434284826,
+          "4": 9.301363408229234,
+          "5": 8.963920260740988,
+          "6": 16.444794304506864,
+          "7": 6.661266205527776,
+          "8": 0.09742272960414351,
+          "9": 4.578610403575751,
+          "10": 9.36617920635352,
+          "11": 9.726921052787864,
+          "12": 9.287550904872463,
+          "13": 11.451917571120617,
+          "14": 6.291498788593531
         },
         "seasonal_naive": {
           "1": 0.0,
           "2": 4.845940959409594,
           "3": 10.922047970479705,
+          "4": 14.072416974169741,
           "5": 13.212638376383763,
+          "6": 26.87130996309963,
           "7": 11.863007380073801,
+          "8": 0.0,
+          "9": 5.521909594095941,
           "10": 14.274677121771218,
+          "11": 13.795433579335793,
+          "12": 13.223247232472325,
+          "13": 21.272140221402214,
           "14": 11.324723247232471
         },
         "zero": {
           "1": 0.0,
           "2": 5.248846863468635,
           "3": 10.223477859778598,
+          "4": 12.200876383763838,
           "5": 11.333948339483396,
+          "6": 19.223247232472325,
           "7": 7.994003690036901,
+          "8": 0.0,
+          "9": 6.004151291512915,
           "10": 11.5,
+          "11": 12.523523985239853,
+          "12": 11.746771217712178,
+          "13": 14.254612546125461,
           "14": 7.608394833948339
         }
       },
       "per_class": {
         "erratic": {
           "routed": {
-            "1": 1.286291368328299,
-            "2": 27.716776357877116,
-            "3": 57.6149663508304,
-            "5": 72.09912402424649,
-            "7": 51.90903898504971,
-            "10": 50.74719132003686,
-            "14": 51.55418291363124
+            "1": 1.2499850842220381,
+            "2": 27.654236296733636,
+            "3": 52.023403658453205,
+            "4": 107.06375107886721,
+            "5": 68.43564242215201,
+            "6": 170.55373249875296,
+            "7": 47.006893379092396,
+            "8": 2.1481281480320282,
+            "9": 27.574591568648874,
+            "10": 47.959967288908565,
+            "11": 95.58890766829832,
+            "12": 93.70002183308348,
+            "13": 175.2315821773278,
+            "14": 45.144290735523256
           },
           "seasonal_naive": {
             "1": 0.0,
             "2": 30.4,
             "3": 59.36666666666667,
+            "4": 154.96666666666667,
             "5": 111.53333333333333,
+            "6": 263.51666666666665,
             "7": 68.35,
+            "8": 0.0,
+            "9": 29.083333333333332,
             "10": 73.18333333333334,
+            "11": 123.65,
+            "12": 140.7,
+            "13": 261.01666666666665,
             "14": 60.0
           }
         },
         "lumpy": {
           "routed": {
-            "1": 0.04622914124942097,
-            "2": 3.4002056879154465,
-            "3": 8.018347927230526,
-            "5": 8.196174958839785,
-            "7": 6.166841179622966,
-            "10": 8.799122714065291,
-            "14": 5.883060048911497
+            "1": 0.048888840794994864,
+            "2": 3.3722162427869273,
+            "3": 7.928246596714642,
+            "4": 7.92958060648969,
+            "5": 8.129424627044854,
+            "6": 14.282367669414542,
+            "7": 6.095144215253248,
+            "8": 0.06864763018747534,
+            "9": 4.255935270295959,
+            "10": 8.824638681341057,
+            "11": 8.52212236314085,
+            "12": 8.103091537311034,
+            "13": 9.153793184691143,
+            "14": 5.746323971751673
           },
           "seasonal_naive": {
             "1": 0.0,
             "2": 4.487371375116932,
             "3": 10.242282507015902,
+            "4": 12.095416276894294,
             "5": 11.833021515434986,
+            "6": 23.550748362956032,
             "7": 11.070392890551918,
+            "8": 0.0,
+            "9": 5.191300280636108,
             "10": 13.448082319925163,
+            "11": 12.253975678203929,
+            "12": 11.434518241347053,
+            "13": 17.908091674462113,
             "14": 10.641721234798878
           }
         }
       }
     },
     "overall_mae_test": {
-      "routed": 6.325656821563725,
-      "direct_hgb": 10.668816649829797,
-      "seasonal_naive": 9.491862150764364,
-      "zero": 7.701238798102267,
-      "croston": 11.397172031708275,
-      "sba": 11.063618356739783,
-      "tsb": 9.85759539083441,
-      "hgb_tweedie": 7.673549979763528,
-      "hurdle_hgb": 6.6507901595831775
+      "routed": 7.463113964414705,
+      "direct_hgb": 11.83045038405418,
+      "seasonal_naive": 11.514249472851871,
+      "zero": 9.275846731681602,
+      "croston": 12.310044300337786,
+      "sba": 12.0121673298028,
+      "tsb": 10.722435508767859,
+      "hgb_tweedie": 8.685363602874276,
+      "hurdle_hgb": 7.910066950532029
     },
     "bootstrap": {
       "method": "paired cluster bootstrap (series resampled with replacement, one shared draw per replication), percentile 95% CI over series x scored test origins",
@@ -3764,13 +3960,13 @@
         {
           "rank": 1,
           "model": "routed",
-          "mae": 6.325656821563725,
+          "mae": 7.463113964414705,
           "gap_to_next": {
             "model": "hurdle_hgb",
-            "diff": -0.32513333801945254,
+            "diff": -0.44695298611732337,
             "ci95": [
-              -0.427215128535989,
-              -0.20917983989166056
+              -0.5153802398477322,
+              -0.37937145410025713
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3780,13 +3976,13 @@
         {
           "rank": 2,
           "model": "hurdle_hgb",
-          "mae": 6.6507901595831775,
+          "mae": 7.910066950532029,
           "gap_to_next": {
             "model": "hgb_tweedie",
-            "diff": -1.02275982018035,
+            "diff": -0.7752966523422469,
             "ci95": [
-              -1.2368316748467918,
-              -0.827712355773572
+              -0.9719004634485968,
+              -0.5970601390986756
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3796,15 +3992,15 @@
         {
           "rank": 3,
           "model": "hgb_tweedie",
-          "mae": 7.673549979763528,
+          "mae": 8.685363602874276,
           "gap_to_next": {
             "model": "zero",
-            "diff": -0.027688818338739374,
+            "diff": -0.5904831288073265,
             "ci95": [
-              -0.4775478096372131,
-              0.37993380625855233
+              -1.0901052341237347,
+              -0.13938396775727074
             ],
-            "spans_zero": true,
+            "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           }
@@ -3812,13 +4008,13 @@
         {
           "rank": 4,
           "model": "zero",
-          "mae": 7.701238798102267,
+          "mae": 9.275846731681602,
           "gap_to_next": {
-            "model": "seasonal_naive",
-            "diff": -1.790623352662097,
+            "model": "tsb",
+            "diff": -1.4465887770862569,
             "ci95": [
-              -2.781323306536637,
-              -1.0386127767527675
+              -2.1745950371480736,
+              -0.7390072838608313
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -3827,16 +4023,16 @@
         },
         {
           "rank": 5,
-          "model": "seasonal_naive",
-          "mae": 9.491862150764364,
+          "model": "tsb",
+          "mae": 10.722435508767859,
           "gap_to_next": {
-            "model": "tsb",
-            "diff": -0.36573324007004615,
+            "model": "seasonal_naive",
+            "diff": -0.7918139640840121,
             "ci95": [
-              -1.3548915003392568,
-              0.5409278912078134
+              -1.3172630858995016,
+              -0.3424405699460979
             ],
-            "spans_zero": true,
+            "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           }
@@ -3859,48 +4055,48 @@
       "per_class": {
         "erratic": {
           "tau_0.80": {
-            "champion": 29512.767460699688,
-            "champion_per_unit_demand": 1.1661898866202904,
-            "floor": 33482.24999999999,
-            "floor_per_unit_demand": 1.3230430315722919,
-            "delta_champion_minus_floor": -3969.482539300305
+            "champion": 136422.43867227313,
+            "champion_per_unit_demand": 1.6825658445026286,
+            "floor": 141463.59999999998,
+            "floor_per_unit_demand": 1.7447409965466203,
+            "delta_champion_minus_floor": -5041.161327726848
           },
           "tau_0.90": {
-            "champion": 27629.867829076524,
-            "champion_per_unit_demand": 1.0917875619028934,
-            "floor": 29859.050000000003,
-            "floor_per_unit_demand": 1.1798731576243728,
-            "delta_champion_minus_floor": -2229.182170923479
+            "champion": 117037.59292123759,
+            "champion_per_unit_demand": 1.4434828924671632,
+            "floor": 122420.375,
+            "floor_per_unit_demand": 1.5098714232856438,
+            "delta_champion_minus_floor": -5382.782078762408
           },
           "tau_0.95": {
-            "champion": 30038.937724058513,
-            "champion_per_unit_demand": 1.1869813776448617,
-            "floor": 30676.399999999998,
-            "floor_per_unit_demand": 1.2121705456988183,
-            "delta_champion_minus_floor": -637.4622759414851
+            "champion": 111723.73835627355,
+            "champion_per_unit_demand": 1.3779444789870936,
+            "floor": 116311.57500000003,
+            "floor_per_unit_demand": 1.434528552047361,
+            "delta_champion_minus_floor": -4587.836643726478
           }
         },
         "lumpy": {
           "tau_0.80": {
-            "champion": 595953.2306873463,
-            "champion_per_unit_demand": 2.859097925491368,
-            "floor": 566134.25,
-            "floor_per_unit_demand": 2.7160407501403276,
-            "delta_champion_minus_floor": 29818.98068734631
+            "champion": 1396739.5392850973,
+            "champion_per_unit_demand": 2.897793862015011,
+            "floor": 1338597.5,
+            "floor_per_unit_demand": 2.7771674747562765,
+            "delta_champion_minus_floor": 58142.03928509727
           },
           "tau_0.90": {
-            "champion": 595953.2306873463,
-            "champion_per_unit_demand": 2.859097925491368,
-            "floor": 566134.25,
-            "floor_per_unit_demand": 2.7160407501403276,
-            "delta_champion_minus_floor": 29818.98068734631
+            "champion": 1390929.9806461986,
+            "champion_per_unit_demand": 2.885740860799456,
+            "floor": 1338597.5,
+            "floor_per_unit_demand": 2.7771674747562765,
+            "delta_champion_minus_floor": 52332.480646198615
           },
           "tau_0.95": {
-            "champion": 551362.4256630464,
-            "champion_per_unit_demand": 2.645172617973654,
-            "floor": 531275.25,
-            "floor_per_unit_demand": 2.548803978104116,
-            "delta_champion_minus_floor": 20087.175663046422
+            "champion": 1288801.4492065993,
+            "champion_per_unit_demand": 2.673856380394645,
+            "floor": 1262613.25,
+            "floor_per_unit_demand": 2.6195241296179885,
+            "delta_champion_minus_floor": 26188.199206599267
           }
         }
       }

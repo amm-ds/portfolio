@@ -149,8 +149,10 @@ class ForecastConfig(PortfolioBaseModel):
         default="2010-12-01", description="DQ freshness floor for the UCI track."
     )
     # Multi-step (direct multi-horizon) track — protocol direct_multihorizon_v1.
+    # The full h = 1..14 lattice: every day of the 14-day window is a real
+    # direct-h model fit (no display interpolation anywhere downstream).
     multistep_horizons: list[int] = Field(
-        default=[1, 2, 3, 5, 7, 10, 14],
+        default=list(range(1, 15)),
         description="Direct per-horizon models: one model per horizon h.",
     )
     multistep_n_origins: int = Field(

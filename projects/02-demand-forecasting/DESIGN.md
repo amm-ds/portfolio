@@ -161,8 +161,10 @@ small tabular lag problems; a sequence model is the roadmap answer).
   target, so no actual within h days of the target is referenced by
   construction; (c) sequence models — same leakage surface as (a) at higher
   complexity, still deferred (temporal.py verdict stands).
-- **Decision: direct per-horizon models** for h ∈ {1, 2, 3, 5, 7, 10, 14}
-  (champion-config HGB, series id as a native categorical). Features per h:
+- **Decision: direct per-horizon models** for h ∈ {1..14} — the full window
+  lattice, one direct model per day, no interpolated display points anywhere
+  downstream (champion-config HGB, series id as a native categorical).
+  Features per h:
   calendar of the target date + lags `lag_h`, `lag_{h+7}`, `lag_{h+14}`
   (origin-relative: units(t), units(t−7), units(t−14)); training rows use
   targets ≤ the origin only. Leakage-proof property-tested by tainting every
@@ -407,7 +409,7 @@ pipeline build). The queue commands above are the exact ones to re-run once
 - **0.8.0 (2026-10-24)** — wave 19 (fifth-pass audit): the experiment is
   genuinely multi-step. New primary track, protocol
   `direct_multihorizon_v1` (`multihorizon.py`): direct per-horizon models
-  for h ∈ {1, 2, 3, 5, 7, 10, 14} (champion-config HGB; calendar of the
+  for h ∈ {1..14} — the full window lattice (champion-config HGB; calendar of the
   target + lags `lag_h`, `lag_{h+7}`, `lag_{h+14}` — no actual within h days
   of the target, property-tested by tainting), issued from 20 weekly rolling
   origins (16 selection + the last 4 scored once; window starts the day

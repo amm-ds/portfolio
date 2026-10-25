@@ -11,14 +11,17 @@ import {
   orderPolicy,
   originBlock,
   originDates,
+  plottedPath,
   scoreboardRow,
+  windowAxis,
 } from "./kpis";
 
 /**
- * Contract test against the REAL committed v3.1 payload
+ * Contract test against the REAL committed v3.2 payload
  * (`projects/02-demand-forecasting/reports/demo_payload.json`, built by
- * `demand_forecasting.demo_payload`, schema v3 + revision 3.1 — the direct
- * multi-horizon catalog with the wave-20 peak-capable candidates). Walks
+ * `demand_forecasting.demo_payload`, schema v3 + revision 3.2 — the direct
+ * multi-horizon catalog on the FULL h = 1..14 lattice: every model curve is
+ * a contiguous 14-day series, one real direct-h point per window day). Walks
  * every series × origin × model through the kpi helpers and cross-checks
  * the experiment-wide blocks against the committed metrics, so a payload
  * drift (renamed key, short array, unhandled null) fails here instead of
@@ -34,15 +37,15 @@ const probCommitted = JSON.parse(
   readFileSync("../../projects/02-demand-forecasting/reports_uci/probabilistic.json", "utf8"),
 )["multistep"];
 
-const LATTICE = [1, 2, 3, 5, 7, 10, 14];
+const LATTICE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 const SHOCK_KEYS = ["0.5", "1.5", "2"];
 const isoDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-describe("committed demo payload contract (schema v3, revision 3.1)", () => {
+describe("committed demo payload contract (schema v3, revision 3.2)", () => {
   it("carries the workbench identity and the multi-horizon protocol", () => {
     expect(raw.schema_version).toBe(3);
-    expect(raw.payload_revision).toBe("3.1");
+    expect(raw.payload_revision).toBe("3.2");
     expect(raw.demo).toBe("forecast-workbench");
     expect(raw.project).toBe("02-demand-forecasting");
     expect(raw.track).toBe("uci");
@@ -94,6 +97,43 @@ describe("committed demo payload contract (schema v3, revision 3.1)", () => {
         for (const d of o.actuals.dates.slice(1)) {
           expect(isoNext(prev)).toBe(d);
           prev = d;
+        }
+      }
+    }
+  });
+
+  it("the plotted daily path covers the full window — 14 real points, no gaps", () => {
+    // revision 3.2: the explorer's curve for every series × origin × model
+    // spans all 14 days of the window (previously days 4,6,8,9,11,12,13 had
+    // no model point — the line could not cover them)
+    for (const s of raw.catalog) {
+      for (const o of s.origins) {
+        expect(o.horizons).toEqual(LATTICE);
+        // the drawn axis is contiguous even across the DST fall-back inside
+        // these 2010 histories — and the LAST window day is a real slot
+        const axis = windowAxis(o);
+        expect(axis[axis.length - 1]).toBe(o.actuals.dates[o.actuals.dates.length - 1]);
+        for (const d of o.actuals.dates) expect(axis).toContain(d);
+        const keys: ModelKey[] = ["zero", "routed"];
+        if (s.demand_class === "erratic") keys.push("champion");
+        if (s.model_used === "hurdle_hgb") keys.push("hurdle");
+        if (s.model_used === "hgb_tweedie") keys.push("tweedie");
+        for (const mk of keys) {
+          const path = plottedPath(o, mk, 1);
+          expect(path).toHaveLength(14);
+          expect(path.map((p) => p.date)).toEqual(o.actuals.dates);
+          for (let i = 1; i < path.length; i++) {
+            expect(
+              new Date(`${path[i].date}T00:00:00`).getTime() -
+                new Date(`${path[i - 1].date}T00:00:00`).getTime(),
+            ).toBe(24 * 3600 * 1000);
+          }
+          // h=4 and the other previously-missing stops produce real values
+          for (const h of [4, 6, 8, 9, 11, 12, 13]) {
+            const pt = path.find((p) => p.date === o.actuals.dates[h - 1]);
+            expect(pt).toBeDefined();
+            expect(Number.isFinite(pt!.y)).toBe(true);
+          }
         }
       }
     }
@@ -213,9 +253,12 @@ describe("committed demo payload contract (schema v3, revision 3.1)", () => {
       }
       expect(board.routing_effect).toEqual(committed.routing.per_class[cls]);
     }
-    // the headline routing win the hero quotes (wave-20 committed numbers)
-    expect(committed.routing.per_class.lumpy.diff).toBeCloseTo(4.0, 0);
-    expect(raw.headline.claim).toContain("+4.0 MAE [3.3, 4.8]");
+    // the headline routing win the hero quotes — derived from the committed
+    // block so a regeneration never leaves this assertion stale
+    const win = committed.routing.per_class.lumpy;
+    expect(raw.headline.claim).toContain(
+      `+${win.diff.toFixed(1)} MAE [${win.ci95[0].toFixed(1)}, ${win.ci95[1].toFixed(1)}]`,
+    );
     expect(raw.headline.pooled_mae_by_model.routed).toBeCloseTo(
       committed.overall_mae_test.routed,
       9,

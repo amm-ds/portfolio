@@ -209,14 +209,15 @@ export interface UpliftPayload {
 }
 
 // --- demand forecast workbench payload (`projects/02-demand-forecasting/reports/demo_payload.json`) ---
-// Schema v3 (+ payload_revision "3.1", wave 20): the DIRECT MULTI-HORIZON
-// catalog (protocol direct_multihorizon_v1). Every catalog series carries its
-// ADI/CV² class and committed routing method (`model_used`), plus the 3 most
-// recent scored weekly origins — each with an as-of-origin history (ends the
-// day BEFORE the origin), 14 contiguous days of actuals (starting the day
-// AFTER — no embargo gap), and per-model direct curves on the committed
-// h-lattice {1,2,3,5,7,10,14}. Built by
-// `demand_forecasting.demo_payload`.
+// Schema v3 (+ payload_revision "3.2"): the DIRECT MULTI-HORIZON catalog
+// (protocol direct_multihorizon_v1) on the FULL h = 1..14 lattice — every
+// model curve is a contiguous 14-day series (one real direct-h point per
+// window day, no interpolated display points). Every catalog series carries
+// its ADI/CV² class and committed routing method (`model_used`), plus the 3
+// most recent scored weekly origins — each with an as-of-origin history
+// (ends the day BEFORE the origin), 14 contiguous days of actuals (starting
+// the day AFTER — no embargo gap), and per-model direct curves at every
+// h = 1..14. Built by `demand_forecasting.demo_payload`.
 
 /** Syntetos-Boylan ADI/CV² classes present in the UCI panel. */
 export type DemandClass = "erratic" | "lumpy";
@@ -435,8 +436,9 @@ export interface DecisionBlock {
 
 export interface ForecastPayload {
   schema_version: number;
-  /** Additive revision on top of schema v3 (wave 20): candidate aliases per
-   * series, `peak_capture`, `class_scoreboard.candidates`. */
+  /** Additive revisions on top of schema v3: "3.1" (wave 20) candidate
+   * aliases per series, `peak_capture`, `class_scoreboard.candidates`;
+   * "3.2" (full lattice) contiguous 14-day curves at every h = 1..14. */
   payload_revision?: string;
   demo: string;
   project: string;

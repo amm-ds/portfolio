@@ -13,7 +13,7 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-/** The REAL committed v3.1 payload — the contract the workbench renders. */
+/** The REAL committed v3.2 payload — the contract the workbench renders. */
 const PAYLOAD = JSON.parse(
   readFileSync("../../projects/02-demand-forecasting/reports/demo_payload.json", "utf8"),
 ) as ForecastPayload;
@@ -21,7 +21,10 @@ const COMMITTED = JSON.parse(
   readFileSync("../../projects/02-demand-forecasting/reports_uci/metrics.json", "utf8"),
 )["_multistep"];
 
-/** Manifest fixture mirroring projects/02-demand-forecasting/demo.yaml (v3.1). */
+/** Manifest fixture mirroring projects/02-demand-forecasting/demo.yaml (v3.2).
+ * The hero numbers derive from the committed metrics so a regeneration never
+ * leaves the fixture stale. */
+const WIN = COMMITTED.routing.per_class.lumpy;
 const MANIFEST: DemoManifest = {
   id: "forecast-workbench",
   title: "demand forecast workbench",
@@ -32,8 +35,8 @@ const MANIFEST: DemoManifest = {
   modes: ["browser", "live"],
   hero: {
     label: "multi-step pooled MAE over the scored origins, routed pipeline vs all-HGB",
-    value: "6.33 routed vs 10.67 all-HGB — the routed pipeline leads",
-    ci: "routing lumpy series away from the boosted model wins +4.0 MAE [3.3, 4.8]",
+    value: `${COMMITTED.overall_mae_test.routed.toFixed(2)} routed vs ${COMMITTED.overall_mae_test.direct_hgb.toFixed(2)} all-HGB — the routed pipeline leads`,
+    ci: `routing lumpy series away from the boosted model wins +${WIN.diff.toFixed(1)} MAE [${WIN.ci95[0].toFixed(1)}, ${WIN.ci95[1].toFixed(1)}]`,
   },
   scenarios: [
     { name: "base", controls: { horizon: 7, shock: 1 } },
@@ -106,7 +109,7 @@ afterEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-describe("ForecastWorkbench (schema v3.1)", () => {
+describe("ForecastWorkbench (schema v3.2)", () => {
   it("shows a loading state then the title, readouts, and KPI band", async () => {
     mockFetch(payloadFetch());
     renderDemo();
@@ -127,11 +130,17 @@ describe("ForecastWorkbench (schema v3.1)", () => {
     expect(screen.getByText("Bias at origin + h")).toBeInTheDocument();
     expect(screen.getByText("WAPE at origin + h")).toBeInTheDocument();
     expect(screen.getByText("Band coverage at h")).toBeInTheDocument();
-    // evidence drawer carries the committed headline
+    // evidence drawer carries the committed headline (derived — it moves
+    // whenever the UCI track is regenerated)
     const drawer = document.querySelector(".wb-evidence")!;
-    expect(drawer.textContent).toContain("+4.0 MAE [3.3, 4.8]");
+    const win = COMMITTED.routing.per_class.lumpy;
+    expect(drawer.textContent).toContain(
+      `+${win.diff.toFixed(1)} MAE [${win.ci95[0].toFixed(1)}, ${win.ci95[1].toFixed(1)}]`,
+    );
     expect(drawer.textContent).toContain("direct_multihorizon_v1");
-    expect(drawer.textContent).toContain("routed 6.33");
+    expect(drawer.textContent).toContain(
+      `routed ${COMMITTED.overall_mae_test.routed.toFixed(2)}`,
+    );
   });
 
   it("the secondary band is three always-visible panels — no tabs anywhere", async () => {
@@ -187,30 +196,37 @@ describe("ForecastWorkbench (schema v3.1)", () => {
     expect(tiles[0].textContent).toContain(peak.hgb_tweedie!.peak_recall.toFixed(2));
   });
 
-  it("the h-slider switches between genuinely different curves (error grows)", async () => {
+  it("the h-slider is continuous 1–14 and every stop grades a different model", async () => {
     mockFetch(payloadFetch());
     renderDemo();
     await screen.findByText("MAE at origin + h");
     const slider = screen.getByLabelText("Horizon h", { selector: "input" });
+    expect(slider).toHaveAttribute("min", "1");
+    expect(slider).toHaveAttribute("max", "14");
+    expect(slider).toHaveAttribute("step", "1");
     const maeTile = () => screen.getByText("MAE at origin + h").nextElementSibling!.textContent!;
-    // h=7 (index 3 on the lattice) vs h=1 (index 0) vs h=14 (index 6): the
-    // KPI numbers must move — each stop is a different direct model
+    // h=7 vs h=1 vs h=14 (the slider value IS h now): the KPI numbers must
+    // move — each stop is a different direct model, all 14 stops real
     const at7 = maeTile();
-    fireEvent.change(slider, { target: { value: "0" } });
+    fireEvent.change(slider, { target: { value: "1" } });
     const at1 = maeTile();
-    fireEvent.change(slider, { target: { value: "6" } });
+    fireEvent.change(slider, { target: { value: "14" } });
     const at14 = maeTile();
     expect(at1).not.toBe(at7);
     expect(at14).not.toBe(at7);
     expect(screen.getAllByText("h = 14").length).toBeGreaterThan(0);
-    // and the derived per-h |err| at h=14 exceeds h=1 for the routed curve
-    // on the default series (checked against the payload curves directly)
+    expect(screen.getAllByText("14d").length).toBeGreaterThan(0);
+    // the previously-gapped stops produce real values too (h=4: a genuine
+    // direct model now, checked against the payload curves directly)
+    fireEvent.change(slider, { target: { value: "4" } });
+    expect(maeTile()).not.toBe(at7);
     const blk = PAYLOAD.catalog[0].origins.at(-1)!;
     const err = (h: number) => {
       const i = blk.horizons.indexOf(h);
       return Math.abs(blk.models.routed.y_pred[i] - blk.actuals.y[h - 1]);
     };
     expect(err(14)).not.toBe(err(1));
+    expect(err(4)).not.toBe(err(1));
   });
 
   it("the origin slider moves across contiguous origins — no embargo shading anywhere", async () => {
@@ -239,7 +255,7 @@ describe("ForecastWorkbench (schema v3.1)", () => {
     const marker = () =>
       secondaryPanels()[2].querySelector('svg[aria-label="pooled MAE and MASE by true horizon, champion versus floor versus zero"] line[stroke-dasharray="3 3"]');
     const markerXBefore = marker()?.getAttribute("x1");
-    fireEvent.change(slider, { target: { value: "6" } }); // h=14
+    fireEvent.change(slider, { target: { value: "14" } }); // h=14
     expect(perOriginTableText()).not.toBe(scoreboardBefore);
     expect(marker()?.getAttribute("x1")).not.toBe(markerXBefore);
   });
@@ -341,11 +357,11 @@ describe("ForecastWorkbench (schema v3.1)", () => {
     const viz = screen.getByRole("img", {
       name: /signed direct-horizon routed forecast errors/,
     });
-    // one bar per lattice horizon (7, not 14 — direct curves live on the lattice)
-    expect(viz.querySelectorAll("rect")).toHaveLength(7);
-    fireEvent.click(viz.querySelectorAll("rect")[6]); // h=14
+    // one bar per direct horizon — all 14 window days are real models now
+    expect(viz.querySelectorAll("rect")).toHaveLength(14);
+    fireEvent.click(viz.querySelectorAll("rect")[13]); // h=14
     expect(screen.getByText("error day h=14")).toBeInTheDocument();
-    fireEvent.click(viz.querySelectorAll("rect")[6]);
+    fireEvent.click(viz.querySelectorAll("rect")[13]);
     expect(screen.queryByText("error day h=14")).toBeNull();
     // switching the model chip re-titles the bars
     fireEvent.click(screen.getAllByRole("button", { name: "zero" })[0]);
