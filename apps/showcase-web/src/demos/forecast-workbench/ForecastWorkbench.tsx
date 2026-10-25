@@ -9,44 +9,44 @@ import type {
 import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import {
   bandAt,
+  candidateAvailable,
   fmtDay,
-  growthRatio,
+  growthMaseAt,
   horizonKpi,
   mulberry32,
   originBlock,
   originDates,
   routedLabel,
-  scoreboardRow,
   seedFromQuery,
   surprisePick,
 } from "./kpis";
-import { ExplorerPanel, MODEL_COLOR } from "./panels/ExplorerPanel";
-import { ModelComparisonPanel } from "./panels/ModelComparisonPanel";
+import { ExplorerPanel } from "./panels/ExplorerPanel";
 import { ErrorAnalysisPanel } from "./panels/ErrorAnalysisPanel";
 import { ReliabilityPanel } from "./panels/ReliabilityPanel";
+import { ScoreboardPanel, modelDisableReason, peakStats } from "./panels/ScoreboardPanel";
 import { Sparkline, useQueryParam } from "./panels/common";
+import { MODEL_COLOR } from "./panels/ExplorerPanel";
 import { fetchForecastPayload, fetchManifest } from "./payload";
-
-const TABS = ["model comparison", "error analysis", "uncertainty & reliability"] as const;
-type Tab = (typeof TABS)[number];
 
 const SHOCK_STOPS: readonly number[] = [0.5, 1, 1.5, 2];
 
 const CLASSES: Array<DemandClass | "all"> = ["all", "lumpy", "erratic"];
 
+const CANDIDATE_CHIPS = ["hurdle", "tweedie"] as const;
+
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "forecast-workbench",
   title: "demand forecast workbench",
-  hook: "Pick a store-product series, pick one of the three scored weekly origins, slide the true horizon h across the direct h-step forecasts, and shock the recent demand; watch the routed pipeline, the zero baseline, and — on the 15 erratic series — the boosted per-horizon model respond.",
+  hook: "Pick a store-product series, pick one of the three scored weekly origins, slide the true horizon h across the direct h-step forecasts, and shock the recent demand; watch the routed pipeline, the zero baseline, and the boosted per-horizon model respond.",
   project: "02-demand-forecasting",
   group: "plan operations",
   skills: ["time series forecasting", "prediction intervals", "demand classification"],
   modes: ["browser", "live"],
   hero: {
     label: "multi-step pooled MAE over the scored origins, routed pipeline vs all-HGB",
-    value: "7.48 routed vs 12.06 all-HGB — the routed pipeline leads",
-    ci: "routing lumpy series away from the boosted model wins +4.6 MAE [4.2, 5.1] (95% paired bootstrap over series x scored origins; 98.6% of series are lumpy)",
+    value: "6.33 routed vs 10.67 all-HGB — the routed pipeline leads",
+    ci: "routing lumpy series away from the boosted model wins +4.0 MAE [3.3, 4.8] (95% paired bootstrap over series × scored origins; 98.6% of series are lumpy)",
   },
   scenarios: [
     { name: "base", controls: { horizon: 7, shock: 1 } },
@@ -121,16 +121,21 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
   const [originDate, setOriginDate] = useQueryParam("origin", dates, defaultDate);
   const [modelRaw, setModel] = useQueryParam<ModelKey>(
     "model",
-    ["zero", "routed", "champion"],
+    ["zero", "routed", "champion", "hurdle", "tweedie"],
     "routed",
   );
   const series = payload.catalog.find((s) => s.series_id === seriesId) ?? payload.catalog[0];
-  // the boosted champion is erratic-only; on a lumpy series it is routed away
+  // coerce chips the current series can't serve: the boosted champion is
+  // erratic-only; the peak-capable candidates only where the router
+  // selected them (their curve IS the routed curve there)
   const model: ModelKey =
-    modelRaw === "champion" && series.demand_class !== "erratic" ? "routed" : modelRaw;
+    (modelRaw === "champion" && series.demand_class !== "erratic") ||
+    ((modelRaw === "hurdle" || modelRaw === "tweedie") && !candidateAvailable(series, modelRaw))
+      ? "routed"
+      : modelRaw;
   const blk = originBlock(series, originDate);
 
-  // --- decision layer τ (kept in the reliability tab)
+  // --- decision layer τ (kept in the reliability panel)
   const [tau, setTau] = useState(0.9);
 
   // --- series picker filtering + stratified surprise-me
@@ -163,8 +168,7 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
     }
   };
 
-  // --- secondary band tabs + error-click highlight
-  const [tab, setTab] = useState<Tab>("model comparison");
+  // --- error-click highlight (resets when the series or origin moves)
   const [highlightDay, setHighlightDay] = useState<number | null>(null);
   useEffect(() => {
     setHighlightDay(null);
@@ -213,8 +217,7 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 ))}
               </div>
               <p className="demo-hint">
-                Three of the four scored weekly test origins — direct h-step forecasts issued on
-                these dates and scored once, never read for selection
+                issued {fmtDay(blk?.origin_date ?? "")} — direct h-step, scored once
               </p>
             </div>
           </div>
@@ -244,22 +247,33 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                   type="button"
                   className={`chip demo-preset ${model === "champion" ? "active" : ""}`}
                   aria-pressed={model === "champion"}
-                  disabled={series.demand_class !== "erratic"}
+                  disabled={modelDisableReason(series, "champion") !== null}
                   title={
-                    series.demand_class !== "erratic"
-                      ? "boosted models don't serve lumpy series — see the routing note"
-                      : "the boosted per-horizon HGB (this series is erratic)"
+                    modelDisableReason(series, "champion") ??
+                    "the boosted per-horizon direct HGB (erratic series)"
                   }
                   onClick={() => setModel("champion")}
                 >
-                  champion
+                  boosted HGB
                 </button>
+                {CANDIDATE_CHIPS.map((cand) => {
+                  const reason = modelDisableReason(series, cand);
+                  return (
+                    <button
+                      key={cand}
+                      type="button"
+                      className={`chip demo-preset ${model === cand ? "active" : ""}`}
+                      aria-pressed={model === cand}
+                      disabled={reason !== null}
+                      title={reason ?? `the peak-capable ${cand} candidate (this series' method)`}
+                      onClick={() => setModel(cand)}
+                    >
+                      {cand}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="demo-hint">
-                {series.demand_class === "erratic"
-                  ? "this series is erratic — the boosted per-horizon HGB serves it"
-                  : `this series is lumpy — the boosted model is routed away; ${series.model_used} serves it (committed routing table)`}
-              </p>
+              <p className="demo-hint">per-series routing picks the method on training origins</p>
             </div>
           </div>
           <div className="wb-control-group wb-group-slider">
@@ -281,10 +295,6 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 />
                 <span className="chip wb-value-badge">h = {horizon}</span>
               </div>
-              <p className="demo-hint">
-                discrete stops on the committed lattice — each h is a different direct model, and
-                the error genuinely grows (see the horizon-truth note)
-              </p>
             </div>
           </div>
           <div className="wb-control-group wb-group-slider">
@@ -306,11 +316,7 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 />
                 <span className="chip wb-value-badge">×{shock.toFixed(1)}</span>
               </div>
-              <p className="demo-hint">
-                scales the last 7 days before the origin — the demand signal every candidate reads
-                (statistical curves re-fit offline, boosted curves re-scored through their fitted
-                trees; exact, precomputed)
-              </p>
+              <p className="demo-hint">scales the last 7 days before the origin — exact re-scores</p>
             </div>
           </div>
           <div className="wb-control-group wb-group-picker">
@@ -381,9 +387,8 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 {filtered.length === 0 && <li className="wb-series-empty">no series matches</li>}
               </ul>
               <p className="demo-hint">
-                {filtered.length} of {payload.catalog.length} series — every erratic series is in
-                the catalog (the boosted model only serves those); the surprise pick is
-                class-stratified and seeded (?seed=)
+                {filtered.length} of {payload.catalog.length} series — surprise pick is
+                class-stratified, seeded (?seed=)
               </p>
             </div>
           </div>
@@ -469,53 +474,41 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
         </>
       }
       secondary={
-        <div className="wb-secondary-panel wb-secondary-wide">
-          <div className="wb-tabs" role="tablist" aria-label="Secondary views">
-            {TABS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                role="tab"
-                aria-selected={tab === t}
-                className={`chip wb-tab ${tab === t ? "active" : ""}`}
-                onClick={() => setTab(t)}
-              >
-                {t}
-              </button>
-            ))}
+        <>
+          <div className="wb-secondary-panel">
+            <h3 className="wb-rail-title">model scoreboard</h3>
+            <ScoreboardPanel
+              payload={payload}
+              series={series}
+              origin={blk}
+              model={model}
+              horizon={horizon}
+              shock={shock}
+              onPickModel={setModel}
+            />
           </div>
-          <div className="wb-tab-body">
-            {tab === "model comparison" && (
-              <ModelComparisonPanel
-                payload={payload}
-                series={series}
-                origin={blk}
-                model={model}
-                horizon={horizon}
-                shock={shock}
-                onPickModel={setModel}
-              />
-            )}
-            {tab === "error analysis" && (
-              <ErrorAnalysisPanel
-                origin={blk}
-                model={model}
-                shock={shock}
-                highlightDay={highlightDay}
-                onHighlight={setHighlightDay}
-              />
-            )}
-            {tab === "uncertainty & reliability" && (
-              <ReliabilityPanel
-                payload={payload}
-                series={series}
-                origin={blk}
-                tau={tau}
-                onTau={setTau}
-              />
-            )}
+          <div className="wb-secondary-panel">
+            <h3 className="wb-rail-title">error analysis</h3>
+            <ErrorAnalysisPanel
+              origin={blk}
+              model={model}
+              shock={shock}
+              highlightDay={highlightDay}
+              onHighlight={setHighlightDay}
+            />
           </div>
-        </div>
+          <div className="wb-secondary-panel">
+            <h3 className="wb-rail-title">reliability + decision</h3>
+            <ReliabilityPanel
+              payload={payload}
+              series={series}
+              origin={blk}
+              horizon={horizon}
+              tau={tau}
+              onTau={setTau}
+            />
+          </div>
+        </>
       }
       evidence={
         <>
@@ -523,18 +516,22 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
             <h4 className="wb-evidence-tag">models used</h4>
             <p className="wb-evidence-line">
               <code className="wb-tag">routed pipeline</code> — per-series routing on the
-              selection origins: ADI ≥ 1.32 (lumpy) series get their best statistical method (
-              {Object.entries(payload.catalog_summary.model_used_counts)
-                .filter(([m]) => m !== "direct_hgb")
-                .map(([m, n]) => (
-                  <span key={m}>
-                    <code className="wb-tag">{m}</code> ×{n}{" "}
-                  </span>
-                ))}
-              in the catalog); the {payload.catalog_summary.model_used_counts.direct_hgb} erratic
-              series stay on the boosted per-horizon HGB. The seasonal-naive floor and the zero
-              baseline grade every candidate.
+              selection origins (committed table):{" "}
+              {Object.entries(payload.catalog_summary.model_used_counts).map(([m, n]) => (
+                <span key={m}>
+                  <code className="wb-tag">{m}</code> ×{n}{" "}
+                </span>
+              ))}
+              in the catalog. The seasonal-naive floor and the zero baseline grade every
+              candidate.
             </p>
+            {Object.entries(payload.catalog_summary.peak_capable_candidates ?? {}).map(
+              ([name, desc]) => (
+                <p className="wb-evidence-line" key={name}>
+                  <code className="wb-tag">{name}</code> — {desc}
+                </p>
+              ),
+            )}
             <p className="wb-evidence-line">{payload.catalog_summary.routing_rule}</p>
             <p className="wb-evidence-line wb-metric-tags">
               <span className="wb-tag">{payload.evaluation_metadata.protocol}</span>
@@ -568,11 +565,43 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 ))}
             </p>
             <p className="wb-evidence-line">
+              Peak-day error (top-decile days, routed vs zero, per class):{" "}
+              {Object.entries(payload.peak_capture.per_class).map(([cls, entry]) => {
+                const stats = peakStats(entry, "routed");
+                return stats ? (
+                  <span key={cls} className="wb-tag">
+                    {cls} {stats.peak_mae.toFixed(1)}
+                  </span>
+                ) : null;
+              })}{" "}
+              — {payload.peak_capture.bootstrap.method}.
+            </p>
+            <p className="wb-evidence-line">
               Bands: {(payload.bands.pooled_coverage * 100).toFixed(1)}% pooled coverage (target{" "}
               {(payload.bands.target_coverage * 100).toFixed(0)}%),{" "}
               {payload.bands.pooled_verdict} — {payload.bands.note}
             </p>
-            <p className="wb-evidence-line">{payload.decision.label}.</p>
+            <p className="wb-evidence-line">
+              {payload.decision.label} — documented costs:{" "}
+              {payload.decision.cost_assumptions.holding_cost_per_unit}/unit held,{" "}
+              {payload.decision.cost_assumptions.stockout_cost_per_unit_short}/unit short (
+              {payload.decision.cost_assumptions.cost_basis}); offsets are τ-quantiles of the
+              policy's selection-origin residuals per class and horizon.
+            </p>
+            <p className="wb-evidence-line">
+              Committed τ=0.90 per class:{" "}
+              {Object.entries(payload.decision.per_class).map(([cls, byTau]) => {
+                const row = byTau[`tau_${(0.9).toFixed(2)}`];
+                if (!row) return null;
+                return (
+                  <span key={cls} className="wb-tag">
+                    {cls}: routed {row.delta_champion_minus_floor >= 0 ? "above" : "below"} floor (
+                    {row.delta_champion_minus_floor >= 0 ? "+" : ""}
+                    {row.delta_champion_minus_floor.toFixed(1)})
+                  </span>
+                );
+              })}
+            </p>
           </div>
         </>
       }
@@ -611,12 +640,12 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">honest limitation</h4>
             <p className="wb-evidence-line">
-              {payload.dataset_metadata.zero_sales_caveat} The erratic class is 15 series — the
-              boosted model's edge there is <em>not established</em> (the gap CI spans zero), and
-              the order-up-to layer is a simulation with documented costs, not a savings claim:
-              on lumpy demand the routed policy costs more than the floor at the committed
-              service levels. Inventory planning would still need per-series safety-stock
-              calibration and a lead-time objective the experiment does not commit.
+              {payload.dataset_metadata.zero_sales_caveat} The erratic class is 15 series —
+              per-series claims there stay descriptive. The order-up-to layer is a simulation
+              with documented costs, not a savings claim: on lumpy demand the routed policy
+              costs more than the floor at the committed service levels. Inventory planning
+              would still need per-series safety-stock calibration and a lead-time objective the
+              experiment does not commit.
             </p>
           </div>
         </>
@@ -625,62 +654,81 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
   );
 }
 
-/** Class-verdict notice: what serves this class, and by how much — pooled
- * gap with the bootstrap verdict, plus the honest per-series beats count. */
+/** Class-verdict notice: what serves this class and what the committed
+ * peak-capture numbers say — erratic cites the peak-day win over zero,
+ * lumpy the honest flat-vs-peak split. All numbers derive from the payload. */
 function ClassVerdictText({ payload, series }: { payload: ForecastPayload; series: CatalogSeries }) {
-  const row = scoreboardRow(payload.class_scoreboard, series.demand_class, 7);
-  const gap = row.gap;
-  const established = gap !== null && !gap.spansZero;
-  const pct =
-    row.modelMae !== null && row.floorMae !== null && row.floorMae > 0
-      ? ((row.floorMae - row.modelMae) / row.floorMae) * 100
-      : null;
-  if (series.demand_class === "lumpy") {
+  const peak = payload.peak_capture.per_class[series.demand_class];
+  if (series.demand_class === "erratic") {
+    const counts = payload.catalog.filter((s) => s.demand_class === "erratic").reduce(
+      (acc, s) => {
+        acc[s.model_used] = (acc[s.model_used] ?? 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+    const parts = Object.entries(counts)
+      .map(([m, n]) => `${n} ${m.replace("_hgb", "").replace("hgb_", "")}`)
+      .join(" · ");
+    const zero = peakStats(peak, "zero");
+    let best: { peak_mae: number; peak_mae_vs_zero?: { spans_zero: boolean } } | null = null;
+    if (peak) {
+      for (const c of payload.peak_capture.candidates) {
+        const s = peakStats(peak, c);
+        if (s && (best === null || s.peak_mae < best.peak_mae)) best = s;
+      }
+    }
+    const est = best?.peak_mae_vs_zero && !best.peak_mae_vs_zero.spans_zero;
     return (
       <>
-        <strong>Lumpy series</strong> — the boosted model is routed away;{" "}
-        <strong>{series.model_used === "direct_hgb" ? "boosted HGB" : series.model_used}</strong>{" "}
-        serves this series (committed routing table). At h=7 the routed pipeline beats the
-        seasonal-naive floor by{" "}
+        <strong>Erratic series</strong> — all {seriesCount(payload, "erratic")} erratic series
+        route to the peak-capable learners ({parts}, committed routing table). Peak-day error{" "}
         <strong>
-          {pct !== null ? `${pct.toFixed(0)}%` : "n/a"} pooled ({row.modelMae?.toFixed(2)} vs{" "}
-          {row.floorMae?.toFixed(2)} MAE)
+          {zero ? zero.peak_mae.toFixed(0) : "n/a"} → ~{best ? best.peak_mae.toFixed(0) : "n/a"}
         </strong>{" "}
-        — {established ? "established" : "not established"} [
-        {gap ? `${gap.ci95[0].toFixed(2)}, ${gap.ci95[1].toFixed(2)}` : "n/a"}] — and the zero
-        baseline trails by only {row.vsZero ? Math.abs(row.vsZero.diff).toFixed(2) : "n/a"} MAE.
-        Per-series honesty: the floor still wins on{" "}
-        {row.beatsCount !== null
-          ? `${(100 - (row.beatsShare ?? 0) * 100).toFixed(0)}% of ${row.nSeries.toLocaleString()} lumpy series`
-          : "n/a"}{" "}
-        (pooled ≠ per-series).
+        vs the zero baseline — committed, paired CI {est ? "excludes zero" : "spans zero"}.
       </>
     );
   }
+  const pooled = payload.headline.pooled_mae_by_model;
+  const routedP = peakStats(peak, "routed");
+  const tw = peakStats(peak, "hgb_tweedie");
   return (
     <>
-      <strong>Erratic series</strong> — one of the {row.nSeries} the boosted per-horizon HGB
-      actually serves. At h=7 the gap over the floor is{" "}
+      <strong>Lumpy series</strong> — flat methods keep the pooled lead (
       <strong>
-        {gap ? `${gap.diff >= 0 ? "+" : ""}${gap.diff.toFixed(2)} MAE` : "n/a"} [
-        {gap ? `${gap.ci95[0].toFixed(1)}, ${gap.ci95[1].toFixed(1)}` : "n/a"}]
+        {pooled.routed?.toFixed(2)} vs tweedie {pooled.hgb_tweedie?.toFixed(2)}
+      </strong>
+      ); tweedie cuts peak-day error{" "}
+      <strong>
+        {routedP ? routedP.peak_mae.toFixed(1) : "n/a"} → {tw ? tw.peak_mae.toFixed(1) : "n/a"}
       </strong>{" "}
-      — <strong>not established</strong> with {row.nSeries} series; treat the boosted curve as
-      competitive-with-the-floor, not better.
+      but trades timing recall{" "}
+      <strong>
+        {routedP ? routedP.peak_recall.toFixed(2) : "n/a"} → {tw ? tw.peak_recall.toFixed(2) : "n/a"}
+      </strong>
+      . Both facts committed.
     </>
   );
 }
 
-/** Horizon-truth notice: the error-growth ratio derived from the committed
- * growth curves — the h-slider is real. */
+function seriesCount(payload: ForecastPayload, cls: DemandClass): number {
+  return payload.catalog.filter((s) => s.demand_class === cls).length;
+}
+
+/** Horizon-truth notice: the error-growth story from the committed curves.
+ * h=1 under weekly origins lands on a fixed near-zero weekday, so the honest
+ * growth read is h=2 -> h=14 — quoted as MASE values, not a flashy ratio. */
 function HorizonTruthText({ payload, h }: { payload: ForecastPayload; h: number }) {
-  const ratio = growthRatio(payload.horizon_growth, 14, 1);
+  const mase2 = growthMaseAt(payload.horizon_growth, "champion", 2);
+  const mase14 = growthMaseAt(payload.horizon_growth, "champion", 14);
   return (
     <>
-      At <strong>h=14</strong> the pooled error is{" "}
-      <strong>~{ratio !== null ? ratio.toFixed(1) : "n/a"}×</strong> the h=1 error (committed
-      MASE curves) — the slider is real: each stop is a different direct model, and you are at{" "}
-      <strong>h={h}</strong>. The growth curve lives in the reliability tab.
+      Error grows with horizon: committed MASE{" "}
+      <strong>{mase2 !== null ? mase2.toFixed(2) : "n/a"}</strong> at h=2 to{" "}
+      <strong>{mase14 !== null ? mase14.toFixed(2) : "n/a"}</strong> at h=14 (h=1 is a fixed
+      near-zero weekday under weekly origins — the slider is real: each stop is a different
+      direct model, and you are at <strong>h={h}</strong>).
     </>
   );
 }

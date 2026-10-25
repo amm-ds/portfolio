@@ -10,6 +10,7 @@ import type {
 import {
   addDays,
   bandAt,
+  candidateAvailable,
   curveAt,
   fmtDay,
   growthAt,
@@ -179,6 +180,22 @@ describe("originBlock + modelBlock + curveAt", () => {
   it("routedLabel names the committed method per series", () => {
     expect(routedLabel(makeSeries())).toBe("routed · boosted HGB");
     expect(routedLabel(makeSeries({ demand_class: "lumpy", model_used: "sba" }))).toBe("routed · sba");
+    expect(routedLabel(makeSeries({ model_used: "hurdle_hgb" }))).toBe("routed · hurdle");
+    expect(routedLabel(makeSeries({ model_used: "hgb_tweedie" }))).toBe("routed · tweedie");
+    expect(routedLabel(makeSeries({ demand_class: "lumpy", model_used: "zero" }))).toBe("routed · zero");
+  });
+
+  it("candidate chips resolve through the revision-3.1 alias entries", () => {
+    const hurdleSeries = makeSeries({ model_used: "hurdle_hgb" });
+    hurdleSeries.origins[0].models.hurdle_hgb = { alias: "routed" };
+    expect(candidateAvailable(hurdleSeries, "hurdle")).toBe(true);
+    expect(candidateAvailable(hurdleSeries, "tweedie")).toBe(false);
+    // the alias block resolves to the routed curve…
+    expect(modelBlock(hurdleSeries.origins[0], "hurdle")).toBe(
+      hurdleSeries.origins[0].models.routed,
+    );
+    // …and a candidate the router did not select has no block at all
+    expect(modelBlock(hurdleSeries.origins[0], "tweedie")).toBeNull();
   });
 });
 

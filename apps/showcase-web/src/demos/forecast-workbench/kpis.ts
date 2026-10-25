@@ -8,6 +8,7 @@ import type {
   HorizonGrowth,
   ModelKey,
   OriginBlock,
+  RoutedMethod,
   ScoreboardClass,
 } from "../types";
 
@@ -47,16 +48,53 @@ export function originDates(payload: ForecastPayload): string[] {
   return payload.catalog_summary.origins.map((o) => o.origin_date);
 }
 
-/** The selected model's block at an origin (`champion` → `champion_hgb`). */
-export function modelBlock(origin: OriginBlock | null, model: ModelKey): DirectModelBlock | null {
+/** Short chip label for a committed routing method. */
+const METHOD_SHORT: Record<RoutedMethod, string> = {
+  direct_hgb: "boosted HGB",
+  zero: "zero",
+  seasonal_naive: "seasonal-naive",
+  croston: "croston",
+  sba: "sba",
+  tsb: "tsb",
+  hurdle_hgb: "hurdle",
+  hgb_tweedie: "tweedie",
+};
+
+/** The peak-capable candidate chips (wave 20) ↔ their payload block keys. */
+export const CANDIDATE_METHOD = {
+  hurdle: "hurdle_hgb",
+  tweedie: "hgb_tweedie",
+} as const;
+
+/** Is the peak-capable candidate available for this series? Only where the
+ * committed router selected it — the candidate curve IS the routed curve
+ * there (payload revision 3.1 alias entries). */
+export function candidateAvailable(
+  series: CatalogSeries,
+  m: keyof typeof CANDIDATE_METHOD,
+): boolean {
+  return series.model_used === CANDIDATE_METHOD[m];
+}
+
+/** A concrete curve block (alias markers resolved away by `modelBlock`). */
+export type CurveBlock = DirectModelBlock;
+
+/** Resolve a model chip to its curve block at an origin (`champion` →
+ * `champion_hgb`; candidate chips → their alias-resolved block). */
+export function modelBlock(origin: OriginBlock | null, model: ModelKey): CurveBlock | null {
   if (!origin) return null;
   if (model === "champion") return origin.models.champion_hgb ?? null;
+  if (model === "hurdle" || model === "tweedie") {
+    const blk = origin.models[CANDIDATE_METHOD[model]];
+    if (!blk) return null;
+    return "alias" in blk ? modelBlock(origin, "routed") : blk;
+  }
   return origin.models[model];
 }
 
 /** The model curve under the demand-shock lever: shock 1 is the committed
  * base curve; other stops read the precomputed exact re-scores. */
-export function curveAt(block: DirectModelBlock | null, shock: number): number[] {
+export function curveAt(block: CurveBlock | null, shock: number): number[] {
   if (!block) return [];
   if (shock === 1) return block.y_pred;
   const hit = block.shock[String(shock)];
@@ -65,7 +103,7 @@ export function curveAt(block: DirectModelBlock | null, shock: number): number[]
 
 /** Chip label for the routed model, per-series honest: the committed method. */
 export function routedLabel(series: CatalogSeries): string {
-  return series.model_used === "direct_hgb" ? "routed · boosted HGB" : `routed · ${series.model_used}`;
+  return `routed · ${METHOD_SHORT[series.model_used]}`;
 }
 
 // --- KPIs at (origin, h) -------------------------------------------------------

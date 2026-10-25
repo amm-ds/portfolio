@@ -1,5 +1,6 @@
 {
   "schema_version": 3,
+  "payload_revision": "3.1",
   "demo": "forecast-workbench",
   "project": "02-demand-forecasting",
   "track": "uci",
@@ -383,6 +384,9 @@
                   38.3408
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -754,6 +758,9 @@
                   86.1559
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -1125,6 +1132,9 @@
                   108.0989
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -1508,6 +1518,9 @@
                   32.9815
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -1879,6 +1892,9 @@
                   53.8042
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -2250,6 +2266,9 @@
                   39.2682
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -2633,6 +2652,9 @@
                   18.0293
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -3004,6 +3026,9 @@
                   27.2339
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -3375,6 +3400,9 @@
                   27.9355
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -3758,6 +3786,9 @@
                   90.8694
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -4129,6 +4160,9 @@
                   37.6538
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -4500,6 +4534,9 @@
                   76.3805
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -4883,6 +4920,9 @@
                   260.0157
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -5254,6 +5294,9 @@
                   305.1647
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -5625,6 +5668,9 @@
                   239.556
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         }
@@ -6008,6 +6054,9 @@
                   138.7012
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -6379,6 +6428,9 @@
                   241.6444
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -6750,6 +6802,9 @@
                   105.9033
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -7133,6 +7188,9 @@
                   19.5447
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -7504,6 +7562,9 @@
                   162.3918
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -7875,6 +7936,9 @@
                   94.3751
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -8258,6 +8322,9 @@
                   227.8332
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -8629,6 +8696,9 @@
                   164.9696
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -9000,6 +9070,9 @@
                   120.6702
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         }
@@ -9383,6 +9456,9 @@
                   15.7223
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -9754,6 +9830,9 @@
                   27.9278
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -10125,6 +10204,9 @@
                   24.1379
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -10508,6 +10590,9 @@
                   42.5068
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -10879,6 +10964,9 @@
                   55.9084
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -11250,6 +11338,9 @@
                   64.8548
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -11633,6 +11724,9 @@
                   318.3338
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -12004,6 +12098,9 @@
                   318.9828
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -12375,6 +12472,9 @@
                   365.7424
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -12758,6 +12858,9 @@
                   130.5297
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -13129,6 +13232,9 @@
                   191.3568
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -13500,6 +13606,9 @@
                   99.4897
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         }
@@ -13883,6 +13992,9 @@
                   209.4565
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -14254,6 +14366,9 @@
                   368.8651
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         },
@@ -14625,6 +14740,9 @@
                   307.8854
                 ]
               }
+            },
+            "hgb_tweedie": {
+              "alias": "routed"
             }
           }
         }
@@ -15008,6 +15126,9 @@
                   34.679
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -15379,6 +15500,9 @@
                   143.1559
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -15750,6 +15874,9 @@
                   136.891
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -16133,6 +16260,9 @@
                   273.1441
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -16504,6 +16634,9 @@
                   370.1459
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -16875,6 +17008,9 @@
                   241.4489
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -31975,6 +32111,9 @@
                   2.0
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -32279,6 +32418,9 @@
                   10.0
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         },
@@ -32583,6 +32725,9 @@
                   32.0
                 ]
               }
+            },
+            "hurdle_hgb": {
+              "alias": "routed"
             }
           }
         }
@@ -95490,6 +95635,104 @@
           "seed": 2044
         }
       },
+      "candidates": {
+        "hgb_tweedie": {
+          "h7": {
+            "mae": 52.334170912309816,
+            "vs_routed": {
+              "diff": 0.42513192726010374,
+              "ci95": [
+                -6.3425901439051575,
+                5.9578654706444825
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": -11.81582908769019,
+              "ci95": [
+                -27.612200336071034,
+                4.5975695523014455
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          },
+          "h14": {
+            "mae": 62.489612159117094,
+            "vs_routed": {
+              "diff": 10.935429245485857,
+              "ci95": [
+                2.8482863721511955,
+                19.933020103158423
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": 4.856278825783761,
+              "ci95": [
+                -10.880145054103972,
+                19.630729843611796
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          }
+        },
+        "hurdle_hgb": {
+          "h7": {
+            "mae": 44.1740573218286,
+            "vs_routed": {
+              "diff": -7.734981663221113,
+              "ci95": [
+                -16.959585986147605,
+                0.0
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": -19.975942678171407,
+              "ci95": [
+                -35.98810923224113,
+                -6.83879680989653
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          },
+          "h14": {
+            "mae": 42.130801148922934,
+            "vs_routed": {
+              "diff": -9.423381764708303,
+              "ci95": [
+                -19.821850941545065,
+                0.0
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": -15.502532184410398,
+              "ci95": [
+                -26.71876448103624,
+                -4.943866647407493
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          }
+        }
+      },
       "routing_effect": {
         "diff": 30.94906092373823,
         "ci95": [
@@ -95567,6 +95810,104 @@
           "spans_zero": false,
           "n_boot": 2000,
           "seed": 2044
+        }
+      },
+      "candidates": {
+        "hgb_tweedie": {
+          "h7": {
+            "mae": 7.823651407000431,
+            "vs_routed": {
+              "diff": 1.6568102273774645,
+              "ci95": [
+                1.309451041293326,
+                2.02362142109421
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": 0.6176177306674093,
+              "ci95": [
+                0.10044852052241109,
+                1.143986035278408
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          },
+          "h14": {
+            "mae": 7.552312730998177,
+            "vs_routed": {
+              "diff": 1.6692526820866807,
+              "ci95": [
+                1.2125942148883937,
+                2.1824222714954176
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": 0.6458581005023865,
+              "ci95": [
+                -0.020033370855819327,
+                1.2889902930756094
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          }
+        },
+        "hurdle_hgb": {
+          "h7": {
+            "mae": 6.61745428299376,
+            "vs_routed": {
+              "diff": 0.4506131033707943,
+              "ci95": [
+                0.32613802050109675,
+                0.5655578247994685
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": -0.5885793933392609,
+              "ci95": [
+                -0.9863088478502452,
+                -0.21896704253973293
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          },
+          "h14": {
+            "mae": 6.411370459063059,
+            "vs_routed": {
+              "diff": 0.5283104101515628,
+              "ci95": [
+                0.39870918006605727,
+                0.6551757194549925
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            },
+            "vs_zero": {
+              "diff": -0.4950841714327314,
+              "ci95": [
+                -0.928288322638147,
+                -0.10707419767812987
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 2044
+            }
+          }
         }
       },
       "routing_effect": {
@@ -95683,6 +96024,302 @@
       }
     },
     "note": "pooled over series x scored test origins per TRUE horizon h (direct per-h models) \u2014 the error-growth curve the horizon slider demonstrates"
+  },
+  "peak_capture": {
+    "definition": "per scored window (series x test origin) over the scored h-lattice days: peak_mae = MAE on the window's top-decile-by-actual demand days (k = max(1, ceil(0.1 x 7)) = 1); peak_recall = share of the window's top-5 actual days whose day ranks in the forecast's own top-5",
+    "candidates": [
+      "routed",
+      "zero",
+      "hgb_tweedie",
+      "hurdle_hgb"
+    ],
+    "top_k_days": 1,
+    "top_recall_days": 5,
+    "bootstrap": {
+      "method": "paired cluster bootstrap over series (windows of a sampled series enter together), percentile 95% CI",
+      "n_boot": 2000,
+      "seed": 4062
+    },
+    "per_class": {
+      "erratic": {
+        "n_windows": 60,
+        "routed": {
+          "peak_mae": 124.7912261659401,
+          "peak_recall": 0.8366666666666664,
+          "peak_mae_vs_zero": {
+            "diff": -59.54210716739324,
+            "ci95": [
+              -82.25451933054794,
+              -38.82571755320138
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_zero": {
+            "diff": -0.010000000000000009,
+            "ci95": [
+              -0.02666666666666657,
+              0.006666666666666643
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        },
+        "zero": {
+          "peak_mae": 184.33333333333334,
+          "peak_recall": 0.8466666666666665,
+          "peak_mae_vs_routed": {
+            "diff": 59.54210716739324,
+            "ci95": [
+              38.82571755320137,
+              82.25451933054792
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_routed": {
+            "diff": 0.010000000000000009,
+            "ci95": [
+              -0.006666666666666643,
+              0.02666666666666657
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        },
+        "hgb_tweedie": {
+          "peak_mae": 122.30887889065527,
+          "peak_recall": 0.8466666666666663,
+          "peak_mae_vs_routed": {
+            "diff": -2.4823472752848375,
+            "ci95": [
+              -6.234447023373682,
+              0.8948403822342251
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_routed": {
+            "diff": 0.009999999999999898,
+            "ci95": [
+              -0.003333333333333381,
+              0.02666666666666669
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_mae_vs_zero": {
+            "diff": -62.02445444267808,
+            "ci95": [
+              -83.08958663464297,
+              -42.72700617753478
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_zero": {
+            "diff": -1.1102230246251565e-16,
+            "ci95": [
+              -0.013333333333333404,
+              0.013333333333333286
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        },
+        "hurdle_hgb": {
+          "peak_mae": 123.89570726677051,
+          "peak_recall": 0.8266666666666664,
+          "peak_mae_vs_routed": {
+            "diff": -0.8955188991695877,
+            "ci95": [
+              -3.8431002744677243,
+              1.0530252777844453
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_routed": {
+            "diff": -0.010000000000000009,
+            "ci95": [
+              -0.02666666666666657,
+              0.006666666666666525
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_mae_vs_zero": {
+            "diff": -60.43762606656283,
+            "ci95": [
+              -83.64061059483261,
+              -38.45498788827001
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_zero": {
+            "diff": -0.020000000000000018,
+            "ci95": [
+              -0.04333333333333324,
+              0.0033333333333332624
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        }
+      },
+      "lumpy": {
+        "n_windows": 4276,
+        "routed": {
+          "peak_mae": 23.547291924906155,
+          "peak_recall": 0.9738072965388214,
+          "peak_mae_vs_zero": {
+            "diff": -3.475626690622377,
+            "ci95": [
+              -4.268574090584518,
+              -2.7623089156218676
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_zero": {
+            "diff": 0.0,
+            "ci95": [
+              -0.0010289990645462198,
+              0.0009833956969131602
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        },
+        "zero": {
+          "peak_mae": 27.022918615528532,
+          "peak_recall": 0.9738072965388214,
+          "peak_mae_vs_routed": {
+            "diff": 3.475626690622377,
+            "ci95": [
+              2.762308915621867,
+              4.268574090584518
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_routed": {
+            "diff": 0.0,
+            "ci95": [
+              -0.0009833956969131665,
+              0.0010289990645462198
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        },
+        "hgb_tweedie": {
+          "peak_mae": 22.062050948651656,
+          "peak_recall": 0.8362956033676333,
+          "peak_mae_vs_routed": {
+            "diff": -1.4852409762544987,
+            "ci95": [
+              -1.9905773820566282,
+              -1.0241674755013086
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_routed": {
+            "diff": -0.13751169317118805,
+            "ci95": [
+              -0.14448316183348928,
+              -0.1307764265668849
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_mae_vs_zero": {
+            "diff": -4.960867666876876,
+            "ci95": [
+              -5.9545957365123074,
+              -4.008417225253662
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_zero": {
+            "diff": -0.13751169317118805,
+            "ci95": [
+              -0.14443521983161842,
+              -0.13082319925163696
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        },
+        "hurdle_hgb": {
+          "peak_mae": 23.54825446110449,
+          "peak_recall": 0.8983629560336763,
+          "peak_mae_vs_routed": {
+            "diff": 0.0009625361983367497,
+            "ci95": [
+              -0.22790143214854347,
+              0.22821673078262944
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_routed": {
+            "diff": -0.07544434050514504,
+            "ci95": [
+              -0.07881314312441554,
+              -0.07207670720299363
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_mae_vs_zero": {
+            "diff": -3.4746641544240404,
+            "ci95": [
+              -4.238950289644534,
+              -2.763289280008824
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          },
+          "peak_recall_vs_zero": {
+            "diff": -0.07544434050514504,
+            "ci95": [
+              -0.07895346117867173,
+              -0.07184284377923289
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 4062
+          }
+        }
+      }
+    }
   },
   "bands": {
     "target_coverage": 0.8,
@@ -97461,6 +98098,21 @@
     ],
     "shock_note": "demand shock xs scales the last 7 days before the origin (the demand signal every candidate reads): statistical curves are re-fit on the shocked window, boosted curves re-predict through the fitted per-horizon trees on the shocked lag trio \u2014 precomputed offline, exact; bands stay on the unshocked base run",
     "routing_rule": "per-series routing on the selection origins ONLY: sparse (ADI >= 1.32) series choose among zero/seasonal_naive/Croston/SBA/TSB/hgb_tweedie/hurdle_hgb; smooth/erratic series choose among direct_hgb/hgb_tweedie/hurdle_hgb",
+    "candidates": [
+      "routed",
+      "direct_hgb",
+      "seasonal_naive",
+      "zero",
+      "croston",
+      "sba",
+      "tsb",
+      "hgb_tweedie",
+      "hurdle_hgb"
+    ],
+    "peak_capable_candidates": {
+      "hgb_tweedie": "HGBRegressor with the compound-Poisson tweedie deviance (variance power 1.5); lr/depth/leaves tuned on the selection origins via a seeded capped Optuna study (hpo.tune_multistep_tweedie)",
+      "hurdle_hgb": "per-h two-stage HGB: log-loss classifier for P(sale) + HGB on log1p(non-zero sizes); point = p_hat x (exp(y_reg) - 1), zero-corrected on the selection origins (identity / scalar / isotonic \u2014 whichever wins there)"
+    },
     "class_thresholds": {
       "adi": 1.32,
       "cv2": 0.49

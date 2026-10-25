@@ -43,22 +43,20 @@ export function ErrorAnalysisPanel({
     <Figure
       comment={
         <>
-          The signed error of each direct h-step forecast for the{" "}
-          <strong style={{ color: MODEL_COLOR[model] }}>{model}</strong> curve at this origin —
-          derived from the stored curve against the window's actuals. Over-forecasts rise pink,
-          under-forecasts sink teal; click a day to pin it on the explorer. The bars genuinely
-          grow with h — that is the direct-model error-growth the horizon slider demonstrates.
+          Signed error per direct h-step forecast for the{" "}
+          <strong style={{ color: MODEL_COLOR[model] }}>{model}</strong> curve — over pink, under
+          teal. Click a bar to pin that day on the explorer.
         </>
       }
     >
-      <div ref={ref} className="wb-panel-viz wb-tab-viz">
+      <div ref={ref} className="wb-panel-viz">
         <svg
           width="100%"
           height="100%"
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="none"
           role="img"
-          aria-label="signed direct-horizon forecast errors, colored by sign"
+          aria-label={`signed direct-horizon ${model} forecast errors, colored by sign`}
         >
           <line x1={pad} x2={W - pad} y1={zeroY} y2={zeroY} stroke="var(--border)" />
           {errs.map((e) => {
@@ -98,15 +96,17 @@ export function ErrorAnalysisPanel({
                   {e.signed.toFixed(1)}
                 </text>
                 {worst && e.h === worst.h && e.abs > 0 && (
-                  <text
-                    x={Math.min(W - 24, x0 + groupW / 2 + 14)}
-                    y={e.over ? Math.max(10, y - 3) : y + bh + 18}
-                    textAnchor="middle"
-                    className="demo-axis-label"
+                  <circle
+                    cx={x0 + groupW / 2}
+                    cy={e.over ? Math.max(8, y - 12) : y + bh + 16}
+                    r={2.5}
                     fill={C_WHITE}
                   >
-                    worst
-                  </text>
+                    <title>
+                      worst day: h={e.h} · {e.signed >= 0 ? "+" : ""}
+                      {e.signed.toFixed(2)} units ({e.over ? "over" : "under"}) · {e.date}
+                    </title>
+                  </circle>
                 )}
               </g>
             );
