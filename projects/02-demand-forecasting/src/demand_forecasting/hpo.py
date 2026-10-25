@@ -30,6 +30,16 @@ from sklearn.preprocessing import OneHotEncoder
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import cv_row_folds
 from demand_forecasting.model import NUMERIC_FEATURES, model_specs, to_xy
+from demand_forecasting.multihorizon import (
+    TWEEDIE_POWER,
+    _calendar_features,
+    _design_pred,
+    _design_train,
+    multistep_origin_indices,
+    panel_matrix,
+    peak_feature_tensor,
+    split_origins,
+)
 
 logger = get_logger(__name__)
 
@@ -64,6 +74,14 @@ LOG_SCALE: dict[str, set[str]] = {
     "hgb": {"learning_rate", "l2_regularization"},
     "xgb": {"learning_rate", "reg_lambda"},
     "lgbm": {"learning_rate", "reg_lambda"},
+}
+
+# Multi-step tweedie-candidate space (wave 20): exactly lr/depth/leaves, per
+# the track design; the other knobs stay on the champion HGB values.
+MULTISTEP_TWEEDIE_SPACE: dict[str, tuple[str, tuple[float | int, ...], bool]] = {
+    "learning_rate": ("float", (0.02, 0.3), True),
+    "max_leaf_nodes": ("int", (7, 63), False),
+    "max_depth": ("int", (3, 10), False),
 }
 
 
@@ -132,6 +150,123 @@ def make_objective(
         return float(np.mean(maes))
 
     return objective
+
+
+# ---------------------------------------------------------------------------
+# Multi-step tweedie tuning (wave 20) — selection origins only, capped trials
+# ---------------------------------------------------------------------------
+
+
+def make_multistep_tweedie_objective(
+    units: np.ndarray,
+    cal: np.ndarray,
+    pf: np.ndarray,
+    eval_origins: list[int],
+    horizons: list[int],
+    config: ForecastConfig,
+) -> Callable[[optuna.Trial], float]:
+    """Objective: pooled MAE of the tweedie candidate on the EVAL selection
+    origins (direct protocol — fit at origin o on rows with targets ≤ o,
+    score day o+h). Never reads a test origin, so the tuned params stay an
+    honest selection-origin choice."""
+
+    def objective(trial: optuna.Trial) -> float:
+        from sklearn._loss.loss import HalfTweedieLoss
+
+        params: dict[str, Any] = {
+            "min_samples_leaf": config.hgb_tuned.min_samples_leaf,
+            "l2_regularization": config.hgb_tuned.l2_regularization,
+            "max_features": config.hgb_tuned.max_features,
+            "max_iter": config.hgb_tuned.max_iter,
+        }
+        for name, (kind, bounds, log) in MULTISTEP_TWEEDIE_SPACE.items():
+            lo, hi = bounds
+            if kind == "int":
+                params[name] = trial.suggest_int(name, int(lo), int(hi))
+            else:
+                params[name] = trial.suggest_float(name, float(lo), float(hi), log=log)
+        total = 0.0
+        count = 0
+        n_num = 7 + 3 + 9  # calendar + lag trio + peak block (multihorizon layout)
+        for origin in eval_origins:
+            for h in horizons:
+                x_train, y_train = _design_train(units, cal, pf, origin, h)
+                x_pred = _design_pred(units, cal, pf, origin, h)
+                model = HistGradientBoostingRegressor(
+                    loss=HalfTweedieLoss(power=TWEEDIE_POWER),
+                    categorical_features=[n_num, n_num + 1],
+                    random_state=config.seed,
+                    **params,
+                )
+                model.fit(x_train, y_train)
+                err = np.abs(units[origin + h] - model.predict(x_pred))
+                total += float(err.sum())
+                count += int(err.size)
+        return total / count
+
+    return objective
+
+
+def tune_multistep_tweedie(
+    settings: DemandSettings,
+    config: ForecastConfig,
+    n_trials: int = 12,
+    eval_origin_count: int = 2,
+) -> optuna.Study:
+    """Seed-capped Optuna study for the multi-step tweedie candidate.
+
+    Judges each trial on the pooled MAE of the last ``eval_origin_count``
+    SELECTION origins (the same origins the router later uses), then persists
+    the best params to ``data/hpo_best_multistep_tweedie.json`` for mirroring
+    into ``ForecastConfig.multistep_tweedie`` + ``params.yaml`` (the same
+    contract as the nowcast-arm studies).
+    """
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    panel = pl.read_parquet(settings.data_dir / "panel.parquet")
+    dates, _series_ids, units = panel_matrix(panel)
+    cal = _calendar_features(dates)
+    pf = peak_feature_tensor(units)
+    horizons = list(config.multistep_horizons)
+    origins = multistep_origin_indices(len(dates), config)
+    selection, _test = split_origins(origins, config)
+    eval_origins = selection[-eval_origin_count:]
+    logger.info(
+        "HPO[multistep_tweedie]: %d trials on selection origins %s (never test)",
+        n_trials,
+        [str(dates[o])[:10] for o in eval_origins],
+    )
+    sampler = optuna.samplers.TPESampler(seed=settings.seed)
+    study = optuna.create_study(direction="minimize", sampler=sampler)
+    study.optimize(
+        make_multistep_tweedie_objective(units, cal, pf, eval_origins, horizons, config),
+        n_trials=n_trials,
+    )
+    best = dict(study.best_params)
+    out = {
+        "best_params": best,
+        "best_selection_mae": float(study.best_value),
+        "n_trials": len(study.trials),
+        "seed": settings.seed,
+        "model": "multistep_tweedie",
+        "variance_power": TWEEDIE_POWER,
+        "eval_origins": [str(dates[o])[:10] for o in eval_origins],
+        "fixed_params": {
+            "min_samples_leaf": config.hgb_tuned.min_samples_leaf,
+            "l2_regularization": config.hgb_tuned.l2_regularization,
+            "max_features": config.hgb_tuned.max_features,
+            "max_iter": config.hgb_tuned.max_iter,
+        },
+    }
+    path = settings.data_dir / "hpo_best_multistep_tweedie.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(out, indent=2))
+    logger.info(
+        "HPO[multistep_tweedie] best selection MAE=%.4f params=%s -> %s",
+        study.best_value,
+        best,
+        path,
+    )
+    return study
 
 
 def figure_hpo_history(study: optuna.Study) -> go.Figure:

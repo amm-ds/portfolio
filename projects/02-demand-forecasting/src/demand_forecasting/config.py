@@ -64,6 +64,30 @@ class XGBTunedConfig(PortfolioBaseModel):
         return self.model_dump()
 
 
+class MultistepTweedieConfig(PortfolioBaseModel):
+    """Multi-step tweedie-candidate hyperparameters (wave 20).
+
+    Best of a seeded 12-trial Optuna study (``hpo.tune_multistep_tweedie``,
+    TPESampler seed 42, selection-origin pooled MAE 6.8190 on UCI) that tunes
+    lr/depth/leaves on the multi-step SELECTION origins only;
+    min_samples_leaf / l2 / max_features / max_iter stay on the champion HGB
+    values. params.yaml mirrors them. The loss is the compound-Poisson tweedie
+    deviance with variance power 1.5 (fixed in multihorizon.TWEEDIE_POWER).
+    """
+
+    learning_rate: float = Field(default=0.03145859378075644, gt=0)
+    max_iter: int = Field(default=190, ge=10)
+    max_leaf_nodes: int = Field(default=59, ge=2)
+    max_depth: int | None = Field(default=8, ge=1, description="None = unlimited.")
+    min_samples_leaf: int = Field(default=48, ge=1)
+    l2_regularization: float = Field(default=0.0014656689866341544, ge=0)
+    max_features: float = Field(default=0.5260286352147595, gt=0, le=1.0)
+
+    def estimator_kwargs(self) -> dict[str, Any]:
+        """Kwargs for :class:`~sklearn.ensemble.HistGradientBoostingRegressor`."""
+        return self.model_dump()
+
+
 class LGBMTunedConfig(PortfolioBaseModel):
     """Production LightGBM hyperparameters — best of a seeded 25-trial study
     (CV mean MAE 8.4133, beats hgb_tuned's 8.5291); params.yaml mirrors them."""
@@ -99,6 +123,10 @@ class ForecastConfig(PortfolioBaseModel):
     )
     lgbm_tuned: LGBMTunedConfig = Field(
         default_factory=LGBMTunedConfig, description="Production LightGBM params (from HPO)."
+    )
+    multistep_tweedie: MultistepTweedieConfig = Field(
+        default_factory=MultistepTweedieConfig,
+        description="Multi-step tweedie-candidate params (selection-origin HPO, wave 20).",
     )
     seed: int = Field(
         default=42, description="Mirror of DemandSettings.seed for estimators built from config."

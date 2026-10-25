@@ -12,6 +12,7 @@ import polars as pl
 import pytest
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.multihorizon import (
+    MIN_LAG_ORIGIN,
     _calendar_features,
     _design_pred,
     _design_train,
@@ -19,6 +20,7 @@ from demand_forecasting.multihorizon import (
     _seasonal_naive_pred,
     multistep_origin_indices,
     panel_matrix,
+    peak_feature_tensor,
     run_multistep,
     split_origins,
 )
@@ -88,16 +90,20 @@ def test_horizon_features_ignore_actuals_within_h_days(mixed_panel: pl.DataFrame
     """Taint every day in (origin, origin+h] — the designs must not move."""
     dates, _, units = panel_matrix(mixed_panel)
     cal = _calendar_features(dates)
+    pf = peak_feature_tensor(units)
     origin = 60
     for h in (1, 7, 14):
         tainted = units.copy()
         tainted[origin + 1 : origin + h + 1] += 1000.0
-        x_clean, y_clean = _design_train(units, cal, origin, h)
-        x_taint, y_taint = _design_train(tainted, cal, origin, h)
+        pf_taint = peak_feature_tensor(tainted)
+        np.testing.assert_array_equal(pf[: origin + 1], pf_taint[: origin + 1])
+        x_clean, y_clean = _design_train(units, cal, pf, origin, h)
+        x_taint, y_taint = _design_train(tainted, cal, pf_taint, origin, h)
         np.testing.assert_array_equal(x_clean, x_taint)
         np.testing.assert_array_equal(y_clean, y_taint)
         np.testing.assert_array_equal(
-            _design_pred(units, cal, origin, h), _design_pred(tainted, cal, origin, h)
+            _design_pred(units, cal, pf, origin, h),
+            _design_pred(tainted, cal, pf_taint, origin, h),
         )
 
 
@@ -126,14 +132,15 @@ def test_training_targets_never_exceed_the_origin(
     used are at least h days older than any training target."""
     dates, _, units = panel_matrix(mixed_panel)
     cal = _calendar_features(dates)
-    for origin in (40, 80):
+    for origin in (60, 80):
         for h in (1, 7, 14):
-            x_train, y_train = _design_train(units, cal, origin, h)
+            pf = peak_feature_tensor(units)
+            x_train, y_train = _design_train(units, cal, pf, origin, h)
             # every y value must appear among units[0..origin]
             known = np.isin(y_train, units[: origin + 1])
             assert known.all()
             # the largest training target is exactly `origin` days old at most
-            lo = 14
+            lo = MIN_LAG_ORIGIN
             hi = origin - h
             assert y_train.size == units.shape[1] * (hi - lo + 1)
             del x_train
@@ -188,6 +195,23 @@ def test_run_multistep_block_shape(mixed_panel: pl.DataFrame) -> None:
         assert "rmsse" in block["per_horizon"][h]["champion"]
     # growth curves over all horizons
     assert sorted(block["horizon_growth"]["pooled"]["routed"]) == ["1", "14", "7"]
+    # wave-20 peak-capable blocks present
+    assert "hgb_tweedie" in block["candidates"] and "hurdle_hgb" in block["candidates"]
+    assert block["routing"]["hurdle_correction"]["chosen"] in (
+        "identity",
+        "scalar",
+        "isotonic",
+    )
+    for cand in ("hgb_tweedie", "hurdle_hgb"):
+        assert cand in block["candidate_comparison"]["per_class"]["lumpy"]
+    peak = block["peak_capture"]
+    for cand in peak["candidates"]:
+        assert cand in peak["per_class"]["lumpy"]
+    assert set(result.figures) >= {
+        "multistep_peak_capture",
+        "multistep_candidate_comparison",
+        "multistep_peak_day_scatter",
+    }
     # coverage table present with verdicts
     prob = result.probabilistic_block
     for h in ("1", "7", "14"):
@@ -204,7 +228,15 @@ def test_per_class_table_sums(mixed_panel: pl.DataFrame) -> None:
     block = result.block
     counts = block["demand_classes"]["counts"]
     assert sum(counts.values()) == 4
-    assert len(block["routing"]["method_choices"]) == counts["intermittent"] + counts["lumpy"]
+    # the wave-20 routing table covers every series (sparse: statistical + ML;
+    # dense: direct_hgb + ML)
+    assert len(block["routing"]["method_choices"]) == 4
+    pool_sparse = set(block["routing"]["pool_sparse"])
+    for sid, method in block["routing"]["method_choices"].items():
+        if block["demand_classes"]["series"][sid] in ("intermittent", "lumpy"):
+            assert method in pool_sparse
+        else:
+            assert method in block["routing"]["pool_dense"]
     # per-class series counts sum to n_series
     total = sum(entry["n_series"] for entry in block["headline_per_class"].values())
     assert total == 4
@@ -226,6 +258,7 @@ def test_routing_uses_selection_origins_only(mixed_panel: pl.DataFrame) -> None:
     block = result.block
     choices_before = dict(block["routing"]["method_choices"])
     widths_before = dict(result.probabilistic_block["conformal_widths_by_h"])
+    correction_before = dict(block["routing"]["hurdle_correction"]["selection_mae"])
 
     tainted_units = units.copy()
     last = test[-1]
@@ -235,6 +268,12 @@ def test_routing_uses_selection_origins_only(mixed_panel: pl.DataFrame) -> None:
     result2 = run_multistep(settings=_settings(), config=MS_CONFIG, panel=tainted_panel)
     assert result2.block["routing"]["method_choices"] == choices_before
     assert result2.probabilistic_block["conformal_widths_by_h"] == widths_before
+    # the hurdle zero-correction is chosen on selection origins only too
+    assert (
+        result2.block["routing"]["hurdle_correction"]["chosen"]
+        == block["routing"]["hurdle_correction"]["chosen"]
+    )
+    assert result2.block["routing"]["hurdle_correction"]["selection_mae"] == correction_before
     # scored MAEs DID move (sanity: the taint actually changed the window)
     h14 = "14"
     assert (

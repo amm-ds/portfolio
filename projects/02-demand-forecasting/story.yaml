@@ -282,10 +282,10 @@ sections:
       - **HPO earns a modest, real gain** — 56 seeded trials moved the
         sklearn HGB 8.619 → 8.529 (−1.0%) pooled over all folds (legacy,
         `hpo_history`).
-      - **Reconciliation pays off on the real hierarchy** — w=0.50,
-        incoherence 474.3 → 237.2 (×(1−w) exactly, property-tested), store
-        MAE 746.2 → 743.4; synthetic chose w=0.05 — the fold-4-drifting
-        parent is barely trusted (store-level HGB refit jitters run-to-run
+      - **Reconciliation pays off on the real hierarchy** — w=0.75 this run,
+        incoherence 536.7 → 134.2 (×(1−w) exactly, property-tested), store
+        MAE 749.1 → 719.8; synthetic chose w=0.00 this run — the fold-4-drifting
+        parent is not trusted (store-level HGB refit jitters run-to-run
         within the documented OpenMP tolerance; numbers from the latest
         canonical run).
       - **Probabilistic bands — coverage AND width on the test window**
@@ -297,33 +297,48 @@ sections:
         ~100% of test rows: the "conservative" UCI verdict is a degenerate
         band, not a useful one, stated on the figure whose buttons drop it
         (`probabilistic_band`).
-      - **Multi-step track (wave 19, now the PRIMARY headline,
-        `direct_multihorizon_v1`)**: the nowcast "14-day" number was 14
-        one-day-ahead predictions — the rebuild fits one direct model per
-        horizon h ∈ {1, 2, 3, 5, 7, 10, 14} (lags ≥ h days old by
-        construction, taint-tested) on 20 weekly origins (16 select, 4 scored
-        once, no embargo gap). ADI/CV² classes: 15 erratic + 1,069 lumpy of
-        1,084 series — sparse series route to the best statistical method
-        (zero for 1,027, SBA 30, TSB/Croston/seasonal_naive 4 each) chosen on
-        selection origins only (property-tested). Lumpy champion vs floor:
-        6.72 vs 11.07 MAE at h=7 (95% paired-bootstrap CI [−7.06, −2.26]),
-        6.45 vs 10.64 at h=14 — routing beats the unrouted all-HGB ladder by
-        4.65 MAE (CI [4.15, 5.15]); on the 15 erratic series nothing
-        significantly beats the floor (CIs span zero). Error grows with the
-        true horizon (pooled MAE 2.46 → 7.37, h=1 → h=14; the sawtooth is
-        weekday composition — weekly origins fix each horizon's weekday).
-        Per-horizon bands: coverage AND width per h, pooled 0.923 →
-        *conservative* (sparse P(sale)+ladder bands, no collapsing band).
-        Order-up-to simulation (τ=0.90; holding 0.25, stockout 4.0):
-        erratic 1.058 vs 1.180 cost/unit champion-vs-floor; lumpy 3.260 vs
-        2.716 the other way — MAE-optimal routing over-orders at high τ on
-        spike-driven demand; simulation, no savings claims.
+      - **Multi-step track (wave 19 rebuild + wave 20 peak candidates, now the
+        PRIMARY headline, `direct_multihorizon_v1`)**: the nowcast "14-day"
+        number was 14 one-day-ahead predictions — the rebuild fits one direct
+        model per horizon h ∈ {1, 2, 3, 5, 7, 10, 14} on 20 weekly origins (16
+        select, 4 scored once, no embargo gap), every feature aged ≥ h days at
+        target−h (calendar + a 9-column peak block — 7/14/28d rolling
+        mean/max, days-since-last-nonzero, 28d non-zero count, 28d peak ratio
+        — + aged lags, taint-tested). ADI/CV² classes: 15 erratic + 1,069
+        lumpy of 1,084 series — the wave-20 router (chosen on selection
+        origins only, property-tested) gives lumpy series the statistical
+        methods PLUS two peak-capable ML candidates: `hgb_tweedie` (tweedie
+        deviance, variance power 1.5, tuned on the selection origins) and
+        `hurdle_hgb` (P(sale) classifier × log1p-size regressor,
+        zero-corrected on the selection origins — identity won, tested not
+        assumed); the 15 erratic series choose among the direct HGB and the
+        two ML candidates. Lumpy champion vs floor: 6.17 vs 11.07 MAE at h=7
+        (95% paired-bootstrap CI [−7.67, −2.79]), 5.88 vs 10.64 at h=14 —
+        routing beats the unrouted all-HGB ladder by 3.97 MAE (CI [3.256,
+        4.821]); the flat methods keep pooled lumpy MAE (routed 5.79 < hurdle
+        6.19 < tweedie 7.09, CIs exclude zero) — reported plainly. All 15
+        erratic series route to the ML candidates (11 hurdle, 4 tweedie):
+        pooled erratic MAE drops to 39.5 (hurdle) and peak-day MAE falls from
+        184.3 (zero) to ~124; on lumpy tweedie cuts peak-day MAE to 22.1 (vs
+        zero 27.0) while its top-5 day-ranking recall drops to 0.84 vs the flat
+        0.97 — magnitude vs timing, both measured with paired-bootstrap CIs in
+        the `peak_capture` block. Error grows with the true horizon (pooled
+        MAE 0.06 → 6.52, h=1 → h=14; the sawtooth is weekday composition —
+        weekly origins fix each horizon's weekday). Per-horizon bands:
+        coverage AND width per h, pooled 0.923 → *conservative* (sparse
+        P(sale)+ladder bands, no collapsing band; the ML candidates carry
+        their own conformal bands, pooled 0.912). Order-up-to simulation
+        (τ=0.90; holding 0.25, stockout 4.0): erratic 1.092 vs 1.180 cost/unit
+        champion-vs-floor; lumpy 2.859 vs 2.716 the other way — MAE-optimal
+        routing over-orders at high τ on spike-driven demand; simulation, no
+        savings claims.
       - **Model ranking changed vs the nowcast track, as the audit
         expected**: the multi-step leaderboard is led by the routed pipeline
-        (7.48 pooled MAE), then `zero` (7.70) and `seasonal_naive` (9.49) —
-        the boosted direct HGB serves only the 15 erratic series, where it
-        does not significantly beat the floor. "Mostly zero, sometimes SBA"
-        is the honest sparse champion on this panel.
+        (6.33 pooled MAE), then `hurdle_hgb` (6.65), `hgb_tweedie` (7.67) and
+        `zero` (7.70) — rank-1-vs-2 gap CI [−0.427, −0.209] excludes zero.
+        "Mostly zero, sometimes a peak-capable model on the series that show
+        spikes on the selection origins" is the honest sparse champion on this
+        panel.
 
       **Business summary:** The decision this informs is whether to replace
       the "same day last week" planning rule with a tuned gradient-boosting
@@ -339,7 +354,7 @@ sections:
       effects before any safety-stock policy can rest on these numbers. No
       savings are claimed here — what is delivered is an honest measurement
       and its limits.
-    figures: [metrics_bars, forecast_vs_actual, probabilistic_band, multistep_error_vs_horizon, multistep_class_scoreboard, multistep_routing, multistep_band_calibration]
+    figures: [metrics_bars, forecast_vs_actual, probabilistic_band, multistep_error_vs_horizon, multistep_class_scoreboard, multistep_routing, multistep_band_calibration, multistep_peak_capture, multistep_candidate_comparison, multistep_peak_day_scatter]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
   - id: conclusions
     text_md: |
@@ -403,11 +418,11 @@ roadmap:
   - status: delivered
     text: Seeded Optuna HPO — 56 trials sklearn HGB (25 per mirror), −1.0% MAE (8.619→8.529) pooled; best configs persisted.
   - status: delivered
-    text: MinT-lite reconciliation — w 0.05 synth / 0.50 UCI; incoherence 474.3→237.2 UCI (×(1−w)); store MAE 746.2→743.4.
+    text: MinT-lite reconciliation — w 0.00 synth / 0.75 UCI (this run); incoherence 536.7→134.2 UCI (×(1−w)); store MAE 749.1→719.8.
   - status: delivered
     text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; test-window horizon set coverage 0.741 (synthetic, width 26.5, optimistic) / 0.861 (UCI, width 0.00, degenerate) vs 0.80 target.
   - status: delivered
-    text: Direct multi-horizon track (direct_multihorizon_v1) — per-h models on 20 weekly origins, ADI/CV² routing (1,069/1,084 series sparse), paired-bootstrap CIs, per-h bands (0.923 pooled, conservative), order-up-to decision simulation; lumpy champion 6.72 vs 11.07 floor MAE at h=7.
+    text: Direct multi-horizon track (direct_multihorizon_v1) — per-h models on 20 weekly origins, per-class ADI/CV² routing over statistical + peak-capable ML candidates (1,069/1,084 series sparse), paired-bootstrap CIs, per-h bands (0.923 pooled, conservative) + candidate bands, peak-capture metrics (peak_mae / peak_recall per window), order-up-to decision simulation; lumpy champion 6.17 vs 11.07 floor MAE at h=7, erratic series routed to the peak-capable models (pooled 39.5 vs 75.7 all-HGB).
   - status: delivered
     text: Serving — showcase-API artifact without retraining; champion lgbm_tuned (CV MAE 8.413); contract in SERVING.md.
 figure_captions:
@@ -422,4 +437,7 @@ figure_captions:
   multistep_class_scoreboard: Champion vs floor MAE per demand class at h=7 and h=14 (units) with a second panel for the champion-minus-floor gap and its 95% paired cluster-bootstrap CI — the lumpy gap CIs exclude zero, the erratic ones span it.
   multistep_routing: Routing effect per class — all-HGB MAE minus routed MAE (units), 95% bootstrap whiskers. Sparse classes sit well above zero; boosted trees overfit intermittent series, statistical methods do not.
   multistep_band_calibration: Per-horizon band calibration on the scored origins — empirical coverage vs the 80% target on the left, average width in units on the right. Verdicts per h; sparse rows carry P(sale)+quantile-ladder bands that cannot collapse to zero width.
+  multistep_peak_capture: Peak capture per class — per-candidate peak_recall and peak_mae differences vs the zero forecast with 95% paired bootstrap CIs. On erratic every candidate cuts peak-day error by ~60 units vs zero; on lumpy tweedie trades top-5 day-ranking recall for smaller error on the days peaks actually happen.
+  multistep_candidate_comparison: Pooled-over-h MAE per class for the peak-capable candidates (tweedie / hurdle) vs the routed pipeline and zero — bars on the left, candidate-minus-routed gap with 95% CI on the right. The flat methods keep pooled lumpy MAE; hurdle wins erratic outright.
+  multistep_peak_day_scatter: Forecast vs actual on each scored window's top-decile demand day (lumpy class), one panel per candidate, dotted parity line. The zero candidate hugs the bottom — the structural miss the peak-capable candidates were built for; tweedie visibly tracks the diagonal on the days that matter.
   probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, test window. The band covers the h=1..14 horizon set at 0.861 on UCI (target 0.80) but with zero width — the median sits on the zero atom — while on synthetic it covers 0.741 at 26.5 units average width (under-covering); the figure states coverage and width.

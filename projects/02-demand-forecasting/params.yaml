@@ -35,6 +35,17 @@ lgbm_tuned:
   num_leaves: 18
   min_child_samples: 139
   reg_lambda: 0.0002520721916536751
+# Multi-step tweedie candidate (wave 20) — best of a seeded 12-trial study on
+# the selection origins only (hpo tune_multistep_tweedie, selection MAE
+# 6.8190); lr/depth/leaves tuned, the rest mirrors the champion HGB.
+multistep_tweedie:
+  learning_rate: 0.03145859378075644
+  max_iter: 190
+  max_leaf_nodes: 59
+  max_depth: 8
+  min_samples_leaf: 48
+  l2_regularization: 0.0014656689866341544
+  max_features: 0.5260286352147595
 # UCI Online Retail II real-data track (synthetic stays the default).
 data_source: synthetic
 uci_n_stores: 8

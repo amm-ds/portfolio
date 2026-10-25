@@ -71,11 +71,13 @@ from demand_forecasting.intermittent import (
 )
 from demand_forecasting.multihorizon import (
     LADDER_LEVELS,
+    ML_SPARSE,
     OriginScore,
     _calendar_features,
     _policy_residuals,
     _score_origin,
     _test_cells,
+    apply_hurdle_correction,
     multistep_origin_indices,
     panel_matrix,
     split_origins,
@@ -482,17 +484,19 @@ def build_demo_payload(
         raise ValueError("recomputed ADI/CV² classes disagree with committed demand_classes")
 
     # routing per series, from the COMMITTED routing table (chosen on the
-    # selection origins only — property-tested upstream)
+    # selection origins only — property-tested upstream); the wave-20 table
+    # covers every series (sparse: statistical + ML candidates; dense:
+    # direct_hgb + ML candidates)
     choices = ms["routing"]["method_choices"]
     method_of = np.empty(len(series_ids), dtype=object)
     for i, sid in enumerate(series_ids):
+        m = choices.get(sid)
         if sparse[i]:
-            m = choices.get(sid)
-            if m not in STATISTICAL_METHODS:
+            if m not in (*STATISTICAL_METHODS, *ML_SPARSE):
                 raise ValueError(f"committed routing table missing method for sparse series {sid}")
-            method_of[i] = m
-        else:
-            method_of[i] = CHAMPION_HGB
+        elif m not in ("direct_hgb", *ML_SPARSE):
+            raise ValueError(f"committed routing table missing method for dense series {sid}")
+        method_of[i] = m
 
     # re-run every origin (scored origins also get the shock grid)
     scores = Parallel(n_jobs=-2, backend="loky")(
@@ -500,6 +504,10 @@ def build_demo_payload(
         for o in origins
     )
     by_origin = {s.origin: s for s in scores}
+
+    # the hurdle zero-correction is part of the committed candidate: re-derive
+    # it on the selection origins (deterministic) so the re-run cells match
+    apply_hurdle_correction(by_origin, selection, horizons, units)
 
     # ---- drift guards: the re-run must reproduce the committed scalars ----
     cells = _test_cells(by_origin, test, horizons, units, sparse, method_of)
@@ -521,7 +529,7 @@ def build_demo_payload(
             "demand_class": classes[sid]["class"],
             "adi": round(classes[sid]["adi"], 4),
             "cv2": round(classes[sid]["cv2"], 4) if np.isfinite(classes[sid]["cv2"]) else None,
-            "model_used": CHAMPION_HGB if not sparse[i] else method,
+            "model_used": method,
             "origins": [
                 _origin_entry(
                     i,

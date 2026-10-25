@@ -208,6 +208,69 @@ small tabular lag problems; a sequence model is the roadmap answer).
   per-series routed curves at the h-lattice on 3 scored origins, scoreboard,
   growth, decision mapping; no nowcast numbers).
 
+### J. Peak-capable candidates (wave 20: "peaks aren't captured")
+
+- **The feedback**: demand peaks are missed and the error could be
+  dramatically improved. Diagnosis: the lumpy-class methods are flat-rate
+  estimators — zero/SBA/TSB/Croston emit one constant per window, so a peak
+  day is structurally indistinguishable from any other day; the flat methods
+  cannot even *represent* a peak, let alone time it.
+- **Options**: (a) rolling statistics as features for the boosted per-h
+  models (rolling mean/max, days-since-last-nonzero, non-zero counts, peak
+  ratio) so trees can modulate within a window; (b) a tweedie-loss HGB —
+  the compound-Poisson deviance (variance power 1.5) is the standard
+  count-with-spikes likelihood, half-way between Poisson (var = mean) and
+  gamma (var = mean²); (c) a hurdle two-stage model — log-loss classifier
+  for P(sale) times a log1p-size regressor on the positive part; (d)
+  count-specific architectures (NPTS, DeepAR-style) — deferred: the panel
+  is 374 days × 1,600 series; sample complexity argues for the direct HGB
+  family. Decision: (a) + (b) + (c), all inside the existing direct
+  per-horizon protocol.
+- **Peak features**: a 9-column block computed at the reference day
+  target−h (rolling mean AND max over 7/14/28d windows, days-since-last-
+  non-zero, 28d non-zero-day count, 28d peak ratio). Every entry is ≥ h days
+  older than the target — the same aging as the lag trio, so the leakage
+  taint proof covers them unchanged. All direct candidates (direct_hgb,
+  hgb_tweedie, hurdle_hgb) read the extended design.
+- **hgb_tweedie**: HGBRegressor with sklearn's HalfTweedieLoss(power=1.5);
+  lr/depth/leaves tuned by a seeded capped Optuna study (12 TPE trials,
+  TPESampler seed 42) judged on the pooled MAE of the last two SELECTION
+  origins only — never a test origin. Best params land in
+  `ForecastConfig.multistep_tweedie` + `params.yaml` (the nowcast-arm
+  contract).
+- **hurdle_hgb**: per-h two-stage HGB on the champion hyperparameters —
+  log-loss classifier for P(sale), regressor on log1p(non-zero sizes); the
+  point forecast is p̂·(exp(ŷ)−1). The raw product is biased toward
+  non-zero answers, so a zero-correction is fit on the SELECTION origins
+  only: identity vs scalar (Σactual/Σpred) vs isotonic, whichever lowers
+  the selection summed |error| (tested, not assumed — on UCI identity
+  wins: shrinking a sparse forecast hurts more than the bias costs).
+- **Selection/scoring**: the routing pool grows per class — sparse series
+  choose among the five statistical methods PLUS the two ML candidates
+  (direct_hgb stays excluded: the wave-19 finding stands); smooth/erratic
+  series choose among direct_hgb and the two ML candidates. Everything is
+  chosen on the selection origins only (property-tested by permuting a test
+  window); the last 4 origins are scored once.
+- **Peak-capture metrics** (the headline the user asked for): per scored
+  window (series × test origin) over the scored h-lattice days —
+  `peak_mae` = MAE on the window's top-decile-by-actual days,
+  `peak_recall` = share of the window's top-5 actual days ranked in the
+  forecast's own top-5. Pooled per class with paired cluster bootstrap CIs
+  against the routed and zero baselines. Honest-report rule: where the flat
+  methods still win pooled MAE (lumpy), the block says so with the measured
+  deltas; the peak-capable models are reported as what they are — winners
+  on spike-driven series (erratic) and peak-day ranking, not a uniform
+  pooled-MAE improvement.
+- **Bands for the new candidates**: point ± q80 split-conformal width per h,
+  calibrated on the selection origins' residuals around the candidate's own
+  point forecast, zero-clipped and sorted; sparse rows keep the honest
+  P(sale)+quantile-ladder band. Coverage AND width committed per h.
+- **Runtime**: the per-origin fit count goes from 28 to 49 HGB fits
+  (7 point + 21 quantile + 7 tweedie + 7 classifier + 7 size-regressor);
+  the hurdle's two stages are per-h — measured first; they fit the budget
+  (no shared-classifier shortcut needed at 16 cores; UCI multi-step ≈ 4 min
+  of the ≈ 12 min evaluate).
+
 ## Pipeline
 
 ```mermaid
@@ -239,12 +302,14 @@ flowchart LR
    origins 1..n-1 only — property-tested by shuffling the test fold's
    actuals and asserting the champion pick is unchanged.
 6. Multi-step direct models: features for horizon h reference only actuals
-   ≥ h days older than the target (lags `lag_h`, `lag_{h+7}`, `lag_{h+14}`);
-   training rows use targets ≤ the origin only — property-tested by tainting
-   every day in (origin, origin+h] and asserting the designs, predictions and
-   quantiles do not move. Routing and conformal widths are fit on the
+   ≥ h days older than the target (the peak block at target−h plus lags
+   `lag_h`, `lag_{h+7}`, `lag_{h+14}`); training rows use targets ≤ the
+   origin only — property-tested by tainting every day in (origin, origin+h]
+   and asserting the designs, predictions and quantiles do not move. Routing,
+   the hurdle zero-correction and the conformal widths are fit on the
    selection origins only — property-tested by permuting a test window's
-   actuals and asserting every routing choice and width is unchanged.
+   actuals and asserting every routing choice, correction and width is
+   unchanged.
 
 ## Experiment versioning (ADR-0007 worked example)
 
@@ -294,6 +359,51 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.9.0 (2026-10-25)** — wave 20 (peak-capable candidates; user feedback:
+  "demand peaks aren't captured correctly"): the multi-step track's design
+  gains a 9-column peak block computed at target−h (rolling mean AND max over
+  7/14/28d windows, days-since-last-nonzero, 28d non-zero-day count, 28d peak
+  ratio) — every entry ≥ h days older than the target by construction, covered
+  by the existing taint proofs (MIN_LAG_ORIGIN 14 → 28). Two ML candidates
+  join the per-class router (selection origins only, property-tested):
+  `hgb_tweedie` — HGB with the compound-Poisson tweedie deviance (variance
+  power 1.5), lr/depth/leaves tuned by a seeded 12-trial Optuna study judged
+  on the last two SELECTION origins (best selection MAE 6.8190; params in
+  `ForecastConfig.multistep_tweedie` + `params.yaml`, the nowcast-arm
+  contract; `cli hpo --model multistep_tweedie`) — and `hurdle_hgb` — per-h
+  two-stage HGB (log-loss P(sale) classifier × log1p-size regressor; point =
+  p̂·(exp(ŷ)−1)) with a zero-correction chosen on the selection origins among
+  identity / scalar / isotonic (identity won on UCI — tested, not assumed).
+  Routing pools per class: sparse = statistical + ML (direct_hgb stays
+  excluded, the wave-19 finding); dense = direct_hgb + ML. New peak-capture
+  metrics per scored window (peak_mae on the top-decile-by-actual days,
+  peak_recall on the top-5 day ranks), pooled per class with paired cluster
+  bootstrap CIs vs the routed and zero baselines; new figures
+  `multistep_{peak_capture,candidate_comparison,peak_day_scatter}`; per-
+  candidate conformal bands in probabilistic.json (`candidate_bands`, sparse
+  rows keep the P(sale)+ladder band). UCI regenerated: the router now sends
+  all 15 erratic series to the ML candidates (11 hurdle, 4 tweedie) — pooled
+  erratic MAE 75.7 → 44.7 (routed), hurdle 39.5 beats routed (CI excludes
+  zero), and erratic peak-day MAE drops from 184.3 (zero) to ~124; on lumpy
+  the flat methods keep pooled MAE (routed 5.787 < hurdle 6.189 < tweedie
+  7.089 — reported plainly) while tweedie cuts lumpy peak-day MAE to 22.06
+  (zero 27.02) at a top-5 day-ranking recall cost (0.836 vs 0.974) — magnitude
+  vs timing, both measured. Lumpy champion 6.167 vs floor 11.070 at h=7 (CI
+  [−7.673, −2.789]); routing beats unrouted all-HGB by 3.970 MAE (CI
+  [3.256, 4.821]); leaderboard routed 6.326 → hurdle 6.651 → tweedie 7.674 →
+  zero 7.701 with the rank-1-vs-2 CI excluding zero. Bands pooled 0.923
+  conservative; candidate bands 0.912. Decision metric at τ=0.90: erratic
+  1.092 vs 1.180, lumpy 2.859 vs 2.716. Runtime: UCI evaluate ≈ 12.5 min
+  end-to-end (multi-step ≈ 4 min, 49 HGB fits per origin — the per-h hurdle
+  two-stage fits the budget, no shared-classifier shortcut), synthetic ≈ 2
+  min. Tests: +9 new hand cases (hurdle math, tweedie construction, peak
+  tensor, window peak metrics, zero-correction choice, selection-only proof
+  extended to the correction, peak-table / candidate-comparison README
+  guards). Reconciliation jittered again within the documented OpenMP
+  tolerance on the canonical reruns (UCI w 0.50 → 0.75 across runs, synthetic
+  w 0.05 → 0.00) — quotes follow the latest canonical run, per the wave-13
+  platform note. dvc repro remains
+  broken repo-wide — stages executed via their `cmd`s.
 - **0.8.0 (2026-10-24)** — wave 19 (fifth-pass audit): the experiment is
   genuinely multi-step. New primary track, protocol
   `direct_multihorizon_v1` (`multihorizon.py`): direct per-horizon models

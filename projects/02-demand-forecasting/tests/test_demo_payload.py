@@ -165,11 +165,14 @@ def test_payload_shape(payload: dict) -> None:
     assert len(origin["models"]["zero"]["y_pred"]) == len(HORIZONS)
     assert len(origin["models"]["routed"]["y_pred"]) == len(HORIZONS)
     assert len(origin["models"]["floor"]["y_pred"]) == len(HORIZONS)
-    # champion_hgb exists for erratic series only
+    # champion_hgb exists for erratic series only; its curve is the boosted
+    # direct HGB, which IS the routed curve only when the router kept the
+    # series on direct_hgb (wave 20: erratic series may route to the
+    # peak-capable ML candidates instead)
     for e in payload["catalog"]:
         has_champ = "champion_hgb" in e["origins"][0]["models"]
         assert has_champ == (e["demand_class"] == "erratic")
-        if has_champ:
+        if has_champ and e["model_used"] == "direct_hgb":
             assert (
                 e["origins"][0]["models"]["champion_hgb"]["y_pred"]
                 == e["origins"][0]["models"]["routed"]["y_pred"]
@@ -180,13 +183,14 @@ def test_class_quotas_keep_every_erratic_series(payload: dict) -> None:
     by_class = payload["catalog_summary"]["by_class"]
     assert by_class["erratic"] == 2  # the fixture has exactly 2 erratic series
     assert by_class["lumpy"] == 4
-    erratic = [e for e in payload["catalog"] if e["demand_class"] == "erratic"]
-    assert {e["series_id"] for e in erratic} == {
-        e["series_id"] for e in payload["catalog"] if e["model_used"] == "direct_hgb"
-    }
-    assert all(
-        e["model_used"] != "direct_hgb" for e in payload["catalog"] if e["demand_class"] == "lumpy"
-    )
+    # every catalog entry honours the committed per-series routing choice;
+    # lumpy series never sit on the boosted direct HGB (sparse pool has no
+    # direct_hgb), erratic series choose among direct_hgb + the ML candidates
+    for e in payload["catalog"]:
+        if e["demand_class"] == "lumpy":
+            assert e["model_used"] != "direct_hgb"
+        else:
+            assert e["model_used"] in ("direct_hgb", "hgb_tweedie", "hurdle_hgb")
 
 
 # ---------------------------------------------------------------------------
@@ -248,10 +252,7 @@ def test_model_used_matches_committed_routing(payload: dict, demo_context) -> No
     settings, _config, _panel = demo_context
     committed = _committed(settings)["routing"]["method_choices"]
     for entry in payload["catalog"]:
-        if entry["demand_class"] == "lumpy":
-            assert entry["model_used"] == committed[entry["series_id"]]
-        else:
-            assert entry["model_used"] == "direct_hgb"
+        assert entry["model_used"] == committed[entry["series_id"]]
 
 
 def test_lumpy_routed_curve_matches_statistical_refit(
@@ -266,6 +267,8 @@ def test_lumpy_routed_curve_matches_statistical_refit(
         if entry["demand_class"] != "lumpy" or entry["model_used"] in (
             "zero",
             "seasonal_naive",
+            "hgb_tweedie",
+            "hurdle_hgb",  # ML-routed curves are model predictions, not flat re-fits
         ):
             continue
         i = idx[entry["series_id"]]
@@ -333,6 +336,8 @@ def test_shock_blocks_are_present_and_sane(payload: dict, demo_context) -> None:
             if entry["demand_class"] == "lumpy" and entry["model_used"] not in (
                 "zero",
                 "seasonal_naive",
+                "hgb_tweedie",
+                "hurdle_hgb",  # ML curves re-predict through fitted trees, not re-fits
             ):
                 i = idx[entry["series_id"]]
                 o = date_str_to_index(dates, origin["origin_date"])
