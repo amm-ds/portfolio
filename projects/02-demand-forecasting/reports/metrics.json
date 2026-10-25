@@ -553,12 +553,18 @@
       "zero",
       "croston",
       "sba",
-      "tsb"
+      "tsb",
+      "hgb_tweedie",
+      "hurdle_hgb"
     ],
     "champion": "routed",
-    "champion_definition": "per-series routing: ADI>=1.32 (intermittent/lumpy) -> best statistical method on selection origins; smooth/erratic -> direct per-horizon HGB",
+    "champion_definition": "per-series routing: sparse (ADI>=1.32) series -> best candidate among the statistical methods + the peak-capable hgb_tweedie / hurdle_hgb on the selection origins; smooth/erratic -> best among direct_hgb + the two ML candidates",
     "floor": "seasonal_naive",
     "naive": "zero",
+    "peak_capable_candidates": {
+      "hgb_tweedie": "HGBRegressor with the compound-Poisson tweedie deviance (variance power 1.5); lr/depth/leaves tuned on the selection origins via a seeded capped Optuna study (hpo.tune_multistep_tweedie)",
+      "hurdle_hgb": "per-h two-stage HGB: log-loss classifier for P(sale) + HGB on log1p(non-zero sizes); point = p_hat x (exp(y_reg) - 1), zero-corrected on the selection origins (identity / scalar / isotonic \u2014 whichever wins there)"
+    },
     "origins": {
       "n_origins": 20,
       "dates": [
@@ -654,14 +660,63 @@
       }
     },
     "routing": {
-      "rule": "sparse (ADI >= 1.32) series route to the best statistical method (zero/seasonal_naive/Croston/SBA/TSB) chosen per series on the selection origins ONLY; smooth/erratic series stay on the direct HGB",
-      "method_choices": {},
+      "rule": "per-series routing on the selection origins ONLY: sparse (ADI >= 1.32) series choose among zero/seasonal_naive/Croston/SBA/TSB/hgb_tweedie/hurdle_hgb; smooth/erratic series choose among direct_hgb/hgb_tweedie/hurdle_hgb",
+      "method_choices": {
+        "store_0|product_0": "hgb_tweedie",
+        "store_0|product_1": "hgb_tweedie",
+        "store_0|product_2": "hgb_tweedie",
+        "store_0|product_3": "hgb_tweedie",
+        "store_0|product_4": "direct_hgb",
+        "store_0|product_5": "direct_hgb",
+        "store_1|product_0": "hgb_tweedie",
+        "store_1|product_1": "hgb_tweedie",
+        "store_1|product_2": "hgb_tweedie",
+        "store_1|product_3": "direct_hgb",
+        "store_1|product_4": "hgb_tweedie",
+        "store_1|product_5": "hgb_tweedie",
+        "store_2|product_0": "direct_hgb",
+        "store_2|product_1": "hgb_tweedie",
+        "store_2|product_2": "direct_hgb",
+        "store_2|product_3": "direct_hgb",
+        "store_2|product_4": "hgb_tweedie",
+        "store_2|product_5": "direct_hgb",
+        "store_3|product_0": "hgb_tweedie",
+        "store_3|product_1": "direct_hgb",
+        "store_3|product_2": "hgb_tweedie",
+        "store_3|product_3": "direct_hgb",
+        "store_3|product_4": "hgb_tweedie",
+        "store_3|product_5": "direct_hgb"
+      },
+      "pool_sparse": [
+        "zero",
+        "seasonal_naive",
+        "croston",
+        "sba",
+        "tsb",
+        "hgb_tweedie",
+        "hurdle_hgb"
+      ],
+      "pool_dense": [
+        "direct_hgb",
+        "hgb_tweedie",
+        "hurdle_hgb"
+      ],
+      "hurdle_correction": {
+        "chosen": "isotonic",
+        "selection_mae": {
+          "identity": 85.85193452380952,
+          "scalar": 85.85193452380952,
+          "isotonic": 36.988935613307824
+        },
+        "scalar_factor": 1.0,
+        "note": "identity/scalar/isotonic compared on the selection origins only; the winner is applied to all origins; a series of all-zero training windows has no correction candidate (raw p\u0302=0)"
+      },
       "per_class": {
         "smooth": {
-          "diff": 0.0,
+          "diff": 0.024039081201049584,
           "ci95": [
-            0.0,
-            0.0
+            -0.06652356305296579,
+            0.11167235100505198
           ],
           "spans_zero": true,
           "n_boot": 2000,
@@ -672,23 +727,65 @@
     "headline_per_class": {
       "smooth": {
         "h7": {
-          "champion_mae": 11.452318493443771,
+          "champion_mae": 10.487549067763247,
           "floor_mae": 14.229166666666666,
           "champion_vs_floor": {
-            "diff": -2.776848173222895,
+            "diff": -3.741617598903419,
             "ci95": [
-              -4.5588889249908355,
-              -0.9505776708502222
+              -5.523847843671037,
+              -2.0067595716002744
             ],
             "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -99.04768150655623,
+            "diff": -100.01245093223676,
             "ci95": [
-              -120.94207449358132,
-              -79.414218748856
+              -122.46833546078507,
+              -80.06438572791791
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_mae": 10.891023531852214,
+          "hgb_tweedie_vs_routed": {
+            "diff": 0.40347446408896737,
+            "ci95": [
+              -0.04598955848947209,
+              1.0296530891076674
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_vs_zero": {
+            "diff": -99.60897646814779,
+            "ci95": [
+              -121.45520160009073,
+              -80.01744178148986
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_mae": 45.03393167162699,
+          "hurdle_hgb_vs_routed": {
+            "diff": 34.54638260386374,
+            "ci95": [
+              20.88828824725702,
+              50.79673107365844
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_vs_zero": {
+            "diff": -65.46606832837301,
+            "ci95": [
+              -77.03057028149802,
+              -52.04514431423611
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -696,23 +793,65 @@
           }
         },
         "h14": {
-          "champion_mae": 11.59419308092131,
+          "champion_mae": 11.149649001013211,
           "floor_mae": 13.916666666666666,
           "champion_vs_floor": {
-            "diff": -2.3224735857453567,
+            "diff": -2.767017665653455,
             "ci95": [
-              -4.838225883085312,
-              -0.33361832194302726
+              -5.350875327884109,
+              -0.6420119692627199
             ],
             "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -99.05164025241201,
+            "diff": -99.49618433232011,
             "ci95": [
-              -120.59843407520823,
-              -79.63508601916205
+              -121.03792826820269,
+              -80.14774762869465
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_mae": 11.362652053865782,
+          "hgb_tweedie_vs_routed": {
+            "diff": 0.21300305285257082,
+            "ci95": [
+              -0.19922141542209837,
+              0.7179847946697527
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_vs_zero": {
+            "diff": -99.28318127946754,
+            "ci95": [
+              -120.62889846024657,
+              -80.00145456305133
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_mae": 44.69751364087301,
+          "hurdle_hgb_vs_routed": {
+            "diff": 33.5478646398598,
+            "ci95": [
+              20.476571331640077,
+              49.49323411976495
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_vs_zero": {
+            "diff": -65.94831969246032,
+            "ci95": [
+              -77.0370365203373,
+              -52.99681803385417
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -722,17 +861,231 @@
         "n_series": 24
       }
     },
+    "candidate_comparison": {
+      "method": "pooled MAE over series x scored test origins x all horizons; gaps carry a 95% paired cluster bootstrap CI over series (negative diff = candidate better)",
+      "n_boot": 2000,
+      "seed": 6444,
+      "per_class": {
+        "smooth": {
+          "routed_mae": 8.376621350114503,
+          "zero_mae": 87.83035714285714,
+          "hgb_tweedie": {
+            "mae": 8.540941139305756,
+            "vs_routed": {
+              "diff": 0.16431978919125356,
+              "ci95": [
+                0.024036089502919855,
+                0.325327715793004
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            },
+            "vs_zero": {
+              "diff": -79.28941600355138,
+              "ci95": [
+                -95.62102624822212,
+                -64.37218259403878
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            }
+          },
+          "hurdle_hgb": {
+            "mae": 37.8611221832483,
+            "vs_routed": {
+              "diff": 29.484500833133794,
+              "ci95": [
+                21.671246195659872,
+                38.491256178540795
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            },
+            "vs_zero": {
+              "diff": -49.96923495960884,
+              "ci95": [
+                -63.619277199812224,
+                -34.95582726580217
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            }
+          }
+        }
+      }
+    },
+    "peak_capture": {
+      "definition": "per scored window (series x test origin) over the scored h-lattice days: peak_mae = MAE on the window's top-decile-by-actual demand days (k = max(1, ceil(0.1 x 7)) = 1); peak_recall = share of the window's top-5 actual days whose day ranks in the forecast's own top-5",
+      "candidates": [
+        "routed",
+        "zero",
+        "hgb_tweedie",
+        "hurdle_hgb"
+      ],
+      "top_k_days": 1,
+      "top_recall_days": 5,
+      "bootstrap": {
+        "method": "paired cluster bootstrap over series (windows of a sampled series enter together), percentile 95% CI",
+        "n_boot": 2000,
+        "seed": 4062
+      },
+      "per_class": {
+        "smooth": {
+          "n_windows": 96,
+          "routed": {
+            "peak_mae": 11.78361442346023,
+            "peak_recall": 0.9166666666666666,
+            "peak_mae_vs_zero": {
+              "diff": -106.86221890987309,
+              "ci95": [
+                -129.48250489009536,
+                -86.6175267231113
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": 0.24583333333333357,
+              "ci95": [
+                0.2104166666666667,
+                0.2833333333333334
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "zero": {
+            "peak_mae": 118.64583333333333,
+            "peak_recall": 0.6708333333333331,
+            "peak_mae_vs_routed": {
+              "diff": 106.86221890987309,
+              "ci95": [
+                86.6175267231113,
+                129.48250489009536
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": -0.24583333333333357,
+              "ci95": [
+                -0.2833333333333334,
+                -0.2104166666666667
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "hgb_tweedie": {
+            "peak_mae": 12.119104474771264,
+            "peak_recall": 0.9166666666666666,
+            "peak_mae_vs_routed": {
+              "diff": 0.3354900513110337,
+              "ci95": [
+                -0.19126051567333288,
+                1.0132978843228453
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_mae_vs_zero": {
+              "diff": -106.52672885856207,
+              "ci95": [
+                -128.81390112466215,
+                -86.43338285418275
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": 0.24583333333333357,
+              "ci95": [
+                0.2104166666666667,
+                0.2833333333333334
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "hurdle_hgb": {
+            "peak_mae": 48.31710379464286,
+            "peak_recall": 0.6708333333333331,
+            "peak_mae_vs_routed": {
+              "diff": 36.53348937118263,
+              "ci95": [
+                20.933557805549743,
+                54.40451292629704
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": -0.24583333333333357,
+              "ci95": [
+                -0.2833333333333334,
+                -0.2104166666666667
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_mae_vs_zero": {
+              "diff": -70.32872953869047,
+              "ci95": [
+                -80.25033598400297,
+                -58.78798401847719
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": 0.0,
+              "ci95": [
+                0.0,
+                0.0
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          }
+        }
+      }
+    },
     "per_horizon": {
       "1": {
         "champion": {
           "n": 96,
-          "mae": 9.496075897257821,
-          "rmse": 13.558177125626184,
-          "mase": 0.9569288725937661,
-          "bias": -0.3175986842756788,
-          "wape": 0.09807673869142021,
-          "rmsse": 0.8560836578170935,
-          "wrmsse": 0.8962003293974119
+          "mae": 8.684904721308827,
+          "rmse": 12.687606330656369,
+          "mase": 0.8751863583931812,
+          "bias": -0.06871983258027543,
+          "wape": 0.08969885457188245,
+          "rmsse": 0.7827660761168541,
+          "wrmsse": 0.8256823819831081
         },
         "floor": {
           "n": 96,
@@ -746,13 +1099,13 @@
       "2": {
         "champion": {
           "n": 96,
-          "mae": 7.467682570832365,
-          "rmse": 9.549436344390887,
-          "mase": 0.7525256896333666,
-          "bias": 1.5547934046010805,
-          "wape": 0.09808421491310809,
-          "rmsse": 0.7090224119422537,
-          "wrmsse": 0.6786574598863048
+          "mae": 7.053493193410039,
+          "rmse": 9.097033010919908,
+          "mase": 0.7107874202402676,
+          "bias": 1.497705534459702,
+          "wape": 0.0926440479637931,
+          "rmsse": 0.6927480974845514,
+          "wrmsse": 0.6470588509767324
         },
         "floor": {
           "n": 96,
@@ -766,13 +1119,13 @@
       "3": {
         "champion": {
           "n": 96,
-          "mae": 6.68352509338414,
-          "rmse": 9.00317067202414,
-          "mase": 0.6735053722992149,
-          "bias": -0.16575831651228765,
-          "wape": 0.09942947605220477,
-          "rmsse": 0.6578106948478103,
-          "wrmsse": 0.6285460393979496
+          "mae": 6.5500047784441575,
+          "rmse": 8.803047842721954,
+          "mase": 0.6600503993370909,
+          "bias": -0.7070376172923593,
+          "wape": 0.09744312083227012,
+          "rmsse": 0.6267806139911317,
+          "wrmsse": 0.6092023064860643
         },
         "floor": {
           "n": 96,
@@ -786,13 +1139,13 @@
       "5": {
         "champion": {
           "n": 96,
-          "mae": 7.694489209941717,
-          "rmse": 11.697692253192862,
-          "mase": 0.7753812168856674,
-          "bias": 2.6129581226730862,
-          "wape": 0.09000499136766234,
-          "rmsse": 0.7674339102646831,
-          "wrmsse": 0.7697777919953522
+          "mae": 7.533722669902464,
+          "rmse": 11.822213282598659,
+          "mase": 0.7591806151239453,
+          "bias": 3.1862313161295988,
+          "wape": 0.08812445184728117,
+          "rmsse": 0.7457239065604787,
+          "wrmsse": 0.7573314420785245
         },
         "floor": {
           "n": 96,
@@ -806,13 +1159,13 @@
       "7": {
         "champion": {
           "n": 96,
-          "mae": 11.452318493443771,
-          "rmse": 15.211034839718534,
-          "mase": 1.154061355773339,
-          "bias": -1.4409535280512784,
-          "wape": 0.10364089134338254,
-          "rmsse": 1.1119404928385292,
-          "wrmsse": 1.0640280344256767
+          "mae": 10.487549067763247,
+          "rmse": 14.38993864589683,
+          "mase": 1.0568405954489615,
+          "bias": -1.2349896970731038,
+          "wape": 0.09490994631459952,
+          "rmsse": 1.0556350298517316,
+          "wrmsse": 0.997007269861109
         },
         "floor": {
           "n": 96,
@@ -826,13 +1179,13 @@
       "10": {
         "champion": {
           "n": 96,
-          "mae": 7.372135902756324,
-          "rmse": 10.085138822305064,
-          "mase": 0.7428973582729886,
-          "bias": -0.8908745784275224,
-          "wape": 0.1084137632758283,
-          "rmsse": 0.6596835430003133,
-          "wrmsse": 0.6782764493100496
+          "mae": 7.177026018959578,
+          "rmse": 9.953382300841119,
+          "mase": 0.7232359441105938,
+          "bias": -1.2331252274568194,
+          "wape": 0.10554450027881732,
+          "rmsse": 0.6419583687697966,
+          "wrmsse": 0.6673804706589668
         },
         "floor": {
           "n": 96,
@@ -846,13 +1199,13 @@
       "14": {
         "champion": {
           "n": 96,
-          "mae": 11.59419308092131,
-          "rmse": 15.124458036481851,
-          "mase": 1.1683581969647399,
-          "bias": -1.2597903523286762,
-          "wape": 0.10478653132822875,
-          "rmsse": 1.1380025597467716,
-          "wrmsse": 1.0657110140945025
+          "mae": 11.149649001013211,
+          "rmse": 14.698421423698413,
+          "mase": 1.1235610544600627,
+          "bias": -1.5129758403473195,
+          "wape": 0.10076881040268013,
+          "rmsse": 1.131722745060446,
+          "wrmsse": 1.0514615341481144
         },
         "floor": {
           "n": 96,
@@ -867,13 +1220,13 @@
     "horizon_growth": {
       "pooled": {
         "routed": {
-          "1": 9.496075897257821,
-          "2": 7.467682570832365,
-          "3": 6.68352509338414,
-          "5": 7.694489209941717,
-          "7": 11.452318493443771,
-          "10": 7.372135902756324,
-          "14": 11.59419308092131
+          "1": 8.684904721308827,
+          "2": 7.053493193410039,
+          "3": 6.5500047784441575,
+          "5": 7.533722669902464,
+          "7": 10.487549067763247,
+          "10": 7.177026018959578,
+          "14": 11.149649001013211
         },
         "seasonal_naive": {
           "1": 13.104166666666666,
@@ -897,13 +1250,13 @@
       "per_class": {
         "smooth": {
           "routed": {
-            "1": 9.496075897257821,
-            "2": 7.467682570832365,
-            "3": 6.68352509338414,
-            "5": 7.694489209941717,
-            "7": 11.452318493443771,
-            "10": 7.372135902756324,
-            "14": 11.59419308092131
+            "1": 8.684904721308827,
+            "2": 7.053493193410039,
+            "3": 6.5500047784441575,
+            "5": 7.533722669902464,
+            "7": 10.487549067763247,
+            "10": 7.177026018959578,
+            "14": 11.149649001013211
           },
           "seasonal_naive": {
             "1": 13.104166666666666,
@@ -918,13 +1271,15 @@
       }
     },
     "overall_mae_test": {
-      "routed": 8.822917178362493,
-      "direct_hgb": 8.822917178362493,
+      "routed": 8.376621350114503,
+      "direct_hgb": 8.400660431315552,
       "seasonal_naive": 11.977678571428571,
       "zero": 87.83035714285714,
       "croston": 17.223346204859418,
       "sba": 16.96068091770408,
-      "tsb": 17.223346204859418
+      "tsb": 17.223346204859418,
+      "hgb_tweedie": 8.540941139305756,
+      "hurdle_hgb": 37.8611221832483
     },
     "bootstrap": {
       "method": "paired cluster bootstrap (series resampled with replacement, one shared draw per replication), percentile 95% CI over series x scored test origins",
@@ -935,13 +1290,13 @@
         {
           "rank": 1,
           "model": "routed",
-          "mae": 8.822917178362493,
+          "mae": 8.376621350114503,
           "gap_to_next": {
             "model": "direct_hgb",
-            "diff": 0.0,
+            "diff": -0.024039081201049584,
             "ci95": [
-              0.0,
-              0.0
+              -0.11167235100505202,
+              0.06652356305296578
             ],
             "spans_zero": true,
             "n_boot": 2000,
@@ -951,13 +1306,29 @@
         {
           "rank": 2,
           "model": "direct_hgb",
-          "mae": 8.822917178362493,
+          "mae": 8.400660431315552,
+          "gap_to_next": {
+            "model": "hgb_tweedie",
+            "diff": -0.14028070799020398,
+            "ci95": [
+              -0.3348495243958264,
+              0.03366034361399499
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          }
+        },
+        {
+          "rank": 3,
+          "model": "hgb_tweedie",
+          "mae": 8.540941139305756,
           "gap_to_next": {
             "model": "seasonal_naive",
-            "diff": -3.154761393066078,
+            "diff": -3.436737432122815,
             "ci95": [
-              -4.1614335511587655,
-              -2.273349663556234
+              -4.40691080266954,
+              -2.566265230437151
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -965,7 +1336,7 @@
           }
         },
         {
-          "rank": 3,
+          "rank": 4,
           "model": "seasonal_naive",
           "mae": 11.977678571428571,
           "gap_to_next": {
@@ -981,7 +1352,7 @@
           }
         },
         {
-          "rank": 4,
+          "rank": 5,
           "model": "sba",
           "mae": 16.96068091770408,
           "gap_to_next": {
@@ -992,22 +1363,6 @@
               -0.04930569401115546
             ],
             "spans_zero": false,
-            "n_boot": 2000,
-            "seed": 2044
-          }
-        },
-        {
-          "rank": 5,
-          "model": "croston",
-          "mae": 17.223346204859418,
-          "gap_to_next": {
-            "model": "tsb",
-            "diff": 0.0,
-            "ci95": [
-              0.0,
-              0.0
-            ],
-            "spans_zero": true,
             "n_boot": 2000,
             "seed": 2044
           }
@@ -1030,25 +1385,25 @@
       "per_class": {
         "smooth": {
           "tau_0.80": {
-            "champion": 6005.628324628304,
-            "champion_per_unit_demand": 0.10175236902558883,
+            "champion": 5658.326928520507,
+            "champion_per_unit_demand": 0.09586809881943185,
             "floor": 8218.0,
             "floor_per_unit_demand": 0.13923621700382907,
-            "delta_champion_minus_floor": -2212.3716753716963
+            "delta_champion_minus_floor": -2559.673071479493
           },
           "tau_0.90": {
-            "champion": 4563.585522047427,
-            "champion_per_unit_demand": 0.07732007593858946,
+            "champion": 4365.625404796792,
+            "champion_per_unit_demand": 0.07396607036015032,
             "floor": 6357.5,
             "floor_per_unit_demand": 0.10771407271864729,
-            "delta_champion_minus_floor": -1793.9144779525732
+            "delta_champion_minus_floor": -1991.8745952032077
           },
           "tau_0.95": {
-            "champion": 4328.647642652509,
-            "champion_per_unit_demand": 0.07333956224208785,
+            "champion": 4364.106473400159,
+            "champion_per_unit_demand": 0.07394033535631052,
             "floor": 6189.875,
             "floor_per_unit_demand": 0.1048740300227034,
-            "delta_champion_minus_floor": -1861.2273573474913
+            "delta_champion_minus_floor": -1825.7685265998407
           }
         }
       }

@@ -553,12 +553,18 @@
       "zero",
       "croston",
       "sba",
-      "tsb"
+      "tsb",
+      "hgb_tweedie",
+      "hurdle_hgb"
     ],
     "champion": "routed",
-    "champion_definition": "per-series routing: ADI>=1.32 (intermittent/lumpy) -> best statistical method on selection origins; smooth/erratic -> direct per-horizon HGB",
+    "champion_definition": "per-series routing: sparse (ADI>=1.32) series -> best candidate among the statistical methods + the peak-capable hgb_tweedie / hurdle_hgb on the selection origins; smooth/erratic -> best among direct_hgb + the two ML candidates",
     "floor": "seasonal_naive",
     "naive": "zero",
+    "peak_capable_candidates": {
+      "hgb_tweedie": "HGBRegressor with the compound-Poisson tweedie deviance (variance power 1.5); lr/depth/leaves tuned on the selection origins via a seeded capped Optuna study (hpo.tune_multistep_tweedie)",
+      "hurdle_hgb": "per-h two-stage HGB: log-loss classifier for P(sale) + HGB on log1p(non-zero sizes); point = p_hat x (exp(y_reg) - 1), zero-corrected on the selection origins (identity / scalar / isotonic \u2014 whichever wins there)"
+    },
     "origins": {
       "n_origins": 20,
       "dates": [
@@ -1714,7 +1720,7 @@
       }
     },
     "routing": {
-      "rule": "sparse (ADI >= 1.32) series route to the best statistical method (zero/seasonal_naive/Croston/SBA/TSB) chosen per series on the selection origins ONLY; smooth/erratic series stay on the direct HGB",
+      "rule": "per-series routing on the selection origins ONLY: sparse (ADI >= 1.32) series choose among zero/seasonal_naive/Croston/SBA/TSB/hgb_tweedie/hurdle_hgb; smooth/erratic series choose among direct_hgb/hgb_tweedie/hurdle_hgb",
       "method_choices": {
         "Denmark|10002": "zero",
         "Denmark|20711": "zero",
@@ -2602,7 +2608,7 @@
         "Sweden|85184D": "zero",
         "United Kingdom|10002": "zero",
         "United Kingdom|15036": "zero",
-        "United Kingdom|15056BL": "zero",
+        "United Kingdom|15056BL": "hurdle_hgb",
         "United Kingdom|15056N": "zero",
         "United Kingdom|16014": "zero",
         "United Kingdom|16033": "zero",
@@ -2612,21 +2618,25 @@
         "United Kingdom|16162L": "zero",
         "United Kingdom|17003": "zero",
         "United Kingdom|17084R": "zero",
-        "United Kingdom|20668": "zero",
-        "United Kingdom|20711": "zero",
-        "United Kingdom|20712": "zero",
-        "United Kingdom|20713": "zero",
-        "United Kingdom|20718": "zero",
-        "United Kingdom|20719": "zero",
-        "United Kingdom|20723": "zero",
-        "United Kingdom|20724": "sba",
-        "United Kingdom|20726": "sba",
-        "United Kingdom|20728": "sba",
-        "United Kingdom|20971": "zero",
-        "United Kingdom|20972": "zero",
-        "United Kingdom|20975": "zero",
+        "United Kingdom|20668": "hurdle_hgb",
+        "United Kingdom|20711": "hurdle_hgb",
+        "United Kingdom|20712": "hurdle_hgb",
+        "United Kingdom|20713": "hurdle_hgb",
+        "United Kingdom|20718": "hurdle_hgb",
+        "United Kingdom|20719": "hurdle_hgb",
+        "United Kingdom|20723": "hurdle_hgb",
+        "United Kingdom|20724": "hurdle_hgb",
+        "United Kingdom|20725": "hurdle_hgb",
+        "United Kingdom|20726": "hurdle_hgb",
+        "United Kingdom|20727": "hurdle_hgb",
+        "United Kingdom|20728": "hurdle_hgb",
+        "United Kingdom|20914": "hurdle_hgb",
+        "United Kingdom|20971": "hurdle_hgb",
+        "United Kingdom|20972": "hurdle_hgb",
+        "United Kingdom|20975": "hurdle_hgb",
         "United Kingdom|20991": "zero",
         "United Kingdom|20993": "zero",
+        "United Kingdom|21080": "hurdle_hgb",
         "United Kingdom|21082": "zero",
         "United Kingdom|21085": "zero",
         "United Kingdom|21086": "zero",
@@ -2636,172 +2646,207 @@
         "United Kingdom|21094": "zero",
         "United Kingdom|21096": "zero",
         "United Kingdom|21099": "zero",
-        "United Kingdom|21121": "zero",
+        "United Kingdom|21121": "hurdle_hgb",
         "United Kingdom|21122": "zero",
         "United Kingdom|21137": "zero",
-        "United Kingdom|21166": "zero",
-        "United Kingdom|21175": "zero",
-        "United Kingdom|21181": "tsb",
-        "United Kingdom|21210": "zero",
-        "United Kingdom|21213": "zero",
-        "United Kingdom|21231": "sba",
-        "United Kingdom|21314": "zero",
-        "United Kingdom|21326": "zero",
-        "United Kingdom|21385": "zero",
-        "United Kingdom|21390": "zero",
+        "United Kingdom|21166": "hurdle_hgb",
+        "United Kingdom|21175": "hurdle_hgb",
+        "United Kingdom|21181": "hgb_tweedie",
+        "United Kingdom|21210": "hurdle_hgb",
+        "United Kingdom|21212": "hgb_tweedie",
+        "United Kingdom|21213": "hurdle_hgb",
+        "United Kingdom|21231": "hurdle_hgb",
+        "United Kingdom|21232": "hurdle_hgb",
+        "United Kingdom|21314": "hurdle_hgb",
+        "United Kingdom|21326": "hurdle_hgb",
+        "United Kingdom|21385": "hurdle_hgb",
+        "United Kingdom|21390": "hurdle_hgb",
         "United Kingdom|21392": "zero",
         "United Kingdom|21495": "zero",
         "United Kingdom|21497": "zero",
-        "United Kingdom|21498": "zero",
+        "United Kingdom|21498": "hgb_tweedie",
         "United Kingdom|21499": "zero",
         "United Kingdom|21500": "zero",
-        "United Kingdom|21704": "zero",
-        "United Kingdom|21731": "zero",
-        "United Kingdom|21733": "sba",
-        "United Kingdom|21790": "sba",
-        "United Kingdom|21791": "zero",
+        "United Kingdom|21704": "hurdle_hgb",
+        "United Kingdom|21731": "hurdle_hgb",
+        "United Kingdom|21733": "hurdle_hgb",
+        "United Kingdom|21790": "hurdle_hgb",
+        "United Kingdom|21791": "hurdle_hgb",
         "United Kingdom|21829": "zero",
-        "United Kingdom|21868": "zero",
-        "United Kingdom|21877": "zero",
-        "United Kingdom|21889": "sba",
-        "United Kingdom|21900": "zero",
+        "United Kingdom|21868": "hurdle_hgb",
+        "United Kingdom|21877": "hurdle_hgb",
+        "United Kingdom|21889": "hurdle_hgb",
+        "United Kingdom|21900": "hurdle_hgb",
         "United Kingdom|21915": "zero",
-        "United Kingdom|21918": "zero",
-        "United Kingdom|21928": "zero",
-        "United Kingdom|21929": "zero",
-        "United Kingdom|21930": "zero",
-        "United Kingdom|21967": "zero",
-        "United Kingdom|21975": "zero",
+        "United Kingdom|21918": "hurdle_hgb",
+        "United Kingdom|21928": "hurdle_hgb",
+        "United Kingdom|21929": "hurdle_hgb",
+        "United Kingdom|21930": "hurdle_hgb",
+        "United Kingdom|21931": "hurdle_hgb",
+        "United Kingdom|21967": "hgb_tweedie",
+        "United Kingdom|21975": "hurdle_hgb",
         "United Kingdom|21976": "zero",
-        "United Kingdom|21980": "zero",
+        "United Kingdom|21977": "hgb_tweedie",
+        "United Kingdom|21980": "hurdle_hgb",
         "United Kingdom|21981": "zero",
-        "United Kingdom|21982": "zero",
+        "United Kingdom|21982": "hurdle_hgb",
         "United Kingdom|21984": "zero",
         "United Kingdom|21985": "zero",
         "United Kingdom|21986": "zero",
-        "United Kingdom|22027": "zero",
-        "United Kingdom|22029": "zero",
-        "United Kingdom|22030": "zero",
-        "United Kingdom|22045": "zero",
-        "United Kingdom|22077": "sba",
-        "United Kingdom|22083": "zero",
-        "United Kingdom|22086": "sba",
-        "United Kingdom|22114": "sba",
-        "United Kingdom|22130": "tsb",
-        "United Kingdom|22147": "zero",
-        "United Kingdom|22149": "sba",
-        "United Kingdom|22151": "sba",
-        "United Kingdom|22178": "zero",
+        "United Kingdom|22027": "hurdle_hgb",
+        "United Kingdom|22029": "hurdle_hgb",
+        "United Kingdom|22030": "hurdle_hgb",
+        "United Kingdom|22045": "hgb_tweedie",
+        "United Kingdom|22077": "hgb_tweedie",
+        "United Kingdom|22083": "hurdle_hgb",
+        "United Kingdom|22086": "hurdle_hgb",
+        "United Kingdom|22090": "hurdle_hgb",
+        "United Kingdom|22114": "hurdle_hgb",
+        "United Kingdom|22130": "hgb_tweedie",
+        "United Kingdom|22147": "hurdle_hgb",
+        "United Kingdom|22149": "hurdle_hgb",
+        "United Kingdom|22151": "hgb_tweedie",
+        "United Kingdom|22178": "hurdle_hgb",
         "United Kingdom|22188": "zero",
-        "United Kingdom|22189": "zero",
-        "United Kingdom|22197": "zero",
-        "United Kingdom|22198": "zero",
-        "United Kingdom|22294": "sba",
-        "United Kingdom|22296": "sba",
-        "United Kingdom|22297": "sba",
+        "United Kingdom|22189": "hurdle_hgb",
+        "United Kingdom|22197": "hurdle_hgb",
+        "United Kingdom|22198": "hurdle_hgb",
+        "United Kingdom|22294": "hurdle_hgb",
+        "United Kingdom|22296": "hurdle_hgb",
+        "United Kingdom|22297": "hgb_tweedie",
         "United Kingdom|22326": "zero",
         "United Kingdom|22328": "zero",
-        "United Kingdom|22348": "zero",
-        "United Kingdom|22355": "zero",
-        "United Kingdom|22356": "zero",
-        "United Kingdom|22379": "zero",
-        "United Kingdom|22382": "sba",
-        "United Kingdom|22383": "sba",
-        "United Kingdom|22384": "zero",
-        "United Kingdom|22385": "zero",
-        "United Kingdom|22386": "zero",
-        "United Kingdom|22411": "sba",
-        "United Kingdom|22417": "zero",
-        "United Kingdom|22423": "sba",
+        "United Kingdom|22348": "hurdle_hgb",
+        "United Kingdom|22355": "hurdle_hgb",
+        "United Kingdom|22356": "hurdle_hgb",
+        "United Kingdom|22379": "hurdle_hgb",
+        "United Kingdom|22382": "hurdle_hgb",
+        "United Kingdom|22383": "hgb_tweedie",
+        "United Kingdom|22384": "hurdle_hgb",
+        "United Kingdom|22385": "hurdle_hgb",
+        "United Kingdom|22386": "hurdle_hgb",
+        "United Kingdom|22411": "hgb_tweedie",
+        "United Kingdom|22417": "hurdle_hgb",
+        "United Kingdom|22423": "hgb_tweedie",
         "United Kingdom|22444": "zero",
-        "United Kingdom|22469": "zero",
-        "United Kingdom|22470": "sba",
-        "United Kingdom|22489": "zero",
-        "United Kingdom|22492": "sba",
+        "United Kingdom|22469": "hurdle_hgb",
+        "United Kingdom|22470": "hgb_tweedie",
+        "United Kingdom|22489": "hurdle_hgb",
+        "United Kingdom|22492": "hurdle_hgb",
         "United Kingdom|22528": "zero",
         "United Kingdom|22530": "zero",
         "United Kingdom|22534": "zero",
-        "United Kingdom|22551": "sba",
-        "United Kingdom|22556": "zero",
+        "United Kingdom|22551": "hurdle_hgb",
+        "United Kingdom|22556": "hurdle_hgb",
         "United Kingdom|22558": "zero",
-        "United Kingdom|22560": "zero",
-        "United Kingdom|22585": "sba",
-        "United Kingdom|22616": "zero",
-        "United Kingdom|22629": "sba",
-        "United Kingdom|22632": "croston",
-        "United Kingdom|22734": "tsb",
+        "United Kingdom|22560": "hurdle_hgb",
+        "United Kingdom|22585": "hurdle_hgb",
+        "United Kingdom|22616": "hurdle_hgb",
+        "United Kingdom|22629": "hurdle_hgb",
+        "United Kingdom|22632": "hurdle_hgb",
+        "United Kingdom|22734": "hurdle_hgb",
         "United Kingdom|22740": "seasonal_naive",
-        "United Kingdom|22752": "zero",
-        "United Kingdom|22754": "zero",
-        "United Kingdom|22755": "zero",
-        "United Kingdom|22759": "zero",
+        "United Kingdom|22752": "hurdle_hgb",
+        "United Kingdom|22754": "hurdle_hgb",
+        "United Kingdom|22755": "hurdle_hgb",
+        "United Kingdom|22759": "hurdle_hgb",
         "United Kingdom|22865": "seasonal_naive",
-        "United Kingdom|22866": "tsb",
-        "United Kingdom|22867": "seasonal_naive",
-        "United Kingdom|22909": "croston",
-        "United Kingdom|22910": "croston",
-        "United Kingdom|22952": "croston",
-        "United Kingdom|35961": "zero",
+        "United Kingdom|22866": "hurdle_hgb",
+        "United Kingdom|22867": "hurdle_hgb",
+        "United Kingdom|22909": "hgb_tweedie",
+        "United Kingdom|22910": "hurdle_hgb",
+        "United Kingdom|22952": "hurdle_hgb",
+        "United Kingdom|35961": "hurdle_hgb",
         "United Kingdom|37340": "zero",
         "United Kingdom|37410": "zero",
         "United Kingdom|40016": "zero",
         "United Kingdom|47503E": "zero",
-        "United Kingdom|47566": "zero",
-        "United Kingdom|71459": "zero",
-        "United Kingdom|71477": "zero",
+        "United Kingdom|47566": "hurdle_hgb",
+        "United Kingdom|71459": "hurdle_hgb",
+        "United Kingdom|71477": "hurdle_hgb",
         "United Kingdom|72008": "zero",
-        "United Kingdom|72741": "zero",
+        "United Kingdom|72741": "hgb_tweedie",
         "United Kingdom|75049L": "zero",
         "United Kingdom|79000": "zero",
-        "United Kingdom|82482": "sba",
-        "United Kingdom|82494L": "sba",
-        "United Kingdom|82580": "zero",
-        "United Kingdom|82600": "zero",
+        "United Kingdom|82482": "hgb_tweedie",
+        "United Kingdom|82494L": "hgb_tweedie",
+        "United Kingdom|82580": "hurdle_hgb",
+        "United Kingdom|82600": "hurdle_hgb",
         "United Kingdom|84016": "zero",
-        "United Kingdom|84029E": "seasonal_naive",
+        "United Kingdom|84029E": "hurdle_hgb",
         "United Kingdom|84050": "zero",
-        "United Kingdom|84077": "zero",
+        "United Kingdom|84077": "hurdle_hgb",
         "United Kingdom|84212": "zero",
-        "United Kingdom|84270": "sba",
-        "United Kingdom|84347": "zero",
-        "United Kingdom|84520B": "zero",
+        "United Kingdom|84270": "hurdle_hgb",
+        "United Kingdom|84347": "hurdle_hgb",
+        "United Kingdom|84520B": "hurdle_hgb",
         "United Kingdom|84568": "zero",
         "United Kingdom|84598": "zero",
         "United Kingdom|84670": "zero",
-        "United Kingdom|84692": "zero",
-        "United Kingdom|84755": "zero",
-        "United Kingdom|84945": "zero",
-        "United Kingdom|84946": "sba",
-        "United Kingdom|84947": "zero",
-        "United Kingdom|84949": "zero",
-        "United Kingdom|84970L": "zero",
-        "United Kingdom|84970S": "sba",
-        "United Kingdom|84978": "zero",
-        "United Kingdom|84992": "zero",
-        "United Kingdom|85099C": "sba",
+        "United Kingdom|84692": "hurdle_hgb",
+        "United Kingdom|84755": "hurdle_hgb",
+        "United Kingdom|84836": "hurdle_hgb",
+        "United Kingdom|84879": "hurdle_hgb",
+        "United Kingdom|84945": "hurdle_hgb",
+        "United Kingdom|84946": "hurdle_hgb",
+        "United Kingdom|84947": "hurdle_hgb",
+        "United Kingdom|84949": "hurdle_hgb",
+        "United Kingdom|84970L": "hurdle_hgb",
+        "United Kingdom|84970S": "hurdle_hgb",
+        "United Kingdom|84978": "hurdle_hgb",
+        "United Kingdom|84991": "hgb_tweedie",
+        "United Kingdom|84992": "hurdle_hgb",
+        "United Kingdom|85099B": "hgb_tweedie",
+        "United Kingdom|85099C": "hurdle_hgb",
+        "United Kingdom|85099F": "hurdle_hgb",
         "United Kingdom|85110": "zero",
-        "United Kingdom|85152": "zero",
+        "United Kingdom|85123A": "hurdle_hgb",
+        "United Kingdom|85152": "hurdle_hgb",
         "United Kingdom|85160A": "zero",
         "United Kingdom|85175": "zero",
         "United Kingdom|85184D": "zero",
         "United Kingdom|85220": "zero"
       },
+      "pool_sparse": [
+        "zero",
+        "seasonal_naive",
+        "croston",
+        "sba",
+        "tsb",
+        "hgb_tweedie",
+        "hurdle_hgb"
+      ],
+      "pool_dense": [
+        "direct_hgb",
+        "hgb_tweedie",
+        "hurdle_hgb"
+      ],
+      "hurdle_correction": {
+        "chosen": "identity",
+        "selection_mae": {
+          "identity": 10.25679071599751,
+          "scalar": 14.394023512652927,
+          "isotonic": 14.00754719423224
+        },
+        "scalar_factor": 2.5483217775964686,
+        "note": "identity/scalar/isotonic compared on the selection origins only; the winner is applied to all origins; a series of all-zero training windows has no correction candidate (raw p\u0302=0)"
+      },
       "per_class": {
         "erratic": {
-          "diff": 0.0,
+          "diff": 30.94906092373823,
           "ci95": [
-            0.0,
-            0.0
+            16.548762070000606,
+            47.77712441061365
           ],
-          "spans_zero": true,
+          "spans_zero": false,
           "n_boot": 2000,
           "seed": 2044
         },
         "lumpy": {
-          "diff": 4.645142637245599,
+          "diff": 3.969831000920813,
           "ci95": [
-            4.152822526518691,
-            5.135129963477026
+            3.255693588068416,
+            4.820689313080051
           ],
           "spans_zero": false,
           "n_boot": 2000,
@@ -2812,49 +2857,133 @@
     "headline_per_class": {
       "erratic": {
         "h7": {
-          "champion_mae": 69.99199247137454,
+          "champion_mae": 51.90903898504971,
           "floor_mae": 68.35,
           "champion_vs_floor": {
-            "diff": 1.6419924713745502,
+            "diff": -16.440961014950283,
             "ci95": [
-              -33.47652935651586,
-              27.738751313526468
+              -54.632732619057556,
+              9.71072010391433
             ],
             "spans_zero": true,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": 5.841992471374539,
+            "diff": -12.240961014950294,
             "ci95": [
-              -7.43834686368624,
-              20.688603270650667
+              -27.883637470744667,
+              3.3160275062683477
             ],
             "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_mae": 52.334170912309816,
+          "hgb_tweedie_vs_routed": {
+            "diff": 0.42513192726010374,
+            "ci95": [
+              -6.3425901439051575,
+              5.9578654706444825
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_vs_zero": {
+            "diff": -11.81582908769019,
+            "ci95": [
+              -27.612200336071034,
+              4.5975695523014455
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_mae": 44.1740573218286,
+          "hurdle_hgb_vs_routed": {
+            "diff": -7.734981663221113,
+            "ci95": [
+              -16.959585986147605,
+              0.0
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_vs_zero": {
+            "diff": -19.975942678171407,
+            "ci95": [
+              -35.98810923224113,
+              -6.83879680989653
+            ],
+            "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           }
         },
         "h14": {
-          "champion_mae": 72.52918777764647,
+          "champion_mae": 51.55418291363124,
           "floor_mae": 60.0,
           "champion_vs_floor": {
-            "diff": 12.52918777764647,
+            "diff": -8.445817086368763,
             "ci95": [
-              -5.495226943300018,
-              31.9847225290241
+              -31.18685950271074,
+              11.59891282179247
             ],
             "spans_zero": true,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": 14.895854444313137,
+            "diff": -6.079150419702096,
             "ci95": [
-              -6.452205013980124,
-              34.80985039588292
+              -20.14884790906695,
+              8.663456786257607
             ],
             "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_mae": 62.489612159117094,
+          "hgb_tweedie_vs_routed": {
+            "diff": 10.935429245485857,
+            "ci95": [
+              2.8482863721511955,
+              19.933020103158423
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_vs_zero": {
+            "diff": 4.856278825783761,
+            "ci95": [
+              -10.880145054103972,
+              19.630729843611796
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_mae": 42.130801148922934,
+          "hurdle_hgb_vs_routed": {
+            "diff": -9.423381764708303,
+            "ci95": [
+              -19.821850941545065,
+              0.0
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_vs_zero": {
+            "diff": -15.502532184410398,
+            "ci95": [
+              -26.71876448103624,
+              -4.943866647407493
+            ],
+            "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           }
@@ -2863,23 +2992,65 @@
       },
       "lumpy": {
         "h7": {
-          "champion_mae": 6.724157002230841,
+          "champion_mae": 6.166841179622966,
           "floor_mae": 11.070392890551918,
           "champion_vs_floor": {
-            "diff": -4.346235888321077,
+            "diff": -4.903551710928952,
             "ci95": [
-              -7.057456082157529,
-              -2.2576897554444755
+              -7.672809923113505,
+              -2.7893810969598025
             ],
             "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -0.48187667410218005,
+            "diff": -1.0391924967100552,
             "ci95": [
-              -0.8805892064904299,
-              -0.14701239871353702
+              -1.3981869918323655,
+              -0.7015438799094921
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_mae": 7.823651407000431,
+          "hgb_tweedie_vs_routed": {
+            "diff": 1.6568102273774645,
+            "ci95": [
+              1.309451041293326,
+              2.02362142109421
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_vs_zero": {
+            "diff": 0.6176177306674093,
+            "ci95": [
+              0.10044852052241109,
+              1.143986035278408
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_mae": 6.61745428299376,
+          "hurdle_hgb_vs_routed": {
+            "diff": 0.4506131033707943,
+            "ci95": [
+              0.32613802050109675,
+              0.5655578247994685
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_vs_zero": {
+            "diff": -0.5885793933392609,
+            "ci95": [
+              -0.9863088478502452,
+              -0.21896704253973293
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -2887,23 +3058,65 @@
           }
         },
         "h14": {
-          "champion_mae": 6.453157546678305,
+          "champion_mae": 5.883060048911497,
           "floor_mae": 10.641721234798878,
           "champion_vs_floor": {
-            "diff": -4.188563688120572,
+            "diff": -4.758661185887381,
             "ci95": [
-              -6.791633135519977,
-              -2.19596842130831
+              -7.437331190370174,
+              -2.719031284669585
             ],
             "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           },
           "champion_vs_naive_zero": {
-            "diff": -0.45329708381748546,
+            "diff": -1.0233945815842942,
             "ci95": [
-              -0.8715626797832714,
-              -0.08288617124979697
+              -1.4280069619717868,
+              -0.6556490105743691
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_mae": 7.552312730998177,
+          "hgb_tweedie_vs_routed": {
+            "diff": 1.6692526820866807,
+            "ci95": [
+              1.2125942148883937,
+              2.1824222714954176
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hgb_tweedie_vs_zero": {
+            "diff": 0.6458581005023865,
+            "ci95": [
+              -0.020033370855819327,
+              1.2889902930756094
+            ],
+            "spans_zero": true,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_mae": 6.411370459063059,
+          "hurdle_hgb_vs_routed": {
+            "diff": 0.5283104101515628,
+            "ci95": [
+              0.39870918006605727,
+              0.6551757194549925
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          },
+          "hurdle_hgb_vs_zero": {
+            "diff": -0.4950841714327314,
+            "ci95": [
+              -0.928288322638147,
+              -0.10707419767812987
             ],
             "spans_zero": false,
             "n_boot": 2000,
@@ -2913,17 +3126,420 @@
         "n_series": 1069
       }
     },
+    "candidate_comparison": {
+      "method": "pooled MAE over series x scored test origins x all horizons; gaps carry a 95% paired cluster bootstrap CI over series (negative diff = candidate better)",
+      "n_boot": 2000,
+      "seed": 6444,
+      "per_class": {
+        "erratic": {
+          "routed_mae": 44.703938760000014,
+          "zero_mae": 60.25476190476191,
+          "hgb_tweedie": {
+            "mae": 49.31759156139469,
+            "vs_routed": {
+              "diff": 4.613652801394679,
+              "ci95": [
+                2.1718962393239587,
+                7.592347505564838
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            },
+            "vs_zero": {
+              "diff": -10.937170343367214,
+              "ci95": [
+                -21.67729463914008,
+                0.2286872202935055
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 6444
+            }
+          },
+          "hurdle_hgb": {
+            "mae": 39.52985527832462,
+            "vs_routed": {
+              "diff": -5.174083481675396,
+              "ci95": [
+                -10.315389910178649,
+                -0.9964606490474017
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            },
+            "vs_zero": {
+              "diff": -20.72490662643729,
+              "ci95": [
+                -32.737465182172734,
+                -10.025892295154856
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            }
+          }
+        },
+        "lumpy": {
+          "routed_mae": 5.787140236833562,
+          "zero_mae": 6.963817987438193,
+          "hgb_tweedie": {
+            "mae": 7.0892088911531745,
+            "vs_routed": {
+              "diff": 1.302068654319613,
+              "ci95": [
+                1.0957895671278235,
+                1.5302220621543314
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            },
+            "vs_zero": {
+              "diff": 0.1253909037149814,
+              "ci95": [
+                -0.2668294284329397,
+                0.5373584048019503
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 6444
+            }
+          },
+          "hurdle_hgb": {
+            "mae": 6.189437515260333,
+            "vs_routed": {
+              "diff": 0.4022972784267713,
+              "ci95": [
+                0.33179228135881333,
+                0.47231060393385504
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            },
+            "vs_zero": {
+              "diff": -0.7743804721778602,
+              "ci95": [
+                -1.1184859252169708,
+                -0.43457943167108615
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 6444
+            }
+          }
+        }
+      }
+    },
+    "peak_capture": {
+      "definition": "per scored window (series x test origin) over the scored h-lattice days: peak_mae = MAE on the window's top-decile-by-actual demand days (k = max(1, ceil(0.1 x 7)) = 1); peak_recall = share of the window's top-5 actual days whose day ranks in the forecast's own top-5",
+      "candidates": [
+        "routed",
+        "zero",
+        "hgb_tweedie",
+        "hurdle_hgb"
+      ],
+      "top_k_days": 1,
+      "top_recall_days": 5,
+      "bootstrap": {
+        "method": "paired cluster bootstrap over series (windows of a sampled series enter together), percentile 95% CI",
+        "n_boot": 2000,
+        "seed": 4062
+      },
+      "per_class": {
+        "erratic": {
+          "n_windows": 60,
+          "routed": {
+            "peak_mae": 124.7912261659401,
+            "peak_recall": 0.8366666666666664,
+            "peak_mae_vs_zero": {
+              "diff": -59.54210716739324,
+              "ci95": [
+                -82.25451933054794,
+                -38.82571755320138
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": -0.010000000000000009,
+              "ci95": [
+                -0.02666666666666657,
+                0.006666666666666643
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "zero": {
+            "peak_mae": 184.33333333333334,
+            "peak_recall": 0.8466666666666665,
+            "peak_mae_vs_routed": {
+              "diff": 59.54210716739324,
+              "ci95": [
+                38.82571755320137,
+                82.25451933054792
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": 0.010000000000000009,
+              "ci95": [
+                -0.006666666666666643,
+                0.02666666666666657
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "hgb_tweedie": {
+            "peak_mae": 122.30887889065527,
+            "peak_recall": 0.8466666666666663,
+            "peak_mae_vs_routed": {
+              "diff": -2.4823472752848375,
+              "ci95": [
+                -6.234447023373682,
+                0.8948403822342251
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": 0.009999999999999898,
+              "ci95": [
+                -0.003333333333333381,
+                0.02666666666666669
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_mae_vs_zero": {
+              "diff": -62.02445444267808,
+              "ci95": [
+                -83.08958663464297,
+                -42.72700617753478
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": -1.1102230246251565e-16,
+              "ci95": [
+                -0.013333333333333404,
+                0.013333333333333286
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "hurdle_hgb": {
+            "peak_mae": 123.89570726677051,
+            "peak_recall": 0.8266666666666664,
+            "peak_mae_vs_routed": {
+              "diff": -0.8955188991695877,
+              "ci95": [
+                -3.8431002744677243,
+                1.0530252777844453
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": -0.010000000000000009,
+              "ci95": [
+                -0.02666666666666657,
+                0.006666666666666525
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_mae_vs_zero": {
+              "diff": -60.43762606656283,
+              "ci95": [
+                -83.64061059483261,
+                -38.45498788827001
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": -0.020000000000000018,
+              "ci95": [
+                -0.04333333333333324,
+                0.0033333333333332624
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          }
+        },
+        "lumpy": {
+          "n_windows": 4276,
+          "routed": {
+            "peak_mae": 23.547291924906155,
+            "peak_recall": 0.9738072965388214,
+            "peak_mae_vs_zero": {
+              "diff": -3.475626690622377,
+              "ci95": [
+                -4.268574090584518,
+                -2.7623089156218676
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": 0.0,
+              "ci95": [
+                -0.0010289990645462198,
+                0.0009833956969131602
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "zero": {
+            "peak_mae": 27.022918615528532,
+            "peak_recall": 0.9738072965388214,
+            "peak_mae_vs_routed": {
+              "diff": 3.475626690622377,
+              "ci95": [
+                2.762308915621867,
+                4.268574090584518
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": 0.0,
+              "ci95": [
+                -0.0009833956969131665,
+                0.0010289990645462198
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "hgb_tweedie": {
+            "peak_mae": 22.062050948651656,
+            "peak_recall": 0.8362956033676333,
+            "peak_mae_vs_routed": {
+              "diff": -1.4852409762544987,
+              "ci95": [
+                -1.9905773820566282,
+                -1.0241674755013086
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": -0.13751169317118805,
+              "ci95": [
+                -0.14448316183348928,
+                -0.1307764265668849
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_mae_vs_zero": {
+              "diff": -4.960867666876876,
+              "ci95": [
+                -5.9545957365123074,
+                -4.008417225253662
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": -0.13751169317118805,
+              "ci95": [
+                -0.14443521983161842,
+                -0.13082319925163696
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          },
+          "hurdle_hgb": {
+            "peak_mae": 23.54825446110449,
+            "peak_recall": 0.8983629560336763,
+            "peak_mae_vs_routed": {
+              "diff": 0.0009625361983367497,
+              "ci95": [
+                -0.22790143214854347,
+                0.22821673078262944
+              ],
+              "spans_zero": true,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_routed": {
+              "diff": -0.07544434050514504,
+              "ci95": [
+                -0.07881314312441554,
+                -0.07207670720299363
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_mae_vs_zero": {
+              "diff": -3.4746641544240404,
+              "ci95": [
+                -4.238950289644534,
+                -2.763289280008824
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            },
+            "peak_recall_vs_zero": {
+              "diff": -0.07544434050514504,
+              "ci95": [
+                -0.07895346117867173,
+                -0.07184284377923289
+              ],
+              "spans_zero": false,
+              "n_boot": 2000,
+              "seed": 4062
+            }
+          }
+        }
+      }
+    },
     "per_horizon": {
       "1": {
         "champion": {
           "n": 4336,
-          "mae": 2.4606119209411887,
-          "rmse": 15.878479197889988,
-          "mase": 0.27237754042375417,
-          "bias": 2.409759006639868,
+          "mae": 0.06338867391195158,
+          "rmse": 0.31637129880552894,
+          "mase": 0.0070168119336171545,
+          "bias": 0.06338867391195158,
           "wape": null,
-          "rmsse": 0.0436682520098669,
-          "wrmsse": 0.20681577407681492
+          "rmsse": 0.0010902345847103158,
+          "wrmsse": 0.004699255878535004
         },
         "floor": {
           "n": 4336,
@@ -2937,13 +3553,13 @@
       "2": {
         "champion": {
           "n": 4336,
-          "mae": 4.5023288662281855,
-          "rmse": 17.438938120458303,
-          "mase": 0.4975685462597476,
-          "bias": -2.698485195820689,
-          "wape": 0.8577748567145048,
-          "rmsse": 0.2151460840657032,
-          "wrmsse": 0.2960176663657355
+          "mae": 3.7366895994001554,
+          "rmse": 15.17644272816146,
+          "mase": 0.41281607530906744,
+          "bias": -1.9248404054900692,
+          "wape": 0.7119067666856661,
+          "rmsse": 0.20089542689362594,
+          "wrmsse": 0.253696950903497
         },
         "floor": {
           "n": 4336,
@@ -2957,13 +3573,13 @@
       "3": {
         "champion": {
           "n": 4336,
-          "mae": 9.73156843578669,
-          "rmse": 57.78323254880403,
-          "mase": 1.0709051124098703,
-          "bias": -6.507048330075682,
-          "wape": 0.9518843361585212,
-          "rmsse": 0.3945399468432579,
-          "wrmsse": 0.6896294555212381
+          "mae": 8.704647997667795,
+          "rmse": 54.481571564664,
+          "mase": 0.9572301111773642,
+          "bias": -5.280599792171771,
+          "wape": 0.8514370664325285,
+          "rmsse": 0.3786449797700117,
+          "wrmsse": 0.6165789948159804
         },
         "floor": {
           "n": 4336,
@@ -2977,13 +3593,13 @@
       "5": {
         "champion": {
           "n": 4336,
-          "mae": 10.175958784256316,
-          "rmse": 61.0840114557435,
-          "mase": 1.1264281870377388,
-          "bias": -7.911308868786602,
-          "wape": 0.8978299952900738,
-          "rmsse": 0.316587400768932,
-          "wrmsse": 0.6870323066135647
+          "mae": 9.080440859191352,
+          "rmse": 58.38265447294621,
+          "mase": 1.0051597840929978,
+          "bias": -6.9385765902591965,
+          "wape": 0.8011718941366943,
+          "rmsse": 0.3001530071487562,
+          "wrmsse": 0.6180327733741935
         },
         "floor": {
           "n": 4336,
@@ -2997,13 +3613,13 @@
       "7": {
         "champion": {
           "n": 4336,
-          "mae": 7.599634430309398,
-          "rmse": 45.944108382409084,
-          "mase": 0.8342468259238425,
-          "bias": -4.635203589887994,
-          "wape": 0.9506668654382767,
-          "rmsse": 0.5908696574573848,
-          "wrmsse": 0.5602197036366031
+          "mae": 6.799805171395477,
+          "rmse": 44.37562220757167,
+          "mase": 0.745709692356434,
+          "bias": -3.9364384567339545,
+          "wape": 0.8506132139856554,
+          "rmsse": 0.5788990637060526,
+          "wrmsse": 0.504422221207748
         },
         "floor": {
           "n": 4336,
@@ -3017,13 +3633,13 @@
       "10": {
         "champion": {
           "n": 4336,
-          "mae": 10.523399010342919,
-          "rmse": 58.99567896880132,
-          "mase": 1.1587100070711691,
-          "bias": -7.717396596526099,
-          "wape": 0.9150781748124278,
-          "rmsse": 0.4469258483191532,
-          "wrmsse": 0.7282095225860761
+          "mae": 9.379584918022463,
+          "rmse": 56.66961140783815,
+          "mase": 1.0320954578540351,
+          "bias": -7.126399506213178,
+          "wape": 0.8156160798280403,
+          "rmsse": 0.43269406536966387,
+          "wrmsse": 0.6549659128296447
         },
         "floor": {
           "n": 4336,
@@ -3037,13 +3653,13 @@
       "14": {
         "champion": {
           "n": 4336,
-          "mae": 7.367493758361444,
-          "rmse": 45.13311009908655,
-          "mase": 0.8124304579552962,
-          "bias": -4.2788873402180805,
-          "wape": 0.9683374639665118,
-          "rmsse": 0.5171446976892689,
-          "wrmsse": 0.5277482601371442
+          "mae": 6.51504053135688,
+          "rmse": 43.2234589220256,
+          "mase": 0.7180681120194191,
+          "bias": -3.4352953752697615,
+          "wape": 0.8562963244608497,
+          "rmsse": 0.5048669293164884,
+          "wrmsse": 0.46953360604899347
         },
         "floor": {
           "n": 4336,
@@ -3058,13 +3674,13 @@
     "horizon_growth": {
       "pooled": {
         "routed": {
-          "1": 2.4606119209411887,
-          "2": 4.5023288662281855,
-          "3": 9.73156843578669,
-          "5": 10.175958784256316,
-          "7": 7.599634430309398,
-          "10": 10.523399010342919,
-          "14": 7.367493758361444
+          "1": 0.06338867391195158,
+          "2": 3.7366895994001554,
+          "3": 8.704647997667795,
+          "5": 9.080440859191352,
+          "7": 6.799805171395477,
+          "10": 9.379584918022463,
+          "14": 6.51504053135688
         },
         "seasonal_naive": {
           "1": 0.0,
@@ -3088,13 +3704,13 @@
       "per_class": {
         "erratic": {
           "routed": {
-            "1": 57.55668536789869,
-            "2": 26.91528430193967,
-            "3": 85.93354939422046,
-            "5": 80.93998891817893,
-            "7": 69.99199247137454,
-            "10": 82.03257761958557,
-            "14": 72.52918777764647
+            "1": 1.286291368328299,
+            "2": 27.716776357877116,
+            "3": 57.6149663508304,
+            "5": 72.09912402424649,
+            "7": 51.90903898504971,
+            "10": 50.74719132003686,
+            "14": 51.55418291363124
           },
           "seasonal_naive": {
             "1": 0.0,
@@ -3108,13 +3724,13 @@
         },
         "lumpy": {
           "routed": {
-            "1": 1.6875145386171821,
-            "2": 4.187834636540933,
-            "3": 8.662317065930276,
-            "5": 9.183011682283594,
-            "7": 6.724157002230841,
-            "10": 9.519996129951304,
-            "14": 6.453157546678305
+            "1": 0.04622914124942097,
+            "2": 3.4002056879154465,
+            "3": 8.018347927230526,
+            "5": 8.196174958839785,
+            "7": 6.166841179622966,
+            "10": 8.799122714065291,
+            "14": 5.883060048911497
           },
           "seasonal_naive": {
             "1": 0.0,
@@ -3129,13 +3745,15 @@
       }
     },
     "overall_mae_test": {
-      "routed": 7.480142172318021,
-      "direct_hgb": 12.061007005542693,
+      "routed": 6.325656821563725,
+      "direct_hgb": 10.668816649829797,
       "seasonal_naive": 9.491862150764364,
       "zero": 7.701238798102267,
       "croston": 11.397172031708275,
       "sba": 11.063618356739783,
-      "tsb": 9.85759539083441
+      "tsb": 9.85759539083441,
+      "hgb_tweedie": 7.673549979763528,
+      "hurdle_hgb": 6.6507901595831775
     },
     "bootstrap": {
       "method": "paired cluster bootstrap (series resampled with replacement, one shared draw per replication), percentile 95% CI over series x scored test origins",
@@ -3146,13 +3764,45 @@
         {
           "rank": 1,
           "model": "routed",
-          "mae": 7.480142172318021,
+          "mae": 6.325656821563725,
+          "gap_to_next": {
+            "model": "hurdle_hgb",
+            "diff": -0.32513333801945254,
+            "ci95": [
+              -0.427215128535989,
+              -0.20917983989166056
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          }
+        },
+        {
+          "rank": 2,
+          "model": "hurdle_hgb",
+          "mae": 6.6507901595831775,
+          "gap_to_next": {
+            "model": "hgb_tweedie",
+            "diff": -1.02275982018035,
+            "ci95": [
+              -1.2368316748467918,
+              -0.827712355773572
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 2044
+          }
+        },
+        {
+          "rank": 3,
+          "model": "hgb_tweedie",
+          "mae": 7.673549979763528,
           "gap_to_next": {
             "model": "zero",
-            "diff": -0.22109662578424594,
+            "diff": -0.027688818338739374,
             "ci95": [
-              -0.5245321132523588,
-              0.06816713607019691
+              -0.4775478096372131,
+              0.37993380625855233
             ],
             "spans_zero": true,
             "n_boot": 2000,
@@ -3160,7 +3810,7 @@
           }
         },
         {
-          "rank": 2,
+          "rank": 4,
           "model": "zero",
           "mae": 7.701238798102267,
           "gap_to_next": {
@@ -3176,7 +3826,7 @@
           }
         },
         {
-          "rank": 3,
+          "rank": 5,
           "model": "seasonal_naive",
           "mae": 9.491862150764364,
           "gap_to_next": {
@@ -3187,38 +3837,6 @@
               0.5409278912078134
             ],
             "spans_zero": true,
-            "n_boot": 2000,
-            "seed": 2044
-          }
-        },
-        {
-          "rank": 4,
-          "model": "tsb",
-          "mae": 9.85759539083441,
-          "gap_to_next": {
-            "model": "sba",
-            "diff": -1.2060229659053725,
-            "ci95": [
-              -2.1406789752864728,
-              -0.42303346759332855
-            ],
-            "spans_zero": false,
-            "n_boot": 2000,
-            "seed": 2044
-          }
-        },
-        {
-          "rank": 5,
-          "model": "sba",
-          "mae": 11.063618356739783,
-          "gap_to_next": {
-            "model": "croston",
-            "diff": -0.333553674968492,
-            "ci95": [
-              -0.41393986563586893,
-              -0.2654977074766318
-            ],
-            "spans_zero": false,
             "n_boot": 2000,
             "seed": 2044
           }
@@ -3241,48 +3859,48 @@
       "per_class": {
         "erratic": {
           "tau_0.80": {
-            "champion": 27293.630873832517,
-            "champion_per_unit_demand": 1.0785012397294234,
+            "champion": 29512.767460699688,
+            "champion_per_unit_demand": 1.1661898866202904,
             "floor": 33482.24999999999,
             "floor_per_unit_demand": 1.3230430315722919,
-            "delta_champion_minus_floor": -6188.619126167476
+            "delta_champion_minus_floor": -3969.482539300305
           },
           "tau_0.90": {
-            "champion": 26772.336978584215,
-            "champion_per_unit_demand": 1.0579024372143762,
+            "champion": 27629.867829076524,
+            "champion_per_unit_demand": 1.0917875619028934,
             "floor": 29859.050000000003,
             "floor_per_unit_demand": 1.1798731576243728,
-            "delta_champion_minus_floor": -3086.713021415788
+            "delta_champion_minus_floor": -2229.182170923479
           },
           "tau_0.95": {
-            "champion": 31205.39689266181,
-            "champion_per_unit_demand": 1.233073730298408,
+            "champion": 30038.937724058513,
+            "champion_per_unit_demand": 1.1869813776448617,
             "floor": 30676.399999999998,
             "floor_per_unit_demand": 1.2121705456988183,
-            "delta_champion_minus_floor": 528.996892661813
+            "delta_champion_minus_floor": -637.4622759414851
           }
         },
         "lumpy": {
           "tau_0.80": {
-            "champion": 702448.2687406421,
-            "champion_per_unit_demand": 3.3700100687515513,
+            "champion": 595953.2306873463,
+            "champion_per_unit_demand": 2.859097925491368,
             "floor": 566134.25,
             "floor_per_unit_demand": 2.7160407501403276,
-            "delta_champion_minus_floor": 136314.01874064212
+            "delta_champion_minus_floor": 29818.98068734631
           },
           "tau_0.90": {
-            "champion": 679437.2610061007,
-            "champion_per_unit_demand": 3.2596142841672258,
+            "champion": 595953.2306873463,
+            "champion_per_unit_demand": 2.859097925491368,
             "floor": 566134.25,
             "floor_per_unit_demand": 2.7160407501403276,
-            "delta_champion_minus_floor": 113303.01100610069
+            "delta_champion_minus_floor": 29818.98068734631
           },
           "tau_0.95": {
-            "champion": 605960.0585521447,
-            "champion_per_unit_demand": 2.9071058887270005,
+            "champion": 551362.4256630464,
+            "champion_per_unit_demand": 2.645172617973654,
             "floor": 531275.25,
             "floor_per_unit_demand": 2.548803978104116,
-            "delta_champion_minus_floor": 74684.80855214468
+            "delta_champion_minus_floor": 20087.175663046422
           }
         }
       }

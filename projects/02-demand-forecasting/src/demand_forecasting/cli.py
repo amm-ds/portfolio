@@ -116,10 +116,17 @@ def hpo(
     reports_dir: Annotated[Path | None, typer.Option()] = None,
     trials: Annotated[int | None, typer.Option(help="Override trial count.")] = None,
     model: Annotated[
-        Literal["hgb", "xgb", "lgbm"], typer.Option(help="Booster arm to tune.")
+        Literal["hgb", "xgb", "lgbm", "multistep_tweedie"],
+        typer.Option(help="Booster arm to tune."),
     ] = "hgb",
 ) -> None:
     """Run seeded Optuna HPO for a production booster config (slow; not in ``all``)."""
+    if model == "multistep_tweedie":
+        from demand_forecasting.hpo import tune_multistep_tweedie
+
+        settings, config = _settings_and_config(data_dir, reports_dir)
+        tune_multistep_tweedie(settings, config, n_trials=trials or 12)
+        return
     from demand_forecasting.hpo import run_hpo
 
     settings, config = _settings_and_config(data_dir, reports_dir)

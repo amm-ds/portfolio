@@ -24,12 +24,32 @@ once per week**, with each horizon modelled directly:
   ``config.multistep_test_origins`` origins are the test set — scored once,
   never read for selection; the earlier origins select (per-series routing
   method, conformal widths).
-- **Routing** — series in the intermittent/lumpy quadrants (ADI ≥ 1.32, see
-  intermittent.py) are routed to the best *statistical* method (zero /
-  seasonal_naive / Croston / SBA / TSB), chosen per series on the selection
-  origins only; smooth/erratic series stay on the direct HGB. Selection on
-  train origins only is property-tested (shuffling the test origins' actuals
-  leaves the routing unchanged).
+- **Routing** — series are routed per class on the selection origins only:
+  sparse quadrants (ADI ≥ 1.32, see intermittent.py) choose among the
+  statistical methods (zero / seasonal_naive / Croston / SBA / TSB) PLUS the
+  wave-20 peak-capable ML models (hgb_tweedie / hurdle_hgb, below) —
+  direct_hgb stays excluded there (the wave-19 finding: boosted trees
+  overfit sparse series); smooth/erratic series choose among direct_hgb and
+  the two ML candidates. Selection on train origins only is property-tested
+  (shuffling the test origins' actuals leaves the routing unchanged).
+- **Peak features** (wave 20) — the design adds a peak block computed at the
+  reference day target-h (so >= h days older than the target, exactly like the)
+  lags): rolling mean AND max over 7/14/28-day windows, days-since-last-
+  non-zero, the 28d non-zero-day count and the 28d peak ratio. The flat
+  intermittent estimators cannot see any of these.
+- **Peak-capable candidates** (wave 20) — two ML entries join the sparse
+  routing pool, both on the hi/lo series-identity categoricals:
+  ``hgb_tweedie`` (HGB with the compound-Poisson tweedie deviance, variance
+  power 1.5; lr/depth/leaves tuned on the selection origins by a seeded
+  capped Optuna study, hpo.tune_multistep_tweedie) and ``hurdle_hgb`` (per-h
+  two-stage HGB: log-loss classifier for P(sale) + HGB on log1p(non-zero
+  sizes); point = p_hat x (exp(y_reg) - 1), zero-corrected on the selection origins -
+  identity / scalar / isotonic, whichever wins there, tested not assumed).
+- **Peak-capture metrics** (wave 20) — per scored window: ``peak_mae`` (MAE
+  on the window's top-decile-by-actual days) and ``peak_recall`` (share of
+  the window's top-5 actual days ranked in the forecast's own top-5),
+  pooled per class with paired cluster-bootstrap CIs vs the routed and zero
+  baselines — the headline answer to "peaks aren't captured".
 - **Uncertainty** — per horizon: quantile HGBs (p10/p50/p90, pinball loss
   reported) plus a split-conformal ±q80 width calibrated on the selection
   origins, zero-clipped and sorted. Sparse (routed) series get an honest
@@ -48,8 +68,10 @@ once per week**, with each horizon modelled directly:
 
 Outputs are merged into the track's metrics.json (``_multistep`` block — the
 per-model nowcast blocks stay untouched), probabilistic.json (``multistep``
-key), evaluation_metadata.json (``multi_horizon`` block) and four new figures
-(unit-incompatible metrics never share an axis).
+key, including per-candidate bands for the peak-capable models),
+evaluation_metadata.json (``multi_horizon`` block) and seven figures
+(unit-incompatible metrics never share an axis; three of them are the wave-20
+peak-capture views).
 """
 
 import json
@@ -65,7 +87,8 @@ from joblib import Parallel, delayed
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json
-from sklearn.ensemble import HistGradientBoostingRegressor
+from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
+from sklearn.isotonic import IsotonicRegression
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import _json_safe
@@ -88,15 +111,53 @@ logger = get_logger(__name__)
 PROTOCOL = "direct_multihorizon_v1"
 # Target-relative lag ages: lag_h, lag_{h+7}, lag_{h+14} (all ≥ h days old).
 LAG_AGES = (0, 7, 14)
-# Lag features need units(origin-14), so training origins start at day 14.
-MIN_LAG_ORIGIN = 14
+# Features need units(origin-14) (lags) and a full 28-day window ending at the
+# origin (peak features), so training/prediction designs start at day 28.
+MIN_LAG_ORIGIN = 28
 ORIGIN_SPACING_DAYS = 7
 # Quantile levels for the learner's forecast distribution.
 QUANTILES_MS = (0.1, 0.5, 0.9)
 # Sparse-band quantile ladder levels (over the training-window demand history).
 LADDER_LEVELS = (0.5, 0.8, 0.9, 0.95)
 
-CANDIDATES = ("routed", "direct_hgb", "seasonal_naive", "zero", "croston", "sba", "tsb")
+# Peak-oriented features (wave 20), all computed at the reference day
+# target-h (= the origin, relative to which every one is ≥ h days old — the
+# same leakage-by-construction aging as the lag trio): rolling mean AND max
+# over 7/14/28-day windows ending at the reference day, days since the last
+# non-zero demand day, the non-zero-day count of the last 28 days, and the
+# peak ratio (28d rolling max / 28d rolling mean) the flat intermittent
+# estimators structurally cannot see.
+PEAK_WINDOWS = (7, 14, 28)
+PEAK_FEATURE_NAMES = (
+    "roll_mean_7",
+    "roll_mean_14",
+    "roll_mean_28",
+    "roll_max_7",
+    "roll_max_14",
+    "roll_max_28",
+    "days_since_last_nz",
+    "nz_count_28",
+    "peak_ratio_28",
+)
+N_PEAK_FEATURES = len(PEAK_FEATURE_NAMES)
+# Tweedie variance power: sklearn's HalfTweedieLoss fixes the compound-Poisson
+# regime 1 < p < 2; p = 1.5 is the standard peak-tolerant choice.
+TWEEDIE_POWER = 1.5
+
+CANDIDATES = (
+    "routed",
+    "direct_hgb",
+    "seasonal_naive",
+    "zero",
+    "croston",
+    "sba",
+    "tsb",
+    "hgb_tweedie",
+    "hurdle_hgb",
+)
+# Peak-capable ML candidates the sparse-series router may pick (direct_hgb
+# stays reserved for smooth/erratic series — the wave-19 routing finding).
+ML_SPARSE = ("hgb_tweedie", "hurdle_hgb")
 CHAMPION = "routed"
 FLOOR = "seasonal_naive"
 NAIVE = "zero"
@@ -140,6 +201,46 @@ def _calendar_features(dates: np.ndarray) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
+# Peak features (all computed at a reference day r from units[≤r] only)
+# ---------------------------------------------------------------------------
+
+
+def peak_feature_tensor(units: np.ndarray) -> np.ndarray:
+    """(n_dates x n_series x N_PEAK_FEATURES) tensor of peak features.
+
+    Every feature for reference day *r* reads ``units[≤r]`` only, so a design
+    whose reference day is ``target - h`` references no actual within *h* days
+    of the target — the same aging that makes the lag trio leakage-proof.
+    Columns follow :data:`PEAK_FEATURE_NAMES`; windows of length *w* are
+    undefined for ``r < w - 1`` and filled with 0.0 (never read: designs start
+    at :data:`MIN_LAG_ORIGIN` = 28). ``days_since_last_nz`` is the distance
+    back from *r* to the most recent non-zero day (``r + 1`` if none yet).
+    ``peak_ratio_28`` is 0.0 when the 28d rolling mean is 0 (all-zero window).
+    """
+    n_dates, n_series = units.shape
+    pf = np.zeros((n_dates, n_series, N_PEAK_FEATURES))
+    csum = np.vstack([np.zeros((1, n_series)), np.cumsum(units, axis=0)])
+    nonzero = (units > 0).astype(float)
+    cpos = np.vstack([np.zeros((1, n_series)), np.cumsum(nonzero, axis=0)])
+    for col, w in enumerate(PEAK_WINDOWS):
+        if w > n_dates:
+            continue  # window never fully fits; features stay 0.0 (undefined)
+        idx = np.arange(w - 1, n_dates)  # reference days with a full window
+        pf[idx, :, col] = (csum[idx + 1] - csum[idx + 1 - w]) / w
+        pf[idx, :, col + 3] = np.lib.stride_tricks.sliding_window_view(units, w, axis=0).max(axis=2)
+    last_nz = np.full(n_series, -1)
+    dsl = np.zeros((n_dates, n_series))
+    for r in range(n_dates):
+        last_nz = np.where(units[r] > 0, r, last_nz)
+        dsl[r] = np.where(last_nz >= 0, (r - last_nz).astype(float), float(r + 1))
+    pf[:, :, 6] = dsl
+    pf[27:, :, 7] = cpos[28:] - cpos[:-28]  # non-zero-day count, last 28 days
+    mean28 = pf[:, :, 2]
+    pf[:, :, 8] = np.where(mean28 > 0, pf[:, :, 5] / np.where(mean28 > 0, mean28, 1.0), 0.0)
+    return pf
+
+
+# ---------------------------------------------------------------------------
 # Weekly rolling origins (no embargo gap)
 # ---------------------------------------------------------------------------
 
@@ -149,12 +250,18 @@ def multistep_origin_indices(n_dates: int, config: ForecastConfig) -> list[int]:
 
     Origin *o* trains on days 0..o (so ``o + 1 ≥ min_train_size``) and scores
     the window o+1 .. o+window_days (so ``o ≤ n_dates - window_days - 1``).
-    The forecast window starts the day AFTER the origin — no embargo gap.
-    When the eligible range exceeds ``multistep_n_origins``, the oldest origins
+    The design for horizon h needs training rows down to candidate origin
+    :data:`MIN_LAG_ORIGIN`, so ``o ≥ MIN_LAG_ORIGIN + h`` for the largest
+    horizon (wave 20: peak features raised MIN_LAG_ORIGIN to 28). The
+    forecast window starts the day AFTER the origin — no embargo gap. When
+    the eligible range exceeds ``multistep_n_origins``, the oldest origins
     are dropped (exact weekly cadence preserved; the cap exists for runtime;
     UCI's 43 eligible weekly origins are capped to the most recent 20).
     """
-    first = max(config.min_train_size - 1, MIN_LAG_ORIGIN)
+    first = max(
+        config.min_train_size - 1,
+        MIN_LAG_ORIGIN + max(config.multistep_horizons),
+    )
     last = n_dates - config.multistep_window_days - 1
     if last < first:
         raise ValueError(
@@ -183,17 +290,19 @@ def split_origins(origin_indices: list[int], config: ForecastConfig) -> tuple[li
 
 
 def _design_train(
-    units: np.ndarray, cal: np.ndarray, origin: int, h: int
+    units: np.ndarray, cal: np.ndarray, pf: np.ndarray, origin: int, h: int
 ) -> tuple[np.ndarray, np.ndarray]:
     """Training matrix for the direct model of horizon h issued at ``origin``.
 
     Rows are (candidate origin o', series i) pairs with
     ``o' ∈ [MIN_LAG_ORIGIN, origin - h]`` — every training target date is ≤
     the issue date, so the fit never reads beyond the origin. Features:
-    calendar of the target date o'+h, units(o'), units(o'-7), units(o'-14),
-    and the series identity as a hi/lo PAIR of native categoricals (HGB caps
-    categorical cardinality at 255; the pair (i // 64, i % 64) identifies the
-    series exactly and keeps both cardinalities small). Column order matches
+    calendar of the target date o'+h, the peak block at the reference day o'
+    (see :func:`peak_feature_tensor` — every entry ≥ h days older than the
+    target), the lag trio units(o'), units(o'-7), units(o'-14), and the series
+    identity as a hi/lo PAIR of native categoricals (HGB caps categorical
+    cardinality at 255; the pair (i // 64, i % 64) identifies the series
+    exactly and keeps both cardinalities small). Column order matches
     :func:`_design_pred`.
     """
     n_series = units.shape[1]
@@ -204,20 +313,36 @@ def _design_train(
     lag0 = units[lo : hi + 1].reshape(-1)
     lag7 = units[lo - 7 : hi + 1 - 7].reshape(-1)
     lag14 = units[lo - 14 : hi + 1 - 14].reshape(-1)
+    peak = pf[lo : hi + 1].reshape(-1, N_PEAK_FEATURES)
     codes = np.tile(np.arange(n_series), m)
-    x = np.column_stack([base, lag0, lag7, lag14, codes // 64, codes % 64])
+    x = np.column_stack([base, lag0, lag7, lag14, peak, codes // 64, codes % 64])
     y = units[tgt].reshape(-1)
     return x, y
 
 
-def _design_pred(units: np.ndarray, cal: np.ndarray, origin: int, h: int) -> np.ndarray:
+def _design_pred(
+    units: np.ndarray, cal: np.ndarray, pf: np.ndarray, origin: int, h: int
+) -> np.ndarray:
     """Prediction matrix for (origin, h): one row per series, target origin+h."""
     n_series = units.shape[1]
     base = np.repeat(cal[origin + h : origin + h + 1], n_series, axis=0)
     codes = np.arange(n_series)
     return np.column_stack(
-        [base, units[origin], units[origin - 7], units[origin - 14], codes // 64, codes % 64]
+        [
+            base,
+            units[origin],
+            units[origin - 7],
+            units[origin - 14],
+            pf[origin],
+            codes // 64,
+            codes % 64,
+        ]
     )
+
+
+def _n_numeric_features() -> int:
+    """Numeric column count: calendar + lag trio + peak block (before hi/lo)."""
+    return 7 + len(LAG_AGES) + N_PEAK_FEATURES
 
 
 def _fit_hgb(config: ForecastConfig, quantile: float | None) -> HistGradientBoostingRegressor:
@@ -228,8 +353,49 @@ def _fit_hgb(config: ForecastConfig, quantile: float | None) -> HistGradientBoos
     if quantile is not None:
         kwargs["loss"] = "quantile"
         kwargs["quantile"] = quantile
-    n_num = 7 + len(LAG_AGES)
+    n_num = _n_numeric_features()
     return HistGradientBoostingRegressor(categorical_features=[n_num, n_num + 1], **kwargs)
+
+
+def _fit_tweedie(config: ForecastConfig) -> HistGradientBoostingRegressor:
+    """Peak-capable tweedie HGB: compound-Poisson deviance (variance power
+    1.5) with the seeded multi-step tuning (lr/depth/leaves tuned on the
+    SELECTION origins only — see hpo.tune_multistep_tweedie)."""
+    from sklearn._loss.loss import HalfTweedieLoss
+
+    kwargs: dict[str, Any] = config.multistep_tweedie.estimator_kwargs()
+    kwargs["random_state"] = config.seed
+    n_num = _n_numeric_features()
+    return HistGradientBoostingRegressor(
+        loss=HalfTweedieLoss(power=TWEEDIE_POWER),
+        categorical_features=[n_num, n_num + 1],
+        **kwargs,
+    )
+
+
+def _fit_hurdle_pair(
+    config: ForecastConfig,
+) -> tuple[HistGradientBoostingClassifier, HistGradientBoostingRegressor]:
+    """Two-stage hurdle pair on the champion HGB config: a classifier for
+    P(sale) (log loss) and a regressor on log1p(non-zero sizes). Same hi/lo
+    categorical encoding as every direct model."""
+    kwargs: dict[str, Any] = config.hgb_tuned.estimator_kwargs()
+    kwargs["random_state"] = config.seed
+    n_num = _n_numeric_features()
+    cat = [n_num, n_num + 1]
+    return (
+        HistGradientBoostingClassifier(categorical_features=cat, **kwargs),
+        HistGradientBoostingRegressor(categorical_features=cat, **kwargs),
+    )
+
+
+def hurdle_point(p_hat: np.ndarray, log_size: np.ndarray) -> np.ndarray:
+    """The hurdle point forecast — pure math, hand-testable:
+    ``p_hat * max(exp(y_reg) - 1, 0)`` (``exp(y) - 1`` inverts the log1p target).
+    """
+    p = np.clip(np.asarray(p_hat, dtype=float), 0.0, 1.0)
+    size = np.clip(np.expm1(np.asarray(log_size, dtype=float)), 0.0, None)
+    return np.asarray(p * size, dtype=float)
 
 
 def _seasonal_naive_pred(units: np.ndarray, origin: int, horizons: list[int]) -> np.ndarray:
@@ -265,14 +431,39 @@ class OriginScore:
     origin: int
     preds: dict[str, np.ndarray]
     quantiles: dict[float, np.ndarray]  # learner p10/p50/p90
+    # Raw hurdle point forecasts (p̂ x size, before the selection-origin
+    # zero-correction is applied globally by apply_hurdle_correction).
+    hurdle_raw: np.ndarray | None = None
     # Optional what-if predictions under demand shocks: shock factor -> method
     # -> (n_series x n_horizons). A shock scales the last 7 days before the
     # origin (the demand signal every candidate reads: the statistical methods
-    # re-fit on the shocked window, the direct HGB re-predicts on its shocked
-    # lag trio, the seasonal naive reads the shocked reference days). Only the
-    # demo payload builder passes shock factors; the committed track never
-    # does, so committed metrics are untouched.
+    # re-fit on the shocked window, the boosted models re-predict on their
+    # shocked features). Only the demo payload builder passes shock factors;
+    # the committed track never does, so committed metrics are untouched.
     shocked: dict[float, dict[str, np.ndarray]] = field(default_factory=dict)
+
+
+def _hurdle_predict(
+    clf: HistGradientBoostingClassifier,
+    reg: HistGradientBoostingRegressor,
+    x: np.ndarray,
+    has_positives: bool,
+) -> tuple[np.ndarray, np.ndarray]:
+    """(p_hat, raw point forecast) of one fitted hurdle pair on design rows.
+
+    A training window with no positive target rows yields p̂ ≡ 0 (a classifier
+    that has seen a single class); the regressor prediction is undefined in
+    that case and the size is 0.
+    """
+    if len(clf.classes_) < 2:
+        p_hat = np.zeros(x.shape[0])
+    else:
+        p_hat = np.asarray(clf.predict_proba(x)[:, 1], dtype=float)
+    if has_positives:
+        size = hurdle_point(np.ones(x.shape[0]), np.asarray(reg.predict(x), dtype=float))
+    else:
+        size = np.zeros(x.shape[0])
+    return p_hat, p_hat * size
 
 
 def _score_origin(
@@ -285,21 +476,44 @@ def _score_origin(
 ) -> OriginScore:
     """Fit every direct model issued at ``origin`` and predict the window."""
     n_series = units.shape[1]
+    pf = peak_feature_tensor(units)
     point_cols: list[np.ndarray] = []
     point_models: list[HistGradientBoostingRegressor] = []
+    tweedie_cols: list[np.ndarray] = []
+    tweedie_models: list[HistGradientBoostingRegressor] = []
+    hurdle_raw_cols: list[np.ndarray] = []
+    hurdle_models: list[tuple[HistGradientBoostingClassifier, HistGradientBoostingRegressor]] = []
     quantile_cols: dict[float, list[np.ndarray]] = {q: [] for q in QUANTILES_MS}
     for h in horizons:
-        x_train, y_train = _design_train(units, cal, origin, h)
-        x_pred = _design_pred(units, cal, origin, h)
+        x_train, y_train = _design_train(units, cal, pf, origin, h)
+        x_pred = _design_pred(units, cal, pf, origin, h)
         model = _fit_hgb(config, quantile=None)
         model.fit(x_train, y_train)
         point_models.append(model)
         point_cols.append(np.asarray(model.predict(x_pred), dtype=float))
+        tweedie = _fit_tweedie(config)
+        tweedie.fit(x_train, y_train)
+        tweedie_models.append(tweedie)
+        tweedie_cols.append(np.asarray(tweedie.predict(x_pred), dtype=float))
+        clf, reg = _fit_hurdle_pair(config)
+        positives = y_train > 0
+        clf.fit(x_train, positives.astype(int))
+        if positives.any():
+            reg.fit(x_train[positives], np.log1p(y_train[positives]))
+        hurdle_models.append((clf, reg))
+        _, raw_point = _hurdle_predict(clf, reg, x_pred, bool(positives.any()))
+        hurdle_raw_cols.append(raw_point)
         for q in QUANTILES_MS:
             qm = _fit_hgb(config, quantile=q)
             qm.fit(x_train, y_train)
             quantile_cols[q].append(np.asarray(qm.predict(x_pred), dtype=float))
-    preds: dict[str, np.ndarray] = {"direct_hgb": np.column_stack(point_cols)}
+    preds: dict[str, np.ndarray] = {
+        "direct_hgb": np.column_stack(point_cols),
+        "hgb_tweedie": np.column_stack(tweedie_cols),
+        # overwritten by apply_hurdle_correction (raw until then)
+        "hurdle_hgb": np.column_stack(hurdle_raw_cols),
+    }
+    hurdle_raw = np.column_stack(hurdle_raw_cols)
     quantiles = {q: np.column_stack(v) for q, v in quantile_cols.items()}
     preds["seasonal_naive"] = _seasonal_naive_pred(units, origin, horizons)
     preds["zero"] = np.zeros((n_series, len(horizons)))
@@ -313,6 +527,7 @@ def _score_origin(
             continue  # the base run IS the 1.0 curve
         units_s = units.copy()
         units_s[max(0, origin - 6) : origin + 1] *= s  # the last 7 days before the origin
+        pf_s = peak_feature_tensor(units_s)
         entry: dict[str, np.ndarray] = {
             "seasonal_naive": _seasonal_naive_pred(units_s, origin, horizons),
             "zero": np.zeros((n_series, len(horizons))),
@@ -320,12 +535,23 @@ def _score_origin(
         for name, mat in _statistical_preds(units_s, origin, config.multistep_window_days).items():
             entry[name] = np.column_stack([mat[:, h - 1] for h in horizons])
         hgb_cols = []
+        tweedie_cols_s = []
+        hurdle_raw_cols_s = []
         for j, h in enumerate(horizons):
-            x_s = _design_pred(units_s, cal, origin, h)
+            x_s = _design_pred(units_s, cal, pf_s, origin, h)
             hgb_cols.append(np.asarray(point_models[j].predict(x_s), dtype=float))
+            tweedie_cols_s.append(np.asarray(tweedie_models[j].predict(x_s), dtype=float))
+            clf_s, reg_s = hurdle_models[j]
+            _, raw_s = _hurdle_predict(clf_s, reg_s, x_s, len(clf_s.classes_) >= 2)
+            hurdle_raw_cols_s.append(raw_s)
         entry["direct_hgb"] = np.column_stack(hgb_cols)
+        entry["hgb_tweedie"] = np.column_stack(tweedie_cols_s)
+        entry["hurdle_hgb"] = np.column_stack(hurdle_raw_cols_s)  # raw; the payload
+        # applies the committed correction mapping to the routed curve
         shocked[float(s)] = entry
-    return OriginScore(origin=origin, preds=preds, quantiles=quantiles, shocked=shocked)
+    return OriginScore(
+        origin=origin, preds=preds, quantiles=quantiles, hurdle_raw=hurdle_raw, shocked=shocked
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -422,6 +648,148 @@ def _paired_bootstrap_mae(
     }
 
 
+def _paired_bootstrap_values(
+    val_a: np.ndarray,
+    val_b: np.ndarray,
+    series_of: np.ndarray,
+    n_boot: int,
+    seed: int,
+) -> dict[str, Any]:
+    """95% CI on mean(A) - mean(B) over per-window values, clustered by series.
+
+    Same resampling contract as :func:`_paired_bootstrap_mae` (one shared
+    series-index draw per replication), but the unit is a scored *window*
+    (series x test origin) carrying one value each (peak_mae or peak_recall).
+    """
+    uniques = np.unique(series_of)
+    sum_a = np.array([val_a[series_of == i].sum() for i in uniques])
+    sum_b = np.array([val_b[series_of == i].sum() for i in uniques])
+    cnt = np.array([int((series_of == i).sum()) for i in uniques], dtype=float)
+    rng = np.random.default_rng(seed)
+    diffs = np.empty(n_boot)
+    for b in range(n_boot):
+        idx = rng.integers(0, len(uniques), len(uniques))
+        denom = cnt[idx].sum()
+        diffs[b] = (sum_a[idx].sum() - sum_b[idx].sum()) / denom
+    lo, hi = np.quantile(diffs, [0.025, 0.975])
+    return {
+        "diff": float(val_a.mean() - val_b.mean()),
+        "ci95": [float(lo), float(hi)],
+        "spans_zero": bool(lo <= 0.0 <= hi),
+        "n_boot": n_boot,
+        "seed": seed,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Peak-capture metrics (the user's headline concern)
+# ---------------------------------------------------------------------------
+
+PEAK_CANDIDATES = ("routed", "zero", "hgb_tweedie", "hurdle_hgb")
+
+
+def _window_peak_arrays(y3: np.ndarray, pred3: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
+    """(peak_mae, peak_recall) per (origin, series) window.
+
+    ``y3``/``pred3`` are (n_origins x n_horizons x n_series). ``peak_mae`` is
+    the |error| on the window's top-k-by-actual demand days (the top decile:
+    ``k = max(1, ceil(0.1 · n_horizons))``); ``peak_recall`` is the share of
+    the window's top-5 actual days that the forecast's own top-5 ranked days
+    include. Both are per-window scalars — pooled per class downstream.
+    """
+    n_o, _n_h, n_s = y3.shape
+    top_k = np.argsort(y3, axis=1)[:, ::-1][:, :k, :]  # (n_o, k, n_s)
+    arange_o = np.arange(n_o)[:, None, None]
+    arange_s = np.arange(n_s)[None, None, :]
+    peak_mae = np.abs(pred3[arange_o, top_k, arange_s] - y3[arange_o, top_k, arange_s]).mean(axis=1)
+    top5 = np.argsort(y3, axis=1)[:, ::-1][:, :5, :]  # (n_o, 5, n_s)
+    pred5 = np.argsort(pred3, axis=1)[:, ::-1][:, :5, :]
+    recall = np.zeros((n_o, n_s))
+    for r in range(n_o):
+        for i in range(n_s):
+            recall[r, i] = len(set(top5[r, :, i].tolist()) & set(pred5[r, :, i].tolist())) / 5.0
+    return peak_mae, recall
+
+
+def _peak_capture(
+    cells: dict[str, Any],
+    test: list[int],
+    horizons: list[int],
+    n_series: int,
+    config: ForecastConfig,
+) -> dict[str, Any]:
+    """Peak-capture report per demand class: peak_mae + peak_recall per
+    candidate (routed / zero / hgb_tweedie / hurdle_hgb), each with a paired
+    cluster bootstrap CI against the routed and the zero baseline.
+
+    Windows are (series x scored test origin); the peak days are picked within
+    each window over the scored h-lattice days, so every compared number is
+    an out-of-sample, selection-untouched quantity.
+    """
+    n_o, n_h = len(test), len(horizons)
+    y3 = cells["y"].reshape(n_o, n_h, n_series)
+    cls3 = cells["class"].reshape(n_o, n_h, n_series)
+    ser3 = cells["series"].reshape(n_o, n_h, n_series)
+    classes = [str(c) for c in np.unique(cls3)]
+    k = max(1, math.ceil(0.1 * n_h))
+    seed = config.seed + 4020  # distinct bootstrap stream
+    series_of = ser3[:, 0, :].reshape(-1)  # window -> series
+
+    per_cand: dict[str, dict[str, np.ndarray]] = {}
+    for cand in PEAK_CANDIDATES:
+        pred3 = cells["pred"][cand].reshape(n_o, n_h, n_series)
+        peak_mae, recall = _window_peak_arrays(y3, pred3, k)
+        per_cand[cand] = {"peak_mae": peak_mae.reshape(-1), "peak_recall": recall.reshape(-1)}
+    per_class: dict[str, Any] = {}
+    for cls in classes:
+        mask = cls3[:, 0, :].reshape(-1) == cls
+        entry: dict[str, Any] = {"n_windows": int(mask.sum())}
+        for cand in PEAK_CANDIDATES:
+            pm = per_cand[cand]["peak_mae"]
+            pr = per_cand[cand]["peak_recall"]
+            item: dict[str, Any] = {
+                "peak_mae": float(pm[mask].mean()),
+                "peak_recall": float(pr[mask].mean()),
+            }
+            for base in ("routed", "zero"):
+                if cand == base:
+                    continue
+                item[f"peak_mae_vs_{base}"] = _paired_bootstrap_values(
+                    pm[mask],
+                    per_cand[base]["peak_mae"][mask],
+                    series_of[mask],
+                    config.bootstrap_reps,
+                    seed,
+                )
+                item[f"peak_recall_vs_{base}"] = _paired_bootstrap_values(
+                    pr[mask],
+                    per_cand[base]["peak_recall"][mask],
+                    series_of[mask],
+                    config.bootstrap_reps,
+                    seed,
+                )
+            entry[cand] = item
+        per_class[cls] = entry
+    return {
+        "definition": (
+            "per scored window (series x test origin) over the scored h-lattice days: "
+            "peak_mae = MAE on the window's top-decile-by-actual demand days "
+            f"(k = max(1, ceil(0.1 x {n_h})) = {k}); peak_recall = share of the window's "
+            "top-5 actual days whose day ranks in the forecast's own top-5"
+        ),
+        "candidates": list(PEAK_CANDIDATES),
+        "top_k_days": k,
+        "top_recall_days": 5,
+        "bootstrap": {
+            "method": "paired cluster bootstrap over series (windows of a sampled series "
+            "enter together), percentile 95% CI",
+            "n_boot": config.bootstrap_reps,
+            "seed": seed,
+        },
+        "per_class": per_class,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Long table over test origins
 # ---------------------------------------------------------------------------
@@ -479,13 +847,18 @@ def _test_cells(
             cells["p50"][sl] = sc.quantiles[0.5][:, j]
             cells["p10"][sl] = sc.quantiles[0.1][:, j]
             cells["p90"][sl] = sc.quantiles[0.9][:, j]
-            for name in ("direct_hgb", "seasonal_naive", "zero", "croston", "sba", "tsb"):
+            for name in (
+                "direct_hgb",
+                "seasonal_naive",
+                "zero",
+                "croston",
+                "sba",
+                "tsb",
+                "hgb_tweedie",
+                "hurdle_hgb",
+            ):
                 cells["pred"][name][sl] = sc.preds[name][:, j]
-            stat_pred = np.zeros(n)
-            for name in STATISTICAL_METHODS:
-                mask = sparse & (method_of == name)
-                stat_pred[mask] = sc.preds[name][mask, j]
-            cells["pred"]["routed"][sl] = np.where(sparse, stat_pred, sc.preds["direct_hgb"][:, j])
+            cells["pred"]["routed"][sl] = _routed_pred(sc, j, sparse, method_of)
             r += n
     return cells
 
@@ -535,7 +908,10 @@ def run_multistep(
     )
     by_origin = {s.origin: s for s in scores}
 
-    # ---- routing: per-series best statistical method on SELECTION origins ----
+    # ---- hurdle zero-correction: chosen on the SELECTION origins only ----
+    correction = apply_hurdle_correction(by_origin, selection, horizons, units)
+
+    # ---- routing: per-series best candidate on SELECTION origins only ----
     method_of = _route(by_origin, selection, horizons, units, sparse, n_series)
 
     # ---- long table over the TEST origins (scored once) ----
@@ -547,6 +923,7 @@ def run_multistep(
     bands = _bands(by_origin, selection, test, horizons, units, sparse, cells)
     bootstrap = _bootstrap_suite(cells, horizons, config)
     growth = _growth_curves(cells, horizons)
+    peak = _peak_capture(cells, test, horizons, n_series, config)
     class_of_series = np.array([classes[s]["class"] for s in series_ids])
     decision = _order_up_to(
         by_origin, selection, horizons, units, sparse, method_of, cells, class_of_series, config
@@ -568,8 +945,10 @@ def run_multistep(
         cells,
         series_ids,
         config,
+        correction,
+        peak,
     )
-    figures = _figures(block, horizons, bands["json"])
+    figures = _figures(block, horizons, bands["json"], cells, test, n_series)
     result = MultiStepResult(
         block=block,
         probabilistic_block=bands["json"],
@@ -587,6 +966,78 @@ def run_multistep(
 
 
 # ---------------------------------------------------------------------------
+# Hurdle zero-correction (chosen on the SELECTION origins only)
+# ---------------------------------------------------------------------------
+
+
+def apply_hurdle_correction(
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+) -> dict[str, Any]:
+    """Pick and apply the hurdle zero-correction — tested, not assumed.
+
+    The raw hurdle point forecast (p̂ x size) is biased toward non-zero
+    answers (it is a conditional mean of the positive part). Three mappings
+    are compared on the SELECTION origins' cells only: identity, a scalar
+    ``Σactual / Σpred`` shrink, and an isotonic regression of actual on
+    predicted. The mapping with the lowest summed |error| on the selection
+    cells wins and is applied to EVERY origin's stored ``hurdle_hgb``
+    predictions (in place), so routing and scoring see the same corrected
+    candidate. Reads no test-origin actual (property-tested). Returns the
+    choice and the selection-origin MAE of every variant (the "does the
+    correction help?" evidence, committed in metrics.json).
+    """
+    raw_sel: list[np.ndarray] = []
+    y_sel: list[np.ndarray] = []
+    for o in selection:
+        sc = by_origin[o]
+        if sc.hurdle_raw is None:  # pragma: no cover - defensive
+            raise ValueError(f"origin {o} has no raw hurdle predictions")
+        # both flattened series-major so cell i of raw pairs with cell i of y
+        raw_sel.append(np.transpose(sc.hurdle_raw).reshape(-1))
+        y_sel.append(np.column_stack([units[o + h] for h in horizons]).reshape(-1))
+    raw = np.concatenate(raw_sel)
+    y = np.concatenate(y_sel)
+    denom = float(raw.sum())
+    scalar = float(y.sum()) / denom if denom > 0 else 1.0
+    iso = IsotonicRegression(out_of_bounds="clip").fit(raw, y)
+    variants: dict[str, np.ndarray] = {
+        "identity": raw,
+        "scalar": raw * scalar,
+        "isotonic": np.asarray(iso.predict(raw), dtype=float),
+    }
+    maes = {name: float(np.abs(v - y).mean()) for name, v in variants.items()}
+    chosen = min(maes, key=lambda name: maes[name])
+
+    def _map(flat: np.ndarray) -> np.ndarray:
+        if chosen == "identity":
+            return flat
+        if chosen == "scalar":
+            return flat * scalar
+        return np.asarray(iso.predict(flat), dtype=float)
+
+    for sc in by_origin.values():
+        if sc.hurdle_raw is None:  # pragma: no cover - defensive
+            continue
+        sc.preds["hurdle_hgb"] = _map(sc.hurdle_raw.reshape(-1)).reshape(sc.hurdle_raw.shape)
+        # the demo payload's what-if curves go through the same mapping
+        for entry in sc.shocked.values():
+            if "hurdle_hgb" in entry:
+                raw_s = entry["hurdle_hgb"]
+                entry["hurdle_hgb"] = _map(raw_s.reshape(-1)).reshape(raw_s.shape)
+    return {
+        "chosen": chosen,
+        "selection_mae": maes,
+        "scalar_factor": scalar,
+        "note": "identity/scalar/isotonic compared on the selection origins only; the "
+        "winner is applied to all origins; a series of all-zero training windows has "
+        "no correction candidate (raw p̂=0)",
+    }
+
+
+# ---------------------------------------------------------------------------
 # Routing
 # ---------------------------------------------------------------------------
 
@@ -599,22 +1050,31 @@ def _route(
     sparse: np.ndarray,
     n_series: int,
 ) -> np.ndarray:
-    """Per-series method: best statistical candidate on SELECTION origins only.
+    """Per-series method: best candidate on SELECTION origins only.
 
-    Property (tested): the choice reads no test-origin actual — shuffling the
-    test window leaves every choice unchanged.
+    Pool per series (the wave-20 extension of the wave-19 statistical-only
+    router): sparse (ADI ≥ 1.32) series choose among the statistical methods
+    AND the peak-capable ML candidates (hgb_tweedie / hurdle_hgb) — direct_hgb
+    stays excluded there (the wave-19 finding: boosted trees overfit sparse
+    series); smooth/erratic series choose among direct_hgb (the previous
+    routed winner) and the two ML candidates. Property (tested): the choice
+    reads no test-origin actual — shuffling the test window leaves every
+    choice unchanged.
     """
-    stat_err = {name: np.zeros(n_series) for name in STATISTICAL_METHODS}
+    pool = (*STATISTICAL_METHODS, *ML_SPARSE, "direct_hgb")
+    cand_err = {name: np.zeros(n_series) for name in pool}
     for o in selection:
         sc = by_origin[o]
         actual = np.column_stack([units[o + h] for h in horizons])
-        for name in STATISTICAL_METHODS:
-            stat_err[name] += np.abs(actual - sc.preds[name]).sum(axis=1)
-    stack = np.stack([stat_err[name] for name in STATISTICAL_METHODS], axis=1)
-    method_of = np.array(STATISTICAL_METHODS, dtype=object)[np.argmin(stack, axis=1)]
-    method_of = method_of.copy()
-    method_of[~sparse] = "direct_hgb"
-    return method_of
+        for name in pool:
+            cand_err[name] += np.abs(actual - sc.preds[name]).sum(axis=1)
+    # eligibility: statistical methods are sparse-only, direct_hgb is dense-only
+    for name in STATISTICAL_METHODS:
+        cand_err[name][~sparse] = np.inf
+    cand_err["direct_hgb"][sparse] = np.inf
+    stack = np.stack([cand_err[name] for name in pool], axis=1)
+    method_of = np.array(pool, dtype=object)[np.argmin(stack, axis=1)]
+    return method_of.copy()
 
 
 # ---------------------------------------------------------------------------
@@ -766,6 +1226,51 @@ def _bands(
         },
     }
 
+    # bands for the peak-capable candidates: conformal width per h from the
+    # selection-origin residuals around the candidate's own point forecast
+    # (zero-clipped and sorted — clipping floors at 0, so sorting is
+    # automatic); sparse rows honestly keep the P(sale)+ladder band as today.
+    candidate_bands: dict[str, Any] = {}
+    for cand in ML_SPARSE:
+        cand_widths: dict[int, float] = {}
+        for h in horizons:
+            j = horizons.index(h)
+            res_c = np.concatenate(
+                [units[o + h] - by_origin[o].preds[cand][:, j] for o in selection]
+            )
+            cand_widths[h] = float(np.quantile(np.abs(res_c), TARGET_COVERAGE))
+        cand_per_h: dict[int, dict[str, Any]] = {}
+        for h in horizons:
+            mask = cells["h"] == h
+            y = cells["y"][mask]
+            lo_c = np.clip(cells["pred"][cand][mask] - cand_widths[h], 0.0, None)
+            hi_c = cells["pred"][cand][mask] + cand_widths[h]
+            sparse_rows = np.flatnonzero(cells["sparse"][mask])
+            for r in sparse_rows:
+                i = int(cells["series"][mask][r])
+                o = int(cells["origin"][mask][r])
+                lo_c[r] = 0.0
+                hi_c[r] = float(np.quantile(units[: o + 1, i], TARGET_COVERAGE))
+            covered_c = (y >= lo_c) & (y <= hi_c)
+            cand_per_h[h] = {
+                "coverage": float(covered_c.mean()),
+                "avg_width": float((hi_c - lo_c).mean()),
+                "calibration_verdict": calibration_verdict(
+                    float(covered_c.mean()), TARGET_COVERAGE
+                ),
+            }
+        candidate_bands[cand] = {
+            "band_type": "point ± q80 split-conformal width per horizon, calibrated on the "
+            "selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+"
+            "quantile-ladder history band instead",
+            "conformal_widths_by_h": {str(h): cand_widths[h] for h in horizons},
+            "per_horizon": {str(h): cand_per_h[h] for h in horizons},
+            "pooled_coverage": float(np.mean([cand_per_h[h]["coverage"] for h in horizons])),
+            "pooled_verdict": calibration_verdict(
+                float(np.mean([cand_per_h[h]["coverage"] for h in horizons])), TARGET_COVERAGE
+            ),
+        }
+
     pooled_cov = float(np.mean([per_h[h]["coverage"] for h in horizons]))
     block = {
         "protocol": PROTOCOL,
@@ -775,9 +1280,13 @@ def _bands(
             "learner": "p50 ± q80 split-conformal width per horizon, calibrated on the "
             "selection origins, zero-clipped and sorted",
             "sparse": "P(any sale) + quantile ladder of the training history (no collapsing band)",
+            "candidate": "peak-capable candidates (hgb_tweedie / hurdle_hgb): point ± q80 "
+            "split-conformal width per horizon around the candidate's own point forecast, "
+            "zero-clipped and sorted; sparse rows keep the P(sale)+ladder band",
         },
         "conformal_widths_by_h": {str(h): widths[h] for h in horizons},
         "per_horizon": {str(h): {**per_h[h], **pinball[h]} for h in horizons},
+        "candidate_bands": candidate_bands,
         "pooled_coverage": pooled_cov,
         "pooled_verdict": calibration_verdict(pooled_cov, TARGET_COVERAGE),
         "sparse_band": sparse_band,
@@ -822,7 +1331,7 @@ def _bootstrap_suite(
             mask = cls_mask & (cells["h"] == h)
             if not mask.any():
                 continue
-            entry[f"h{h}"] = {
+            h_entry: dict[str, Any] = {
                 "champion_mae": float(
                     np.abs(cells["pred"][CHAMPION][mask] - cells["y"][mask]).mean()
                 ),
@@ -830,6 +1339,14 @@ def _bootstrap_suite(
                 "champion_vs_floor": _pair(mask, CHAMPION, FLOOR),
                 "champion_vs_naive_zero": _pair(mask, CHAMPION, NAIVE),
             }
+            # peak-capable candidates vs the routed pipeline and the zero floor
+            for cand in ML_SPARSE:
+                h_entry[f"{cand}_mae"] = float(
+                    np.abs(cells["pred"][cand][mask] - cells["y"][mask]).mean()
+                )
+                h_entry[f"{cand}_vs_routed"] = _pair(mask, cand, CHAMPION)
+                h_entry[f"{cand}_vs_zero"] = _pair(mask, cand, NAIVE)
+            entry[f"h{h}"] = h_entry
         # routing before/after: all-HGB (unrouted) vs routed champion, all h
         entry["routing"] = _pair(cls_mask, "direct_hgb", CHAMPION)
         entry["n_series"] = len(np.unique(cells["series"][cls_mask]))
@@ -901,14 +1418,55 @@ def _growth_curves(cells: dict[str, Any], horizons: list[int]) -> dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
+# Candidate comparison (pooled over horizons, per class)
+# ---------------------------------------------------------------------------
+
+
+def _candidate_comparison(cells: dict[str, Any], config: ForecastConfig) -> dict[str, Any]:
+    """Pooled-over-h MAE of the peak-capable candidates vs the routed/zero
+    baselines, per class, with paired cluster-bootstrap CIs on every gap."""
+    seed = config.seed + 6402  # distinct bootstrap stream
+    classes = [str(c) for c in np.unique(cells["class"])]
+    per_class: dict[str, Any] = {}
+    for cls in classes:
+        mask = cells["class"] == cls
+        entry: dict[str, Any] = {
+            "routed_mae": float(np.abs(cells["pred"][CHAMPION][mask] - cells["y"][mask]).mean()),
+            "zero_mae": float(np.abs(cells["pred"][NAIVE][mask] - cells["y"][mask]).mean()),
+        }
+        for cand in ML_SPARSE:
+            item: dict[str, Any] = {
+                "mae": float(np.abs(cells["pred"][cand][mask] - cells["y"][mask]).mean())
+            }
+            for base_name, base in (("routed", CHAMPION), ("zero", NAIVE)):
+                item[f"vs_{base_name}"] = _paired_bootstrap_mae(
+                    cells["pred"][cand][mask] - cells["y"][mask],
+                    cells["pred"][base][mask] - cells["y"][mask],
+                    cells["series"][mask],
+                    config.bootstrap_reps,
+                    seed,
+                )
+            entry[cand] = item
+        per_class[cls] = entry
+    return {
+        "method": "pooled MAE over series x scored test origins x all horizons; gaps carry "
+        "a 95% paired cluster bootstrap CI over series (negative diff = candidate better)",
+        "n_boot": config.bootstrap_reps,
+        "seed": seed,
+        "per_class": per_class,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Decision metric: order-up-to policy simulation
 # ---------------------------------------------------------------------------
 
 
 def _routed_pred(sc: OriginScore, j: int, sparse: np.ndarray, method_of: np.ndarray) -> np.ndarray:
+    del sparse  # eligibility is encoded in method_of by _route
     out = sc.preds["direct_hgb"][:, j].copy()
-    for name in STATISTICAL_METHODS:
-        mask = sparse & (method_of == name)
+    for name in (*STATISTICAL_METHODS, *ML_SPARSE):
+        mask = method_of == name
         out[mask] = sc.preds[name][mask, j]
     return out
 
@@ -1032,6 +1590,8 @@ def _assemble_block(
     cells: dict[str, Any],
     series_ids: list[str],
     config: ForecastConfig,
+    correction: dict[str, Any],
+    peak: dict[str, Any],
 ) -> dict[str, Any]:
     """The ``_multistep`` block of metrics.json (multi-step headline)."""
     del bands  # band numbers live in probabilistic.json (merged separately)
@@ -1043,7 +1603,7 @@ def _assemble_block(
     for cls, entry in bootstrap["per_class"].items():
         headline[cls] = {key: value for key, value in entry.items() if key.startswith("h")}
         headline[cls]["n_series"] = entry["n_series"]
-    routing_choices = {sid: str(method_of[i]) for i, sid in enumerate(series_ids) if sparse[i]}
+    routing_choices = {sid: str(method_of[i]) for i, sid in enumerate(series_ids)}
     overall = {name: float(np.abs(cells["pred"][name] - cells["y"]).mean()) for name in CANDIDATES}
     return {
         "protocol": PROTOCOL,
@@ -1058,10 +1618,19 @@ def _assemble_block(
         "window_days": config.multistep_window_days,
         "candidates": list(CANDIDATES),
         "champion": CHAMPION,
-        "champion_definition": "per-series routing: ADI>=1.32 (intermittent/lumpy) -> best "
-        "statistical method on selection origins; smooth/erratic -> direct per-horizon HGB",
+        "champion_definition": "per-series routing: sparse (ADI>=1.32) series -> best candidate "
+        "among the statistical methods + the peak-capable hgb_tweedie / hurdle_hgb on the "
+        "selection origins; smooth/erratic -> best among direct_hgb + the two ML candidates",
         "floor": FLOOR,
         "naive": NAIVE,
+        "peak_capable_candidates": {
+            "hgb_tweedie": "HGBRegressor with the compound-Poisson tweedie deviance "
+            "(variance power 1.5); lr/depth/leaves tuned on the selection origins via a "
+            "seeded capped Optuna study (hpo.tune_multistep_tweedie)",
+            "hurdle_hgb": "per-h two-stage HGB: log-loss classifier for P(sale) + HGB on "
+            "log1p(non-zero sizes); point = p_hat x (exp(y_reg) - 1), zero-corrected on the "
+            "selection origins (identity / scalar / isotonic — whichever wins there)",
+        },
         "origins": {
             "n_origins": len(origins),
             "dates": [str(dates[o])[:10] for o in origins],
@@ -1085,13 +1654,18 @@ def _assemble_block(
             "series": {sid: classes[sid]["class"] for sid in series_ids},
         },
         "routing": {
-            "rule": "sparse (ADI >= 1.32) series route to the best statistical method "
-            "(zero/seasonal_naive/Croston/SBA/TSB) chosen per series on the selection "
-            "origins ONLY; smooth/erratic series stay on the direct HGB",
+            "rule": "per-series routing on the selection origins ONLY: sparse (ADI >= 1.32) "
+            "series choose among zero/seasonal_naive/Croston/SBA/TSB/hgb_tweedie/hurdle_hgb; "
+            "smooth/erratic series choose among direct_hgb/hgb_tweedie/hurdle_hgb",
             "method_choices": routing_choices,
+            "pool_sparse": list((*STATISTICAL_METHODS, *ML_SPARSE)),
+            "pool_dense": list(("direct_hgb", *ML_SPARSE)),
+            "hurdle_correction": correction,
             "per_class": {cls: entry["routing"] for cls, entry in bootstrap["per_class"].items()},
         },
         "headline_per_class": headline,
+        "candidate_comparison": _candidate_comparison(cells, config),
+        "peak_capture": peak,
         "per_horizon": {str(h): per_horizon[h] for h in horizons},
         "horizon_growth": growth,
         "overall_mae_test": overall,
@@ -1121,14 +1695,19 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
             "earlier origins select (routing + conformal calibration) only"
         ),
         "selection_rule": "per-series routing method = lowest summed |error| over the "
-        "selection origins among zero/seasonal_naive/Croston/SBA/TSB; never reads test "
+        "selection origins: sparse series among zero/seasonal_naive/Croston/SBA/TSB/"
+        "hgb_tweedie/hurdle_hgb (direct_hgb ineligible — the wave-19 sparse finding); "
+        "smooth/erratic series among direct_hgb/hgb_tweedie/hurdle_hgb; never reads test "
         "actuals (property-tested by shuffling the test origins' actuals)",
         "feature_semantics": "direct per-horizon models: calendar of the target date + "
-        "lags lag_h, lag_{h+7}, lag_{h+14} (>= h days old relative to the target — no "
+        "peak block at target-h (rolling mean/max over 7/14/28d windows ending at target-h, "
+        "days-since-last-nonzero, 28d non-zero-day count, 28d peak ratio) + lags lag_h, "
+        "lag_{h+7}, lag_{h+14} (every feature >= h days old relative to the target — no "
         "actual within h days of the target is referenced); training rows use targets "
         "<= the origin only",
-        "uncertainty": "per-horizon split-conformal (learner rows) and P(sale)+quantile "
-        "ladder (sparse rows), both calibrated on selection origins",
+        "uncertainty": "per-horizon split-conformal (learner rows and the peak-capable "
+        "candidates' own point forecasts) and P(sale)+quantile ladder (sparse rows), both "
+        "calibrated on selection origins",
         "metric_definitions": {
             "mae": "mean |actual - forecast| over series x scored test origins at horizon h",
             "mase": "pooled |err| / pooled per-series in-sample seasonal-naive-7 scale "
@@ -1142,7 +1721,14 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
             "coverage": "share of actuals inside the per-h band on the scored origins",
             "calibration_verdict": "|coverage - target| <= 0.05 -> calibrated; above -> "
             "conservative; below -> optimistic",
+            "peak_mae": "per scored window (series x test origin), MAE on the window's "
+            "top-decile-by-actual days of the scored h-lattice; pooled per class as the "
+            "mean over windows",
+            "peak_recall": "per scored window, the share of the window's top-5 actual days "
+            "whose day ranks in the forecast's own top-5; pooled per class as the mean "
+            "over windows",
         },
+        "candidates": list(CANDIDATES),
     }
 
 
@@ -1151,8 +1737,38 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
 # ---------------------------------------------------------------------------
 
 
+def _peak_day_pairs(
+    cells: dict[str, Any],
+    test: list[int],
+    horizons: list[int],
+    n_series: int,
+    candidate: str,
+    max_points: int = 1500,
+) -> tuple[np.ndarray, np.ndarray]:
+    """(peak-day actual, forecast) pairs for one candidate on its windows'
+    top-decile days — the scatter data behind multistep_peak_day_scatter."""
+    n_o, n_h = len(test), len(horizons)
+    y3 = cells["y"].reshape(n_o, n_h, n_series)
+    pred3 = cells["pred"][candidate].reshape(n_o, n_h, n_series)
+    k = max(1, math.ceil(0.1 * n_h))
+    top_k = np.argsort(y3, axis=1)[:, ::-1][:, :k, :]
+    arange_o = np.arange(n_o)[:, None, None]
+    arange_s = np.arange(n_series)[None, None, :]
+    actual = y3[arange_o, top_k, arange_s].reshape(-1)
+    pred = pred3[arange_o, top_k, arange_s].reshape(-1)
+    if actual.size > max_points:  # deterministic subsample for the JSON size
+        step = int(np.ceil(actual.size / max_points))
+        actual, pred = actual[::step], pred[::step]
+    return actual, pred
+
+
 def _figures(
-    block: dict[str, Any], horizons: list[int], prob_block: dict[str, Any]
+    block: dict[str, Any],
+    horizons: list[int],
+    prob_block: dict[str, Any],
+    cells: dict[str, Any],
+    test: list[int],
+    n_series: int,
 ) -> dict[str, go.Figure]:
     """The four multi-step figures (unit-incompatible metrics on separate axes)."""
     growth = block["horizon_growth"]["pooled"]
@@ -1334,12 +1950,217 @@ def _figures(
     )
     band_fig = apply_theme(fig)
 
+    peak_fig = _figure_peak_capture(block)
+    candidate_fig = _figure_candidate_comparison(block)
+    scatter_fig = _figure_peak_day_scatter(cells, test, horizons, n_series)
+
     return {
         "multistep_error_vs_horizon": error_fig,
         "multistep_class_scoreboard": scoreboard_fig,
         "multistep_routing": routing_fig,
         "multistep_band_calibration": band_fig,
+        "multistep_peak_capture": peak_fig,
+        "multistep_candidate_comparison": candidate_fig,
+        "multistep_peak_day_scatter": scatter_fig,
     }
+
+
+def _figure_peak_capture(block: dict[str, Any]) -> go.Figure:
+    """Peak capture per class: peak_recall and peak_mae differences vs the
+    zero forecast with paired-bootstrap CIs (positive recall diff / negative
+    MAE diff = better than zero)."""
+    peak = block["peak_capture"]["per_class"]
+    classes_sorted = sorted(peak)
+    fig = make_subplots(
+        rows=len(classes_sorted),
+        cols=2,
+        subplot_titles=(
+            "peak_recall minus zero (share of top-5 peak days ranked top-5)",
+            "peak_mae minus zero (units, on top-decile demand days)",
+        ),
+        row_titles=classes_sorted,
+    )
+    for row, cls in enumerate(classes_sorted, start=1):
+        for col, metric in enumerate(("peak_recall", "peak_mae"), start=1):
+            for cand in PEAK_CANDIDATES:
+                item = peak[cls][cand]
+                comp = item.get(f"{metric}_vs_zero")
+                if comp is None:
+                    continue
+                color = "#2dd4bf" if cand == "routed" else "#64748b"
+                fig.add_bar(
+                    x=[f"{cls}<br>{cand}"],
+                    y=[comp["diff"]],
+                    name=cand,
+                    marker_color=color,
+                    legendgroup=cand,
+                    showlegend=row == 1 and col == 1,
+                    row=row,
+                    col=col,
+                )
+                fig.add_scatter(
+                    x=[f"{cls}<br>{cand}"],
+                    y=[comp["diff"]],
+                    name="95% CI",
+                    mode="markers",
+                    marker={"color": "#fbbf24", "size": 4},
+                    error_y={
+                        "type": "data",
+                        "array": [comp["ci95"][1] - comp["diff"]],
+                        "arrayminus": [comp["diff"] - comp["ci95"][0]],
+                    },
+                    showlegend=False,
+                    row=row,
+                    col=col,
+                )
+    fig.add_shape(
+        type="line",
+        xref="paper",
+        x0=0,
+        x1=1,
+        yref="y",
+        y0=0.0,
+        y1=0.0,
+        line={"dash": "dot", "color": "#fbbf24"},
+    )
+    fig.update_layout(
+        title="Peak capture per class — difference vs the zero forecast (95% paired bootstrap CI)",
+        barmode="group",
+    )
+    add_takeaway(
+        fig,
+        "the user's headline question: do the peak-capable candidates rank the window's "
+        "peak days better than the flat zero baseline? recall diff > 0 and MAE diff < 0 "
+        "is a win; routed is the committed per-series router",
+    )
+    return apply_theme(fig)
+
+
+def _figure_candidate_comparison(block: dict[str, Any]) -> go.Figure:
+    """Pooled-over-h MAE per class for the peak-capable candidates with the
+    gap CI vs the routed pipeline."""
+    comp_block = block["candidate_comparison"]["per_class"]
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=("pooled MAE, all horizons (units)", "candidate minus routed MAE (95% CI)"),
+    )
+    comp_cands = ("hgb_tweedie", "hurdle_hgb")
+    for cls in sorted(comp_block):
+        entry = comp_block[cls]
+        x_pos = f"{cls}"
+        for name, color in (("routed", "#2dd4bf"), ("zero", "#94a3b8")):
+            key = "routed_mae" if name == "routed" else "zero_mae"
+            fig.add_bar(
+                x=[x_pos],
+                y=[entry[key]],
+                name=name,
+                marker_color=color,
+                legendgroup=name,
+                showlegend=False,
+                row=1,
+                col=1,
+            )
+        for cand in comp_cands:
+            fig.add_bar(
+                x=[x_pos],
+                y=[entry[cand]["mae"]],
+                name=cand,
+                marker_color="#64748b",
+                legendgroup=cand,
+                showlegend=False,
+                row=1,
+                col=1,
+            )
+            gap = entry[cand]["vs_routed"]
+            fig.add_scatter(
+                x=[f"{cls}<br>{cand}"],
+                y=[gap["diff"]],
+                name="gap",
+                mode="markers",
+                marker={"color": "#fbbf24", "size": 10},
+                error_y={
+                    "type": "data",
+                    "array": [gap["ci95"][1] - gap["diff"]],
+                    "arrayminus": [gap["diff"] - gap["ci95"][0]],
+                },
+                showlegend=False,
+                row=1,
+                col=2,
+            )
+    fig.add_shape(
+        type="line",
+        xref="x2 domain",
+        x0=0,
+        x1=1,
+        yref="y2",
+        y0=0.0,
+        y1=0.0,
+        line={"dash": "dot", "color": "#fbbf24"},
+    )
+    fig.update_layout(
+        title="Peak-capable candidates vs the routed pipeline — pooled multi-step MAE",
+        barmode="group",
+    )
+    add_takeaway(
+        fig,
+        "right panel: tweedie/hurdle MAE minus routed MAE with 95% paired bootstrap CIs — "
+        "negative means the peak-capable candidate beats the committed router on pooled MAE",
+    )
+    return apply_theme(fig)
+
+
+def _figure_peak_day_scatter(
+    cells: dict[str, Any], test: list[int], horizons: list[int], n_series: int
+) -> go.Figure:
+    """Forecast vs actual on each scored window's top-decile day (lumpy class
+    — 98.6% of the panel), one panel per candidate (linear axes: the zero
+    candidate's y=0 row is the point of the figure)."""
+    lumpy_mask = cells["class"] == "lumpy"
+    has_lumpy = bool(lumpy_mask.any())
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=tuple(f"{c} (lumpy peak days)" for c in PEAK_CANDIDATES),
+    )
+    if has_lumpy:
+        for pos, cand in enumerate(PEAK_CANDIDATES, start=1):
+            row, col = (pos - 1) // 2 + 1, (pos - 1) % 2 + 1
+            actual, pred = _peak_day_pairs(cells, test, horizons, n_series, cand)
+            fig.add_scatter(
+                x=actual,
+                y=pred,
+                name=cand,
+                mode="markers",
+                marker={"size": 4, "opacity": 0.5},
+                showlegend=False,
+                row=row,
+                col=col,
+            )
+            hi = float(max(actual.max(), pred.max())) if actual.size else 1.0
+            xref = "x domain" if pos == 1 else f"x{pos} domain"
+            yref = "y" if pos == 1 else f"y{pos}"
+            fig.add_shape(
+                type="line",
+                xref=xref,
+                x0=0,
+                x1=1,
+                yref=yref,
+                y0=0.0,
+                y1=hi,
+                line={"dash": "dot", "color": "#fbbf24"},
+                row=row,
+                col=col,
+            )
+    fig.update_xaxes(title="peak-day actual (units)")
+    fig.update_yaxes(title="forecast (units)")
+    fig.update_layout(title="Peak-day scatter — each scored window's top-decile demand day (lumpy)")
+    add_takeaway(
+        fig,
+        "points on the dotted parity line nail the peak; a flat candidate (zero) hugs the "
+        "bottom — this is the structural miss the peak-capable candidates were built for",
+    )
+    return apply_theme(fig)
 
 
 # ---------------------------------------------------------------------------

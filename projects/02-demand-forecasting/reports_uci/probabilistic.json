@@ -85,27 +85,28 @@
     "calibration_tolerance": 0.05,
     "band_types": {
       "learner": "p50 \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted",
-      "sparse": "P(any sale) + quantile ladder of the training history (no collapsing band)"
+      "sparse": "P(any sale) + quantile ladder of the training history (no collapsing band)",
+      "candidate": "peak-capable candidates (hgb_tweedie / hurdle_hgb): point \u00b1 q80 split-conformal width per horizon around the candidate's own point forecast, zero-clipped and sorted; sparse rows keep the P(sale)+ladder band"
     },
     "conformal_widths_by_h": {
-      "1": 0.0002581275108828021,
+      "1": 0.0,
       "2": 89.60000000000005,
       "3": 115.0,
       "5": 117.80000000000007,
-      "7": 101.80211496771959,
+      "7": 124.20000000000002,
       "10": 110.20000000000002,
-      "14": 96.92273985288868
+      "14": 121.60000000000005
     },
     "per_horizon": {
       "1": {
         "coverage": 1.0,
-        "avg_width": 4.2622729445688785,
+        "avg_width": 4.262269372693728,
         "calibration_verdict": "conservative",
         "learner_coverage": 1.0,
         "sparse_coverage": 1.0,
         "pinball_p10": 0.0,
         "pinball_p50": 0.0,
-        "pinball_p90": 0.192474895625555
+        "pinball_p90": 0.17211147532333343
       },
       "2": {
         "coverage": 0.926429889298893,
@@ -115,7 +116,7 @@
         "sparse_coverage": 0.9275023386342376,
         "pinball_p10": 4.566666666666666,
         "pinball_p50": 22.833333333333332,
-        "pinball_p90": 9.68512048748221
+        "pinball_p90": 9.110883886834154
       },
       "3": {
         "coverage": 0.9098247232472325,
@@ -125,7 +126,7 @@
         "sparse_coverage": 0.9106641721234799,
         "pinball_p10": 6.398333333333335,
         "pinball_p50": 31.991666666666667,
-        "pinball_p90": 16.47200258884237
+        "pinball_p90": 18.692505030753004
       },
       "5": {
         "coverage": 0.911669741697417,
@@ -135,17 +136,17 @@
         "sparse_coverage": 0.9148737137511693,
         "pinball_p10": 11.091666666666669,
         "pinball_p50": 55.458333333333336,
-        "pinball_p90": 40.79651531866948
+        "pinball_p90": 40.162159002677555
       },
       "7": {
-        "coverage": 0.9033671586715867,
-        "avg_width": 5.670970225568077,
+        "coverage": 0.9049815498154982,
+        "avg_width": 5.980904059040593,
         "calibration_verdict": "conservative",
-        "learner_coverage": 0.7833333333333333,
+        "learner_coverage": 0.9,
         "sparse_coverage": 0.9050514499532273,
         "pinball_p10": 6.415000000000002,
         "pinball_p50": 32.075,
-        "pinball_p90": 21.301000076634004
+        "pinball_p90": 20.991265497932456
       },
       "10": {
         "coverage": 0.8987546125461254,
@@ -155,20 +156,124 @@
         "sparse_coverage": 0.9008419083255379,
         "pinball_p10": 7.9433333333333325,
         "pinball_p50": 39.71666666666667,
-        "pinball_p90": 16.691863286341036
+        "pinball_p90": 20.244725049412963
       },
       "14": {
-        "coverage": 0.9077490774907749,
-        "avg_width": 5.603451197226321,
+        "coverage": 0.9089022140221402,
+        "avg_width": 5.944926199261994,
         "calibration_verdict": "conservative",
-        "learner_coverage": 0.8333333333333334,
+        "learner_coverage": 0.9166666666666666,
         "sparse_coverage": 0.9087932647333957,
         "pinball_p10": 5.763333333333334,
         "pinball_p50": 28.816666666666666,
-        "pinball_p90": 21.333981067013656
+        "pinball_p90": 23.13975477543388
       }
     },
-    "pooled_coverage": 0.9225421718502897,
+    "candidate_bands": {
+      "hgb_tweedie": {
+        "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
+        "conformal_widths_by_h": {
+          "1": 0.41770745922078895,
+          "2": 1.6117163603982088,
+          "3": 3.6252261850848497,
+          "5": 3.9849324351403865,
+          "7": 3.307186852108756,
+          "10": 4.026647068572468,
+          "14": 3.6532166026762956
+        },
+        "per_horizon": {
+          "1": {
+            "coverage": 0.9884686346863468,
+            "avg_width": 4.2737442686510905,
+            "calibration_verdict": "conservative"
+          },
+          "2": {
+            "coverage": 0.9158210332103321,
+            "avg_width": 4.306874069014712,
+            "calibration_verdict": "conservative"
+          },
+          "3": {
+            "coverage": 0.8980627306273062,
+            "avg_width": 4.36259851065733,
+            "calibration_verdict": "conservative"
+          },
+          "5": {
+            "coverage": 0.9031365313653137,
+            "avg_width": 4.372553480677318,
+            "calibration_verdict": "conservative"
+          },
+          "7": {
+            "coverage": 0.8929889298892989,
+            "avg_width": 4.353796684098952,
+            "calibration_verdict": "conservative"
+          },
+          "10": {
+            "coverage": 0.8895295202952029,
+            "avg_width": 4.373707944702192,
+            "calibration_verdict": "conservative"
+          },
+          "14": {
+            "coverage": 0.897140221402214,
+            "avg_width": 4.3633731532106,
+            "calibration_verdict": "conservative"
+          }
+        },
+        "pooled_coverage": 0.9121639430680021,
+        "pooled_verdict": "conservative"
+      },
+      "hurdle_hgb": {
+        "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
+        "conformal_widths_by_h": {
+          "1": 0.07090528355372368,
+          "2": 1.592462664856731,
+          "3": 2.8230358396829733,
+          "5": 2.7954188348024593,
+          "7": 2.24802963105886,
+          "10": 2.816203047551815,
+          "14": 2.3984819803231723
+        },
+        "per_horizon": {
+          "1": {
+            "coverage": 0.9873154981549815,
+            "avg_width": 4.264206588737753,
+            "calibration_verdict": "conservative"
+          },
+          "2": {
+            "coverage": 0.9158210332103321,
+            "avg_width": 4.306341217662088,
+            "calibration_verdict": "conservative"
+          },
+          "3": {
+            "coverage": 0.8992158671586716,
+            "avg_width": 4.340397670839935,
+            "calibration_verdict": "conservative"
+          },
+          "5": {
+            "coverage": 0.9031365313653137,
+            "avg_width": 4.339633362586785,
+            "calibration_verdict": "conservative"
+          },
+          "7": {
+            "coverage": 0.8927583025830258,
+            "avg_width": 4.3244842148817035,
+            "calibration_verdict": "conservative"
+          },
+          "10": {
+            "coverage": 0.889760147601476,
+            "avg_width": 4.340208571426712,
+            "calibration_verdict": "conservative"
+          },
+          "14": {
+            "coverage": 0.896909594095941,
+            "avg_width": 4.328648025285697,
+            "calibration_verdict": "conservative"
+          }
+        },
+        "pooled_coverage": 0.9121309963099631,
+        "pooled_verdict": "conservative"
+      }
+    },
+    "pooled_coverage": 0.922937532946758,
     "pooled_verdict": "conservative",
     "sparse_band": {
       "definition": "P(any sale) = share of non-zero demand days in the training history up to the origin; quantile ladder over the same history",

@@ -14,9 +14,13 @@ real track; seeded synthetic hierarchy as the labelled CI fast path) ·
 > not parity on this window); no run dips below MASE 1.0 there — stated, not
 > smoothed over. The wave-19 rebuild made the experiment genuinely
 > multi-step (direct per-horizon models on weekly origins, protocol
-> `direct_multihorizon_v1`, now the primary headline): on the 98.6% of
-> series that are intermittent/lumpy, routed statistical methods beat the
-> boosted ladder by **4.65 MAE** (95% CI [4.15, 5.15]) — see *Key results*.
+> `direct_multihorizon_v1`, now the primary headline), and wave 20 answered
+> the peak-capture feedback with peak features plus two peak-capable
+> candidates (tweedie HGB, hurdle two-stage HGB) in the per-class router:
+> on the 98.6% of series that are lumpy the routed pipeline beats the
+> boosted ladder by **3.97 MAE** (95% CI [3.26, 4.82]) while the peak-capable
+> models take over all 15 erratic series and cut their peak-day error by a
+> third — see *Key results*.
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -103,28 +107,41 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   champion's median forecast is 0 on ~100% of rows, so the band collapses to
   the point forecast — the honest limit, stated on the figure, whose buttons
   drop the band interactively.
-- **Multi-step headline (wave 19, PRIMARY — `direct_multihorizon_v1`)**:
-  direct per-horizon models h ∈ {1, 2, 3, 5, 7, 10, 14} on 20 weekly rolling
-  origins (16 selection + 4 scored once, no embargo gap; lags ≥ h days old,
-  taint-tested). ADI/CV² routing: 1,069 of 1,084 series are lumpy and route
-  to statistical methods (zero/SBA/TSB/Croston/seasonal_naive, chosen on the
-  selection origins only). Lumpy champion vs floor: **6.72 vs 11.07 MAE at
-  h=7** (95% paired-bootstrap CI [−7.06, −2.26]), 6.45 vs 10.64 at h=14;
-  routing beats the unrouted all-HGB ladder by 4.65 MAE (CI [4.15, 5.15]);
-  on the 15 erratic series nothing significantly beats the floor. Error
-  grows with the true horizon (pooled 2.46 → 7.37, h=1 → h=14). Per-horizon
-  bands report coverage AND width per h (pooled 0.923, conservative — sparse
-  P(sale)+ladder bands never collapse). Order-up-to simulation at τ=0.90
-  (holding 0.25 / stockout 4.0 per unit): erratic 1.058 vs 1.180 cost/unit
-  for the champion, lumpy 3.260 vs 2.716 against — MAE-optimal routing
-  over-orders at high τ on spike-driven demand; simulation, no savings
-  claims. The nowcast ladder above stays committed as the labelled
-  one-day-ahead track.
-- UCI reconciliation: w=0.50, incoherence 474.3 → 237.2 (coherence property
-  exact); store MAE 746.2 → 743.4. Synthetic: w=0.05, accuracy effect near-null
-  and reported as such.
-- 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 9 min;
-  103 offline tests.
+- **Multi-step headline (wave 19 + wave 20 peak candidates, PRIMARY —
+  `direct_multihorizon_v1`)**: direct per-horizon models h ∈ {1, 2, 3, 5, 7,
+  10, 14} on 20 weekly rolling origins (16 selection + 4 scored once, no
+  embargo gap; features aged ≥ h days at target−h — calendar + a peak block
+  (7/14/28d rolling mean/max, days-since-last-nonzero, 28d non-zero count,
+  28d peak ratio) + aged lags, taint-tested). ADI/CV² routing: 1,069 of 1,084
+  series are lumpy and choose among the statistical methods plus two
+  peak-capable ML candidates — `hgb_tweedie` (tweedie deviance, variance
+  power 1.5, selection-origin-tuned) and `hurdle_hgb` (P(sale) classifier ×
+  log1p-size regressor, selection-origin zero-correction) — while the 15
+  erratic series choose among the direct HGB and the two ML candidates (all
+  15 now route to ML: 11 hurdle, 4 tweedie). Lumpy champion vs floor: **6.17
+  vs 11.07 MAE at h=7** (95% paired-bootstrap CI [−7.67, −2.79]), 5.88 vs
+  10.64 at h=14; the flat methods keep pooled lumpy MAE (routed 5.79 <
+  hurdle 6.19 < tweedie 7.09, CIs exclude zero) — reported plainly. On erratic
+  the peak-capable models cut pooled MAE to 39.5 (hurdle) and peak-day MAE
+  from 184.3 (zero) to ~124 vs the flat baselines; on lumpy tweedie cuts
+  peak-day MAE to 22.1 (vs zero 27.0) while trading top-5 day-ranking recall
+  (0.84 vs 0.97) — the peak_capture block carries every delta with a paired
+  bootstrap CI. Error grows with the true horizon (pooled 0.06 → 6.52,
+  h=1 → h=14). Per-horizon bands report coverage AND width per h (pooled
+  0.923, conservative — sparse P(sale)+ladder bands never collapse; the ML
+  candidates carry their own conformal bands, pooled 0.912). Order-up-to
+  simulation at τ=0.90 (holding 0.25 / stockout 4.0 per unit): erratic 1.092
+  vs 1.180 cost/unit for the champion, lumpy 2.859 vs 2.716 against —
+  MAE-optimal routing over-orders at high τ on spike-driven demand;
+  simulation, no savings claims. The nowcast ladder above stays committed as
+  the labelled one-day-ahead track.
+- UCI reconciliation: w=0.75 this run, incoherence 536.7 → 134.2 (coherence
+  property exact); store MAE 749.1 → 719.8. Synthetic: w=0.00 this run (store
+  MAE 24.133 → 24.133, incoherence 26.688 → 26.688), accuracy effect null and
+  reported as such.
+- 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 13 min
+  (multi-step ≈ 4 min of it, 49 HGB fits per origin, joblib-parallel);
+  123 offline tests.
 
 ![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run, where the 1.0 gridline is not seasonal-naive parity: the MASE scale is the naive's in-sample error from a quieter period, so the seasonal-naive itself lands at 1.310 on this window. MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 

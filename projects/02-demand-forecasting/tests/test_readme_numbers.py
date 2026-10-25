@@ -272,3 +272,56 @@ def test_multistep_routing_and_decision_numbers_match_committed_metrics() -> Non
     assert m, "lumpy decision-metric quote not found"
     assert float(m.group(1)) == pytest.approx(tau90["lumpy"]["champion_per_unit_demand"], abs=5e-4)
     assert float(m.group(2)) == pytest.approx(tau90["lumpy"]["floor_per_unit_demand"], abs=5e-4)
+
+
+# ---------------------------------------------------------------------------
+# Wave-20 peak-capable candidates: peak-capture + candidate-comparison guards
+# ---------------------------------------------------------------------------
+
+
+def test_multistep_peak_capture_table_matches_committed_metrics() -> None:
+    """The peak-capture table (peak_mae / peak_recall per candidate per class)."""
+    ms = _multistep()
+    section = _multistep_section()
+    peak = ms["peak_capture"]["per_class"]
+    rows: dict[str, list[str]] = {}
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) != 5 or cells[0] in ("candidate",) or set(cells[0]) <= {"-", ":"}:
+            continue
+        rows[cells[0].replace("**", "")] = cells[1:]
+    assert set(rows) == set(ms["peak_capture"]["candidates"]), "peak-capture table mismatch"
+    for cand, cells in rows.items():
+        for cls, off in (("lumpy", 0), ("erratic", 2)):
+            if cls not in peak:
+                continue
+            assert _num(cells[off]) == pytest.approx(peak[cls][cand]["peak_mae"], abs=5e-4), (
+                f"{cls} {cand} peak_mae drifted"
+            )
+            assert _num(cells[off + 1]) == pytest.approx(
+                peak[cls][cand]["peak_recall"], abs=5e-4
+            ), f"{cls} {cand} peak_recall drifted"
+
+
+def test_multistep_candidate_comparison_matches_committed_metrics() -> None:
+    """The 'lumpy hgb_tweedie MAE **X**' / 'hurdle_hgb MAE **Y**' quotes are live."""
+    ms = _multistep()
+    section = _multistep_section()
+    comp = ms["candidate_comparison"]["per_class"]
+    for cls in comp:
+        for cand in ("hgb_tweedie", "hurdle_hgb"):
+            m = re.search(rf"{cls} {cand} MAE\s+\*\*([\d.]+)\*\*", section)
+            assert m, f"{cls} {cand} MAE quote missing from README"
+            assert float(m.group(1)) == pytest.approx(comp[cls][cand]["mae"], abs=5e-4)
+    # the router's ML-pick count quote on lumpy ("hurdle_hgb for N series, ...")
+    from collections import Counter
+
+    classes_of = ms["demand_classes"]["series"]
+    counts = Counter(
+        m for sid, m in ms["routing"]["method_choices"].items() if classes_of[sid] == "lumpy"
+    )
+    m = re.search(r"hurdle_hgb for\s+([\d,]+) series", section)
+    assert m and int(m.group(1).replace(",", "")) == counts.get("hurdle_hgb", 0)
