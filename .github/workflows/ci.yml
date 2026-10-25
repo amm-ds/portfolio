@@ -85,7 +85,7 @@ jobs:
         working-directory: ${{ matrix.suite.path }}
         # per-project pytest.ini/pyproject applies its own floor; the libs
         # cell carries the shared ≥80% gate via its cov flags
-        run: uv run pytest -o addopts="--import-mode=importlib -q" ${{ matrix.suite.cov }}
+        run: uv run pytest -o addopts="--import-mode=importlib -q -n 2" ${{ matrix.suite.cov }}
 
   docker:
     needs: [gate, tests]
