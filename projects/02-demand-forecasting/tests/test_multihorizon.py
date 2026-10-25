@@ -41,6 +41,14 @@ MS_CONFIG = ForecastConfig(
     bootstrap_reps=200,
 )
 
+# The production lattice: the full h = 1..14 window (revision 3.2).
+FULL_HORIZONS = list(range(1, 15))
+# The pre-3.2 lattice — the golden reference for the existing-h drift test.
+LEGACY_HORIZONS = [1, 2, 3, 5, 7, 10, 14]
+
+FULL_CONFIG = MS_CONFIG.model_copy(update={"multistep_horizons": FULL_HORIZONS})
+LEGACY_CONFIG = MS_CONFIG.model_copy(update={"multistep_horizons": LEGACY_HORIZONS})
+
 
 def _mixed_panel() -> pl.DataFrame:
     """4 series: two smooth (daily demand), one intermittent, one lumpy."""
@@ -302,6 +310,114 @@ def test_seasonal_naive_reference_day_is_never_after_the_origin(
         assert ref <= 80
         out = _seasonal_naive_pred(units, 80, [h])
         np.testing.assert_array_equal(out[:, 0], units[ref])
+
+
+# ---------------------------------------------------------------------------
+# Full lattice (revision 3.2): shapes, existing-h golden values, new-h behavior
+# ---------------------------------------------------------------------------
+
+
+def _smooth_ar_panel(n_series: int = 4, n_days: int = 220, seed: int = 3) -> pl.DataFrame:
+    """Autocorrelated (AR(1), rho 0.9) positive-count series — the direct
+    models genuinely degrade with h there, so the growth curve is testable."""
+    dates = np.arange(
+        np.datetime64("2024-01-01"),
+        np.datetime64("2024-01-01") + np.timedelta64(n_days, "D"),
+        dtype="datetime64[D]",
+    )
+    rng = np.random.default_rng(seed)
+    frames = []
+    for i in range(n_series):
+        ar = np.empty(n_days)
+        ar[0] = 10.0
+        for t in range(1, n_days):
+            ar[t] = 10.0 + 0.9 * (ar[t - 1] - 10.0) + rng.normal(0, 2.0)
+        units = np.clip(np.round(ar + 3.0 * np.sin(np.arange(n_days) * 2 * np.pi / 7)), 0, None)
+        store, product = f"s{i % 2}", f"p{i}"
+        frames.append(
+            pl.DataFrame(
+                {"date": dates, "store": store, "product": product, "units": units.astype(int)}
+            )
+        )
+    return pl.concat(frames)
+
+
+def test_full_lattice_block_shape() -> None:
+    """The h-lattice spans 1..14 everywhere: per-h metrics, growth, bands."""
+    result = run_multistep(settings=_settings(), config=FULL_CONFIG, panel=_smooth_ar_panel())
+    block = result.block
+    hs = [str(h) for h in FULL_HORIZONS]
+    assert block["horizons"] == FULL_HORIZONS
+    assert sorted(block["per_horizon"], key=int) == hs
+    assert sorted(block["horizon_growth"]["pooled"]["routed"], key=int) == hs
+    assert sorted(block["horizon_growth"]["pooled"]["seasonal_naive"], key=int) == hs
+    assert sorted(result.probabilistic_block["conformal_widths_by_h"], key=int) == hs
+    assert sorted(result.probabilistic_block["per_horizon"], key=int) == hs
+    # the growth figure data covers the full lattice
+    fig = result.figures["multistep_error_vs_horizon"]
+    xs = [list(trace.x) for trace in fig.data if trace.x is not None]
+    assert any(x == hs for x in xs)
+
+
+def test_existing_horizons_unchanged_by_lattice_extension(mixed_panel: pl.DataFrame) -> None:
+    """Golden: the direct per-h fits are separate models — extending the
+    lattice to 1..14 must not move ANY existing-h quantity. Origin-level
+    predictions, per-h floor metrics, conformal widths and the non-routed
+    growth curves at the legacy h stay bit-identical."""
+    dates, _series_ids, units = panel_matrix(mixed_panel)
+    cal = _calendar_features(dates)
+    origin = 70
+    legacy = _score_origin(units, cal, origin, LEGACY_HORIZONS, MS_CONFIG)
+    full = _score_origin(units, cal, origin, FULL_HORIZONS, MS_CONFIG)
+    for name in legacy.preds:
+        for h in LEGACY_HORIZONS:
+            j_old = LEGACY_HORIZONS.index(h)
+            j_new = FULL_HORIZONS.index(h)
+            np.testing.assert_array_equal(
+                legacy.preds[name][:, j_old], full.preds[name][:, j_new], err_msg=f"{name} h={h}"
+            )
+    for q in legacy.quantiles:
+        for h in LEGACY_HORIZONS:
+            np.testing.assert_array_equal(
+                legacy.quantiles[q][:, LEGACY_HORIZONS.index(h)],
+                full.quantiles[q][:, FULL_HORIZONS.index(h)],
+            )
+
+    legacy_run = run_multistep(settings=_settings(), config=LEGACY_CONFIG, panel=mixed_panel)
+    full_run = run_multistep(settings=_settings(), config=FULL_CONFIG, panel=mixed_panel)
+    lb, fb = legacy_run.block, full_run.block
+    for h in LEGACY_HORIZONS:
+        key = str(h)
+        # the floor is a pure per-h candidate: identical
+        assert fb["per_horizon"][key]["floor"] == lb["per_horizon"][key]["floor"]
+        # conformal widths calibrate per-h residuals: identical
+        assert (
+            full_run.probabilistic_block["conformal_widths_by_h"][key]
+            == legacy_run.probabilistic_block["conformal_widths_by_h"][key]
+        )
+        # growth curves of the non-routed candidates: identical
+        for cand in ("seasonal_naive", "zero"):
+            assert (
+                fb["horizon_growth"]["pooled"][cand][key]
+                == (lb["horizon_growth"]["pooled"][cand][key])
+            )
+
+
+def test_new_horizons_behave_like_direct_models() -> None:
+    """On autocorrelated nonzero demand the error genuinely grows with h:
+    the pooled routed MAE at h=14 is no better than at h=1 (the lag trio a
+    direct h-model reads is h days stale), and every new lattice day h
+    {4,6,8,9,11,12,13} has its own committed metrics."""
+    panel = _smooth_ar_panel()
+    result = run_multistep(settings=_settings(), config=FULL_CONFIG, panel=panel)
+    growth = result.block["horizon_growth"]["pooled"]
+    assert growth["routed"]["14"] >= growth["routed"]["1"]
+    assert growth["seasonal_naive"]["14"] >= growth["seasonal_naive"]["1"] - 1e-9
+    for h in (4, 6, 8, 9, 11, 12, 13):
+        key = str(h)
+        assert key in result.block["per_horizon"]
+        assert result.block["per_horizon"][key]["champion"]["n"] > 0
+        assert np.isfinite(growth["routed"][key])
 
 
 # ---------------------------------------------------------------------------

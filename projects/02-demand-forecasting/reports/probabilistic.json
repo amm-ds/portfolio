@@ -92,9 +92,16 @@
       "1": 15.383272972162192,
       "2": 11.999270532061894,
       "3": 10.264267277965992,
+      "4": 11.06459516799553,
       "5": 13.666876194847848,
+      "6": 16.99625287869265,
       "7": 17.86534292865563,
+      "8": 14.04241103982474,
+      "9": 12.31907112298,
       "10": 10.04250219743653,
+      "11": 10.589167358487074,
+      "12": 13.9547513527572,
+      "13": 15.8756759651015,
       "14": 17.65718367650443
     },
     "per_horizon": {
@@ -128,6 +135,16 @@
         "pinball_p50": 3.3041330047532984,
         "pinball_p90": 1.4213738025491167
       },
+      "4": {
+        "coverage": 0.7916666666666666,
+        "avg_width": 22.12919033599106,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.7916666666666666,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.5515202537232184,
+        "pinball_p50": 3.603084827574333,
+        "pinball_p90": 1.6584773221473554
+      },
       "5": {
         "coverage": 0.8645833333333334,
         "avg_width": 27.33375238969569,
@@ -137,6 +154,16 @@
         "pinball_p10": 2.1538994974619565,
         "pinball_p50": 3.8180227590611246,
         "pinball_p90": 1.7511799725525077
+      },
+      "6": {
+        "coverage": 0.8333333333333334,
+        "avg_width": 33.992505757385295,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.8333333333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.865569981555753,
+        "pinball_p50": 4.376850368032525,
+        "pinball_p90": 2.0296978474300986
       },
       "7": {
         "coverage": 0.8020833333333334,
@@ -148,6 +175,26 @@
         "pinball_p50": 5.475316675165679,
         "pinball_p90": 2.7076531189945947
       },
+      "8": {
+        "coverage": 0.78125,
+        "avg_width": 28.084822079649484,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.78125,
+        "sparse_coverage": NaN,
+        "pinball_p10": 2.1043947273182595,
+        "pinball_p50": 4.920163674027228,
+        "pinball_p90": 2.0132546689857618
+      },
+      "9": {
+        "coverage": 0.8229166666666666,
+        "avg_width": 24.638142245960008,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.8229166666666666,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.7354037957367574,
+        "pinball_p50": 3.697989921455848,
+        "pinball_p90": 1.9943018409319144
+      },
       "10": {
         "coverage": 0.75,
         "avg_width": 20.085004394873064,
@@ -157,6 +204,36 @@
         "pinball_p10": 1.4475495596841617,
         "pinball_p50": 3.551412826451528,
         "pinball_p90": 1.8514267832086138
+      },
+      "11": {
+        "coverage": 0.7395833333333334,
+        "avg_width": 21.17833471697415,
+        "calibration_verdict": "optimistic",
+        "learner_coverage": 0.7395833333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.708850203103464,
+        "pinball_p50": 4.195795576862675,
+        "pinball_p90": 1.708136769270699
+      },
+      "12": {
+        "coverage": 0.84375,
+        "avg_width": 27.9095027055144,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.84375,
+        "sparse_coverage": NaN,
+        "pinball_p10": 1.8988833022132336,
+        "pinball_p50": 3.8704298437867792,
+        "pinball_p90": 1.7938973555373738
+      },
+      "13": {
+        "coverage": 0.7708333333333334,
+        "avg_width": 31.751351930202997,
+        "calibration_verdict": "calibrated",
+        "learner_coverage": 0.7708333333333334,
+        "sparse_coverage": NaN,
+        "pinball_p10": 2.2342029185712615,
+        "pinball_p50": 4.846787059190135,
+        "pinball_p90": 2.4389917289072187
       },
       "14": {
         "coverage": 0.7708333333333334,
@@ -176,9 +253,16 @@
           "1": 15.201878275064555,
           "2": 12.573139401324434,
           "3": 10.2492379763071,
+          "4": 11.353497723966454,
           "5": 13.156401463513788,
+          "6": 16.475609765083284,
           "7": 18.136637091301232,
+          "8": 14.47469547345337,
+          "9": 12.363580708218985,
           "10": 10.36954690807904,
+          "11": 10.786508043813996,
+          "12": 13.842248109534575,
+          "13": 16.139719960480047,
           "14": 17.428648940854494
         },
         "per_horizon": {
@@ -197,9 +281,19 @@
             "avg_width": 20.4984759526142,
             "calibration_verdict": "calibrated"
           },
+          "4": {
+            "coverage": 0.8020833333333334,
+            "avg_width": 22.70699544793291,
+            "calibration_verdict": "calibrated"
+          },
           "5": {
             "coverage": 0.8333333333333334,
             "avg_width": 26.312802927027576,
+            "calibration_verdict": "calibrated"
+          },
+          "6": {
+            "coverage": 0.84375,
+            "avg_width": 32.95121953016656,
             "calibration_verdict": "calibrated"
           },
           "7": {
@@ -207,9 +301,34 @@
             "avg_width": 36.27327418260246,
             "calibration_verdict": "calibrated"
           },
+          "8": {
+            "coverage": 0.7916666666666666,
+            "avg_width": 28.949390946906743,
+            "calibration_verdict": "calibrated"
+          },
+          "9": {
+            "coverage": 0.8125,
+            "avg_width": 24.727161416437976,
+            "calibration_verdict": "calibrated"
+          },
           "10": {
             "coverage": 0.7604166666666666,
             "avg_width": 20.73909381615808,
+            "calibration_verdict": "calibrated"
+          },
+          "11": {
+            "coverage": 0.7291666666666666,
+            "avg_width": 21.57301608762799,
+            "calibration_verdict": "optimistic"
+          },
+          "12": {
+            "coverage": 0.8333333333333334,
+            "avg_width": 27.684496219069157,
+            "calibration_verdict": "calibrated"
+          },
+          "13": {
+            "coverage": 0.7916666666666666,
+            "avg_width": 32.2794399209601,
             "calibration_verdict": "calibrated"
           },
           "14": {
@@ -218,62 +337,104 @@
             "calibration_verdict": "calibrated"
           }
         },
-        "pooled_coverage": 0.806547619047619,
+        "pooled_coverage": 0.8035714285714286,
         "pooled_verdict": "calibrated"
       },
       "hurdle_hgb": {
         "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
         "conformal_widths_by_h": {
-          "1": 56.85193452380952,
-          "2": 51.42961309523812,
-          "3": 51.85193452380952,
-          "5": 52.85193452380952,
-          "7": 67.14806547619048,
-          "10": 51.42961309523812,
-          "14": 67.54806547619052
+          "1": 56.52604166666667,
+          "2": 51.494791666666664,
+          "3": 51.52604166666667,
+          "4": 50.52604166666667,
+          "5": 52.52604166666667,
+          "6": 59.87395833333336,
+          "7": 67.47395833333333,
+          "8": 56.926041666666706,
+          "9": 51.494791666666664,
+          "10": 51.494791666666664,
+          "11": 49.926041666666706,
+          "12": 52.494791666666664,
+          "13": 60.52604166666667,
+          "14": 67.87395833333336
         },
         "per_horizon": {
           "1": {
             "coverage": 0.7708333333333334,
-            "avg_width": 113.70386904761904,
+            "avg_width": 113.05208333333333,
             "calibration_verdict": "calibrated"
           },
           "2": {
             "coverage": 0.8125,
-            "avg_width": 102.8592261904762,
+            "avg_width": 102.98958333333333,
             "calibration_verdict": "calibrated"
           },
           "3": {
             "coverage": 0.8125,
-            "avg_width": 103.70386904761904,
+            "avg_width": 103.05208333333333,
+            "calibration_verdict": "calibrated"
+          },
+          "4": {
+            "coverage": 0.8125,
+            "avg_width": 101.05208333333336,
             "calibration_verdict": "calibrated"
           },
           "5": {
             "coverage": 0.8020833333333334,
-            "avg_width": 105.70386904761904,
+            "avg_width": 105.05208333333333,
             "calibration_verdict": "calibrated"
+          },
+          "6": {
+            "coverage": 0.75,
+            "avg_width": 119.74791666666671,
+            "calibration_verdict": "optimistic"
           },
           "7": {
             "coverage": 0.7916666666666666,
-            "avg_width": 134.29613095238096,
+            "avg_width": 134.94791666666669,
+            "calibration_verdict": "calibrated"
+          },
+          "8": {
+            "coverage": 0.7916666666666666,
+            "avg_width": 113.85208333333343,
+            "calibration_verdict": "calibrated"
+          },
+          "9": {
+            "coverage": 0.7708333333333334,
+            "avg_width": 102.98958333333333,
             "calibration_verdict": "calibrated"
           },
           "10": {
             "coverage": 0.7916666666666666,
-            "avg_width": 102.8592261904762,
+            "avg_width": 102.98958333333333,
+            "calibration_verdict": "calibrated"
+          },
+          "11": {
+            "coverage": 0.78125,
+            "avg_width": 99.85208333333343,
+            "calibration_verdict": "calibrated"
+          },
+          "12": {
+            "coverage": 0.78125,
+            "avg_width": 104.98958333333333,
+            "calibration_verdict": "calibrated"
+          },
+          "13": {
+            "coverage": 0.7708333333333334,
+            "avg_width": 121.05208333333333,
             "calibration_verdict": "calibrated"
           },
           "14": {
             "coverage": 0.7708333333333334,
-            "avg_width": 135.096130952381,
+            "avg_width": 135.74791666666673,
             "calibration_verdict": "calibrated"
           }
         },
-        "pooled_coverage": 0.7931547619047619,
+        "pooled_coverage": 0.7864583333333334,
         "pooled_verdict": "calibrated"
       }
     },
-    "pooled_coverage": 0.7991071428571429,
+    "pooled_coverage": 0.7983630952380952,
     "pooled_verdict": "calibrated",
     "sparse_band": {
       "definition": "P(any sale) = share of non-zero demand days in the training history up to the origin; quantile ladder over the same history",

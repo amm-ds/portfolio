@@ -22,6 +22,26 @@ export function parseDay(iso: string): Date {
   return new Date(y, m - 1, d);
 }
 
+/** The contiguous daily axis the explorer draws on: from the history's
+ * first day through the last actual — the origin date sits in it as a real
+ * slot (history ends the day before, actuals start the day after; there is
+ * no gap to shade).
+ *
+ * Built with wall-calendar arithmetic (`addDays`), never by mutating a
+ * local-time Date in a loop: a `new Date(iso)` loop drifts across DST
+ * transitions (e.g. the CET fall-back inside these 2010 windows) and can
+ * silently drop the final window day from the axis. */
+export function windowAxis(origin: OriginBlock | null): string[] {
+  if (!origin || origin.history.dates.length === 0 || origin.actuals.dates.length === 0) {
+    return [];
+  }
+  const first = origin.history.dates[0];
+  const last = origin.actuals.dates[origin.actuals.dates.length - 1];
+  // both parse as UTC midnight, so the day count is exact
+  const nDays = Math.round((Date.parse(last) - Date.parse(first)) / 86400000);
+  return Array.from({ length: nDays + 1 }, (_, i) => addDays(first, i));
+}
+
 /** "2010-12-09" → "Dec 9". */
 export function fmtDay(iso: string): string {
   const d = parseDay(iso);
@@ -101,6 +121,26 @@ export function curveAt(block: CurveBlock | null, shock: number): number[] {
   return hit ?? block.y_pred;
 }
 
+/** The plotted daily path of a model curve: one {date, y} per horizon h,
+ * mapped onto the window actuals' dates (day origin+h). With the committed
+ * full h = 1..14 lattice this covers the WHOLE window — 14 contiguous days,
+ * no gaps, every point a real direct-h model. Null-safe. */
+export function plottedPath(
+  origin: OriginBlock | null,
+  model: ModelKey,
+  shock: number,
+): Array<{ date: string; y: number }> {
+  if (!origin) return [];
+  const pred = curveAt(modelBlock(origin, model), shock);
+  const out: Array<{ date: string; y: number }> = [];
+  for (let i = 0; i < origin.horizons.length; i++) {
+    const dayIdx = origin.horizons[i] - 1; // actuals are the 14 days after the origin
+    if (origin.actuals.y[dayIdx] === undefined || pred[i] === undefined) continue;
+    out.push({ date: origin.actuals.dates[dayIdx], y: pred[i] });
+  }
+  return out;
+}
+
 /** Chip label for the routed model, per-series honest: the committed method. */
 export function routedLabel(series: CatalogSeries): string {
   return `routed · ${METHOD_SHORT[series.model_used]}`;
@@ -109,13 +149,13 @@ export function routedLabel(series: CatalogSeries): string {
 // --- KPIs at (origin, h) -------------------------------------------------------
 
 export interface HorizonKpi {
-  /** Mean |err| over the direct points h′ ≤ h (the visible fan). */
+  /** |err| of the direct h-step forecast (the day-h point of the curve). */
   mae: number;
-  /** MAE over the origin history's seasonal-naive scale; null on zero scale. */
+  /** |err| over the origin history's seasonal-naive scale; null on zero scale. */
   mase: number | null;
-  /** Mean signed error (pred − actual) over h′ ≤ h. */
+  /** Signed error (pred − actual) of the day-h point. */
   bias: number;
-  /** Σ|err| / Σ actual over the direct points h′ ≤ h; null on zero demand. */
+  /** |err| / |actual| of the day-h point; null on zero demand that day. */
   wape: number | null;
   /** The day-h signed error. */
   signed: number;
@@ -151,32 +191,26 @@ export function latticeErrors(
   return out;
 }
 
-/** KPI band for one model at (origin, h): the direct points h′ ≤ h are the
- * graded window — selecting h genuinely changes every number. */
+/** KPI band for one model at (origin, h), taken AT exactly h: with the full
+ * h = 1..14 lattice every horizon is a real direct model, so the graded cell
+ * is the single day-h point — sliding h genuinely changes every number. Null
+ * when h is off the curve or the origin is missing. */
 export function horizonKpi(
   origin: OriginBlock | null,
   model: ModelKey,
   shock: number,
   h: number,
 ): HorizonKpi | null {
-  const errs = latticeErrors(origin, model, shock).filter((e) => e.h <= h);
-  if (errs.length === 0) return null;
-  let absSum = 0;
-  let signedSum = 0;
-  let actSum = 0;
-  for (const e of errs) {
-    absSum += e.abs;
-    signedSum += e.signed;
-  }
-  for (let i = 0; i < origin!.actuals.y.length; i++) actSum += Math.abs(origin!.actuals.y[i]);
-  const dayH = errs[errs.length - 1];
-  const scale = origin?.scale ?? 0;
-  const mae = absSum / errs.length;
+  const errs = latticeErrors(origin, model, shock);
+  const dayH = errs.find((e) => e.h === h);
+  if (!origin || !dayH) return null;
+  const scale = origin.scale ?? 0;
+  const actual = origin.actuals.y[h - 1];
   return {
-    mae,
-    mase: scale > 0 ? mae / scale : null,
-    bias: signedSum / errs.length,
-    wape: actSum > 0 ? absSum / actSum : null,
+    mae: dayH.abs,
+    mase: scale > 0 ? dayH.abs / scale : null,
+    bias: dayH.signed,
+    wape: actual !== 0 ? dayH.abs / Math.abs(actual) : null,
     signed: dayH.signed,
     abs: dayH.abs,
   };

@@ -14,7 +14,8 @@ curves; v3 replaces the catalog with the multi-step experiment:
   window starts the day AFTER the origin — no embargo gap): the as-of-origin
   history (ends the day BEFORE the origin), the 14 contiguous days of
   actuals, and per-model DIRECT curves on the committed h-lattice
-  {1,2,3,5,7,10,14} — ``zero`` (the naive baseline), ``routed`` (the series'
+  h = 1..14 (the full window — one real direct-h model per day, no display
+  interpolation) — ``zero`` (the naive baseline), ``routed`` (the series'
   committed routing method; for erratic series this IS the boosted direct
   HGB), ``floor`` (seasonal-naive, for the decision layer) and, for erratic
   series only, ``champion_hgb`` — with a per-series ``model_used`` field so
@@ -44,6 +45,11 @@ curves; v3 replaces the catalog with the multi-step experiment:
   the peak-capable candidates (``hurdle_hgb`` / ``hgb_tweedie``) on the series
   the committed router selected them for — the candidate curve IS the routed
   curve, surfaced under its own name for the workbench's model chips;
+- revision 3.2 (additive over 3.1, full lattice): the committed direct
+  h-lattice is h = 1..14, so every per-model curve is a contiguous 14-day
+  series (one real direct-h point per window day — no interpolated display
+  points anywhere), learner p10/p90 bands and sparse P(sale)+ladder bands cover
+  the whole window, and ``horizon_growth`` spans h = 1..14;
 - ``evaluation_metadata`` embeds the committed protocol-v2 block (20 weekly
   rolling origins, select-16/score-4, per-h direct models, the
   leakage-by-construction feature semantics) and ``dataset_metadata`` the
@@ -91,10 +97,15 @@ logger = get_logger(__name__)
 
 DEMO_PAYLOAD_NAME = "demo_payload.json"
 PAYLOAD_SCHEMA_VERSION = 3
-# Additive revision on top of schema v3 (wave 20): per-series candidate curves
-# for the peak-capable ML methods the router selected, `peak_capture` per
-# class, and `class_scoreboard[cls].candidates` — nothing v3 carries moves.
-PAYLOAD_REVISION = "3.1"
+# Additive revisions on top of schema v3:
+#   3.1 (wave 20): per-series candidate curves for the peak-capable ML methods
+#       the router selected, `peak_capture` per class, and
+#       `class_scoreboard[cls].candidates` — nothing v3 carries moves.
+#   3.2 (full lattice): the direct h-lattice is now h = 1..14 — every model
+#       curve is a contiguous 14-day series (one real direct-h point per
+#       window day, no interpolated display points), bands/pinball/widths
+#       exist at every h, and `horizon_growth` spans 1..14.
+PAYLOAD_REVISION = "3.2"
 CATALOG_N = 100
 ORIGIN_HISTORY_DAYS = 60
 HORIZON_DAYS = 14

@@ -31,11 +31,12 @@ from demand_forecasting.multihorizon import (
 )
 
 # 12 weekly origins (4 scored test origins) — enough for the 3 scored origins
-# the catalog needs; tiny bootstrap for speed.
+# the catalog needs; tiny bootstrap for speed. The full h = 1..14 lattice
+# (revision 3.2): every window day is a real direct-h model.
 MS_CONFIG = ForecastConfig(
     n_days=170,
     min_train_size=60,
-    multistep_horizons=[1, 2, 3, 5, 7, 10, 14],
+    multistep_horizons=list(range(1, 15)),
     multistep_n_origins=12,
     multistep_test_origins=4,
     bootstrap_reps=200,
@@ -313,6 +314,40 @@ def test_band_sanity(payload: dict) -> None:
                 assert all(v >= 0 for v in ladder)
 
 
+def test_full_lattice_curves_cover_the_whole_window(payload: dict) -> None:
+    """Revision 3.2: the committed lattice is the full h = 1..14 — every model
+    curve carries one real direct-h point per window day (14 contiguous days,
+    no display interpolation), and the per-h band entries exist at every h."""
+    assert list(range(1, 15)) == HORIZONS
+    for entry in payload["catalog"]:
+        for origin in entry["origins"]:
+            assert origin["horizons"] == list(range(1, 15))
+            window = origin["actuals"]["dates"]
+            assert len(window) == 14
+            for name, block in origin["models"].items():
+                if "alias" in block:
+                    continue  # candidate aliases share the routed curve
+                assert len(block["y_pred"]) == 14, f"{name} curve is not full-lattice"
+                for curve in block["shock"].values():
+                    assert len(curve) == 14
+            # the learner band exists at every h and stays clamped around the
+            # point curve (sparse rows carry the P(sale)+ladder band instead)
+            if entry["demand_class"] == "erratic":
+                assert len(origin["models"]["routed"]["p10"]) == 14
+                assert len(origin["models"]["routed"]["p90"]) == 14
+            # the plotted daily path spans the whole window: one point per
+            # actual day, dates identical to the window's
+            for _name, block in origin["models"].items():
+                if "alias" in block:
+                    block = origin["models"]["routed"]
+                path = [
+                    (origin["actuals"]["dates"][h - 1], block["y_pred"][i])
+                    for i, h in enumerate(origin["horizons"])
+                ]
+                assert [d for d, _y in path] == window
+                assert len(path) == 14
+
+
 def test_shock_blocks_are_present_and_sane(payload: dict, demo_context) -> None:
     _settings, _config, panel = demo_context
     dates, series_ids, units = panel_matrix(panel)
@@ -387,7 +422,7 @@ def test_scoreboard_candidates_and_peak_capture(payload: dict, demo_context) -> 
     peak-capture block lands per class — all equal to the committed metrics."""
     settings, _config, _panel = demo_context
     ms = _committed(settings)
-    assert payload["payload_revision"] == "3.1"
+    assert payload["payload_revision"] == "3.2"
     assert payload["peak_capture"] == ms["peak_capture"]
     for e in payload["catalog"]:
         models = e["origins"][0]["models"]

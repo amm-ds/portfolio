@@ -45,8 +45,8 @@ const FALLBACK_MANIFEST: DemoManifest = {
   modes: ["browser", "live"],
   hero: {
     label: "multi-step pooled MAE over the scored origins, routed pipeline vs all-HGB",
-    value: "6.33 routed vs 10.67 all-HGB — the routed pipeline leads",
-    ci: "routing lumpy series away from the boosted model wins +4.0 MAE [3.3, 4.8] (95% paired bootstrap over series × scored origins; 98.6% of series are lumpy)",
+    value: "7.46 routed vs 11.83 all-HGB — the routed pipeline leads",
+    ci: "routing lumpy series away from the boosted model wins +4.1 MAE [3.4, 4.9] (95% paired bootstrap over series × scored origins; 98.6% of series are lumpy)",
   },
   scenarios: [
     { name: "base", controls: { horizon: 7, shock: 1 } },
@@ -100,13 +100,14 @@ export default function ForecastWorkbench() {
 
 /** Workbench body once the payload (and manifest, or fallback) is in hand. */
 function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: ForecastPayload }) {
-  const hLattice = payload.catalog_summary.horizons;
+  const hMax = payload.catalog_summary.horizon_days;
   const state = useControlState({ horizon: 7, shock: 1 }, manifest.scenarios);
   const { controls, setControl } = state;
-  // snap the free numeric controls to their discrete stops
+  // snap the free numeric shock control to its discrete stops; the horizon
+  // slider is continuous 1..hMax — every stop is a real direct-h model now
   const nearest = (v: number, stops: readonly number[]) =>
     stops.reduce((a, b) => (Math.abs(b - v) < Math.abs(a - v) ? b : a), stops[0]);
-  const horizon = nearest(controls.horizon ?? 7, hLattice);
+  const horizon = Math.min(hMax, Math.max(1, Math.round(controls.horizon ?? 7)));
   const shock = nearest(controls.shock ?? 1, SHOCK_STOPS);
   const dates = originDates(payload);
   const defaultDate = dates[dates.length - 1];
@@ -286,14 +287,14 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                   id="forecast-horizon"
                   type="range"
                   className="wb-slider"
-                  min={0}
-                  max={hLattice.length - 1}
+                  min={1}
+                  max={hMax}
                   step={1}
-                  value={hLattice.indexOf(horizon)}
-                  style={{ "--fill": `${(hLattice.indexOf(horizon) / Math.max(1, hLattice.length - 1)) * 100}%` } as CSSProperties}
-                  onChange={(e) => setControl("horizon", hLattice[Number(e.target.value)])}
+                  value={horizon}
+                  style={{ "--fill": `${((horizon - 1) / Math.max(1, hMax - 1)) * 100}%` } as CSSProperties}
+                  onChange={(e) => setControl("horizon", Number(e.target.value))}
                 />
-                <span className="chip wb-value-badge">h = {horizon}</span>
+                <span className="chip wb-value-badge">{horizon}d</span>
               </div>
             </div>
           </div>
@@ -413,7 +414,7 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 ? `${routedKpi.mae.toFixed(2)} vs ${zeroKpi.mae.toFixed(2)}`
                 : "n/a"
             }
-            sub={`routed vs zero · ${fmtDay(blk?.origin_date ?? "")} · h ≤ ${horizon}`}
+            sub={`routed vs zero · ${fmtDay(blk?.origin_date ?? "")} · h = ${horizon}`}
             tone={
               routedKpi && zeroKpi ? (routedKpi.mae <= zeroKpi.mae ? "good" : "bad") : "neutral"
             }
@@ -435,7 +436,7 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
             value={routedKpi ? signed(routedKpi.bias) : "n/a"}
             sub={
               routedKpi
-                ? `units · ${routedKpi.bias > 0 ? "over" : routedKpi.bias < 0 ? "under" : "un"}-forecasts on average · h ≤ ${horizon}`
+                ? `units · ${routedKpi.bias > 0 ? "over" : routedKpi.bias < 0 ? "under" : "un"}-forecasts on day h · h = ${horizon}`
                 : "no curve"
             }
             tone={
@@ -445,7 +446,7 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
           <KpiTile
             label="WAPE at origin + h"
             value={routedKpi?.wape == null ? "n/a" : `${(routedKpi.wape * 100).toFixed(1)}%`}
-            sub={`Σ|err| / Σ demand · h ≤ ${horizon}`}
+            sub={`|err| / demand on day h · h = ${horizon}`}
           />
           <KpiTile
             label="Band coverage at h"
@@ -542,7 +543,9 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 {payload.evaluation_metadata.origins.gap_days}d gap — window abuts the origin
               </span>
               <span className="wb-tag">
-                {payload.evaluation_metadata.horizons.join("/")} direct horizons
+                h = {payload.evaluation_metadata.horizons[0]}–
+                {payload.evaluation_metadata.horizons[payload.evaluation_metadata.horizons.length - 1]}{" "}
+                direct horizons
               </span>
               <span className="wb-tag">{payload.headline.n_series_experiment} series</span>
             </p>
@@ -614,9 +617,10 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
               <strong>origin</strong> slider moves across three of the four scored weekly origins;
               the explorer shows only what was known as of that date — history up to the day
               before the origin — plus the 14 days that came after, as ghost actuals. Each curve
-              is a set of <strong>direct h-step forecasts</strong>: one model per horizon h on the
-              committed lattice, so the <strong>horizon</strong> slider switches between genuinely
-              different models and the error genuinely grows with h. The <strong>shock</strong>{" "}
+              is a set of <strong>direct h-step forecasts</strong>: one model per horizon
+              h = 1…14 — every day of the window is a real direct model, so the{" "}
+              <strong>horizon</strong> slider switches between genuinely different models at every
+              stop and the error genuinely grows with h. The <strong>shock</strong>{" "}
               lever scales the last 7 days before the origin — the only demand signal these
               models read — with the re-scores precomputed offline, exactly.
             </p>

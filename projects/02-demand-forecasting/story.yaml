@@ -300,7 +300,8 @@ sections:
       - **Multi-step track (wave 19 rebuild + wave 20 peak candidates, now the
         PRIMARY headline, `direct_multihorizon_v1`)**: the nowcast "14-day"
         number was 14 one-day-ahead predictions — the rebuild fits one direct
-        model per horizon h ∈ {1, 2, 3, 5, 7, 10, 14} on 20 weekly origins (16
+        model per horizon h ∈ {1..14} (the full window lattice) on 20 weekly
+        origins (16
         select, 4 scored once, no embargo gap), every feature aged ≥ h days at
         target−h (calendar + a 9-column peak block — 7/14/28d rolling
         mean/max, days-since-last-nonzero, 28d non-zero count, 28d peak ratio
