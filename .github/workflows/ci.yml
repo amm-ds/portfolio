@@ -32,11 +32,6 @@ jobs:
         run: uv run python scripts/check_demo_contract.py
       - name: Mypy (libs strict + projects/apps typed)
         run: uv run mypy libs projects apps
-      - name: Tests with coverage gates (libs ≥80% strict)
-        run: uv run pytest --cov=libs --cov-fail-under=80 --cov-report=term-missing
-      - name: "Coverage floor — projects + apps ≥55%"
-        # Override addopts to exclude libs from this pass's total
-        run: uv run pytest -o addopts="--import-mode=importlib -q" --cov=projects --cov=apps --cov-fail-under=55 --cov-report=term
       - name: "Frontend — install, test, typecheck, build"
         working-directory: apps/showcase-web
         run: |
@@ -52,7 +47,48 @@ jobs:
           uv export --frozen --no-dev -o /tmp/requirements.txt
           uvx pip-audit --requirement /tmp/requirements.txt --strict
 
+  tests:
+    # The full suite outgrew a single 2-vCPU runner (the lattice wave pushed
+    # the monolithic step past 1.5h). One free runner per project keeps every
+    # cell under ~15 min, runs them concurrently, and makes any future hang
+    # identifiable by project.
+    needs: gate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: libs, path: libs, cov: "--cov=libs --cov-fail-under=80" }
+          - { name: 01-rag-agent, path: projects/01-rag-agent, cov: "--cov=src" }
+          - { name: 02-demand-forecasting, path: projects/02-demand-forecasting, cov: "--cov=src" }
+          - { name: 03-anomaly-detection, path: projects/03-anomaly-detection, cov: "--cov=src" }
+          - { name: 04-nlp-classification, path: projects/04-nlp-classification, cov: "--cov=src" }
+          - { name: 05-ml-pipeline-churn, path: projects/05-ml-pipeline-churn, cov: "--cov=src" }
+          - { name: 06-routing-optimization, path: projects/06-routing-optimization, cov: "--cov=src" }
+          - { name: 07-open-data-mobility, path: projects/07-open-data-mobility, cov: "--cov=src" }
+          - { name: 08-inference-serving, path: projects/08-inference-serving, cov: "--cov=src" }
+          - { name: 09-agentic-workflows, path: projects/09-agentic-workflows, cov: "--cov=src" }
+          - { name: 10-uplift-experimentation, path: projects/10-uplift-experimentation, cov: "--cov=src" }
+          - { name: showcase-api, path: apps/showcase-api, cov: "--cov=src" }
+    name: tests · ${{ matrix.suite.name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --all-packages --dev
+      - name: Pytest (${{ matrix.suite.name }})
+        working-directory: ${{ matrix.suite.path }}
+        # per-project pytest.ini/pyproject applies its own floor; the libs
+        # cell carries the shared ≥80% gate via its cov flags
+        run: uv run pytest -o addopts="--import-mode=importlib -q" ${{ matrix.suite.cov }}
+
   docker:
+    needs: tests
     runs-on: ubuntu-latest
     needs: gate
     steps:
