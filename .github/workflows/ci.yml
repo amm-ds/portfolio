@@ -7,6 +7,11 @@ on:
 
 env:
   LLM_BASE_URL: "" # no hosted key in CI; LLM phases fall back to keyword judges / skip
+  # joblib's loky backend spawns a worker per core inside each pytest-xdist
+  # worker; on 2-vCPU runners that nested parallelism thrashes (sys CPU ~=
+  # user CPU observed locally). Cap loky at 1 CPU per worker: 2 workers x 1
+  # thread on 2 cores.
+  LOKY_MAX_CPU_COUNT: "1"
 
 jobs:
   gate:
