@@ -34,13 +34,16 @@ curves; v3 replaces the catalog with the multi-step experiment:
 - experiment-wide blocks straight from the committed JSONs: ``class_scoreboard``
   (per ADI/CV² class: n series, the per-series beats-floor count/share
   recomputed from the re-run cells, committed pooled MAE model-vs-floor at
-  h=7/h=14 with the paired-bootstrap CIs, the routing effect), ``horizon_growth``
-  (pooled MAE and MASE vs the true horizon h — the error-growth evidence the
-  h-slider demonstrates), ``bands`` (per-h coverage/width/verdict + pinball),
-  and ``decision`` (the committed order-up-to simulation: documented cost
-  assumptions, per-class champion-vs-floor cost at the committed service
-  levels, PLUS the τ→quantile mapping — per-class, per-policy, per-h offsets
-  recomputed exactly as the committed simulation derives them);
+  h=7/h=14 with the paired-bootstrap CIs, the routing effect, and — revision
+  3.1 — the wave-20 peak-capable candidates' committed rows per horizon),
+  ``horizon_growth`` (pooled MAE and MASE vs the true horizon h), ``bands``
+  (per-h coverage/width/verdict + pinball), ``decision`` (the committed
+  order-up-to simulation plus the τ→quantile mapping), and ``peak_capture``
+  (peak-day MAE + peak timing recall per class with paired-bootstrap CIs);
+- revision 3.1 (additive over v3, wave 20): per-series ``models`` entries for
+  the peak-capable candidates (``hurdle_hgb`` / ``hgb_tweedie``) on the series
+  the committed router selected them for — the candidate curve IS the routed
+  curve, surfaced under its own name for the workbench's model chips;
 - ``evaluation_metadata`` embeds the committed protocol-v2 block (20 weekly
   rolling origins, select-16/score-4, per-h direct models, the
   leakage-by-construction feature semantics) and ``dataset_metadata`` the
@@ -88,6 +91,10 @@ logger = get_logger(__name__)
 
 DEMO_PAYLOAD_NAME = "demo_payload.json"
 PAYLOAD_SCHEMA_VERSION = 3
+# Additive revision on top of schema v3 (wave 20): per-series candidate curves
+# for the peak-capable ML methods the router selected, `peak_capture` per
+# class, and `class_scoreboard[cls].candidates` — nothing v3 carries moves.
+PAYLOAD_REVISION = "3.1"
 CATALOG_N = 100
 ORIGIN_HISTORY_DAYS = 60
 HORIZON_DAYS = 14
@@ -232,8 +239,9 @@ def _origin_entry(
         models["routed"]["p90"] = p90
         models["champion_hgb"] = {
             "y_pred": _round_curve(hgb),
-            # the routed curve IS the boosted HGB for erratic series; the
-            # learner band belongs to it either way
+            # the routed curve IS the boosted HGB only when the router kept the
+            # series on direct_hgb (wave 20: erratic series may route to the
+            # peak-capable ML candidates instead)
             "p10": list(p10),
             "p90": list(p90),
         }
@@ -249,6 +257,12 @@ def _origin_entry(
         for s, entry in sc.shocked.items():
             block[f"{s:g}"] = _round_curve(entry[method][i, :])
         models[name]["shock"] = block
+    if method_of in ML_SPARSE:
+        # the router selected a peak-capable ML candidate for this series: the
+        # candidate curve IS the routed curve — surface an alias entry under
+        # the candidate's name so the workbench can offer it as a model chip
+        # without duplicating the curve bytes
+        models[method_of] = {"alias": "routed"}
 
     return {
         "origin_date": str(dates[origin])[:10],
@@ -308,8 +322,29 @@ def _class_scoreboard(
             "vs_zero_bootstrap": {
                 key: entry[key]["champion_vs_naive_zero"] for key in ("h7", "h14") if key in entry
             },
+            "candidates": _candidate_board(entry),
             "routing_effect": ms["routing"]["per_class"].get(cls),
         }
+    return board
+
+
+def _candidate_board(entry: dict[str, Any]) -> dict[str, Any]:
+    """The wave-20 peak-capable candidates per class, from the committed
+    headline rows: pooled MAE + the paired-bootstrap gaps vs routed and vs
+    zero at each committed horizon."""
+    board: dict[str, Any] = {}
+    for cand in ML_SPARSE:
+        rows: dict[str, Any] = {}
+        for key in ("h7", "h14"):
+            row = entry.get(key)
+            if not row or row.get(f"{cand}_mae") is None:
+                continue
+            rows[key] = {
+                "mae": row[f"{cand}_mae"],
+                "vs_routed": row.get(f"{cand}_vs_routed"),
+                "vs_zero": row.get(f"{cand}_vs_zero"),
+            }
+        board[cand] = rows
     return board
 
 
@@ -579,6 +614,7 @@ def build_demo_payload(
     target_definition = str(dataset_meta.get("target_definition", ""))
     return {
         "schema_version": PAYLOAD_SCHEMA_VERSION,
+        "payload_revision": PAYLOAD_REVISION,
         "demo": "forecast-workbench",
         "project": "02-demand-forecasting",
         "track": config.data_source,
@@ -586,6 +622,7 @@ def build_demo_payload(
         "catalog": catalog,
         "class_scoreboard": scoreboard,
         "horizon_growth": growth,
+        "peak_capture": ms["peak_capture"],
         "bands": {
             "target_coverage": prob_ms["target_coverage"],
             "band_types": prob_ms["band_types"],
@@ -632,6 +669,8 @@ def build_demo_payload(
                 "lag trio — precomputed offline, exact; bands stay on the unshocked base run"
             ),
             "routing_rule": ms["routing"]["rule"],
+            "candidates": ms["candidates"],
+            "peak_capable_candidates": ms["peak_capable_candidates"],
             "class_thresholds": {"adi": ADI_THRESHOLD, "cv2": CV2_THRESHOLD},
             "experiment_origins": ms["origins"],
         },

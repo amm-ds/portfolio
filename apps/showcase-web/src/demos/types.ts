@@ -209,26 +209,38 @@ export interface UpliftPayload {
 }
 
 // --- demand forecast workbench payload (`projects/02-demand-forecasting/reports/demo_payload.json`) ---
-// Schema v3: the DIRECT MULTI-HORIZON catalog (protocol direct_multihorizon_v1).
-// Every catalog series carries its ADI/CV² class and committed routing method
-// (`model_used`), plus the 3 most recent scored weekly origins — each with an
-// as-of-origin history (ends the day BEFORE the origin), 14 contiguous days
-// of actuals (starting the day AFTER — no embargo gap), and per-model direct
-// curves on the committed h-lattice {1,2,3,5,7,10,14}. Built by
+// Schema v3 (+ payload_revision "3.1", wave 20): the DIRECT MULTI-HORIZON
+// catalog (protocol direct_multihorizon_v1). Every catalog series carries its
+// ADI/CV² class and committed routing method (`model_used`), plus the 3 most
+// recent scored weekly origins — each with an as-of-origin history (ends the
+// day BEFORE the origin), 14 contiguous days of actuals (starting the day
+// AFTER — no embargo gap), and per-model direct curves on the committed
+// h-lattice {1,2,3,5,7,10,14}. Built by
 // `demand_forecasting.demo_payload`.
 
 /** Syntetos-Boylan ADI/CV² classes present in the UCI panel. */
 export type DemandClass = "erratic" | "lumpy";
 
 /** Model chips: `zero` is the naive baseline, `routed` the committed
- * per-series routing method (the boosted direct HGB on erratic series,
- * a statistical method on lumpy series), `champion` the boosted per-horizon
- * HGB (erratic series only — disabled on lumpy, where routing sends it away). */
-export type ModelKey = "zero" | "routed" | "champion";
+ * per-series routing method, `champion` the boosted per-horizon direct HGB
+ * (erratic series only), `hurdle` / `tweedie` the wave-20 peak-capable
+ * candidates — enabled only on the series the committed router selected
+ * them for (their curve IS the routed curve there). */
+export type ModelKey = "zero" | "routed" | "champion" | "hurdle" | "tweedie";
 
-/** The committed per-series routing decision: the boosted HGB serves erratic
- * series; lumpy series get their selection-origin-chosen statistical method. */
-export type RoutedMethod = "direct_hgb" | "zero" | "seasonal_naive" | "croston" | "sba" | "tsb";
+/** The committed per-series routing decision (chosen on the selection
+ * origins only): sparse series among zero/seasonal-naive/Croston/SBA/TSB +
+ * the peak-capable ML candidates; smooth/erratic among direct_hgb + the ML
+ * candidates. */
+export type RoutedMethod =
+  | "direct_hgb"
+  | "zero"
+  | "seasonal_naive"
+  | "croston"
+  | "sba"
+  | "tsb"
+  | "hurdle_hgb"
+  | "hgb_tweedie";
 
 /** One model's direct curve at one origin: one point per horizon h (aligned
  * with `OriginBlock.horizons`). `shock` carries the precomputed exact
@@ -245,6 +257,14 @@ export interface DirectModelBlock {
   shock: Record<string, number[]>;
 }
 
+/** Revision 3.1 marker: a peak-capable candidate the router selected for this
+ * series — its curve IS the routed curve, aliased to avoid duplicating bytes. */
+export interface CandidateAlias {
+  alias: "routed";
+}
+
+export type ModelEntry = DirectModelBlock | CandidateAlias;
+
 /** One series at one scored origin. The origin marker IS the information
  * cutoff: `history` ends the day before it, `actuals` start the day after. */
 export interface OriginBlock {
@@ -260,8 +280,12 @@ export interface OriginBlock {
     routed: DirectModelBlock;
     /** Seasonal-naive floor (drives the decision layer). */
     floor: DirectModelBlock;
-    /** Erratic series only — the boosted per-horizon HGB (== routed there). */
+    /** Erratic series only — the boosted per-horizon direct HGB. */
     champion_hgb?: DirectModelBlock;
+    /** Revision 3.1: present only when the router selected the candidate for
+     * this series — the alias marker `{"alias": "routed"}`. */
+    hurdle_hgb?: ModelEntry;
+    hgb_tweedie?: ModelEntry;
   };
 }
 
@@ -296,7 +320,49 @@ export interface ScoreboardClass {
   mae: Record<string, { model: number; floor: number }>;
   gap_bootstrap: Record<string, BootstrapResult>;
   vs_zero_bootstrap: Record<string, BootstrapResult>;
+  /** Revision 3.1: the wave-20 peak-capable candidates' committed rows per
+   * horizon (pooled MAE + paired-bootstrap gaps vs routed and vs zero). */
+  candidates?: Record<string, Record<string, CandidateScoreboardRow | undefined>>;
   routing_effect: BootstrapResult | null;
+}
+
+/** One candidate × horizon scoreboard row (committed). */
+export interface CandidateScoreboardRow {
+  mae: number;
+  vs_routed: BootstrapResult | null;
+  vs_zero: BootstrapResult | null;
+}
+
+/** One candidate's committed peak-capture numbers per class. */
+export interface PeakCandidateStats {
+  peak_mae: number;
+  peak_recall: number;
+  peak_mae_vs_zero?: BootstrapResult;
+  peak_mae_vs_routed?: BootstrapResult;
+  peak_recall_vs_zero?: BootstrapResult;
+  peak_recall_vs_routed?: BootstrapResult;
+}
+
+/** One class' committed peak-capture numbers (every peak candidate + the
+ * zero baseline), with the scored-window count. */
+export interface PeakClassEntry {
+  n_windows: number;
+  routed?: PeakCandidateStats;
+  zero?: PeakCandidateStats;
+  hgb_tweedie?: PeakCandidateStats;
+  hurdle_hgb?: PeakCandidateStats;
+}
+
+/** The committed peak-capture block (wave 20): per scored window, peak_mae on
+ * the top-decile-by-actual days + peak timing recall, per class, with paired
+ * bootstrap CIs. */
+export interface PeakCaptureBlock {
+  definition: string;
+  candidates: string[];
+  top_k_days: number;
+  top_recall_days: number;
+  bootstrap: { method: string; n_boot: number; seed: number };
+  per_class: Record<string, PeakClassEntry>;
 }
 
 /** Pooled error vs the TRUE horizon h (direct per-h models). */
@@ -369,6 +435,9 @@ export interface DecisionBlock {
 
 export interface ForecastPayload {
   schema_version: number;
+  /** Additive revision on top of schema v3 (wave 20): candidate aliases per
+   * series, `peak_capture`, `class_scoreboard.candidates`. */
+  payload_revision?: string;
   demo: string;
   project: string;
   track: string;
@@ -376,6 +445,7 @@ export interface ForecastPayload {
   catalog: CatalogSeries[];
   class_scoreboard: Record<DemandClass, ScoreboardClass>;
   horizon_growth: HorizonGrowth;
+  peak_capture: PeakCaptureBlock;
   bands: BandsBlock;
   decision: DecisionBlock;
   headline: {
@@ -398,6 +468,10 @@ export interface ForecastPayload {
     shock_factors: number[];
     shock_note: string;
     routing_rule: string;
+    /** The full committed candidate list + the wave-20 peak-capable
+     * candidates' one-line definitions. */
+    candidates?: string[];
+    peak_capable_candidates?: Record<string, string>;
     class_thresholds: { adi: number; cv2: number };
     experiment_origins: {
       n_origins: number;

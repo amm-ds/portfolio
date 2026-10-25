@@ -320,6 +320,8 @@ def test_shock_blocks_are_present_and_sane(payload: dict, demo_context) -> None:
     for entry in payload["catalog"]:
         for origin in entry["origins"]:
             for _model, block in origin["models"].items():
+                if "alias" in block:
+                    continue  # candidate aliases share the routed curve + shocks
                 assert set(block["shock"]) == {f"{s:g}" for s in SHOCK_FACTORS}
                 for curve in block["shock"].values():
                     assert len(curve) == len(HORIZONS)
@@ -379,6 +381,35 @@ def test_scoreboard_matches_committed(payload: dict, demo_context) -> None:
         assert board["routing_effect"] == ms["routing"]["per_class"][cls]
 
 
+def test_scoreboard_candidates_and_peak_capture(payload: dict, demo_context) -> None:
+    """Revision 3.1: the peak-capable candidates the router actually selected
+    surface per-series, the scoreboard carries their committed rows, and the
+    peak-capture block lands per class — all equal to the committed metrics."""
+    settings, _config, _panel = demo_context
+    ms = _committed(settings)
+    assert payload["payload_revision"] == "3.1"
+    assert payload["peak_capture"] == ms["peak_capture"]
+    for e in payload["catalog"]:
+        models = e["origins"][0]["models"]
+        for cand in ("hgb_tweedie", "hurdle_hgb"):
+            if e["model_used"] == cand:
+                # the router selected the candidate: an alias of the routed curve
+                assert models[cand] == {"alias": "routed"}
+            else:
+                assert cand not in models
+    for cls, board in payload["class_scoreboard"].items():
+        committed_cls = ms["headline_per_class"][cls]
+        for cand in ("hgb_tweedie", "hurdle_hgb"):
+            for h in ("h7", "h14"):
+                if h not in committed_cls or committed_cls[h].get(f"{cand}_mae") is None:
+                    continue
+                row = board["candidates"][cand][h]
+                assert row["mae"] == pytest.approx(committed_cls[h][f"{cand}_mae"], abs=1e-9)
+                assert row["vs_routed"] == committed_cls[h][f"{cand}_vs_routed"]
+                assert row["vs_zero"] == committed_cls[h][f"{cand}_vs_zero"]
+    assert payload["catalog_summary"]["peak_capable_candidates"] == ms["peak_capable_candidates"]
+
+
 def test_horizon_growth_and_bands_match_committed(payload: dict, demo_context) -> None:
     settings, _config, _panel = demo_context
     ms = _committed(settings)
@@ -427,10 +458,23 @@ def test_deterministic(payload: dict, demo_context) -> None:
 
 def test_size_headroom_for_full_catalog(payload: dict) -> None:
     """The 6-series fixture payload scaled to 100 series x 3 origins must fit
-    the cap with headroom (the UCI regeneration enforces the cap itself)."""
+    the cap with headroom (the UCI regeneration enforces the cap itself).
+    Experiment-wide blocks are fixed-size — only the per-series bytes scale."""
     size = len((json.dumps(payload, indent=2) + "\n").encode())
-    per_series = size / len(payload["catalog"])
-    projected = per_series * 100
+    fixed_keys = (
+        "class_scoreboard",
+        "horizon_growth",
+        "peak_capture",
+        "bands",
+        "decision",
+        "headline",
+        "catalog_summary",
+        "evaluation_metadata",
+        "dataset_metadata",
+    )
+    fixed = len((json.dumps({k: payload[k] for k in fixed_keys}, indent=2)).encode())
+    per_series = (size - fixed) / len(payload["catalog"])
+    projected = per_series * 100 + fixed
     # the real UCI regeneration enforces the cap at write time; here we only
     # sanity-check the per-series cost does not blow past it at 100 series
     assert projected <= SIZE_CAP_BYTES, f"projected {projected:.0f} bytes over cap"

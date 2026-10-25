@@ -14,6 +14,8 @@ export const MODEL_COLOR: Record<ModelKey, string> = {
   zero: "#64748b",
   routed: C_TEAL,
   champion: C_PINK,
+  hurdle: C_AMBER,
+  tweedie: "#a78bfa",
 };
 
 /** Contiguous daily axis from the history's first day through the last

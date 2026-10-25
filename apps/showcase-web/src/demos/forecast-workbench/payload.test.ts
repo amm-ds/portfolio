@@ -15,13 +15,14 @@ import {
 } from "./kpis";
 
 /**
- * Contract test against the REAL committed v3 payload
+ * Contract test against the REAL committed v3.1 payload
  * (`projects/02-demand-forecasting/reports/demo_payload.json`, built by
- * `demand_forecasting.demo_payload`, schema v3 — the direct multi-horizon
- * catalog). Walks every series × origin × model through the kpi helpers and
- * cross-checks the experiment-wide blocks against the committed metrics, so
- * a payload drift (renamed key, short array, unhandled null) fails here
- * instead of blanking the demo.
+ * `demand_forecasting.demo_payload`, schema v3 + revision 3.1 — the direct
+ * multi-horizon catalog with the wave-20 peak-capable candidates). Walks
+ * every series × origin × model through the kpi helpers and cross-checks
+ * the experiment-wide blocks against the committed metrics, so a payload
+ * drift (renamed key, short array, unhandled null) fails here instead of
+ * blanking the demo.
  */
 const raw = JSON.parse(
   readFileSync("../../projects/02-demand-forecasting/reports/demo_payload.json", "utf8"),
@@ -38,9 +39,10 @@ const SHOCK_KEYS = ["0.5", "1.5", "2"];
 const isoDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-describe("committed demo payload contract (schema v3)", () => {
+describe("committed demo payload contract (schema v3, revision 3.1)", () => {
   it("carries the workbench identity and the multi-horizon protocol", () => {
     expect(raw.schema_version).toBe(3);
+    expect(raw.payload_revision).toBe("3.1");
     expect(raw.demo).toBe("forecast-workbench");
     expect(raw.project).toBe("02-demand-forecasting");
     expect(raw.track).toBe("uci");
@@ -53,9 +55,15 @@ describe("committed demo payload contract (schema v3)", () => {
     expect(raw.catalog_summary.by_class).toEqual({ erratic: 15, lumpy: 85 });
     const erratic = raw.catalog.filter((s) => s.demand_class === "erratic");
     expect(erratic).toHaveLength(15);
-    // every erratic series is served by the boosted HGB (and vice versa)
+    // the wave-20 committed routing table: lumpy series never sit on the
+    // boosted direct HGB; erratic series choose among direct_hgb + the
+    // peak-capable ML candidates
     for (const s of raw.catalog) {
-      expect(s.model_used === "direct_hgb").toBe(s.demand_class === "erratic");
+      if (s.demand_class === "lumpy") {
+        expect(s.model_used).not.toBe("direct_hgb");
+      } else {
+        expect(["direct_hgb", "hurdle_hgb", "hgb_tweedie"]).toContain(s.model_used);
+      }
     }
     // country diversity (the v2 audit found 64/100 UK)
     expect(raw.catalog_summary.countries["United Kingdom"]).toBeLessThanOrEqual(30);
@@ -106,8 +114,13 @@ describe("committed demo payload contract (schema v3)", () => {
         }
         if (s.demand_class === "erratic") {
           const champ = modelBlock(o, "champion")!;
-          expect(champ.y_pred).toEqual(o.models.routed.y_pred);
+          expect(champ.y_pred).toHaveLength(LATTICE.length);
           expect(champ.p10).toHaveLength(LATTICE.length);
+          // the champion curve IS the routed curve only when the router kept
+          // the series on the boosted direct HGB
+          if (s.model_used === "direct_hgb") {
+            expect(champ.y_pred).toEqual(o.models.routed.y_pred);
+          }
           for (let i = 0; i < LATTICE.length; i++) {
             expect(o.models.routed.p10![i]).toBeGreaterThanOrEqual(0);
             expect(o.models.routed.p10![i]).toBeLessThanOrEqual(o.models.routed.y_pred[i]);
@@ -122,6 +135,21 @@ describe("committed demo payload contract (schema v3)", () => {
           expect(band.p_sale).toBeLessThanOrEqual(1);
           const ladder = Object.values(band.ladder);
           expect([...ladder].sort((a, b) => a - b)).toEqual(ladder);
+        }
+        // revision 3.1: the peak-capable candidate appears as an alias of the
+        // routed curve exactly on the series the router selected it for
+        for (const [cand, method] of [
+          ["hurdle_hgb", "hurdle_hgb"],
+          ["hgb_tweedie", "hgb_tweedie"],
+        ] as const) {
+          if (s.model_used === method) {
+            expect(o.models[cand]).toEqual({ alias: "routed" });
+            expect(modelBlock(o, cand === "hurdle_hgb" ? "hurdle" : "tweedie")!.y_pred).toEqual(
+              o.models.routed.y_pred,
+            );
+          } else {
+            expect(o.models[cand]).toBeUndefined();
+          }
         }
         // zero stays zero under every shock; the floor reads only shocked days
         for (const curve of Object.values(o.models.zero.shock)) {
@@ -141,7 +169,10 @@ describe("committed demo payload contract (schema v3)", () => {
       for (const date of originDates(raw)) {
         const blk = originBlock(s, date);
         expect(blk).not.toBeNull();
-        for (const mk of ["zero", "routed", "champion"] as ModelKey[]) {
+        const keys: ModelKey[] = ["zero", "routed", "champion"];
+        if (s.model_used === "hurdle_hgb") keys.push("hurdle");
+        if (s.model_used === "hgb_tweedie") keys.push("tweedie");
+        for (const mk of keys) {
           if (mk === "champion" && s.demand_class !== "erratic") continue;
           for (const h of LATTICE) {
             const k = horizonKpi(blk, mk, 1, h);
@@ -182,9 +213,42 @@ describe("committed demo payload contract (schema v3)", () => {
       }
       expect(board.routing_effect).toEqual(committed.routing.per_class[cls]);
     }
-    // the headline routing win the hero quotes
-    expect(committed.routing.per_class.lumpy.diff).toBeCloseTo(4.6, 0);
-    expect(raw.headline.claim).toContain("+4.6 MAE [4.2, 5.1]");
+    // the headline routing win the hero quotes (wave-20 committed numbers)
+    expect(committed.routing.per_class.lumpy.diff).toBeCloseTo(4.0, 0);
+    expect(raw.headline.claim).toContain("+4.0 MAE [3.3, 4.8]");
+    expect(raw.headline.pooled_mae_by_model.routed).toBeCloseTo(
+      committed.overall_mae_test.routed,
+      9,
+    );
+  });
+
+  it("scoreboard carries the wave-20 candidates; peak_capture equals the committed block", () => {
+    expect(raw.peak_capture).toEqual(committed.peak_capture);
+    for (const cls of ["lumpy", "erratic"] as DemandClass[]) {
+      const committedCls = committed.headline_per_class[cls];
+      for (const cand of ["hgb_tweedie", "hurdle_hgb"] as const) {
+        for (const h of ["h7", "h14"] as const) {
+          if (!(h in committedCls) || committedCls[h][`${cand}_mae` as keyof typeof committedCls[typeof h]] == null) {
+            continue;
+          }
+          const row = raw.class_scoreboard[cls].candidates?.[cand]?.[h];
+          const committedRow = committedCls[h] as Record<string, unknown>;
+          expect(row).not.toBeUndefined();
+          expect(row!.mae).toBeCloseTo(committedRow[`${cand}_mae`] as number, 9);
+          expect(row!.vs_routed).toEqual(committedRow[`${cand}_vs_routed`]);
+          expect(row!.vs_zero).toEqual(committedRow[`${cand}_vs_zero`]);
+        }
+      }
+      // the peak block carries every peak candidate per class
+      const peak = raw.peak_capture.per_class[cls];
+      expect(peak.n_windows).toBeGreaterThan(0);
+      for (const cand of raw.peak_capture.candidates) {
+        const stats = peak[cand as keyof typeof peak];
+        expect(typeof stats).toBe("object");
+        expect(Number.isFinite((stats as { peak_mae: number }).peak_mae)).toBe(true);
+        expect(Number.isFinite((stats as { peak_recall: number }).peak_recall)).toBe(true);
+      }
+    }
   });
 
   it("horizon growth and bands equal the committed blocks", () => {
