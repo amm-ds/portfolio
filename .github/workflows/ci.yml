@@ -88,9 +88,8 @@ jobs:
         run: uv run pytest -o addopts="--import-mode=importlib -q" ${{ matrix.suite.cov }}
 
   docker:
-    needs: tests
+    needs: [gate, tests]
     runs-on: ubuntu-latest
-    needs: gate
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
       - name: Build showcase image
