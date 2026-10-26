@@ -116,7 +116,14 @@ def hpo(
     reports_dir: Annotated[Path | None, typer.Option()] = None,
     trials: Annotated[int | None, typer.Option(help="Override trial count.")] = None,
     model: Annotated[
-        Literal["hgb", "xgb", "lgbm", "multistep_tweedie"],
+        Literal[
+            "hgb",
+            "xgb",
+            "lgbm",
+            "multistep_tweedie",
+            "multistep_lgbm_tweedie",
+            "multistep_lgbm_poisson",
+        ],
         typer.Option(help="Booster arm to tune."),
     ] = "hgb",
 ) -> None:
@@ -126,6 +133,14 @@ def hpo(
 
         settings, config = _settings_and_config(data_dir, reports_dir)
         tune_multistep_tweedie(settings, config, n_trials=trials or 12)
+        return
+    if model in ("multistep_lgbm_tweedie", "multistep_lgbm_poisson"):
+        from demand_forecasting.hpo import tune_multistep_lgbm
+
+        settings, config = _settings_and_config(data_dir, reports_dir)
+        tune_multistep_lgbm(
+            settings, config, n_trials=trials or 12, objective_name=model.rsplit("_", 1)[-1]
+        )
         return
     from demand_forecasting.hpo import run_hpo
 

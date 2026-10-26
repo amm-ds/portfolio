@@ -3,13 +3,18 @@
 The fixture runs the REAL multi-step track (``run_multistep``) on a tiny
 erratic+lumpy panel and writes the committed-metrics shape, so the builder's
 drift guards, routing-table consistency and scoreboard numbers are exercised
-against a genuine committed block — exactly the UCI regeneration path.
+against a genuine committed block — exactly the UCI regeneration path. The
+fixtures are SESSION-scoped (the wave-21 candidate set doubled the per-origin
+fit count; per-test recomputation would dominate the suite) — tests that
+corrupt a committed file restore it via ``_tampered``.
 """
 
+import contextlib
 import itertools
 import json
 from datetime import date, timedelta
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -24,6 +29,8 @@ from demand_forecasting.demo_payload import (
 )
 from demand_forecasting.intermittent import statistical_forecast
 from demand_forecasting.multihorizon import (
+    COMPARISON_CANDIDATES,
+    ML_SPARSE,
     multistep_origin_indices,
     panel_matrix,
     run_multistep,
@@ -95,11 +102,22 @@ def _write_committed(reports: Path, result) -> None:
     (reports / "dataset_metadata.json").write_text(json.dumps(dataset))
 
 
-@pytest.fixture
-def demo_context(tmp_path: Path) -> tuple[DemandSettings, ForecastConfig, pl.DataFrame]:
-    """Tiny panel + its genuinely committed multi-step metrics."""
+@pytest.fixture(scope="session")
+def demo_context(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> tuple[DemandSettings, ForecastConfig, pl.DataFrame]:
+    """Tiny panel + its genuinely committed multi-step metrics.
+
+    Session-scoped: the fixture runs the full multi-step scoring (every
+    candidate, all origins) and each test only READS the result — the wave-21
+    candidate set doubled the fit count, so per-test recomputation would
+    dominate the suite. Tests that mutate the committed files restore them
+    (see :func:`_tampered`)."""
+    tmp = tmp_path_factory.mktemp("demo")
     settings = DemandSettings(
-        data_dir=tmp_path / "data", reports_dir=tmp_path / "reports", min_newest_date="2023-01-01"
+        data_dir=tmp / "data",
+        reports_dir=tmp / "reports",
+        min_newest_date="2023-01-01",
     )
     settings.data_dir.mkdir(parents=True)
     settings.reports_dir.mkdir(parents=True)
@@ -110,7 +128,7 @@ def demo_context(tmp_path: Path) -> tuple[DemandSettings, ForecastConfig, pl.Dat
     return settings, MS_CONFIG, panel
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def payload(demo_context) -> dict:
     settings, config, _panel = demo_context
     return build_demo_payload(settings, config, **CATALOG_ARGS)
@@ -191,7 +209,7 @@ def test_class_quotas_keep_every_erratic_series(payload: dict) -> None:
         if e["demand_class"] == "lumpy":
             assert e["model_used"] != "direct_hgb"
         else:
-            assert e["model_used"] in ("direct_hgb", "hgb_tweedie", "hurdle_hgb")
+            assert e["model_used"] in ("direct_hgb", *ML_SPARSE)
 
 
 # ---------------------------------------------------------------------------
@@ -268,8 +286,7 @@ def test_lumpy_routed_curve_matches_statistical_refit(
         if entry["demand_class"] != "lumpy" or entry["model_used"] in (
             "zero",
             "seasonal_naive",
-            "hgb_tweedie",
-            "hurdle_hgb",  # ML-routed curves are model predictions, not flat re-fits
+            *ML_SPARSE,  # ML-routed curves are model predictions, not flat re-fits
         ):
             continue
         i = idx[entry["series_id"]]
@@ -373,8 +390,7 @@ def test_shock_blocks_are_present_and_sane(payload: dict, demo_context) -> None:
             if entry["demand_class"] == "lumpy" and entry["model_used"] not in (
                 "zero",
                 "seasonal_naive",
-                "hgb_tweedie",
-                "hurdle_hgb",  # ML curves re-predict through fitted trees, not re-fits
+                *ML_SPARSE,  # ML curves re-predict through fitted trees, not re-fits
             ):
                 i = idx[entry["series_id"]]
                 o = date_str_to_index(dates, origin["origin_date"])
@@ -417,16 +433,18 @@ def test_scoreboard_matches_committed(payload: dict, demo_context) -> None:
 
 
 def test_scoreboard_candidates_and_peak_capture(payload: dict, demo_context) -> None:
-    """Revision 3.1: the peak-capable candidates the router actually selected
+    """Revisions 3.1/3.3: the ML candidates the router actually selected
     surface per-series, the scoreboard carries their committed rows, and the
-    peak-capture block lands per class — all equal to the committed metrics."""
+    peak-capture + win-rates blocks land per class — all equal to the
+    committed metrics."""
     settings, _config, _panel = demo_context
     ms = _committed(settings)
-    assert payload["payload_revision"] == "3.2"
+    assert payload["payload_revision"] == "3.3"
     assert payload["peak_capture"] == ms["peak_capture"]
+    assert payload["win_rates"] == ms["win_rates"]
     for e in payload["catalog"]:
         models = e["origins"][0]["models"]
-        for cand in ("hgb_tweedie", "hurdle_hgb"):
+        for cand in ML_SPARSE:
             if e["model_used"] == cand:
                 # the router selected the candidate: an alias of the routed curve
                 assert models[cand] == {"alias": "routed"}
@@ -434,7 +452,7 @@ def test_scoreboard_candidates_and_peak_capture(payload: dict, demo_context) -> 
                 assert cand not in models
     for cls, board in payload["class_scoreboard"].items():
         committed_cls = ms["headline_per_class"][cls]
-        for cand in ("hgb_tweedie", "hurdle_hgb"):
+        for cand in COMPARISON_CANDIDATES:
             for h in ("h7", "h14"):
                 if h not in committed_cls or committed_cls[h].get(f"{cand}_mae") is None:
                     continue
@@ -485,7 +503,10 @@ def test_decision_block_matches_committed(payload: dict, demo_context) -> None:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_deterministic(payload: dict, demo_context) -> None:
+    """Full second payload rebuild — ~20 min serial; excluded from CI cells
+    (run with -m "slow" locally / in the nightly job)."""
     settings, config, _panel = demo_context
     again = build_demo_payload(settings, config, **CATALOG_ARGS)
     assert again == payload
@@ -500,6 +521,7 @@ def test_size_headroom_for_full_catalog(payload: dict) -> None:
         "class_scoreboard",
         "horizon_growth",
         "peak_capture",
+        "win_rates",
         "bands",
         "decision",
         "headline",
@@ -515,58 +537,81 @@ def test_size_headroom_for_full_catalog(payload: dict) -> None:
     assert projected <= SIZE_CAP_BYTES, f"projected {projected:.0f} bytes over cap"
 
 
-def _tamper(settings: DemandSettings, name: str, fn) -> None:
+def _tampered(settings: DemandSettings, name: str, fn) -> contextlib.AbstractContextManager[None]:
+    """Temporarily corrupt a committed metrics file (restored on exit — the
+    fixtures are session-scoped, so a tamper must not leak into later tests)."""
     path = settings.reports_dir / name
-    data = json.loads(path.read_text())
-    fn(data)
-    path.write_text(json.dumps(data))
+    original = path.read_text()
+
+    @contextlib.contextmanager
+    def _cm() -> Any:
+        try:
+            data = json.loads(original)
+            fn(data)
+            path.write_text(json.dumps(data))
+            yield
+        finally:
+            path.write_text(original)
+
+    return _cm()
 
 
 def test_drift_guard_raises_on_tampered_overall_mae(demo_context) -> None:
     settings, config, _panel = demo_context
-    _tamper(
-        settings,
-        "metrics.json",
-        lambda d: d["_multistep"]["overall_mae_test"].update(routed=0.0),
-    )
-    with pytest.raises(ValueError, match="overall_mae_test"):
+    with (
+        _tampered(
+            settings,
+            "metrics.json",
+            lambda d: d["_multistep"]["overall_mae_test"].update(routed=0.0),
+        ),
+        pytest.raises(ValueError, match="overall_mae_test"),
+    ):
         build_demo_payload(settings, config, **CATALOG_ARGS)
 
 
 def test_drift_guard_raises_on_tampered_origins(demo_context) -> None:
     settings, config, _panel = demo_context
-    _tamper(
-        settings,
-        "metrics.json",
-        lambda d: d["_multistep"]["origins"]["dates"].__setitem__(0, "1999-01-01"),
-    )
-    with pytest.raises(ValueError, match="origin plan"):
+    with (
+        _tampered(
+            settings,
+            "metrics.json",
+            lambda d: d["_multistep"]["origins"]["dates"].__setitem__(0, "1999-01-01"),
+        ),
+        pytest.raises(ValueError, match="origin plan"),
+    ):
         build_demo_payload(settings, config, **CATALOG_ARGS)
 
 
 def test_drift_guard_raises_on_tampered_routing(demo_context) -> None:
     settings, config, _panel = demo_context
-    _tamper(
-        settings,
-        "metrics.json",
-        lambda d: d["_multistep"]["routing"]["method_choices"].clear(),
-    )
-    with pytest.raises(ValueError, match="routing"):
+    with (
+        _tampered(
+            settings,
+            "metrics.json",
+            lambda d: d["_multistep"]["routing"]["method_choices"].clear(),
+        ),
+        pytest.raises(ValueError, match="routing"),
+    ):
         build_demo_payload(settings, config, **CATALOG_ARGS)
 
 
 def test_drift_guard_raises_on_tampered_widths(demo_context) -> None:
     settings, config, _panel = demo_context
-    _tamper(
-        settings,
-        "probabilistic.json",
-        lambda d: d["multistep"]["conformal_widths_by_h"].update({"7": 999.0}),
-    )
-    with pytest.raises(ValueError, match="conformal_widths"):
+    with (
+        _tampered(
+            settings,
+            "probabilistic.json",
+            lambda d: d["multistep"]["conformal_widths_by_h"].update({"7": 999.0}),
+        ),
+        pytest.raises(ValueError, match="conformal_widths"),
+    ):
         build_demo_payload(settings, config, **CATALOG_ARGS)
 
 
+@pytest.mark.slow
 def test_write_demo_payload_roundtrip(demo_context) -> None:
+    """Writes the payload and rebuilds it again for comparison — ~20 min
+    serial; excluded from CI cells (run with -m "slow" locally / nightly)."""
     settings, config, _panel = demo_context
     out = write_demo_payload(settings, config, **CATALOG_ARGS)
     assert out.name == "demo_payload.json"

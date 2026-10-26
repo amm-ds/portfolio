@@ -71,7 +71,16 @@ jobs:
           - name: 02-payload
             path: projects/02-demand-forecasting
             cov: "--cov=src tests/test_demo_payload.py"
-            unit_args: "unit-only"
+            # Serial, slow-rebuild tests excluded. -n 2 duplicates the
+            # session-scoped payload fixtures across xdist workers AND the
+            # two full-rebuild tests (test_deterministic,
+            # test_write_demo_payload_roundtrip, each ~20 min on a runner)
+            # pushed this cell to 1h55 + a 900s timeout; there is also an
+            # xdist-nested-loky PEP 3118 flake in HGB fits that does not
+            # reproduce serially. Those two tests carry @pytest.mark.slow;
+            # the full rebuilds run serially via -m "slow" (locally / the
+            # proposed nightly job).
+            addopts: "--import-mode=importlib -q --timeout=900 --durations=30 -p no:xdist -m 'not slow'"
 
           - { name: 03-anomaly-detection, path: projects/03-anomaly-detection, cov: "--cov=src" }
           - { name: 04-nlp-classification, path: projects/04-nlp-classification, cov: "--cov=src" }
@@ -98,7 +107,7 @@ jobs:
         # per-project pytest.ini/pyproject applies its own floor; the libs
         # cell carries the shared ≥80% gate via its cov flags
         run: >-
-          uv run pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900 --durations=30"
+          uv run pytest -o addopts="${{ matrix.suite.addopts || '--import-mode=importlib -q -n 2 --timeout=900 --durations=30' }}"
           ${{ matrix.suite.cov }}
           ${{
             matrix.suite.unit_args == 'unit-only'

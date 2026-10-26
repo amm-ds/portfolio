@@ -46,6 +46,17 @@ multistep_tweedie:
   min_samples_leaf: 48
   l2_regularization: 0.0014656689866341544
   max_features: 0.5260286352147595
+# Multi-step LightGBM candidates (wave 21) — best of seeded 12-trial studies
+# on the selection origins only (hpo tune_multistep_lgbm, one per objective;
+# tweedie/poisson share the tuned values); lr/leaves/min_child_samples tuned,
+# the rest mirrors the nowcast-arm lgbm tuning. Tweedie study best selection
+# MAE 7.1265 (the HGB tweedie's is 6.8190); poisson study best 8.1220.
+multistep_lgbm:
+  learning_rate: 0.27227020754653686
+  n_estimators: 217
+  num_leaves: 28
+  min_child_samples: 22
+  reg_lambda: 0.0002520721916536751
 # UCI Online Retail II real-data track (synthetic stays the default).
 data_source: synthetic
 uci_n_stores: 8

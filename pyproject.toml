@@ -71,13 +71,20 @@ module = [
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["plotly.*", "sklearn.*", "joblib.*"]
+module = ["plotly.*", "sklearn.*", "joblib.*", "threadpoolctl.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 # --import-mode=importlib: test modules share basenames across packages.
 addopts = "-q --import-mode=importlib --timeout=600 --cov=libs --cov-report=term-missing"
 testpaths = ["libs", "projects", "apps"]
+markers = [
+    # Full demo-payload rebuilds (projects/02 tests/test_demo_payload.py::
+    # test_deterministic / test_write_demo_payload_roundtrip) — ~20 min each,
+    # serial-only. CI cells exclude them (-m "not slow"); run them locally or
+    # via the proposed nightly job with -m "slow".
+    "slow: full payload-rebuild tests, serial-only, excluded from CI cells",
+]
 
 [tool.coverage.run]
 source = ["libs"]

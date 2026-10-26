@@ -273,6 +273,48 @@ small tabular lag problems; a sequence model is the roadmap answer).
   (no shared-classifier shortcut needed at 16 cores; UCI multi-step ≈ 4 min
   of the ≈ 12 min evaluate).
 
+### K. Wave 21 — LightGBM arms, convex ensemble, per-series win rates
+
+- **Price/trading-cycle features**: the direct-h design matrix gains unit-
+  price statistics and weekday/trading-day flags of the target week (wave
+  21). Same aging rule as every other feature (≥ h days older than the
+  target), covered by the existing taint proofs.
+- **LightGBM candidates** (three arms, all judged on the selection origins
+  only): `lgbm_tweedie` (tweedie loss), `hurdle_lgbm` (two-stage, same
+  identity/scalar/isotonic zero-correction as `hurdle_hgb` — identity won on
+  UCI), and `lgbm_poisson` (Poisson loss). LightGBM params are HPO'd by a
+  seeded capped Optuna study on the selection origins; a degenerate-split
+  retry ladder (`_lgbm_fit_safe`) keeps fits deterministic. `lgbm_poisson`'s
+  exp link overflows on this panel (literal +inf on ~11% of cells, finite
+  garbage up to ~1e283 elsewhere) — `_finite_demand_pred` maps non-finite
+  cells to per-series training maxima (NaN→0, +inf→train max ≥1, −inf→0;
+  a poisson-only hard clip also caps finite cells). Evaluated-and-losing,
+  it stays in every comparison (pooled MAE 85.15 vs zero 9.28; lumpy h=7
+  beats-floor win rate 4.96%) — never hidden.
+- **`peak_weighted_hgb`**: the direct HGB with sample weights up-weighting
+  peak days (weight grid {2, 3}, 2.0 chosen on the selection origins' pooled
+  MAE, then zero-corrected like the hurdles). `peak_weighted_hgb` joins the
+  routing pools.
+- **`ensemble_convex`**: per-series convex combination of the routed
+  prediction and the series' best ML candidate — `pred = w·routed +
+  (1−w)·best_ml`, `w ∈ {0, 0.1, …, 1}` minimising the selection summed
+  |error|. No refits, test origins never read; rides as an unrouted
+  benchmark (pooled MAE 7.597 vs routed 7.480, rank-1-vs-2 gap CI excludes
+  zero).
+- **Per-series beats-floor win rate** (the "improve EVERY series" metric):
+  per class, horizon and candidate, the share of series whose summed |error|
+  over the scored test origins at that h is strictly below the
+  seasonal-naive floor's; 95% CI from a cluster bootstrap over series (one
+  shared index draw per replication across candidates, so the CIs stay
+  paired; 2,000 draws, fixed seed). Committed in `metrics.json`
+  (`_multistep.win_rates`) and plotted in `multistep_win_rates`. Headline:
+  even the routed champion beats the floor on only 22.17% of lumpy series
+  at h=7 (CI [19.83, 24.70]) — pooled MAE wins ride on magnitude, not
+  coverage.
+- **Pools after wave 21**: sparse = statistical five + six ML candidates
+  (hgb_tweedie, hurdle_hgb, lgbm_tweedie, lgbm_poisson, hurdle_lgbm,
+  peak_weighted_hgb); dense = direct_hgb + the same six.
+
 ## Pipeline
 
 ```mermaid
@@ -361,6 +403,33 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.10.0 (2026-10-26)** — wave 21: the multi-step track gains price/
+  trading-cycle features (unit-price stats + weekday/trading-day flags of the
+  target week, same ≥h-day aging), three LightGBM arms (`lgbm_tweedie`,
+  `hurdle_lgbm` with the same zero-correction, `lgbm_poisson`), a
+  peak-day-weighted HGB (`peak_weighted_hgb`, weight 2.0 chosen on the
+  selection origins), a per-series convex ensemble benchmark
+  (`ensemble_convex`), HPO for the lgbm params (seeded capped Optuna study on
+  the selection origins; `_lgbm_fit_safe` degenerate-split retry ladder), and
+  the per-series beats-floor win-rate metric with cluster-bootstrap CIs
+  (`_multistep.win_rates`, one shared index draw per replication; new figure
+  `multistep_win_rates`). `_finite_demand_pred` guards the lgbm arms'
+  predictions (NaN→0, +inf→per-series training max ≥1, −inf→0; poisson-only
+  hard clip) — without it `lgbm_poisson`'s exp link produces literal +inf on
+  ~11% of cells. UCI regenerated (evaluate ≈ 31 min): routed stays champion
+  (pooled MAE 7.480; ensemble_convex 7.597; hurdle_hgb 7.923; lgbm_poisson
+  85.15 — evaluated-and-losing, kept in every table; routing picks zero 944 /
+  hurdle_hgb 110 / peak_weighted_hgb 14 / hgb_tweedie 12 / lgbm_tweedie 3 /
+  hurdle_lgbm 1 / lgbm_poisson 0). Lumpy champion 6.109 vs floor 11.070 at
+  h=7 (CI [−7.708, −2.881]); routing beats unrouted all-HGB by 4.135 MAE (CI
+  [3.464, 4.929]); win rates lumpy routed h=7 22.17% (CI [19.83, 24.70]),
+  erratic 73.3%; bands pooled 0.918 conservative; decision metric τ=0.90
+  erratic 1.422 vs 1.510, lumpy 2.879 vs 2.777. Demo payload schema v3
+  extended (payload_revision 3.3, `win_rates` block). Tests: wave-21 suite
+  (`test_wave21.py`, +12 cases incl. the finite-prediction guard) and README
+  drift guards extended to the win rates / candidate quotes. All non-poisson
+  candidates byte-identical across three full runs (determinism contract
+  holds).
 - **0.9.0 (2026-10-25)** — wave 20 (peak-capable candidates; user feedback:
   "demand peaks aren't captured correctly"): the multi-step track's design
   gains a 9-column peak block computed at target−h (rolling mean AND max over
