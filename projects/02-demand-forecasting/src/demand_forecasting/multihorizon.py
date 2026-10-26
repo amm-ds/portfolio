@@ -90,7 +90,7 @@ from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json
 from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.isotonic import IsotonicRegression
-from threadpoolctl import threadpool_limits
+from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]  # re-exported
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import _json_safe

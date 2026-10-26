@@ -27,7 +27,7 @@ from portfolio_core.plotting import add_takeaway, apply_theme, save_html, save_j
 from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.preprocessing import OneHotEncoder
-from threadpoolctl import threadpool_limits
+from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]  # re-exported
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import cv_row_folds
