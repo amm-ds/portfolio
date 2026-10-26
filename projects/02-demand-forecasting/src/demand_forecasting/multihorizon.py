@@ -77,18 +77,20 @@ peak-capture views).
 import json
 import math
 from dataclasses import dataclass, field
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import plotly.graph_objects as go
 import polars as pl
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_config
 from plotly.subplots import make_subplots
 from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json
 from sklearn.ensemble import HistGradientBoostingClassifier, HistGradientBoostingRegressor
 from sklearn.isotonic import IsotonicRegression
+from threadpoolctl import threadpool_limits
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import _json_safe
@@ -140,9 +142,37 @@ PEAK_FEATURE_NAMES = (
     "peak_ratio_28",
 )
 N_PEAK_FEATURES = len(PEAK_FEATURE_NAMES)
+# Price features (wave 21), all computed at a reference day r from price[≤r]
+# only — the same aging contract as the peak block. Online Retail II is B2B
+# wholesale, so a price cut is the promo proxy: ``price_ratio_28d`` compares
+# the last known price with its 28-day mean as of target-h, ``price_drop``
+# flags a >10% cut, ``days_since_price_change`` counts days since the last
+# observed price change. Panels without a price column (synthetic track) get
+# a NEUTRAL tensor (asof/ratio 1.0, the rest 0.0) — constant columns the
+# boosters never split on, so the synthetic track is bit-stable.
+PRICE_FEATURE_NAMES = (
+    "price_asof",
+    "price_ratio_28d",
+    "days_since_price_change",
+    "price_drop",
+)
+N_PRICE_FEATURES = len(PRICE_FEATURE_NAMES)
+PRICE_WINDOW_DAYS = 28
+PRICE_DROP_RATIO = 0.9
+# Trading-cycle calendar additions (wave 21): wholesale buyers concentrate
+# orders at month end, so the TARGET-date calendar carries is_month_end (the
+# next calendar day starts a new month) and week_of_month ((dom-1)//7+1).
+# Pure functions of the target date — known in advance, leakage-free.
 # Tweedie variance power: sklearn's HalfTweedieLoss fixes the compound-Poisson
 # regime 1 < p < 2; p = 1.5 is the standard peak-tolerant choice.
 TWEEDIE_POWER = 1.5
+# Hurdle-family candidates that go through the selection-origin
+# zero-correction (identity / scalar / isotonic) — all are two-stage
+# p̂ x size models with the same conditional-mean bias structure.
+HURDLE_CANDIDATES = ("hurdle_hgb", "hurdle_lgbm", "peak_weighted_hgb")
+# Sample-weight grid for peak_weighted_hgb (top-decile demand days up-weighted
+# by w in the hurdle fits); the winner is chosen on the selection origins.
+PEAK_WEIGHTS = (2.0, 3.0)
 
 CANDIDATES = (
     "routed",
@@ -154,10 +184,27 @@ CANDIDATES = (
     "tsb",
     "hgb_tweedie",
     "hurdle_hgb",
+    "lgbm_tweedie",
+    "lgbm_poisson",
+    "hurdle_lgbm",
+    "peak_weighted_hgb",
+    "ensemble_convex",
 )
 # Peak-capable ML candidates the sparse-series router may pick (direct_hgb
 # stays reserved for smooth/erratic series — the wave-19 routing finding).
-ML_SPARSE = ("hgb_tweedie", "hurdle_hgb")
+# Wave 21 adds the LightGBM family and the peak-weighted hurdle; the same
+# list serves the dense pool (direct_hgb + these candidates).
+ML_SPARSE = (
+    "hgb_tweedie",
+    "hurdle_hgb",
+    "lgbm_tweedie",
+    "lgbm_poisson",
+    "hurdle_lgbm",
+    "peak_weighted_hgb",
+)
+# Candidates compared against the routed pipeline and the zero floor in the
+# candidate-comparison / headline rows (the ML pool + the convex ensemble).
+COMPARISON_CANDIDATES = (*ML_SPARSE, "ensemble_convex")
 CHAMPION = "routed"
 FLOOR = "seasonal_naive"
 NAIVE = "zero"
@@ -180,11 +227,35 @@ def panel_matrix(panel: pl.DataFrame) -> tuple[np.ndarray, list[str], np.ndarray
     return dates, series_ids, units
 
 
+def panel_price_matrix(
+    panel: pl.DataFrame, dates: np.ndarray, series_ids: list[str]
+) -> np.ndarray | None:
+    """Pivot the panel's ``price`` column to a (dates x series) matrix aligned
+    with :func:`panel_matrix`. Returns None when the panel carries no price
+    column (the synthetic track) — callers then use the neutral tensor.
+    """
+    if "price" not in panel.columns:
+        return None
+    p = panel.with_columns((pl.col("store") + "|" + pl.col("product")).alias("series_id")).sort(
+        ["date", "series_id"]
+    )
+    wide = p.pivot(index="date", on="series_id", values="price").sort("date")
+    cols = [str(c) for c in wide.columns if c != "date"]
+    mat = wide.drop("date").to_numpy().astype(float)
+    if not np.array_equal(wide["date"].to_numpy(), dates) or set(cols) != set(series_ids):
+        raise ValueError("price pivot does not align with the units pivot")
+    order = [cols.index(s) for s in series_ids]
+    return mat[:, order]
+
+
 def _calendar_features(dates: np.ndarray) -> np.ndarray:
-    """The nowcast calendar block (7 columns), as a pure function of date.
+    """The multi-step calendar block (9 columns), as a pure function of date.
 
     Columns: dow (1=Mon..7=Sun), is_weekend, month, iso week, doy sin/cos, day
-    ordinal (trend counter). Deterministic and known in advance — leakage-free.
+    ordinal (trend counter), is_month_end (the next calendar day starts a new
+    month — the wave-21 trading-cycle hypothesis: wholesale buyers concentrate
+    orders at month end) and week_of_month ((dom-1)//7 + 1). Deterministic and
+    known in advance — leakage-free.
     """
     py_dates = dates.astype("datetime64[D]").astype(object)
     epoch = np.datetime64("0001-01-01")
@@ -195,8 +266,21 @@ def _calendar_features(dates: np.ndarray) -> np.ndarray:
     weeks = np.array([int(d.isocalendar().week) for d in py_dates], dtype=float)
     doy = np.array([d.timetuple().tm_yday for d in py_dates], dtype=float)
     ang = doy * math.tau / 365.25
+    next_months = np.array([(d + timedelta(days=1)).month for d in py_dates], dtype=float)
+    is_month_end = (next_months != months).astype(float)
+    week_of_month = np.array([(d.day - 1) // 7 + 1 for d in py_dates], dtype=float)
     return np.column_stack(
-        [dow, is_weekend, months, weeks, np.sin(ang), np.cos(ang), ordinals.astype(float)]
+        [
+            dow,
+            is_weekend,
+            months,
+            weeks,
+            np.sin(ang),
+            np.cos(ang),
+            ordinals.astype(float),
+            is_month_end,
+            week_of_month,
+        ]
     )
 
 
@@ -238,6 +322,77 @@ def peak_feature_tensor(units: np.ndarray) -> np.ndarray:
     mean28 = pf[:, :, 2]
     pf[:, :, 8] = np.where(mean28 > 0, pf[:, :, 5] / np.where(mean28 > 0, mean28, 1.0), 0.0)
     return pf
+
+
+# ---------------------------------------------------------------------------
+# Price features (wave 21) — all computed at a reference day r from price[≤r]
+# ---------------------------------------------------------------------------
+
+
+def neutral_price_tensor(n_dates: int, n_series: int) -> np.ndarray:
+    """The no-price-panel neutral tensor: asof/ratio 1.0, the rest 0.0.
+
+    Every column is constant, so the boosters never split on it — the
+    synthetic track (no price column) stays bit-stable.
+    """
+    out = np.zeros((n_dates, n_series, N_PRICE_FEATURES))
+    out[:, :, 0] = 1.0
+    out[:, :, 1] = 1.0
+    return out
+
+
+def price_feature_tensor(price: np.ndarray) -> np.ndarray:
+    """(n_dates x n_series x N_PRICE_FEATURES) tensor of price features.
+
+    Every feature for reference day *r* reads ``price[≤r]`` only, so a design
+    whose reference day is ``target - h`` references no price within *h* days
+    of the target — the same aging as the peak block (taint-tested: post-target-h
+    price moves must not move the features). Columns follow
+    :data:`PRICE_FEATURE_NAMES`:
+
+    - ``price_asof[r]`` — the last valid (finite, > 0) price at day ≤ r;
+      1.0 when the series has no observed price yet (neutral).
+    - ``price_ratio_28d[r]`` — ``price_asof[r] / mean(price_asof over the
+      28 days ending at r)``; 1.0 before the first full window (day 27 —
+      never read: designs start at :data:`MIN_LAG_ORIGIN` = 28). A price cut
+      shows up here as a ratio < 1.
+    - ``days_since_price_change[r]`` — days since the most recent day whose
+      valid price differed from the previously observed price (0 on the
+      change day); ``r + 1`` when no price was ever observed.
+    - ``price_drop[r]`` — 1.0 when ``price_ratio_28d < 0.9`` (the wholesale
+      promo proxy), else 0.0.
+    """
+    n_dates, n_series = price.shape
+    out = np.zeros((n_dates, n_series, N_PRICE_FEATURES))
+    valid = np.isfinite(price) & (price > 0)
+    # forward pass: last-valid-price (asof) and days-since-price-change
+    asof = np.ones((n_dates, n_series))
+    prev = np.full(n_series, np.nan)
+    last = np.ones(n_series)
+    last_change = np.full(n_series, -1)
+    seen = np.zeros(n_series, dtype=bool)
+    for r in range(n_dates):
+        m = valid[r]
+        changed = m & (price[r] != prev)
+        last = np.where(m, price[r], last)
+        seen |= m
+        prev = np.where(m, price[r], prev)
+        last_change = np.where(changed, r, last_change)
+        asof[r] = np.where(seen, last, 1.0)
+        out[r, :, 2] = np.where(last_change >= 0, (r - last_change).astype(float), float(r + 1))
+    out[:, :, 0] = asof
+    # 28d window mean of asof (window [r-27, r]); ratio 1.0 before day 27
+    csum = np.vstack([np.zeros((1, n_series)), np.cumsum(asof, axis=0)])
+    idx = np.arange(PRICE_WINDOW_DAYS - 1, n_dates)
+    if idx.size:
+        mean_w = (csum[idx + 1] - csum[idx + 1 - PRICE_WINDOW_DAYS]) / PRICE_WINDOW_DAYS
+        ratio = np.ones((n_dates, n_series))
+        ratio[idx] = asof[idx] / mean_w
+        out[:, :, 1] = ratio
+        out[:, :, 3] = (ratio < PRICE_DROP_RATIO).astype(float)
+    else:
+        out[:, :, 1] = 1.0
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -290,7 +445,12 @@ def split_origins(origin_indices: list[int], config: ForecastConfig) -> tuple[li
 
 
 def _design_train(
-    units: np.ndarray, cal: np.ndarray, pf: np.ndarray, origin: int, h: int
+    units: np.ndarray,
+    cal: np.ndarray,
+    pf: np.ndarray,
+    prf: np.ndarray,
+    origin: int,
+    h: int,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Training matrix for the direct model of horizon h issued at ``origin``.
 
@@ -299,11 +459,12 @@ def _design_train(
     the issue date, so the fit never reads beyond the origin. Features:
     calendar of the target date o'+h, the peak block at the reference day o'
     (see :func:`peak_feature_tensor` — every entry ≥ h days older than the
-    target), the lag trio units(o'), units(o'-7), units(o'-14), and the series
-    identity as a hi/lo PAIR of native categoricals (HGB caps categorical
-    cardinality at 255; the pair (i // 64, i % 64) identifies the series
-    exactly and keeps both cardinalities small). Column order matches
-    :func:`_design_pred`.
+    target), the price block at the same reference day (see
+    :func:`price_feature_tensor` — same aging), the lag trio
+    units(o'), units(o'-7), units(o'-14), and the series identity as a hi/lo
+    PAIR of native categoricals (HGB caps categorical cardinality at 255; the
+    pair (i // 64, i % 64) identifies the series exactly and keeps both
+    cardinalities small). Column order matches :func:`_design_pred`.
     """
     n_series = units.shape[1]
     lo, hi = MIN_LAG_ORIGIN, origin - h
@@ -314,14 +475,15 @@ def _design_train(
     lag7 = units[lo - 7 : hi + 1 - 7].reshape(-1)
     lag14 = units[lo - 14 : hi + 1 - 14].reshape(-1)
     peak = pf[lo : hi + 1].reshape(-1, N_PEAK_FEATURES)
+    price = prf[lo : hi + 1].reshape(-1, N_PRICE_FEATURES)
     codes = np.tile(np.arange(n_series), m)
-    x = np.column_stack([base, lag0, lag7, lag14, peak, codes // 64, codes % 64])
+    x = np.column_stack([base, lag0, lag7, lag14, peak, price, codes // 64, codes % 64])
     y = units[tgt].reshape(-1)
     return x, y
 
 
 def _design_pred(
-    units: np.ndarray, cal: np.ndarray, pf: np.ndarray, origin: int, h: int
+    units: np.ndarray, cal: np.ndarray, pf: np.ndarray, prf: np.ndarray, origin: int, h: int
 ) -> np.ndarray:
     """Prediction matrix for (origin, h): one row per series, target origin+h."""
     n_series = units.shape[1]
@@ -334,6 +496,7 @@ def _design_pred(
             units[origin - 7],
             units[origin - 14],
             pf[origin],
+            prf[origin],
             codes // 64,
             codes % 64,
         ]
@@ -341,8 +504,8 @@ def _design_pred(
 
 
 def _n_numeric_features() -> int:
-    """Numeric column count: calendar + lag trio + peak block (before hi/lo)."""
-    return 7 + len(LAG_AGES) + N_PEAK_FEATURES
+    """Numeric column count: calendar + lag trio + peak + price (before hi/lo)."""
+    return 9 + len(LAG_AGES) + N_PEAK_FEATURES + N_PRICE_FEATURES
 
 
 def _fit_hgb(config: ForecastConfig, quantile: float | None) -> HistGradientBoostingRegressor:
@@ -389,6 +552,127 @@ def _fit_hurdle_pair(
     )
 
 
+def _fit_lgbm(config: ForecastConfig, objective: str) -> Any:
+    """Global LightGBM candidate (wave 21) on the multi-step LGBM tuning:
+    tweedie (compound-Poisson, variance power 1.5) or poisson count objective.
+    ``force_row_wise=True`` + ``n_jobs=1`` + the fixed seed make fits
+    reproducible; the series identity enters as the same hi/lo categorical
+    pair via ``categorical_feature`` at fit time."""
+    from lightgbm import LGBMRegressor
+
+    kwargs: dict[str, Any] = config.multistep_lgbm.estimator_kwargs()
+    kwargs.update(
+        random_state=config.seed,
+        # deterministic=True is deliberately OFF: LightGBM 4.7's deterministic
+        # splitter hits a degenerate-split assert (serial_tree_learner.cpp:870)
+        # on some training windows; force_row_wise + n_jobs=1 + the fixed seed
+        # keep fits reproducible (byte-identity-tested) without that path
+        force_row_wise=True,
+        verbosity=-1,
+        n_jobs=1,  # origin-level joblib workers already fill the cores
+    )
+    if objective == "tweedie":
+        return LGBMRegressor(objective="tweedie", tweedie_variance_power=TWEEDIE_POWER, **kwargs)
+    if objective == "poisson":
+        return LGBMRegressor(objective="poisson", **kwargs)
+    raise ValueError(f"unknown lgbm objective: {objective!r}")
+
+
+def _fit_hurdle_lgbm_pair(config: ForecastConfig) -> tuple[Any, Any]:
+    """Two-stage hurdle on LightGBM halves (wave 21): LGBMClassifier for
+    P(sale) + LGBMRegressor on log1p(non-zero sizes), both on the multi-step
+    LGBM tuning. Same raw point math and the same selection-origin
+    zero-correction as the HGB hurdle."""
+    from lightgbm import LGBMClassifier, LGBMRegressor
+
+    kwargs: dict[str, Any] = config.multistep_lgbm.estimator_kwargs()
+    kwargs.update(
+        random_state=config.seed,
+        # deterministic=True is deliberately OFF: LightGBM 4.7's deterministic
+        # splitter hits a degenerate-split assert (serial_tree_learner.cpp:870)
+        # on some training windows; force_row_wise + n_jobs=1 + the fixed seed
+        # keep fits reproducible (byte-identity-tested) without that path
+        force_row_wise=True,
+        verbosity=-1,
+        n_jobs=1,  # origin-level joblib workers already fill the cores
+    )
+    return LGBMClassifier(**kwargs), LGBMRegressor(**kwargs)
+
+
+def _lgbm_fit_safe(model: Any, x: np.ndarray, y: np.ndarray, cat: list[int]) -> Any:
+    """Fit one LightGBM estimator with a deterministic degenerate-split
+    fallback.
+
+    On strongly zero-inflated panels the tweedie/poisson objectives can
+    produce near-zero-hessian histogram bins whose counts round to zero,
+    tripping LightGBM's ``best_split_info.right_count > 0`` assert
+    (serial_tree_learner.cpp:870 — a hard crash, not a warning). The retry
+    ladder (``min_sum_hessian_in_leaf=1.0``, then ``num_leaves=8``) only
+    engages on those windows, so identical runs take identical branches —
+    the byte-identity determinism contract is unchanged. Any OTHER error
+    propagates unchanged.
+    """
+    from lightgbm.basic import LightGBMError
+
+    try:
+        model.fit(x, y, categorical_feature=cat)
+        return model
+    except LightGBMError as exc:
+        if "right_count" not in str(exc) and "Check failed" not in str(exc):
+            raise
+    model.set_params(min_sum_hessian_in_leaf=1.0)
+    try:
+        model.fit(x, y, categorical_feature=cat)
+        return model
+    except LightGBMError:
+        model.set_params(num_leaves=8)
+        model.fit(x, y, categorical_feature=cat)
+        return model
+
+
+def _finite_demand_pred(
+    pred: np.ndarray, train_units: np.ndarray, hard_clip: bool = False
+) -> np.ndarray:
+    """Guard a log-link LightGBM forecast matrix against overflowed cells.
+
+    The tweedie/poisson objectives can overflow the exponential link on
+    zero-inflated panels: lgbm_poisson on UCI produced literal +inf on ~11%
+    of one scored origin's cells AND finite values up to ~1e283 elsewhere,
+    either of which poisons every pooled metric. NaN -> 0, +inf -> the
+    series' training-window max (>= 1), -inf -> 0. With ``hard_clip``
+    (poisson only) finite cells are also capped at that training max — the
+    pure-exp link diverges under the HPO'd step size, so an
+    above-historical-peak poisson forecast is overflow garbage, not signal.
+    The mapping is deterministic, so the byte-identity contract between
+    runs is unchanged.
+    """
+    cap = np.maximum(train_units.max(axis=0), 1.0)
+    out: np.ndarray = np.nan_to_num(pred, nan=0.0, posinf=cap, neginf=0.0)
+    if hard_clip:
+        out = np.minimum(out, cap)
+    return out
+
+
+def peak_sample_weights(y: np.ndarray, n_series: int, weight: float) -> np.ndarray:
+    """Training-row weights up-weighting each series' top-decile demand days.
+
+    ``y`` is series-minor (``y.reshape(-1, n_series)`` gives (rows, series) —
+    the multi-step training layouts are built that way). Every positive
+    training target at or above its own series' 90th percentile of positive
+    demand gets ``weight``; everything else gets 1. Pure numpy, hand-testable.
+    """
+    w = np.ones(y.shape[0])
+    w2 = w.reshape(-1, n_series)
+    y2 = y.reshape(-1, n_series)
+    for i in range(n_series):
+        col = y2[:, i]
+        pos = col[col > 0]
+        if pos.size:
+            thr = float(np.quantile(pos, 0.9))
+            w2[col >= thr, i] = weight
+    return w
+
+
 def hurdle_point(p_hat: np.ndarray, log_size: np.ndarray) -> np.ndarray:
     """The hurdle point forecast — pure math, hand-testable:
     ``p_hat * max(exp(y_reg) - 1, 0)`` (``exp(y) - 1`` inverts the log1p target).
@@ -432,8 +716,14 @@ class OriginScore:
     preds: dict[str, np.ndarray]
     quantiles: dict[float, np.ndarray]  # learner p10/p50/p90
     # Raw hurdle point forecasts (p̂ x size, before the selection-origin
-    # zero-correction is applied globally by apply_hurdle_correction).
-    hurdle_raw: np.ndarray | None = None
+    # zero-correction is applied globally by apply_hurdle_correction), keyed
+    # by hurdle candidate (hurdle_hgb / hurdle_lgbm / peak_weighted_hgb —
+    # the last one appears only after choose_peak_weight picked a variant).
+    hurdle_raw: dict[str, np.ndarray] = field(default_factory=dict)
+    # Raw peak_weighted_hgb variants keyed by the sample-weight multiplier
+    # (both variants are fit everywhere; the weight is chosen on the
+    # selection origins only).
+    pw_raw: dict[float, np.ndarray] = field(default_factory=dict)
     # Optional what-if predictions under demand shocks: shock factor -> method
     # -> (n_series x n_horizons). A shock scales the last 7 days before the
     # origin (the demand signal every candidate reads: the statistical methods
@@ -444,8 +734,8 @@ class OriginScore:
 
 
 def _hurdle_predict(
-    clf: HistGradientBoostingClassifier,
-    reg: HistGradientBoostingRegressor,
+    clf: Any,
+    reg: Any,
     x: np.ndarray,
     has_positives: bool,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -466,6 +756,12 @@ def _hurdle_predict(
     return p_hat, p_hat * size
 
 
+def _lgbm_cat_cols() -> list[int]:
+    """Column indices of the hi/lo series-identity pair for LightGBM."""
+    n_num = _n_numeric_features()
+    return [n_num, n_num + 1]
+
+
 def _score_origin(
     units: np.ndarray,
     cal: np.ndarray,
@@ -473,20 +769,57 @@ def _score_origin(
     horizons: list[int],
     config: ForecastConfig,
     shock_factors: tuple[float, ...] = (),
+    price: np.ndarray | None = None,
 ) -> OriginScore:
-    """Fit every direct model issued at ``origin`` and predict the window."""
+    """Fit every direct model issued at ``origin`` and predict the window.
+
+    One thread per estimator: parallelism comes from the caller (joblib
+    workers across origins, which carry OMP_NUM_THREADS=1 via
+    parallel_config); a 16-thread OpenMP pool inside a single fit measures
+    20-100x SLOWER on this machine (per-iteration sync dominates), so
+    direct/serial callers (tests, the tweedie HPO objective) must not let
+    sklearn grab every core per fit.
+    """
+    with threadpool_limits(limits=1):
+        return _score_origin_impl(units, cal, origin, horizons, config, shock_factors, price)
+
+
+def _score_origin_impl(
+    units: np.ndarray,
+    cal: np.ndarray,
+    origin: int,
+    horizons: list[int],
+    config: ForecastConfig,
+    shock_factors: tuple[float, ...] = (),
+    price: np.ndarray | None = None,
+) -> OriginScore:
+    """The fit-and-predict body (see :func:`_score_origin`)."""
     n_series = units.shape[1]
     pf = peak_feature_tensor(units)
+    prf = (
+        price_feature_tensor(price)
+        if price is not None
+        else neutral_price_tensor(units.shape[0], n_series)
+    )
+    cat_lgbm = _lgbm_cat_cols()
     point_cols: list[np.ndarray] = []
     point_models: list[HistGradientBoostingRegressor] = []
     tweedie_cols: list[np.ndarray] = []
     tweedie_models: list[HistGradientBoostingRegressor] = []
     hurdle_raw_cols: list[np.ndarray] = []
-    hurdle_models: list[tuple[HistGradientBoostingClassifier, HistGradientBoostingRegressor]] = []
+    hurdle_lgbm_cols: list[np.ndarray] = []
+    lgbm_tw_cols: list[np.ndarray] = []
+    lgbm_ps_cols: list[np.ndarray] = []
+    pw_cols: dict[float, list[np.ndarray]] = {w: [] for w in PEAK_WEIGHTS}
+    hurdle_models: list[tuple[Any, Any]] = []
+    lgbm_tw_models: list[Any] = []
+    lgbm_ps_models: list[Any] = []
+    hurdle_lgbm_models: list[tuple[Any, Any]] = []
+    pw_models: dict[float, list[tuple[Any, Any]]] = {w: [] for w in PEAK_WEIGHTS}
     quantile_cols: dict[float, list[np.ndarray]] = {q: [] for q in QUANTILES_MS}
     for h in horizons:
-        x_train, y_train = _design_train(units, cal, pf, origin, h)
-        x_pred = _design_pred(units, cal, pf, origin, h)
+        x_train, y_train = _design_train(units, cal, pf, prf, origin, h)
+        x_pred = _design_pred(units, cal, pf, prf, origin, h)
         model = _fit_hgb(config, quantile=None)
         model.fit(x_train, y_train)
         point_models.append(model)
@@ -507,13 +840,60 @@ def _score_origin(
             qm = _fit_hgb(config, quantile=q)
             qm.fit(x_train, y_train)
             quantile_cols[q].append(np.asarray(qm.predict(x_pred), dtype=float))
+        # wave 21: LightGBM global candidates + the LGBM hurdle
+        lgbm_tw = _fit_lgbm(config, "tweedie")
+        _lgbm_fit_safe(lgbm_tw, x_train, y_train, cat_lgbm)
+        lgbm_tw_models.append(lgbm_tw)
+        lgbm_tw_cols.append(
+            _finite_demand_pred(np.asarray(lgbm_tw.predict(x_pred), dtype=float), units[:origin])
+        )
+        lgbm_ps = _fit_lgbm(config, "poisson")
+        _lgbm_fit_safe(lgbm_ps, x_train, y_train, cat_lgbm)
+        lgbm_ps_models.append(lgbm_ps)
+        lgbm_ps_cols.append(
+            _finite_demand_pred(
+                np.asarray(lgbm_ps.predict(x_pred), dtype=float), units[:origin], hard_clip=True
+            )
+        )
+        clf_l, reg_l = _fit_hurdle_lgbm_pair(config)
+        _lgbm_fit_safe(clf_l, x_train, positives.astype(int), cat_lgbm)
+        if positives.any():
+            _lgbm_fit_safe(
+                reg_l,
+                x_train[positives],
+                np.log1p(y_train[positives]),
+                cat_lgbm,
+            )
+        hurdle_lgbm_models.append((clf_l, reg_l))
+        _, raw_l = _hurdle_predict(clf_l, reg_l, x_pred, bool(positives.any()))
+        hurdle_lgbm_cols.append(raw_l)
+        # wave 21: peak-weighted hurdle variants (top-decile demand days
+        # up-weighted by w in both halves of the pair)
+        for w in PEAK_WEIGHTS:
+            clf_w, reg_w = _fit_hurdle_pair(config)
+            w_train = peak_sample_weights(y_train, n_series, w)
+            clf_w.fit(x_train, positives.astype(int), sample_weight=w_train)
+            if positives.any():
+                reg_w.fit(
+                    x_train[positives],
+                    np.log1p(y_train[positives]),
+                    sample_weight=w_train[positives],
+                )
+            pw_models[w].append((clf_w, reg_w))
+            _, raw_w = _hurdle_predict(clf_w, reg_w, x_pred, bool(positives.any()))
+            pw_cols[w].append(raw_w)
     preds: dict[str, np.ndarray] = {
         "direct_hgb": np.column_stack(point_cols),
         "hgb_tweedie": np.column_stack(tweedie_cols),
-        # overwritten by apply_hurdle_correction (raw until then)
+        "lgbm_tweedie": np.column_stack(lgbm_tw_cols),
+        "lgbm_poisson": np.column_stack(lgbm_ps_cols),
+        # overwritten by apply_hurdle_correction (raw until then); the
+        # peak_weighted_hgb key appears with choose_peak_weight's winner
         "hurdle_hgb": np.column_stack(hurdle_raw_cols),
+        "hurdle_lgbm": np.column_stack(hurdle_lgbm_cols),
     }
-    hurdle_raw = np.column_stack(hurdle_raw_cols)
+    hurdle_raw = {"hurdle_hgb": preds["hurdle_hgb"], "hurdle_lgbm": preds["hurdle_lgbm"]}
+    pw_raw = {w: np.column_stack(cols) for w, cols in pw_cols.items()}
     quantiles = {q: np.column_stack(v) for q, v in quantile_cols.items()}
     preds["seasonal_naive"] = _seasonal_naive_pred(units, origin, horizons)
     preds["zero"] = np.zeros((n_series, len(horizons)))
@@ -528,6 +908,11 @@ def _score_origin(
         units_s = units.copy()
         units_s[max(0, origin - 6) : origin + 1] *= s  # the last 7 days before the origin
         pf_s = peak_feature_tensor(units_s)
+        prf_s = (
+            price_feature_tensor(price)
+            if price is not None
+            else neutral_price_tensor(units.shape[0], n_series)
+        )
         entry: dict[str, np.ndarray] = {
             "seasonal_naive": _seasonal_naive_pred(units_s, origin, horizons),
             "zero": np.zeros((n_series, len(horizons))),
@@ -537,20 +922,48 @@ def _score_origin(
         hgb_cols = []
         tweedie_cols_s = []
         hurdle_raw_cols_s = []
+        lgbm_tw_cols_s = []
+        lgbm_ps_cols_s = []
+        hurdle_lgbm_cols_s = []
+        pw_cols_s: dict[float, list[np.ndarray]] = {w: [] for w in PEAK_WEIGHTS}
         for j, h in enumerate(horizons):
-            x_s = _design_pred(units_s, cal, pf_s, origin, h)
+            x_s = _design_pred(units_s, cal, pf_s, prf_s, origin, h)
             hgb_cols.append(np.asarray(point_models[j].predict(x_s), dtype=float))
             tweedie_cols_s.append(np.asarray(tweedie_models[j].predict(x_s), dtype=float))
             clf_s, reg_s = hurdle_models[j]
             _, raw_s = _hurdle_predict(clf_s, reg_s, x_s, len(clf_s.classes_) >= 2)
             hurdle_raw_cols_s.append(raw_s)
+            # wave 21 candidates re-predict through their fitted per-h models
+            tw_pred_s = np.asarray(lgbm_tw_models[j].predict(x_s), dtype=float)
+            lgbm_tw_cols_s.append(_finite_demand_pred(tw_pred_s, units_s[:origin]))
+            ps_pred_s = np.asarray(lgbm_ps_models[j].predict(x_s), dtype=float)
+            lgbm_ps_cols_s.append(_finite_demand_pred(ps_pred_s, units_s[:origin], hard_clip=True))
+            clf_l_s, reg_l_s = hurdle_lgbm_models[j]
+            _, raw_l_s = _hurdle_predict(clf_l_s, reg_l_s, x_s, len(clf_l_s.classes_) >= 2)
+            hurdle_lgbm_cols_s.append(raw_l_s)
+            for w in PEAK_WEIGHTS:
+                clf_w_s, reg_w_s = pw_models[w][j]
+                _, raw_w_s = _hurdle_predict(clf_w_s, reg_w_s, x_s, len(clf_w_s.classes_) >= 2)
+                pw_cols_s[w].append(raw_w_s)
         entry["direct_hgb"] = np.column_stack(hgb_cols)
         entry["hgb_tweedie"] = np.column_stack(tweedie_cols_s)
         entry["hurdle_hgb"] = np.column_stack(hurdle_raw_cols_s)  # raw; the payload
         # applies the committed correction mapping to the routed curve
+        entry["lgbm_tweedie"] = np.column_stack(lgbm_tw_cols_s)
+        entry["lgbm_poisson"] = np.column_stack(lgbm_ps_cols_s)
+        entry["hurdle_lgbm"] = np.column_stack(hurdle_lgbm_cols_s)  # raw, corrected later
+        # peak-weighted variants stay keyed by weight until choose_peak_weight
+        # promotes the winner to the "peak_weighted_hgb" key
+        for w in PEAK_WEIGHTS:
+            entry[f"peak_weighted_hgb@{w}"] = np.column_stack(pw_cols_s[w])
         shocked[float(s)] = entry
     return OriginScore(
-        origin=origin, preds=preds, quantiles=quantiles, hurdle_raw=hurdle_raw, shocked=shocked
+        origin=origin,
+        preds=preds,
+        quantiles=quantiles,
+        hurdle_raw=hurdle_raw,
+        pw_raw=pw_raw,
+        shocked=shocked,
     )
 
 
@@ -685,7 +1098,19 @@ def _paired_bootstrap_values(
 # Peak-capture metrics (the user's headline concern)
 # ---------------------------------------------------------------------------
 
-PEAK_CANDIDATES = ("routed", "zero", "hgb_tweedie", "hurdle_hgb")
+PEAK_CANDIDATES = (
+    "routed",
+    "zero",
+    "hgb_tweedie",
+    "hurdle_hgb",
+    "lgbm_tweedie",
+    "lgbm_poisson",
+    "hurdle_lgbm",
+    "peak_weighted_hgb",
+    "ensemble_convex",
+)
+# Candidates in the per-series beats-floor win-rate report.
+WIN_RATE_CANDIDATES = ("routed", "zero", *COMPARISON_CANDIDATES)
 
 
 def _window_peak_arrays(y3: np.ndarray, pred3: np.ndarray, k: int) -> tuple[np.ndarray, np.ndarray]:
@@ -791,8 +1216,76 @@ def _peak_capture(
 
 
 # ---------------------------------------------------------------------------
-# Long table over test origins
+# Per-series beats-floor win rates (wave 21: "improve error for EVERY series")
 # ---------------------------------------------------------------------------
+
+
+def _win_rates(
+    cells: dict[str, Any], horizons: list[int], config: ForecastConfig
+) -> dict[str, Any]:
+    """Per-series beats-floor win rate by class and horizon, with a paired
+    cluster bootstrap CI on the win rate.
+
+    A series "beats the floor" at horizon h when its summed |error| over the
+    scored test origins at that h is strictly below the seasonal-naive
+    floor's. The win rate is the share of series (per class) winning that
+    per-series comparison; the 95% CI resamples SERIES with replacement (one
+    shared index draw per replication across candidates, so the intervals
+    stay paired), exactly the cluster-bootstrap contract of the MAE CIs.
+    """
+    seed = config.seed + 8801  # distinct bootstrap stream
+    classes = [str(c) for c in np.unique(cells["class"])]
+    n_series_all = int(cells["series"].max()) + 1
+    per_class: dict[str, Any] = {}
+    for cls in classes:
+        cls_mask = cells["class"] == cls
+        series_u = np.unique(cells["series"][cls_mask])
+        per_h: dict[str, Any] = {}
+        for h in horizons:
+            mask = cls_mask & (cells["h"] == h)
+            ser = cells["series"][mask]
+            y = cells["y"][mask]
+            floor_s = np.bincount(
+                ser, weights=np.abs(cells["pred"][FLOOR][mask] - y), minlength=n_series_all
+            )
+            win_mat = np.zeros((len(WIN_RATE_CANDIDATES), n_series_all))
+            for k, cand in enumerate(WIN_RATE_CANDIDATES):
+                cand_s = np.bincount(
+                    ser, weights=np.abs(cells["pred"][cand][mask] - y), minlength=n_series_all
+                )
+                win_mat[k] = cand_s < floor_s
+            w_cls = win_mat[:, series_u]  # (n_cand, n_series_in_class)
+            rng = np.random.default_rng(seed)
+            idx = rng.integers(0, w_cls.shape[1], (config.bootstrap_reps, w_cls.shape[1]))
+            rates = w_cls[:, idx].mean(axis=2)  # (n_cand, n_boot)
+            h_entry: dict[str, Any] = {}
+            for k, cand in enumerate(WIN_RATE_CANDIDATES):
+                lo, hi = np.quantile(rates[k], [0.025, 0.975])
+                h_entry[cand] = {
+                    "win_rate": float(w_cls[k].mean()),
+                    "beats_floor_count": int(w_cls[k].sum()),
+                    "ci95": [float(lo), float(hi)],
+                }
+            per_h[str(h)] = h_entry
+        per_class[cls] = {"n_series": len(series_u), "per_horizon": per_h}
+    return {
+        "definition": (
+            "per series and horizon: beats-floor = the series' summed |error| over the "
+            "scored test origins at that h is strictly below the seasonal_naive floor's; "
+            "win_rate = the share of series in the class beating the floor; 95% CI = "
+            "percentile interval of a cluster bootstrap over series (one shared index "
+            "draw per replication across candidates)"
+        ),
+        "floor": FLOOR,
+        "candidates": list(WIN_RATE_CANDIDATES),
+        "bootstrap": {
+            "method": "cluster bootstrap over series (one shared index draw per "
+            "replication across candidates), percentile 95% CI",
+            "n_boot": config.bootstrap_reps,
+            "seed": seed,
+        },
+        "per_class": per_class,
+    }
 
 
 def _scales(units: np.ndarray, origin: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -805,6 +1298,11 @@ def _scales(units: np.ndarray, origin: int) -> tuple[np.ndarray, np.ndarray, np.
     )
 
 
+# ---------------------------------------------------------------------------
+# Long table over test origins
+# ---------------------------------------------------------------------------
+
+
 def _test_cells(
     by_origin: dict[int, OriginScore],
     test: list[int],
@@ -812,6 +1310,8 @@ def _test_cells(
     units: np.ndarray,
     sparse: np.ndarray,
     method_of: np.ndarray,
+    ens_weights: np.ndarray | None = None,
+    ens_ml_idx: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Flatten (series x test origin x horizon) into column arrays."""
     n_cells = units.shape[1] * len(test) * len(horizons)
@@ -856,9 +1356,18 @@ def _test_cells(
                 "tsb",
                 "hgb_tweedie",
                 "hurdle_hgb",
+                "lgbm_tweedie",
+                "lgbm_poisson",
+                "hurdle_lgbm",
+                "peak_weighted_hgb",
             ):
                 cells["pred"][name][sl] = sc.preds[name][:, j]
-            cells["pred"]["routed"][sl] = _routed_pred(sc, j, sparse, method_of)
+            routed = _routed_pred(sc, j, sparse, method_of)
+            cells["pred"]["routed"][sl] = routed
+            if ens_weights is not None and ens_ml_idx is not None:
+                cells["pred"]["ensemble_convex"][sl] = _ensemble_pred(
+                    sc, routed, ens_weights, ens_ml_idx, j
+                )
             r += n
     return cells
 
@@ -884,6 +1393,7 @@ def run_multistep(
     """Run the full direct multi-horizon track; returns JSON blocks + figures."""
     del settings  # artifact merging is the caller's job (evaluate.py)
     dates, series_ids, units = panel_matrix(panel)
+    price = panel_price_matrix(panel, dates, series_ids)
     cal = _calendar_features(dates)
     horizons = list(config.multistep_horizons)
     n_series = len(series_ids)
@@ -894,7 +1404,7 @@ def run_multistep(
     selection, test = split_origins(origins, config)
     logger.info(
         "multistep: %d origins (%d selection + %d test), horizons %s, %d series, "
-        "%d sparse (%.1f%%)",
+        "%d sparse (%.1f%%), price features %s",
         len(origins),
         len(selection),
         len(test),
@@ -902,20 +1412,32 @@ def run_multistep(
         n_series,
         int(sparse.sum()),
         100.0 * sparse.mean(),
+        "on" if price is not None else "off (neutral)",
     )
-    scores = Parallel(n_jobs=-2, backend="loky")(
-        delayed(_score_origin)(units, cal, o, horizons, config) for o in origins
-    )
+    # inner_max_num_threads=1: the workers run full-core already — letting
+    # each estimator ALSO spawn its own thread pool (sklearn OpenMP, LightGBM)
+    # oversubscribes the machine and every fit slows down several-fold
+    with parallel_config("loky", inner_max_num_threads=1):
+        scores = Parallel(n_jobs=-2)(
+            delayed(_score_origin)(units, cal, o, horizons, config, (), price) for o in origins
+        )
     by_origin = {s.origin: s for s in scores}
 
-    # ---- hurdle zero-correction: chosen on the SELECTION origins only ----
+    # ---- peak-weight choice + hurdle zero-correction: SELECTION origins only --
+    pw_choice = choose_peak_weight(by_origin, selection, horizons, units)
     correction = apply_hurdle_correction(by_origin, selection, horizons, units)
 
     # ---- routing: per-series best candidate on SELECTION origins only ----
     method_of = _route(by_origin, selection, horizons, units, sparse, n_series)
 
+    # ---- convex ensemble: per-series weight on SELECTION origins only (no refits)
+    ens = ensemble_weights(by_origin, selection, horizons, units, sparse, method_of, n_series)
+    ens_ml_idx = np.array([ML_SPARSE.index(str(m)) for m in ens["ml_choice"]])
+
     # ---- long table over the TEST origins (scored once) ----
-    cells = _test_cells(by_origin, test, horizons, units, sparse, method_of)
+    cells = _test_cells(
+        by_origin, test, horizons, units, sparse, method_of, ens["weights"], ens_ml_idx
+    )
     class_of_series = np.array([classes[s]["class"] for s in series_ids])
     cells["class"] = class_of_series[cells["series"]]
 
@@ -924,6 +1446,7 @@ def run_multistep(
     bootstrap = _bootstrap_suite(cells, horizons, config)
     growth = _growth_curves(cells, horizons)
     peak = _peak_capture(cells, test, horizons, n_series, config)
+    win_rates = _win_rates(cells, horizons, config)
     class_of_series = np.array([classes[s]["class"] for s in series_ids])
     decision = _order_up_to(
         by_origin, selection, horizons, units, sparse, method_of, cells, class_of_series, config
@@ -947,6 +1470,9 @@ def run_multistep(
         config,
         correction,
         peak,
+        win_rates,
+        pw_choice,
+        ens,
     )
     figures = _figures(block, horizons, bands["json"], cells, test, n_series)
     result = MultiStepResult(
@@ -970,71 +1496,129 @@ def run_multistep(
 # ---------------------------------------------------------------------------
 
 
-def apply_hurdle_correction(
+def choose_peak_weight(
     by_origin: dict[int, OriginScore],
     selection: list[int],
     horizons: list[int],
     units: np.ndarray,
 ) -> dict[str, Any]:
+    """Pick the peak_weighted_hgb sample-weight multiplier on SELECTION cells.
+
+    Both weight variants (see :data:`PEAK_WEIGHTS`) are fit at every origin;
+    the one with the lowest pooled |error| over the selection origins' cells
+    wins and its raw predictions become the ``peak_weighted_hgb`` candidate
+    (which then goes through the same zero-correction as the other hurdle
+    models). Reads no test-origin actual (property-tested).
+    """
+    scores: dict[str, float] = {}
+    for w in PEAK_WEIGHTS:
+        total = 0.0
+        count = 0
+        for o in selection:
+            y = np.column_stack([units[o + h] for h in horizons])
+            total += float(np.abs(by_origin[o].pw_raw[w] - y).sum())
+            count += int(y.size)
+        scores[str(w)] = total / count if count else float("nan")
+    chosen = float(min(scores, key=lambda k: scores[k]))
+    for sc in by_origin.values():
+        sc.hurdle_raw["peak_weighted_hgb"] = sc.pw_raw[chosen]
+        sc.preds["peak_weighted_hgb"] = sc.pw_raw[chosen].copy()
+        # promote the same variant in the what-if shock entries (keyed by
+        # weight until now; apply_hurdle_correction maps the promoted key)
+        for entry in sc.shocked.values():
+            key = f"peak_weighted_hgb@{chosen}"
+            if key in entry:
+                entry["peak_weighted_hgb"] = entry.pop(key)
+                for w in PEAK_WEIGHTS:
+                    entry.pop(f"peak_weighted_hgb@{w}", None)
+    return {
+        "weights": list(PEAK_WEIGHTS),
+        "chosen": chosen,
+        "selection_mae": scores,
+        "definition": "pooled MAE of each raw weight variant over the selection origins' "
+        "cells; the winner is applied to all origins (then zero-corrected)",
+    }
+
+
+def apply_hurdle_correction(
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    candidates: tuple[str, ...] = HURDLE_CANDIDATES,
+) -> dict[str, Any]:
     """Pick and apply the hurdle zero-correction — tested, not assumed.
 
     The raw hurdle point forecast (p̂ x size) is biased toward non-zero
-    answers (it is a conditional mean of the positive part). Three mappings
-    are compared on the SELECTION origins' cells only: identity, a scalar
+    answers (it is a conditional mean of the positive part). For every
+    hurdle-family candidate (see :data:`HURDLE_CANDIDATES`) three mappings are
+    compared on the SELECTION origins' cells only: identity, a scalar
     ``Σactual / Σpred`` shrink, and an isotonic regression of actual on
     predicted. The mapping with the lowest summed |error| on the selection
-    cells wins and is applied to EVERY origin's stored ``hurdle_hgb``
-    predictions (in place), so routing and scoring see the same corrected
-    candidate. Reads no test-origin actual (property-tested). Returns the
-    choice and the selection-origin MAE of every variant (the "does the
-    correction help?" evidence, committed in metrics.json).
+    cells wins and is applied to EVERY origin's stored predictions (in place),
+    so routing and scoring see the same corrected candidate. Reads no
+    test-origin actual (property-tested). Returns, per candidate, the choice
+    and the selection-origin MAE of every variant (the "does the correction
+    help?" evidence, committed in metrics.json).
     """
-    raw_sel: list[np.ndarray] = []
-    y_sel: list[np.ndarray] = []
-    for o in selection:
-        sc = by_origin[o]
-        if sc.hurdle_raw is None:  # pragma: no cover - defensive
-            raise ValueError(f"origin {o} has no raw hurdle predictions")
-        # both flattened series-major so cell i of raw pairs with cell i of y
-        raw_sel.append(np.transpose(sc.hurdle_raw).reshape(-1))
-        y_sel.append(np.column_stack([units[o + h] for h in horizons]).reshape(-1))
-    raw = np.concatenate(raw_sel)
-    y = np.concatenate(y_sel)
-    denom = float(raw.sum())
-    scalar = float(y.sum()) / denom if denom > 0 else 1.0
-    iso = IsotonicRegression(out_of_bounds="clip").fit(raw, y)
-    variants: dict[str, np.ndarray] = {
-        "identity": raw,
-        "scalar": raw * scalar,
-        "isotonic": np.asarray(iso.predict(raw), dtype=float),
-    }
-    maes = {name: float(np.abs(v - y).mean()) for name, v in variants.items()}
-    chosen = min(maes, key=lambda name: maes[name])
+    out: dict[str, Any] = {}
+    for cand in candidates:
+        raw_sel: list[np.ndarray] = []
+        y_sel: list[np.ndarray] = []
+        for o in selection:
+            sc = by_origin[o]
+            if cand not in sc.hurdle_raw:  # pragma: no cover - defensive
+                raise ValueError(f"origin {o} has no raw {cand} predictions")
+            # both flattened series-major so cell i of raw pairs with cell i of y
+            raw_sel.append(np.transpose(sc.hurdle_raw[cand]).reshape(-1))
+            y_sel.append(np.column_stack([units[o + h] for h in horizons]).reshape(-1))
+        raw = np.concatenate(raw_sel)
+        y = np.concatenate(y_sel)
+        denom = float(raw.sum())
+        scalar = float(y.sum()) / denom if denom > 0 else 1.0
+        iso = IsotonicRegression(out_of_bounds="clip").fit(raw, y)
+        variants: dict[str, np.ndarray] = {
+            "identity": raw,
+            "scalar": raw * scalar,
+            "isotonic": np.asarray(iso.predict(raw), dtype=float),
+        }
+        maes = {name: float(np.abs(v - y).mean()) for name, v in variants.items()}
+        chosen = min(maes, key=lambda name: maes[name])
 
-    def _map(flat: np.ndarray) -> np.ndarray:
-        if chosen == "identity":
-            return flat
-        if chosen == "scalar":
-            return flat * scalar
-        return np.asarray(iso.predict(flat), dtype=float)
+        def _map(
+            flat: np.ndarray,
+            _chosen: str = chosen,
+            _scalar: float = scalar,
+            _iso: IsotonicRegression = iso,
+        ) -> np.ndarray:
+            if _chosen == "identity":
+                return flat
+            if _chosen == "scalar":
+                return flat * _scalar
+            return np.asarray(_iso.predict(flat), dtype=float)
 
-    for sc in by_origin.values():
-        if sc.hurdle_raw is None:  # pragma: no cover - defensive
-            continue
-        sc.preds["hurdle_hgb"] = _map(sc.hurdle_raw.reshape(-1)).reshape(sc.hurdle_raw.shape)
-        # the demo payload's what-if curves go through the same mapping
-        for entry in sc.shocked.values():
-            if "hurdle_hgb" in entry:
-                raw_s = entry["hurdle_hgb"]
-                entry["hurdle_hgb"] = _map(raw_s.reshape(-1)).reshape(raw_s.shape)
-    return {
-        "chosen": chosen,
-        "selection_mae": maes,
-        "scalar_factor": scalar,
-        "note": "identity/scalar/isotonic compared on the selection origins only; the "
-        "winner is applied to all origins; a series of all-zero training windows has "
-        "no correction candidate (raw p̂=0)",
-    }
+        for sc in by_origin.values():
+            if cand not in sc.hurdle_raw:  # pragma: no cover - defensive
+                continue
+            sc.preds[cand] = _map(sc.hurdle_raw[cand].reshape(-1)).reshape(
+                sc.hurdle_raw[cand].shape
+            )
+            # the demo payload's what-if curves go through the same mapping
+            for entry in sc.shocked.values():
+                if cand in entry:
+                    raw_s = entry[cand]
+                    entry[cand] = _map(raw_s.reshape(-1)).reshape(raw_s.shape)
+        out[cand] = {
+            "chosen": chosen,
+            "selection_mae": maes,
+            "scalar_factor": scalar,
+        }
+    out["note"] = (
+        "identity/scalar/isotonic compared on the selection origins only; the "
+        "winner per hurdle candidate is applied to all origins; a series of "
+        "all-zero training windows has no correction candidate (raw p̂=0)"
+    )
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1075,6 +1659,92 @@ def _route(
     stack = np.stack([cand_err[name] for name in pool], axis=1)
     method_of = np.array(pool, dtype=object)[np.argmin(stack, axis=1)]
     return method_of.copy()
+
+
+# ---------------------------------------------------------------------------
+# Convex ensemble (wave 21): per-series weight between the routed pick and the
+# best ML candidate, chosen on the SELECTION origins only (no refits)
+# ---------------------------------------------------------------------------
+
+
+def ensemble_weights(
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    sparse: np.ndarray,
+    method_of: np.ndarray,
+    n_series: int,
+) -> dict[str, Any]:
+    """Per-series convex blend of the routed pick and the best ML candidate.
+
+    The best ML candidate is per series (lowest summed |error| over the
+    selection origins among :data:`ML_SPARSE` — every series is eligible for
+    the whole ML pool; class eligibility was the router's job). The weight
+    w in {0, 0.1, ..., 1} (prediction = ``w · routed + (1 - w) · best_ml``)
+    minimises each series' summed |error| over the selection cells — a pure
+    post-processing of stored predictions, no refits. Reads no test-origin
+    actual (property-tested alongside the router).
+    """
+    n_h = len(horizons)
+    ml_err = {c: np.zeros(n_series) for c in ML_SPARSE}
+    routed_err = np.zeros(n_series)
+    R = np.zeros((n_series, n_h))
+    M_stack = np.zeros((n_series, n_h, len(ML_SPARSE)))  # summed ML candidate preds
+    Y = np.zeros((n_series, n_h))
+    for o in selection:
+        sc = by_origin[o]
+        y = np.column_stack([units[o + h] for h in horizons])
+        routed = np.column_stack([_routed_pred(sc, j, sparse, method_of) for j in range(n_h)])
+        routed_err += np.abs(y - routed).sum(axis=1)
+        for k, c in enumerate(ML_SPARSE):
+            ml_err[c] += np.abs(y - sc.preds[c]).sum(axis=1)
+            M_stack[:, :, k] += sc.preds[c]
+        R += routed
+        Y += y
+    # best-ML pick from the COMPLETE selection errors, then blend per series
+    ml_idx = np.argmin(np.stack([ml_err[c] for c in ML_SPARSE], axis=1), axis=1)
+    ml_choice = np.array(ML_SPARSE, dtype=object)[ml_idx]
+    M = np.take_along_axis(M_stack, ml_idx[:, None, None], axis=2)[:, :, 0]
+    grid = np.round(np.linspace(0.0, 1.0, 11), 1)
+    # errs[i, g] = summed |error| of series i under weight grid[g]
+    errs = np.stack([np.abs(w * R + (1.0 - w) * M - Y).sum(axis=1) for w in grid], axis=1)
+    w_pos = np.argmin(errs, axis=1)
+    weights = grid[w_pos]
+    n_cells = n_series * n_h * len(selection)
+    from collections import Counter
+
+    return {
+        "weights": weights,
+        "ml_choice": ml_choice,
+        "grid": [float(w) for w in grid],
+        "selection_mae": {
+            "routed": float(routed_err.sum() / n_cells),
+            "best_ml": float(
+                np.stack([ml_err[c] for c in ML_SPARSE], axis=1).min(axis=1).sum() / n_cells
+            ),
+            "ensemble": float(errs[np.arange(n_series), w_pos].sum() / n_cells),
+        },
+        "weight_counts": {str(w): int(c) for w, c in sorted(Counter(weights).items())},
+        "ml_choice_counts": {
+            str(m): int(c) for m, c in sorted(Counter(str(m) for m in ml_choice).items())
+        },
+        "definition": "per series: pred = w * routed + (1 - w) * best_ml with best_ml = the "
+        "ML_SPARSE candidate of lowest summed |error| on the selection origins; w in "
+        "{0, 0.1, ..., 1} minimises the same selection loss — no refits, test origins "
+        "never read",
+    }
+
+
+def _ensemble_pred(
+    sc: OriginScore, routed_col: np.ndarray, weights: np.ndarray, ml_idx: np.ndarray, j: int
+) -> np.ndarray:
+    """The convex-ensemble point forecast for one (origin, horizon j) column:
+    blend of the routed pipeline's per-series pick with that series' best ML
+    candidate — ``w x routed + (1 - w) x best_ml`` (see :func:`ensemble_weights`)."""
+    ml_stack = np.stack([sc.preds[c][:, j] for c in ML_SPARSE], axis=1)  # (n_s, n_c)
+    best_ml = np.take_along_axis(ml_stack, ml_idx[:, None], axis=1)[:, 0]
+    return np.asarray(weights * routed_col + (1.0 - weights) * best_ml, dtype=float)
 
 
 # ---------------------------------------------------------------------------
@@ -1340,7 +2010,7 @@ def _bootstrap_suite(
                 "champion_vs_naive_zero": _pair(mask, CHAMPION, NAIVE),
             }
             # peak-capable candidates vs the routed pipeline and the zero floor
-            for cand in ML_SPARSE:
+            for cand in COMPARISON_CANDIDATES:
                 h_entry[f"{cand}_mae"] = float(
                     np.abs(cells["pred"][cand][mask] - cells["y"][mask]).mean()
                 )
@@ -1434,7 +2104,7 @@ def _candidate_comparison(cells: dict[str, Any], config: ForecastConfig) -> dict
             "routed_mae": float(np.abs(cells["pred"][CHAMPION][mask] - cells["y"][mask]).mean()),
             "zero_mae": float(np.abs(cells["pred"][NAIVE][mask] - cells["y"][mask]).mean()),
         }
-        for cand in ML_SPARSE:
+        for cand in COMPARISON_CANDIDATES:
             item: dict[str, Any] = {
                 "mae": float(np.abs(cells["pred"][cand][mask] - cells["y"][mask]).mean())
             }
@@ -1451,6 +2121,7 @@ def _candidate_comparison(cells: dict[str, Any], config: ForecastConfig) -> dict
     return {
         "method": "pooled MAE over series x scored test origins x all horizons; gaps carry "
         "a 95% paired cluster bootstrap CI over series (negative diff = candidate better)",
+        "candidates": list(COMPARISON_CANDIDATES),
         "n_boot": config.bootstrap_reps,
         "seed": seed,
         "per_class": per_class,
@@ -1592,6 +2263,9 @@ def _assemble_block(
     config: ForecastConfig,
     correction: dict[str, Any],
     peak: dict[str, Any],
+    win_rates: dict[str, Any],
+    pw_choice: dict[str, Any],
+    ens: dict[str, Any],
 ) -> dict[str, Any]:
     """The ``_multistep`` block of metrics.json (multi-step headline)."""
     del bands  # band numbers live in probabilistic.json (merged separately)
@@ -1619,8 +2293,8 @@ def _assemble_block(
         "candidates": list(CANDIDATES),
         "champion": CHAMPION,
         "champion_definition": "per-series routing: sparse (ADI>=1.32) series -> best candidate "
-        "among the statistical methods + the peak-capable hgb_tweedie / hurdle_hgb on the "
-        "selection origins; smooth/erratic -> best among direct_hgb + the two ML candidates",
+        "among the statistical methods + the six peak-capable ML candidates on the "
+        "selection origins; smooth/erratic -> best among direct_hgb + the same ML pool",
         "floor": FLOOR,
         "naive": NAIVE,
         "peak_capable_candidates": {
@@ -1630,6 +2304,20 @@ def _assemble_block(
             "hurdle_hgb": "per-h two-stage HGB: log-loss classifier for P(sale) + HGB on "
             "log1p(non-zero sizes); point = p_hat x (exp(y_reg) - 1), zero-corrected on the "
             "selection origins (identity / scalar / isotonic — whichever wins there)",
+            "lgbm_tweedie": "global LightGBM with the tweedie objective (variance power "
+            "1.5), series identity as hi/lo categoricals; lr/leaves/min_child_samples tuned "
+            "on the selection origins via a seeded capped Optuna study (hpo.tune_multistep_lgbm)",
+            "lgbm_poisson": "global LightGBM with the poisson count objective — same "
+            "features, same tuning contract as lgbm_tweedie",
+            "hurdle_lgbm": "the two-stage hurdle on LightGBM halves (classifier x "
+            "log1p-size regressor), same raw point math and the same selection-origin "
+            "zero-correction as hurdle_hgb",
+            "peak_weighted_hgb": "the HGB hurdle pair fit with sample weights 2-3 on each "
+            "series' top-decile demand days; the weight is chosen on the selection origins, "
+            "then the same zero-correction applies",
+            "ensemble_convex": "per-series convex blend w x routed + (1 - w) x best_ml "
+            "(w in {0, 0.1, ..., 1}, best_ml = the per-series best ML candidate, both "
+            "chosen on the selection origins; no refits)",
         },
         "origins": {
             "n_origins": len(origins),
@@ -1655,17 +2343,25 @@ def _assemble_block(
         },
         "routing": {
             "rule": "per-series routing on the selection origins ONLY: sparse (ADI >= 1.32) "
-            "series choose among zero/seasonal_naive/Croston/SBA/TSB/hgb_tweedie/hurdle_hgb; "
-            "smooth/erratic series choose among direct_hgb/hgb_tweedie/hurdle_hgb",
+            "series choose among zero/seasonal_naive/Croston/SBA/TSB plus the six "
+            "peak-capable ML candidates; smooth/erratic series choose among direct_hgb "
+            "plus the same ML pool",
             "method_choices": routing_choices,
             "pool_sparse": list((*STATISTICAL_METHODS, *ML_SPARSE)),
             "pool_dense": list(("direct_hgb", *ML_SPARSE)),
             "hurdle_correction": correction,
+            "peak_weight_choice": pw_choice,
+            "ensemble": {
+                k: v
+                for k, v in ens.items()
+                if k not in ("ml_choice", "weights")  # numpy arrays, not JSON-safe
+            },
             "per_class": {cls: entry["routing"] for cls, entry in bootstrap["per_class"].items()},
         },
         "headline_per_class": headline,
         "candidate_comparison": _candidate_comparison(cells, config),
         "peak_capture": peak,
+        "win_rates": win_rates,
         "per_horizon": {str(h): per_horizon[h] for h in horizons},
         "horizon_growth": growth,
         "overall_mae_test": overall,
@@ -1695,16 +2391,21 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
             "earlier origins select (routing + conformal calibration) only"
         ),
         "selection_rule": "per-series routing method = lowest summed |error| over the "
-        "selection origins: sparse series among zero/seasonal_naive/Croston/SBA/TSB/"
-        "hgb_tweedie/hurdle_hgb (direct_hgb ineligible — the wave-19 sparse finding); "
-        "smooth/erratic series among direct_hgb/hgb_tweedie/hurdle_hgb; never reads test "
-        "actuals (property-tested by shuffling the test origins' actuals)",
-        "feature_semantics": "direct per-horizon models: calendar of the target date + "
-        "peak block at target-h (rolling mean/max over 7/14/28d windows ending at target-h, "
-        "days-since-last-nonzero, 28d non-zero-day count, 28d peak ratio) + lags lag_h, "
-        "lag_{h+7}, lag_{h+14} (every feature >= h days old relative to the target — no "
-        "actual within h days of the target is referenced); training rows use targets "
-        "<= the origin only",
+        "selection origins: sparse series among zero/seasonal_naive/Croston/SBA/TSB plus "
+        "the six ML candidates (direct_hgb ineligible — the wave-19 sparse finding); "
+        "smooth/erratic series among direct_hgb plus the same ML pool; the convex-ensemble "
+        "weight and the peak-weighted hurdle's sample weight are chosen on the same "
+        "selection origins; never reads test actuals (property-tested by shuffling the "
+        "test origins' actuals)",
+        "feature_semantics": "direct per-horizon models: calendar of the target date (incl. "
+        "is_month_end / week_of_month, the wholesale trading-cycle hypothesis) + peak block "
+        "at target-h (rolling mean/max over 7/14/28d windows ending at target-h, "
+        "days-since-last-nonzero, 28d non-zero-day count, 28d peak ratio) + price block at "
+        "target-h (price_asof, price_ratio_28d, days_since_price_change, price_drop — the "
+        "B2B promo proxy; neutral constants when the panel has no price column) + lags "
+        "lag_h, lag_{h+7}, lag_{h+14} (every demand/price feature >= h days old relative "
+        "to the target — no actual within h days of the target is referenced, taint-tested "
+        "for units AND price); training rows use targets <= the origin only",
         "uncertainty": "per-horizon split-conformal (learner rows and the peak-capable "
         "candidates' own point forecasts) and P(sale)+quantile ladder (sparse rows), both "
         "calibrated on selection origins",
@@ -1727,6 +2428,10 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
             "peak_recall": "per scored window, the share of the window's top-5 actual days "
             "whose day ranks in the forecast's own top-5; pooled per class as the mean "
             "over windows",
+            "win_rate": "per class and horizon: the share of series whose summed |error| "
+            "over the scored test origins at that h is strictly below the seasonal_naive "
+            "floor's; 95% CI = cluster bootstrap over series (one shared index draw per "
+            "replication across candidates)",
         },
         "candidates": list(CANDIDATES),
     }
@@ -1953,6 +2658,7 @@ def _figures(
     peak_fig = _figure_peak_capture(block)
     candidate_fig = _figure_candidate_comparison(block)
     scatter_fig = _figure_peak_day_scatter(cells, test, horizons, n_series)
+    win_fig = _figure_win_rates(block)
 
     return {
         "multistep_error_vs_horizon": error_fig,
@@ -1962,7 +2668,67 @@ def _figures(
         "multistep_peak_capture": peak_fig,
         "multistep_candidate_comparison": candidate_fig,
         "multistep_peak_day_scatter": scatter_fig,
+        "multistep_win_rates": win_fig,
     }
+
+
+def _figure_win_rates(block: dict[str, Any]) -> go.Figure:
+    """Per-series beats-floor win rates (wave 21 — the "EVERY time series"
+    metric): share of series in each class beating the seasonal-naive floor
+    per candidate at h=7 and h=14, with the cluster-bootstrap CI whiskers."""
+    wr = block["win_rates"]["per_class"]
+    classes_sorted = sorted(wr)
+    fig = make_subplots(
+        rows=len(classes_sorted),
+        cols=2,
+        subplot_titles=("win rate vs floor at h=7 (share of series)", "at h=14"),
+        row_titles=classes_sorted,
+    )
+    for row, cls in enumerate(classes_sorted, start=1):
+        for col, h in enumerate((7, 14), start=1):
+            key = str(h)
+            if key not in wr[cls]["per_horizon"]:
+                continue
+            entry = wr[cls]["per_horizon"][key]
+            for cand in block["win_rates"]["candidates"]:
+                item = entry[cand]
+                color = "#2dd4bf" if cand == "routed" else "#64748b"
+                fig.add_bar(
+                    x=[f"{cls}<br>{cand}"],
+                    y=[item["win_rate"]],
+                    name=cand,
+                    marker_color=color,
+                    legendgroup=cand,
+                    showlegend=row == 1 and col == 1,
+                    row=row,
+                    col=col,
+                )
+                fig.add_scatter(
+                    x=[f"{cls}<br>{cand}"],
+                    y=[item["win_rate"]],
+                    name="95% CI",
+                    mode="markers",
+                    marker={"color": "#fbbf24", "size": 4},
+                    error_y={
+                        "type": "data",
+                        "array": [item["ci95"][1] - item["win_rate"]],
+                        "arrayminus": [item["win_rate"] - item["ci95"][0]],
+                    },
+                    showlegend=False,
+                    row=row,
+                    col=col,
+                )
+    fig.update_layout(
+        title="Per-series beats-floor win rate per class (95% cluster-bootstrap CI)",
+        barmode="group",
+    )
+    add_takeaway(
+        fig,
+        "the 'improve EVERY series' metric: pooled MAE can fall while most series lose — "
+        "this panel counts, per class, how many series actually beat the seasonal-naive "
+        "floor per candidate and horizon",
+    )
+    return apply_theme(fig)
 
 
 def _figure_peak_capture(block: dict[str, Any]) -> go.Figure:
@@ -2037,15 +2803,15 @@ def _figure_peak_capture(block: dict[str, Any]) -> go.Figure:
 
 
 def _figure_candidate_comparison(block: dict[str, Any]) -> go.Figure:
-    """Pooled-over-h MAE per class for the peak-capable candidates with the
+    """Pooled-over-h MAE per class for every ML/ensemble candidate with the
     gap CI vs the routed pipeline."""
     comp_block = block["candidate_comparison"]["per_class"]
+    comp_cands = tuple(block["candidate_comparison"]["candidates"])
     fig = make_subplots(
         rows=1,
         cols=2,
         subplot_titles=("pooled MAE, all horizons (units)", "candidate minus routed MAE (95% CI)"),
     )
-    comp_cands = ("hgb_tweedie", "hurdle_hgb")
     for cls in sorted(comp_block):
         entry = comp_block[cls]
         x_pos = f"{cls}"
@@ -2099,13 +2865,13 @@ def _figure_candidate_comparison(block: dict[str, Any]) -> go.Figure:
         line={"dash": "dot", "color": "#fbbf24"},
     )
     fig.update_layout(
-        title="Peak-capable candidates vs the routed pipeline — pooled multi-step MAE",
+        title="ML + ensemble candidates vs the routed pipeline — pooled multi-step MAE",
         barmode="group",
     )
     add_takeaway(
         fig,
-        "right panel: tweedie/hurdle MAE minus routed MAE with 95% paired bootstrap CIs — "
-        "negative means the peak-capable candidate beats the committed router on pooled MAE",
+        "right panel: candidate MAE minus routed MAE with 95% paired bootstrap CIs — "
+        "negative means the candidate beats the committed router on pooled MAE",
     )
     return apply_theme(fig)
 
@@ -2118,14 +2884,17 @@ def _figure_peak_day_scatter(
     candidate's y=0 row is the point of the figure)."""
     lumpy_mask = cells["class"] == "lumpy"
     has_lumpy = bool(lumpy_mask.any())
+    n_cand = len(PEAK_CANDIDATES)
+    n_cols = 3
+    n_rows = math.ceil(n_cand / n_cols)
     fig = make_subplots(
-        rows=2,
-        cols=2,
+        rows=n_rows,
+        cols=n_cols,
         subplot_titles=tuple(f"{c} (lumpy peak days)" for c in PEAK_CANDIDATES),
     )
     if has_lumpy:
         for pos, cand in enumerate(PEAK_CANDIDATES, start=1):
-            row, col = (pos - 1) // 2 + 1, (pos - 1) % 2 + 1
+            row, col = (pos - 1) // n_cols + 1, (pos - 1) % n_cols + 1
             actual, pred = _peak_day_pairs(cells, test, horizons, n_series, cand)
             fig.add_scatter(
                 x=actual,

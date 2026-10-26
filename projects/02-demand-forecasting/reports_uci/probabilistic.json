@@ -91,29 +91,29 @@
     "conformal_widths_by_h": {
       "1": 0.0,
       "2": 89.60000000000005,
-      "3": 115.0,
-      "4": 151.20000000000002,
+      "3": 114.20000000000002,
+      "4": 148.20000000000002,
       "5": 117.80000000000007,
-      "6": 133.40000000000003,
-      "7": 124.20000000000002,
+      "6": 131.40000000000003,
+      "7": 116.80000000000007,
       "8": 0.0,
       "9": 87.40000000000003,
       "10": 110.20000000000002,
       "11": 164.60000000000005,
       "12": 120.20000000000002,
       "13": 135.40000000000003,
-      "14": 121.60000000000005
+      "14": 110.78335398225724
     },
     "per_horizon": {
       "1": {
-        "coverage": 1.0,
-        "avg_width": 4.262269372693728,
+        "coverage": 0.9930811808118081,
+        "avg_width": 4.261086577887429,
         "calibration_verdict": "conservative",
-        "learner_coverage": 1.0,
+        "learner_coverage": 0.5,
         "sparse_coverage": 1.0,
         "pinball_p10": 0.0,
-        "pinball_p50": 0.0,
-        "pinball_p90": 0.17211147532333343
+        "pinball_p50": 0.3527401467417487,
+        "pinball_p90": 0.07227891469832952
       },
       "2": {
         "coverage": 0.926429889298893,
@@ -123,27 +123,27 @@
         "sparse_coverage": 0.9275023386342376,
         "pinball_p10": 4.566666666666666,
         "pinball_p50": 22.833333333333332,
-        "pinball_p90": 9.110883886834154
+        "pinball_p90": 9.06195395250257
       },
       "3": {
         "coverage": 0.9098247232472325,
-        "avg_width": 5.853597785977861,
+        "avg_width": 5.976140129407463,
         "calibration_verdict": "conservative",
         "learner_coverage": 0.85,
         "sparse_coverage": 0.9106641721234799,
         "pinball_p10": 6.398333333333335,
-        "pinball_p50": 31.991666666666667,
-        "pinball_p90": 18.692505030753004
+        "pinball_p50": 29.882615421359844,
+        "pinball_p90": 18.31458171087828
       },
       "4": {
         "coverage": 0.8879151291512916,
-        "avg_width": 6.354520295202954,
+        "avg_width": 6.3130073800738025,
         "calibration_verdict": "conservative",
         "learner_coverage": 0.6333333333333333,
         "sparse_coverage": 0.8914873713751169,
         "pinball_p10": 15.92333333333333,
         "pinball_p50": 79.61666666666666,
-        "pinball_p90": 49.222304235067874
+        "pinball_p90": 47.2789284290129
       },
       "5": {
         "coverage": 0.911669741697417,
@@ -153,37 +153,37 @@
         "sparse_coverage": 0.9148737137511693,
         "pinball_p10": 11.091666666666669,
         "pinball_p50": 55.458333333333336,
-        "pinball_p90": 40.162159002677555
+        "pinball_p90": 40.15473631276348
       },
       "6": {
-        "coverage": 0.8925276752767528,
-        "avg_width": 6.108210332103322,
+        "coverage": 0.8929889298892989,
+        "avg_width": 6.395128312558806,
         "calibration_verdict": "conservative",
-        "learner_coverage": 0.6666666666666666,
+        "learner_coverage": 0.7,
         "sparse_coverage": 0.8956969130028064,
         "pinball_p10": 21.814999999999998,
-        "pinball_p50": 109.075,
-        "pinball_p90": 108.20540064413302
+        "pinball_p50": 100.87411491349691,
+        "pinball_p90": 108.14433321087174
       },
       "7": {
         "coverage": 0.9049815498154982,
-        "avg_width": 5.980904059040593,
+        "avg_width": 6.168216680299576,
         "calibration_verdict": "conservative",
         "learner_coverage": 0.9,
         "sparse_coverage": 0.9050514499532273,
         "pinball_p10": 6.415000000000002,
-        "pinball_p50": 32.075,
-        "pinball_p90": 20.991265497932456
+        "pinball_p50": 28.25357880598763,
+        "pinball_p90": 21.319314565684447
       },
       "8": {
-        "coverage": 1.0,
+        "coverage": 0.996540590405904,
         "avg_width": 4.262269372693728,
         "calibration_verdict": "conservative",
-        "learner_coverage": 1.0,
+        "learner_coverage": 0.75,
         "sparse_coverage": 1.0,
         "pinball_p10": 0.0,
-        "pinball_p50": 0.0,
-        "pinball_p90": 0.06077679855774132
+        "pinball_p50": 0.7247311014101292,
+        "pinball_p90": 0.18939458560842073
       },
       "9": {
         "coverage": 0.9245848708487084,
@@ -193,7 +193,7 @@
         "sparse_coverage": 0.9253975678203928,
         "pinball_p10": 4.118333333333333,
         "pinball_p50": 20.591666666666665,
-        "pinball_p90": 8.589844967310626
+        "pinball_p90": 8.433207340857317
       },
       "10": {
         "coverage": 0.8987546125461254,
@@ -203,7 +203,7 @@
         "sparse_coverage": 0.9008419083255379,
         "pinball_p10": 7.9433333333333325,
         "pinball_p50": 39.71666666666667,
-        "pinball_p90": 20.244725049412963
+        "pinball_p90": 20.91205226902606
       },
       "11": {
         "coverage": 0.8851476014760148,
@@ -213,228 +213,600 @@
         "sparse_coverage": 0.887043966323667,
         "pinball_p10": 14.275,
         "pinball_p50": 71.375,
-        "pinball_p90": 42.34124564664528
+        "pinball_p90": 42.194665511307484
       },
       "12": {
-        "coverage": 0.9132841328413284,
-        "avg_width": 5.925553505535057,
+        "coverage": 0.9137453874538746,
+        "avg_width": 6.070116284593762,
         "calibration_verdict": "conservative",
-        "learner_coverage": 0.6666666666666666,
+        "learner_coverage": 0.7,
         "sparse_coverage": 0.9167446211412535,
         "pinball_p10": 14.178333333333336,
-        "pinball_p50": 70.89166666666667,
-        "pinball_p90": 48.58894016827272
+        "pinball_p50": 65.70935035780266,
+        "pinball_p90": 49.42132578598773
       },
       "13": {
-        "coverage": 0.9003690036900369,
-        "avg_width": 6.135885608856089,
+        "coverage": 0.9010608856088561,
+        "avg_width": 6.586651361634615,
         "calibration_verdict": "conservative",
-        "learner_coverage": 0.6666666666666666,
+        "learner_coverage": 0.7166666666666667,
         "sparse_coverage": 0.9036482694106641,
         "pinball_p10": 22.645,
-        "pinball_p50": 113.225,
-        "pinball_p90": 111.1477480212247
+        "pinball_p50": 100.56715646579308,
+        "pinball_p90": 108.02187781790256
       },
       "14": {
-        "coverage": 0.9089022140221402,
-        "avg_width": 5.944926199261994,
+        "coverage": 0.9091328413284133,
+        "avg_width": 6.093089346055466,
         "calibration_verdict": "conservative",
-        "learner_coverage": 0.9166666666666666,
+        "learner_coverage": 0.9333333333333333,
         "sparse_coverage": 0.9087932647333957,
         "pinball_p10": 5.763333333333334,
-        "pinball_p50": 28.816666666666666,
-        "pinball_p90": 23.13975477543388
+        "pinball_p50": 25.401174860751,
+        "pinball_p90": 22.8803402595284
       }
     },
     "candidate_bands": {
       "hgb_tweedie": {
         "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
         "conformal_widths_by_h": {
-          "1": 0.41770745922078895,
-          "2": 1.6117163603982088,
-          "3": 3.6252261850848497,
-          "4": 3.764240342203838,
-          "5": 3.9849324351403865,
-          "6": 3.910047537697063,
-          "7": 3.307186852108756,
-          "8": 0.5039171823581231,
-          "9": 1.777472808545226,
-          "10": 4.026647068572468,
-          "11": 3.9677465489426345,
-          "12": 4.270578580522876,
-          "13": 3.96560961521349,
-          "14": 3.6532166026762956
+          "1": 0.46027075020435104,
+          "2": 1.4634529079976335,
+          "3": 3.6640545066467647,
+          "4": 3.8585698359300036,
+          "5": 3.9189727922211444,
+          "6": 3.768843664577409,
+          "7": 3.3196242063149395,
+          "8": 0.48379569251174176,
+          "9": 1.745368245061203,
+          "10": 4.000050725791806,
+          "11": 3.9132950784599587,
+          "12": 3.9595280909488126,
+          "13": 3.89656877579966,
+          "14": 3.5215233586720682
         },
         "per_horizon": {
           "1": {
-            "coverage": 0.9884686346863468,
-            "avg_width": 4.2737442686510905,
+            "coverage": 0.9877767527675276,
+            "avg_width": 4.274922718199447,
             "calibration_verdict": "conservative"
           },
           "2": {
             "coverage": 0.9158210332103321,
-            "avg_width": 4.306874069014712,
+            "avg_width": 4.302770836937205,
             "calibration_verdict": "conservative"
           },
           "3": {
             "coverage": 0.8980627306273062,
-            "avg_width": 4.36259851065733,
+            "avg_width": 4.363673095202403,
             "calibration_verdict": "conservative"
           },
           "4": {
-            "coverage": 0.8798431734317343,
-            "avg_width": 4.366445765928153,
+            "coverage": 0.8791512915129152,
+            "avg_width": 4.369056360772971,
             "calibration_verdict": "conservative"
           },
           "5": {
             "coverage": 0.9031365313653137,
-            "avg_width": 4.372553480677318,
+            "avg_width": 4.370728029305014,
             "calibration_verdict": "conservative"
           },
           "6": {
-            "coverage": 0.8837638376383764,
-            "avg_width": 4.370481020415971,
+            "coverage": 0.8833025830258303,
+            "avg_width": 4.366573164148823,
             "calibration_verdict": "conservative"
           },
           "7": {
-            "coverage": 0.8929889298892989,
-            "avg_width": 4.353796684098952,
+            "coverage": 0.8927583025830258,
+            "avg_width": 4.354140891318679,
             "calibration_verdict": "conservative"
           },
           "8": {
-            "coverage": 0.9903136531365314,
-            "avg_width": 4.2755339281189455,
+            "coverage": 0.9912361623616236,
+            "avg_width": 4.274606771449616,
             "calibration_verdict": "conservative"
           },
           "9": {
-            "coverage": 0.9135147601476015,
-            "avg_width": 4.3114614245907354,
+            "coverage": 0.9137453874538746,
+            "avg_width": 4.310572921911289,
             "calibration_verdict": "conservative"
           },
           "10": {
             "coverage": 0.8895295202952029,
-            "avg_width": 4.373707944702192,
+            "avg_width": 4.372971883555125,
             "calibration_verdict": "conservative"
           },
           "11": {
-            "coverage": 0.8754612546125461,
-            "avg_width": 4.372077856520554,
+            "coverage": 0.8763837638376384,
+            "avg_width": 4.370570897005351,
             "calibration_verdict": "conservative"
           },
           "12": {
-            "coverage": 0.9056734317343174,
-            "avg_width": 4.38045881680414,
+            "coverage": 0.9052121771217713,
+            "avg_width": 4.371850408421094,
             "calibration_verdict": "conservative"
           },
           "13": {
-            "coverage": 0.8916051660516605,
-            "avg_width": 4.372018716288197,
+            "coverage": 0.8920664206642066,
+            "avg_width": 4.370107991950177,
             "calibration_verdict": "conservative"
           },
           "14": {
-            "coverage": 0.897140221402214,
-            "avg_width": 4.3633731532106,
+            "coverage": 0.8964483394833949,
+            "avg_width": 4.359728506236313,
             "calibration_verdict": "conservative"
           }
         },
-        "pooled_coverage": 0.9089516341591988,
+        "pooled_coverage": 0.9089022140221406,
         "pooled_verdict": "conservative"
       },
       "hurdle_hgb": {
         "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
         "conformal_widths_by_h": {
-          "1": 0.07090528355372368,
-          "2": 1.592462664856731,
-          "3": 2.8230358396829733,
-          "4": 2.9241422546415263,
-          "5": 2.7954188348024593,
-          "6": 2.9950371187412674,
-          "7": 2.24802963105886,
-          "8": 0.07216606532907692,
-          "9": 1.5904516848729382,
-          "10": 2.816203047551815,
-          "11": 2.88397767859361,
-          "12": 2.8714420076062206,
-          "13": 2.8785747390125325,
-          "14": 2.3984819803231723
+          "1": 0.08239598733329034,
+          "2": 1.5608025935061407,
+          "3": 2.848455904759731,
+          "4": 2.852256210496146,
+          "5": 2.688793570224182,
+          "6": 2.8536018370109093,
+          "7": 2.1451976725240924,
+          "8": 0.08668589767370612,
+          "9": 1.6597279473868585,
+          "10": 2.628782982995045,
+          "11": 2.9097951877302473,
+          "12": 3.0093762141913434,
+          "13": 3.0324179332765406,
+          "14": 2.4563263345405915
         },
         "per_horizon": {
           "1": {
-            "coverage": 0.9873154981549815,
-            "avg_width": 4.264206588737753,
+            "coverage": 0.9875461254612546,
+            "avg_width": 4.264512885033296,
             "calibration_verdict": "conservative"
           },
           "2": {
-            "coverage": 0.9158210332103321,
-            "avg_width": 4.306341217662088,
+            "coverage": 0.9160516605166051,
+            "avg_width": 4.3054650164254475,
             "calibration_verdict": "conservative"
           },
           "3": {
-            "coverage": 0.8992158671586716,
-            "avg_width": 4.340397670839935,
+            "coverage": 0.8994464944649446,
+            "avg_width": 4.341101178176008,
             "calibration_verdict": "conservative"
           },
           "4": {
-            "coverage": 0.8798431734317343,
-            "avg_width": 4.343195818855393,
+            "coverage": 0.8803044280442804,
+            "avg_width": 4.341206352689008,
             "calibration_verdict": "conservative"
           },
           "5": {
-            "coverage": 0.9031365313653137,
-            "avg_width": 4.339633362586785,
+            "coverage": 0.9035977859778598,
+            "avg_width": 4.3366824788807445,
             "calibration_verdict": "conservative"
           },
           "6": {
-            "coverage": 0.8837638376383764,
-            "avg_width": 4.345157853839704,
+            "coverage": 0.8839944649446494,
+            "avg_width": 4.341243593275211,
             "calibration_verdict": "conservative"
           },
           "7": {
             "coverage": 0.8927583025830258,
-            "avg_width": 4.3244842148817035,
+            "avg_width": 4.321638311970226,
             "calibration_verdict": "conservative"
           },
           "8": {
-            "coverage": 0.9863929889298892,
-            "avg_width": 4.264260161987553,
+            "coverage": 0.9868542435424354,
+            "avg_width": 4.264662047847911,
             "calibration_verdict": "conservative"
           },
           "9": {
-            "coverage": 0.9142066420664207,
-            "avg_width": 4.306285563234492,
+            "coverage": 0.9135147601476015,
+            "avg_width": 4.308202802971962,
             "calibration_verdict": "conservative"
           },
           "10": {
-            "coverage": 0.889760147601476,
-            "avg_width": 4.340208571426712,
+            "coverage": 0.8892988929889298,
+            "avg_width": 4.3350216692710815,
             "calibration_verdict": "conservative"
           },
           "11": {
             "coverage": 0.8759225092250923,
-            "avg_width": 4.342084253097611,
+            "avg_width": 4.3427987598080335,
             "calibration_verdict": "conservative"
           },
           "12": {
             "coverage": 0.9047509225092251,
-            "avg_width": 4.341737324933753,
+            "avg_width": 4.34555469227467,
             "calibration_verdict": "conservative"
           },
           "13": {
             "coverage": 0.8916051660516605,
-            "avg_width": 4.341934725249425,
+            "avg_width": 4.346192378227212,
             "calibration_verdict": "conservative"
           },
           "14": {
-            "coverage": 0.896909594095941,
-            "avg_width": 4.328648025285697,
+            "coverage": 0.897140221402214,
+            "avg_width": 4.330248883797251,
             "calibration_verdict": "conservative"
           }
         },
-        "pooled_coverage": 0.9086715867158671,
+        "pooled_coverage": 0.908770426989984,
+        "pooled_verdict": "conservative"
+      },
+      "lgbm_tweedie": {
+        "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
+        "conformal_widths_by_h": {
+          "1": 0.0003448001070743151,
+          "2": 0.3825713673266157,
+          "3": 1.284630834720564,
+          "4": 1.7520826281562891,
+          "5": 1.662456480134032,
+          "6": 1.5305842509111633,
+          "7": 1.166603328298959,
+          "8": 0.0002498848563914323,
+          "9": 0.3713720275388255,
+          "10": 1.4065434185869925,
+          "11": 1.7300538153316718,
+          "12": 1.5193089725427138,
+          "13": 1.7391716188138857,
+          "14": 1.114788796715028
+        },
+        "per_horizon": {
+          "1": {
+            "coverage": 0.9900830258302583,
+            "avg_width": 4.262278257542383,
+            "calibration_verdict": "conservative"
+          },
+          "2": {
+            "coverage": 0.915129151291513,
+            "avg_width": 4.272857141162177,
+            "calibration_verdict": "conservative"
+          },
+          "3": {
+            "coverage": 0.8980627306273062,
+            "avg_width": 4.297821886569759,
+            "calibration_verdict": "conservative"
+          },
+          "4": {
+            "coverage": 0.8796125461254612,
+            "avg_width": 4.31075874432167,
+            "calibration_verdict": "conservative"
+          },
+          "5": {
+            "coverage": 0.9026752767527675,
+            "avg_width": 4.3082783158708695,
+            "calibration_verdict": "conservative"
+          },
+          "6": {
+            "coverage": 0.8835332103321033,
+            "avg_width": 4.3046287154311225,
+            "calibration_verdict": "conservative"
+          },
+          "7": {
+            "coverage": 0.8927583025830258,
+            "avg_width": 4.294555442665101,
+            "calibration_verdict": "conservative"
+          },
+          "8": {
+            "coverage": 0.9877767527675276,
+            "avg_width": 4.26227611996588,
+            "calibration_verdict": "conservative"
+          },
+          "9": {
+            "coverage": 0.9125922509225092,
+            "avg_width": 4.272547196334101,
+            "calibration_verdict": "conservative"
+          },
+          "10": {
+            "coverage": 0.8888376383763837,
+            "avg_width": 4.301195851067907,
+            "calibration_verdict": "conservative"
+          },
+          "11": {
+            "coverage": 0.875,
+            "avg_width": 4.310149090830214,
+            "calibration_verdict": "conservative"
+          },
+          "12": {
+            "coverage": 0.9040590405904059,
+            "avg_width": 4.30431666898181,
+            "calibration_verdict": "conservative"
+          },
+          "13": {
+            "coverage": 0.8913745387453874,
+            "avg_width": 4.310401428564961,
+            "calibration_verdict": "conservative"
+          },
+          "14": {
+            "coverage": 0.8964483394833949,
+            "avg_width": 4.293121461163701,
+            "calibration_verdict": "conservative"
+          }
+        },
+        "pooled_coverage": 0.9084244860305747,
+        "pooled_verdict": "conservative"
+      },
+      "lgbm_poisson": {
+        "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
+        "conformal_widths_by_h": {
+          "1": 0.44148430180496673,
+          "2": 12.0,
+          "3": 4.368176934919233,
+          "4": 0.41874035320507386,
+          "5": 7.403949974633117,
+          "6": 12.0,
+          "7": 12.0,
+          "8": 0.0034455781458218072,
+          "9": 0.9801467817751559,
+          "10": 23.999969773013625,
+          "11": 4.473732476542455,
+          "12": 2.8759658211700554,
+          "13": 10.0,
+          "14": 12.0
+        },
+        "per_horizon": {
+          "1": {
+            "coverage": 0.9995387453874539,
+            "avg_width": 4.268717124507184,
+            "calibration_verdict": "conservative"
+          },
+          "2": {
+            "coverage": 0.9188191881918819,
+            "avg_width": 4.501733266995933,
+            "calibration_verdict": "conservative"
+          },
+          "3": {
+            "coverage": 0.8989852398523985,
+            "avg_width": 4.364474108020052,
+            "calibration_verdict": "conservative"
+          },
+          "4": {
+            "coverage": 0.8791512915129152,
+            "avg_width": 4.271654230070574,
+            "calibration_verdict": "conservative"
+          },
+          "5": {
+            "coverage": 0.904289667896679,
+            "avg_width": 4.393549313541082,
+            "calibration_verdict": "conservative"
+          },
+          "6": {
+            "coverage": 0.8844557195571956,
+            "avg_width": 4.561636187410574,
+            "calibration_verdict": "conservative"
+          },
+          "7": {
+            "coverage": 0.893219557195572,
+            "avg_width": 4.533491001773162,
+            "calibration_verdict": "conservative"
+          },
+          "8": {
+            "coverage": 0.9896217712177122,
+            "avg_width": 4.262353493356227,
+            "calibration_verdict": "conservative"
+          },
+          "9": {
+            "coverage": 0.9125922509225092,
+            "avg_width": 4.282305948624542,
+            "calibration_verdict": "conservative"
+          },
+          "10": {
+            "coverage": 0.8922970479704797,
+            "avg_width": 4.856114764774145,
+            "calibration_verdict": "conservative"
+          },
+          "11": {
+            "coverage": 0.8754612546125461,
+            "avg_width": 4.386081157099884,
+            "calibration_verdict": "conservative"
+          },
+          "12": {
+            "coverage": 0.904289667896679,
+            "avg_width": 4.329143008526564,
+            "calibration_verdict": "conservative"
+          },
+          "13": {
+            "coverage": 0.8929889298892989,
+            "avg_width": 4.466452472380186,
+            "calibration_verdict": "conservative"
+          },
+          "14": {
+            "coverage": 0.8992158671586716,
+            "avg_width": 4.501674288881684,
+            "calibration_verdict": "conservative"
+          }
+        },
+        "pooled_coverage": 0.9103518713758566,
+        "pooled_verdict": "conservative"
+      },
+      "hurdle_lgbm": {
+        "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
+        "conformal_widths_by_h": {
+          "1": 0.009956671931332862,
+          "2": 1.8443987070563717,
+          "3": 4.286105831671151,
+          "4": 4.046980024904192,
+          "5": 3.6529418938906946,
+          "6": 4.060283043400686,
+          "7": 2.6023694102569785,
+          "8": 0.010529218224621772,
+          "9": 1.7259701829009086,
+          "10": 4.234434574213179,
+          "11": 3.9445107951945415,
+          "12": 3.5207712733988794,
+          "13": 4.006541411488364,
+          "14": 2.7634078514468503
+        },
+        "per_horizon": {
+          "1": {
+            "coverage": 0.9880073800738007,
+            "avg_width": 4.262538224455224,
+            "calibration_verdict": "conservative"
+          },
+          "2": {
+            "coverage": 0.915359778597786,
+            "avg_width": 4.313313617353961,
+            "calibration_verdict": "conservative"
+          },
+          "3": {
+            "coverage": 0.9003690036900369,
+            "avg_width": 4.380720928543214,
+            "calibration_verdict": "conservative"
+          },
+          "4": {
+            "coverage": 0.8807656826568265,
+            "avg_width": 4.3742706648958745,
+            "calibration_verdict": "conservative"
+          },
+          "5": {
+            "coverage": 0.9038284132841329,
+            "avg_width": 4.363365550568933,
+            "calibration_verdict": "conservative"
+          },
+          "6": {
+            "coverage": 0.8842250922509225,
+            "avg_width": 4.374638829614412,
+            "calibration_verdict": "conservative"
+          },
+          "7": {
+            "coverage": 0.893450184501845,
+            "avg_width": 4.3342906663355265,
+            "calibration_verdict": "conservative"
+          },
+          "8": {
+            "coverage": 0.9870848708487084,
+            "avg_width": 4.262557781633124,
+            "calibration_verdict": "conservative"
+          },
+          "9": {
+            "coverage": 0.9132841328413284,
+            "avg_width": 4.310036075172535,
+            "calibration_verdict": "conservative"
+          },
+          "10": {
+            "coverage": 0.8904520295202952,
+            "avg_width": 4.379062338232287,
+            "calibration_verdict": "conservative"
+          },
+          "11": {
+            "coverage": 0.8756918819188192,
+            "avg_width": 4.371434800605016,
+            "calibration_verdict": "conservative"
+          },
+          "12": {
+            "coverage": 0.9040590405904059,
+            "avg_width": 4.359707692068236,
+            "calibration_verdict": "conservative"
+          },
+          "13": {
+            "coverage": 0.8922970479704797,
+            "avg_width": 4.373151515078092,
+            "calibration_verdict": "conservative"
+          },
+          "14": {
+            "coverage": 0.8978321033210332,
+            "avg_width": 4.338747449763291,
+            "calibration_verdict": "conservative"
+          }
+        },
+        "pooled_coverage": 0.9090504744333157,
+        "pooled_verdict": "conservative"
+      },
+      "peak_weighted_hgb": {
+        "band_type": "point \u00b1 q80 split-conformal width per horizon, calibrated on the selection origins, zero-clipped and sorted; sparse rows carry the P(sale)+quantile-ladder history band instead",
+        "conformal_widths_by_h": {
+          "1": 0.12577334519030267,
+          "2": 2.1530578743444857,
+          "3": 3.8702151147438313,
+          "4": 3.909926522618316,
+          "5": 3.803943935602369,
+          "6": 3.809706572305555,
+          "7": 3.0769140984246595,
+          "8": 0.11239844171333671,
+          "9": 2.2834634085864653,
+          "10": 4.075881823254316,
+          "11": 4.153706667332008,
+          "12": 3.9315236162839513,
+          "13": 3.780526668155491,
+          "14": 3.2171676681098815
+        },
+        "per_horizon": {
+          "1": {
+            "coverage": 0.9873154981549815,
+            "avg_width": 4.265712023399806,
+            "calibration_verdict": "conservative"
+          },
+          "2": {
+            "coverage": 0.915590405904059,
+            "avg_width": 4.321855845230937,
+            "calibration_verdict": "conservative"
+          },
+          "3": {
+            "coverage": 0.8994464944649446,
+            "avg_width": 4.369378647087007,
+            "calibration_verdict": "conservative"
+          },
+          "4": {
+            "coverage": 0.8803044280442804,
+            "avg_width": 4.370477671290177,
+            "calibration_verdict": "conservative"
+          },
+          "5": {
+            "coverage": 0.9035977859778598,
+            "avg_width": 4.367544573863535,
+            "calibration_verdict": "conservative"
+          },
+          "6": {
+            "coverage": 0.8842250922509225,
+            "avg_width": 4.367704056429122,
+            "calibration_verdict": "conservative"
+          },
+          "7": {
+            "coverage": 0.8936808118081181,
+            "avg_width": 4.347423821912122,
+            "calibration_verdict": "conservative"
+          },
+          "8": {
+            "coverage": 0.9873154981549815,
+            "avg_width": 4.265326710326921,
+            "calibration_verdict": "conservative"
+          },
+          "9": {
+            "coverage": 0.9137453874538746,
+            "avg_width": 4.325464854481177,
+            "calibration_verdict": "conservative"
+          },
+          "10": {
+            "coverage": 0.8895295202952029,
+            "avg_width": 4.375070530163867,
+            "calibration_verdict": "conservative"
+          },
+          "11": {
+            "coverage": 0.8756918819188192,
+            "avg_width": 4.3772243542619576,
+            "calibration_verdict": "conservative"
+          },
+          "12": {
+            "coverage": 0.9052121771217713,
+            "avg_width": 4.371075376834427,
+            "calibration_verdict": "conservative"
+          },
+          "13": {
+            "coverage": 0.8916051660516605,
+            "avg_width": 4.366896494506149,
+            "calibration_verdict": "conservative"
+          },
+          "14": {
+            "coverage": 0.8976014760147601,
+            "avg_width": 4.351305378268724,
+            "calibration_verdict": "conservative"
+          }
+        },
+        "pooled_coverage": 0.9089186874011598,
         "pooled_verdict": "conservative"
       }
     },
-    "pooled_coverage": 0.9188850817079599,
+    "pooled_coverage": 0.9182755666842384,
     "pooled_verdict": "conservative",
     "sparse_band": {
       "definition": "P(any sale) = share of non-zero demand days in the training history up to the origin; quantile ladder over the same history",

@@ -50,6 +50,12 @@ curves; v3 replaces the catalog with the multi-step experiment:
   series (one real direct-h point per window day — no interpolated display
   points anywhere), learner p10/p90 bands and sparse P(sale)+ladder bands cover
   the whole window, and ``horizon_growth`` spans h = 1..14;
+- revision 3.3 (additive over 3.2, wave 21): per-series ``models`` alias
+  entries cover every ML candidate the committed router may now pick (the
+  LightGBM family and the peak-weighted hurdle join the wave-20 pair), and the
+  experiment-wide ``win_rates`` block (per-class per-series beats-floor win
+  rates with cluster-bootstrap CIs) is carried straight from the committed
+  ``_multistep`` block — nothing v3.2 carries moves.
 - ``evaluation_metadata`` embeds the committed protocol-v2 block (20 weekly
   rolling origins, select-16/score-4, per-h direct models, the
   leakage-by-construction feature semantics) and ``dataset_metadata`` the
@@ -67,7 +73,7 @@ from typing import Any
 
 import numpy as np
 import polars as pl
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_config
 from portfolio_core.logging import get_logger
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
@@ -79,6 +85,7 @@ from demand_forecasting.intermittent import (
     classify_panel,
 )
 from demand_forecasting.multihorizon import (
+    COMPARISON_CANDIDATES,
     LADDER_LEVELS,
     ML_SPARSE,
     OriginScore,
@@ -87,8 +94,11 @@ from demand_forecasting.multihorizon import (
     _score_origin,
     _test_cells,
     apply_hurdle_correction,
+    choose_peak_weight,
+    ensemble_weights,
     multistep_origin_indices,
     panel_matrix,
+    panel_price_matrix,
     split_origins,
 )
 from demand_forecasting.probabilistic import TARGET_COVERAGE as _TARGET_COVERAGE
@@ -105,7 +115,7 @@ PAYLOAD_SCHEMA_VERSION = 3
 #       curve is a contiguous 14-day series (one real direct-h point per
 #       window day, no interpolated display points), bands/pinball/widths
 #       exist at every h, and `horizon_growth` spans 1..14.
-PAYLOAD_REVISION = "3.2"
+PAYLOAD_REVISION = "3.3"
 CATALOG_N = 100
 ORIGIN_HISTORY_DAYS = 60
 HORIZON_DAYS = 14
@@ -340,11 +350,11 @@ def _class_scoreboard(
 
 
 def _candidate_board(entry: dict[str, Any]) -> dict[str, Any]:
-    """The wave-20 peak-capable candidates per class, from the committed
+    """The peak-capable ML + ensemble candidates per class, from the committed
     headline rows: pooled MAE + the paired-bootstrap gaps vs routed and vs
     zero at each committed horizon."""
     board: dict[str, Any] = {}
-    for cand in ML_SPARSE:
+    for cand in COMPARISON_CANDIDATES:
         rows: dict[str, Any] = {}
         for key in ("h7", "h14"):
             row = entry.get(key)
@@ -511,6 +521,7 @@ def build_demo_payload(
 
     panel = pl.read_parquet(settings.data_dir / "panel.parquet")
     dates, series_ids, units = panel_matrix(panel)
+    price = panel_price_matrix(panel, dates, series_ids)
     cal = _calendar_features(dates)
     horizons = list(config.multistep_horizons)
     classes = classify_panel(units, series_ids)
@@ -544,19 +555,31 @@ def build_demo_payload(
             raise ValueError(f"committed routing table missing method for dense series {sid}")
         method_of[i] = m
 
-    # re-run every origin (scored origins also get the shock grid)
-    scores = Parallel(n_jobs=-2, backend="loky")(
-        delayed(_score_origin)(units, cal, o, horizons, config, SHOCK_FACTORS if o in test else ())
-        for o in origins
-    )
+    # re-run every origin (scored origins also get the shock grid);
+    # inner_max_num_threads=1 — workers are full-core already (see multihorizon)
+    with parallel_config("loky", inner_max_num_threads=1):
+        scores = Parallel(n_jobs=-2)(
+            delayed(_score_origin)(
+                units, cal, o, horizons, config, SHOCK_FACTORS if o in test else (), price
+            )
+            for o in origins
+        )
     by_origin = {s.origin: s for s in scores}
 
-    # the hurdle zero-correction is part of the committed candidate: re-derive
-    # it on the selection origins (deterministic) so the re-run cells match
+    # the peak-weight choice and the hurdle zero-correction are part of the
+    # committed candidates: re-derive them on the selection origins
+    # (deterministic) so the re-run cells match
+    choose_peak_weight(by_origin, selection, horizons, units)
     apply_hurdle_correction(by_origin, selection, horizons, units)
 
     # ---- drift guards: the re-run must reproduce the committed scalars ----
-    cells = _test_cells(by_origin, test, horizons, units, sparse, method_of)
+    ens = ensemble_weights(
+        by_origin, selection, horizons, units, sparse, method_of, len(series_ids)
+    )
+    ens_ml_idx = np.array([ML_SPARSE.index(str(m)) for m in ens["ml_choice"]])
+    cells = _test_cells(
+        by_origin, test, horizons, units, sparse, method_of, ens["weights"], ens_ml_idx
+    )
     widths = _drift_guard(ms, prob_ms, cells, by_origin, selection, horizons, units, sparse)
 
     # ---- catalog ----
@@ -634,6 +657,7 @@ def build_demo_payload(
         "class_scoreboard": scoreboard,
         "horizon_growth": growth,
         "peak_capture": ms["peak_capture"],
+        "win_rates": ms["win_rates"],
         "bands": {
             "target_coverage": prob_ms["target_coverage"],
             "band_types": prob_ms["band_types"],

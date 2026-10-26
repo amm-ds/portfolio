@@ -88,6 +88,30 @@ class MultistepTweedieConfig(PortfolioBaseModel):
         return self.model_dump()
 
 
+class MultistepLGBMConfig(PortfolioBaseModel):
+    """Multi-step LightGBM-candidate hyperparameters (wave 21).
+
+    Best of seeded capped Optuna studies on the multi-step SELECTION origins
+    (``hpo.tune_multistep_lgbm``, one study per objective — tweedie and
+    poisson share the tuning contract; lr/num_leaves/min_child_samples tuned,
+    n_estimators/reg_lambda fixed). params.yaml mirrors them. The objective
+    (tweedie variance power 1.5 / poisson) is fixed in multihorizon._fit_lgbm.
+    Defaults are the tweedie study's best (selection MAE 7.1265); the poisson
+    study landed lr 0.0887 / leaves 52 / min_child 190 (selection MAE 8.1220)
+    and shares these values per the tuning contract.
+    """
+
+    learning_rate: float = Field(default=0.27227020754653686, gt=0)
+    n_estimators: int = Field(default=217, ge=10)
+    num_leaves: int = Field(default=28, ge=2)
+    min_child_samples: int = Field(default=22, ge=1)
+    reg_lambda: float = Field(default=0.0002520721916536751, ge=0)
+
+    def estimator_kwargs(self) -> dict[str, Any]:
+        """Kwargs for :class:`~lightgbm.LGBMRegressor` (objective set by caller)."""
+        return self.model_dump()
+
+
 class LGBMTunedConfig(PortfolioBaseModel):
     """Production LightGBM hyperparameters — best of a seeded 25-trial study
     (CV mean MAE 8.4133, beats hgb_tuned's 8.5291); params.yaml mirrors them."""
@@ -127,6 +151,10 @@ class ForecastConfig(PortfolioBaseModel):
     multistep_tweedie: MultistepTweedieConfig = Field(
         default_factory=MultistepTweedieConfig,
         description="Multi-step tweedie-candidate params (selection-origin HPO, wave 20).",
+    )
+    multistep_lgbm: MultistepLGBMConfig = Field(
+        default_factory=MultistepLGBMConfig,
+        description="Multi-step LightGBM-candidate params (selection-origin HPO, wave 21).",
     )
     seed: int = Field(
         default=42, description="Mirror of DemandSettings.seed for estimators built from config."

@@ -19,6 +19,7 @@ from demand_forecasting.multihorizon import (
     _score_origin,
     _seasonal_naive_pred,
     multistep_origin_indices,
+    neutral_price_tensor,
     panel_matrix,
     peak_feature_tensor,
     run_multistep,
@@ -99,19 +100,20 @@ def test_horizon_features_ignore_actuals_within_h_days(mixed_panel: pl.DataFrame
     dates, _, units = panel_matrix(mixed_panel)
     cal = _calendar_features(dates)
     pf = peak_feature_tensor(units)
+    prf = neutral_price_tensor(units.shape[0], units.shape[1])
     origin = 60
     for h in (1, 7, 14):
         tainted = units.copy()
         tainted[origin + 1 : origin + h + 1] += 1000.0
         pf_taint = peak_feature_tensor(tainted)
         np.testing.assert_array_equal(pf[: origin + 1], pf_taint[: origin + 1])
-        x_clean, y_clean = _design_train(units, cal, pf, origin, h)
-        x_taint, y_taint = _design_train(tainted, cal, pf_taint, origin, h)
+        x_clean, y_clean = _design_train(units, cal, pf, prf, origin, h)
+        x_taint, y_taint = _design_train(tainted, cal, pf_taint, prf, origin, h)
         np.testing.assert_array_equal(x_clean, x_taint)
         np.testing.assert_array_equal(y_clean, y_taint)
         np.testing.assert_array_equal(
-            _design_pred(units, cal, pf, origin, h),
-            _design_pred(tainted, cal, pf_taint, origin, h),
+            _design_pred(units, cal, pf, prf, origin, h),
+            _design_pred(tainted, cal, pf_taint, prf, origin, h),
         )
 
 
@@ -140,10 +142,11 @@ def test_training_targets_never_exceed_the_origin(
     used are at least h days older than any training target."""
     dates, _, units = panel_matrix(mixed_panel)
     cal = _calendar_features(dates)
+    prf = neutral_price_tensor(units.shape[0], units.shape[1])
     for origin in (60, 80):
         for h in (1, 7, 14):
             pf = peak_feature_tensor(units)
-            x_train, y_train = _design_train(units, cal, pf, origin, h)
+            x_train, y_train = _design_train(units, cal, pf, prf, origin, h)
             # every y value must appear among units[0..origin]
             known = np.isin(y_train, units[: origin + 1])
             assert known.all()
@@ -205,7 +208,7 @@ def test_run_multistep_block_shape(mixed_panel: pl.DataFrame) -> None:
     assert sorted(block["horizon_growth"]["pooled"]["routed"]) == ["1", "14", "7"]
     # wave-20 peak-capable blocks present
     assert "hgb_tweedie" in block["candidates"] and "hurdle_hgb" in block["candidates"]
-    assert block["routing"]["hurdle_correction"]["chosen"] in (
+    assert block["routing"]["hurdle_correction"]["hurdle_hgb"]["chosen"] in (
         "identity",
         "scalar",
         "isotonic",
@@ -219,7 +222,21 @@ def test_run_multistep_block_shape(mixed_panel: pl.DataFrame) -> None:
         "multistep_peak_capture",
         "multistep_candidate_comparison",
         "multistep_peak_day_scatter",
+        "multistep_win_rates",
     }
+    # wave-21 candidates + blocks present
+    for cand in (
+        "lgbm_tweedie",
+        "lgbm_poisson",
+        "hurdle_lgbm",
+        "peak_weighted_hgb",
+        "ensemble_convex",
+    ):
+        assert cand in block["candidates"]
+        assert cand in block["candidate_comparison"]["per_class"]["lumpy"]
+    assert "win_rates" in block
+    assert block["win_rates"]["per_class"]["lumpy"]["n_series"] >= 1
+    assert block["routing"]["peak_weight_choice"]["chosen"] in (2.0, 3.0)
     # coverage table present with verdicts
     prob = result.probabilistic_block
     for h in ("1", "7", "14"):
@@ -255,8 +272,8 @@ def test_per_class_table_sums(mixed_panel: pl.DataFrame) -> None:
 def test_routing_uses_selection_origins_only(mixed_panel: pl.DataFrame) -> None:
     """Taint the LAST test window (permuting actuals across series) — that
     window is never a training row for any origin, so the fits are identical
-    and the routing choice, conformal widths and every selection-origin number
-    must not move, while the scored h=14 MAE does."""
+    and the routing choice, conformal widths, hurdle corrections, peak-weight
+    choice and ensemble weights must not move, while the scored h=14 MAE does."""
     dates, series_ids, units = panel_matrix(mixed_panel)
     origins = multistep_origin_indices(len(dates), MS_CONFIG)
     _, test = split_origins(origins, MS_CONFIG)
@@ -266,7 +283,11 @@ def test_routing_uses_selection_origins_only(mixed_panel: pl.DataFrame) -> None:
     block = result.block
     choices_before = dict(block["routing"]["method_choices"])
     widths_before = dict(result.probabilistic_block["conformal_widths_by_h"])
-    correction_before = dict(block["routing"]["hurdle_correction"]["selection_mae"])
+    correction_before = {
+        cand: dict(info["selection_mae"])
+        for cand, info in block["routing"]["hurdle_correction"].items()
+        if isinstance(info, dict) and "selection_mae" in info
+    }
 
     tainted_units = units.copy()
     last = test[-1]
@@ -276,12 +297,29 @@ def test_routing_uses_selection_origins_only(mixed_panel: pl.DataFrame) -> None:
     result2 = run_multistep(settings=_settings(), config=MS_CONFIG, panel=tainted_panel)
     assert result2.block["routing"]["method_choices"] == choices_before
     assert result2.probabilistic_block["conformal_widths_by_h"] == widths_before
-    # the hurdle zero-correction is chosen on selection origins only too
+    # the hurdle zero-corrections are chosen on selection origins only too
+    for cand in ("hurdle_hgb", "hurdle_lgbm", "peak_weighted_hgb"):
+        assert (
+            result2.block["routing"]["hurdle_correction"][cand]["chosen"]
+            == block["routing"]["hurdle_correction"][cand]["chosen"]
+        )
+        assert (
+            result2.block["routing"]["hurdle_correction"][cand]["selection_mae"]
+            == correction_before[cand]
+        )
+    # the peak-weight choice and the ensemble plan are selection-only as well
     assert (
-        result2.block["routing"]["hurdle_correction"]["chosen"]
-        == block["routing"]["hurdle_correction"]["chosen"]
+        result2.block["routing"]["peak_weight_choice"]["chosen"]
+        == block["routing"]["peak_weight_choice"]["chosen"]
     )
-    assert result2.block["routing"]["hurdle_correction"]["selection_mae"] == correction_before
+    assert (
+        result2.block["routing"]["ensemble"]["weight_counts"]
+        == block["routing"]["ensemble"]["weight_counts"]
+    )
+    assert (
+        result2.block["routing"]["ensemble"]["ml_choice_counts"]
+        == block["routing"]["ensemble"]["ml_choice_counts"]
+    )
     # scored MAEs DID move (sanity: the taint actually changed the window)
     h14 = "14"
     assert (

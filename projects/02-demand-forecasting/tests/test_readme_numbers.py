@@ -307,12 +307,15 @@ def test_multistep_peak_capture_table_matches_committed_metrics() -> None:
 
 
 def test_multistep_candidate_comparison_matches_committed_metrics() -> None:
-    """The 'lumpy hgb_tweedie MAE **X**' / 'hurdle_hgb MAE **Y**' quotes are live."""
+    """The per-class candidate MAE quotes (incl. the wave-21 candidates and
+    the convex ensemble) are live."""
     ms = _multistep()
     section = _multistep_section()
     comp = ms["candidate_comparison"]["per_class"]
     for cls in comp:
-        for cand in ("hgb_tweedie", "hurdle_hgb"):
+        for cand in comp[cls]:
+            if cand in ("routed_mae", "zero_mae"):
+                continue
             m = re.search(rf"{cls} {cand} MAE\s+\*\*([\d.]+)\*\*", section)
             assert m, f"{cls} {cand} MAE quote missing from README"
             assert float(m.group(1)) == pytest.approx(comp[cls][cand]["mae"], abs=5e-4)
@@ -325,3 +328,30 @@ def test_multistep_candidate_comparison_matches_committed_metrics() -> None:
     )
     m = re.search(r"hurdle_hgb for\s+([\d,]+) series", section)
     assert m and int(m.group(1).replace(",", "")) == counts.get("hurdle_hgb", 0)
+
+
+def test_multistep_win_rates_match_committed_metrics() -> None:
+    """The wave-21 win-rate quotes (per class and candidate at h=7/h=14,
+    with the bootstrap CIs) are live against the committed block."""
+    ms = _multistep()
+    section = _multistep_section()
+    wr = ms["win_rates"]["per_class"]
+    for cls in wr:
+        for cand, h_key, pat in (
+            (
+                "routed",
+                "7",
+                r"{} routed beats-floor h=7:\s+\*\*([\d.]+)%\*\* \(CI \[([\d.]+),\s*([\d.]+)\]\)",
+            ),
+            (
+                "routed",
+                "14",
+                r"{} routed beats-floor h=14:\s+\*\*([\d.]+)%\*\* \(CI \[([\d.]+),\s*([\d.]+)\]\)",
+            ),
+        ):
+            m = re.search(pat.format(cls), section)
+            assert m, f"{cls} win-rate quote missing from README"
+            item = wr[cls]["per_horizon"][h_key][cand]
+            assert float(m.group(1)) == pytest.approx(100.0 * item["win_rate"], abs=5e-2)
+            assert float(m.group(2)) == pytest.approx(100.0 * item["ci95"][0], abs=5e-2)
+            assert float(m.group(3)) == pytest.approx(100.0 * item["ci95"][1], abs=5e-2)

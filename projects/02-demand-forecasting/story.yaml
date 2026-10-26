@@ -297,7 +297,8 @@ sections:
         ~100% of test rows: the "conservative" UCI verdict is a degenerate
         band, not a useful one, stated on the figure whose buttons drop it
         (`probabilistic_band`).
-      - **Multi-step track (wave 19 rebuild + wave 20 peak candidates, now the
+      - **Multi-step track (wave 19 rebuild + wave 20 peak candidates + wave
+        21 LightGBM arms / ensemble / win rates, now the
         PRIMARY headline, `direct_multihorizon_v1`)**: the nowcast "14-day"
         number was 14 one-day-ahead predictions — the rebuild fits one direct
         model per horizon h ∈ {1..14} (the full window lattice) on 20 weekly
@@ -305,38 +306,52 @@ sections:
         select, 4 scored once, no embargo gap), every feature aged ≥ h days at
         target−h (calendar + a 9-column peak block — 7/14/28d rolling
         mean/max, days-since-last-nonzero, 28d non-zero count, 28d peak ratio
-        — + aged lags, taint-tested). ADI/CV² classes: 15 erratic + 1,069
-        lumpy of 1,084 series — the wave-20 router (chosen on selection
+        — + wave-21 price/trading-cycle features + aged lags, taint-tested).
+        ADI/CV² classes: 15 erratic + 1,069
+        lumpy of 1,084 series — the wave-21 router (chosen on selection
         origins only, property-tested) gives lumpy series the statistical
-        methods PLUS two peak-capable ML candidates: `hgb_tweedie` (tweedie
-        deviance, variance power 1.5, tuned on the selection origins) and
+        methods PLUS six peak-capable ML candidates: `hgb_tweedie` (tweedie
+        deviance, variance power 1.5, tuned on the selection origins),
         `hurdle_hgb` (P(sale) classifier × log1p-size regressor,
         zero-corrected on the selection origins — identity won, tested not
-        assumed); the 15 erratic series choose among the direct HGB and the
-        two ML candidates. Lumpy champion vs floor: 6.17 vs 11.07 MAE at h=7
-        (95% paired-bootstrap CI [−7.67, −2.79]), 5.88 vs 10.64 at h=14 —
-        routing beats the unrouted all-HGB ladder by 3.97 MAE (CI [3.256,
-        4.821]); the flat methods keep pooled lumpy MAE (routed 5.79 < hurdle
-        6.19 < tweedie 7.09, CIs exclude zero) — reported plainly. All 15
-        erratic series route to the ML candidates (11 hurdle, 4 tweedie):
-        pooled erratic MAE drops to 39.5 (hurdle) and peak-day MAE falls from
-        184.3 (zero) to ~124; on lumpy tweedie cuts peak-day MAE to 22.1 (vs
-        zero 27.0) while its top-5 day-ranking recall drops to 0.84 vs the flat
-        0.97 — magnitude vs timing, both measured with paired-bootstrap CIs in
-        the `peak_capture` block. Error grows with the true horizon (pooled
-        MAE 0.06 → 6.52, h=1 → h=14; the sawtooth is weekday composition —
-        weekly origins fix each horizon's weekday). Per-horizon bands:
-        coverage AND width per h, pooled 0.923 → *conservative* (sparse
-        P(sale)+ladder bands, no collapsing band; the ML candidates carry
-        their own conformal bands, pooled 0.912). Order-up-to simulation
-        (τ=0.90; holding 0.25, stockout 4.0): erratic 1.092 vs 1.180 cost/unit
-        champion-vs-floor; lumpy 2.859 vs 2.716 the other way — MAE-optimal
-        routing over-orders at high τ on spike-driven demand; simulation, no
-        savings claims.
+        assumed), the LightGBM arms `lgbm_tweedie` / `hurdle_lgbm` (HPO'd on
+        the selection origins), `peak_weighted_hgb` (peak-day-weighted, weight
+        2.0 chosen on the selection origins), and the honestly-losing
+        `lgbm_poisson` (its exp link overflows on ~11% of cells — literal
+        +inf before the finite-prediction guard maps non-finite cells to the
+        per-series training max; evaluated, kept in every table, 85.15 pooled
+        MAE vs zero 9.28); the 15 erratic series choose among the direct HGB
+        and the same ML pool. Lumpy champion vs floor: 6.11 vs 11.07 MAE at
+        h=7 (95% paired-bootstrap CI [−7.71, −2.88]), 5.80 vs 10.64 at h=14 —
+        routing beats the unrouted all-HGB ladder by 4.14 MAE (CI [3.46,
+        4.93]); the ML candidates stay close on pooled lumpy MAE (routed 6.62
+        < ensemble_convex 6.74 < hurdle 7.07 < peak-weighted 7.34 <
+        hurdle_lgbm 7.53 < lgbm_tweedie 7.59 < hgb_tweedie 7.76 — every gap vs
+        routed CI excludes zero) — reported plainly. All 15 erratic series
+        route to the ML candidates (12 hurdle, 2 peak-weighted, 1 tweedie).
+        On erratic, peak-day MAE falls from 367.3 (zero) to 280.9–295.4
+        across the ML candidates (routed 286.9); on lumpy tweedie cuts
+        peak-day MAE to 28.2 (vs zero 33.7) while its top-5 day-ranking
+        recall drops to 0.42 vs the flat 0.88 — magnitude vs timing, both
+        measured with paired-bootstrap CIs in the `peak_capture` block. Wave
+        21 adds the per-series beats-floor win rate: even the champion beats
+        the floor on only 22.17% of lumpy series at h=7 (CI [19.83, 24.70];
+        erratic 73.3%) — the pooled win rides on magnitude, not coverage.
+        Error grows with the true horizon (pooled MAE 0.07 → 6.37, h=1 →
+        h=14; the sawtooth is weekday composition — weekly origins fix each
+        horizon's weekday). Per-horizon bands: coverage AND width per h,
+        pooled 0.918 → *conservative* (sparse P(sale)+ladder bands, no
+        collapsing band; the ML candidates carry their own conformal bands,
+        pooled 0.908–0.910). Order-up-to simulation (τ=0.90; holding 0.25,
+        stockout 4.0): erratic 1.422 vs 1.510 cost/unit champion-vs-floor;
+        lumpy 2.879 vs 2.777 the other way — MAE-optimal routing over-orders
+        at high τ on spike-driven demand; simulation, no savings claims.
       - **Model ranking changed vs the nowcast track, as the audit
         expected**: the multi-step leaderboard is led by the routed pipeline
-        (6.33 pooled MAE), then `hurdle_hgb` (6.65), `hgb_tweedie` (7.67) and
-        `zero` (7.70) — rank-1-vs-2 gap CI [−0.427, −0.209] excludes zero.
+        (7.48 pooled MAE), then `ensemble_convex` (7.60), `hurdle_hgb`
+        (7.92), `peak_weighted_hgb` (8.20) and `zero` (9.28) —
+        rank-1-vs-2 gap CI [−0.175, −0.064] excludes zero; `lgbm_poisson`
+        (85.15) sits last, evaluated and reported, not hidden.
         "Mostly zero, sometimes a peak-capable model on the series that show
         spikes on the selection origins" is the honest sparse champion on this
         panel.
@@ -423,7 +438,7 @@ roadmap:
   - status: delivered
     text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; test-window horizon set coverage 0.741 (synthetic, width 26.5, optimistic) / 0.861 (UCI, width 0.00, degenerate) vs 0.80 target.
   - status: delivered
-    text: Direct multi-horizon track (direct_multihorizon_v1) — per-h models on 20 weekly origins, per-class ADI/CV² routing over statistical + peak-capable ML candidates (1,069/1,084 series sparse), paired-bootstrap CIs, per-h bands (0.923 pooled, conservative) + candidate bands, peak-capture metrics (peak_mae / peak_recall per window), order-up-to decision simulation; lumpy champion 6.17 vs 11.07 floor MAE at h=7, erratic series routed to the peak-capable models (pooled 39.5 vs 75.7 all-HGB).
+    text: Direct multi-horizon track (direct_multihorizon_v1) — per-h models on 20 weekly origins, per-class ADI/CV² routing over statistical + six peak-capable ML candidates incl. the wave-21 LightGBM arms (1,069/1,084 series sparse), paired-bootstrap CIs, per-series beats-floor win rates (lumpy routed 22.17% at h=7 — the pooled win rides on magnitude, not coverage), per-h bands (0.918 pooled, conservative) + candidate bands, peak-capture metrics (peak_mae / peak_recall per window), convex-ensemble benchmark, order-up-to decision simulation; lumpy champion 6.11 vs 11.07 floor MAE at h=7, erratic series routed to the peak-capable models, lgbm_poisson evaluated-and-losing (85.15 pooled, kept in every table).
   - status: delivered
     text: Serving — showcase-API artifact without retraining; champion lgbm_tuned (CV MAE 8.413); contract in SERVING.md.
 figure_captions:

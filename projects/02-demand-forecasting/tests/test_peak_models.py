@@ -38,7 +38,7 @@ def test_tweedie_estimator_construction() -> None:
     assert TWEEDIE_POWER == 1.5
     # sklearn keeps the variance power on the inner cy loss
     assert model.loss.closs.power == TWEEDIE_POWER
-    n_num = 7 + 3 + N_PEAK_FEATURES
+    n_num = 9 + 3 + N_PEAK_FEATURES + 4
     assert model.categorical_features == [n_num, n_num + 1]
     # tuned params flow from the config
     assert model.learning_rate == pytest.approx(config.multistep_tweedie.learning_rate)
@@ -118,17 +118,20 @@ def test_zero_correction_picks_the_selection_origin_winner() -> None:
             origin=origin,
             preds={"hurdle_hgb": raw.copy()},
             quantiles={},
-            hurdle_raw=raw.copy(),
+            hurdle_raw={"hurdle_hgb": raw.copy()},
         )
 
     # raw over-predicts everywhere; the scalar shrink (sum y / sum raw on the
     # SELECTION cells = 2/16 = 0.125) is the best fix and beats identity
     raw = np.array([[4.0, 4.0], [4.0, 4.0]])  # both horizons, both series
     by_origin = {0: _score(0, raw), 1: _score(1, np.array([[100.0, 100.0], [100.0, 100.0]]))}
-    info = apply_hurdle_correction(by_origin, [0], horizons, units)
-    assert info["chosen"] == "scalar"
-    assert info["scalar_factor"] == pytest.approx(0.125)
-    assert info["selection_mae"]["scalar"] < info["selection_mae"]["identity"]
+    info = apply_hurdle_correction(by_origin, [0], horizons, units, ("hurdle_hgb",))
+    assert info["hurdle_hgb"]["chosen"] == "scalar"
+    assert info["hurdle_hgb"]["scalar_factor"] == pytest.approx(0.125)
+    assert (
+        info["hurdle_hgb"]["selection_mae"]["scalar"]
+        < info["hurdle_hgb"]["selection_mae"]["identity"]
+    )
     # the test origin's stored preds were corrected by the same mapping
     np.testing.assert_allclose(by_origin[1].preds["hurdle_hgb"], 12.5)
 
@@ -136,6 +139,6 @@ def test_zero_correction_picks_the_selection_origin_winner() -> None:
     # "test, don't assume" branch: no correction when none helps)
     raw2 = np.array([[0.0, 0.0], [2.0, 0.0]])
     by_origin2 = {0: _score(0, raw2), 1: _score(1, raw2)}
-    info2 = apply_hurdle_correction(by_origin2, [0], horizons, units)
-    assert info2["chosen"] == "identity"
-    assert info2["selection_mae"]["identity"] == pytest.approx(0.0)
+    info2 = apply_hurdle_correction(by_origin2, [0], horizons, units, ("hurdle_hgb",))
+    assert info2["hurdle_hgb"]["chosen"] == "identity"
+    assert info2["hurdle_hgb"]["selection_mae"]["identity"] == pytest.approx(0.0)
