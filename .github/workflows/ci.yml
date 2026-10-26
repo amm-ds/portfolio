@@ -61,6 +61,11 @@ jobs:
           - { name: libs, path: libs, cov: "--cov=libs --cov-fail-under=80" }
           - { name: 01-rag-agent, path: projects/01-rag-agent, cov: "--cov=src" }
           - { name: 02-demand-forecasting, path: projects/02-demand-forecasting, cov: "--cov=src" }
+          - name: 02-heavy
+            path: projects/02-demand-forecasting
+            cov: "--cov=src tests/test_multihorizon.py tests/test_multistep_metrics.py tests/test_peak_models.py tests/test_demo_payload.py"
+            unit_args: "unit-only"
+
           - { name: 03-anomaly-detection, path: projects/03-anomaly-detection, cov: "--cov=src" }
           - { name: 04-nlp-classification, path: projects/04-nlp-classification, cov: "--cov=src" }
           - { name: 05-ml-pipeline-churn, path: projects/05-ml-pipeline-churn, cov: "--cov=src" }
@@ -85,7 +90,14 @@ jobs:
         working-directory: ${{ matrix.suite.path }}
         # per-project pytest.ini/pyproject applies its own floor; the libs
         # cell carries the shared ≥80% gate via its cov flags
-        run: uv run pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900" ${{ matrix.suite.cov }}
+        run: >-
+          uv run pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900"
+          ${{ matrix.suite.cov }}
+          ${{
+            matrix.suite.unit_args == 'unit-only'
+            && '--ignore=tests/test_multihorizon.py --ignore=tests/test_multistep_metrics.py --ignore=tests/test_peak_models.py --ignore=tests/test_demo_payload.py'
+            || ''
+          }}
 
   docker:
     needs: [gate, tests]
