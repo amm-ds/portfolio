@@ -42,10 +42,10 @@ const SHOCK_KEYS = ["0.5", "1.5", "2"];
 const isoDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-describe("committed demo payload contract (schema v3, revision 3.2)", () => {
+describe("committed demo payload contract (schema v3, revision 3.3)", () => {
   it("carries the workbench identity and the multi-horizon protocol", () => {
     expect(raw.schema_version).toBe(3);
-    expect(raw.payload_revision).toBe("3.2");
+    expect(raw.payload_revision).toBe("3.3");
     expect(raw.demo).toBe("forecast-workbench");
     expect(raw.project).toBe("02-demand-forecasting");
     expect(raw.track).toBe("uci");
@@ -58,14 +58,16 @@ describe("committed demo payload contract (schema v3, revision 3.2)", () => {
     expect(raw.catalog_summary.by_class).toEqual({ erratic: 15, lumpy: 85 });
     const erratic = raw.catalog.filter((s) => s.demand_class === "erratic");
     expect(erratic).toHaveLength(15);
-    // the wave-20 committed routing table: lumpy series never sit on the
+    // the wave-21 committed routing table: lumpy series never sit on the
     // boosted direct HGB; erratic series choose among direct_hgb + the
-    // peak-capable ML candidates
+    // peak-capable ML candidates (incl. the wave-21 peak_weighted_hgb)
     for (const s of raw.catalog) {
       if (s.demand_class === "lumpy") {
         expect(s.model_used).not.toBe("direct_hgb");
       } else {
-        expect(["direct_hgb", "hurdle_hgb", "hgb_tweedie"]).toContain(s.model_used);
+        expect(["direct_hgb", "hurdle_hgb", "hgb_tweedie", "peak_weighted_hgb"]).toContain(
+          s.model_used,
+        );
       }
     }
     // country diversity (the v2 audit found 64/100 UK)
