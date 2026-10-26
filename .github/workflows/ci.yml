@@ -60,7 +60,11 @@ jobs:
         suite:
           - { name: libs, path: libs, cov: "--cov=libs --cov-fail-under=80" }
           - { name: 01-rag-agent, path: projects/01-rag-agent, cov: "--cov=src" }
-          - { name: 02-demand-forecasting, path: projects/02-demand-forecasting, cov: "--cov=src" }
+          - name: 02-unit
+            path: projects/02-demand-forecasting
+            cov: "--cov=src"
+            unit_args: "unit-only"
+
           - name: 02-heavy
             path: projects/02-demand-forecasting
             cov: "--cov=src tests/test_multihorizon.py tests/test_multistep_metrics.py tests/test_peak_models.py tests/test_demo_payload.py"
