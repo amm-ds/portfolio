@@ -65,9 +65,12 @@ jobs:
             cov: "--cov=src"
             unit_args: "unit-only"
 
-          - name: 02-heavy
+          - name: 02-models
             path: projects/02-demand-forecasting
-            cov: "--cov=src tests/test_multihorizon.py tests/test_multistep_metrics.py tests/test_peak_models.py tests/test_demo_payload.py"
+            cov: "--cov=src tests/test_multihorizon.py tests/test_multistep_metrics.py tests/test_peak_models.py"
+          - name: 02-payload
+            path: projects/02-demand-forecasting
+            cov: "--cov=src tests/test_demo_payload.py"
             unit_args: "unit-only"
 
           - { name: 03-anomaly-detection, path: projects/03-anomaly-detection, cov: "--cov=src" }
@@ -95,7 +98,7 @@ jobs:
         # per-project pytest.ini/pyproject applies its own floor; the libs
         # cell carries the shared ≥80% gate via its cov flags
         run: >-
-          uv run pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900"
+          uv run pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900 --durations=30"
           ${{ matrix.suite.cov }}
           ${{
             matrix.suite.unit_args == 'unit-only'
