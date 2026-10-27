@@ -600,3 +600,106 @@ export interface ForecastPayload {
     };
   };
 }
+
+// --- hierarchy explorer payload (`projects/02-demand-forecasting/reports/hier_demo_payload.json`) ---
+// Schema v1 (wave 23b): the hierarchical reconciliation companion to the
+// forecast workbench. Two groups (Labour monthly, TourismSmall quarterly),
+// each a small committed hierarchy — 6 catalog nodes per group (total,
+// mid levels, bottoms), the 3 most recent rolling origins per node. Every
+// origin carries a bounded history (2 seasons), the horizon actuals, and the
+// 5 committed curve variants: the raw learners plus the two reconciled
+// lgbm_global curves. Reconciliation leaves bottom series unchanged
+// (BottomUp); the parent-level gap between raw and reconciled IS the demo.
+// Built by `demand_forecasting.hier_demo_payload`.
+
+/** The 5 committed curve variants (`evaluation_metadata.curve_variants`). */
+export type HierVariant =
+  | "seasonal_naive"
+  | "auto_ets"
+  | "lgbm_global"
+  | "lgbm_global+bottom_up"
+  | "lgbm_global+mint_shrink";
+
+/** One variant's forecast curve at one origin (one point per horizon step). */
+export interface HierCurveBlock {
+  y_pred: number[];
+}
+
+/** One node at one rolling origin. `history` ends AT the origin period,
+ * `actuals` cover the next `horizon` periods; the axis is contiguous. */
+export interface HierOrigin {
+  origin: string;
+  history: { dates: string[]; y: number[] };
+  actuals: { dates: string[]; y: number[] };
+  models: Record<HierVariant, HierCurveBlock>;
+  /** Parent nodes only: the reconciled curves' residual incoherence — 0.0 by
+   * construction (reconciliation is exact). Absent on bottom nodes. */
+  coherence?: Partial<
+    Record<"lgbm_global+bottom_up" | "lgbm_global+mint_shrink", number>
+  > | null;
+}
+
+/** One catalog node. `node` is a plain slug (TourismSmall, e.g. "nsw-hol") or
+ * a stringified path list (Labour, e.g. "['Males', 'New South Wales']") —
+ * `parent_path` entries use the same id form. */
+export interface HierNode {
+  node: string;
+  group: string;
+  level: string;
+  parent_path: string[];
+  children_count: number;
+  children: string[];
+  origins: HierOrigin[];
+}
+
+/** Committed per-level pooled error for one variant. */
+export interface HierLevelMetrics {
+  mae: number;
+  rmae: number;
+}
+
+export interface HierBootstrap {
+  diff: number;
+  ci95: [number, number];
+  spans_zero: boolean;
+}
+
+/** The committed per-group block: per-level rmae/mae for every candidate and
+ * reconciled variant, the group-mean incoherence share per variant, and the
+ * headline (MinT) numbers at the total and bottom levels. */
+export interface HierGroupBlock {
+  group: string;
+  freq: string;
+  season_length: number;
+  horizon: number;
+  levels: string[];
+  origins: { dates: string[]; n: number };
+  candidates: string[];
+  per_level: Record<string, Record<string, HierLevelMetrics>>;
+  /** Mean |parent − Σchildren| share of each variant's forecasts; exactly 0
+   * for every reconciled variant, positive for the raw ML/statistical bases. */
+  coherence: Record<string, number>;
+  headline: {
+    claim: string;
+    total: { rmae: number; mae: number; naive_mae: number; bootstrap: HierBootstrap };
+    bottom: { rmae: number; mae: number; naive_mae: number; bootstrap: HierBootstrap };
+  };
+}
+
+export interface HierarchyPayload {
+  schema_version: number;
+  demo: string;
+  project: string;
+  groups: Record<string, HierGroupBlock>;
+  catalog: HierNode[];
+  evaluation_metadata: {
+    protocol: string;
+    origins: Record<
+      string,
+      { dates: string[]; n: number; catalog_origins: string[] }
+    >;
+    candidates: string[];
+    curve_variants: string[];
+    source: string;
+  };
+}

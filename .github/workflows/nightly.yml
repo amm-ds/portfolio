@@ -1,0 +1,40 @@
+# Nightly drift guards: the expensive byte-identity / full-rebuild checks that
+# are too slow for PR CI. PR CI runs the fast guards on every push; this job
+# proves the expensive reproducibility contracts nightly and on demand.
+name: nightly
+
+on:
+  schedule:
+    # 03:17 UTC — off the top-of-the-hour herd
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  slow-drift-guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --all-packages --dev
+      - name: Demo payload full-rebuild drift tests (serial, slow marker)
+        working-directory: projects/02-demand-forecasting
+        run: >-
+          uv run pytest -o addopts="--import-mode=importlib -q -p no:xdist --timeout=3600"
+          -m "slow" tests/test_demo_payload.py
+      - name: Hierarchical track run-twice byte-identity
+        working-directory: projects/02-demand-forecasting
+        run: |
+          uv run python -m demand_forecasting.cli evaluate-hierarchical --group both
+          cp reports_hier/metrics.json /tmp/hier_run1.json
+          uv run python -m demand_forecasting.cli evaluate-hierarchical --group both
+          cmp reports_hier/metrics.json /tmp/hier_run1.json
+          echo "hierarchical metrics: BYTE_IDENTICAL across runs"
