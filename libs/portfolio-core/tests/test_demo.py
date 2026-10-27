@@ -112,9 +112,7 @@ def test_demos_dir_only_project_discovered(tmp_path: Path) -> None:
 def test_demos_dir_invalid_manifest_rejected(tmp_path: Path) -> None:
     project = tmp_path / "02-demand-forecasting"
     (project / "demos").mkdir(parents=True)
-    (project / "demos" / "bad.yaml").write_text(
-        _VALID.replace("id: churn-sandbox", "id: Bad ID!")
-    )
+    (project / "demos" / "bad.yaml").write_text(_VALID.replace("id: churn-sandbox", "id: Bad ID!"))
     with pytest.raises(ValidationError):
         load_demo_index(tmp_path)
 
