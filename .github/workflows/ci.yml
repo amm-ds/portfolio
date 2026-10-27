@@ -79,8 +79,11 @@ jobs:
             # xdist-nested-loky PEP 3118 flake in HGB fits that does not
             # reproduce serially. Those two tests carry @pytest.mark.slow;
             # the full rebuilds run serially via -m "slow" (locally / the
-            # proposed nightly job).
-            addopts: "--import-mode=importlib -q --timeout=900 --durations=30 -p no:xdist -m 'not slow'"
+            # proposed nightly job). The remaining payload FIXTURE still
+            # re-scores every origin on 1-2 loky workers (n_jobs=-2 on a
+            # 2-vCPU runner) and takes 12-20 min — hence the 1800s
+            # per-test timeout instead of the matrix default 900s.
+            addopts: "--import-mode=importlib -q --timeout=1800 --durations=30 -p no:xdist -m 'not slow'"
 
           - { name: 03-anomaly-detection, path: projects/03-anomaly-detection, cov: "--cov=src" }
           - { name: 04-nlp-classification, path: projects/04-nlp-classification, cov: "--cov=src" }
