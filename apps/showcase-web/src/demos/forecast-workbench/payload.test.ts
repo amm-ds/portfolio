@@ -17,11 +17,14 @@ import {
 } from "./kpis";
 
 /**
- * Contract test against the REAL committed v3.2 payload
+ * Contract test against the REAL committed v3.4 payload
  * (`projects/02-demand-forecasting/reports/demo_payload.json`, built by
- * `demand_forecasting.demo_payload`, schema v3 + revision 3.2 — the direct
+ * `demand_forecasting.demo_payload`, schema v3 + revision 3.4 — the direct
  * multi-horizon catalog on the FULL h = 1..14 lattice: every model curve is
- * a contiguous 14-day series, one real direct-h point per window day). Walks
+ * a contiguous 14-day series, one real direct-h point per window day; wave
+ * 22 adds the per-series `adida` curve (y_pred only, no shock grid), rmae/
+ * rmsse rows on the scoreboard candidates and the newsvendor decision
+ * layer). Walks
  * every series × origin × model through the kpi helpers and cross-checks
  * the experiment-wide blocks against the committed metrics, so a payload
  * drift (renamed key, short array, unhandled null) fails here instead of
@@ -42,10 +45,10 @@ const SHOCK_KEYS = ["0.5", "1.5", "2"];
 const isoDate = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-describe("committed demo payload contract (schema v3, revision 3.3)", () => {
+describe("committed demo payload contract (schema v3, revision 3.4)", () => {
   it("carries the workbench identity and the multi-horizon protocol", () => {
     expect(raw.schema_version).toBe(3);
-    expect(raw.payload_revision).toBe("3.3");
+    expect(raw.payload_revision).toBe("3.4");
     expect(raw.demo).toBe("forecast-workbench");
     expect(raw.project).toBe("02-demand-forecasting");
     expect(raw.track).toBe("uci");
@@ -58,12 +61,30 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
     expect(raw.catalog_summary.by_class).toEqual({ erratic: 15, lumpy: 85 });
     const erratic = raw.catalog.filter((s) => s.demand_class === "erratic");
     expect(erratic).toHaveLength(15);
-    // the wave-21 committed routing table: lumpy series never sit on the
-    // boosted direct HGB; erratic series choose among direct_hgb + the
-    // peak-capable ML candidates (incl. the wave-21 peak_weighted_hgb)
+    // the wave-22 committed routing table: lumpy series never sit on the
+    // boosted direct HGB (sparse pool has no direct_hgb); erratic series
+    // choose among direct_hgb + the ML candidates; the wave-22 statistical
+    // additions (ma_28 / adida_sba / adida_tsb) are valid lumpy picks
+    const SPARSE_POOL = [
+      "zero",
+      "seasonal_naive",
+      "croston",
+      "sba",
+      "tsb",
+      "ma_28",
+      "adida_sba",
+      "adida_tsb",
+      "hurdle_hgb",
+      "hgb_tweedie",
+      "lgbm_tweedie",
+      "lgbm_poisson",
+      "hurdle_lgbm",
+      "peak_weighted_hgb",
+    ];
     for (const s of raw.catalog) {
       if (s.demand_class === "lumpy") {
         expect(s.model_used).not.toBe("direct_hgb");
+        expect(SPARSE_POOL).toContain(s.model_used);
       } else {
         expect(["direct_hgb", "hurdle_hgb", "hgb_tweedie", "peak_weighted_hgb"]).toContain(
           s.model_used,
@@ -116,7 +137,7 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
         const axis = windowAxis(o);
         expect(axis[axis.length - 1]).toBe(o.actuals.dates[o.actuals.dates.length - 1]);
         for (const d of o.actuals.dates) expect(axis).toContain(d);
-        const keys: ModelKey[] = ["zero", "routed"];
+        const keys: ModelKey[] = ["zero", "routed", "adida"];
         if (s.demand_class === "erratic") keys.push("champion");
         if (s.model_used === "hurdle_hgb") keys.push("hurdle");
         if (s.model_used === "hgb_tweedie") keys.push("tweedie");
@@ -193,6 +214,22 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
             expect(o.models[cand]).toBeUndefined();
           }
         }
+        // revision 3.4: the ADIDA curve block — y_pred only (NO shock key:
+        // the cap leaves room for three shock families, not four), rounded
+        // to 2 decimals; under an active shock the helper falls back to the
+        // base curve instead of fabricating a re-score
+        const adida = o.models.adida!;
+        expect(adida.y_pred).toHaveLength(LATTICE.length);
+        expect(adida).not.toHaveProperty("shock");
+        for (const v of adida.y_pred) {
+          expect(v).toBeGreaterThanOrEqual(0);
+          expect(v).toBe(Math.round(v * 100) / 100); // 2-decimal rounding
+        }
+        const adidaBlk = modelBlock(o, "adida")!;
+        expect(adidaBlk.y_pred).toEqual(adida.y_pred);
+        for (const shock of [0.5, 1.5, 2]) {
+          expect(curveAt(adidaBlk, shock)).toEqual(adida.y_pred);
+        }
         // zero stays zero under every shock; the floor reads only shocked days
         for (const curve of Object.values(o.models.zero.shock)) {
           expect(curve.every((v) => v === 0)).toBe(true);
@@ -211,7 +248,7 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
       for (const date of originDates(raw)) {
         const blk = originBlock(s, date);
         expect(blk).not.toBeNull();
-        const keys: ModelKey[] = ["zero", "routed", "champion"];
+        const keys: ModelKey[] = ["zero", "routed", "adida", "champion"];
         if (s.model_used === "hurdle_hgb") keys.push("hurdle");
         if (s.model_used === "hgb_tweedie") keys.push("tweedie");
         for (const mk of keys) {
@@ -261,13 +298,17 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
     expect(raw.headline.claim).toContain(
       `+${win.diff.toFixed(1)} MAE [${win.ci95[0].toFixed(1)}, ${win.ci95[1].toFixed(1)}]`,
     );
+    expect(raw.headline.claim).toContain(
+      `pooled rmae vs the seasonal-naive floor ${committed.rmae.pooled.routed.toFixed(3)}`,
+    );
+    expect(raw.headline.headline_claim).toBe(committed.headline_claim);
     expect(raw.headline.pooled_mae_by_model.routed).toBeCloseTo(
       committed.overall_mae_test.routed,
       9,
     );
   });
 
-  it("scoreboard carries the wave-20 candidates; peak_capture equals the committed block", () => {
+  it("scoreboard carries the wave-20 candidates + wave-22 rmae/rmsse rows; peak_capture equals the committed block", () => {
     expect(raw.peak_capture).toEqual(committed.peak_capture);
     for (const cls of ["lumpy", "erratic"] as DemandClass[]) {
       const committedCls = committed.headline_per_class[cls];
@@ -282,6 +323,21 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
           expect(row!.mae).toBeCloseTo(committedRow[`${cand}_mae`] as number, 9);
           expect(row!.vs_routed).toEqual(committedRow[`${cand}_vs_routed`]);
           expect(row!.vs_zero).toEqual(committedRow[`${cand}_vs_zero`]);
+        }
+        // revision 3.4: the class-level relative-error numbers ride along
+        const entry = raw.class_scoreboard[cls].candidates?.[cand];
+        expect(entry?.rmae).toBeCloseTo(committed.rmae.per_class[cls][cand], 9);
+        expect(entry?.rmsse).toEqual(committed.rmsse.per_class[cls][cand]);
+      }
+      // routed_reconciled is comparison-only: a scoreboard row (with
+      // rmae/rmsse) but NEVER a per-series curve block
+      const recon = raw.class_scoreboard[cls].candidates?.routed_reconciled;
+      expect(recon).toBeDefined();
+      expect(recon!.rmae).toBeCloseTo(committed.rmae.per_class[cls].routed_reconciled, 9);
+      expect(recon!.rmsse).toEqual(committed.rmsse.per_class[cls].routed_reconciled);
+      for (const s of raw.catalog) {
+        for (const o of s.origins) {
+          expect(o.models).not.toHaveProperty("routed_reconciled");
         }
       }
       // the peak block carries every peak candidate per class
@@ -316,7 +372,7 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
     );
   });
 
-  it("decision block carries the committed simulation plus a monotone τ mapping", () => {
+  it("decision block carries the committed simulation, the newsvendor layer, and a monotone τ mapping", () => {
     expect(raw.decision.per_class).toEqual(committed.decision_metric.per_class);
     expect(raw.decision.simulation).toBe(true);
     expect(raw.decision.tau_grid[0]).toBe("0.50");
@@ -336,6 +392,22 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
     const orders = orderPolicy(raw.decision, s.demand_class, "champion", curveAt(blk.models.routed, 1), blk.horizons, 0.9);
     expect(orders).toHaveLength(LATTICE.length);
     expect(orders.every((v) => v >= 0)).toBe(true);
+    // revision 3.4: the newsvendor order-quantile layer, committed verbatim
+    const nv = raw.decision.newsvendor!;
+    expect(nv).toEqual(committed.decision_metric.newsvendor);
+    expect(nv.cost_assumptions.holding_cost_per_unit_ordered_unsold_per_day).toBe(1.0);
+    expect(nv.cost_assumptions.stockout_cost_per_unit_short_per_day).toBe(3.0);
+    expect(nv.service_levels).toEqual([0.8, 0.9, 0.95]);
+    for (const cls of ["lumpy", "erratic"] as DemandClass[]) {
+      for (const q of ["q_0.80", "q_0.90", "q_0.95"] as const) {
+        const row = nv.per_class[cls]?.[q];
+        expect(row).toBeDefined();
+        expect(Number.isFinite(row.routed_cost_per_unit_demand)).toBe(true);
+        expect(Number.isFinite(row.floor_cost_per_unit_demand)).toBe(true);
+        expect(row.routed_minus_floor.ci95[0]).toBeLessThanOrEqual(row.routed_minus_floor.diff);
+        expect(row.routed_minus_floor.diff).toBeLessThanOrEqual(row.routed_minus_floor.ci95[1]);
+      }
+    }
   });
 
   it("evaluation + dataset metadata embed the protocol block and intermittency classes", () => {
@@ -348,9 +420,9 @@ describe("committed demo payload contract (schema v3, revision 3.3)", () => {
     expect(raw.dataset_metadata.target_definition.length).toBeGreaterThan(20);
   });
 
-  it("stays under the 3 MB cap", () => {
+  it("stays under the 3.5 MB cap (recalibrated in wave 22)", () => {
     const bytes = readFileSync("../../projects/02-demand-forecasting/reports/demo_payload.json").byteLength;
-    expect(bytes).toBeLessThanOrEqual(3 * 1024 * 1024);
+    expect(bytes).toBeLessThanOrEqual(3.5 * 1024 * 1024);
   });
 });
 

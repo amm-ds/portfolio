@@ -109,7 +109,7 @@ afterEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-describe("ForecastWorkbench (schema v3.2)", () => {
+describe("ForecastWorkbench (schema v3.4)", () => {
   it("shows a loading state then the title, readouts, and KPI band", async () => {
     mockFetch(payloadFetch());
     renderDemo();
@@ -278,7 +278,7 @@ describe("ForecastWorkbench (schema v3.2)", () => {
     expect(within(panel).getByText(/beats floor/)).toBeInTheDocument();
   });
 
-  it("the candidate rows carry the committed per-class numbers", async () => {
+  it("the candidate rows carry the committed per-class numbers and the wave-22 rmae/rmsse", async () => {
     mockFetch(payloadFetch());
     renderDemo();
     await screen.findByText("MAE at origin + h");
@@ -293,6 +293,54 @@ describe("ForecastWorkbench (schema v3.2)", () => {
     // the committed peak-day numbers render too
     const lumpyPeak = PAYLOAD.peak_capture.per_class.lumpy.hgb_tweedie!.peak_mae;
     expect(within(table).getByText(lumpyPeak.toFixed(1))).toBeInTheDocument();
+    // revision 3.4: rmae / rmsse pairs per class on the candidate rows
+    const twRmae = COMMITTED.rmae.per_class.lumpy.hgb_tweedie;
+    const twRmsse = COMMITTED.rmsse.per_class.lumpy.hgb_tweedie.rmsse;
+    expect(
+      within(table).getByText(`${twRmae.toFixed(3)} / ${twRmsse.toFixed(3)}`),
+    ).toBeInTheDocument();
+  });
+
+  it("the adida chip serves every series and shows the base curve with a note under shock", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("MAE at origin + h");
+    const rail = document.querySelector<HTMLElement>(".wb-controls")!;
+    // enabled on the default (erratic) series…
+    const adidaChip = within(rail).getByRole("button", { name: "adida" });
+    expect(adidaChip).not.toBeDisabled();
+    expect(adidaChip).toHaveAttribute("title", expect.stringContaining("weekday profile"));
+    fireEvent.click(adidaChip);
+    expect(new URLSearchParams(window.location.search).get("model")).toBe("adida");
+    // …and on a lumpy series too (every series carries the curve)
+    const lumpy = firstSeries("lumpy");
+    const list = screen.getByRole("list", { name: "Series list" });
+    fireEvent.click(within(list).getByRole("button", { name: new RegExp(lumpy.label) }));
+    expect(within(rail).getByRole("button", { name: "adida" })).not.toBeDisabled();
+    // under an active shock the base curve shows with the honest note
+    expect(screen.queryByText(/adida ships without shock curves/)).toBeNull();
+    fireEvent.change(screen.getByLabelText("Demand shock", { selector: "input" }), {
+      target: { value: "3" }, // ×2.0
+    });
+    expect(screen.getAllByText("×2.0").length).toBeGreaterThan(0);
+    expect(screen.getByText(/adida ships without shock curves/)).toBeInTheDocument();
+  });
+
+  it("the evidence area carries the wave-22 newsvendor cost layer", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    await screen.findByText("MAE at origin + h");
+    const evidence = document.querySelector<HTMLElement>(".wb-evidence")!;
+    const nv = COMMITTED.decision_metric.newsvendor;
+    expect(within(evidence).getByText(/Newsvendor order-quantile cost/)).toBeInTheDocument();
+    const table = within(evidence).getByRole("table", { name: "newsvendor cost per class" });
+    for (const cls of ["lumpy", "erratic"] as const) {
+      const row = nv.per_class[cls]["q_0.90"];
+      const cellText = `${row.routed_cost_per_unit_demand.toFixed(3)} / ${row.floor_cost_per_unit_demand.toFixed(3)}`;
+      expect(within(table).getByText(cellText)).toBeInTheDocument();
+    }
+    expect(within(evidence).getByText(/unit ordered-but-unsold\/day/)).toBeInTheDocument();
+    expect(within(evidence).getAllByText(/no savings claims/).length).toBeGreaterThan(0);
   });
 
   it("clicking a comparison-table model row sets the model chip", async () => {

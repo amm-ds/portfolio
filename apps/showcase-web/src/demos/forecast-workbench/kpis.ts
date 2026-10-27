@@ -76,8 +76,15 @@ const METHOD_SHORT: Record<RoutedMethod, string> = {
   croston: "croston",
   sba: "sba",
   tsb: "tsb",
+  ma_28: "ma_28",
+  adida_sba: "adida_sba",
+  adida_tsb: "adida_tsb",
   hurdle_hgb: "hurdle",
   hgb_tweedie: "tweedie",
+  lgbm_tweedie: "lgbm_tweedie",
+  lgbm_poisson: "lgbm_poisson",
+  hurdle_lgbm: "hurdle_lgbm",
+  peak_weighted_hgb: "peak-weighted",
 };
 
 /** The peak-capable candidate chips (wave 20) ↔ their payload block keys. */
@@ -100,7 +107,10 @@ export function candidateAvailable(
 export type CurveBlock = DirectModelBlock;
 
 /** Resolve a model chip to its curve block at an origin (`champion` →
- * `champion_hgb`; candidate chips → their alias-resolved block). */
+ * `champion_hgb`; candidate chips → their alias-resolved block; `adida` →
+ * the y_pred-only wave-22 block, wrapped with an EMPTY shock grid so
+ * `curveAt` falls back to the base curve under an active shock — the
+ * workbench shows the base curve with a note, never a fabricated shock). */
 export function modelBlock(origin: OriginBlock | null, model: ModelKey): CurveBlock | null {
   if (!origin) return null;
   if (model === "champion") return origin.models.champion_hgb ?? null;
@@ -108,6 +118,10 @@ export function modelBlock(origin: OriginBlock | null, model: ModelKey): CurveBl
     const blk = origin.models[CANDIDATE_METHOD[model]];
     if (!blk) return null;
     return "alias" in blk ? modelBlock(origin, "routed") : blk;
+  }
+  if (model === "adida") {
+    const blk = origin.models.adida;
+    return blk ? { y_pred: blk.y_pred, shock: {} } : null;
   }
   return origin.models[model];
 }
