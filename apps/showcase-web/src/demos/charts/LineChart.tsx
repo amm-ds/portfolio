@@ -5,6 +5,10 @@ export interface LineSeries {
   name: string;
   color: string;
   dashed?: boolean;
+  /** Stroke width in px (defaults to 2 — thinner reads as a faint baseline). */
+  width?: number;
+  /** Stroke opacity (defaults to 1). */
+  opacity?: number;
   values: number[];
 }
 
@@ -214,7 +218,8 @@ export function LineChart({
               .join(" ")}
             fill="none"
             stroke={s.color}
-            strokeWidth={2}
+            strokeWidth={s.width ?? 2}
+            strokeOpacity={s.opacity ?? 1}
             strokeDasharray={s.dashed ? "4 4" : undefined}
           />
         ));
