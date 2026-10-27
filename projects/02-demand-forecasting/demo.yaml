@@ -19,29 +19,5 @@ live_endpoints:
     path: /projects/02-demand-forecasting/forecast
     label: live what-if scoring
     cost: free-local
-scenarios:
-  - name: base
-    controls: {series: "United Kingdom|85123A", origin: "2010-11-19", horizon: 7, shock: 1}
-  - name: lumpy-series
-    controls: {series: "United Kingdom|84077", origin: "2010-11-19", horizon: 7, shock: 1}
-  - name: early-origin
-    controls: {series: "United Kingdom|85123A", origin: "2010-11-05", horizon: 7, shock: 1}
-  - name: demand-shock
-    controls: {series: "United Kingdom|85123A", origin: "2010-11-19", horizon: 7, shock: 2}
-payload:
-  path: reports/demo_payload.json
-  schema_version: 3
-  required_keys:
-    - demo
-    - project
-    - track
-    - catalog
-    - class_scoreboard
-    - horizon_growth
-    - peak_capture
-    - payload_revision
-    - bands
-    - decision
-    - evaluation_metadata
-    - dataset_metadata
-    - catalog_summary
+# NOTE: the old forecast-workbench scenarios and payload block were removed
+# with the demo; a later phase rebuilds this manifest (payload TBD).

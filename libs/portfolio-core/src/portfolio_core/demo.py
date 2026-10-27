@@ -70,7 +70,10 @@ class DemoManifest(PortfolioBaseModel):
     hero: HeroMetric | None = None
     scenarios: list[Scenario] = Field(default_factory=list)
     live_endpoints: list[LiveEndpoint] = Field(default_factory=list)
-    payload: PayloadRef
+    # A demo mid-rebuild (e.g. forecast-workbench) may declare no payload yet:
+    # the registry/manifest still serve, and the payload route 404s until a
+    # payload block lands again.
+    payload: PayloadRef | None = None
 
 
 def load_demo(root: Path) -> DemoManifest | None:

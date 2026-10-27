@@ -772,7 +772,8 @@ def evaluate(
         **ms_result.figures,
     }
     builder = ReportBuilder(
-        title="Hierarchical Demand Forecasting — evaluation",
+        # EvalReport appends "— evaluation report" itself.
+        title="Hierarchical Demand Forecasting",
         figures_dir=settings.reports_dir / "figures",
     )
     for run in result.runs:

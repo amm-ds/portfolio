@@ -8,8 +8,6 @@ import { Services } from "./pages/Services";
 import { Contact } from "./pages/Contact";
 import { NotFound } from "./pages/NotFound";
 import ChurnSandbox from "./demos/churn-sandbox/ChurnSandbox";
-import ForecastWorkbench from "./demos/forecast-workbench/ForecastWorkbench";
-import HierarchyExplorer from "./demos/hierarchy-explorer/HierarchyExplorer";
 import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 
 export function App() {
@@ -29,22 +27,6 @@ export function App() {
             element={
               <DemoErrorBoundary>
                 <ChurnSandbox />
-              </DemoErrorBoundary>
-            }
-          />
-          <Route
-            path="/demos/forecast-workbench"
-            element={
-              <DemoErrorBoundary>
-                <ForecastWorkbench />
-              </DemoErrorBoundary>
-            }
-          />
-          <Route
-            path="/demos/hierarchy-explorer"
-            element={
-              <DemoErrorBoundary>
-                <HierarchyExplorer />
               </DemoErrorBoundary>
             }
           />

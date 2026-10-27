@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useId, useRef } from "react";
 import { useMeasuredSize } from "./useMeasuredSize";
 
 export interface LineSeries {
@@ -87,6 +87,10 @@ export function LineChart({
   const width = measured?.w ?? widthProp;
   const height = measured?.h ?? heightProp;
   const svgRef = useRef<SVGSVGElement | null>(null);
+  // Plot-area clip: with an explicit yMax (forecast-window domains) a series
+  // may exceed the domain — it must exit the frame cleanly instead of drawing
+  // over the padding/UI. Colons in useId values break url(#…) references.
+  const clipId = `lc-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
 
   const xMin = x[0];
   const xMax = x[x.length - 1];
@@ -190,6 +194,10 @@ export function LineChart({
         </text>
       ))}
 
+      <clipPath id={clipId}>
+        <rect x={pad.l} y={pad.t} width={Math.max(0, plotW)} height={Math.max(0, plotH)} />
+      </clipPath>
+      <g clipPath={`url(#${clipId})`}>
       {bandPath && (
         <path d={bandPath} fill={band!.color} fillOpacity={band!.opacity ?? 0.15} stroke="none" />
       )}
@@ -224,6 +232,7 @@ export function LineChart({
           />
         ));
       })}
+      </g>
 
       {markers.map((m, i) => {
         const mx = x[m.xIndex];

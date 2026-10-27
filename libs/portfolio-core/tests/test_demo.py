@@ -127,6 +127,13 @@ def test_missing_hook_rejected(tmp_path: Path) -> None:
         load_demo(_write(tmp_path, _VALID.replace("hook: Move the threshold.\n", "")))
 
 
+def test_payload_optional_mid_rebuild(tmp_path: Path) -> None:
+    """A demo mid-rebuild (forecast-workbench) may declare no payload yet."""
+    demo = load_demo(_write(tmp_path, _VALID.replace("payload:\n  path: reports/demo_payload.json\n  required_keys: [demo, project]\n", "")))
+    assert demo is not None
+    assert demo.payload is None
+
+
 def test_live_endpoint_path_must_be_absolute(tmp_path: Path) -> None:
     bad = _VALID.replace(
         "payload:", "live_endpoints:\n  - {method: POST, path: no-slash, label: x}\npayload:"

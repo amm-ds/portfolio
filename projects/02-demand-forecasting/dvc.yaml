@@ -61,16 +61,3 @@ stages:
       - data/features.parquet
     outs:
       - reports/models/serving
-
-  demo_payload:
-    cmd: uv run python -m demand_forecasting.cli demo-payload --data-source uci --reports-dir reports --metrics-dir reports_uci
-    deps:
-      - src/demand_forecasting
-      - params.yaml
-      - data_uci/panel.parquet
-      - reports_uci/metrics.json
-      - reports_uci/probabilistic.json
-      - reports_uci/evaluation_metadata.json
-      - reports_uci/dataset_metadata.json
-    outs:
-      - reports/demo_payload.json

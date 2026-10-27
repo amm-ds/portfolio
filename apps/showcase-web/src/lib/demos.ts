@@ -18,13 +18,6 @@ export const DEMOS: Demo[] = [
     status: "live",
     href: "/demos/churn-sandbox",
   },
-  {
-    id: "forecast-workbench",
-    title: "demand forecast workbench",
-    line: "Pick a store-product series, pick a rolling origin — early, middle, or the frozen test window — stretch the horizon, and stress the recent demand; watch the champion, the challenger, the band, and the baseline respond on real intermittent retail demand.",
-    status: "live",
-    href: "/demos/forecast-workbench",
-  },
 ];
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";
