@@ -21,10 +21,11 @@ const CLASSES: DemandClass[] = ["lumpy", "erratic"];
 const HS = [7, 14];
 
 /** The model rows offered for ONE series: the universal zero baseline, the
- * committed routed method, the boosted direct HGB on erratic series, and the
- * peak-capable candidates only where the router selected them. */
+ * committed routed method, the wave-22 ADIDA curve (every series), the
+ * boosted direct HGB on erratic series, and the peak-capable candidates only
+ * where the router selected them. */
 export function seriesModelKeys(series: CatalogSeries): ModelKey[] {
-  const keys: ModelKey[] = ["zero", "routed"];
+  const keys: ModelKey[] = ["zero", "routed", "adida"];
   if (series.demand_class === "erratic") keys.push("champion");
   if (candidateAvailable(series, "hurdle")) keys.push("hurdle");
   if (candidateAvailable(series, "tweedie")) keys.push("tweedie");
@@ -49,6 +50,7 @@ const ROW_LABEL: Record<string, string> = {
   champion: "boosted HGB",
   hurdle: "hurdle",
   tweedie: "tweedie",
+  adida: "adida",
 };
 
 /** MODEL SCOREBOARD (always visible): the committed experiment-wide class
@@ -150,6 +152,9 @@ export function ScoreboardPanel({
               {CLASSES.map((cls) => (
                 <th key={`pk-${cls}`}>{cls} peak-day</th>
               ))}
+              {CLASSES.map((cls) => (
+                <th key={`re-${cls}`}>{cls} rmae / rmsse</th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -162,6 +167,12 @@ export function ScoreboardPanel({
                   ? (payload.class_scoreboard[cls].mae.h7?.model ?? null)
                   : (payload.class_scoreboard[cls].candidates?.[method]?.h7?.mae ?? null);
               const clsPeak = (cls: DemandClass) => peakStats(peak[cls], method ?? "routed")?.peak_mae ?? null;
+              const clsRel = (cls: DemandClass) => {
+                const entry = method === null ? null : payload.class_scoreboard[cls].candidates?.[method];
+                const rmae = entry?.rmae ?? null;
+                const rmsse = entry?.rmsse?.rmsse ?? null;
+                return rmae !== null && rmsse !== null ? `${rmae.toFixed(3)} / ${rmsse.toFixed(3)}` : "n/a";
+              };
               return (
                 <tr key={cand} className={`${cand === "routed" ? "wb-cmp-champion" : ""} ${mk === model ? "wb-cmp-active" : ""}`}>
                   <th>
@@ -182,6 +193,9 @@ export function ScoreboardPanel({
                   ))}
                   {CLASSES.map((cls) => (
                     <td key={`pk-${cls}`}>{clsPeak(cls) !== null ? clsPeak(cls)!.toFixed(1) : "n/a"}</td>
+                  ))}
+                  {CLASSES.map((cls) => (
+                    <td key={`re-${cls}`}>{clsRel(cls)}</td>
                   ))}
                 </tr>
               );

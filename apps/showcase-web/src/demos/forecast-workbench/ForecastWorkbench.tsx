@@ -45,8 +45,8 @@ const FALLBACK_MANIFEST: DemoManifest = {
   modes: ["browser", "live"],
   hero: {
     label: "multi-step pooled MAE over the scored origins, routed pipeline vs all-HGB",
-    value: "7.46 routed vs 11.83 all-HGB — the routed pipeline leads",
-    ci: "routing lumpy series away from the boosted model wins +4.1 MAE [3.4, 4.9] (95% paired bootstrap over series × scored origins; 98.6% of series are lumpy)",
+    value: "7.47 routed vs 11.71 all-HGB — the routed pipeline leads",
+    ci: "routing lumpy series away from the boosted model wins +4.0 MAE [3.3, 4.8] (95% paired bootstrap over series × scored origins; 98.6% of series are lumpy; pooled rmae 0.649)",
   },
   scenarios: [
     { name: "base", controls: { horizon: 7, shock: 1 } },
@@ -122,13 +122,14 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
   const [originDate, setOriginDate] = useQueryParam("origin", dates, defaultDate);
   const [modelRaw, setModel] = useQueryParam<ModelKey>(
     "model",
-    ["zero", "routed", "champion", "hurdle", "tweedie"],
+    ["zero", "routed", "champion", "hurdle", "tweedie", "adida"],
     "routed",
   );
   const series = payload.catalog.find((s) => s.series_id === seriesId) ?? payload.catalog[0];
   // coerce chips the current series can't serve: the boosted champion is
   // erratic-only; the peak-capable candidates only where the router
-  // selected them (their curve IS the routed curve there)
+  // selected them (their curve IS the routed curve there); adida serves
+  // every series
   const model: ModelKey =
     (modelRaw === "champion" && series.demand_class !== "erratic") ||
     ((modelRaw === "hurdle" || modelRaw === "tweedie") && !candidateAvailable(series, modelRaw))
@@ -273,6 +274,15 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                     </button>
                   );
                 })}
+                <button
+                  type="button"
+                  className={`chip demo-preset ${model === "adida" ? "active" : ""}`}
+                  aria-pressed={model === "adida"}
+                  title="7-day-aggregate intermittent forecast distributed by weekday profile (wave 22)"
+                  onClick={() => setModel("adida")}
+                >
+                  adida
+                </button>
               </div>
               <p className="demo-hint">per-series routing picks the method on training origins</p>
             </div>
@@ -472,6 +482,13 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
           <Notice>
             <HorizonTruthText payload={payload} h={horizon} />
           </Notice>
+          {model === "adida" && shock !== 1 && (
+            <Notice>
+              <strong>adida ships without shock curves</strong> — the payload cap leaves room
+              for three shock families, not four. The base (unshocked) ADIDA curve is shown;
+              the routed / zero / floor curves still re-score exactly under ×{shock.toFixed(1)}.
+            </Notice>
+          )}
         </>
       }
       secondary={
@@ -605,6 +622,9 @@ function Workbench({ manifest, payload }: { manifest: DemoManifest; payload: For
                 );
               })}
             </p>
+            {payload.decision.newsvendor && (
+              <NewsvendorBlock newsvendor={payload.decision.newsvendor} />
+            )}
           </div>
         </>
       }
@@ -718,6 +738,69 @@ function ClassVerdictText({ payload, series }: { payload: ForecastPayload; serie
 
 function seriesCount(payload: ForecastPayload, cls: DemandClass): number {
   return payload.catalog.filter((s) => s.demand_class === cls).length;
+}
+
+/** The wave-22 newsvendor layer (revision 3.4): per class and service level,
+ * the expected daily cost per unit-demand of ordering the routed band's
+ * q-quantile vs the floor's seasonal-naive weekday quantile — documented
+ * cost assumptions, a simulation, no savings claims. Compact table in the
+ * evidence area, committed numbers only. */
+function NewsvendorBlock({
+  newsvendor,
+}: {
+  newsvendor: NonNullable<ForecastPayload["decision"]["newsvendor"]>;
+}) {
+  const costs = newsvendor.cost_assumptions;
+  const classes = Object.keys(newsvendor.per_class);
+  return (
+    <>
+      <p className="wb-evidence-line">
+        <strong>Newsvendor order-quantile cost</strong> (wave 22) — order = the routed band's
+        q-quantile (dense rows interpolate the committed p10/p50/p90 ladder; sparse rows the
+        training-history ladder); the floor orders the same quantile of the seasonal-naive
+        weekday distribution. Documented assumption: holding{" "}
+        {costs.holding_cost_per_unit_ordered_unsold_per_day}/unit ordered-but-unsold/day,
+        stockout {costs.stockout_cost_per_unit_short_per_day}/unit short/day — a simulation,
+        no savings claims. Expected daily cost per unit-demand (committed, 95% paired
+        bootstrap on the Δ):
+      </p>
+      <table className="data-table wb-cmp-table" aria-label="newsvendor cost per class">
+        <thead>
+          <tr>
+            <th>class</th>
+            {newsvendor.service_levels.map((q) => (
+              <th key={q}>q={q.toFixed(2)} routed / floor</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {classes.map((cls) => (
+            <tr key={cls}>
+              <th>{cls}</th>
+              {newsvendor.service_levels.map((q) => {
+                const row = newsvendor.per_class[cls]?.[`q_${q.toFixed(2)}`];
+                if (!row) return <td key={q}>n/a</td>;
+                const diff = row.routed_minus_floor;
+                return (
+                  <td key={q}>
+                    {row.routed_cost_per_unit_demand.toFixed(3)} /{" "}
+                    {row.floor_cost_per_unit_demand.toFixed(3)}{" "}
+                    <span
+                      className={`chip demo-readout ${diff.spans_zero ? "" : "good"}`}
+                      title={`95% CI [${diff.ci95[0].toFixed(3)}, ${diff.ci95[1].toFixed(3)}]`}
+                    >
+                      Δ {diff.diff >= 0 ? "+" : ""}
+                      {diff.diff.toFixed(3)} {diff.spans_zero ? "(spans zero)" : "(established)"}
+                    </span>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
 }
 
 /** Horizon-truth notice: the error-growth story from the committed curves.

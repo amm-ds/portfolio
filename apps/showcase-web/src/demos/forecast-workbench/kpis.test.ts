@@ -66,6 +66,8 @@ function makeOrigin(over: Partial<OriginBlock> = {}): OriginBlock {
         p90: curve(49),
         shock: { "0.5": curve(31), "2": curve(61) },
       },
+      // revision 3.4: y_pred only — no shock grid
+      adida: { y_pred: curve(38) },
     },
     ...over,
   };
@@ -187,6 +189,29 @@ describe("originBlock + modelBlock + curveAt", () => {
     expect(routedLabel(makeSeries({ model_used: "hurdle_hgb" }))).toBe("routed · hurdle");
     expect(routedLabel(makeSeries({ model_used: "hgb_tweedie" }))).toBe("routed · tweedie");
     expect(routedLabel(makeSeries({ demand_class: "lumpy", model_used: "zero" }))).toBe("routed · zero");
+    // wave-22 methods
+    expect(routedLabel(makeSeries({ demand_class: "lumpy", model_used: "ma_28" }))).toBe("routed · ma_28");
+    expect(routedLabel(makeSeries({ demand_class: "lumpy", model_used: "adida_sba" }))).toBe(
+      "routed · adida_sba",
+    );
+    expect(routedLabel(makeSeries({ model_used: "peak_weighted_hgb" }))).toBe("routed · peak-weighted");
+  });
+
+  it("the adida block (revision 3.4) resolves y_pred-only and never fabricates a shock", () => {
+    const o = series.origins[0];
+    const blk = modelBlock(o, "adida")!;
+    expect(blk.y_pred).toEqual(o.models.adida!.y_pred);
+    // no shock grid in the payload → the helper wraps an empty shock map…
+    expect(blk.shock).toEqual({});
+    // …so curveAt falls back to the base curve at every shock stop
+    expect(curveAt(blk, 1)).toBe(o.models.adida!.y_pred);
+    expect(curveAt(blk, 0.5)).toBe(o.models.adida!.y_pred);
+    expect(curveAt(blk, 2)).toBe(o.models.adida!.y_pred);
+    expect(plottedPath(o, "adida", 2)).toHaveLength(HORIZONS.length);
+    // a series whose origin carries no adida block resolves to null
+    const bare = makeOrigin();
+    delete bare.models.adida;
+    expect(modelBlock(bare, "adida")).toBeNull();
   });
 
   it("candidate chips resolve through the revision-3.1 alias entries", () => {

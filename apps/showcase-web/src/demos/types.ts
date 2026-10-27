@@ -226,13 +226,15 @@ export type DemandClass = "erratic" | "lumpy";
  * per-series routing method, `champion` the boosted per-horizon direct HGB
  * (erratic series only), `hurdle` / `tweedie` the wave-20 peak-capable
  * candidates — enabled only on the series the committed router selected
- * them for (their curve IS the routed curve there). */
-export type ModelKey = "zero" | "routed" | "champion" | "hurdle" | "tweedie";
+ * them for (their curve IS the routed curve there) — and `adida` the
+ * wave-22 temporal-aggregation curve (every series; y_pred only, no shock
+ * grid). */
+export type ModelKey = "zero" | "routed" | "champion" | "hurdle" | "tweedie" | "adida";
 
 /** The committed per-series routing decision (chosen on the selection
- * origins only): sparse series among zero/seasonal-naive/Croston/SBA/TSB +
- * the peak-capable ML candidates; smooth/erratic among direct_hgb + the ML
- * candidates. */
+ * origins only): sparse series among zero/seasonal-naive/Croston/SBA/TSB/
+ * ma_28/adida_sba/adida_tsb + the peak-capable ML candidates; smooth/erratic
+ * among direct_hgb + the ML candidates. */
 export type RoutedMethod =
   | "direct_hgb"
   | "zero"
@@ -240,8 +242,15 @@ export type RoutedMethod =
   | "croston"
   | "sba"
   | "tsb"
+  | "ma_28"
+  | "adida_sba"
+  | "adida_tsb"
   | "hurdle_hgb"
-  | "hgb_tweedie";
+  | "hgb_tweedie"
+  | "lgbm_tweedie"
+  | "lgbm_poisson"
+  | "hurdle_lgbm"
+  | "peak_weighted_hgb";
 
 /** One model's direct curve at one origin: one point per horizon h (aligned
  * with `OriginBlock.horizons`). `shock` carries the precomputed exact
@@ -266,6 +275,14 @@ export interface CandidateAlias {
 
 export type ModelEntry = DirectModelBlock | CandidateAlias;
 
+/** Revision 3.4 (wave 22): the ADIDA curve block — y_pred ONLY, no shock
+ * grid (the payload cap leaves room for three shock families, not four;
+ * documented in catalog_summary.metrics_only_note). Under an active shock
+ * the workbench shows the base curve with a note, never a fabricated shock. */
+export interface AdidaBlock {
+  y_pred: number[];
+}
+
 /** One series at one scored origin. The origin marker IS the information
  * cutoff: `history` ends the day before it, `actuals` start the day after. */
 export interface OriginBlock {
@@ -287,6 +304,8 @@ export interface OriginBlock {
      * this series — the alias marker `{"alias": "routed"}`. */
     hurdle_hgb?: ModelEntry;
     hgb_tweedie?: ModelEntry;
+    /** Revision 3.4: the ADIDA curve (every series) — y_pred only. */
+    adida?: AdidaBlock;
   };
 }
 
@@ -322,8 +341,9 @@ export interface ScoreboardClass {
   gap_bootstrap: Record<string, BootstrapResult>;
   vs_zero_bootstrap: Record<string, BootstrapResult>;
   /** Revision 3.1: the wave-20 peak-capable candidates' committed rows per
-   * horizon (pooled MAE + paired-bootstrap gaps vs routed and vs zero). */
-  candidates?: Record<string, Record<string, CandidateScoreboardRow | undefined>>;
+   * horizon (pooled MAE + paired-bootstrap gaps vs routed and vs zero);
+   * revision 3.4 adds class-level rmae/rmsse to every entry. */
+  candidates?: Record<string, CandidateBoardEntry>;
   routing_effect: BootstrapResult | null;
 }
 
@@ -332,6 +352,24 @@ export interface CandidateScoreboardRow {
   mae: number;
   vs_routed: BootstrapResult | null;
   vs_zero: BootstrapResult | null;
+}
+
+/** M5-convention RMSSE pair (committed): pooled mean + volume-weighted. */
+export interface RmsseEntry {
+  rmsse: number;
+  wrmsse: number;
+}
+
+/** One candidate's committed board entry per class: the h-keyed rows plus
+ * the revision-3.4 class-level relative-error numbers (rmae vs the floor;
+ * rmsse + wrmsse). */
+export interface CandidateBoardEntry {
+  h7?: CandidateScoreboardRow;
+  h14?: CandidateScoreboardRow;
+  /** Revision 3.4 (wave 22): candidate pooled MAE ÷ floor pooled MAE. */
+  rmae?: number | null;
+  /** Revision 3.4 (wave 22): M5-convention RMSSE per class. */
+  rmsse?: RmsseEntry | null;
 }
 
 /** One candidate's committed peak-capture numbers per class. */
@@ -432,13 +470,44 @@ export interface DecisionBlock {
     Record<"champion" | "floor", Record<string, Record<string, number>>>
   >;
   mapping_note: string;
+  /** Revision 3.4 (wave 22): the newsvendor order-quantile cost layer —
+   * order = the routed band's q-quantile (dense rows interpolate the
+   * committed p10/p50/p90 ladder; sparse rows the training-history ladder);
+   * the floor orders the same quantile of the seasonal-naive weekday
+   * distribution. Documented cost assumptions — a simulation, no savings
+   * claims. */
+  newsvendor?: {
+    simulation: boolean;
+    label: string;
+    cost_assumptions: {
+      holding_cost_per_unit_ordered_unsold_per_day: number;
+      stockout_cost_per_unit_short_per_day: number;
+      cost_basis: string;
+    };
+    order_definition: Record<string, string>;
+    service_levels: number[];
+    per_class: Record<
+      string,
+      Record<
+        string,
+        {
+          routed_cost_per_unit_demand: number;
+          floor_cost_per_unit_demand: number;
+          routed_minus_floor: BootstrapResult;
+        }
+      >
+    >;
+  };
 }
 
 export interface ForecastPayload {
   schema_version: number;
   /** Additive revisions on top of schema v3: "3.1" (wave 20) candidate
    * aliases per series, `peak_capture`, `class_scoreboard.candidates`;
-   * "3.2" (full lattice) contiguous 14-day curves at every h = 1..14. */
+   * "3.2" (full lattice) contiguous 14-day curves at every h = 1..14;
+   * "3.3" (wave 21) `win_rates` + ML alias entries; "3.4" (wave 22) the
+   * per-series `adida` curve (y_pred only), rmae/rmsse scoreboard rows and
+   * the newsvendor decision layer. */
   payload_revision?: string;
   demo: string;
   project: string;
@@ -452,6 +521,8 @@ export interface ForecastPayload {
   decision: DecisionBlock;
   headline: {
     claim: string;
+    /** Revision 3.4: the committed rmae-quoting headline sentence. */
+    headline_claim?: string | null;
     pooled_mae_by_model: Record<string, number>;
     routing_win_lumpy: BootstrapResult | null;
     n_series_experiment: number;
@@ -474,6 +545,10 @@ export interface ForecastPayload {
      * candidates' one-line definitions. */
     candidates?: string[];
     peak_capable_candidates?: Record<string, string>;
+    /** Revision 3.4: routed_reconciled's one-line definition (metrics-only). */
+    post_processing_candidates?: Record<string, string>;
+    /** Revision 3.4: documents the metrics-only / no-shock curve decisions. */
+    metrics_only_note?: string;
     class_thresholds: { adi: number; cv2: number };
     experiment_origins: {
       n_origins: number;

@@ -16,6 +16,7 @@ export const MODEL_COLOR: Record<ModelKey, string> = {
   champion: C_PINK,
   hurdle: C_AMBER,
   tweedie: "#a78bfa",
+  adida: "#38bdf8",
 };
 
 /** The drawn axis + its date→index map (see `windowAxis` in ../kpis — the
