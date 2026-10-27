@@ -1,7 +1,13 @@
 from pathlib import Path
 
 import pytest
-from portfolio_core.demo import DemoManifest, load_demo, load_demo_index, to_registry_entry
+from portfolio_core.demo import (
+    DemoManifest,
+    load_demo,
+    load_demo_index,
+    load_demos,
+    to_registry_entry,
+)
 from pydantic import ValidationError
 
 _VALID = """
@@ -60,6 +66,57 @@ def test_demo_index_sorted_by_group_and_id(tmp_path: Path) -> None:
     idx = load_demo_index(tmp_path)
     assert [d.id for d in idx] == ["churn-sandbox", "zz-demo"]
     assert all(isinstance(d, DemoManifest) for d in idx)
+
+
+def test_demos_dir_discovered_alongside_root_demo(tmp_path: Path) -> None:
+    """A project may declare the legacy root demo.yaml AND demos/*.yaml."""
+    project = tmp_path / "02-demand-forecasting"
+    project.mkdir()
+    (project / "demo.yaml").write_text(
+        _VALID.replace("churn-sandbox", "forecast-workbench").replace(
+            "05-ml-pipeline-churn", "02-demand-forecasting"
+        )
+    )
+    (project / "demos").mkdir()
+    (project / "demos" / "hierarchy-explorer.yaml").write_text(
+        _VALID.replace("churn-sandbox", "hierarchy-explorer").replace(
+            "05-ml-pipeline-churn", "02-demand-forecasting"
+        )
+    )
+    idx = load_demo_index(tmp_path)
+    assert [d.id for d in idx] == ["forecast-workbench", "hierarchy-explorer"]
+    # same group + sorted by id (registry order is (group, id) — unchanged shape)
+    assert all(d.group == "retain customers" for d in idx)
+    assert load_demos(project)[0].id == "forecast-workbench"  # root demo first
+
+
+def test_demos_dir_only_project_discovered(tmp_path: Path) -> None:
+    """demos/*.yaml alone (no root demo.yaml) is a valid declaration."""
+    project = tmp_path / "09-agentic-workflows"
+    project.mkdir()
+    (project / "demos").mkdir()
+    (project / "demos" / "b-demo.yaml").write_text(
+        _VALID.replace("churn-sandbox", "b-demo").replace(
+            "05-ml-pipeline-churn", "09-agentic-workflows"
+        )
+    )
+    (project / "demos" / "a-demo.yaml").write_text(
+        _VALID.replace("churn-sandbox", "a-demo").replace(
+            "05-ml-pipeline-churn", "09-agentic-workflows"
+        )
+    )
+    idx = load_demo_index(tmp_path)
+    assert [d.id for d in idx] == ["a-demo", "b-demo"]
+
+
+def test_demos_dir_invalid_manifest_rejected(tmp_path: Path) -> None:
+    project = tmp_path / "02-demand-forecasting"
+    (project / "demos").mkdir(parents=True)
+    (project / "demos" / "bad.yaml").write_text(
+        _VALID.replace("id: churn-sandbox", "id: Bad ID!")
+    )
+    with pytest.raises(ValidationError):
+        load_demo_index(tmp_path)
 
 
 def test_bad_id_pattern_rejected(tmp_path: Path) -> None:

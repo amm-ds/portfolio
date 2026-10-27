@@ -475,6 +475,23 @@ def mae_rmae_by_level(
     return per_level, naive_mae
 
 
+def load_group_frames(
+    data_dir: Path, group: str
+) -> tuple[pd.DataFrame, np.ndarray, dict[str, np.ndarray], GroupSpec]:
+    """Load one benchmark group's frames from ``data_dir``.
+
+    Returns ``(Y_df, S, tags, spec)`` with ``ds`` parsed to timestamps and
+    ``S`` as a float matrix whose row order matches ``Y_df.unique_id`` order
+    (the reconciliation contract — asserted by ``score_hierarchy``).
+    """
+    spec = HIERARCHICAL_GROUPS[group]
+    Y_df, S, tags = HierarchicalData.load(str(data_dir), group)
+    Y_df = Y_df.copy()
+    Y_df["ds"] = pd.to_datetime(Y_df["ds"])
+    S = np.asarray(S, dtype=float)
+    return Y_df, S, tags, spec
+
+
 def evaluate_group(
     data_dir: Path,
     group: str,
@@ -482,7 +499,7 @@ def evaluate_group(
     n_origins: int | None = None,
 ) -> dict[str, Any]:
     """Evaluate every candidate x reconciliation variant on one benchmark group."""
-    spec = HIERARCHICAL_GROUPS[group]
+    Y_df, S, tags, spec = load_group_frames(data_dir, group)
     if n_origins is not None:
         spec = GroupSpec(
             freq=spec.freq,
@@ -491,10 +508,26 @@ def evaluate_group(
             min_train=spec.min_train,
             n_origins=n_origins,
         )
-    Y_df, S, tags = HierarchicalData.load(str(data_dir), group)
-    Y_df = Y_df.copy()
-    Y_df["ds"] = pd.to_datetime(Y_df["ds"])
-    S = np.asarray(S, dtype=float)
+    block, _ = score_hierarchy(group, Y_df, S, tags, spec, config)
+    return block
+
+
+def score_hierarchy(
+    group: str,
+    Y_df: pd.DataFrame,
+    S: np.ndarray,
+    tags: dict[str, np.ndarray],
+    spec: GroupSpec,
+    config: ForecastConfig,
+) -> tuple[dict[str, Any], pd.DataFrame]:
+    """Score every candidate x reconciliation variant on an in-memory hierarchy.
+
+    The scoring core behind :func:`evaluate_group` — identical math and
+    determinism, but the caller supplies the frames (payload builders score
+    toy hierarchies) and additionally receives the pooled scored frame
+    (``actual`` + one column per variant per unique_id x ds x origin). The
+    frame is NOT JSON-safe: callers that persist the block must drop it.
+    """
     uids = list(Y_df["unique_id"].unique())
     bottom_ids = [str(u) for u in tags[list(tags.keys())[-1]]]
     if S.shape[0] != len(uids):
@@ -597,7 +630,7 @@ def evaluate_group(
             "n_boot": BOOTSTRAP_REPS,
             "seed": config.seed,
         },
-    }
+    }, pooled
 
 
 def evaluate_hierarchical(
