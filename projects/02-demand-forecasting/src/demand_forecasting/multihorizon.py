@@ -26,12 +26,13 @@ once per week**, with each horizon modelled directly:
   method, conformal widths).
 - **Routing** — series are routed per class on the selection origins only:
   sparse quadrants (ADI ≥ 1.32, see intermittent.py) choose among the
-  statistical methods (zero / seasonal_naive / Croston / SBA / TSB) PLUS the
-  wave-20 peak-capable ML models (hgb_tweedie / hurdle_hgb, below) —
-  direct_hgb stays excluded there (the wave-19 finding: boosted trees
-  overfit sparse series); smooth/erratic series choose among direct_hgb and
-  the two ML candidates. Selection on train origins only is property-tested
-  (shuffling the test origins' actuals leaves the routing unchanged).
+  statistical methods (zero / seasonal_naive / Croston / SBA / TSB + the
+  wave-22 ma_28 / ADIDA pair) PLUS the wave-20 peak-capable ML models
+  (hgb_tweedie / hurdle_hgb, below) — direct_hgb stays excluded there (the
+  wave-19 finding: boosted trees overfit sparse series); smooth/erratic series
+  choose among direct_hgb and the two ML candidates. Selection on train
+  origins only is property-tested (shuffling the test origins' actuals leaves
+  the routing unchanged).
 - **Peak features** (wave 20) — the design adds a peak block computed at the
   reference day target-h (so >= h days older than the target, exactly like the)
   lags): rolling mean AND max over 7/14/28-day windows, days-since-last-
@@ -58,13 +59,34 @@ once per week**, with each horizon modelled directly:
 - **Decision metric** — an order-up-to policy simulation (service level τ →
   order = quantile_τ of the forecast distribution; holding + stockout cost
   against actuals), champion vs seasonal-naive policy, per demand class, cost
-  assumptions documented in the JSON. Labelled a simulation — no savings
-  claims.
+  assumptions documented in the JSON. Wave 22 adds a newsvendor layer: the
+  order IS the routed band's q-quantile (band ladder / sparse history ladder;
+  the floor reads the same quantile of the seasonal-naive weekday
+  distribution) under documented holding/stockout unit costs. Labelled a
+  simulation — no savings claims.
 - **Paired bootstrap** — every headline comparison (per-class champion-vs-floor
   and champion-vs-naive at h=7/h=14, model-rank gaps, routing before/after)
   carries a 95% cluster bootstrap CI over (series x scored test origins):
   series are resampled with replacement, one shared index draw per
   replication so differences stay paired (the pattern from projects/05 /10).
+- **Wave-22 statistical candidates** — ``ma_28`` (rolling 28-day mean, flat),
+  and the ADIDA pair ``adida_sba`` / ``adida_tsb`` (7-day temporal aggregation
+  aligned to the origin so the 14-day window is exactly 2 buckets, SBA/TSB on
+  the bucket series, within-week-profile disaggregation — see
+  intermittent.adida_forecast). All three join the sparse routing pool.
+- **Wave-22 rolling features** — the design adds a rolling block at the same
+  target-h reference day as the peak/price blocks: rolling means over
+  7/14/28 days and rolling stds over 14/28 (rmean7/rmean14/rmean28/rstd14/
+  rstd28), so the boosters see trend/volatility state, not just levels.
+- **Wave-22 hierarchy anchoring** — ``routed_reconciled`` (comparison-only):
+  per country block the routed forecast is reconciled to the seasonal-naive
+  anchor of the country's aggregated demand (a denser, independent signal),
+  discrepancy allocated proportionally to the routed forecasts (fallback:
+  training-window means; then no adjustment).
+- **Wave-22 metrics** — ``rmae`` (candidate pooled MAE / floor pooled MAE) and
+  per-candidate ``rmsse`` (M5 convention) per class and pooled; the decision
+  block gains a newsvendor order-quantile cost layer (documented cost
+  assumptions, no savings claims). The headline claim quotes rmae.
 
 Outputs are merged into the track's metrics.json (``_multistep`` block — the
 per-model nowcast blocks stay untouched), probabilistic.json (``multistep``
@@ -159,6 +181,23 @@ PRICE_FEATURE_NAMES = (
 N_PRICE_FEATURES = len(PRICE_FEATURE_NAMES)
 PRICE_WINDOW_DAYS = 28
 PRICE_DROP_RATIO = 0.9
+# Rolling-statistics features (wave 22), all computed at a reference day r
+# from units[<=r] only — the same aging contract as the peak/price blocks
+# (taint-tested). Means over 7/14/28-day windows, stds over 14/28; windows of
+# length w are undefined for r < w - 1 and filled with 0.0 (never read:
+# designs start at MIN_LAG_ORIGIN = 28).
+ROLLING_FEATURE_NAMES = ("rmean7", "rmean14", "rmean28", "rstd14", "rstd28")
+N_ROLLING_FEATURES = len(ROLLING_FEATURE_NAMES)
+ROLLING_MEAN_WINDOWS = (7, 14, 28)
+ROLLING_STD_WINDOWS = (14, 28)
+# Newsvendor decision layer (wave 22): the order quantity is the forecast
+# band's q-quantile (q in config.service_levels). Cost model is a DOCUMENTED
+# ASSUMPTION (not a measured saving): holding 1.0 per ordered-but-unsold unit
+# per day, stockout penalty 3.0 per unmet unit per day.
+NEWSVENDOR_HOLDING_COST = 1.0
+NEWSVENDOR_STOCKOUT_COST = 3.0
+# The committed learner band ladder the dense-row quantiles interpolate.
+BAND_LADDER_LEVELS = QUANTILES_MS
 # Trading-cycle calendar additions (wave 21): wholesale buyers concentrate
 # orders at month end, so the TARGET-date calendar carries is_month_end (the
 # next calendar day starts a new month) and week_of_month ((dom-1)//7+1).
@@ -182,6 +221,9 @@ CANDIDATES = (
     "croston",
     "sba",
     "tsb",
+    "ma_28",
+    "adida_sba",
+    "adida_tsb",
     "hgb_tweedie",
     "hurdle_hgb",
     "lgbm_tweedie",
@@ -189,6 +231,7 @@ CANDIDATES = (
     "hurdle_lgbm",
     "peak_weighted_hgb",
     "ensemble_convex",
+    "routed_reconciled",
 )
 # Peak-capable ML candidates the sparse-series router may pick (direct_hgb
 # stays reserved for smooth/erratic series — the wave-19 routing finding).
@@ -203,8 +246,10 @@ ML_SPARSE = (
     "peak_weighted_hgb",
 )
 # Candidates compared against the routed pipeline and the zero floor in the
-# candidate-comparison / headline rows (the ML pool + the convex ensemble).
-COMPARISON_CANDIDATES = (*ML_SPARSE, "ensemble_convex")
+# candidate-comparison / headline rows (the ML pool + the convex ensemble +
+# the wave-22 hierarchy-anchored routed post-processing). routed_reconciled
+# is comparison-only: it never enters the routing pool.
+COMPARISON_CANDIDATES = (*ML_SPARSE, "ensemble_convex", "routed_reconciled")
 CHAMPION = "routed"
 FLOOR = "seasonal_naive"
 NAIVE = "zero"
@@ -396,6 +441,44 @@ def price_feature_tensor(price: np.ndarray) -> np.ndarray:
 
 
 # ---------------------------------------------------------------------------
+# Rolling features (wave 22) — all computed at a reference day r from units[≤r]
+# ---------------------------------------------------------------------------
+
+
+def rolling_feature_tensor(units: np.ndarray) -> np.ndarray:
+    """(n_dates x n_series x N_ROLLING_FEATURES) tensor of rolling statistics.
+
+    Every feature for reference day *r* reads ``units[<=r]`` only, so a design
+    whose reference day is ``target - h`` references no actual within *h* days
+    of the target — the same aging that makes the lag trio/peak/price blocks
+    leakage-proof (taint-tested). Columns follow
+    :data:`ROLLING_FEATURE_NAMES`: rolling means over 7/14/28-day windows
+    (columns 0-2) and rolling standard deviations (population, ddof=0) over
+    14/28-day windows (columns 3-4), each window ENDING at the reference day.
+    Windows of length *w* are undefined for ``r < w - 1`` and filled with 0.0
+    (never read: designs start at :data:`MIN_LAG_ORIGIN` = 28).
+    """
+    n_dates, n_series = units.shape
+    out = np.zeros((n_dates, n_series, N_ROLLING_FEATURES))
+    csum = np.vstack([np.zeros((1, n_series)), np.cumsum(units, axis=0)])
+    csum2 = np.vstack([np.zeros((1, n_series)), np.cumsum(units**2, axis=0)])
+    col = 0
+    for w in ROLLING_MEAN_WINDOWS + ROLLING_STD_WINDOWS:
+        if w > n_dates:
+            continue  # window never fully fits; features stay 0.0 (undefined)
+        idx = np.arange(w - 1, n_dates)  # reference days with a full window
+        s1 = csum[idx + 1] - csum[idx + 1 - w]
+        mean = s1 / w
+        if col < len(ROLLING_MEAN_WINDOWS):
+            out[idx, :, col] = mean
+        else:
+            var = np.maximum(csum2[idx + 1] - csum2[idx + 1 - w] - w * mean**2, 0.0) / w
+            out[idx, :, col] = np.sqrt(var)
+        col += 1
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Weekly rolling origins (no embargo gap)
 # ---------------------------------------------------------------------------
 
@@ -449,6 +532,7 @@ def _design_train(
     cal: np.ndarray,
     pf: np.ndarray,
     prf: np.ndarray,
+    rf: np.ndarray,
     origin: int,
     h: int,
 ) -> tuple[np.ndarray, np.ndarray]:
@@ -460,11 +544,12 @@ def _design_train(
     calendar of the target date o'+h, the peak block at the reference day o'
     (see :func:`peak_feature_tensor` — every entry ≥ h days older than the
     target), the price block at the same reference day (see
-    :func:`price_feature_tensor` — same aging), the lag trio
-    units(o'), units(o'-7), units(o'-14), and the series identity as a hi/lo
-    PAIR of native categoricals (HGB caps categorical cardinality at 255; the
-    pair (i // 64, i % 64) identifies the series exactly and keeps both
-    cardinalities small). Column order matches :func:`_design_pred`.
+    :func:`price_feature_tensor` — same aging), the rolling block at the same
+    reference day (see :func:`rolling_feature_tensor` — same aging), the lag
+    trio units(o'), units(o'-7), units(o'-14), and the series identity as a
+    hi/lo PAIR of native categoricals (HGB caps categorical cardinality at
+    255; the pair (i // 64, i % 64) identifies the series exactly and keeps
+    both cardinalities small). Column order matches :func:`_design_pred`.
     """
     n_series = units.shape[1]
     lo, hi = MIN_LAG_ORIGIN, origin - h
@@ -476,14 +561,21 @@ def _design_train(
     lag14 = units[lo - 14 : hi + 1 - 14].reshape(-1)
     peak = pf[lo : hi + 1].reshape(-1, N_PEAK_FEATURES)
     price = prf[lo : hi + 1].reshape(-1, N_PRICE_FEATURES)
+    roll = rf[lo : hi + 1].reshape(-1, N_ROLLING_FEATURES)
     codes = np.tile(np.arange(n_series), m)
-    x = np.column_stack([base, lag0, lag7, lag14, peak, price, codes // 64, codes % 64])
+    x = np.column_stack([base, lag0, lag7, lag14, peak, price, roll, codes // 64, codes % 64])
     y = units[tgt].reshape(-1)
     return x, y
 
 
 def _design_pred(
-    units: np.ndarray, cal: np.ndarray, pf: np.ndarray, prf: np.ndarray, origin: int, h: int
+    units: np.ndarray,
+    cal: np.ndarray,
+    pf: np.ndarray,
+    prf: np.ndarray,
+    rf: np.ndarray,
+    origin: int,
+    h: int,
 ) -> np.ndarray:
     """Prediction matrix for (origin, h): one row per series, target origin+h."""
     n_series = units.shape[1]
@@ -497,6 +589,7 @@ def _design_pred(
             units[origin - 14],
             pf[origin],
             prf[origin],
+            rf[origin],
             codes // 64,
             codes % 64,
         ]
@@ -504,8 +597,8 @@ def _design_pred(
 
 
 def _n_numeric_features() -> int:
-    """Numeric column count: calendar + lag trio + peak + price (before hi/lo)."""
-    return 9 + len(LAG_AGES) + N_PEAK_FEATURES + N_PRICE_FEATURES
+    """Numeric column count: calendar + lag trio + peak + price + rolling."""
+    return 9 + len(LAG_AGES) + N_PEAK_FEATURES + N_PRICE_FEATURES + N_ROLLING_FEATURES
 
 
 def _fit_hgb(config: ForecastConfig, quantile: float | None) -> HistGradientBoostingRegressor:
@@ -698,13 +791,20 @@ def _seasonal_naive_pred(units: np.ndarray, origin: int, horizons: list[int]) ->
 
 
 def _statistical_preds(units: np.ndarray, origin: int, window: int) -> dict[str, np.ndarray]:
-    """Flat Croston/SBA/TSB forecasts per series, fit on days 0..origin only."""
+    """Flat/varied statistical forecasts per series, fit on days 0..origin only.
+
+    Covers the Croston family (croston/sba/tsb), the wave-22 rolling-mean
+    baseline (ma_28, flat) and the ADIDA pair (adida_sba/adida_tsb — bucket
+    totals via SBA/TSB, within-week-profile disaggregation, so the 14-day
+    window is exactly two 7-day buckets; see intermittent.adida_forecast).
+    """
     hist = units[: origin + 1]
+    names = ("croston", "sba", "tsb", "ma_28", "adida_sba", "adida_tsb")
     return {
         name: np.array(
             [statistical_forecast(name, hist[:, i], window) for i in range(hist.shape[1])]
         )
-        for name in ("croston", "sba", "tsb")
+        for name in names
     }
 
 
@@ -801,6 +901,7 @@ def _score_origin_impl(
         if price is not None
         else neutral_price_tensor(units.shape[0], n_series)
     )
+    rf = rolling_feature_tensor(units)
     cat_lgbm = _lgbm_cat_cols()
     point_cols: list[np.ndarray] = []
     point_models: list[HistGradientBoostingRegressor] = []
@@ -818,8 +919,8 @@ def _score_origin_impl(
     pw_models: dict[float, list[tuple[Any, Any]]] = {w: [] for w in PEAK_WEIGHTS}
     quantile_cols: dict[float, list[np.ndarray]] = {q: [] for q in QUANTILES_MS}
     for h in horizons:
-        x_train, y_train = _design_train(units, cal, pf, prf, origin, h)
-        x_pred = _design_pred(units, cal, pf, prf, origin, h)
+        x_train, y_train = _design_train(units, cal, pf, prf, rf, origin, h)
+        x_pred = _design_pred(units, cal, pf, prf, rf, origin, h)
         model = _fit_hgb(config, quantile=None)
         model.fit(x_train, y_train)
         point_models.append(model)
@@ -908,6 +1009,7 @@ def _score_origin_impl(
         units_s = units.copy()
         units_s[max(0, origin - 6) : origin + 1] *= s  # the last 7 days before the origin
         pf_s = peak_feature_tensor(units_s)
+        rf_s = rolling_feature_tensor(units_s)
         prf_s = (
             price_feature_tensor(price)
             if price is not None
@@ -927,7 +1029,7 @@ def _score_origin_impl(
         hurdle_lgbm_cols_s = []
         pw_cols_s: dict[float, list[np.ndarray]] = {w: [] for w in PEAK_WEIGHTS}
         for j, h in enumerate(horizons):
-            x_s = _design_pred(units_s, cal, pf_s, prf_s, origin, h)
+            x_s = _design_pred(units_s, cal, pf_s, prf_s, rf_s, origin, h)
             hgb_cols.append(np.asarray(point_models[j].predict(x_s), dtype=float))
             tweedie_cols_s.append(np.asarray(tweedie_models[j].predict(x_s), dtype=float))
             clf_s, reg_s = hurdle_models[j]
@@ -995,6 +1097,56 @@ def order_up_to_cost(
     )
 
 
+def _ladder_quantile(q: float, p10: np.ndarray, p50: np.ndarray, p90: np.ndarray) -> np.ndarray:
+    """q-quantile of the committed p10/p50/p90 band ladder (wave 22 newsvendor).
+
+    Linear interpolation between the ladder rungs, linear extrapolation above
+    p90 / below p10 (same segment slope), zero-clipped. Pure math, hand-testable:
+    with p10=1, p50=3, p90=5 the q=0.8 rung is 3 + 0.3 x (5-3)/0.4 = 4.5.
+    """
+    lo_slope = (p50 - p10) / (0.5 - 0.1)
+    hi_slope = (p90 - p50) / (0.9 - 0.5)
+    out = np.where(q <= 0.5, p50 + (q - 0.5) * lo_slope, p50 + (q - 0.5) * hi_slope)
+    return np.maximum(out, 0.0)
+
+
+def _paired_bootstrap_cost(
+    cost_a: np.ndarray,
+    cost_b: np.ndarray,
+    demand: np.ndarray,
+    series_codes: np.ndarray,
+    n_boot: int,
+    seed: int,
+) -> dict[str, Any]:
+    """95% CI on cost-per-unit-demand(A) - cost-per-unit-demand(B).
+
+    Same resampling contract as :func:`_paired_bootstrap_mae` (one shared
+    series-index draw per replication, percentile interval); the replicated
+    statistic is the resampled-cluster cost ratio difference, so the point
+    estimate is (sum A / sum demand) - (sum B / sum demand) over all cells.
+    """
+    uniques = np.unique(series_codes)
+    sum_a = np.array([cost_a[series_codes == i].sum() for i in uniques])
+    sum_b = np.array([cost_b[series_codes == i].sum() for i in uniques])
+    sum_d = np.array([demand[series_codes == i].sum() for i in uniques])
+    rng = np.random.default_rng(seed)
+    diffs = np.empty(n_boot)
+    for b in range(n_boot):
+        idx = rng.integers(0, len(uniques), len(uniques))
+        denom = sum_d[idx].sum()
+        diffs[b] = (sum_a[idx].sum() - sum_b[idx].sum()) / denom if denom > 0 else np.nan
+    lo, hi = np.nanquantile(diffs, [0.025, 0.975])
+    denom = demand.sum()
+    point = (cost_a.sum() - cost_b.sum()) / denom if denom > 0 else float("nan")
+    return {
+        "diff": float(point),
+        "ci95": [float(lo), float(hi)],
+        "spans_zero": bool(lo <= 0.0 <= hi),
+        "n_boot": n_boot,
+        "seed": seed,
+    }
+
+
 def rmsse_pooled(
     err: np.ndarray,
     scale2: np.ndarray,
@@ -1023,6 +1175,30 @@ def rmsse_pooled(
     if not pooled:
         return float("nan"), float("nan")
     return float(np.mean(pooled)), (w_num / w_den if w_den > 0 else float("nan"))
+
+
+def _rmae_cells(cells: dict[str, Any], mask: np.ndarray, pred_key: str) -> float:
+    """Relative MAE: candidate pooled MAE / seasonal_naive floor pooled MAE
+    over the same masked cells (< 1 = beats the floor). NaN when the floor's
+    pooled MAE is 0 (no relative scale exists)."""
+    err_c = float(np.abs(cells["pred"][pred_key][mask] - cells["y"][mask]).mean())
+    err_f = float(np.abs(cells["pred"][FLOOR][mask] - cells["y"][mask]).mean())
+    return err_c / err_f if err_f > 0 else float("nan")
+
+
+def _rmsse_cells(cells: dict[str, Any], mask: np.ndarray, pred_key: str) -> tuple[float, float]:
+    """(pooled, volume-weighted) RMSSE for one candidate over the masked
+    cells, M5 convention: the unit is a (series x scored origin) evaluation —
+    numerator = MSE of the candidate over that unit's scored horizon days,
+    denominator = the in-sample MSE of the one-step seasonal-naive-7 over the
+    unit's training window (cells["scale2"], 0-scale units excluded)."""
+    err = cells["pred"][pred_key][mask] - cells["y"][mask]
+    origins = np.unique(cells["origin"][mask])
+    rank = {int(o): k for k, o in enumerate(origins)}
+    codes = cells["series"][mask] * len(origins) + np.array(
+        [rank[int(o)] for o in cells["origin"][mask]]
+    )
+    return rmsse_pooled(err, cells["scale2"][mask], cells["volume"][mask], codes)
 
 
 def _paired_bootstrap_mae(
@@ -1108,6 +1284,7 @@ PEAK_CANDIDATES = (
     "hurdle_lgbm",
     "peak_weighted_hgb",
     "ensemble_convex",
+    "routed_reconciled",
 )
 # Candidates in the per-series beats-floor win-rate report.
 WIN_RATE_CANDIDATES = ("routed", "zero", *COMPARISON_CANDIDATES)
@@ -1310,11 +1487,15 @@ def _test_cells(
     units: np.ndarray,
     sparse: np.ndarray,
     method_of: np.ndarray,
+    series_ids: list[str],
     ens_weights: np.ndarray | None = None,
     ens_ml_idx: np.ndarray | None = None,
 ) -> dict[str, Any]:
     """Flatten (series x test origin x horizon) into column arrays."""
     n_cells = units.shape[1] * len(test) * len(horizons)
+    # country block per series (store = country in the UCI panel) for the
+    # wave-22 hierarchy anchoring: total -> country -> (country, product)
+    country_of = np.array([sid.split("|")[0] for sid in series_ids], dtype=object)
     cells: dict[str, Any] = {
         "series": np.empty(n_cells, dtype=int),
         "origin": np.empty(n_cells, dtype=int),
@@ -1354,6 +1535,9 @@ def _test_cells(
                 "croston",
                 "sba",
                 "tsb",
+                "ma_28",
+                "adida_sba",
+                "adida_tsb",
                 "hgb_tweedie",
                 "hurdle_hgb",
                 "lgbm_tweedie",
@@ -1364,12 +1548,64 @@ def _test_cells(
                 cells["pred"][name][sl] = sc.preds[name][:, j]
             routed = _routed_pred(sc, j, sparse, method_of)
             cells["pred"]["routed"][sl] = routed
+            cells["pred"]["routed_reconciled"][sl] = _reconciled_pred(
+                units, sc, j, sparse, method_of, country_of, horizons
+            )
             if ens_weights is not None and ens_ml_idx is not None:
                 cells["pred"]["ensemble_convex"][sl] = _ensemble_pred(
                     sc, routed, ens_weights, ens_ml_idx, j
                 )
             r += n
     return cells
+
+
+def _reconciled_pred(
+    units: np.ndarray,
+    sc: OriginScore,
+    j: int,
+    sparse: np.ndarray,
+    method_of: np.ndarray,
+    country_of: np.ndarray,
+    horizons: list[int],
+) -> np.ndarray:
+    """Hierarchy-anchored post-processing of the routed forecast (wave 22).
+
+    For horizon index ``j`` (true horizon h), each country block is anchored
+    to the seasonal-naive forecast of the country's AGGREGATED demand on the
+    target day — a genuinely independent, denser signal than any member
+    series. The discrepancy (anchor - sum of member routed forecasts) is
+    allocated to member series proportionally to their routed forecast;
+    members with zero forecast get nothing. If every member forecast in the
+    block is zero, the discrepancy is allocated proportionally to the member
+    training-window means (up to the origin); if those are all zero too, the
+    block is left unadjusted. Pure numpy, deterministic.
+    """
+    origin = sc.origin
+    h = horizons[j]
+    ref = origin + h - 7 * math.ceil(h / 7)  # seasonal-naive reference day
+    routed = _routed_pred(sc, j, sparse, method_of)
+    countries = np.unique(country_of)
+    anchor = np.zeros(countries.shape[0])
+    for c_i, c in enumerate(countries):
+        members = country_of == c
+        anchor[c_i] = units[ref][members].sum()
+    train_mean = units[: origin + 1].mean(axis=0)
+    out = routed.copy()
+    for c_i, c in enumerate(countries):
+        members = np.flatnonzero(country_of == c)
+        block_sum = float(routed[members].sum())
+        discrepancy = anchor[c_i] - block_sum
+        if discrepancy == 0.0:
+            continue
+        if block_sum > 0:
+            weights = routed[members] / block_sum
+        else:
+            mean_sum = float(train_mean[members].sum())
+            if mean_sum <= 0:
+                continue  # nothing to allocate to: no adjustment
+            weights = train_mean[members] / mean_sum
+        out[members] = routed[members] + discrepancy * weights
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -1436,7 +1672,15 @@ def run_multistep(
 
     # ---- long table over the TEST origins (scored once) ----
     cells = _test_cells(
-        by_origin, test, horizons, units, sparse, method_of, ens["weights"], ens_ml_idx
+        by_origin,
+        test,
+        horizons,
+        units,
+        sparse,
+        method_of,
+        series_ids,
+        ens["weights"],
+        ens_ml_idx,
     )
     class_of_series = np.array([classes[s]["class"] for s in series_ids])
     cells["class"] = class_of_series[cells["series"]]
@@ -1449,7 +1693,16 @@ def run_multistep(
     win_rates = _win_rates(cells, horizons, config)
     class_of_series = np.array([classes[s]["class"] for s in series_ids])
     decision = _order_up_to(
-        by_origin, selection, horizons, units, sparse, method_of, cells, class_of_series, config
+        by_origin,
+        selection,
+        horizons,
+        units,
+        sparse,
+        method_of,
+        cells,
+        class_of_series,
+        config,
+        dates,
     )
     block = _assemble_block(
         dates,
@@ -2129,6 +2382,52 @@ def _candidate_comparison(cells: dict[str, Any], config: ForecastConfig) -> dict
 
 
 # ---------------------------------------------------------------------------
+# Wave-22 relative-error blocks: rmae + per-candidate rmsse (per class/pooled)
+# ---------------------------------------------------------------------------
+
+
+def _rmae_block(cells: dict[str, Any]) -> dict[str, Any]:
+    """Relative MAE (candidate pooled MAE / seasonal_naive floor pooled MAE)
+    for every candidate, pooled and per demand class. The floor itself sits at
+    1.0 by construction; this is the headline ratio the claim quotes."""
+    full = np.ones(cells["y"].shape[0], dtype=bool)
+    classes = [str(c) for c in np.unique(cells["class"])]
+    return {
+        "definition": "rmae = candidate pooled MAE / seasonal_naive floor pooled MAE over "
+        "the same scored cells; < 1 = beats the floor (the floor's rmae is 1.0 "
+        "by construction)",
+        "pooled": {name: _rmae_cells(cells, full, name) for name in CANDIDATES},
+        "per_class": {
+            cls: {name: _rmae_cells(cells, cells["class"] == cls, name) for name in CANDIDATES}
+            for cls in classes
+        },
+    }
+
+
+def _rmsse_block(cells: dict[str, Any]) -> dict[str, Any]:
+    """Per-candidate RMSSE (M5 convention, see :func:`_rmsse_cells`), pooled
+    and per demand class, with the volume-weighted variant alongside."""
+
+    def _entry(mask: np.ndarray, name: str) -> dict[str, float]:
+        r, wr = _rmsse_cells(cells, mask, name)
+        return {"rmsse": r, "wrmsse": wr}
+
+    full = np.ones(cells["y"].shape[0], dtype=bool)
+    classes = [str(c) for c in np.unique(cells["class"])]
+    return {
+        "definition": "M5-style RMSSE per (series x scored origin) unit: numerator = MSE of "
+        "the candidate over the unit's scored horizon days, denominator = in-sample MSE of "
+        "the one-step seasonal-naive-7 over the unit's training window; averaged over units "
+        "(zero-scale units excluded); wrmsse weights by training-window volume",
+        "pooled": {name: _entry(full, name) for name in CANDIDATES},
+        "per_class": {
+            cls: {name: _entry(cells["class"] == cls, name) for name in CANDIDATES}
+            for cls in classes
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
 # Decision metric: order-up-to policy simulation
 # ---------------------------------------------------------------------------
 
@@ -2169,6 +2468,107 @@ def _policy_residuals(
     return np.concatenate(res)
 
 
+def _newsvendor(
+    dates: np.ndarray,
+    cells: dict[str, Any],
+    units: np.ndarray,
+    sparse: np.ndarray,
+    config: ForecastConfig,
+) -> dict[str, Any]:
+    """Newsvendor order-quantile cost layer (wave 22, additive in the decision
+    block; documented cost assumptions — NOT a measured saving).
+
+    For each service level q in ``config.service_levels`` and each scored
+    cell (series x test origin x horizon day):
+
+    - **routed policy order** — the routed band's q-quantile. Dense rows:
+      linear interpolation of the committed p10/p50/p90 learner band ladder
+      (extrapolation above p90 with the p50→p90 slope, zero-clipped — see
+      :func:`_ladder_quantile`). Sparse rows: the q-quantile of the training
+      history up to the origin (the existing sparse ladder machinery; the
+      P(sale) summary stays in the bands block).
+    - **floor policy order** — the q-quantile of the seasonal-naive empirical
+      distribution: the training-window demand observed on the target day's
+      weekday (0 when the weekday never occurred in the window).
+    - **cost per cell** — holding 1.0 per ordered-but-unsold unit + stockout
+      3.0 per unmet unit (per day, assumption).
+
+    Reported per demand class as expected daily cost per unit-demand (total
+    cost / total demand) for the routed vs the floor policy, with a paired
+    cluster bootstrap CI on the difference (series resampled with
+    replacement, one shared draw per replication).
+    """
+    dows = np.array([d.weekday() for d in dates.astype("datetime64[D]").astype(object)])
+    out: dict[str, Any] = {
+        "simulation": True,
+        "label": "newsvendor order-quantile cost — documented cost assumptions, no savings claims",
+        "cost_assumptions": {
+            "holding_cost_per_unit_ordered_unsold_per_day": NEWSVENDOR_HOLDING_COST,
+            "stockout_cost_per_unit_short_per_day": NEWSVENDOR_STOCKOUT_COST,
+            "cost_basis": "per scored cell (series x test origin x horizon day); "
+            "assumption, not measured",
+        },
+        "order_definition": {
+            "routed_dense": "q-quantile of the committed p10/p50/p90 learner band ladder "
+            "(linear interpolation; linear extrapolation above p90), zero-clipped",
+            "routed_sparse": "q-quantile of the training history up to the origin (the "
+            "existing sparse ladder machinery)",
+            "floor": "q-quantile of the seasonal-naive empirical distribution: the "
+            "training-window demand on the target day's weekday",
+        },
+        "service_levels": [float(q) for q in config.service_levels],
+        "per_class": {},
+    }
+    for cls in [str(c) for c in np.unique(cells["class"])]:
+        mask = cells["class"] == cls
+        idx = np.flatnonzero(mask)
+        ser = cells["series"][idx]
+        org = cells["origin"][idx]
+        h_of = cells["h"][idx]
+        y = cells["y"][idx]
+        per_q: dict[str, Any] = {}
+        for q in config.service_levels:
+            # routed orders: dense rows interpolate the band ladder; sparse
+            # rows read the history ladder (one quantile per series x origin)
+            order_r = np.empty(idx.size)
+            dense_rows = ~sparse[ser]
+            order_r[dense_rows] = _ladder_quantile(
+                q,
+                cells["p10"][idx[dense_rows]],
+                cells["p50"][idx[dense_rows]],
+                cells["p90"][idx[dense_rows]],
+            )
+            for k in np.flatnonzero(~dense_rows):
+                order_r[k] = float(np.quantile(units[: int(org[k]) + 1, int(ser[k])], q))
+            # floor orders: weekday-filtered training history quantile
+            order_f = np.empty(idx.size)
+            for r in range(idx.size):
+                o = int(org[r])
+                hist = units[: o + 1, int(ser[r])]
+                same_dow = hist[dows[: o + 1] == dows[o + int(h_of[r])]]
+                order_f[r] = float(np.quantile(same_dow, q)) if same_dow.size else 0.0
+            cost_r = NEWSVENDOR_HOLDING_COST * np.maximum(order_r - y, 0.0) + (
+                NEWSVENDOR_STOCKOUT_COST * np.maximum(y - order_r, 0.0)
+            )
+            cost_f = NEWSVENDOR_HOLDING_COST * np.maximum(order_f - y, 0.0) + (
+                NEWSVENDOR_STOCKOUT_COST * np.maximum(y - order_f, 0.0)
+            )
+            denom = float(y.sum())
+            per_q[f"q_{q:.2f}"] = {
+                "routed_cost_per_unit_demand": float(cost_r.sum() / denom)
+                if denom > 0
+                else float("nan"),
+                "floor_cost_per_unit_demand": float(cost_f.sum() / denom)
+                if denom > 0
+                else float("nan"),
+                "routed_minus_floor": _paired_bootstrap_cost(
+                    cost_r, cost_f, y, ser, config.bootstrap_reps, config.seed + 9602
+                ),
+            }
+        out["per_class"][cls] = per_q
+    return out
+
+
 def _order_up_to(
     by_origin: dict[int, OriginScore],
     selection: list[int],
@@ -2179,6 +2579,7 @@ def _order_up_to(
     cells: dict[str, Any],
     class_of_series: np.ndarray,
     config: ForecastConfig,
+    dates: np.ndarray,
 ) -> dict[str, Any]:
     """Order-up-to policy evaluation (simulation — no savings claims).
 
@@ -2236,6 +2637,9 @@ def _order_up_to(
                 "delta_champion_minus_floor": totals["champion"] - totals["floor"],
             }
         out["per_class"][cls] = per_tau
+    # wave 22: the newsvendor order-quantile layer, additive over the
+    # order-up-to simulation above (different order rule, documented costs)
+    out["newsvendor"] = _newsvendor(dates, cells, units, sparse, config)
     return out
 
 
@@ -2279,6 +2683,13 @@ def _assemble_block(
         headline[cls]["n_series"] = entry["n_series"]
     routing_choices = {sid: str(method_of[i]) for i, sid in enumerate(series_ids)}
     overall = {name: float(np.abs(cells["pred"][name] - cells["y"]).mean()) for name in CANDIDATES}
+    rmae = _rmae_block(cells)
+    champ_mae = overall[CHAMPION]
+    headline_claim = (
+        f"champion '{CHAMPION}' pooled test MAE {champ_mae:.2f} vs floor '{FLOOR}' "
+        f"{overall[FLOOR]:.2f} — rmae {rmae['pooled'][CHAMPION]:.3f} "
+        "(relative MAE vs the seasonal-naive floor; < 1 beats the floor)"
+    )
     return {
         "protocol": PROTOCOL,
         "track_note": (
@@ -2293,8 +2704,9 @@ def _assemble_block(
         "candidates": list(CANDIDATES),
         "champion": CHAMPION,
         "champion_definition": "per-series routing: sparse (ADI>=1.32) series -> best candidate "
-        "among the statistical methods + the six peak-capable ML candidates on the "
-        "selection origins; smooth/erratic -> best among direct_hgb + the same ML pool",
+        "among the statistical methods (zero/seasonal_naive/Croston/SBA/TSB + the wave-22 "
+        "ma_28/ADIDA pair) + the six peak-capable ML candidates on the selection origins; "
+        "smooth/erratic -> best among direct_hgb + the same ML pool",
         "floor": FLOOR,
         "naive": NAIVE,
         "peak_capable_candidates": {
@@ -2318,6 +2730,13 @@ def _assemble_block(
             "ensemble_convex": "per-series convex blend w x routed + (1 - w) x best_ml "
             "(w in {0, 0.1, ..., 1}, best_ml = the per-series best ML candidate, both "
             "chosen on the selection origins; no refits)",
+        },
+        "post_processing_candidates": {
+            "routed_reconciled": "hierarchy anchoring of the routed forecast (comparison-"
+            "only, never in the routing pool): per country block the anchor is the "
+            "seasonal-naive forecast of the country's aggregated demand on the target day; "
+            "the discrepancy is allocated to member series proportionally to their routed "
+            "forecast (fallback: training-window means; then no adjustment)"
         },
         "origins": {
             "n_origins": len(origins),
@@ -2343,9 +2762,9 @@ def _assemble_block(
         },
         "routing": {
             "rule": "per-series routing on the selection origins ONLY: sparse (ADI >= 1.32) "
-            "series choose among zero/seasonal_naive/Croston/SBA/TSB plus the six "
-            "peak-capable ML candidates; smooth/erratic series choose among direct_hgb "
-            "plus the same ML pool",
+            "series choose among zero/seasonal_naive/Croston/SBA/TSB/ma_28/adida_sba/"
+            "adida_tsb plus the six peak-capable ML candidates; smooth/erratic series "
+            "choose among direct_hgb plus the same ML pool",
             "method_choices": routing_choices,
             "pool_sparse": list((*STATISTICAL_METHODS, *ML_SPARSE)),
             "pool_dense": list(("direct_hgb", *ML_SPARSE)),
@@ -2365,6 +2784,9 @@ def _assemble_block(
         "per_horizon": {str(h): per_horizon[h] for h in horizons},
         "horizon_growth": growth,
         "overall_mae_test": overall,
+        "headline_claim": headline_claim,
+        "rmae": rmae,
+        "rmsse": _rmsse_block(cells),
         "bootstrap": {
             "method": bootstrap["method"],
             "unit": bootstrap["unit"],
@@ -2391,18 +2813,20 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
             "earlier origins select (routing + conformal calibration) only"
         ),
         "selection_rule": "per-series routing method = lowest summed |error| over the "
-        "selection origins: sparse series among zero/seasonal_naive/Croston/SBA/TSB plus "
-        "the six ML candidates (direct_hgb ineligible — the wave-19 sparse finding); "
-        "smooth/erratic series among direct_hgb plus the same ML pool; the convex-ensemble "
-        "weight and the peak-weighted hurdle's sample weight are chosen on the same "
-        "selection origins; never reads test actuals (property-tested by shuffling the "
-        "test origins' actuals)",
+        "selection origins: sparse series among zero/seasonal_naive/Croston/SBA/TSB/"
+        "ma_28/adida_sba/adida_tsb plus the six ML candidates (direct_hgb ineligible — "
+        "the wave-19 sparse finding); smooth/erratic series among direct_hgb plus the "
+        "same ML pool; the convex-ensemble weight and the peak-weighted hurdle's sample "
+        "weight are chosen on the same selection origins; never reads test actuals "
+        "(property-tested by shuffling the test origins' actuals)",
         "feature_semantics": "direct per-horizon models: calendar of the target date (incl. "
         "is_month_end / week_of_month, the wholesale trading-cycle hypothesis) + peak block "
         "at target-h (rolling mean/max over 7/14/28d windows ending at target-h, "
         "days-since-last-nonzero, 28d non-zero-day count, 28d peak ratio) + price block at "
         "target-h (price_asof, price_ratio_28d, days_since_price_change, price_drop — the "
-        "B2B promo proxy; neutral constants when the panel has no price column) + lags "
+        "B2B promo proxy; neutral constants when the panel has no price column) + rolling "
+        "block at target-h (wave 22: rmean7/rmean14/rmean28, rstd14/rstd28 — rolling "
+        "means/stds of demand over windows ending at target-h) + lags "
         "lag_h, lag_{h+7}, lag_{h+14} (every demand/price feature >= h days old relative "
         "to the target — no actual within h days of the target is referenced, taint-tested "
         "for units AND price); training rows use targets <= the origin only",
@@ -2412,12 +2836,17 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
         "metric_definitions": {
             "mae": "mean |actual - forecast| over series x scored test origins at horizon h",
             "mase": "pooled |err| / pooled per-series in-sample seasonal-naive-7 scale "
-            "(zero-scale rows excluded)",
+            "(zero-scale rows excluded); 1.0 is the scale's in-sample error level, "
+            "NOT the naive's own holdout error — the naive's MASE can differ from "
+            "1.0 on a scored window",
+            "rmae": "candidate pooled MAE / seasonal_naive floor pooled MAE over the same "
+            "scored cells; < 1 = beats the floor (the floor sits at 1.0 by construction)",
+            "rmsse": "M5-style per (series x scored origin) unit: sqrt(MSE(candidate) / "
+            "in-sample MSE of the one-step seasonal-naive-7 on the unit's training window), "
+            "averaged over units (zero-scale excluded)",
+            "wrmsse": "volume-weighted RMSSE (weights = training-window demand)",
             "bias": "mean(forecast - actual) at horizon h",
             "wape": "sum|err| / sum|actual| at horizon h",
-            "rmsse": "M5-style: per-series sqrt(MSE(err)/MSE(in-sample seasonal-naive-7)), "
-            "averaged over series (zero-scale excluded)",
-            "wrmsse": "volume-weighted RMSSE (weights = training-window demand)",
             "pinball_pXX": "mean pinball loss of the learner quantile at level XX",
             "coverage": "share of actuals inside the per-h band on the scored origins",
             "calibration_verdict": "|coverage - target| <= 0.05 -> calibrated; above -> "
@@ -2432,6 +2861,13 @@ def _metadata_block(block: dict[str, Any], config: ForecastConfig) -> dict[str, 
             "over the scored test origins at that h is strictly below the seasonal_naive "
             "floor's; 95% CI = cluster bootstrap over series (one shared index draw per "
             "replication across candidates)",
+            "newsvendor_cost": "decision layer (documented assumption, not a measured "
+            "saving): order = the routed band's q-quantile (dense rows interpolate the "
+            "committed p10/p50/p90 ladder; sparse rows read the training-history ladder; "
+            "the floor reads the same quantile of the seasonal-naive empirical "
+            "distribution = training demand on the target's weekday); cost = 1.0 x "
+            "ordered-but-unsold + 3.0 x unmet per unit per day; reported per class as "
+            "expected daily cost per unit-demand with a paired cluster-bootstrap CI",
         },
         "candidates": list(CANDIDATES),
     }

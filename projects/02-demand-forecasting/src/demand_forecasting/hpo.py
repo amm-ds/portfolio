@@ -45,6 +45,7 @@ from demand_forecasting.multihorizon import (
     panel_price_matrix,
     peak_feature_tensor,
     price_feature_tensor,
+    rolling_feature_tensor,
     split_origins,
 )
 
@@ -181,6 +182,7 @@ def make_multistep_tweedie_objective(
     cal: np.ndarray,
     pf: np.ndarray,
     prf: np.ndarray,
+    rf: np.ndarray,
     eval_origins: list[int],
     horizons: list[int],
     config: ForecastConfig,
@@ -213,8 +215,8 @@ def make_multistep_tweedie_objective(
             n_num = _n_numeric_features()
             for origin in eval_origins:
                 for h in horizons:
-                    x_train, y_train = _design_train(units, cal, pf, prf, origin, h)
-                    x_pred = _design_pred(units, cal, pf, prf, origin, h)
+                    x_train, y_train = _design_train(units, cal, pf, prf, rf, origin, h)
+                    x_pred = _design_pred(units, cal, pf, prf, rf, origin, h)
                     model = HistGradientBoostingRegressor(
                         loss=HalfTweedieLoss(power=TWEEDIE_POWER),
                         categorical_features=[n_num, n_num + 1],
@@ -232,7 +234,9 @@ def make_multistep_tweedie_objective(
 
 def _multistep_eval_context(
     settings: DemandSettings, config: ForecastConfig, eval_origin_count: int
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[int], list[int]]:
+) -> tuple[
+    np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, list[int], list[int]
+]:
     """Shared setup for the multi-step HPO studies: panel matrices, the feature
     tensors and the LAST ``eval_origin_count`` SELECTION origins (never test)."""
     panel = pl.read_parquet(settings.data_dir / "panel.parquet")
@@ -240,6 +244,7 @@ def _multistep_eval_context(
     price = panel_price_matrix(panel, dates, series_ids)
     cal = _calendar_features(dates)
     pf = peak_feature_tensor(units)
+    rf = rolling_feature_tensor(units)
     prf = (
         price_feature_tensor(price)
         if price is not None
@@ -247,7 +252,7 @@ def _multistep_eval_context(
     )
     origins = multistep_origin_indices(len(dates), config)
     selection, _test = split_origins(origins, config)
-    return units, cal, pf, prf, dates, selection[-eval_origin_count:], selection
+    return units, cal, pf, prf, rf, dates, selection[-eval_origin_count:], selection
 
 
 def tune_multistep_tweedie(
@@ -265,7 +270,7 @@ def tune_multistep_tweedie(
     contract as the nowcast-arm studies).
     """
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    units, cal, pf, prf, dates, eval_origins, _sel = _multistep_eval_context(
+    units, cal, pf, prf, rf, dates, eval_origins, _sel = _multistep_eval_context(
         settings, config, eval_origin_count
     )
     horizons = list(config.multistep_horizons)
@@ -277,7 +282,7 @@ def tune_multistep_tweedie(
     sampler = optuna.samplers.TPESampler(seed=settings.seed)
     study = optuna.create_study(direction="minimize", sampler=sampler)
     study.optimize(
-        make_multistep_tweedie_objective(units, cal, pf, prf, eval_origins, horizons, config),
+        make_multistep_tweedie_objective(units, cal, pf, prf, rf, eval_origins, horizons, config),
         n_trials=n_trials,
     )
     best = dict(study.best_params)
@@ -321,6 +326,7 @@ def _eval_one_lgbm(
     cal: np.ndarray,
     pf: np.ndarray,
     prf: np.ndarray,
+    rf: np.ndarray,
     origin: int,
     h: int,
     config: ForecastConfig,
@@ -328,8 +334,8 @@ def _eval_one_lgbm(
     """Fit one LightGBM candidate (origin, h) and return (summed |err|, count)."""
     from lightgbm import LGBMRegressor
 
-    x_train, y_train = _design_train(units, cal, pf, prf, origin, h)
-    x_pred = _design_pred(units, cal, pf, prf, origin, h)
+    x_train, y_train = _design_train(units, cal, pf, prf, rf, origin, h)
+    x_pred = _design_pred(units, cal, pf, prf, rf, origin, h)
     kwargs: dict[str, Any] = dict(params)
     kwargs.update(
         random_state=config.seed,
@@ -359,6 +365,7 @@ def make_multistep_lgbm_objective(
     cal: np.ndarray,
     pf: np.ndarray,
     prf: np.ndarray,
+    rf: np.ndarray,
     eval_origins: list[int],
     horizons: list[int],
     config: ForecastConfig,
@@ -384,7 +391,7 @@ def make_multistep_lgbm_objective(
         with parallel_config("loky", inner_max_num_threads=1):
             results = Parallel(n_jobs=-2)(
                 delayed(_eval_one_lgbm)(
-                    objective_name, params, units, cal, pf, prf, origin, h, config
+                    objective_name, params, units, cal, pf, prf, rf, origin, h, config
                 )
                 for origin, h in jobs
             )
@@ -411,7 +418,7 @@ def tune_multistep_lgbm(
     poisson candidates share the tuned values (documented in README/DESIGN).
     """
     optuna.logging.set_verbosity(optuna.logging.WARNING)
-    units, cal, pf, prf, dates, eval_origins, _sel = _multistep_eval_context(
+    units, cal, pf, prf, rf, dates, eval_origins, _sel = _multistep_eval_context(
         settings, config, eval_origin_count
     )
     horizons = list(config.multistep_horizons)
@@ -425,7 +432,7 @@ def tune_multistep_lgbm(
     study = optuna.create_study(direction="minimize", sampler=sampler)
     study.optimize(
         make_multistep_lgbm_objective(
-            units, cal, pf, prf, eval_origins, horizons, config, objective_name
+            units, cal, pf, prf, rf, eval_origins, horizons, config, objective_name
         ),
         n_trials=n_trials,
     )

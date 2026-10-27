@@ -303,6 +303,36 @@ def date_str_to_index(dates: np.ndarray, iso: str) -> int:
     return int(np.searchsorted(dates.astype("datetime64[D]"), np.datetime64(iso)))
 
 
+def test_adida_curve_matches_statistical_refit(
+    payload: dict, demo_context: tuple[DemandSettings, ForecastConfig, pl.DataFrame]
+) -> None:
+    """Revision 3.4: the `adida` curve block is the series' routed-to ADIDA
+    variant when the router picked one, else adida_sba — re-fit by hand on
+    the as-of-origin training history (drift = a bug). The block is y_pred
+    only: no shock grid (the payload cap leaves room for three shock
+    families, not four — documented in catalog_summary.metrics_only_note)."""
+    _settings, _config, panel = demo_context
+    dates, series_ids, units = panel_matrix(panel)
+    idx = {s: i for i, s in enumerate(series_ids)}
+    for entry in payload["catalog"]:
+        i = idx[entry["series_id"]]
+        method = (
+            entry["model_used"]
+            if entry["model_used"] in ("adida_sba", "adida_tsb")
+            else "adida_sba"
+        )
+        for origin in entry["origins"]:
+            o = date_str_to_index(dates, origin["origin_date"])
+            hist = units[: o + 1, i]
+            flat = statistical_forecast(method, hist, 14)
+            want = [round(float(flat[h - 1]), 4) for h in HORIZONS]
+            adida = origin["models"]["adida"]
+            assert "shock" not in adida  # y_pred only (payload cap)
+            got = [max(v, 0.0) for v in adida["y_pred"]]
+            # the payload rounds the adida curve to 2 decimals (size cap)
+            assert got == pytest.approx(want, abs=0.006)
+
+
 # ---------------------------------------------------------------------------
 # Bands + shocks
 # ---------------------------------------------------------------------------
@@ -345,7 +375,7 @@ def test_full_lattice_curves_cover_the_whole_window(payload: dict) -> None:
                 if "alias" in block:
                     continue  # candidate aliases share the routed curve
                 assert len(block["y_pred"]) == 14, f"{name} curve is not full-lattice"
-                for curve in block["shock"].values():
+                for curve in block.get("shock", {}).values():
                     assert len(curve) == 14
             # the learner band exists at every h and stays clamped around the
             # point curve (sparse rows carry the P(sale)+ladder band instead)
@@ -374,6 +404,12 @@ def test_shock_blocks_are_present_and_sane(payload: dict, demo_context) -> None:
             for _model, block in origin["models"].items():
                 if "alias" in block:
                     continue  # candidate aliases share the routed curve + shocks
+                # revision 3.4: the adida block ships y_pred only — no shock
+                # grid (the cap leaves room for three shock families, not
+                # four; documented in catalog_summary.metrics_only_note)
+                if "shock" not in block:
+                    assert _model == "adida" and set(block) == {"y_pred"}
+                    continue
                 assert set(block["shock"]) == {f"{s:g}" for s in SHOCK_FACTORS}
                 for curve in block["shock"].values():
                     assert len(curve) == len(HORIZONS)
@@ -436,10 +472,12 @@ def test_scoreboard_candidates_and_peak_capture(payload: dict, demo_context) -> 
     """Revisions 3.1/3.3: the ML candidates the router actually selected
     surface per-series, the scoreboard carries their committed rows, and the
     peak-capture + win-rates blocks land per class — all equal to the
-    committed metrics."""
+    committed metrics. Revision 3.4 (wave 22): the scoreboard candidate rows
+    carry the committed rmae/rmsse numbers, and routed_reconciled stays
+    metrics-only (scoreboard row, never a per-series curve block)."""
     settings, _config, _panel = demo_context
     ms = _committed(settings)
-    assert payload["payload_revision"] == "3.3"
+    assert payload["payload_revision"] == "3.4"
     assert payload["peak_capture"] == ms["peak_capture"]
     assert payload["win_rates"] == ms["win_rates"]
     for e in payload["catalog"]:
@@ -450,17 +488,26 @@ def test_scoreboard_candidates_and_peak_capture(payload: dict, demo_context) -> 
                 assert models[cand] == {"alias": "routed"}
             else:
                 assert cand not in models
+        # routed_reconciled is metrics-only: no per-series curve anywhere
+        assert "routed_reconciled" not in models
+        # the wave-22 ADIDA curve block is present on every series
+        assert len(models["adida"]["y_pred"]) == len(HORIZONS)
     for cls, board in payload["class_scoreboard"].items():
         committed_cls = ms["headline_per_class"][cls]
         for cand in COMPARISON_CANDIDATES:
+            row = board["candidates"][cand]
+            # wave 22: the committed relative-error blocks ride along
+            assert row["rmae"] == ms["rmae"]["per_class"][cls][cand]
+            assert row["rmsse"] == ms["rmsse"]["per_class"][cls][cand]
             for h in ("h7", "h14"):
                 if h not in committed_cls or committed_cls[h].get(f"{cand}_mae") is None:
                     continue
-                row = board["candidates"][cand][h]
-                assert row["mae"] == pytest.approx(committed_cls[h][f"{cand}_mae"], abs=1e-9)
-                assert row["vs_routed"] == committed_cls[h][f"{cand}_vs_routed"]
-                assert row["vs_zero"] == committed_cls[h][f"{cand}_vs_zero"]
+                row_h = row[h]
+                assert row_h["mae"] == pytest.approx(committed_cls[h][f"{cand}_mae"], abs=1e-9)
+                assert row_h["vs_routed"] == committed_cls[h][f"{cand}_vs_routed"]
+                assert row_h["vs_zero"] == committed_cls[h][f"{cand}_vs_zero"]
     assert payload["catalog_summary"]["peak_capable_candidates"] == ms["peak_capable_candidates"]
+    assert payload["headline"]["headline_claim"] == ms["headline_claim"]
 
 
 def test_horizon_growth_and_bands_match_committed(payload: dict, demo_context) -> None:
@@ -488,6 +535,8 @@ def test_decision_block_matches_committed(payload: dict, demo_context) -> None:
     assert decision["simulation"] is True
     assert decision["cost_assumptions"] == committed["cost_assumptions"]
     assert decision["per_class"] == committed["per_class"]
+    # wave 22: the newsvendor order-quantile layer is carried committed-verbatim
+    assert decision["newsvendor"] == committed["newsvendor"]
     assert all(isinstance(t, str) for t in decision["tau_grid"])
     # the τ→quantile mapping is monotone non-decreasing in τ (quantiles)
     for _cls, per_policy in decision["quantile_map"].items():

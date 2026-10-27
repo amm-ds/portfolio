@@ -115,22 +115,24 @@
       "cap_note": "weekly origins, capped at 20 by dropping the oldest (exact weekly cadence kept) for runtime; the window starts the day AFTER the origin (no embargo gap)"
     },
     "holdout_designation": "last 4 origins = test (scored once); the earlier origins select (routing + conformal calibration) only",
-    "selection_rule": "per-series routing method = lowest summed |error| over the selection origins: sparse series among zero/seasonal_naive/Croston/SBA/TSB plus the six ML candidates (direct_hgb ineligible \u2014 the wave-19 sparse finding); smooth/erratic series among direct_hgb plus the same ML pool; the convex-ensemble weight and the peak-weighted hurdle's sample weight are chosen on the same selection origins; never reads test actuals (property-tested by shuffling the test origins' actuals)",
-    "feature_semantics": "direct per-horizon models: calendar of the target date (incl. is_month_end / week_of_month, the wholesale trading-cycle hypothesis) + peak block at target-h (rolling mean/max over 7/14/28d windows ending at target-h, days-since-last-nonzero, 28d non-zero-day count, 28d peak ratio) + price block at target-h (price_asof, price_ratio_28d, days_since_price_change, price_drop \u2014 the B2B promo proxy; neutral constants when the panel has no price column) + lags lag_h, lag_{h+7}, lag_{h+14} (every demand/price feature >= h days old relative to the target \u2014 no actual within h days of the target is referenced, taint-tested for units AND price); training rows use targets <= the origin only",
+    "selection_rule": "per-series routing method = lowest summed |error| over the selection origins: sparse series among zero/seasonal_naive/Croston/SBA/TSB/ma_28/adida_sba/adida_tsb plus the six ML candidates (direct_hgb ineligible \u2014 the wave-19 sparse finding); smooth/erratic series among direct_hgb plus the same ML pool; the convex-ensemble weight and the peak-weighted hurdle's sample weight are chosen on the same selection origins; never reads test actuals (property-tested by shuffling the test origins' actuals)",
+    "feature_semantics": "direct per-horizon models: calendar of the target date (incl. is_month_end / week_of_month, the wholesale trading-cycle hypothesis) + peak block at target-h (rolling mean/max over 7/14/28d windows ending at target-h, days-since-last-nonzero, 28d non-zero-day count, 28d peak ratio) + price block at target-h (price_asof, price_ratio_28d, days_since_price_change, price_drop \u2014 the B2B promo proxy; neutral constants when the panel has no price column) + rolling block at target-h (wave 22: rmean7/rmean14/rmean28, rstd14/rstd28 \u2014 rolling means/stds of demand over windows ending at target-h) + lags lag_h, lag_{h+7}, lag_{h+14} (every demand/price feature >= h days old relative to the target \u2014 no actual within h days of the target is referenced, taint-tested for units AND price); training rows use targets <= the origin only",
     "uncertainty": "per-horizon split-conformal (learner rows and the peak-capable candidates' own point forecasts) and P(sale)+quantile ladder (sparse rows), both calibrated on selection origins",
     "metric_definitions": {
       "mae": "mean |actual - forecast| over series x scored test origins at horizon h",
-      "mase": "pooled |err| / pooled per-series in-sample seasonal-naive-7 scale (zero-scale rows excluded)",
+      "mase": "pooled |err| / pooled per-series in-sample seasonal-naive-7 scale (zero-scale rows excluded); 1.0 is the scale's in-sample error level, NOT the naive's own holdout error \u2014 the naive's MASE can differ from 1.0 on a scored window",
+      "rmae": "candidate pooled MAE / seasonal_naive floor pooled MAE over the same scored cells; < 1 = beats the floor (the floor sits at 1.0 by construction)",
+      "rmsse": "M5-style per (series x scored origin) unit: sqrt(MSE(candidate) / in-sample MSE of the one-step seasonal-naive-7 on the unit's training window), averaged over units (zero-scale excluded)",
+      "wrmsse": "volume-weighted RMSSE (weights = training-window demand)",
       "bias": "mean(forecast - actual) at horizon h",
       "wape": "sum|err| / sum|actual| at horizon h",
-      "rmsse": "M5-style: per-series sqrt(MSE(err)/MSE(in-sample seasonal-naive-7)), averaged over series (zero-scale excluded)",
-      "wrmsse": "volume-weighted RMSSE (weights = training-window demand)",
       "pinball_pXX": "mean pinball loss of the learner quantile at level XX",
       "coverage": "share of actuals inside the per-h band on the scored origins",
       "calibration_verdict": "|coverage - target| <= 0.05 -> calibrated; above -> conservative; below -> optimistic",
       "peak_mae": "per scored window (series x test origin), MAE on the window's top-decile-by-actual days of the scored h-lattice; pooled per class as the mean over windows",
       "peak_recall": "per scored window, the share of the window's top-5 actual days whose day ranks in the forecast's own top-5; pooled per class as the mean over windows",
-      "win_rate": "per class and horizon: the share of series whose summed |error| over the scored test origins at that h is strictly below the seasonal_naive floor's; 95% CI = cluster bootstrap over series (one shared index draw per replication across candidates)"
+      "win_rate": "per class and horizon: the share of series whose summed |error| over the scored test origins at that h is strictly below the seasonal_naive floor's; 95% CI = cluster bootstrap over series (one shared index draw per replication across candidates)",
+      "newsvendor_cost": "decision layer (documented assumption, not a measured saving): order = the routed band's q-quantile (dense rows interpolate the committed p10/p50/p90 ladder; sparse rows read the training-history ladder; the floor reads the same quantile of the seasonal-naive empirical distribution = training demand on the target's weekday); cost = 1.0 x ordered-but-unsold + 3.0 x unmet per unit per day; reported per class as expected daily cost per unit-demand with a paired cluster-bootstrap CI"
     },
     "candidates": [
       "routed",
@@ -140,13 +142,17 @@
       "croston",
       "sba",
       "tsb",
+      "ma_28",
+      "adida_sba",
+      "adida_tsb",
       "hgb_tweedie",
       "hurdle_hgb",
       "lgbm_tweedie",
       "lgbm_poisson",
       "hurdle_lgbm",
       "peak_weighted_hgb",
-      "ensemble_convex"
+      "ensemble_convex",
+      "routed_reconciled"
     ]
   }
 }

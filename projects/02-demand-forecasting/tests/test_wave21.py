@@ -28,6 +28,7 @@ from demand_forecasting.multihorizon import (
     peak_feature_tensor,
     peak_sample_weights,
     price_feature_tensor,
+    rolling_feature_tensor,
 )
 
 # Fast multi-step config for the _score_origin taint test (3 horizons).
@@ -140,17 +141,18 @@ def test_origin_predictions_unchanged_by_tainting_prices_in_the_window(
     price = panel_price_matrix(panel, dates, series_ids)
     cal = _calendar_features(dates)
     pf = peak_feature_tensor(units)
+    rf = rolling_feature_tensor(units)
     prf = price_feature_tensor(price)
     origin, h = 70, 7
-    x_train, y_train = _design_train(units, cal, pf, prf, origin, h)
-    x_pred = _design_pred(units, cal, pf, prf, origin, h)
+    x_train, y_train = _design_train(units, cal, pf, prf, rf, origin, h)
+    x_pred = _design_pred(units, cal, pf, prf, rf, origin, h)
     tainted = price.copy()
     tainted[origin + 1 :] = 500.0
     prf_taint = price_feature_tensor(tainted)
-    x_train_t, y_train_t = _design_train(units, cal, pf, prf_taint, origin, h)
+    x_train_t, y_train_t = _design_train(units, cal, pf, prf_taint, rf, origin, h)
     np.testing.assert_array_equal(x_train, x_train_t)
     np.testing.assert_array_equal(y_train, y_train_t)
-    np.testing.assert_array_equal(x_pred, _design_pred(units, cal, pf, prf_taint, origin, h))
+    np.testing.assert_array_equal(x_pred, _design_pred(units, cal, pf, prf_taint, rf, origin, h))
     clean = _score_origin(units, cal, origin, [1, 7, 14], ms_config, (), price)
     dirty = _score_origin(units, cal, origin, [1, 7, 14], ms_config, (), tainted)
     for name in clean.preds:
@@ -252,6 +254,9 @@ def _base_preds() -> dict[str, np.ndarray]:
         "croston": _col(0.0, 0.0),
         "sba": _col(0.0, 0.0),
         "tsb": _col(0.0, 0.0),
+        "ma_28": _col(0.0, 0.0),
+        "adida_sba": _col(0.0, 0.0),
+        "adida_tsb": _col(0.0, 0.0),
         "hgb_tweedie": _col(2.0, 2.0),
         "hurdle_hgb": _col(3.0, 3.0),
         "lgbm_tweedie": _col(3.0, 3.0),
@@ -345,6 +350,7 @@ def test_win_rates_hand_computed() -> None:
             "hurdle_lgbm": routed,
             "peak_weighted_hgb": routed,
             "ensemble_convex": routed,
+            "routed_reconciled": routed,
         },
     )
     config = ForecastConfig(bootstrap_reps=200)

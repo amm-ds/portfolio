@@ -355,3 +355,78 @@ def test_multistep_win_rates_match_committed_metrics() -> None:
             assert float(m.group(1)) == pytest.approx(100.0 * item["win_rate"], abs=5e-2)
             assert float(m.group(2)) == pytest.approx(100.0 * item["ci95"][0], abs=5e-2)
             assert float(m.group(3)) == pytest.approx(100.0 * item["ci95"][1], abs=5e-2)
+
+
+# ---------------------------------------------------------------------------
+# Wave-22 guards: new candidates, rmae/rmsse, newsvendor decision layer
+# ---------------------------------------------------------------------------
+
+
+def test_multistep_wave22_leaderboard_and_rmae_match_committed_metrics() -> None:
+    """The wave-22 quotes are live: champion pooled MAE + rmae, the new
+    candidates' pooled MAEs, and the rmsse summary."""
+    ms = _multistep()
+    section = _multistep_section()
+    # champion pooled MAE and rmae vs the floor
+    m = re.search(
+        r"routed pipeline\s*\n?\s*\(\*\*([\d.]+)\*\* — pooled rmae \*\*([\d.]+)\*\*", section
+    )
+    assert m, "champion pooled MAE / rmae quote missing from README"
+    assert float(m.group(1)) == pytest.approx(ms["overall_mae_test"]["routed"], abs=5e-4)
+    assert float(m.group(2)) == pytest.approx(ms["rmae"]["pooled"]["routed"], abs=5e-4)
+    # the floor's rmae is 1.0 by construction
+    assert ms["rmae"]["pooled"]["seasonal_naive"] == pytest.approx(1.0)
+    # new candidates' pooled MAEs in the wave-22 bullet
+    for cand, pat in (
+        ("ma_28", r"ma_28 \*\*([\d.]+)\*\*"),
+        ("adida_tsb", r"adida_tsb \*\*([\d.]+)\*\*"),
+        ("adida_sba", r"adida_sba \*\*([\d.]+)\*\*"),
+        (
+            "routed_reconciled",
+            r"\(country-aggregate anchoring\) also loses on pooled\s*\n?\s*MAE — ([\d.]+)",
+        ),
+    ):
+        m = re.search(pat, section)
+        assert m, f"{cand} pooled-MAE quote missing from README"
+        assert float(m.group(1)) == pytest.approx(ms["overall_mae_test"][cand], abs=5e-4), cand
+    # rmsse summary: routed pooled rmsse + volume-weighted, floor rmsse
+    m = re.search(
+        r"routed rmsse ([\d.]+) \(volume-weighted\s*\n?\s*([\d.]+)\) vs the floor's (\d+\.\d+)",
+        section,
+    )
+    assert m, "rmsse summary quote missing from README"
+    assert float(m.group(1)) == pytest.approx(ms["rmsse"]["pooled"]["routed"]["rmsse"], abs=5e-4)
+    assert float(m.group(2)) == pytest.approx(ms["rmsse"]["pooled"]["routed"]["wrmsse"], abs=5e-4)
+    assert float(m.group(3)) == pytest.approx(
+        ms["rmsse"]["pooled"]["seasonal_naive"]["rmsse"], abs=5e-4
+    )
+
+
+def test_multistep_newsvendor_quotes_match_committed_metrics() -> None:
+    """The newsvendor layer quotes (per-class cost per unit-demand at q=0.90
+    with the paired-bootstrap CIs) are live against the committed block."""
+    ms = _multistep()
+    section = _multistep_section()
+    nv = ms["decision_metric"]["newsvendor"]["per_class"]
+    # q=0.90 per-class quotes (the headline service level)
+    m = re.search(r"erratic q=0\.90 routed\s*\n?\s*\*\*([\d.]+) vs floor ([\d.]+)\*\*", section)
+    assert m, "erratic newsvendor q=0.90 quote missing from README"
+    assert float(m.group(1)) == pytest.approx(
+        nv["erratic"]["q_0.90"]["routed_cost_per_unit_demand"], abs=5e-4
+    )
+    assert float(m.group(2)) == pytest.approx(
+        nv["erratic"]["q_0.90"]["floor_cost_per_unit_demand"], abs=5e-4
+    )
+    m = re.search(r"lumpy q=0\.90 \*\*([\d.]+)\s*\n?\s*vs ([\d.]+)\*\*", section)
+    assert m, "lumpy newsvendor q=0.90 quote missing from README"
+    assert float(m.group(1)) == pytest.approx(
+        nv["lumpy"]["q_0.90"]["routed_cost_per_unit_demand"], abs=5e-4
+    )
+    assert float(m.group(2)) == pytest.approx(
+        nv["lumpy"]["q_0.90"]["floor_cost_per_unit_demand"], abs=5e-4
+    )
+    # every committed service level appears in the section
+    for q in ms["decision_metric"]["newsvendor"]["service_levels"]:
+        assert f"q={q:.2f}" in section, f"newsvendor service level {q:.2f} not quoted"
+    # cost assumptions stated
+    assert "holding 1.0 / stockout 3.0" in section

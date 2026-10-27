@@ -9,7 +9,7 @@ same case studies render live (with interactive figures) in the
 | # | Project | Domain | Data | Impact in one line | Status |
 |---|---|---|---|---|---|
 | 01 | [RAG & Agentic AI Assistant](01-rag-agent.md) | Agentic AI / LLM | Wikipedia (HF) | retrieval recall@5 0.83 vs 0.03 random; verify loop cut unsupported-claim share 60%→47% in an on/off A/B (committed hosted 65-q run: 18/65) | Flagship — complete |
-| 02 | [Hierarchical Demand Forecasting](02-demand-forecasting.md) | Time series | UCI Retail II (real) + synthetic CI path | champion runs at 0.843 relative MAE of the seasonal-naive floor on real intermittent demand (MASE 1.078 vs the naive's own 1.310) | Working showcase |
+| 02 | [Hierarchical Demand Forecasting](02-demand-forecasting.md) | Time series | UCI Retail II (real) + synthetic CI path | nowcast champion at 0.843 relative MAE of the seasonal-naive floor (MASE 1.078 vs the naive's own 1.310); primary multi-step track: routed pipeline 7.47 pooled MAE (rmae 0.649), zero stays the sparse ceiling — new wave-22 baselines lose honestly | Working showcase |
 | 03 | [Anomaly Detection over Telemetry](03-anomaly-detection.md) | Unsupervised ML | NAB (real) + seeded synthetic CI path | catches 73% of real incidents; alert budget quantifies the false-positive cost | Working showcase |
 | 04 | [NLP Classification with Transformers](04-nlp-classification.md) | Deep learning NLP | AG News (HF, full 120k) | full-data fine-tune reaches 0.946 macro-F1 on a laptop GPU | Working showcase |
 | 05 | [Churn Modeling with sklearn Pipelines](05-ml-pipeline-churn.md) | Classical ML | IBM telco churn (real) + synthetic CI path | cuts retention-campaign cost 41.9% vs the naive policy (CI excludes zero) | Working showcase |

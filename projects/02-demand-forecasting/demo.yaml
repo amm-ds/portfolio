@@ -10,9 +10,10 @@ skills: [time series forecasting, prediction intervals, demand classification]
 modes: [browser, live]
 hero:
   label: multi-step pooled MAE over the scored origins, routed pipeline vs all-HGB
-  value: 7.46 routed vs 11.83 all-HGB — the routed pipeline leads
-  ci: routing lumpy series away from the boosted model wins +4.1 MAE [3.4, 4.9]
-    (95% paired bootstrap over series x scored origins; 98.6% of series are lumpy)
+  value: 7.47 routed vs 11.71 all-HGB — the routed pipeline leads
+  ci: routing lumpy series away from the boosted model wins +4.0 MAE [3.3, 4.8]
+    (95% paired bootstrap over series x scored origins; 98.6% of series are lumpy;
+    pooled rmae 0.649)
 live_endpoints:
   - method: POST
     path: /projects/02-demand-forecasting/forecast
