@@ -1,5 +1,13 @@
-"""Demo manifest: the showcase API and docs read ``demo.yaml`` files to serve
-the manifest-driven demo platform instead of hardcoding demos."""
+"""Demo manifest: the showcase API and docs read demo manifest YAML files to
+serve the manifest-driven demo platform instead of hardcoding demos.
+
+A project declares demos in either or both of two places:
+
+- ``projects/<pid>/demo.yaml`` — the legacy single-demo declaration;
+- ``projects/<pid>/demos/*.yaml`` — one YAML file per additional demo.
+
+Both carry the same ``DemoManifest`` schema; ``load_demo_index`` discovers
+all of them and sorts by (group, id)."""
 
 from pathlib import Path
 
@@ -49,7 +57,8 @@ class PayloadRef(PortfolioBaseModel):
 
 
 class DemoManifest(PortfolioBaseModel):
-    """One demo declared by ``projects/<pid>/demo.yaml``."""
+    """One demo declared by ``projects/<pid>/demo.yaml`` or a file in
+    ``projects/<pid>/demos/`` — both carry this schema."""
 
     id: str = Field(pattern=r"^[a-z0-9-]+$")
     title: str
@@ -73,10 +82,35 @@ def load_demo(root: Path) -> DemoManifest | None:
     return DemoManifest.model_validate(data)
 
 
+def load_demos(project_dir: Path) -> list[DemoManifest]:
+    """All demo manifests declared by one project.
+
+    The legacy ``<project_dir>/demo.yaml`` (when present) plus every
+    ``<project_dir>/demos/*.yaml`` (sorted by filename for a deterministic
+    order; a project may declare either or both).
+    """
+    manifests: list[DemoManifest] = []
+    root_demo = load_demo(project_dir)
+    if root_demo is not None:
+        manifests.append(root_demo)
+    demos_dir = project_dir / "demos"
+    if demos_dir.is_dir():
+        for f in sorted(demos_dir.glob("*.yaml")):
+            data = yaml.safe_load(f.read_text())
+            manifests.append(DemoManifest.model_validate(data))
+    return manifests
+
+
 def load_demo_index(projects_root: Path) -> list[DemoManifest]:
-    """All demo manifests under ``projects/*/demo.yaml``, sorted by (group, id)."""
-    projects = [p for p in projects_root.iterdir() if p.is_dir() and (p / "demo.yaml").exists()]
-    demos = [d for p in projects if (d := load_demo(p)) is not None]
+    """All demo manifests under ``projects/*/``, sorted by (group, id).
+
+    Discovers both declaration styles per project: the legacy root
+    ``demo.yaml`` and every ``demos/*.yaml`` alongside it.
+    """
+    demos: list[DemoManifest] = []
+    for p in sorted(projects_root.iterdir()):
+        if p.is_dir():
+            demos.extend(load_demos(p))
     return sorted(demos, key=lambda d: (d.group, d.id))
 
 

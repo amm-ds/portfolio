@@ -242,6 +242,40 @@ def demo_payload_cmd(
     return write_demo_payload(settings, config, metrics_dir=metrics_dir)
 
 
+@app.command("demo-payload-hierarchical")
+def demo_payload_hierarchical_cmd(
+    data_dir: Annotated[
+        Path | None, typer.Option(help="Dir with the committed data_hier datasets.")
+    ] = None,
+    reports_dir: Annotated[
+        Path | None, typer.Option(help="Output dir for the demo payload (reports/).")
+    ] = None,
+    metrics_path: Annotated[
+        Path | None,
+        typer.Option(help="Path to the committed reports_hier/metrics.json (drift guard)."),
+    ] = None,
+) -> Path:
+    """Build the hierarchy-explorer demo payload (wave 23b).
+
+    Re-runs the hierarchical track scoring for both benchmark groups through
+    the same deterministic core that wrote reports_hier/metrics.json, retains
+    the per-node per-origin forecast curves for a 12-node deterministic
+    catalog, drift-guards the re-run against the committed metrics at 1e-9,
+    and writes reports/hier_demo_payload.json (the payload the showcase API
+    serves for the hierarchy-explorer demo). Slow (minutes): it re-fits every
+    candidate at every committed origin, like evaluate-hierarchical.
+    """
+    from demand_forecasting.hier_demo_payload import write_hier_demo_payload
+
+    root = Path.cwd()
+    return write_hier_demo_payload(
+        data_dir=data_dir or root / "data_hier",
+        reports_dir=reports_dir or root / "reports",
+        metrics_path=metrics_path or root / "reports_hier" / "metrics.json",
+        config=_config_from_params(ForecastConfig()),
+    )
+
+
 @app.command()
 def all(
     data_dir: Annotated[Path | None, typer.Option()] = None,
