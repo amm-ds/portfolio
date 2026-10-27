@@ -56,6 +56,45 @@ def test_metrics_and_figures_served(tmp_path: Path, monkeypatch) -> None:  # typ
     assert r.status_code == 200 and "fig" in r.text
 
 
+def test_metrics_prefer_uci_track(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """02 ships two tracks; reports_uci/ is the canonical one when present."""
+    from showcase_api import main
+
+    reports = tmp_path / "01-demo" / "reports"
+    uci = tmp_path / "01-demo" / "reports_uci"
+    reports.mkdir(parents=True)
+    uci.mkdir()
+    (reports / "metrics.json").write_text(json.dumps({"m": {"f1": 0.9}}))
+    (uci / "metrics.json").write_text(json.dumps({"m": {"f1": 0.95}}))
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    assert client.get("/projects/01-demo/metrics").json() == {"m": {"f1": 0.95}}
+
+
+def test_figures_served_per_track(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """A `track:` prefix resolves into reports_<track>/figures/ (02's dual
+    tracks); unprefixed names and unknown tracks keep the old behavior."""
+    from showcase_api import main
+
+    figs = tmp_path / "01-demo" / "reports" / "figures"
+    uci_figs = tmp_path / "01-demo" / "reports_uci" / "figures"
+    figs.mkdir(parents=True)
+    uci_figs.mkdir(parents=True)
+    (figs / "bars.html").write_text("<html>fig</html>")
+    (uci_figs / "bars.html").write_text("<html>uci fig</html>")
+    (uci_figs / "bars.json").write_text(json.dumps({"data": [], "layout": {}}))
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    assert client.get("/projects/01-demo/figures/bars").text == "<html>fig</html>"
+    r = client.get("/projects/01-demo/figures/uci:bars")
+    assert r.status_code == 200 and "uci fig" in r.text
+    r = client.get("/projects/01-demo/figures/uci:bars.json")
+    assert r.status_code == 200 and r.json() == {"data": [], "layout": {}}
+    # unknown track → 404, never a path escape
+    assert client.get("/projects/01-demo/figures/nope:bars").status_code == 404
+    assert client.get("/projects/01-demo/figures/uci:missing").status_code == 404
+
+
 def test_chat_gated_off_by_default() -> None:
     """RAG chat is an LLM cost proxy: routes must not exist unless explicitly enabled."""
     r = client.post("/rag/chat", json={"question": "hi"})

@@ -25,16 +25,8 @@ jobs:
           python-version: "3.12"
       - name: Install workspace
         run: uv sync --all-packages --dev
-      - name: Demo payload full-rebuild drift tests (serial, slow marker)
-        working-directory: projects/02-demand-forecasting
-        run: >-
-          uv run pytest -o addopts="--import-mode=importlib -q -p no:xdist --timeout=3600"
-          -m "slow" tests/test_demo_payload.py
-      - name: Hierarchical track run-twice byte-identity
-        working-directory: projects/02-demand-forecasting
-        run: |
-          uv run python -m demand_forecasting.cli evaluate-hierarchical --group both
-          cp reports_hier/metrics.json /tmp/hier_run1.json
-          uv run python -m demand_forecasting.cli evaluate-hierarchical --group both
-          cmp reports_hier/metrics.json /tmp/hier_run1.json
-          echo "hierarchical metrics: BYTE_IDENTICAL across runs"
+      # TODO(demo-rebuild phase): the forecast-workbench demo and the
+      # hierarchical track were removed; their nightly drift guards (the
+      # payload full-rebuild slow tests and the evaluate-hierarchical
+      # run-twice byte-identity check) went with them. The rebuilt demo's M5
+      # byte-identity step lands here.

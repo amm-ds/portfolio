@@ -246,13 +246,10 @@ describe("ProjectsIndex", () => {
     await waitFor(() => expect(screen.getByText("Machine Learning")).toBeInTheDocument());
     const demos = document.querySelector(".demos")!;
     const demoCards = demos.querySelectorAll(".demo-card");
-    expect(demoCards).toHaveLength(2);
+    expect(demoCards).toHaveLength(1);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].textContent).toContain("live");
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
-    expect(demoCards[1].textContent).toContain("demand forecast workbench");
-    expect(demoCards[1].textContent).toContain("live");
-    expect(demoCards[1].querySelector("a")!.getAttribute("href")).toBe("/demos/forecast-workbench");
   });
 
   it("renders a what-it-achieves summary plus sub-topic, dataset, and status chips on each card", async () => {

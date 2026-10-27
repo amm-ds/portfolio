@@ -86,7 +86,14 @@ def projects(request: Request) -> Response:
 
 @app.get("/projects/{pid}/metrics")
 def metrics(pid: str) -> dict[str, Any]:
-    f = _project_dir(pid) / "reports" / "metrics.json"
+    # 02-demand-forecasting ships two tracks (CI/synthetic in reports/, the
+    # primary real-data UCI run in reports_uci/, see its story.yaml); when a
+    # project carries a reports_uci/ dir that track is the canonical source
+    # for the numbers the story quotes. Everywhere else reports/ is it.
+    d = _project_dir(pid)
+    f = d / "reports_uci" / "metrics.json"
+    if not f.exists():
+        f = d / "reports" / "metrics.json"
     if not f.exists():
         raise HTTPException(status_code=404, detail=f"no metrics yet for {pid} — run its pipeline")
     data: dict[str, Any] = json.loads(f.read_text())
@@ -102,6 +109,25 @@ def story(pid: str) -> ProjectStory:
     return s
 
 
+def _figure_file(pid: str, name: str, ext: str) -> Path | None:
+    """Resolve a figure payload to an existing file, or None.
+
+    A ``track:`` prefix selects a sibling track directory — 02-demand-
+    forecasting ships two tracks (CI/synthetic in ``reports/figures/``, the
+    primary UCI run in ``reports_uci/figures/``) and its story.yaml names
+    figures per track (e.g. ``uci:metrics_bars``). Unprefixed names keep the
+    canonical ``reports/figures/`` location every other project uses.
+    """
+    track, sep, bare = name.partition(":")
+    d = _project_dir(pid)
+    candidates = (
+        [d / f"reports_{track}" / "figures" / f"{bare}.{ext}"]
+        if sep
+        else [d / "reports" / "figures" / f"{name}.{ext}"]
+    )
+    return next((f for f in candidates if f.exists()), None)
+
+
 @app.get("/projects/{pid}/figures")
 def figures(pid: str) -> list[str]:
     figs = sorted((_project_dir(pid) / "reports" / "figures").glob("*.html"))
@@ -111,8 +137,8 @@ def figures(pid: str) -> list[str]:
 @app.get("/projects/{pid}/figures/{name}.json")
 def figure_json(pid: str, name: str) -> Any:
     """Plotly JSON payload (same content the React app could render natively)."""
-    f = _project_dir(pid) / "reports" / "figures" / f"{name}.json"
-    if not f.exists():
+    f = _figure_file(pid, name, "json")
+    if f is None:
         raise HTTPException(status_code=404, detail=f"no figure JSON {name!r} for {pid}")
     data: Any = json.loads(f.read_text())
     return data
@@ -120,8 +146,8 @@ def figure_json(pid: str, name: str) -> Any:
 
 @app.get("/projects/{pid}/figures/{name}", response_class=HTMLResponse)
 def figure(pid: str, name: str) -> str:
-    f = _project_dir(pid) / "reports" / "figures" / f"{name}.html"
-    if not f.exists():
+    f = _figure_file(pid, name, "html")
+    if f is None:
         raise HTTPException(status_code=404, detail=f"no figure {name!r} for {pid}")
     return f.read_text()
 
@@ -162,6 +188,11 @@ def demo_payload(demo_id: str) -> JSONResponse:
     or a schema_version mismatch).
     """
     m = _demo_or_404(demo_id)
+    if m.payload is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"demo {demo_id} declares no payload yet — the manifest is a placeholder",
+        )
     f = PROJECTS_ROOT / m.project / m.payload.path
     if not f.exists():
         raise HTTPException(

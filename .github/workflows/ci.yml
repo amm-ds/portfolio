@@ -68,22 +68,6 @@ jobs:
           - name: 02-models
             path: projects/02-demand-forecasting
             cov: "--cov=src tests/test_multihorizon.py tests/test_multistep_metrics.py tests/test_peak_models.py"
-          - name: 02-payload
-            path: projects/02-demand-forecasting
-            cov: "--cov=src tests/test_demo_payload.py"
-            # Serial, slow-rebuild tests excluded. -n 2 duplicates the
-            # session-scoped payload fixtures across xdist workers AND the
-            # two full-rebuild tests (test_deterministic,
-            # test_write_demo_payload_roundtrip, each ~20 min on a runner)
-            # pushed this cell to 1h55 + a 900s timeout; there is also an
-            # xdist-nested-loky PEP 3118 flake in HGB fits that does not
-            # reproduce serially. Those two tests carry @pytest.mark.slow;
-            # the full rebuilds run serially via -m "slow" (locally / the
-            # proposed nightly job). The remaining payload FIXTURE still
-            # re-scores every origin on 1-2 loky workers (n_jobs=-2 on a
-            # 2-vCPU runner) and takes 12-20 min — hence the 1800s
-            # per-test timeout instead of the matrix default 900s.
-            addopts: "--import-mode=importlib -q --timeout=1800 --durations=30 -p no:xdist -m 'not slow'"
 
           - { name: 03-anomaly-detection, path: projects/03-anomaly-detection, cov: "--cov=src" }
           - { name: 04-nlp-classification, path: projects/04-nlp-classification, cov: "--cov=src" }
@@ -114,7 +98,7 @@ jobs:
           ${{ matrix.suite.cov }}
           ${{
             matrix.suite.unit_args == 'unit-only'
-            && '--ignore=tests/test_multihorizon.py --ignore=tests/test_multistep_metrics.py --ignore=tests/test_peak_models.py --ignore=tests/test_demo_payload.py'
+            && '--ignore=tests/test_multihorizon.py --ignore=tests/test_multistep_metrics.py --ignore=tests/test_peak_models.py'
             || ''
           }}
 
@@ -149,7 +133,7 @@ jobs:
             | grep -q 'selected_model_calibrated'
           # Live forecast endpoint: build the request from the serving artifact's
           # example_row so the smoke test tracks whichever track the artifact
-          # was built from (UCI as of the forecast-workbench demo).
+          # was built from (the UCI track).
           body=$(python3 -c "
           import json
           meta = json.load(open('projects/02-demand-forecasting/reports/models/serving/meta.json'))

@@ -13,11 +13,11 @@ import os
 
 # Apple Accelerate (numpy's BLAS/LAPACK on macOS arm64) reads
 # VECLIB_MAXIMUM_THREADS at library-init time and threadpoolctl cannot limit
-# it (threadpool_info() is empty on this host). The hierarchical track's MinT
-# reconciliation goes through Accelerate's threaded LAPACK (pinv/SVD), whose
-# threaded reductions are NOT run-to-run reproducible — pin Accelerate to one
-# thread BEFORE numpy loads so reports_hier/metrics.json is byte-identical
-# across runs. setdefault keeps an explicit user override.
+# it (threadpool_info() is empty on this host). Accelerate's threaded BLAS
+# reductions are NOT run-to-run reproducible, which makes any metric or
+# report that flows through numpy/loky LAPACK byte-drift between runs — pin
+# Accelerate to one thread BEFORE numpy loads so committed artefacts are
+# byte-identical across runs. setdefault keeps an explicit user override.
 os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
 
 from pathlib import Path
@@ -28,7 +28,6 @@ import typer
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.data import prepare
-from demand_forecasting.demo_payload import write_demo_payload
 from demand_forecasting.evaluate import evaluate
 from demand_forecasting.features import build_features, save_features
 from demand_forecasting.model import fit_all, save_models
@@ -172,40 +171,6 @@ def evaluate_cmd(
     run_probabilistic(settings, config, multistep=result.multistep)
 
 
-@app.command("evaluate-hierarchical")
-def evaluate_hierarchical_cmd(
-    group: Annotated[
-        Literal["tourism-small", "labour", "both"],
-        typer.Option(help="Hierarchical benchmark group (Nixtla datasetsforecast)."),
-    ] = "both",
-    data_dir: Annotated[
-        Path | None, typer.Option(help="Dir with the committed data_hier datasets.")
-    ] = None,
-    reports_dir: Annotated[Path | None, typer.Option(help="Output dir for reports_hier.")] = None,
-) -> None:
-    """Evaluate the hierarchical track (wave 23a) on the Nixtla benchmarks.
-
-    Fixed candidates x {raw, +BottomUp, +MinT(mint_shrink)} on rolling origins
-    (protocol ``hierarchical_rolling_v1``); writes reports_hier/metrics.json and
-    reports_hier/evaluation_metadata.json. Fully offline — the datasets are
-    committed under data_hier/.
-    """
-    from demand_forecasting.hierarchical import evaluate_hierarchical
-
-    root = Path.cwd()
-    groups = {
-        "tourism-small": ["TourismSmall"],
-        "labour": ["Labour"],
-        "both": ["TourismSmall", "Labour"],
-    }[group]
-    evaluate_hierarchical(
-        data_dir=data_dir or root / "data_hier",
-        reports_dir=reports_dir or root / "reports_hier",
-        groups=groups,
-        config=_config_from_params(ForecastConfig()),
-    )
-
-
 @app.command("build-serving")
 def build_serving(
     data_dir: Annotated[Path | None, typer.Option()] = None,
@@ -215,65 +180,6 @@ def build_serving(
     """Build the showcase-API serving artifact (loads pickles; no retraining)."""
     settings, config = _settings_and_config(data_dir, reports_dir, data_source)
     return build_serving_artifact(settings, config)
-
-
-@app.command("demo-payload")
-def demo_payload_cmd(
-    data_dir: Annotated[Path | None, typer.Option(help="Override data dir.")] = None,
-    reports_dir: Annotated[Path | None, typer.Option(help="Override payload output dir.")] = None,
-    metrics_dir: Annotated[
-        Path | None,
-        typer.Option(help="Dir with committed metrics.json + probabilistic.json."),
-    ] = None,
-    data_source: Annotated[
-        Literal["synthetic", "uci"], typer.Option(help="Panel track (the demo ships UCI).")
-    ] = "synthetic",
-) -> Path:
-    """Build the showcase-API demo payload (forecast workbench catalog).
-
-    The demo ships the UCI track (real intermittent demand) but the payload
-    lands in ``reports/`` next to the demo contract, so the committed metrics
-    come from the track's own reports dir via ``--metrics-dir``. Schema v3
-    rebuilds the catalog from the committed multi-step (direct_multihorizon_v1)
-    track: it re-scores every rolling origin from ``data_uci/panel.parquet``
-    (slow, ~15 min) and drift-guards the re-run against the committed metrics.
-    """
-    settings, config = _settings_and_config(data_dir, reports_dir, data_source)
-    return write_demo_payload(settings, config, metrics_dir=metrics_dir)
-
-
-@app.command("demo-payload-hierarchical")
-def demo_payload_hierarchical_cmd(
-    data_dir: Annotated[
-        Path | None, typer.Option(help="Dir with the committed data_hier datasets.")
-    ] = None,
-    reports_dir: Annotated[
-        Path | None, typer.Option(help="Output dir for the demo payload (reports/).")
-    ] = None,
-    metrics_path: Annotated[
-        Path | None,
-        typer.Option(help="Path to the committed reports_hier/metrics.json (drift guard)."),
-    ] = None,
-) -> Path:
-    """Build the hierarchy-explorer demo payload (wave 23b).
-
-    Re-runs the hierarchical track scoring for both benchmark groups through
-    the same deterministic core that wrote reports_hier/metrics.json, retains
-    the per-node per-origin forecast curves for a 12-node deterministic
-    catalog, drift-guards the re-run against the committed metrics at 1e-9,
-    and writes reports/hier_demo_payload.json (the payload the showcase API
-    serves for the hierarchy-explorer demo). Slow (minutes): it re-fits every
-    candidate at every committed origin, like evaluate-hierarchical.
-    """
-    from demand_forecasting.hier_demo_payload import write_hier_demo_payload
-
-    root = Path.cwd()
-    return write_hier_demo_payload(
-        data_dir=data_dir or root / "data_hier",
-        reports_dir=reports_dir or root / "reports",
-        metrics_path=metrics_path or root / "reports_hier" / "metrics.json",
-        config=_config_from_params(ForecastConfig()),
-    )
 
 
 @app.command()

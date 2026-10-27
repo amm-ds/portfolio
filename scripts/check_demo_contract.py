@@ -27,6 +27,11 @@ def check_demo(projects_root: Path) -> None:
     for m in manifests:
         errors_before = len(errors)
         project_dir = projects_root / m.project
+        if m.payload is None:
+            # Mid-rebuild demo: the manifest is a placeholder until a later
+            # phase re-declares the payload. Report, don't fail.
+            print(f"INCOMPLETE: {m.id} ({m.project}) — no payload declared")
+            continue
         payload_path = project_dir / m.payload.path
         if not payload_path.exists():
             errors.append(

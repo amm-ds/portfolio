@@ -230,7 +230,7 @@ sections:
       letting the answer leak into which model gets shipped. Stability is
       reported per fold, so a model that wins on average but wobbles on
       recent data is visible before it reaches production.
-    figures: [fold_stability]
+    figures: [uci:fold_stability]
 
   - id: results
     text_md: |
@@ -404,7 +404,7 @@ sections:
       effects before any safety-stock policy can rest on these numbers. No
       savings are claimed here — what is delivered is an honest measurement
       and its limits.
-    figures: [metrics_bars, forecast_vs_actual, probabilistic_band, multistep_error_vs_horizon, multistep_class_scoreboard, multistep_routing, multistep_band_calibration, multistep_peak_capture, multistep_candidate_comparison, multistep_peak_day_scatter]
+    figures: [uci:metrics_bars, uci:forecast_vs_actual, uci:probabilistic_band, uci:multistep_error_vs_horizon, uci:multistep_class_scoreboard, uci:multistep_routing, uci:multistep_band_calibration, uci:multistep_peak_capture, uci:multistep_candidate_comparison, uci:multistep_peak_day_scatter]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
   - id: conclusions
     text_md: |
@@ -476,9 +476,9 @@ roadmap:
   - status: delivered
     text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; test-window horizon set coverage 0.741 (synthetic, width 26.5, optimistic) / 0.861 (UCI, width 0.00, degenerate) vs 0.80 target.
   - status: delivered
-    text: Hierarchical track (hierarchical_rolling_v1) — Nixtla TourismSmall/Labour benchmarks, fixed candidates (naive/AutoTheta/AutoETS/global LightGBM) × {raw, +BottomUp, +MinT(mint_shrink)}, per-level MAE/rmae + coherence error + paired bootstrap; MinT repairs the ML total (TourismSmall 1.205→0.869) but BottomUp degrades raw auto_ets on Labour (0.177→0.292) — per-candidate verdicts, byte-identical metrics across runs.
+    text: Hierarchical track (hierarchical_rolling_v1) — Nixtla TourismSmall/Labour, candidates × {raw, +BottomUp, +MinT(mint_shrink)}, per-level rmae + coherence; MinT repairs the ML total (TourismSmall 1.205→0.869), BottomUp degrades raw auto_ets on Labour (0.177→0.292) — per-candidate verdicts.
   - status: delivered
-    text: Direct multi-horizon track (direct_multihorizon_v1) — per-h models on 20 weekly origins, per-class ADI/CV² routing over statistical + six peak-capable ML candidates incl. the wave-21 LightGBM arms (1,069/1,084 series sparse), paired-bootstrap CIs, per-series beats-floor win rates (lumpy routed 22.17% at h=7 — the pooled win rides on magnitude, not coverage), per-h bands (0.918 pooled, conservative) + candidate bands, peak-capture metrics (peak_mae / peak_recall per window), convex-ensemble benchmark, order-up-to decision simulation; lumpy champion 6.11 vs 11.07 floor MAE at h=7, erratic series routed to the peak-capable models, lgbm_poisson evaluated-and-losing (85.15 pooled, kept in every table).
+    text: Direct multi-horizon (direct_multihorizon_v1) — per-h models, 20 weekly origins, ADI/CV² routing over statistical + six ML peak candidates, bootstrap CIs, per-series win rates (lumpy routed 21.89% at h=7); lumpy champion 6.09 vs 11.07 floor MAE at h=7; lgbm_poisson losing (107.17, kept).
   - status: delivered
     text: Serving — showcase-API artifact without retraining; champion lgbm_tuned (CV MAE 8.413); contract in SERVING.md.
 figure_captions:
@@ -486,14 +486,14 @@ figure_captions:
   eda_units_distribution: Histogram of daily units pooled over all 24 store-product series of the synthetic panel. The wide, right-skewed spread is why one global mean predicts poorly (MAE 31.8) and why models receive a series-identity feature.
   hpo_history: Objective value (CV MAE) of every trial in the 56-trial seeded Optuna study on the sklearn HGB, with the running best overlaid. The search converges on regularised small-tree configs and buys a modest, real gain (best 8.529 vs 8.619 default).
   hpo_importance: Hyperparameter importance (fANOVA) over the same seeded study. Regularisation knobs dominate — the top two parameters carry 66% of the search importance.
-  fold_stability: Out-of-fold MAE per CV origin for every run in the ladder, with the test window marked after the dashed line. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
-  metrics_bars: "The run ladder in two panels — MAE + RMSE in units (left) and MASE (right) — scored on the final holdout window, so unit-mixing metrics never share an axis. MAPE stays tabulated (not drawn): with ~89% zero-demand days near-zero actuals inflate it. MASE divides by the seasonal-naive's in-sample error from a quieter period — on the UCI test window the naive itself lands at 1.310, so the 1.0 gridline is not parity (no run dips below it there); on synthetic only ETS does."
-  forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, test window — on UCI hgb_tuned clears seasonal_naive by 15.7% MAE. The residual gap after the naive floor is day-over-day noise.
-  multistep_error_vs_horizon: Multi-step error by TRUE horizon (direct per-horizon models, scored origins) — MAE in units on the left panel, MASE on the right, so unit-incompatible metrics never share an axis. Error grows with h; the sawtooth is weekday composition (weekly origins fix each horizon's weekday — h=1 is always a Saturday on the UCI panel).
-  multistep_class_scoreboard: Champion vs floor MAE per demand class at h=7 and h=14 (units) with a second panel for the champion-minus-floor gap and its 95% paired cluster-bootstrap CI — the lumpy gap CIs exclude zero, the erratic ones span it.
-  multistep_routing: Routing effect per class — all-HGB MAE minus routed MAE (units), 95% bootstrap whiskers. Sparse classes sit well above zero; boosted trees overfit intermittent series, statistical methods do not.
-  multistep_band_calibration: Per-horizon band calibration on the scored origins — empirical coverage vs the 80% target on the left, average width in units on the right. Verdicts per h; sparse rows carry P(sale)+quantile-ladder bands that cannot collapse to zero width.
-  multistep_peak_capture: Peak capture per class — per-candidate peak_recall and peak_mae differences vs the zero forecast with 95% paired bootstrap CIs. On erratic every candidate cuts peak-day error by ~60 units vs zero; on lumpy tweedie trades top-5 day-ranking recall for smaller error on the days peaks actually happen.
-  multistep_candidate_comparison: Pooled-over-h MAE per class for the peak-capable candidates (tweedie / hurdle) vs the routed pipeline and zero — bars on the left, candidate-minus-routed gap with 95% CI on the right. The flat methods keep pooled lumpy MAE; hurdle wins erratic outright.
-  multistep_peak_day_scatter: Forecast vs actual on each scored window's top-decile demand day (lumpy class), one panel per candidate, dotted parity line. The zero candidate hugs the bottom — the structural miss the peak-capable candidates were built for; tweedie visibly tracks the diagonal on the days that matter.
-  probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, test window. The band covers the h=1..14 horizon set at 0.861 on UCI (target 0.80) but with zero width — the median sits on the zero atom — while on synthetic it covers 0.741 at 26.5 units average width (under-covering); the figure states coverage and width.
+  uci:fold_stability: Out-of-fold MAE per CV origin for every run in the ladder, with the test window marked after the dashed line. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
+  uci:metrics_bars: "The run ladder in two panels — MAE + RMSE in units (left) and MASE (right) — scored on the final holdout window, so unit-mixing metrics never share an axis. MAPE stays tabulated (not drawn): with ~89% zero-demand days near-zero actuals inflate it. MASE divides by the seasonal-naive's in-sample error from a quieter period — on the UCI test window the naive itself lands at 1.310, so the 1.0 gridline is not parity (no run dips below it there); on synthetic only ETS does."
+  uci:forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, test window — on UCI hgb_tuned clears seasonal_naive by 15.7% MAE. The residual gap after the naive floor is day-over-day noise.
+  uci:multistep_error_vs_horizon: Multi-step error by TRUE horizon (direct per-horizon models, scored origins) — MAE in units on the left panel, MASE on the right, so unit-incompatible metrics never share an axis. Error grows with h; the sawtooth is weekday composition (weekly origins fix each horizon's weekday — h=1 is always a Saturday on the UCI panel).
+  uci:multistep_class_scoreboard: Champion vs floor MAE per demand class at h=7 and h=14 (units) with a second panel for the champion-minus-floor gap and its 95% paired cluster-bootstrap CI — the lumpy gap CIs exclude zero, the erratic ones span it.
+  uci:multistep_routing: Routing effect per class — all-HGB MAE minus routed MAE (units), 95% bootstrap whiskers. Sparse classes sit well above zero; boosted trees overfit intermittent series, statistical methods do not.
+  uci:multistep_band_calibration: Per-horizon band calibration on the scored origins — empirical coverage vs the 80% target on the left, average width in units on the right. Verdicts per h; sparse rows carry P(sale)+quantile-ladder bands that cannot collapse to zero width.
+  uci:multistep_peak_capture: Peak capture per class — per-candidate peak_recall and peak_mae differences vs the zero forecast with 95% paired bootstrap CIs. On erratic every candidate cuts peak-day error by ~60 units vs zero; on lumpy tweedie trades top-5 day-ranking recall for smaller error on the days peaks actually happen.
+  uci:multistep_candidate_comparison: Pooled-over-h MAE per class for the peak-capable candidates (tweedie / hurdle) vs the routed pipeline and zero — bars on the left, candidate-minus-routed gap with 95% CI on the right. The flat methods keep pooled lumpy MAE; hurdle wins erratic outright.
+  uci:multistep_peak_day_scatter: Forecast vs actual on each scored window's top-decile demand day (lumpy class), one panel per candidate, dotted parity line. The zero candidate hugs the bottom — the structural miss the peak-capable candidates were built for; tweedie visibly tracks the diagonal on the days that matter.
+  uci:probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, test window. The band covers the h=1..14 horizon set at 0.861 on UCI (target 0.80) but with zero width — the median sits on the zero atom — while on synthetic it covers 0.741 at 26.5 units average width (under-covering); the figure states coverage and width.
