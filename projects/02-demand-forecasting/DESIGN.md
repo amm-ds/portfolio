@@ -315,6 +315,71 @@ small tabular lag problems; a sequence model is the roadmap answer).
   (hgb_tweedie, hurdle_hgb, lgbm_tweedie, lgbm_poisson, hurdle_lgbm,
   peak_weighted_hgb); dense = direct_hgb + the same six.
 
+### L. Wave 22 — missing baselines, rolling features, hierarchy anchoring,
+### better metrics
+
+- **`ma_28`** (rolling 28-day mean, flat across the window): the
+  audit-flagged missing moving-average baseline. Pure and deterministic;
+  joins the sparse routing pool like every statistical method.
+- **ADIDA** (`adida_sba` / `adida_tsb`): temporal aggregation of the SBA/TSB
+  estimators. The daily training series is aggregated into non-overlapping
+  7-day buckets aligned to the END of the training window — because the
+  forecast window abuts the origin, o+1..o+14 is then exactly two buckets.
+  The base estimator is fit on the bucket-total series and forecasts the two
+  next bucket totals; each total is disaggregated into daily values via the
+  series' empirical within-week profile: position k of the 7-day cycle gets
+  the share of training demand observed at days t ≡ (len + k) (mod 7)
+  (index-mod-7 is the weekday offset of a contiguous daily panel, so all
+  buckets share one profile). Edge cases: all-zero training history →
+  all-zero forecast (the all-zero profile subsumes it); a positive bucket
+  total under an all-zero profile → uniform spread (total/7 per day) — the
+  branch lives in the pure `_adida_disaggregate` helper because through the
+  public entry point a zero profile implies zero bucket totals; a window
+  shorter than one bucket → all-zero forecast.
+- **Rolling features** (all ML candidates): rmean7/rmean14/rmean28,
+  rstd14/rstd28, computed at the same target−h reference day as the
+  peak/price blocks (population std; windows undefined before their full
+  length → 0.0, never read). The hpo objectives (`make_multistep_tweedie_
+  objective`, `make_multistep_lgbm_objective`) are threaded with the tensor
+  so any future re-tuning sees the same design the evaluate track fits.
+- **`routed_reconciled`** (comparison-only hierarchy anchoring): for each
+  country block and window day, the anchor is the seasonal-naive forecast of
+  the block's AGGREGATED demand on the target day (a genuinely independent,
+  denser signal); the discrepancy (anchor − Σ member routed forecasts) is
+  allocated proportionally to member routed forecasts — members with zero
+  forecast get nothing — with a fallback to training-window means when the
+  whole block forecasts zero, and no adjustment when those are zero too.
+  **Why it lost**: 945 of 1,069 lumpy series route to the zero forecast, and
+  anchoring injects the seasonal-naive's noise into exactly those flat
+  forecasts — pooled MAE 9.969 vs routed 7.471 (it does cut lumpy peak-day
+  MAE to 27.923, so it stays as an honest benchmark). Covariance-projection
+  MinT is the documented next step, not a proven win.
+- **`rmae`**: candidate pooled MAE ÷ seasonal_naive floor pooled MAE over the
+  same scored cells, per candidate per class and pooled; the floor is 1.0 by
+  construction and the headline claim quotes the champion's value (0.649).
+  Fixes the flagged wording problem: MASE's 1.0 is the in-sample scale's
+  error level, never called "seasonal-naive parity" anywhere in src or docs.
+- **Per-candidate `rmsse`** (M5 convention): the unit is a (series × scored
+  origin) evaluation — numerator = MSE of the candidate over the unit's
+  scored horizon days, denominator = in-sample MSE of the one-step
+  seasonal-naive-7 over the unit's training window; averaged over units
+  (zero-scale excluded), volume-weighted variant alongside; per class and
+  pooled for every candidate.
+- **Newsvendor decision layer** (additive in `decision_metric`): for q ∈
+  {0.8, 0.9, 0.95} the order IS a quantile of the forecast distribution —
+  routed rows: dense = linear interpolation of the committed p10/p50/p90
+  ladder (linear extrapolation above p90, zero-clipped), sparse = the
+  q-quantile of the training history (the existing ladder machinery); floor
+  rows: the same quantile of the seasonal-naive empirical distribution
+  (training-window demand on the target's weekday). Cost per scored cell:
+  holding 1.0 × ordered-but-unsold + stockout 3.0 × unmet per unit-day —
+  a documented assumption, not a measured saving. Reported per class as
+  expected daily cost per unit-demand with paired cluster-bootstrap CIs
+  (routed minus floor). Result: the MAE-optimal router over-orders at q ≤
+  0.90 on spike-driven lumpy demand (+0.127/unit at q=0.90, CI excludes
+  zero) and wins on erratic only at q=0.95 — the same asymmetry the
+  order-up-to layer shows, priced at the band quantile.
+
 ## Pipeline
 
 ```mermaid
@@ -403,6 +468,47 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.11.0 (2026-10-27)** — wave 22 ("missing baselines and better
+  metrics"): the statistical side gains `ma_28` (rolling 28-day mean, flat —
+  the audit-flagged missing moving-average baseline) and the ADIDA pair
+  (`adida_sba` / `adida_tsb`): 7-day non-overlapping temporal aggregation
+  aligned to the END of the training window so the o+1..o+14 window is exactly
+  two buckets, SBA/TSB fit on the bucket-total series, disaggregation via the
+  empirical within-week profile (index-mod-7 position classes — the weekday
+  offset on a contiguous daily panel); edge cases: all-zero history →
+  all-zero forecast, positive bucket under an all-zero profile → uniform
+  spread (pure `_adida_disaggregate` helper, unit-tested directly). All ML
+  candidates gain a rolling block at the target−h reference day (rmean7/14/28,
+  rstd14/28 — same ≥h-day aging, taint-tested; the hpo objectives are threaded
+  with the tensor). `routed_reconciled` joins as a comparison-only benchmark:
+  per country block the routed forecast is anchored to the seasonal-naive
+  forecast of the country's aggregated demand, discrepancy allocated
+  proportionally to member routed forecasts (fallback: training-window means;
+  then no adjustment). New metric layer: `rmae` (candidate pooled MAE ÷ floor
+  pooled MAE, per class + pooled), per-candidate `rmsse` (M5 convention,
+  denominator = in-sample MSE of the one-step seasonal-naive-7 over each
+  series × origin training window; volume-weighted variant alongside), and a
+  `newsvendor` decision layer (order = the routed band's q-quantile: dense
+  rows interpolate the committed p10/p50/p90 ladder with linear extrapolation
+  above p90, sparse rows read the training-history ladder; floor orders the
+  same quantile of the seasonal-naive weekday distribution; holding 1.0 /
+  stockout 3.0 per unit-day — documented assumption, no savings claims;
+  paired cluster-bootstrap CIs). UCI regenerated: the new candidates honestly
+  lose — ma_28 9.944 / adida_tsb 9.977 / adida_sba 10.732 / routed_reconciled
+  9.969 pooled MAE, all behind zero (9.276) and far behind routed (7.471,
+  rmae 0.649); only 18 lumpy series route to an ADIDA variant, zero stays the
+  ceiling (945 of 1,069) — consistent with the independent
+  collapseindex/online-retail-forecast benchmark where seasonal-naive wins on
+  the same dataset. Champion lumpy 6.090 vs floor 11.070 at h=7 (CI [−7.742,
+  −2.877]); routing beats unrouted all-HGB by 3.982 MAE (CI [3.338, 4.756]);
+  win rates lumpy routed h=7 21.89% (CI [19.55, 24.32]); newsvendor q=0.90
+  erratic 1.820 vs 1.727, lumpy 2.370 vs 2.243. Demo payload schema v3
+  extended (payload_revision 3.4: per-series `adida` curve y_pred-only at
+  2-decimal rounding — the 3.5 MB cap leaves room for three shock families,
+  not four; scoreboard candidate rows carry rmae/rmsse; decision block carries
+  the newsvendor layer; drift guards cover the new blocks). Tests: wave-22
+  suite (`test_wave22.py`, 16 hand-computed cases) and README drift guards
+  extended to the wave-22 quotes.
 - **0.10.0 (2026-10-26)** — wave 21: the multi-step track gains price/
   trading-cycle features (unit-price stats + weekday/trading-day flags of the
   target week, same ≥h-day aging), three LightGBM arms (`lgbm_tweedie`,

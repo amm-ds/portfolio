@@ -493,11 +493,14 @@ def figure_forecast_vs_actual(result: BacktestResult) -> go.Figure:
 
 
 def figure_metrics_bars(result: BacktestResult) -> go.Figure:
-    """Two-panel metric ladder: (a) MAE + RMSE in units; (b) MASE vs parity.
+    """Two-panel metric ladder: (a) MAE + RMSE in units; (b) MASE vs its 1.0
+    in-sample-scale reference line.
 
     MAPE stays off the chart: its % scale is unit-incompatible with MAE/RMSE
     (and not decision-grade on zero-heavy demand) — it is reported in
-    metrics.json and the docs results table instead.
+    metrics.json and the docs results table instead. The MASE scale is the
+    seasonal-naive's in-sample error, so 1.0 is only a scale reference — the
+    naive itself lands wherever its own holdout error puts it.
     """
     runs = result.runs
     names = [r.name for r in runs]
@@ -513,7 +516,7 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     fig = make_subplots(
         rows=1,
         cols=2,
-        subplot_titles=("MAE + RMSE (units)", "MASE — 1.0 = seasonal-naive parity"),
+        subplot_titles=("MAE + RMSE (units)", "MASE vs the 1.0 in-sample-scale reference"),
     )
     fig.add_bar(x=names, y=mae, name="mae", row=1, col=1)
     fig.add_bar(x=names, y=rmse, name="rmse", row=1, col=1)
@@ -548,9 +551,11 @@ def figure_metrics_bars(result: BacktestResult) -> go.Figure:
     apply_theme(fig)
     add_takeaway(
         fig,
-        "bars = final holdout window (last origin), one score per run — MASE vs 1.0 "
-        "seasonal-naive parity; MAPE omitted: with ~89% zero-demand days, near-zero "
-        "actuals inflate it (hundreds of %), so it is not decision-grade here",
+        "bars = final holdout window (last origin), one score per run — MASE against "
+        "its 1.0 in-sample-scale reference (the scale comes from a quieter in-sample "
+        "period, so the seasonal-naive's own bar need not sit at 1.0); MAPE omitted: "
+        "with ~89% zero-demand days, near-zero actuals inflate it (hundreds of %), so "
+        "it is not decision-grade here",
     )
     return fig
 

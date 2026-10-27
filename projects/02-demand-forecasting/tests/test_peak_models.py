@@ -8,6 +8,8 @@ import pytest
 from demand_forecasting.config import ForecastConfig
 from demand_forecasting.multihorizon import (
     N_PEAK_FEATURES,
+    N_PRICE_FEATURES,
+    N_ROLLING_FEATURES,
     PEAK_FEATURE_NAMES,
     TWEEDIE_POWER,
     OriginScore,
@@ -38,7 +40,7 @@ def test_tweedie_estimator_construction() -> None:
     assert TWEEDIE_POWER == 1.5
     # sklearn keeps the variance power on the inner cy loss
     assert model.loss.closs.power == TWEEDIE_POWER
-    n_num = 9 + 3 + N_PEAK_FEATURES + 4
+    n_num = 9 + 3 + N_PEAK_FEATURES + N_PRICE_FEATURES + N_ROLLING_FEATURES
     assert model.categorical_features == [n_num, n_num + 1]
     # tuned params flow from the config
     assert model.learning_rate == pytest.approx(config.multistep_tweedie.learning_rate)

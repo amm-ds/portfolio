@@ -56,6 +56,16 @@ curves; v3 replaces the catalog with the multi-step experiment:
   experiment-wide ``win_rates`` block (per-class per-series beats-floor win
   rates with cluster-bootstrap CIs) is carried straight from the committed
   ``_multistep`` block — nothing v3.2 carries moves.
+- revision 3.4 (additive over 3.3, wave 22): per-series ``models`` gain an
+  ``adida`` curve (the series' routed-to ADIDA variant when the router picked
+  one, else ``adida_sba``; y_pred only — the shock grid stays on the
+  routed-pipeline curves to hold the payload size cap); the scoreboard candidate rows
+  carry the committed ``rmae`` and ``rmsse`` numbers per class; the decision
+  block carries the wave-22 newsvendor order-quantile cost layer; the drift
+  guards cover the new ``rmae``/``rmsse`` committed blocks. ``routed_reconciled``
+  is METRICS-ONLY (hierarchy anchoring of the routed forecast): it appears in
+  the metric blocks but ships NO per-series curve block. Nothing v3.3 carries
+  moves.
 - ``evaluation_metadata`` embeds the committed protocol-v2 block (20 weekly
   rolling origins, select-16/score-4, per-h direct models, the
   leakage-by-construction feature semantics) and ``dataset_metadata`` the
@@ -63,8 +73,9 @@ curves; v3 replaces the catalog with the multi-step experiment:
 
 Drift guards (as v2): the re-run multi-step scoring must reproduce the
 committed pooled MAE per candidate over the scored test cells, the committed
-conformal widths, the committed class assignments, and the committed origin
-plan — any mismatch raises instead of shipping.
+rmae/rmsse blocks, the committed conformal widths, the committed class
+assignments, and the committed origin plan — any mismatch raises instead of
+shipping.
 """
 
 import json
@@ -91,6 +102,8 @@ from demand_forecasting.multihorizon import (
     OriginScore,
     _calendar_features,
     _policy_residuals,
+    _rmae_cells,
+    _rmsse_cells,
     _score_origin,
     _test_cells,
     apply_hurdle_correction,
@@ -115,12 +128,25 @@ PAYLOAD_SCHEMA_VERSION = 3
 #       curve is a contiguous 14-day series (one real direct-h point per
 #       window day, no interpolated display points), bands/pinball/widths
 #       exist at every h, and `horizon_growth` spans 1..14.
-PAYLOAD_REVISION = "3.3"
+#   3.3 (wave 21): ML alias entries for every router-pickable candidate +
+#       the experiment-wide `win_rates` block.
+#   3.4 (wave 22): the `adida` per-series curve block (y_pred only, no shocks
+#       — cap), rmae/rmsse
+#       rows on the scoreboard candidates, the newsvendor decision layer, and
+#       drift guards over the new committed metric blocks. `routed_reconciled`
+#       stays metrics-only — no per-series curve block.
+PAYLOAD_REVISION = "3.4"
 CATALOG_N = 100
 ORIGIN_HISTORY_DAYS = 60
 HORIZON_DAYS = 14
 SEASON = 7
-SIZE_CAP_BYTES = 3 * 1024 * 1024
+# Payload size cap, enforced at write time. Set at 3 MB in wave 20 when the
+# catalog carried 7 curve families; recalibrated to 3.5 MB in wave 22 — four
+# honest comparison candidates (ma_28, adida_sba/tsb, routed_reconciled) ship
+# CI-bearing metric blocks, not curves, and gzip transfer (~0.4 MB) is what
+# actually bounds demo load time. The headroom test in
+# tests/test_demo_payload.py reads this same constant.
+SIZE_CAP_BYTES = int(3.5 * 1024 * 1024)
 # Demand-shock what-if stops (1.0x is the committed base curve itself).
 SHOCK_FACTORS = (0.5, 1.5, 2.0)
 # Service-level grid for the decision layer's τ→quantile mapping.
@@ -131,6 +157,9 @@ TAU_GRID = tuple(round(0.50 + 0.01 * k, 2) for k in range(50))
 NAIVE_MODEL = "zero"
 FLOOR_MODEL = "seasonal_naive"
 CHAMPION_HGB = "direct_hgb"
+# The ADIDA variants the router may pick; the per-series `adida` curve shows
+# the routed-to variant when one was picked, else the SBA default.
+ADIDA_VARIANTS = ("adida_sba", "adida_tsb")
 
 
 def _check_close(name: str, actual: float, committed: float, tol: float = 1e-6) -> None:
@@ -284,6 +313,15 @@ def _origin_entry(
         # the candidate's name so the workbench can offer it as a model chip
         # without duplicating the curve bytes
         models[method_of] = {"alias": "routed"}
+    # wave 22 (revision 3.4): the ADIDA curve block — the series' routed-to
+    # ADIDA variant when the router picked one, else the adida_sba default.
+    # y_pred only (no shock grid): the payload size cap has no room for a
+    # fourth per-series shock family — shocks stay on the routed-pipeline
+    # curves (documented in catalog_summary.metrics_only_note)
+    adida_method = method_of if method_of in ADIDA_VARIANTS else "adida_sba"
+    models["adida"] = {
+        "y_pred": [round(float(x), 2) for x in np.clip(sc.preds[adida_method][i, :], 0.0, None)]
+    }
 
     return {
         "origin_date": str(dates[origin])[:10],
@@ -343,16 +381,17 @@ def _class_scoreboard(
             "vs_zero_bootstrap": {
                 key: entry[key]["champion_vs_naive_zero"] for key in ("h7", "h14") if key in entry
             },
-            "candidates": _candidate_board(entry),
+            "candidates": _candidate_board(entry, ms, cls),
             "routing_effect": ms["routing"]["per_class"].get(cls),
         }
     return board
 
 
-def _candidate_board(entry: dict[str, Any]) -> dict[str, Any]:
-    """The peak-capable ML + ensemble candidates per class, from the committed
-    headline rows: pooled MAE + the paired-bootstrap gaps vs routed and vs
-    zero at each committed horizon."""
+def _candidate_board(entry: dict[str, Any], ms: dict[str, Any], cls: str) -> dict[str, Any]:
+    """The peak-capable ML + ensemble + reconciled candidates per class, from
+    the committed rows: pooled MAE + the paired-bootstrap gaps vs routed and
+    vs zero at each committed horizon, plus the wave-22 rmae/rmsse numbers for
+    the class (additive keys on every candidate row)."""
     board: dict[str, Any] = {}
     for cand in COMPARISON_CANDIDATES:
         rows: dict[str, Any] = {}
@@ -365,6 +404,9 @@ def _candidate_board(entry: dict[str, Any]) -> dict[str, Any]:
                 "vs_routed": row.get(f"{cand}_vs_routed"),
                 "vs_zero": row.get(f"{cand}_vs_zero"),
             }
+        # wave 22: the committed relative-error blocks for this class
+        rows["rmae"] = ms["rmae"]["per_class"].get(cls, {}).get(cand)
+        rows["rmsse"] = ms["rmsse"]["per_class"].get(cls, {}).get(cand)
         board[cand] = rows
     return board
 
@@ -458,7 +500,8 @@ def _drift_guard(
 ) -> dict[int, float]:
     """Assert the re-run reproduces every committed scalar the payload carries
     (pooled MAE per candidate over the scored cells, the routed per-h MAE,
-    and the conformal widths); return the recomputed widths for band emission."""
+    the wave-22 rmae/rmsse blocks, and the conformal widths); return the
+    recomputed widths for band emission."""
     for name, committed in ms["overall_mae_test"].items():
         mae = float(np.abs(cells["pred"][name] - cells["y"]).mean())
         _check_close(f"_multistep.overall_mae_test.{name}", mae, float(committed))
@@ -470,6 +513,28 @@ def _drift_guard(
             mae,
             ms["per_horizon"][str(h)]["champion"]["mae"],
         )
+    # wave 22: the committed relative-error blocks, recomputed from the cells
+    full = np.ones(cells["y"].shape[0], dtype=bool)
+    for name, committed in ms["rmae"]["pooled"].items():
+        _check_close(f"_multistep.rmae.pooled.{name}", _rmae_cells(cells, full, name), committed)
+    for cls, per_cls in ms["rmae"]["per_class"].items():
+        mask = cells["class"] == cls
+        for name, committed in per_cls.items():
+            _check_close(
+                f"_multistep.rmae.per_class.{cls}.{name}",
+                _rmae_cells(cells, mask, name),
+                committed,
+            )
+    for name, committed in ms["rmsse"]["pooled"].items():
+        r, wr = _rmsse_cells(cells, full, name)
+        _check_close(f"_multistep.rmsse.pooled.{name}.rmsse", r, committed["rmsse"])
+        _check_close(f"_multistep.rmsse.pooled.{name}.wrmsse", wr, committed["wrmsse"])
+    for cls, per_cls in ms["rmsse"]["per_class"].items():
+        mask = cells["class"] == cls
+        for name, committed in per_cls.items():
+            r, wr = _rmsse_cells(cells, mask, name)
+            _check_close(f"_multistep.rmsse.per_class.{cls}.{name}.rmsse", r, committed["rmsse"])
+            _check_close(f"_multistep.rmsse.per_class.{cls}.{name}.wrmsse", wr, committed["wrmsse"])
     # conformal widths, recomputed from the selection origins' p50 residuals
     widths: dict[int, float] = {}
     for h in horizons:
@@ -578,8 +643,19 @@ def build_demo_payload(
     )
     ens_ml_idx = np.array([ML_SPARSE.index(str(m)) for m in ens["ml_choice"]])
     cells = _test_cells(
-        by_origin, test, horizons, units, sparse, method_of, ens["weights"], ens_ml_idx
+        by_origin,
+        test,
+        horizons,
+        units,
+        sparse,
+        method_of,
+        series_ids,
+        ens["weights"],
+        ens_ml_idx,
     )
+    # wave-22 rmae/rmsse per-class guards key off the class column (same
+    # assignment as run_multistep's writer side)
+    cells["class"] = classes_of[cells["series"]]
     widths = _drift_guard(ms, prob_ms, cells, by_origin, selection, horizons, units, sparse)
 
     # ---- catalog ----
@@ -626,12 +702,14 @@ def build_demo_payload(
     routing_win = ms["routing"]["per_class"].get("lumpy", {})
     win_diff = routing_win.get("diff")
     win_ci = routing_win.get("ci95")
+    champ_rmae = ms["rmae"]["pooled"].get("routed")
     claim = (
         "the routed pipeline leads the multi-step leaderboard; routing lumpy series away "
         "from the boosted model wins "
         f"+{win_diff:.1f} MAE [{win_ci[0]:.1f}, {win_ci[1]:.1f}] over all-HGB "
-        "(95% paired bootstrap over series x scored origins)"
-        if win_diff is not None and win_ci is not None
+        "(95% paired bootstrap over series x scored origins); pooled rmae vs the "
+        f"seasonal-naive floor {champ_rmae:.3f} (< 1 beats the floor)"
+        if win_diff is not None and win_ci is not None and champ_rmae is not None
         else "the routed pipeline leads the multi-step leaderboard"
     )
 
@@ -675,6 +753,7 @@ def build_demo_payload(
         "decision": decision,
         "headline": {
             "claim": claim,
+            "headline_claim": ms.get("headline_claim"),
             "pooled_mae_by_model": ms["overall_mae_test"],
             "routing_win_lumpy": routing_win,
             "n_series_experiment": ms["demand_classes"]["n_series"],
@@ -706,6 +785,16 @@ def build_demo_payload(
             "routing_rule": ms["routing"]["rule"],
             "candidates": ms["candidates"],
             "peak_capable_candidates": ms["peak_capable_candidates"],
+            "post_processing_candidates": ms.get("post_processing_candidates", {}),
+            "metrics_only_note": (
+                "routed_reconciled (wave 22) is metrics-only: the hierarchy-anchored "
+                "routed forecast appears in overall_mae_test / rmae / rmsse / "
+                "candidate_comparison / win_rates / peak_capture, but ships no "
+                "per-series curve block. The adida curve ships y_pred only — no "
+                "shock grid (the payload cap leaves room for three shock families, "
+                "not four); its shocks are recomputed offline like every other "
+                "candidate's"
+            ),
             "class_thresholds": {"adi": ADI_THRESHOLD, "cv2": CV2_THRESHOLD},
             "experiment_origins": ms["origins"],
         },

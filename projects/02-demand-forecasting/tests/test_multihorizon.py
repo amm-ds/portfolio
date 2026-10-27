@@ -22,6 +22,7 @@ from demand_forecasting.multihorizon import (
     neutral_price_tensor,
     panel_matrix,
     peak_feature_tensor,
+    rolling_feature_tensor,
     run_multistep,
     split_origins,
 )
@@ -100,20 +101,23 @@ def test_horizon_features_ignore_actuals_within_h_days(mixed_panel: pl.DataFrame
     dates, _, units = panel_matrix(mixed_panel)
     cal = _calendar_features(dates)
     pf = peak_feature_tensor(units)
+    rf = rolling_feature_tensor(units)
     prf = neutral_price_tensor(units.shape[0], units.shape[1])
     origin = 60
     for h in (1, 7, 14):
         tainted = units.copy()
         tainted[origin + 1 : origin + h + 1] += 1000.0
         pf_taint = peak_feature_tensor(tainted)
+        rf_taint = rolling_feature_tensor(tainted)
         np.testing.assert_array_equal(pf[: origin + 1], pf_taint[: origin + 1])
-        x_clean, y_clean = _design_train(units, cal, pf, prf, origin, h)
-        x_taint, y_taint = _design_train(tainted, cal, pf_taint, prf, origin, h)
+        np.testing.assert_array_equal(rf[: origin + 1], rf_taint[: origin + 1])
+        x_clean, y_clean = _design_train(units, cal, pf, prf, rf, origin, h)
+        x_taint, y_taint = _design_train(tainted, cal, pf_taint, prf, rf_taint, origin, h)
         np.testing.assert_array_equal(x_clean, x_taint)
         np.testing.assert_array_equal(y_clean, y_taint)
         np.testing.assert_array_equal(
-            _design_pred(units, cal, pf, prf, origin, h),
-            _design_pred(tainted, cal, pf_taint, prf, origin, h),
+            _design_pred(units, cal, pf, prf, rf, origin, h),
+            _design_pred(tainted, cal, pf_taint, prf, rf_taint, origin, h),
         )
 
 
@@ -146,7 +150,8 @@ def test_training_targets_never_exceed_the_origin(
     for origin in (60, 80):
         for h in (1, 7, 14):
             pf = peak_feature_tensor(units)
-            x_train, y_train = _design_train(units, cal, pf, prf, origin, h)
+            rf = rolling_feature_tensor(units)
+            x_train, y_train = _design_train(units, cal, pf, prf, rf, origin, h)
             # every y value must appear among units[0..origin]
             known = np.isin(y_train, units[: origin + 1])
             assert known.all()
@@ -237,6 +242,24 @@ def test_run_multistep_block_shape(mixed_panel: pl.DataFrame) -> None:
     assert "win_rates" in block
     assert block["win_rates"]["per_class"]["lumpy"]["n_series"] >= 1
     assert block["routing"]["peak_weight_choice"]["chosen"] in (2.0, 3.0)
+    # wave-22 statistical candidates + hierarchy anchoring + metric blocks
+    for cand in ("ma_28", "adida_sba", "adida_tsb", "routed_reconciled"):
+        assert cand in block["candidates"]
+        assert cand in block["overall_mae_test"]
+        assert cand in block["rmae"]["pooled"]
+        assert cand in block["rmsse"]["pooled"]
+    for cand in ("ma_28", "adida_sba", "adida_tsb"):
+        assert cand in block["routing"]["pool_sparse"]
+    assert "routed_reconciled" not in (*block["routing"]["pool_sparse"],)
+    assert "routed_reconciled" in block["candidate_comparison"]["per_class"]["lumpy"]
+    assert "routed_reconciled" in block["peak_capture"]["candidates"]
+    assert "rmae" in block["headline_claim"]
+    assert abs(block["rmae"]["pooled"]["seasonal_naive"] - 1.0) < 1e-12
+    assert block["rmsse"]["pooled"]["routed"]["rmsse"] > 0
+    assert "newsvendor" in block["decision_metric"]
+    assert set(block["decision_metric"]["newsvendor"]["per_class"]) == set(
+        block["headline_per_class"]
+    )
     # coverage table present with verdicts
     prob = result.probabilistic_block
     for h in ("1", "7", "14"):

@@ -11,6 +11,20 @@ an afterthought:
 - **TSB** (Teunter-Syntetos-Babai): smooth the demand *probability* every
   period and the demand *size* on demand periods only; forecast = p·z. Unlike
   Croston/SBA it reacts when a series goes quiet (the probability decays).
+- **ma_28** (wave 22): the rolling 28-day mean of the training window, held
+  flat across the window — the missing moving-average baseline the audit
+  flagged (deterministic, pure).
+- **ADIDA** (wave 22, ``adida_sba`` / ``adida_tsb``): aggregation-disaggregation
+  intermittent-demand approach. The daily series is aggregated into
+  non-overlapping 7-day buckets aligned to the END of the training window (so
+  the forecast window o+1..o+14 is exactly 2 buckets); SBA (resp. TSB) is fit
+  on the bucket-total series and forecasts the next bucket totals; each bucket
+  total is disaggregated into daily values via the series' empirical
+  within-week profile (the mean share of each position in the 7-day cycle over
+  the training window — index-mod-7 of the daily panel IS the weekday offset,
+  the panels are contiguous daily). Edge cases: an all-zero training profile
+  gives an all-zero forecast; a positive bucket forecast under an all-zero
+  profile spreads uniformly (bucket_total / 7 per day).
 
 All three are flat ``h``-step forecasts (the standard convention for
 intermittent methods): one value per series, constant across the window.
@@ -32,6 +46,7 @@ the selection origins only; ``smooth``/``erratic`` series go to the direct
 per-horizon boosted model.
 """
 
+import math
 from typing import Any
 
 import numpy as np
@@ -142,22 +157,128 @@ def tsb_forecast(
 
 
 #: Statistical candidates eligible for sparse-series routing (multi-step track).
-STATISTICAL_METHODS = ("zero", "seasonal_naive", "croston", "sba", "tsb")
+#: Wave 22 adds the moving-average baseline (ma_28) and the ADIDA pair
+#: (adida_sba / adida_tsb — temporal aggregation of the SBA/TSB estimators).
+STATISTICAL_METHODS = (
+    "zero",
+    "seasonal_naive",
+    "croston",
+    "sba",
+    "tsb",
+    "ma_28",
+    "adida_sba",
+    "adida_tsb",
+)
 
 
-def statistical_forecast(method: str, y: np.ndarray, horizon: int) -> np.ndarray:
-    """Dispatch one statistical method to a flat ``horizon``-step forecast.
+def ma_28_forecast(y: np.ndarray, horizon: int) -> np.ndarray:
+    """Rolling 28-day mean of the training window, held flat across the window.
+
+    Windows shorter than 28 days average over what exists. Pure and
+    deterministic — the audit-flagged missing moving-average baseline.
+    """
+    y = np.asarray(y, dtype=float)
+    if y.size == 0:
+        return np.zeros(horizon)
+    w = min(28, y.size)
+    return np.full(horizon, float(y[-w:].mean()))
+
+
+#: ADIDA bucket length (days). The window o+1..o+14 is exactly 2 buckets when
+#: the aggregation is aligned to the end of the training window.
+ADIDA_BUCKET_DAYS = 7
+
+
+def _adida_disaggregate(
+    bucket_fc: np.ndarray, profile: np.ndarray, horizon: int, bucket: int
+) -> np.ndarray:
+    """Disaggregate per-bucket totals into daily values via the within-week
+    profile (position ``k`` of each bucket gets ``profile[k]`` — see
+    :func:`adida_forecast` for the alignment). Pure math, hand-testable: a
+    positive bucket total under an all-zero profile spreads uniformly
+    (``total / bucket`` per day).
+    """
+    out = np.zeros(horizon)
+    if not np.any(profile > 0):
+        profile = np.full(bucket, 1.0 / bucket)
+    for b, total in enumerate(bucket_fc):
+        day_lo = b * bucket
+        if day_lo >= horizon:
+            break
+        take = min(bucket, horizon - day_lo)
+        out[day_lo : day_lo + take] = total * profile[:take]
+    return out
+
+
+def adida_forecast(
+    method: str,
+    y: np.ndarray,
+    horizon: int,
+    alpha: float = ALPHA,
+    bucket: int = ADIDA_BUCKET_DAYS,
+) -> np.ndarray:
+    """ADIDA-style temporal aggregation around a flat intermittent estimator.
+
+    ``method`` is the base estimator fit on the bucket series (``"sba"`` or
+    ``"tsb"`` — both live in this module; Croston is deliberately not exposed
+    since SBA dominates it here). Steps, all pure numpy:
+
+    1. Aggregate the daily training series into non-overlapping ``bucket``-day
+       buckets aligned to the END of the training window, so the forecast
+       window (which abuts the origin) starts exactly on a bucket boundary.
+    2. Fit the base estimator on the bucket-total series, forecast the next
+       ``ceil(horizon / bucket)`` bucket totals (flat per bucket).
+    3. Disaggregate via :func:`_adida_disaggregate` with the series' empirical
+       within-week profile: position ``k`` of the 7-day cycle gets the share
+       of training demand observed at days ``t ≡ (len + k) (mod 7)``
+       (index-mod-7 is the weekday offset of a contiguous daily panel).
+
+    Edge cases: an all-zero training profile → all-zero forecast; a positive
+    bucket total under an all-zero profile → spread uniformly (bucket_total /
+    bucket per day — unreachable through this entry point since a zero
+    profile implies zero bucket totals, so the branch lives in the pure
+    disaggregation helper where it is unit-tested); a training window shorter
+    than one bucket → all-zero forecast.
+    """
+    y = np.asarray(y, dtype=float)
+    if method not in ("sba", "tsb"):
+        raise ValueError(f"ADIDA base method must be 'sba' or 'tsb', got {method!r}")
+    n = int(y.size)
+    n_bk = math.ceil(horizon / bucket)
+    n_full = n // bucket
+    if n_full == 0 or n_bk == 0 or not np.any(y > 0):
+        return np.zeros(horizon)
+    bucket_totals = y[n - n_full * bucket :].reshape(n_full, bucket).sum(axis=1)
+    base = statistical_forecast(method, bucket_totals, n_bk, alpha=alpha)
+    total = float(y.sum())
+    pos = np.arange(n) % bucket
+    profile = np.array([float(y[pos == (n + k) % bucket].sum()) / total for k in range(bucket)])
+    return _adida_disaggregate(base, profile, horizon, bucket)
+
+
+def statistical_forecast(
+    method: str, y: np.ndarray, horizon: int, alpha: float = ALPHA
+) -> np.ndarray:
+    """Dispatch one statistical method to an ``horizon``-step forecast vector.
 
     ``seasonal_naive`` is NOT flat — it is handled by the multi-step engine
     (its direct h-step value depends on the horizon position), so this
-    dispatcher covers only the flat methods used by sparse-series routing.
+    dispatcher covers the statistical methods used by sparse-series routing.
+    ``ma_28`` is flat; the ADIDA pair varies within the window (the
+    within-week profile disaggregation is day-specific).
     """
     if method == "zero":
         return np.zeros(horizon)
     if method == "croston":
-        return croston_forecast(y, horizon)
+        return croston_forecast(y, horizon, alpha)
     if method == "sba":
-        return sba_forecast(y, horizon)
+        return sba_forecast(y, horizon, alpha)
     if method == "tsb":
-        return tsb_forecast(y, horizon)
+        return tsb_forecast(y, horizon, alpha)
+    if method == "ma_28":
+        return ma_28_forecast(y, horizon)
+    if method == "adida_sba":
+        return adida_forecast("sba", y, horizon, alpha)
+    if method == "adida_tsb":
+        return adida_forecast("tsb", y, horizon, alpha)
     raise ValueError(f"not a flat statistical method: {method!r}")
