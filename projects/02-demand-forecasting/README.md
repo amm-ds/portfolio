@@ -387,6 +387,66 @@ scored origins, 95% CI on the gap (negative = champion better):
   research-grade intermittent-demand work quoting RMSSE on this dataset; our
   per-candidate M5-convention rmsse block is directly comparable.
 
+## Hierarchical track — Nixtla benchmarks (protocol `hierarchical_rolling_v1`, wave 23)
+
+Wave 22 closed with a measured failure: the panel track's `routed_reconciled`
+country-anchoring **lost** on pooled MAE, and the design note named
+covariance-projection MinT (Wickramasuriya et al. 2019) as the documented next
+step. Wave 23 is that step, evaluated where hierarchical reconciliation is
+actually the problem — the two canonical Nixtla hierarchical benchmarks
+(`datasetsforecast.hierarchical`, committed under `data_hier/`): **TourismSmall**
+(Australian tourism, quarterly, 89 nodes / 56 bottom, 1998Q1–2006Q4, season 4,
+horizon 4; Rangapuram et al. ICML 2021) and **Labour** (Australian labour force,
+monthly, 57 nodes / 32 bottom, 1978–2019, season 12, horizon 8; Olivares et
+al. IJF 2023, Kamarthi et al. PROFHIT 2022). Protocol: rolling origins one
+period apart (6 per group, oldest dropped past the cap; the window abuts the
+origin — no embargo gap), candidates fixed a priori — **no routing, no
+selection**, so every origin is honest evaluation for the fixed candidates:
+`seasonal_naive` (the panel-track definition), `auto_theta` and `auto_ets`
+(statsforecast), and `lgbm_global` (one LightGBM over all nodes via mlforecast).
+Every candidate is scored **raw**, **+BottomUp** and **+MinT(mint_shrink)**
+(hierarchicalforecast 1.5.3); per-level MAE / rmae (floor = 1.0 by
+construction), a coherence error per variant
+(|parent − Σ children| / max(|actual|, 1), pooled over parents × periods), and
+a 95% paired cluster bootstrap over bottom series for the headline gaps.
+Re-run with `cli evaluate-hierarchical --group both` (offline, ~4 min);
+`reports_hier/metrics.json` is byte-identical across runs.
+
+Results (pooled over the 6 origins; rmae vs `seasonal_naive` at the same
+level; full grid committed in `reports_hier/metrics.json`):
+
+- **TourismSmall**: the statistical base forecasts beat the floor at both
+  levels (auto_theta rmae **0.890** / auto_ets **0.889** at the total, 0.895 /
+  0.838 at the bottom); the global LightGBM is the incoherent one — raw total
+  rmae **1.205** with coherence error **0.102**, bottom rmae **0.931**.
+  Reconciliation repairs exactly that: `lgbm_global+mint_shrink` lands at
+  total rmae **0.869** (bottom **0.925**, coherence **0.000**), and
+  `auto_ets+bottom_up` is the best total-level variant at **0.765**. The
+  headline gap (`lgbm_global+mint_shrink` vs `seasonal_naive`) is
+  **−679.3** total MAE (CI [−1482.6, 306.1] — spans zero at the total) and
+  **−16.5** bottom MAE (CI [−30.3, −3.5] — excludes zero at the bottom).
+- **Labour**: the Auto models are excellent at the total (auto_theta raw total
+  rmae **0.194**, auto_ets **0.177**) and reconciliation is no free lunch —
+  BottomUp *degrades* a good top-level forecast (`auto_ets+bottom_up` 0.292 vs
+  raw 0.177), while MinT is the least-damaging reconciler (0.225). The
+  LightGBM again needs reconciliation: raw total rmae **1.032** →
+  `lgbm_global+bottom_up` **0.181** (its best total-level variant) and
+  `lgbm_global+mint_shrink` **0.297**. The headline gap is **−209.6** total
+  MAE (CI [−321.1, −49.8] — excludes zero) and **−2.56** bottom MAE
+  (CI [−5.72, 0.16] — spans zero).
+
+Read honestly, the two benchmarks split the verdict. Where the ML base
+forecast is incoherent and loses at the total (TourismSmall raw 1.205,
+Labour 1.032), proper MinT/BottomUp coherence is a real, bootstrap-supported
+repair — and at the bottom level the reconciled ML candidate beats the
+seasonal-naive floor with a CI excluding zero on TourismSmall. But the
+strongest base forecaster on Labour is the raw `auto_ets` at the total, and
+*any* bottom-anchored reconciliation makes it worse — so reconciliation is
+reported per candidate, never as a blanket win, exactly the failure mode the
+wave-22 caveat predicted. The seasonal-naive floor is exactly coherent
+(coherence 0.0) by construction on both datasets, which is itself the
+hand-test anchor for the coherence metric.
+
 ## Synthetic track — CI fast path (`data_source: synthetic`, seed 42)
 
 The synthetic hierarchy (24 series, clean trend + weekly seasonality) is the

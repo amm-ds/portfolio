@@ -380,6 +380,62 @@ small tabular lag problems; a sequence model is the roadmap answer).
   zero) and wins on erratic only at q=0.95 — the same asymmetry the
   order-up-to layer shows, priced at the band quantile.
 
+### M. Wave 23 — hierarchical forecasting track (Nixtla benchmarks)
+
+- **Protocol `hierarchical_rolling_v1`** (`hierarchical.py`): rolling-origin
+  evaluation on the committed Nixtla benchmark datasets (`data_hier/`,
+  PROVENANCE.md — Rangapuram et al. ICML 2021, Olivares et al. IJF 2023,
+  Kamarthi et al. PROFHIT 2022). Origin = last training period; window =
+  next `horizon` periods, abutting the origin (no embargo gap); origins one
+  period apart, capped at 6 by dropping the oldest (exact cadence kept).
+  TourismSmall: quarterly (`QE`), season 4, horizon 4, min_train 24 quarters.
+  Labour: monthly (`MS`), season 12, horizon 8, min_train 96 months.
+- **Candidates fixed a priori — no routing, no selection** (unlike the panel
+  track): `seasonal_naive` (hand-rolled, the panel-track definition
+  f(h) = y[T − m + ((h−1) mod m)]), `auto_theta` / `auto_ets` (statsforecast
+  per-node, n_jobs=1), `lgbm_global` (one LGBMRegressor over all nodes via
+  mlforecast: lags 1..m + 2m, RollingMean(m)/ExpandingMean at lag 1, quarter
+  or month + year date features, fixed 300 trees / lr 0.05 / seed). Every
+  origin is honest evaluation for these fixed candidates.
+- **Reconciliation**: every candidate scored raw, +BottomUp and
+  +MinT(mint_shrink) (hierarchicalforecast 1.5.3) in one reconcile call per
+  origin. All four base forecasts reconcile — the statsforecast insample
+  residuals come from `sf.forecast(df, h, fitted=True)` +
+  `sf.forecast_fitted_values()` (the same y_rec merge contract as the
+  mlforecast path; the naive's residuals are its own one-step insample fits
+  fitted[t] = y[t−m]). OLS/OptimalCombination are excluded (spike finding);
+  MinT is `MinTrace`.
+- **Metrics**: per level (from `tags`, ordered total → bottom; short names —
+  first tag → `total`, last → `bottom`) pooled MAE and `rmae` (÷ raw
+  seasonal_naive MAE at the same level, floor = 1.0). `coherence` per
+  variant: pooled mean over (origin × parent × window-period) cells of
+  |parent_fc − S[parent] @ fc_bottom| / max(|parent_actual|, 1) — hand-tested
+  on a 3-bottom + total toy (an exactly-linear base forecast on exactly-
+  aggregating actuals scores 0.0). Headline gaps (`lgbm_global+mint_shrink`
+  vs `seasonal_naive`, total and bottom levels): 95% paired cluster
+  bootstrap over bottom series, 2,000 reps, one shared index draw per
+  replication; total-level cells are re-aggregated from the sampled bottom
+  series inside each resample.
+- **Determinism**: LightGBM `force_row_wise` + `n_jobs=1` + fixed seed,
+  statsforecast `n_jobs=1`, `threadpool_limits(limits=1)` around every fit —
+  and, decisively, `VECLIB_MAXIMUM_THREADS=1` set before numpy loads: this
+  host's numpy uses Apple Accelerate, whose threaded LAPACK reductions
+  (MinT's pinv/SVD) are not run-to-run reproducible and which threadpoolctl
+  cannot limit (`threadpool_info()` is empty); the env var is read at
+  Accelerate init, hence the early set in cli.py / hierarchical.py. Same
+  landmine family as temporal.py: hierarchicalforecast's compiled `_lib`
+  bundles its own `.dylibs/libomp.dylib`, so hierarchical.py imports
+  lightgbm+xgboost BEFORE the Nixtla stack (dual OpenMP runtimes segfault the
+  first booster fit otherwise — reproduced, then guard-verified).
+  `reports_hier/metrics.json` is byte-identical across runs (gate-verified).
+- **Honest result** (committed): on TourismSmall the reconciled ML candidate
+  repairs a real incoherence (lgbm raw total rmae 1.205, coherence 0.102 →
+  +MinT 0.869, coherence 0.000; bottom-level gap CI excludes zero); on
+  Labour the raw `auto_ets` total forecast is the strongest variant and
+  BottomUp degrades it (0.177 → 0.292) — reconciliation is reported per
+  candidate, never as a blanket win. Wave 22's `routed_reconciled` caveat
+  resolves into "proper MinT works where the base forecast needs it".
+
 ## Pipeline
 
 ```mermaid
@@ -468,6 +524,21 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.12.0 (2026-10-27)** — wave 23a (hierarchical track): new
+  `hierarchical.py` (protocol `hierarchical_rolling_v1`) + `cli
+  evaluate-hierarchical --group tourism-small|labour|both` on the committed
+  Nixtla benchmark datasets (TourismSmall quarterly 89 nodes, Labour monthly
+  57 nodes; `data_hier/`, PROVENANCE.md). Fixed candidates (seasonal_naive,
+  AutoTheta, AutoETS, global LightGBM via mlforecast) × {raw, +BottomUp,
+  +MinT(mint_shrink)} on 6 rolling origins per group; per-level MAE/rmae,
+  hand-testable coherence error, paired cluster bootstrap over bottom series
+  (2,000 reps, seed 42) for the headline gaps; `reports_hier/metrics.json`
+  (byte-identical across runs) + `evaluation_metadata.json`; tests
+  (`tests/test_hierarchical.py`: tiny-hierarchy hand cases, MinT determinism,
+  TourismSmall smoke) and README/DESIGN drift guards. Result quoted in the
+  README: reconciliation repairs the ML candidate's total-level incoherence
+  on both benchmarks but degrades the raw auto_ets total on Labour — per-
+  candidate verdicts, no blanket win.
 - **0.11.0 (2026-10-27)** — wave 22 ("missing baselines and better
   metrics"): the statistical side gains `ma_28` (rolling 28-day mean, flat —
   the audit-flagged missing moving-average baseline) and the ADIDA pair

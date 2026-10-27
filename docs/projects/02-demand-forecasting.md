@@ -18,7 +18,11 @@ real track; seeded synthetic hierarchy as the labelled CI fast path) ·
 > the peak-capture feedback with peak features plus two peak-capable
 > candidates (tweedie HGB, hurdle two-stage HGB) in the per-class router,
 > and wave 22 added the missing baselines (ma_28, ADIDA pair) and the
-> rmae/rmsse/newsvendor metric layer:
+> rmae/rmsse/newsvendor metric layer — wave 23 then resolved the
+> reconciliation caveat on the canonical Nixtla hierarchies (proper
+> MinT repairs an incoherent ML base forecast and degrades an
+> already-good statistical one — per-candidate verdicts with bootstrap CIs,
+> protocol `hierarchical_rolling_v1`):
 > on the 98.6% of series that are lumpy the routed pipeline beats the
 > boosted ladder by **3.98 MAE** (95% CI [3.34, 4.76]) while the peak-capable
 > models take over all 15 erratic series — and the new baselines lose
@@ -154,6 +158,22 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   story: erratic 1.422 vs 1.510 for the champion, lumpy 2.874 vs 2.777
   against. The nowcast ladder above stays committed as
   the labelled one-day-ahead track.
+- **Hierarchical track (wave 23, `hierarchical_rolling_v1`)**: the wave-22
+  caveat — "covariance-projection MinT is the documented next step" —
+  evaluated on the canonical Nixtla hierarchical benchmarks (TourismSmall
+  quarterly 89 nodes / 56 bottom; Labour monthly 57 nodes / 32 bottom;
+  datasets committed under `data_hier/`). Fixed candidates (seasonal_naive,
+  AutoTheta, AutoETS, one global LightGBM) × {raw, +BottomUp,
+  +MinT(mint_shrink)} on 6 rolling origins per group, per-level MAE/rmae plus
+  a hand-testable coherence error (|parent − Σ children| /
+  max(|actual|, 1)) and a paired cluster bootstrap over bottom series. The
+  reconciled ML candidate repairs its own incoherence on both benchmarks
+  (TourismSmall raw total rmae 1.205, coherence 0.102 → +MinT 0.869,
+  coherence 0.000; Labour +MinT total rmae 0.297, MAE-gap CI [−321.1, −49.8]
+  excludes zero) — but the strongest Labour variant overall is the RAW
+  auto_ets at the total (0.177), and BottomUp degrades it to 0.292:
+  reconciliation is a per-candidate repair, quoted with CIs, never a blanket
+  win. Metrics byte-identical across runs (fixed seeds, n_jobs=1).
 - UCI reconciliation: w=0.75 this run, incoherence 536.7 → 134.2 (coherence
   property exact); store MAE 749.1 → 719.8. Synthetic: w=0.00 this run (store
   MAE 24.133 → 24.133, incoherence 26.688 → 26.688), accuracy effect null and
@@ -161,7 +181,7 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
 - 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 30 min
   (multi-step the bulk of it — 14 model fits × 14 horizons × 20 origins,
   joblib-parallel);
-  161 offline tests.
+  173 offline tests.
 
 ![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run against the 1.0 in-sample-scale reference line (the MASE scale is the naive's in-sample error from a quieter period, NOT the naive's own holdout error — the seasonal-naive itself lands at 1.310 on this window). MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 
@@ -173,7 +193,9 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   `legacy_pooled_*`) · Protocol: `evaluation_metadata.json` · Report:
   `report.html` · Reconciliation: `reconciliation.json` · Probabilistic:
   `probabilistic.json` (per-horizon coverage/width + verdict) ·
-  Data-generating process: `dataset_metadata.json` (UCI)
+  Data-generating process: `dataset_metadata.json` (UCI) · Hierarchical
+  track: `reports_hier/metrics.json` + `reports_hier/evaluation_metadata.json`
+  (Nixtla benchmarks, `data_hier/` datasets)
 - Dataset cards: `data/dataset.json`, `data_uci/dataset.json` · HPO:
   `data/hpo_best.json` (+ `hpo_study.db`) · Story: `story.yaml`
 

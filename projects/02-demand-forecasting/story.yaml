@@ -377,6 +377,18 @@ sections:
         "Mostly zero, sometimes a peak-capable model on the series that show
         spikes on the selection origins" is the honest sparse champion on this
         panel.
+      - **Wave 23 — the wave-22 MinT caveat, resolved on real hierarchies**
+        (protocol `hierarchical_rolling_v1`, Nixtla TourismSmall + Labour
+        benchmarks, fixed candidates × {raw, +BottomUp, +MinT(mint_shrink)},
+        6 rolling origins each, no selection anywhere): the reconciled
+        LightGBM repairs its own total-level incoherence on both benchmarks
+        (TourismSmall raw total rmae 1.205, coherence 0.102 → +MinT 0.869,
+        coherence 0.000, bottom-level gap CI excludes zero; Labour +MinT
+        total rmae 0.297, gap CI [−321.1, −49.8] excludes zero) — but the
+        strongest Labour variant overall is the RAW `auto_ets` at the total
+        (0.177), and BottomUp degrades it to 0.292. Reconciliation is a
+        per-candidate repair, not a blanket win: quoted per level with
+        paired-bootstrap CIs, never forced.
 
       **Business summary:** The decision this informs is whether to replace
       the "same day last week" planning rule with a tuned gradient-boosting
@@ -410,7 +422,11 @@ sections:
         window before shipping.
       - **Reconciliation guarantees coherence, not accuracy** — the gain is
         bounded by how much the parent model can be trusted (w=0.00
-        synthetic vs 0.60 on UCI).
+        synthetic vs 0.60 on UCI); wave 23 confirmed the same law on the
+        Nixtla hierarchies with proper MinT — it repairs an incoherent ML
+        base forecast (TourismSmall total rmae 1.205 → 0.869) and degrades
+        an already-good statistical one (Labour auto_ets 0.177 → 0.292 under
+        BottomUp), so the verdict is per candidate, never blanket.
       - **The honest limit for inventory planning**: the 80% band is not yet
         usable on intermittent demand (zero-width conformal band on the real
         test window), stockouts and promotions are not modelled, and
@@ -459,6 +475,8 @@ roadmap:
     text: MinT-lite reconciliation — w 0.00 synth / 0.75 UCI (this run); incoherence 536.7→134.2 UCI (×(1−w)); store MAE 749.1→719.8.
   - status: delivered
     text: 80% bands — quantile p10/p50/p90 + zero-aware split-conformal; test-window horizon set coverage 0.741 (synthetic, width 26.5, optimistic) / 0.861 (UCI, width 0.00, degenerate) vs 0.80 target.
+  - status: delivered
+    text: Hierarchical track (hierarchical_rolling_v1) — Nixtla TourismSmall/Labour benchmarks, fixed candidates (naive/AutoTheta/AutoETS/global LightGBM) × {raw, +BottomUp, +MinT(mint_shrink)}, per-level MAE/rmae + coherence error + paired bootstrap; MinT repairs the ML total (TourismSmall 1.205→0.869) but BottomUp degrades raw auto_ets on Labour (0.177→0.292) — per-candidate verdicts, byte-identical metrics across runs.
   - status: delivered
     text: Direct multi-horizon track (direct_multihorizon_v1) — per-h models on 20 weekly origins, per-class ADI/CV² routing over statistical + six peak-capable ML candidates incl. the wave-21 LightGBM arms (1,069/1,084 series sparse), paired-bootstrap CIs, per-series beats-floor win rates (lumpy routed 22.17% at h=7 — the pooled win rides on magnitude, not coverage), per-h bands (0.918 pooled, conservative) + candidate bands, peak-capture metrics (peak_mae / peak_recall per window), convex-ensemble benchmark, order-up-to decision simulation; lumpy champion 6.11 vs 11.07 floor MAE at h=7, erratic series routed to the peak-capable models, lgbm_poisson evaluated-and-losing (85.15 pooled, kept in every table).
   - status: delivered

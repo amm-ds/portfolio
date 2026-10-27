@@ -17,6 +17,10 @@ dependencies = [
     "threadpoolctl>=3.0",
     "portfolio-core",
     "portfolio-eval",
+    "datasetsforecast>=1.0.2",
+    "statsforecast>=2.1.1",
+    "mlforecast>=1.1.0",
+    "hierarchicalforecast>=1.5.3",
 ]
 
 [project.scripts]
