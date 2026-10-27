@@ -9,6 +9,17 @@ seconds) and feeds the production ``hgb_tuned`` config.
 synthetic track remains the default (fully offline, CI-safe).
 """
 
+import os
+
+# Apple Accelerate (numpy's BLAS/LAPACK on macOS arm64) reads
+# VECLIB_MAXIMUM_THREADS at library-init time and threadpoolctl cannot limit
+# it (threadpool_info() is empty on this host). The hierarchical track's MinT
+# reconciliation goes through Accelerate's threaded LAPACK (pinv/SVD), whose
+# threaded reductions are NOT run-to-run reproducible — pin Accelerate to one
+# thread BEFORE numpy loads so reports_hier/metrics.json is byte-identical
+# across runs. setdefault keeps an explicit user override.
+os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
+
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -159,6 +170,40 @@ def evaluate_cmd(
     result = evaluate(settings, config)
     reconcile_and_plot(settings, config, result)
     run_probabilistic(settings, config, multistep=result.multistep)
+
+
+@app.command("evaluate-hierarchical")
+def evaluate_hierarchical_cmd(
+    group: Annotated[
+        Literal["tourism-small", "labour", "both"],
+        typer.Option(help="Hierarchical benchmark group (Nixtla datasetsforecast)."),
+    ] = "both",
+    data_dir: Annotated[
+        Path | None, typer.Option(help="Dir with the committed data_hier datasets.")
+    ] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="Output dir for reports_hier.")] = None,
+) -> None:
+    """Evaluate the hierarchical track (wave 23a) on the Nixtla benchmarks.
+
+    Fixed candidates x {raw, +BottomUp, +MinT(mint_shrink)} on rolling origins
+    (protocol ``hierarchical_rolling_v1``); writes reports_hier/metrics.json and
+    reports_hier/evaluation_metadata.json. Fully offline — the datasets are
+    committed under data_hier/.
+    """
+    from demand_forecasting.hierarchical import evaluate_hierarchical
+
+    root = Path.cwd()
+    groups = {
+        "tourism-small": ["TourismSmall"],
+        "labour": ["Labour"],
+        "both": ["TourismSmall", "Labour"],
+    }[group]
+    evaluate_hierarchical(
+        data_dir=data_dir or root / "data_hier",
+        reports_dir=reports_dir or root / "reports_hier",
+        groups=groups,
+        config=_config_from_params(ForecastConfig()),
+    )
 
 
 @app.command("build-serving")

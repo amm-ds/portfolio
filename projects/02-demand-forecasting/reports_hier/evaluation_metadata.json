@@ -1,0 +1,62 @@
+{
+  "hierarchical": {
+    "protocol": "hierarchical_rolling_v1",
+    "seed": 42,
+    "groups": {
+      "TourismSmall": {
+        "freq": "QE",
+        "season_length": 4,
+        "horizon": 4,
+        "min_train": 24,
+        "n_origins": 6,
+        "origin_dates": [
+          "2004-09-30",
+          "2004-12-31",
+          "2005-03-31",
+          "2005-06-30",
+          "2005-09-30",
+          "2005-12-31"
+        ],
+        "candidates": [
+          "seasonal_naive",
+          "auto_theta",
+          "auto_ets",
+          "lgbm_global"
+        ],
+        "levels": [
+          "total",
+          "Country/Purpose",
+          "Country/Purpose/State",
+          "bottom"
+        ]
+      },
+      "Labour": {
+        "freq": "MS",
+        "season_length": 12,
+        "horizon": 8,
+        "min_train": 96,
+        "n_origins": 6,
+        "origin_dates": [
+          "2018-11-01",
+          "2018-12-01",
+          "2019-01-01",
+          "2019-02-01",
+          "2019-03-01",
+          "2019-04-01"
+        ],
+        "candidates": [
+          "seasonal_naive",
+          "auto_theta",
+          "auto_ets",
+          "lgbm_global"
+        ],
+        "levels": [
+          "total",
+          "Country/Region",
+          "Country/Gender/Region",
+          "bottom"
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,598 @@
+{
+  "groups": {
+    "TourismSmall": {
+      "protocol": "hierarchical_rolling_v1",
+      "group": "TourismSmall",
+      "freq": "QE",
+      "season_length": 4,
+      "horizon": 4,
+      "min_train": 24,
+      "origins": {
+        "dates": [
+          "2004-09-30",
+          "2004-12-31",
+          "2005-03-31",
+          "2005-06-30",
+          "2005-09-30",
+          "2005-12-31"
+        ],
+        "n": 6
+      },
+      "candidates": [
+        "seasonal_naive",
+        "auto_theta",
+        "auto_ets",
+        "lgbm_global"
+      ],
+      "levels": [
+        "total",
+        "Country/Purpose",
+        "Country/Purpose/State",
+        "bottom"
+      ],
+      "per_level": {
+        "seasonal_naive": {
+          "total": {
+            "mae": 5169.791666666667,
+            "rmae": 1.0
+          },
+          "Country/Purpose": {
+            "mae": 1653.3229166666667,
+            "rmae": 1.0
+          },
+          "Country/Purpose/State": {
+            "mae": 347.0967261904762,
+            "rmae": 1.0
+          },
+          "bottom": {
+            "mae": 219.96205357142858,
+            "rmae": 1.0
+          }
+        },
+        "auto_theta": {
+          "total": {
+            "mae": 4601.703125,
+            "rmae": 0.8901138424340116
+          },
+          "Country/Purpose": {
+            "mae": 1403.4744491577148,
+            "rmae": 0.8488810231865159
+          },
+          "Country/Purpose/State": {
+            "mae": 318.2838268450328,
+            "rmae": 0.9169888472827838
+          },
+          "bottom": {
+            "mae": 196.87477153823488,
+            "rmae": 0.8950397049930409
+          }
+        },
+        "auto_ets": {
+          "total": {
+            "mae": 4595.379557291667,
+            "rmae": 0.8888906659278663
+          },
+          "Country/Purpose": {
+            "mae": 1350.4180374145508,
+            "rmae": 0.8167902493828519
+          },
+          "Country/Purpose/State": {
+            "mae": 306.55452727703823,
+            "rmae": 0.8831962509171302
+          },
+          "bottom": {
+            "mae": 184.22081833190862,
+            "rmae": 0.8375118132459439
+          }
+        },
+        "lgbm_global": {
+          "total": {
+            "mae": 6228.5600855271405,
+            "rmae": 1.2047990493866723
+          },
+          "Country/Purpose": {
+            "mae": 1908.6110570767314,
+            "rmae": 1.1544091222813035
+          },
+          "Country/Purpose/State": {
+            "mae": 340.4718729997217,
+            "rmae": 0.980913524413022
+          },
+          "bottom": {
+            "mae": 204.84269833892697,
+            "rmae": 0.9312638021558028
+          }
+        },
+        "seasonal_naive+bottom_up": {
+          "total": {
+            "mae": 5169.791666666667,
+            "rmae": 1.0
+          },
+          "Country/Purpose": {
+            "mae": 1653.3229166666667,
+            "rmae": 1.0
+          },
+          "Country/Purpose/State": {
+            "mae": 347.0967261904762,
+            "rmae": 1.0
+          },
+          "bottom": {
+            "mae": 219.96205357142858,
+            "rmae": 1.0
+          }
+        },
+        "auto_theta+bottom_up": {
+          "total": {
+            "mae": 3985.9174649715424,
+            "rmae": 0.771001564854459
+          },
+          "Country/Purpose": {
+            "mae": 1612.4487226804097,
+            "rmae": 0.9752775494888408
+          },
+          "Country/Purpose/State": {
+            "mae": 323.6041326863425,
+            "rmae": 0.932316868090419
+          },
+          "bottom": {
+            "mae": 196.87477153823488,
+            "rmae": 0.8950397049930409
+          }
+        },
+        "auto_ets+bottom_up": {
+          "total": {
+            "mae": 3954.4430173834166,
+            "rmae": 0.7649134186355188
+          },
+          "Country/Purpose": {
+            "mae": 1333.074181124568,
+            "rmae": 0.8062999476304571
+          },
+          "Country/Purpose/State": {
+            "mae": 292.96508192945095,
+            "rmae": 0.844044497753864
+          },
+          "bottom": {
+            "mae": 184.22081833190862,
+            "rmae": 0.8375118132459439
+          }
+        },
+        "lgbm_global+bottom_up": {
+          "total": {
+            "mae": 4520.394457848099,
+            "rmae": 0.8743861937405147
+          },
+          "Country/Purpose": {
+            "mae": 1566.3693908314062,
+            "rmae": 0.9474068102735966
+          },
+          "Country/Purpose/State": {
+            "mae": 333.29552199589625,
+            "rmae": 0.9602381608548901
+          },
+          "bottom": {
+            "mae": 204.84269833892697,
+            "rmae": 0.9312638021558028
+          }
+        },
+        "seasonal_naive+mint_shrink": {
+          "total": {
+            "mae": 5169.791666666667,
+            "rmae": 1.0
+          },
+          "Country/Purpose": {
+            "mae": 1653.3229166666667,
+            "rmae": 1.0
+          },
+          "Country/Purpose/State": {
+            "mae": 347.0967261904762,
+            "rmae": 1.0
+          },
+          "bottom": {
+            "mae": 219.96205357142858,
+            "rmae": 1.0
+          }
+        },
+        "auto_theta+mint_shrink": {
+          "total": {
+            "mae": 4371.6830458955665,
+            "rmae": 0.8456207382751851
+          },
+          "Country/Purpose": {
+            "mae": 1407.833376360047,
+            "rmae": 0.8515174877019418
+          },
+          "Country/Purpose/State": {
+            "mae": 306.68156839097014,
+            "rmae": 0.8835622616119766
+          },
+          "bottom": {
+            "mae": 191.4321381242154,
+            "rmae": 0.8702961943481373
+          }
+        },
+        "auto_ets+mint_shrink": {
+          "total": {
+            "mae": 4340.544264034351,
+            "rmae": 0.8395975203451495
+          },
+          "Country/Purpose": {
+            "mae": 1339.9300269516518,
+            "rmae": 0.8104466547001844
+          },
+          "Country/Purpose/State": {
+            "mae": 294.997059620414,
+            "rmae": 0.8498987093831837
+          },
+          "bottom": {
+            "mae": 183.6010050610787,
+            "rmae": 0.8346939941686701
+          }
+        },
+        "lgbm_global+mint_shrink": {
+          "total": {
+            "mae": 4490.527311461038,
+            "rmae": 0.8686089500307468
+          },
+          "Country/Purpose": {
+            "mae": 1599.0219868535344,
+            "rmae": 0.9671564887501767
+          },
+          "Country/Purpose/State": {
+            "mae": 329.8712872410223,
+            "rmae": 0.9503727991372609
+          },
+          "bottom": {
+            "mae": 203.45879049951932,
+            "rmae": 0.9249722267820611
+          }
+        }
+      },
+      "coherence": {
+        "seasonal_naive": 0.0,
+        "auto_theta": 0.07264378579011092,
+        "auto_ets": 0.09180289386780797,
+        "lgbm_global": 0.10222924746248085,
+        "seasonal_naive+bottom_up": 0.0,
+        "auto_theta+bottom_up": 0.0,
+        "auto_ets+bottom_up": 0.0,
+        "lgbm_global+bottom_up": 0.0,
+        "seasonal_naive+mint_shrink": 0.0,
+        "auto_theta+mint_shrink": 0.0,
+        "auto_ets+mint_shrink": 0.0,
+        "lgbm_global+mint_shrink": 0.0
+      },
+      "headline": {
+        "claim": "lgbm_global+mint_shrink posts rmae 0.869 vs seasonal_naive at the total level and 0.925 at the bottom level (95% paired cluster bootstrap over bottom series, 2000 reps, seed 42; total-level MAE gap -679.264, CI [-1482.618, 306.105]; bottom-level MAE gap -16.503, CI [-30.292, -3.540])",
+        "total": {
+          "rmae": 0.8686089500307468,
+          "mae": 4490.527311461038,
+          "naive_mae": 5169.791666666667,
+          "bootstrap": {
+            "diff": -679.2643552056325,
+            "ci95": [
+              -1482.617930784672,
+              306.10501582257695
+            ],
+            "spans_zero": true
+          }
+        },
+        "bottom": {
+          "rmae": 0.9249722267820611,
+          "mae": 203.45879049951932,
+          "naive_mae": 219.96205357142858,
+          "bootstrap": {
+            "diff": -16.503263071909288,
+            "ci95": [
+              -30.291768325196823,
+              -3.5399535963858457
+            ],
+            "spans_zero": false
+          }
+        }
+      },
+      "bootstrap": {
+        "method": "paired cluster bootstrap over bottom series (shared index draws per replication); total-level cells re-aggregated from the sampled bottom series inside each resample; percentile CI on the pooled-MAE gap",
+        "n_boot": 2000,
+        "seed": 42
+      }
+    },
+    "Labour": {
+      "protocol": "hierarchical_rolling_v1",
+      "group": "Labour",
+      "freq": "MS",
+      "season_length": 12,
+      "horizon": 8,
+      "min_train": 96,
+      "origins": {
+        "dates": [
+          "2018-11-01",
+          "2018-12-01",
+          "2019-01-01",
+          "2019-02-01",
+          "2019-03-01",
+          "2019-04-01"
+        ],
+        "n": 6
+      },
+      "candidates": [
+        "seasonal_naive",
+        "auto_theta",
+        "auto_ets",
+        "lgbm_global"
+      ],
+      "levels": [
+        "total",
+        "Country/Region",
+        "Country/Gender/Region",
+        "bottom"
+      ],
+      "per_level": {
+        "seasonal_naive": {
+          "total": {
+            "mae": 298.187150010417,
+            "rmae": 1.0
+          },
+          "Country/Region": {
+            "mae": 39.57591753932292,
+            "rmae": 1.0
+          },
+          "Country/Gender/Region": {
+            "mae": 20.324589396223967,
+            "rmae": 1.0
+          },
+          "bottom": {
+            "mae": 13.085955397721351,
+            "rmae": 1.0
+          }
+        },
+        "auto_theta": {
+          "total": {
+            "mae": 57.88239930034698,
+            "rmae": 0.19411433154756969
+          },
+          "Country/Region": {
+            "mae": 11.472563803886425,
+            "rmae": 0.2898875002073471
+          },
+          "Country/Gender/Region": {
+            "mae": 8.328595212680517,
+            "rmae": 0.409779260496542
+          },
+          "bottom": {
+            "mae": 7.403793410590301,
+            "rmae": 0.565781648000995
+          }
+        },
+        "auto_ets": {
+          "total": {
+            "mae": 52.92086837789933,
+            "rmae": 0.17747534853883065
+          },
+          "Country/Region": {
+            "mae": 11.035555935562975,
+            "rmae": 0.2788452326998601
+          },
+          "Country/Gender/Region": {
+            "mae": 9.004165101380396,
+            "rmae": 0.4430183028963551
+          },
+          "bottom": {
+            "mae": 7.873317267921731,
+            "rmae": 0.6016616310103508
+          }
+        },
+        "lgbm_global": {
+          "total": {
+            "mae": 307.6044446632053,
+            "rmae": 1.0315818258850502
+          },
+          "Country/Region": {
+            "mae": 20.412016071734467,
+            "rmae": 0.5157686123499964
+          },
+          "Country/Gender/Region": {
+            "mae": 14.504959058357803,
+            "rmae": 0.7136655395878565
+          },
+          "bottom": {
+            "mae": 9.037255083969729,
+            "rmae": 0.6906072051524323
+          }
+        },
+        "seasonal_naive+bottom_up": {
+          "total": {
+            "mae": 298.18715001041693,
+            "rmae": 0.9999999999999998
+          },
+          "Country/Region": {
+            "mae": 39.575917539322916,
+            "rmae": 0.9999999999999998
+          },
+          "Country/Gender/Region": {
+            "mae": 20.324589396223956,
+            "rmae": 0.9999999999999994
+          },
+          "bottom": {
+            "mae": 13.085955397721351,
+            "rmae": 1.0
+          }
+        },
+        "auto_theta+bottom_up": {
+          "total": {
+            "mae": 62.265912862647575,
+            "rmae": 0.2088148763636272
+          },
+          "Country/Region": {
+            "mae": 12.160141878657562,
+            "rmae": 0.30726114856528985
+          },
+          "Country/Gender/Region": {
+            "mae": 8.591971274798345,
+            "rmae": 0.422737754121351
+          },
+          "bottom": {
+            "mae": 7.403793410590301,
+            "rmae": 0.565781648000995
+          }
+        },
+        "auto_ets+bottom_up": {
+          "total": {
+            "mae": 87.11574752841057,
+            "rmae": 0.2921512463745243
+          },
+          "Country/Region": {
+            "mae": 13.637273542092425,
+            "rmae": 0.3445851515266154
+          },
+          "Country/Gender/Region": {
+            "mae": 9.35394996068698,
+            "rmae": 0.4602282377436278
+          },
+          "bottom": {
+            "mae": 7.873317267921731,
+            "rmae": 0.6016616310103508
+          }
+        },
+        "lgbm_global+bottom_up": {
+          "total": {
+            "mae": 53.85315675270052,
+            "rmae": 0.1806018694998064
+          },
+          "Country/Region": {
+            "mae": 13.924166009663901,
+            "rmae": 0.35183431933899567
+          },
+          "Country/Gender/Region": {
+            "mae": 11.550258663085993,
+            "rmae": 0.5682898895478732
+          },
+          "bottom": {
+            "mae": 9.037255083969729,
+            "rmae": 0.6906072051524323
+          }
+        },
+        "seasonal_naive+mint_shrink": {
+          "total": {
+            "mae": 298.18715001041744,
+            "rmae": 1.0000000000000016
+          },
+          "Country/Region": {
+            "mae": 39.57591753932291,
+            "rmae": 0.9999999999999997
+          },
+          "Country/Gender/Region": {
+            "mae": 20.324589396223953,
+            "rmae": 0.9999999999999993
+          },
+          "bottom": {
+            "mae": 13.08595539772135,
+            "rmae": 0.9999999999999999
+          }
+        },
+        "auto_theta+mint_shrink": {
+          "total": {
+            "mae": 60.312640756499185,
+            "rmae": 0.20226438582075787
+          },
+          "Country/Region": {
+            "mae": 11.744492791486424,
+            "rmae": 0.29675857242771464
+          },
+          "Country/Gender/Region": {
+            "mae": 8.371544240918524,
+            "rmae": 0.4118924165067681
+          },
+          "bottom": {
+            "mae": 7.3205761605679145,
+            "rmae": 0.5594223683387032
+          }
+        },
+        "auto_ets+mint_shrink": {
+          "total": {
+            "mae": 66.9655335941856,
+            "rmae": 0.22457551773054674
+          },
+          "Country/Region": {
+            "mae": 11.620536239187706,
+            "rmae": 0.29362645168343743
+          },
+          "Country/Gender/Region": {
+            "mae": 8.614644137343227,
+            "rmae": 0.4238532926497256
+          },
+          "bottom": {
+            "mae": 7.547568567027356,
+            "rmae": 0.5767686300032483
+          }
+        },
+        "lgbm_global+mint_shrink": {
+          "total": {
+            "mae": 88.55270082707027,
+            "rmae": 0.2969702109027057
+          },
+          "Country/Region": {
+            "mae": 18.101891579100382,
+            "rmae": 0.4573966367580539
+          },
+          "Country/Gender/Region": {
+            "mae": 13.274220107295939,
+            "rmae": 0.6531113543559266
+          },
+          "bottom": {
+            "mae": 10.526375622752365,
+            "rmae": 0.8044025294924447
+          }
+        }
+      },
+      "coherence": {
+        "seasonal_naive": 2.2252325585982485e-17,
+        "auto_theta": 0.0026509205226447133,
+        "auto_ets": 0.004155386966451155,
+        "lgbm_global": 0.016068674768273807,
+        "seasonal_naive+bottom_up": 0.0,
+        "auto_theta+bottom_up": 0.0,
+        "auto_ets+bottom_up": 0.0,
+        "lgbm_global+bottom_up": 0.0,
+        "seasonal_naive+mint_shrink": 0.0,
+        "auto_theta+mint_shrink": 0.0,
+        "auto_ets+mint_shrink": 0.0,
+        "lgbm_global+mint_shrink": 0.0
+      },
+      "headline": {
+        "claim": "lgbm_global+mint_shrink posts rmae 0.297 vs seasonal_naive at the total level and 0.804 at the bottom level (95% paired cluster bootstrap over bottom series, 2000 reps, seed 42; total-level MAE gap -209.634, CI [-321.113, -49.806]; bottom-level MAE gap -2.560, CI [-5.717, 0.156])",
+        "total": {
+          "rmae": 0.2969702109027057,
+          "mae": 88.55270082707027,
+          "naive_mae": 298.187150010417,
+          "bootstrap": {
+            "diff": -209.63444918334528,
+            "ci95": [
+              -321.1134508288978,
+              -49.80589298636834
+            ],
+            "spans_zero": false
+          }
+        },
+        "bottom": {
+          "rmae": 0.8044025294924447,
+          "mae": 10.526375622752365,
+          "naive_mae": 13.085955397721351,
+          "bootstrap": {
+            "diff": -2.559579774968988,
+            "ci95": [
+              -5.716769469541566,
+              0.1559639082312054
+            ],
+            "spans_zero": true
+          }
+        }
+      },
+      "bootstrap": {
+        "method": "paired cluster bootstrap over bottom series (shared index draws per replication); total-level cells re-aggregated from the sampled bottom series inside each resample; percentile CI on the pooled-MAE gap",
+        "n_boot": 2000,
+        "seed": 42
+      }
+    }
+  }
+}
