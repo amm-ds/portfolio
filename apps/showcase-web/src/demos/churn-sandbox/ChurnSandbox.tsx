@@ -7,6 +7,7 @@ import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import { contactCount, costAt, nearestIndex, recallAt, rowCost, savings } from "./kpis";
 import { CostCompositionPanel } from "./CostCompositionPanel";
 import { fetchChurnPayload, fetchManifest } from "./payload";
+import { usePageMeta } from "../../seo";
 import { ScorerCard } from "./ScorerCard";
 
 const C_TEAL = "#2dd4bf";
@@ -379,6 +380,12 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
 // --- demo ------------------------------------------------------------------------------
 
 export default function ChurnSandbox() {
+  usePageMeta({
+    title: "Churn threshold sandbox",
+    description:
+      "Interactive churn demo: move the alarm threshold and the missed-churner cost, watch the optimal cutoff and the saved budget respond.",
+  });
+
   const [manifest, setManifest] = useState<DemoManifest | null>(null);
   const [payload, setPayload] = useState<ChurnPayload | null>(null);
   const [error, setError] = useState<string | null>(null);

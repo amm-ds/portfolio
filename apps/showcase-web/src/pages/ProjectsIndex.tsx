@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePageMeta } from "../seo";
 import {
   getDemoRegistry,
   getProjects,
@@ -195,6 +196,10 @@ export function groupByDemoGroup(entries: DemoRegistryEntry[]): { group: string;
  * button that re-fetches. A /projects failure with a live /demos endpoint
  * keeps the plain error state. */
 export function ProjectsIndex() {
+  usePageMeta({
+    title: "Demos & Experiments",
+    description: "Interactive ML demos and reproducible experiment case studies — forecasting, churn, RAG, optimization and serving.",
+  });
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState(false);

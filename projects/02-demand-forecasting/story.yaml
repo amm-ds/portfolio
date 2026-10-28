@@ -531,9 +531,9 @@ sections:
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
-    text: M5 rolling next-week service (wave 26) — the `weekly_rolling` block computed from the retained per-origin forecasts (no new fitting) — next-week h≤7 WAPE over all 10 origins (convex_ensemble 0.4250 vs naive 0.5442; bootstrap gaps ensemble −0.1192 [−0.1271, −0.1113], lgbm −0.1120 [−0.1200, −0.1047]), per-class rmae with a measured always-beats-naive verdict (every candidate wins in both classes at h≤7), and wk1..wk4 weekly error blocks on the test origins (champion 0.4158→0.5612, 1.35× growth) with per-block demand volumes; the report gains a "Rolling next-week service" section and the README gains drift guards on the new quotes.
+    text: "M5 rolling next-week service — h<=7 WAPE over all 10 origins (ensemble 0.4250 vs naive 0.5442; gap -0.1192 [-0.1271, -0.1113]), per-class rmae, a measured always-beats-naive verdict, and wk1..wk4 error blocks (0.4158 to 0.5612)."
   - status: delivered
-    text: M5 headline track (m5_direct_v1, wave 24) — committed M5 subset (600 series, top-3 stores × top-200 items); 10 weekly origins (8 selection + 2 scored once), 28-day horizon, 8 candidates incl. global LightGBM (wave-25 tuned, extended M5 feature set) + selection-fitted 3-member convex ensemble (0.05 simplex); ensemble −0.112 WAPE (CI [−0.122, −0.102]) vs naive.
+    text: "M5 headline track (m5_direct_v1) — committed M5 subset (600 series, 3 stores x top-200 items); 10 weekly origins, 28-day horizon, 8 candidates incl. tuned LightGBM + 3-member ensemble; WAPE 0.491 (gap -0.112, CI [-0.122, -0.102])."
   - status: delivered
     text: M5 metric layer — WAPE/rmae/WRMSSE (documented naive-28 denominator), peak-day MAE, per-series win rates (ensemble 90.2%), bootstrap CIs on every gap, per-series scaled split-conformal 80% band (77.9% coverage vs 80% target, balanced across volume classes).
   - status: delivered
