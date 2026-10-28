@@ -9,13 +9,13 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 > dense-demand regime where ML demonstrably wins. Under protocol
 > `m5_direct_v1` (10 weekly rolling origins, the last 2 scored once on a
 > 28-day horizon), the selection-fitted convex ensemble beats the
-> seasonal-naive floor by **−0.112 WAPE** (0.491 vs 0.603; 95% paired
-> cluster bootstrap CI **[−0.122, −0.102]**) and −0.165 WRMSSE (0.597 vs
+> seasonal-naive floor by **−0.1125 WAPE** (0.491 vs 0.603; 95% paired
+> cluster bootstrap CI **[−0.1228, −0.1026]**) and −0.166 WRMSSE (0.596 vs
 > 0.762) on 600 series (463 dense + 137 intermittent), winning in **both**
 > volume classes — and on the rolling next-week service (h ≤ 7 over all 10
-> origins, the deployment shape) the ensemble posts next-week WAPE **0.425**
-> vs the floor's **0.544** (95% paired bootstrap CI **[−0.127, −0.111]** on
-> the −0.119 gap), measurably beating the naive floor in both volume classes
+> origins, the deployment shape) the ensemble posts next-week WAPE **0.4233**
+> vs the floor's **0.5442** (95% paired bootstrap CI **[−0.1288, −0.1130]** on
+> the −0.1208 gap), measurably beating the naive floor in both volume classes
 > (always-beats-naive: **yes**). The mirror image is the UCI sparse track
 > kept below as the secondary study, where the zero forecast stays the
 > ceiling.
@@ -26,9 +26,10 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 
 Leakage-safe, production-depth forecasting across both demand regimes. The
 M5 headline track (`m5_track.py`): per-series statistical candidates
-(statsforecast), per-series AutoETS/AutoCES, a global LightGBM over lags /
-rolling means / calendar / price-SNAP-event exog (no series-identity
-feature), and a convex ensemble fitted on the selection origins only — all
+(statsforecast), per-series AutoETS/AutoCES, a global LightGBM and a global
+XGBoost over lags / multi-horizon rolling means/stds / calendar /
+price-SNAP-event exog + panel statics (no series-identity feature), and a
+convex ensemble fitted on the selection origins only — all
 through 10 weekly rolling origins with a frozen, scored-once test pair, ADI/CV²
 volume classes, WRMSSE with a documented denominator, paired-bootstrap CIs
 and split-conformal 80% bands — plus a rolling next-week evaluation (h≤7
@@ -61,46 +62,52 @@ stated deviation from the official M5 lag-1 scale):
 | tsb | 0.510 | 0.616 | 85.8% |
 | auto_ets | 0.503 | 0.611 | 88.2% |
 | auto_ces | 0.515 | 0.612 | 83.0% |
-| lgbm | 0.495 | 0.599 | 88.8% |
-| **convex_ensemble (champion)** | **0.491** | **0.597** | **90.2%** |
+| lgbm | 0.498 | 0.596 | 87.8% |
+| xgb | 0.496 | 0.600 | 86.5% |
+| **convex_ensemble (champion)** | **0.491** | **0.596** | **88.8%** |
 
 - **The gap vs the floor is significant** — 95% paired cluster bootstrap
-  over series (2,000 reps): ensemble **−0.112 WAPE** (CI **[−0.122,
-  −0.102]**) / **−0.165 WRMSSE** (CI **[−0.176, −0.155]**); lgbm −0.108 WAPE
-  (CI [−0.120, −0.0965] — a 17.9% relative cut) / −0.163 WRMSSE (CI
-  [−0.174, −0.152]). Both CIs exclude zero.
+  over series (2,000 reps): ensemble **−0.1125 WAPE** (CI **[−0.1228,
+  −0.1026]**) / **−0.1659 WRMSSE** (CI **[−0.1772, −0.1552]**); lgbm −0.1057
+  WAPE (CI [−0.1184, −0.0935] — a 17.5% relative cut) / −0.1652 WRMSSE (CI
+  [−0.1770, −0.1535]). Both CIs exclude zero.
 - **The champion is a selection-fitted convex ensemble** — best three of
-  {lgbm, auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a 0.05
-  simplex over the selection origins: lgbm × 0.45 + auto_ets × 0.45 + auto_ces
-  × 0.10 — the wave-25 feature pass + seeded Optuna tuning (`cli tune-m5`,
-  selection origins only) put the global booster at the top of the pool
-  (selection WAPE 0.469 vs auto_ets 0.473), and the blend adds pooling
-  stability on top.
-- **Win rates** — the ensemble clears the seasonal-naive floor on **90.2%**
-  of series (dense 90.1%, intermittent 90.5%); every serious candidate lands
-  in the 82.8–90.2% band, so on dense weekly-seasonal demand the pooled
+  {lgbm, xgb, auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a
+  0.05 simplex over the selection origins: xgb × 0.35 + lgbm × 0.20 +
+  auto_ets × 0.45. The wave-27 refinement widened the feature space per the
+  M5-winning-solution practice (56/84-day means, snap_weekend,
+  price-relative-to-mean, panel statics item age/history level/dept/category
+  pooled means — all leakage-safe), re-tuned the lgbm (seeded 25-trial study,
+  `cli tune-m5`, selection origins only) and added the xgb booster to the
+  pool (selection WAPE 0.4694 vs lgbm 0.4706); stated plainly, the feature +
+  tuning lever moved lgbm's pooled test WAPE only within noise (0.495 →
+  0.498), and the honest gain of the pass is the wider pool and the
+  next-week service number.
+- **Win rates** — the ensemble clears the seasonal-naive floor on **88.8%**
+  of series (dense 88.6%, intermittent 89.8%); every serious candidate lands
+  in the 82.8–88.8% band, so on dense weekly-seasonal demand the pooled
   margin, not per-series coverage, separates the candidates.
 - **Bands** — per-series scaled split-conformal 80% band (per-horizon-day
   width = 0.8-quantile of |lgbm residual| / series scale over the 8 selection
   origins, scaled back by each series' in-sample naive-28 RMSE, zero-clipped):
-  lgbm covers **77.9%** of test actuals at mean width 13.53 units; the
-  ensemble 77.9% at 13.41 — balanced across volume classes (lgbm dense 77.2%,
-  intermittent 80.4%), slightly under the 80% target, stated as measured.
+  lgbm covers **77.7%** of test actuals at mean width 13.54 units; the
+  ensemble 77.7% at 13.34 — balanced across volume classes (lgbm dense 76.9%,
+  intermittent 80.6%), slightly under the 80% target, stated as measured.
 - **Both volume classes** — test WAPE dense 0.568 → 0.464, intermittent
-  0.749 → 0.604: the models win in both classes here, the honest contrast to
+  0.749 → 0.603: the models win in both classes here, the honest contrast to
   the sparse panel below.
 - **Rolling next-week service** (h ≤ 7 pooled over ALL 10 origins — the
   deployment shape: each week the model is re-run, only the first week of
   the fresh forecast is consumed, later weeks roll forward; the selection
   origins are included, so this is the operational service number, not a
-  held-out estimate): convex_ensemble next-week WAPE **0.4250** vs the
-  floor's **0.5442** (lgbm **0.4322**, rmae 0.794) — paired-bootstrap gaps
-  lgbm **−0.1120** (CI [−0.1200, −0.1047]) / ensemble **−0.1192** (CI
-  [−0.1271, −0.1113]), and every candidate beats the floor in both volume
-  classes at h≤7, measured not asserted (ensemble rmae dense 0.776 /
-  intermittent 0.796). The weekly error blocks on the scored test origins
-  grow wk1 **0.4158** → wk4 **0.5612** — **1.35×** week 1 (the floor
-  degrades 1.22× the same way) — and week 1 carries 27.6% of the champion's
+  held-out estimate): convex_ensemble next-week WAPE **0.4233** vs the
+  floor's **0.5442** (lgbm **0.4327**, xgb **0.4297**) — paired-bootstrap
+  gaps lgbm **−0.1115** (CI [−0.1197, −0.1039]) / ensemble **−0.1208** (CI
+  [−0.1288, −0.1130]), and every candidate beats the floor in both volume
+  classes at h≤7, measured not asserted (ensemble rmae dense 0.774 /
+  intermittent 0.791). The weekly error blocks on the scored test origins
+  grow wk1 **0.4136** → wk4 **0.5636** — **1.36×** week 1 (the floor
+  degrades 1.22× the same way) — and week 1 carries 28.0% of the champion's
   absolute-error reduction, which is why the next-week number is the
   service headline while the 28-day pooled table stays the month view.
 - **Related work** — Makridakis et al., M5 competition companion (IJF 2022);
