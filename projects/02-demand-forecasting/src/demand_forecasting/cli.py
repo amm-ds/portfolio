@@ -200,5 +200,39 @@ def all(
     run_probabilistic(settings, config, multistep=result.multistep)
 
 
+@app.command("evaluate-m5")
+def evaluate_m5(
+    data_dir: Annotated[Path | None, typer.Option(help="M5 subset dir.")] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 reports dir.")] = None,
+) -> None:
+    """Run the M5 headline experiment (protocol m5_direct_v1) and write reports_m5/.
+
+    Offline: reads the committed, checksum-pinned subset in data_m5/; writes
+    metrics.json, probabilistic.json, evaluation_metadata.json, figures and
+    report.html under reports_m5/ (minutes, not seconds — the real evaluate).
+    """
+    root = Path.cwd()
+    data_dir = data_dir or root / "data_m5"
+    reports_dir = reports_dir or root / "reports_m5"
+    from demand_forecasting.m5_report import build_report
+    from demand_forecasting.m5_track import run_m5_track, write_m5_artifacts
+
+    result = run_m5_track(data_dir)
+    write_m5_artifacts(result, reports_dir)
+    build_report(reports_dir)
+
+
+@app.command("build-report-m5")
+def build_report_m5(
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 reports dir.")] = None,
+) -> Path:
+    """Rebuild reports_m5/report.html (+figures) from the committed artifacts only."""
+    root = Path.cwd()
+    reports_dir = reports_dir or root / "reports_m5"
+    from demand_forecasting.m5_report import build_report
+
+    return build_report(reports_dir)
+
+
 if __name__ == "__main__":
     app()
