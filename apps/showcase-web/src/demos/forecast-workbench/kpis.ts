@@ -54,6 +54,38 @@ export function bestModelAt(
   return best;
 }
 
+/** Sum of |pred − actual| grouped into 7-day week buckets over the first `h`
+ * scored days: ceil(h/7) buckets — the 4-bar view at the full 28-day window,
+ * fewer bars as the horizon toggle shortens the scored window. */
+export function weeklyAbsError(actual: number[], pred: number[], h: number): number[] {
+  const n = Math.max(0, Math.min(h, actual.length));
+  const buckets: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const w = Math.floor(i / 7);
+    buckets[w] = (buckets[w] ?? 0) + Math.abs(pred[i] - actual[i]);
+  }
+  return buckets;
+}
+
+/** Band calibration over the first `h` scored days, straight from the payload
+ * arrays: per-day hit indicator (p10 ≤ actual ≤ p90), the coverage fraction
+ * and the mean p10→p90 width. NaN-safe when the band is missing. */
+export function bandCalibration(
+  window: ForecastWindow,
+  h: number,
+): { hits: number; n: number; coverage: number; meanWidth: number } {
+  const n = Math.max(0, Math.min(h, window.actual.length, window.band.p10.length, window.band.p90.length));
+  let hits = 0;
+  let width = 0;
+  for (let i = 0; i < n; i++) {
+    const lo = window.band.p10[i];
+    const hi = window.band.p90[i];
+    if (window.actual[i] >= lo && window.actual[i] <= hi) hits += 1;
+    width += hi - lo;
+  }
+  return { hits, n, coverage: n > 0 ? hits / n : 0, meanWidth: n > 0 ? width / n : 0 };
+}
+
 /** One-line per-series verdict for the notice strip. */
 export function verdictText(
   window: ForecastWindow,

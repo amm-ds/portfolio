@@ -96,6 +96,8 @@ export function PlotlyFigure({
   const [payload, setPayload] = useState<PlotlyPayload | null>(null);
   const [failed, setFailed] = useState(false);
   const [inView, setInView] = useState(false);
+  /** Plotly has painted into the host — the skeleton can retire. */
+  const [rendered, setRendered] = useState(false);
   const elRef = useRef<HTMLDivElement>(null);
   const plotlyRef = useRef<typeof PlotlyStatic | null>(null);
 
@@ -103,6 +105,7 @@ export function PlotlyFigure({
     let cancelled = false;
     setPayload(null);
     setFailed(false);
+    setRendered(false);
     fetch(`/projects/${pid}/figures/${name}.json`)
       .then((res) => {
         if (res.status === 404) return null;
@@ -165,6 +168,9 @@ export function PlotlyFigure({
         buildLayout(payload.layout, el.clientWidth),
         { responsive: true, displayModeBar: false },
       );
+      // The plot is painted — swap the skeleton out (only if still mounted:
+      // a resize re-render may finish after unmount).
+      if (!disposed) setRendered(true);
     };
     void render();
 
@@ -202,9 +208,10 @@ export function PlotlyFigure({
   return (
     <figure className="figure-frame">
       <div className="plotly-wrap">
-        {(!payload || !inView) && (
-          <div className="frame-skeleton" aria-hidden="true">
-            <span>loading…</span>
+        {!rendered && (
+          <div className="frame-skeleton" aria-hidden="true" data-testid="figure-skeleton">
+            <span className="frame-label">$ {name}</span>
+            <span className="frame-skeleton-status">rendering figure…</span>
           </div>
         )}
         <div ref={elRef} className="plotly-host" data-testid={`plotly-${name}`} />

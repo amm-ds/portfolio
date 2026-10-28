@@ -520,7 +520,7 @@ roadmap:
   - status: delivered
     text: M5 metric layer — WAPE/rmae/WRMSSE (documented naive-28 denominator), peak-day MAE, per-series win rates (ensemble 89.3%), bootstrap CIs on every gap, per-series scaled split-conformal 80% band (78.0% coverage vs 80% target, balanced across volume classes).
   - status: delivered
-    text: forecast-workbench demo rebuilt on M5 (churn-style, schema v4) — deterministic 24-series catalog across stores × classes, per-series curves for the 2 scored origins (copied from the committed run's catalog_forecasts.parquet sidecar — the lgbm curve is the global 600-series model, not a subset refit), committed headline block verbatim, 1e-9 drift guards on both the metrics block and the sidecar.
+    text: forecast-workbench demo rebuilt on M5 (churn-style, schema v4) — deterministic 24-series catalog across stores × classes, per-series curves for the 2 scored origins from the committed sidecar (lgbm = global 600-series model, not a subset refit), headline block verbatim, drift guards on both blocks.
   - status: delivered
     text: UCI real-data sparse headline — 405k rows, 89% zeros; frozen holdout (rolling_origin_holdout_v1), champion selected on origins 1..n-1, test window scored once.
   - status: delivered

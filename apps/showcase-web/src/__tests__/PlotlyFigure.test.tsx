@@ -42,6 +42,8 @@ describe("PlotlyFigure", () => {
 
     expect(fetchMock).toHaveBeenCalledWith("/projects/01-rag-agent/figures/retrieval_funnel.json");
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    // the labeled skeleton retires once the plot is painted
+    expect(screen.queryByTestId("figure-skeleton")).toBeNull();
     const [el, data, layout, config] = mocks.react.mock.calls[0];
     expect((el as HTMLElement).dataset.testid).toBe("plotly-retrieval_funnel");
     expect(data).toEqual(PAYLOAD.data);
@@ -93,6 +95,15 @@ describe("PlotlyFigure", () => {
     expect(mocks.react.mock.calls[0][2].height).toBe(360);
   });
 
+  it("shows a labeled skeleton placeholder until the plot renders", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+    render(<PlotlyFigure pid="p" name="pending_fig" />);
+    const skeleton = screen.getByTestId("figure-skeleton");
+    // intentional pending state: mono "$ name" corner label + status line
+    expect(skeleton).toHaveTextContent("$ pending_fig");
+    expect(skeleton).toHaveTextContent("rendering figure…");
+  });
+
   it("defers the plotly import until the host nears the viewport", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
     // jsdom has no IntersectionObserver: stub a controllable one
@@ -110,12 +121,14 @@ describe("PlotlyFigure", () => {
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     await act(() => new Promise((r) => setTimeout(r, 20)));
     expect(mocks.react).not.toHaveBeenCalled();
-    expect(screen.getByText("loading…")).toBeInTheDocument();
-    // host enters the viewport → render proceeds
+    expect(screen.getByTestId("figure-skeleton")).toHaveTextContent("$ gated");
+    expect(screen.getByText("rendering figure…")).toBeInTheDocument();
+    // host enters the viewport → render proceeds, skeleton retires
     act(() => {
       ioCallback!([{ isIntersecting: true }]);
     });
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByTestId("figure-skeleton")).toBeNull());
   });
 
   it("falls back to the HTML iframe when the JSON payload 404s", async () => {

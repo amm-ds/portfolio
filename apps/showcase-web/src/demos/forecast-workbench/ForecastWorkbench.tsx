@@ -4,6 +4,7 @@ import type { CatalogEntry, DemoManifest, ForecastWorkbenchPayload } from "../ty
 import { DemoWorkbench, KpiTile, Notice } from "../workbench";
 import { C_HIST, C_PINK, C_TEAL, MODELS, assembleChartData } from "./chartData";
 import { bestModelAt, peakDayMae, verdictText, wapeAt } from "./kpis";
+import { BandCalibrationPanel, BandPlaceholder, ErrorCompositionPanel, VerdictPanel } from "./panels";
 import { fetchForecastPayload, fetchManifest } from "./payload";
 import { useWorkbenchState } from "./useWorkbenchState";
 
@@ -301,6 +302,26 @@ function Workbench({
         </>
       }
       notice={<Notice>{verdictText(window, best, h)}</Notice>}
+      secondary={
+        <>
+          <div className="wb-secondary-panel">
+            <h3 className="wb-rail-title">error composition</h3>
+            <ErrorCompositionPanel window={window} primary={best} h={h} />
+          </div>
+          <div className="wb-secondary-panel">
+            <h3 className="wb-rail-title">band calibration</h3>
+            {modelsOn.includes("lgbm") ? (
+              <BandCalibrationPanel window={window} h={h} />
+            ) : (
+              <BandPlaceholder />
+            )}
+          </div>
+          <div className="wb-secondary-panel">
+            <h3 className="wb-rail-title">model verdict</h3>
+            <VerdictPanel entry={entry} window={window} modelsOn={modelsOn} h={h} payload={payload} />
+          </div>
+        </>
+      }
       evidence={
         <>
           <div className="wb-result-block">
