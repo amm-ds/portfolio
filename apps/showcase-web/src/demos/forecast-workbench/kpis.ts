@@ -86,6 +86,92 @@ export function bandCalibration(
   return { hits, n, coverage: n > 0 ? hits / n : 0, meanWidth: n > 0 ? width / n : 0 };
 }
 
+/** Per-day p10→p90 band width over the first `h` scored days — the width
+ * trajectory behind the calibration sparkline (uncertainty vs horizon). */
+export function bandWidthTrajectory(window: ForecastWindow, h: number): number[] {
+  const n = Math.max(0, Math.min(h, window.actual.length, window.band.p10.length, window.band.p90.length));
+  return Array.from({ length: n }, (_, i) => window.band.p90[i] - window.band.p10[i]);
+}
+
+/** Coverage (fraction of days inside p10/p90) per 7-day bucket over the first
+ * `h` scored days: ceil(h/7) entries, one per non-empty week — shows where
+ * calibration drifts across the window. */
+export function weeklyBandCoverage(window: ForecastWindow, h: number): number[] {
+  const n = Math.max(0, Math.min(h, window.actual.length, window.band.p10.length, window.band.p90.length));
+  const hits: number[] = [];
+  const counts: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const w = Math.floor(i / 7);
+    counts[w] = (counts[w] ?? 0) + 1;
+    if (window.actual[i] >= window.band.p10[i] && window.actual[i] <= window.band.p90[i]) {
+      hits[w] = (hits[w] ?? 0) + 1;
+    }
+  }
+  return counts.map((c, w) => (hits[w] ?? 0) / c);
+}
+
+/** The single worst band violation over the first `h` scored days — the day
+ * furthest outside p10/p90, which side it left through, and by how much.
+ * Null when every scored day is inside the band. */
+export function worstBandMiss(
+  window: ForecastWindow,
+  h: number,
+): { day: number; side: "over" | "under"; actual: number; bound: number; amount: number } | null {
+  const n = Math.max(0, Math.min(h, window.actual.length, window.band.p10.length, window.band.p90.length));
+  let worst: { day: number; side: "over" | "under"; actual: number; bound: number; amount: number } | null = null;
+  for (let i = 0; i < n; i++) {
+    const over = window.actual[i] - window.band.p90[i];
+    const under = window.band.p10[i] - window.actual[i];
+    const amount = Math.max(over, under);
+    if (amount > 0 && (worst === null || amount > worst.amount)) {
+      worst =
+        over >= under
+          ? { day: i, side: "over", actual: window.actual[i], bound: window.band.p90[i], amount }
+          : { day: i, side: "under", actual: window.actual[i], bound: window.band.p10[i], amount };
+    }
+  }
+  return worst;
+}
+
+/** Sum of |pred − actual| grouped into `buckets` equal spans across the first
+ * `h` scored days — the row-level error *shape* behind the verdict micro-bars,
+ * comparable across models regardless of window length. */
+export function bucketedAbsError(actual: number[], pred: number[], h: number, buckets = 7): number[] {
+  const n = Math.max(0, Math.min(h, actual.length));
+  const out = Array<number>(buckets).fill(0);
+  if (n === 0) return out;
+  for (let i = 0; i < n; i++) {
+    const b = Math.min(buckets - 1, Math.floor((i / n) * buckets));
+    out[b] += Math.abs(pred[i] - actual[i]);
+  }
+  return out;
+}
+
+/** Worst single-day |pred − actual| over the first `h` scored days — the
+ * per-model peak-day MAE quoted in the verdict rows. */
+export function peakAbsError(actual: number[], pred: number[], h: number): number {
+  const n = Math.max(0, Math.min(h, actual.length));
+  let peak = 0;
+  for (let i = 0; i < n; i++) {
+    peak = Math.max(peak, Math.abs(pred[i] - actual[i]));
+  }
+  return peak;
+}
+
+/** Per-weekday totals of |pred − actual| over the first `h` scored days,
+ * bucketed Mon..Sun by the forecast dates (index 0 = Mon). Days whose date is
+ * missing or unparseable are skipped; entries with no scored day stay 0. */
+export function weekdayAbsError(actual: number[], pred: number[], dates: string[], h: number): number[] {
+  const n = Math.max(0, Math.min(h, actual.length, dates.length));
+  const out = Array<number>(7).fill(0);
+  for (let i = 0; i < n; i++) {
+    const dow = new Date(`${dates[i]}T00:00:00Z`).getUTCDay();
+    if (!Number.isFinite(dow)) continue;
+    out[(dow + 6) % 7] += Math.abs(pred[i] - actual[i]);
+  }
+  return out;
+}
+
 /** One-line per-series verdict for the notice strip. */
 export function verdictText(
   window: ForecastWindow,

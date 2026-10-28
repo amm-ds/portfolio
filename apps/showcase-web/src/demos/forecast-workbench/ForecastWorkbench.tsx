@@ -308,17 +308,29 @@ function Workbench({
             <h3 className="wb-rail-title">error composition</h3>
             <ErrorCompositionPanel window={window} primary={best} h={h} />
           </div>
-          <div className="wb-secondary-panel">
+          <div className="wb-secondary-panel fwb-tall">
             <h3 className="wb-rail-title">band calibration</h3>
             {modelsOn.includes("lgbm") ? (
-              <BandCalibrationPanel window={window} h={h} />
+              <BandCalibrationPanel
+                window={window}
+                h={h}
+                committedCoverage={band.coverage_80}
+                forecastDates={originBlock.forecast_dates}
+              />
             ) : (
               <BandPlaceholder />
             )}
           </div>
-          <div className="wb-secondary-panel">
+          <div className="wb-secondary-panel fwb-tall">
             <h3 className="wb-rail-title">model verdict</h3>
-            <VerdictPanel entry={entry} window={window} modelsOn={modelsOn} h={h} payload={payload} />
+            <VerdictPanel
+              entry={entry}
+              window={window}
+              modelsOn={modelsOn}
+              h={h}
+              payload={payload}
+              forecastDates={originBlock.forecast_dates}
+            />
           </div>
         </>
       }

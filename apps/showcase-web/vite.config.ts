@@ -10,10 +10,11 @@ const PROJECT_PAGE = /^\/projects\/\d{2}-[^/]+$/;
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: "127.0.0.1",
     port: 4321,
     proxy: {
       "/projects": {
-        target: "http://localhost:8000",
+        target: "http://127.0.0.1:8000",
         bypass: (req) => {
           const url = req.url ?? "";
           // deep links like /projects/02-demand-forecasting are SPA page
@@ -26,10 +27,10 @@ export default defineConfig({
           return undefined; // /projects/<pid>/<resource> → API
         },
       },
-      "/rag": "http://localhost:8000",
-      "/health": "http://localhost:8000",
+      "/rag": "http://127.0.0.1:8000",
+      "/health": "http://127.0.0.1:8000",
       "/demos": {
-        target: "http://localhost:8000",
+        target: "http://127.0.0.1:8000",
         bypass: (req) => {
           const url = req.url ?? "";
           if (url === "/demos" || DEMO_API.test(url)) return undefined; // proxy
