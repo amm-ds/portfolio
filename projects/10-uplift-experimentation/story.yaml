@@ -425,12 +425,10 @@ sections:
 roadmap:
   - status: delivered
     text: >-
-      Multi-treatment uplift (secondary, model-estimated): per-arm
-      cross-fitted T-learners (Mens Qini 12.03 = committed binary read;
-      Womens 3.37, CI spans zero), best-arm policy $35.5k @25% budget vs
-      $29.5k single-arm (paired CI excludes zero), recommended arms
-      76.0/20.2/3.8% Mens/Womens/none, break-even ≈$0.31/email vs
-      mail-everyone-mens.
+      Multi-treatment uplift (model-estimated): per-arm T-learners (Mens
+      Qini 12.03 committed; Womens 3.37, CI spans zero), best-arm policy
+      $35.5k @25% budget vs $29.5k single-arm (CI excludes zero), arms
+      76.0/20.2/3.8% Mens/Womens/none, break-even ~$0.31/email.
   - status: delivered
     text: >-
       CUPED: 0.08% conversion / 0.52% visit variance removed on the

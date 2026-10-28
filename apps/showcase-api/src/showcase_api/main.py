@@ -180,9 +180,14 @@ def _readiness() -> bool:
 # PROJECTS_ROOT to a tmp dir still see fresh data.
 
 
-def _cached_payload(root: Path, compute: Callable[[], Any]) -> tuple[str, str]:
-    """(etag, body) for a JSON payload, computed once per root path."""
-    key = Path(root)
+def _cached_payload(root: Path, kind: str, compute: Callable[[], Any]) -> tuple[str, str]:
+    """(etag, body) for a JSON payload, computed once per (root, kind).
+
+    ``kind`` discriminates payloads that share a root path — /projects and
+    /demos both key on PROJECTS_ROOT and would otherwise collide (whichever
+    endpoint is hit first would serve its payload for both).
+    """
+    key = (Path(root), kind)
     if key not in _PAYLOAD_CACHE:
         body = json.dumps(compute(), sort_keys=True)
         etag = '"' + hashlib.sha256(body.encode()).hexdigest()[:16] + '"'
@@ -190,7 +195,7 @@ def _cached_payload(root: Path, compute: Callable[[], Any]) -> tuple[str, str]:
     return _PAYLOAD_CACHE[key]
 
 
-_PAYLOAD_CACHE: dict[Path, tuple[str, str]] = {}
+_PAYLOAD_CACHE: dict[tuple[Path, str], tuple[str, str]] = {}
 _DEMO_MANIFEST_CACHE: dict[Path, list[DemoManifest]] = {}
 
 
@@ -227,7 +232,7 @@ def projects(request: Request) -> Response:
             else JSONResponse({"error": "web build not found"}, status_code=503)
         )
     etag, body = _cached_payload(
-        PROJECTS_ROOT, lambda: [m.model_dump() for m in load_index(PROJECTS_ROOT)]
+        PROJECTS_ROOT, "projects", lambda: [m.model_dump() for m in load_index(PROJECTS_ROOT)]
     )
     return _etag_response(request, etag, body)
 
@@ -338,7 +343,9 @@ def demos_index(request: Request) -> Response:
     """Registry entries for the frontend demos index (sorted by group, id),
     computed once at startup and served with ETag."""
     etag, body = _cached_payload(
-        PROJECTS_ROOT, lambda: [to_registry_entry(m) for m in _demo_manifests(PROJECTS_ROOT)]
+        PROJECTS_ROOT,
+        "demos",
+        lambda: [to_registry_entry(m) for m in _demo_manifests(PROJECTS_ROOT)],
     )
     return _etag_response(request, etag, body)
 
