@@ -43,11 +43,12 @@ validation macro-F1 (0.8880 → 0.8953) but the gain sat inside seed noise
 (mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
 honesty rule kept the original artifact as `distilbert_tuned`.
 
-**Serving economics** (measured on this machine — Apple M4 Max, CPU, torch
-2.14.1, 12 threads; batch=1 end-to-end, n=200 predictions per variant; cost
-at a declared $1/M-input + $4/M-output rate card, ~51.5 in + ~3.5 out
-tokens per prediction; accuracy from the committed test-split metrics,
-int8 measured on a 2000-row train sample):
+**Serving economics** (probe-hardware numbers, not the headline — measured
+on this machine, an Apple M4 Max, CPU, torch 2.14.1, 12 threads; batch=1
+end-to-end, n=200 predictions per variant; cost at a declared $1/M-input +
+$4/M-output rate card, ~51.5 in + ~3.5 out tokens per prediction; accuracy
+from the committed test-split metrics, int8 measured on a 2000-row train
+sample — single-machine probe figures, not production benchmarks):
 
 | Variant | Size (MB) | p50 latency (ms) | Throughput (pred/s) | Cost ($/1k preds) | Accuracy | F1 macro |
 |---|---|---|---|---|---|---|
@@ -69,14 +70,31 @@ early stopping disabled (same hypers, seed 42;
 `projects/04-nlp-classification/reports/history_probe4.json`) peaks at val
 macro-F1 0.9477 in epoch 3 — +0.0003 over epoch 2, −0.0003 by epoch 4 —
 while validation loss climbs again and train loss keeps falling. Epochs 3-4
-overfit rather than improve.
+overfit rather than improve. Both history files are from the **full 120k
+data**, not the bounded subsample: `history_fulldata.json` is the shipped
+headline run (2 epochs, val macro-F1 0.9433 → 0.9464), `history_probe4.json`
+is the 4-epoch probe of the same full-data fine-tune (early stopping
+disabled) — read the probe as "extra epochs overfit", not as a better result.
 
 ![4-epoch probe: validation macro-F1 plateaus after epoch 2 while train loss keeps falling](../assets/projects/04-nlp-classification/epochs_probe.png){ width="100%" }
 
 Temperature
 scaling cuts test ECE 0.047 → 0.013 for free. The dominant confusion pair,
 Business → Sci/Tech (24/250 → 15/250 → 14/250 across the curve), is a
-labeling-ambiguity floor, not a data-scale problem. Full ladder:
+labeling-ambiguity floor, not a data-scale problem. Representative
+misclassifications of the selected model (`distilbert_tuned`, wave-2
+artifact) on the untouched 1,000-row bounded test split — reproduced from
+the committed artifact + test split, bit-matching `metrics.json`; full list
+in `reports/misclassification_examples.json`:
+
+| text snippet | true | predicted |
+|---|---|---|
+| "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) … will buy Joyo.com Limited --…" | Business | Sci/Tech |
+| "India's Tata makes powerful debut Shares in Indian software services giant Tata Consultancy close 16 higher…" | World | Business |
+| "Dell Exits Low-End China Consumer PC Market HONG KONG (Reuters) - Dell Inc., the world's largest PC maker…" | Sci/Tech | Business |
+| "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker…" | World | Sports |
+
+Full ladder:
 `projects/04-nlp-classification/reports/metrics.json`; decision record:
 `reports/selection.json`; interactive figures in `reports/figures/`.
 

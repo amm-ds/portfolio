@@ -1,0 +1,81 @@
+{
+  "model": "distilbert_tuned (wave-2 artifact, reports/models/distilbert.pt \u2014 selection.json winner)",
+  "split": "bounded test split, 1000 rows, stratified 250/class, seed 42",
+  "n_test": 1000,
+  "accuracy": 0.902,
+  "f1_macro": 0.9020969724519001,
+  "confusion_pairs_top": [
+    {
+      "true": "Business",
+      "predicted": "Sci/Tech",
+      "count": 24
+    },
+    {
+      "true": "World",
+      "predicted": "Business",
+      "count": 20
+    },
+    {
+      "true": "Sci/Tech",
+      "predicted": "Business",
+      "count": 16
+    },
+    {
+      "true": "World",
+      "predicted": "Sci/Tech",
+      "count": 10
+    },
+    {
+      "true": "World",
+      "predicted": "Sports",
+      "count": 8
+    },
+    {
+      "true": "Sci/Tech",
+      "predicted": "World",
+      "count": 6
+    }
+  ],
+  "examples": [
+    {
+      "text": "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited --...",
+      "true": "Business",
+      "predicted": "Sci/Tech"
+    },
+    {
+      "text": "India's Tata makes powerful debut Shares  in Indian software services giant Tata Consultancy close 16 higher on their market debut, raisi...",
+      "true": "World",
+      "predicted": "Business"
+    },
+    {
+      "text": "Dell Exits Low-End China Consumer PC Market  HONG KONG (Reuters) - Dell Inc. &lt;DELL.O&gt;, the world's  largest PC maker, said on Monda...",
+      "true": "Sci/Tech",
+      "predicted": "Business"
+    },
+    {
+      "text": "Future Doctors, Crossing Borders Students at the Mount Sinai School of Medicine learn that diet and culture shape health in East Harlem.",
+      "true": "World",
+      "predicted": "Sci/Tech"
+    },
+    {
+      "text": "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker missed the cut in the Olympic 100...",
+      "true": "World",
+      "predicted": "Sports"
+    },
+    {
+      "text": "103 arrests for Internet fraud, related crimes since June: US (AFP) AFP - US authorities arrested at least 103 suspects and filed 117 cri...",
+      "true": "Sci/Tech",
+      "predicted": "World"
+    },
+    {
+      "text": "Audit finds no fraud in Venezuelan recall vote CARACAS : An audit of last Sunday #39;s recall vote in Venezuela, which favored keeping Pr...",
+      "true": "Business",
+      "predicted": "World"
+    },
+    {
+      "text": "Tyncastle sale gets official go ahead Of the votes received by proxy and from shareholders in the room at a stormy extraordinary general...",
+      "true": "Sports",
+      "predicted": "Business"
+    }
+  ]
+}

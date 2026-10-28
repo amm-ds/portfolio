@@ -68,12 +68,15 @@ data scale. `naive_majority` looks deceptively good on accuracy (0.25 =
 chance on a balanced test split) but collapses on macro-F1 (0.10) — exactly
 why the portfolio scores runs with macro-F1, not accuracy.
 
-### Serving economics
+### Serving economics (probe-hardware numbers, not the headline)
 
 Measured, not estimated — this machine (Apple M4 Max, torch 2.14.1, CPU
 with 12 torch threads), batch=1 end-to-end serving (tokenize + forward for
 the transformers, vectorize + predict for sklearn), n=200 held-out test
-rows per variant, p50 per prediction. Model size: artifact bytes for the
+rows per variant, p50 per prediction. These are single-machine probe
+figures for a routing decision, not production benchmarks; other hardware
+moves the milliseconds, not the ordering conclusions. Model size: artifact
+bytes for the
 sklearn pipeline, serialized `state_dict` for torch. Accuracy/F1 for the
 first three rows are the committed 1000-row test-split numbers (no
 re-evaluation); the int8 row's quality is measured on a 2000-row train
@@ -134,8 +137,14 @@ epochs 3-4 add **+0.0003 / −0.0003** over epoch 2, inside run-to-run noise,
 while val loss rises again (0.1566 → 0.1609 → 0.1774) and train loss keeps
 falling (0.1425 → 0.0959 → 0.0634): textbook overfitting onset, ~27 extra
 minutes for no quality. (Probe epochs 1-2 don't bit-match the shipped run —
-the LR schedule depends on the total step count.) History:
-`reports/history_probe4.json`; figure: `reports/figures/epochs_probe.*`.
+the LR schedule depends on the total step count.) Both histories come from
+the **full 120k data**, not the bounded subsample: `reports/history_fulldata.json`
+is the shipped headline run (2 epochs, early stopping enabled, val macro-F1
+0.9433 → 0.9464); `reports/history_probe4.json` is this 4-epoch probe of the
+same full-data fine-tune. Read the probe as "extra epochs overfit", not as
+a better headline — its peak 0.9477 vs the shipped 0.9464 is the validation
+split under a different LR schedule, inside run-to-run noise. Figure:
+`reports/figures/epochs_probe.*`.
 
 Scaling story (all on the same untouched 1000-row test split, seed 42):
 
@@ -210,6 +219,23 @@ across the scaling curve (24 → 15 → 14 of 250); only its frequency shrinks
 with data. Full table in [`reports/error_analysis.md`](reports/error_analysis.md);
 per-class comparison vs the TF-IDF baseline in
 `reports/figures/per_class_f1_comparison.*`.
+
+**Misclassified examples** — selected model (`distilbert_tuned`, wave-2
+artifact per `reports/selection.json`) on the untouched 1,000-row bounded
+test split; reproduced by running the committed artifact on the committed
+test split — the reproduced predictions bit-match `reports/metrics.json`
+(accuracy 0.9020, macro-F1 0.9020969724519001). Full list with all 8
+examples and per-pair confusion counts:
+[`reports/misclassification_examples.json`](reports/misclassification_examples.json).
+
+| text snippet | true | predicted |
+|---|---|---|
+| "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited --…" | Business | Sci/Tech |
+| "India's Tata makes powerful debut Shares in Indian software services giant Tata Consultancy close 16 higher on their market debut, raisi…" | World | Business |
+| "Dell Exits Low-End China Consumer PC Market HONG KONG (Reuters) - Dell Inc. &lt;DELL.O&gt;, the world's largest PC maker, said on Monda…" | Sci/Tech | Business |
+| "Future Doctors, Crossing Borders Students at the Mount Sinai School of Medicine learn that diet and culture shape health in East Harlem." | World | Sci/Tech |
+| "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker missed the cut in the Olympic 100…" | World | Sports |
+| "103 arrests for Internet fraud, related crimes since June: US (AFP) AFP - US authorities arrested at least 103 suspects and filed 117 cri…" | Sci/Tech | World |
 
 **Why fine-tuning beats bag-of-words here.** TF-IDF + logistic regression sees
 each headline as an unordered weighted word bag: it captures which *words*

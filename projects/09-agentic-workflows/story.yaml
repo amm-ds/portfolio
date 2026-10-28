@@ -1,4 +1,21 @@
 project_id: 09-agentic-workflows
+headline: >-
+  A hosted Plan→Execute→Critique workflow passed 15/15 tuning tasks on every
+  deterministic grader — answers, exact tool set, step budget, latency — and
+  its held-out split at 7/7 answers plus 3/3 graceful refusals, at median
+  18.2 s per task and ~85k in / ~12k out tokens per suite (~$0.13
+  cloud-equivalent); the held-out set is small (n=10), so generalization is
+  verified on unseen prompts, not proven at scale.
+data_note: >-
+  Mostly synthetic data — a 12-document "Atlas Valley" field-station handbook
+  authored in code — plus one real arm: project 01's Wikipedia slice (3,589
+  chunks over five topics, CC BY-SA) queried read-only through 01's persisted
+  FAISS index.
+limits: >-
+  Bounded research-ops scenarios only — lookup, arithmetic, conversion, and
+  note-keeping over two fixed corpora with capped retries and budgets; this
+  does not show open-ended autonomy, and the held-out set is small (n=10,
+  3 should-fail probes).
 figure_captions:
   suite_summary: >-
     Graded outcomes (passed/total) across the three splits: the 15-task
@@ -22,7 +39,7 @@ figure_captions:
     Stacked input/output tokens per task (bars, left axis), the
     cloud-equivalent cost labelled above each bar, and latency against
     the dashed 60 s budget line (right axis). The whole 15-task suite
-    cost $0.086 of the $2.00 cap (~$0.009 per task) at a labelled rate
+    cost $0.13 of the $2.00 cap (~$0.0088 per task mean) at a labelled rate
     card — a cost estimate, never a billed amount.
 roadmap:
 - status: delivered
@@ -173,7 +190,7 @@ enforced during the run, not discovered on the invoice.\n"
   - tool_usage_matrix
   metrics_keys: []
 - id: training
-  text_md: "The workflow *is* the artifact — a pydantic-graph\nPlan→Execute→Critique→End over typed `WorkflowState`, one agent per node:\n\n```mermaid\ngraph LR\n    U[user] --> P[Plan]\n    P --> E[Execute]\n    E -->|repair ≤ max retries| E\n    E --> C[Critique]\n    C -->|revise, ≤1| E\n    C -->|pass| R[WorkflowResult]\n    E -->|retries exhausted| F[End failure]\n```\n\nEvery transition and loop bound in that graph is executable code;\nCritique `revise` loops back to **Execute** (never Plan) and audits tools\nagainst the plan. Consequential runs pause at a human checkpoint (typed\nstate on disk) and resume along the same graph:\n\n```mermaid\ngraph LR\n    P[Plan] --> H[Approval gate]\n    H -->|approve| E[Execute]\n    H -->|reject + feedback| P\n```\n\n**Tool design — each tool is a contract:** the `calculator` is\nAST-locked (cross-unit questions go to `unit_convert`, never an invented\ndensity); `search_documents` mounts 01's FAISS index read-only (a missing\nindex fails loudly).\
+  text_md: "The workflow *is* the artifact — a pydantic-graph\nPlan→Execute→Critique→End over typed `WorkflowState`, one agent per node:\n\n```mermaid\ngraph LR\n    U[user] --> P[Plan]\n    P --> E[Execute]\n    E -->|repair ≤ max retries| E\n    E --> C[Critique]\n    C -->|revise, ≤1| E\n    C -->|pass| R[WorkflowResult]\n    E -->|retries exhausted| F[End failure]\n```\n\nA static SVG rendering of this typed graph (including the approval-gate lane)\nships with the docs page at `docs/assets/projects/09-agentic-workflows/workflow_graph.svg`.\n\nEvery transition and loop bound in that graph is executable code;\nCritique `revise` loops back to **Execute** (never Plan) and audits tools\nagainst the plan. Consequential runs pause at a human checkpoint (typed\nstate on disk) and resume along the same graph:\n\n```mermaid\ngraph LR\n    P[Plan] --> H[Approval gate]\n    H -->|approve| E[Execute]\n    H -->|reject + feedback| P\n```\n\n**Tool design — each tool is a contract:** the `calculator` is\nAST-locked (cross-unit questions go to `unit_convert`, never an invented\ndensity); `search_documents` mounts 01's FAISS index read-only (a missing\nindex fails loudly).\
     \ Traces turned docstrings into behavioral contracts:\n`note_store` said \"working memory\" and ran unrequested on 4 tasks —\nrewording it and giving Critique the plan/tools audit removed all 8\nunplanned calls. Wording is behavior.\n\n**Toolset** (per-call traces: name, args, latency, size, ok):\n\n| tool | signature | guardrail | this run |\n|---|---|---|---|\n| `calculator` | `(expr) -> float` | AST only; exp ≤ 64 | 11 / 11 (0 unplanned) |\n| `unit_convert` | `(value, from, to) -> float` | fixed tables; no invented factors | 3 / 3 |\n| `search_handbook` | `(query, top_k=3) -> list[str]` | 12-doc corpus in code | 13 / 13 |\n| `search_documents` | `(query, top_k=3) -> list[str]` | read-only FAISS (01) | 2 / 2 |\n| `note_store` | `(ctx, action, note=\"\") -> list[str]` | only when \"record\" is requested | 1 / 1 |\n"
   figures: []
   metrics_keys: []
@@ -193,13 +210,13 @@ with numbers attached, not a demo impression.\n"
   metrics_keys:
   - agentic_suite
 - id: results
-  text_md: "Hosted run on `kimi-for-coding`, plain `run-all`, per-call capture on:\n**15/15 ok, and all four graders 15/15 — answers, exact tool set, step\nbudget, latency budget**. `suite_summary` puts the whole verification\nstory in one chart: tuning 15/15 on every grader, held-out answers 7/7,\nshould-fail probes 3/3 refusals.\n\n- tool selection **15/15** exact-set (from 8/15 two waves ago): 30\n  captured calls, call precision **100%**, tool recall **100%** — zero\n  unplanned calls (the previous run had 8)\n- latency: median **18.2 s**, p95 31.1 s — comfortably inside the 60 s\n  budget (`node_waterfall`)\n- tokens: ~85k in + ~12k out; ledger total **$0.086** of the $2.00 cap\n  (~$0.009 per task cloud-equivalent)\n\nTwo tasks were honestly re-scoped while tuning — disclosed, not silent\ngrader edits: t15's expected set gained `calculator` (the 119-year gap is\narithmetic the suite itself demands elsewhere), and t05's prompt now pins\n\"before inverter losses\" (both 38.4 and 36.9\
-    \ kWh were defensible readings\nof the old wording).\n\n**Held-out set** (audit finding 6): 10 unseen tasks over the same\ncorpora, run only after the tuning set was clean. Small by design —\nn=10 with 3 should-fail — it checks what the tuning set cannot: prompt\noverfitting, and failure behavior.\n\n| split | n | result |\n|---|---|---|\n| answer tasks | 7 | answer success 7/7, exact tool set 7/7, 12 calls all planned |\n| should-fail probes | 3 | graceful refusal 3/3 (no crash, no fabricated number) |\n\nThe probes matter: the first held-out run caught h10 confabulating (\"40 kg\n≈ 40 L via a 1 kg/L basis\"); tightening the conversion docstrings turned\nit into a stated refusal. A pass-only suite can never see that failure\nclass.\n\n**Business summary:** The hosted run passed everything: 15 of 15
+  text_md: "Hosted run on `kimi-for-coding`, plain `run-all`, per-call capture on:\n**15/15 ok, and all four graders 15/15 — answers, exact tool set, step\nbudget, latency budget**. `suite_summary` puts the whole verification\nstory in one chart: tuning 15/15 on every grader, held-out answers 7/7,\nshould-fail probes 3/3 refusals.\n\n- tool selection **15/15** exact-set (from 8/15 two waves ago): 30\n  captured calls, call precision **100%**, tool recall **100%** — zero\n  unplanned calls (the previous run had 8)\n- latency: median **18.2 s**, p95 31.1 s — comfortably inside the 60 s\n  budget (`node_waterfall`)\n- tokens: ~85k in + ~12k out; suite total **$0.13** of the $2.00 cap\n  (~$0.0088 per task mean, cloud-equivalent)\n\nTwo tasks were honestly re-scoped while tuning — disclosed, not silent\ngrader edits: t15's expected set gained `calculator` (the 119-year gap is\narithmetic the suite itself demands elsewhere), and t05's prompt now pins\n\"before inverter losses\" (both 38.4 and 36.9\
+    \ kWh were defensible readings\nof the old wording).\n\n**Held-out set** (audit finding 6): 10 unseen tasks over the same\ncorpora, run only after the tuning set was clean. Small by design —\nn=10 with 3 should-fail — it checks what the tuning set cannot: prompt\noverfitting, and failure behavior.\n\n| split | n | result |\n|---|---|---|\n| answer tasks | 7 | answer success 7/7, exact tool set 7/7, 12 calls all planned |\n| should-fail probes | 3 | graceful refusal 3/3 (no crash, no fabricated number) |\n\nAn example trace, replayed from the committed run record (`data/run_records.json`, task t15 — the real-data multi-hop lookup over 01's Wikipedia index; 31.1 s, 7,709 in / 862 out tokens, zero retries) and the committed human checkpoint (`data/checkpoint.json`):\n\n| step | node | action | intermediate output |\n|---|---|---|---|\n| 1 | Plan | 3-step plan: two `search_documents` lookups + one `calculator` gap | 217 out tokens, 4.1 s |\n| 2 | Execute | `search_documents(query='Wright brothers first controlled sustained flight powered aircraft year')` | 1,908 chars, ok, 11.9 s |\n| 3 | Execute | `search_documents(query='wind power supplied over 2000 TWh electricity year', top_k=3)` | 1,973 chars, ok, 11.9 s |\n| 4 | Execute | `calculator(expr='2022 - 1903')` | `119`, ok, 0.0 s |\n| 5 | Execute | draft answer, self-confidence 0.99 | — |\n| 6 | Critique | audit of tools used vs plan; verdict pass | 4.1 s |\n| 7 | Approval gate | HITL checkpoint — 'Convert 48 km to miles' paused at `awaiting_approval`; the committed state records a reject-with-feedback → re-plan cycle | human decision point, state on disk |\n\nThe probes matter: the first held-out run caught h10 confabulating (\"40 kg\n≈ 40 L via a 1 kg/L basis\"); tightening the conversion docstrings turned\nit into a stated refusal. A pass-only suite can never see that failure\nclass.\n\n**Business summary:** The hosted run passed everything: 15 of 15
 tuning tasks on all four graders — answers, exact tool selection, step
 budget, latency — with held-out answers at 7 of 7 and
 designed-to-fail probes refused gracefully at 3 of 3. Median latency
-was 18.2 s against the 60 s budget, and the whole suite cost $0.086 of
-the $2.00 cap — about $0.009 per task as a labelled cloud-equivalent
+was 18.2 s against the 60 s budget, and the whole suite cost $0.13 of
+the $2.00 cap — about $0.0088 per task mean as a labelled cloud-equivalent
 estimate, never a billed amount. Two tasks were honestly re-scoped
 during tuning and the changes are disclosed in the report, not hidden.
 At roughly $0.01 and 18 s per task with enforced budgets, graded agents

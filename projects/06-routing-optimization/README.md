@@ -214,6 +214,14 @@ Figures (`reports/figures/`, HTML + JSON for the showcase API):
 - `pareto_gap_runtime` — mean-runtime vs mean-gap scatter across all seven
   solvers (log-x), annotated with the mean vehicle-count delta.
 - `route_map_C101` — best C101 plan (ALNS: 11 vehicles, 860.21, gap 3.77 %).
+- `route_map_C101_before_after.svg` — static two-panel C101 map (committed
+  copy in `docs/assets/projects/06-routing-optimization/`): the improvement
+  heuristic before/after. Left: HPO-tuned 2-opt on the Clarke–Wright plan
+  (15 routes, 1046.53, regenerated deterministically — matches the committed
+  `two_opt_tuned` distance); right: the committed ALNS plan (11 routes,
+  860.21). Both verified capacity- and time-window-feasible by the project
+  validator. Embedded in the docs case study
+  (`docs/projects/06-routing-optimization.md`).
 - `runtime` — grouped bar, solver runtime per instance (log scale).
 
 ## Reproduce

@@ -1,4 +1,19 @@
 project_id: 08-inference-serving
+headline: >-
+  On a 128 GB Apple-Silicon Mac running Ollama 0.40.4, the Q4_K_M-quantized
+  3B-active MoE qwen3.6:35b-a3b serves validated structured output at 0.81 s
+  p95 latency at concurrency 1, rising to 7.80 s at concurrency 8, at about
+  $0.12 per 1M output tokens on declared electricity assumptions — from a
+  single author run, so treat the exact numbers as illustrative, not portable.
+data_note: >-
+  Fully synthetic fixed task — 8 general-knowledge prompts with keyword
+  checklists, generated locally with no download and no external data, so no
+  license applies.
+limits: >-
+  Single-machine local measurement (one author run, Ollama 0.40.4 on an
+  Apple-Silicon Mac with 128 GB unified memory) — latency and tok/s are not
+  portable across hardware or Ollama builds, so regenerate with `bench --full`
+  before quoting any number.
 figure_captions:
   quality_quant: >-
     Schema-valid rate and keyword quality rate for every quantization and
@@ -9,12 +24,14 @@ figure_captions:
     p95 latency vs concurrency (1/2/4/8) for the primary models on the
     local Ollama endpoint, one line per model+runner. The MoE arm stays in
     single-digit seconds through c=8 (qwen3.6: 0.81 s → 7.80 s), with p95
-    ≈ linear in concurrency.
+    ≈ linear in concurrency. Error bars span the committed p50–p99 band
+    around each p95 point.
   toks_per_s: >-
     Aggregate output tok/s per model and concurrency level. Throughput is
     flat-to-declining as concurrency rises — decode is memory-bandwidth
     bound — and the 3B-active MoE still serves ~7× the tok/s of dense
-    qwen3:32b.
+    qwen3:32b. Error bars are ±1σ of per-request tok/s across each
+    40-request cell.
   engine_panel: >-
     p95 latency and output tok/s for the two engine-plus-packaging arms of
     gemma4:31b at c=1 (llama.cpp Q8_0 vs MLX 4-bit) on Apple Silicon. MLX

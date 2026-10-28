@@ -137,7 +137,8 @@ Weather elasticity (mean hourly pickups, rain ≥1 mm vs dry, test window):
   not causal.
 
 Figures (interactive HTML + showcase JSON) in `reports/figures/`:
-`eda_trips_profile` (hour-of-day × borough profile), `zone_hour_heatmap`
+`hour_borough_heatmap` (hour-of-day × borough mean-pickups heatmap, lead
+results figure), `eda_trips_profile` (hour-of-day × borough profile), `zone_hour_heatmap`
 (borough-grouped top-30 zones × hour-of-week), `zone_demand_map` and
 `zone_residual_map` (TLC-zone choropleths of demand geography and per-zone
 MAPE), `zone_fan` (mean + p90 forecast fan for the busiest zones),

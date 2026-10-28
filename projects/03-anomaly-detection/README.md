@@ -138,6 +138,13 @@ split and are excluded from aggregates, not scored as misses):
 | realTraffic | 0.728 | 0.310 | 0.232 / 0.750 | 5/5, 188 alerts |
 | **overall** | **0.527** | **0.157** | **0.107 / 0.729** | **16/17, 1 609 alerts** |
 
+The event-window verdict leads: 16 of 17 labelled windows detected (range
+recall 0.729) at 0.107 range precision — 1 609 alerts for 16 events. Honest
+detector-vs-family note: only IsolationForest has been run on NAB so far, so
+the family ranking is IsolationForest's alone (strongest on realTraffic,
+weakest range recall on realAWSCloudwatch at 0.500); the cross-detector
+winner claim exists on the synthetic ladder only — tuned IsolationForest by
+ROC-AUC (0.9171), tuned OCSVM by PR-AUC (0.1355), LOF at chance either way.
 (ROC-AUC 0.735 overall, reported secondary per the audit.) The adaptive
 streaming mode runs on NAB too: its drift trigger fires on 31 of 120 chunks on
 real series — the median/IQR trigger calibrated on synthetic is too twitchy
@@ -151,7 +158,10 @@ on the property clients care about — precision at real anomaly rarity. On NAB
 the champion finds most events (range recall 0.73) but fires 1 609 alerts to
 catch 16 windows (range precision 0.11): the real problem is the
 false-positive firehose, exactly what the synthetic track could never show.
-Figures: `nab_timelines` (six representative series, true vs. detected windows), `nab_score_distribution`, `nab_alert_budget`; artifact `reports/nab_metrics.json`.
+Figures: `nab_timelines` (six representative series, true vs. detected
+windows), the downsampled single-series `nab_timeline_nyc_taxi` (3 of 4
+labelled windows detected, 179 alerts, every 2nd test-window minute),
+`nab_score_distribution`, `nab_alert_budget`; artifact `reports/nab_metrics.json`.
 
 ## Wave-7 additions: streaming, residuals, real data
 

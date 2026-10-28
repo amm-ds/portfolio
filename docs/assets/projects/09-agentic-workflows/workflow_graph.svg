@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="300" viewBox="0 0 920 300" font-family="Helvetica, Arial, sans-serif" font-size="14">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+    </marker>
+    <marker id="arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2dd4bf"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <rect width="920" height="300" fill="#ffffff"/>
+  <text x="460" y="28" text-anchor="middle" font-size="17" font-weight="bold" fill="#0f172a">Typed workflow graph — Plan → Execute → Critique → End</text>
+
+  <!-- nodes -->
+  <rect x="40" y="120" width="110" height="52" rx="8" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="95" y="151" text-anchor="middle" fill="#0f172a">user</text>
+
+  <rect x="210" y="120" width="120" height="52" rx="8" fill="#0f172a" stroke="#0f172a"/>
+  <text x="270" y="144" text-anchor="middle" fill="#ffffff" font-weight="bold">Plan</text>
+  <text x="270" y="162" text-anchor="middle" fill="#94a3b8" font-size="11">typed WorkflowState in</text>
+
+  <rect x="400" y="120" width="130" height="52" rx="8" fill="#2dd4bf" stroke="#0d9488" stroke-width="1.5"/>
+  <text x="465" y="144" text-anchor="middle" fill="#0f172a" font-weight="bold">Execute</text>
+  <text x="465" y="162" text-anchor="middle" fill="#134e4a" font-size="11">tool calls traced per visit</text>
+
+  <rect x="600" y="120" width="130" height="52" rx="8" fill="#38bdf8" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="665" y="144" text-anchor="middle" fill="#0f172a" font-weight="bold">Critique</text>
+  <text x="665" y="162" text-anchor="middle" fill="#0c4a6e" font-size="11">audits tools vs plan</text>
+
+  <rect x="790" y="120" width="120" height="52" rx="8" fill="#0f172a" stroke="#0f172a"/>
+  <text x="850" y="144" text-anchor="middle" fill="#ffffff" font-weight="bold">WorkflowResult</text>
+  <text x="850" y="162" text-anchor="middle" fill="#94a3b8" font-size="11">pass</text>
+
+  <rect x="465" y="230" width="160" height="46" rx="8" fill="#ffffff" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="545" y="250" text-anchor="middle" fill="#dc2626" font-weight="bold">End (failure)</text>
+  <text x="545" y="267" text-anchor="middle" fill="#7f1d1d" font-size="11">retries exhausted</text>
+
+  <!-- edges -->
+  <line x1="150" y1="146" x2="205" y2="146" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="330" y1="146" x2="395" y2="146" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="530" y1="146" x2="595" y2="146" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="730" y1="146" x2="785" y2="146" stroke="#2dd4bf" stroke-width="2" marker-end="url(#arrow-teal)"/>
+  <text x="757" y="137" text-anchor="middle" font-size="11" fill="#0d9488">pass</text>
+
+  <!-- repair self-loop on Execute -->
+  <path d="M 440 118 C 440 68 490 68 490 118" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="465" y="60" text-anchor="middle" font-size="11" fill="#475569">repair ≤ max retries</text>
+
+  <!-- critique revise loop back to Execute -->
+  <path d="M 665 172 C 665 208 545 208 545 176" fill="none" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="607" y="203" text-anchor="middle" font-size="11" fill="#475569">revise, ≤ 1 (never to Plan)</text>
+
+  <!-- execute failure edge -->
+  <line x1="465" y1="172" x2="520" y2="228" stroke="#dc2626" stroke-width="1.5" marker-end="url(#arrow-red)"/>
+
+  <!-- approval gate (HITL) -->
+  <rect x="60" y="230" width="280" height="46" rx="8" fill="#ffffff" stroke="#2dd4bf" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="200" y="250" text-anchor="middle" fill="#0f766e" font-weight="bold">Approval gate (consequential runs)</text>
+  <text x="200" y="267" text-anchor="middle" fill="#0f766e" font-size="11">typed state on disk → approve or reject + feedback</text>
+  <path d="M 340 240 C 380 220 385 180 395 168" fill="none" stroke="#2dd4bf" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arrow-teal)"/>
+</svg>

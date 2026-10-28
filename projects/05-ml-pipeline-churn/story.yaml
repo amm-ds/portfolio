@@ -1,4 +1,7 @@
 project_id: 05-ml-pipeline-churn
+headline: Cost-aware threshold tuning cuts holdout decision cost by 41.9% (1,035 → 601) vs the do-nothing policy — a paired bootstrap delta of −416 (95% CI [−485, −343], significant) on the 1,409-row IBM telco holdout.
+data_note: Real IBM telco churn data (7,043 customers, license IBM sample data) behind a sha256-pinned DatasetContract, with a seeded synthetic twin (8.8% base rate) as the clearly labeled offline CI path.
+limits: Cross-sectional snapshot only — with no time axis this shows neither drift nor seasonality, and fairness is audited only across contract, gender, and senior-citizen slices.
 sections:
   - id: background
     text_md: |
@@ -225,6 +228,21 @@ sections:
     figures: [calibration_curve, precision_recall_curve, cost_surface]
   - id: results
     text_md: |
+      **▶ Try it live: [the churn threshold sandbox](https://amm-ds.github.io/portfolio/demos/churn-sandbox)
+      — move the alarm threshold and the missed-churner cost on the committed
+      holdout payload and watch the optimal cutoff and the saved budget move.**
+
+      DQ gates on the pinned snapshot — every gate passes, or the pipeline
+      halts loudly before training:
+
+      | gate | column | contract | observed | status |
+      |---|---|---|---|---|
+      | null rate ≤ 5% | tenure_months | ≤ 0.050 | 0.000 | ✅ |
+      | null rate ≤ 5% | monthly_charges | ≤ 0.050 | 0.000 | ✅ |
+      | range [0, 240] | tenure_months | within bounds | [0.0, 72.0] | ✅ |
+      | range [0, 10,000] | monthly_charges | within bounds | [18.25, 118.75] | ✅ |
+      | binary {0, 1} | churned | within bounds | [0.0, 1.0] | ✅ |
+
       Run ladder (holdout, FP=1/FN=5):
 
       | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
@@ -274,7 +292,7 @@ sections:
       cost surface. The procedure transfers even though the operating
       point does not: re-deriving the threshold per regime is part of
       the deliverable, not an afterthought.
-    figures: [business_cost_curve, permutation_importance, fairness_slices]
+    figures: [calibration_curve, business_cost_curve, permutation_importance, fairness_slices]
     metrics_keys: [naive_majority, logreg_threshold_0.300, selected_model, selected_model_calibrated]
   - id: conclusions
     text_md: |
