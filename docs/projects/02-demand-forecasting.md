@@ -9,8 +9,8 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 > dense-demand regime where ML demonstrably wins. Under protocol
 > `m5_direct_v1` (10 weekly rolling origins, the last 2 scored once on a
 > 28-day horizon), the selection-fitted convex ensemble beats the
-> seasonal-naive floor by **−0.105 WAPE** (0.498 vs 0.603; 95% paired
-> cluster bootstrap CI **[−0.115, −0.095]**) and −0.157 WRMSSE (0.604 vs
+> seasonal-naive floor by **−0.112 WAPE** (0.491 vs 0.603; 95% paired
+> cluster bootstrap CI **[−0.122, −0.102]**) and −0.165 WRMSSE (0.597 vs
 > 0.762) on 600 series (463 dense + 137 intermittent), winning in **both**
 > volume classes — the mirror image of the UCI sparse track kept below as
 > the secondary study, where the zero forecast stays the ceiling.
@@ -53,31 +53,33 @@ stated deviation from the official M5 lag-1 scale):
 | tsb | 0.510 | 0.616 | 85.8% |
 | auto_ets | 0.503 | 0.611 | 88.2% |
 | auto_ces | 0.515 | 0.612 | 83.0% |
-| lgbm | 0.512 | 0.611 | 84.3% |
-| **convex_ensemble (champion)** | **0.498** | **0.604** | **89.3%** |
+| lgbm | 0.495 | 0.599 | 88.8% |
+| **convex_ensemble (champion)** | **0.491** | **0.597** | **90.2%** |
 
 - **The gap vs the floor is significant** — 95% paired cluster bootstrap
-  over series (2,000 reps): ensemble **−0.105 WAPE** (CI **[−0.115,
-  −0.095]**) / **−0.157 WRMSSE** (CI **[−0.168, −0.147]**); lgbm −0.091 WAPE
-  (CI [−0.102, −0.080] — a 15.1% relative cut) / −0.151 WRMSSE (CI
-  [−0.163, −0.140]). Both CIs exclude zero.
-- **The champion is a selection-fitted convex ensemble** — best two of
-  {lgbm, auto_ets, auto_ces} by SELECTION WAPE, weight grid-fit on the
-  selection origins: auto_ets × 0.67 + auto_ces × 0.33 — the two per-series
-  automatic models pooled better than the global booster on the selection
-  origins, and the ensemble adds pooling stability on top.
-- **Win rates** — the ensemble clears the seasonal-naive floor on **89.3%**
-  of series (dense 89.0%, intermittent 90.5%); every serious candidate lands
-  in the 83.0–89.3% band, so on dense weekly-seasonal demand the pooled
+  over series (2,000 reps): ensemble **−0.112 WAPE** (CI **[−0.122,
+  −0.102]**) / **−0.165 WRMSSE** (CI **[−0.176, −0.155]**); lgbm −0.108 WAPE
+  (CI [−0.120, −0.0965] — a 17.9% relative cut) / −0.163 WRMSSE (CI
+  [−0.174, −0.152]). Both CIs exclude zero.
+- **The champion is a selection-fitted convex ensemble** — best three of
+  {lgbm, auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a 0.05
+  simplex over the selection origins: lgbm × 0.45 + auto_ets × 0.45 + auto_ces
+  × 0.10 — the wave-25 feature pass + seeded Optuna tuning (`cli tune-m5`,
+  selection origins only) put the global booster at the top of the pool
+  (selection WAPE 0.469 vs auto_ets 0.473), and the blend adds pooling
+  stability on top.
+- **Win rates** — the ensemble clears the seasonal-naive floor on **90.2%**
+  of series (dense 90.1%, intermittent 90.5%); every serious candidate lands
+  in the 82.8–90.2% band, so on dense weekly-seasonal demand the pooled
   margin, not per-series coverage, separates the candidates.
 - **Bands** — per-series scaled split-conformal 80% band (per-horizon-day
   width = 0.8-quantile of |lgbm residual| / series scale over the 8 selection
   origins, scaled back by each series' in-sample naive-28 RMSE, zero-clipped):
-  lgbm covers **78.0%** of test actuals at mean width 14.25 units; the
-  ensemble 78.4% at 13.80 — balanced across volume classes (lgbm dense 77.3%,
+  lgbm covers **77.9%** of test actuals at mean width 13.53 units; the
+  ensemble 77.9% at 13.41 — balanced across volume classes (lgbm dense 77.2%,
   intermittent 80.4%), slightly under the 80% target, stated as measured.
-- **Both volume classes** — test WAPE dense 0.568 → 0.470, intermittent
-  0.749 → 0.616: the models win in both classes here, the honest contrast to
+- **Both volume classes** — test WAPE dense 0.568 → 0.464, intermittent
+  0.749 → 0.604: the models win in both classes here, the honest contrast to
   the sparse panel below.
 - **Related work** — Makridakis et al., M5 competition companion (IJF 2022);
   the nixtla stack (statsforecast / mlforecast / datasetsforecast) powering

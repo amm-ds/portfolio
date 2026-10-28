@@ -27,6 +27,7 @@ from demand_forecasting.m5_track import (  # noqa: E402
     _lgbm_forecast,
     _statistical_forecasts,
     ensemble_weight,
+    ensemble_weights,
     naive28_scale,
     paired_bootstrap_wape,
     pinball_loss,
@@ -179,6 +180,33 @@ def test_ensemble_weight_toy():
     assert ensemble_weight(a, b, y) == 0.5  # |4w - 2| minimised at w=0.5
     assert ensemble_weight(y + 5.0, y, y) == 0.0  # b is perfect
     assert ensemble_weight(y, y + 5.0, y) == 1.0  # a is perfect
+
+
+def test_ensemble_weights_simplex_toy():
+    """The 0.05-step simplex grid picks the best convex combination."""
+    y = np.array([10.0, 20.0, 30.0, 40.0])
+    perfect = y.copy()
+    a, c = y + 2.0, y + 4.0
+    w = ensemble_weights([a, perfect, c], y)
+    assert w.shape == (3,)
+    assert w.sum() == pytest.approx(1.0)
+    assert w[1] == 1.0  # all weight on the perfect member
+    # a tie (identical members) resolves to the lexicographically first point
+    w = ensemble_weights([a, a, c], y)
+    assert list(w) == [0.0, 1.0, 0.0]
+    # anti-correlated errors cancel at w2 = 0.5 (first lexicographic minimiser)
+    p1, p2, p3 = y + 3.0, y - 3.0, y + 3.0
+    w = ensemble_weights([p1, p2, p3], y)
+    assert list(w) == [0.0, 0.5, 0.5]
+    # brute-force consistency: the returned weights never lose to a grid point
+    members = [y + 2.0, y - 2.0, y + 6.0]
+    w = ensemble_weights(members, y)
+    err = lambda p: float(np.sum(np.abs(p - y)))  # noqa: E731
+    combo = sum(wi * pi for wi, pi in zip(w, members, strict=True))
+    for g1 in np.arange(0, 1.0001, 0.05):
+        for g2 in np.arange(0, 1.0001 - g1, 0.05):
+            cand = g1 * members[0] + g2 * members[1] + (1 - g1 - g2) * members[2]
+            assert err(combo) <= err(cand) + 1e-9
 
 
 def test_bootstrap_pairs_on_shared_draws():

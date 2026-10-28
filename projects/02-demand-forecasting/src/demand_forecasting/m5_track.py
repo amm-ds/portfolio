@@ -16,12 +16,14 @@ Protocol (fixed a priori, machine-readable in evaluation_metadata.json):
 - **Candidates**: ``seasonal_naive`` (m=7), ``window_avg_28``, ``adida``,
   ``tsb`` (per-series statistical, statsforecast 2.1.1 — C-fast),
   ``auto_ets``, ``auto_ces`` (per-series automatic, statsforecast), ``lgbm``
-  (global LightGBM via mlforecast 1.1.0: lags 1/7/14/21/28, rolling means,
-  calendar, exog price/SNAP/event codes — no series-identity feature, the
-  global model generalises across the 600 series), and ``convex_ensemble`` —
-  a convex combination of the best two of {lgbm, auto_ets, auto_ces} by
-  SELECTION WAPE, weight fit on the selection origins only over a fixed 0..1
-  grid (deterministic, documented).
+  (global LightGBM via mlforecast 1.1.0: lags 1/7/14/21/28, rolling means/
+  stds, expanding mean, calendar, exog price/SNAP/event codes + any_snap +
+  event distances + price momentum/missing — no series-identity feature, the
+  global model generalises across the 600 series; wave 25: tuned config from
+  the params.yaml ``m5_lgbm`` block, written by ``cli tune-m5``), and
+  ``convex_ensemble`` — a convex combination of the best THREE of {lgbm,
+  auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a 0.05-step
+  simplex over the selection origins only (deterministic, documented).
 - **Volume classes** per series: ADI/CV² (Syntetos-Boylan, same thresholds as
   the panel track) computed on the series' REAL history up to the last
   SELECTION origin — pre-introduction days are excluded (an item not yet
@@ -95,20 +97,32 @@ MIN_TRAIN_DAYS = 1096  # >= 3 years of training history per origin
 ORIGIN_SPACING_DAYS = 7
 SEED = 42
 BOOTSTRAP_REPS = 2000
-# Fixed-a-priori LightGBM config (not tuned — the track compares modelling
-# families; tuning belongs to a later phase).
+# Default LightGBM config, used when params.yaml has no ``m5_lgbm`` block
+# (the wave-24 fixed config; wave 25 tuned values live in params.yaml, written
+# by ``cli tune-m5`` and read by ``evaluate-m5`` — see load_m5_lgbm_params).
 LGBM_KWARGS: dict[str, Any] = {
     "n_estimators": 300,
     "learning_rate": 0.05,
     "num_leaves": 63,
     "min_child_samples": 20,
 }
+# Keys a params.yaml ``m5_lgbm`` block may set (anything else is ignored);
+# colsample_bytree defaults to LightGBM's 1.0 when absent.
+LGBM_PARAM_KEYS = (
+    "n_estimators",
+    "learning_rate",
+    "num_leaves",
+    "min_child_samples",
+    "colsample_bytree",
+)
 # TSB smoothing constants — repo convention (intermittent.ALPHA), fixed a priori.
 TSB_ALPHA_D = 0.1
 TSB_ALPHA_P = 0.1
-# Ensemble grid: w in [0, 1] step 0.01 over SELECTION WAPE.
-ENSEMBLE_GRID = np.round(np.arange(0.0, 1.0 + 1e-9, 0.01), 2)
+# Ensemble grid: simplex over the pool members, step 0.05 (wave 25; the
+# wave-24 two-candidate 0.01 grid is retired with the best-two rule).
+ENSEMBLE_GRID_STEP = 0.05
 ENSEMBLE_POOL = ("lgbm", "auto_ets", "auto_ces")
+ENSEMBLE_TOP_K = 3  # best three of the pool by selection WAPE enter the blend
 STATISTICAL_CANDIDATES = ("seasonal_naive", "window_avg_28", "adida", "tsb")
 CANDIDATES = (*STATISTICAL_CANDIDATES, "auto_ets", "auto_ces", "lgbm", "convex_ensemble")
 NAIVE = "seasonal_naive"
@@ -263,6 +277,58 @@ def _statistical_forecasts(
     return out
 
 
+def load_m5_lgbm_params(params_path: Path | str = "params.yaml") -> dict[str, Any]:
+    """The ``m5_lgbm`` block of params.yaml (defaults when absent/incomplete).
+
+    ``cli tune-m5`` writes the tuned block; ``evaluate-m5`` reads it here.
+    Missing keys fall back to :data:`LGBM_KWARGS`, so a params.yaml without
+    the block reproduces the wave-24 fixed config. Unknown keys are ignored.
+    """
+    import yaml  # type: ignore[import-untyped]
+
+    params = dict(LGBM_KWARGS)
+    path = Path(params_path)
+    if path.exists():
+        data = yaml.safe_load(path.read_text()) or {}
+        block = data.get("m5_lgbm") or {}
+        for key in LGBM_PARAM_KEYS:
+            if key in block:
+                params[key] = block[key]
+    return params
+
+
+def _mlforecast_for(model: Any) -> Any:
+    """The mlforecast recursive wrapper for the lgbm candidate (wave-25 set).
+
+    Lags 1/7/14/21/28; lag transforms: rolling means 7/28 (at lag 1) and 7
+    (at lag 7), rolling stds 7/28 (at lag 1) and 7 (at lag 7) — M5-practice
+    volatility features — plus an expanding mean at lag 1; calendar
+    dayofweek/month/ISO-week. The exog price/SNAP/event columns (incl.
+    any_snap, event distances, price momentum/missing) ride on the train /
+    X_df frames. Shared by the track and the tuner so both fit the exact
+    same feature space.
+    """
+    from mlforecast import MLForecast
+    from mlforecast.lag_transforms import ExpandingMean, RollingMean, RollingStd
+
+    return MLForecast(
+        models=[model],
+        freq="D",
+        lags=[1, 7, 14, 21, 28],
+        lag_transforms={
+            1: [
+                RollingMean(7),
+                RollingMean(28, min_samples=1),
+                RollingStd(7, min_samples=2),
+                RollingStd(28, min_samples=2),
+                ExpandingMean(),
+            ],
+            7: [RollingMean(7), RollingStd(7, min_samples=2)],
+        },
+        date_features=["dayofweek", "month", _weekofyear],
+    )
+
+
 def _lgbm_forecast(
     train: pd.DataFrame,
     hist_exog: pd.DataFrame,
@@ -270,27 +336,32 @@ def _lgbm_forecast(
     seed: int,
     n_estimators: int | None = None,
     series_ids: list[str] | None = None,
+    lgbm_params: dict[str, Any] | None = None,
 ) -> np.ndarray:
     """Global LightGBM point forecast at one origin: (n_series, h).
 
-    mlforecast recursive strategy: lags 1/7/14/21/28, rolling means at those
-    lags, calendar dayofweek/month/ISO-week, exog price/SNAP/event codes
-    (history joined on the training frame; future values from the calendar /
+    mlforecast recursive strategy: lags 1/7/14/21/28, rolling means/stds, an
+    expanding mean, calendar dayofweek/month/ISO-week, exog price/SNAP/event
+    codes + any_snap + event distances + price momentum/missing (history
+    joined on the training frame; future values from the calendar /
     forward-filled price). Determinism: fixed seed, n_jobs=1, force_row_wise
     (the repo's byte-identity contract for LightGBM).
+
+    ``lgbm_params`` overrides the booster config (the tune-m5 path passes
+    per-trial params; the track passes the params.yaml ``m5_lgbm`` block);
+    ``None`` uses :data:`LGBM_KWARGS`. ``n_estimators`` (the early-stopping /
+    smoke-test override) wins over either.
 
     mlforecast returns rows sorted by ``unique_id`` (alphabetical) — NOT in
     the caller's series order; pass ``series_ids`` to get the result
     re-indexed to it (the demo-payload refit bug was exactly this mismatch).
     """
     from lightgbm import LGBMRegressor
-    from mlforecast import MLForecast
-    from mlforecast.lag_transforms import RollingMean
 
     train_m = train.merge(hist_exog, on=["unique_id", "ds"], how="left", validate="1:1")
     if train_m.drop(columns=["unique_id", "ds", "y"]).isna().any().any():
         raise ValueError("exogenous merge produced NaNs in the lgbm training frame")
-    kwargs = dict(LGBM_KWARGS)
+    kwargs = dict(lgbm_params or LGBM_KWARGS)
     if n_estimators is not None:
         kwargs["n_estimators"] = n_estimators
     model = LGBMRegressor(
@@ -300,13 +371,7 @@ def _lgbm_forecast(
         force_row_wise=True,
         **kwargs,
     )
-    fc = MLForecast(
-        models=[model],
-        freq="D",
-        lags=[1, 7, 14, 21, 28],
-        lag_transforms={1: [RollingMean(7), RollingMean(28, min_samples=1)], 7: [RollingMean(7)]},
-        date_features=["dayofweek", "month", _weekofyear],
-    )
+    fc = _mlforecast_for(model)
     fc.fit(
         train_m,
         id_col="unique_id",
@@ -427,14 +492,58 @@ def band_scales(scales: np.ndarray) -> np.ndarray:
 def ensemble_weight(pred_a: np.ndarray, pred_b: np.ndarray, y: np.ndarray) -> float:
     """Grid-fit convex weight minimising pooled WAPE of w*A + (1-w)*B.
 
-    The grid is :data:`ENSEMBLE_GRID` (0..1 step 0.01); ties resolve to the
-    smallest w (first argmin) — deterministic. Pure, hand-testable.
+    Retained for the two-candidate case (unit-tested); the track blends
+    :func:`ensemble_weights` over the top-K pool instead.
     """
     best_w, best_err = 0.0, float("inf")
-    for w in ENSEMBLE_GRID:
+    for w in ENSEMBLE_TOP_K_GRID_01:
         err = float(np.sum(np.abs(w * pred_a + (1.0 - w) * pred_b - y)))
         if err < best_err - 1e-12:
             best_err, best_w = err, float(w)
+    return best_w
+
+
+#: the retired wave-24 grid (0..1 step 0.01), kept only for ensemble_weight.
+ENSEMBLE_TOP_K_GRID_01 = np.round(np.arange(0.0, 1.0 + 1e-9, 0.01), 2)
+
+
+def ensemble_weights(preds: list[np.ndarray], y: np.ndarray) -> np.ndarray:
+    """Simplex-grid weights over K candidates minimising pooled Σ|err|.
+
+    The grid steps :data:`ENSEMBLE_GRID_STEP` over the first K-1 weights
+    (the last is ``1 - sum(w)``); ties resolve to the first grid point in
+    lexicographic order — deterministic. ``preds[i]`` is (n, h) for member i;
+    returns a (K,) weight vector summing to 1. Pure, hand-testable.
+    """
+    k = len(preds)
+    if k < 2:
+        raise ValueError("ensemble needs at least two members")
+    grid = np.round(np.arange(0.0, 1.0 + 1e-9, ENSEMBLE_GRID_STEP), 2)
+    best_w: np.ndarray | None = None
+    best_err = float("inf")
+
+    def _walk(depth: int, prefix: list[float]) -> None:
+        nonlocal best_w, best_err
+        if depth == k - 1:
+            w = np.array([*prefix, 1.0 - sum(prefix)])
+            if w[-1] < -1e-9:
+                return
+            w = np.clip(w, 0.0, 1.0)
+            combo = np.zeros_like(preds[0], dtype=float)
+            for wi, pi in zip(w, preds, strict=True):
+                combo += wi * pi
+            err = float(np.sum(np.abs(combo - y)))
+            if err < best_err - 1e-12:
+                best_err, best_w = err, w
+            return
+        for g in grid:
+            if sum(prefix) + g > 1.0 + 1e-9:
+                break
+            _walk(depth + 1, [*prefix, float(g)])
+
+    _walk(0, [])
+    if best_w is None:  # pragma: no cover - the all-zero prefix always fits
+        raise ValueError("no point on the ensemble simplex grid")
     return best_w
 
 
@@ -535,6 +644,50 @@ def _series_train_history(
     }
 
 
+def _ensemble_blend(
+    forecasts: dict[str, dict[int, np.ndarray]],
+    selection: list[int],
+    act_sel: np.ndarray,
+) -> tuple[list[str], np.ndarray, dict[str, float]]:
+    """Fit and apply the convex ensemble: best THREE of :data:`ENSEMBLE_POOL`.
+
+    Selection WAPE ranks the pool; the top :data:`ENSEMBLE_TOP_K` members get
+    :func:`ensemble_weights` fit on the stacked selection predictions (simplex
+    grid step 0.05); the blend is written into ``forecasts['convex_ensemble']``
+    for EVERY origin. Returns (members, weights, selection_wape).
+    """
+    sel_wapes = {c: wape(act_sel, _stack_preds(forecasts, selection, c)) for c in ENSEMBLE_POOL}
+    ranked = sorted(
+        ENSEMBLE_POOL,
+        key=lambda c: (
+            float("inf") if sel_wapes[c] != sel_wapes[c] else sel_wapes[c],
+            c,
+        ),
+    )
+    members = ranked[:ENSEMBLE_TOP_K]
+    ens_preds_sel = [_stack_preds(forecasts, selection, c) for c in members]
+    ens_w = ensemble_weights(ens_preds_sel, act_sel)
+    for o in forecasts[members[0]]:
+        combo = np.zeros_like(forecasts[members[0]][o])
+        for wi, member in zip(ens_w, members, strict=True):
+            combo += wi * forecasts[member][o]
+        forecasts["convex_ensemble"][o] = combo
+    logger.info(
+        "m5 ensemble: %s by selection WAPE %s; weights %s",
+        members,
+        {c: round(v, 4) for c, v in sel_wapes.items()},
+        {m: round(float(w), 2) for m, w in zip(members, ens_w, strict=True)},
+    )
+    return members, ens_w, sel_wapes
+
+
+def _stack_preds(
+    forecasts: dict[str, dict[int, np.ndarray]], subset: list[int], cand: str
+) -> np.ndarray:
+    """(n_cells,) stacked candidate forecast over ``subset`` origins."""
+    return np.concatenate([forecasts[cand][o] for o in subset])
+
+
 def run_m5_track(
     data_dir: Path,
     *,
@@ -586,6 +739,10 @@ def run_m5_track(
     # ---- per-origin forecasts for every candidate ----
     forecasts: dict[str, dict[int, np.ndarray]] = {c: {} for c in CANDIDATES}
     actuals: dict[int, np.ndarray] = {}
+    lgbm_params = load_m5_lgbm_params()
+    if n_estimators is not None:  # smoke-test override wins over params.yaml
+        lgbm_params["n_estimators"] = n_estimators
+    logger.info("m5 lgbm params: %s", {k: lgbm_params[k] for k in lgbm_params})
     for k, o in enumerate(origins):
         odate = pd.Timestamp(dates[o])
         t_o = time.time()
@@ -594,7 +751,7 @@ def run_m5_track(
         preds = _statistical_forecasts(train, series_ids, HORIZON)
         hist_exog, future_exog = split_exogenous(x_enc, series_ids, odate, HORIZON)
         preds["lgbm"] = _lgbm_forecast(
-            train, hist_exog, future_exog, seed, n_estimators, series_ids
+            train, hist_exog, future_exog, seed, series_ids=series_ids, lgbm_params=lgbm_params
         )
         for name, mat in preds.items():
             forecasts[name][o] = mat
@@ -640,30 +797,9 @@ def run_m5_track(
     q80 = np.quantile(np.abs(resid_scaled), 0.8, axis=0)  # per horizon day
     q80 = np.maximum(q80, 1e-9)
 
-    # ---- ensemble: best two of the pool by SELECTION WAPE, grid weight ----
-    sel_wapes = {c: wape(act_sel, _stack(selection, c)[0]) for c in ENSEMBLE_POOL}
-    ranked = sorted(
-        ENSEMBLE_POOL,
-        key=lambda c: (
-            float("inf") if sel_wapes[c] != sel_wapes[c] else sel_wapes[c],
-            c,
-        ),
-    )
-    ens_a, ens_b = ranked[0], ranked[1]
-    pred_a_sel, pred_b_sel = _stack(selection, ens_a)[0], _stack(selection, ens_b)[0]
-    w_ens = ensemble_weight(pred_a_sel, pred_b_sel, act_sel)
-    for o in origins:
-        forecasts["convex_ensemble"][o] = (
-            w_ens * forecasts[ens_a][o] + (1.0 - w_ens) * forecasts[ens_b][o]
-        )
-    logger.info(
-        "m5 ensemble: %s (w=%.2f) + %s (w=%.2f) by selection WAPE %s",
-        ens_a,
-        w_ens,
-        ens_b,
-        1.0 - w_ens,
-        {c: round(v, 4) for c, v in sel_wapes.items()},
-    )
+    # ---- ensemble: best THREE of the pool by SELECTION WAPE, simplex-grid
+    #      weights (selection origins only; fills convex_ensemble per origin)
+    ens_members, ens_w, sel_wapes = _ensemble_blend(forecasts, selection, act_sel)
 
     test_block = _metrics_block(forecasts, actuals, scales, volumes, test, dense_mask, n_series)
     selection_block = _metrics_block(
@@ -784,10 +920,10 @@ def run_m5_track(
         "ensemble": {
             "pool": list(ENSEMBLE_POOL),
             "selection_wape": sel_wapes,
-            "members": [ens_a, ens_b],
-            "weight_on_a": w_ens,
-            "rule": "best two of the pool by selection WAPE; w grid-fit on selection "
-            "origins only (ENSEMBLE_GRID, ties -> smallest w)",
+            "members": ens_members,
+            "weights": [float(w) for w in ens_w],
+            "rule": "best three of the pool by selection WAPE; weights simplex-grid-fit "
+            "on selection origins only (step 0.05, ties -> first grid point)",
         },
         "selection": selection_block,
         "test": test_block,

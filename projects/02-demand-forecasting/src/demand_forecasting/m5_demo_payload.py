@@ -356,11 +356,14 @@ def build_demo_payload(
     state_of = s_all.drop_duplicates("unique_id").set_index("unique_id")["state_id"]
     x_enc = encode_events(x_all, x_all["unique_id"].map(state_of))
 
-    # Committed ensemble rule: members + weight read from the metrics block
+    # Committed ensemble rule: members + weights read from the metrics block
     # (the shipped ensemble curve is verified against this rule in the tests).
     ens_members = tuple(metrics["ensemble"]["members"])
-    if len(ens_members) != 2:
-        raise ValueError(f"committed ensemble must have 2 members, got {ens_members}")
+    if len(ens_members) < 2:
+        raise ValueError(f"committed ensemble must have >= 2 members, got {ens_members}")
+    ens_weights = [float(w) for w in metrics["ensemble"]["weights"]]
+    if len(ens_weights) != len(ens_members):
+        raise ValueError("committed ensemble weights/members length mismatch")
     for member in ens_members:
         if member not in sidecar.columns:
             raise ValueError(f"committed ensemble member {member!r} missing from the sidecar")

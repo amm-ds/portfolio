@@ -585,3 +585,23 @@ def test_m5_win_rate_and_class_quotes_match_committed_metrics() -> None:
     assert m, "class-count quote missing from README"
     assert int(m.group(1).replace(",", "")) == counts["dense"]
     assert int(m.group(2).replace(",", "")) == counts["intermittent"]
+
+
+def test_m5_ensemble_composition_quote_matches_committed_metrics() -> None:
+    """The committed ensemble members + simplex weights quote is live."""
+    metrics = _m5_metrics()
+    section = _m5_section()
+    ens = metrics["ensemble"]
+    members = ens["members"]
+    weights = ens["weights"]
+    assert len(members) == len(weights) == 3, "committed ensemble is a 3-member blend"
+    MULT = "\u00d7"  # multiplication sign, written escaped to keep ruff RUF001 quiet
+    m = re.search(
+        rf"picked\s+([\w_]+)\s*{MULT}\s*([\d.]+)\s*\+\s*([\w_]+)\s*{MULT}\s*([\d.]+)"
+        rf"\s*\+\s*([\w_]+)\s*{MULT}\s*([\d.]+)",
+        section,
+    )
+    assert m, "3-member ensemble composition quote missing from README"
+    for i in range(3):
+        assert m.group(2 * i + 1) == members[i]
+        assert float(m.group(2 * i + 2)) == pytest.approx(weights[i], abs=5e-3)

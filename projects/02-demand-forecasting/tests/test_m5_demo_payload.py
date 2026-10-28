@@ -178,12 +178,16 @@ def test_catalog_window_shapes(tiny_m5_payload) -> None:
 def test_ensemble_curve_uses_committed_rule(tiny_m5_payload) -> None:
     _, _, payload = tiny_m5_payload
     ens = payload["groups"]["ensemble"]
-    a, b = ens["members"]
-    w = ens["weight_on_a"]
+    members = ens["members"]
+    weights = ens["weights"]
+    assert len(members) == len(weights) >= 2
+    assert sum(weights) == pytest.approx(1.0, abs=1e-6)
     for entry in payload["catalog"]:
         for win in entry["origins"].values():
-            blend = zip(win["curves"][a], win["curves"][b], strict=True)
-            expected = [w * x + (1 - w) * y for x, y in blend]
+            expected = [
+                sum(w * win["curves"][m][i] for w, m in zip(weights, members, strict=True))
+                for i in range(len(win["actual"]))
+            ]
             assert win["curves"]["convex_ensemble"] == pytest.approx(expected, abs=2e-4)
 
 
