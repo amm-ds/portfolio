@@ -1,12 +1,32 @@
 import type { ReactNode } from "react";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { CatalogEntry, ForecastWorkbenchPayload, ForecastWindow } from "../types";
-import { C_GRAY, MODELS } from "./chartData";
-import { bandCalibration, wapeAt, weeklyAbsError } from "./kpis";
+import { C_GRAY, C_TEAL, MODELS } from "./chartData";
+import {
+  bandCalibration,
+  bandWidthTrajectory,
+  bucketedAbsError,
+  peakAbsError,
+  wapeAt,
+  weekdayAbsError,
+  weeklyAbsError,
+  weeklyBandCoverage,
+  worstBandMiss,
+} from "./kpis";
 
 const NAIVE = "seasonal_naive";
 const MODEL_COLORS = Object.fromEntries(MODELS.map((m) => [m.key, m.color]));
 const MODEL_LABELS = Object.fromEntries(MODELS.map((m) => [m.key, m.label]));
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const WD_LABELS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+/** Compact "May 24" rendering of a forecast date; falls back to the day slot. */
+function shortDate(dates: string[], day: number): string {
+  const d = dates[day];
+  const parts = d ? d.split("-") : [];
+  if (parts.length !== 3) return `day +${day + 1}`;
+  return `${MONTHS[Number(parts[1]) - 1] ?? parts[1]} ${Number(parts[2])}`;
+}
 
 /** Card with the shared figure-card chrome (viz region + commentary band). */
 function Card({ comment, children }: { comment: ReactNode; children: ReactNode }) {
@@ -161,23 +181,56 @@ export function ErrorCompositionPanel({
 }
 
 /**
- * Band calibration: the coverage-so-far view of the LightGBM split-conformal
- * band at this origin — one square per scored day (teal = actual inside
- * p10/p90, pink = outside), the hit count and the mean band width, all
- * computed from the payload arrays for the selected series and horizon.
+ * Band calibration dashboard: the per-day hit strip (teal = actual inside
+ * p10/p90, pink = outside, hover shows the day, band and actual), the width
+ * trajectory across the horizon (uncertainty grows with lead time), weekly
+ * coverage buckets showing where calibration drifts, the single worst band
+ * violation, and the pooled committed coverage chip. Everything recomputes
+ * client-side from the payload arrays for the selected series and horizon.
  * Collapses to a placeholder when LightGBM is deselected (the churn demo's
  * disabled-state pattern).
  */
-export function BandCalibrationPanel({ window, h }: { window: ForecastWindow; h: number }) {
+export function BandCalibrationPanel({
+  window,
+  h,
+  committedCoverage,
+  forecastDates,
+}: {
+  window: ForecastWindow;
+  h: number;
+  /** Pooled committed 80% coverage across all 600 series (payload, fixed). */
+  committedCoverage: number;
+  /** Forecast dates for the current origin (labels hit-strip days / misses). */
+  forecastDates: string[];
+}) {
   const cal = bandCalibration(window, h);
+  const weekly = weeklyBandCoverage(window, h);
+  const widths = bandWidthTrajectory(window, h);
+  const worst = worstBandMiss(window, h);
+
+  // width-trajectory sparkline: container-measured like the other svg panels
+  const { ref, size } = useMeasuredSize<HTMLDivElement>();
+  const W = size?.w ?? 300;
+  const H = 34;
+  const wMax = Math.max(...widths, 0);
+  const wMin = Math.min(...widths, wMax);
+  const span = Math.max(wMax - wMin, 1e-9);
+  const px = (i: number) => (widths.length > 1 ? 4 + (i / (widths.length - 1)) * (W - 8) : W / 2);
+  const py = (v: number) => 4 + (1 - (v - wMin) / span) * (H - 10);
+  const pts = widths.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`).join(" ");
+
+  const pctFmt = (f: number) => `${Math.round(f * 100)}%`;
+
   return (
     <Card
       comment={
         <>
-          At this origin the committed 80% band catches {cal.hits} of {cal.n} scored days so far
-          {" "}
+          At this origin the committed 80% band catches {cal.hits} of {cal.n} scored days so far{" "}
           {cal.coverage >= 0.8 ? "at or above" : "just under"} its nominal level, averaging{" "}
-          {cal.meanWidth.toFixed(1)} units wide.
+          {cal.meanWidth.toFixed(1)} units wide
+          {weekly.length > 1
+            ? `; weekly coverage runs ${pctFmt(weekly[0])} → ${pctFmt(weekly[weekly.length - 1])} from week 1 to week ${weekly.length}`
+            : `; the single visible week covers ${pctFmt(weekly[0] ?? cal.coverage)}`}
         </>
       }
     >
@@ -186,20 +239,70 @@ export function BandCalibrationPanel({ window, h }: { window: ForecastWindow; h:
           {cal.hits}/{cal.n} days inside
         </span>
         <span className="chip demo-readout">mean width {cal.meanWidth.toFixed(1)}u</span>
+        <span className="chip demo-readout">{(committedCoverage * 100).toFixed(1)}% committed</span>
       </div>
-      <div className="fwb-band-strip" role="img" aria-label="per-day band hit indicator">
-        {Array.from({ length: cal.n }, (_, i) => {
-          const hit = window.actual[i] >= window.band.p10[i] && window.actual[i] <= window.band.p90[i];
-          return (
-            <span
-              key={i}
-              className={`fwb-band-day ${hit ? "hit" : "miss"}`}
-              title={`day +${i + 1}: ${hit ? "inside" : "outside"} [${window.band.p10[i].toFixed(1)}, ${window.band.p90[i].toFixed(
-                1,
-              )}] vs actual ${window.actual[i].toFixed(1)}`}
-            />
-          );
-        })}
+      <div className="fwb-band-dash">
+        <div className="fwb-band-strip" role="img" aria-label="per-day band hit indicator">
+          {Array.from({ length: cal.n }, (_, i) => {
+            const hit = window.actual[i] >= window.band.p10[i] && window.actual[i] <= window.band.p90[i];
+            return (
+              <span
+                key={i}
+                className={`fwb-band-day ${hit ? "hit" : "miss"}`}
+                title={`${shortDate(forecastDates, i)} (day +${i + 1}): ${
+                  hit ? "inside" : "outside"
+                } [${window.band.p10[i].toFixed(1)}, ${window.band.p90[i].toFixed(1)}] vs actual ${window.actual[i].toFixed(1)}`}
+              />
+            );
+          })}
+        </div>
+        <div className="fwb-width-spark">
+          <span className="fwb-mini-label">band width by horizon day (p90 − p10)</span>
+          <div ref={ref} className="fwb-width-spark-viz">
+            <svg
+              width="100%"
+              height={H}
+              viewBox={`0 0 ${W} ${H}`}
+              preserveAspectRatio="none"
+              role="img"
+              aria-label="mean band width by horizon day"
+            >
+              {pts && (
+                <polygon points={`4,${H - 4} ${pts} ${(W - 4).toFixed(1)},${H - 4}`} fill={C_TEAL} opacity={0.12} />
+              )}
+              <polyline
+                points={pts}
+                fill="none"
+                stroke={C_TEAL}
+                strokeWidth={1.5}
+                vectorEffect="non-scaling-stroke"
+              />
+            </svg>
+          </div>
+          <span className="fwb-spark-ends">
+            <span>min {wMin.toFixed(1)}u</span>
+            <span>max {wMax.toFixed(1)}u</span>
+          </span>
+        </div>
+        <div className="fwb-cov-weeks" aria-label="weekly band coverage">
+          {weekly.map((c, w) => (
+            <div
+              key={w}
+              className="fwb-cov-week"
+              title={`week ${w + 1}: ${pctFmt(c)} of days inside the band`}
+            >
+              <span className={`fwb-cov-box ${c >= 0.75 ? "" : "low"}`}>{pctFmt(c)}</span>
+              <span className="fwb-cov-label">wk{w + 1}</span>
+            </div>
+          ))}
+        </div>
+        <p className="fwb-worst-miss">
+          {worst
+            ? `worst miss: ${shortDate(forecastDates, worst.day)} · actual ${worst.actual.toFixed(1)} vs ${
+                worst.side === "over" ? "p90" : "p10"
+              } ${worst.bound.toFixed(1)} (+${worst.amount.toFixed(1)})`
+            : "no misses — every scored day sits inside the band"}
+        </p>
       </div>
     </Card>
   );
@@ -215,10 +318,13 @@ export function BandPlaceholder() {
 }
 
 /**
- * Model verdict: one mini-row per active candidate — name, window WAPE@h,
- * delta vs the seasonal-naive floor — with the best model highlighted. The
- * footer names the honest per-series outcome, including the intermittent
- * case where the naive can win a single window.
+ * Model verdict, comparative: one block per active candidate — dot, name,
+ * window WAPE@h, delta chip, peak-day MAE — plus the row's error *shape* as a
+ * 7-bucket |error| micro-bar profile, a total-|error| proportion bar so the
+ * models' window totals are comparable at a glance, and a Mon..Sun heat-strip
+ * of the primary model versus the seasonal-naive floor (hidden below 7 scored
+ * days). The best model keeps the crown; the footer names the honest
+ * per-series outcome, including the intermittent case where the naive wins.
  */
 export function VerdictPanel({
   entry,
@@ -226,17 +332,30 @@ export function VerdictPanel({
   modelsOn,
   h,
   payload,
+  forecastDates,
 }: {
   entry: CatalogEntry;
   window: ForecastWindow;
   modelsOn: string[];
   h: number;
   payload: ForecastWorkbenchPayload;
+  /** Forecast dates for the current origin (weekday bucketing of |error|). */
+  forecastDates: string[];
 }) {
   const rows = modelsOn
     .filter((m) => window.curves[m])
-    .map((m) => ({ key: m, wape: wapeAt(window.actual, window.curves[m], h) }))
+    .map((m) => ({
+      key: m,
+      wape: wapeAt(window.actual, window.curves[m], h),
+      buckets: bucketedAbsError(window.actual, window.curves[m], h),
+      peak: peakAbsError(window.actual, window.curves[m], h),
+      total: 0,
+    }))
     .sort((a, b) => a.wape - b.wape);
+  // micro-bar heights share one scale across rows so shapes are comparable
+  const bucketMax = Math.max(1e-9, ...rows.flatMap((r) => r.buckets));
+  for (const r of rows) r.total = r.buckets.reduce((s, v) => s + v, 0);
+  const totalMax = Math.max(1e-9, ...rows.map((r) => r.total));
   const naiveWape = wapeAt(window.actual, window.curves[NAIVE], h);
   const bestKey = rows[0]?.key ?? null;
   const naiveWins = bestKey === NAIVE;
@@ -247,6 +366,19 @@ export function VerdictPanel({
       : null;
   const intermWinRate =
     payload.groups.win_rate_vs_naive.convex_ensemble?.intermittent ?? null;
+
+  // weekday heat-strip: the best candidate against the naive floor, only
+  // once a full week of scored days is visible
+  const nVisible = Math.max(0, Math.min(h, window.actual.length));
+  const stripKey = bestKey && bestKey !== NAIVE && window.curves[bestKey] ? bestKey : null;
+  const wdModel = stripKey ? weekdayAbsError(window.actual, window.curves[stripKey], forecastDates, h) : null;
+  const wdNaive = window.curves[NAIVE]
+    ? weekdayAbsError(window.actual, window.curves[NAIVE], forecastDates, h)
+    : null;
+  const showWeekstrip = nVisible >= 7 && wdModel !== null && wdNaive !== null;
+  const wdMax = Math.max(1e-9, ...(wdModel ?? [0]), ...(wdNaive ?? [0]));
+  const wdOpacity = (v: number) => (v > 0 ? 0.25 + 0.75 * (v / wdMax) : 0.08);
+  const wdShare = (v: number) => `${((v / Math.max(wdModel!.reduce((s, x) => s + x, 0), 1e-9)) * 100).toFixed(0)}%`;
 
   let comment: ReactNode;
   if (entry.class === "intermittent") {
@@ -276,26 +408,100 @@ export function VerdictPanel({
   return (
     <Card comment={comment}>
       <div className="fwb-verdict">
+        <div className="fwb-verdict-head">
+          <span>model</span>
+          <span>|err| shape</span>
+          <span>wape</span>
+          <span>Δ vs naive</span>
+          <span>peak</span>
+        </div>
         {rows.map((r) => {
           const delta = (r.wape - naiveWape) * 100;
           const isNaiveRow = r.key === NAIVE;
           return (
             <div
               key={r.key}
-              className={`fwb-verdict-row ${r.key === bestKey ? "best" : ""}`}
+              className={`fwb-verdict-item ${r.key === bestKey ? "best" : ""}`}
             >
-              <span className="fwb-verdict-name">
-                <span className="fwb-dot" style={{ background: MODEL_COLORS[r.key] }} />
-                {MODEL_LABELS[r.key]}
-                {r.key === bestKey && <span className="fwb-verdict-crown">best</span>}
-              </span>
-              <span className="fwb-verdict-wape">{r.wape.toFixed(3)}</span>
-              <span className={`chip demo-readout ${isNaiveRow ? "" : delta < 0 ? "good" : "bad"}`}>
-                {isNaiveRow ? "floor" : `${delta < 0 ? "−" : "+"}${Math.abs(delta).toFixed(1)} pts`}
-              </span>
+              <div className="fwb-verdict-row">
+                <span className="fwb-verdict-name">
+                  <span className="fwb-dot" style={{ background: MODEL_COLORS[r.key] }} />
+                  {MODEL_LABELS[r.key]}
+                  {r.key === bestKey && <span className="fwb-verdict-crown">best</span>}
+                </span>
+                <span
+                  className="fwb-microbars"
+                  aria-hidden="true"
+                  title={`${MODEL_LABELS[r.key]} |error| across 7 horizon buckets`}
+                >
+                  {r.buckets.map((v, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        height: `${(v / bucketMax) * 100}%`,
+                        background: v > 0 ? MODEL_COLORS[r.key] : "transparent",
+                      }}
+                    />
+                  ))}
+                </span>
+                <span className="fwb-verdict-wape">{r.wape.toFixed(3)}</span>
+                <span className={`chip demo-readout ${isNaiveRow ? "" : delta < 0 ? "good" : "bad"}`}>
+                  {isNaiveRow ? "floor" : `${delta < 0 ? "−" : "+"}${Math.abs(delta).toFixed(1)} pts`}
+                </span>
+                <span className="fwb-verdict-peak" title="peak-day MAE (worst single day)">
+                  {r.peak.toFixed(1)}
+                </span>
+              </div>
+              <div
+                className="fwb-verdict-share"
+                role="img"
+                aria-label={`${MODEL_LABELS[r.key]} total |error| for the window, share of the worst model`}
+              >
+                <span
+                  style={{
+                    width: `${(r.total / totalMax) * 100}%`,
+                    background: MODEL_COLORS[r.key],
+                  }}
+                />
+              </div>
             </div>
           );
         })}
+        {showWeekstrip && (
+          <div className="fwb-weekstrip">
+            <span className="fwb-mini-label">
+              weekday |error| — {MODEL_LABELS[stripKey!]} vs naive
+            </span>
+            <div className="fwb-weekstrip-row">
+              <span className="fwb-weekstrip-tag">{MODEL_LABELS[stripKey!]}</span>
+              {WD_LABELS.map((d, i) => (
+                <span
+                  key={d}
+                  className="fwb-wd-cell"
+                  style={{ background: MODEL_COLORS[stripKey!], opacity: wdOpacity(wdModel![i]) }}
+                  title={`${d} · |err| ${wdModel![i].toFixed(1)} (${wdShare(wdModel![i])} of row)`}
+                />
+              ))}
+            </div>
+            <div className="fwb-weekstrip-row">
+              <span className="fwb-weekstrip-tag">naive</span>
+              {WD_LABELS.map((d, i) => (
+                <span
+                  key={d}
+                  className="fwb-wd-cell"
+                  style={{ background: C_GRAY, opacity: wdOpacity(wdNaive![i]) }}
+                  title={`${d} · |err| ${wdNaive![i].toFixed(1)} (${(
+                    (wdNaive![i] / Math.max(wdNaive!.reduce((s, x) => s + x, 0), 1e-9)) *
+                    100
+                  ).toFixed(0)}% of row)`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        {!showWeekstrip && rows.length > 0 && nVisible < 7 && (
+          <p className="fwb-wd-note">weekday breakdown needs at least 7 scored days</p>
+        )}
         {committedChip !== null && (
           <p className="fwb-verdict-committed">
             pooled {committedChip > 0 ? "+" : "−"}

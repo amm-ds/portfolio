@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
 import ForecastWorkbench from "../demos/forecast-workbench/ForecastWorkbench";
+import { VerdictPanel } from "../demos/forecast-workbench/panels";
 import type { ForecastWorkbenchPayload } from "../demos/types";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -381,7 +382,7 @@ describe("ForecastWorkbench", () => {
     expect(verdictCard.textContent).toContain("seasonal naive wins this window");
     expect(verdictCard.textContent).toContain("90.5% of intermittent series");
     // the naive row carries the best highlight
-    const bestRow = verdictCard.querySelector(".fwb-verdict-row.best")!;
+    const bestRow = verdictCard.querySelector(".fwb-verdict-item.best")!;
     expect(bestRow.textContent).toContain("seasonal naive");
   });
 
@@ -394,5 +395,102 @@ describe("ForecastWorkbench", () => {
     await waitFor(() =>
       expect(screen.getByText(/could not load the demo payload/i)).toBeInTheDocument(),
     );
+  });
+
+  it("renders the band card as a calibration dashboard that recomputes at h=7", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    const bandCard = () => screen.getByText("band calibration").closest(".wb-secondary-panel")!;
+    // per-series coverage chip + pooled committed chip side by side
+    expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
+    expect(bandCard().textContent).toMatch(/78\.7% committed/);
+    // width-trajectory sparkline with min/max labels at the ends
+    expect(
+      bandCard().querySelector('svg[aria-label="mean band width by horizon day"]'),
+    ).not.toBeNull();
+    expect(bandCard().textContent).toMatch(/min [\d.]+u/);
+    expect(bandCard().textContent).toMatch(/max [\d.]+u/);
+    // four weekly coverage buckets at the full horizon + worst-miss line
+    expect(bandCard().querySelectorAll(".fwb-cov-week")).toHaveLength(4);
+    expect(bandCard().querySelector(".fwb-worst-miss")!.textContent).toMatch(
+      /worst miss:|no misses/,
+    );
+    const before = bandCard().textContent;
+    // the fixture band (lgbm ± 4) catches every actual -> the honest no-miss line
+    expect(bandCard().querySelector(".fwb-worst-miss")!.textContent).toContain("no misses");
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
+    expect(bandCard().querySelectorAll(".fwb-cov-week")).toHaveLength(1);
+    expect(bandCard().textContent).not.toBe(before);
+  });
+
+  it("renders the comparative verdict card that recomputes at h=7", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    const verdictCard = () => screen.getByText("model verdict").closest(".wb-secondary-panel")!;
+    // default selection: naive + LightGBM -> one block per model
+    const items = verdictCard().querySelectorAll(".fwb-verdict-item");
+    expect(items).toHaveLength(2);
+    for (const item of Array.from(items)) {
+      // 7-bucket |error| micro-bar profile + peak-day MAE + proportion bar
+      expect(item.querySelectorAll(".fwb-microbars span")).toHaveLength(7);
+      expect(item.querySelector(".fwb-verdict-peak")!.textContent).toMatch(/^\d+\.\d$/);
+      expect(item.querySelectorAll(".fwb-verdict-share span")).toHaveLength(1);
+    }
+    // weekday heat-strip: best model vs naive, 7 cells per row
+    const strip = verdictCard().querySelector(".fwb-weekstrip")!;
+    expect(strip.querySelectorAll(".fwb-weekstrip-row")).toHaveLength(2);
+    expect(strip.querySelectorAll(".fwb-wd-cell")).toHaveLength(14);
+    // pooled committed chip only at the full scored horizon
+    expect(verdictCard().textContent).toMatch(/pooled −9\.1 pts committed/);
+    // peak-day MAEs and micro-bar heights change with the horizon toggle
+    const peaksAt = () =>
+      Array.from(verdictCard().querySelectorAll(".fwb-verdict-peak")).map((e) => e.textContent);
+    const peaksBefore = peaksAt();
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(peaksAt()).not.toEqual(peaksBefore);
+    // the full week is still visible at h=7, so the strip stays
+    expect(verdictCard().querySelectorAll(".fwb-wd-cell")).toHaveLength(14);
+    // below the full horizon the committed pooled chip is not quoted
+    expect(verdictCard().textContent).not.toMatch(/pts committed/);
+  });
+
+  it("degrades the weekday strip below 7 visible days", () => {
+    // a window truncated to 5 scored days (horizon toggle cannot reach it)
+    const short = {
+      history: HISTORY,
+      actual: ACTUAL.slice(0, 5),
+      curves: Object.fromEntries(Object.entries(CURVES).map(([k, v]) => [k, v.slice(0, 5)])),
+      band: {
+        p10: CURVES.lgbm.map((v) => Math.max(0, v - 4)).slice(0, 5),
+        p90: CURVES.lgbm.map((v) => v + 4).slice(0, 5),
+      },
+      wape: {},
+      shape: "steady",
+    };
+    const entry = {
+      series_id: "S_1",
+      store: "CA_1",
+      class: "dense" as const,
+      adi: 1.1,
+      cv2: 0.7,
+      origins: { "2016-05-10": short },
+    };
+    render(
+      <VerdictPanel
+        entry={entry}
+        window={short}
+        modelsOn={["seasonal_naive", "lgbm"]}
+        h={28}
+        payload={PAYLOAD}
+        forecastDates={PAYLOAD.origins[0].forecast_dates.slice(0, 5)}
+      />,
+    );
+    expect(document.querySelector(".fwb-weekstrip")).toBeNull();
+    expect(screen.getByText(/weekday breakdown needs at least 7 scored days/)).toBeInTheDocument();
+    // the model rows themselves still render
+    expect(document.querySelectorAll(".fwb-verdict-item")).toHaveLength(2);
   });
 });

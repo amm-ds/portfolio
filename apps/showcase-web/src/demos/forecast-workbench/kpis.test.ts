@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 import type { ForecastWindow } from "../types";
-import { bandAt, bestModelAt, peakDayMae, verdictText, wapeAt } from "./kpis";
+import {
+  bandAt,
+  bandWidthTrajectory,
+  bestModelAt,
+  bucketedAbsError,
+  peakAbsError,
+  peakDayMae,
+  verdictText,
+  wapeAt,
+  weekdayAbsError,
+  weeklyBandCoverage,
+  worstBandMiss,
+} from "./kpis";
 
 // 4-day fixture: actual [10, 20, 10, 40]; naive flat 10; lgbm [12, 18, 14, 30].
 const ACTUAL = [10, 20, 10, 40];
@@ -87,5 +99,90 @@ describe("verdictText", () => {
   it("degrades to a prompt when no model is selected", () => {
     const win = windowOf({});
     expect(verdictText(win, null, 4)).toContain("Select a model");
+  });
+});
+
+describe("bandWidthTrajectory", () => {
+  it("returns the per-day p10→p90 width over the first h days", () => {
+    const win = windowOf({ seasonal_naive: NAIVE });
+    // band [8,16][8,20][8,20][8,36] -> widths 8, 12, 12, 28
+    expect(bandWidthTrajectory(win, 4)).toEqual([8, 12, 12, 28]);
+    expect(bandWidthTrajectory(win, 2)).toEqual([8, 12]);
+  });
+});
+
+describe("weeklyBandCoverage", () => {
+  it("buckets coverage per 7-day week over the scored window", () => {
+    // actual [10,20,10,40] vs band p90 [16,20,20,36]: day 3 (40) misses -> 3/4
+    const win = windowOf({ seasonal_naive: NAIVE });
+    expect(weeklyBandCoverage(win, 4)).toEqual([0.75]);
+    // a 28-day window with band [0, 50] catches everything
+    const wide: ForecastWindow = {
+      ...windowOf({ seasonal_naive: NAIVE }),
+      actual: Array<number>(28).fill(10),
+      band: { p10: Array<number>(28).fill(0), p90: Array<number>(28).fill(50) },
+    };
+    expect(weeklyBandCoverage(wide, 28)).toEqual([1, 1, 1, 1]);
+  });
+  it("reports drift when a later week misses", () => {
+    // days 0..6 inside, day 7 (week 2) far above the band
+    const win: ForecastWindow = {
+      ...windowOf({ seasonal_naive: NAIVE }),
+      actual: [10, 10, 10, 10, 10, 10, 10, 40],
+      band: {
+        p10: Array<number>(8).fill(0),
+        p90: Array<number>(8).fill(20),
+      },
+    };
+    expect(weeklyBandCoverage(win, 8)).toEqual([1, 0]);
+  });
+});
+
+describe("worstBandMiss", () => {
+  it("finds the largest violation and which side it left through", () => {
+    const win = windowOf({ seasonal_naive: NAIVE });
+    // day 3: actual 40 vs p90 36 -> +4 over; nothing is below p10
+    expect(worstBandMiss(win, 4)).toEqual({ day: 3, side: "over", actual: 40, bound: 36, amount: 4 });
+  });
+  it("is null when every scored day is inside the band", () => {
+    const win: ForecastWindow = {
+      ...windowOf({ seasonal_naive: NAIVE }),
+      actual: [10, 10, 10, 10],
+    };
+    expect(worstBandMiss(win, 4)).toBeNull();
+  });
+});
+
+describe("bucketedAbsError", () => {
+  it("groups |err| into equal spans across the visible window", () => {
+    // 4 visible days into 4 buckets -> one day each: 0, |20-10|=10, 0, |40-10|=30
+    expect(bucketedAbsError(ACTUAL, NAIVE, 8, 4)).toEqual([0, 10, 0, 30]);
+  });
+  it("always returns exactly `buckets` entries", () => {
+    expect(bucketedAbsError(ACTUAL, NAIVE, 3, 7)).toHaveLength(7);
+    expect(bucketedAbsError(ACTUAL, NAIVE, 0, 7)).toEqual([0, 0, 0, 0, 0, 0, 0]);
+  });
+});
+
+describe("peakAbsError", () => {
+  it("is the worst single-day |err| over the first h days", () => {
+    // naive: 0, 10, 0, 30
+    expect(peakAbsError(ACTUAL, NAIVE, 4)).toBe(30);
+    expect(peakAbsError(ACTUAL, NAIVE, 2)).toBe(10);
+    expect(peakAbsError(ACTUAL, LGBM, 4)).toBe(10);
+  });
+});
+
+describe("weekdayAbsError", () => {
+  // 2016-05-11 was a Wednesday; 8 consecutive dates cover Wed..Wed.
+  const DATES = Array.from({ length: 8 }, (_, i) => `2016-05-${11 + i}`);
+  it("buckets |err| Mon..Sun by forecast date", () => {
+    // 4 scored days from Wed 2016-05-11: naive errors 0, 10, 0, 30 ->
+    // Wed 0, Thu 10, Fri 0, Sat 30
+    expect(weekdayAbsError(ACTUAL, NAIVE, DATES, 8)).toEqual([0, 0, 0, 10, 0, 30, 0]);
+  });
+  it("skips days beyond the visible window and missing dates", () => {
+    expect(weekdayAbsError(ACTUAL, NAIVE, DATES, 2)).toEqual([0, 0, 0, 10, 0, 0, 0]);
+    expect(weekdayAbsError(ACTUAL, NAIVE, ["bad-date"], 8)).toEqual([0, 0, 0, 0, 0, 0, 0]);
   });
 });
