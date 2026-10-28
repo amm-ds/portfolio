@@ -156,7 +156,8 @@ def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[n
 
 
 def test_report_endpoint_prefers_m5_then_uci_then_reports(
-    tmp_path: Path, monkeypatch  # type: ignore[no-untyped-def]
+    tmp_path: Path,
+    monkeypatch,  # type: ignore[no-untyped-def]
 ) -> None:
     """02's canonical report is reports_m5/report.html; the UCI and synthetic
     tracks stay reachable through the fallback chain."""
