@@ -213,27 +213,29 @@ function Workbench({
                   surprise me
                 </button>
               </div>
-              {stores.map((store) => (
-                <div key={store} className="fwb-store">
-                  <span className="fwb-store-tag">{store}</span>
-                  <div className="demo-presets">
-                    {payload.catalog
-                      .filter((e) => e.store === store)
-                      .map((e) => (
-                        <button
-                          key={e.series_id}
-                          type="button"
-                          className={`chip demo-preset ${e.series_id === entry.series_id ? "fwb-active" : ""}`}
-                          aria-pressed={e.series_id === entry.series_id}
-                          onClick={() => setValue("series", e.series_id)}
-                        >
-                          {shortId(e.series_id)}
-                          <span className={`fwb-badge fwb-badge-${e.class}`}>{e.class}</span>
-                        </button>
-                      ))}
+              <div className="fwb-store-scroll">
+                {stores.map((store) => (
+                  <div key={store} className="fwb-store">
+                    <span className="fwb-store-tag">{store}</span>
+                    <div className="demo-presets">
+                      {payload.catalog
+                        .filter((e) => e.store === store)
+                        .map((e) => (
+                          <button
+                            key={e.series_id}
+                            type="button"
+                            className={`chip demo-preset ${e.series_id === entry.series_id ? "fwb-active" : ""}`}
+                            aria-pressed={e.series_id === entry.series_id}
+                            onClick={() => setValue("series", e.series_id)}
+                          >
+                            {shortId(e.series_id)}
+                            <span className={`fwb-badge fwb-badge-${e.class}`}>{e.class}</span>
+                          </button>
+                        ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
           <div className="wb-control-group wb-group-models">

@@ -194,6 +194,9 @@ afterEach(() => {
 const lgbmPolylines = () =>
   Array.from(document.querySelectorAll('.demo-chart polyline[stroke="#2dd4bf"]'));
 
+const peaksAt = (card: Element) =>
+  Array.from(card.querySelectorAll(".fwb-verdict-peak")).map((e) => e.textContent);
+
 /** Regression guard for the NaN band geometry bug: every rendered polyline
  * and path in the chart must carry only finite coordinates (gaps are split
  * into separate runs, never interpolated as NaN). */
@@ -401,21 +404,27 @@ describe("ForecastWorkbench", () => {
     );
   });
 
-  it("renders the band card compact — chips, hit strip and a tight/loose footer — and recomputes with the horizon", async () => {
+  it("renders the band card compact — coverage gauge, hit strip and a tight/loose footer — and recomputes with the horizon", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
     const bandCard = () => screen.getByText("band calibration").closest(".wb-secondary-panel")!;
-    // per-series coverage chip + mean width + pooled committed chip
+    // coverage gauge: per-series fill against the 80% target + pooled marker
+    const gauge = bandCard().querySelector(".fwb-cov-gauge")!;
+    expect(gauge).not.toBeNull();
+    expect(gauge.querySelector(".fwb-cov-marker.target")).not.toBeNull();
+    expect(gauge.querySelector(".fwb-cov-marker.committed")).not.toBeNull();
+    // the folded labels: day count, target legend, pooled committed, mean width
     expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
     expect(bandCard().textContent).toMatch(/mean width [\d.]+u/);
+    expect(bandCard().textContent).toMatch(/80% target/);
     expect(bandCard().textContent).toMatch(/78\.7% committed/);
     // the per-day hit strip: one square per scored day, hover titles kept
     const days = bandCard().querySelectorAll(".fwb-band-day");
     expect(days).toHaveLength(7);
     expect(days[0].getAttribute("title")).toMatch(/\(day \+1\): inside|outside/);
-    // the over-built extras are gone: no width sparkline, weekly buckets,
-    // worst-miss line
+    // the old plain chips row is gone; the removed extras stay gone too
+    expect(bandCard().querySelector(".figure-card .demo-readouts")).toBeNull();
     expect(bandCard().querySelector('svg[aria-label="mean band width by horizon day"]')).toBeNull();
     expect(bandCard().querySelector(".fwb-cov-week")).toBeNull();
     expect(bandCard().querySelector(".fwb-worst-miss")).toBeNull();
@@ -430,39 +439,73 @@ describe("ForecastWorkbench", () => {
     expect(bandCard().textContent).not.toBe(before);
   });
 
-  it("renders the comparative verdict card — one row per model, committed chip at h=28 — and recomputes with the horizon", async () => {
+  it("renders the verdict card as ordered horizontal WAPE bars — naive grey reference, best crowned, committed chip at h=28 — and recomputes with the horizon", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
     const verdictCard = () => screen.getByText("model verdict").closest(".wb-secondary-panel")!;
-    // default selection: naive + LightGBM -> one clean row per model
+    // default selection: naive + LightGBM -> one bar per model
     const items = verdictCard().querySelectorAll(".fwb-verdict-item");
     expect(items).toHaveLength(2);
     for (const item of Array.from(items)) {
-      // dot + name + mono WAPE + delta chip + right-aligned peak-day MAE
+      // dot + name + tinted bar fill + value label at the bar end + peak-day MAE
       expect(item.querySelector(".fwb-dot")).not.toBeNull();
       expect(item.querySelector(".fwb-verdict-name")!.textContent).toMatch(/seasonal naive|LightGBM/);
-      expect(item.querySelector(".fwb-verdict-wape")!.textContent).toMatch(/^\d+\.\d{3}$/);
-      expect(item.querySelector(".chip")!.textContent).toMatch(/floor|[−+]\d+\.\d pts/);
+      expect(item.querySelector(".fwb-bar-fill")).not.toBeNull();
+      expect(item.querySelector(".fwb-bar-value")!.textContent).toMatch(/^\d+\.\d{3}$/);
       expect(item.querySelector(".fwb-verdict-peak")!.textContent).toMatch(/^\d+\.\d$/);
-      // the removed extras stay gone: no micro-bars, proportion bar, weekstrip
+      // the removed extras stay gone: no delta chips, micro-bars, weekstrip
+      expect(item.querySelector(".chip")).toBeNull();
       expect(item.querySelector(".fwb-microbars")).toBeNull();
       expect(item.querySelector(".fwb-verdict-share")).toBeNull();
     }
     expect(verdictCard().querySelector(".fwb-verdict-head")).toBeNull();
     expect(verdictCard().querySelector(".fwb-weekstrip")).toBeNull();
-    // the best row carries the crown
+    // bars share one scale and are ordered best-first (ascending WAPE)
+    const values = () =>
+      Array.from(verdictCard().querySelectorAll(".fwb-bar-value")).map((e) => Number(e.textContent));
+    const fills = () => Array.from(verdictCard().querySelectorAll<HTMLElement>(".fwb-bar-fill"));
+    const vals = values();
+    expect(vals[0]).toBeLessThanOrEqual(vals[1]);
+    expect(fills()[0].style.width).not.toBe("");
+    // the naive is the grey reference bar
+    const naiveItem = Array.from(items).find((i) =>
+      i.querySelector(".fwb-verdict-name")!.textContent!.includes("seasonal naive"),
+    )!;
+    expect((naiveItem.querySelector(".fwb-bar-fill") as HTMLElement).style.backgroundColor).toBe(
+      "rgb(100, 116, 139)",
+    );
+    // the best bar carries the crown
     expect(verdictCard().querySelector(".fwb-verdict-item.best .fwb-verdict-crown")).not.toBeNull();
     // below the full scored horizon the committed pooled chip is not quoted
     expect(verdictCard().textContent).not.toMatch(/pts committed/);
-    // peak-day MAEs and WAPEs change with the horizon toggle
-    const peaksAt = () =>
-      Array.from(verdictCard().querySelectorAll(".fwb-verdict-peak")).map((e) => e.textContent);
-    const peaksBefore = peaksAt();
+    // bars and peak-day MAEs change with the horizon toggle
+    const before = { vals: values(), peaks: peaksAt(verdictCard()) };
     fireEvent.click(screen.getByRole("button", { name: "28d" }));
-    expect(peaksAt()).not.toEqual(peaksBefore);
+    expect(values()).not.toEqual(before.vals);
+    expect(peaksAt(verdictCard())).not.toEqual(before.peaks);
     // at h=28 the pooled committed chip appears
     expect(verdictCard().textContent).toMatch(/pooled −9\.1 pts committed/);
     expect(verdictCard().textContent).toMatch(/h = 28/);
+  });
+
+  it("pins the series picker controls above a scrollable store list", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    const group = document.querySelector(".wb-group-series")!;
+    // prev/next/surprise stay pinned at the top of the selector…
+    const readouts = group.querySelector(".demo-readouts")!;
+    expect(readouts.textContent).toMatch(/prev/);
+    expect(readouts.textContent).toMatch(/next/);
+    expect(readouts.textContent).toMatch(/surprise me/);
+    // …outside the scroll region that holds the store-grouped chips
+    const scroll = group.querySelector(".fwb-store-scroll")!;
+    expect(scroll).not.toBeNull();
+    expect(scroll.contains(readouts)).toBe(false);
+    expect(scroll.querySelectorAll(".chip.demo-preset")).toHaveLength(4);
+    // the scroll region is capped (max-height) so a long list cannot push
+    // the layout — the rail and chart keep the churn demo's proportions
+    expect(scroll.classList.contains("fwb-store-scroll")).toBe(true);
   });
 });
