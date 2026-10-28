@@ -30,6 +30,8 @@ body {
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
+  /* full-bleed hero grid uses a 100vw pseudo — clip, never scroll, sideways */
+  overflow-x: clip;
 }
 
 /* Mono accent typeface: headings, nav, buttons, metric values, chips, labels. */
@@ -343,9 +345,25 @@ select:focus-visible,
 /* --- Hero (terminal window + faint grid texture) --- */
 
 .hero {
+  position: relative;
   padding: 3rem 0 2rem;
   max-width: 940px;
+  margin-inline: auto;
   text-align: center;
+  isolation: isolate;
+}
+
+/* full-bleed faint grid behind the whole hero block (title → terminal),
+   spanning the viewport until 'where to go' */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  bottom: -2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
   background-image:
     linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
@@ -1419,7 +1437,6 @@ button:disabled {
 }
 
 .footer-inner {
-  max-width: 1100px;
   margin: 0 auto;
   display: flex;
   align-items: baseline;
@@ -1466,7 +1483,6 @@ button:disabled {
 }
 
 .footer-small {
-  max-width: 1100px;
   margin: 0.6rem auto 0;
   font-size: 0.75rem;
   color: var(--muted);
