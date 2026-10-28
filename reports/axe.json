@@ -29,7 +29,7 @@
       "route": "/projects",
       "url": "http://127.0.0.1:4321/projects",
       "httpStatus": 200,
-      "passes": 30,
+      "passes": 32,
       "violationCount": 1,
       "failingViolations": [],
       "violations": [
@@ -53,21 +53,56 @@
       "route": "/projects/05-ml-pipeline-churn",
       "url": "http://127.0.0.1:4321/projects/05-ml-pipeline-churn",
       "httpStatus": 200,
-      "passes": 43,
-      "violationCount": 2,
-      "failingViolations": [],
+      "passes": 29,
+      "violationCount": 3,
+      "failingViolations": [
+        {
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/link-in-text-block?application=playwright",
+          "nodes": [
+            [
+              ".state-box:nth-child(3) > a[target=\"_blank\"][rel=\"noreferrer\"]"
+            ],
+            [
+              ".state-box:nth-child(5) > a[target=\"_blank\"][rel=\"noreferrer\"]"
+            ]
+          ]
+        }
+      ],
       "violations": [
         {
-          "id": "landmark-unique",
-          "impact": "moderate",
-          "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
-          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/landmark-unique?application=playwright",
+          "id": "link-in-text-block",
+          "impact": "serious",
+          "help": "Links must be distinguishable without relying on color",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/link-in-text-block?application=playwright",
           "nodes": [
             {
               "target": [
-                "#sec-background > .story-cols > .story-main > aside"
+                ".state-box:nth-child(3) > a[target=\"_blank\"][rel=\"noreferrer\"]"
               ],
-              "failureSummary": "Fix any of the following:\n  The landmark must have a unique aria-label, aria-labelledby, or title to make landmarks distinguishable"
+              "failureSummary": "Fix any of the following:\n  The link has insufficient color contrast of 1.19:1 with the surrounding text. (Minimum contrast is 3:1, link text: #38bdf8, surrounding text: #94a3b8)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+            },
+            {
+              "target": [
+                ".state-box:nth-child(5) > a[target=\"_blank\"][rel=\"noreferrer\"]"
+              ],
+              "failureSummary": "Fix any of the following:\n  The link has insufficient color contrast of 1.19:1 with the surrounding text. (Minimum contrast is 3:1, link text: #38bdf8, surrounding text: #94a3b8)\n  The link has no styling (such as underline) to distinguish it from the surrounding text"
+            }
+          ]
+        },
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/page-has-heading-one?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "html"
+              ],
+              "failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
             }
           ]
         },
@@ -91,10 +126,24 @@
       "route": "/demos/churn-sandbox",
       "url": "http://127.0.0.1:4321/demos/churn-sandbox",
       "httpStatus": 200,
-      "passes": 42,
-      "violationCount": 1,
+      "passes": 25,
+      "violationCount": 2,
       "failingViolations": [],
       "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/page-has-heading-one?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "html"
+              ],
+              "failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
+            }
+          ]
+        },
         {
           "id": "region",
           "impact": "moderate",
@@ -115,10 +164,24 @@
       "route": "/demos/forecast-workbench",
       "url": "http://127.0.0.1:4321/demos/forecast-workbench",
       "httpStatus": 200,
-      "passes": 36,
-      "violationCount": 1,
+      "passes": 25,
+      "violationCount": 2,
       "failingViolations": [],
       "violations": [
+        {
+          "id": "page-has-heading-one",
+          "impact": "moderate",
+          "help": "Page should contain a level-one heading",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/page-has-heading-one?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "html"
+              ],
+              "failureSummary": "Fix all of the following:\n  Page must have a level-one heading"
+            }
+          ]
+        },
         {
           "id": "region",
           "impact": "moderate",

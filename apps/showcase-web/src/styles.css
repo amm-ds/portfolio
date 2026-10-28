@@ -1144,6 +1144,13 @@ a.figure-caption:hover {
   margin: 1rem 0;
 }
 
+/* links inside prose/state blocks must not rely on color alone (axe
+   link-in-text-block) */
+.state-box a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .state-box.error {
   border-left-color: var(--danger);
   color: var(--danger);
