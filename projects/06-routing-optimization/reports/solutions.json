@@ -1,0 +1,9962 @@
+{
+  "seed": 42,
+  "max_two_opt_iterations": 200,
+  "instances": {
+    "C101": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1464.3377,
+          "n_vehicles": 20,
+          "runtime_s": 0.003269
+        },
+        "clarke_wright": {
+          "total_distance": 1127.4833,
+          "n_vehicles": 15,
+          "runtime_s": 0.008529
+        },
+        "randomized": {
+          "total_distance": 4147.4248,
+          "n_vehicles": 27,
+          "runtime_s": 0.003381
+        },
+        "two_opt": {
+          "total_distance": 1046.5304,
+          "n_vehicles": 15,
+          "runtime_s": 0.023491,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1046.5304,
+          "n_vehicles": 15,
+          "runtime_s": 0.040404,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 1.607194,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 9.670743,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 860.2051,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12
+          ],
+          [
+            5,
+            3,
+            7,
+            8
+          ],
+          [
+            10,
+            11,
+            9,
+            6,
+            4,
+            2,
+            1,
+            75
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            43,
+            42,
+            41,
+            40,
+            44,
+            46,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ]
+        ]
+      }
+    },
+    "C102": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1482.2049,
+          "n_vehicles": 17,
+          "runtime_s": 0.004832
+        },
+        "clarke_wright": {
+          "total_distance": 1118.967,
+          "n_vehicles": 15,
+          "runtime_s": 0.008747
+        },
+        "randomized": {
+          "total_distance": 4162.4299,
+          "n_vehicles": 24,
+          "runtime_s": 0.001878
+        },
+        "two_opt": {
+          "total_distance": 1080.9912,
+          "n_vehicles": 15,
+          "runtime_s": 0.009368,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1071.3472,
+          "n_vehicles": 15,
+          "runtime_s": 0.028506,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 898.0456,
+          "n_vehicles": 12,
+          "runtime_s": 1.658334,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 898.0456,
+          "n_vehicles": 12,
+          "runtime_s": 12.447662,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 898.0456,
+        "n_vehicles": 12,
+        "routes": [
+          [
+            75,
+            1,
+            2,
+            4,
+            3,
+            5
+          ],
+          [
+            8,
+            10,
+            11,
+            9,
+            6,
+            7
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            41,
+            40,
+            44,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49
+          ],
+          [
+            43,
+            42,
+            46,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ],
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ]
+        ]
+      }
+    },
+    "C103": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1464.6304,
+          "n_vehicles": 15,
+          "runtime_s": 0.003091
+        },
+        "clarke_wright": {
+          "total_distance": 1081.2959,
+          "n_vehicles": 14,
+          "runtime_s": 0.072264
+        },
+        "randomized": {
+          "total_distance": 4253.4452,
+          "n_vehicles": 19,
+          "runtime_s": 0.00182
+        },
+        "two_opt": {
+          "total_distance": 1001.9941,
+          "n_vehicles": 14,
+          "runtime_s": 0.029815,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 994.2455,
+          "n_vehicles": 14,
+          "runtime_s": 0.062685,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 924.6978,
+          "n_vehicles": 12,
+          "runtime_s": 1.68415,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 924.6978,
+          "n_vehicles": 12,
+          "runtime_s": 13.063528,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 924.6978,
+        "n_vehicles": 12,
+        "routes": [
+          [
+            75,
+            1,
+            2,
+            4,
+            3,
+            5
+          ],
+          [
+            10,
+            11,
+            12,
+            14,
+            16,
+            19,
+            18
+          ],
+          [
+            8,
+            9,
+            6,
+            7
+          ],
+          [
+            20,
+            25,
+            27,
+            29,
+            24,
+            22,
+            21
+          ],
+          [
+            13,
+            17,
+            15,
+            30,
+            28,
+            26,
+            23
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            43,
+            42,
+            41,
+            40,
+            44,
+            46,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80,
+            63
+          ],
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ]
+        ]
+      }
+    },
+    "C104": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1456.0777,
+          "n_vehicles": 14,
+          "runtime_s": 0.003446
+        },
+        "clarke_wright": {
+          "total_distance": 996.7845,
+          "n_vehicles": 13,
+          "runtime_s": 0.010012
+        },
+        "randomized": {
+          "total_distance": 4168.2091,
+          "n_vehicles": 17,
+          "runtime_s": 0.004426
+        },
+        "two_opt": {
+          "total_distance": 963.2997,
+          "n_vehicles": 13,
+          "runtime_s": 0.009597,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 963.2997,
+          "n_vehicles": 13,
+          "runtime_s": 0.024465,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 868.1095,
+          "n_vehicles": 11,
+          "runtime_s": 1.929414,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 868.1095,
+          "n_vehicles": 11,
+          "runtime_s": 13.835852,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 868.1095,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            5,
+            3,
+            4,
+            2,
+            1,
+            75
+          ],
+          [
+            8,
+            11,
+            9,
+            6,
+            7
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12,
+            10
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            43,
+            42,
+            44,
+            46,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69,
+            40,
+            41
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80,
+            63
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ],
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ]
+        ]
+      }
+    },
+    "C105": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1580.0204,
+          "n_vehicles": 19,
+          "runtime_s": 0.003972
+        },
+        "clarke_wright": {
+          "total_distance": 1122.0507,
+          "n_vehicles": 15,
+          "runtime_s": 0.017235
+        },
+        "randomized": {
+          "total_distance": 4301.0832,
+          "n_vehicles": 25,
+          "runtime_s": 0.001877
+        },
+        "two_opt": {
+          "total_distance": 1047.5414,
+          "n_vehicles": 15,
+          "runtime_s": 0.030589,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1047.5414,
+          "n_vehicles": 15,
+          "runtime_s": 0.04115,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 1.651451,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 13.74464,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 860.2051,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ],
+          [
+            5,
+            3,
+            7,
+            8
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12
+          ],
+          [
+            10,
+            11,
+            9,
+            6,
+            4,
+            2,
+            1,
+            75
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            43,
+            42,
+            41,
+            40,
+            44,
+            46,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ]
+        ]
+      }
+    },
+    "C106": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1469.8905,
+          "n_vehicles": 17,
+          "runtime_s": 0.003416
+        },
+        "clarke_wright": {
+          "total_distance": 1033.861,
+          "n_vehicles": 13,
+          "runtime_s": 0.008456
+        },
+        "randomized": {
+          "total_distance": 4254.4345,
+          "n_vehicles": 24,
+          "runtime_s": 0.00221
+        },
+        "two_opt": {
+          "total_distance": 968.6866,
+          "n_vehicles": 13,
+          "runtime_s": 0.021568,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 968.6866,
+          "n_vehicles": 13,
+          "runtime_s": 0.03976,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 1.548586,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 9.10476,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 860.2051,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ],
+          [
+            5,
+            3,
+            7,
+            8
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12
+          ],
+          [
+            10,
+            11,
+            9,
+            6,
+            4,
+            2,
+            1,
+            75
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            43,
+            42,
+            41,
+            40,
+            44,
+            46,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ]
+        ]
+      }
+    },
+    "C107": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1656.532,
+          "n_vehicles": 17,
+          "runtime_s": 0.00374
+        },
+        "clarke_wright": {
+          "total_distance": 1088.5537,
+          "n_vehicles": 14,
+          "runtime_s": 0.008878
+        },
+        "randomized": {
+          "total_distance": 4346.9476,
+          "n_vehicles": 20,
+          "runtime_s": 0.001753
+        },
+        "two_opt": {
+          "total_distance": 1012.0124,
+          "n_vehicles": 14,
+          "runtime_s": 0.020762,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1012.0124,
+          "n_vehicles": 14,
+          "runtime_s": 0.023987,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 1.726272,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 860.2051,
+          "n_vehicles": 11,
+          "runtime_s": 10.709029,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 860.2051,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12
+          ],
+          [
+            5,
+            3,
+            7,
+            8
+          ],
+          [
+            10,
+            11,
+            9,
+            6,
+            4,
+            2,
+            1,
+            75
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            43,
+            42,
+            41,
+            40,
+            44,
+            46,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ]
+        ]
+      }
+    },
+    "C108": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1521.075,
+          "n_vehicles": 15,
+          "runtime_s": 0.004728
+        },
+        "clarke_wright": {
+          "total_distance": 909.202,
+          "n_vehicles": 11,
+          "runtime_s": 0.007038
+        },
+        "randomized": {
+          "total_distance": 4012.8326,
+          "n_vehicles": 19,
+          "runtime_s": 0.002339
+        },
+        "two_opt": {
+          "total_distance": 861.2358,
+          "n_vehicles": 11,
+          "runtime_s": 0.005328,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 861.2358,
+          "n_vehicles": 11,
+          "runtime_s": 0.034164,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 828.9369,
+          "n_vehicles": 10,
+          "runtime_s": 1.842508,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 828.9369,
+          "n_vehicles": 10,
+          "runtime_s": 10.884936,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 828.9369,
+        "n_vehicles": 10,
+        "routes": [
+          [
+            5,
+            3,
+            7,
+            8,
+            10,
+            11,
+            9,
+            6,
+            4,
+            2,
+            1,
+            75
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            43,
+            42,
+            41,
+            40,
+            44,
+            45,
+            46,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ],
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ]
+        ]
+      }
+    },
+    "C109": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1640.5414,
+          "n_vehicles": 14,
+          "runtime_s": 0.003756
+        },
+        "clarke_wright": {
+          "total_distance": 898.223,
+          "n_vehicles": 11,
+          "runtime_s": 0.008231
+        },
+        "randomized": {
+          "total_distance": 4302.1828,
+          "n_vehicles": 16,
+          "runtime_s": 0.001732
+        },
+        "two_opt": {
+          "total_distance": 879.0968,
+          "n_vehicles": 11,
+          "runtime_s": 0.007198,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 879.0968,
+          "n_vehicles": 11,
+          "runtime_s": 0.028013,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 828.9369,
+          "n_vehicles": 10,
+          "runtime_s": 1.958278,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 828.9369,
+          "n_vehicles": 10,
+          "runtime_s": 12.566316,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 828.9369,
+        "n_vehicles": 10,
+        "routes": [
+          [
+            5,
+            3,
+            7,
+            8,
+            10,
+            11,
+            9,
+            6,
+            4,
+            2,
+            1,
+            75
+          ],
+          [
+            98,
+            96,
+            95,
+            94,
+            92,
+            93,
+            97,
+            100,
+            99
+          ],
+          [
+            13,
+            17,
+            18,
+            19,
+            15,
+            16,
+            14,
+            12
+          ],
+          [
+            20,
+            24,
+            25,
+            27,
+            29,
+            30,
+            28,
+            26,
+            23,
+            22,
+            21
+          ],
+          [
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34
+          ],
+          [
+            81,
+            78,
+            76,
+            71,
+            70,
+            73,
+            77,
+            79,
+            80
+          ],
+          [
+            43,
+            42,
+            41,
+            40,
+            44,
+            46,
+            45,
+            48,
+            51,
+            50,
+            52,
+            49,
+            47
+          ],
+          [
+            57,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59
+          ],
+          [
+            67,
+            65,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            66,
+            69
+          ],
+          [
+            90,
+            87,
+            86,
+            83,
+            82,
+            84,
+            85,
+            88,
+            89,
+            91
+          ]
+        ]
+      }
+    },
+    "C201": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1547.9601,
+          "n_vehicles": 10,
+          "runtime_s": 0.004258
+        },
+        "clarke_wright": {
+          "total_distance": 1029.6628,
+          "n_vehicles": 9,
+          "runtime_s": 0.011008
+        },
+        "randomized": {
+          "total_distance": 4197.3978,
+          "n_vehicles": 15,
+          "runtime_s": 0.001741
+        },
+        "two_opt": {
+          "total_distance": 889.2116,
+          "n_vehicles": 9,
+          "runtime_s": 0.044978,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 889.2116,
+          "n_vehicles": 9,
+          "runtime_s": 0.05007,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 636.267,
+          "n_vehicles": 4,
+          "runtime_s": 4.528178,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 636.267,
+          "n_vehicles": 4,
+          "runtime_s": 11.681766,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 636.267,
+        "n_vehicles": 4,
+        "routes": [
+          [
+            93,
+            5,
+            75,
+            2,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            91,
+            88,
+            84,
+            86,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            96,
+            87,
+            90
+          ],
+          [
+            18,
+            19,
+            16,
+            14,
+            12,
+            15,
+            17,
+            13,
+            9,
+            11,
+            10,
+            8
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            25,
+            21
+          ],
+          [
+            67,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            66,
+            69,
+            68,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            45,
+            51,
+            50,
+            52,
+            47,
+            43,
+            42,
+            41,
+            48
+          ]
+        ]
+      }
+    },
+    "C202": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1308.7073,
+          "n_vehicles": 9,
+          "runtime_s": 0.003541
+        },
+        "clarke_wright": {
+          "total_distance": 824.2928,
+          "n_vehicles": 7,
+          "runtime_s": 0.010533
+        },
+        "randomized": {
+          "total_distance": 4101.8291,
+          "n_vehicles": 12,
+          "runtime_s": 0.003465
+        },
+        "two_opt": {
+          "total_distance": 784.6626,
+          "n_vehicles": 7,
+          "runtime_s": 0.023425,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 784.6626,
+          "n_vehicles": 7,
+          "runtime_s": 0.028987,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 621.6367,
+          "n_vehicles": 4,
+          "runtime_s": 1.710205,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 621.6367,
+          "n_vehicles": 4,
+          "runtime_s": 11.185353,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 621.6367,
+        "n_vehicles": 4,
+        "routes": [
+          [
+            93,
+            5,
+            75,
+            2,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            91,
+            88,
+            84,
+            86,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            96,
+            87,
+            90
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            18,
+            19,
+            16,
+            14,
+            12,
+            15,
+            17,
+            13,
+            25,
+            9,
+            11,
+            10,
+            8,
+            21
+          ],
+          [
+            68,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            45,
+            51,
+            50,
+            52,
+            47,
+            43,
+            42,
+            41,
+            48
+          ],
+          [
+            67,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            66,
+            69
+          ]
+        ]
+      }
+    },
+    "C203": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1366.6654,
+          "n_vehicles": 8,
+          "runtime_s": 0.004287
+        },
+        "clarke_wright": {
+          "total_distance": 805.8357,
+          "n_vehicles": 6,
+          "runtime_s": 0.010616
+        },
+        "randomized": {
+          "total_distance": 4369.8753,
+          "n_vehicles": 12,
+          "runtime_s": 0.002434
+        },
+        "two_opt": {
+          "total_distance": 780.8523,
+          "n_vehicles": 6,
+          "runtime_s": 0.003889,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 780.8523,
+          "n_vehicles": 6,
+          "runtime_s": 0.013095,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 706.354,
+          "n_vehicles": 6,
+          "runtime_s": 4.354545,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 706.354,
+          "n_vehicles": 6,
+          "runtime_s": 11.145134,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 706.354,
+        "n_vehicles": 6,
+        "routes": [
+          [
+            93,
+            5,
+            75,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            2,
+            12,
+            14,
+            16,
+            19,
+            15,
+            18,
+            17,
+            13,
+            9,
+            11,
+            10,
+            8
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            25,
+            21
+          ],
+          [
+            68,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            41
+          ],
+          [
+            47,
+            52,
+            50,
+            51,
+            45,
+            42,
+            43,
+            48
+          ],
+          [
+            67,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            66,
+            69
+          ],
+          [
+            90,
+            91,
+            88,
+            86,
+            84,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            87,
+            96
+          ]
+        ]
+      }
+    },
+    "C204": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1500.1036,
+          "n_vehicles": 9,
+          "runtime_s": 0.002458
+        },
+        "clarke_wright": {
+          "total_distance": 734.2916,
+          "n_vehicles": 4,
+          "runtime_s": 0.006331
+        },
+        "randomized": {
+          "total_distance": 4249.6537,
+          "n_vehicles": 10,
+          "runtime_s": 0.003433
+        },
+        "two_opt": {
+          "total_distance": 681.663,
+          "n_vehicles": 4,
+          "runtime_s": 0.012489,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 668.4562,
+          "n_vehicles": 4,
+          "runtime_s": 0.037259,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 643.5437,
+          "n_vehicles": 4,
+          "runtime_s": 6.428864,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 643.5437,
+          "n_vehicles": 4,
+          "runtime_s": 10.085858,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 643.5437,
+        "n_vehicles": 4,
+        "routes": [
+          [
+            93,
+            2,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            75,
+            5,
+            11,
+            10,
+            8
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            18,
+            19,
+            16,
+            14,
+            12,
+            15,
+            17,
+            13,
+            25,
+            9,
+            21
+          ],
+          [
+            69,
+            66,
+            63,
+            90,
+            91,
+            88,
+            86,
+            84,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            87,
+            96
+          ],
+          [
+            67,
+            62,
+            74,
+            72,
+            61,
+            64,
+            68,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            45,
+            51,
+            50,
+            52,
+            47,
+            42,
+            41,
+            43,
+            48
+          ]
+        ]
+      }
+    },
+    "C205": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1439.5837,
+          "n_vehicles": 9,
+          "runtime_s": 0.00332
+        },
+        "clarke_wright": {
+          "total_distance": 678.5058,
+          "n_vehicles": 4,
+          "runtime_s": 0.009764
+        },
+        "randomized": {
+          "total_distance": 3977.3408,
+          "n_vehicles": 11,
+          "runtime_s": 0.001934
+        },
+        "two_opt": {
+          "total_distance": 630.625,
+          "n_vehicles": 4,
+          "runtime_s": 0.020021,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 630.544,
+          "n_vehicles": 4,
+          "runtime_s": 0.028638,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 620.4184,
+          "n_vehicles": 4,
+          "runtime_s": 5.263072,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 620.4184,
+          "n_vehicles": 4,
+          "runtime_s": 12.280198,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 620.4184,
+        "n_vehicles": 4,
+        "routes": [
+          [
+            93,
+            5,
+            75,
+            2,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            91,
+            88,
+            86,
+            84,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            96,
+            87,
+            90
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            18,
+            19,
+            16,
+            14,
+            12,
+            15,
+            17,
+            13,
+            25,
+            9,
+            11,
+            10,
+            8,
+            21
+          ],
+          [
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            69
+          ],
+          [
+            67,
+            66,
+            68,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            45,
+            51,
+            50,
+            52,
+            47,
+            42,
+            41,
+            43,
+            48
+          ]
+        ]
+      }
+    },
+    "C206": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1393.3752,
+          "n_vehicles": 7,
+          "runtime_s": 0.003246
+        },
+        "clarke_wright": {
+          "total_distance": 719.3955,
+          "n_vehicles": 5,
+          "runtime_s": 0.010599
+        },
+        "randomized": {
+          "total_distance": 4053.5117,
+          "n_vehicles": 10,
+          "runtime_s": 0.002574
+        },
+        "two_opt": {
+          "total_distance": 672.959,
+          "n_vehicles": 5,
+          "runtime_s": 0.012411,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 682.8006,
+          "n_vehicles": 5,
+          "runtime_s": 0.027757,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 621.0136,
+          "n_vehicles": 4,
+          "runtime_s": 5.053101,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 621.0136,
+          "n_vehicles": 4,
+          "runtime_s": 12.405408,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 621.0136,
+        "n_vehicles": 4,
+        "routes": [
+          [
+            93,
+            5,
+            75,
+            2,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            91,
+            88,
+            86,
+            84,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            96,
+            87,
+            90
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            18,
+            19,
+            16,
+            14,
+            12,
+            15,
+            17,
+            13,
+            25,
+            9,
+            11,
+            10,
+            8,
+            21
+          ],
+          [
+            67,
+            66,
+            69,
+            68,
+            41,
+            42,
+            43,
+            48
+          ],
+          [
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            45,
+            51,
+            50,
+            52,
+            47
+          ]
+        ]
+      }
+    },
+    "C207": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1303.3549,
+          "n_vehicles": 7,
+          "runtime_s": 0.003336
+        },
+        "clarke_wright": {
+          "total_distance": 718.4426,
+          "n_vehicles": 5,
+          "runtime_s": 0.013811
+        },
+        "randomized": {
+          "total_distance": 4163.5235,
+          "n_vehicles": 10,
+          "runtime_s": 0.001565
+        },
+        "two_opt": {
+          "total_distance": 660.5476,
+          "n_vehicles": 5,
+          "runtime_s": 0.009242,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 660.3411,
+          "n_vehicles": 5,
+          "runtime_s": 0.028968,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 588.2863,
+          "n_vehicles": 3,
+          "runtime_s": 5.428069,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 588.2863,
+          "n_vehicles": 3,
+          "runtime_s": 12.189838,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 588.2863,
+        "n_vehicles": 3,
+        "routes": [
+          [
+            93,
+            5,
+            75,
+            2,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            91,
+            88,
+            86,
+            84,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            96,
+            87,
+            90
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            17,
+            18,
+            19,
+            16,
+            14,
+            12,
+            15,
+            13,
+            25,
+            9,
+            11,
+            10,
+            8,
+            21
+          ],
+          [
+            67,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            66,
+            69,
+            68,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            45,
+            51,
+            50,
+            52,
+            47,
+            42,
+            41,
+            43,
+            48
+          ]
+        ]
+      }
+    },
+    "C208": {
+      "n_customers": 100,
+      "vehicle_capacity": 700.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1145.2293,
+          "n_vehicles": 6,
+          "runtime_s": 0.004246
+        },
+        "clarke_wright": {
+          "total_distance": 702.2481,
+          "n_vehicles": 4,
+          "runtime_s": 0.008365
+        },
+        "randomized": {
+          "total_distance": 4008.2711,
+          "n_vehicles": 8,
+          "runtime_s": 0.001628
+        },
+        "two_opt": {
+          "total_distance": 636.7616,
+          "n_vehicles": 4,
+          "runtime_s": 0.011475,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 636.7616,
+          "n_vehicles": 4,
+          "runtime_s": 0.034913,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 588.3238,
+          "n_vehicles": 3,
+          "runtime_s": 5.836617,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 588.3238,
+          "n_vehicles": 3,
+          "runtime_s": 11.872992,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 588.3238,
+        "n_vehicles": 3,
+        "routes": [
+          [
+            93,
+            5,
+            75,
+            2,
+            1,
+            99,
+            100,
+            97,
+            92,
+            94,
+            95,
+            98,
+            7,
+            3,
+            4,
+            89,
+            91,
+            88,
+            86,
+            84,
+            83,
+            82,
+            85,
+            76,
+            71,
+            70,
+            73,
+            80,
+            79,
+            81,
+            78,
+            77,
+            96,
+            87,
+            90
+          ],
+          [
+            20,
+            22,
+            24,
+            27,
+            30,
+            29,
+            6,
+            32,
+            33,
+            31,
+            35,
+            37,
+            38,
+            39,
+            36,
+            34,
+            28,
+            26,
+            23,
+            18,
+            17,
+            19,
+            16,
+            14,
+            12,
+            15,
+            13,
+            25,
+            9,
+            11,
+            10,
+            8,
+            21
+          ],
+          [
+            67,
+            63,
+            62,
+            74,
+            72,
+            61,
+            64,
+            66,
+            69,
+            68,
+            65,
+            49,
+            55,
+            54,
+            53,
+            56,
+            58,
+            60,
+            59,
+            57,
+            40,
+            44,
+            46,
+            45,
+            51,
+            50,
+            52,
+            47,
+            42,
+            41,
+            43,
+            48
+          ]
+        ]
+      }
+    },
+    "R101": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2464.0005,
+          "n_vehicles": 33,
+          "runtime_s": 0.003481
+        },
+        "clarke_wright": {
+          "total_distance": 2141.6808,
+          "n_vehicles": 31,
+          "runtime_s": 0.014049
+        },
+        "randomized": {
+          "total_distance": 3544.7403,
+          "n_vehicles": 41,
+          "runtime_s": 0.002404
+        },
+        "two_opt": {
+          "total_distance": 2032.0041,
+          "n_vehicles": 31,
+          "runtime_s": 0.023764,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 2029.1428,
+          "n_vehicles": 31,
+          "runtime_s": 0.064857,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1687.3625,
+          "n_vehicles": 22,
+          "runtime_s": 1.792087,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1687.3625,
+          "n_vehicles": 22,
+          "runtime_s": 10.603284,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1687.3625,
+        "n_vehicles": 22,
+        "routes": [
+          [
+            33,
+            81,
+            50
+          ],
+          [
+            39,
+            23,
+            67,
+            55,
+            25
+          ],
+          [
+            31,
+            88,
+            7
+          ],
+          [
+            62,
+            11,
+            90,
+            10
+          ],
+          [
+            14,
+            44,
+            38,
+            43,
+            13
+          ],
+          [
+            92,
+            42,
+            15,
+            57,
+            58
+          ],
+          [
+            59,
+            5,
+            16,
+            86,
+            91,
+            100
+          ],
+          [
+            30,
+            51,
+            9,
+            20,
+            32,
+            70
+          ],
+          [
+            12,
+            54,
+            24,
+            80
+          ],
+          [
+            40,
+            53,
+            26
+          ],
+          [
+            28,
+            29,
+            79,
+            3,
+            68
+          ],
+          [
+            65,
+            71,
+            66,
+            1
+          ],
+          [
+            63,
+            64,
+            49,
+            48
+          ],
+          [
+            2,
+            87,
+            97
+          ],
+          [
+            82,
+            18,
+            6
+          ],
+          [
+            36,
+            47,
+            19,
+            8,
+            46,
+            17
+          ],
+          [
+            21,
+            73,
+            41,
+            74
+          ],
+          [
+            52,
+            99,
+            94,
+            96
+          ],
+          [
+            45,
+            83,
+            84,
+            60,
+            89
+          ],
+          [
+            72,
+            75,
+            22,
+            56,
+            4
+          ],
+          [
+            27,
+            69,
+            76,
+            78,
+            34,
+            35,
+            77
+          ],
+          [
+            95,
+            98,
+            61,
+            85,
+            37,
+            93
+          ]
+        ]
+      }
+    },
+    "R102": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2201.2774,
+          "n_vehicles": 28,
+          "runtime_s": 0.004349
+        },
+        "clarke_wright": {
+          "total_distance": 1835.8,
+          "n_vehicles": 27,
+          "runtime_s": 0.010583
+        },
+        "randomized": {
+          "total_distance": 3357.3369,
+          "n_vehicles": 34,
+          "runtime_s": 0.002229
+        },
+        "two_opt": {
+          "total_distance": 1798.7025,
+          "n_vehicles": 27,
+          "runtime_s": 0.023398,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1790.9974,
+          "n_vehicles": 27,
+          "runtime_s": 0.045008,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1594.8893,
+          "n_vehicles": 20,
+          "runtime_s": 1.884718,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1594.8893,
+          "n_vehicles": 20,
+          "runtime_s": 15.398975,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1594.8893,
+        "n_vehicles": 20,
+        "routes": [
+          [
+            51,
+            9,
+            35,
+            34
+          ],
+          [
+            36,
+            64,
+            49,
+            7,
+            52
+          ],
+          [
+            48,
+            47,
+            18,
+            6
+          ],
+          [
+            62,
+            88,
+            90,
+            10,
+            31
+          ],
+          [
+            63,
+            11,
+            19
+          ],
+          [
+            14,
+            44,
+            38,
+            43,
+            13
+          ],
+          [
+            42,
+            15,
+            41,
+            75,
+            56,
+            4
+          ],
+          [
+            72,
+            39,
+            23,
+            67,
+            55,
+            25,
+            26
+          ],
+          [
+            21,
+            73,
+            22,
+            74,
+            2,
+            58
+          ],
+          [
+            40,
+            53,
+            54,
+            24,
+            80,
+            12
+          ],
+          [
+            27,
+            69,
+            30,
+            20,
+            32,
+            70
+          ],
+          [
+            28,
+            29,
+            78,
+            68
+          ],
+          [
+            65,
+            71,
+            66,
+            1
+          ],
+          [
+            92,
+            85,
+            91,
+            16,
+            86,
+            17,
+            93,
+            94
+          ],
+          [
+            83,
+            45,
+            8,
+            46,
+            82
+          ],
+          [
+            5,
+            61,
+            84,
+            60,
+            89
+          ],
+          [
+            33,
+            81,
+            50
+          ],
+          [
+            76,
+            79,
+            3,
+            77
+          ],
+          [
+            96,
+            99,
+            59,
+            98,
+            100,
+            37
+          ],
+          [
+            87,
+            57,
+            97,
+            95
+          ]
+        ]
+      }
+    },
+    "R103": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1893.3315,
+          "n_vehicles": 23,
+          "runtime_s": 0.004499
+        },
+        "clarke_wright": {
+          "total_distance": 1565.9205,
+          "n_vehicles": 22,
+          "runtime_s": 0.012458
+        },
+        "randomized": {
+          "total_distance": 3489.0863,
+          "n_vehicles": 28,
+          "runtime_s": 0.003275
+        },
+        "two_opt": {
+          "total_distance": 1498.1272,
+          "n_vehicles": 22,
+          "runtime_s": 0.039117,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1516.3282,
+          "n_vehicles": 22,
+          "runtime_s": 0.051354,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1325.4983,
+          "n_vehicles": 17,
+          "runtime_s": 2.087316,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1325.4983,
+          "n_vehicles": 17,
+          "runtime_s": 18.232302,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1325.4983,
+        "n_vehicles": 17,
+        "routes": [
+          [
+            1,
+            30,
+            51,
+            9,
+            81,
+            77,
+            28
+          ],
+          [
+            42,
+            43,
+            15,
+            57,
+            87,
+            13
+          ],
+          [
+            27,
+            69,
+            88,
+            32,
+            66,
+            20,
+            70
+          ],
+          [
+            92,
+            91,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            85,
+            98,
+            97
+          ],
+          [
+            52,
+            7,
+            19,
+            64,
+            49,
+            47,
+            48,
+            82
+          ],
+          [
+            62,
+            11,
+            63,
+            90,
+            10,
+            31
+          ],
+          [
+            76,
+            79,
+            3,
+            68,
+            80,
+            12
+          ],
+          [
+            21,
+            72,
+            75,
+            41,
+            2,
+            58
+          ],
+          [
+            39,
+            23,
+            67,
+            56,
+            4,
+            26
+          ],
+          [
+            50,
+            33,
+            78,
+            24,
+            55,
+            25,
+            54
+          ],
+          [
+            71,
+            65,
+            35,
+            34,
+            29
+          ],
+          [
+            36,
+            46,
+            8,
+            18
+          ],
+          [
+            6,
+            59,
+            37,
+            100,
+            95
+          ],
+          [
+            83,
+            45,
+            84,
+            17,
+            5,
+            60,
+            89
+          ],
+          [
+            22,
+            74,
+            73
+          ],
+          [
+            40,
+            53
+          ],
+          [
+            96,
+            99,
+            93,
+            94
+          ]
+        ]
+      }
+    },
+    "R104": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1515.2545,
+          "n_vehicles": 17,
+          "runtime_s": 0.003893
+        },
+        "clarke_wright": {
+          "total_distance": 1239.0883,
+          "n_vehicles": 16,
+          "runtime_s": 0.01072
+        },
+        "randomized": {
+          "total_distance": 3292.936,
+          "n_vehicles": 24,
+          "runtime_s": 0.002122
+        },
+        "two_opt": {
+          "total_distance": 1209.1593,
+          "n_vehicles": 16,
+          "runtime_s": 0.012022,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1203.8216,
+          "n_vehicles": 16,
+          "runtime_s": 0.029813,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1060.9348,
+          "n_vehicles": 13,
+          "runtime_s": 2.205825,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1060.9348,
+          "n_vehicles": 13,
+          "runtime_s": 17.777159,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1060.9348,
+        "n_vehicles": 13,
+        "routes": [
+          [
+            69,
+            1,
+            51,
+            9,
+            81,
+            33,
+            3,
+            77,
+            28
+          ],
+          [
+            88,
+            62,
+            11,
+            63,
+            90,
+            19,
+            47,
+            48,
+            7,
+            52
+          ],
+          [
+            18,
+            8,
+            82
+          ],
+          [
+            42,
+            43,
+            15,
+            57,
+            2,
+            41,
+            22,
+            74,
+            72,
+            73,
+            40,
+            58
+          ],
+          [
+            21,
+            75,
+            56,
+            23,
+            67,
+            39,
+            55,
+            4,
+            25,
+            54
+          ],
+          [
+            50,
+            78,
+            34,
+            35,
+            71,
+            65,
+            66,
+            20,
+            30,
+            70,
+            27
+          ],
+          [
+            76,
+            79,
+            29,
+            24,
+            68,
+            80,
+            12,
+            26
+          ],
+          [
+            53
+          ],
+          [
+            83,
+            45,
+            46,
+            36,
+            49,
+            64,
+            32,
+            10,
+            31
+          ],
+          [
+            6,
+            99,
+            59,
+            98,
+            100,
+            37
+          ],
+          [
+            5,
+            17,
+            84,
+            60,
+            89
+          ],
+          [
+            92,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            91,
+            85,
+            93,
+            96
+          ],
+          [
+            94,
+            95,
+            97,
+            87,
+            13
+          ]
+        ]
+      }
+    },
+    "R105": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2197.7101,
+          "n_vehicles": 26,
+          "runtime_s": 0.003715
+        },
+        "clarke_wright": {
+          "total_distance": 1650.68,
+          "n_vehicles": 21,
+          "runtime_s": 0.013109
+        },
+        "randomized": {
+          "total_distance": 3210.8414,
+          "n_vehicles": 32,
+          "runtime_s": 0.003031
+        },
+        "two_opt": {
+          "total_distance": 1598.7508,
+          "n_vehicles": 21,
+          "runtime_s": 0.024352,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1597.3613,
+          "n_vehicles": 21,
+          "runtime_s": 0.053895,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1457.2429,
+          "n_vehicles": 18,
+          "runtime_s": 1.827014,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1457.2429,
+          "n_vehicles": 18,
+          "runtime_s": 12.825206,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1457.2429,
+        "n_vehicles": 18,
+        "routes": [
+          [
+            63,
+            64,
+            11,
+            90,
+            32,
+            1
+          ],
+          [
+            53
+          ],
+          [
+            72,
+            39,
+            23,
+            67,
+            55,
+            25
+          ],
+          [
+            87,
+            94,
+            6
+          ],
+          [
+            2,
+            15,
+            57,
+            43,
+            97,
+            13
+          ],
+          [
+            42,
+            14,
+            44,
+            38,
+            86,
+            17,
+            60,
+            89
+          ],
+          [
+            83,
+            82,
+            7,
+            88
+          ],
+          [
+            21,
+            75,
+            41,
+            22,
+            74,
+            58
+          ],
+          [
+            28,
+            76,
+            81,
+            78,
+            34,
+            68,
+            24,
+            80
+          ],
+          [
+            40,
+            73,
+            56,
+            4,
+            54
+          ],
+          [
+            59,
+            5,
+            45,
+            8,
+            84
+          ],
+          [
+            27,
+            69,
+            30,
+            51,
+            9,
+            50
+          ],
+          [
+            12,
+            29,
+            79,
+            3,
+            26
+          ],
+          [
+            31,
+            62,
+            10,
+            70
+          ],
+          [
+            33,
+            65,
+            71,
+            20,
+            66,
+            35,
+            77
+          ],
+          [
+            47,
+            36,
+            19,
+            49,
+            46,
+            48
+          ],
+          [
+            95,
+            92,
+            98,
+            16,
+            61,
+            85,
+            37,
+            100,
+            91,
+            93
+          ],
+          [
+            52,
+            18,
+            99,
+            96
+          ]
+        ]
+      }
+    },
+    "R106": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1797.8277,
+          "n_vehicles": 20,
+          "runtime_s": 0.007553
+        },
+        "clarke_wright": {
+          "total_distance": 1497.5936,
+          "n_vehicles": 20,
+          "runtime_s": 0.011734
+        },
+        "randomized": {
+          "total_distance": 3147.963,
+          "n_vehicles": 28,
+          "runtime_s": 0.004221
+        },
+        "two_opt": {
+          "total_distance": 1483.3503,
+          "n_vehicles": 20,
+          "runtime_s": 0.020869,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1484.2357,
+          "n_vehicles": 20,
+          "runtime_s": 0.02403,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1318.8271,
+          "n_vehicles": 16,
+          "runtime_s": 2.009729,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1318.8271,
+          "n_vehicles": 16,
+          "runtime_s": 16.213981,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1318.8271,
+        "n_vehicles": 16,
+        "routes": [
+          [
+            62,
+            88,
+            30,
+            20,
+            66,
+            32,
+            70
+          ],
+          [
+            2,
+            15,
+            43,
+            100,
+            37,
+            95
+          ],
+          [
+            42,
+            14,
+            44,
+            38,
+            86,
+            17,
+            60,
+            89
+          ],
+          [
+            96,
+            99,
+            6
+          ],
+          [
+            50,
+            33,
+            81,
+            51
+          ],
+          [
+            57,
+            87,
+            97,
+            13
+          ],
+          [
+            72,
+            75,
+            39,
+            23,
+            67,
+            56,
+            55,
+            25,
+            26
+          ],
+          [
+            21,
+            73,
+            41,
+            22,
+            74,
+            4
+          ],
+          [
+            27,
+            69,
+            76
+          ],
+          [
+            28,
+            12,
+            29,
+            78,
+            79,
+            68,
+            54,
+            24,
+            80
+          ],
+          [
+            31,
+            63,
+            11,
+            64,
+            90,
+            10
+          ],
+          [
+            1,
+            65,
+            71,
+            9,
+            35,
+            34,
+            3,
+            77
+          ],
+          [
+            53,
+            40,
+            58
+          ],
+          [
+            48,
+            47,
+            36,
+            19,
+            49,
+            46,
+            82,
+            7,
+            52
+          ],
+          [
+            92,
+            98,
+            85,
+            91,
+            16,
+            61,
+            84,
+            5,
+            93,
+            59,
+            94
+          ],
+          [
+            83,
+            45,
+            8,
+            18
+          ]
+        ]
+      }
+    },
+    "R107": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1678.8358,
+          "n_vehicles": 18,
+          "runtime_s": 0.003468
+        },
+        "clarke_wright": {
+          "total_distance": 1350.1265,
+          "n_vehicles": 17,
+          "runtime_s": 0.009608
+        },
+        "randomized": {
+          "total_distance": 3259.7785,
+          "n_vehicles": 24,
+          "runtime_s": 0.002068
+        },
+        "two_opt": {
+          "total_distance": 1315.1734,
+          "n_vehicles": 17,
+          "runtime_s": 0.00828,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1315.1734,
+          "n_vehicles": 17,
+          "runtime_s": 0.037043,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1170.619,
+          "n_vehicles": 14,
+          "runtime_s": 2.057894,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1170.619,
+          "n_vehicles": 14,
+          "runtime_s": 16.289303,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1170.619,
+        "n_vehicles": 14,
+        "routes": [
+          [
+            27,
+            69,
+            30,
+            88,
+            10,
+            31
+          ],
+          [
+            94,
+            59,
+            85,
+            91,
+            44,
+            61,
+            84,
+            17,
+            5,
+            89
+          ],
+          [
+            82,
+            46,
+            36,
+            49,
+            19,
+            47,
+            48,
+            7,
+            52
+          ],
+          [
+            60,
+            83,
+            45,
+            8,
+            18
+          ],
+          [
+            21,
+            72,
+            39,
+            23,
+            67,
+            55,
+            4,
+            25,
+            54
+          ],
+          [
+            76,
+            79,
+            3,
+            77,
+            28
+          ],
+          [
+            51,
+            71,
+            65,
+            66,
+            35,
+            34,
+            29
+          ],
+          [
+            62,
+            11,
+            64,
+            63,
+            90,
+            32,
+            20,
+            70,
+            1
+          ],
+          [
+            50,
+            33,
+            81,
+            9,
+            78,
+            24,
+            68,
+            80,
+            12,
+            26
+          ],
+          [
+            53,
+            40
+          ],
+          [
+            2,
+            41,
+            22,
+            75,
+            56,
+            74,
+            73,
+            58
+          ],
+          [
+            95,
+            92,
+            37,
+            16,
+            86,
+            38,
+            14,
+            100,
+            98,
+            93
+          ],
+          [
+            96,
+            99,
+            6
+          ],
+          [
+            97,
+            42,
+            43,
+            15,
+            57,
+            87,
+            13
+          ]
+        ]
+      }
+    },
+    "R108": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1526.4912,
+          "n_vehicles": 16,
+          "runtime_s": 0.003462
+        },
+        "clarke_wright": {
+          "total_distance": 1141.7516,
+          "n_vehicles": 14,
+          "runtime_s": 0.007951
+        },
+        "randomized": {
+          "total_distance": 3444.1884,
+          "n_vehicles": 24,
+          "runtime_s": 0.002678
+        },
+        "two_opt": {
+          "total_distance": 1086.9221,
+          "n_vehicles": 14,
+          "runtime_s": 0.011694,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1087.0583,
+          "n_vehicles": 14,
+          "runtime_s": 0.032337,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1012.2835,
+          "n_vehicles": 12,
+          "runtime_s": 1.278174,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1012.2835,
+          "n_vehicles": 12,
+          "runtime_s": 14.760699,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1012.2835,
+        "n_vehicles": 12,
+        "routes": [
+          [
+            76,
+            79,
+            3,
+            77,
+            28
+          ],
+          [
+            2,
+            57,
+            15,
+            43,
+            42,
+            87,
+            13
+          ],
+          [
+            93,
+            85,
+            91,
+            44,
+            14,
+            38,
+            86,
+            16,
+            61,
+            96,
+            6
+          ],
+          [
+            18,
+            83,
+            8,
+            45,
+            84,
+            17,
+            5,
+            60,
+            89
+          ],
+          [
+            12,
+            80,
+            68,
+            29,
+            24,
+            55,
+            25,
+            54
+          ],
+          [
+            94,
+            95,
+            92,
+            59,
+            99,
+            98,
+            100,
+            37,
+            97
+          ],
+          [
+            53,
+            21,
+            72,
+            74,
+            22,
+            41,
+            58
+          ],
+          [
+            40,
+            73,
+            75,
+            56,
+            23,
+            67,
+            39,
+            4,
+            26
+          ],
+          [
+            78,
+            34,
+            35,
+            71,
+            65,
+            66,
+            20,
+            30,
+            70,
+            27
+          ],
+          [
+            69,
+            1,
+            51,
+            9,
+            81,
+            33,
+            50
+          ],
+          [
+            88,
+            62,
+            11,
+            19,
+            47,
+            48,
+            7,
+            52
+          ],
+          [
+            82,
+            46,
+            36,
+            49,
+            64,
+            63,
+            90,
+            32,
+            10,
+            31
+          ]
+        ]
+      }
+    },
+    "R109": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1751.1575,
+          "n_vehicles": 18,
+          "runtime_s": 0.004953
+        },
+        "clarke_wright": {
+          "total_distance": 1352.5825,
+          "n_vehicles": 17,
+          "runtime_s": 0.008086
+        },
+        "randomized": {
+          "total_distance": 2774.6246,
+          "n_vehicles": 25,
+          "runtime_s": 0.001397
+        },
+        "two_opt": {
+          "total_distance": 1330.321,
+          "n_vehicles": 17,
+          "runtime_s": 0.009631,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1330.321,
+          "n_vehicles": 17,
+          "runtime_s": 0.010492,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1213.7108,
+          "n_vehicles": 14,
+          "runtime_s": 0.803867,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1213.7108,
+          "n_vehicles": 14,
+          "runtime_s": 12.195298,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1213.7108,
+        "n_vehicles": 14,
+        "routes": [
+          [
+            83,
+            5,
+            61,
+            85,
+            98,
+            87,
+            94
+          ],
+          [
+            18,
+            7,
+            88,
+            10,
+            70
+          ],
+          [
+            2,
+            57,
+            15,
+            43,
+            37,
+            97,
+            13
+          ],
+          [
+            42,
+            14,
+            38,
+            44,
+            16,
+            86,
+            91,
+            100,
+            93
+          ],
+          [
+            11,
+            64,
+            63,
+            90,
+            32,
+            20,
+            66,
+            1
+          ],
+          [
+            21,
+            73,
+            72,
+            75,
+            41,
+            22,
+            74,
+            58
+          ],
+          [
+            39,
+            67,
+            23,
+            56,
+            25,
+            55,
+            54,
+            4
+          ],
+          [
+            53,
+            40,
+            26
+          ],
+          [
+            28,
+            12,
+            76,
+            29,
+            78,
+            79,
+            3,
+            77,
+            68
+          ],
+          [
+            27,
+            69,
+            30,
+            51,
+            9,
+            81,
+            50
+          ],
+          [
+            31,
+            62,
+            19,
+            47,
+            36,
+            49,
+            46,
+            48
+          ],
+          [
+            33,
+            71,
+            65,
+            35,
+            34,
+            24,
+            80
+          ],
+          [
+            52,
+            82,
+            8,
+            45,
+            84,
+            17,
+            60,
+            89
+          ],
+          [
+            95,
+            92,
+            59,
+            99,
+            96,
+            6
+          ]
+        ]
+      }
+    },
+    "R110": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1714.0772,
+          "n_vehicles": 18,
+          "runtime_s": 0.005027
+        },
+        "clarke_wright": {
+          "total_distance": 1193.3959,
+          "n_vehicles": 14,
+          "runtime_s": 0.011031
+        },
+        "randomized": {
+          "total_distance": 3285.0229,
+          "n_vehicles": 25,
+          "runtime_s": 0.00415
+        },
+        "two_opt": {
+          "total_distance": 1179.1197,
+          "n_vehicles": 14,
+          "runtime_s": 0.00753,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1179.1197,
+          "n_vehicles": 14,
+          "runtime_s": 0.027012,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1156.2277,
+          "n_vehicles": 14,
+          "runtime_s": 2.148156,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1156.2277,
+          "n_vehicles": 14,
+          "runtime_s": 16.861668,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1156.2277,
+        "n_vehicles": 14,
+        "routes": [
+          [
+            29,
+            35,
+            71,
+            65,
+            66,
+            20,
+            1
+          ],
+          [
+            21,
+            72,
+            75,
+            56,
+            23,
+            67,
+            39,
+            25,
+            55,
+            4
+          ],
+          [
+            99,
+            5,
+            83,
+            45,
+            8,
+            46,
+            48
+          ],
+          [
+            52,
+            7,
+            18
+          ],
+          [
+            82,
+            47,
+            36,
+            49,
+            64,
+            11,
+            62
+          ],
+          [
+            2,
+            57,
+            15,
+            43,
+            42,
+            13
+          ],
+          [
+            53,
+            40,
+            73,
+            74,
+            22,
+            41,
+            58
+          ],
+          [
+            27,
+            69,
+            70,
+            30,
+            51,
+            9,
+            34,
+            24,
+            54,
+            80,
+            68
+          ],
+          [
+            12,
+            26
+          ],
+          [
+            31,
+            88,
+            19,
+            63,
+            90,
+            32,
+            10
+          ],
+          [
+            94,
+            87,
+            97,
+            96,
+            6
+          ],
+          [
+            59,
+            93,
+            98,
+            85,
+            61,
+            16,
+            91,
+            100,
+            37,
+            92
+          ],
+          [
+            95,
+            14,
+            44,
+            38,
+            86,
+            17,
+            84,
+            60,
+            89
+          ],
+          [
+            28,
+            76,
+            79,
+            78,
+            81,
+            33,
+            3,
+            77,
+            50
+          ]
+        ]
+      }
+    },
+    "R111": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1800.4296,
+          "n_vehicles": 18,
+          "runtime_s": 0.004621
+        },
+        "clarke_wright": {
+          "total_distance": 1249.3019,
+          "n_vehicles": 15,
+          "runtime_s": 0.008624
+        },
+        "randomized": {
+          "total_distance": 3389.8661,
+          "n_vehicles": 24,
+          "runtime_s": 0.001395
+        },
+        "two_opt": {
+          "total_distance": 1214.8968,
+          "n_vehicles": 15,
+          "runtime_s": 0.005299,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1214.8968,
+          "n_vehicles": 15,
+          "runtime_s": 0.034203,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1121.8358,
+          "n_vehicles": 13,
+          "runtime_s": 2.546826,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1121.8358,
+          "n_vehicles": 13,
+          "runtime_s": 17.095951,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1121.8358,
+        "n_vehicles": 13,
+        "routes": [
+          [
+            52,
+            7,
+            62,
+            11,
+            64,
+            63,
+            90,
+            32,
+            20,
+            1
+          ],
+          [
+            6,
+            99,
+            61,
+            85,
+            93,
+            96
+          ],
+          [
+            18,
+            8,
+            84,
+            17,
+            5,
+            60,
+            89
+          ],
+          [
+            28,
+            12,
+            76,
+            79,
+            3,
+            77
+          ],
+          [
+            2,
+            57,
+            15,
+            43,
+            41,
+            22,
+            74,
+            4,
+            26
+          ],
+          [
+            27,
+            69,
+            30,
+            51,
+            9,
+            78,
+            29,
+            24,
+            68,
+            80
+          ],
+          [
+            31,
+            88,
+            10,
+            70
+          ],
+          [
+            33,
+            81,
+            65,
+            66,
+            71,
+            35,
+            34,
+            50
+          ],
+          [
+            92,
+            42,
+            14,
+            44,
+            38,
+            86,
+            16,
+            91,
+            100,
+            37,
+            98,
+            59
+          ],
+          [
+            53,
+            40,
+            73,
+            58
+          ],
+          [
+            83,
+            45,
+            46,
+            47,
+            36,
+            49,
+            19,
+            48,
+            82
+          ],
+          [
+            21,
+            72,
+            75,
+            23,
+            67,
+            39,
+            56,
+            55,
+            25,
+            54
+          ],
+          [
+            94,
+            95,
+            97,
+            87,
+            13
+          ]
+        ]
+      }
+    },
+    "R112": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1422.7791,
+          "n_vehicles": 13,
+          "runtime_s": 0.003655
+        },
+        "clarke_wright": {
+          "total_distance": 1043.9086,
+          "n_vehicles": 12,
+          "runtime_s": 0.01129
+        },
+        "randomized": {
+          "total_distance": 3316.8071,
+          "n_vehicles": 22,
+          "runtime_s": 0.002469
+        },
+        "two_opt": {
+          "total_distance": 1030.7765,
+          "n_vehicles": 12,
+          "runtime_s": 0.005285,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1030.7765,
+          "n_vehicles": 12,
+          "runtime_s": 0.01643,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1003.1855,
+          "n_vehicles": 11,
+          "runtime_s": 2.497306,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1003.1855,
+          "n_vehicles": 11,
+          "runtime_s": 17.35596,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1003.1855,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            21,
+            72,
+            75,
+            56,
+            23,
+            67,
+            39,
+            25,
+            55,
+            4
+          ],
+          [
+            47,
+            36,
+            49,
+            64,
+            11,
+            63,
+            90,
+            32,
+            70
+          ],
+          [
+            12,
+            80,
+            68,
+            29,
+            24,
+            54,
+            26
+          ],
+          [
+            6,
+            94,
+            99,
+            59,
+            98,
+            91,
+            44,
+            100,
+            37,
+            97
+          ],
+          [
+            53,
+            40,
+            73,
+            74,
+            22,
+            41,
+            58
+          ],
+          [
+            27,
+            69,
+            30,
+            51,
+            9,
+            81,
+            33,
+            3,
+            77,
+            50
+          ],
+          [
+            28,
+            76,
+            79,
+            78,
+            34,
+            35,
+            71,
+            65,
+            66,
+            20,
+            1
+          ],
+          [
+            95,
+            92,
+            14,
+            38,
+            86,
+            16,
+            61,
+            85,
+            93,
+            96
+          ],
+          [
+            52,
+            31,
+            88,
+            7,
+            18,
+            82,
+            48,
+            19,
+            62,
+            10
+          ],
+          [
+            5,
+            84,
+            17,
+            45,
+            46,
+            8,
+            83,
+            60,
+            89
+          ],
+          [
+            2,
+            57,
+            15,
+            43,
+            42,
+            87,
+            13
+          ]
+        ]
+      }
+    },
+    "R201": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1856.9122,
+          "n_vehicles": 13,
+          "runtime_s": 0.002722
+        },
+        "clarke_wright": {
+          "total_distance": 1401.2702,
+          "n_vehicles": 15,
+          "runtime_s": 0.013369
+        },
+        "randomized": {
+          "total_distance": 3524.7372,
+          "n_vehicles": 14,
+          "runtime_s": 0.001772
+        },
+        "two_opt": {
+          "total_distance": 1329.5266,
+          "n_vehicles": 15,
+          "runtime_s": 0.029155,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1339.2194,
+          "n_vehicles": 15,
+          "runtime_s": 0.052658,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1296.9195,
+          "n_vehicles": 14,
+          "runtime_s": 2.222978,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1296.9195,
+          "n_vehicles": 14,
+          "runtime_s": 10.049281,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1296.9195,
+        "n_vehicles": 14,
+        "routes": [
+          [
+            31,
+            63,
+            90,
+            32,
+            70,
+            1
+          ],
+          [
+            5,
+            83,
+            45,
+            8,
+            18
+          ],
+          [
+            82,
+            47,
+            36,
+            49,
+            46,
+            48
+          ],
+          [
+            21,
+            73,
+            40,
+            53
+          ],
+          [
+            42,
+            14,
+            38,
+            44,
+            16,
+            86,
+            84,
+            17,
+            60,
+            89
+          ],
+          [
+            52,
+            88,
+            7,
+            6,
+            94,
+            96
+          ],
+          [
+            27,
+            69,
+            62,
+            19,
+            64,
+            11,
+            10
+          ],
+          [
+            12,
+            29,
+            79,
+            3,
+            77
+          ],
+          [
+            28,
+            76,
+            30,
+            51,
+            9,
+            81,
+            78,
+            34,
+            35,
+            68
+          ],
+          [
+            33,
+            65,
+            71,
+            66,
+            20,
+            50,
+            26
+          ],
+          [
+            39,
+            67,
+            23,
+            56,
+            4,
+            54,
+            55,
+            25,
+            24,
+            80
+          ],
+          [
+            95,
+            92,
+            98,
+            59,
+            99,
+            61,
+            85,
+            91,
+            100,
+            93
+          ],
+          [
+            72,
+            75,
+            41,
+            22,
+            74,
+            58
+          ],
+          [
+            2,
+            15,
+            57,
+            87,
+            43,
+            37,
+            97,
+            13
+          ]
+        ]
+      }
+    },
+    "R202": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1748.2916,
+          "n_vehicles": 13,
+          "runtime_s": 0.003127
+        },
+        "clarke_wright": {
+          "total_distance": 1259.85,
+          "n_vehicles": 14,
+          "runtime_s": 0.009822
+        },
+        "randomized": {
+          "total_distance": 3612.2327,
+          "n_vehicles": 13,
+          "runtime_s": 0.003066
+        },
+        "two_opt": {
+          "total_distance": 1237.5569,
+          "n_vehicles": 14,
+          "runtime_s": 0.005356,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1237.5569,
+          "n_vehicles": 14,
+          "runtime_s": 0.025653,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1179.4209,
+          "n_vehicles": 13,
+          "runtime_s": 2.394188,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1179.4209,
+          "n_vehicles": 13,
+          "runtime_s": 15.729533,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1179.4209,
+        "n_vehicles": 13,
+        "routes": [
+          [
+            15,
+            43,
+            100,
+            37,
+            95
+          ],
+          [
+            50,
+            33,
+            65,
+            71,
+            35,
+            34,
+            3,
+            77
+          ],
+          [
+            42,
+            14,
+            44,
+            38,
+            86,
+            84,
+            17,
+            5,
+            60,
+            89
+          ],
+          [
+            83,
+            45,
+            8,
+            18,
+            6
+          ],
+          [
+            52,
+            7,
+            48,
+            47,
+            36,
+            19,
+            11,
+            64,
+            49,
+            46,
+            82
+          ],
+          [
+            96,
+            99,
+            59,
+            87,
+            97,
+            13
+          ],
+          [
+            26,
+            39,
+            67,
+            23,
+            56,
+            75,
+            74,
+            72,
+            21,
+            58
+          ],
+          [
+            27,
+            69,
+            88
+          ],
+          [
+            28,
+            29,
+            78,
+            9,
+            51,
+            81,
+            79,
+            68,
+            54,
+            4,
+            55,
+            25,
+            24,
+            80,
+            12
+          ],
+          [
+            62,
+            63,
+            90,
+            10,
+            31
+          ],
+          [
+            40,
+            73,
+            22,
+            41,
+            57,
+            2,
+            53
+          ],
+          [
+            94,
+            92,
+            98,
+            91,
+            16,
+            61,
+            85,
+            93
+          ],
+          [
+            76,
+            1,
+            30,
+            20,
+            66,
+            32,
+            70
+          ]
+        ]
+      }
+    },
+    "R203": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1459.2263,
+          "n_vehicles": 9,
+          "runtime_s": 0.00597
+        },
+        "clarke_wright": {
+          "total_distance": 1109.1498,
+          "n_vehicles": 12,
+          "runtime_s": 0.008751
+        },
+        "randomized": {
+          "total_distance": 3651.3897,
+          "n_vehicles": 10,
+          "runtime_s": 0.001872
+        },
+        "two_opt": {
+          "total_distance": 1070.5706,
+          "n_vehicles": 12,
+          "runtime_s": 0.015341,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1073.8577,
+          "n_vehicles": 12,
+          "runtime_s": 0.037307,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 962.8493,
+          "n_vehicles": 9,
+          "runtime_s": 3.630374,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 962.8493,
+          "n_vehicles": 9,
+          "runtime_s": 15.528429,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 962.8493,
+        "n_vehicles": 9,
+        "routes": [
+          [
+            6,
+            99,
+            93,
+            85,
+            91,
+            100,
+            37,
+            98,
+            59,
+            96
+          ],
+          [
+            40,
+            2,
+            57,
+            87,
+            13
+          ],
+          [
+            18,
+            83,
+            45,
+            46,
+            47,
+            36,
+            49,
+            19,
+            48,
+            82,
+            7,
+            52
+          ],
+          [
+            1,
+            51,
+            20,
+            65,
+            66,
+            71,
+            35,
+            34,
+            29,
+            24,
+            80,
+            77,
+            12
+          ],
+          [
+            21,
+            72,
+            39,
+            67,
+            23,
+            41,
+            22,
+            75,
+            56,
+            74,
+            73,
+            58
+          ],
+          [
+            27,
+            69,
+            31,
+            62,
+            11,
+            64,
+            63,
+            90,
+            32,
+            30,
+            88,
+            10,
+            70
+          ],
+          [
+            50,
+            33,
+            81,
+            9,
+            78,
+            79,
+            3,
+            68,
+            54,
+            4,
+            55,
+            25,
+            26
+          ],
+          [
+            28,
+            76,
+            53
+          ],
+          [
+            94,
+            95,
+            92,
+            97,
+            42,
+            15,
+            43,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            84,
+            8,
+            17,
+            5,
+            60,
+            89
+          ]
+        ]
+      }
+    },
+    "R204": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1118.8656,
+          "n_vehicles": 6,
+          "runtime_s": 0.004267
+        },
+        "clarke_wright": {
+          "total_distance": 867.2488,
+          "n_vehicles": 8,
+          "runtime_s": 0.008456
+        },
+        "randomized": {
+          "total_distance": 3578.3296,
+          "n_vehicles": 8,
+          "runtime_s": 0.001584
+        },
+        "two_opt": {
+          "total_distance": 857.8224,
+          "n_vehicles": 8,
+          "runtime_s": 0.006373,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 857.8224,
+          "n_vehicles": 8,
+          "runtime_s": 0.022348,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 839.6703,
+          "n_vehicles": 8,
+          "runtime_s": 4.078466,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 839.6703,
+          "n_vehicles": 8,
+          "runtime_s": 15.040919,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 839.6703,
+        "n_vehicles": 8,
+        "routes": [
+          [
+            6,
+            99,
+            96,
+            53
+          ],
+          [
+            28,
+            68,
+            80,
+            24,
+            29,
+            78,
+            34,
+            35,
+            71,
+            65,
+            66,
+            20,
+            51,
+            9,
+            81,
+            33,
+            79,
+            3,
+            77,
+            50
+          ],
+          [
+            95,
+            92,
+            97,
+            87,
+            13
+          ],
+          [
+            31,
+            10,
+            62,
+            11,
+            19,
+            48,
+            82,
+            7,
+            88,
+            52
+          ],
+          [
+            27,
+            69,
+            1,
+            70,
+            30,
+            32,
+            90,
+            63,
+            64,
+            49,
+            36,
+            47,
+            46,
+            8,
+            45,
+            17,
+            84,
+            5,
+            60,
+            83,
+            18,
+            89
+          ],
+          [
+            76,
+            12,
+            4,
+            55,
+            25,
+            54,
+            26
+          ],
+          [
+            40,
+            21,
+            72,
+            75,
+            56,
+            39,
+            67,
+            23,
+            41,
+            22,
+            74,
+            73,
+            58
+          ],
+          [
+            2,
+            57,
+            15,
+            43,
+            42,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            85,
+            91,
+            100,
+            37,
+            98,
+            93,
+            59,
+            94
+          ]
+        ]
+      }
+    },
+    "R205": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1571.5931,
+          "n_vehicles": 8,
+          "runtime_s": 0.006713
+        },
+        "clarke_wright": {
+          "total_distance": 1150.3753,
+          "n_vehicles": 12,
+          "runtime_s": 0.010904
+        },
+        "randomized": {
+          "total_distance": 3539.4313,
+          "n_vehicles": 9,
+          "runtime_s": 0.00161
+        },
+        "two_opt": {
+          "total_distance": 1120.6603,
+          "n_vehicles": 12,
+          "runtime_s": 0.008035,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1120.6603,
+          "n_vehicles": 12,
+          "runtime_s": 0.030528,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1071.3509,
+          "n_vehicles": 11,
+          "runtime_s": 2.929414,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1071.3509,
+          "n_vehicles": 11,
+          "runtime_s": 10.660943,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1071.3509,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            2,
+            42,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            85,
+            91,
+            100,
+            37,
+            93,
+            96
+          ],
+          [
+            5,
+            84,
+            17,
+            60,
+            89
+          ],
+          [
+            83,
+            45,
+            46,
+            8,
+            18
+          ],
+          [
+            12,
+            29,
+            79,
+            78,
+            81,
+            51,
+            30,
+            50,
+            26,
+            53
+          ],
+          [
+            94,
+            97,
+            87,
+            13
+          ],
+          [
+            52,
+            82,
+            47,
+            36,
+            64,
+            49,
+            19,
+            7,
+            48
+          ],
+          [
+            21,
+            72,
+            75,
+            23,
+            67,
+            39,
+            56,
+            22,
+            74,
+            4,
+            25,
+            55,
+            24,
+            54
+          ],
+          [
+            27,
+            69,
+            31,
+            88,
+            62,
+            11,
+            63,
+            90,
+            32,
+            10,
+            70,
+            1
+          ],
+          [
+            40,
+            73,
+            41,
+            15,
+            43,
+            57,
+            58
+          ],
+          [
+            95,
+            92,
+            98,
+            59,
+            99,
+            6
+          ],
+          [
+            28,
+            76,
+            33,
+            71,
+            65,
+            66,
+            20,
+            9,
+            35,
+            34,
+            3,
+            77,
+            68,
+            80
+          ]
+        ]
+      }
+    },
+    "R206": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1666.0348,
+          "n_vehicles": 8,
+          "runtime_s": 0.004012
+        },
+        "clarke_wright": {
+          "total_distance": 1065.7418,
+          "n_vehicles": 10,
+          "runtime_s": 0.012503
+        },
+        "randomized": {
+          "total_distance": 3582.4483,
+          "n_vehicles": 8,
+          "runtime_s": 0.002045
+        },
+        "two_opt": {
+          "total_distance": 1039.9251,
+          "n_vehicles": 10,
+          "runtime_s": 0.015005,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1035.524,
+          "n_vehicles": 10,
+          "runtime_s": 0.061136,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 968.5962,
+          "n_vehicles": 9,
+          "runtime_s": 2.673312,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 968.5962,
+          "n_vehicles": 9,
+          "runtime_s": 12.213956,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 968.5962,
+        "n_vehicles": 9,
+        "routes": [
+          [
+            40,
+            87,
+            15,
+            43,
+            57,
+            2,
+            58
+          ],
+          [
+            52,
+            7,
+            82,
+            48,
+            47,
+            36,
+            49,
+            19,
+            88
+          ],
+          [
+            50,
+            33,
+            71,
+            65,
+            35,
+            34,
+            3,
+            77,
+            68,
+            80,
+            12
+          ],
+          [
+            53,
+            6,
+            96,
+            99,
+            97,
+            37,
+            98,
+            100,
+            91,
+            85,
+            93,
+            59,
+            95,
+            13
+          ],
+          [
+            21,
+            73,
+            72,
+            39,
+            67,
+            23,
+            41,
+            22,
+            74,
+            75,
+            56,
+            4,
+            25,
+            55,
+            24,
+            54,
+            26
+          ],
+          [
+            27,
+            69,
+            31,
+            62,
+            11,
+            64,
+            63,
+            10,
+            90,
+            32,
+            66,
+            20,
+            1
+          ],
+          [
+            28,
+            76,
+            79,
+            29,
+            78,
+            81,
+            9,
+            51,
+            30,
+            70
+          ],
+          [
+            94,
+            92,
+            42,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            84,
+            17,
+            5,
+            60,
+            89
+          ],
+          [
+            83,
+            45,
+            46,
+            8,
+            18
+          ]
+        ]
+      }
+    },
+    "R207": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1378.2537,
+          "n_vehicles": 7,
+          "runtime_s": 0.003481
+        },
+        "clarke_wright": {
+          "total_distance": 927.0165,
+          "n_vehicles": 8,
+          "runtime_s": 0.008627
+        },
+        "randomized": {
+          "total_distance": 3513.5758,
+          "n_vehicles": 8,
+          "runtime_s": 0.001898
+        },
+        "two_opt": {
+          "total_distance": 882.752,
+          "n_vehicles": 8,
+          "runtime_s": 0.015413,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 891.7074,
+          "n_vehicles": 8,
+          "runtime_s": 0.039164,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 859.3454,
+          "n_vehicles": 7,
+          "runtime_s": 3.768575,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 859.3454,
+          "n_vehicles": 7,
+          "runtime_s": 13.278667,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 859.3454,
+        "n_vehicles": 7,
+        "routes": [
+          [
+            94,
+            95,
+            92,
+            42,
+            87,
+            57,
+            15,
+            43,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            84,
+            17,
+            5
+          ],
+          [
+            89,
+            60,
+            83,
+            45,
+            46,
+            47,
+            36,
+            49,
+            19,
+            48,
+            82,
+            8,
+            18
+          ],
+          [
+            21,
+            72,
+            39,
+            67,
+            23,
+            56,
+            75,
+            41,
+            22,
+            74,
+            73,
+            2,
+            58
+          ],
+          [
+            27,
+            69,
+            1,
+            30,
+            20,
+            71,
+            65,
+            66,
+            51,
+            9,
+            35,
+            34,
+            29,
+            24,
+            54,
+            55,
+            25,
+            4,
+            26
+          ],
+          [
+            28,
+            76,
+            50,
+            33,
+            81,
+            78,
+            79,
+            3,
+            77,
+            68,
+            80,
+            12
+          ],
+          [
+            52,
+            7,
+            88,
+            62,
+            11,
+            64,
+            63,
+            90,
+            32,
+            10,
+            70,
+            31
+          ],
+          [
+            53,
+            40,
+            6,
+            96,
+            99,
+            59,
+            93,
+            85,
+            91,
+            100,
+            98,
+            37,
+            97,
+            13
+          ]
+        ]
+      }
+    },
+    "R208": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1079.8163,
+          "n_vehicles": 5,
+          "runtime_s": 0.004394
+        },
+        "clarke_wright": {
+          "total_distance": 778.3352,
+          "n_vehicles": 5,
+          "runtime_s": 0.008473
+        },
+        "randomized": {
+          "total_distance": 3521.4017,
+          "n_vehicles": 8,
+          "runtime_s": 0.001578
+        },
+        "two_opt": {
+          "total_distance": 776.9121,
+          "n_vehicles": 5,
+          "runtime_s": 0.005585,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 776.9121,
+          "n_vehicles": 5,
+          "runtime_s": 0.009422,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 761.1891,
+          "n_vehicles": 5,
+          "runtime_s": 5.869858,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 761.1891,
+          "n_vehicles": 5,
+          "runtime_s": 11.619329,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 761.1891,
+        "n_vehicles": 5,
+        "routes": [
+          [
+            28,
+            12,
+            80,
+            68,
+            24,
+            29,
+            78,
+            34,
+            35,
+            71,
+            65,
+            66,
+            20,
+            32,
+            90,
+            63,
+            64,
+            49,
+            36,
+            47,
+            46,
+            45,
+            17,
+            84,
+            5,
+            99,
+            96,
+            6,
+            53
+          ],
+          [
+            40,
+            21,
+            72,
+            56,
+            39,
+            67,
+            23,
+            75,
+            22,
+            41,
+            15,
+            43,
+            42,
+            14,
+            44,
+            38,
+            86,
+            16,
+            61,
+            85,
+            91,
+            100,
+            37,
+            98,
+            93,
+            59,
+            95,
+            13,
+            58
+          ],
+          [
+            52,
+            7,
+            88,
+            31,
+            10,
+            62,
+            11,
+            19,
+            48,
+            82,
+            8,
+            83,
+            60,
+            18,
+            89
+          ],
+          [
+            94,
+            92,
+            97,
+            87,
+            57,
+            2,
+            73,
+            74,
+            4,
+            25,
+            55,
+            54,
+            26
+          ],
+          [
+            27,
+            69,
+            1,
+            70,
+            30,
+            51,
+            9,
+            81,
+            33,
+            79,
+            3,
+            76,
+            77,
+            50
+          ]
+        ]
+      }
+    },
+    "R209": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1347.6079,
+          "n_vehicles": 7,
+          "runtime_s": 0.003146
+        },
+        "clarke_wright": {
+          "total_distance": 1029.036,
+          "n_vehicles": 10,
+          "runtime_s": 0.013111
+        },
+        "randomized": {
+          "total_distance": 3369.0981,
+          "n_vehicles": 10,
+          "runtime_s": 0.00154
+        },
+        "two_opt": {
+          "total_distance": 991.1282,
+          "n_vehicles": 10,
+          "runtime_s": 0.012985,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 991.1282,
+          "n_vehicles": 10,
+          "runtime_s": 0.040083,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 960.5779,
+          "n_vehicles": 9,
+          "runtime_s": 3.444151,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 960.5779,
+          "n_vehicles": 9,
+          "runtime_s": 11.877515,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 960.5779,
+        "n_vehicles": 9,
+        "routes": [
+          [
+            31,
+            70,
+            30,
+            63,
+            90,
+            32,
+            66,
+            20,
+            1
+          ],
+          [
+            6,
+            99,
+            5,
+            83,
+            18,
+            84,
+            17,
+            45,
+            8,
+            46,
+            48,
+            60,
+            89
+          ],
+          [
+            52,
+            7,
+            82,
+            19,
+            47,
+            36,
+            49,
+            64,
+            11,
+            62,
+            10,
+            88
+          ],
+          [
+            2,
+            57,
+            87,
+            94
+          ],
+          [
+            53,
+            40,
+            21,
+            73,
+            72,
+            75,
+            74,
+            22,
+            41,
+            15,
+            43,
+            42,
+            97,
+            13,
+            58
+          ],
+          [
+            27,
+            69,
+            51,
+            9,
+            71,
+            65,
+            35,
+            34,
+            78,
+            79,
+            3,
+            77,
+            68,
+            80,
+            24,
+            54
+          ],
+          [
+            28,
+            76,
+            29,
+            81,
+            33,
+            50
+          ],
+          [
+            12,
+            55,
+            25,
+            67,
+            23,
+            56,
+            39,
+            4,
+            26
+          ],
+          [
+            95,
+            59,
+            92,
+            98,
+            85,
+            61,
+            16,
+            86,
+            38,
+            14,
+            44,
+            91,
+            100,
+            37,
+            93,
+            96
+          ]
+        ]
+      }
+    },
+    "R210": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1661.9206,
+          "n_vehicles": 9,
+          "runtime_s": 0.003347
+        },
+        "clarke_wright": {
+          "total_distance": 1074.3245,
+          "n_vehicles": 12,
+          "runtime_s": 0.009606
+        },
+        "randomized": {
+          "total_distance": 3485.2371,
+          "n_vehicles": 8,
+          "runtime_s": 0.002379
+        },
+        "two_opt": {
+          "total_distance": 1046.2995,
+          "n_vehicles": 12,
+          "runtime_s": 0.012063,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1039.1588,
+          "n_vehicles": 12,
+          "runtime_s": 0.067017,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1020.0141,
+          "n_vehicles": 11,
+          "runtime_s": 1.786081,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1020.0141,
+          "n_vehicles": 11,
+          "runtime_s": 15.642659,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1020.0141,
+        "n_vehicles": 11,
+        "routes": [
+          [
+            94,
+            95,
+            42,
+            15,
+            43,
+            57,
+            2,
+            58
+          ],
+          [
+            52,
+            7,
+            82,
+            48,
+            47,
+            36,
+            49,
+            19,
+            10,
+            31
+          ],
+          [
+            28,
+            76,
+            12,
+            26,
+            40,
+            53
+          ],
+          [
+            6,
+            96,
+            99,
+            93,
+            85,
+            100,
+            37,
+            59
+          ],
+          [
+            83,
+            45,
+            46,
+            8,
+            18
+          ],
+          [
+            21,
+            73,
+            72,
+            23,
+            67,
+            39,
+            56,
+            75,
+            22,
+            41,
+            74,
+            4
+          ],
+          [
+            50,
+            33,
+            81,
+            9,
+            78,
+            79,
+            29,
+            24,
+            55,
+            25,
+            54
+          ],
+          [
+            27,
+            69,
+            1,
+            30,
+            51,
+            71,
+            65,
+            35,
+            34,
+            3,
+            68,
+            80,
+            77
+          ],
+          [
+            88,
+            62,
+            11,
+            64,
+            63,
+            90,
+            32,
+            66,
+            20,
+            70
+          ],
+          [
+            87,
+            97,
+            13
+          ],
+          [
+            92,
+            98,
+            91,
+            44,
+            14,
+            38,
+            86,
+            16,
+            61,
+            84,
+            17,
+            5,
+            60,
+            89
+          ]
+        ]
+      }
+    },
+    "R211": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1291.2456,
+          "n_vehicles": 4,
+          "runtime_s": 0.003566
+        },
+        "clarke_wright": {
+          "total_distance": 889.6808,
+          "n_vehicles": 8,
+          "runtime_s": 0.007722
+        },
+        "randomized": {
+          "total_distance": 3381.8107,
+          "n_vehicles": 7,
+          "runtime_s": 0.001865
+        },
+        "two_opt": {
+          "total_distance": 864.9075,
+          "n_vehicles": 8,
+          "runtime_s": 0.007512,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 863.079,
+          "n_vehicles": 8,
+          "runtime_s": 0.037195,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 855.3503,
+          "n_vehicles": 8,
+          "runtime_s": 3.511717,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 855.3503,
+          "n_vehicles": 8,
+          "runtime_s": 13.384483,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 855.3503,
+        "n_vehicles": 8,
+        "routes": [
+          [
+            94,
+            59,
+            98,
+            100,
+            44,
+            14,
+            38,
+            86,
+            16,
+            61,
+            17,
+            84,
+            5,
+            60,
+            89
+          ],
+          [
+            28,
+            12,
+            76,
+            77,
+            3,
+            29,
+            24,
+            80,
+            68
+          ],
+          [
+            58,
+            2,
+            73,
+            74,
+            72,
+            4,
+            25,
+            55,
+            54,
+            26
+          ],
+          [
+            52,
+            18,
+            83,
+            45,
+            8,
+            46,
+            47,
+            36,
+            49,
+            64,
+            63,
+            90,
+            32,
+            10
+          ],
+          [
+            53,
+            40,
+            21,
+            39,
+            67,
+            23,
+            56,
+            75,
+            22,
+            41,
+            57,
+            15,
+            43,
+            42,
+            87,
+            13
+          ],
+          [
+            27,
+            69,
+            70,
+            30,
+            20,
+            66,
+            65,
+            71,
+            35,
+            34,
+            78,
+            79,
+            33,
+            81,
+            9,
+            51,
+            50,
+            1
+          ],
+          [
+            31,
+            88,
+            62,
+            11,
+            19,
+            48,
+            82,
+            7
+          ],
+          [
+            95,
+            97,
+            92,
+            37,
+            91,
+            85,
+            93,
+            99,
+            96,
+            6
+          ]
+        ]
+      }
+    },
+    "RC101": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2599.1713,
+          "n_vehicles": 27,
+          "runtime_s": 0.004563
+        },
+        "clarke_wright": {
+          "total_distance": 1999.3504,
+          "n_vehicles": 23,
+          "runtime_s": 0.010054
+        },
+        "randomized": {
+          "total_distance": 4203.2406,
+          "n_vehicles": 36,
+          "runtime_s": 0.003163
+        },
+        "two_opt": {
+          "total_distance": 1933.5652,
+          "n_vehicles": 23,
+          "runtime_s": 0.017997,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1928.2187,
+          "n_vehicles": 23,
+          "runtime_s": 0.046785,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1701.2479,
+          "n_vehicles": 17,
+          "runtime_s": 1.868231,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1701.2479,
+          "n_vehicles": 17,
+          "runtime_s": 10.939781,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1701.2479,
+        "n_vehicles": 17,
+        "routes": [
+          [
+            5,
+            45,
+            2,
+            6,
+            3,
+            1,
+            70
+          ],
+          [
+            82,
+            11,
+            15,
+            16,
+            9,
+            10,
+            13,
+            17
+          ],
+          [
+            47,
+            14,
+            12,
+            53,
+            55,
+            68
+          ],
+          [
+            64,
+            19,
+            49,
+            22,
+            20,
+            24
+          ],
+          [
+            65,
+            52,
+            99,
+            57,
+            86,
+            74
+          ],
+          [
+            83,
+            23,
+            21,
+            18,
+            48,
+            25
+          ],
+          [
+            33,
+            28,
+            27,
+            26,
+            32,
+            93
+          ],
+          [
+            31,
+            29,
+            30,
+            34,
+            50,
+            80
+          ],
+          [
+            72,
+            39,
+            36,
+            40,
+            38,
+            41,
+            54,
+            96
+          ],
+          [
+            42,
+            44,
+            43,
+            37,
+            35
+          ],
+          [
+            61,
+            81,
+            90
+          ],
+          [
+            92,
+            62,
+            51,
+            76,
+            89,
+            91
+          ],
+          [
+            59,
+            75,
+            87,
+            97,
+            58,
+            77
+          ],
+          [
+            73,
+            79,
+            78,
+            60
+          ],
+          [
+            71,
+            67,
+            94
+          ],
+          [
+            95,
+            63,
+            85,
+            84,
+            56,
+            66
+          ],
+          [
+            69,
+            98,
+            88,
+            7,
+            8,
+            46,
+            4,
+            100
+          ]
+        ]
+      }
+    },
+    "RC102": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2302.7683,
+          "n_vehicles": 21,
+          "runtime_s": 0.005055
+        },
+        "clarke_wright": {
+          "total_distance": 1876.2027,
+          "n_vehicles": 21,
+          "runtime_s": 0.013149
+        },
+        "randomized": {
+          "total_distance": 3757.3119,
+          "n_vehicles": 28,
+          "runtime_s": 0.002221
+        },
+        "two_opt": {
+          "total_distance": 1847.9091,
+          "n_vehicles": 21,
+          "runtime_s": 0.010848,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1831.0439,
+          "n_vehicles": 21,
+          "runtime_s": 0.037836,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1587.0051,
+          "n_vehicles": 16,
+          "runtime_s": 2.017885,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1587.0051,
+          "n_vehicles": 16,
+          "runtime_s": 15.774162,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1587.0051,
+        "n_vehicles": 16,
+        "routes": [
+          [
+            1,
+            3,
+            45,
+            5,
+            8,
+            6,
+            55,
+            68
+          ],
+          [
+            65,
+            57,
+            86,
+            74,
+            52
+          ],
+          [
+            11,
+            9,
+            10
+          ],
+          [
+            12,
+            14,
+            47,
+            15,
+            16,
+            17,
+            13,
+            82
+          ],
+          [
+            64,
+            22,
+            49,
+            25,
+            77
+          ],
+          [
+            19,
+            23,
+            21,
+            18,
+            48,
+            20,
+            24,
+            83
+          ],
+          [
+            27,
+            26,
+            28,
+            30,
+            32,
+            34,
+            94,
+            80
+          ],
+          [
+            39,
+            36,
+            40,
+            38,
+            41,
+            37,
+            35,
+            72
+          ],
+          [
+            42,
+            44,
+            43,
+            54
+          ],
+          [
+            99,
+            87,
+            59,
+            97,
+            75,
+            58
+          ],
+          [
+            61,
+            81,
+            90
+          ],
+          [
+            98,
+            73,
+            79,
+            78,
+            60
+          ],
+          [
+            92,
+            62,
+            67,
+            71,
+            93,
+            96
+          ],
+          [
+            95,
+            85,
+            63,
+            76,
+            51,
+            84,
+            56,
+            66
+          ],
+          [
+            69,
+            88,
+            53,
+            7,
+            46,
+            4,
+            2,
+            100,
+            70
+          ],
+          [
+            50,
+            33,
+            29,
+            31,
+            89,
+            91
+          ]
+        ]
+      }
+    },
+    "RC103": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2141.0149,
+          "n_vehicles": 20,
+          "runtime_s": 0.003388
+        },
+        "clarke_wright": {
+          "total_distance": 1508.1599,
+          "n_vehicles": 15,
+          "runtime_s": 0.009282
+        },
+        "randomized": {
+          "total_distance": 4123.1983,
+          "n_vehicles": 27,
+          "runtime_s": 0.004334
+        },
+        "two_opt": {
+          "total_distance": 1480.1956,
+          "n_vehicles": 15,
+          "runtime_s": 0.009338,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1480.1956,
+          "n_vehicles": 15,
+          "runtime_s": 0.031916,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1404.873,
+          "n_vehicles": 14,
+          "runtime_s": 1.833628,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1404.873,
+          "n_vehicles": 14,
+          "runtime_s": 14.221019,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1404.873,
+        "n_vehicles": 14,
+        "routes": [
+          [
+            1,
+            3,
+            45,
+            5,
+            8,
+            6,
+            2,
+            70
+          ],
+          [
+            90,
+            99,
+            9,
+            10,
+            13,
+            82
+          ],
+          [
+            98,
+            60,
+            73,
+            78,
+            79,
+            7,
+            46,
+            4,
+            100
+          ],
+          [
+            11,
+            15,
+            16,
+            17,
+            47,
+            14,
+            12
+          ],
+          [
+            64,
+            20,
+            49,
+            22,
+            24,
+            74,
+            57
+          ],
+          [
+            19,
+            18,
+            48,
+            21,
+            23,
+            25,
+            83
+          ],
+          [
+            28,
+            26,
+            27,
+            29,
+            31,
+            34,
+            71,
+            93,
+            96
+          ],
+          [
+            39,
+            36,
+            35,
+            37,
+            72,
+            54,
+            81
+          ],
+          [
+            51,
+            76,
+            89,
+            63,
+            85,
+            95,
+            91
+          ],
+          [
+            65,
+            52,
+            86,
+            59,
+            87,
+            97,
+            75,
+            58,
+            77
+          ],
+          [
+            42,
+            43,
+            44,
+            40,
+            38,
+            41,
+            61,
+            68
+          ],
+          [
+            92,
+            62,
+            67,
+            84,
+            56,
+            66
+          ],
+          [
+            50,
+            33,
+            30,
+            32,
+            94,
+            80
+          ],
+          [
+            69,
+            88,
+            53,
+            55
+          ]
+        ]
+      }
+    },
+    "RC104": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1778.1778,
+          "n_vehicles": 15,
+          "runtime_s": 0.004264
+        },
+        "clarke_wright": {
+          "total_distance": 1296.0497,
+          "n_vehicles": 13,
+          "runtime_s": 0.007224
+        },
+        "randomized": {
+          "total_distance": 4013.26,
+          "n_vehicles": 25,
+          "runtime_s": 0.002037
+        },
+        "two_opt": {
+          "total_distance": 1236.9906,
+          "n_vehicles": 13,
+          "runtime_s": 0.012127,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1236.9906,
+          "n_vehicles": 13,
+          "runtime_s": 0.088948,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1213.2966,
+          "n_vehicles": 12,
+          "runtime_s": 1.826674,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1213.2966,
+          "n_vehicles": 12,
+          "runtime_s": 17.266871,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1213.2966,
+        "n_vehicles": 12,
+        "routes": [
+          [
+            61,
+            1,
+            3,
+            5,
+            45,
+            46,
+            8,
+            7,
+            6,
+            4,
+            2
+          ],
+          [
+            10,
+            11,
+            15,
+            16,
+            17,
+            47,
+            14,
+            12
+          ],
+          [
+            22,
+            20,
+            49,
+            23,
+            21,
+            48,
+            18,
+            19,
+            24,
+            25
+          ],
+          [
+            92,
+            50,
+            33,
+            32,
+            30,
+            28,
+            26,
+            27,
+            29,
+            31,
+            34
+          ],
+          [
+            41,
+            42,
+            44,
+            39,
+            38,
+            37,
+            35,
+            36,
+            40,
+            43
+          ],
+          [
+            65,
+            52,
+            59,
+            87,
+            97,
+            75,
+            58,
+            77
+          ],
+          [
+            69,
+            53,
+            9,
+            13,
+            82
+          ],
+          [
+            98,
+            78,
+            73,
+            79,
+            60,
+            88,
+            55,
+            100,
+            70,
+            68
+          ],
+          [
+            95,
+            85,
+            63,
+            89,
+            76,
+            51,
+            64,
+            66
+          ],
+          [
+            90,
+            99,
+            86,
+            74,
+            57,
+            83
+          ],
+          [
+            96,
+            93,
+            71,
+            72,
+            54,
+            81
+          ],
+          [
+            80,
+            94,
+            62,
+            67,
+            84,
+            56,
+            91
+          ]
+        ]
+      }
+    },
+    "RC105": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2544.3532,
+          "n_vehicles": 26,
+          "runtime_s": 0.004745
+        },
+        "clarke_wright": {
+          "total_distance": 1984.787,
+          "n_vehicles": 23,
+          "runtime_s": 0.010604
+        },
+        "randomized": {
+          "total_distance": 3916.2449,
+          "n_vehicles": 30,
+          "runtime_s": 0.001566
+        },
+        "two_opt": {
+          "total_distance": 1920.2732,
+          "n_vehicles": 23,
+          "runtime_s": 0.028631,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1901.1774,
+          "n_vehicles": 23,
+          "runtime_s": 0.046292,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1584.1476,
+          "n_vehicles": 16,
+          "runtime_s": 2.079538,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1584.1476,
+          "n_vehicles": 16,
+          "runtime_s": 14.379543,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1584.1476,
+        "n_vehicles": 16,
+        "routes": [
+          [
+            45,
+            5,
+            3,
+            1,
+            46,
+            8,
+            7,
+            2,
+            100
+          ],
+          [
+            98,
+            73,
+            79,
+            6,
+            4,
+            70
+          ],
+          [
+            12,
+            14,
+            15,
+            16,
+            47,
+            78,
+            60
+          ],
+          [
+            83,
+            19,
+            23,
+            18,
+            22,
+            49,
+            20,
+            77
+          ],
+          [
+            61,
+            81,
+            90
+          ],
+          [
+            64,
+            76,
+            89,
+            48,
+            21,
+            25,
+            24
+          ],
+          [
+            28,
+            26,
+            27,
+            29,
+            31,
+            34,
+            94
+          ],
+          [
+            95,
+            33,
+            30,
+            32,
+            50,
+            91,
+            80
+          ],
+          [
+            39,
+            36,
+            38,
+            41,
+            72,
+            54
+          ],
+          [
+            42,
+            44,
+            40,
+            43,
+            35,
+            37
+          ],
+          [
+            82,
+            11,
+            9,
+            10,
+            13,
+            17
+          ],
+          [
+            85,
+            63,
+            51,
+            84,
+            56,
+            66
+          ],
+          [
+            65,
+            52,
+            86,
+            87,
+            59,
+            97,
+            75,
+            58
+          ],
+          [
+            69,
+            88,
+            53,
+            55,
+            68
+          ],
+          [
+            92,
+            62,
+            67,
+            71,
+            93,
+            96
+          ],
+          [
+            99,
+            57,
+            74
+          ]
+        ]
+      }
+    },
+    "RC106": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2111.6623,
+          "n_vehicles": 19,
+          "runtime_s": 0.003686
+        },
+        "clarke_wright": {
+          "total_distance": 1598.2084,
+          "n_vehicles": 17,
+          "runtime_s": 0.012107
+        },
+        "randomized": {
+          "total_distance": 3894.4379,
+          "n_vehicles": 28,
+          "runtime_s": 0.002699
+        },
+        "two_opt": {
+          "total_distance": 1543.2265,
+          "n_vehicles": 17,
+          "runtime_s": 0.020183,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1543.2265,
+          "n_vehicles": 17,
+          "runtime_s": 0.055892,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1481.8056,
+          "n_vehicles": 15,
+          "runtime_s": 1.994506,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1481.8056,
+          "n_vehicles": 15,
+          "runtime_s": 11.399293,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1481.8056,
+        "n_vehicles": 15,
+        "routes": [
+          [
+            61,
+            2,
+            6,
+            7,
+            8,
+            46,
+            4,
+            100
+          ],
+          [
+            65,
+            99,
+            52,
+            86,
+            57,
+            66
+          ],
+          [
+            69,
+            98,
+            53,
+            90
+          ],
+          [
+            64,
+            51,
+            19,
+            18,
+            48,
+            49,
+            20,
+            24
+          ],
+          [
+            83,
+            22,
+            21,
+            23,
+            25,
+            77,
+            58
+          ],
+          [
+            31,
+            29,
+            27,
+            26,
+            28,
+            34,
+            93
+          ],
+          [
+            95,
+            85,
+            63,
+            76,
+            89,
+            56
+          ],
+          [
+            42,
+            44,
+            39,
+            38,
+            36,
+            40,
+            35,
+            37,
+            43
+          ],
+          [
+            82,
+            87,
+            59,
+            75,
+            97,
+            74
+          ],
+          [
+            71,
+            72,
+            41,
+            54,
+            96
+          ],
+          [
+            88,
+            78,
+            73,
+            79,
+            60,
+            55
+          ],
+          [
+            81,
+            94,
+            67,
+            84,
+            91
+          ],
+          [
+            11,
+            12,
+            14,
+            47,
+            15,
+            16,
+            9,
+            10,
+            13,
+            17
+          ],
+          [
+            92,
+            62,
+            33,
+            30,
+            32,
+            50,
+            80
+          ],
+          [
+            45,
+            5,
+            3,
+            1,
+            70,
+            68
+          ]
+        ]
+      }
+    },
+    "RC107": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1817.6742,
+          "n_vehicles": 16,
+          "runtime_s": 0.003818
+        },
+        "clarke_wright": {
+          "total_distance": 1406.3211,
+          "n_vehicles": 14,
+          "runtime_s": 0.008744
+        },
+        "randomized": {
+          "total_distance": 3869.1926,
+          "n_vehicles": 27,
+          "runtime_s": 0.002141
+        },
+        "two_opt": {
+          "total_distance": 1385.8399,
+          "n_vehicles": 14,
+          "runtime_s": 0.012595,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1382.4572,
+          "n_vehicles": 14,
+          "runtime_s": 0.036184,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1345.5724,
+          "n_vehicles": 13,
+          "runtime_s": 1.664441,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1345.5724,
+          "n_vehicles": 13,
+          "runtime_s": 15.254484,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1345.5724,
+        "n_vehicles": 13,
+        "routes": [
+          [
+            2,
+            6,
+            7,
+            8,
+            5,
+            3,
+            1,
+            45,
+            46,
+            4,
+            100
+          ],
+          [
+            82,
+            9,
+            87,
+            59,
+            74,
+            86
+          ],
+          [
+            47,
+            15,
+            16,
+            11,
+            10,
+            53,
+            88,
+            55,
+            68
+          ],
+          [
+            64,
+            51,
+            63,
+            89,
+            76,
+            56
+          ],
+          [
+            67,
+            31,
+            29,
+            27,
+            26,
+            28,
+            30,
+            32,
+            33,
+            80
+          ],
+          [
+            41,
+            38,
+            39,
+            42,
+            44,
+            43,
+            40,
+            37,
+            35,
+            36
+          ],
+          [
+            72,
+            71,
+            93,
+            94,
+            96,
+            54
+          ],
+          [
+            70,
+            61,
+            81,
+            90
+          ],
+          [
+            83,
+            19,
+            25,
+            23,
+            21,
+            18,
+            48,
+            49,
+            20,
+            66
+          ],
+          [
+            69,
+            98,
+            12,
+            14,
+            78,
+            73,
+            79,
+            60
+          ],
+          [
+            92,
+            95,
+            84,
+            85,
+            34,
+            50,
+            62,
+            91
+          ],
+          [
+            99,
+            52,
+            57,
+            24,
+            22
+          ],
+          [
+            65,
+            77,
+            58,
+            75,
+            97,
+            13,
+            17
+          ]
+        ]
+      }
+    },
+    "RC108": {
+      "n_customers": 100,
+      "vehicle_capacity": 200.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1841.8983,
+          "n_vehicles": 15,
+          "runtime_s": 0.003726
+        },
+        "clarke_wright": {
+          "total_distance": 1279.5645,
+          "n_vehicles": 13,
+          "runtime_s": 0.011469
+        },
+        "randomized": {
+          "total_distance": 3714.9643,
+          "n_vehicles": 24,
+          "runtime_s": 0.003131
+        },
+        "two_opt": {
+          "total_distance": 1273.3673,
+          "n_vehicles": 13,
+          "runtime_s": 0.00402,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1269.0954,
+          "n_vehicles": 13,
+          "runtime_s": 0.011442,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1218.7896,
+          "n_vehicles": 12,
+          "runtime_s": 1.807012,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1218.7896,
+          "n_vehicles": 12,
+          "runtime_s": 17.317989,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1218.7896,
+        "n_vehicles": 12,
+        "routes": [
+          [
+            2,
+            6,
+            7,
+            8,
+            46,
+            4,
+            45,
+            5,
+            3,
+            1,
+            100
+          ],
+          [
+            25,
+            23,
+            21,
+            48,
+            18,
+            19,
+            49,
+            24,
+            57
+          ],
+          [
+            33,
+            32,
+            30,
+            28,
+            26,
+            27,
+            29,
+            31,
+            34,
+            80
+          ],
+          [
+            39,
+            38,
+            36,
+            35,
+            37,
+            40,
+            43,
+            44,
+            42,
+            54
+          ],
+          [
+            95,
+            51,
+            76,
+            89,
+            63,
+            85,
+            84,
+            56,
+            91
+          ],
+          [
+            99,
+            74,
+            77,
+            58,
+            75,
+            97,
+            59
+          ],
+          [
+            81,
+            67,
+            50,
+            62,
+            92
+          ],
+          [
+            65,
+            52,
+            86,
+            87,
+            9,
+            53
+          ],
+          [
+            61,
+            41,
+            72,
+            71,
+            93,
+            94,
+            96
+          ],
+          [
+            90,
+            64,
+            20,
+            22,
+            83,
+            66
+          ],
+          [
+            69,
+            98,
+            78,
+            73,
+            79,
+            60,
+            88,
+            55,
+            70,
+            68
+          ],
+          [
+            82,
+            12,
+            14,
+            47,
+            17,
+            16,
+            15,
+            13,
+            11,
+            10
+          ]
+        ]
+      }
+    },
+    "RC201": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2397.8282,
+          "n_vehicles": 14,
+          "runtime_s": 0.003809
+        },
+        "clarke_wright": {
+          "total_distance": 1654.1322,
+          "n_vehicles": 16,
+          "runtime_s": 0.009386
+        },
+        "randomized": {
+          "total_distance": 4677.9434,
+          "n_vehicles": 13,
+          "runtime_s": 0.001648
+        },
+        "two_opt": {
+          "total_distance": 1619.4823,
+          "n_vehicles": 16,
+          "runtime_s": 0.020725,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1616.1761,
+          "n_vehicles": 16,
+          "runtime_s": 0.038765,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1550.4691,
+          "n_vehicles": 15,
+          "runtime_s": 2.391809,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1550.4691,
+          "n_vehicles": 15,
+          "runtime_s": 14.739714,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1550.4691,
+        "n_vehicles": 15,
+        "routes": [
+          [
+            2,
+            6,
+            7,
+            8,
+            46,
+            4,
+            100
+          ],
+          [
+            45,
+            5,
+            3,
+            1,
+            70
+          ],
+          [
+            65,
+            59,
+            75,
+            97,
+            74
+          ],
+          [
+            47,
+            14,
+            12,
+            11,
+            15,
+            16,
+            17,
+            13
+          ],
+          [
+            83,
+            21,
+            23,
+            25,
+            77,
+            58
+          ],
+          [
+            64,
+            19,
+            18,
+            48,
+            24
+          ],
+          [
+            92,
+            62,
+            33,
+            28,
+            27,
+            29,
+            31,
+            30,
+            26,
+            34,
+            32,
+            56
+          ],
+          [
+            72,
+            42,
+            39,
+            36,
+            35,
+            37,
+            43,
+            68
+          ],
+          [
+            61,
+            44,
+            40,
+            38,
+            41,
+            54,
+            96
+          ],
+          [
+            82,
+            52,
+            86,
+            87,
+            9,
+            10
+          ],
+          [
+            90,
+            84,
+            50,
+            93
+          ],
+          [
+            88,
+            78,
+            73,
+            79,
+            60,
+            55
+          ],
+          [
+            69,
+            98,
+            53,
+            99,
+            57,
+            22,
+            49,
+            20,
+            66
+          ],
+          [
+            95,
+            63,
+            85,
+            51,
+            76,
+            89,
+            91,
+            80
+          ],
+          [
+            71,
+            67,
+            94,
+            81
+          ]
+        ]
+      }
+    },
+    "RC202": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2246.2485,
+          "n_vehicles": 12,
+          "runtime_s": 0.003365
+        },
+        "clarke_wright": {
+          "total_distance": 1446.375,
+          "n_vehicles": 14,
+          "runtime_s": 0.010061
+        },
+        "randomized": {
+          "total_distance": 4511.5502,
+          "n_vehicles": 11,
+          "runtime_s": 0.001918
+        },
+        "two_opt": {
+          "total_distance": 1436.3184,
+          "n_vehicles": 14,
+          "runtime_s": 0.011419,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1436.3184,
+          "n_vehicles": 14,
+          "runtime_s": 0.027936,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1313.1028,
+          "n_vehicles": 12,
+          "runtime_s": 2.663496,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1313.1028,
+          "n_vehicles": 12,
+          "runtime_s": 15.247824,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1313.1028,
+        "n_vehicles": 12,
+        "routes": [
+          [
+            1,
+            3,
+            5,
+            45,
+            4,
+            2,
+            55,
+            68
+          ],
+          [
+            61,
+            88,
+            78,
+            73,
+            79,
+            7,
+            8,
+            46,
+            6,
+            100,
+            70
+          ],
+          [
+            12,
+            14,
+            47,
+            11,
+            15,
+            16,
+            17,
+            60
+          ],
+          [
+            64,
+            22,
+            48,
+            18,
+            49,
+            20,
+            24
+          ],
+          [
+            65,
+            83,
+            19,
+            21,
+            23,
+            25,
+            77,
+            75,
+            58,
+            52
+          ],
+          [
+            72,
+            39,
+            37,
+            36,
+            35,
+            43,
+            54
+          ],
+          [
+            42,
+            44,
+            40,
+            38,
+            41,
+            81
+          ],
+          [
+            90,
+            99,
+            57,
+            86,
+            87,
+            97,
+            59,
+            74,
+            66
+          ],
+          [
+            69,
+            98,
+            53,
+            9,
+            10,
+            13,
+            82
+          ],
+          [
+            96,
+            71,
+            67,
+            62,
+            84,
+            56
+          ],
+          [
+            91,
+            95,
+            85,
+            63,
+            51,
+            76,
+            89
+          ],
+          [
+            92,
+            50,
+            33,
+            31,
+            29,
+            27,
+            26,
+            28,
+            30,
+            32,
+            34,
+            93,
+            94,
+            80
+          ]
+        ]
+      }
+    },
+    "RC203": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1647.7967,
+          "n_vehicles": 10,
+          "runtime_s": 0.00325
+        },
+        "clarke_wright": {
+          "total_distance": 1120.1316,
+          "n_vehicles": 9,
+          "runtime_s": 0.010139
+        },
+        "randomized": {
+          "total_distance": 4356.5472,
+          "n_vehicles": 11,
+          "runtime_s": 0.002057
+        },
+        "two_opt": {
+          "total_distance": 1106.6844,
+          "n_vehicles": 9,
+          "runtime_s": 0.012946,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1106.6844,
+          "n_vehicles": 9,
+          "runtime_s": 0.019176,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1070.0327,
+          "n_vehicles": 9,
+          "runtime_s": 3.143288,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1070.0327,
+          "n_vehicles": 9,
+          "runtime_s": 12.482404,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1070.0327,
+        "n_vehicles": 9,
+        "routes": [
+          [
+            88,
+            6,
+            7,
+            79,
+            73,
+            78,
+            60,
+            55
+          ],
+          [
+            90,
+            82,
+            11,
+            15,
+            9,
+            10,
+            13,
+            16,
+            17,
+            47,
+            14,
+            12
+          ],
+          [
+            81,
+            54,
+            39,
+            36,
+            38,
+            41,
+            72,
+            71,
+            93,
+            96
+          ],
+          [
+            65,
+            83,
+            24,
+            19,
+            18,
+            48,
+            21,
+            23,
+            25,
+            77,
+            58,
+            75,
+            97,
+            59,
+            52
+          ],
+          [
+            64,
+            51,
+            76,
+            89,
+            63,
+            85,
+            84,
+            20,
+            49,
+            22,
+            56,
+            66
+          ],
+          [
+            69,
+            98,
+            53,
+            99,
+            87,
+            74,
+            86,
+            57
+          ],
+          [
+            1,
+            3,
+            5,
+            45,
+            8,
+            46,
+            4,
+            2,
+            100,
+            70
+          ],
+          [
+            42,
+            44,
+            43,
+            40,
+            35,
+            37,
+            61,
+            68
+          ],
+          [
+            91,
+            92,
+            95,
+            62,
+            33,
+            28,
+            26,
+            27,
+            29,
+            31,
+            30,
+            32,
+            34,
+            50,
+            67,
+            94,
+            80
+          ]
+        ]
+      }
+    },
+    "RC204": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1440.0115,
+          "n_vehicles": 7,
+          "runtime_s": 0.004679
+        },
+        "clarke_wright": {
+          "total_distance": 842.112,
+          "n_vehicles": 5,
+          "runtime_s": 0.00903
+        },
+        "randomized": {
+          "total_distance": 4545.3678,
+          "n_vehicles": 11,
+          "runtime_s": 0.002033
+        },
+        "two_opt": {
+          "total_distance": 841.6688,
+          "n_vehicles": 5,
+          "runtime_s": 0.004798,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 841.6688,
+          "n_vehicles": 5,
+          "runtime_s": 0.006438,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 832.0166,
+          "n_vehicles": 5,
+          "runtime_s": 5.209639,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 832.0166,
+          "n_vehicles": 5,
+          "runtime_s": 13.124618,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 832.0166,
+        "n_vehicles": 5,
+        "routes": [
+          [
+            66,
+            24,
+            22,
+            20,
+            49,
+            19,
+            18,
+            48,
+            21,
+            23,
+            25,
+            77,
+            58,
+            75,
+            97,
+            59,
+            82
+          ],
+          [
+            81,
+            54,
+            96,
+            93,
+            71,
+            72,
+            41,
+            42,
+            44,
+            39,
+            38,
+            37,
+            35,
+            36,
+            40,
+            43,
+            1,
+            3,
+            5,
+            45,
+            8,
+            46,
+            4,
+            7,
+            6,
+            2,
+            100,
+            70,
+            61,
+            68
+          ],
+          [
+            80,
+            92,
+            67,
+            95,
+            56,
+            64,
+            83,
+            99,
+            52,
+            86,
+            87,
+            9,
+            13,
+            74,
+            57,
+            65,
+            90
+          ],
+          [
+            69,
+            98,
+            10,
+            11,
+            15,
+            16,
+            17,
+            47,
+            14,
+            12,
+            78,
+            73,
+            79,
+            60,
+            53,
+            88,
+            55
+          ],
+          [
+            94,
+            62,
+            50,
+            34,
+            31,
+            29,
+            27,
+            26,
+            28,
+            30,
+            32,
+            33,
+            89,
+            76,
+            63,
+            85,
+            51,
+            84,
+            91
+          ]
+        ]
+      }
+    },
+    "RC205": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 2248.193,
+          "n_vehicles": 11,
+          "runtime_s": 0.004008
+        },
+        "clarke_wright": {
+          "total_distance": 1412.745,
+          "n_vehicles": 13,
+          "runtime_s": 0.013216
+        },
+        "randomized": {
+          "total_distance": 4624.5605,
+          "n_vehicles": 13,
+          "runtime_s": 0.002112
+        },
+        "two_opt": {
+          "total_distance": 1353.2769,
+          "n_vehicles": 13,
+          "runtime_s": 0.022862,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1347.0559,
+          "n_vehicles": 13,
+          "runtime_s": 0.077211,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1308.7245,
+          "n_vehicles": 13,
+          "runtime_s": 2.824696,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1308.7245,
+          "n_vehicles": 13,
+          "runtime_s": 15.378641,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1308.7245,
+        "n_vehicles": 13,
+        "routes": [
+          [
+            69,
+            98,
+            53
+          ],
+          [
+            90,
+            99,
+            52,
+            86,
+            87,
+            59,
+            75,
+            97,
+            74
+          ],
+          [
+            64,
+            19,
+            21,
+            23,
+            25,
+            77,
+            58
+          ],
+          [
+            72,
+            39,
+            36,
+            35,
+            37,
+            43,
+            54
+          ],
+          [
+            42,
+            44,
+            40,
+            38,
+            41,
+            71,
+            93,
+            96
+          ],
+          [
+            82,
+            12,
+            14,
+            47,
+            16,
+            15,
+            11,
+            9,
+            10,
+            13,
+            17
+          ],
+          [
+            92,
+            62,
+            85,
+            63,
+            51,
+            76,
+            89,
+            56
+          ],
+          [
+            81,
+            61,
+            68
+          ],
+          [
+            94,
+            67,
+            84,
+            91
+          ],
+          [
+            65,
+            83,
+            57,
+            22,
+            48,
+            18,
+            49,
+            20,
+            24,
+            66
+          ],
+          [
+            88,
+            78,
+            73,
+            79,
+            60,
+            55
+          ],
+          [
+            2,
+            45,
+            6,
+            7,
+            8,
+            46,
+            5,
+            3,
+            1,
+            4,
+            100,
+            70
+          ],
+          [
+            95,
+            33,
+            30,
+            27,
+            28,
+            26,
+            29,
+            31,
+            32,
+            34,
+            50,
+            80
+          ]
+        ]
+      }
+    },
+    "RC206": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1854.9804,
+          "n_vehicles": 8,
+          "runtime_s": 0.006501
+        },
+        "clarke_wright": {
+          "total_distance": 1264.2706,
+          "n_vehicles": 11,
+          "runtime_s": 0.00926
+        },
+        "randomized": {
+          "total_distance": 4378.7822,
+          "n_vehicles": 10,
+          "runtime_s": 0.002804
+        },
+        "two_opt": {
+          "total_distance": 1250.4722,
+          "n_vehicles": 11,
+          "runtime_s": 0.009838,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1248.508,
+          "n_vehicles": 11,
+          "runtime_s": 0.02014,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1182.5365,
+          "n_vehicles": 10,
+          "runtime_s": 2.91011,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1182.5365,
+          "n_vehicles": 10,
+          "runtime_s": 13.557037,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1182.5365,
+        "n_vehicles": 10,
+        "routes": [
+          [
+            69,
+            98,
+            88,
+            12,
+            14,
+            47,
+            11,
+            9,
+            15,
+            16,
+            17,
+            13,
+            10
+          ],
+          [
+            64,
+            49,
+            19,
+            18,
+            48,
+            20,
+            24,
+            66
+          ],
+          [
+            83,
+            22,
+            21,
+            23,
+            25,
+            77,
+            58,
+            74
+          ],
+          [
+            71,
+            72,
+            42,
+            39,
+            38,
+            36,
+            40,
+            44,
+            43,
+            41,
+            35,
+            37,
+            54
+          ],
+          [
+            81,
+            96,
+            94,
+            80
+          ],
+          [
+            65,
+            52,
+            99,
+            59,
+            75,
+            97,
+            87,
+            86,
+            57
+          ],
+          [
+            90,
+            82,
+            53,
+            78,
+            73,
+            79,
+            60,
+            55
+          ],
+          [
+            95,
+            63,
+            85,
+            84,
+            51,
+            76,
+            89,
+            56,
+            91
+          ],
+          [
+            61,
+            2,
+            45,
+            5,
+            8,
+            7,
+            6,
+            46,
+            4,
+            3,
+            1,
+            100,
+            70,
+            68
+          ],
+          [
+            92,
+            67,
+            62,
+            33,
+            30,
+            28,
+            27,
+            29,
+            31,
+            26,
+            32,
+            34,
+            50,
+            93
+          ]
+        ]
+      }
+    },
+    "RC207": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1658.6886,
+          "n_vehicles": 7,
+          "runtime_s": 0.003708
+        },
+        "clarke_wright": {
+          "total_distance": 1246.8631,
+          "n_vehicles": 11,
+          "runtime_s": 0.009335
+        },
+        "randomized": {
+          "total_distance": 4386.6878,
+          "n_vehicles": 11,
+          "runtime_s": 0.003865
+        },
+        "two_opt": {
+          "total_distance": 1186.9,
+          "n_vehicles": 11,
+          "runtime_s": 0.013365,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 1189.6613,
+          "n_vehicles": 11,
+          "runtime_s": 0.039013,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 1127.8949,
+          "n_vehicles": 10,
+          "runtime_s": 2.98768,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 1127.8949,
+          "n_vehicles": 10,
+          "runtime_s": 16.195586,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 1127.8949,
+        "n_vehicles": 10,
+        "routes": [
+          [
+            64,
+            49,
+            18,
+            48,
+            20,
+            24,
+            66
+          ],
+          [
+            100,
+            2,
+            6,
+            7,
+            8,
+            5,
+            46,
+            4,
+            45,
+            3,
+            1,
+            70,
+            68
+          ],
+          [
+            51,
+            85,
+            63,
+            76,
+            89,
+            84,
+            56,
+            91
+          ],
+          [
+            81,
+            61,
+            42,
+            44,
+            40,
+            36,
+            35,
+            37,
+            38,
+            39,
+            43,
+            41,
+            54
+          ],
+          [
+            83,
+            22,
+            19,
+            21,
+            23,
+            25,
+            77,
+            75,
+            58,
+            87,
+            59,
+            97,
+            13,
+            9
+          ],
+          [
+            88,
+            78,
+            73,
+            79,
+            60,
+            55
+          ],
+          [
+            69,
+            98,
+            53,
+            12,
+            14,
+            47,
+            17,
+            16,
+            15,
+            11,
+            10
+          ],
+          [
+            72,
+            71,
+            29,
+            31,
+            34,
+            67,
+            94,
+            80
+          ],
+          [
+            82,
+            99,
+            52,
+            86,
+            74,
+            57,
+            65,
+            90
+          ],
+          [
+            92,
+            95,
+            62,
+            33,
+            30,
+            28,
+            26,
+            27,
+            32,
+            50,
+            93,
+            96
+          ]
+        ]
+      }
+    },
+    "RC208": {
+      "n_customers": 100,
+      "vehicle_capacity": 1000.0,
+      "max_vehicles": 25,
+      "solvers": {
+        "nearest_neighbor": {
+          "total_distance": 1360.3606,
+          "n_vehicles": 5,
+          "runtime_s": 0.004433
+        },
+        "clarke_wright": {
+          "total_distance": 865.0696,
+          "n_vehicles": 6,
+          "runtime_s": 0.010344
+        },
+        "randomized": {
+          "total_distance": 4322.0558,
+          "n_vehicles": 8,
+          "runtime_s": 0.001721
+        },
+        "two_opt": {
+          "total_distance": 856.9467,
+          "n_vehicles": 6,
+          "runtime_s": 0.006269,
+          "base_solver": "clarke_wright"
+        },
+        "two_opt_tuned": {
+          "total_distance": 845.6742,
+          "n_vehicles": 6,
+          "runtime_s": 0.027381,
+          "base_solver": "clarke_wright best-of-1"
+        },
+        "alns": {
+          "total_distance": 838.2573,
+          "n_vehicles": 6,
+          "runtime_s": 4.228811,
+          "base_solver": "two_opt_tuned"
+        },
+        "ortools_cp": {
+          "total_distance": 838.2573,
+          "n_vehicles": 6,
+          "runtime_s": 12.277162,
+          "base_solver": "alns"
+        }
+      },
+      "best": {
+        "solver": "alns",
+        "total_distance": 838.2573,
+        "n_vehicles": 6,
+        "routes": [
+          [
+            94,
+            67,
+            34,
+            31,
+            29,
+            27,
+            26,
+            28,
+            30,
+            32,
+            33,
+            50,
+            62,
+            95,
+            92,
+            91,
+            80
+          ],
+          [
+            81,
+            61,
+            70,
+            100,
+            1,
+            3,
+            5,
+            45,
+            4,
+            46,
+            8,
+            7,
+            6,
+            2,
+            88,
+            55,
+            68
+          ],
+          [
+            90,
+            65,
+            83,
+            64,
+            49,
+            19,
+            18,
+            48,
+            21,
+            23,
+            25,
+            77,
+            58,
+            75,
+            97,
+            59,
+            87,
+            74,
+            86,
+            57
+          ],
+          [
+            69,
+            98,
+            82,
+            99,
+            52,
+            9,
+            13,
+            15,
+            16,
+            17,
+            47,
+            14,
+            11,
+            10,
+            12,
+            78,
+            73,
+            79,
+            60,
+            53
+          ],
+          [
+            93,
+            71,
+            72,
+            37,
+            35,
+            36,
+            40,
+            43,
+            44,
+            42,
+            39,
+            38,
+            41,
+            54,
+            96
+          ],
+          [
+            56,
+            84,
+            85,
+            63,
+            89,
+            76,
+            51,
+            20,
+            22,
+            24,
+            66
+          ]
+        ]
+      }
+    }
+  },
+  "solver_best": {
+    "max_iterations": 50,
+    "acceptance": "best",
+    "tail_exchange": true,
+    "restarts": 1
+  },
+  "hpo": {
+    "trials": 24,
+    "best_mean_distance": 1156.9221
+  },
+  "alns_best": {
+    "segment_length": 100,
+    "reaction_factor": 0.5,
+    "init_weights": "uniform"
+  },
+  "alns_hpo": {
+    "trials": 12,
+    "subset": [
+      "C101",
+      "C104",
+      "R104",
+      "R108",
+      "RC104",
+      "RC105"
+    ],
+    "best_mean_distance": 1099.8295
+  },
+  "convergence": {
+    "C101": {
+      "untuned": [
+        1127.4832775991276,
+        1093.346843967463,
+        1091.9204904959715,
+        1090.9079805701488,
+        1089.761887922106,
+        1088.4477909268371,
+        1081.0748985613027,
+        1078.5689536605075,
+        1072.1254127982527,
+        1071.1924326705978,
+        1068.5237584359209,
+        1067.2962640068345,
+        1066.914376437159,
+        1065.2524726474685,
+        1058.4422229715617,
+        1046.530358079906
+      ],
+      "tuned": [
+        1127.4832775991276,
+        1091.9048607310942,
+        1079.9929958394384,
+        1075.3517942686865,
+        1071.520842373841,
+        1070.508332448018,
+        1065.5551305612246,
+        1062.1384049141138,
+        1059.985123542691,
+        1058.5587700711997,
+        1057.6257899435448,
+        1054.9571157088678,
+        1053.7296212797814,
+        1053.347733710106,
+        1052.9738989421608,
+        1046.530358079906
+      ]
+    },
+    "RC105": {
+      "untuned": [
+        1984.7869988762895,
+        1981.3993092990559,
+        1981.221373298029,
+        1968.0865885120002,
+        1966.6662081859893,
+        1965.8813521809332,
+        1955.4545848872979,
+        1954.8363787877079,
+        1948.7882664329545,
+        1932.5833312380519,
+        1925.3860622371083,
+        1925.2110323270097,
+        1921.3150428840277,
+        1920.273247559883
+      ],
+      "tuned": [
+        1984.7869988762895,
+        1971.6522140902607,
+        1955.447278895358,
+        1937.0662181440357,
+        1930.8935988193439,
+        1926.9976093763619,
+        1923.4663519211847,
+        1918.7804489164537,
+        1915.39275933922,
+        1913.972379013209,
+        1912.9305836890646,
+        1912.1457276840083,
+        1901.718960390373,
+        1901.3553148879935,
+        1901.1773788869666
+      ]
+    }
+  },
+  "alns_convergence": {
+    "C101": {
+      "iterations": [
+        0.0,
+        24.0,
+        48.0,
+        72.0,
+        96.0,
+        120.0
+      ],
+      "best": [
+        1046.530358079906,
+        993.4511531289527,
+        927.3921433343038,
+        860.205140557885,
+        860.205140557885,
+        860.205140557885
+      ],
+      "segments": [
+        1.0
+      ],
+      "destroy_weights": [
+        [
+          1.1,
+          1.2222222222222223,
+          1.0588235294117647
+        ]
+      ]
+    },
+    "RC105": {
+      "iterations": [
+        0.0,
+        23.0,
+        46.0,
+        68.0,
+        91.0,
+        114.0
+      ],
+      "best": [
+        1901.1773788869666,
+        1762.4120971881725,
+        1715.659981315211,
+        1709.4090049977847,
+        1639.1788469410453,
+        1584.1476072539049
+      ],
+      "segments": [
+        1.0
+      ],
+      "destroy_weights": [
+        [
+          1.3026315789473686,
+          1.2794117647058822,
+          1.2321428571428572
+        ]
+      ]
+    }
+  }
+}
