@@ -254,8 +254,15 @@ jobs:
         run: |
           trap "docker rm -f showcase" EXIT
           docker run -d --name showcase -p 8000:8000 amm-ds-portfolio
-          sleep 15
-          curl -fsS http://localhost:8000/health
+          # poll readiness (cold joblib loads on a 2-vCPU runner can exceed a
+          # fixed sleep; a previous run flaked here)
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8000/health 2>/dev/null | grep -q '"ready":true'; then
+              echo "ready after ${i}s"; break
+            fi
+            sleep 1
+            if [ "$i" = "60" ]; then echo "container never became ready"; docker logs showcase; exit 1; fi
+          done
           curl -fsS http://localhost:8000/ | grep -q 'id="root"'
           # Deep links must return the SPA shell (client-side routing fallback).
           # NB: bare /projects is a JSON API route (project index), not the SPA.
