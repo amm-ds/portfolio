@@ -21,16 +21,19 @@ import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
 from demand_forecasting import m5_data  # noqa: E402
 from demand_forecasting.m5_demo_payload import (  # noqa: E402
-    CATALOG_PER_CELL,
     CURVE_CANDIDATES,
     HISTORY_DAYS,
     SCHEMA_VERSION,
-    _select_catalog,
     _shape_tag,
     build_demo_payload,
     write_demo_payload,
 )
-from demand_forecasting.m5_track import run_m5_track, write_m5_artifacts  # noqa: E402
+from demand_forecasting.m5_track import (  # noqa: E402
+    CATALOG_PER_CELL,
+    _select_catalog,
+    run_m5_track,
+    write_m5_artifacts,
+)
 
 N_DAYS = 150
 
@@ -119,7 +122,7 @@ def tiny_m5_payload(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     )
     reports_dir = tmp_path / "reports_m5"
     write_m5_artifacts(result, reports_dir)
-    payload = build_demo_payload(data_dir, reports_dir, per_cell=2)
+    payload = build_demo_payload(data_dir, reports_dir)
     return data_dir, reports_dir, payload
 
 
@@ -267,12 +270,40 @@ def test_drift_guard_raises_on_tampered_metrics(tiny_m5_payload) -> None:
     metrics["test"]["pooled"]["seasonal_naive"]["wape"] += 0.5
     metrics_path.write_text(json.dumps(metrics))
     with pytest.raises(ValueError, match="drift guard failed"):
-        build_demo_payload(data_dir, reports_dir, per_cell=2)
+        build_demo_payload(data_dir, reports_dir)
+
+
+def test_sidecar_guard_raises_on_missing_sidecar(tiny_m5_payload) -> None:
+    data_dir, reports_dir, _ = tiny_m5_payload
+    (reports_dir / "catalog_forecasts.parquet").unlink()
+    with pytest.raises(FileNotFoundError, match="catalog_forecasts"):
+        build_demo_payload(data_dir, reports_dir)
+
+
+def test_sidecar_guard_raises_on_tampered_curve(tiny_m5_payload) -> None:
+    """A tampered lgbm curve column (no live re-run reference) fails the
+    self-consistency guard: the catalog WAPE recomputed from the frame must
+    match the recorded value."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+    from demand_forecasting.m5_track import CATALOG_FORECASTS_NAME
+
+    data_dir, reports_dir, _ = tiny_m5_payload
+    path = reports_dir / CATALOG_FORECASTS_NAME
+    table = pq.read_table(path)
+    frame = table.to_pandas()
+    frame.loc[frame["lgbm"].index[0], "lgbm"] += 100.0
+    tampered = pa.Table.from_pandas(frame, preserve_index=False).replace_schema_metadata(
+        table.schema.metadata
+    )
+    pq.write_table(tampered, path)
+    with pytest.raises(ValueError, match="sidecar curve guard failed"):
+        build_demo_payload(data_dir, reports_dir)
 
 
 def test_run_twice_byte_identity(tiny_m5_payload) -> None:
     data_dir, reports_dir, payload = tiny_m5_payload
-    again = build_demo_payload(data_dir, reports_dir, per_cell=2)
+    again = build_demo_payload(data_dir, reports_dir)
     assert json.dumps(payload, indent=2) + "\n" == json.dumps(again, indent=2) + "\n"
 
 

@@ -39,13 +39,26 @@ Protocol (fixed a priori, machine-readable in evaluation_metadata.json):
   seasonal_naive on the TEST origins: pooled-WAPE difference and pooled-WRMSSE
   difference, each with a 95% paired cluster bootstrap over series (one shared
   index draw per replication, ``BOOTSTRAP_REPS = 2000``, fixed seed).
-- **Probabilistic** (lgbm + convex_ensemble): a split-conformal band
-  calibrated on SELECTION-origin out-of-sample residuals at per-horizon-day
-  granularity — ``lo/hi = point ± quantile(|residual_h|, 0.8)``, zero-clipped
-  and sorted (mlforecast's PredictionIntervals needs multiple calibration
-  windows; a documented split-conformal over the 8 selection origins x 600
-  series is the simpler, fully deterministic choice). Reported: p50/p90
-  pinball and the empirical 80% coverage on the test origins.
+- **Probabilistic** (lgbm + convex_ensemble): a per-series SCALED
+  split-conformal band calibrated on SELECTION-origin out-of-sample residuals
+  at per-horizon-day granularity —
+  ``lo/hi = point ± quantile(|residual_h| / scale_i, 0.8) * scale_i`` with
+  ``scale_i`` the series' in-sample seasonal-naive-28 RMSE (the same scale
+  family as the WRMSSE denominator). A pooled absolute-width band was tried
+  first and mis-serves the panel's volume heterogeneity (top-quintile series
+  covered ~61% vs ~90% bottom-quintile at the same nominal 80% level); the
+  scaled band brackets every volume quintile at ~80%. This mirrors
+  mlforecast's ``PredictionIntervals`` conformal strategy (per-horizon-step
+  quantile of calibration-window absolute errors — the 8 selection origins
+  are the calibration windows), with the documented per-series scale
+  extension; zero-clipped and sorted. Reported: p50/p90 pinball, the
+  empirical 80% coverage pooled and by volume class on the test origins.
+- **Demo sidecar**: the run retains the per-series forecast curves of the
+  FIXED 24-series demo catalog (same deterministic rule as the payload) at
+  the 2 test origins — ``reports_m5/catalog_forecasts.parquet`` — so the
+  demo payload copies curves from the committed global model instead of
+  re-fitting a catalog-subset approximation (an earlier subset refit was
+  both weaker and, via a row-order mismatch, mis-aligned — see DESIGN N).
 - **Honesty/determinism**: no candidate sees test rows at fit/selection time;
   LightGBM runs ``n_jobs=1`` + fixed seed + ``force_row_wise`` (the repo's
   byte-identity contract); statsforecast runs ``n_jobs=1``; every fit is
@@ -100,6 +113,20 @@ STATISTICAL_CANDIDATES = ("seasonal_naive", "window_avg_28", "adida", "tsb")
 CANDIDATES = (*STATISTICAL_CANDIDATES, "auto_ets", "auto_ces", "lgbm", "convex_ensemble")
 NAIVE = "seasonal_naive"
 DENSE_CLASSES = ("smooth", "erratic")
+#: demo catalog quota per (store x class) cell -> 3 stores x 2 classes x 4 = 24.
+CATALOG_PER_CELL = 4
+#: candidates whose per-series curves the demo sidecar retains (every shipped
+#: curve candidate plus auto_ces — a potential ensemble member the demo blend
+#: needs verifiable).
+SIDECAR_CANDIDATES = ("seasonal_naive", "auto_ets", "auto_ces", "lgbm", "convex_ensemble")
+#: the demo sidecar artifact (per-series catalog curves at the test origins).
+CATALOG_FORECASTS_NAME = "catalog_forecasts.parquet"
+CATALOG_RULE = (
+    "deterministic: within each (store, class) cell, series are ordered by "
+    "total panel volume descending (ties -> unique_id) and the evenly spaced "
+    "ranks [0, 1, len//2, len-1] (first CATALOG_PER_CELL of them) are picked, "
+    "so every cell spans high/mid/low volume"
+)
 
 METRIC_DEFINITIONS = {
     "mae": "mean |actual - forecast| over the scored (series x day) cells",
@@ -118,7 +145,8 @@ METRIC_DEFINITIONS = {
     "win_rate_vs_naive": "share of series whose pooled test |error| is below the "
     "seasonal_naive pooled test |error|",
     "pinball": "mean pinball loss at the stated quantile over the test cells",
-    "coverage_80": "share of test actuals inside the split-conformal 80% band",
+    "coverage_80": "share of test actuals inside the per-series scaled "
+    "split-conformal 80% band (pooled and by volume class)",
 }
 
 
@@ -129,6 +157,8 @@ class M5Result:
     metrics: dict[str, Any]
     probabilistic: dict[str, Any]
     metadata: dict[str, Any]
+    catalog_frame: pd.DataFrame
+    catalog_meta: dict[str, Any]
 
 
 # ---------------------------------------------------------------------------
@@ -239,6 +269,7 @@ def _lgbm_forecast(
     future_exog: pd.DataFrame,
     seed: int,
     n_estimators: int | None = None,
+    series_ids: list[str] | None = None,
 ) -> np.ndarray:
     """Global LightGBM point forecast at one origin: (n_series, h).
 
@@ -247,6 +278,10 @@ def _lgbm_forecast(
     (history joined on the training frame; future values from the calendar /
     forward-filled price). Determinism: fixed seed, n_jobs=1, force_row_wise
     (the repo's byte-identity contract for LightGBM).
+
+    mlforecast returns rows sorted by ``unique_id`` (alphabetical) — NOT in
+    the caller's series order; pass ``series_ids`` to get the result
+    re-indexed to it (the demo-payload refit bug was exactly this mismatch).
     """
     from lightgbm import LGBMRegressor
     from mlforecast import MLForecast
@@ -281,12 +316,18 @@ def _lgbm_forecast(
     )
     pred: Any = fc.predict(HORIZON, X_df=future_exog)
     col_name = pred.columns[-1]
-    n_series = train_m["unique_id"].nunique()
+    alpha_ids = sorted(train_m["unique_id"].unique().tolist())
+    n_series = len(alpha_ids)
     if len(pred) != n_series * HORIZON:
         raise ValueError("mlforecast did not return the (series x horizon) grid")
     # rows come back one h-block per series, sorted by (unique_id, ds)
     col: np.ndarray = pred.sort_values(["unique_id", "ds"])[col_name].to_numpy(dtype=float)
-    mat = col.reshape(n_series, HORIZON)
+    mat = col.reshape(n_series, HORIZON)  # alphabetical unique_id order
+    if series_ids is not None:
+        if set(series_ids) != set(alpha_ids) or len(series_ids) != n_series:
+            raise ValueError("series_ids does not match the training frame's series set")
+        alpha_pos = {sid: i for i, sid in enumerate(alpha_ids)}
+        mat = mat[[alpha_pos[sid] for sid in series_ids]]
     if np.isnan(mat).any():
         raise ValueError("lgbm forecast contains NaNs")
     clipped: np.ndarray = np.clip(mat, 0.0, None)
@@ -363,6 +404,24 @@ def pinball_loss(y: np.ndarray, pred: np.ndarray, tau: float) -> float:
     """Mean pinball loss at quantile ``tau``."""
     diff = np.asarray(y, dtype=float) - np.asarray(pred, dtype=float)
     return float(np.mean(np.maximum(tau * diff, (tau - 1.0) * diff)))
+
+
+def band_scales(scales: np.ndarray) -> np.ndarray:
+    """Per-series band scale: the seasonal-naive-28 in-sample RMSE.
+
+    ``scales`` are the per-series naive-28 in-sample MSEs (see
+    :func:`naive28_scale`); the band scale is their square root — the same
+    scale family as the WRMSSE denominator, so loud and quiet series get
+    proportionally wide/narrow conformal bands. Zero/NaN scales (constant or
+    too-short training windows) fall back to the origin's median valid RMSE
+    (then to 1.0 if no scale is valid at all).
+    """
+    rmse = np.sqrt(np.where(np.isnan(scales) | (scales <= 0), np.nan, scales))
+    fallback = float(np.nanmedian(rmse))
+    if not np.isfinite(fallback) or fallback <= 0:
+        fallback = 1.0
+    out = np.where(np.isnan(rmse), fallback, rmse)
+    return np.maximum(out, 1e-9)
 
 
 def ensemble_weight(pred_a: np.ndarray, pred_b: np.ndarray, y: np.ndarray) -> float:
@@ -534,7 +593,9 @@ def run_m5_track(
         actuals[o] = _actual_window(y_all, series_ids, odate, HORIZON)
         preds = _statistical_forecasts(train, series_ids, HORIZON)
         hist_exog, future_exog = split_exogenous(x_enc, series_ids, odate, HORIZON)
-        preds["lgbm"] = _lgbm_forecast(train, hist_exog, future_exog, seed, n_estimators)
+        preds["lgbm"] = _lgbm_forecast(
+            train, hist_exog, future_exog, seed, n_estimators, series_ids
+        )
         for name, mat in preds.items():
             forecasts[name][o] = mat
         logger.info(
@@ -562,10 +623,21 @@ def run_m5_track(
             [actuals[o] for o in subset]
         )
 
-    # ---- conformal band calibration on SELECTION residuals (per horizon day)
+    # ---- WRMSSE scales/volumes per (series, origin) (band scales reuse them)
+    scales: dict[int, np.ndarray] = {}
+    volumes: dict[int, np.ndarray] = {}
+    for o in origins:
+        h = _series_train_history(y_all, series_ids, pd.Timestamp(dates[o]))
+        scales[o] = np.array([naive28_scale(h[sid]) for sid in series_ids])
+        volumes[o] = np.array([float(np.sum(h[sid])) for sid in series_ids])
+
+    # ---- conformal band calibration on SELECTION residuals (per horizon day,
+    #      per-series scaled — see the module docstring: a pooled absolute
+    #      width mis-serves this panel's volume heterogeneity)
     pred_lgbm_sel, act_sel = _stack(selection, "lgbm")
-    resid_sel = pred_lgbm_sel - act_sel  # (n_sel * n_series, HORIZON)
-    q80 = np.quantile(np.abs(resid_sel), 0.8, axis=0)  # per horizon day
+    scale_sel = np.concatenate([band_scales(scales[o]) for o in selection])
+    resid_scaled = (pred_lgbm_sel - act_sel) / scale_sel[:, None]  # (n_sel*n_series, H)
+    q80 = np.quantile(np.abs(resid_scaled), 0.8, axis=0)  # per horizon day
     q80 = np.maximum(q80, 1e-9)
 
     # ---- ensemble: best two of the pool by SELECTION WAPE, grid weight ----
@@ -592,14 +664,6 @@ def run_m5_track(
         1.0 - w_ens,
         {c: round(v, 4) for c, v in sel_wapes.items()},
     )
-
-    # ---- WRMSSE scales/volumes per (series, origin) ----
-    scales: dict[int, np.ndarray] = {}
-    volumes: dict[int, np.ndarray] = {}
-    for o in origins:
-        h = _series_train_history(y_all, series_ids, pd.Timestamp(dates[o]))
-        scales[o] = np.array([naive28_scale(h[sid]) for sid in series_ids])
-        volumes[o] = np.array([float(np.sum(h[sid])) for sid in series_ids])
 
     test_block = _metrics_block(forecasts, actuals, scales, volumes, test, dense_mask, n_series)
     selection_block = _metrics_block(
@@ -651,26 +715,40 @@ def run_m5_track(
         "baseline": NAIVE,
     }
 
-    # ---- probabilistic block (split-conformal 80% band, selection-calibrated)
+    # ---- probabilistic block (per-series scaled split-conformal 80% band,
+    #      calibration on SELECTION residuals only)
     prob: dict[str, Any] = {
-        "method": "split-conformal: lo/hi = point ± per-horizon-day quantile of "
-        "|lgbm residual| over the SELECTION origins (8 x n_series calibration "
-        "points per h), level 0.8; zero-clipped and sorted. p50 = point forecast; "
-        "p90 = hi band edge.",
+        "method": "per-series scaled split-conformal: lo/hi = point ± "
+        "(per-horizon-day 0.8-quantile of |lgbm residual| / series scale over "
+        "the SELECTION origins, 8 x n_series calibration points per h) x (the "
+        "scored origin's naive-28 in-sample RMSE of that series; zero/NaN scale "
+        "-> the origin's median valid RMSE) — level 0.8; zero-clipped and "
+        "sorted. p50 = point forecast; p90 = hi band edge.",
         "level": 0.8,
         "per_horizon_width": q80.tolist(),
         "candidates": {},
     }
     for cand in ("lgbm", "convex_ensemble"):
         pred_t, _ = _stack(test, cand)
-        lo = np.clip(pred_t - q80, 0.0, None)
-        hi = pred_t + q80
-        covered = (act_t >= lo) & (act_t <= hi)
+        los, his, covs = [], [], []
+        for o in test:
+            width = q80[None, :] * band_scales(scales[o])[:, None]
+            lo = np.clip(forecasts[cand][o] - width, 0.0, None)
+            hi = forecasts[cand][o] + width
+            los.append(lo)
+            his.append(hi)
+            covs.append((actuals[o] >= lo) & (actuals[o] <= hi))
+        hi_t = np.concatenate(his)  # (n_test * n_series, HORIZON)
+        covered = np.stack(covs)  # (n_test, n_series, HORIZON)
         prob["candidates"][cand] = {
             "pinball_p50": pinball_loss(act_t, pred_t, 0.5),
-            "pinball_p90": pinball_loss(act_t, hi, 0.9),
+            "pinball_p90": pinball_loss(act_t, hi_t, 0.9),
             "coverage_80": float(covered.mean()),
-            "mean_band_width": float((hi - lo).mean()),
+            "coverage_80_by_class": {
+                "dense": float(covered[:, dense_mask, :].mean()),
+                "intermittent": float(covered[:, ~dense_mask, :].mean()),
+            },
+            "mean_band_width": float(np.mean([hi - lo for hi, lo in zip(his, los, strict=True)])),
         }
 
     metrics = {
@@ -763,6 +841,52 @@ def run_m5_track(
         "report_sample_series": report_series,
     }
 
+    # ---- demo sidecar: per-series curves for the FIXED demo catalog at the
+    #      test origins (the payload copies these — no catalog-subset refit)
+    stores = s_all.drop_duplicates("unique_id").set_index("unique_id")["store_id"]
+    catalog_ids = _select_catalog(y_all, classes, stores, per_cell=CATALOG_PER_CELL)
+    cat_idx = [series_ids.index(sid) for sid in catalog_ids]
+    sidecar_rows = []
+    for o in test:
+        odate = pd.Timestamp(dates[o])
+        days = pd.date_range(odate + pd.to_timedelta(1, unit="D"), periods=HORIZON, freq="D")
+        block: dict[str, Any] = {
+            "unique_id": np.repeat(catalog_ids, HORIZON),
+            "origin": str(odate.date()),
+            "ds": np.tile(days, len(catalog_ids)),
+            "actual": actuals[o][cat_idx].reshape(-1),
+        }
+        for cand in SIDECAR_CANDIDATES:
+            block[cand] = forecasts[cand][o][cat_idx].reshape(-1)
+        width = q80[None, :] * band_scales(scales[o])[cat_idx][:, None]
+        block["band_lo"] = np.clip(forecasts["lgbm"][o][cat_idx] - width, 0.0, None).reshape(-1)
+        block["band_hi"] = (forecasts["lgbm"][o][cat_idx] + width).reshape(-1)
+        sidecar_rows.append(pd.DataFrame(block))
+    catalog_frame = pd.concat(sidecar_rows, ignore_index=True)
+    catalog_meta: dict[str, Any] = {
+        "protocol": PROTOCOL,
+        "catalog_rule": CATALOG_RULE,
+        "per_cell": CATALOG_PER_CELL,
+        # the full-panel pooled test WAPEs, pinned by the payload's drift
+        # guard against the committed metrics block at 1e-9
+        "pooled_test_wape": {c: wape(_stack(test, c)[1], _stack(test, c)[0]) for c in CANDIDATES},
+        # the catalog-only pooled test WAPEs, recomputed from the sidecar
+        # frame by the payload's guard at 1e-9 (catches a tampered curve
+        # column; lgbm/ensemble have no live re-run reference)
+        "catalog_test_wape": {
+            c: float(
+                np.abs(catalog_frame[c].to_numpy() - catalog_frame["actual"].to_numpy()).sum()
+                / catalog_frame["actual"].to_numpy().sum()
+            )
+            for c in SIDECAR_CANDIDATES
+        },
+    }
+    logger.info(
+        "m5 demo sidecar: %d catalog series x %d test origins retained",
+        len(catalog_ids),
+        len(test),
+    )
+
     logger.info(
         "m5 track done in %.1fs: test WAPE lgbm=%.4f naive=%.4f | ensemble=%.4f",
         time.time() - t0,
@@ -770,7 +894,13 @@ def run_m5_track(
         test_block["pooled"][NAIVE]["wape"],
         test_block["pooled"]["convex_ensemble"]["wape"],
     )
-    return M5Result(metrics=metrics, probabilistic=prob, metadata=metadata)
+    return M5Result(
+        metrics=metrics,
+        probabilistic=prob,
+        metadata=metadata,
+        catalog_frame=catalog_frame,
+        catalog_meta=catalog_meta,
+    )
 
 
 def _metrics_block(
@@ -876,6 +1006,44 @@ def _metrics_block(
     }
 
 
+def _is_dense(syntetos_boylan_class: str) -> bool:
+    return syntetos_boylan_class in DENSE_CLASSES
+
+
+def _select_catalog(
+    y: pd.DataFrame,
+    classes: dict[str, dict[str, Any]],
+    stores: pd.Series,
+    *,
+    per_cell: int = CATALOG_PER_CELL,
+) -> list[str]:
+    """Deterministic demo catalog: balanced across stores x {dense, intermittent}.
+
+    Rule (documented in the payload): within each cell, series are ordered by
+    total panel volume descending (ties -> unique_id); the evenly spaced
+    ranks [0, 1, len//2, len-1] — first ``per_cell`` of them — are picked, so
+    every cell spans high/mid/low volume. Shared by the track (which retains
+    the catalog curves in the demo sidecar) and the payload builder.
+    """
+    volume = y.groupby("unique_id")["y"].sum()
+    picked: list[str] = []
+    for store in sorted(stores.unique()):
+        members_store = [s for s in stores.index if stores.loc[s] == store]
+        for cls in ("dense", "intermittent"):
+            members = sorted(
+                (s for s in members_store if _is_dense(classes[s]["class"]) == (cls == "dense")),
+                key=lambda s: (-float(volume.loc[s]), s),
+            )
+            if not members:
+                continue
+            # evenly spaced ranks [0, 1, mid, last], clamped to the cell and
+            # deduplicated (a 1-member cell contributes only rank 0)
+            rank_pool = (0, 1, len(members) // 2, len(members) - 1)
+            ranks = sorted({min(r, len(members) - 1) for r in rank_pool})[:per_cell]
+            picked.extend(members[r] for r in ranks)
+    return picked
+
+
 def _pick_sample_series(
     series_ids: list[str], volume: np.ndarray, s: pd.DataFrame, k: int = 4
 ) -> list[str]:
@@ -916,7 +1084,16 @@ def _package_versions() -> dict[str, str]:
 
 
 def write_m5_artifacts(result: M5Result, reports_dir: Path) -> None:
-    """Persist metrics/probabilistic/evaluation_metadata JSON (json-safe)."""
+    """Persist metrics/probabilistic/evaluation_metadata JSON + the demo sidecar.
+
+    The sidecar parquet carries the per-series catalog curves (actuals, every
+    shipped candidate, the lgbm band edges) at the test origins, plus the
+    full-panel pooled test WAPEs in its schema metadata for the payload's
+    drift guard.
+    """
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
     from demand_forecasting.evaluate import _json_safe
 
     reports_dir = Path(reports_dir)
@@ -930,4 +1107,8 @@ def write_m5_artifacts(result: M5Result, reports_dir: Path) -> None:
     (reports_dir / "evaluation_metadata.json").write_text(
         json.dumps(_json_safe(result.metadata), indent=2) + "\n"
     )
+    table = pa.Table.from_pandas(result.catalog_frame, preserve_index=False)
+    meta = {key.encode(): json.dumps(value).encode() for key, value in result.catalog_meta.items()}
+    table = table.replace_schema_metadata({**dict(table.schema.metadata or {}), **meta})
+    pq.write_table(table, reports_dir / CATALOG_FORECASTS_NAME)
     logger.info("m5 artifacts -> %s", reports_dir)

@@ -152,11 +152,16 @@ evaluation_metadata.json):
   **[−0.168, −0.147]**); lgbm −0.091 WAPE (CI [−0.102, −0.080], a 15.1%
   relative cut) and −0.151 WRMSSE (CI [−0.163, −0.140]). Both CIs exclude
   zero.
-- **Bands** — split-conformal 80% band around the point forecast,
-  per-horizon-day width = the 0.8-quantile of |lgbm residual| over the 8
-  selection origins, zero-clipped and sorted: lgbm covers **78.7%** of test
-  actuals (target 80%) at mean width **12.46** units; the ensemble covers
-  78.5% at 11.96. Slightly under-covering, stated as measured.
+- **Bands** — per-series scaled split-conformal 80% band around the point
+  forecast: per-horizon-day width = the 0.8-quantile of |lgbm residual| /
+  series scale over the 8 selection origins, scaled back by the series'
+  in-sample seasonal-naive-28 RMSE (zero/NaN scale -> the origin's median),
+  zero-clipped and sorted — the pooled absolute-width band we tried first
+  mis-served the panel's volume heterogeneity (top-quintile series covered
+  ~61% at the nominal 80% level). Result: lgbm covers **78.0%** of test
+  actuals (target 80%) at mean width **14.25** units; the ensemble covers
+  78.4% at 13.80 — by class the band is balanced (lgbm dense 77.3%,
+  intermittent 80.4%). Slightly under-covering, stated as measured.
 - **Win rates** — share of series whose pooled test |error| beats the
   seasonal_naive floor: the ensemble wins on **89.3%** of all series (dense
   89.0%, intermittent 90.5%); the per-series spread across candidates is
