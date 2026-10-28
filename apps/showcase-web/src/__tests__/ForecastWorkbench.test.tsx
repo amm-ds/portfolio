@@ -35,6 +35,12 @@ function windowOf(shape: string) {
   };
 }
 
+/** Intermittent-series window where the flat naive curve nails the actuals —
+ * the honest per-series verdict there is "the seasonal naive wins this one". */
+function naiveFavorableWindow(shape: string) {
+  return { ...windowOf(shape), actual: CURVES.seasonal_naive.slice() };
+}
+
 /** 4-series fixture: 2 stores × (dense + intermittent), 2 scored origins. */
 const PAYLOAD: ForecastWorkbenchPayload = {
   schema_version: 4,
@@ -104,7 +110,7 @@ const PAYLOAD: ForecastWorkbenchPayload = {
       class: "intermittent",
       adi: 1.35,
       cv2: 1.29,
-      origins: { "2016-05-10": windowOf("slow-mover"), "2016-05-17": windowOf("slow-mover") },
+      origins: { "2016-05-10": naiveFavorableWindow("slow-mover"), "2016-05-17": naiveFavorableWindow("slow-mover") },
     },
     {
       series_id: "FOODS_3_090_CA_3",
@@ -120,7 +126,7 @@ const PAYLOAD: ForecastWorkbenchPayload = {
       class: "intermittent",
       adi: 1.5,
       cv2: 1.15,
-      origins: { "2016-05-10": windowOf("steady"), "2016-05-17": windowOf("steady") },
+      origins: { "2016-05-10": naiveFavorableWindow("steady"), "2016-05-17": naiveFavorableWindow("steady") },
     },
   ],
   evaluation_metadata: {
@@ -321,6 +327,62 @@ describe("ForecastWorkbench", () => {
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
     expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument();
     expectFiniteChartGeometry();
+  });
+
+  it("renders three dynamic cards below the chart that update with the horizon toggle", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    // the churn-style card row sits in the secondary band under the chart
+    expect(screen.getByText("error composition")).toBeInTheDocument();
+    expect(screen.getByText("band calibration")).toBeInTheDocument();
+    expect(screen.getByText("model verdict")).toBeInTheDocument();
+    expect(document.querySelectorAll(".wb-secondary .figure-card")).toHaveLength(3);
+
+    const errCard = () =>
+      screen.getByText("error composition").closest(".wb-secondary-panel")!;
+    const bandCard = () =>
+      screen.getByText("band calibration").closest(".wb-secondary-panel")!;
+    // full-horizon headlines
+    expect(errCard().textContent).toMatch(/wape @28d 0\.\d{3}/);
+    expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
+    const errBefore = errCard().textContent;
+    // horizon 7d: every card recomputes client-side
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(errCard().textContent).toMatch(/wape @7d 0\.\d{3}/);
+    expect(errCard().textContent).not.toBe(errBefore);
+    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
+    expect(
+      screen.getByText("model verdict").closest(".wb-secondary-panel")!.textContent,
+    ).toMatch(/h = 7/);
+  });
+
+  it("collapses the band card when LightGBM is deselected", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    expect(screen.queryByText(/enable LightGBM/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /LightGBM/ }));
+    expect(screen.getByText("enable LightGBM to see its band")).toBeInTheDocument();
+    // re-enabling restores the live band strip
+    fireEvent.click(screen.getByRole("button", { name: /LightGBM/ }));
+    expect(screen.queryByText(/enable LightGBM/)).toBeNull();
+    expect(
+      screen.getByText("band calibration").closest(".wb-secondary-panel")!.textContent,
+    ).toMatch(/days inside/);
+  });
+
+  it("names the seasonal naive as the honest per-series winner on the intermittent series", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
+    const verdictCard = screen.getByText("model verdict").closest(".wb-secondary-panel")!;
+    expect(verdictCard.textContent).toContain("seasonal naive wins this window");
+    expect(verdictCard.textContent).toContain("90.5% of intermittent series");
+    // the naive row carries the best highlight
+    const bestRow = verdictCard.querySelector(".fwb-verdict-row.best")!;
+    expect(bestRow.textContent).toContain("seasonal naive");
   });
 
   it("shows an error state when the payload cannot be loaded", async () => {

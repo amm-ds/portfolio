@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FigureCard } from "../components/FigureCard";
 
@@ -54,6 +54,28 @@ describe("FigureCard", () => {
     expect(band.querySelector(".figure-comment")!.textContent).toBe(
       "Retrieval recall@5 reaches 0.83 once claims are verified.",
     );
+  });
+
+  it("shows the labeled skeleton inside the card until the plot renders", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } })),
+    );
+    render(
+      <FigureCard
+        pid="02-demand-forecasting"
+        name="wape_horizon"
+        caption="WAPE by candidate and horizon."
+      />,
+    );
+    const card = document.querySelector<HTMLElement>(".figure-card")!;
+    // intentional loading state: "$ name" label + status line, not a blank box
+    const skeleton = within(card).getByTestId("figure-skeleton");
+    expect(skeleton).toHaveTextContent("$ wape_horizon");
+    expect(skeleton).toHaveTextContent("rendering figure…");
+    await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(within(card).queryByTestId("figure-skeleton")).toBeNull());
+    expect(card.querySelector(".plotly-host")).not.toBeNull();
   });
 
   it("falls back to an id-only band when no caption exists", async () => {

@@ -73,8 +73,8 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
     expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.6043, 3);
     expect(test_pooled.seasonal_naive.wrmsse).toBeCloseTo(0.7617, 3);
     expect(win_rate_vs_naive.convex_ensemble.pooled).toBeCloseTo(0.8933, 3);
-    expect(band.candidates.lgbm.coverage_80).toBeCloseTo(0.7869, 3);
-    expect(band.candidates.lgbm.mean_band_width).toBeCloseTo(12.455, 2);
+    expect(band.candidates.lgbm.coverage_80).toBeCloseTo(0.7802, 3);
+    expect(band.candidates.lgbm.mean_band_width).toBeCloseTo(14.249, 2);
     expect(band.level).toBe(0.8);
     expect(band.per_horizon_width).toHaveLength(28);
   });

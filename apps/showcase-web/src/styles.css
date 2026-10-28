@@ -1003,6 +1003,26 @@ code {
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
+/* PlotlyFigure's pre-render placeholder: the reserved box can sit empty for
+   seconds while the JSON fetches and the plotly chunk lazy-loads, so the
+   skeleton must read as an intentional pending state — a dashed inner
+   border, the mono "$ name" corner label, and a pulsing status line. */
+.plotly-wrap .frame-skeleton {
+  margin: 0.5rem;
+  flex-direction: column;
+  gap: 0.4rem;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+.plotly-wrap .frame-skeleton .frame-label {
+  animation: none;
+}
+
+.plotly-wrap .frame-skeleton-status {
+  font-size: 0.78rem;
+}
+
 @keyframes skeleton-pulse {
   50% {
     opacity: 0.35;
@@ -2454,6 +2474,114 @@ button.chip.demo-preset.fwb-active {
   border-radius: 50%;
   margin-right: 0.3rem;
   vertical-align: baseline;
+}
+
+/* --- forecast workbench bottom cards (secondary band) --- */
+
+/* compact readout chips inside the secondary cards: tighter padding than
+   the canvas-slot readouts */
+.wb-secondary .figure-card .demo-readouts {
+  padding: 0.4rem 0.6rem 0;
+}
+
+/* band calibration: one square per scored day, teal = actual inside the
+   p10/p90 band, pink = outside; wraps onto a second row on narrow cards */
+.fwb-band-strip {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-content: center;
+  padding: 0.3rem 0.7rem 0.45rem;
+}
+
+.fwb-band-day {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  border: 1px solid var(--border);
+}
+
+.fwb-band-day.hit {
+  background: var(--accent);
+  border-color: var(--accent);
+  opacity: 0.75;
+}
+
+.fwb-band-day.miss {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.fwb-band-off {
+  margin: 0.6rem 0.7rem 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
+/* model verdict: one row per active candidate, mono WAPE + delta chip */
+.fwb-verdict {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.7rem 0.5rem;
+}
+
+.fwb-verdict-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
+.fwb-verdict-row.best .fwb-verdict-name {
+  color: var(--accent);
+}
+
+.fwb-verdict-row.best .fwb-verdict-wape {
+  color: var(--accent);
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.fwb-verdict-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fwb-verdict-crown {
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0 0.3rem;
+}
+
+.fwb-verdict-wape {
+  color: var(--text);
+}
+
+.fwb-verdict-row .chip {
+  flex-shrink: 0;
+  font-size: 0.66rem;
+}
+
+.fwb-verdict-committed {
+  margin: 0.1rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
 }
 
 /* scorer card: header row (label + submit) on top of a 2×2 field grid; the
