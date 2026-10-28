@@ -462,33 +462,47 @@ small tabular lag problems; a sequence model is the roadmap answer).
   `window_avg_28`, `adida`, `tsb` — statsforecast 2.1.1, C-fast, batch with a
   per-series naive-fallback path for degenerate fits), per-series automatic
   (`auto_ets`, `auto_ces`), a **global LightGBM** (mlforecast 1.1.0 recursive:
-  lags 1/7/14/21/28, RollingMean(7)/RollingMean(28) at lag 1 and
-  RollingMean(7) at lag 7, wave-25 additions RollingStd(7/28) and an
-  ExpandingMean at lag 1, dayofweek/month/ISO-week calendar, exog
-  sell_price/snap/any_snap/event codes/event distances/price
-  momentum+missing — **no series-identity feature**, so the global model
-  generalises across the 600 series), and `convex_ensemble`.
-- **lgbm config (wave 25)**: fixed-a-priori no more — `cli tune-m5` runs a
-  seeded 30-trial Optuna TPE study (`m5_tune.py`, TPESampler seed 42,
-  `n_jobs=1` + `force_row_wise` + fixed booster seed) on the SELECTION
-  origins only: each trial early-stops (patience 50, L1) on a nested split —
-  fit rows end 56 days before the last selection origin, eval set is that
-  trailing block (teacher-forced features, all selection data) — and the
-  objective pools WAPE over the last 2 selection origins refit through the
-  track's exact mlforecast wrapper at `best_iteration_`. Search space:
+  lags 1/7/14/21/28, rolling means 7/28/56/84 and stds 7/28 at lag 1,
+  rolling mean 7/28 and std 7 at lag 7, an expanding mean at lag 1,
+  dayofweek/day-of-month/month/ISO-week calendar, exog
+  sell_price/snap/any_snap/snap_weekend/event codes/event distances/price
+  momentum/relative/missing + per-origin panel statics item_age/hist_mean/
+  hist_max/dept_mean/cat_mean — **no series-identity feature**, so the
+  global model generalises across the 600 series; wave 27 feature space per
+  the M5-practice research pass, 37 model features), a **global XGBoost**
+  through the same wrapper/feature space (wave 27; modest a-priori
+  `XGB_KWARGS`, hist/n_jobs=1/seeded — a second booster family for ensemble
+  diversity), and `convex_ensemble`.
+- **lgbm config (wave 25; wave 27 re-tune)**: `cli tune-m5` runs a seeded
+  Optuna TPE study (`m5_tune.py`, TPESampler seed 42, `n_jobs=1` +
+  `force_row_wise` + fixed booster seed) on the SELECTION origins only: each
+  trial early-stops (patience 50, L1) on a nested split — fit rows end 56
+  days before the last selection origin, eval set is that trailing block
+  (teacher-forced features, all selection data) — and the objective pools
+  WAPE over the last 2 selection origins refit through the track's exact
+  mlforecast wrapper at `best_iteration_`. Wave 25: 30 trials, space
   learning_rate (log 0.02–0.3), num_leaves (16–512 int log),
   min_child_samples (5–200), colsample_bytree (0.5–1.0), n_estimators ≤ 800
-  (committed value = best_iteration_). The best block lands in params.yaml
-  under `m5_lgbm:`; `evaluate-m5` reads it
+  → n_estimators 126, lr 0.0598, leaves 393, min_child_samples 197,
+  colsample 0.515 (study best 0.4581). Wave 27 (expanded feature space):
+  25 trials with min_child_samples widened to 5–300 and colsample_bytree to
+  0.4–1.0 (the min_data_in_leaf × feature_fraction interplay the public M5
+  solutions highlight) → n_estimators 279, lr 0.0280, leaves 472,
+  min_child_samples 226, colsample 0.436 (study best 0.4612; the two study
+  bests are not directly comparable — different feature spaces). The best
+  block lands in params.yaml under `m5_lgbm:` (the writer keeps the
+  predecessor values in the block's comment); `evaluate-m5` reads it
   (`m5_track.load_m5_lgbm_params`, defaults = the wave-24 fixed config when
-  the block is absent).
-- **Ensemble rule** (wave 25; fixed, deterministic): the best THREE of
-  {lgbm, auto_ets, auto_ces} by SELECTION pooled WAPE; the weights are
-  grid-fit on the selection origins only over a simplex with step 0.05
-  (231 points, ties → first grid point lexicographically) minimising pooled
-  Σ|err|. The wave-24 best-two 0.01-grid rule is retired — with a tuned lgbm
-  all three pool members carry signal, and the wider pool hedges the
-  per-origin selection noise.
+  the block is absent). The xgb candidate is deliberately NOT tuned: a
+  modest fixed config, admitted to the pool on selection WAPE alone.
+- **Ensemble rule** (wave 25; wave 27 pool widening; fixed, deterministic):
+  the best THREE of {lgbm, xgb, auto_ets, auto_ces} by SELECTION pooled
+  WAPE; the weights are grid-fit on the selection origins only over a
+  simplex with step 0.05 (231 points, ties → first grid point
+  lexicographically) minimising pooled Σ|err|. Wave 27 committed: xgb ×
+  0.35 + lgbm × 0.20 + auto_ets × 0.45 (xgb selection WAPE 0.4694 edged
+  lgbm 0.4706; the blend beat the no-xgb best-three 0.4603 vs 0.4616 on the
+  selection origins). The wave-24 best-two 0.01-grid rule is retired.
 - **Volume classes**: Syntetos-Boylan ADI/CV² (same thresholds as the panel
   track, ADI 1.32 / CV² 0.49) computed on each series' REAL history
   (pre-introduction days excluded — an item not yet assorted is not
@@ -563,17 +577,23 @@ small tabular lag problems; a sequence model is the roadmap answer).
   against the committed metrics block at 1e-9 (mixing artifacts from
   different runs fails) and re-run the per-series candidates' curves over the
   full 600-series panel live at 1e-9.
-- **Honest result** (committed, `reports_m5/`, wave-25 run): ensemble WAPE
-  0.491 vs naive 0.603 (gap −0.112, 95% CI [−0.122, −0.102]); WRMSSE 0.597
-  vs 0.762; the models win in BOTH volume classes on this subset (dense
-  0.568→0.464, intermittent 0.749→0.604) — the mirror image of the UCI
+- **Honest result** (committed, `reports_m5/`, wave-27 run): ensemble WAPE
+  0.491 vs naive 0.603 (gap −0.1125, 95% CI [−0.1228, −0.1026]); WRMSSE
+  0.596 vs 0.762; the models win in BOTH volume classes on this subset (dense
+  0.568→0.464, intermittent 0.749→0.603) — the mirror image of the UCI
   sparse panel, which stays as the clearly-labelled secondary track. The
-  wave-25 levers, as measured: the feature pass + tuned booster moved lgbm
-  0.512→0.495 test WAPE (selection WAPE 0.4694 now leads the ensemble pool —
-  the untuned wave-24 lgbm trailed both automatic models); the best-three
-  0.05-simplex ensemble then took the blend 0.498→0.491, with lgbm × 0.45 +
-  auto_ets × 0.45 + auto_ces × 0.10. The band still sits just under its 80%
-  target (lgbm 77.9% coverage at 13.53 units mean width) — stated as
+  wave-27 levers, as measured: the research-led feature expansion (37
+  features) + 25-trial re-tune moved lgbm's pooled test WAPE only within
+  noise (0.4953→0.4975; full-selection WAPE 0.4718→0.4706) — the tuning
+  objective improved (study best 0.4612 vs the wave-25 study's 0.4581 is not
+  comparable across feature spaces, but the tuned config beats the wave-25
+  config on the full 8-origin selection set by 0.0012); the honest gains of
+  the pass are the pool widening and the service number: xgb (selection WAPE
+  0.4694) entered the best-three blend (committed: xgb × 0.35 + lgbm × 0.20 +
+  auto_ets × 0.45, selection 0.4603 vs 0.4616 without xgb) and the ensemble
+  improved 0.4911→0.4907 test WAPE, 0.4250→0.4233 next-week (rmae 0.7810→
+  0.7780, dense 0.7762→0.7736). The band still sits just under its 80%
+  target (lgbm 77.7% coverage at 13.535 units mean width) — stated as
   measured.
 
 ## Pipeline
@@ -664,6 +684,31 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.16.0 (2026-10-29)** — wave 27 (model-refinement round, research-led):
+  the lgbm feature space extended per the M5-winning-solution practice
+  (56/84-day rolling means at lag 1, rolling mean 28 at lag 7, day-of-month,
+  `snap_weekend`, `price_rel_mean`, and per-origin panel statics
+  `item_age_days`/`hist_mean`/`hist_max`/`dept_mean`/`cat_mean` —
+  `_attach_panel_features`, all computed from the training window only, so
+  the future window stays leakage-free); 37 model features total. `cli
+  tune-m5` re-run: seeded 25-trial Optuna TPE over the expanded space with
+  widened min_child_samples (≤300) / colsample_bytree (≥0.4) ranges (the
+  min_data_in_leaf × feature_fraction interplay the public solutions
+  highlight) → `m5_lgbm:` n_estimators 279, lr 0.0280, leaves 472,
+  min_child_samples 226, colsample 0.436 (study best 0.4612; wave-25 values
+  kept in the block's comment for the record). New candidate `xgb` (global
+  XGBoost through the same mlforecast wrapper/feature space, modest
+  a-priori config, `XGB_KWARGS`; hist/n_jobs=1/seeded) — selection WAPE
+  0.4694 vs lgbm 0.4706, so the ensemble pool widens to {lgbm, xgb,
+  auto_ets, auto_ces} best-three (committed members xgb × 0.35 + lgbm × 0.20
+  + auto_ets × 0.45). Committed run: ensemble test WAPE 0.4911 → 0.4907,
+  next-week 0.4250 → 0.4233 (rmae 0.7810 → 0.7780), lgbm pooled test WAPE
+  0.4953 → 0.4975 — the feature+tuning lever is inside noise on the 28-day
+  view, the pool widening + next-week gain is the honest delta, stated as
+  measured (§N). Runtime 1629s; per-series statistical candidates
+  byte-identical; README/docs drift guards updated; demo payload keys
+  unchanged (xgb is pool-only — no sidecar curves), the payload's copied
+  headline block carries the new candidate additively.
 - **0.15.0 (2026-10-28)** — wave 26 (rolling next-week service): the
   `weekly_rolling` block in `metrics.json` (§N) — `next_week` pools WAPE over
   h=1..7 of ALL 10 origins (each origin's first-week forecast = one deployed

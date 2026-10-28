@@ -1,10 +1,13 @@
-"""Optuna tuning of the M5 headline-track LightGBM (wave 25).
+"""Optuna tuning of the M5 headline-track LightGBM (wave 25; wave 27 pass).
 
-``cli tune-m5`` runs a seeded TPE study (~30 trials) and writes the best
+``cli tune-m5`` runs a seeded TPE study (~25-30 trials) and writes the best
 booster config to the params.yaml ``m5_lgbm`` block; ``evaluate-m5`` reads it
 via :func:`demand_forecasting.m5_track.load_m5_lgbm_params`. Selection-origins
 only, per the track's honesty rule — the scored-once test origins are never
-read here.
+read here. Wave 27: the study runs over the expanded wave-27 feature space
+(the tuner attaches the panel statics exactly like the track), and the
+min_child_samples/colsample_bytree ranges widen per the M5-practice research
+(min_data_in_leaf x feature_fraction interplay).
 
 Objective (fixed a priori, documented):
 
@@ -45,6 +48,7 @@ from demand_forecasting.m5_track import (
     ORIGIN_SPACING_DAYS,
     SEED,
     _actual_window,
+    _attach_panel_features,
     _lgbm_forecast,
     _mlforecast_for,
 )
@@ -66,8 +70,11 @@ TUNE_OBJECTIVE_ORIGINS = 2
 _SEARCH_SPACE: dict[str, tuple[str, Any]] = {
     "learning_rate": ("log", (0.02, 0.3)),
     "num_leaves": ("int_log", (16, 512)),
-    "min_child_samples": ("int", (5, 200)),
-    "colsample_bytree": ("float", (0.5, 1.0)),
+    # wave 27: widened per the M5-practice research — the strong public
+    # solutions lean on larger min_data_in_leaf with feature_fraction 0.5-0.9
+    # (leaf-count/feature-sampling interplay), so both ranges stretch
+    "min_child_samples": ("int", (5, 300)),
+    "colsample_bytree": ("float", (0.4, 1.0)),
     "n_estimators": ("int", (100, TUNE_N_ESTIMATORS_CAP)),
 }
 
@@ -161,12 +168,14 @@ def run_m5_tune(
         seed,
     )
 
-    # per-origin cached frames (trial-independent)
+    # per-origin cached frames (trial-independent); the panel statics are
+    # attached here so the tuner fits the exact wave-27 feature space
     origin_frames: dict[int, tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, np.ndarray]] = {}
     for o in obj_origins:
         odate = pd.Timestamp(dates[o])
         train = y_all[y_all["ds"] <= odate]
         hist_exog, future_exog = split_exogenous(x_enc, series_ids, odate, HORIZON)
+        _attach_panel_features(train, hist_exog, future_exog, s_all)
         actuals = _actual_window(y_all, series_ids, odate, HORIZON)
         origin_frames[o] = (train, hist_exog, future_exog, actuals)
 
@@ -174,6 +183,7 @@ def run_m5_tune(
     # origin merged with exog, preprocessed once (trial-independent)
     train_last = y_all[y_all["ds"] <= last_sel_date]
     hist_last, _ = split_exogenous(x_enc, series_ids, last_sel_date, HORIZON)
+    _attach_panel_features(train_last, hist_last, hist_last, s_all)  # idempotent
     train_m_last = train_last.merge(hist_last, on=["unique_id", "ds"], how="left", validate="1:1")
     prep_cache: pd.DataFrame | None = None
 
@@ -264,6 +274,18 @@ def write_m5_lgbm_params(
     while i < len(lines):
         line = lines[i]
         if line == "m5_lgbm:":
+            # drop the block's own auto-generated note (the contiguous run of
+            # comment/blank lines directly above it, which always contains a
+            # "# M5 headline-track lgbm" marker line) so a re-tune does not
+            # leave an orphaned stale note behind
+            k = len(out) - 1
+            seen_marker = False
+            while k >= 0 and (out[k].strip() == "" or out[k].lstrip().startswith("#")):
+                if out[k].lstrip().startswith("# M5 headline-track lgbm"):
+                    seen_marker = True
+                k -= 1
+            if seen_marker:
+                del out[k + 1 :]
             i += 1
             while i < len(lines) and (lines[i].startswith(" ") or lines[i].strip() == ""):
                 i += 1
@@ -273,10 +295,13 @@ def write_m5_lgbm_params(
     while out and out[-1].strip() == "":
         out.pop()
     note = (
-        f"# M5 headline-track lgbm (wave 25) — best of a seeded {n_trials}-trial "
-        "Optuna TPE\n# study on the selection origins only (cli tune-m5; nested "
-        "56-day early-stopping\n# split, objective = pooled WAPE over the last "
-        f"2 selection origins; study best {best_value:.4f})."
+        f"# M5 headline-track lgbm (wave 27) — best of a seeded {n_trials}-trial "
+        "Optuna TPE\n# study on the selection origins only over the wave-27 feature "
+        "space (cli tune-m5;\n# nested 56-day early-stopping split, objective = pooled "
+        f"WAPE over the last 2 selection origins;\n# study best {best_value:.4f}). "
+        "Wave-25 predecessor (30 trials, old feature space): n_estimators 126,\n# "
+        "learning_rate 0.05980272162403059, num_leaves 393, min_child_samples 197, "
+        "colsample_bytree 0.5146641352420852."
     )
     rendered = "\n".join(f"{k}: {block[k]}" for k in LGBM_PARAM_KEYS if k in block)
     out.extend(["", note, "m5_lgbm:", *[f"  {ln}" for ln in rendered.splitlines()]])

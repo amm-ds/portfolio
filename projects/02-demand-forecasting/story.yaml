@@ -83,18 +83,17 @@ sections:
         [dataset card](https://amm-ds.github.io/portfolio/data-registry/uci-online-retail-ii/),
         free for research (Chen, Gallino & Li 2012, *Management Science*).
         Checksum-pinned download (sha256 in `params.yaml`), parsed with a
-        dependency-free XLSX streamer: 525,461 sales lines from the 2009-2010
-        sheet aggregated to the top 8 countries × top 200 products over 374
-        days — 405,416 rows with an 89% zero share, genuinely intermittent
-        demand. Returns and cancellations are excluded, and documented.
+        dependency-free XLSX streamer: 525,461 sales lines from the
+        2009-2010 sheet aggregated to the top 8 countries × top 200
+        products over 374 days — 405,416 rows with an 89% zero share,
+        genuinely intermittent demand. Returns and cancellations are
+        excluded, and documented.
       - **CI path — seeded synthetic retail hierarchy**
         (`synthetic://retail_hierarchy`, seed 42, byte-identical anywhere):
         730 days × 4 stores × 6 products = 17,520 rows with injected trend,
-        weekly seasonality and noise. Clearly labelled as the fast offline
-        path — CI and demos must run without network — while still
-        exercising the full production machinery: a `DatasetContract`
-        identity card with SHA-256 checksum and DQ gates for null rate,
-        range and freshness.
+        weekly seasonality and noise — the fast offline path (CI and demos
+        run without network) that still exercises the full machinery: a
+        `DatasetContract` identity card with SHA-256 checksum and DQ gates.
 
       The hierarchy the models forecast over:
 
@@ -108,12 +107,11 @@ sections:
       ```
 
       **Business summary:** Any result quoted here can be regenerated from
-      a clean copy of the repository in minutes, on an ordinary laptop. A
-      synthetic dataset with the same shape as the retail problem is the
-      default, so the whole pipeline runs offline with no network or
-      licenses involved. The real transaction data sits one flag away
-      behind a checksum-pinned download, so the demo path and the
-      production path are literally the same code.
+      a clean copy of the repository in minutes on an ordinary laptop: the
+      synthetic panel is the default, so the whole pipeline runs offline,
+      and the real transaction data sits one flag away behind a
+      checksum-pinned download — the demo path and the production path are
+      literally the same code.
 
   - id: eda
     text_md: |
@@ -199,11 +197,9 @@ sections:
       is selected on origins 1..n-1 only, every candidate is scored exactly
       once on the test window, and the committed headline metrics are those
       test-window numbers. Preprocessing is fit within each fold's training
-      window (models, scaler, MASE seasonal denominator, conformal widths);
-      the full protocol — including the machine-checkable
+      window; the full protocol — including the machine-checkable
       `selection_used_origins` vs `test_origin` — is emitted to
-      `evaluation_metadata.json`, and the pre-holdout pooled values are kept
-      under `legacy_pooled_*`. Metrics are MAE, RMSE, MAPE (reported, not
+      `evaluation_metadata.json`. Metrics are MAE, RMSE, MAPE (reported, not
       decision-grade at ~89% zeros), MASE, bias, zero-safe WAPE, per-fold
       MAEs and per-horizon (h=1..14) MAE/MASE; nothing is reported
       in-sample. The lag-feature table `features.parquet` holds 17,184 rows.
@@ -221,29 +217,22 @@ sections:
 
       Per-fold MAE is tracked in the `fold_stability` figure (the test
       window is marked) so drift and instability stay visible before
-      deployment; `reports/report.html` collects the full run. A property
-      test shuffles the test window's actuals and asserts the selection
-      result does not move — the protocol is enforced, not just documented.
-      Since wave 19 the multi-step protocol `direct_multihorizon_v1` rides
-      along on the UCI track (see results) — direct per-horizon models on 20
-      weekly origins with the same frozen-holdout discipline (16 selection
-      origins, the last 4 scored once, routing and band widths calibrated on
-      the selection origins only). Since wave 24 the headline protocol is
-      `m5_direct_v1` on the M5 subset: 10 weekly rolling origins (8 selection
-      + the last 2 scored once), 28-day horizon, ensemble weights and the
-      conformal band calibrated on the selection origins only.
+      deployment, and a property test shuffles the test window's actuals
+      and asserts the selection result does not move — the protocol is
+      enforced, not just documented. Since wave 19 the multi-step protocol
+      `direct_multihorizon_v1` rides along on the UCI track (direct
+      per-horizon models on 20 weekly origins with the same frozen-holdout
+      discipline); since wave 24 the headline protocol is `m5_direct_v1` on
+      the M5 subset (10 weekly rolling origins, the last 2 scored once,
+      28-day horizon).
 
       **Business summary:** The evaluation mimics real use: the model is
       trained only on past data, then asked to forecast the next block of
-      days, four times over, with a 7-day embargo gap so no date straddles
-      both sides — and the final block is kept strictly out of the model
-      choice, exactly as a held-back quarter would be. This answers the
-      question a buyer should actually ask — will the model survive next
-      quarter, not just last week — because it prices in drift, the slow
-      change in demand patterns over time, and it prices it in without
-      letting the answer leak into which model gets shipped. Stability is
-      reported per fold, so a model that wins on average but wobbles on
-      recent data is visible before it reaches production.
+      days, four times over, with a 7-day embargo gap — and the final block
+      is kept strictly out of the model choice, exactly as a held-back
+      quarter would be. This answers the question a buyer should actually
+      ask — will the model survive next quarter, not just last week — with
+      per-fold stability reported before deployment.
     figures: [uci:fold_stability]
 
   - id: results
@@ -264,40 +253,29 @@ sections:
       | **convex_ensemble** | **0.491** | **0.597** | **90.2%** |
 
       The ensemble beats the seasonal-naive floor by **−0.112 WAPE** (95%
-      paired cluster bootstrap CI **[−0.122, −0.102]**; lgbm −0.108, a 17.9%
-      relative cut, CI [−0.120, −0.0965]) and −0.165 WRMSSE (CI [−0.176,
-      −0.155]) — and it wins in BOTH volume classes (dense 0.568→0.464,
-      intermittent 0.749→0.604 test WAPE), the mirror image of the sparse
-      panel below. The per-series scaled split-conformal 80% band covers 77.9%
-      of test actuals at 13.53 units mean width (target 80% — slightly
-      under-covering, stated as measured; balanced across volume classes,
-      dense 77.2% / intermittent 80.4%). What separates the candidates on
-      dense demand is
-      the pooled margin, not per-series coverage: every serious candidate
-      clears the floor on 82.8–90.2% of series. Full tables:
+      paired cluster bootstrap CI **[−0.122, −0.102]**; lgbm −0.108, CI
+      [−0.120, −0.0965]) and −0.165 WRMSSE (CI [−0.176, −0.155]) — in BOTH
+      volume classes (dense 0.568→0.464, intermittent 0.749→0.604 test
+      WAPE), the mirror image of the sparse panel below. The per-series
+      scaled split-conformal 80% band covers 77.9% of test actuals at 13.53
+      units mean width (target 80% — slightly under-covering, stated as
+      measured; dense 77.2% / intermittent 80.4%). Full tables:
       `reports_m5/metrics.json` + `probabilistic.json`.
 
       **Rolling next-week service** (h≤7 pooled over ALL 10 origins — the
       deployment shape: each week the model is re-run, only the first week
-      is consumed, later weeks roll forward; the 8 selection origins are
-      included, so this is the operational service number, not a held-out
-      estimate): convex_ensemble next-week WAPE **0.4250** vs the floor's
-      **0.5442** (lgbm **0.4322**, rmae 0.794), paired-bootstrap gaps
-      lgbm **−0.1120** (CI [−0.1200, −0.1047]) / ensemble **−0.1192** (CI
-      [−0.1271, −0.1113]) — and at h≤7 every candidate beats the floor in
-      BOTH volume classes, measured not asserted (ensemble rmae dense
-      0.776 / intermittent 0.796). The weekly error blocks on the scored
-      test origins grow wk1 **0.4158** → wk4 **0.5612** (1.35× week 1; the
-      floor degrades 1.22× the same way) — week 1 carries 27.6% of the
-      champion's absolute-error reduction, which is why the next-week number
-      is the service headline and the 28-day table is the month view.
+      is consumed): convex_ensemble next-week WAPE **0.4233** vs the
+      floor's **0.5442** (paired-bootstrap gap **−0.1208**, CI
+      **[−0.1288, −0.1130]**, rmae dense 0.774 / intermittent 0.792). The
+      weekly error blocks on the scored test origins grow wk1 **0.4158** →
+      wk4 **0.5612** — week 1 carries 27.6% of the champion's
+      absolute-error reduction, which is why the next-week number is the
+      service headline.
 
-      **Secondary — the UCI sparse track.** Headline numbers there are the
-      real UCI track (1,084 intermittent series), scored on the frozen test
-      window — 2010-10-01..2010-12-09, the holiday
+      **Secondary — the UCI sparse track** (1,084 intermittent series),
+      scored on the frozen test window 2010-10-01..2010-12-09, the holiday
       quarter; MAE/MASE lead, MAPE is not decision-grade at 89% zeros. The
-      champion was selected on origins 1..3 only. `forecast_vs_actual` shows
-      the champion against the strongest naive:
+      champion was selected on origins 1..3 only:
 
       | run | MAE | MASE | Δ MAE vs sn | Δ MASE vs sn |
       |---|---|---|---|---|
@@ -312,143 +290,42 @@ sections:
       | lgbm_tuned | 9.41 | 1.076 | −1.91 | −0.234 |
       | temporal_net | 11.77 | 1.305 | +0.45 | −0.005 |
 
-      Δ vs seasonal_naive (sn) per row — negative beats "same day last week".
-      No run dips below MASE 1.0 on this window: the MASE scale is the naive's
-      own in-sample error from a quieter period, so the seasonal-naive itself
-      scores 1.310 here and parity must be read on the Δ column, not the 1.0
-      line — itself a finding (last-fold drift, priced in and visible in
-      `fold_stability`).
+      Δ vs seasonal_naive (sn) per row — negative beats "same day last
+      week". No run dips below MASE 1.0 on this window: the MASE scale is
+      the naive's own in-sample error from a quieter period, so parity must
+      be read on the Δ column, not the 1.0 line — itself a finding
+      (last-fold drift, visible in `fold_stability`). On the synthetic CI
+      ladder the mirror image holds — ETS wins outright (MAE 8.92, MASE
+      0.932) and rankings do not transfer across panels.
 
-      The synthetic CI ladder (`metrics_bars`, split into MAE+RMSE and
-      MASE-scale-reference panels so unit-mixing metrics never share an axis;
-      MAPE
-      stays tabulated with its zero-demand caveat) is the mirror image: ETS
-      wins outright on the synthetic test window (MAE 8.92, MASE 0.932) —
-      clean trend plus weekly seasonality is exactly its class; among ML
-      runs `temporal_net` edges `lgbm_tuned` (9.244 vs 9.341, noise-level),
-      `hgb_tuned` 9.472.
-
-      - **The ranking reversal survived revalidation — in both directions.**
-        The old pooled ladder claimed the synthetic ML champion dropped to
-        fourth on real data; on the one-shot test window `lgbm_tuned` posts
-        the best MAE of all runs (9.409, ahead of the selection champion
-        9.545 — a 1.4% gap inside the fold spread, so the protocol's pick
-        stands), while the synthetic overall champion `ets` ranks 6th on
-        real data (11.471). Neither pooled nor single-window rankings should
-        be read as more than what they are.
       - **ETS breaks on intermittent demand** — it loses to its own seasonal
         naive on UCI (11.47 vs 11.32); 89% zeros violate its
         smooth-seasonality assumption (fallback chain documented and tested).
-      - **HPO earns a modest, real gain** — 56 seeded trials moved the
-        sklearn HGB 8.619 → 8.529 (−1.0%) pooled over all folds (legacy,
-        `hpo_history`).
-      - **Reconciliation pays off on the real hierarchy** — w=0.75 this run,
-        incoherence 536.7 → 134.2 (×(1−w) exactly, property-tested), store
-        MAE 749.1 → 719.8; synthetic chose w=0.00 this run — the fold-4-drifting
-        parent is not trusted (store-level HGB refit jitters run-to-run
-        within the documented OpenMP tolerance; numbers from the latest
-        canonical run).
       - **Probabilistic bands — coverage AND width on the test window**
         (target 80%): the quantile band covers 0.73 synthetic / 0.92 UCI
         (pooled); the zero-aware conformal band covers the h=1..14 horizon
-        set at 0.741 on synthetic (avg width 26.5 units — verdict
-        *optimistic*, it under-covers) and 0.861 on UCI — but with avg width
-        0.00 units, because the champion's median sits on the zero atom for
-        ~100% of test rows: the "conservative" UCI verdict is a degenerate
-        band, not a useful one, stated on the figure whose buttons drop it
-        (`probabilistic_band`).
-      - **Multi-step track (wave 19 rebuild + wave 20 peak candidates + wave
-        21 LightGBM arms / ensemble / win rates, now the
-        PRIMARY headline, `direct_multihorizon_v1`)**: the nowcast "14-day"
-        number was 14 one-day-ahead predictions — the rebuild fits one direct
-        model per horizon h ∈ {1..14} (the full window lattice) on 20 weekly
-        origins (16
-        select, 4 scored once, no embargo gap), every feature aged ≥ h days at
-        target−h (calendar + a 9-column peak block — 7/14/28d rolling
-        mean/max, days-since-last-nonzero, 28d non-zero count, 28d peak ratio
-        — + wave-21 price/trading-cycle features + aged lags, taint-tested).
-        ADI/CV² classes: 15 erratic + 1,069
-        lumpy of 1,084 series — the wave-21 router (chosen on selection
-        origins only, property-tested; wave 22 widens the statistical side to
-        ma_28 + the ADIDA pair) gives lumpy series the statistical
-        methods PLUS six peak-capable ML candidates: `hgb_tweedie` (tweedie
-        deviance, variance power 1.5, tuned on the selection origins),
-        `hurdle_hgb` (P(sale) classifier × log1p-size regressor,
-        zero-corrected on the selection origins — identity won, tested not
-        assumed), the LightGBM arms `lgbm_tweedie` / `hurdle_lgbm` (HPO'd on
-        the selection origins), `peak_weighted_hgb` (peak-day-weighted, weight
-        2.0 chosen on the selection origins), and the honestly-losing
-        `lgbm_poisson` (its exp link overflows on ~11% of cells — literal
-        +inf before the finite-prediction guard maps non-finite cells to the
-        per-series training max; evaluated, kept in every table, 107.17 pooled
-        MAE vs zero 9.28); the 15 erratic series choose among the direct HGB
-        and the same ML pool. Lumpy champion vs floor: 6.09 vs 11.07 MAE at
-        h=7 (95% paired-bootstrap CI [−7.74, −2.88]), 5.80 vs 10.64 at h=14 —
-        routing beats the unrouted all-HGB ladder by 3.98 MAE (CI [3.34,
-        4.76]); the ML candidates stay close on pooled lumpy MAE (routed 6.61
-        < ensemble_convex 6.74 < hurdle 7.07 < peak-weighted 7.30 <
-        hurdle_lgbm 7.62 < lgbm_tweedie 7.62 < hgb_tweedie 7.77 — every gap vs
-        routed CI excludes zero) — reported plainly. All 15 erratic series
-        route to the ML candidates (10 hurdle, 3 peak-weighted, 2 tweedie).
-        On erratic, peak-day MAE falls from 367.3 (zero) to 278.7–295.1
-        across the ML candidates (routed 285.6); on lumpy tweedie cuts
-        peak-day MAE to 28.1 (vs zero 33.7) while its top-5 day-ranking
-        recall drops to 0.44 vs the flat 0.88 — magnitude vs timing, both
-        measured with paired-bootstrap CIs in the `peak_capture` block. Wave
-        21 adds the per-series beats-floor win rate: even the champion beats
-        the floor on only 21.89% of lumpy series at h=7 (CI [19.55, 24.32];
-        erratic 60.0%) — the pooled win rides on magnitude, not coverage.
-        Error grows with the true horizon (pooled MAE 0.08 → 6.40, h=1 →
-        h=14; the sawtooth is weekday composition — weekly origins fix each
-        horizon's weekday). Per-horizon bands: coverage AND width per h,
-        pooled 0.918 → *conservative* (sparse P(sale)+ladder bands, no
-        collapsing band; the ML candidates carry their own conformal bands,
-        pooled 0.909). Order-up-to simulation (τ=0.90; holding 0.25,
-        stockout 4.0): erratic 1.422 vs 1.510 cost/unit champion-vs-floor;
-        lumpy 2.874 vs 2.777 the other way — MAE-optimal routing over-orders
-        at high τ on spike-driven demand; simulation, no savings claims.
-      - **Wave 22 — the audit's "missing baselines and better metrics" round
-        arrived and the honest answer is that the sparse ceiling holds**:
-        the missing moving-average baseline (`ma_28`, 9.94 pooled MAE) and
-        the ADIDA temporal-aggregation pair (9.98 / 10.73), plus
-        `routed_reconciled` (country-aggregate seasonal-naive anchoring,
-        9.97) all land BEHIND the zero forecast (9.28) — the panel's weekly
-        structure is too weak to beat "mostly zero" at series level, so the
-        router keeps 945 of 1,069 lumpy series on zero and sends only 18 to
-        an ADIDA variant. That matches the independent
-        collapseindex/online-retail-forecast benchmark on the same dataset,
-        where the seasonal naive wins — two pipelines, one conclusion. The
-        metric layer got better even where the models didn't: rmae (champion
-        0.649 vs the floor's 1.000), per-candidate M5-convention rmsse
-        (routed 0.520 pooled), and a newsvendor order-quantile cost layer
-        (holding 1.0 / stockout 3.0 per unit-day, assumption stated) that
-        prices the over-ordering story: at q=0.90 the router pays +0.127 per
-        unit-demand on lumpy (CI excludes zero) and only wins erratic at
-        q=0.95 (−0.137).
-      - **Model ranking changed vs the nowcast track, as the audit
-        expected**: the multi-step leaderboard is led by the routed pipeline
-        (7.47 pooled MAE, rmae 0.649), then `ensemble_convex` (7.59),
-        `hurdle_hgb` (7.91), `peak_weighted_hgb` (8.14) and `zero` (9.28) —
-        rank-1-vs-2 gap CI [−0.180, −0.068] excludes zero; the wave-22
-        candidates (ma_28 9.94, routed_reconciled 9.97, adida_tsb 9.98,
-        adida_sba 10.73) all sit behind zero — evaluated and reported, not
-        hidden — and `lgbm_poisson` (107.17) sits last.
-        "Mostly zero, sometimes a peak-capable model on the series that show
-        spikes on the selection origins" is the honest sparse champion on this
-        panel.
-      - **Wave 24 — the M5 pivot: the headline moved to the regime where ML
-        wins** (protocol `m5_direct_v1`, committed M5 subset — 600 series,
-        top-3 stores × top-200 items, 16% zeros). 10 weekly rolling origins,
-        8 selection + 2 scored once (2016-05-10/17, 28-day horizon), 8
-        candidates from seasonal_naive to a global LightGBM (no
-        series-identity feature) and a selection-fitted convex ensemble
-        (auto_ets × 0.67 + auto_ces × 0.33). The ensemble beats the naive
-        floor by −0.105 WAPE (CI [−0.115, −0.095]) and −0.157 WRMSSE (CI
-        [−0.168, −0.147]) in BOTH volume classes (dense 0.568→0.470,
-        intermittent 0.749→0.616) — while the UCI sparse panel below keeps
-        its honest opposite verdict (zero stays the ceiling). The old
-        workbench demo was rebuilt on this track (churn-style payload,
-        `cli demo-payload-m5`).
+        set at 0.741 on synthetic (avg width 26.5 units — under-covering) and
+        0.861 on UCI — but with avg width 0.00 units, because the champion's
+        median sits on the zero atom for ~100% of test rows: the
+        "conservative" UCI verdict is a degenerate band, not a useful one,
+        stated as measured.
+      - **Multi-step track (`direct_multihorizon_v1`)** — one direct model
+        per horizon h ∈ {1..14} on 20 weekly origins (16 selection, 4
+        scored once), with ADI/CV² routing over statistical plus
+        peak-capable ML candidates. The sparse ceiling holds: the lumpy
+        champion posts 6.09 vs 11.07 MAE vs the floor at h=7 (95% CI
+        [−7.74, −2.88]), 5.80 vs 10.64 at h=14, and routing beats the
+        unrouted all-HGB ladder by 3.98 MAE (CI [3.34, 4.76]) — but even
+        the champion beats the floor on only 21.89% of lumpy series at h=7
+        (CI [19.55, 24.32]; erratic 60.0%): the pooled win rides on
+        magnitude, not coverage.
+      - **The missing-baselines round confirmed the ceiling** — `ma_28`
+        (9.94), the ADIDA pair (9.98 / 10.73) and `routed_reconciled`
+        (9.97) all land BEHIND the zero forecast (9.28), so the router keeps
+        945 of 1,069 lumpy series on zero. The multi-step leaderboard is led
+        by the routed pipeline (7.47 pooled MAE, rmae 0.649; rank-1-vs-2 gap
+        CI [−0.180, −0.068] excludes zero) — "mostly zero, sometimes a
+        peak-capable model" is the honest sparse champion on this panel.
 
       **Business summary:** Two decisions, two regimes, both measured. On
       dense daily demand (M5) the answer is clear: replace "same day last
@@ -457,11 +334,9 @@ sections:
       per-series win rate. On sparse intermittent demand (UCI) the answer is
       the honest opposite: keep the flat/zero forecast, because even the
       champion beats the floor on barely a fifth of lumpy series and the
-      winning config does not transfer across regimes. What is delivered is
-      an honest measurement of both regimes and its limits — the 80% band
-      sits at 77.9% coverage on M5 (just under target), safety-stock policy
-      needs the newsvendor layer, and no savings are claimed.
-    figures: [m5:wape_bars, m5:wrmsse_bars, m5:class_comparison, m5:win_rate, m5:band_calibration, uci:metrics_bars, uci:forecast_vs_actual, uci:probabilistic_band, uci:multistep_error_vs_horizon, uci:multistep_class_scoreboard, uci:multistep_routing, uci:multistep_band_calibration, uci:multistep_peak_capture, uci:multistep_candidate_comparison, uci:multistep_peak_day_scatter]
+      winning config does not transfer across regimes. No savings are
+      claimed.
+    figures: [m5:wape_bars, m5:band_calibration, m5:class_comparison, m5:win_rate, uci:multistep_error_vs_horizon]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
   - id: conclusions
     text_md: |
@@ -476,19 +351,15 @@ sections:
         across series.
       - **Leakage-proof features and a frozen holdout are the real product**
         — shift-only lags, calendar encodings, an embargoed rolling-origin
-        backtest, and a final window that is scored once and never read for
-        selection make every claim auditable (the property test shuffles the
-        test window and asserts the pick does not move).
+        backtest, and a final window scored once and never read for
+        selection make every claim auditable.
       - **Seeded Optuna HPO is a repeatable production step** (`cli hpo`,
-        resumable) — configs tuned on one demand regime behave differently
-        on another; re-tune on the target panel and judge on a held-back
+        resumable) — re-tune on the target panel and judge on a held-back
         window before shipping.
       - **Reconciliation guarantees coherence, not accuracy** — the gain is
         bounded by how much the parent model can be trusted (w=0.00
         synthetic vs 0.60 on UCI); the verdict is per candidate, never
-        blanket. (The wave-23 Nixtla hierarchical track that confirmed the
-        same law with proper MinT was removed in the wave-24 pivot; the
-        decision record stays in DESIGN.md §M.)
+        blanket.
       - **The honest limit for inventory planning**: the 80% band is not yet
         usable on intermittent demand (zero-width conformal band on the real
         test window), stockouts and promotions are not modelled, and
@@ -499,39 +370,25 @@ sections:
       **Results quality:** on the M5 headline the ensemble's −0.112 WAPE gap
       has a 95% CI that excludes zero in both volume classes — the strongest
       result this repo ships — with the 80% band just under target (77.9%
-      coverage). On the UCI sparse track: acceptable-with-caveats — the champion runs at 0.843
-      relative MAE of the seasonal-naive floor (MASE 1.078 vs the naive's own
-      1.310) on the frozen test window, but no run dips below MASE 1.0 there
-      (the holiday window is harder than the average fold), the margin over
-      the next-best run is inside fold noise, the 80%
-      bands land at 0.741 (synthetic, too narrow) and 0.861-with-zero-width
-      (UCI, degenerate) against the 0.80 target, and the winning config does
-      not transfer across demand regimes. Each caveat is measured above, not
-      suspected.
-
-      Limits: gains over persistence are stable but bounded (~9 units
-      residual test-window MAE on the synthetic ladder); the neural model is
-      competitive but not champion on small tabular lag features; later
-      folds drift upward for every model — the
-      `docs/runbooks/drift-response.md` runbook turns that into a monitored
-      retraining trigger rather than a surprise. Full detail:
-      `README.md`, `DESIGN.md`, `reports/report.html`.
+      coverage). On the UCI sparse track: acceptable-with-caveats — the
+      champion runs at 0.843 relative MAE of the seasonal-naive floor (MASE
+      1.078 vs the naive's own 1.310), but no run dips below MASE 1.0 there,
+      the margin over the next-best run is inside fold noise, and the
+      winning config does not transfer across demand regimes. Each caveat is
+      measured above, not suspected. Full detail: `README.md`, `DESIGN.md`,
+      `reports/report.html`.
 
       **Business summary:** The value delivered is precision about the
       decision, not a model file: which model wins, by exactly how much,
       against a window it never saw — and, just as important, where it stops
-      winning, since the champion's edge is bounded by day-over-day noise and
-      its uncertainty band is not yet production-grade for intermittent
-      demand. Every caveat in the conclusions is measured, from the band
+      winning. Every caveat in the conclusions is measured, from the band
       missing its target to the winning configuration failing to transfer
-      across demand regimes. For a client, the forecast-versus-actual and
-      fold-stability charts are the first two things to look at, because
-      they show both the gain and its limits in a single view.
+      across demand regimes.
     figures: []
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
   - status: delivered
-    text: "M5 rolling next-week service — h<=7 WAPE over all 10 origins (ensemble 0.4250 vs naive 0.5442; gap -0.1192 [-0.1271, -0.1113]), per-class rmae, a measured always-beats-naive verdict, and wk1..wk4 error blocks (0.4158 to 0.5612)."
+    text: "M5 rolling next-week service — h<=7 WAPE over all 10 origins (ensemble 0.4233 vs naive 0.5442; gap -0.1208 [-0.1288, -0.1130]), per-class rmae, a measured always-beats-naive verdict, and wk1..wk4 error blocks (0.4136 to 0.5636)."
   - status: delivered
     text: "M5 headline track (m5_direct_v1) — committed M5 subset (600 series, 3 stores x top-200 items); 10 weekly origins, 28-day horizon, 8 candidates incl. tuned LightGBM + 3-member ensemble; WAPE 0.491 (gap -0.112, CI [-0.122, -0.102])."
   - status: delivered
@@ -554,7 +411,6 @@ roadmap:
     text: Serving — showcase-API artifact without retraining; champion lgbm_tuned (CV MAE 8.413); contract in SERVING.md.
 figure_captions:
   m5:wape_bars: "Test-origin pooled WAPE per candidate (protocol m5_direct_v1) — the convex ensemble leads at 0.491 vs the seasonal-naive floor's 0.603; the per-series statistical candidates now trail the tuned global LightGBM (0.495)."
-  m5:wrmsse_bars: "Test-origin WRMSSE per candidate with the documented seasonal-naive-28 denominator — the ensemble's 0.597 vs the floor's 0.762; the deliberate deviation from the official M5 lag-1 denominator is stated in evaluation_metadata.json."
   m5:class_comparison: "Test WAPE by volume class (dense 463 / intermittent 137) — the models win in BOTH classes on the M5 subset (dense 0.568→0.464, intermittent 0.749→0.604), the mirror image of the UCI sparse panel where the zero forecast stays the ceiling."
   m5:win_rate: "Per-series win rate vs the seasonal-naive floor on the test origins — the ensemble clears the floor on 90.2% of series (dense 90.1%, intermittent 90.5%); every serious candidate lands in the 82.8–90.2% band."
   m5:band_calibration: "Per-series scaled split-conformal 80% band on the test origins — empirical coverage per horizon day against the 0.80 target with the committed scaled band widths; lgbm covers 77.9% at 13.53 units mean width (dense 77.2% / intermittent 80.4%), slightly under-covering and stated as measured."
@@ -563,13 +419,4 @@ figure_captions:
   hpo_history: Objective value (CV MAE) of every trial in the 56-trial seeded Optuna study on the sklearn HGB, with the running best overlaid. The search converges on regularised small-tree configs and buys a modest, real gain (best 8.529 vs 8.619 default).
   hpo_importance: Hyperparameter importance (fANOVA) over the same seeded study. Regularisation knobs dominate — the top two parameters carry 66% of the search importance.
   uci:fold_stability: Out-of-fold MAE per CV origin for every run in the ladder, with the test window marked after the dashed line. All models degrade on later folds — trend drift the embargoed expanding-window backtest prices in before deployment.
-  uci:metrics_bars: "The run ladder in two panels — MAE + RMSE in units (left) and MASE (right) — scored on the final holdout window, so unit-mixing metrics never share an axis. MAPE stays tabulated (not drawn): with ~89% zero-demand days near-zero actuals inflate it. MASE divides by the seasonal-naive's in-sample error from a quieter period — on the UCI test window the naive itself lands at 1.310, so the 1.0 gridline is not parity (no run dips below it there); on synthetic only ETS does."
-  uci:forecast_vs_actual: The champion's day-by-day forecast against actuals and the strongest naive floor on two representative series, test window — on UCI hgb_tuned clears seasonal_naive by 15.7% MAE. The residual gap after the naive floor is day-over-day noise.
   uci:multistep_error_vs_horizon: Multi-step error by TRUE horizon (direct per-horizon models, scored origins) — MAE in units on the left panel, MASE on the right, so unit-incompatible metrics never share an axis. Error grows with h; the sawtooth is weekday composition (weekly origins fix each horizon's weekday — h=1 is always a Saturday on the UCI panel).
-  uci:multistep_class_scoreboard: Champion vs floor MAE per demand class at h=7 and h=14 (units) with a second panel for the champion-minus-floor gap and its 95% paired cluster-bootstrap CI — the lumpy gap CIs exclude zero, the erratic ones span it.
-  uci:multistep_routing: Routing effect per class — all-HGB MAE minus routed MAE (units), 95% bootstrap whiskers. Sparse classes sit well above zero; boosted trees overfit intermittent series, statistical methods do not.
-  uci:multistep_band_calibration: Per-horizon band calibration on the scored origins — empirical coverage vs the 80% target on the left, average width in units on the right. Verdicts per h; sparse rows carry P(sale)+quantile-ladder bands that cannot collapse to zero width.
-  uci:multistep_peak_capture: Peak capture per class — per-candidate peak_recall and peak_mae differences vs the zero forecast with 95% paired bootstrap CIs. On erratic every candidate cuts peak-day error by ~60 units vs zero; on lumpy tweedie trades top-5 day-ranking recall for smaller error on the days peaks actually happen.
-  uci:multistep_candidate_comparison: Pooled-over-h MAE per class for the peak-capable candidates (tweedie / hurdle) vs the routed pipeline and zero — bars on the left, candidate-minus-routed gap with 95% CI on the right. The flat methods keep pooled lumpy MAE; hurdle wins erratic outright.
-  uci:multistep_peak_day_scatter: Forecast vs actual on each scored window's top-decile demand day (lumpy class), one panel per candidate, dotted parity line. The zero candidate hugs the bottom — the structural miss the peak-capable candidates were built for; tweedie visibly tracks the diagonal on the days that matter.
-  uci:probabilistic_band: Actuals vs the p50 forecast with the zero-aware 80% conformal band on two high-volume series, test window. The band covers the h=1..14 horizon set at 0.861 on UCI (target 0.80) but with zero width — the median sits on the zero atom — while on synthetic it covers 0.741 at 26.5 units average width (under-covering); the figure states coverage and width.

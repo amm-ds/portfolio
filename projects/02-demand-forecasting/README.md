@@ -108,7 +108,8 @@ Summary:
 
 ## M5 headline — Walmart M5 accuracy subset (protocol `m5_direct_v1`, PRIMARY)
 
-The headline experiment (wave 24, performance pass wave 25) is the committed
+The headline experiment (wave 24; performance passes wave 25 + wave 27) is
+the committed
 Walmart M5 subset — 600
 daily store-item series (top-3 stores CA_3/CA_1/TX_2 × top-200 volume items),
 2011-01-29..2016-06-19 (1,105,594 rows, 16% zero-day share), in the regime
@@ -118,15 +119,20 @@ signal (price, SNAP, events). Protocol: **10 weekly rolling origins**
 each training on ≥ 1,096 days (3+ years) and scoring the next **28 days**
 (the M5 evaluation horizon). Candidates: per-series statistical
 (`seasonal_naive`, `window_avg_28`, `adida`, `tsb` — statsforecast 2.1.1),
-per-series automatic (`auto_ets`, `auto_ces`), a global **LightGBM**
-(mlforecast 1.1.0: lags 1/7/14/21/28, rolling means/stds 7/28, expanding
-mean, calendar, exog price/SNAP/event codes + any_snap + event distances +
-price momentum/missing — no series-identity feature; wave-25 tuned config
-from a seeded 30-trial Optuna study on the selection origins, `cli tune-m5`,
-block `m5_lgbm:` in params.yaml), and a **convex_ensemble** of the best THREE
-of {lgbm, auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a 0.05
-simplex over the selection origins only (the committed rule picked lgbm ×
-0.45 + auto_ets × 0.45 + auto_ces × 0.10). Volume classes per series:
+per-series automatic (`auto_ets`, `auto_ces`), a global **LightGBM** and a
+global **XGBoost** (mlforecast 1.1.0 recursive over the same wave-27 feature
+space: lags 1/7/14/21/28, rolling means 7/28/56/84 and stds 7/28 at lag 1,
+rolling mean 7/28 + std 7 at lag 7, expanding mean, calendar
+dayofweek/day-of-month/month, exog price/SNAP/event codes + any_snap +
+snap_weekend + event distances + price momentum/relative/missing + panel
+statics item_age/hist_mean/hist_max/dept_mean/cat_mean — no series-identity
+feature; lgbm runs the wave-27 25-trial tuned config from a seeded Optuna
+study on the selection origins, `cli tune-m5`, block `m5_lgbm:` in
+params.yaml; xgb carries a modest a-priori config for booster diversity), and
+a **convex_ensemble** of the best THREE of {lgbm, xgb, auto_ets, auto_ces} by
+SELECTION WAPE, weights grid-fit on a 0.05 simplex over the selection origins
+only (the committed rule picked xgb × 0.35 + lgbm × 0.20 + auto_ets × 0.45).
+Volume classes per series:
 Syntetos-Boylan ADI/CV² on each series' real history up to the last
 selection origin — **463 dense + 137 intermittent** series. Nothing reads the
 test origins at fit/selection time; every fit is seeded or closed-form, so a
@@ -147,33 +153,38 @@ evaluation_metadata.json):
 | tsb | 0.510 | 0.6156 | 4.879 | 85.8% |
 | auto_ets | 0.503 | 0.6105 | 4.819 | 88.2% |
 | auto_ces | 0.515 | 0.6119 | 4.931 | 83.0% |
-| lgbm | 0.495 | 0.5985 | 4.741 | 88.8% |
-| **convex_ensemble (champion)** | **0.491** | **0.5965** | **4.700** | **90.2%** |
+| lgbm | 0.4975 | 0.5964 | 4.762 | 87.8% |
+| xgb | 0.4955 | 0.6001 | 4.7425 | 86.5% |
+| **convex_ensemble (champion)** | **0.491** | **0.5958** | **4.697** | **88.8%** |
 
 - **The gap vs the naive floor is real and significant** — 95% paired cluster
   bootstrap over series (2,000 reps, fixed seeds): convex_ensemble
-  **−0.112 WAPE** (CI **[−0.122, −0.102]**) and **−0.165 WRMSSE** (CI
-  **[−0.176, −0.155]**); lgbm −0.108 WAPE (CI [−0.120, −0.0965], a 17.9%
-  relative cut) and −0.163 WRMSSE (CI [−0.174, −0.152]). Both CIs exclude
-  zero.
+  **−0.1125 WAPE** (CI **[−0.1228, −0.1026]**) and **−0.1659 WRMSSE** (CI
+  **[−0.1772, −0.1552]**); lgbm −0.1057 WAPE (CI [−0.1184, −0.0935], a 17.5%
+  relative cut) and −0.1652 WRMSSE (CI [−0.1770, −0.1535]). Both CIs exclude
+  zero. Wave 27, stated plainly: the feature expansion + tuning round moved
+  lgbm's pooled test WAPE only within noise (0.495 → 0.498; the gap CI is
+  ~0.012 wide) — the honest gain of the pass is the wider booster pool: xgb
+  enters the ensemble (test 0.496 on its own) and the champion blend improves
+  to 0.491, with the next-week service number (below) the clearest mover.
 - **Bands** — per-series scaled split-conformal 80% band around the point
   forecast: per-horizon-day width = the 0.8-quantile of |lgbm residual| /
   series scale over the 8 selection origins, scaled back by the series'
   in-sample seasonal-naive-28 RMSE (zero/NaN scale -> the origin's median),
   zero-clipped and sorted — the pooled absolute-width band we tried first
   mis-served the panel's volume heterogeneity (top-quintile series covered
-  ~61% at the nominal 80% level). Result: lgbm covers **77.9%** of test
-  actuals (target 80%) at mean width **13.53** units; the ensemble covers
-  77.9% at 13.41 — by class the band is balanced (lgbm dense 77.2%,
-  intermittent 80.4%). Slightly under-covering, stated as measured.
+  ~61% at the nominal 80% level). Result: lgbm covers **77.7%** of test
+  actuals (target 80%) at mean width **13.535** units; the ensemble covers
+  77.7% at 13.342 — by class the band is balanced (lgbm dense 76.9%,
+  intermittent 80.6%). Slightly under-covering, stated as measured.
 - **Win rates** — share of series whose pooled test |error| beats the
-  seasonal_naive floor: the ensemble wins on **90.2%** of all series (dense
-  90.1%, intermittent 90.5%); the per-series spread across candidates is
-  narrow (82.8–90.2%) because on dense weekly-seasonal demand every serious
+  seasonal_naive floor: the ensemble wins on **88.8%** of all series (dense
+  88.6%, intermittent 89.8%); the per-series spread across candidates is
+  narrow (82.8–88.8%) because on dense weekly-seasonal demand every serious
   candidate clears the floor — the pooled margin, not per-series coverage, is
   what separates them.
 - **By class** (test WAPE): dense 0.568 (naive) → **0.464** (ensemble);
-  intermittent 0.749 → **0.604**. On this subset the models win in BOTH
+  intermittent 0.749 → **0.603**. On this subset the models win in BOTH
   classes — the honest contrast to the UCI sparse panel below, where the
   zero forecast stays the ceiling.
 
@@ -195,16 +206,19 @@ held-out estimate — the held-out estimate stays the 28-day test block above):
 | tsb | 0.4571 | 0.8399 | 0.8436 | 0.8288 |
 | auto_ets | 0.4352 | 0.7998 | 0.7962 | 0.8109 |
 | auto_ces | 0.4388 | 0.8064 | 0.8075 | 0.8030 |
-| lgbm | 0.4322 | 0.7942 | 0.7885 | 0.8115 |
-| **convex_ensemble (champion)** | **0.4250** | **0.7810** | **0.7762** | **0.7959** |
+| lgbm | 0.4327 | 0.7951 | 0.7915 | 0.8063 |
+| xgb | 0.4297 | 0.7896 | 0.7876 | 0.7957 |
+| **convex_ensemble (champion)** | **0.4233** | **0.7780** | **0.7736** | **0.7915** |
 
 - The next-week gap vs the floor is real and significant — paired cluster
-  bootstrap over series on the h≤7 metric: lgbm **−0.1120 WAPE** (CI
-  **[−0.1200, −0.1047]**); convex_ensemble **−0.1192 WAPE** (CI
-  **[−0.1271, −0.1113]**) — a 21.9% relative cut. Measured, not asserted: at
+  bootstrap over series on the h≤7 metric: lgbm **−0.1115 WAPE** (CI
+  **[−0.1197, −0.1039]**); convex_ensemble **−0.1208 WAPE** (CI
+  **[−0.1288, −0.1130]**) — a 22.2% relative cut. Measured, not asserted: at
   h≤7 every candidate beats the seasonal_naive floor in BOTH volume classes —
-  lgbm: **yes** (dense 0.7885, intermittent 0.8115); convex_ensemble:
-  **yes** (dense 0.7762, intermittent 0.7959).
+  lgbm: **yes** (dense 0.7915, intermittent 0.8063); xgb: **yes** (dense
+  0.7876, intermittent 0.7957); convex_ensemble: **yes** (dense 0.7736,
+  intermittent 0.7915). The wave-27 pass moved this number the most:
+  0.4250 → 0.4233 (rmae 0.7810 → 0.7780).
 - The error-growth shape on the 2 scored-once test origins (WAPE per 7-day
   block of the 28-day horizon):
 
@@ -216,12 +230,13 @@ held-out estimate — the held-out estimate stays the 28-day test block above):
 | tsb | 0.4414 | 0.4733 | 0.5435 | 0.5756 |
 | auto_ets | 0.4283 | 0.4668 | 0.5422 | 0.5710 |
 | auto_ces | 0.4345 | 0.4891 | 0.5598 | 0.5723 |
-| lgbm | 0.4188 | 0.4520 | 0.5335 | 0.5710 |
-| **convex_ensemble (champion)** | **0.4158** | **0.4522** | **0.5294** | **0.5612** |
+| lgbm | 0.4205 | 0.4553 | 0.5367 | 0.5715 |
+| xgb | 0.4146 | 0.4515 | 0.5356 | 0.5738 |
+| **convex_ensemble (champion)** | **0.4136** | **0.4498** | **0.5298** | **0.5636** |
 
-  Week 1 carries **27.6%** of the value (the share of the champion's
+  Week 1 carries **28.0%** of the value (the share of the champion's
   absolute-error reduction vs the floor delivered in wk1) and week 4 error
-  is **1.35×** week 1 (0.4158 → 0.5612; the floor degrades 1.22× the same
+  is **1.36×** week 1 (0.4136 → 0.5636; the floor degrades 1.22× the same
   way) — the further out the week, the more every candidate converges to the
   floor. That is why the next-week number is the service headline and the
   28-day pooled table stays the month view.
@@ -771,8 +786,8 @@ gates pass on both tracks.
 
 ```bash
 # from the repo root, inside the workspace venv
-uv run python -m demand_forecasting.cli tune-m5           # re-tune the lgbm booster (seeded 30-trial study, ~15 min; writes params.yaml m5_lgbm)
-uv run python -m demand_forecasting.cli evaluate-m5       # M5 headline track (~24 min, offline)
+uv run python -m demand_forecasting.cli tune-m5           # re-tune the lgbm booster (seeded 25-trial study on the wave-27 feature space, ~25 min; writes params.yaml m5_lgbm)
+uv run python -m demand_forecasting.cli evaluate-m5       # M5 headline track (~27 min, offline)
 uv run python -m demand_forecasting.cli build-report-m5   # rebuild reports_m5/report.html from committed artifacts
 uv run python -m demand_forecasting.cli demo-payload-m5   # the forecast-workbench demo payload (reports_m5/demo_payload.json)
 uv run python -m demand_forecasting.cli all            # synthetic pipeline (~2 min)
@@ -833,8 +848,13 @@ payload (`cli demo-payload-m5`, schema v4) served by the showcase API — and
 the wave-25 performance pass: the M5-practice lgbm feature set (rolling
 stds/expanding mean/price momentum/any_snap/event distances), `cli tune-m5`
 (seeded Optuna TPE on the selection origins → the params.yaml `m5_lgbm`
-block), and the best-three 0.05-simplex ensemble (committed: lgbm 0.495,
-ensemble 0.491 test WAPE). Also
+block), and the best-three 0.05-simplex ensemble; the wave-27 refinement
+round then widened the feature space per the M5-winning-solution practice
+(56/84-day means, snap_weekend, price-relative-to-mean, panel statics item
+age/history level/dept/category pooled means — all leakage-safe), re-tuned
+the lgbm (25 trials on the selection origins) and added a second global
+booster (xgb) to the ensemble pool (committed: lgbm 0.498, xgb 0.496,
+ensemble 0.491 test WAPE; next-week 0.4233). Also
 delivered: UCI real-data sparse track, probabilistic forecasts
 (quantile HGB + split-conformal), Optuna HPO across three boosting arms, the
 wave-13 audit items — statistical baselines (`seasonal_naive` + per-series

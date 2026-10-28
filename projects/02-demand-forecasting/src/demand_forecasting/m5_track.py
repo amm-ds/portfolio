@@ -17,12 +17,18 @@ Protocol (fixed a priori, machine-readable in evaluation_metadata.json):
 - **Candidates**: ``seasonal_naive`` (m=7), ``window_avg_28``, ``adida``,
   ``tsb`` (per-series statistical, statsforecast 2.1.1 — C-fast),
   ``auto_ets``, ``auto_ces`` (per-series automatic, statsforecast), ``lgbm``
-  (global LightGBM via mlforecast 1.1.0: lags 1/7/14/21/28, rolling means/
-  stds, expanding mean, calendar, exog price/SNAP/event codes + any_snap +
-  event distances + price momentum/missing — no series-identity feature, the
-  global model generalises across the 600 series; wave 25: tuned config from
-  the params.yaml ``m5_lgbm`` block, written by ``cli tune-m5``), and
-  ``convex_ensemble`` — a convex combination of the best THREE of {lgbm,
+  (global LightGBM via mlforecast 1.1.0: lags 1/7/14/21/28, rolling means
+  7/28/56/84 and stds 7/28 at lag 1, rolling mean 7/28 and std 7 at lag 7,
+  expanding mean, calendar dayofweek/day/month/ISO-week, exog price/SNAP/
+  event codes + any_snap + snap_weekend + event distances + price momentum/
+  relative/missing + panel statics item_age/hist_mean/hist_max/dept_mean/
+  cat_mean — no series-identity feature, the global model generalises across
+  the 600 series; wave 25: tuned config from the params.yaml ``m5_lgbm``
+  block, written by ``cli tune-m5``; wave 27: feature set per the M5-practice
+  research pass), ``xgb`` (global XGBoost via the same mlforecast wrapper and
+  feature space — a second booster family for ensemble diversity; modest
+  a-priori config, wave 27: entered the pool on selection WAPE), and
+  ``convex_ensemble`` — a convex combination of the best THREE of {lgbm, xgb,
   auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a 0.05-step
   simplex over the selection origins only (deterministic, documented).
 - **Volume classes** per series: ADI/CV² (Syntetos-Boylan, same thresholds as
@@ -128,20 +134,23 @@ LGBM_PARAM_KEYS = (
 TSB_ALPHA_D = 0.1
 TSB_ALPHA_P = 0.1
 # Ensemble grid: simplex over the pool members, step 0.05 (wave 25; the
-# wave-24 two-candidate 0.01 grid is retired with the best-two rule).
+# wave-24 two-candidate 0.01 grid is retired with the best-two rule). Wave 27:
+# the pool widens to four — xgb (a second global booster, different bias
+# profile) earned its slot on selection WAPE (0.4694 vs lgbm 0.4718 on the
+# wave-27 feature space) and improved the best-three blend (0.4603 vs 0.4616).
 ENSEMBLE_GRID_STEP = 0.05
-ENSEMBLE_POOL = ("lgbm", "auto_ets", "auto_ces")
+ENSEMBLE_POOL = ("lgbm", "xgb", "auto_ets", "auto_ces")
 ENSEMBLE_TOP_K = 3  # best three of the pool by selection WAPE enter the blend
 STATISTICAL_CANDIDATES = ("seasonal_naive", "window_avg_28", "adida", "tsb")
-CANDIDATES = (*STATISTICAL_CANDIDATES, "auto_ets", "auto_ces", "lgbm", "convex_ensemble")
+CANDIDATES = (*STATISTICAL_CANDIDATES, "auto_ets", "auto_ces", "lgbm", "xgb", "convex_ensemble")
 NAIVE = "seasonal_naive"
 DENSE_CLASSES = ("smooth", "erratic")
 #: demo catalog quota per (store x class) cell -> 3 stores x 2 classes x 4 = 24.
 CATALOG_PER_CELL = 4
 #: candidates whose per-series curves the demo sidecar retains (every shipped
-#: curve candidate plus auto_ces — a potential ensemble member the demo blend
-#: needs verifiable).
-SIDECAR_CANDIDATES = ("seasonal_naive", "auto_ets", "auto_ces", "lgbm", "convex_ensemble")
+#: curve candidate plus any candidate the demo blend needs verifiable — the
+#: payload raises if a committed ensemble member has no sidecar curves).
+SIDECAR_CANDIDATES = ("seasonal_naive", "auto_ets", "auto_ces", "lgbm", "xgb", "convex_ensemble")
 #: the demo sidecar artifact (per-series catalog curves at the test origins).
 CATALOG_FORECASTS_NAME = "catalog_forecasts.parquet"
 CATALOG_RULE = (
@@ -316,15 +325,21 @@ def load_m5_lgbm_params(params_path: Path | str = "params.yaml") -> dict[str, An
 
 
 def _mlforecast_for(model: Any) -> Any:
-    """The mlforecast recursive wrapper for the lgbm candidate (wave-25 set).
+    """The mlforecast recursive wrapper for the global-ML candidates (wave-25
+    set; wave 27 extended per M5-practice research).
 
-    Lags 1/7/14/21/28; lag transforms: rolling means 7/28 (at lag 1) and 7
-    (at lag 7), rolling stds 7/28 (at lag 1) and 7 (at lag 7) — M5-practice
-    volatility features — plus an expanding mean at lag 1; calendar
-    dayofweek/month/ISO-week. The exog price/SNAP/event columns (incl.
-    any_snap, event distances, price momentum/missing) ride on the train /
-    X_df frames. Shared by the track and the tuner so both fit the exact
-    same feature space.
+    Lags 1/7/14/21/28; lag transforms: at lag 1 rolling means 7/28/56/84
+    (56/84 are the wave-27 additions — the strong public M5 solutions carry
+    multi-month price/demand levels, and 56/84-day means capture them),
+    rolling stds 7/28, and an expanding mean; at lag 7 rolling means 7/28 and
+    a rolling std 7 (the lag-7 RollingMean(28) is the "previous-week view"
+    the M5 weekly-forecast practice highlights). Calendar
+    dayofweek/day-of-month/month/ISO-week. The exog price/SNAP/event columns
+    (incl. any_snap, snap_weekend, event distances, price momentum/relative/
+    missing) ride on the train / X_df frames; the panel-level statics
+    (item age, history mean/max, dept/cat pooled means) are attached per
+    origin by :func:`_attach_panel_features`. Shared by the track and the
+    tuner so both fit the exact same feature space.
     """
     from mlforecast import MLForecast
     from mlforecast.lag_transforms import ExpandingMean, RollingMean, RollingStd
@@ -337,14 +352,67 @@ def _mlforecast_for(model: Any) -> Any:
             1: [
                 RollingMean(7),
                 RollingMean(28, min_samples=1),
+                RollingMean(56, min_samples=1),
+                RollingMean(84, min_samples=1),
                 RollingStd(7, min_samples=2),
                 RollingStd(28, min_samples=2),
                 ExpandingMean(),
             ],
-            7: [RollingMean(7), RollingStd(7, min_samples=2)],
+            7: [RollingMean(7), RollingMean(28, min_samples=1), RollingStd(7, min_samples=2)],
         },
-        date_features=["dayofweek", "month", _weekofyear],
+        date_features=["dayofweek", "day", "month", _weekofyear],
     )
+
+
+#: Panel-level statics attached per origin (wave 27) — constant per series
+#: within an origin, carried identically into the future window. All are
+#: computed from the training window ONLY (``ds <= origin``), so the future
+#: values are leakage-free by construction.
+PANEL_STATIC_FEATURES = (
+    "item_age_days",  # days since the series' first observed sale
+    "hist_mean",  # mean daily demand over the training window
+    "hist_max",  # max daily demand over the training window
+    "dept_mean",  # pooled: mean of hist_mean over the series' department
+    "cat_mean",  # pooled: mean of hist_mean over the series' category
+)
+
+
+def _attach_panel_features(
+    train: pd.DataFrame,
+    hist_exog: pd.DataFrame,
+    future_exog: pd.DataFrame,
+    series_meta: pd.DataFrame,
+) -> None:
+    """Attach the per-origin panel statics to the (history, future) exog frames.
+
+    ``series_meta`` carries ``unique_id, dept_id, cat_id`` (one row per
+    series). ``item_age_days`` / ``hist_mean`` / ``hist_max`` are per-series
+    aggregates of the training window; ``dept_mean`` / ``cat_mean`` are
+    cross-series pooled levels (mean of ``hist_mean`` within the department /
+    category) — the leakage-safe version of the target-encoded aggregates
+    the strong public M5 solutions use: the encoding pool is the origin's
+    training window, never the scored window. The same constant is written
+    on the history and the future rows (the values are known at the origin),
+    in place on both frames.
+    """
+    origin = train["ds"].max()
+    stats = train.groupby("unique_id")["y"].agg(["mean", "max", "count"])
+    first_sale = train.groupby("unique_id")["ds"].min()
+    stats["item_age_days"] = (origin - first_sale).dt.days.astype(float)
+    stats = stats.rename(columns={"mean": "hist_mean", "max": "hist_max"})[
+        ["hist_mean", "hist_max", "item_age_days"]
+    ]
+    meta = series_meta.drop_duplicates("unique_id").set_index("unique_id")
+    for level, col in (("dept_mean", "dept_id"), ("cat_mean", "cat_id")):
+        pooled = stats["hist_mean"].groupby(meta[col], observed=True).transform("mean")
+        stats[level] = pooled
+    cols = list(PANEL_STATIC_FEATURES)
+    for frame in (hist_exog, future_exog):
+        uids = frame["unique_id"]
+        if not uids.isin(stats.index).all():
+            raise ValueError("panel statics: series missing from the training window")
+        # .loc preserves the frame's row order (duplicated labels repeat)
+        frame[cols] = stats.loc[uids, cols].to_numpy()
 
 
 def _lgbm_forecast(
@@ -358,12 +426,15 @@ def _lgbm_forecast(
 ) -> np.ndarray:
     """Global LightGBM point forecast at one origin: (n_series, h).
 
-    mlforecast recursive strategy: lags 1/7/14/21/28, rolling means/stds, an
-    expanding mean, calendar dayofweek/month/ISO-week, exog price/SNAP/event
-    codes + any_snap + event distances + price momentum/missing (history
-    joined on the training frame; future values from the calendar /
-    forward-filled price). Determinism: fixed seed, n_jobs=1, force_row_wise
-    (the repo's byte-identity contract for LightGBM).
+    mlforecast recursive strategy: lags 1/7/14/21/28, rolling means 7/28/56/84
+    and stds 7/28 (lag 1), rolling mean 7/28 and std 7 (lag 7), expanding
+    mean, calendar dayofweek/day/month/ISO-week, exog price/SNAP/event codes
+    + any_snap + snap_weekend + event distances + price momentum/relative/
+    missing + panel statics (attached by :func:`_attach_panel_features`
+    before this call; history joined on the training frame, future values
+    from the calendar / forward-filled price). Determinism: fixed seed,
+    n_jobs=1, force_row_wise (the repo's byte-identity contract for
+    LightGBM).
 
     ``lgbm_params`` overrides the booster config (the tune-m5 path passes
     per-trial params; the track passes the params.yaml ``m5_lgbm`` block);
@@ -376,9 +447,6 @@ def _lgbm_forecast(
     """
     from lightgbm import LGBMRegressor
 
-    train_m = train.merge(hist_exog, on=["unique_id", "ds"], how="left", validate="1:1")
-    if train_m.drop(columns=["unique_id", "ds", "y"]).isna().any().any():
-        raise ValueError("exogenous merge produced NaNs in the lgbm training frame")
     kwargs = dict(lgbm_params or LGBM_KWARGS)
     if n_estimators is not None:
         kwargs["n_estimators"] = n_estimators
@@ -389,6 +457,69 @@ def _lgbm_forecast(
         force_row_wise=True,
         **kwargs,
     )
+    return _boost_forecast(model, train, hist_exog, future_exog, series_ids, name="lgbm")
+
+
+#: XGB candidate (wave 27) — a second global booster with a different bias
+#: profile, added to the ensemble pool. Modest a-priori config (NOT tuned —
+#: the selection-origins study is the lgbm tuner's; xgb enters the pool only
+#: if it earns its place on selection WAPE, which it did: 0.4694 vs lgbm
+#: 0.4718 on the wave-27 feature space). Deterministic: hist tree method,
+#: n_jobs=1, fixed seed.
+XGB_KWARGS: dict[str, Any] = {
+    "n_estimators": 400,
+    "learning_rate": 0.05,
+    "max_depth": 7,
+    "min_child_weight": 10.0,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+}
+
+
+def _xgb_forecast(
+    train: pd.DataFrame,
+    hist_exog: pd.DataFrame,
+    future_exog: pd.DataFrame,
+    seed: int,
+    series_ids: list[str] | None = None,
+) -> np.ndarray:
+    """Global XGBoost point forecast at one origin: (n_series, h).
+
+    Identical feature space and mlforecast recursive strategy as
+    :func:`_lgbm_forecast` (shared :func:`_mlforecast_for` wrapper), a
+    different booster family for ensemble diversity. Determinism: hist
+    tree method, n_jobs=1, fixed seed.
+    """
+    from xgboost import XGBRegressor
+
+    model = XGBRegressor(
+        tree_method="hist",
+        random_state=seed,
+        n_jobs=1,
+        verbosity=0,
+        **XGB_KWARGS,
+    )
+    return _boost_forecast(model, train, hist_exog, future_exog, series_ids, name="xgb")
+
+
+def _boost_forecast(
+    model: Any,
+    train: pd.DataFrame,
+    hist_exog: pd.DataFrame,
+    future_exog: pd.DataFrame,
+    series_ids: list[str] | None,
+    *,
+    name: str,
+) -> np.ndarray:
+    """Shared mlforecast recursive fit/predict for the global boosters.
+
+    ``name`` is only for error messages. See :func:`_lgbm_forecast` for the
+    series-order contract (mlforecast returns alphabetical unique_id order;
+    ``series_ids`` re-indexes to the caller's order).
+    """
+    train_m = train.merge(hist_exog, on=["unique_id", "ds"], how="left", validate="1:1")
+    if train_m.drop(columns=["unique_id", "ds", "y"]).isna().any().any():
+        raise ValueError(f"exogenous merge produced NaNs in the {name} training frame")
     fc = _mlforecast_for(model)
     fc.fit(
         train_m,
@@ -412,7 +543,7 @@ def _lgbm_forecast(
         alpha_pos = {sid: i for i, sid in enumerate(alpha_ids)}
         mat = mat[[alpha_pos[sid] for sid in series_ids]]
     if np.isnan(mat).any():
-        raise ValueError("lgbm forecast contains NaNs")
+        raise ValueError(f"{name} forecast contains NaNs")
     clipped: np.ndarray = np.clip(mat, 0.0, None)
     return clipped
 
@@ -768,9 +899,11 @@ def run_m5_track(
         actuals[o] = _actual_window(y_all, series_ids, odate, HORIZON)
         preds = _statistical_forecasts(train, series_ids, HORIZON)
         hist_exog, future_exog = split_exogenous(x_enc, series_ids, odate, HORIZON)
+        _attach_panel_features(train, hist_exog, future_exog, s_all)
         preds["lgbm"] = _lgbm_forecast(
             train, hist_exog, future_exog, seed, series_ids=series_ids, lgbm_params=lgbm_params
         )
+        preds["xgb"] = _xgb_forecast(train, hist_exog, future_exog, seed, series_ids=series_ids)
         for name, mat in preds.items():
             forecasts[name][o] = mat
         logger.info(
@@ -1361,7 +1494,16 @@ def _package_versions() -> dict[str, str]:
     from importlib.metadata import version
 
     out: dict[str, str] = {}
-    for pkg in ("statsforecast", "mlforecast", "lightgbm", "datasetsforecast", "polars", "numpy"):
+    pkgs = (
+        "statsforecast",
+        "mlforecast",
+        "lightgbm",
+        "xgboost",
+        "datasetsforecast",
+        "polars",
+        "numpy",
+    )
+    for pkg in pkgs:
         try:
             out[pkg] = version(pkg)
         except Exception:  # pragma: no cover - package metadata always present
