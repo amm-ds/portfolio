@@ -510,6 +510,24 @@ small tabular lag problems; a sequence model is the roadmap answer).
   paired cluster bootstrap over series (2,000 reps, one shared index draw per
   replication; the WAPE replicate is the resampled error-ratio gap
   (Σ|err_A|−Σ|err_B|)/Σy, zero-demand resamples skipped).
+- **Rolling next-week service** (wave 26; the `weekly_rolling` block of
+  `metrics.json`, computed from the retained per-series per-origin forecasts —
+  no new fitting): the headline of a demand forecast is the NEXT week; later
+  weeks roll forward as new data lands. `next_week` pools WAPE over h=1..7 of
+  ALL 10 origins (each origin's first-week forecast is one deployed weekly
+  forecast, so the 10 origins are 10 weekly service evaluations rolled
+  together) — pooled, per volume class, with the paired cluster-bootstrap gap
+  vs seasonal_naive for lgbm/convex_ensemble and an `always_beats_naive`
+  verdict per candidate (`wins_everywhere` = per-class rmae < 1.0 in every
+  class, reported as measured — never asserted). Honesty note carried in the
+  block's method string: the 8 selection origins are included, so this is the
+  operational SERVICE number, not a held-out estimate; the held-out estimate
+  stays the 28-day test block. `weekly_blocks` slices the 2 scored-once test
+  origins into the four 7-day blocks of the horizon (wk1 = h1-7 … wk4 =
+  h22-28) — the honest error-growth shape of the month view — and
+  `weekly_block_demand` records Σ actual per block so WAPE gaps translate
+  into absolute-error reductions. The 28-day pooled tables stay as the month
+  view.
 - **Probabilistic band** (`probabilistic.py` block): per-series scaled
   split-conformal, level 0.8 — per-horizon-day width = the 0.8-quantile of
   |lgbm residual| / series scale over the 8 selection origins (8 × 600
@@ -646,6 +664,17 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.15.0 (2026-10-28)** — wave 26 (rolling next-week service): the
+  `weekly_rolling` block in `metrics.json` (§N) — `next_week` pools WAPE over
+  h=1..7 of ALL 10 origins (each origin's first-week forecast = one deployed
+  weekly forecast), per volume class, with the paired cluster-bootstrap gap
+  vs naive for lgbm/convex_ensemble and a measured `always_beats_naive`
+  verdict per candidate; `weekly_blocks` slices the 2 scored-once test
+  origins into wk1..wk4 (7-day blocks) with `weekly_block_demand` volumes.
+  No new fitting — computed from the retained per-origin forecasts. The
+  report gains a "Rolling next-week service" section right after the
+  headline table (next-week table + verdict sentence, weekly-block table +
+  error-growth sentence); the 28-day pooled tables stay as the month view.
 - **0.13.1 (2026-10-28)** — wave 24 fix pass: the 80% band became a per-series
   scaled split-conformal (per-horizon-day q80 of |lgbm residual| / series
   naive-28 RMSE over the 8 selection origins, scaled back per series; §N) — a

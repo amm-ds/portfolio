@@ -121,7 +121,7 @@ function Workbench({
   const firstSeries = payload.catalog[0]?.series_id ?? "";
   const firstOrigin = payload.origins[0]?.origin ?? "";
   const state = useWorkbenchState(
-    { series: firstSeries, models: "seasonal_naive,lgbm", origin: firstOrigin, horizon: 28 },
+    { series: firstSeries, models: "seasonal_naive,lgbm", origin: firstOrigin, horizon: 7 },
     manifest.scenarios,
   );
   const { values, setValue } = state;
@@ -132,7 +132,7 @@ function Workbench({
   const origin = payload.origins.some((o) => o.origin === values.origin)
     ? String(values.origin)
     : firstOrigin;
-  const h = HORIZONS.includes(Number(values.horizon)) ? Number(values.horizon) : 28;
+  const h = HORIZONS.includes(Number(values.horizon)) ? Number(values.horizon) : 7;
   const modelsOn = String(values.models)
     .split(",")
     .filter((m) => MODELS.some((mm) => mm.key === m));
@@ -308,7 +308,7 @@ function Workbench({
             <h3 className="wb-rail-title">error composition</h3>
             <ErrorCompositionPanel window={window} primary={best} h={h} />
           </div>
-          <div className="wb-secondary-panel fwb-tall">
+          <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">band calibration</h3>
             {modelsOn.includes("lgbm") ? (
               <BandCalibrationPanel
@@ -321,7 +321,7 @@ function Workbench({
               <BandPlaceholder />
             )}
           </div>
-          <div className="wb-secondary-panel fwb-tall">
+          <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">model verdict</h3>
             <VerdictPanel
               entry={entry}
@@ -329,7 +329,6 @@ function Workbench({
               modelsOn={modelsOn}
               h={h}
               payload={payload}
-              forecastDates={originBlock.forecast_dates}
             />
           </div>
         </>

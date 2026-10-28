@@ -2496,34 +2496,16 @@ button.chip.demo-preset.fwb-active {
   font-variant-numeric: tabular-nums;
 }
 
-/* the forecast workbench's calibration + verdict cards pack a dashboard's
-   worth of readouts, so its secondary band gets extra height; :has scoping
-   leaves the churn/uplift bands at 280px */
-.wb-secondary:has(.fwb-tall) {
-  height: 340px;
-}
-
-/* band calibration card: vertical stack of strip, width sparkline, weekly
-   coverage squares and the worst-miss line; the hit strip absorbs slack */
-.fwb-band-dash {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.2rem 0.7rem 0.4rem;
-}
-
-/* band calibration: one square per scored day, teal = actual inside the
-   p10/p90 band, pink = outside; wraps onto a second row on narrow cards */
-.fwb-band-strip {
+/* band calibration card: the per-day hit strip fills the card body; teal =
+   actual inside the p10/p90 band, pink = outside */
+.wb-secondary .fwb-band-strip {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
   align-content: center;
-  padding: 0;
+  padding: 0.2rem 0.7rem 0.4rem;
 }
 
 .fwb-band-day {
@@ -2544,95 +2526,14 @@ button.chip.demo-preset.fwb-active {
   border-color: var(--danger);
 }
 
-/* width-trajectory sparkline: pure SVG polyline, min/max labels at the ends */
-.fwb-width-spark {
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.fwb-width-spark-viz {
-  height: 34px;
-}
-
-.fwb-mini-label {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.fwb-spark-ends {
-  display: flex;
-  justify-content: space-between;
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-/* weekly coverage buckets: one labeled square per week, fill flags drift */
-.fwb-cov-weeks {
-  flex-shrink: 0;
-  display: flex;
-  gap: 0.45rem;
-}
-
-.fwb-cov-week {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
-}
-
-.fwb-cov-box {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 20px;
-  border: 1px solid var(--accent);
-  border-radius: 3px;
-  background: var(--accent);
-  opacity: 0.35;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.fwb-cov-box.low {
-  border-color: var(--danger);
-  background: var(--danger);
-}
-
-.fwb-cov-label {
-  font-family: var(--mono);
-  font-size: 0.58rem;
-  color: var(--muted);
-}
-
-/* worst-miss annotation: one computed line, mono small */
-.fwb-worst-miss {
-  flex-shrink: 0;
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 0.66rem;
-  color: var(--secondary);
-}
-
 .fwb-band-off {
   margin: 0.6rem 0.7rem 0.75rem;
   font-family: var(--mono);
   font-size: 0.78rem;
 }
 
-/* model verdict: header + one block per active candidate — name, 7-bucket
-   |error| micro-bar profile, mono WAPE, delta chip, peak-day MAE — with a
-   total-|error| proportion bar under each row and a Mon..Sun heat-strip of
-   the best model versus the naive floor */
+/* model verdict: one clean single-line row per active candidate — name,
+   mono WAPE, delta chip, right-aligned peak-day MAE */
 .fwb-verdict {
   flex: 1 1 auto;
   min-height: 0;
@@ -2643,32 +2544,18 @@ button.chip.demo-preset.fwb-active {
   padding: 0.35rem 0.7rem 0.5rem;
 }
 
-/* header and rows share one column grid so every column lines up */
-.fwb-verdict-head,
+/* every row shares one column grid so wape, delta and peak line up */
 .fwb-verdict-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 54px 46px 80px 32px;
+  grid-template-columns: minmax(0, 1fr) 46px 80px 32px;
   gap: 0.35rem;
   align-items: center;
 }
 
-.fwb-verdict-head {
-  font-family: var(--mono);
-  font-size: 0.56rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
-
-.fwb-verdict-head span,
 .fwb-verdict-wape,
 .fwb-verdict-peak {
   text-align: right;
   font-variant-numeric: tabular-nums;
-}
-
-.fwb-verdict-head span:first-child {
-  text-align: left;
 }
 
 .fwb-verdict-item.best .fwb-verdict-name {
@@ -2704,23 +2591,6 @@ button.chip.demo-preset.fwb-active {
   padding: 0 0.3rem;
 }
 
-/* 7-bucket |error| micro-bars: one shared scale across rows (height set
-   inline), tinted with the row's model color */
-.fwb-microbars {
-  display: flex;
-  align-items: flex-end;
-  gap: 1px;
-  width: 54px;
-  height: 14px;
-}
-
-.fwb-microbars span {
-  flex: 1 1 0;
-  min-height: 0;
-  opacity: 0.8;
-  border-radius: 1px 1px 0 0;
-}
-
 .fwb-verdict-wape {
   color: var(--text);
 }
@@ -2733,58 +2603,6 @@ button.chip.demo-preset.fwb-active {
   font-size: 0.66rem;
   text-align: center;
   white-space: nowrap;
-}
-
-/* total-|error| proportion bar: window total relative to the worst model */
-.fwb-verdict-share {
-  height: 4px;
-  margin-top: 2px;
-  border-radius: 2px;
-  background: var(--bg);
-  overflow: hidden;
-}
-
-.fwb-verdict-share span {
-  display: block;
-  height: 100%;
-  opacity: 0.55;
-}
-
-/* weekday heat-strip: two labeled rows of 7 cells, intensity = |err| share */
-.fwb-weekstrip {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  margin-top: 0.15rem;
-}
-
-.fwb-weekstrip-row {
-  display: grid;
-  grid-template-columns: 54px repeat(7, 14px);
-  gap: 3px;
-  align-items: center;
-}
-
-.fwb-weekstrip-tag {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.fwb-wd-cell {
-  width: 14px;
-  height: 10px;
-  border-radius: 2px;
-}
-
-.fwb-wd-note {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 0.64rem;
-  color: var(--muted);
 }
 
 .fwb-verdict-committed {
@@ -3236,10 +3054,6 @@ button.chip.demo-preset.fwb-active {
 
   .wb-secondary {
     grid-template-columns: 1fr;
-    height: auto;
-  }
-
-  .wb-secondary:has(.fwb-tall) {
     height: auto;
   }
 

@@ -605,3 +605,125 @@ def test_m5_ensemble_composition_quote_matches_committed_metrics() -> None:
     for i in range(3):
         assert m.group(2 * i + 1) == members[i]
         assert float(m.group(2 * i + 2)) == pytest.approx(weights[i], abs=5e-3)
+
+
+# ---------------------------------------------------------------------------
+# Wave-26 rolling next-week service guards (weekly_rolling block)
+# ---------------------------------------------------------------------------
+
+
+def _m5_weekly_subsection() -> str:
+    """The 'Rolling next-week service' subsection of the M5 README section."""
+    section = _m5_section()
+    assert "### Rolling next-week service" in section, "next-week subsection missing"
+    return section.split("### Rolling next-week service", 1)[1].split("### ", 1)[0]
+
+
+def _next_week_readme_table(sub: str) -> dict[str, list[str]]:
+    """Parse the next-week table (candidate | WAPE | rmae | dense | intermittent)."""
+    rows: dict[str, list[str]] = {}
+    for line in sub.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            if rows:
+                break  # table ended
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) != 5 or cells[0] == "candidate" or set(cells[0]) <= {"-", ":"}:
+            continue
+        name = cells[0].replace("**", "")
+        for suffix in (" (floor)", " (champion)"):
+            name = name.replace(suffix, "")
+        rows[name] = cells[1:]
+    return rows
+
+
+def test_m5_next_week_table_matches_committed_weekly_block() -> None:
+    """The next-week table (h≤7, all origins) is live against weekly_rolling."""
+    nw = _m5_metrics()["weekly_rolling"]["next_week"]
+    table = _next_week_readme_table(_m5_weekly_subsection())
+    assert set(table) == set(nw["pooled"]), "next-week table candidates mismatch"
+    for cand, (wape_s, rmae_s, dense_s, inter_s) in table.items():
+        assert _num(wape_s) == pytest.approx(nw["pooled"][cand]["wape"], abs=5e-4), cand
+        assert _num(rmae_s) == pytest.approx(nw["pooled"][cand]["rmae"], abs=5e-4), cand
+        for cls, cell in (("dense", dense_s), ("intermittent", inter_s)):
+            entry = nw["by_class"][cand][cls]
+            if entry is None:
+                assert cell == "-", cand
+            else:
+                assert _num(cell) == pytest.approx(entry["rmae"], abs=5e-4), f"{cand} {cls}"
+
+
+def test_m5_next_week_gap_and_verdict_quotes_match_committed_weekly_block() -> None:
+    """The next-week bootstrap gap CIs and the always-beats-naive verdicts are live."""
+    nw = _m5_metrics()["weekly_rolling"]["next_week"]
+    sub = _m5_weekly_subsection()
+    MINUS = "\u2212"  # unicode minus, written escaped to keep ruff RUF001 quiet
+    for label in ("lgbm", "convex_ensemble"):
+        block = nw["gaps"][f"{label}_vs_naive"]["wape"]
+        m = re.search(
+            rf"{label}\s*{MINUS}([\d.]+)\s+WAPE\s*\(CI\s*\[{MINUS}([\d.]+),\s*"
+            rf"{MINUS}([\d.]+)\]\)",
+            sub,
+        )
+        assert m, f"{label} next-week gap quote missing from README"
+        assert float(m.group(1)) == pytest.approx(-block["diff"], abs=5e-4)
+        assert float(m.group(2)) == pytest.approx(-block["ci95"][0], abs=5e-4)
+        assert float(m.group(3)) == pytest.approx(-block["ci95"][1], abs=5e-4)
+        # the always-beats-naive verdict word + per-class rmaes
+        verdict = nw["always_beats_naive"][label]
+        word = "yes" if verdict["wins_everywhere"] else "NO"
+        per = verdict["per_class_rmae"]
+        m = re.search(
+            rf"{label}:\s*\*\*{word}\*\*\s*\(dense\s*([\d.]+),\s*intermittent\s*([\d.]+)\)",
+            sub,
+        )
+        assert m, f"{label} always-beats-naive quote missing from README"
+        assert float(m.group(1)) == pytest.approx(per["dense"], abs=5e-4)
+        assert float(m.group(2)) == pytest.approx(per["intermittent"], abs=5e-4)
+
+
+def test_m5_weekly_blocks_table_and_growth_quote_match_committed_weekly_block() -> None:
+    """The wk1..wk4 table and the value-share / growth sentence are live."""
+    metrics = _m5_metrics()
+    rolling = metrics["weekly_rolling"]
+    wb, demand = rolling["weekly_blocks"], rolling["weekly_block_demand"]
+    sub = _m5_weekly_subsection()
+    rows: dict[str, list[str]] = {}
+    for line in sub.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            if rows:
+                break
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) != 5 or cells[0] == "candidate" or set(cells[0]) <= {"-", ":"}:
+            continue
+        name = cells[0].replace("**", "")
+        for suffix in (" (floor)", " (champion)"):
+            name = name.replace(suffix, "")
+        rows[name] = cells[1:]
+    assert set(rows) == set(wb), "weekly-blocks table candidates mismatch"
+    for cand, cells in rows.items():
+        for k, cell in enumerate(cells, start=1):
+            assert _num(cell) == pytest.approx(wb[cand][f"wk{k}"], abs=5e-4), f"{cand} wk{k}"
+    # growth sentence: "week 1 carries X% of the value; week 4 error is Yx week 1"
+    pooled28 = metrics["test"]["pooled"]
+    baseline = metrics["headline"]["baseline"]
+    champ = min(
+        (c for c in pooled28),
+        key=lambda c: pooled28[c]["wape"] if pooled28[c]["wape"] == pooled28[c]["wape"] else float("inf"),
+    )
+    reductions = [
+        (wb[baseline][f"wk{k}"] - wb[champ][f"wk{k}"]) * demand[f"wk{k}"] for k in range(1, 5)
+    ]
+    total = sum(reductions)
+    assert total > 0, "champion must reduce absolute error vs the floor for the quote"
+    wk1_share = 100.0 * reductions[0] / total
+    growth = wb[champ]["wk4"] / wb[champ]["wk1"]
+    m = re.search(r"week 1 carries\s+\*\*([\d.]+)%\*\*", sub)
+    assert m, "value-share quote missing from README"
+    assert float(m.group(1)) == pytest.approx(wk1_share, abs=5e-2)
+    m = re.search(r"week 4 error is\s+\*\*([\d.]+)×\*\*", sub)
+    assert m, "error-growth quote missing from README"
+    assert float(m.group(1)) == pytest.approx(growth, abs=5e-3)
