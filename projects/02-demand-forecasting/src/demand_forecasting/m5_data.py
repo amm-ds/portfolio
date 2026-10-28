@@ -55,6 +55,7 @@ _S_COLUMNS = ("unique_id", "item_id", "dept_id", "cat_id", "store_id", "state_id
 EXOG_FEATURES = (
     "sell_price",
     "snap",
+    "snap_weekend",
     "event_name_1_code",
     "event_type_1_code",
     "event_name_2_code",
@@ -63,6 +64,7 @@ EXOG_FEATURES = (
     "days_since_event",
     "days_to_next_event",
     "price_momentum_7",
+    "price_rel_mean",
     "price_missing",
 )
 #: SNAP flag per M5 state (the subset covers CA_3/CA_1/TX_2 -> CA and TX).
@@ -182,6 +184,10 @@ def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.Dat
     - ``any_snap`` — the OR of the three state SNAP flags for the day (a
       calendar-level "SNAP somewhere" flag; complements the per-series
       ``snap``).
+    - ``snap_weekend`` (wave 27) — ``snap`` AND weekend (dayofweek >= 5): the
+      M5 SNAP uplift is concentrated on weekend grocery trips, so the
+      interaction carries signal the two marginals miss. Both inputs are
+      calendar-known, so the future window carries it with no lookahead.
     - ``days_since_event`` / ``days_to_next_event`` — distance in days to the
       nearest real event day (0 on event days), computed per unique date and
       mapped back onto the rows; both directions are known for every panel
@@ -205,6 +211,7 @@ def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.Dat
             snap = np.where(state_arr == state, flags[:, pos], snap)
     out["snap"] = snap
     out["any_snap"] = x[list(_STATE_SNAP.values())].to_numpy(dtype=float).max(axis=1)
+    out["snap_weekend"] = (snap * (x["ds"].dt.dayofweek.to_numpy() >= 5)).astype(float)
     out["sell_price"] = x["sell_price"].to_numpy(dtype=float)
     for raw in ("event_name_1", "event_type_1", "event_name_2", "event_type_2"):
         filled = x[raw].astype("string").fillna("<none>")
@@ -257,6 +264,12 @@ def split_exogenous(
       computed on the concatenated history+future (so the future window uses
       exactly the price the model sees); the first 7 days of a series fill
       with 1.0 ("no change known").
+    - ``price_rel_mean`` (wave 27) — ``sell_price_t / mean(sell_price)`` over
+      the series' TRAINING-window prices: M5-practice normalised price (the
+      competition's strong public solutions all carry a per-item price
+      level/relative feature). The denominator is the history-window mean
+      only, so the future window divides by a number fixed at the origin —
+      leakage-free by construction.
     """
     hist = x_enc[x_enc["ds"] <= origin_date].copy()
     window_start = origin_date + pd.to_timedelta(1, unit="D")
@@ -286,6 +299,11 @@ def split_exogenous(
     both["price_momentum_7"] = (price_grp.transform(lambda s: s / s.shift(7))).fillna(1.0)
     hist = both[both["_blk"] == 0].drop(columns="_blk")
     future = both[both["_blk"] == 1].drop(columns="_blk")
+    # price relative to the training-window mean (history mean fixes the
+    # denominator at the origin, so the future window is leakage-free)
+    price_mean = hist.groupby("unique_id")["sell_price"].mean()
+    hist["price_rel_mean"] = hist["sell_price"] / hist["unique_id"].map(price_mean)
+    future["price_rel_mean"] = future["sell_price"] / future["unique_id"].map(price_mean)
     order = {sid: i for i, sid in enumerate(series_ids)}
     future["_o"] = future["unique_id"].map(order)
     future = future.sort_values(["_o", "ds"], ignore_index=True).drop(columns="_o")

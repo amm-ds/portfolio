@@ -38,6 +38,7 @@ DISPLAY = {  # candidate -> display name
     "auto_ets": "auto_ets",
     "auto_ces": "auto_ces",
     "lgbm": "lgbm",
+    "xgb": "xgb",
     "convex_ensemble": "convex_ensemble",
 }
 
@@ -377,8 +378,11 @@ CANDIDATE_DEFINITIONS = {
     "auto_ces": "per-series automatic complex exponential smoothing (season_length=7)",
     "lgbm": "global LightGBM over all 600 series (mlforecast recursive; lags 1/7/14/21/28, "
     "rolling means/stds, expanding mean, calendar + price/SNAP/event exog; wave-25 "
-    "tuned config)",
-    "convex_ensemble": "convex blend of the best three of {lgbm, auto_ets, auto_ces} by "
+    "tuned config; wave-27 feature space)",
+    "xgb": "global XGBoost over all 600 series (same mlforecast recursive feature space as "
+    "lgbm; modest a-priori config — a second booster family for ensemble diversity, "
+    "wave 27)",
+    "convex_ensemble": "convex blend of the best three of {lgbm, xgb, auto_ets, auto_ces} by "
     "selection WAPE (simplex grid step 0.05, selection origins only)",
 }
 

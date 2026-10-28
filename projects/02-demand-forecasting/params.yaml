@@ -94,12 +94,14 @@ holding_cost: 0.25
 stockout_cost: 4.0
 bootstrap_reps: 2000
 
-# M5 headline-track lgbm (wave 25) — best of a seeded 30-trial Optuna TPE
-# study on the selection origins only (cli tune-m5; nested 56-day early-stopping
-# split, objective = pooled WAPE over the last 2 selection origins; study best 0.4581).
+# M5 headline-track lgbm (wave 27) — best of a seeded 25-trial Optuna TPE
+# study on the selection origins only over the wave-27 feature space (cli tune-m5;
+# nested 56-day early-stopping split, objective = pooled WAPE over the last 2 selection origins;
+# study best 0.4612). Wave-25 predecessor (30 trials, old feature space): n_estimators 126,
+# learning_rate 0.05980272162403059, num_leaves 393, min_child_samples 197, colsample_bytree 0.5146641352420852.
 m5_lgbm:
-  n_estimators: 126
-  learning_rate: 0.05980272162403059
-  num_leaves: 393
-  min_child_samples: 197
-  colsample_bytree: 0.5146641352420852
+  n_estimators: 279
+  learning_rate: 0.027961422706101635
+  num_leaves: 472
+  min_child_samples: 226
+  colsample_bytree: 0.43564738242134776
