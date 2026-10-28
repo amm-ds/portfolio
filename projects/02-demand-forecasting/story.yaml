@@ -277,6 +277,21 @@ sections:
       clears the floor on 82.8–90.2% of series. Full tables:
       `reports_m5/metrics.json` + `probabilistic.json`.
 
+      **Rolling next-week service** (h≤7 pooled over ALL 10 origins — the
+      deployment shape: each week the model is re-run, only the first week
+      is consumed, later weeks roll forward; the 8 selection origins are
+      included, so this is the operational service number, not a held-out
+      estimate): convex_ensemble next-week WAPE **0.4250** vs the floor's
+      **0.5442** (lgbm **0.4322**, rmae 0.794), paired-bootstrap gaps
+      lgbm **−0.1120** (CI [−0.1200, −0.1047]) / ensemble **−0.1192** (CI
+      [−0.1271, −0.1113]) — and at h≤7 every candidate beats the floor in
+      BOTH volume classes, measured not asserted (ensemble rmae dense
+      0.776 / intermittent 0.796). The weekly error blocks on the scored
+      test origins grow wk1 **0.4158** → wk4 **0.5612** (1.35× week 1; the
+      floor degrades 1.22× the same way) — week 1 carries 27.6% of the
+      champion's absolute-error reduction, which is why the next-week number
+      is the service headline and the 28-day table is the month view.
+
       **Secondary — the UCI sparse track.** Headline numbers there are the
       real UCI track (1,084 intermittent series), scored on the frozen test
       window — 2010-10-01..2010-12-09, the holiday
@@ -515,6 +530,8 @@ sections:
     figures: []
     metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
+  - status: delivered
+    text: M5 rolling next-week service (wave 26) — the `weekly_rolling` block computed from the retained per-origin forecasts (no new fitting) — next-week h≤7 WAPE over all 10 origins (convex_ensemble 0.4250 vs naive 0.5442; bootstrap gaps ensemble −0.1192 [−0.1271, −0.1113], lgbm −0.1120 [−0.1200, −0.1047]), per-class rmae with a measured always-beats-naive verdict (every candidate wins in both classes at h≤7), and wk1..wk4 weekly error blocks on the test origins (champion 0.4158→0.5612, 1.35× growth) with per-block demand volumes; the report gains a "Rolling next-week service" section and the README gains drift guards on the new quotes.
   - status: delivered
     text: M5 headline track (m5_direct_v1, wave 24) — committed M5 subset (600 series, top-3 stores × top-200 items); 10 weekly origins (8 selection + 2 scored once), 28-day horizon, 8 candidates incl. global LightGBM (wave-25 tuned, extended M5 feature set) + selection-fitted 3-member convex ensemble (0.05 simplex); ensemble −0.112 WAPE (CI [−0.122, −0.102]) vs naive.
   - status: delivered

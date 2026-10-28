@@ -675,6 +675,8 @@ pipeline build). The queue commands above are the exact ones to re-run once
   report gains a "Rolling next-week service" section right after the
   headline table (next-week table + verdict sentence, weekly-block table +
   error-growth sentence); the 28-day pooled tables stay as the month view.
+  Committed re-run: 1460s; the 28-day point metrics reproduced the wave-25
+  artifacts' values exactly (determinism contract holds).
 - **0.13.1 (2026-10-28)** — wave 24 fix pass: the 80% band became a per-series
   scaled split-conformal (per-horizon-day q80 of |lgbm residual| / series
   naive-28 RMSE over the 8 selection origins, scaled back per series; §N) — a

@@ -42,7 +42,9 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
       {fw.slug && !imgFailed ? (
         <img
           src={`https://cdn.simpleicons.org/${fw.slug}`}
-          alt=""
+          alt={`${fw.name} logo`}
+          width={22}
+          height={22}
           loading="lazy"
           onError={() => setImgFailed(true)}
         />
@@ -54,10 +56,13 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
   );
 }
 
-/** Deployment providers — same tile pattern as frameworks. */
+/** Deployment providers — same tile pattern as frameworks.
+ * AWS and Azure render as letter tiles: their brand icons were removed from
+ * Simple Icons (no CC0-licensed source anymore), so the CDN slug no longer
+ * resolves and the logo usage is dropped rather than hotlinking unofficial art. */
 export const PROVIDERS: Framework[] = [
-  { name: "AWS", url: "https://aws.amazon.com", slug: "amazonaws", letters: "Aw" },
-  { name: "Microsoft Azure", url: "https://azure.microsoft.com", slug: "microsoftazure", letters: "Az" },
+  { name: "AWS", url: "https://aws.amazon.com", letters: "Aw" },
+  { name: "Microsoft Azure", url: "https://azure.microsoft.com", letters: "Az" },
   { name: "Google Cloud", url: "https://cloud.google.com", slug: "googlecloud", letters: "Gc" },
   { name: "Docker", url: "https://docker.com", slug: "docker", letters: "Dk" },
 ];

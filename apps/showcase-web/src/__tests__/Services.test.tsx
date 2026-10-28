@@ -15,34 +15,44 @@ function renderServices() {
 }
 
 describe("Services page (wave 8)", () => {
-  it("renders the hero and exactly 6 offering cards", () => {
+  it("renders the hero and exactly 5 offering cards (one per service line)", () => {
     renderServices();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "ML/AI engineering, end to end",
     );
     const offerings = document.querySelectorAll(".offering-card");
-    expect(offerings).toHaveLength(6);
+    expect(offerings).toHaveLength(5);
+    const titles = [...document.querySelectorAll(".offering-card h3")].map(
+      (el) => el.textContent,
+    );
+    expect(titles).toEqual([
+      "AI/LLM systems",
+      "Predictive analytics",
+      "ML engineering & MLOps",
+      "Optimization",
+      "Anomaly detection",
+    ]);
     // offering cards use the shared Card surface
     document.querySelectorAll(".offering-card").forEach((el) => {
       expect(el.classList.contains("accent-card")).toBe(true);
     });
   });
 
-  it("each offering has an outcome line, technical chips and deliverables", () => {
+  it("each offering has an outcome line, technical chips, evidence and a success sentence", () => {
     renderServices();
-    expect(screen.getByText(/Production ML systems designed, built, and handed over/)).toBeInTheDocument();
+    expect(screen.getByText(/Assistants and agents that cite their sources/)).toBeInTheDocument();
     // technical elements rendered as short, specific chips (scoped — some names also appear in prose)
     const chipTexts = [...document.querySelectorAll(".chip")].map((el) => el.textContent);
     for (const chip of [
-      "Full-stack (TS/React)",
       "APIs (FastAPI/REST)",
       "Inference & serving",
       "Data pipelines (Polars/DVC)",
       "Viz (Plotly/React)",
       "Eval/HPO (Optuna)",
       "MLOps/CI (Actions/Docker)",
-      "Out-of-core processing",
       "Leakage-proof CV",
+      "Benchmark instances",
+      "Alert budgets",
       "uv",
     ]) {
       expect(chipTexts).toContain(chip);
@@ -50,6 +60,49 @@ describe("Services page (wave 8)", () => {
     // every chip stays short (≤ 3 words)
     chipTexts.forEach((c) => {
       expect(c!.trim().split(/\s+/).length).toBeLessThanOrEqual(3);
+    });
+    // evidence chips link each offering to its proving experiment/demo
+    const proofLinks = [...document.querySelectorAll(".offering-card .chip-link")].map(
+      (el) => [el.textContent, el.getAttribute("href")] as const,
+    );
+    expect(proofLinks).toContainEqual(["proof: verified-claim RAG agent", "/projects/01-rag-agent"]);
+    expect(proofLinks).toContainEqual([
+      "proof: graded agentic workflow suite",
+      "/projects/09-agentic-workflows",
+    ]);
+    expect(proofLinks).toContainEqual([
+      "proof: demand forecast workbench",
+      "/projects/02-demand-forecasting",
+    ]);
+    expect(proofLinks).toContainEqual(["live demo: forecast workbench", "/demos/forecast-workbench"]);
+    expect(proofLinks).toContainEqual([
+      "proof: CI-evaluated churn pipeline",
+      "/projects/05-ml-pipeline-churn",
+    ]);
+    expect(proofLinks).toContainEqual(["live demo: churn sandbox", "/demos/churn-sandbox"]);
+    expect(proofLinks).toContainEqual([
+      "proof: uplift targeting study",
+      "/projects/10-uplift-experimentation",
+    ]);
+    expect(proofLinks).toContainEqual([
+      "proof: inference serving benchmark",
+      "/projects/08-inference-serving",
+    ]);
+    expect(proofLinks).toContainEqual([
+      "proof: vehicle routing benchmark",
+      "/projects/06-routing-optimization",
+    ]);
+    expect(proofLinks).toContainEqual([
+      "proof: incident detection w/ alert budget",
+      "/projects/03-anomaly-detection",
+    ]);
+    // every offering carries exactly one metric-first success sentence
+    const cards = document.querySelectorAll(".offering-card");
+    expect(cards).toHaveLength(5);
+    cards.forEach((card) => {
+      expect(card.textContent).toMatch(/how success is measured ::/);
+      expect(card.textContent).toMatch(/measured (on|by|as)/);
+      expect(card.textContent).not.toMatch(/revenue/i);
     });
     expect(screen.getByText("faithfulness/relevance eval harness")).toBeInTheDocument();
   });
@@ -109,9 +162,11 @@ describe("Services page (wave 8)", () => {
   it("degrades a provider logo to a letter tile on image error", () => {
     renderServices();
     const providerTiles = document.querySelectorAll(".providers-grid .framework-tile");
-    fireEvent.error(providerTiles[0].querySelector("img")!);
-    expect(screen.getByText("Aw")).toBeInTheDocument();
-    expect(providerTiles[0].querySelector("img")).toBeNull();
+    // Google Cloud is the first provider still served a CDN logo (AWS/Azure are
+    // letter tiles by design — their Simple Icons entries were removed).
+    fireEvent.error(providerTiles[2].querySelector("img")!);
+    expect(screen.getByText("Gc")).toBeInTheDocument();
+    expect(providerTiles[2].querySelector("img")).toBeNull();
   });
 
   it("ships a horizontal process timeline (4-up, 2-up, 1-up) with breathing room", () => {
@@ -133,5 +188,21 @@ describe("Services page (wave 8)", () => {
     fireEvent.error(tiles[0].querySelector("img")!);
     expect(screen.getByText("Pd")).toBeInTheDocument();
     expect(tiles[0].querySelector("img")).toBeNull();
+  });
+
+  it("framework logos carry explicit dimensions and meaningful alt text", () => {
+    renderServices();
+    const imgs = [...document.querySelectorAll(".framework-tile img")];
+    expect(imgs.length).toBeGreaterThan(0);
+    imgs.forEach((img) => {
+      expect(img.getAttribute("width")).toBe("22");
+      expect(img.getAttribute("height")).toBe("22");
+      expect(img.getAttribute("alt")).toMatch(/logo$/);
+    });
+    // AWS and Azure have no CC0-licensed icon source anymore — letter tiles, no <img>
+    const providerSection = document.querySelector(".providers-grid")!;
+    const providerImgs = [...providerSection.querySelectorAll("img")].map((i) => i.getAttribute("alt"));
+    expect(providerImgs).not.toContain("AWS logo");
+    expect(providerImgs).not.toContain("Microsoft Azure logo");
   });
 });

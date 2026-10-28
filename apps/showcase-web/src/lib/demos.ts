@@ -1,6 +1,9 @@
+import { STATIC_DEMO_REGISTRY } from "./staticRegistry";
+
 /** Offline fallback for the projects-page demos block, rendered only when the
- * demo registry endpoint (`GET /demos`) is unreachable. The live list comes
- * from the registry; keep the cards here in sync with the published demos. */
+ * demo registry endpoint (`GET /demos`) is unreachable. Derived from the
+ * generated registry snapshot (scripts/gen_static_registry.py), so it cannot
+ * drift from the published demos; the live list still comes from the registry. */
 export interface Demo {
   id: string;
   title: string;
@@ -10,21 +13,14 @@ export interface Demo {
   href?: string;
 }
 
-export const DEMOS: Demo[] = [
-  {
-    id: "churn-sandbox",
-    title: "churn threshold sandbox",
-    line: "Move the alarm threshold and the false-alarm cost — watch the optimal cutoff and the saved budget change on a real churn model.",
-    status: "live",
-    href: "/demos/churn-sandbox",
-  },
-  {
-    id: "forecast-workbench",
-    title: "demand forecast workbench",
-    line: "Pick a store-product series from the committed M5 track and compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the scored-once test origins.",
-    status: "live",
-    href: "/demos/forecast-workbench",
-  },
-];
+export const DEMOS: Demo[] = [...STATIC_DEMO_REGISTRY]
+  .sort((a, b) => a.id.localeCompare(b.id))
+  .map((d) => ({
+    id: d.id,
+    title: d.title,
+    line: d.hook,
+    status: "live" as const,
+    href: d.href,
+  }));
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";

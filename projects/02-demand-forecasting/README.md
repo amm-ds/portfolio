@@ -177,6 +177,55 @@ evaluation_metadata.json):
   classes — the honest contrast to the UCI sparse panel below, where the
   zero forecast stays the ceiling.
 
+### Rolling next-week service (h ≤ 7, all origins)
+
+The headline of a demand forecast is the NEXT week — later weeks roll
+forward as new data lands, so the **weekly rolling service is the deployment
+shape**: each week the model is re-run and only the first week of the fresh
+forecast is consumed. Pooled over h=1..7 of ALL 10 rolling origins (each
+origin's first-week forecast is one deployed weekly forecast; the 8 selection
+origins are included, so this is the operational service number, not a
+held-out estimate — the held-out estimate stays the 28-day test block above):
+
+| candidate | next-week WAPE | rmae | rmae dense | rmae intermittent |
+|---|---|---|---|---|
+| seasonal_naive (floor) | 0.5442 | 1.0000 | 1.0000 | 1.0000 |
+| window_avg_28 | 0.4669 | 0.8581 | 0.8640 | 0.8400 |
+| adida | 0.4547 | 0.8355 | 0.8357 | 0.8350 |
+| tsb | 0.4571 | 0.8399 | 0.8436 | 0.8288 |
+| auto_ets | 0.4352 | 0.7998 | 0.7962 | 0.8109 |
+| auto_ces | 0.4388 | 0.8064 | 0.8075 | 0.8030 |
+| lgbm | 0.4322 | 0.7942 | 0.7885 | 0.8115 |
+| **convex_ensemble (champion)** | **0.4250** | **0.7810** | **0.7762** | **0.7959** |
+
+- The next-week gap vs the floor is real and significant — paired cluster
+  bootstrap over series on the h≤7 metric: lgbm **−0.1120 WAPE** (CI
+  **[−0.1200, −0.1047]**); convex_ensemble **−0.1192 WAPE** (CI
+  **[−0.1271, −0.1113]**) — a 21.9% relative cut. Measured, not asserted: at
+  h≤7 every candidate beats the seasonal_naive floor in BOTH volume classes —
+  lgbm: **yes** (dense 0.7885, intermittent 0.8115); convex_ensemble:
+  **yes** (dense 0.7762, intermittent 0.7959).
+- The error-growth shape on the 2 scored-once test origins (WAPE per 7-day
+  block of the 28-day horizon):
+
+| candidate | wk1 (h1-7) | wk2 (h8-14) | wk3 (h15-21) | wk4 (h22-28) |
+|---|---|---|---|---|
+| seasonal_naive (floor) | 0.5423 | 0.5717 | 0.6343 | 0.6598 |
+| window_avg_28 | 0.4482 | 0.4783 | 0.5465 | 0.5801 |
+| adida | 0.4395 | 0.4749 | 0.5487 | 0.5798 |
+| tsb | 0.4414 | 0.4733 | 0.5435 | 0.5756 |
+| auto_ets | 0.4283 | 0.4668 | 0.5422 | 0.5710 |
+| auto_ces | 0.4345 | 0.4891 | 0.5598 | 0.5723 |
+| lgbm | 0.4188 | 0.4520 | 0.5335 | 0.5710 |
+| **convex_ensemble (champion)** | **0.4158** | **0.4522** | **0.5294** | **0.5612** |
+
+  Week 1 carries **27.6%** of the value (the share of the champion's
+  absolute-error reduction vs the floor delivered in wk1) and week 4 error
+  is **1.35×** week 1 (0.4158 → 0.5612; the floor degrades 1.22× the same
+  way) — the further out the week, the more every candidate converges to the
+  floor. That is why the next-week number is the service headline and the
+  28-day pooled table stays the month view.
+
 ### Related work — M5 and the forecasting stack
 
 - **M5 competition companion** (Makridakis et al., *International Journal of
@@ -199,7 +248,7 @@ evaluation_metadata.json):
   measures from the inside).
 
 Reproduce: `uv run python -m demand_forecasting.cli evaluate-m5` (writes
-`reports_m5/`, ~22 min; offline, checksum-pinned) or
+`reports_m5/`, ~24 min; offline, checksum-pinned) or
 `build-report-m5` to rebuild the HTML report from the committed artifacts.
 
 ## Data-generating process (UCI track — SECONDARY)
@@ -689,7 +738,10 @@ Figures (HTML + JSON per track, `reports/figures/` synthetic,
 Artifacts: the M5 track writes `reports_m5/metrics.json` (per-candidate ×
 {class, pooled} × {selection, test}: MAE/WAPE/rmae/WRMSSE/volume-weighted
 WRMSSE/peak-day MAE + horizon-wise MAE + per-series win rates + the headline
-gap bootstrap blocks), `probabilistic.json` (split-conformal band method,
+gap bootstrap blocks + the `weekly_rolling` block — next-week h≤7 WAPE over
+all 10 origins pooled/by class with bootstrap gaps and the measured
+`always_beats_naive` verdicts, and the wk1..wk4 weekly error blocks on the
+test origins), `probabilistic.json` (split-conformal band method,
 per-horizon widths, coverage/pinball/width per candidate),
 `evaluation_metadata.json` (protocol, checksums, seeds, package pins, metric
 definitions, report sample series), `figures/` and `report.html`; the
@@ -720,7 +772,7 @@ gates pass on both tracks.
 ```bash
 # from the repo root, inside the workspace venv
 uv run python -m demand_forecasting.cli tune-m5           # re-tune the lgbm booster (seeded 30-trial study, ~15 min; writes params.yaml m5_lgbm)
-uv run python -m demand_forecasting.cli evaluate-m5       # M5 headline track (~22 min, offline)
+uv run python -m demand_forecasting.cli evaluate-m5       # M5 headline track (~24 min, offline)
 uv run python -m demand_forecasting.cli build-report-m5   # rebuild reports_m5/report.html from committed artifacts
 uv run python -m demand_forecasting.cli demo-payload-m5   # the forecast-workbench demo payload (reports_m5/demo_payload.json)
 uv run python -m demand_forecasting.cli all            # synthetic pipeline (~2 min)

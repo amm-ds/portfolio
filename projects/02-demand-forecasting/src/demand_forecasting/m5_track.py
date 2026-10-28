@@ -905,6 +905,10 @@ def run_m5_track(
             "mean_band_width": float(np.mean([hi - lo for hi, lo in zip(his, los, strict=True)])),
         }
 
+    weekly_block = _weekly_rolling_block(
+        forecasts, actuals, origins, test, dense_mask, n_series, bootstrap_reps, seed
+    )
+
     metrics = {
         "protocol": PROTOCOL,
         "candidates": list(CANDIDATES),
@@ -946,9 +950,7 @@ def run_m5_track(
         "selection": selection_block,
         "test": test_block,
         "headline": headline,
-        "weekly_rolling": _weekly_rolling_block(
-            forecasts, actuals, origins, test, dense_mask, n_series, bootstrap_reps, seed
-        ),
+        "weekly_rolling": weekly_block,
     }
 
     # ---- report payload: sample series (test windows) ----
@@ -1051,9 +1053,9 @@ def run_m5_track(
         test_block["pooled"]["lgbm"]["wape"],
         test_block["pooled"][NAIVE]["wape"],
         test_block["pooled"]["convex_ensemble"]["wape"],
-        metrics["weekly_rolling"]["next_week"]["pooled"]["lgbm"]["wape"],
-        metrics["weekly_rolling"]["next_week"]["pooled"][NAIVE]["wape"],
-        metrics["weekly_rolling"]["next_week"]["pooled"]["convex_ensemble"]["wape"],
+        weekly_block["next_week"]["pooled"]["lgbm"]["wape"],
+        weekly_block["next_week"]["pooled"][NAIVE]["wape"],
+        weekly_block["next_week"]["pooled"]["convex_ensemble"]["wape"],
     )
     return M5Result(
         metrics=metrics,
@@ -1243,9 +1245,7 @@ def _weekly_rolling_block(
 
     verdicts: dict[str, Any] = {}
     for c in CANDIDATES:
-        per_class = {
-            cls: (entry["rmae"] if entry else None) for cls, entry in by_class[c].items()
-        }
+        per_class = {cls: (entry["rmae"] if entry else None) for cls, entry in by_class[c].items()}
         verdicts[c] = {
             "wins_everywhere": all(v is not None and v < 1.0 for v in per_class.values()),
             "per_class_rmae": per_class,

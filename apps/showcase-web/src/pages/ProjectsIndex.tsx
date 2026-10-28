@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { getDemoRegistry, getProjects, type DemoRegistryEntry, type Project } from "../api";
+import {
+  getDemoRegistry,
+  getProjects,
+  STATIC_PROJECTS,
+  type DemoRegistryEntry,
+  type Project,
+} from "../api";
 import { ProjectCard } from "../components/ProjectCard";
 import { DEMOS, DEMOS_INTRO } from "../lib/demos";
 
@@ -181,22 +187,58 @@ export function groupByDemoGroup(entries: DemoRegistryEntry[]): { group: string;
 
 /** Projects index: a "demos" block on top, then an "experiments" block with
  * topic rows as full-width sections and their cards in a responsive 2-column
- * grid. Both blocks live inside /projects (`/experiments` is an alias). */
+ * grid. Both blocks live inside /projects (`/experiments` is an alias).
+ *
+ * Resilience: if GET /projects fails we probe GET /demos — only when both are
+ * unreachable do we conclude the registry is down and render the last
+ * published snapshot (STATIC_PROJECTS, baked at build time), with a Retry
+ * button that re-fetches. A /projects failure with a live /demos endpoint
+ * keeps the plain error state. */
 export function ProjectsIndex() {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [snapshot, setSnapshot] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+    setProjects(null);
+    setError(null);
+    setSnapshot(false);
     getProjects()
-      .then((list) => setProjects([...list].sort((a, b) => a.order - b.order)))
-      .catch(() => setError("could not load the project index — is the API running?"));
-  }, []);
+      .then((list) => !cancelled && setProjects([...list].sort((a, b) => a.order - b.order)))
+      .catch(() => {
+        if (cancelled) return;
+        getDemoRegistry()
+          .then(
+            () =>
+              !cancelled &&
+              setError("could not load the project index — is the API running?"),
+          )
+          .catch(() => {
+            if (cancelled) return;
+            setSnapshot(true);
+            setProjects([...STATIC_PROJECTS].sort((a, b) => a.order - b.order));
+          });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [attempt]);
 
   return (
     <>
       <h1 className="page-title">projects</h1>
+      {snapshot && (
+        <div className="state-box error" role="alert">
+          The live registry is unreachable — showing the last published snapshot.{" "}
+          <button type="button" onClick={() => setAttempt((n) => n + 1)}>
+            Retry
+          </button>
+        </div>
+      )}
       {error && <div className="state-box error">{error}</div>}
-      {!error && projects === null && <p className="loading">loading projects…</p>}
+      {!error && !snapshot && projects === null && <p className="loading">loading projects…</p>}
       {projects !== null && projects.length === 0 && (
         <div className="state-box">No projects published yet — check back soon.</div>
       )}
@@ -207,7 +249,7 @@ export function ProjectsIndex() {
           <div className="topic-rows">
           {groupByRow(projects).map((row) => (
             <section key={row.name} className="topic-row" aria-label={row.name}>
-              <h2 className="section-title">{row.name}</h2>
+              <h3 className="section-title">{row.name}</h3>
               {row.description && <p className="section-intro">{row.description}</p>}
               <div className="project-grid">
                 {row.topics.flatMap((t) =>

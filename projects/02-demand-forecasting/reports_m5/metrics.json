@@ -4135,5 +4135,280 @@
       }
     },
     "baseline": "seasonal_naive"
+  },
+  "weekly_rolling": {
+    "method": "next_week: pooled WAPE over h=1..7 of ALL origins (each origin's first-week forecast = one deployed weekly forecast; the 8 selection origins are included, so this is the rolling weekly SERVICE number, not a held-out estimate \u2014 the held-out estimate stays the 28-day test block below). weekly_blocks: pooled WAPE per 7-day block (wk1 h1-7 .. wk4 h22-28) over the 2 scored-once test origins; weekly_block_demand holds the per-block \u03a3 actual (turning WAPE gaps into absolute-error reductions).",
+    "next_week": {
+      "horizon_days": [
+        1,
+        7
+      ],
+      "n_origins": 10,
+      "pooled": {
+        "seasonal_naive": {
+          "wape": 0.5441709847828995,
+          "rmae": 1.0
+        },
+        "window_avg_28": {
+          "wape": 0.46693670875140714,
+          "rmae": 0.8580698379897901
+        },
+        "adida": {
+          "wape": 0.4546634780412155,
+          "rmae": 0.835515841078161
+        },
+        "tsb": {
+          "wape": 0.4570667615942948,
+          "rmae": 0.839932253603423
+        },
+        "auto_ets": {
+          "wape": 0.43522000151360335,
+          "rmae": 0.7997853867332473
+        },
+        "auto_ces": {
+          "wape": 0.4388106957416358,
+          "rmae": 0.806383853627738
+        },
+        "lgbm": {
+          "wape": 0.4321675675331216,
+          "rmae": 0.7941760579269723
+        },
+        "convex_ensemble": {
+          "wape": 0.4250171293068251,
+          "rmae": 0.7810360000660241
+        }
+      },
+      "by_class": {
+        "seasonal_naive": {
+          "dense": {
+            "wape": 0.5055623074795085,
+            "rmae": 1.0
+          },
+          "intermittent": {
+            "wape": 0.7109425349087003,
+            "rmae": 1.0
+          }
+        },
+        "window_avg_28": {
+          "dense": {
+            "wape": 0.43678800413168806,
+            "rmae": 0.8639647332676041
+          },
+          "intermittent": {
+            "wape": 0.597165106999949,
+            "rmae": 0.8399625534806934
+          }
+        },
+        "adida": {
+          "dense": {
+            "wape": 0.4224908073897756,
+            "rmae": 0.8356849415774533
+          },
+          "intermittent": {
+            "wape": 0.5936344693047843,
+            "rmae": 0.834996416948128
+          }
+        },
+        "tsb": {
+          "dense": {
+            "wape": 0.4264715489158394,
+            "rmae": 0.8435588306454692
+          },
+          "intermittent": {
+            "wape": 0.5892238672293648,
+            "rmae": 0.8287925370860435
+          }
+        },
+        "auto_ets": {
+          "dense": {
+            "wape": 0.40250853804092623,
+            "rmae": 0.7961601015068568
+          },
+          "intermittent": {
+            "wape": 0.5765183274664255,
+            "rmae": 0.8109211351947909
+          }
+        },
+        "auto_ces": {
+          "dense": {
+            "wape": 0.408226106889241,
+            "rmae": 0.8074694273084969
+          },
+          "intermittent": {
+            "wape": 0.5709219113834673,
+            "rmae": 0.8030493089807679
+          }
+        },
+        "lgbm": {
+          "dense": {
+            "wape": 0.3986588730677233,
+            "rmae": 0.78854548127855
+          },
+          "intermittent": {
+            "wape": 0.576909561017459,
+            "rmae": 0.8114714378308314
+          }
+        },
+        "convex_ensemble": {
+          "dense": {
+            "wape": 0.39241493231350494,
+            "rmae": 0.7761949941836008
+          },
+          "intermittent": {
+            "wape": 0.5658434748290324,
+            "rmae": 0.7959060641964522
+          }
+        }
+      },
+      "gaps": {
+        "lgbm_vs_naive": {
+          "wape": {
+            "diff": -0.11200341724977796,
+            "ci95": [
+              -0.11996957889101836,
+              -0.10467908979098267
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 57
+          }
+        },
+        "convex_ensemble_vs_naive": {
+          "wape": {
+            "diff": -0.11915385547607439,
+            "ci95": [
+              -0.1271167163625446,
+              -0.11131447725263392
+            ],
+            "spans_zero": false,
+            "n_boot": 2000,
+            "seed": 58
+          }
+        }
+      },
+      "always_beats_naive": {
+        "seasonal_naive": {
+          "wins_everywhere": false,
+          "per_class_rmae": {
+            "dense": 1.0,
+            "intermittent": 1.0
+          },
+          "pooled_rmae": 1.0
+        },
+        "window_avg_28": {
+          "wins_everywhere": true,
+          "per_class_rmae": {
+            "dense": 0.8639647332676041,
+            "intermittent": 0.8399625534806934
+          },
+          "pooled_rmae": 0.8580698379897901
+        },
+        "adida": {
+          "wins_everywhere": true,
+          "per_class_rmae": {
+            "dense": 0.8356849415774533,
+            "intermittent": 0.834996416948128
+          },
+          "pooled_rmae": 0.835515841078161
+        },
+        "tsb": {
+          "wins_everywhere": true,
+          "per_class_rmae": {
+            "dense": 0.8435588306454692,
+            "intermittent": 0.8287925370860435
+          },
+          "pooled_rmae": 0.839932253603423
+        },
+        "auto_ets": {
+          "wins_everywhere": true,
+          "per_class_rmae": {
+            "dense": 0.7961601015068568,
+            "intermittent": 0.8109211351947909
+          },
+          "pooled_rmae": 0.7997853867332473
+        },
+        "auto_ces": {
+          "wins_everywhere": true,
+          "per_class_rmae": {
+            "dense": 0.8074694273084969,
+            "intermittent": 0.8030493089807679
+          },
+          "pooled_rmae": 0.806383853627738
+        },
+        "lgbm": {
+          "wins_everywhere": true,
+          "per_class_rmae": {
+            "dense": 0.78854548127855,
+            "intermittent": 0.8114714378308314
+          },
+          "pooled_rmae": 0.7941760579269723
+        },
+        "convex_ensemble": {
+          "wins_everywhere": true,
+          "per_class_rmae": {
+            "dense": 0.7761949941836008,
+            "intermittent": 0.7959060641964522
+          },
+          "pooled_rmae": 0.7810360000660241
+        }
+      },
+      "baseline": "seasonal_naive"
+    },
+    "weekly_blocks": {
+      "seasonal_naive": {
+        "wk1": 0.542309549833507,
+        "wk2": 0.571711240186379,
+        "wk3": 0.6343026853112239,
+        "wk4": 0.6598152259543079
+      },
+      "window_avg_28": {
+        "wk1": 0.44817202690446095,
+        "wk2": 0.4782728029226571,
+        "wk3": 0.5465474571200135,
+        "wk4": 0.5800653437886242
+      },
+      "adida": {
+        "wk1": 0.4394743173887252,
+        "wk2": 0.47489501109628723,
+        "wk3": 0.5487268465850589,
+        "wk4": 0.5798112802723809
+      },
+      "tsb": {
+        "wk1": 0.44140444793493827,
+        "wk2": 0.4733466020368409,
+        "wk3": 0.543470925111884,
+        "wk4": 0.5755526892426132
+      },
+      "auto_ets": {
+        "wk1": 0.4283152824776515,
+        "wk2": 0.4667889194134374,
+        "wk3": 0.5422296366608064,
+        "wk4": 0.5709757447129871
+      },
+      "auto_ces": {
+        "wk1": 0.43445250187243056,
+        "wk2": 0.4891365029155985,
+        "wk3": 0.5597652258766008,
+        "wk4": 0.572268494550079
+      },
+      "lgbm": {
+        "wk1": 0.41879741159384326,
+        "wk2": 0.4519948616534607,
+        "wk3": 0.5334738217768052,
+        "wk4": 0.5709509129878333
+      },
+      "convex_ensemble": {
+        "wk1": 0.4157882523868745,
+        "wk2": 0.4522456818743465,
+        "wk3": 0.5293786801116455,
+        "wk4": 0.5611517553482228
+      }
+    },
+    "weekly_block_demand": {
+      "wk1": 78682.0,
+      "wk2": 78335.0,
+      "wk3": 80810.0,
+      "wk4": 83778.0
+    }
   }
 }

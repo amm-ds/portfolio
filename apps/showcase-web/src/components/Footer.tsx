@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { SITE_EMAIL } from "../config";
+import { LINKEDIN_URL, SITE_EMAIL } from "../config";
 
 export function Footer() {
   return (
@@ -18,11 +18,17 @@ export function Footer() {
           <a href="https://github.com/amm-ds/portfolio" target="_blank" rel="noreferrer">
             GitHub
           </a>
+          <a href={LINKEDIN_URL} target="_blank" rel="noreferrer">
+            LinkedIn
+          </a>
           <a href={`mailto:${SITE_EMAIL}`} className="footer-email">
             {SITE_EMAIL}
           </a>
         </nav>
       </div>
+      <p className="footer-small">
+        No analytics, no cookies, no user data stored.
+      </p>
       <p className="footer-small">© 2026 amm-ds · MIT licensed</p>
     </footer>
   );

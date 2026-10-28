@@ -1,4 +1,8 @@
 import { Link } from "react-router-dom";
+import { AVAILABILITY } from "../config";
+import { PersonJsonLd, usePageMeta } from "../seo";
+import { FeaturedDemos } from "../components/FeaturedDemos";
+import { ProofTiles } from "../components/ProofTiles";
 import { Terminal } from "../components/Terminal";
 import { useTypedScript } from "../hooks/useTyped";
 
@@ -8,6 +12,10 @@ export const HERO_SCRIPT = [
   { cmd: "stack", output: "pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc" },
   { cmd: "principles", output: "reproducible pipelines · honest baselines · production-grade code" },
 ];
+
+/** The terminal's fully-typed content, kept in the DOM from first render as
+ * the accessible name of the (aria-hidden) animated copy. */
+const HERO_MESSAGE = HERO_SCRIPT.map((l) => `$ ${l.cmd}\n${l.output ?? ""}`).join("\n");
 
 const GO_LINKS = [
   {
@@ -30,43 +38,65 @@ const GO_LINKS = [
 function HeroTerminal() {
   const { lines, currentCmd, done } = useTypedScript(HERO_SCRIPT);
   return (
-    <Terminal title="alejandro@amm-ds: ~">
-      {lines.map((line, i) => (
-        <div key={i}>
-          <p className="cmd">{line.cmd}</p>
-          {line.output && <p className="out">{line.output}</p>}
-        </div>
-      ))}
-      {!done && (
-        <p className="cmd-partial">
-          {currentCmd}
-          <span className="cursor" aria-hidden="true" />
-        </p>
-      )}
-      {done && (
-        <p className="cmd-partial">
-          <span className="cursor" aria-hidden="true" />
-        </p>
-      )}
-    </Terminal>
+    <div role="img" aria-label={HERO_MESSAGE} className="hero-terminal">
+      {/* Animated copy is decorative; the full message above is what AT reads. */}
+      <div aria-hidden="true">
+        <Terminal title="alejandro@amm-ds: ~">
+          {lines.map((line, i) => (
+            <div key={i}>
+              <p className="cmd">{line.cmd}</p>
+              {line.output && <p className="out">{line.output}</p>}
+            </div>
+          ))}
+          {!done && (
+            <p className="cmd-partial">
+              {currentCmd}
+              <span className="cursor" aria-hidden="true" />
+            </p>
+          )}
+          {done && (
+            <p className="cmd-partial">
+              <span className="cursor" aria-hidden="true" />
+            </p>
+          )}
+        </Terminal>
+      </div>
+    </div>
   );
 }
 
 export function Home() {
+  usePageMeta({
+    title: "Independent AI & ML consultant",
+    description:
+      "Applied AI, predictive analytics and ML engineering — reproducible experiments with measured baselines, published code, and live demos of the systems behind the numbers.",
+  });
+
   return (
     <>
+      <PersonJsonLd />
       <section className="hero">
-        <h1>Data Scientist &amp; ML Engineer</h1>
+        <h1>Independent AI &amp; ML Consultant</h1>
+        <p className="hero-kicker">
+          applied AI, predictive analytics and ML engineering — from experiment to production
+        </p>
         <p className="hero-sub">
-          I build ML/AI systems end to end — from data contracts and reproducible pipelines
-          to measured evaluation and production deployment — and I keep the working code and
-          case studies public. Location-independent; open to freelance and contract work.
+          I design, build and evaluate ML systems end to end, and I keep the code, metrics and
+          case studies public so the results can be checked before we talk.
         </p>
+        <p className="hero-actions">
+          <Link to="/demos/forecast-workbench" className="hero-btn hero-btn-primary">
+            Try a live demo
+          </Link>
+          <Link to="/projects/02-demand-forecasting" className="hero-btn">
+            Read an experiment
+          </Link>
+        </p>
+        <ProofTiles />
         <HeroTerminal />
-        <p className="hero-cta">
-          → open to engagements: <Link to="/contact">/contact</Link>
-        </p>
       </section>
+
+      <FeaturedDemos />
 
       <h2 className="section-title">where to go</h2>
       <div className="go-grid">
@@ -80,8 +110,8 @@ export function Home() {
 
       <p className="home-status">
         <span className="status-dot" aria-hidden="true" />
-        available for engagements · <Link to="/contact">→ /contact</Link>
-        <span className="status-note"> — typical reply within 48h</span>
+        {AVAILABILITY.status} · <Link to="/contact">→ /contact</Link>
+        <span className="status-note"> — typical reply within {AVAILABILITY.replyHours}h</span>
       </p>
     </>
   );

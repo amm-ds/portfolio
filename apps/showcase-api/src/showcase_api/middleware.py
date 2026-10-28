@@ -17,9 +17,11 @@ Dockerfile, restricted to the Caddy container in deploy compose) — otherwise
 every visitor behind the proxy shares the proxy's bucket.
 """
 
+import hashlib
 import math
 import os
 import time
+import uuid
 
 from portfolio_core.logging import get_logger
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
@@ -95,7 +97,7 @@ class RateLimitMiddleware:
             from starlette.responses import JSONResponse
 
             response = JSONResponse(
-                {"detail": "rate limit exceeded"},
+                {"error": "rate limit exceeded", "request_id": request_id_from(scope)},
                 status_code=429,
                 headers={"Retry-After": str(math.ceil(retry_after))},
             )
@@ -142,17 +144,71 @@ class BodyLimitMiddleware:
     async def _too_large(scope: Scope, receive: Receive, send: Send) -> None:
         from starlette.responses import JSONResponse
 
-        response = JSONResponse({"detail": "request body too large"}, status_code=413)
+        response = JSONResponse(
+            {"error": "request body too large", "request_id": request_id_from(scope)},
+            status_code=413,
+        )
         await response(scope, receive, send)
 
 
-class RequestLoggingMiddleware:
-    """One INFO line per request: method, path, status, latency ms. No bodies,
-    no query strings (they may carry tokens), no client IPs beyond what the
-    shared log formatter already emits."""
+class RequestIdMiddleware:
+    """Assign every request a short uuid4 id, exposed two ways:
+
+    - ``request.state.request_id`` (via ``scope["state"]``) for exception
+      handlers and middlewares downstream;
+    - an ``X-Request-ID`` response header, so a client can quote the id when
+      reporting a failure.
+    """
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        request_id = uuid.uuid4().hex[:12]
+        scope.setdefault("state", {})["request_id"] = request_id
+
+        async def wrapped_send(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = message.setdefault("headers", [])
+                headers.append([b"x-request-id", request_id.encode()])
+            await send(message)
+
+        await self.app(scope, receive, wrapped_send)
 
     def __init__(self, app: ASGIApp):
         self.app = app
+
+
+def request_id_from(scope: Scope) -> str:
+    """Best-effort request id for middleware-generated responses (429/413),
+    which never see a ``Request`` object. Falls back to a fresh id."""
+    state = scope.get("state") or {}
+    rid = state.get("request_id")
+    if isinstance(rid, str) and rid:
+        return rid
+    return uuid.uuid4().hex[:12]
+
+
+def hash_client_ip(ip: str, salt: str | None = None) -> str:
+    """Privacy-preserving client key for logs: sha256(ip + salt), 12 hex chars.
+
+    Salt comes from ``IP_HASH_SALT`` (read once by the middleware at process
+    startup; default ``dev-salt``). The raw IP never reaches the logs.
+    """
+    s = (salt if salt is not None else os.environ.get("IP_HASH_SALT", "dev-salt")).encode()
+    return hashlib.sha256(s + ip.encode()).hexdigest()[:12]
+
+
+class RequestLoggingMiddleware:
+    """One INFO line per request: method, path, status, latency ms, hashed
+    client IP, request id. No bodies, no query strings (they may carry
+    tokens), no raw client IPs — the IP is logged only as a salted sha256
+    prefix (12 hex chars), which is enough to correlate a session without
+    storing the address."""
+
+    def __init__(self, app: ASGIApp, salt: str | None = None):
+        self.app = app
+        self._salt = salt if salt is not None else os.environ.get("IP_HASH_SALT", "dev-salt")
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -162,6 +218,9 @@ class RequestLoggingMiddleware:
         path = scope.get("path", "?")
         start = time.perf_counter()
         status = 500
+        client = scope.get("client")
+        ip_hash = hash_client_ip(client[0] if client else "unknown", self._salt)
+        rid = request_id_from(scope)
 
         async def wrapped_send(message: Message) -> None:
             nonlocal status
@@ -173,4 +232,6 @@ class RequestLoggingMiddleware:
             await self.app(scope, receive, wrapped_send)
         finally:
             latency_ms = (time.perf_counter() - start) * 1000.0
-            logger.info("%s %s -> %d (%.1f ms)", method, path, status, latency_ms)
+            logger.info(
+                "%s %s -> %d (%.1f ms) ip=%s rid=%s", method, path, status, latency_ms, ip_hash, rid
+            )

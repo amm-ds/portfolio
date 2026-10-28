@@ -7,13 +7,16 @@ import {
   getProjects,
   getStory,
   type Metrics,
+  type Project,
   type ProjectStoryData,
 } from "../api";
 import { CaseStudy } from "../components/CaseStudy";
+import { ExperimentCrumbs, ExperimentNav } from "../components/ExperimentNav";
 import { FigureFrame } from "../components/FigureFrame";
 import { MetricsTable } from "../components/MetricsTable";
-
-const REPO_URL = "https://github.com/amm-ds/portfolio";
+import { REPO_URL } from "../config";
+import { summaryLine } from "../lib/impact";
+import { usePageMeta } from "../seo";
 
 /** "01-rag-agent" → https://amm-ds.github.io/portfolio/projects/01-rag-agent/ */
 function docsUrl(projectId: string): string {
@@ -27,8 +30,27 @@ interface Detail {
   techniques: string[];
 }
 
+// --- Evaluation-report probe ---------------------------------------------------
+// The API serves the full HTML report at /projects/{id}/report and 404s when the
+// pipeline has not produced one. Probe once per id (module-level cache, promise
+// deduped) and show the link only when it would 200. GET rather than HEAD: the
+// FastAPI route answers GET only; the body is never consumed.
+const reportProbeCache = new Map<string, Promise<boolean>>();
+
+function hasReport(projectId: string): Promise<boolean> {
+  let probe = reportProbeCache.get(projectId);
+  if (!probe) {
+    probe = fetch(`/projects/${projectId}/report`)
+      .then((res) => res.ok)
+      .catch(() => false);
+    reportProbeCache.set(projectId, probe);
+  }
+  return probe;
+}
+
 export function ProjectDetail() {
   const { id = "" } = useParams();
+  const [projects, setProjects] = useState<Project[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +59,14 @@ export function ProjectDetail() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [figures, setFigures] = useState<string[]>([]);
   const [demoHref, setDemoHref] = useState<string | null>(null);
+  const [reportOk, setReportOk] = useState(false);
+
+  usePageMeta({
+    title: detail?.title ?? "Unknown project",
+    description:
+      summaryLine(id) ?? "An experiment from the amm-ds ML/AI engineering portfolio.",
+    noindex: notFound || undefined,
+  });
 
   // Live-demo CTA: match this project against the demo registry (fetched once
   // per mount, shared across re-renders via component state).
@@ -53,8 +83,21 @@ export function ProjectDetail() {
     };
   }, [id]);
 
+  // Evaluation report link: probe once per id (cached module-level).
   useEffect(() => {
     let cancelled = false;
+    setReportOk(false);
+    hasReport(id)
+      .then((ok) => !cancelled && setReportOk(ok))
+      .catch(() => !cancelled && setReportOk(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setProjects([]);
     setDetail(null);
     setNotFound(false);
     setStory(null);
@@ -66,6 +109,7 @@ export function ProjectDetail() {
     getProjects()
       .then((list) => {
         if (cancelled) return;
+        setProjects(list);
         const project = list.find((p) => p.id === id);
         if (!project) {
           setNotFound(true);
@@ -115,9 +159,13 @@ export function ProjectDetail() {
   if (notFound) {
     return (
       <div className="state-box">
+        <h1>Unknown project</h1>
         <p>
-          Unknown project <code>{id}</code>. Back to the{" "}
-          <Link to="/projects">project list</Link>.
+          We couldn't find an experiment called <code>{id}</code>. It may have been renamed
+          or retired — browse the current experiments instead.
+        </p>
+        <p>
+          <Link to="/projects">← all experiments</Link>
         </p>
       </div>
     );
@@ -125,6 +173,7 @@ export function ProjectDetail() {
 
   return (
     <>
+      <ExperimentCrumbs projectId={id} projects={projects} />
       {error && <div className="state-box error">{error}</div>}
       {detail === null && !error ? (
         <p className="loading">loading project…</p>
@@ -147,7 +196,7 @@ export function ProjectDetail() {
             )}
             <a
               className="chip-link"
-              href={`https://github.com/amm-ds/portfolio/tree/main/projects/${id}`}
+              href={`${REPO_URL}/tree/main/projects/${id}`}
               target="_blank"
               rel="noreferrer"
             >
@@ -156,8 +205,18 @@ export function ProjectDetail() {
             <a className="chip-link" href={docsUrl(id)} target="_blank" rel="noreferrer">
               [docs]
             </a>
+            {reportOk && (
+              <a
+                className="chip-link"
+                href={`/projects/${id}/report`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                [full evaluation report]
+              </a>
+            )}
             <a className="chip-link" href={REPO_URL} target="_blank" rel="noreferrer">
-              [source]
+              [repo]
             </a>
           </div>
         </header>
@@ -200,6 +259,8 @@ export function ProjectDetail() {
           )}
         </>
       )}
+
+      <ExperimentNav projectId={id} projects={projects} />
     </>
   );
 }

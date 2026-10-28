@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-10-28T17:46:30+00:00",
+  "sources": [
+    "apps/showcase-web/src/App.tsx",
+    "projects/*/portfolio.yaml",
+    "projects/*/demo.yaml",
+    "projects/*/demos/*.yaml"
+  ],
+  "spa_routes": [
+    "/",
+    "/about",
+    "/contact",
+    "/demos/churn-sandbox",
+    "/demos/forecast-workbench",
+    "/experiments",
+    "/projects",
+    "/projects/*",
+    "/projects/01-rag-agent",
+    "/projects/02-demand-forecasting",
+    "/projects/03-anomaly-detection",
+    "/projects/04-nlp-classification",
+    "/projects/05-ml-pipeline-churn",
+    "/projects/06-routing-optimization",
+    "/projects/07-open-data-mobility",
+    "/projects/08-inference-serving",
+    "/projects/09-agentic-workflows",
+    "/projects/10-uplift-experimentation",
+    "/services"
+  ]
+}

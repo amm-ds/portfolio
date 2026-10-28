@@ -109,6 +109,18 @@ export function getDemoRegistry(): Promise<DemoRegistryEntry[]> {
   return getJson<DemoRegistryEntry[]>("/demos");
 }
 
+// --- Static snapshot (last resort) ---------------------------------------------
+// Baked at build time by scripts/gen_static_registry.py from the same YAML the
+// API serves (projects/*/portfolio.yaml + story.yaml + demo.yaml). The projects
+// index renders from it when both GET /projects and GET /demos are unreachable;
+// per-endpoint fallbacks (static demo cards, error boxes) stay in place before
+// this kicks in.
+export {
+  STATIC_DEMO_REGISTRY,
+  STATIC_PROJECTS,
+  STATIC_STORIES,
+} from "./lib/staticRegistry";
+
 export function getDemoManifest(demoId: string): Promise<DemoManifest> {
   return getJson<DemoManifest>(`/demos/${demoId}/manifest`);
 }

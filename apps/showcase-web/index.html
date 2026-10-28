@@ -4,26 +4,40 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Static SEO fallback for the GitHub Pages deploy (https://amm-ds.github.io/portfolio).
+      vite only replaces import.meta.env inside src/, so these URLs are hardcoded here;
+      deploys serving another domain must rewrite them (see scripts/gen_sitemap.py).
+    -->
+    <link rel="canonical" href="https://amm-ds.github.io/portfolio/" />
     <meta
       name="description"
       content="Live showcase of the amm-ds public ML/AI portfolio: reproducible case studies with metrics, interactive figures and published pipelines."
     />
     <meta name="theme-color" content="#0f172a" />
+    <meta property="og:site_name" content="amm-ds — ML/AI Engineering Portfolio" />
     <meta property="og:title" content="amm-ds — ML/AI Engineering Portfolio" />
     <meta
       property="og:description"
       content="End-to-end ML/AI systems — agentic AI, forecasting, optimization, serving — every claim reproducible."
     />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/social-card.png" />
+    <meta property="og:url" content="https://amm-ds.github.io/portfolio/" />
+    <meta
+      property="og:image"
+      content="https://amm-ds.github.io/portfolio/social-card.png"
+    />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="amm-ds — ML/AI Engineering Portfolio" />
     <meta
       name="twitter:description"
       content="End-to-end ML/AI systems — agentic AI, forecasting, optimization, serving — every claim reproducible."
     />
-    <meta name="twitter:image" content="/social-card.png" />
-    <title>amm-ds · portfolio</title>
+    <meta
+      name="twitter:image"
+      content="https://amm-ds.github.io/portfolio/social-card.png"
+    />
+    <title>amm-ds — ML/AI Engineering Portfolio</title>
   </head>
   <body>
     <div id="root"></div>

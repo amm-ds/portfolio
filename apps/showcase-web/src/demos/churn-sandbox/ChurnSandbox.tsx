@@ -481,6 +481,7 @@ function ChurnSandboxWorkbench({
                   max={10}
                   step={1}
                   value={fnRatio}
+                  aria-valuetext={`${fnRatio} times`}
                   style={{ "--fill": `${((fnRatio - 1) / 9) * 100}%` } as CSSProperties}
                   onChange={(e) => setControl("fn_ratio", Number(e.target.value))}
                 />

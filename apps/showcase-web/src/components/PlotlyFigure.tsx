@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type PlotlyStatic from "plotly.js-dist-min";
 import { FigureFrame } from "./FigureFrame";
 
-interface PlotlyPayload {
+export interface PlotlyPayload {
   data: unknown[];
   layout: Record<string, unknown>;
 }
@@ -86,12 +86,16 @@ export function PlotlyFigure({
   name,
   caption,
   sectionId,
+  onPayload,
 }: {
   pid: string;
   name: string;
   caption?: string;
   /** Story section id; when given, the caption links back to `#sec-{sectionId}`. */
   sectionId?: string;
+  /** Notified with the parsed figure JSON (null when unavailable) so hosts
+   * can offer a non-visual fallback such as a data table. */
+  onPayload?: (payload: PlotlyPayload | null) => void;
 }) {
   const [payload, setPayload] = useState<PlotlyPayload | null>(null);
   const [failed, setFailed] = useState(false);
@@ -100,6 +104,10 @@ export function PlotlyFigure({
   const [rendered, setRendered] = useState(false);
   const elRef = useRef<HTMLDivElement>(null);
   const plotlyRef = useRef<typeof PlotlyStatic | null>(null);
+  // Latest-ref pattern: the fetch effect runs per (pid, name), never per
+  // callback identity, so an inline host callback cannot trigger refetches.
+  const onPayloadRef = useRef(onPayload);
+  onPayloadRef.current = onPayload;
 
   useEffect(() => {
     let cancelled = false;
@@ -114,11 +122,19 @@ export function PlotlyFigure({
       })
       .then((p: PlotlyPayload | null) => {
         if (cancelled) return;
-        if (p && Array.isArray(p.data) && p.layout) setPayload(p);
-        else setFailed(true);
+        if (p && Array.isArray(p.data) && p.layout) {
+          setPayload(p);
+          onPayloadRef.current?.(p);
+        } else {
+          setFailed(true);
+          onPayloadRef.current?.(null);
+        }
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (!cancelled) {
+          setFailed(true);
+          onPayloadRef.current?.(null);
+        }
       });
     return () => {
       cancelled = true;

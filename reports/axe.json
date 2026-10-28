@@ -1,0 +1,139 @@
+{
+  "baseUrl": "http://127.0.0.1:4321",
+  "results": [
+    {
+      "route": "/",
+      "url": "http://127.0.0.1:4321/",
+      "httpStatus": 200,
+      "passes": 33,
+      "violationCount": 1,
+      "failingViolations": [],
+      "violations": [
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".nav-brand"
+              ],
+              "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/projects",
+      "url": "http://127.0.0.1:4321/projects",
+      "httpStatus": 200,
+      "passes": 30,
+      "violationCount": 1,
+      "failingViolations": [],
+      "violations": [
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".nav-brand"
+              ],
+              "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/projects/05-ml-pipeline-churn",
+      "url": "http://127.0.0.1:4321/projects/05-ml-pipeline-churn",
+      "httpStatus": 200,
+      "passes": 43,
+      "violationCount": 2,
+      "failingViolations": [],
+      "violations": [
+        {
+          "id": "landmark-unique",
+          "impact": "moderate",
+          "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/landmark-unique?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                "#sec-background > .story-cols > .story-main > aside"
+              ],
+              "failureSummary": "Fix any of the following:\n  The landmark must have a unique aria-label, aria-labelledby, or title to make landmarks distinguishable"
+            }
+          ]
+        },
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".nav-brand"
+              ],
+              "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/demos/churn-sandbox",
+      "url": "http://127.0.0.1:4321/demos/churn-sandbox",
+      "httpStatus": 200,
+      "passes": 42,
+      "violationCount": 1,
+      "failingViolations": [],
+      "violations": [
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".nav-brand"
+              ],
+              "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/demos/forecast-workbench",
+      "url": "http://127.0.0.1:4321/demos/forecast-workbench",
+      "httpStatus": 200,
+      "passes": 36,
+      "violationCount": 1,
+      "failingViolations": [],
+      "violations": [
+        {
+          "id": "region",
+          "impact": "moderate",
+          "help": "All page content should be contained by landmarks",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.14/region?application=playwright",
+          "nodes": [
+            {
+              "target": [
+                ".nav-brand"
+              ],
+              "failureSummary": "Fix any of the following:\n  Some page content is not contained by landmarks"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
