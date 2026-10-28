@@ -6,7 +6,7 @@ export function PersonJsonLd() {
     "@type": "Person",
     name: SITE_NAME,
     url: absoluteUrl("/"),
-    jobTitle: "Independent AI & ML Consultant",
+    jobTitle: "Data Scientist, ML & AI Consultant",
     sameAs: [REPO_URL, LINKEDIN_URL],
   };
   return (

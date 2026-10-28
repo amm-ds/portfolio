@@ -1,13 +1,11 @@
 import { Link } from "react-router-dom";
 import { AVAILABILITY } from "../config";
 import { PersonJsonLd, usePageMeta } from "../seo";
-import { FeaturedDemos } from "../components/FeaturedDemos";
-import { ProofTiles } from "../components/ProofTiles";
 import { Terminal } from "../components/Terminal";
 import { useTypedScript } from "../hooks/useTyped";
 
 export const HERO_SCRIPT = [
-  { cmd: "whoami", output: "data scientist & ml engineer" },
+  { cmd: "whoami", output: "data scientist · ml & ai consultant" },
   { cmd: "focus", output: "agentic ai · forecasting · machine learning · optimization · data engineering" },
   { cmd: "stack", output: "pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc" },
   { cmd: "principles", output: "reproducible pipelines · honest baselines · production-grade code" },
@@ -67,16 +65,16 @@ function HeroTerminal() {
 
 export function Home() {
   usePageMeta({
-    title: "Independent AI & ML consultant",
+    title: "Data Scientist, ML & AI Consultant",
     description:
-      "Applied AI, predictive analytics and ML engineering — reproducible experiments with measured baselines, published code, and live demos of the systems behind the numbers.",
+      "Applied AI, predictive analytics and ML engineering — reproducible experiments with measured baselines, published code, and honest case studies.",
   });
 
   return (
     <>
       <PersonJsonLd />
       <section className="hero">
-        <h1>Independent AI &amp; ML Consultant</h1>
+        <h1>Data Scientist, ML &amp; AI Consultant</h1>
         <p className="hero-kicker">
           applied AI, predictive analytics and ML engineering — from experiment to production
         </p>
@@ -84,19 +82,8 @@ export function Home() {
           I design, build and evaluate ML systems end to end, and I keep the code, metrics and
           case studies public so the results can be checked before we talk.
         </p>
-        <p className="hero-actions">
-          <Link to="/demos/forecast-workbench" className="hero-btn hero-btn-primary">
-            Try a live demo
-          </Link>
-          <Link to="/projects/02-demand-forecasting" className="hero-btn">
-            Read an experiment
-          </Link>
-        </p>
-        <ProofTiles />
         <HeroTerminal />
       </section>
-
-      <FeaturedDemos />
 
       <h2 className="section-title">where to go</h2>
       <div className="go-grid">
