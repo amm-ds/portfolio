@@ -188,6 +188,20 @@ afterEach(() => {
 const lgbmPolylines = () =>
   Array.from(document.querySelectorAll('.demo-chart polyline[stroke="#2dd4bf"]'));
 
+/** Regression guard for the NaN band geometry bug: every rendered polyline
+ * and path in the chart must carry only finite coordinates (gaps are split
+ * into separate runs, never interpolated as NaN). */
+function expectFiniteChartGeometry() {
+  const polylines = document.querySelectorAll(".demo-chart polyline");
+  expect(polylines.length).toBeGreaterThan(0);
+  for (const el of Array.from(polylines)) {
+    expect(el.getAttribute("points")).not.toMatch(/NaN|undefined/);
+  }
+  for (const el of Array.from(document.querySelectorAll(".demo-chart path"))) {
+    expect(el.getAttribute("d")).not.toMatch(/NaN|undefined/);
+  }
+}
+
 describe("ForecastWorkbench", () => {
   it("shows a loading state then the title, hook and populated series picker", async () => {
     mockFetch();
@@ -284,6 +298,29 @@ describe("ForecastWorkbench", () => {
       "href",
       "/projects#demos",
     );
+  });
+
+  it("keeps every chart coordinate finite across series, origin, model and horizon changes", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    // default view: naive + LightGBM + band at the full horizon
+    expect(lgbmPolylines().length).toBeGreaterThan(0);
+    expect(document.querySelector(".demo-chart path[d]")).not.toBeNull();
+    expectFiniteChartGeometry();
+    // toggle the ensemble on (band indices shift by one)
+    fireEvent.click(screen.getByRole("button", { name: /ensemble/ }));
+    expectFiniteChartGeometry();
+    // switch origin
+    fireEvent.click(screen.getByRole("button", { name: "2016-05-17" }));
+    expectFiniteChartGeometry();
+    // switch to an intermittent series
+    fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
+    expectFiniteChartGeometry();
+    // clipped-domain path: horizon 7
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument();
+    expectFiniteChartGeometry();
   });
 
   it("shows an error state when the payload cannot be loaded", async () => {

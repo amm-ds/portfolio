@@ -2,15 +2,30 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
 // In dev, proxy API paths to the FastAPI app; in prod FastAPI serves dist/.
-// /demos is shared: /demos (registry) and /demos/<id>/(manifest|payload) are
-// API, but /demos/<id> itself is a client-side page route — bypass those.
+// /demos and /projects are shared namespaces: the bare paths and single-id
+// segments (/projects/<pid>, /demos is API-only except known SPA routes) are
+// client-side page routes, everything with a resource subpath is API.
 const DEMO_API = /^\/demos\/[^/]+\/(manifest|payload|replay|live)(\/|$)/;
+const PROJECT_PAGE = /^\/projects\/\d{2}-[^/]+$/;
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
     proxy: {
-      "/projects": "http://localhost:8000",
+      "/projects": {
+        target: "http://localhost:8000",
+        bypass: (req) => {
+          const url = req.url ?? "";
+          // deep links like /projects/02-demand-forecasting are SPA page
+          // routes (the API only serves /projects/<pid>/<resource>); the bare
+          // /projects list is API JSON unless the browser asks for a page
+          if (PROJECT_PAGE.test(url)) return url;
+          if (url === "/projects" && !(req.headers.accept ?? "").includes("text/html"))
+            return undefined; // JSON list → API
+          if (url === "/projects") return url; // page navigation → SPA
+          return undefined; // /projects/<pid>/<resource> → API
+        },
+      },
       "/rag": "http://localhost:8000",
       "/health": "http://localhost:8000",
       "/demos": {

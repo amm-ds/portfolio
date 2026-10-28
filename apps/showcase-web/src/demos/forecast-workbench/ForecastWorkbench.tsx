@@ -1,28 +1,15 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { LineChart, type LineSeries } from "../charts/LineChart";
+import { LineChart } from "../charts/LineChart";
 import type { CatalogEntry, DemoManifest, ForecastWorkbenchPayload } from "../types";
 import { DemoWorkbench, KpiTile, Notice } from "../workbench";
+import { C_HIST, C_PINK, C_TEAL, MODELS, assembleChartData } from "./chartData";
 import { bestModelAt, peakDayMae, verdictText, wapeAt } from "./kpis";
 import { fetchForecastPayload, fetchManifest } from "./payload";
 import { useWorkbenchState } from "./useWorkbenchState";
 
-const C_TEAL = "#2dd4bf";
-const C_PINK = "#f472b6";
-const C_AMBER = "#fbbf24";
-const C_GRAY = "#64748b";
-const C_LILAC = "#a78bfa";
-const C_HIST = "#94a3b8";
-
 const HORIZONS = [7, 14, 21, 28];
 const NAIVE = "seasonal_naive";
 
-/** Demo candidates: naive dashed grey, AutoETS thin, lgbm accent, ensemble bold. */
-const MODELS: { key: string; label: string; color: string; width: number; dashed?: boolean }[] = [
-  { key: "seasonal_naive", label: "seasonal naive", color: C_GRAY, width: 2, dashed: true },
-  { key: "auto_ets", label: "AutoETS", color: C_LILAC, width: 1.5 },
-  { key: "lgbm", label: "LightGBM", color: C_TEAL, width: 2 },
-  { key: "convex_ensemble", label: "ensemble", color: C_AMBER, width: 3 },
-];
 const MODEL_LABELS = Object.fromEntries(MODELS.map((m) => [m.key, m.label]));
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
@@ -405,55 +392,13 @@ function ForecastChart({
   modelsOn: string[];
   h: number;
 }) {
-  const historyDays = window.history.length;
-  const n = historyDays + window.actual.length;
-  const x = Array.from({ length: n }, (_, i) => i - (historyDays - 1));
-  const prefix: number[] = Array.from({ length: historyDays }, () => NaN);
-  const suffix = (values: number[], take: number) =>
-    prefix.concat(values.slice(0, take)).concat(Array(window.actual.length - take).fill(NaN));
-
-  const series: LineSeries[] = [
-    {
-      name: "history",
-      color: C_HIST,
-      width: 1.5,
-      opacity: 0.85,
-      values: window.history.concat(Array(window.actual.length).fill(NaN)),
-    },
-    { name: "actual", color: C_PINK, width: 2.5, values: suffix(window.actual, window.actual.length) },
-  ];
-  for (const m of MODELS) {
-    if (modelsOn.includes(m.key) && window.curves[m.key]) {
-      series.push({ name: m.key, color: m.color, width: m.width, dashed: m.dashed, values: suffix(window.curves[m.key], h) });
-    }
-  }
-  let bandIdx: [number, number] | null = null;
-  if (modelsOn.includes("lgbm")) {
-    bandIdx = [series.length, series.length + 1];
-    series.push({ name: "p10", color: "transparent", width: 1, values: suffix(window.band.p10, h) });
-    series.push({ name: "p90", color: "transparent", width: 1, values: suffix(window.band.p90, h) });
-  }
-
-  // clipped domain: the visible window only, so curves are never flat lines
-  let max = 1;
-  for (const v of window.history) if (Number.isFinite(v) && v > max) max = v;
-  window.actual.slice(0, h).forEach((v) => {
-    if (v > max) max = v;
-  });
-  for (const m of modelsOn) {
-    const curve = window.curves[m];
-    if (!curve) continue;
-    for (let i = 0; i < h; i++) if (curve[i] > max) max = curve[i];
-  }
-  if (bandIdx) {
-    for (let i = 0; i < h; i++) if (window.band.p90[i] > max) max = window.band.p90[i];
-  }
+  const { x, series, band, yMax, take } = assembleChartData(window, modelsOn, h);
 
   const legend = [
     { label: "history", color: C_HIST },
     { label: "actual", color: C_PINK },
     ...MODELS.filter((m) => modelsOn.includes(m.key)).map((m) => ({ label: m.label, color: m.color })),
-    ...(bandIdx ? [{ label: "lgbm 80% band", color: C_TEAL }] : []),
+    ...(band ? [{ label: "lgbm 80% band", color: C_TEAL }] : []),
   ];
 
   return (
@@ -477,15 +422,15 @@ function ForecastChart({
         <LineChart
           x={x}
           series={series}
-          yMax={max * 1.08}
-          band={bandIdx ? { between: bandIdx, color: C_TEAL, opacity: 0.12 } : undefined}
+          yMax={yMax}
+          band={band ? { between: band, color: C_TEAL, opacity: 0.12 } : undefined}
           yTicks={3}
           xTicks={4}
           formatX={(v) => (v <= 0 ? `d${v}` : `+${v}`)}
           ariaLabel="forecast curves versus actuals for the selected series"
         />
       </div>
-      <p className="demo-hint">history tail ends at the origin; +1…+{h} is the scored window</p>
+      <p className="demo-hint">history tail ends at the origin; +1…+{take} is the scored window</p>
     </Figure>
   );
 }

@@ -129,18 +129,44 @@ export function LineChart({
 
   const cursorX = cursor !== undefined ? x[cursor] : undefined;
 
-  // band polygon: series[a] left-to-right, then series[b] right-to-left
+  // band polygon: series[a] left-to-right, then series[b] right-to-left.
+  // Both edges may be NaN-gapped (a forecast window drawn after a history
+  // tail, as in the forecast workbench): emit one closed subpath per
+  // contiguous run where BOTH edges are finite, mirroring the polyline
+  // run-splitting below — a single full-domain polygon would interpolate
+  // the gaps and produce "M…,NaN …" paths that render nothing.
   let bandPath: string | null = null;
   if (band) {
     const [ai, bi] = band.between;
     const a = series[ai];
     const b = series[bi];
     if (a && b) {
-      const fwd = x.map((t, i) => `${px(t).toFixed(1)},${py(a.values[i]).toFixed(1)}`);
-      const back = x
-        .map((t, i) => `${px(t).toFixed(1)},${py(b.values[i]).toFixed(1)}`)
-        .reverse();
-      bandPath = `M${fwd.join(" L")} L${back.join(" L")} Z`;
+      const runs: Array<[number, number]> = [];
+      let runStart = -1;
+      for (let i = 0; i <= x.length; i++) {
+        const ok =
+          i < x.length &&
+          i < a.values.length &&
+          i < b.values.length &&
+          Number.isFinite(a.values[i]) &&
+          Number.isFinite(b.values[i]);
+        if (ok && runStart < 0) runStart = i;
+        if (!ok && runStart >= 0) {
+          runs.push([runStart, i]);
+          runStart = -1;
+        }
+      }
+      const subpaths = runs.map(([s, e]) => {
+        const fwd = x
+          .slice(s, e)
+          .map((t, i) => `${px(t).toFixed(1)},${py(a.values[s + i]).toFixed(1)}`);
+        const back = x
+          .slice(s, e)
+          .map((t, i) => `${px(t).toFixed(1)},${py(b.values[s + i]).toFixed(1)}`)
+          .reverse();
+        return `M${fwd.join(" L")} L${back.join(" L")} Z`;
+      });
+      bandPath = subpaths.length > 0 ? subpaths.join(" ") : null;
     }
   }
 
