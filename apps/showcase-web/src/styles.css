@@ -343,12 +343,25 @@ select:focus-visible,
 /* --- Hero (terminal window + faint grid texture) --- */
 
 .hero {
-  padding: 2.5rem 0 1.5rem;
-  max-width: 820px;
+  padding: 3rem 0 2rem;
+  max-width: 940px;
+  text-align: center;
   background-image:
     linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
   background-size: 28px 28px;
+}
+
+/* centerpiece terminal: bigger than body text, centered under the hero copy */
+.hero-terminal {
+  max-width: 780px;
+  margin: 2.75rem auto 0;
+  text-align: left;
+}
+
+.hero-terminal .terminal {
+  font-size: 1.02rem;
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.65);
 }
 
 .terminal {
