@@ -263,12 +263,13 @@ jobs:
             sleep 1
             if [ "$i" = "60" ]; then echo "container never became ready"; docker logs showcase; exit 1; fi
           done
-          curl -fsS http://localhost:8000/ | grep -q 'id="root"'
+          # html minification may strip attribute quotes — match either form
+          curl -fsS http://localhost:8000/ | grep -qE 'id="?root"?'
           # Deep links must return the SPA shell (client-side routing fallback).
           # NB: bare /projects is a JSON API route (project index), not the SPA.
           for route in /projects/06-routing-optimization /services; do
             test "$(curl -fsS -o /dev/null -w '%{http_code}' "http://localhost:8000$route")" = "200"
-            curl -fsS "http://localhost:8000$route" | grep -q 'id="root"'
+            curl -fsS "http://localhost:8000$route" | grep -qE 'id="?root"?'
           done
           # Project-index API answers JSON.
           curl -fsS http://localhost:8000/projects | grep -q '"id":"01-rag-agent"'
