@@ -12,8 +12,13 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 > seasonal-naive floor by **−0.112 WAPE** (0.491 vs 0.603; 95% paired
 > cluster bootstrap CI **[−0.122, −0.102]**) and −0.165 WRMSSE (0.597 vs
 > 0.762) on 600 series (463 dense + 137 intermittent), winning in **both**
-> volume classes — the mirror image of the UCI sparse track kept below as
-> the secondary study, where the zero forecast stays the ceiling.
+> volume classes — and on the rolling next-week service (h ≤ 7 over all 10
+> origins, the deployment shape) the ensemble posts next-week WAPE **0.425**
+> vs the floor's **0.544** (95% paired bootstrap CI **[−0.127, −0.111]** on
+> the −0.119 gap), measurably beating the naive floor in both volume classes
+> (always-beats-naive: **yes**). The mirror image is the UCI sparse track
+> kept below as the secondary study, where the zero forecast stays the
+> ceiling.
 
 [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -253,4 +258,7 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   reconciliation), the M5 protocol decisions (§N), pipeline diagram, changelog
 - Dataset card: [UCI Online Retail II](../data-registry/uci-online-retail-ii.md)
 - Drift response runbook: [drift-response.md](../runbooks/drift-response.md)
+- [Evaluation report](/projects/02-demand-forecasting/report) — standalone
+  themed HTML report of the M5 headline track (served by the showcase API
+  from the committed `reports_m5/report.html`)
 - Source: `projects/02-demand-forecasting/src/demand_forecasting/`

@@ -59,6 +59,8 @@ maps, per-family gaps, convergence descents, runtime-vs-gap Pareto) with
 `results.md` / `metrics.json` / `report.html` for the full per-instance and
 per-family tables — interactive versions in the [interactive case study](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization).
 
+![Before/after of the improvement heuristic on Solomon C101 — left: HPO-tuned 2-opt on the Clarke–Wright plan (15 routes, 1046.53 total distance); right: ALNS on the same instance (11 routes, 860.21). The metaheuristic consolidates the construction plan's overlapping short routes into fewer, longer ones, cutting distance 17.8% (1046.5 → 860.2, matching `alns_convergence_C101`); the after-plan sits 3.77% above the best-known 828.94. Routes reproduced from the committed solution artifact; both plans verified capacity- and time-window-feasible by the project validator.](../assets/projects/06-routing-optimization/route_map_C101_before_after.svg){ width="100%" }
+
 ![HPO-tuned ALNS closes the gap to best-known optima into single digits on every Solomon family (C1 4.48%, C2 6.50%, R1 4.10%, R2 3.04%, RC1 4.75%, RC2 3.00%).](../assets/projects/06-routing-optimization/family_gap.png){ width="100%" }
 
 ## Roadmap

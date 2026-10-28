@@ -1,4 +1,14 @@
 project_id: 06-routing-optimization
+headline: >-
+  HPO-tuned ALNS lands 4.23% (95% CI 3.1–5.3 pp, n=56 instances, t(55)=2.004)
+  above published best-known distance on all 56 Solomon VRPTW instances.
+data_note: >-
+  Real academic benchmark, not synthetic: all 56 Solomon 100-customer VRPTW
+  instances from CVRPLIB (SINTEF TOP mirror), free with citation, sha256-pinned.
+limits: >-
+  Synthetic textbook benchmarks with Euclidean distances — not production
+  street-network routing: no traffic, road speeds, driver breaks, or dynamic
+  re-optimization.
 figure_captions:
   eda_instance_map: >-
     Customer locations on C101 colored by time-window width (due − ready);

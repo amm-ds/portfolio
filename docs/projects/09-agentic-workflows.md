@@ -39,7 +39,7 @@ unprompted extra calls count as misses.
 | tool-selection accuracy | **15/15** exact-set — up from 8/15; all 30 captured calls planned (call precision 100%, tool recall 100%), `detail.tooling` |
 | step budget | 15/15 |
 | latency | median **18.2 s**, p95 31.1 s per task; 60 s budget held 15/15 |
-| tokens / cost | ~85k in + ~12k out; ledger total **$0.086** cloud-equivalent of the $2.00 suite cap (~$0.009/task) |
+| tokens / cost | ~85k in + ~12k out; suite total **$0.13** cloud-equivalent of the $2.00 suite cap (~$0.0088/task mean) |
 | held-out set | 7/7 answer success, 7/7 exact tool set, **3/3 should-fail probes refused gracefully** (`detail.heldout`) |
 
 One chart tells the whole verification story — the tuning suite passes all
@@ -91,6 +91,8 @@ graph LR
     H -->|reject + feedback| P
 ```
 
+![Static rendering of the typed workflow graph: Plan → Execute → Critique with bounded repair and revise loop-backs, End(failure) on exhausted retries, and the dashed human approval-gate lane.](../assets/projects/09-agentic-workflows/workflow_graph.svg){ width="100%" }
+
 Read this as a control-flow contract: Critique now also audits the tools
 used against the plan, the approval lane marks exactly where a human can
 pause a run, and both terminal ends (structured `WorkflowResult` on pass,
@@ -106,6 +108,23 @@ shows zero unplanned calls, which is what 15/15 exact-set means in calls
 rather than in bars.
 
 ![Where the time goes per task: stacked plan/execute/critique visits — the slowest task finished in 32 s, far under the 60 s budget; a retry appears as an extra labelled segment, never as one stretched visit.](../assets/projects/09-agentic-workflows/node_waterfall.png){ width="100%" }
+
+## Example trace
+
+Replayed from the committed run record (`data/run_records.json`, task t15 —
+the real-data multi-hop lookup over 01's Wikipedia index; 31.1 s, 7,709 in /
+862 out tokens, zero retries) and the committed human checkpoint
+(`data/checkpoint.json`):
+
+| step | node | action | intermediate output |
+|---|---|---|---|
+| 1 | Plan | 3-step plan: two `search_documents` lookups + one `calculator` gap | 217 out tokens, 4.1 s |
+| 2 | Execute | `search_documents(query='Wright brothers first controlled sustained flight powered aircraft year')` | 1,908 chars, ok, 11.9 s |
+| 3 | Execute | `search_documents(query='wind power supplied over 2000 TWh electricity year', top_k=3)` | 1,973 chars, ok, 11.9 s |
+| 4 | Execute | `calculator(expr='2022 - 1903')` | `119`, ok, 0.0 s |
+| 5 | Execute | draft answer, self-confidence 0.99 | — |
+| 6 | Critique | audit of tools used vs plan; verdict pass | 4.1 s |
+| 7 | Approval gate | HITL checkpoint — 'Convert 48 km to miles' paused at `awaiting_approval`; the committed state records a reject-with-feedback → re-plan cycle | human decision point, state on disk |
 
 ## Architecture
 
@@ -158,7 +177,8 @@ held-out answers, should-fail probes), cost/latency per task, the
 tool-usage matrix (calls per task × tool from the captured traces), and the
 node waterfall (per-visit latency stack) — live in `reports/figures/` (one
 `.html` + `.json` per figure, served by the showcase API). The workflow
-graph itself is a mermaid diagram (above) in this page and the story.
+graph itself is a mermaid diagram (above) in this page and the story, with
+a static SVG rendering alongside (`docs/assets/projects/09-agentic-workflows/workflow_graph.svg`).
 Aggregates in `reports/metrics.json` (key `agentic_suite`, plus
 `detail.tooling` and `detail.heldout`); full report in `reports/report.html`.
 

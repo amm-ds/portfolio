@@ -1,4 +1,7 @@
 project_id: 04-nlp-classification
+headline: The full 120k DistilBERT fine-tune reaches 0.9460 accuracy and 0.9460 macro-F1 on the untouched 1,000-row stratified test split (bounded 3.6k-row ladder tops out at 0.9020 / 0.9021).
+data_note: Real AG News corpus — 127,600 news items (120k standard train split) from HuggingFace fancyzhx/ag_news; license recorded as "unknown" on the HF dataset card.
+limits: The serving table is probe-hardware data (Apple M4 Max, CPU batch=1, n=200) and its int8 quality number is measured on a 2,000-row train sample, not the test split; the bounded CPU ladder is a 4k-train / 1k-test subsample, not the full corpus.
 sections:
   - id: background
     text_md: |
@@ -200,8 +203,10 @@ sections:
       | 6 | `distilbert_tuned` (bounded) | 0.9020 | 0.9021 |
       | 7 | `distilbert_full_120k` | 0.9460 | 0.9460 |
 
-      Serving economics (Apple M4 Max, CPU batch=1, n=200; $1/M-in +
-      $4/M-out card; int8 on a 2000-row train sample):
+      Serving economics — **probe-hardware numbers, not the headline**
+      (measured on this Apple M4 Max, CPU batch=1 end-to-end, n=200; $1/M-in +
+      $4/M-out card; int8 quality on a 2000-row train sample — hardware and
+      sample specifics are in `reports/latency_probe.json`):
 
       | variant | MB | p50 ms | pred/s | $/1k | acc | f1 |
       |---|---|---|---|---|---|---|
@@ -225,6 +230,33 @@ sections:
         15/250 → 14/250, visible per class in `per_class_f1_comparison`) —
         hybrid tech-business headlines; more data shrinks the frequency,
         not the pair (labeling-ambiguity floor).
+
+      **Full-data run vs 4-epoch probe — which history is which.** Both
+      history files come from the *same full 120k data*, not from the
+      bounded subsample: `reports/history_fulldata.json` is the shipped
+      headline run (2 epochs, early stopping enabled, val macro-F1
+      0.9433 → 0.9464), while `reports/history_probe4.json` is a probe of
+      that same full-data fine-tune with the budget raised to 4 epochs
+      and early stopping disabled (seed 42, val macro-F1 peaking at
+      0.9477 in epoch 3). The probe's epochs 1–2 do not bit-match the
+      shipped run — the LR schedule depends on the total step count —
+      and its +0.0003 third-epoch blip is inside run-to-run noise. Read
+      the probe as "extra epochs overfit", not as a better result.
+
+      **Misclassified examples** (selected model = `distilbert_tuned`,
+      wave-2 artifact per `reports/selection.json`, on the untouched
+      1,000-row bounded test split; reproduced from the committed model
+      + test split, predictions bit-match `metrics.json` — full list in
+      `reports/misclassification_examples.json`):
+
+      | text snippet | true | predicted |
+      |---|---|---|
+      | "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited --…" | Business | Sci/Tech |
+      | "India's Tata makes powerful debut Shares in Indian software services giant Tata Consultancy close 16 higher on their market debut, raisi…" | World | Business |
+      | "Dell Exits Low-End China Consumer PC Market HONG KONG (Reuters) - Dell Inc. &lt;DELL.O&gt;, the world's largest PC maker, said on Monda…" | Sci/Tech | Business |
+      | "Future Doctors, Crossing Borders Students at the Mount Sinai School of Medicine learn that diet and culture shape health in East Harlem." | World | Sci/Tech |
+      | "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker missed the cut in the Olympic 100…" | World | Sports |
+      | "103 arrests for Internet fraud, related crimes since June: US (AFP) AFP - US authorities arrested at least 103 suspects and filed 117 cri…" | Sci/Tech | World |
 
       **Business summary:** The decision here is funding: a full-data
       fine-tune of the neural model beats the classical TF-IDF approach

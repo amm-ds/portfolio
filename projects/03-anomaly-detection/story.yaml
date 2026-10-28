@@ -1,4 +1,15 @@
 project_id: 03-anomaly-detection
+headline: On real NAB event windows the IsolationForest champion detects 16 of
+  17 labelled incidents (range recall 0.729) but fires 1 609 alerts for those
+  16 windows (range precision 0.107; PR-AUC 0.527, range-F1 0.157 overall).
+data_note: Headline numbers are real data — 12 series from the Numenta
+  Anomaly Benchmark (research benchmark; cite Ahmad, Lavin, Purdy & Agha 2017)
+  — with a seeded synthetic telemetry stream (n = 20 000) as the labelled CI
+  fast path and an NSL-KDD transfer probe.
+limits: Does not show multivariate transfer — NAB results are univariate
+  per-series IsolationForest runs, the synthetic ladder ranks detectors only
+  on trivially separable injected anomalies, and NSL-KDD is a single transfer
+  probe at 56.9% test prevalence.
 sections:
   - id: background
     text_md: |
@@ -205,9 +216,13 @@ sections:
 
   - id: results
     text_md: |
-      The headline is real data: NAB, event-based metrics, 9 of 12 series
-      evaluable (the other 3 have all labelled windows inside the train
-      split; excluded from aggregates, not scored as misses):
+      The headline is the event window, not the point: on NAB the champion
+      (IsolationForest, fixed train-anchored 2% threshold) detects 16 of 17
+      labelled incident windows — range recall 0.729 — at 0.107 range
+      precision, 1 609 alerts for 16 events; PR-AUC 0.527 and range-F1 0.157
+      overall, on 9 of 12 series evaluable (the other 3 have all labelled
+      windows inside the train split; excluded from aggregates, not scored
+      as misses):
 
       | family | PR-AUC | range-F1 | events (alerts) |
       |---|---|---|---|
@@ -216,12 +231,22 @@ sections:
       | realAWSCloudwatch | 0.404 | 0.088 | 3/3, 132 |
       | **overall** | **0.527** | **0.157** | **16/17, 1 609** |
 
-      The champion finds most real events (range recall 0.729), but the
-      firehose is the finding: 1 609 alerts for 16 windows, range precision
-      0.107. `nab_timelines` shows six representative series (2x3 panels,
-      series id per panel) with true vs. detected windows — nyc_taxi misses
-      one labelled event, the other five detect theirs;
-      `nab_score_distribution` and `nab_alert_budget` show the budget curve.
+      Which detector wins where, honestly: on NAB only IsolationForest has
+      been run per series, so the family ranking above is IsolationForest's
+      alone — strongest on realTraffic (PR-AUC 0.728, range-F1 0.310, 5/5
+      events), thinnest on realAWSCloudwatch by range recall (0.500) and on
+      realKnownCause by precision (1 289 of the 1 609 alerts come from that
+      family). The cross-detector verdict exists on the synthetic ladder
+      only: tuned IsolationForest wins ROC-AUC (0.9171), tuned OCSVM wins
+      PR-AUC (0.1355), and LOF stays at chance either way — re-running the
+      full ladder on NAB is roadmap work, not a reported result.
+      `nab_timelines` shows six representative series (2x3 panels, series
+      id per panel) with true vs. detected windows; the downsampled
+      single-series `nab_timeline_nyc_taxi` makes the one real miss
+      interactive — nyc_taxi detects 3 of its 4 labelled windows (range
+      recall 0.750) with 179 alerts fired. `nab_score_distribution` and
+      `nab_alert_budget` show the budget curve: the firehose is the
+      finding — 1 609 alerts for 16 windows, range precision 0.107.
 
       The seeded synthetic stream stays the CI / fast path, and the
       synthetic-to-real drop is why: injected anomalies are trivially
@@ -252,6 +277,7 @@ sections:
       would actually feel the improvement.
     figures:
       - nab_timelines
+      - nab_timeline_nyc_taxi
       - nab_score_distribution
       - nab_alert_budget
     metrics_keys:
@@ -312,5 +338,6 @@ figure_captions:
   threshold_sweep: The champion's precision and recall traced across alert budgets on the synthetic test window, with the fixed 2% operating point marked — recall 15% and precision 14% there, 17 of 120 flags hitting real incidents. The operating point is a staffing dial, not a mystery.
   adaptive_stream: The anomaly-score stream under adaptive (dashed) vs fixed (dotted) thresholding in streaming simulation. The rolling median/IQR trigger re-anchors on drift; calibrated on synthetic it fired on 31 of 120 real NAB chunks — too twitchy for real rarity, so headline metrics stay on the fixed budget curve.
   nab_timelines: Six representative NAB series (2×3 panels) over the test window — amber bands are the labelled anomaly windows, pink crosses are the champion's alerts. 897 alerts across these panels mostly miss the windows; nyc_taxi misses one labelled event, the other five detect theirs.
+  nab_timeline_nyc_taxi: The realKnownCause/nyc_taxi test window downsampled to every 2nd minute (1,540 of 3,079 points) — amber bands are the 4 labelled windows, pink crosses are the champion's 179 alerts. 3 of 4 windows are detected (range recall 0.750, PR-AUC 0.462); hover the series to see the missed window the aggregate table only counts.
   nab_score_distribution: The champion's anomaly scores pooled over all evaluable NAB series, split by in-window vs outside-window minutes (log-count y axis). In-window scores overlap the normal mass — at NAB rarity no threshold separates them cleanly.
   nab_alert_budget: Event-level range-F1 of each detector family across alert budgets (flagged fraction of the window, log x). Range-F1 peaks at a small budget; more pages mostly add false alarms — the budget curve, not AUC, is where the next dollar goes.

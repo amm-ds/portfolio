@@ -10,7 +10,8 @@ showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-ope
 > The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs that do-nothing
 > policy, with a bootstrap 95% CI of [−485, −343].
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn)
+> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
+> [Try the threshold sandbox →](https://amm-ds.github.io/portfolio/demos/churn-sandbox)
 
 ## What it shows
 
@@ -66,7 +67,15 @@ threshold.
   surface.
 - Figures include `fairness_slices` (grouped bars) and `cost_surface`
   (FN cost x threshold heatmap with the operating point marked).
-- 5/5 DQ gates on the pinned snapshot; full pipeline ~10 s, deterministic.
+- 5/5 DQ gates on the pinned snapshot; full pipeline ~10 s, deterministic:
+
+  | gate | column | contract | observed | status |
+  |---|---|---|---|---|
+  | null rate ≤ 5% | tenure_months | ≤ 0.050 | 0.000 | ✅ |
+  | null rate ≤ 5% | monthly_charges | ≤ 0.050 | 0.000 | ✅ |
+  | range [0, 240] | tenure_months | within bounds | [0.0, 72.0] | ✅ |
+  | range [0, 10,000] | monthly_charges | within bounds | [18.25, 118.75] | ✅ |
+  | binary {0, 1} | churned | within bounds | [0.0, 1.0] | ✅ |
 
 ## Artifacts
 

@@ -115,3 +115,57 @@ def test_roadmap_status_validated() -> None:
 
     with pytest.raises(ValidationError):
         RoadmapItem(status="planned", text="x")
+
+
+def test_header_fields_default_to_none() -> None:
+    story = ProjectStory(project_id="p", sections=[_section("background")])
+    assert story.headline is None
+    assert story.data_note is None
+    assert story.limits is None
+
+
+def test_header_fields_parsed() -> None:
+    story = ProjectStory(
+        project_id="p",
+        headline="MAE 12.3 ± 1.1 on the holdout month.",
+        data_note="Real, 1.1M rows, CC-BY-4.0.",
+        limits="Does not cover cross-city transfer.",
+        sections=[_section("background")],
+    )
+    assert story.headline == "MAE 12.3 ± 1.1 on the holdout month."
+    assert story.data_note == "Real, 1.1M rows, CC-BY-4.0."
+    assert story.limits == "Does not cover cross-city transfer."
+
+
+def test_header_fields_roundtrip(tmp_path: Path) -> None:
+    import yaml
+
+    (tmp_path / "story.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "project_id": "p",
+                "headline": "Result with uncertainty.",
+                "data_note": "Synthetic, 50k rows, MIT.",
+                "limits": "Not a causal claim.",
+                "sections": [{"id": "background", "text_md": "x"}],
+            },
+            sort_keys=False,
+        )
+    )
+    loaded = load_story(tmp_path)
+    assert loaded is not None
+    assert loaded.headline == "Result with uncertainty."
+    assert loaded.data_note == "Synthetic, 50k rows, MIT."
+    assert loaded.limits == "Not a causal claim."
+
+
+@pytest.mark.parametrize("field", ["headline", "data_note", "limits"])
+def test_header_fields_reject_wrong_types(field: str) -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        ProjectStory(
+            project_id="p",
+            sections=[_section("background")],
+            **{field: 42},  # type: ignore[arg-type]
+        )

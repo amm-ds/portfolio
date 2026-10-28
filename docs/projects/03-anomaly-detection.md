@@ -41,12 +41,18 @@ budget; bold = overall champion.*
 | realTraffic | 0.728 | 0.310 | 0.232 / 0.750 | 5/5, 188 alerts |
 | **overall** | **0.527** | **0.157** | **0.107 / 0.729** | **16/17, 1 609 alerts** |
 
-The honest delta vs. the synthetic track (PR-AUC 0.916, residuals 0.9999):
-injected synthetic anomalies are trivially separable; on real data the
-champion finds most events (recall 0.73) but the firehose is the finding
-(precision 0.107). On the synthetic run ladder,
-`tuned OCSVM` is the PR-AUC champion (0.136) after a 0.34 → 0.91 tuning
-rescue; LOF's local-density blindness is structural and tuning-resistant.
+The event-window verdict leads: 16 of 17 labelled windows detected (range
+recall 0.729) at 0.107 range precision — 1 609 alerts for 16 events. Only
+IsolationForest has been run on NAB so far, so the family ranking above is
+IsolationForest's alone (strongest on realTraffic, 0.728 PR-AUC / 0.310
+range-F1); the cross-detector winner claim lives on the synthetic ladder
+only — tuned IsolationForest by ROC-AUC (0.9171), tuned OCSVM by PR-AUC
+(0.1355). The honest delta vs. the synthetic track (PR-AUC 0.916, residuals
+0.9999): injected synthetic anomalies are trivially separable; LOF's
+local-density blindness is structural and tuning-resistant. New: a
+downsampled single-series interactive timeline, `nab_timeline_nyc_taxi`
+(3 of 4 labelled windows detected, 179 alerts), makes the one real miss
+hoverable.
 
 ## Artifacts
 

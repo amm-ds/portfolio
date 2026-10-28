@@ -168,6 +168,48 @@ def fig_eda_trips_profile(demand: pl.DataFrame) -> go.Figure:
     )
 
 
+def fig_hour_borough_heatmap(demand: pl.DataFrame) -> go.Figure:
+    """Hour x borough mean-pickups heatmap over the full-year curated grid.
+
+    Pre-aggregated companion to ``fig_eda_trips_profile``: identical numbers
+    (mean pickups per zone-hour by hour of day and borough) rendered as a
+    heatmap so the twin weekday peaks and the Manhattan/everything-else volume
+    gap read as one picture. Tiny payload (8 x 24 cells), safe as a lead
+    results figure.
+    """
+    by_hour = (
+        demand.with_columns(hour=pl.col("ts").dt.hour())
+        .group_by(["borough", "hour"])
+        .agg(pl.col("pickup_count").mean().alias("mean_pickups"))
+        .sort(["borough", "hour"])
+    )
+    boroughs = by_hour["borough"].unique().sort().to_list()
+    hours = list(range(24))
+    z = [
+        by_hour.filter(pl.col("borough") == b).sort("hour")["mean_pickups"].to_list()
+        for b in boroughs
+    ]
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z,
+            x=[f"{h:02d}:00" for h in hours],
+            y=boroughs,
+            colorscale="Teal",
+            colorbar={"title": "mean pickups<br>per zone-hour"},
+            hovertemplate="%{y} %{x}: %{z:.2f} pickups/zone-hour<extra></extra>",
+        )
+    )
+    fig.update_layout(
+        title="Mean pickups by hour of day x borough",
+        xaxis_title="hour of day",
+        yaxis_title="borough",
+    )
+    return add_takeaway(
+        apply_theme(fig, height=420),
+        "full-year 2024 curated zone-hour grid; identical data to eda_trips_profile.",
+    )
+
+
 def fig_zone_hour_heatmap(demand: pl.DataFrame, top_n: int = 30) -> go.Figure:
     """Demand heatmap: top-N zones x hour-of-week for the selected test week.
 
@@ -719,6 +761,7 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
     if has_gbm_model and test_path.exists():
         importance_fig = fig_gbm_feature_importance(cfg, pl.read_parquet(test_path))
     figures = {
+        "hour_borough_heatmap": fig_hour_borough_heatmap(demand),
         "eda_trips_profile": fig_eda_trips_profile(demand),
         "zone_hour_heatmap": fig_zone_hour_heatmap(demand_zoned),
         "actual_vs_pred_top5": fig_actual_vs_pred(preds),

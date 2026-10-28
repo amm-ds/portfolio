@@ -1,10 +1,27 @@
 project_id: 07-open-data-mobility
+headline: "On a strict Q4-2024 temporal holdout (584,855 zone-hours) the served
+  GBM forecasts next-hour taxi pickups at MAE 4.67 pickups/hour — 28.4% below
+  \"same hour last week\" — with a p90 staffing band covering 90.8% of realized
+  zone-hours against a 90% target; the uncertainty is measured too: sparse
+  N/A-borough zones under-cover at 84.7%, so bands there are flagged, not
+  trusted."
+data_note: "Real data: 41.2M NYC TLC yellow-taxi trips (2024, 12
+  checksum-pinned monthly Parquet files, ~1.5 GB compressed) joined with NOAA
+  GHCN-Daily weather (Central Park, public domain); both licensed for
+  commercial use and re-downloaded by the pipeline — the raw data is NOT
+  shipped in the repo."
+limits: "Does not show causal effects or horizons beyond one hour: one
+  vehicle class, one city, one year of associative hour-ahead forecasts;
+  weather elasticities are raw groupbys without hour-of-week normalisation,
+  and yellow-trained weights do not transfer to green-taxi demand without
+  per-service retraining."
 figure_captions:
-  eda_trips_profile: >-
-    Mean pickups per zone-hour by hour of day, one line per borough, over the
-    full-year 2024 curated grid. Weekdays are twin-peaked (08:00 and 18:00)
-    while weekend profiles flatten — and Manhattan dominates the volume every
-    hour.
+  hour_borough_heatmap: >-
+    Mean pickups per zone-hour by hour of day × borough over the full-year
+    2024 curated grid — the demand surface every forecast below operates on.
+    Manhattan peaks at 103.7 pickups/zone-hour at 18:00 while the Bronx tops
+    out at 0.23; weekdays are twin-peaked everywhere (the line view is
+    `eda_trips_profile`, same committed numbers).
   zone_hour_heatmap: >-
     Hour-of-week pickup demand for the top 30 zones by volume, grouped by
     borough, for the week of 2024-10-07 (first full Monday of the test
@@ -144,13 +161,19 @@ sections:
       declared laptop-friendly boundary: large enough to be credible at real
       scale, small enough to re-run in minutes.
 
+      **Nothing raw ships in this repo.** A first run downloads ~1.5 GB — the
+      12 monthly Parquet files, the TLC zone lookup, and the NOAA extract —
+      before any stage executes, so budget a long download up front; every
+      later stage runs offline from the pinned local copies.
+
       **Business summary:** Both inputs are public and licensed for
       commercial use: a full year of New York yellow-taxi trip records —
       41.2M trips across 12 monthly files — and a public-domain weather
       station's daily precipitation and temperature. Each is
       checksum-pinned, so any upstream republication that changes the
       data fails loudly rather than silently shifting the results. The
-      whole analysis re-obtains by a single command and reproduces
+      whole analysis re-obtains by a single command — after a one-off
+      ~1.5 GB download, since no raw data ships in the repo — and reproduces
       inside a client's own environment, with no proprietary data
       dependency; the bounded slice (one vehicle class, one city, one
       year) is deliberate — credible at real scale, small enough to
@@ -164,8 +187,8 @@ sections:
       engineering decision.
 
       - **Twin-peaked weekdays:** morning and evening rush profiles
-        flatten on weekends — visible in `eda_trips_profile` and the
-        `zone_hour_heatmap`.
+        flatten on weekends — visible in the `hour_borough_heatmap`
+        and the `zone_hour_heatmap`.
       - **Geography concentrates volume:** Manhattan dominates while outer
         boroughs and airports (EWR, "Unknown" zones) run sparse — mapped
         directly in `zone_demand_map`.
@@ -187,7 +210,7 @@ sections:
       Manhattan peak and the flat, around-the-clock airports need very
       different plans, and this analysis is what turns a city-wide
       average into per-zone staffing decisions.
-    figures: [eda_trips_profile, zone_hour_heatmap, zone_demand_map]
+    figures: [zone_hour_heatmap, zone_demand_map]
     metrics_keys: []
 
   - id: training
@@ -299,6 +322,9 @@ sections:
 
       MASE 1.0 = persistence parity; served GBM 0.76 (`gbm_vs_nn`).
 
+      - **The demand surface:** `hour_borough_heatmap` — Manhattan averages
+        103.7 pickups/zone-hour at its 18:00 peak while the Bronx tops out at
+        0.23; the ladder below is scored against that volume spread.
       - **GBM tuning was flat:** tuned ≈ defaults within noise — tuning
         will not rescue weak features.
       - **Challengers lost on validation:** xgb beat the incumbent on the
@@ -330,7 +356,7 @@ sections:
       hour. The exception is stated, not hidden: sparse zones with no
       borough assignment under-cover at 84.7%, so staff from the band in
       dense boroughs and fall back to simple rules in the flagged zones.
-    figures: [gbm_vs_nn, p90_band, weather_elasticity]
+    figures: [hour_borough_heatmap, gbm_vs_nn, p90_band, weather_elasticity]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
 
   - id: conclusions
@@ -354,8 +380,12 @@ sections:
         scores every new TLC month against the persisted serving model and
         opens an issue on regression (`docs/runbooks/drift-response.md`) —
         2024-11 (+8.2%, within tolerance) is only the wiring check.
-      - The served model ships with a model card (`MODEL_CARD.md`) —
-        intended use, slices, limits: the procurement one-pager.
+      - The served model ships with a model card
+        ([MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md))
+        — intended use, slices, limits: the procurement one-pager — and the
+        persisted artifact follows the
+        [SERVING.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/SERVING.md)
+        contract (`projects/07-open-data-mobility/SERVING.md`).
 
       **Results quality: strong on dense zones, caveated on sparse
       ones.** The 28.4% error cut and 90.8% band hold on dense zones;

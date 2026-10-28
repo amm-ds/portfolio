@@ -1,4 +1,19 @@
 project_id: 10-uplift-experimentation
+headline: >-
+  The recommended top-25% T-learner targeting list earns +$2,812 (+69%) profit
+  vs random at equal budget (95% paired-bootstrap CI [+$718, +$4,767] —
+  established), with out-of-fold Qini 12.03 [0.77, 24.39], while the Qini
+  curve-area ranking between policies is not established (paired CI
+  [−8.18, 9.52] spans zero).
+data_note: >-
+  Real data: the Hillstrom MineThatData email-marketing benchmark (64,000
+  customers, March 2008 randomized campaign), fetched sha256-pinned from the
+  author's site and published by the author for research use — no formal
+  license file; attribute MineThatData/Hillstrom.
+limits: >-
+  Does not show margin — profit is revenue ($114 per conversion) minus send
+  cost only, no COGS in the snapshot — and the multi-arm best-arm money
+  figures are model-estimated planning values, not realized counterfactuals.
 figure_captions:
   eda_segment_profile: >-
     Arm sizes, visit/conversion rates and mean pre-period spend for the
@@ -38,8 +53,9 @@ figure_captions:
     0.95% — covariate selection is the design decision.
   qini_per_arm: >-
     Empirical Qini curves for the per-arm cross-fitted T-learners on the
-    randomized arm-vs-control pairs, with the committed two-arm T-learner
-    curve (dashed — the Mens-arm fit reproduces it exactly). Mens ranks
+    randomized arm-vs-control pairs; the Mens-arm fit reproduces the
+    committed two-arm T-learner curve exactly (same score stream), so the
+    duplicated overlay was dropped from the figure. Mens ranks
     (Qini 12.03); the Womens arm's conversion ranking (3.37, CI spanning
     zero) is not established.
   profit_frontier_multi_arm: >-
@@ -381,6 +397,11 @@ sections:
         but with no randomized assignment realizing the recommended mix,
         its money figures are planning numbers — the per-arm randomized
         contrasts (Mens established, Womens not) are the causal anchor.
+      - **No live demo, by design this wave:** an interactive
+        uplift-simulator demo was removed as a half-wired orphan; the
+        evidence stands on the randomized experiment read above and the
+        static `qini_curves` figure, and a properly wired demo may land in
+        a future wave.
 
       **Results quality: acceptable with caveats.** The ATE is precise
       (SE 0.09pp) and the profit ranking is established by paired CIs; the
@@ -397,7 +418,8 @@ sections:
       profit ranking — not the curve-quality ranking — is claimed as
       established. Choosing policies on the money, with paired
       confidence intervals, is the habit that transfers. Full rationale
-      lives in `DESIGN.md`, reproduction in `README.md`, the rendered
+      lives in `DESIGN.md`, reproduction in `README.md`, model disclosure
+      in `MODEL_CARD.md`, the rendered
       run in `reports/report.html`, and the machine-readable numbers in
       `reports/metrics.json`.
 roadmap:

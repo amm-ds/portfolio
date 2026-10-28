@@ -126,3 +126,23 @@ def test_build_report_writes_artifacts(cfg: MobilityConfig, curated: pl.DataFram
     metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
     assert "gbm_mean" in metrics and "mae" in metrics["gbm_mean"]
     assert metrics["_meta"]["n_test_rows"] == preds.height
+
+
+def test_hour_borough_heatmap_matches_groupby() -> None:
+    """Heatmap payload is exactly the hour x borough mean-pickups aggregate."""
+    from mobility.evaluate import fig_hour_borough_heatmap
+
+    demand = make_zone_hour_demand()
+    fig = fig_hour_borough_heatmap(demand)
+    trace = fig.data[0]
+    assert trace.type == "heatmap"
+    assert len(trace.x) == 24
+    assert list(trace.y) == ["Manhattan", "Queens"]
+    expected = (
+        demand.with_columns(hour=pl.col("ts").dt.hour())
+        .group_by(["borough", "hour"])
+        .agg(pl.col("pickup_count").mean().alias("mean_pickups"))
+    )
+    for borough, row in zip(trace.y, trace.z, strict=True):
+        want = expected.filter(pl.col("borough") == borough).sort("hour")["mean_pickups"].to_list()
+        assert list(row) == want

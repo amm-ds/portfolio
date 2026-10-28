@@ -55,8 +55,8 @@ selection 15/15** exact-set (from 8/15 — the previous run's 8 unplanned
 calls: `note_store` ×4, `calculator` ×2, `search_documents` ×2), step budget
 15/15, latency budget 15/15. All 30 captured calls were planned (call
 precision 100%, tool recall 100%). Median latency **18.2s** per task (p95
-31.1s). Totals: ~85k in + ~12k out tokens; ledger spend **$0.086** of the
-$2.00 suite cap (~$0.009/task cloud-equivalent).
+31.1s). Totals: ~85k in + ~12k out tokens; suite total **$0.13** of the
+$2.00 suite cap (~$0.0088/task mean cloud-equivalent).
 
 Two suite entries were re-scoped while tuning — disclosed, not silent grader
 edits: t15's expected set gained `calculator` (the 119-year gap is

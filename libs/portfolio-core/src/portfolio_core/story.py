@@ -75,6 +75,18 @@ class ProjectStory(PortfolioBaseModel):
     """The full case study for one project."""
 
     project_id: str = Field(min_length=1)
+    headline: str | None = Field(
+        default=None,
+        description="One sentence: the result plus its uncertainty.",
+    )
+    data_note: str | None = Field(
+        default=None,
+        description="One sentence: real/synthetic, size, license.",
+    )
+    limits: str | None = Field(
+        default=None,
+        description="One sentence: what the story does not show.",
+    )
     sections: list[StorySection] = Field(min_length=1)
     roadmap: list[RoadmapItem] = Field(
         default_factory=list,
