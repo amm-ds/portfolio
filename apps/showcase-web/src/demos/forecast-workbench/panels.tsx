@@ -170,13 +170,15 @@ export function ErrorCompositionPanel({
 }
 
 /**
- * Band calibration, compact: the per-day hit strip (teal = actual inside
- * p10/p90, pink = outside, hover shows the day, band and actual), three chips
- * (per-series coverage, mean width, pooled committed coverage) and one footer
- * sentence on where the band hugs or floats off the actuals. Recomputes
- * client-side from the payload arrays for the selected series and horizon.
- * Collapses to a placeholder when LightGBM is deselected (the churn demo's
- * disabled-state pattern).
+ * Band calibration, compact: a horizontal coverage gauge (the per-series
+ * coverage for this series × origin × visible horizon as a filled bar, a
+ * marker at the 80% target and the pooled committed coverage as a second
+ * marker, with the day-count and mean-width folded as small labels), the
+ * per-day hit strip (teal = actual inside p10/p90, pink = outside, hover
+ * shows the day, band and actual) and one footer sentence on where the band
+ * hugs or floats off the actuals. Recomputes client-side from the payload
+ * arrays for the selected series and horizon. Collapses to a placeholder
+ * when LightGBM is deselected (the churn demo's disabled-state pattern).
  */
 export function BandCalibrationPanel({
   window,
@@ -219,6 +221,7 @@ export function BandCalibrationPanel({
       ? `clears the ${side} edge by ${clearance.toFixed(1)}u`
       : `overshoots the ${side} edge by ${Math.abs(clearance).toFixed(1)}u`;
 
+  const target = 0.8;
   return (
     <Card
       comment={
@@ -237,12 +240,28 @@ export function BandCalibrationPanel({
         )
       }
     >
-      <div className="demo-readouts">
-        <span className={`chip demo-readout ${cal.coverage >= 0.75 ? "good" : "bad"}`}>
-          {cal.hits}/{cal.n} days inside
-        </span>
-        <span className="chip demo-readout">mean width {cal.meanWidth.toFixed(1)}u</span>
-        <span className="chip demo-readout">{(committedCoverage * 100).toFixed(1)}% committed</span>
+      <div className="fwb-cov-gauge" role="img" aria-label="per-series 80% band coverage gauge">
+        <div className="fwb-cov-track">
+          <span
+            className={`fwb-cov-fill ${cal.coverage >= 0.75 ? "good" : "bad"}`}
+            style={{ width: `${(cal.coverage * 100).toFixed(1)}%` }}
+          />
+          <span className="fwb-cov-marker target" style={{ left: `${target * 100}%` }} />
+          <span
+            className="fwb-cov-marker committed"
+            style={{ left: `${(committedCoverage * 100).toFixed(1)}%` }}
+          />
+        </div>
+        <div className="fwb-cov-scale">
+          <span>{cal.hits}/{cal.n} days inside</span>
+          <span className="fwb-cov-legend">
+            <span className="fwb-cov-key target">80% target</span>
+            <span className="fwb-cov-key committed">
+              {(committedCoverage * 100).toFixed(1)}% committed
+            </span>
+          </span>
+          <span>mean width {cal.meanWidth.toFixed(1)}u</span>
+        </div>
       </div>
       <div className="fwb-band-strip" role="img" aria-label="per-day band hit indicator">
         {Array.from({ length: cal.n }, (_, i) => {
@@ -272,11 +291,13 @@ export function BandPlaceholder() {
 }
 
 /**
- * Model verdict, comparative: one clean single-line row per active candidate —
- * dot, name, window WAPE@h (mono), delta-vs-naive chip, right-aligned peak-day
- * MAE — plus the pooled committed chip at the full scored horizon. The best
- * model keeps the crown; the footer names the honest per-series outcome,
- * including the intermittent case where the naive wins.
+ * Model verdict, comparative: one horizontal bar per active candidate —
+ * window WAPE@h on a shared scale as a model-tinted bar (the seasonal naive
+ * is the grey reference), the value label at the bar end, the best model's
+ * bar crowned, and a right-aligned mini column of peak-day MAE — plus the
+ * pooled committed chip at the full scored horizon. The footer names the
+ * honest per-series outcome, including the intermittent case where the
+ * naive wins.
  */
 export function VerdictPanel({
   entry,
@@ -299,7 +320,6 @@ export function VerdictPanel({
       peak: peakAbsError(window.actual, window.curves[m], h),
     }))
     .sort((a, b) => a.wape - b.wape);
-  const naiveWape = wapeAt(window.actual, window.curves[NAIVE], h);
   const bestKey = rows[0]?.key ?? null;
   const naiveWins = bestKey === NAIVE;
   const pooled = payload.groups.test_pooled;
@@ -309,6 +329,9 @@ export function VerdictPanel({
       : null;
   const intermWinRate =
     payload.groups.win_rate_vs_naive.convex_ensemble?.intermittent ?? null;
+
+  // shared scale with headroom so the value label always clears the track end
+  const maxWape = Math.max(...rows.map((r) => r.wape), 1e-6) * 1.08;
 
   let comment: ReactNode;
   if (entry.class === "intermittent") {
@@ -339,22 +362,26 @@ export function VerdictPanel({
     <Card comment={comment}>
       <div className="fwb-verdict">
         {rows.map((r) => {
-          const delta = (r.wape - naiveWape) * 100;
-          const isNaiveRow = r.key === NAIVE;
+          const pct = (r.wape / maxWape) * 100;
           return (
             <div
               key={r.key}
               className={`fwb-verdict-item ${r.key === bestKey ? "best" : ""}`}
             >
               <div className="fwb-verdict-row">
-                <span className="fwb-verdict-name">
+                <span className="fwb-verdict-name" title={MODEL_LABELS[r.key]}>
                   <span className="fwb-dot" style={{ background: MODEL_COLORS[r.key] }} />
                   {MODEL_LABELS[r.key]}
                   {r.key === bestKey && <span className="fwb-verdict-crown">best</span>}
                 </span>
-                <span className="fwb-verdict-wape">{r.wape.toFixed(3)}</span>
-                <span className={`chip demo-readout ${isNaiveRow ? "" : delta < 0 ? "good" : "bad"}`}>
-                  {isNaiveRow ? "floor" : `${delta < 0 ? "−" : "+"}${Math.abs(delta).toFixed(1)} pts`}
+                <span className="fwb-bar-track">
+                  <span
+                    className="fwb-bar-fill"
+                    style={{ width: `${pct.toFixed(1)}%`, backgroundColor: MODEL_COLORS[r.key] }}
+                  />
+                  <span className="fwb-bar-value" style={{ left: `calc(${pct.toFixed(1)}% + 6px)` }}>
+                    {r.wape.toFixed(3)}
+                  </span>
                 </span>
                 <span className="fwb-verdict-peak" title="peak-day MAE (worst single day)">
                   {r.peak.toFixed(1)}

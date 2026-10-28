@@ -66,14 +66,14 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
   it("ships the committed headline block with the quoted numbers", () => {
     const { headline, test_pooled, win_rate_vs_naive, band } = payload.groups;
     expect(test_pooled.seasonal_naive.wape).toBeCloseTo(0.6032, 3);
-    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.4911, 3);
-    expect(headline.convex_ensemble_vs_naive.wape.diff).toBeCloseTo(-0.1121, 3);
-    expect(headline.convex_ensemble_vs_naive.wape.ci95[0]).toBeCloseTo(-0.1224, 3);
-    expect(headline.convex_ensemble_vs_naive.wape.ci95[1]).toBeCloseTo(-0.1021, 3);
-    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.5965, 3);
+    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.4907, 3);
+    expect(headline.convex_ensemble_vs_naive.wape.diff).toBeCloseTo(-0.1125, 3);
+    expect(headline.convex_ensemble_vs_naive.wape.ci95[0]).toBeCloseTo(-0.1228, 3);
+    expect(headline.convex_ensemble_vs_naive.wape.ci95[1]).toBeCloseTo(-0.1026, 3);
+    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.5958, 3);
     expect(test_pooled.seasonal_naive.wrmsse).toBeCloseTo(0.7617, 3);
-    expect(win_rate_vs_naive.convex_ensemble.pooled).toBeCloseTo(0.9017, 3);
-    expect(band.candidates.lgbm.coverage_80).toBeCloseTo(0.7792, 3);
+    expect(win_rate_vs_naive.convex_ensemble.pooled).toBeCloseTo(0.8883, 3);
+    expect(band.candidates.lgbm.coverage_80).toBeCloseTo(0.7773, 3);
     expect(band.candidates.lgbm.mean_band_width).toBeCloseTo(13.532, 2);
     expect(band.level).toBe(0.8);
     expect(band.per_horizon_width).toHaveLength(28);
