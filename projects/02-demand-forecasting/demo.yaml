@@ -1,23 +1,35 @@
 id: forecast-workbench
 title: demand forecast workbench
-hook: Pick a store-product series, pick one of the three scored weekly origins,
-  slide the true horizon h across the direct h-step forecasts, and shock the
-  recent demand; watch the routed pipeline, the zero baseline, and — on the
-  15 erratic series — the boosted per-horizon model respond.
+hook: Pick a store-product series from the committed M5 track, compare the
+  seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two
+  scored-once test origins, and slide the horizon — watch the curves, the
+  80% band and the per-series WAPE respond.
 project: 02-demand-forecasting
 group: plan operations
 skills: [time series forecasting, prediction intervals, demand classification]
-modes: [browser, live]
+modes: [browser]
 hero:
-  label: multi-step pooled MAE over the scored origins, routed pipeline vs all-HGB
-  value: 7.47 routed vs 11.71 all-HGB — the routed pipeline leads
-  ci: routing lumpy series away from the boosted model wins +4.0 MAE [3.3, 4.8]
-    (95% paired bootstrap over series x scored origins; 98.6% of series are lumpy;
-    pooled rmae 0.649)
-live_endpoints:
-  - method: POST
-    path: /projects/02-demand-forecasting/forecast
-    label: live what-if scoring
-    cost: free-local
-# NOTE: the old forecast-workbench scenarios and payload block were removed
-# with the demo; a later phase rebuilds this manifest (payload TBD).
+  label: pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)
+  value: 0.498 vs 0.603
+  ci: paired bootstrap CI [−0.115, −0.095] on the −0.105 gap; 89.3% per-series
+    win rate; 80% band covers 78.7% (protocol m5_direct_v1, horizon 28)
+scenarios:
+  - name: base
+    controls: {models: "seasonal_naive,lgbm", origin: "2016-05-10", horizon: 28}
+  - name: full-horizon-ensemble
+    controls:
+      models: "seasonal_naive,auto_ets,lgbm,convex_ensemble"
+      origin: "2016-05-17"
+      horizon: 28
+  - name: short-window
+    controls: {models: "seasonal_naive,convex_ensemble", origin: "2016-05-10", horizon: 7}
+payload:
+  path: reports_m5/demo_payload.json
+  schema_version: 4
+  required_keys:
+    - demo
+    - project
+    - protocol
+    - catalog
+    - groups
+    - evaluation_metadata

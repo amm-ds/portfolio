@@ -430,3 +430,146 @@ def test_multistep_newsvendor_quotes_match_committed_metrics() -> None:
         assert f"q={q:.2f}" in section, f"newsvendor service level {q:.2f} not quoted"
     # cost assumptions stated
     assert "holding 1.0 / stockout 3.0" in section
+
+
+# ---------------------------------------------------------------------------
+# M5 headline track (protocol m5_direct_v1) drift guards — wave 24
+# ---------------------------------------------------------------------------
+
+
+def _m5_metrics() -> dict:
+    return _load_metrics(PROJECT / "reports_m5" / "metrics.json")
+
+
+def _m5_probabilistic() -> dict:
+    return _load_metrics(PROJECT / "reports_m5" / "probabilistic.json")
+
+
+def _m5_section() -> str:
+    text = (PROJECT / "README.md").read_text()
+    assert "## M5 headline" in text, "M5 section missing from README"
+    return text.split("## M5 headline", 1)[1].split("## Data-generating process", 1)[0]
+
+
+def _m5_table(section: str) -> dict[str, list[str]]:
+    """Parse the candidate comparison table (candidate | WAPE | WRMSSE | MAE | win%)."""
+    rows: dict[str, list[str]] = {}
+    for line in section.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            if rows:
+                break  # table ended
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) != 5 or cells[0] == "candidate" or set(cells[0]) <= {"-", ":"}:
+            continue
+        name = cells[0].replace("**", "")
+        for suffix in (" (floor)", " (champion)"):
+            name = name.replace(suffix, "")
+        rows[name] = cells[1:]
+    return rows
+
+
+def test_m5_model_comparison_table_matches_committed_metrics() -> None:
+    """The M5 headline table (WAPE / WRMSSE / MAE / win rate per candidate)
+    is live against the committed test block."""
+    metrics = _m5_metrics()
+    table = _m5_table(_m5_section())
+    pooled = metrics["test"]["pooled"]
+    assert set(table) == set(pooled), "M5 table candidates mismatch the committed run"
+    for cand, (wape, wrmsse, mae, win) in table.items():
+        assert _num(wape) == pytest.approx(pooled[cand]["wape"], abs=5e-4), cand
+        assert _num(wrmsse) == pytest.approx(pooled[cand]["wrmsse"], abs=5e-4), cand
+        assert _num(mae) == pytest.approx(pooled[cand]["mae"], abs=5e-4), cand
+        if cand == metrics["headline"]["baseline"]:
+            assert win == "—"
+        else:
+            rate = metrics["test"]["win_rate_vs_naive"][cand]["pooled"]
+            assert _num(win) == pytest.approx(100.0 * rate, abs=5e-2), cand
+
+
+def test_m5_headline_gap_cis_match_committed_metrics() -> None:
+    """The bootstrap gap quotes (WAPE + WRMSSE, both candidates, with CIs)."""
+    metrics = _m5_metrics()
+    section = _m5_section()
+    headline = metrics["headline"]
+    MINUS = "\u2212"  # unicode minus, written escaped to keep ruff RUF001 quiet
+    for pair, label in (
+        ("convex_ensemble_vs_naive", "convex_ensemble"),
+        ("lgbm_vs_naive", "lgbm"),
+    ):
+        for metric in ("wape", "wrmsse"):
+            block = headline[pair][metric]
+            # README prints magnitudes with a unicode minus; prose wraps, so
+            # every token boundary tolerates whitespace/newlines.
+            m = re.search(
+                rf"{label}\b[\s\S]{{0,80}}?{MINUS}([\d.]+)\s+{metric.upper()}\**\s*"
+                rf"\(CI\s*\**\[{MINUS}([\d.]+),\s*{MINUS}([\d.]+)\]\**",
+                section,
+            )
+            assert m, f"{label} {metric} gap quote missing from README"
+            assert float(m.group(1)) == pytest.approx(-block["diff"], abs=5e-4)
+            # README prints the CI in signed [lo, hi] order as magnitudes
+            assert float(m.group(2)) == pytest.approx(-block["ci95"][0], abs=5e-4)
+            assert float(m.group(3)) == pytest.approx(-block["ci95"][1], abs=5e-4)
+    # the lgbm relative-cut quote ("a 15.1% relative cut")
+    m = re.search(r"a\s+([\d.]+)%\s*relative cut", section)
+    assert m, "lgbm relative-cut quote missing"
+    rel = 100.0 * (
+        metrics["test"]["pooled"]["lgbm"]["wape"]
+        / metrics["test"]["pooled"]["seasonal_naive"]["wape"]
+        - 1.0
+    )
+    assert float(m.group(1)) == pytest.approx(-rel, abs=5e-2)
+
+
+def test_m5_band_coverage_quotes_match_committed_probabilistic() -> None:
+    """The split-conformal coverage / width quotes are live."""
+    prob = _m5_probabilistic()
+    section = _m5_section()
+    lgbm = prob["candidates"]["lgbm"]
+    ens = prob["candidates"]["convex_ensemble"]
+    m = re.search(
+        r"lgbm covers\s*\*\*([\d.]+)%\*\*\s*of test\s*actuals\s*"
+        r"\(target 80%\)\s*at mean width\s*\*\*([\d.]+)\*\*",
+        section,
+    )
+    assert m, "lgbm coverage/width quote missing from README"
+    assert float(m.group(1)) == pytest.approx(100.0 * lgbm["coverage_80"], abs=5e-2)
+    assert float(m.group(2)) == pytest.approx(lgbm["mean_band_width"], abs=5e-3)
+    m = re.search(r"the ensemble\s*covers\s*(\d+(?:\.\d+)?)%\s*at\s*(\d+(?:\.\d+)?)", section)
+    assert m, "ensemble coverage/width quote missing from README"
+    assert float(m.group(1)) == pytest.approx(100.0 * ens["coverage_80"], abs=5e-2)
+    assert float(m.group(2)) == pytest.approx(ens["mean_band_width"], abs=5e-3)
+
+
+def test_m5_win_rate_and_class_quotes_match_committed_metrics() -> None:
+    """Win-rate bullet, by-class WAPE quotes and class counts are live."""
+    metrics = _m5_metrics()
+    section = _m5_section()
+    wr = metrics["test"]["win_rate_vs_naive"]["convex_ensemble"]
+    m = re.search(
+        r"wins on\s*\*\*([\d.]+)%\*\*\s*of all series\s*"
+        r"\(dense\s*([\d.]+)%,\s*intermittent\s*([\d.]+)%\)",
+        section,
+    )
+    assert m, "ensemble win-rate quote missing from README"
+    assert float(m.group(1)) == pytest.approx(100.0 * wr["pooled"], abs=5e-2)
+    assert float(m.group(2)) == pytest.approx(100.0 * wr["dense"], abs=5e-2)
+    assert float(m.group(3)) == pytest.approx(100.0 * wr["intermittent"], abs=5e-2)
+    by_class = metrics["test"]["by_class"]
+    naive, ens = by_class["seasonal_naive"], by_class["convex_ensemble"]
+    m = re.search(
+        r"dense\s*([\d.]+)\s*\(naive\)\s*→\s*\*\*([\d.]+)\*\*\s*\(ensemble\);\s*intermittent\s*([\d.]+)\s*→\s*\*\*([\d.]+)\*\*",
+        section,
+    )
+    assert m, "by-class WAPE quote missing from README"
+    assert float(m.group(1)) == pytest.approx(naive["dense"]["wape"], abs=5e-4)
+    assert float(m.group(2)) == pytest.approx(ens["dense"]["wape"], abs=5e-4)
+    assert float(m.group(3)) == pytest.approx(naive["intermittent"]["wape"], abs=5e-4)
+    assert float(m.group(4)) == pytest.approx(ens["intermittent"]["wape"], abs=5e-4)
+    counts = metrics["classes"]["counts"]
+    m = re.search(r"\*\*([\d,]+) dense \+ ([\d,]+) intermittent\*\* series", section)
+    assert m, "class-count quote missing from README"
+    assert int(m.group(1).replace(",", "")) == counts["dense"]
+    assert int(m.group(2).replace(",", "")) == counts["intermittent"]

@@ -234,5 +234,25 @@ def build_report_m5(
     return build_report(reports_dir)
 
 
+@app.command("demo-payload-m5")
+def demo_payload_m5(
+    data_dir: Annotated[Path | None, typer.Option(help="M5 subset dir.")] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 reports dir.")] = None,
+) -> Path:
+    """Build the forecast-workbench demo payload (reports_m5/demo_payload.json, schema v4).
+
+    Recomputes the per-series catalog curves with the m5_track functions on
+    the committed subset (seconds-to-minutes, NOT the full ~22-min evaluate)
+    and drift-guards the per-series candidates' pooled test WAPE against the
+    committed metrics block at 1e-9.
+    """
+    root = Path.cwd()
+    data_dir = data_dir or root / "data_m5"
+    reports_dir = reports_dir or root / "reports_m5"
+    from demand_forecasting.m5_demo_payload import write_demo_payload
+
+    return write_demo_payload(data_dir, reports_dir)
+
+
 if __name__ == "__main__":
     app()

@@ -1,31 +1,43 @@
-# 02 · Hierarchical Demand Forecasting
+# 02 · Demand Forecasting
 
-**Domain:** time-series forecasting · **Data:** seeded synthetic retail hierarchy
-(4 stores × 6 products × 730 days, `portfolio_core.synthetic.retail_hierarchy`) ·
+**Domain:** time-series forecasting · **Data:** Walmart M5 accuracy-track
+subset (600 daily store-item series, primary headline); UCI Online Retail II
+(sparse secondary track); seeded synthetic hierarchy (CI fast path) ·
 **Status:** working showcase on the standard platform (flagships: [01](../01-rag-agent), [07](../07-open-data-mobility))
 
 ## Problem
 
-A retailer sells 6 products in 4 stores and needs **per-store-product daily unit
-forecasts**. The hierarchy is small enough to model globally but structured
-enough to demand honest validation: demand has trend, weekly seasonality and
-store/product-specific levels, so a random train/test split would leak the
-future into the past and overstate accuracy. The deliverable is a reproducible
-pipeline that generates the data, validates it, engineers leakage-safe
-features, and compares a linear baseline against a gradient-boosted model
-under an embargoed expanding-window backtest.
+A retailer needs **per-store-product daily unit forecasts** it can trust for
+replenishment. The project studies both demand regimes honestly: the
+**dense** regime (Walmart M5 — daily food demand with trend, weekly
+seasonality, price/SNAP/event signal), where global ML demonstrably beats the
+seasonal-naive floor, and the **sparse** regime (UCI Online Retail II — 89%
+zero share), where the flat/zero forecast stays the ceiling and the
+measurement says so. Either regime invalidates a random train/test split:
+dated panels leak the future into the past and overstate accuracy, so every
+track here runs embargoed rolling origins with a frozen, scored-once test
+window. The deliverable is a reproducible pipeline that validates its data,
+engineers leakage-safe features, and compares baseline against
+gradient-boosted models under that protocol.
 
 ## Design
 
 See [DESIGN.md](DESIGN.md) for the full requirements/options/decisions log.
 Summary:
 
-- **Data**: platform-seeded synthetic panel (`seed=42`, 730 days → 17,520 rows),
-  gated by `DQReport` (null-rate, range, freshness) and versioned by a
-  `DatasetContract` with SHA-256 (`data/dataset.json`). A real-data track
-  (UCI Online Retail II) is implemented behind `--data-source uci` — the
-  headline results below come from it; synthetic stays the default so CI
-  runs offline.
+- **Data**: three tracks side by side. The **M5 headline track**
+  (`m5_data.py`/`m5_track.py`, protocol `m5_direct_v1`, wave 24) runs on the
+  committed, checksum-pinned Walmart M5 subset — 600 daily store-item series
+  (top-3 stores CA_3/CA_1/TX_2 × top-200 items by volume, 2011-01-29..2016-06-19,
+  1,105,594 rows, 16% zero-day share), built offline from the Nixtla
+  `datasetsforecast` mirror (sha256 pins in `data_m5/`, PROVENANCE.md) — in
+  the regime where ML demonstrably wins: dense daily demand with real
+  exogenous signal (price, SNAP, events). The **UCI Online Retail II sparse
+  track** (`uci.py`, `multihorizon.py`) stays as the clearly-labelled
+  secondary study — the panel where baselines win. The **synthetic track**
+  (platform-seeded, `seed=42`, 730 days → 17,520 rows) remains the CI/offline
+  fast path, gated by `DQReport` and versioned by a `DatasetContract` with
+  SHA-256 (`data/dataset.json`).
 - **Features** (`features.py`): lags `[1, 7, 14]` built with `shift` **per
   series** (never the current row), plus calendar features (day-of-week,
   weekend, month, week, day-of-year sin/cos) and a linear trend counter.
@@ -94,7 +106,94 @@ Summary:
   CIs, per-horizon bands and the order-up-to decision metric — see
   *Multi-step headline* below.
 
-## Data-generating process (UCI track)
+## M5 headline — Walmart M5 accuracy subset (protocol `m5_direct_v1`, PRIMARY)
+
+The headline experiment (wave 24) is the committed Walmart M5 subset — 600
+daily store-item series (top-3 stores CA_3/CA_1/TX_2 × top-200 volume items),
+2011-01-29..2016-06-19 (1,105,594 rows, 16% zero-day share), in the regime
+where ML demonstrably wins: dense daily store-item demand with real exogenous
+signal (price, SNAP, events). Protocol: **10 weekly rolling origins**
+(8 SELECTION + the last 2 scored once as TEST — 2016-05-10 and 2016-05-17),
+each training on ≥ 1,096 days (3+ years) and scoring the next **28 days**
+(the M5 evaluation horizon). Candidates: per-series statistical
+(`seasonal_naive`, `window_avg_28`, `adida`, `tsb` — statsforecast 2.1.1),
+per-series automatic (`auto_ets`, `auto_ces`), a global **LightGBM**
+(mlforecast 1.1.0: lags 1/7/14/21/28, rolling means, calendar, exog
+price/SNAP/event codes — no series-identity feature), and a
+**convex_ensemble** of the best two of {lgbm, auto_ets, auto_ces} by
+SELECTION WAPE, weight grid-fit on the selection origins only (the committed
+rule picked auto_ets × 0.67 + auto_ces × 0.33). Volume classes per series:
+Syntetos-Boylan ADI/CV² on each series' real history up to the last
+selection origin — **463 dense + 137 intermittent** series. Nothing reads the
+test origins at fit/selection time; every fit is seeded or closed-form, so a
+re-run reproduces the artifacts byte-for-byte. The machine-readable protocol
+is [reports_m5/evaluation_metadata.json](reports_m5/evaluation_metadata.json);
+the written report is `reports_m5/report.html`.
+
+Headline table — pooled over the 2 scored-once test origins (600 series ×
+28 days each; WAPE = Σ|err| / Σ actual, WRMSSE with the documented
+seasonal-naive-28 denominator — see the metric definitions in
+evaluation_metadata.json):
+
+| candidate | test WAPE | test WRMSSE | MAE (units) | win rate vs naive |
+|---|---|---|---|---|
+| seasonal_naive (floor) | 0.603 | 0.762 | 5.774 | — |
+| window_avg_28 | 0.515 | 0.619 | 4.925 | 82.8% |
+| adida | 0.512 | 0.623 | 4.902 | 86.5% |
+| tsb | 0.510 | 0.616 | 4.879 | 85.8% |
+| auto_ets | 0.503 | 0.611 | 4.819 | 88.2% |
+| auto_ces | 0.515 | 0.612 | 4.931 | 83.0% |
+| lgbm | 0.512 | 0.611 | 4.902 | 84.3% |
+| **convex_ensemble (champion)** | **0.498** | **0.604** | **4.769** | **89.3%** |
+
+- **The gap vs the naive floor is real and significant** — 95% paired cluster
+  bootstrap over series (2,000 reps, fixed seeds): convex_ensemble
+  **−0.105 WAPE** (CI **[−0.115, −0.095]**) and **−0.157 WRMSSE** (CI
+  **[−0.168, −0.147]**); lgbm −0.091 WAPE (CI [−0.102, −0.080], a 15.1%
+  relative cut) and −0.151 WRMSSE (CI [−0.163, −0.140]). Both CIs exclude
+  zero.
+- **Bands** — split-conformal 80% band around the point forecast,
+  per-horizon-day width = the 0.8-quantile of |lgbm residual| over the 8
+  selection origins, zero-clipped and sorted: lgbm covers **78.7%** of test
+  actuals (target 80%) at mean width **12.46** units; the ensemble covers
+  78.5% at 11.96. Slightly under-covering, stated as measured.
+- **Win rates** — share of series whose pooled test |error| beats the
+  seasonal_naive floor: the ensemble wins on **89.3%** of all series (dense
+  89.0%, intermittent 90.5%); the per-series spread across candidates is
+  narrow (83.0–89.3%) because on dense weekly-seasonal demand every serious
+  candidate clears the floor — the pooled margin, not per-series coverage, is
+  what separates them.
+- **By class** (test WAPE): dense 0.568 (naive) → **0.470** (ensemble);
+  intermittent 0.749 → **0.616**. On this subset the models win in BOTH
+  classes — the honest contrast to the UCI sparse panel below, where the
+  zero forecast stays the ceiling.
+
+### Related work — M5 and the forecasting stack
+
+- **M5 competition companion** (Makridakis et al., *International Journal of
+  Forecasting*, 2022) — the competition this subset comes from. Two
+  deliberate deviations, both documented in
+  `evaluation_metadata.json`: the subset is the top-volume 600 of 30,490
+  series (a working-scale study, not the competition leaderboard), and the
+  WRMSSE denominator is the seasonal-naive-28 in-sample MSE rather than the
+  official lag-1 random walk — a stricter scale for weekly-seasonal dense
+  demand.
+- **The nixtla stack** ([nixtla.github.io](https://nixtla.github.io)) —
+  statsforecast / mlforecast / datasetsforecast power every candidate here;
+  the per-series statistical layer and the global LightGBM recursive
+  strategy follow their documented patterns (pinned versions in
+  evaluation_metadata.json).
+- **A Kaggle-competitions analysis of the M5 accuracy round**
+  ([arXiv:2009.07701](https://arxiv.org/abs/2009.07701)) — external context
+  on how the competition was won (global gradient-boosted models over
+  per-series statistical fits — the same ordering our 600-series subset
+  measures from the inside).
+
+Reproduce: `uv run python -m demand_forecasting.cli evaluate-m5` (writes
+`reports_m5/`, ~22 min; offline, checksum-pinned) or
+`build-report-m5` to rebuild the HTML report from the committed artifacts.
+
+## Data-generating process (UCI track — SECONDARY)
 
 `reports_uci/dataset_metadata.json` is the machine-readable audit anchor;
 the summary (all of it implemented in `uci.py` — the doc exists because the
@@ -123,9 +222,11 @@ review demanded the pipeline's data contract be stated explicitly):
   mean "closed or not trading" as easily as "no demand". Models must live
   with that ambiguity; it is also why MAPE is not decision-grade here.
 
-## Multi-step headline — direct multi-horizon (protocol `direct_multihorizon_v1`, PRIMARY)
+## Multi-step headline — direct multi-horizon (protocol `direct_multihorizon_v1`, UCI sparse track — SECONDARY)
 
-The nowcast tables above stay committed and valid, but they answer "tomorrow,
+The UCI sparse track's primary result — kept intact below — is the deliberate
+counterpoint to the M5 headline above: on 89%-zero demand the baselines win.
+The nowcast tables below stay committed and valid, but they answer "tomorrow,
 given today". The track replenishment actually runs is **multi-step** (wave 19,
 fifth-pass audit; wave 20 the peak-capable candidates; wave 21 the LightGBM
 arms, the peak-weighted HGB, the convex ensemble and the per-series win-rate
@@ -391,8 +492,9 @@ scored origins, 95% CI on the gap (negative = champion better):
 
 The synthetic hierarchy (24 series, clean trend + weekly seasonality) is the
 **CI/offline path**: fully seedable, byte-reproducible, no network. It exists
-so every gate in this repo runs hermetically; the headline results live on the
-real-data track below. Ladder below is scored on the **final holdout
+so every gate in this repo runs hermetically; the headline results live on
+the M5 track above, and the sparse-regime study on the UCI track below. Ladder
+below is scored on the **final holdout
 window** (last rolling origin), champion selected on origins 1..n-1 only —
 note what clean data does to the statistical baselines:
 
@@ -471,7 +573,7 @@ fold 4 is the holdout window):
 hgb_tuned improves on hgb in **every** fold; on the holdout window
 temporal_net finally leads the ML pack (9.244) without threatening ETS.
 
-## Nowcast track (one-day-ahead) — real data (UCI Online Retail II, `cli all --data-source uci`)
+## Nowcast track (one-day-ahead) — real data (UCI Online Retail II, SECONDARY)
 
 > **Track label:** this ladder is the retained **nowcast** (one-day-ahead)
 > track, protocol `rolling_origin_holdout_v1` — its frozen-window numbers are
@@ -575,7 +677,15 @@ Figures (HTML + JSON per track, `reports/figures/` synthetic,
   per class), `multistep_band_calibration` (coverage and width per horizon on
   separate panels)
 
-Artifacts: per track, `reports*/metrics.json` (10 nowcast runs: test-window MAE/RMSE/
+Artifacts: the M5 track writes `reports_m5/metrics.json` (per-candidate ×
+{class, pooled} × {selection, test}: MAE/WAPE/rmae/WRMSSE/volume-weighted
+WRMSSE/peak-day MAE + horizon-wise MAE + per-series win rates + the headline
+gap bootstrap blocks), `probabilistic.json` (split-conformal band method,
+per-horizon widths, coverage/pinball/width per candidate),
+`evaluation_metadata.json` (protocol, checksums, seeds, package pins, metric
+definitions, report sample series), `figures/` and `report.html`; the
+`demo_payload.json` (schema v4) feeds the `forecast-workbench` showcase demo.
+Per UCI/synthetic track, `reports*/metrics.json` (10 nowcast runs: test-window MAE/RMSE/
 MAPE/MASE + bias/WAPE + fold MAEs + per-horizon arrays + `legacy_pooled_*`,
 and a `_meta` protocol block — plus the `_multistep` block: protocol
 `direct_multihorizon_v1`, origins, per-class headlines with bootstrap CIs,
@@ -600,8 +710,11 @@ gates pass on both tracks.
 
 ```bash
 # from the repo root, inside the workspace venv
+uv run python -m demand_forecasting.cli evaluate-m5       # M5 headline track (~22 min, offline)
+uv run python -m demand_forecasting.cli build-report-m5   # rebuild reports_m5/report.html from committed artifacts
+uv run python -m demand_forecasting.cli demo-payload-m5   # the forecast-workbench demo payload (reports_m5/demo_payload.json)
 uv run python -m demand_forecasting.cli all            # synthetic pipeline (~2 min)
-uv run python -m demand_forecasting.cli all --data-source uci   # real-data track (~30 min, fetches once)
+uv run python -m demand_forecasting.cli all --data-source uci   # UCI sparse track (~30 min, fetches once)
 uv run python -m demand_forecasting.cli hpo            # Optuna HPO (minutes; resumable; --model xgb|lgbm|multistep_tweedie)
 uv run dvc metrics show                                 # declared metrics (reports/metrics.json)
 # or stage by stage (mirrors dvc.yaml)
@@ -647,13 +760,21 @@ uv run pytest projects/02-demand-forecasting -q
 
 ## Roadmap
 
-Delivered: UCI real-data track, probabilistic forecasts
+Delivered: the **M5 headline track** (wave 24, protocol `m5_direct_v1`) —
+the committed checksum-pinned Walmart M5 subset (600 series, top-3 stores ×
+top-200 items), 10 weekly rolling origins (8 selection + 2 scored once),
+28-day horizon, 8 candidates from seasonal_naive to a global LightGBM and a
+selection-fitted convex ensemble, ADI/CV² volume classes, WRMSSE with the
+documented naive-28 denominator, paired-bootstrap CIs on every headline gap,
+split-conformal 80% bands, and the churn-style `forecast-workbench` demo
+payload (`cli demo-payload-m5`, schema v4) served by the showcase API. Also
+delivered: UCI real-data sparse track, probabilistic forecasts
 (quantile HGB + split-conformal), Optuna HPO across three boosting arms, the
 wave-13 audit items — statistical baselines (`seasonal_naive` + per-series
 damped Holt-Winters ETS with documented fallbacks) and **MASE** on both tracks,
 the fan-chart/coherence-heatmap/error-by-fold figure set — the wave-19
 fifth-pass audit rebuild: the **direct multi-horizon track** (`direct_multihorizon_v1`,
-primary headline), ADI/CV² classification with statistical routing for sparse
+UCI secondary headline), ADI/CV² classification with statistical routing for sparse
 series, Croston/SBA/TSB baselines, paired-bootstrap CIs on every headline
 comparison, per-horizon conformal/sparse bands with coverage AND width, and
 the order-up-to decision-metric simulation — and the wave-22 round: the

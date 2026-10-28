@@ -219,11 +219,22 @@ def demo_payload(demo_id: str) -> JSONResponse:
 
 @app.get("/projects/{pid}/report", response_class=HTMLResponse)
 def report(pid: str) -> str:
-    """The project's full evaluation report (reports/report.html)."""
-    f = _project_dir(pid) / "reports" / "report.html"
-    if not f.exists():
-        raise HTTPException(status_code=404, detail=f"no report yet for {pid} — run its pipeline")
-    return f.read_text()
+    """The project's full evaluation report (HTML).
+
+    Track-aware resolution, most-recent headline first: 02-demand-forecasting
+    now ships three tracks — the M5 headline in ``reports_m5/`` (canonical),
+    the UCI sparse track in ``reports_uci/``, and the synthetic CI track in
+    ``reports/``. Everywhere else ``reports/report.html`` is it.
+    """
+    d = _project_dir(pid)
+    for candidate in (
+        d / "reports_m5" / "report.html",
+        d / "reports_uci" / "report.html",
+        d / "reports" / "report.html",
+    ):
+        if candidate.exists():
+            return candidate.read_text()
+    raise HTTPException(status_code=404, detail=f"no report yet for {pid} — run its pipeline")
 
 
 # --- Served forecasts (Project 07) -----------------------------------------
