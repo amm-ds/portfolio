@@ -6,6 +6,7 @@ import { C_HIST, C_PINK, C_TEAL, MODELS, assembleChartData } from "./chartData";
 import { bestModelAt, peakDayMae, verdictText, wapeAt } from "./kpis";
 import { BandCalibrationPanel, BandPlaceholder, ErrorCompositionPanel, VerdictPanel } from "./panels";
 import { fetchForecastPayload, fetchManifest } from "./payload";
+import { usePageMeta } from "../../seo";
 import { useWorkbenchState } from "./useWorkbenchState";
 
 const HORIZONS = [7, 14, 21, 28];
@@ -84,6 +85,12 @@ function ChipRow({
 }
 
 export default function ForecastWorkbench() {
+  usePageMeta({
+    title: "Demand forecast workbench",
+    description:
+      "Interactive M5 demand-forecasting demo: compare seasonal naive, AutoETS, LightGBM and the pooled ensemble on scored origins with an 80% band.",
+  });
+
   const [manifest, setManifest] = useState<DemoManifest | null>(null);
   const [payload, setPayload] = useState<ForecastWorkbenchPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
