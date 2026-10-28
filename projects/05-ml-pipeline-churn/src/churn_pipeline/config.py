@@ -8,7 +8,7 @@ data preparation, model training and evaluation.
 from pathlib import Path
 from typing import Any
 
-import pandas as pd  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
+import pandas as pd  # re-exported (covered by the root pandas.* ignore_missing_imports)
 import yaml  # type: ignore[import-untyped]  # re-exported (no stubs in repo)
 from portfolio_core.schemas import PortfolioBaseModel
 from pydantic import Field, field_validator

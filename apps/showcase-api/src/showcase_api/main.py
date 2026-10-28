@@ -430,7 +430,7 @@ def score_churn(request: ChurnScoreRequest) -> ChurnScoreResponse:
     if missing:
         raise HTTPException(status_code=422, detail=f"missing features: {', '.join(missing)}")
     row = {f: request.features[f] for f in feature_names}
-    import pandas as pd  # type: ignore[import-untyped]
+    import pandas as pd  # typed package; root override covers missing stubs
 
     proba = float(model.predict_proba(pd.DataFrame([row]))[0, 1])
     decision_cfg: dict[str, Any] = dict(bundle.get("decision") or {})
