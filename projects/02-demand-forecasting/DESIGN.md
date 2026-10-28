@@ -463,16 +463,32 @@ small tabular lag problems; a sequence model is the roadmap answer).
   per-series naive-fallback path for degenerate fits), per-series automatic
   (`auto_ets`, `auto_ces`), a **global LightGBM** (mlforecast 1.1.0 recursive:
   lags 1/7/14/21/28, RollingMean(7)/RollingMean(28) at lag 1 and
-  RollingMean(7) at lag 7, dayofweek/month/ISO-week calendar, exog
-  sell_price/snap/event codes — **no series-identity feature**, so the global
-  model generalises across the 600 series; fixed config 300 trees / lr 0.05 /
-  63 leaves, not tuned), and `convex_ensemble`.
-- **Ensemble rule** (fixed, deterministic): the best two of {lgbm, auto_ets,
-  auto_ces} by SELECTION pooled WAPE; the weight w grid-fit on the selection
-  origins only over `ENSEMBLE_GRID` = 0..1 step 0.01 minimising pooled Σ|err|
-  (ties → smallest w). The committed run picked auto_ets × 0.67 + auto_ces ×
-  0.33 — notably *without* lgbm: on the selection origins the two per-series
-  automatic models pooled better than the global booster.
+  RollingMean(7) at lag 7, wave-25 additions RollingStd(7/28) and an
+  ExpandingMean at lag 1, dayofweek/month/ISO-week calendar, exog
+  sell_price/snap/any_snap/event codes/event distances/price
+  momentum+missing — **no series-identity feature**, so the global model
+  generalises across the 600 series), and `convex_ensemble`.
+- **lgbm config (wave 25)**: fixed-a-priori no more — `cli tune-m5` runs a
+  seeded 30-trial Optuna TPE study (`m5_tune.py`, TPESampler seed 42,
+  `n_jobs=1` + `force_row_wise` + fixed booster seed) on the SELECTION
+  origins only: each trial early-stops (patience 50, L1) on a nested split —
+  fit rows end 56 days before the last selection origin, eval set is that
+  trailing block (teacher-forced features, all selection data) — and the
+  objective pools WAPE over the last 2 selection origins refit through the
+  track's exact mlforecast wrapper at `best_iteration_`. Search space:
+  learning_rate (log 0.02–0.3), num_leaves (16–512 int log),
+  min_child_samples (5–200), colsample_bytree (0.5–1.0), n_estimators ≤ 800
+  (committed value = best_iteration_). The best block lands in params.yaml
+  under `m5_lgbm:`; `evaluate-m5` reads it
+  (`m5_track.load_m5_lgbm_params`, defaults = the wave-24 fixed config when
+  the block is absent).
+- **Ensemble rule** (wave 25; fixed, deterministic): the best THREE of
+  {lgbm, auto_ets, auto_ces} by SELECTION pooled WAPE; the weights are
+  grid-fit on the selection origins only over a simplex with step 0.05
+  (231 points, ties → first grid point lexicographically) minimising pooled
+  Σ|err|. The wave-24 best-two 0.01-grid rule is retired — with a tuned lgbm
+  all three pool members carry signal, and the wider pool hedges the
+  per-origin selection noise.
 - **Volume classes**: Syntetos-Boylan ADI/CV² (same thresholds as the panel
   track, ADI 1.32 / CV² 0.49) computed on each series' REAL history
   (pre-introduction days excluded — an item not yet assorted is not
@@ -529,11 +545,18 @@ small tabular lag problems; a sequence model is the roadmap answer).
   against the committed metrics block at 1e-9 (mixing artifacts from
   different runs fails) and re-run the per-series candidates' curves over the
   full 600-series panel live at 1e-9.
-- **Honest result** (committed, `reports_m5/`): ensemble WAPE 0.498 vs naive
-  0.603 (gap −0.105, 95% CI [−0.115, −0.095]); WRMSSE 0.604 vs 0.762; the
-  models win in BOTH volume classes on this subset (dense 0.568→0.470,
-  intermittent 0.749→0.616) — the mirror image of the UCI sparse panel,
-  which stays as the clearly-labelled secondary track.
+- **Honest result** (committed, `reports_m5/`, wave-25 run): ensemble WAPE
+  0.491 vs naive 0.603 (gap −0.112, 95% CI [−0.122, −0.102]); WRMSSE 0.597
+  vs 0.762; the models win in BOTH volume classes on this subset (dense
+  0.568→0.464, intermittent 0.749→0.604) — the mirror image of the UCI
+  sparse panel, which stays as the clearly-labelled secondary track. The
+  wave-25 levers, as measured: the feature pass + tuned booster moved lgbm
+  0.512→0.495 test WAPE (selection WAPE 0.4694 now leads the ensemble pool —
+  the untuned wave-24 lgbm trailed both automatic models); the best-three
+  0.05-simplex ensemble then took the blend 0.498→0.491, with lgbm × 0.45 +
+  auto_ets × 0.45 + auto_ces × 0.10. The band still sits just under its 80%
+  target (lgbm 77.9% coverage at 13.53 units mean width) — stated as
+  measured.
 
 ## Pipeline
 
@@ -634,6 +657,22 @@ pipeline build). The queue commands above are the exact ones to re-run once
   catalog-subset refit whose mlforecast alphabetical row order landed curves on
   the wrong series; the sidecar carries its own schema-metadata drift guards.
   Point metrics unchanged (byte-identical re-run).
+- **0.14.0 (2026-10-28)** — wave 25 (M5 performance pass): lgbm feature set
+  extended per M5 practice (rolling stds 7/28, expanding mean, price
+  momentum/missing, any_snap, event-calendar distances — all
+  known-in-advance, `m5_data.encode_events`/`split_exogenous`); new
+  `m5_tune.py` + `cli tune-m5` (seeded 30-trial Optuna TPE on the selection
+  origins only — nested 56-day early-stopping split, objective = pooled WAPE
+  over the last 2 selection origins — writing the `m5_lgbm:` params block,
+  read by `evaluate-m5` via `m5_track.load_m5_lgbm_params`); ensemble widened
+  from best-two/0.01-grid to best-THREE of {lgbm, auto_ets, auto_ces} on a
+  0.05 simplex (`ensemble_weights`); report rebuilt to projects/07's
+  narrative structure (intro, candidate/class/band tables, business
+  insights, 4 linked figures, protocol appendix — no iframes). Committed
+  run: lgbm 0.512→0.495 and ensemble 0.498→0.491 test WAPE (gap −0.112, CI
+  [−0.122, −0.102]), runtime 22 min; per-series statistical candidates
+  byte-identical. Payload pins + README drift guards updated; the
+  forecast-workbench payload now carries the 3-member ensemble block.
 - **0.13.0 (2026-10-28)** — wave 24 (M5 headline pivot): new `m5_data.py`
   (checksum-pinned Walmart M5 accuracy subset, 600 series × 1,969 days,
   `data_m5/` + PROVENANCE.md) and `m5_track.py` (protocol `m5_direct_v1`,

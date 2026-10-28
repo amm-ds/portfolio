@@ -108,7 +108,8 @@ Summary:
 
 ## M5 headline — Walmart M5 accuracy subset (protocol `m5_direct_v1`, PRIMARY)
 
-The headline experiment (wave 24) is the committed Walmart M5 subset — 600
+The headline experiment (wave 24, performance pass wave 25) is the committed
+Walmart M5 subset — 600
 daily store-item series (top-3 stores CA_3/CA_1/TX_2 × top-200 volume items),
 2011-01-29..2016-06-19 (1,105,594 rows, 16% zero-day share), in the regime
 where ML demonstrably wins: dense daily store-item demand with real exogenous
@@ -118,11 +119,14 @@ each training on ≥ 1,096 days (3+ years) and scoring the next **28 days**
 (the M5 evaluation horizon). Candidates: per-series statistical
 (`seasonal_naive`, `window_avg_28`, `adida`, `tsb` — statsforecast 2.1.1),
 per-series automatic (`auto_ets`, `auto_ces`), a global **LightGBM**
-(mlforecast 1.1.0: lags 1/7/14/21/28, rolling means, calendar, exog
-price/SNAP/event codes — no series-identity feature), and a
-**convex_ensemble** of the best two of {lgbm, auto_ets, auto_ces} by
-SELECTION WAPE, weight grid-fit on the selection origins only (the committed
-rule picked auto_ets × 0.67 + auto_ces × 0.33). Volume classes per series:
+(mlforecast 1.1.0: lags 1/7/14/21/28, rolling means/stds 7/28, expanding
+mean, calendar, exog price/SNAP/event codes + any_snap + event distances +
+price momentum/missing — no series-identity feature; wave-25 tuned config
+from a seeded 30-trial Optuna study on the selection origins, `cli tune-m5`,
+block `m5_lgbm:` in params.yaml), and a **convex_ensemble** of the best THREE
+of {lgbm, auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a 0.05
+simplex over the selection origins only (the committed rule picked lgbm ×
+0.45 + auto_ets × 0.45 + auto_ces × 0.10). Volume classes per series:
 Syntetos-Boylan ADI/CV² on each series' real history up to the last
 selection origin — **463 dense + 137 intermittent** series. Nothing reads the
 test origins at fit/selection time; every fit is seeded or closed-form, so a
@@ -137,20 +141,20 @@ evaluation_metadata.json):
 
 | candidate | test WAPE | test WRMSSE | MAE (units) | win rate vs naive |
 |---|---|---|---|---|
-| seasonal_naive (floor) | 0.603 | 0.762 | 5.774 | — |
-| window_avg_28 | 0.515 | 0.619 | 4.925 | 82.8% |
-| adida | 0.512 | 0.623 | 4.902 | 86.5% |
-| tsb | 0.510 | 0.616 | 4.879 | 85.8% |
-| auto_ets | 0.503 | 0.611 | 4.819 | 88.2% |
-| auto_ces | 0.515 | 0.612 | 4.931 | 83.0% |
-| lgbm | 0.512 | 0.611 | 4.902 | 84.3% |
-| **convex_ensemble (champion)** | **0.498** | **0.604** | **4.769** | **89.3%** |
+| seasonal_naive (floor) | 0.603 | 0.7617 | 5.774 | — |
+| window_avg_28 | 0.515 | 0.6192 | 4.925 | 82.8% |
+| adida | 0.512 | 0.6230 | 4.902 | 86.5% |
+| tsb | 0.510 | 0.6156 | 4.879 | 85.8% |
+| auto_ets | 0.503 | 0.6105 | 4.819 | 88.2% |
+| auto_ces | 0.515 | 0.6119 | 4.931 | 83.0% |
+| lgbm | 0.495 | 0.5985 | 4.741 | 88.8% |
+| **convex_ensemble (champion)** | **0.491** | **0.5965** | **4.700** | **90.2%** |
 
 - **The gap vs the naive floor is real and significant** — 95% paired cluster
   bootstrap over series (2,000 reps, fixed seeds): convex_ensemble
-  **−0.105 WAPE** (CI **[−0.115, −0.095]**) and **−0.157 WRMSSE** (CI
-  **[−0.168, −0.147]**); lgbm −0.091 WAPE (CI [−0.102, −0.080], a 15.1%
-  relative cut) and −0.151 WRMSSE (CI [−0.163, −0.140]). Both CIs exclude
+  **−0.112 WAPE** (CI **[−0.122, −0.102]**) and **−0.165 WRMSSE** (CI
+  **[−0.176, −0.155]**); lgbm −0.108 WAPE (CI [−0.120, −0.0965], a 17.9%
+  relative cut) and −0.163 WRMSSE (CI [−0.174, −0.152]). Both CIs exclude
   zero.
 - **Bands** — per-series scaled split-conformal 80% band around the point
   forecast: per-horizon-day width = the 0.8-quantile of |lgbm residual| /
@@ -158,18 +162,18 @@ evaluation_metadata.json):
   in-sample seasonal-naive-28 RMSE (zero/NaN scale -> the origin's median),
   zero-clipped and sorted — the pooled absolute-width band we tried first
   mis-served the panel's volume heterogeneity (top-quintile series covered
-  ~61% at the nominal 80% level). Result: lgbm covers **78.0%** of test
-  actuals (target 80%) at mean width **14.25** units; the ensemble covers
-  78.4% at 13.80 — by class the band is balanced (lgbm dense 77.3%,
+  ~61% at the nominal 80% level). Result: lgbm covers **77.9%** of test
+  actuals (target 80%) at mean width **13.53** units; the ensemble covers
+  77.9% at 13.41 — by class the band is balanced (lgbm dense 77.2%,
   intermittent 80.4%). Slightly under-covering, stated as measured.
 - **Win rates** — share of series whose pooled test |error| beats the
-  seasonal_naive floor: the ensemble wins on **89.3%** of all series (dense
-  89.0%, intermittent 90.5%); the per-series spread across candidates is
-  narrow (83.0–89.3%) because on dense weekly-seasonal demand every serious
+  seasonal_naive floor: the ensemble wins on **90.2%** of all series (dense
+  90.1%, intermittent 90.5%); the per-series spread across candidates is
+  narrow (82.8–90.2%) because on dense weekly-seasonal demand every serious
   candidate clears the floor — the pooled margin, not per-series coverage, is
   what separates them.
-- **By class** (test WAPE): dense 0.568 (naive) → **0.470** (ensemble);
-  intermittent 0.749 → **0.616**. On this subset the models win in BOTH
+- **By class** (test WAPE): dense 0.568 (naive) → **0.464** (ensemble);
+  intermittent 0.749 → **0.604**. On this subset the models win in BOTH
   classes — the honest contrast to the UCI sparse panel below, where the
   zero forecast stays the ceiling.
 
@@ -715,6 +719,7 @@ gates pass on both tracks.
 
 ```bash
 # from the repo root, inside the workspace venv
+uv run python -m demand_forecasting.cli tune-m5           # re-tune the lgbm booster (seeded 30-trial study, ~15 min; writes params.yaml m5_lgbm)
 uv run python -m demand_forecasting.cli evaluate-m5       # M5 headline track (~22 min, offline)
 uv run python -m demand_forecasting.cli build-report-m5   # rebuild reports_m5/report.html from committed artifacts
 uv run python -m demand_forecasting.cli demo-payload-m5   # the forecast-workbench demo payload (reports_m5/demo_payload.json)
@@ -772,7 +777,12 @@ top-200 items), 10 weekly rolling origins (8 selection + 2 scored once),
 selection-fitted convex ensemble, ADI/CV² volume classes, WRMSSE with the
 documented naive-28 denominator, paired-bootstrap CIs on every headline gap,
 split-conformal 80% bands, and the churn-style `forecast-workbench` demo
-payload (`cli demo-payload-m5`, schema v4) served by the showcase API. Also
+payload (`cli demo-payload-m5`, schema v4) served by the showcase API — and
+the wave-25 performance pass: the M5-practice lgbm feature set (rolling
+stds/expanding mean/price momentum/any_snap/event distances), `cli tune-m5`
+(seeded Optuna TPE on the selection origins → the params.yaml `m5_lgbm`
+block), and the best-three 0.05-simplex ensemble (committed: lgbm 0.495,
+ensemble 0.491 test WAPE). Also
 delivered: UCI real-data sparse track, probabilistic forecasts
 (quantile HGB + split-conformal), Optuna HPO across three boosting arms, the
 wave-13 audit items — statistical baselines (`seasonal_naive` + per-series

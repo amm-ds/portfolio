@@ -222,6 +222,25 @@ def evaluate_m5(
     build_report(reports_dir)
 
 
+@app.command("tune-m5")
+def tune_m5(
+    data_dir: Annotated[Path | None, typer.Option(help="M5 subset dir.")] = None,
+    params_path: Annotated[Path, typer.Option(help="params.yaml to update.")] = Path("params.yaml"),
+    trials: Annotated[int, typer.Option(help="Optuna trials.")] = 30,
+) -> None:
+    """Tune the M5 lgbm booster (seeded Optuna TPE, selection origins only).
+
+    Slow (tens of minutes): each trial early-stops on a nested 56-day block
+    and pools WAPE over the last 2 selection origins. Writes the best params
+    to the params.yaml ``m5_lgbm`` block; ``evaluate-m5`` reads them.
+    """
+    root = Path.cwd()
+    data_dir = data_dir or root / "data_m5"
+    from demand_forecasting.m5_tune import run_m5_tune
+
+    run_m5_tune(data_dir, params_path=params_path, n_trials=trials)
+
+
 @app.command("build-report-m5")
 def build_report_m5(
     reports_dir: Annotated[Path | None, typer.Option(help="M5 reports dir.")] = None,

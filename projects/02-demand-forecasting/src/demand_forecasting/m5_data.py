@@ -59,6 +59,11 @@ EXOG_FEATURES = (
     "event_type_1_code",
     "event_name_2_code",
     "event_type_2_code",
+    "any_snap",
+    "days_since_event",
+    "days_to_next_event",
+    "price_momentum_7",
+    "price_missing",
 )
 #: SNAP flag per M5 state (the subset covers CA_3/CA_1/TX_2 -> CA and TX).
 _STATE_SNAP = {"CA": "snap_CA", "TX": "snap_TX", "WI": "snap_WI"}
@@ -145,6 +150,16 @@ def load_m5_subset(data_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     return y, x, s
 
 
+def _event_day(name: pd.Series) -> pd.Series:
+    """True on real event days: not null AND not the literal ``"nan"`` string.
+
+    The committed subset parquet stores no-event as the string ``"nan"`` while
+    other writers round-trip real NaNs — handle both (the no-event marker must
+    be resolved from the data, exactly like encode_events' category codes).
+    """
+    return name.notna() & (name.astype("string") != "nan")
+
+
 def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.DataFrame:
     """Encode the exogenous block as model-ready numeric columns.
 
@@ -161,6 +176,22 @@ def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.Dat
 
     Row order and count are preserved; the result carries
     ``unique_id, ds`` + :data:`EXOG_FEATURES`.
+
+    Wave-25 additions (all known-in-advance, leakage-safe):
+
+    - ``any_snap`` — the OR of the three state SNAP flags for the day (a
+      calendar-level "SNAP somewhere" flag; complements the per-series
+      ``snap``).
+    - ``days_since_event`` / ``days_to_next_event`` — distance in days to the
+      nearest real event day (0 on event days), computed per unique date and
+      mapped back onto the rows; both directions are known for every panel
+      day, so the future window carries them with no lookahead (days before
+      the first event get ``days_since = position + 1``; days past the
+      panel's last event get a large capped ``days_to_next``).
+    - ``price_momentum_7`` / ``price_missing`` are NOT added here: momentum
+      must be computed on the origin-dependent forward-filled price (see
+      :func:`split_exogenous`), and the missing indicator marks the same
+      fill — both are attached per origin there.
     """
     out = pd.DataFrame({"unique_id": x["unique_id"], "ds": x["ds"]})
     if state_col is None:
@@ -173,6 +204,7 @@ def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.Dat
         for pos, state in enumerate(_STATE_SNAP):
             snap = np.where(state_arr == state, flags[:, pos], snap)
     out["snap"] = snap
+    out["any_snap"] = x[list(_STATE_SNAP.values())].to_numpy(dtype=float).max(axis=1)
     out["sell_price"] = x["sell_price"].to_numpy(dtype=float)
     for raw in ("event_name_1", "event_type_1", "event_name_2", "event_type_2"):
         filled = x[raw].astype("string").fillna("<none>")
@@ -181,6 +213,21 @@ def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.Dat
         # covered by the categories above. The no-event code is position-
         # dependent (see the docstring) — never hardcode it downstream.
         out[f"{raw}_code"] = (cat.codes + 1).astype(float)
+    # event-calendar distances — per unique date (the calendar is shared
+    # across series), mapped back onto the rows
+    cal = x.drop_duplicates("ds").sort_values("ds", ignore_index=True)
+    ev = (_event_day(cal["event_name_1"]) | _event_day(cal["event_name_2"])).to_numpy()
+    day_idx = np.arange(len(cal))
+    last_ev = np.maximum.accumulate(np.where(ev, day_idx, -1))
+    rev_idx = np.maximum.accumulate(np.where(ev[::-1], day_idx[::-1], -1))[::-1]
+    next_ev = len(cal) - 1 - rev_idx
+    cal["days_since_event"] = np.where(last_ev >= 0, day_idx - last_ev, day_idx + 1).astype(float)
+    cal["days_to_next_event"] = np.where(
+        next_ev < len(cal), next_ev - day_idx, len(cal) - day_idx
+    ).astype(float)
+    cal_idx = cal.set_index("ds")
+    out["days_since_event"] = out["ds"].map(cal_idx["days_since_event"]).to_numpy(dtype=float)
+    out["days_to_next_event"] = out["ds"].map(cal_idx["days_to_next_event"]).to_numpy(dtype=float)
     return out
 
 
@@ -197,13 +244,29 @@ def split_exogenous(
     the last known one) and ``snap``/event codes taken from the calendar block
     of X itself (known-in-advance regressors, never actuals). Both frames are
     sorted by (unique_id, ds) in ``series_ids`` order.
+
+    Price features (wave 25), computed here because they depend on the
+    origin-dependent forward-filled price:
+
+    - ``price_missing`` — 1.0 where the raw calendar price was missing and the
+      value is carried (ffill); 0.0 on the committed subset (its X has no
+      null sell_price) — kept as an explicit feature so a re-built subset
+      with gaps stays honest. History prices are ffilled/bfilled per series
+      first, so the training merge stays NaN-free.
+    - ``price_momentum_7`` — ``sell_price_t / sell_price_{t-7}`` per series
+      computed on the concatenated history+future (so the future window uses
+      exactly the price the model sees); the first 7 days of a series fill
+      with 1.0 ("no change known").
     """
-    hist = x_enc[x_enc["ds"] <= origin_date]
+    hist = x_enc[x_enc["ds"] <= origin_date].copy()
     window_start = origin_date + pd.to_timedelta(1, unit="D")
     window_end = origin_date + pd.to_timedelta(horizon, unit="D")
     future = x_enc[(x_enc["ds"] >= window_start) & (x_enc["ds"] <= window_end)].copy()
     # every (series, future day) must exist in X (the calendar is complete);
     # sell_price ffills per series, event/snap codes are calendar-known
+    hist["price_missing"] = hist["sell_price"].isna().to_numpy(dtype=float)
+    future["price_missing"] = future["sell_price"].isna().to_numpy(dtype=float)
+    hist["sell_price"] = hist.sort_values("ds").groupby("unique_id")["sell_price"].ffill().bfill()
     last_price = (
         hist.sort_values("ds").groupby("unique_id")["sell_price"].last().reindex(series_ids)
     )
@@ -211,8 +274,18 @@ def split_exogenous(
     expected = len(series_ids) * horizon
     if len(future) != expected:
         raise ValueError(f"future exog has {len(future)} rows, expected {expected}")
-    if future["sell_price"].isna().any():
-        raise ValueError("future sell_price could not be forward-filled for every series")
+    if future["sell_price"].isna().any() or hist["sell_price"].isna().any():
+        raise ValueError("sell_price could not be forward-filled for every series")
+    # 7-day price momentum on the concatenated per-series price (hist row order
+    # is (unique_id, ds), so a per-series shift over the concat is exact)
+    hist["_blk"] = 0
+    future["_blk"] = 1
+    both = pd.concat([hist, future], ignore_index=True)
+    both = both.sort_values(["unique_id", "ds", "_blk"], ignore_index=True)
+    price_grp = both.groupby("unique_id")["sell_price"]
+    both["price_momentum_7"] = (price_grp.transform(lambda s: s / s.shift(7))).fillna(1.0)
+    hist = both[both["_blk"] == 0].drop(columns="_blk")
+    future = both[both["_blk"] == 1].drop(columns="_blk")
     order = {sid: i for i, sid in enumerate(series_ids)}
     future["_o"] = future["unique_id"].map(order)
     future = future.sort_values(["_o", "ds"], ignore_index=True).drop(columns="_o")

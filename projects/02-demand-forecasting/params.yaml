@@ -93,3 +93,13 @@ service_levels:
 holding_cost: 0.25
 stockout_cost: 4.0
 bootstrap_reps: 2000
+
+# M5 headline-track lgbm (wave 25) — best of a seeded 30-trial Optuna TPE
+# study on the selection origins only (cli tune-m5; nested 56-day early-stopping
+# split, objective = pooled WAPE over the last 2 selection origins; study best 0.4581).
+m5_lgbm:
+  n_estimators: 126
+  learning_rate: 0.05980272162403059
+  num_leaves: 393
+  min_child_samples: 197
+  colsample_bytree: 0.5146641352420852
