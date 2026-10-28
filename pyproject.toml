@@ -71,7 +71,7 @@ module = [
 strict = true
 
 [[tool.mypy.overrides]]
-module = ["plotly.*", "sklearn.*", "joblib.*", "pandas.*"]
+module = ["plotly.*", "sklearn.*", "joblib.*", "pandas.*", "pyarrow.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

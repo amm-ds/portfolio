@@ -70,10 +70,12 @@ stated deviation from the official M5 lag-1 scale):
   of series (dense 89.0%, intermittent 90.5%); every serious candidate lands
   in the 83.0–89.3% band, so on dense weekly-seasonal demand the pooled
   margin, not per-series coverage, separates the candidates.
-- **Bands** — split-conformal 80% band (per-horizon-day width = 0.8-quantile
-  of |lgbm residual| over the 8 selection origins, zero-clipped): lgbm covers
-  **78.7%** of test actuals at mean width 12.46 units; the ensemble 78.5% at
-  11.96 — slightly under the 80% target, stated as measured.
+- **Bands** — per-series scaled split-conformal 80% band (per-horizon-day
+  width = 0.8-quantile of |lgbm residual| / series scale over the 8 selection
+  origins, scaled back by each series' in-sample naive-28 RMSE, zero-clipped):
+  lgbm covers **78.0%** of test actuals at mean width 14.25 units; the
+  ensemble 78.4% at 13.80 — balanced across volume classes (lgbm dense 77.3%,
+  intermittent 80.4%), slightly under the 80% target, stated as measured.
 - **Both volume classes** — test WAPE dense 0.568 → 0.470, intermittent
   0.749 → 0.616: the models win in both classes here, the honest contrast to
   the sparse panel below.

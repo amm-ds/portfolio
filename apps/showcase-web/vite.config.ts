@@ -10,7 +10,7 @@ const PROJECT_PAGE = /^\/projects\/\d{2}-[^/]+$/;
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 5173,
+    port: 4321,
     proxy: {
       "/projects": {
         target: "http://localhost:8000",

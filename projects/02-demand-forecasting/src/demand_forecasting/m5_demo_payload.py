@@ -9,29 +9,32 @@ headline track without retraining:
   event-driven / slow-mover);
 - per catalog series x the 2 scored test origins: the 56-day history tail,
   the 28-day actuals, and curves for ``seasonal_naive`` / ``auto_ets`` /
-  ``lgbm`` / ``convex_ensemble``, plus the lgbm p10/p90 conformal band and
-  per-series test WAPE per candidate;
+  ``auto_ces`` / ``lgbm`` / ``convex_ensemble``, plus the lgbm p10/p90
+  conformal band and per-series test WAPE per candidate;
 - the committed headline block (``reports_m5/metrics.json`` +
   ``probabilistic.json``) verbatim under ``groups``.
 
-Curve provenance (honest, documented in the payload): the per-series
-statistical candidates re-run the SAME ``m5_track`` functions on the catalog
-subset — their fits are per series, so they reproduce the committed
-full-panel forecasts exactly. The ``convex_ensemble`` curve applies the
-COMMITTED selection rule (members + weight from the committed metrics block)
-to the two member curves — both members are per-series, so the ensemble curve
-is exact for any catalog series. The ``lgbm`` curve is a documented
-catalog-subset refit: the committed global model trains on all 600 series and
-cannot be cheaply re-fit outside the full ~22-min track.
+Curve provenance (honest, documented in the payload): EVERY curve — including
+lgbm and the ensemble — is copied from ``reports_m5/catalog_forecasts.parquet``,
+the sidecar the evaluate run retains for the fixed catalog (the committed
+global 600-series model cannot be re-fit outside the ~22-min track, and the
+earlier catalog-subset refit approximation was retired: it was weaker than the
+full-panel model and, via an mlforecast alphabetical-row-order mismatch, its
+curves landed on the wrong series).
 
-Drift guard: the per-series statistical candidates are re-scored over the
-FULL panel at the 2 committed test origins (statsforecast only — C-fast) and
-their pooled test WAPEs are pinned against the committed metrics block at
-1e-9. A tampered dataset, a drifted ``m5_track`` function or a hand-edited
-metrics.json fails the build here, not silently in the demo.
+Drift guards, so a stale or tampered artifact fails the build, not the demo:
+- the per-series statistical candidates are re-scored over the FULL panel at
+  the 2 committed test origins (statsforecast only — C-fast) and their pooled
+  test WAPEs are pinned against the committed metrics block at 1e-9;
+- the sidecar's schema metadata carries the run's full-panel pooled test
+  WAPEs — pinned against the committed metrics block at 1e-9 (mixing artifacts
+  from different runs fails here);
+- the sidecar's per-series statistical curves and actuals are pinned against a
+  live catalog-subset re-run of the same functions at 1e-9.
 
-Everything is deterministic: fixed selection rule, seeded lgbm refit,
-4-decimal rounding, stable key order — two runs produce byte-identical JSON.
+Everything is deterministic: fixed catalog (from the sidecar), fixed
+selection rule, 4-decimal rounding, stable key order — two runs produce
+byte-identical JSON.
 """
 
 import json
@@ -40,23 +43,27 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+import pyarrow.parquet as pq
 from portfolio_core.logging import get_logger
 
 from demand_forecasting.m5_data import (
     encode_events,
     load_m5_subset,
-    split_exogenous,
 )
 from demand_forecasting.m5_track import (
+    CATALOG_FORECASTS_NAME,
+    CATALOG_RULE,
     HORIZON,
     PROTOCOL,
-    SEED,
+    SIDECAR_CANDIDATES,
     STATISTICAL_CANDIDATES,
     _actual_window,
-    _lgbm_forecast,
+    _is_dense,
     _statistical_forecasts,
     wape,
 )
+
+__all__ = ["build_demo_payload", "write_demo_payload"]
 
 logger = get_logger(__name__)
 
@@ -65,30 +72,20 @@ SCHEMA_VERSION = 4
 DEMO_ID = "forecast-workbench"
 #: history tail rendered before each scored origin (8 weekly cycles).
 HISTORY_DAYS = 56
-#: catalog quota per (store x class) cell -> 3 stores x 2 classes x 4 = 24.
-CATALOG_PER_CELL = 4
-#: drift-guard tolerance on the recomputed pooled test WAPE (absolute).
+#: drift-guard tolerance on recomputed pooled test WAPEs (absolute).
 DRIFT_TOL = 1e-9
-
-CATALOG_RULE = (
-    "deterministic: within each (store, class) cell, series are ordered by "
-    "total panel volume descending (ties -> unique_id) and the evenly spaced "
-    "ranks [0, 1, len//2, len-1] (first CATALOG_PER_CELL of them) are picked, "
-    "so every cell spans high/mid/low volume"
-)
-
-#: per-series candidates whose curves the demo renders (all per-series fits —
-#: exact against the committed run; lgbm is the documented subset refit).
+#: sidecar candidates whose curves ship in the payload (all per-series fits
+#: are exactly verifiable against a live re-run; lgbm/ensemble come from the
+#: committed global run via the sidecar).
 CURVE_CANDIDATES = ("seasonal_naive", "auto_ets", "lgbm", "convex_ensemble")
 
 CURVE_PROVENANCE = (
-    "per-series curves (seasonal_naive, auto_ets) re-run the m5_track "
-    "functions on the catalog subset and reproduce the committed full-panel "
-    "forecasts exactly (per-series fits); convex_ensemble applies the "
-    "committed selection rule (auto_ets x weight_on_a + auto_ces x (1-w)) to "
-    "the member curves; lgbm is a catalog-subset refit of the fixed config "
-    "(the committed global model trains on all 600 series) — per-series "
-    "test WAPEs in each window are computed from these curves"
+    "every curve (seasonal_naive, auto_ets, auto_ces, lgbm, convex_ensemble) "
+    "is copied from reports_m5/catalog_forecasts.parquet, the sidecar the "
+    "committed evaluate run retains for this exact catalog — the lgbm curve "
+    "is the committed global 600-series model (no catalog-subset refit); the "
+    "ensemble curve is the committed selection rule applied in-run; "
+    "per-series test WAPEs in each window are computed from these curves"
 )
 
 
@@ -156,40 +153,103 @@ def _drift_guard_full_panel(
     )
 
 
-def _select_catalog(
-    y: pd.DataFrame,
-    classes: dict[str, dict[str, Any]],
-    stores: pd.Series,
-    *,
-    per_cell: int = CATALOG_PER_CELL,
-) -> list[str]:
-    """Deterministic catalog: balanced across stores x {dense, intermittent}.
+def _load_sidecar(
+    reports_dir: Path,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """Read the demo sidecar parquet + its schema-metadata block."""
+    path = Path(reports_dir) / CATALOG_FORECASTS_NAME
+    if not path.exists():
+        raise FileNotFoundError(
+            f"missing {path} — run `evaluate-m5` first (the payload copies "
+            "the catalog curves from the committed run's sidecar)"
+        )
+    table = pq.read_table(path)
+    raw_meta = table.schema.metadata or {}
+    meta = {key.decode(): json.loads(value.decode()) for key, value in raw_meta.items()}
+    frame = table.to_pandas()
+    expected_cols = {
+        "unique_id",
+        "origin",
+        "ds",
+        "actual",
+        "band_lo",
+        "band_hi",
+        *SIDECAR_CANDIDATES,
+    }
+    missing = expected_cols - set(frame.columns)
+    if missing:
+        raise ValueError(f"sidecar {path} is missing columns {sorted(missing)}")
+    return frame, meta
 
-    Rule (documented in the payload): within each cell, series are ordered by
-    total panel volume descending (ties -> unique_id); the evenly spaced
-    ranks [0, 1, len//2, len-1] — first ``per_cell`` of them — are picked.
+
+def _sidecar_guard(
+    sidecar: pd.DataFrame,
+    sidecar_meta: dict[str, Any],
+    metrics: dict[str, Any],
+    y_all: pd.DataFrame,
+    catalog_ids: list[str],
+    test_origins: list[pd.Timestamp],
+) -> None:
+    """Pin the sidecar against the committed metrics AND a live re-run.
+
+    - schema-metadata pooled test WAPEs vs the committed metrics block (1e-9):
+      mixing a sidecar and metrics.json from DIFFERENT runs fails here;
+    - per-series statistical curves + actuals vs a live catalog-subset re-run
+      of the same m5_track functions (1e-9): dataset / m5_track drift fails
+      here. statsforecast fits are per series and closed-form, so the live
+      re-run reproduces the committed full-panel forecasts exactly.
     """
-    volume = y.groupby("unique_id")["y"].sum()
-    picked: list[str] = []
-    for store in sorted(stores.unique()):
-        members_store = [s for s in stores.index if stores.loc[s] == store]
-        for cls in ("dense", "intermittent"):
-            members = sorted(
-                (s for s in members_store if _is_dense(classes[s]["class"]) == (cls == "dense")),
-                key=lambda s: (-float(volume.loc[s]), s),
+    committed = metrics["test"]["pooled"]
+    for cand, value in sidecar_meta.get("pooled_test_wape", {}).items():
+        if cand not in committed:
+            continue
+        if abs(float(value) - committed[cand]["wape"]) > DRIFT_TOL:
+            raise ValueError(
+                f"sidecar drift guard failed for {cand}: sidecar pooled test "
+                f"WAPE {value!r} != committed {committed[cand]['wape']!r} "
+                f"(tol {DRIFT_TOL}) — the sidecar and metrics.json come from "
+                "different runs; re-run `evaluate-m5` and rebuild both"
             )
-            if not members:
-                continue
-            # evenly spaced ranks [0, 1, mid, last], clamped to the cell and
-            # deduplicated (a 1-member cell contributes only rank 0)
-            rank_pool = (0, 1, len(members) // 2, len(members) - 1)
-            ranks = sorted({min(r, len(members) - 1) for r in rank_pool})[:per_cell]
-            picked.extend(members[r] for r in ranks)
-    return picked
-
-
-def _is_dense(syntetos_boylan_class: str) -> bool:
-    return syntetos_boylan_class in ("smooth", "erratic")
+    # self-consistency: the catalog-only pooled test WAPEs must recompute
+    # from the shipped curves (a tampered lgbm/ensemble column fails here —
+    # those curves have no live re-run reference)
+    actual_np = sidecar["actual"].to_numpy(dtype=float)
+    for cand, expected in sidecar_meta.get("catalog_test_wape", {}).items():
+        curve = sidecar[cand].to_numpy(dtype=float)
+        recomputed = float(np.abs(curve - actual_np).sum() / actual_np.sum())
+        if abs(recomputed - float(expected)) > DRIFT_TOL:
+            raise ValueError(
+                f"sidecar curve guard failed for {cand}: recomputed catalog "
+                f"pooled test WAPE {recomputed!r} != recorded {expected!r} — "
+                "the sidecar curves were tampered with or corrupted"
+            )
+    check_candidates = tuple(c for c in ("seasonal_naive", "auto_ets", "auto_ces") if c in sidecar)
+    for odate in test_origins:
+        train = y_all[(y_all["ds"] <= odate) & (y_all["unique_id"].isin(catalog_ids))]
+        live = _statistical_forecasts(train, catalog_ids, HORIZON)
+        live_actuals = _actual_window(y_all, catalog_ids, pd.Timestamp(odate), HORIZON)
+        block = sidecar[sidecar["origin"] == str(odate.date())]
+        if len(block) != len(catalog_ids) * HORIZON:
+            raise ValueError(f"sidecar block for {odate.date()} has {len(block)} rows")
+        grid = block.pivot(index="unique_id", columns="ds", values="actual").reindex(catalog_ids)
+        if grid.isna().any().any():
+            raise ValueError(f"sidecar actuals for {odate.date()} are not a full grid")
+        if float(np.max(np.abs(grid.to_numpy(dtype=float) - live_actuals))) > DRIFT_TOL:
+            raise ValueError(f"sidecar actuals drifted from the dataset at {odate.date()}")
+        for cand in check_candidates:
+            grid_c = block.pivot(index="unique_id", columns="ds", values=cand).reindex(catalog_ids)
+            diff = float(np.max(np.abs(grid_c.to_numpy(dtype=float) - live[cand])))
+            if diff > DRIFT_TOL:
+                raise ValueError(
+                    f"sidecar drift guard failed for {cand} at {odate.date()}: "
+                    f"max |curve diff| {diff} > {DRIFT_TOL} — the dataset or "
+                    "m5_track drifted from the committed run"
+                )
+    logger.info(
+        "sidecar drift guard OK: pooled WAPEs + %d per-series curves pinned at %g",
+        len(check_candidates),
+        DRIFT_TOL,
+    )
 
 
 def _shape_tag(
@@ -226,14 +286,10 @@ def _window_payload(
     y_all: pd.DataFrame,
     catalog_ids: list[str],
     odate: pd.Timestamp,
-    stats: dict[str, np.ndarray],
-    lgbm: np.ndarray,
-    ens_members: tuple[str, str],
-    ens_w: float,
-    band_width: np.ndarray,
+    sidecar_block: pd.DataFrame,
     curve_names: tuple[str, ...],
 ) -> dict[str, Any]:
-    """One (origin x catalog) window: history tail, actuals, curves, band, WAPEs."""
+    """One (origin x catalog) window: history tail (live) + curves/band (sidecar)."""
     hist_start = odate - pd.to_timedelta(HISTORY_DAYS - 1, unit="D")
     tail = y_all[(y_all["ds"] >= hist_start) & (y_all["ds"] <= odate)]
     grid = tail.pivot(index="unique_id", columns="ds", values="y").reindex(catalog_ids)
@@ -241,26 +297,27 @@ def _window_payload(
         raise ValueError(f"history tail before {odate.date()} is not a full grid")
     history = grid.to_numpy(dtype=float)
 
-    actuals = _actual_window(y_all, catalog_ids, odate, HORIZON)
     days = pd.date_range(odate + pd.to_timedelta(1, unit="D"), periods=HORIZON, freq="D")
+    block_days = np.sort(sidecar_block["ds"].unique())
+    if len(block_days) != HORIZON or not (block_days == days.to_numpy()).all():
+        raise ValueError(f"sidecar dates for {odate.date()} do not match the forecast window")
 
-    member_a, member_b = stats[ens_members[0]], stats[ens_members[1]]
-    curves = dict(stats)  # every per-series candidate the track fit
-    curves["lgbm"] = lgbm
-    curves["convex_ensemble"] = ens_w * member_a + (1.0 - ens_w) * member_b
     windows: dict[str, Any] = {}
     for i, sid in enumerate(catalog_ids):
-        curves_i = {c: _r4(curves[c][i]) for c in curve_names}
-        actual_i = actuals[i]
-        p50 = curves["lgbm"][i]
-        lo = np.clip(p50 - band_width, 0.0, None)
-        hi = p50 + band_width
+        row = sidecar_block[sidecar_block["unique_id"] == sid].sort_values("ds")
+        if len(row) != HORIZON:
+            raise ValueError(f"sidecar has {len(row)} rows for {sid} at {odate.date()}")
+        actual_i = row["actual"].to_numpy(dtype=float)
+        curves_i = {c: row[c].to_numpy(dtype=float) for c in curve_names}
         windows[sid] = {
             "history": _r4(history[i]),
             "actual": _r4(actual_i),
-            "curves": curves_i,
-            "band": {"p10": _r4(lo), "p90": _r4(hi)},
-            "wape": {c: round(wape(actual_i, curves[c][i]), 4) for c in curve_names},
+            "curves": {c: _r4(v) for c, v in curves_i.items()},
+            "band": {
+                "p10": _r4(row["band_lo"].to_numpy(dtype=float)),
+                "p90": _r4(row["band_hi"].to_numpy(dtype=float)),
+            },
+            "wape": {c: round(wape(actual_i, curves_i[c]), 4) for c in curve_names},
         }
     return {
         "origin": str(odate.date()),
@@ -276,8 +333,6 @@ def _window_payload(
 def build_demo_payload(
     data_dir: Path,
     reports_dir: Path,
-    *,
-    per_cell: int = CATALOG_PER_CELL,
 ) -> dict[str, Any]:
     """Assemble the forecast-workbench payload from the committed M5 artifacts."""
     reports_dir = Path(reports_dir)
@@ -289,41 +344,34 @@ def build_demo_payload(
 
     _drift_guard_full_panel(y_all, series_ids, dates, test_origins, metrics)
 
+    sidecar, sidecar_meta = _load_sidecar(reports_dir)
+    catalog_ids = list(dict.fromkeys(sidecar["unique_id"].tolist()))
+    if len(catalog_ids) < 2:
+        raise ValueError(f"catalog too small ({len(catalog_ids)} series) — check the sidecar")
+    logger.info("m5 demo catalog: %d series (%s)", len(catalog_ids), catalog_ids)
+    _sidecar_guard(sidecar, sidecar_meta, metrics, y_all, catalog_ids, test_origins)
+
     classes: dict[str, dict[str, Any]] = metrics["classes"]["per_series"]
     stores = s_all.drop_duplicates("unique_id").set_index("unique_id")["store_id"]
-    catalog_ids = _select_catalog(y_all, classes, stores, per_cell=per_cell)
-    if len(catalog_ids) < 2:
-        raise ValueError(f"catalog too small ({len(catalog_ids)} series) — check the classes block")
-    logger.info("m5 demo catalog: %d series (%s)", len(catalog_ids), catalog_ids)
-
     state_of = s_all.drop_duplicates("unique_id").set_index("unique_id")["state_id"]
     x_enc = encode_events(x_all, x_all["unique_id"].map(state_of))
-    # split_exogenous expects the frame pre-filtered to the scored series set
-    # (its future-window row-count check is series_ids x horizon).
-    x_cat = x_enc[x_enc["unique_id"].isin(catalog_ids)]
 
     # Committed ensemble rule: members + weight read from the metrics block
-    # (the demo applies the same rule the track committed to).
+    # (the shipped ensemble curve is verified against this rule in the tests).
     ens_members = tuple(metrics["ensemble"]["members"])
     if len(ens_members) != 2:
         raise ValueError(f"committed ensemble must have 2 members, got {ens_members}")
-    ens_w = float(metrics["ensemble"]["weight_on_a"])
-    band_width = np.asarray(probabilistic["per_horizon_width"], dtype=float)
+    for member in ens_members:
+        if member not in sidecar.columns:
+            raise ValueError(f"committed ensemble member {member!r} missing from the sidecar")
     # ship the demo candidates plus any committed ensemble member not among
     # them (the blend is verifiable from the shipped curves)
     curve_names = tuple(dict.fromkeys((*CURVE_CANDIDATES, *ens_members)))
 
     origin_blocks: list[dict[str, Any]] = []
     for odate in test_origins:
-        train = y_all[(y_all["ds"] <= odate) & (y_all["unique_id"].isin(catalog_ids))]
-        stats = _statistical_forecasts(train, catalog_ids, HORIZON)
-        hist_exog, future_exog = split_exogenous(x_cat, catalog_ids, odate, HORIZON)
-        lgbm = _lgbm_forecast(train, hist_exog, future_exog, SEED)
-        origin_blocks.append(
-            _window_payload(
-                y_all, catalog_ids, odate, stats, lgbm, ens_members, ens_w, band_width, curve_names
-            )
-        )
+        block = sidecar[sidecar["origin"] == str(odate.date())]
+        origin_blocks.append(_window_payload(y_all, catalog_ids, odate, block, curve_names))
 
     # shape tags: deterministic, from the 56-day history tail + event codes.
     # The no-event marker is whatever encode_events assigned to the dominant
@@ -377,7 +425,7 @@ def build_demo_payload(
             "band": {
                 "method": probabilistic["method"],
                 "level": probabilistic["level"],
-                "per_horizon_width": _r4(band_width),
+                "per_horizon_width": probabilistic["per_horizon_width"],
                 "candidates": probabilistic["candidates"],
             },
         },

@@ -541,6 +541,18 @@ def test_m5_band_coverage_quotes_match_committed_probabilistic() -> None:
     assert m, "ensemble coverage/width quote missing from README"
     assert float(m.group(1)) == pytest.approx(100.0 * ens["coverage_80"], abs=5e-2)
     assert float(m.group(2)) == pytest.approx(ens["mean_band_width"], abs=5e-3)
+    # by-class balance quote (per-series scaled band — dense/intermittent)
+    m = re.search(
+        r"lgbm dense\s*([\d.]+)%,\s*intermittent\s*([\d.]+)%",
+        section,
+    )
+    assert m, "by-class coverage quote missing from README"
+    assert float(m.group(1)) == pytest.approx(
+        100.0 * lgbm["coverage_80_by_class"]["dense"], abs=5e-2
+    )
+    assert float(m.group(2)) == pytest.approx(
+        100.0 * lgbm["coverage_80_by_class"]["intermittent"], abs=5e-2
+    )
 
 
 def test_m5_win_rate_and_class_quotes_match_committed_metrics() -> None:

@@ -71,7 +71,7 @@
     "polars": "2.0.0",
     "numpy": "2.5.4"
   },
-  "runtime_seconds": 1329.161,
+  "runtime_seconds": 1734.651,
   "determinism": "VECLIB_MAXIMUM_THREADS=1 pinned in cli.py before numpy; LightGBM n_jobs=1 + fixed seed + force_row_wise; statsforecast n_jobs=1; statsforecast models are closed-form/seed-free",
   "metric_definitions": {
     "mae": "mean |actual - forecast| over the scored (series x day) cells",
@@ -81,7 +81,7 @@
     "peak_mae": "MAE on the window's top-decile-by-actual days (k = ceil(0.1*28) = 3)",
     "win_rate_vs_naive": "share of series whose pooled test |error| is below the seasonal_naive pooled test |error|",
     "pinball": "mean pinball loss at the stated quantile over the test cells",
-    "coverage_80": "share of test actuals inside the split-conformal 80% band"
+    "coverage_80": "share of test actuals inside the per-series scaled split-conformal 80% band (pooled and by volume class)"
   },
   "report_sample_series": [
     {

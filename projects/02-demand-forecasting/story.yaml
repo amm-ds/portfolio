@@ -268,9 +268,11 @@ sections:
       relative cut, CI [−0.102, −0.080]) and −0.157 WRMSSE (CI [−0.168,
       −0.147]) — and it wins in BOTH volume classes (dense 0.568→0.470,
       intermittent 0.749→0.616 test WAPE), the mirror image of the sparse
-      panel below. The split-conformal 80% band covers 78.7% of test actuals
-      at 12.46 units mean width (target 80% — slightly under-covering,
-      stated as measured). What separates the candidates on dense demand is
+      panel below. The per-series scaled split-conformal 80% band covers 78.0%
+      of test actuals at 14.25 units mean width (target 80% — slightly
+      under-covering, stated as measured; balanced across volume classes,
+      dense 77.3% / intermittent 80.4%). What separates the candidates on
+      dense demand is
       the pooled margin, not per-series coverage: every serious candidate
       clears the floor on 83–89% of series. Full tables:
       `reports_m5/metrics.json` + `probabilistic.json`.
@@ -442,7 +444,7 @@ sections:
       champion beats the floor on barely a fifth of lumpy series and the
       winning config does not transfer across regimes. What is delivered is
       an honest measurement of both regimes and its limits — the 80% band
-      sits at 78.7% coverage on M5 (just under target), safety-stock policy
+      sits at 78.0% coverage on M5 (just under target), safety-stock policy
       needs the newsvendor layer, and no savings are claimed.
     figures: [m5:wape_bars, m5:wrmsse_bars, m5:class_comparison, m5:win_rate, m5:band_calibration, uci:metrics_bars, uci:forecast_vs_actual, uci:probabilistic_band, uci:multistep_error_vs_horizon, uci:multistep_class_scoreboard, uci:multistep_routing, uci:multistep_band_calibration, uci:multistep_peak_capture, uci:multistep_candidate_comparison, uci:multistep_peak_day_scatter]
     metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
@@ -481,7 +483,7 @@ sections:
 
       **Results quality:** on the M5 headline the ensemble's −0.105 WAPE gap
       has a 95% CI that excludes zero in both volume classes — the strongest
-      result this repo ships — with the 80% band just under target (78.7%
+      result this repo ships — with the 80% band just under target (78.0%
       coverage). On the UCI sparse track: acceptable-with-caveats — the champion runs at 0.843
       relative MAE of the seasonal-naive floor (MASE 1.078 vs the naive's own
       1.310) on the frozen test window, but no run dips below MASE 1.0 there
@@ -516,9 +518,9 @@ roadmap:
   - status: delivered
     text: M5 headline track (m5_direct_v1, wave 24) — committed M5 subset (600 series, top-3 stores × top-200 items); 10 weekly origins (8 selection + 2 scored once), 28-day horizon, 8 candidates incl. global LightGBM + selection-fitted convex ensemble; ensemble −0.105 WAPE (CI [−0.115, −0.095]) vs naive.
   - status: delivered
-    text: M5 metric layer — WAPE/rmae/WRMSSE (documented naive-28 denominator), peak-day MAE, per-series win rates (ensemble 89.3%), bootstrap CIs on every gap, split-conformal 80% band (78.7% coverage vs 80% target).
+    text: M5 metric layer — WAPE/rmae/WRMSSE (documented naive-28 denominator), peak-day MAE, per-series win rates (ensemble 89.3%), bootstrap CIs on every gap, per-series scaled split-conformal 80% band (78.0% coverage vs 80% target, balanced across volume classes).
   - status: delivered
-    text: forecast-workbench demo rebuilt on M5 (churn-style, schema v4) — deterministic 24-series catalog across stores × classes, per-series curves for the 2 scored origins, committed headline block verbatim, 1e-9 drift guard.
+    text: forecast-workbench demo rebuilt on M5 (churn-style, schema v4) — deterministic 24-series catalog across stores × classes, per-series curves for the 2 scored origins (copied from the committed run's catalog_forecasts.parquet sidecar — the lgbm curve is the global 600-series model, not a subset refit), committed headline block verbatim, 1e-9 drift guards on both the metrics block and the sidecar.
   - status: delivered
     text: UCI real-data sparse headline — 405k rows, 89% zeros; frozen holdout (rolling_origin_holdout_v1), champion selected on origins 1..n-1, test window scored once.
   - status: delivered
@@ -538,7 +540,7 @@ figure_captions:
   m5:wrmsse_bars: "Test-origin WRMSSE per candidate with the documented seasonal-naive-28 denominator — the ensemble's 0.604 vs the floor's 0.762; the deliberate deviation from the official M5 lag-1 denominator is stated in evaluation_metadata.json."
   m5:class_comparison: "Test WAPE by volume class (dense 463 / intermittent 137) — the models win in BOTH classes on the M5 subset (dense 0.568→0.470, intermittent 0.749→0.616), the mirror image of the UCI sparse panel where the zero forecast stays the ceiling."
   m5:win_rate: "Per-series win rate vs the seasonal-naive floor on the test origins — the ensemble clears the floor on 89.3% of series (dense 89.0%, intermittent 90.5%); every serious candidate lands in the 83–89% band."
-  m5:band_calibration: "Split-conformal 80% band on the test origins — empirical coverage per horizon day against the 0.80 target with the committed band widths; lgbm covers 78.7% at 12.46 units mean width, slightly under-covering and stated as measured."
+  m5:band_calibration: "Per-series scaled split-conformal 80% band on the test origins — empirical coverage per horizon day against the 0.80 target with the committed scaled band widths; lgbm covers 78.0% at 14.25 units mean width (dense 77.3% / intermittent 80.4%), slightly under-covering and stated as measured."
   eda_series_overview: Four representative store-product daily series from the seeded synthetic hierarchy. Each carries a slow upward trend plus a regular weekly cycle — the two structures any model must capture.
   eda_units_distribution: Histogram of daily units pooled over all 24 store-product series of the synthetic panel. The wide, right-skewed spread is why one global mean predicts poorly (MAE 31.8) and why models receive a series-identity feature.
   hpo_history: Objective value (CV MAE) of every trial in the 56-trial seeded Optuna study on the sklearn HGB, with the running best overlaid. The search converges on regularised small-tree configs and buys a modest, real gain (best 8.529 vs 8.619 default).

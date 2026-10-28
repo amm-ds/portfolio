@@ -494,13 +494,20 @@ small tabular lag problems; a sequence model is the roadmap answer).
   paired cluster bootstrap over series (2,000 reps, one shared index draw per
   replication; the WAPE replicate is the resampled error-ratio gap
   (Σ|err_A|−Σ|err_B|)/Σy, zero-demand resamples skipped).
-- **Probabilistic band** (`probabilistic.py` block): split-conformal, level
-  0.8 — per-horizon-day width = the 0.8-quantile of |lgbm residual| over the
-  8 selection origins (8 × 600 calibration points per h), zero-clipped and
-  sorted; `lo/hi = point ± width_h`. mlforecast's PredictionIntervals needs
-  multiple calibration windows; the documented split-conformal is the simpler
-  fully-deterministic choice. Coverage/pinball/width reported per candidate
-  on the test origins.
+- **Probabilistic band** (`probabilistic.py` block): per-series scaled
+  split-conformal, level 0.8 — per-horizon-day width = the 0.8-quantile of
+  |lgbm residual| / series scale over the 8 selection origins (8 × 600
+  calibration points per h), scaled back by each scored series' in-sample
+  seasonal-naive-28 RMSE (zero/NaN scale -> the origin's median valid RMSE);
+  `lo/hi = point ± width_h x scale_i`, zero-clipped and sorted. This mirrors
+  mlforecast's PredictionIntervals conformal strategy (per-horizon-step
+  quantile of calibration-window absolute errors — the 8 selection origins
+  are the calibration windows) with the documented per-series scale
+  extension: a pooled absolute-width band was tried first and mis-served the
+  panel's volume heterogeneity (top-quintile series covered ~61% at the
+  nominal 80% level), while the scaled band brackets every volume quintile
+  at ~80%. Coverage/pinball/width reported per candidate on the test
+  origins, pooled and by volume class (dense/intermittent).
 - **Determinism**: `VECLIB_MAXIMUM_THREADS=1` pinned in cli.py before numpy
   (Apple Accelerate — see section M); LightGBM `n_jobs=1` + fixed seed +
   `force_row_wise`; statsforecast `n_jobs=1` (closed-form/seed-free). The
@@ -511,12 +518,17 @@ small tabular lag problems; a sequence model is the roadmap answer).
   (`cli demo-payload-m5`) writes `reports_m5/demo_payload.json` (schema
   version 4): a deterministic 24-series catalog balanced across stores ×
   demand classes with per-series history/actuals/curves for the 2 scored
-  origins, plus the committed headline block verbatim. Per-series statistical
-  curves re-run the track functions on the catalog (exact for per-series
-  candidates); the lgbm curve is a documented catalog-subset refit (the
-  global model cannot be cheaply re-fit outside the full track). A drift
-  guard recomputes the per-series candidates' pooled test WAPE over the full
-  600-series panel and pins it against the committed metrics block at 1e-9.
+  origins, plus the committed headline block verbatim. The evaluate run
+  retains the catalog series' curves in a sidecar
+  (`reports_m5/catalog_forecasts.parquet` — actuals, every shipped candidate
+  including the committed global lgbm, the band edges) and the payload copies
+  curves from it: the lgbm curve is the committed 600-series global model, not
+  a catalog-subset refit (an earlier subset refit was both weaker and, via an
+  mlforecast alphabetical-row-order mismatch, landed its curves on the wrong
+  series). Drift guards pin the sidecar's schema-metadata pooled test WAPEs
+  against the committed metrics block at 1e-9 (mixing artifacts from
+  different runs fails) and re-run the per-series candidates' curves over the
+  full 600-series panel live at 1e-9.
 - **Honest result** (committed, `reports_m5/`): ensemble WAPE 0.498 vs naive
   0.603 (gap −0.105, 95% CI [−0.115, −0.095]); WRMSSE 0.604 vs 0.762; the
   models win in BOTH volume classes on this subset (dense 0.568→0.470,
@@ -611,6 +623,17 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.13.1 (2026-10-28)** — wave 24 fix pass: the 80% band became a per-series
+  scaled split-conformal (per-horizon-day q80 of |lgbm residual| / series
+  naive-28 RMSE over the 8 selection origins, scaled back per series; §N) — a
+  pooled absolute width covered top-quintile series only ~61% at the nominal
+  80% level; coverage now balanced across volume classes (lgbm 78.0% pooled,
+  dense 77.3% / intermittent 80.4%). The demo payload's lgbm curves come from a
+  new committed sidecar (`reports_m5/catalog_forecasts.parquet`, retained by
+  the evaluate run for the fixed 24-series catalog) instead of a
+  catalog-subset refit whose mlforecast alphabetical row order landed curves on
+  the wrong series; the sidecar carries its own schema-metadata drift guards.
+  Point metrics unchanged (byte-identical re-run).
 - **0.13.0 (2026-10-28)** — wave 24 (M5 headline pivot): new `m5_data.py`
   (checksum-pinned Walmart M5 accuracy subset, 600 series × 1,969 days,
   `data_m5/` + PROVENANCE.md) and `m5_track.py` (protocol `m5_direct_v1`,

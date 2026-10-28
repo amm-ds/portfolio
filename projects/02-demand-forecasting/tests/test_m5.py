@@ -244,10 +244,15 @@ def test_lgbm_determinism_toy(tiny_m5_dir: Path):
     odate = y["ds"].max() - pd.to_timedelta(28, unit="D")
     train = y[y["ds"] <= odate]
     hist_exog, future_exog = m5_data.split_exogenous(x_enc, ids, odate, 28)
-    p1 = _lgbm_forecast(train, hist_exog, future_exog, seed=42, n_estimators=25)
-    p2 = _lgbm_forecast(train, hist_exog, future_exog, seed=42, n_estimators=25)
+    p1 = _lgbm_forecast(train, hist_exog, future_exog, seed=42, n_estimators=25, series_ids=ids)
+    p2 = _lgbm_forecast(train, hist_exog, future_exog, seed=42, n_estimators=25, series_ids=ids)
     assert p1.shape == (3, 28)
     assert p1.tobytes() == p2.tobytes()
+    # rows follow the caller's series_ids order, not mlforecast's alphabetical default
+    rev = _lgbm_forecast(
+        train, hist_exog, future_exog, seed=42, n_estimators=25, series_ids=list(reversed(ids))
+    )
+    assert np.array_equal(rev, p1[::-1])
 
 
 # ---------------------------------------------------------------------------
