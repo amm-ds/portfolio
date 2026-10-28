@@ -1,0 +1,9 @@
+{
+  "name": "solomon-vrptw-100-subset",
+  "version": "1.0.0",
+  "source": "https://www.sintef.no/globalassets/project/top/vrptw/solomon/solomon-100.zip",
+  "license": "Academic benchmark — free to use with citation (Solomon 1987, Oper. Res. 35(2))",
+  "snapshot_date": "2026-10-15",
+  "checksum_sha256": "8a0a72cbe6b7f8f9988ace4ebde0378ec34943acaaac47f2c408915e41887747",
+  "n_rows": 5600
+}
