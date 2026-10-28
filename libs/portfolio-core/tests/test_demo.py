@@ -129,7 +129,10 @@ def test_missing_hook_rejected(tmp_path: Path) -> None:
 
 def test_payload_optional_mid_rebuild(tmp_path: Path) -> None:
     """A demo mid-rebuild (forecast-workbench) may declare no payload yet."""
-    demo = load_demo(_write(tmp_path, _VALID.replace("payload:\n  path: reports/demo_payload.json\n  required_keys: [demo, project]\n", "")))
+    payload_block = (
+        "payload:\n  path: reports/demo_payload.json\n  required_keys: [demo, project]\n"
+    )
+    demo = load_demo(_write(tmp_path, _VALID.replace(payload_block, "")))
     assert demo is not None
     assert demo.payload is None
 
