@@ -407,6 +407,136 @@ def _metrics_table(metrics: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _best_by_wape(rows: dict[str, dict[str, Any]], key: str) -> str:
+    """The candidate with the smallest finite ``rows[c][key]`` (NaN ranks last)."""
+    return min(
+        (c for c in CANDIDATES if c in rows),
+        key=lambda c: rows[c][key] if rows[c][key] == rows[c][key] else float("inf"),
+    )
+
+
+def _next_week_table(metrics: dict[str, Any]) -> str:
+    """Next-week service: pooled h≤7 WAPE over all origins + rmae per class."""
+    nw = metrics["weekly_rolling"]["next_week"]
+    pooled = nw["pooled"]
+    best = _best_by_wape(pooled, "wape")
+    cols = [
+        "candidate",
+        "next-week WAPE (h≤7, all 10 origins)",
+        "rmae",
+        "rmae dense",
+        "rmae intermittent",
+    ]
+    lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
+    for c in CANDIDATES:
+        if c not in pooled:
+            continue
+        cls = nw["by_class"].get(c) or {}
+        dense_r = cls.get("dense")
+        inter_r = cls.get("intermittent")
+        name = DISPLAY[c] + (" (floor)" if c == NAIVE else "")
+        cells = (
+            f"{_fmt(pooled[c]['wape'])} | {_fmt(pooled[c]['rmae'])} "
+            f"| {_fmt(dense_r['rmae'] if dense_r else None, 3)} "
+            f"| {_fmt(inter_r['rmae'] if inter_r else None, 3)}"
+        )
+        if c == best:
+            name, cells = f"<b>{name}</b>", f"<b>{cells}</b>"
+        lines.append(f"| {name} | {cells} |")
+    return "\n".join(lines)
+
+
+def _rolling_gap_quote(nw: dict[str, Any], pair: str) -> str:
+    g = nw["gaps"][pair]["wape"]
+    sig = "significant" if not g["spans_zero"] else "spans zero"
+    return f"{g['diff']:+.4f} (95% CI [{g['ci95'][0]:+.4f}, {g['ci95'][1]:+.4f}], {sig})"
+
+
+def _next_week_paragraph(metrics: dict[str, Any]) -> str:
+    """One honest sentence on the next-week numbers + the always-beats-naive verdict."""
+    nw = metrics["weekly_rolling"]["next_week"]
+    pooled = nw["pooled"]
+    best = _best_by_wape(pooled, "wape")
+    vl, ve = nw["always_beats_naive"]["lgbm"], nw["always_beats_naive"]["convex_ensemble"]
+
+    def _verdict(v: dict[str, Any]) -> str:
+        per = v["per_class_rmae"]
+        parts = ", ".join(
+            f"{cls} rmae {_fmt(per.get(cls), 3)}" if per.get(cls) is not None else f"{cls} n/a"
+            for cls in ("dense", "intermittent")
+        )
+        word = "<b>yes</b>" if v["wins_everywhere"] else "<b>NO</b>"
+        return f"{word} ({parts})"
+
+    return (
+        "<p>The headline of a demand forecast is the NEXT week — later weeks roll "
+        "forward as new data lands. Pooled over h≤7 of all 10 rolling origins "
+        "(each origin's first-week forecast is one deployed weekly forecast; the "
+        "8 selection origins are included, so this is the operational service "
+        f"number, not a held-out estimate), {DISPLAY[best]} posts next-week WAPE "
+        f"<b>{pooled[best]['wape']:.4f}</b> (rmae {pooled[best]['rmae']:.3f}) against the "
+        f"seasonal_naive floor's {pooled[NAIVE]['wape']:.4f}; lgbm is at "
+        f"{pooled['lgbm']['wape']:.4f} (rmae {pooled['lgbm']['rmae']:.3f}). The paired "
+        "cluster bootstrap on this metric: lgbm vs naive "
+        f"{_rolling_gap_quote(nw, 'lgbm_vs_naive')}; convex_ensemble vs naive "
+        f"{_rolling_gap_quote(nw, 'convex_ensemble_vs_naive')}. Beats the naive "
+        f"floor in every volume class at h≤7? — lgbm: {_verdict(vl)}; "
+        f"convex_ensemble: {_verdict(ve)}.</p>"
+    )
+
+
+def _weekly_blocks_table(metrics: dict[str, Any]) -> str:
+    """WAPE per 7-day block of the 28-day horizon on the test origins."""
+    wb = metrics["weekly_rolling"]["weekly_blocks"]
+    best = _best_by_wape(wb, "wk1")
+    cols = ["candidate", "wk1 (h1-7)", "wk2 (h8-14)", "wk3 (h15-21)", "wk4 (h22-28)"]
+    lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
+    for c in CANDIDATES:
+        if c not in wb:
+            continue
+        name = DISPLAY[c] + (" (floor)" if c == NAIVE else "")
+        cells = " | ".join(_fmt(wb[c][f"wk{k}"]) for k in range(1, 5))
+        if c == best:
+            name, cells = f"<b>{name}</b>", f"<b>{cells}</b>"
+        lines.append(f"| {name} | {cells} |")
+    return "\n".join(lines)
+
+
+def _weekly_blocks_paragraph(metrics: dict[str, Any]) -> str:
+    """One sentence on the error-growth shape: value share of week 1, wk4/wk1 ratio."""
+    rolling = metrics["weekly_rolling"]
+    wb, demand = rolling["weekly_blocks"], rolling["weekly_block_demand"]
+    pooled28 = metrics["test"]["pooled"]
+    champ = _best_by_wape(pooled28, "wape")
+    # the champion's absolute-error reduction per block (WAPE gap x block volume)
+    reductions = [
+        (wb[NAIVE][f"wk{k}"] - wb[champ][f"wk{k}"]) * demand[f"wk{k}"] for k in range(1, 5)
+    ]
+    total = sum(reductions)
+    if total <= 0:  # degenerate: the floor is unbeatable — say so, don't divide
+        return (
+            "<p>The 28-day view is a rollup of four weekly services. On these test "
+            f"origins no candidate reduces pooled absolute error below the "
+            f"{DISPLAY[NAIVE]} floor (wk1 WAPE {wb[NAIVE]['wk1']:.4f} → wk4 "
+            f"{wb[NAIVE]['wk4']:.4f}), so the error-growth shape belongs to the floor "
+            "itself — stated as measured.</p>"
+        )
+    wk1_share = 100.0 * reductions[0] / total
+    champ_growth = wb[champ]["wk4"] / wb[champ]["wk1"] if wb[champ]["wk1"] > 0 else float("nan")
+    naive_growth = wb[NAIVE]["wk4"] / wb[NAIVE]["wk1"] if wb[NAIVE]["wk1"] > 0 else float("nan")
+    return (
+        "<p>The 28-day view is a rollup of four weekly services, and they are not "
+        f"worth the same: week 1 carries <b>{wk1_share:.0f}%</b> of the value (the share "
+        f"of {DISPLAY[champ]}'s total absolute-error reduction vs the floor delivered in "
+        f"wk1, where its WAPE is {wb[champ]['wk1']:.4f}), and the error grows roughly "
+        f"linearly with distance — wk4 WAPE is <b>{champ_growth:.1f}\u00d7</b> the wk1 number "
+        f"({wb[champ]['wk4']:.4f} vs {wb[champ]['wk1']:.4f}; the naive floor degrades "
+        f"the same way, {naive_growth:.1f}\u00d7). The further out the week, the more the "
+        "forecast converges to the floor — which is why the next-week number above is "
+        "the service headline and the 28-day pooled table is the month view.</p>"
+    )
+
+
 def _gap_quote(metrics: dict[str, Any], pair: str, metric: str) -> str:
     g = metrics["headline"][pair][metric]
     sig = "significant" if not g["spans_zero"] else "spans zero"
@@ -576,6 +706,16 @@ def build_report(reports_dir: Path) -> Path:
         "Test metrics by candidate (pooled over the scored-once test origins)",
         _metrics_table(metrics),
     )
+    report.add_markdown_table(
+        "Rolling next-week service (h ≤ 7, all origins)",
+        _next_week_table(metrics),
+    )
+    report.add_html("The next-week service, honestly", _next_week_paragraph(metrics))
+    report.add_markdown_table(
+        "Weekly error blocks on the scored-once test origins (WAPE)",
+        _weekly_blocks_table(metrics),
+    )
+    report.add_html("How the error grows week over week", _weekly_blocks_paragraph(metrics))
     report.add_html(
         "Gap vs the floor (95% paired cluster bootstrap over series)",
         "<ul>"

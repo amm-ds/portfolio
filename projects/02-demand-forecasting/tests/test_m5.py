@@ -23,6 +23,8 @@ import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
 from demand_forecasting import m5_data  # noqa: E402
 from demand_forecasting.m5_track import (  # noqa: E402
+    CANDIDATES,
+    HORIZON,
     NAIVE,
     _lgbm_forecast,
     _statistical_forecasts,
@@ -218,6 +220,88 @@ def test_bootstrap_pairs_on_shared_draws():
     # per-series demand is 2 and 2, so the WAPE gap equals the MAE gap: 0.1 - 0.3
     assert out["diff"] == pytest.approx(0.1 - 0.3)
     assert out["ci95"][1] < 0.0  # a is uniformly better; CI must exclude 0
+
+
+def _weekly_fixtures(dense_mask: np.ndarray):
+    """2 series x 28 days, 2 origins; naive=2.0, lgbm=1.5, rest copy naive.
+
+    Actuals are all 1.0, so every cell of the naive floor has |err| = 1 and
+    every lgbm cell has |err| = 0.5 — hand-computable at every aggregation.
+    """
+    n_series = len(dense_mask)
+    origins = [0, 1]
+    actuals = {o: np.ones((n_series, HORIZON)) for o in origins}
+    forecasts: dict[str, dict[int, np.ndarray]] = {}
+    for cand in CANDIDATES:
+        level = 1.5 if cand == "lgbm" else 2.0
+        forecasts[cand] = {o: np.full((n_series, HORIZON), level) for o in origins}
+    return forecasts, actuals, origins
+
+
+def test_weekly_rolling_block_hand_values():
+    from demand_forecasting.m5_track import _weekly_rolling_block
+
+    dense_mask = np.array([True, False])
+    forecasts, actuals, origins = _weekly_fixtures(dense_mask)
+    block = _weekly_rolling_block(
+        forecasts, actuals, origins, [1], dense_mask, n_series=2, bootstrap_reps=50, seed=7
+    )
+    nw = block["next_week"]
+    # pooled: 2 origins x 2 series x 7 days; lgbm wape = 0.5/1.0 = 0.5, rmae = 0.5/1.0
+    assert nw["pooled"]["lgbm"]["wape"] == pytest.approx(0.5)
+    assert nw["pooled"]["lgbm"]["rmae"] == pytest.approx(0.5)
+    assert nw["pooled"][NAIVE]["wape"] == pytest.approx(1.0)
+    assert nw["pooled"][NAIVE]["rmae"] == pytest.approx(1.0)
+    # per class: each class has 1 series, same slice arithmetic
+    assert nw["by_class"]["lgbm"]["dense"]["wape"] == pytest.approx(0.5)
+    assert nw["by_class"]["lgbm"]["intermittent"]["rmae"] == pytest.approx(0.5)
+    # lgbm beats the floor in every class; the floor itself does not (rmae 1.0)
+    assert nw["always_beats_naive"]["lgbm"]["wins_everywhere"] is True
+    assert nw["always_beats_naive"][NAIVE]["wins_everywhere"] is False
+    assert nw["always_beats_naive"]["lgbm"]["per_class_rmae"] == {
+        "dense": pytest.approx(0.5),
+        "intermittent": pytest.approx(0.5),
+    }
+    # bootstrap gap: lgbm err 0.5 vs naive err 1.0 uniformly -> diff < 0, CI excludes 0
+    gap = nw["gaps"]["lgbm_vs_naive"]["wape"]
+    assert gap["diff"] == pytest.approx(0.5 - 1.0)
+    assert gap["ci95"][1] < 0.0
+    assert nw["gaps"]["convex_ensemble_vs_naive"]["wape"]["n_boot"] == 50
+    # weekly blocks on the single test origin: 2 series x 7 days per week,
+    # lgbm wape 0.5 every week; wk1..wk4 present for every candidate
+    assert set(block["weekly_blocks"]) == set(CANDIDATES)
+    for cand in CANDIDATES:
+        wk = block["weekly_blocks"][cand]
+        assert list(wk) == ["wk1", "wk2", "wk3", "wk4"]
+        assert wk["wk1"] == pytest.approx(0.5 if cand == "lgbm" else 1.0)
+    # determinism of the whole block
+    block2 = _weekly_rolling_block(
+        forecasts, actuals, origins, [1], dense_mask, n_series=2, bootstrap_reps=50, seed=7
+    )
+    assert block == block2
+    # per-block demand: 2 series x 7 all-ones days on the single test origin
+    assert block["weekly_block_demand"] == {
+        "wk1": 14.0,
+        "wk2": 14.0,
+        "wk3": 14.0,
+        "wk4": 14.0,
+    }
+
+
+def test_weekly_rolling_block_class_absent_is_none():
+    from demand_forecasting.m5_track import _weekly_rolling_block
+
+    dense_mask = np.array([True, True])  # no intermittent series
+    forecasts, actuals, origins = _weekly_fixtures(dense_mask)
+    block = _weekly_rolling_block(
+        forecasts, actuals, origins, [1], dense_mask, n_series=2, bootstrap_reps=20, seed=7
+    )
+    nw = block["next_week"]
+    assert nw["by_class"]["lgbm"]["dense"]["wape"] == pytest.approx(0.5)
+    assert nw["by_class"]["lgbm"]["intermittent"] is None
+    # a missing class cannot be a win -> wins_everywhere is honestly False
+    assert nw["always_beats_naive"]["lgbm"]["wins_everywhere"] is False
+    assert nw["always_beats_naive"]["lgbm"]["per_class_rmae"]["intermittent"] is None
 
 
 # ---------------------------------------------------------------------------

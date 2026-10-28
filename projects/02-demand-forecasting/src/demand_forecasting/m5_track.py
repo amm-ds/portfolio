@@ -1,4 +1,5 @@
-"""M5 headline experiment — protocol ``m5_direct_v1`` (wave 24).
+"""M5 headline experiment — protocol ``m5_direct_v1`` (wave 24; wave 25
+performance pass; wave 26 rolling next-week service block).
 
 The UCI Online Retail II panel track (multihorizon.py) stays untouched as the
 secondary study; this module is the NEW headline experiment on the committed
@@ -41,6 +42,14 @@ Protocol (fixed a priori, machine-readable in evaluation_metadata.json):
   seasonal_naive on the TEST origins: pooled-WAPE difference and pooled-WRMSSE
   difference, each with a 95% paired cluster bootstrap over series (one shared
   index draw per replication, ``BOOTSTRAP_REPS = 2000``, fixed seed).
+- **Rolling next-week service** (``weekly_rolling`` block) — the headline of
+  a demand forecast is the NEXT week; later weeks roll forward. ``next_week``
+  pools WAPE over h=1..7 of ALL 10 origins (each origin's first-week forecast
+  = one deployed weekly forecast), per class, with the paired bootstrap gap
+  vs naive and an ``always_beats_naive`` verdict (per-class rmae < 1.0
+  everywhere?) reported as measured; ``weekly_blocks`` slices the 2 scored
+  test origins into wk1..wk4 (7-day blocks) for the error-growth shape. No new
+  fitting — computed from the retained per-series per-origin forecasts.
 - **Probabilistic** (lgbm + convex_ensemble): a per-series SCALED
   split-conformal band calibrated on SELECTION-origin out-of-sample residuals
   at per-horizon-day granularity —
@@ -161,6 +170,15 @@ METRIC_DEFINITIONS = {
     "pinball": "mean pinball loss at the stated quantile over the test cells",
     "coverage_80": "share of test actuals inside the per-series scaled "
     "split-conformal 80% band (pooled and by volume class)",
+    "next_week_wape": "pooled WAPE over h=1..7 of EVERY rolling origin (each "
+    "origin's first-week forecast is one deployed weekly forecast, so the 10 "
+    "origins are 10 weekly service evaluations rolled together) — the rolling "
+    "next-week service number; reported pooled, per volume class, and with "
+    "the paired cluster-bootstrap gap vs seasonal_naive",
+    "weekly_block_wape": "pooled WAPE per 7-day block of the 28-day horizon "
+    "(wk1 = h1-7, wk2 = h8-14, wk3 = h15-21, wk4 = h22-28) over the 2 "
+    "scored-once test origins — the honest error-growth shape of the "
+    "month-ahead view",
 }
 
 
@@ -928,6 +946,9 @@ def run_m5_track(
         "selection": selection_block,
         "test": test_block,
         "headline": headline,
+        "weekly_rolling": _weekly_rolling_block(
+            forecasts, actuals, origins, test, dense_mask, n_series, bootstrap_reps, seed
+        ),
     }
 
     # ---- report payload: sample series (test windows) ----
@@ -1024,11 +1045,15 @@ def run_m5_track(
     )
 
     logger.info(
-        "m5 track done in %.1fs: test WAPE lgbm=%.4f naive=%.4f | ensemble=%.4f",
+        "m5 track done in %.1fs: test WAPE lgbm=%.4f naive=%.4f | ensemble=%.4f | "
+        "next-week WAPE lgbm=%.4f naive=%.4f | ensemble=%.4f",
         time.time() - t0,
         test_block["pooled"]["lgbm"]["wape"],
         test_block["pooled"][NAIVE]["wape"],
         test_block["pooled"]["convex_ensemble"]["wape"],
+        metrics["weekly_rolling"]["next_week"]["pooled"]["lgbm"]["wape"],
+        metrics["weekly_rolling"]["next_week"]["pooled"][NAIVE]["wape"],
+        metrics["weekly_rolling"]["next_week"]["pooled"]["convex_ensemble"]["wape"],
     )
     return M5Result(
         metrics=metrics,
@@ -1139,6 +1164,131 @@ def _metrics_block(
         },
         "horizon_mae": horizon_mae,
         "win_rate_vs_naive": win_rates,
+    }
+
+
+def _slice_wape_rmae(pred: np.ndarray, act: np.ndarray, naive_pred: np.ndarray) -> dict[str, float]:
+    """(wape, rmae) of ``pred`` on ``act`` against the naive floor's MAE.
+
+    Same conventions as the 28-day block: pooled WAPE = Σ|err|/Σy, rmae =
+    pooled-MAE ratio vs seasonal_naive floored at 1.0.
+    """
+    mae = float(np.abs(pred - act).mean())
+    naive_mae = float(np.abs(naive_pred - act).mean())
+    return {"wape": wape(act, pred), "rmae": rmae(mae, naive_mae)}
+
+
+def _weekly_rolling_block(
+    forecasts: dict[str, dict[int, np.ndarray]],
+    actuals: dict[int, np.ndarray],
+    origins: list[int],
+    test: list[int],
+    dense_mask: np.ndarray,
+    n_series: int,
+    bootstrap_reps: int,
+    seed: int,
+) -> dict[str, Any]:
+    """The rolling next-week service block — no new fitting, retained forecasts only.
+
+    ``next_week`` pools WAPE over h=1..7 of EVERY origin: each origin's
+    first-week forecast is one deployed weekly forecast, so the 10 origins
+    are 10 weekly service evaluations rolled together (the deployment
+    shape of the service). Pooled and per volume class, with the paired
+    cluster-bootstrap gap vs naive for lgbm/convex_ensemble and an
+    ``always_beats_naive`` verdict per candidate (per-class rmae < 1.0
+    everywhere — reported as measured, never asserted). ``weekly_blocks``
+    slices the 2 scored-once test origins into the four 7-day blocks of
+    the 28-day horizon — the honest error-growth shape of the month view.
+    A class with no series (or a zero-volume slice) gets None, json-safe.
+    """
+    week = 7
+
+    def _stack_h(subset: list[int], cand: str, h_lo: int, h_hi: int) -> np.ndarray:
+        return np.concatenate([forecasts[cand][o][:, h_lo:h_hi] for o in subset])
+
+    def _stack_act(subset: list[int], h_lo: int, h_hi: int) -> np.ndarray:
+        return np.concatenate([actuals[o][:, h_lo:h_hi] for o in subset])
+
+    n_o = len(origins)
+    act_nw = _stack_act(origins, 0, week)
+    naive_nw = _stack_h(origins, NAIVE, 0, week)
+    pooled: dict[str, dict[str, float]] = {}
+    by_class: dict[str, dict[str, Any]] = {}
+    for c in CANDIDATES:
+        pred_nw = _stack_h(origins, c, 0, week)
+        pooled[c] = _slice_wape_rmae(pred_nw, act_nw, naive_nw)
+        cls_out: dict[str, Any] = {}
+        for cls_name, mask in (("dense", dense_mask), ("intermittent", ~dense_mask)):
+            m = np.tile(mask, n_o)
+            if int(mask.sum()) == 0 or float(act_nw[m].sum()) <= 0:
+                cls_out[cls_name] = None  # class absent or zero-volume slice
+                continue
+            cls_out[cls_name] = _slice_wape_rmae(pred_nw[m], act_nw[m], naive_nw[m])
+        by_class[c] = cls_out
+
+    # paired cluster bootstrap of the next-week WAPE gap vs the floor
+    # (one shared series-index draw per replication, seeds after the 28-day
+    # headline gaps' 11..14)
+    ser_cells = np.repeat(np.tile(np.arange(n_series), n_o), week)
+    err_naive = np.abs(naive_nw - act_nw).reshape(-1)
+    demand_cells = act_nw.reshape(-1)
+    gaps: dict[str, Any] = {}
+    for c, offset in (("lgbm", 15), ("convex_ensemble", 16)):
+        err_c = np.abs(_stack_h(origins, c, 0, week) - act_nw).reshape(-1)
+        gaps[f"{c}_vs_naive"] = {
+            "wape": paired_bootstrap_wape(
+                err_c, err_naive, demand_cells, ser_cells, bootstrap_reps, seed + offset
+            )
+        }
+
+    verdicts: dict[str, Any] = {}
+    for c in CANDIDATES:
+        per_class = {
+            cls: (entry["rmae"] if entry else None) for cls, entry in by_class[c].items()
+        }
+        verdicts[c] = {
+            "wins_everywhere": all(v is not None and v < 1.0 for v in per_class.values()),
+            "per_class_rmae": per_class,
+            "pooled_rmae": pooled[c]["rmae"],
+        }
+
+    act_t = _stack_act(test, 0, HORIZON)
+    block_demand = {
+        f"wk{k + 1}": float(act_t[:, k * week : (k + 1) * week].sum())
+        for k in range(HORIZON // week)
+    }
+    weekly_blocks: dict[str, dict[str, float]] = {}
+    for c in CANDIDATES:
+        pred_t = np.concatenate([forecasts[c][o] for o in test])
+        weekly_blocks[c] = {
+            f"wk{k + 1}": wape(
+                act_t[:, k * week : (k + 1) * week], pred_t[:, k * week : (k + 1) * week]
+            )
+            for k in range(HORIZON // week)
+        }
+
+    return {
+        "method": "next_week: pooled WAPE over h=1..7 of ALL origins (each origin's "
+        "first-week forecast = one deployed weekly forecast; the 8 selection "
+        "origins are included, so this is the rolling weekly SERVICE number, "
+        "not a held-out estimate — the held-out estimate stays the 28-day test "
+        "block below). weekly_blocks: pooled WAPE per 7-day block (wk1 h1-7 .. "
+        "wk4 h22-28) over the 2 scored-once test origins; weekly_block_demand "
+        "holds the per-block Σ actual (turning WAPE gaps into absolute-error "
+        "reductions).",
+        "next_week": {
+            "horizon_days": [1, week],
+            "n_origins": n_o,
+            "pooled": pooled,
+            "by_class": by_class,
+            "gaps": gaps,
+            "always_beats_naive": verdicts,
+            "baseline": NAIVE,
+        },
+        "weekly_blocks": weekly_blocks,
+        # Σ actual per block on the test origins — turns per-block WAPE gaps
+        # into absolute-error reductions (the report's value-share sentence)
+        "weekly_block_demand": block_demand,
     }
 
 
