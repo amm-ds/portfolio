@@ -231,7 +231,7 @@ describe("ProjectsIndex", () => {
     expect(experimentsBlock.querySelectorAll(".topic-row")).toHaveLength(4);
   });
 
-  it("falls back to the static demo card when the registry fetch fails", async () => {
+  it("falls back to the static demo cards when the registry fetch fails", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
@@ -246,10 +246,12 @@ describe("ProjectsIndex", () => {
     await waitFor(() => expect(screen.getByText("Machine Learning")).toBeInTheDocument());
     const demos = document.querySelector(".demos")!;
     const demoCards = demos.querySelectorAll(".demo-card");
-    expect(demoCards).toHaveLength(1);
+    expect(demoCards).toHaveLength(2);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].textContent).toContain("live");
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
+    expect(demoCards[1].textContent).toContain("demand forecast workbench");
+    expect(demoCards[1].querySelector("a")!.getAttribute("href")).toBe("/demos/forecast-workbench");
   });
 
   it("renders a what-it-achieves summary plus sub-topic, dataset, and status chips on each card", async () => {

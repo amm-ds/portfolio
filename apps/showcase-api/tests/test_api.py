@@ -155,6 +155,29 @@ def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[n
     assert r.status_code == 200 and "report" in r.text
 
 
+def test_report_endpoint_prefers_m5_then_uci_then_reports(
+    tmp_path: Path, monkeypatch  # type: ignore[no-untyped-def]
+) -> None:
+    """02's canonical report is reports_m5/report.html; the UCI and synthetic
+    tracks stay reachable through the fallback chain."""
+    from showcase_api import main
+
+    d = tmp_path / "01-demo"
+    (d / "reports").mkdir(parents=True)
+    (d / "reports" / "report.html").write_text("<html>synthetic report</html>")
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+    r = client.get("/projects/01-demo/report")
+    assert r.status_code == 200 and "synthetic report" in r.text
+    (d / "reports_uci").mkdir()
+    (d / "reports_uci" / "report.html").write_text("<html>uci report</html>")
+    r = client.get("/projects/01-demo/report")
+    assert r.status_code == 200 and "uci report" in r.text
+    (d / "reports_m5").mkdir()
+    (d / "reports_m5" / "report.html").write_text("<html>m5 report</html>")
+    r = client.get("/projects/01-demo/report")
+    assert r.status_code == 200 and "m5 report" in r.text
+
+
 # --- Demo platform: registry / manifest / payload ----------------------------
 
 _DEMO_YAML = """\

@@ -435,6 +435,93 @@ small tabular lag problems; a sequence model is the roadmap answer).
   BottomUp degrades it (0.177 → 0.292) — reconciliation is reported per
   candidate, never as a blanket win. Wave 22's `routed_reconciled` caveat
   resolves into "proper MinT works where the base forecast needs it".
+  *(Removed in the wave-24 pivot: `hierarchical.py`, `data_hier/` and
+  `reports_hier/` were dropped to keep the project focused on the two retail
+  regimes — the section stays as the decision record.)*
+
+### N. Wave 24 — the M5 headline pivot (protocol `m5_direct_v1`)
+
+- **Why**: the project's honest result on the UCI sparse panel was "baselines
+  win" — the right measurement, but a weak headline. The pivot adds the
+  regime where ML demonstrably wins: **dense daily store-item demand** with
+  real exogenous signal. Dataset: the committed, checksum-pinned Walmart M5
+  accuracy-track subset (`m5_data.py`, `data_m5/`, PROVENANCE.md) — top-3
+  stores by total units (CA_3, CA_1, TX_2) × top-200 items by total units
+  within those stores; 600 daily series, 2011-01-29..2016-06-19, 1,105,594
+  rows, 16% zero-day share; built offline from the Nixtla `datasetsforecast`
+  mirror with sha256 pins verified at load (the UCI snapshot-pin pattern).
+- **Protocol** (`m5_track.py`, machine-readable in
+  `reports_m5/evaluation_metadata.json`): **10 weekly rolling origins** 7
+  days apart near the panel end (`rolling_origins`, anchored at the end like
+  the M5 evaluation), each training on ≥ 1,096 days (3+ years) and scoring
+  the next **28 days**. The first **8 origins are SELECTION** (ensemble
+  weight, conformal calibration, class anchoring); the **last 2 are TEST** —
+  2016-05-10 and 2016-05-17 — scored once, never read for selection. The
+  window starts the day AFTER the origin.
+- **Candidates**: per-series statistical (`seasonal_naive` m=7,
+  `window_avg_28`, `adida`, `tsb` — statsforecast 2.1.1, C-fast, batch with a
+  per-series naive-fallback path for degenerate fits), per-series automatic
+  (`auto_ets`, `auto_ces`), a **global LightGBM** (mlforecast 1.1.0 recursive:
+  lags 1/7/14/21/28, RollingMean(7)/RollingMean(28) at lag 1 and
+  RollingMean(7) at lag 7, dayofweek/month/ISO-week calendar, exog
+  sell_price/snap/event codes — **no series-identity feature**, so the global
+  model generalises across the 600 series; fixed config 300 trees / lr 0.05 /
+  63 leaves, not tuned), and `convex_ensemble`.
+- **Ensemble rule** (fixed, deterministic): the best two of {lgbm, auto_ets,
+  auto_ces} by SELECTION pooled WAPE; the weight w grid-fit on the selection
+  origins only over `ENSEMBLE_GRID` = 0..1 step 0.01 minimising pooled Σ|err|
+  (ties → smallest w). The committed run picked auto_ets × 0.67 + auto_ces ×
+  0.33 — notably *without* lgbm: on the selection origins the two per-series
+  automatic models pooled better than the global booster.
+- **Volume classes**: Syntetos-Boylan ADI/CV² (same thresholds as the panel
+  track, ADI 1.32 / CV² 0.49) computed on each series' REAL history
+  (pre-introduction days excluded — an item not yet assorted is not
+  intermittent demand) up to the last SELECTION origin: 463 dense
+  (smooth/erratic) + 137 intermittent (intermittent/lumpy) of 600.
+- **Metrics**: per candidate × class × {selection, test} — MAE, WAPE
+  (Σ|err|/Σy), `rmae` (pooled-MAE ratio vs the seasonal_naive floor, floored
+  at 1.0), **WRMSSE** and volume-weighted WRMSSE per (series × origin) unit:
+  sqrt(MSE over the 28 scored days / in-sample MSE of the one-step
+  seasonal-naive-28 over that series' training window), zero-denominator
+  units excluded. **Documented deviation**: the official M5 denominator is
+  the lag-1 random walk; this track uses the seasonal-naive-28 denominator
+  (stricter for weekly-seasonal dense demand — the lag-1 scale would flatter
+  every candidate), stated in `metric_definitions`. Plus peak-day MAE
+  (top-decile-by-actual days), horizon-wise MAE growth, and per-series
+  win-rate vs the floor.
+- **Headline gaps**: lgbm-vs-naive and ensemble-vs-naive on the TEST origins
+  — pooled-WAPE difference and pooled-WRMSSE difference, each with a 95%
+  paired cluster bootstrap over series (2,000 reps, one shared index draw per
+  replication; the WAPE replicate is the resampled error-ratio gap
+  (Σ|err_A|−Σ|err_B|)/Σy, zero-demand resamples skipped).
+- **Probabilistic band** (`probabilistic.py` block): split-conformal, level
+  0.8 — per-horizon-day width = the 0.8-quantile of |lgbm residual| over the
+  8 selection origins (8 × 600 calibration points per h), zero-clipped and
+  sorted; `lo/hi = point ± width_h`. mlforecast's PredictionIntervals needs
+  multiple calibration windows; the documented split-conformal is the simpler
+  fully-deterministic choice. Coverage/pinball/width reported per candidate
+  on the test origins.
+- **Determinism**: `VECLIB_MAXIMUM_THREADS=1` pinned in cli.py before numpy
+  (Apple Accelerate — see section M); LightGBM `n_jobs=1` + fixed seed +
+  `force_row_wise`; statsforecast `n_jobs=1` (closed-form/seed-free). The
+  committed artifacts regenerate byte-for-byte.
+- **Demo** (wave 24, phase 4): the old `forecast-workbench` demo (workbench
+  payload schema v1–v3, live POST endpoint, shock levers) was removed in the
+  pivot; it is rebuilt churn-style on the M5 track — `m5_demo_payload.py`
+  (`cli demo-payload-m5`) writes `reports_m5/demo_payload.json` (schema
+  version 4): a deterministic 24-series catalog balanced across stores ×
+  demand classes with per-series history/actuals/curves for the 2 scored
+  origins, plus the committed headline block verbatim. Per-series statistical
+  curves re-run the track functions on the catalog (exact for per-series
+  candidates); the lgbm curve is a documented catalog-subset refit (the
+  global model cannot be cheaply re-fit outside the full track). A drift
+  guard recomputes the per-series candidates' pooled test WAPE over the full
+  600-series panel and pins it against the committed metrics block at 1e-9.
+- **Honest result** (committed, `reports_m5/`): ensemble WAPE 0.498 vs naive
+  0.603 (gap −0.105, 95% CI [−0.115, −0.095]); WRMSSE 0.604 vs 0.762; the
+  models win in BOTH volume classes on this subset (dense 0.568→0.470,
+  intermittent 0.749→0.616) — the mirror image of the UCI sparse panel,
+  which stays as the clearly-labelled secondary track.
 
 ## Pipeline
 
@@ -524,6 +611,29 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.13.0 (2026-10-28)** — wave 24 (M5 headline pivot): new `m5_data.py`
+  (checksum-pinned Walmart M5 accuracy subset, 600 series × 1,969 days,
+  `data_m5/` + PROVENANCE.md) and `m5_track.py` (protocol `m5_direct_v1`,
+  §N): 10 weekly rolling origins (8 selection + 2 scored once, 28-day
+  horizon), 8 candidates (per-series statistical/automatic via statsforecast,
+  global LightGBM via mlforecast — no series-identity feature, selection-
+  fitted convex ensemble of the best two by selection WAPE), Syntetos-Boylan
+  volume classes on real history (463 dense / 137 intermittent), WAPE/rmae/
+  WRMSSE (documented seasonal-naive-28 denominator vs the official lag-1) +
+  peak-day MAE + per-series win rates, paired cluster bootstrap CIs on every
+  headline gap, split-conformal 80% band calibrated on the selection origins.
+  `reports_m5/` committed (metrics/probabilistic/evaluation_metadata + report
+  + figures), README/story/docs restructured M5-first with the UCI sparse
+  track demoted to clearly-labelled secondary, README drift guards extended
+  to the M5 quotes, showcase-API `report` route now prefers
+  `reports_m5/report.html`. The `forecast-workbench` demo is rebuilt
+  churn-style on the M5 track: `m5_demo_payload.py` + `cli demo-payload-m5`
+  → `reports_m5/demo_payload.json` (schema v4: 24-series deterministic
+  catalog, per-series curves + committed headline block; per-series-candidate
+  pooled test WAPE recomputed over the full panel and pinned at 1e-9).
+  Removed in the pivot: the wave-23 hierarchical track (`hierarchical.py`,
+  `data_hier/`, `reports_hier/` — decision record kept as §M) and the old
+  workbench demo (schema v1–v3 payload, shock levers, live POST scoring).
 - **0.12.0 (2026-10-27)** — wave 23a (hierarchical track): new
   `hierarchical.py` (protocol `hierarchical_rolling_v1`) + `cli
   evaluate-hierarchical --group tourism-small|labour|both` on the committed

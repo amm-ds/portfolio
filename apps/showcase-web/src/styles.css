@@ -2393,6 +2393,69 @@ button.chip.wb-scenario.active {
   gap: 0.3rem;
 }
 
+/* forecast workbench: series picker + chip rows (models / origin / horizon).
+   The churn presets stay columnar; these groups lay their chips out in
+   wrapping rows, and an active chip takes the accent border. */
+.wb-group-models .demo-presets,
+.wb-group-origin .demo-presets,
+.wb-group-horizon .demo-presets,
+.wb-group-series .demo-presets {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.wb-group-models .demo-control .chip,
+.wb-group-origin .demo-control .chip,
+.wb-group-horizon .demo-control .chip {
+  display: inline-block;
+}
+
+button.chip.demo-preset.fwb-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fwb-store {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.fwb-store + .fwb-store {
+  margin-top: 0.35rem;
+}
+
+.fwb-store-tag {
+  font-size: 0.66rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.fwb-badge {
+  margin-left: 0.35rem;
+  font-size: 0.62rem;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.fwb-badge-intermittent {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.fwb-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.3rem;
+  vertical-align: baseline;
+}
+
 /* scorer card: header row (label + submit) on top of a 2×2 field grid; the
    result block sits directly under the header, above the fields */
 .wb-controls .wb-scorer {

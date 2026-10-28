@@ -18,6 +18,13 @@ export const DEMOS: Demo[] = [
     status: "live",
     href: "/demos/churn-sandbox",
   },
+  {
+    id: "forecast-workbench",
+    title: "demand forecast workbench",
+    line: "Pick a store-product series from the committed M5 track and compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the scored-once test origins.",
+    status: "live",
+    href: "/demos/forecast-workbench",
+  },
 ];
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";

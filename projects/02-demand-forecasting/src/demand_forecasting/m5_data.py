@@ -151,8 +151,13 @@ def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.Dat
     - ``snap`` — the series' own state SNAP flag (CA_3/CA_1 -> snap_CA,
       TX_2 -> snap_TX; joined from S via ``state_col``, aligned on row order).
     - ``event_name_1/2_code``, ``event_type_1/2_code`` — integer category
-      codes over the full frame (0 = no event, NaN-filled), deterministic
-      (sorted-category ordering), so LightGBM sees numeric columns.
+      codes over the full frame, deterministic (sorted-category ordering), so
+      LightGBM sees numeric columns. The no-event marker is its own category
+      (nulls filled with ``"<none>"``); WHICH code that is depends on how the
+      parquet represented nulls (real NaN sorts ``"<none>"`` first -> code 1,
+      the string ``"nan"`` sorts last) — callers needing the event-day mask
+      must resolve it from the mode, never a hardcoded code (see
+      ``m5_demo_payload._event_mask``).
 
     Row order and count are preserved; the result carries
     ``unique_id, ds`` + :data:`EXOG_FEATURES`.
@@ -172,7 +177,10 @@ def encode_events(x: pd.DataFrame, state_col: pd.Series | None = None) -> pd.Dat
     for raw in ("event_name_1", "event_type_1", "event_name_2", "event_type_2"):
         filled = x[raw].astype("string").fillna("<none>")
         cat = pd.Categorical(filled, categories=sorted(filled.unique()))
-        out[f"{raw}_code"] = (cat.codes + 1).astype(float)  # 0 = no event
+        # +1 so pandas-missing codes (-1) would land at 0; every real row is
+        # covered by the categories above. The no-event code is position-
+        # dependent (see the docstring) — never hardcode it downstream.
+        out[f"{raw}_code"] = (cat.codes + 1).astype(float)
     return out
 
 
