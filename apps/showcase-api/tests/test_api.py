@@ -4,6 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
+from showcase_api import main
 from showcase_api.main import app
 from showcase_api.middleware import RateLimiter, RateLimitMiddleware
 
@@ -933,3 +934,39 @@ def test_request_log_line_contains_hashed_ip_not_raw(caplog) -> None:  # type: i
     line = lines[0]
     assert "203.0.113.7" not in line  # raw IP never logged
     assert "ip=" in line and "rid=" in line
+
+
+def test_projects_and_demos_payloads_do_not_collide(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Regression: /demos hit BEFORE /projects must not poison the projects
+    payload — both indexes cache by (root, kind) since sharing PROJECTS_ROOT."""
+    (tmp_path / "01-demo-project").mkdir()
+    (tmp_path / "01-demo-project" / "portfolio.yaml").write_text(
+        "id: 01-demo-project\ntitle: Demo Project\ndomain: x\ntopic: T\n"
+        "techniques: [t]\ndata: s\norder: 1\n"
+    )
+    (tmp_path / "01-demo-project" / "demo.yaml").write_text(
+        "id: some-demo\ntitle: Some Demo\nhook: h.\nproject: 01-demo-project\n"
+        "group: g\nskills: [x]\nmodes: [browser]\n"
+    )
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+    main._PAYLOAD_CACHE.clear()
+    client = TestClient(main.app)
+    demos_first = client.get("/demos")
+    projects_after = client.get("/projects")
+    assert projects_after.status_code == 200
+    body = projects_after.json()
+    assert any(p.get("id") == "01-demo-project" for p in body), body
+    assert not any(p.get("id") == "some-demo" for p in body), body
+    assert demos_first.status_code == 200
+
+
+def test_every_committed_project_story_parses() -> None:
+    """Guard against the C-phase content-edit failure mode: a story.yaml that
+    drifts from the pydantic schema 500s its page. Every committed project
+    must serve story 200 against the real repo tree."""
+    from showcase_api.main import PROJECTS_ROOT, load_index
+
+    ids = [m.id for m in load_index(PROJECTS_ROOT)]
+    assert len(ids) >= 10, ids
+    bad = [pid for pid in ids if client.get(f"/projects/{pid}/story").status_code != 200]
+    assert not bad, f"story endpoints failing: {bad}"
