@@ -73,6 +73,7 @@ function ChipRow({
           key={o.key}
           type="button"
           className={`chip demo-preset ${active(o.key) ? "fwb-active" : ""}`}
+          aria-pressed={active(o.key)}
           onClick={() => onPick(o.key)}
         >
           {o.label}
@@ -216,6 +217,7 @@ function Workbench({
                           key={e.series_id}
                           type="button"
                           className={`chip demo-preset ${e.series_id === entry.series_id ? "fwb-active" : ""}`}
+                          aria-pressed={e.series_id === entry.series_id}
                           onClick={() => setValue("series", e.series_id)}
                         >
                           {shortId(e.series_id)}

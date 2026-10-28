@@ -158,10 +158,10 @@ describe("ProjectsIndex", () => {
       return cur!;
     };
     // 07 must sit under Data Engineering, 06 under Optimization, 01+04 under their rows
-    expect(rowOf(cardOf("Mobility")).querySelector("h2")!.textContent).toBe("Data Engineering");
-    expect(rowOf(cardOf("Routing")).querySelector("h2")!.textContent).toBe("Optimization");
-    expect(rowOf(cardOf("RAG Agent")).querySelector("h2")!.textContent).toBe("Agentic AI & LLM");
-    expect(rowOf(cardOf("NLP Classification")).querySelector("h2")!.textContent).toBe(
+    expect(rowOf(cardOf("Mobility")).querySelector("h3")!.textContent).toBe("Data Engineering");
+    expect(rowOf(cardOf("Routing")).querySelector("h3")!.textContent).toBe("Optimization");
+    expect(rowOf(cardOf("RAG Agent")).querySelector("h3")!.textContent).toBe("Agentic AI & LLM");
+    expect(rowOf(cardOf("NLP Classification")).querySelector("h3")!.textContent).toBe(
       "Machine Learning",
     );
   });
@@ -353,13 +353,51 @@ describe("ProjectsIndex", () => {
     await waitFor(() => expect(screen.getByText(/no projects published yet/i)).toBeInTheDocument());
   });
 
-  it("shows an error state when the API is unreachable", async () => {
+  it("renders the experiment cards from the static snapshot when the registry is unreachable", async () => {
+    // fetch rejects for every endpoint (projects, demos, per-card metrics…)
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
+    await waitFor(() =>
+      expect(
+        screen.getByText(/the live registry is unreachable — showing the last published snapshot/i),
+      ).toBeInTheDocument(),
+    );
+    // heading outline: one h2 "experiments"; topic rows are h3 under it
+    expect(
+      screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
+    ).toEqual(["Demos — interactive experiments", "experiments"]);
+    expect(screen.getByRole("heading", { level: 3, name: "Machine Learning" })).toBeInTheDocument();
+    // all ten snapshot projects render as cards
+    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(10));
+    // Retry re-fetches (the failing mock is called again)
+    const callsBefore = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
+    screen.getByRole("button", { name: "Retry" }).click();
+    await waitFor(() =>
+      expect((global.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBeGreaterThan(
+        callsBefore,
+      ),
+    );
+  });
+
+  it("keeps the plain error state when only /projects fails", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/projects")) return Promise.reject(new Error("down"));
+      if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([]));
+      return Promise.resolve(jsonResponse({ detail: "no" }, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
     await waitFor(() => expect(screen.getByText(/could not load/i)).toBeInTheDocument());
+    expect(document.querySelector(".experiments-block")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
   });
 });

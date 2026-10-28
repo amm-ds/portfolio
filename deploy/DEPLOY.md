@@ -1,112 +1,89 @@
-# Production deployment — Caddy + Docker (reference VPS: Hetzner)
+# Deployment
 
-Target: one small cloud VPS (Hetzner CX33 is the reference: 4 vCPU / 8 GB) running
-the showcase app behind Caddy (automatic TLS) with Cloudflare in front (CDN, WAF,
-rate limiting). Docs stay on GitHub Pages.
+## Current state: code-first, deploy deferred
 
-## 1. Domain + DNS (once)
+The app is fully buildable from source but **not deployed anywhere yet** — there
+is no domain, no server, and no live URL. Deliberately: deployment is deferred
+until a domain exists, so no configuration carries placeholder hosts.
 
-1. Buy a domain and point its A-record at the server IP (proxied through Cloudflare).
-2. Set the environment — no file edits needed, `DOMAIN` is passed through to
-   Caddy by `docker-compose.prod.yml`:
+What works today, locally and in CI:
 
-   ```bash
-   export DOMAIN=example.com
-   # Optional: Cloudflare API token, so Caddy can solve the DNS challenge
-   # (needed for wildcard/subdomain certificates):
-   export CLOUDFLARE_API_TOKEN=...
-   ```
+- **SPA** — `apps/showcase-web` builds to a static `dist/` (client-side
+  routing, deep links need a SPA fallback rewrite). The CI gate enforces a
+  bundle budget on the entry chunk.
+- **API** — `apps/showcase-api` serves project stories, metrics, live
+  forecast/scoring endpoints (from the git-committed serving bundles) and the
+  health check. The all-in-one image at the repo root bakes the SPA build and
+  the API into a single container (`deploy/docker-compose.prod.yml` +
+  `deploy/Caddyfile` describe that topology for when a host exists).
+- **Docs** — built with MkDocs (`mkdocs build --strict` in CI).
 
-3. Cloudflare: SSL mode "Full (strict)"; add a rate-limiting rule for `/rag/*` and
-   `/projects/*/forecast` (e.g. 20 req/min per IP) — cheap abuse protection for the
-   public endpoints. The API also enforces **in-app per-IP rate limiting as a
-   floor**, so the endpoints stay bounded even if a request bypasses Cloudflare.
-   The RAG chat stays OFF publicly (`RAG_CHAT_ENABLED` unset).
+## Recommended target when a domain exists (per the readiness brief)
 
-## 2. Server bootstrap (once)
+**Hybrid:**
 
-```bash
-# On a fresh Ubuntu 24.04 image
-curl -fsSL https://get.docker.com | sh
-usermod -aG docker <your-user>
-mkdir -p /opt/portfolio && chown $USER /opt/portfolio
-```
+- **Static SPA on Cloudflare Pages** — deploy `apps/showcase-web/dist` as a
+  Pages project. Cloudflare provides the CDN, TLS, and the SPA fallback
+  rewrite. Cost: free tier.
+- **API on a small VPS** — the all-in-one image (or a slim API-only variant)
+  on one small VPS (Hetzner CX33-class: 4 vCPU / 8 GB is the reference) behind
+  Caddy for TLS. The SPA talks to the API at a configured origin; Cloudflare
+  proxies and rate-limits the API hostname.
 
-## 3. Deploy
+Until the hybrid split is implemented, the single-container image behind
+Caddy remains the simplest whole-app target — same env vars, one host.
 
-```bash
-# From the repo (or any machine with ssh access)
-docker build -t amm-ds-portfolio .
-docker save amm-ds-portfolio | ssh <user>@<server> 'docker load'
-scp deploy/docker-compose.prod.yml deploy/Caddyfile <user>@<server>:/opt/portfolio/
-ssh <user>@<server> 'cd /opt/portfolio && DOMAIN=example.com docker compose -f docker-compose.prod.yml up -d'
-```
+## Required environment variables
 
-The image bakes the web build and project stories, plus the deployable
-artifacts committed to git: figure specs (`projects/*/reports/figures/*.json`,
-with `.html` siblings) and serving bundles (`projects/*/reports/models/serving/`
-— live forecast/scoring endpoints). They are committed precisely so a fresh
-clone or CI-built image produces a fully functional app; bulky raw data stays
-DVC-tracked and regenerates locally via `dvc repro`. The 01 RAG index is the
-one opt-in exception — it is not committed: enable `/rag/chat` by running
-`dvc repro` in `projects/01-rag-agent` on the host.
-On first start Caddy provisions a Let's Encrypt certificate for `$DOMAIN`
-automatically — HTTPS is live as soon as DNS resolves.
+| Variable | Where | Purpose |
+| --- | --- | --- |
+| `SITE_URL` | SPA build time (`VITE_SITE_URL`) | Canonical origin baked into the build: sitemap, `og:url`/canonical tags, `absoluteUrl()`, contact copy. Must be the final public URL — rebuilding is required when it changes. |
+| `BUILD_SHA` | SPA build time (`VITE_BUILD_SHA`) | Git commit baked into the build for cache-busting / build attribution. |
+| `LIVE_*` | SPA build time | Feature switches for the live-demo registry (which demos render as interactive vs static fallback). Off/absent = static fallbacks, safe default. |
+| `IP_HASH_SALT` | API runtime | Salt for hashing client IPs before they are stored/logged — the privacy floor behind "no user data stored". Rotate on any suspected compromise (invalidates historical buckets only). |
+| `RATE_LIMIT_PER_MINUTE` | API runtime | Per-IP POST rate limit (default 30/min, burst 10). |
+| `RAG_CHAT_ENABLED` | API runtime | `1` opts in to the public RAG chat (off by default; needs a provider key or Ollama). |
 
-## 4. Verify
+`VITE_*` values are compiled into the static bundle — they are public, never
+secrets. The API container needs no secrets for the default configuration.
+
+## Smoke test (after any deploy)
 
 ```bash
-curl -s https://example.com/health            # {"status":"ok"}
-curl -s https://example.com/projects | head -c 120
-curl -s -X POST https://example.com/projects/07-open-data-mobility/forecast \
-  -H 'content-type: application/json' \
-  -d '{"zone_id":132,"features":{"lag_1":191,"lag_2":191,"lag_24":193,"lag_168":197,"hour":11,"day_of_week":4,"month":11,"prcp_mm":0,"tmax_c":14.4,"tmin_c":6.7,"snow_mm":0}}'
+BASE="https://<your-domain>"   # or http://localhost:8000 for the all-in-one image
+
+curl -fsS "$BASE/health"                                   # {"status":"ok"}
+curl -fsS "$BASE/" | grep -q 'id="root"'                   # SPA shell served
+# Deep links return the SPA shell (client-side routing fallback):
+curl -fsS "$BASE/projects/06-routing-optimization" | grep -q 'id="root"'
+curl -fsS "$BASE/projects" | grep -q '"id":"01-rag-agent"' # project index JSON
+curl -fsS "$BASE/projects/05-ml-pipeline-churn/metrics" | grep -q selected_model_calibrated
 ```
 
-Also check the response headers: HSTS, CSP, `nosniff`, `Referrer-Policy`, and
-`Permissions-Policy` are all set by the Caddyfile.
+Also verify response headers (HSTS, CSP, `nosniff`, `Referrer-Policy`,
+`Permissions-Policy`) and that the served HTML carries the expected
+`BUILD_SHA`/`SITE_URL`.
 
-## 5. Operations
+## Rollback outline
 
-- **Logs**: `docker compose -f /opt/portfolio/docker-compose.prod.yml logs -f api`
-  (containers rotate logs: json-file, 10 MB × 3).
-- **Update**: rebuild + `docker save | ssh ... 'docker load'` + `up -d` (zero-downtime recreate)
-- **No bulk data on the server**: raw datasets stay DVC-tracked and regenerate
-  via `dvc repro` where needed; the image ships the committed figure specs and
-  serving bundles, so the VPS is stateless apart from Caddy's certificates.
+1. **Static (Pages)** — Pages keeps prior deployments: roll back in the
+   Cloudflare dashboard (instant) or redeploy the previous CI artifact.
+   Because `SITE_URL`/`BUILD_SHA` are baked per build, a rollback is a pure
+   pointer move, no rebuild.
+2. **API (VPS)** — the image is immutable and tagged by commit:
+   keep the previous image on the host, `docker compose up -d` with the prior
+   tag (zero-downtime recreate), and only prune the old image after the
+   smoke test passes. Serving bundles are committed to git, so any historical
+   image can be rebuilt bit-for-bit from its commit.
+3. **Database/state** — none: the app stores no user data (privacy note in
+   the footer is literal); the only host state is Caddy's certificates and
+   regenerable serving artifacts.
 
-## RAG chat (opt-in, off by default)
+## Privacy posture
 
-Public visitors get the deterministic mock provider — no LLM costs. To serve the
-RAG chat publicly:
-
-1. Get the retrieval index onto the host: it is baked into the image when built
-   after `dvc repro`; on the server it regenerates from the repo with `dvc repro`
-   (or copy the built image from a machine that has it).
-2. Add a local model: extend the compose file with an `ollama` service (image
-   `ollama/ollama`, `OLLAMA_HOST=0.0.0.0`, pull `qwen3:8b`) and point the api at
-   it via `OLLAMA_BASE_URL=http://ollama:11434/v1` — or set a budgeted provider
-   key (`LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL`, which take priority over Ollama).
-   `extra_hosts: host.docker.internal:host-gateway` is already on the api service,
-   so a host-level Ollama also works (`OLLAMA_BASE_URL` default).
-3. Enable with `RAG_CHAT_ENABLED=1` and keep the Cloudflare rate-limit rules on
-   `/rag/*` (plus the API's in-app per-IP floor).
-
-A 32B model does NOT fit this tier — keep big-model demos local (see ADR-0006).
-
-## Alternative: free-tier hosts (no VPS needed)
-
-The showcase is a single container, so free tiers work for a public demo:
-
-- **Render.com** — one Web Service from this repo's Dockerfile (build context
-  repo root, port 8000); free tier spins down on idle, which is fine for a
-  portfolio. Set no env vars; RAG chat stays off, rate limiting is in-app.
-- **Fly.io** — `fly launch` against the root Dockerfile; smallest shared-cpu
-  VM is enough (the api service is capped at 2 cpus / 2G in compose).
-- **Oracle Cloud free tier** (if you want always-on) — an ARM Ampere VM runs
-  the compose stack as-is.
-
-Caveats on any host: the serving artifacts and figures bake into the image
-at build time (they are committed to git — nothing else to configure), and
-the optional RAG chat needs the 01 index rebuilt on the host (`dvc repro`
-in `projects/01-rag-agent`) plus a provider key or Ollama sidecar.
+No analytics, no cookies, no user data stored — stated in the site footer and
+a design constraint, not a marketing line. Client IPs are only ever handled
+salted-hashed (`IP_HASH_SALT`) or held in memory for the rate-limit bucket,
+which resets on restart. Keep it that way when wiring the hybrid target: no
+third-party analytics scripts, no Cloudflare Web Analytics without revisiting
+this document.

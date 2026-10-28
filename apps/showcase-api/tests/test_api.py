@@ -12,7 +12,30 @@ client = TestClient(app)
 
 def test_health() -> None:
     r = client.get("/health")
-    assert r.status_code == 200 and r.json() == {"status": "ok"}
+    assert r.status_code == 200
+    body = r.json()
+    assert body["status"] == "ok"
+    assert body["sha"] == "dev"  # BUILD_SHA unset locally
+    assert body["version"]
+    assert isinstance(body["ready"], bool)
+    assert r.headers["Cache-Control"] == "no-store"
+
+
+def test_health_readiness_reflects_missing_artifacts(
+    tmp_path: Path,
+    monkeypatch,  # type: ignore[no-untyped-def]
+) -> None:
+    """ready=False when a serving bundle or a demo payload file is missing."""
+    from showcase_api import main
+
+    monkeypatch.delenv("BUILD_SHA", raising=False)
+    monkeypatch.setattr(main, "_DEMAND_SERVING_DIR", tmp_path / "no-such-dir")
+    assert client.get("/health").json()["ready"] is False
+
+    _write_demo_project(tmp_path / "with-demo")
+    (tmp_path / "with-demo" / "05-ml-pipeline-churn" / "reports" / "demo_payload.json").unlink()
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path / "with-demo")
+    assert client.get("/health").json()["ready"] is False
 
 
 def test_projects_index(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -283,7 +306,11 @@ def test_demo_payload_200_and_cache_header(tmp_path: Path, monkeypatch) -> None:
     r = client.get("/demos/churn-sandbox/payload")
     assert r.status_code == 200
     assert r.json() == _DEMO_PAYLOAD
-    assert r.headers["Cache-Control"] == "public, max-age=300"
+    assert r.headers["Cache-Control"] == "public, max-age=3600, stale-while-revalidate=86400"
+    assert r.headers["ETag"]
+    # If-None-Match on the ETag -> 304
+    r2 = client.get("/demos/churn-sandbox/payload", headers={"If-None-Match": r.headers["ETag"]})
+    assert r2.status_code == 304
 
 
 def test_demo_payload_404_unknown_demo(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -305,7 +332,7 @@ def test_demo_payload_404_when_not_built(tmp_path: Path, monkeypatch) -> None:  
 
     r = client.get("/demos/churn-sandbox/payload")
     assert r.status_code == 404
-    assert "demo-payload" in r.json()["detail"]
+    assert "demo-payload" in r.json()["error"]
 
 
 def test_demo_payload_409_on_missing_required_key(
@@ -323,7 +350,7 @@ def test_demo_payload_409_on_missing_required_key(
 
     r = client.get("/demos/churn-sandbox/payload")
     assert r.status_code == 409
-    assert "overall" in r.json()["detail"]
+    assert "overall" in r.json()["error"]
 
 
 def test_forecast_503_without_artifacts(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -721,4 +748,188 @@ def test_solve_returns_503_when_capacity_busy(monkeypatch) -> None:
     monkeypatch.setattr(main_mod, "_SOLVE_SEMAPHORE", s)
     r = client.post("/projects/06-routing-optimization/solve", json=_vrptw_payload(5))
     assert r.status_code == 503
-    assert "busy" in r.json()["detail"]
+    assert "busy" in r.json()["error"]
+
+
+# --- Route manifest 404 / cache headers / kill switch / IP hashing ------------
+
+
+@pytest.fixture()
+def fake_web_dist(tmp_path: Path, monkeypatch):  # type: ignore[no-untyped-def]
+    """A minimal web build in tmp: index.html + one hashed asset. Patches the
+    WEB_DIST the catch-all reads, and an SPA manifest with one static route,
+    one wildcard route, one project deep link, and one demo deep link."""
+    from showcase_api import main
+
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<html>spa shell</html>")
+    (dist / "assets" / "app-a1b2c3.js").write_text("console.log(1)")
+    monkeypatch.setattr(main, "WEB_DIST", dist)
+    monkeypatch.setattr(
+        main, "_SPA_PATTERNS", ["/", "/projects", "/projects/*", "/demos/churn-sandbox"]
+    )
+    return dist
+
+
+def test_spa_known_routes_serve_index_html(fake_web_dist) -> None:  # type: ignore[no-untyped-def]
+    for path in ("/", "/projects", "/projects/05-ml-pipeline-churn", "/demos/churn-sandbox"):
+        r = client.get(path, headers={"accept": "text/html"})
+        assert r.status_code == 200, path
+        assert "spa shell" in r.text
+        assert r.headers["Cache-Control"] == "no-cache"
+        assert r.headers["X-Request-ID"]
+
+
+def test_spa_unknown_path_gets_real_404_json(fake_web_dist) -> None:  # type: ignore[no-untyped-def]
+    r = client.get("/definitely/not/a/route")
+    assert r.status_code == 404
+    body = r.json()
+    assert "unknown path" in body["error"]
+    assert len(body["request_id"]) == 12  # short uuid4
+    # wildcard patterns match exactly one segment: /projects/a/b is unknown
+    assert client.get("/projects/too/deep").status_code == 404
+
+
+def test_spa_hashed_assets_immutable_else_no_cache(fake_web_dist) -> None:  # type: ignore[no-untyped-def]
+    r = client.get("/assets/app-a1b2c3.js")
+    assert r.status_code == 200
+    assert r.headers["Cache-Control"] == "public, max-age=31536000, immutable"
+
+
+def test_figures_cache_headers_and_etag(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    figs = tmp_path / "01-demo" / "reports" / "figures"
+    figs.mkdir(parents=True)
+    (figs / "bars.html").write_text("<html>fig</html>")
+    (figs / "bars.json").write_text(json.dumps({"data": [], "layout": {}}))
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    for url in ("/projects/01-demo/figures/bars", "/projects/01-demo/figures/bars.json"):
+        r = client.get(url)
+        assert r.status_code == 200
+        assert r.headers["Cache-Control"] == "public, max-age=3600, stale-while-revalidate=86400"
+        etag = r.headers["ETag"]
+        assert client.get(url, headers={"If-None-Match": etag}).status_code == 304
+
+
+def test_projects_and_demos_indexes_have_etag(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Startup-computed indexes: same ETag across calls, 304 on If-None-Match."""
+    from showcase_api import main
+
+    _write_demo_project(tmp_path)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    for url in ("/projects", "/demos"):
+        r = client.get(url)
+        assert r.status_code == 200
+        etag = r.headers["ETag"]
+        assert etag
+        assert client.get(url, headers={"If-None-Match": etag}).status_code == 304
+        assert client.get(url).headers["ETag"] == etag  # computed once
+
+
+def test_http_errors_share_error_request_id_envelope() -> None:
+    r = client.get("/projects/99-nope/metrics")
+    assert r.status_code == 404
+    body = r.json()
+    assert set(body) == {"error", "request_id"}
+    assert body["request_id"] == r.headers["X-Request-ID"]
+    # 422 validation errors share the envelope
+    r2 = client.post("/projects/02-demand-forecasting/forecast", json={"series_id": "S1"})
+    assert r2.status_code == 422
+    assert r2.json()["request_id"] == r2.headers["X-Request-ID"]
+
+
+# --- Live kill switch + daily budget -------------------------------------------
+
+
+def _patch_guard(monkeypatch, **kwargs):  # type: ignore[no-untyped-def]
+    """Swap in an isolated LiveGuard so kill-switch/budget tests never touch
+    the process-wide counter other tests share."""
+    import showcase_api.main as main_mod
+
+    guard = main_mod.LiveGuard(**kwargs)
+    monkeypatch.setattr(main_mod, "_LIVE_GUARD", guard)
+    return guard
+
+
+def test_kill_switch_env_returns_503_with_hint(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _patch_guard(monkeypatch, kill_switch=True)
+    r = client.post(
+        "/projects/02-demand-forecasting/forecast",
+        json={"series_id": "S1", "features": {"lag_1": 1.0}},
+    )
+    assert r.status_code == 503
+    body = r.json()
+    assert body["hint"] == "precomputed demo replay remains available"
+    assert body["request_id"]
+
+
+def test_kill_switch_file_flag_returns_503(
+    tmp_path: Path,
+    monkeypatch,  # type: ignore[no-untyped-def]
+) -> None:
+    _patch_guard(monkeypatch)
+    flag = tmp_path / "live_disabled"
+    flag.write_text("")
+    monkeypatch.setattr("showcase_api.main._LIVE_DISABLE_FLAG", flag)
+    r = client.post(
+        "/projects/05-ml-pipeline-churn/score",
+        json={"features": {"tenure_months": 1.0}},
+    )
+    assert r.status_code == 503
+    assert r.json()["hint"] == "precomputed demo replay remains available"
+
+
+def test_live_guard_daily_budget_and_80pct_alert(caplog, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import logging
+
+    guard = _patch_guard(monkeypatch, budget=4)
+    url = "/projects/02-demand-forecasting/forecast"
+    body = {"series_id": "S1", "features": {"lag_1": 1.0}}
+    with caplog.at_level(logging.WARNING, logger="showcase_api.main"):
+        for _ in range(4):  # 80% of 4 -> alert logged on the 4th call
+            # gated through; whether the call 200s/422s depends on artifacts
+            r = client.post(url, json=body)
+            assert "budget" not in r.json().get("error", "")
+        assert any("80%" in rec.getMessage() for rec in caplog.records)
+        r = client.post(url, json=body)  # 5th call: over budget
+        assert r.status_code == 503
+        assert "budget" in r.json()["error"]
+        assert r.json()["hint"] == "precomputed demo replay remains available"
+        assert guard._count == 5
+
+
+# --- Client-IP hashing in request logs -----------------------------------------
+
+
+def test_hash_client_ip_is_salted_truncated_sha256() -> None:
+    import hashlib
+
+    from showcase_api.middleware import hash_client_ip
+
+    h = hash_client_ip("203.0.113.7", salt="test-salt")
+    assert h == hashlib.sha256(b"test-salt203.0.113.7").hexdigest()[:12]
+    assert len(h) == 12 and h != "203.0.113.7"
+    # different salt or IP -> different hash; default salt is stable
+    assert hash_client_ip("203.0.113.7", salt="other") != h
+    assert hash_client_ip("203.0.113.8", salt="test-salt") != h
+    assert hash_client_ip("1.2.3.4") == hash_client_ip("1.2.3.4", salt="dev-salt")
+
+
+def test_request_log_line_contains_hashed_ip_not_raw(caplog) -> None:  # type: ignore[no-untyped-def]
+    import logging
+
+    with caplog.at_level(logging.INFO, logger="showcase_api.middleware"):
+        client.get("/health", headers={"x-forwarded-for": "203.0.113.7"})
+    lines = [
+        rec.getMessage()
+        for rec in caplog.records
+        if rec.name == "showcase_api.middleware" and "GET /health -> 200" in rec.getMessage()
+    ]
+    assert len(lines) == 1
+    line = lines[0]
+    assert "203.0.113.7" not in line  # raw IP never logged
+    assert "ip=" in line and "rid=" in line

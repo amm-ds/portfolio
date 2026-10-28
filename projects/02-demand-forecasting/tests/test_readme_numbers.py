@@ -662,8 +662,8 @@ def test_m5_next_week_gap_and_verdict_quotes_match_committed_weekly_block() -> N
     for label in ("lgbm", "convex_ensemble"):
         block = nw["gaps"][f"{label}_vs_naive"]["wape"]
         m = re.search(
-            rf"{label}\s*{MINUS}([\d.]+)\s+WAPE\s*\(CI\s*\[{MINUS}([\d.]+),\s*"
-            rf"{MINUS}([\d.]+)\]\)",
+            rf"{label}\s*\**\s*{MINUS}([\d.]+)\s+WAPE\s*\**\s*\(CI\s*\**\s*"
+            rf"\[{MINUS}([\d.]+),\s*{MINUS}([\d.]+)\]\s*\**\s*\)",
             sub,
         )
         assert m, f"{label} next-week gap quote missing from README"
@@ -689,6 +689,10 @@ def test_m5_weekly_blocks_table_and_growth_quote_match_committed_weekly_block() 
     rolling = metrics["weekly_rolling"]
     wb, demand = rolling["weekly_blocks"], rolling["weekly_block_demand"]
     sub = _m5_weekly_subsection()
+    # anchor past the next-week table: the blocks table is the one with a
+    # 'wk1 (h1-7)' header
+    assert "wk1 (h1-7)" in sub, "weekly-blocks table header missing from README"
+    sub = sub.split("wk1 (h1-7)", 1)[1]
     rows: dict[str, list[str]] = {}
     for line in sub.splitlines():
         stripped = line.strip()
@@ -712,7 +716,9 @@ def test_m5_weekly_blocks_table_and_growth_quote_match_committed_weekly_block() 
     baseline = metrics["headline"]["baseline"]
     champ = min(
         (c for c in pooled28),
-        key=lambda c: pooled28[c]["wape"] if pooled28[c]["wape"] == pooled28[c]["wape"] else float("inf"),
+        key=lambda c: (
+            pooled28[c]["wape"] if pooled28[c]["wape"] == pooled28[c]["wape"] else float("inf")
+        ),
     )
     reductions = [
         (wb[baseline][f"wk{k}"] - wb[champ][f"wk{k}"]) * demand[f"wk{k}"] for k in range(1, 5)
@@ -721,9 +727,10 @@ def test_m5_weekly_blocks_table_and_growth_quote_match_committed_weekly_block() 
     assert total > 0, "champion must reduce absolute error vs the floor for the quote"
     wk1_share = 100.0 * reductions[0] / total
     growth = wb[champ]["wk4"] / wb[champ]["wk1"]
-    m = re.search(r"week 1 carries\s+\*\*([\d.]+)%\*\*", sub)
+    m = re.search(r"[Ww]eek 1 carries\s+\*\*([\d.]+)%\*\*", sub)
     assert m, "value-share quote missing from README"
     assert float(m.group(1)) == pytest.approx(wk1_share, abs=5e-2)
-    m = re.search(r"week 4 error is\s+\*\*([\d.]+)×\*\*", sub)
+    MULT = "\u00d7"  # multiplication sign, written escaped to keep ruff RUF001 quiet
+    m = re.search(rf"[Ww]eek 4 error\s+is\s+\*\*([\d.]+){MULT}\*\*", sub)
     assert m, "error-growth quote missing from README"
     assert float(m.group(1)) == pytest.approx(growth, abs=5e-3)

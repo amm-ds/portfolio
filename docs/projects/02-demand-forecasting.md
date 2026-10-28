@@ -26,8 +26,11 @@ rolling means / calendar / price-SNAP-event exog (no series-identity
 feature), and a convex ensemble fitted on the selection origins only — all
 through 10 weekly rolling origins with a frozen, scored-once test pair, ADI/CV²
 volume classes, WRMSSE with a documented denominator, paired-bootstrap CIs
-and split-conformal 80% bands. The UCI/synthetic tracks below carry the same
-discipline into the sparse regime and the CI fast path.
+and split-conformal 80% bands — plus a rolling next-week evaluation (h≤7
+over all origins: the weekly service a retailer actually consumes, with a
+measured always-beats-naive verdict per volume class) and weekly error
+blocks showing how the 28-day error grows. The UCI/synthetic tracks below
+carry the same discipline into the sparse regime and the CI fast path.
 
 ## Key results — M5 headline (protocol `m5_direct_v1`, committed `reports_m5/`)
 
@@ -81,6 +84,20 @@ stated deviation from the official M5 lag-1 scale):
 - **Both volume classes** — test WAPE dense 0.568 → 0.464, intermittent
   0.749 → 0.604: the models win in both classes here, the honest contrast to
   the sparse panel below.
+- **Rolling next-week service** (h ≤ 7 pooled over ALL 10 origins — the
+  deployment shape: each week the model is re-run, only the first week of
+  the fresh forecast is consumed, later weeks roll forward; the selection
+  origins are included, so this is the operational service number, not a
+  held-out estimate): convex_ensemble next-week WAPE **0.4250** vs the
+  floor's **0.5442** (lgbm **0.4322**, rmae 0.794) — paired-bootstrap gaps
+  lgbm **−0.1120** (CI [−0.1200, −0.1047]) / ensemble **−0.1192** (CI
+  [−0.1271, −0.1113]), and every candidate beats the floor in both volume
+  classes at h≤7, measured not asserted (ensemble rmae dense 0.776 /
+  intermittent 0.796). The weekly error blocks on the scored test origins
+  grow wk1 **0.4158** → wk4 **0.5612** — **1.35×** week 1 (the floor
+  degrades 1.22× the same way) — and week 1 carries 27.6% of the champion's
+  absolute-error reduction, which is why the next-week number is the
+  service headline while the 28-day pooled table stays the month view.
 - **Related work** — Makridakis et al., M5 competition companion (IJF 2022);
   the nixtla stack (statsforecast / mlforecast / datasetsforecast) powering
   every candidate; a Kaggle-competitions analysis of the M5 accuracy round
@@ -208,7 +225,7 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   reported as such.
 - 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 30 min
   (multi-step the bulk of it — 14 model fits × 14 horizons × 20 origins,
-  joblib-parallel); M5 ≈ 22 min; 165 offline tests.
+  joblib-parallel); M5 ≈ 24 min; 165 offline tests.
 
 ![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run against the 1.0 in-sample-scale reference line (the MASE scale is the naive's in-sample error from a quieter period, NOT the naive's own holdout error — the seasonal-naive itself lands at 1.310 on this window). MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 

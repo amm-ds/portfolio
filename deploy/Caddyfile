@@ -14,9 +14,16 @@
         # is hard to undo, so it stays off until deliberately enabled.
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         # Conservative CSP for the SPA — everything same-origin. Plotly writes
-        # inline `style` attributes on its rendered elements, so style-src keeps
-        # 'unsafe-inline'; img-src data: covers plotly data-URI images.
-        Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'"
+        # inline `style` attributes on its rendered elements and mermaid injects
+        # an inline <style> block into the SVG it renders, so style-src keeps
+        # 'unsafe-inline' (both are renderer-injected, not server-supplied);
+        # img-src data: covers plotly data-URI images. The remaining directives
+        # pin down the edges default-src leaves open: no <base> hijacking, no
+        # form posts off-origin, no framing, no plugins.
+        Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+        # Full process isolation from cross-origin popups/windows (defense in
+        # depth next to frame-ancestors 'none' / X-Frame-Options DENY).
+        Cross-Origin-Opener-Policy "same-origin"
         X-Content-Type-Options nosniff
         X-Frame-Options DENY
         Referrer-Policy strict-origin-when-cross-origin

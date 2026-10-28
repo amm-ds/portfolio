@@ -269,7 +269,14 @@ code {
   border-collapse: collapse;
 }
 
-:focus-visible {
+/* Visible keyboard focus everywhere interactive. 2px accent ring, offset 2px;
+   accent on --bg computes to ~9.6:1, well above the 3:1 non-text minimum. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -745,7 +752,9 @@ code {
 }
 
 .rail .rail-num {
-  color: var(--border);
+  /* --border computed to 1.7:1 on --bg (axe serious color-contrast); --muted
+     is a still-quiet 6.9:1 and keeps the number visually secondary. */
+  color: var(--muted);
   margin-right: 0.45rem;
 }
 
@@ -1024,8 +1033,10 @@ code {
 }
 
 @keyframes skeleton-pulse {
+  /* floor 0.8: below ~0.8 the pulsing muted text on --bg drops under the
+     4.5:1 AA threshold (axe caught it at 4.0:1) */
   50% {
-    opacity: 0.35;
+    opacity: 0.8;
   }
 }
 
@@ -1048,6 +1059,45 @@ a.figure-caption {
 a.figure-caption:hover {
   color: var(--accent);
   text-decoration: none;
+}
+
+/* --- Figure data table fallback (FigureCard) --- */
+
+.figure-data {
+  margin-top: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
+.figure-data summary {
+  cursor: pointer;
+  color: var(--secondary);
+  display: inline-block;
+}
+
+.figure-data summary:hover {
+  color: var(--accent);
+}
+
+.figure-data summary:focus-visible {
+  outline-offset: 0;
+}
+
+.figure-data .data-table {
+  margin-top: 0.6rem;
+  font-size: 0.76rem;
+}
+
+.figure-data .data-table caption {
+  text-align: left;
+  padding: 0.5rem 0.9rem 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.figure-data .figure-data-note {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
 }
 
 .figure-grid {
@@ -1154,6 +1204,7 @@ button {
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.02em;
+  min-height: 44px;
 }
 
 button:hover:not(:disabled) {
@@ -1399,7 +1450,8 @@ button:disabled {
   margin: 0.6rem auto 0;
   font-size: 0.75rem;
   color: var(--muted);
-  opacity: 0.8;
+  /* full-strength --muted: at opacity 0.8 the footer text computed to 4.2:1
+     on --surface (fails WCAG AA 4.5:1); without the fade it is 5.7:1. */
 }
 
 @media (max-width: 800px) {
@@ -1838,6 +1890,7 @@ button.chip.demo-preset {
   padding: 0.15rem 0.55rem;
   border-radius: 6px;
   cursor: pointer;
+  min-height: 44px;
 }
 
 button.chip.demo-preset:hover {
@@ -2020,6 +2073,7 @@ button.chip.demo-preset:hover {
   font-family: var(--mono);
   font-size: 0.85rem;
   padding: 0.4rem 0.55rem;
+  min-height: 44px;
 }
 
 .demo-form button {
@@ -2195,6 +2249,7 @@ button.chip.wb-reset {
   padding: 0.15rem 0.55rem;
   border-radius: 6px;
   cursor: pointer;
+  min-height: 44px;
 }
 
 button.chip.wb-scenario:hover,
@@ -2655,6 +2710,7 @@ button.chip.demo-preset.fwb-active {
   width: 100%;
   padding: 0.35rem 0.8rem;
   font-size: 0.8rem;
+  min-height: 44px;
 }
 
 .wb-controls .wb-scorer .demo-prob-bar {
@@ -2676,20 +2732,23 @@ button.chip.demo-preset.fwb-active {
 }
 
 /* filled slider track: --fill (inline style, 0–100%) paints the accent part.
-   No side padding on the input — the thumb center must reach both track ends. */
+   No side padding on the input — the thumb center must reach both track ends.
+   The input itself is a 44px-high hit area (WCAG 2.5.5 target size); the
+   track stays 6px tall and is centered inside it. */
 .wb-slider {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   box-sizing: border-box;
   margin: 0;
-  height: 16px;
+  height: 44px;
   background: transparent;
   cursor: pointer;
 }
 
 .wb-slider::-webkit-slider-runnable-track {
   height: 6px;
+  margin-top: 19px;
   border-radius: 3px;
   background: linear-gradient(90deg, var(--accent) 0 var(--fill), var(--border) var(--fill) 100%);
 }

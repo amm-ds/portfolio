@@ -23,6 +23,17 @@ services:
       # host.docker.internal is not resolved on Linux by default; this lets the
       # api reach an Ollama sidecar running on the Docker host (see DEPLOY.md).
       - "host.docker.internal:host-gateway"
+    # Hardened container shape: read-only rootfs (tmpfs /tmp for transient
+    # writes), no capabilities, no privilege escalation. The app logs to
+    # stdout and persists nothing, so this is safe; the opt-in RAG path would
+    # need HF_HOME pointed at a writable volume (see deploy/DEPLOY.md).
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"]
       interval: 30s

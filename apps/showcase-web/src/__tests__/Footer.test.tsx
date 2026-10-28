@@ -2,7 +2,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { Footer } from "../components/Footer";
-import { SITE_EMAIL } from "../config";
+import { LINKEDIN_URL, SITE_EMAIL } from "../config";
 
 afterEach(cleanup);
 
@@ -28,10 +28,22 @@ describe("Footer", () => {
       { text: "Services", href: "/services" },
       { text: "Contact", href: "/contact" },
       { text: "GitHub", href: "https://github.com/amm-ds/portfolio" },
+      { text: "LinkedIn", href: LINKEDIN_URL },
       { text: SITE_EMAIL, href: `mailto:${SITE_EMAIL}` },
     ]);
 
     expect(screen.getByText(/© 2026 amm-ds · MIT licensed/)).toBeInTheDocument();
+  });
+
+  it("states the privacy posture: no analytics, cookies, or stored user data", () => {
+    render(
+      <MemoryRouter>
+        <Footer />
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByText("No analytics, no cookies, no user data stored."),
+    ).toBeInTheDocument();
   });
 
   it("drops the old gimmicky shell status line", () => {

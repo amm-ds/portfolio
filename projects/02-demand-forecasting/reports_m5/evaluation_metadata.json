@@ -71,7 +71,7 @@
     "polars": "2.0.0",
     "numpy": "2.5.4"
   },
-  "runtime_seconds": 1327.971,
+  "runtime_seconds": 1460.186,
   "determinism": "VECLIB_MAXIMUM_THREADS=1 pinned in cli.py before numpy; LightGBM n_jobs=1 + fixed seed + force_row_wise; statsforecast n_jobs=1; statsforecast models are closed-form/seed-free",
   "metric_definitions": {
     "mae": "mean |actual - forecast| over the scored (series x day) cells",
@@ -81,7 +81,9 @@
     "peak_mae": "MAE on the window's top-decile-by-actual days (k = ceil(0.1*28) = 3)",
     "win_rate_vs_naive": "share of series whose pooled test |error| is below the seasonal_naive pooled test |error|",
     "pinball": "mean pinball loss at the stated quantile over the test cells",
-    "coverage_80": "share of test actuals inside the per-series scaled split-conformal 80% band (pooled and by volume class)"
+    "coverage_80": "share of test actuals inside the per-series scaled split-conformal 80% band (pooled and by volume class)",
+    "next_week_wape": "pooled WAPE over h=1..7 of EVERY rolling origin (each origin's first-week forecast is one deployed weekly forecast, so the 10 origins are 10 weekly service evaluations rolled together) \u2014 the rolling next-week service number; reported pooled, per volume class, and with the paired cluster-bootstrap gap vs seasonal_naive",
+    "weekly_block_wape": "pooled WAPE per 7-day block of the 28-day horizon (wk1 = h1-7, wk2 = h8-14, wk3 = h15-21, wk4 = h22-28) over the 2 scored-once test origins \u2014 the honest error-growth shape of the month-ahead view"
   },
   "report_sample_series": [
     {

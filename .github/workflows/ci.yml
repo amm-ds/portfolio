@@ -14,7 +14,39 @@ env:
   LOKY_MAX_CPU_COUNT: "1"
 
 jobs:
+  changes:
+    # Path filters: docs-only pushes/PRs skip the heavy matrix below. Every
+    # other job gates its steps (or itself) on these outputs.
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      web: ${{ steps.filter.outputs.web }}
+      docs: ${{ steps.filter.outputs.docs }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 0 # paths-filter diffs against the merge base
+      - uses: dorny/paths-filter@f3360c560367c9daf72b88c0e6164162034c5721 # v3
+        id: filter
+        with:
+          filters: |
+            python:
+              - 'libs/**'
+              - 'projects/**'
+              - 'apps/showcase-api/**'
+              - 'scripts/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'apps/showcase-web/**'
+            docs:
+              - 'docs/**'
+              - 'mkdocs.yml'
+              - 'README.md'
+
   gate:
+    needs: changes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
@@ -27,32 +59,126 @@ jobs:
       - name: Install workspace
         run: uv sync --all-packages --dev
       - name: Ruff
+        if: needs.changes.outputs.python == 'true'
         run: uv run ruff check . && uv run ruff format --check .
       - name: Demo contract check
+        if: needs.changes.outputs.python == 'true'
         run: uv run python scripts/check_demo_contract.py
-      - name: Mypy (libs strict + projects/apps typed)
+      - name: "Mypy (libs strict + projects/apps typed)"
+        if: needs.changes.outputs.python == 'true'
         run: uv run mypy libs projects apps
       - name: "Frontend — install, test, typecheck, build"
+        if: needs.changes.outputs.web == 'true'
         working-directory: apps/showcase-web
         run: |
           npm ci --no-audit --no-fund
           npm test
           npm run build
+      - name: Bundle budget (index-*.js gzip ≤ 250 KB)
+        # Blocking: the main entry chunk must stay lean; route-heavy pages are
+        # already code-split by Vite. No new deps — gzip via node:zlib.
+        if: needs.changes.outputs.web == 'true'
+        working-directory: apps/showcase-web
+        run: >-
+          node --input-type=module -e
+          "import z from 'node:zlib'; import f from 'node:fs';
+          const files = f.readdirSync('dist/assets').filter((n) => /^index-.*\.js$/.test(n));
+          if (!files.length) { console.error('no index chunk found'); process.exit(1); }
+          let fail = false;
+          for (const n of files) {
+            const gz = z.gzipSync(f.readFileSync('dist/assets/' + n)).length;
+            console.log(n + ': ' + (gz / 1024).toFixed(1) + ' KB gzip');
+            if (gz > 250 * 1024) fail = true;
+          }
+          if (fail) { console.error('bundle budget exceeded (250 KB gzip)'); process.exit(1); }"
       - name: Docs build (strict)
+        if: needs.changes.outputs.docs == 'true'
         run: uv run mkdocs build --strict
       - name: Dependency audit
         # uv has no audit subcommand (uv pip audit / uv audit are both invalid);
         # export the locked runtime requirements and audit them with pip-audit.
+        if: needs.changes.outputs.python == 'true'
         run: |
           uv export --frozen --no-dev -o /tmp/requirements.txt
           uvx pip-audit --requirement /tmp/requirements.txt --strict
+
+  eslint:
+    # NON-BLOCKING this wave (continue-on-error); becomes a required gate in a
+    # later wave. Minimal flat config: jsx-a11y recommended.
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          cache: npm
+          cache-dependency-path: apps/showcase-web/package-lock.json
+      - name: ESLint (jsx-a11y recommended)
+        working-directory: apps/showcase-web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run lint
+
+  a11y-axe:
+    # NON-BLOCKING this wave (continue-on-error). Runs the axe-core check
+    # (scripts/axe_check.mjs) against a preview build with chromium installed,
+    # and uploads reports/axe.json for inspection.
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          cache: npm
+          cache-dependency-path: apps/showcase-web/package-lock.json
+      - name: Build preview + install chromium
+        working-directory: apps/showcase-web
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+          npx playwright install --with-deps chromium
+      - name: Serve preview + run axe check
+        working-directory: apps/showcase-web
+        # The script defaults to the dev server; point it at the preview of
+        # the production build instead and write reports/axe.json at the root.
+        run: |
+          npm run preview -- --port 4173 --strictPort &
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null 2>&1 && break
+            sleep 1
+          done
+          AXE_BASE_URL=http://127.0.0.1:4173 node ../../scripts/axe_check.mjs
+      - name: Upload axe report
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
+        with:
+          name: axe-report
+          path: reports/axe.json
+          if-no-files-found: warn
+
+  links:
+    # NON-BLOCKING link check over docs + README (continue-on-error).
+    needs: changes
+    if: needs.changes.outputs.docs == 'true'
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - uses: lycheeverse/lychee-action@649b0e4890508ea3e11ea6b3ee35ce899a25afd5 # v2
+        with:
+          # LinkedIn 999s bot requests; exclude it (the URL is config-driven).
+          args: --no-progress --exclude-loopback --exclude '^https://www\.linkedin\.com' README.md docs/
 
   tests:
     # The full suite outgrew a single 2-vCPU runner (the lattice wave pushed
     # the monolithic step past 1.5h). One free runner per project keeps every
     # cell under ~15 min, runs them concurrently, and makes any future hang
     # identifiable by project.
-    needs: gate
+    needs: [changes, gate]
+    if: needs.changes.outputs.python == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -104,6 +230,7 @@ jobs:
 
   docker:
     needs: [gate, tests]
+    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
