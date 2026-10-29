@@ -38,8 +38,10 @@ DISPLAY = {  # candidate -> display name
     "auto_ets": "auto_ets",
     "auto_ces": "auto_ces",
     "lgbm": "lgbm",
+    "lgbm_l2": "lgbm_l2",
     "xgb": "xgb",
     "convex_ensemble": "convex_ensemble",
+    "ensemble_l2": "ensemble_l2",
 }
 
 
@@ -350,7 +352,16 @@ def _pct(x: Any) -> str:
 
 
 #: candidates shown in the per-class + band tables (floor + the ML-family leaders)
-HEADLINE_CANDIDATES = ("seasonal_naive", "auto_ets", "auto_ces", "lgbm", "convex_ensemble")
+HEADLINE_CANDIDATES = (
+    "seasonal_naive",
+    "auto_ets",
+    "auto_ces",
+    "lgbm",
+    "lgbm_l2",
+    "xgb",
+    "convex_ensemble",
+    "ensemble_l2",
+)
 
 #: the four figures the report links (all seven are still generated).
 REPORT_FIGURES = ("sample_series", "wape_bars", "band_calibration", "class_comparison")
@@ -379,11 +390,18 @@ CANDIDATE_DEFINITIONS = {
     "lgbm": "global LightGBM over all 600 series (mlforecast recursive; lags 1/7/14/21/28, "
     "rolling means/stds, expanding mean, calendar + price/SNAP/event exog; wave-25 "
     "tuned config; wave-27 feature space)",
+    "lgbm_l2": "global LightGBM, pure-L2 arm (wave 28): same mlforecast feature space as "
+    "lgbm, objective=regression with the tree count re-derived under an L2 "
+    "early-stopping pass on the selection-only nested split (the committed "
+    "m5_lgbm count was chosen by an L1 rule)",
     "xgb": "global XGBoost over all 600 series (same mlforecast recursive feature space as "
     "lgbm; modest a-priori config — a second booster family for ensemble diversity, "
     "wave 27)",
-    "convex_ensemble": "convex blend of the best three of {lgbm, xgb, auto_ets, auto_ces} by "
-    "selection WAPE (simplex grid step 0.05, selection origins only)",
+    "convex_ensemble": "convex blend of the best three of {lgbm, lgbm_l2, xgb, auto_ets, "
+    "auto_ces} by SELECTION WAPE (simplex grid step 0.05, selection origins only)",
+    "ensemble_l2": "convex blend of the best three of the same pool by SELECTION WRMSSE, "
+    "weights minimising pooled selection WRMSSE (simplex grid step 0.05, selection "
+    "origins only) — the L2-selected comparison blend (wave 28)",
 }
 
 
@@ -613,6 +631,65 @@ def _band_table(prob: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _l1_l2_insight(metrics: dict[str, Any]) -> str:
+    """The wave-28 L1/L2 forecast-shape finding — measured, both metrics, both blends.
+
+    The theory: an L1/WAPE objective targets the conditional MEDIAN — flat,
+    mean-reverting curves on spiky series — while the M5 competition's WRMSSE
+    (L2) targets the conditional MEAN, which tracks spikes at the cost of
+    everyday accuracy. The paragraph states exactly what this run measured for
+    both ensembles (and the lgbm_l2 arm), including the verification finding
+    that LightGBM's default booster loss was already L2 — the track's L1
+    character lived in the early-stopping metric and the WAPE selection.
+    """
+    pooled = metrics["test"]["pooled"]
+    ce, l2e = pooled["convex_ensemble"], pooled["ensemble_l2"]
+    l2_arm = pooled["lgbm_l2"]
+    champ = metrics["headline"].get("wrmsse_champion") or {}
+    trade = (
+        f"the trade is real but not free: ensemble_l2 gives back "
+        f"{l2e['wape'] - ce['wape']:+.4f} test WAPE vs the WAPE-selected blend "
+        f"and buys {l2e['wrmsse'] - ce['wrmsse']:+.4f} test WRMSSE"
+        if l2e["wrmsse"] <= ce["wrmsse"] and l2e["wape"] >= ce["wape"]
+        else (
+            f"on this panel the L2-selected blend wins BOTH metrics "
+            f"(WAPE {l2e['wape']:.4f} vs {ce['wape']:.4f}, WRMSSE "
+            f"{l2e['wrmsse']:.4f} vs {ce['wrmsse']:.4f})"
+            if l2e["wrmsse"] <= ce["wrmsse"] and l2e["wape"] <= ce["wape"]
+            else f"on this panel the WAPE-selected blend leads BOTH metrics "
+            f"(WAPE {ce['wape']:.4f} vs {l2e['wape']:.4f}, WRMSSE "
+            f"{ce['wrmsse']:.4f} vs {l2e['wrmsse']:.4f}) — the L2-selection "
+            f"hypothesis is not supported here"
+        )
+    )
+    champ_name = DISPLAY.get(str(champ.get("candidate", "")), "?")
+    champ_note = (
+        f" The overall pooled-test-WRMSSE champion is <b>{champ_name}</b> "
+        f"at {champ.get('wrmsse', float('nan')):.4f}."
+        if champ
+        else ""
+    )
+    return (
+        "<li><b>L1 vs L2 forecast shape (wave 28):</b> the flat look of the shipped curves "
+        "was hypothesised to be an L1 artifact — WAPE optimisation targets the conditional "
+        "median, which mean-reverts on spiky series, while the M5 competition's WRMSSE "
+        "(L2) targets the conditional mean, which tracks spikes. Verification finding: "
+        "LightGBM's default booster loss was already squared error — the L1 character "
+        "entered through the tuner's l1 early-stopping and the WAPE selection layers — "
+        "so the pure-L2 arm <code>lgbm_l2</code> (L2 objective + L2-stopped tree count) "
+        f"is measured against <code>lgbm</code> (test WAPE {l2_arm['wape']:.4f} vs "
+        f"{pooled['lgbm']['wape']:.4f}; WRMSSE {l2_arm['wrmsse']:.4f} vs "
+        f"{pooled['lgbm']['wrmsse']:.4f} — it reproduced lgbm exactly), and the "
+        f"WRMSSE-selected <code>ensemble_l2</code> against the WAPE-selected "
+        f"<code>convex_ensemble</code>: "
+        f"test WAPE {l2e['wape']:.4f} vs {ce['wape']:.4f}, test WRMSSE {l2e['wrmsse']:.4f} "
+        f"vs {ce['wrmsse']:.4f} — {trade}.{champ_note} The demo ships both ensemble curves "
+        "for per-series inspection (they are visually near-identical: curve day-to-day "
+        "variation ~5.4 units vs ~12.2 for realized demand); headline stays the "
+        "WAPE-primary blend.</li>"
+    )
+
+
 def _business_insights(metrics: dict[str, Any], prob: dict[str, Any]) -> str:
     pooled = metrics["test"]["pooled"]
     by_class = metrics["test"]["by_class"]
@@ -653,9 +730,10 @@ def _business_insights(metrics: dict[str, Any], prob: dict[str, Any]) -> str:
         "thinner there and the band runs slightly wide — size intermittent safety stock "
         "from the band, not from the point forecast alone.</li>"
         f"<li><b>Tuning/ensemble evidence:</b> the lgbm config is the best of a seeded "
-        f"30-trial Optuna study on the selection origins (params.yaml ``m5_lgbm``), and the "
+        f"25-trial Optuna study on the selection origins (params.yaml ``m5_lgbm``), and the "
         f"ensemble ({weights}) is grid-fit on a 0.05 simplex over the same origins — "
         "neither saw the test windows.</li>"
+        f"{_l1_l2_insight(metrics)}"
         "<li><b>Caveat:</b> two scored-once test origins on one 600-series subset of M5; "
         "the gaps are statistically established on this panel but should not be read as "
         "universal effect sizes.</li>"
@@ -677,6 +755,16 @@ def _protocol_html(metrics: dict[str, Any], meta: dict[str, Any]) -> str:
     mdefs = "".join(f"<li><code>{k}</code>: {v}</li>" for k, v in metric_defs.items())
     prov = meta["dataset"].get("provenance_ref", "data_m5/PROVENANCE.md")
     ens = metrics["ensemble"]
+    ens_l2 = ens.get("ensemble_l2") or {}
+    ens_l2_note = (
+        " <b>Wave-28 comparison blend:</b> "
+        + str(ens_l2.get("rule", ""))
+        + "; committed members "
+        + ", ".join(str(m) for m in ens_l2.get("members", []))
+        + "."
+        if ens_l2
+        else ""
+    )
     return (
         "<p><b>Origins</b> (weekly, 7-day spacing; the last two are scored once as TEST): "
         f"selection {origins['selection']} | test {origins['test']}; horizon "
@@ -688,7 +776,9 @@ def _protocol_html(metrics: dict[str, Any], meta: dict[str, Any]) -> str:
         + str(ens["rule"])
         + "; committed members "
         + ", ".join(str(m) for m in ens["members"])
-        + ".</p>"
+        + "."
+        + ens_l2_note
+        + "</p>"
         "<p><b>Metric definitions</b></p><ul>"
         f"{mdefs}</ul>"
         f"<p>Dataset provenance and the sha256 pins: <code>{prov}</code>.</p>"

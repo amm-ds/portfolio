@@ -10,7 +10,7 @@ skills: [time series forecasting, prediction intervals, demand classification]
 modes: [browser]
 hero:
   label: pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)
-  value: 0.498 vs 0.603
+  value: 0.491 vs 0.603
   ci: paired bootstrap CI [−0.115, −0.095] on the −0.105 gap; 89.3% per-series
     win rate; 80% band covers 78.7% (protocol m5_direct_v1, horizon 28)
 scenarios:

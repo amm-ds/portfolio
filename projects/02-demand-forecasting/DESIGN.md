@@ -596,6 +596,66 @@ small tabular lag problems; a sequence model is the roadmap answer).
   target (lgbm 77.7% coverage at 13.535 units mean width) — stated as
   measured.
 
+### O. Wave 28 — the L1/L2 forecast-shape pass (lgbm_l2 + ensemble_l2)
+
+- **Why**: the feedback "the predictions look repetitive vs the actuals".
+  Theory (documented research pass): an L1/WAPE objective targets the
+  conditional MEDIAN — flat, mean-reverting curves on spiky series — while
+  the M5 competition's WRMSSE (L2) targets the conditional MEAN, which
+  tracks spikes (FPP3, otexts.com/fpp3; the MAE→median thread,
+  stats.stackexchange.com/questions/355538; Kolassa et al. on flat
+  MAE-optimal forecasts for intermittent demand, arXiv:2204.08283; M5
+  companion, Makridakis et al., IJF 2022). The pass was built to test —
+  not assume — that root cause.
+- **Verification finding (the premise was half wrong, measured)**: LightGBM's
+  DEFAULT objective is already squared error (verified bitwise on this
+  build: `LGBMRegressor()` ≡ `objective="regression"`). The track's L1
+  character lived in the SELECTION layers — the tuner's `eval_metric="l1"`
+  early stopping and the WAPE-ranked ensemble — not in the booster loss.
+  So the pure-L2 arm `lgbm_l2` (same mlforecast pipeline/feature space,
+  explicit `objective="regression"`, all other params at the committed
+  `m5_lgbm` values, tree count re-derived by ONE deterministic L2
+  early-stopping pass on the tuner's nested selection-only split —
+  `_early_stop_l2_n_estimators`, cap 800, patience 50) reproduced `lgbm`
+  **bitwise**: the L2 stop re-derived the same 279 trees. A literal
+  same-params copy would have been a duplicate and measured nothing.
+- **Ensemble changes**: the pool widens to five {lgbm, lgbm_l2, xgb,
+  auto_ets, auto_ces}; the headline `convex_ensemble` keeps its wave-25/27
+  semantics (best-3 by selection WAPE, 0.05-simplex weights minimising
+  pooled Σ|err|); `ensemble_l2` is the same rule under selection WRMSSE
+  (best-3 by pooled selection WRMSSE, weights from a new
+  `ensemble_weights_l2` grid minimising pooled WRMSSE over the stacked
+  (series x origin) units). Both are committed in metrics.json
+  (`ensemble.ensemble_l2`); `ensemble_l2` is comparison/demo material, the
+  headline stays WAPE-primary.
+- **Dedup rule (measured, not speculative)**: ranking the bitwise-identical
+  `lgbm_l2` as a separate pool member pushed auto_ets out of the best three
+  and regressed the headline blend 0.4907 → 0.4953 with zero new information
+  (first wave-28 run, reproduced deterministically). Rule: a candidate whose
+  stacked selection forecasts are bitwise identical to an already-admitted
+  member is skipped at ranking time (deterministic admission order = the
+  ranked order); its metrics row stays committed, only the blend skips it.
+  With the dedup, the wave-27 headline is reproduced exactly: xgb × 0.35 +
+  lgbm × 0.20 + auto_ets × 0.45, test WAPE 0.4907, next-week 0.4233.
+- **Measured L1/L2 outcome (stated plainly)**: both blends' best-three is
+  {xgb, lgbm, auto_ets}; `ensemble_l2`'s WRMSSE-optimal weights (xgb ×
+  0.45 + lgbm × 0.20 + auto_ets × 0.35) land test WAPE **0.4905** / WRMSSE
+  **0.5952** vs the WAPE blend's 0.4907 / 0.5958 — both metrics, by
+  0.0002 / 0.0006, three orders of magnitude inside the ±0.01 bootstrap
+  noise; next-week 0.4234 vs 0.4233. `ensemble_l2` is the committed
+  pooled-test-WRMSSE champion (headline block's one-line
+  `wrmsse_champion` note, computed). Conclusion: on this panel L1-vs-L2
+  SELECTION is a wash; the flatness is not a loss-function artifact — the
+  curves' day-to-day variation (≈ 5.4 units vs ≈ 12.2 realized) is what the
+  conditional mean of noisy daily demand looks like, and spike-day MAE
+  (~13) is flat across every candidate. The honest answer to spike
+  uncertainty stays the conformal band, not a pointier curve.
+- **Demo/report surface**: the sidecar and payload (schema stays v4 — new
+  keys inside the open-keyed curves map only) ship `lgbm_l2` and
+  `ensemble_l2` curves; the report's business insights carry the measured
+  paragraph above; the payload's committed-ensemble verification test covers
+  both blends.
+
 ## Pipeline
 
 ```mermaid

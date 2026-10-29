@@ -608,6 +608,63 @@ def test_m5_ensemble_composition_quote_matches_committed_metrics() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Wave-28 L1/L2 guards: lgbm_l2 identity + ensemble_l2 composition/trade-off
+# ---------------------------------------------------------------------------
+
+
+def test_m5_l1_l2_identity_and_tradeoff_quotes_match_committed_metrics() -> None:
+    """The wave-28 bullet's measured claims are live against the committed run:
+    lgbm_l2 == lgbm (bitwise identity), ensemble_l2's test WAPE/WRMSSE quote,
+    and the pooled-test-WRMSSE champion note."""
+    metrics = _m5_metrics()
+    section = _m5_section()
+    pooled = metrics["test"]["pooled"]
+    # bitwise-identity claim: lgbm_l2's committed numbers equal lgbm's
+    for key in ("wape", "wrmsse", "mae"):
+        assert pooled["lgbm_l2"][key] == pytest.approx(pooled["lgbm"][key], abs=1e-12), key
+    sel = metrics["ensemble"]["selection_wape"]
+    assert sel["lgbm_l2"] == pytest.approx(sel["lgbm"], abs=1e-12)
+    # the trade-off quote: "test WAPE **0.4905** / WRMSSE **0.5952** vs the
+    # WAPE blend's 0.4907 / 0.5958"
+    m = re.search(
+        r"test\s+WAPE\s*\**\s*([\d.]+)\s*\**\s*/\s*\**\s*WRMSSE\s*\**\s*([\d.]+)\s*\**\s*vs\s+the\s+"
+        r"WAPE\s+blend's\s+([\d.]+)\s*/\s*([\d.]+)",
+        section,
+    )
+    assert m, "ensemble_l2 trade-off quote missing from README"
+    l2e, ce = pooled["ensemble_l2"], pooled["convex_ensemble"]
+    assert float(m.group(1)) == pytest.approx(l2e["wape"], abs=5e-4)
+    assert float(m.group(2)) == pytest.approx(l2e["wrmsse"], abs=5e-4)
+    assert float(m.group(3)) == pytest.approx(ce["wape"], abs=5e-4)
+    assert float(m.group(4)) == pytest.approx(ce["wrmsse"], abs=5e-4)
+    # the champion note: "pooled-test-WRMSSE champion (0.5952)"
+    champ = metrics["headline"]["wrmsse_champion"]
+    m = re.search(r"WRMSSE\s+champion\s*\(([\d.]+)\)", section)
+    assert m, "wrmsse champion quote missing from README"
+    assert champ["candidate"] == "ensemble_l2"
+    assert float(m.group(1)) == pytest.approx(champ["wrmsse"], abs=5e-4)
+
+
+def test_m5_ensemble_l2_composition_quote_matches_committed_metrics() -> None:
+    """The ensemble_l2 members + WRMSSE-simplex weights quote is live."""
+    metrics = _m5_metrics()
+    section = _m5_section()
+    l2 = metrics["ensemble"]["ensemble_l2"]
+    members, weights = l2["members"], l2["weights"]
+    assert len(members) == len(weights) == 3, "committed ensemble_l2 is a 3-member blend"
+    MULT = "\u00d7"  # multiplication sign, written escaped to keep ruff RUF001 quiet
+    m = re.search(
+        rf"weights\s+([\w_]+)\s*{MULT}\s*([\d.]+)\s*\+\s*([\w_]+)\s*{MULT}\s*([\d.]+)"
+        rf"\s*\+\s*([\w_]+)\s*{MULT}\s*([\d.]+)\s+minimising\s+selection\s+WRMSSE",
+        section,
+    )
+    assert m, "ensemble_l2 composition quote missing from README"
+    for i in range(3):
+        assert m.group(2 * i + 1) == members[i]
+        assert float(m.group(2 * i + 2)) == pytest.approx(weights[i], abs=5e-3)
+
+
+# ---------------------------------------------------------------------------
 # Wave-26 rolling next-week service guards (weekly_rolling block)
 # ---------------------------------------------------------------------------
 
@@ -712,14 +769,15 @@ def test_m5_weekly_blocks_table_and_growth_quote_match_committed_weekly_block() 
         for k, cell in enumerate(cells, start=1):
             assert _num(cell) == pytest.approx(wb[cand][f"wk{k}"], abs=5e-4), f"{cand} wk{k}"
     # growth sentence: "week 1 carries X% of the value; week 4 error is Yx week 1"
+    # — anchored to the candidate the README NAMES (wave 28: the pooled-WAPE
+    # minimum can be a comparison candidate, while the sentence quotes the
+    # headline blend, so the name is parsed, not re-derived)
     pooled28 = metrics["test"]["pooled"]
     baseline = metrics["headline"]["baseline"]
-    champ = min(
-        (c for c in pooled28),
-        key=lambda c: (
-            pooled28[c]["wape"] if pooled28[c]["wape"] == pooled28[c]["wape"] else float("inf")
-        ),
-    )
+    m_name = re.search(r"share\s+of\s+(\w+)'s\s+absolute-error\s+reduction", sub)
+    assert m_name, "value-share candidate name missing from README"
+    champ = m_name.group(1)
+    assert champ in wb and champ in pooled28, f"README names unknown candidate {champ!r}"
     reductions = [
         (wb[baseline][f"wk{k}"] - wb[champ][f"wk{k}"]) * demand[f"wk{k}"] for k in range(1, 5)
     ]

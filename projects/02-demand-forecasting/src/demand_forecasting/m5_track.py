@@ -1,5 +1,6 @@
 """M5 headline experiment — protocol ``m5_direct_v1`` (wave 24; wave 25
-performance pass; wave 26 rolling next-week service block).
+performance pass; wave 26 rolling next-week service block; wave 28 L1/L2
+forecast-shape pass).
 
 The UCI Online Retail II panel track (multihorizon.py) stays untouched as the
 secondary study; this module is the NEW headline experiment on the committed
@@ -27,10 +28,24 @@ Protocol (fixed a priori, machine-readable in evaluation_metadata.json):
   block, written by ``cli tune-m5``; wave 27: feature set per the M5-practice
   research pass), ``xgb`` (global XGBoost via the same mlforecast wrapper and
   feature space — a second booster family for ensemble diversity; modest
-  a-priori config, wave 27: entered the pool on selection WAPE), and
-  ``convex_ensemble`` — a convex combination of the best THREE of {lgbm, xgb,
-  auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a 0.05-step
-  simplex over the selection origins only (deterministic, documented).
+  a-priori config, wave 27: entered the pool on selection WAPE), ``lgbm_l2``
+  (wave 28 — the pure-L2 arm of the SAME mlforecast pipeline and feature
+  space: ``objective="regression"`` with every other booster param held at
+  the committed ``m5_lgbm`` values and the tree count re-derived under a
+  deterministic L2 early-stopping pass on the tuner's nested selection-only
+  split; verification finding, documented in the wave-28 note: LightGBM's
+  DEFAULT objective is already squared error, so the track's L1 character
+  entered through the tuner's ``eval_metric="l1"`` early stopping and the
+  WAPE-based selection layers — a literal same-params copy would be a bitwise
+  duplicate of ``lgbm`` and would measure nothing), and two ensemble
+  candidates — ``convex_ensemble`` (the headline, wave 25/27 semantics): the
+  best THREE of {lgbm, lgbm_l2, xgb, auto_ets, auto_ces} by SELECTION WAPE
+  (bitwise-identical selection curves skipped — the wave-28 dedup rule),
+  weights grid-fit on a 0.05-step simplex over the selection origins only
+  (deterministic, documented); and ``ensemble_l2``
+  (wave 28, comparison/demo material): the same rule with SELECTION WRMSSE as
+  the ranking and weight-fitting metric — the L2-selected blend the M5
+  competition's official metric would pick.
 - **Volume classes** per series: ADI/CV² (Syntetos-Boylan, same thresholds as
   the panel track) computed on the series' REAL history up to the last
   SELECTION origin — pre-introduction days are excluded (an item not yet
@@ -47,7 +62,16 @@ Protocol (fixed a priori, machine-readable in evaluation_metadata.json):
 - **Headline gaps** — lgbm vs seasonal_naive and convex_ensemble vs
   seasonal_naive on the TEST origins: pooled-WAPE difference and pooled-WRMSSE
   difference, each with a 95% paired cluster bootstrap over series (one shared
-  index draw per replication, ``BOOTSTRAP_REPS = 2000``, fixed seed).
+  index draw per replication, ``BOOTSTRAP_REPS = 2000``, fixed seed). The block
+  also carries a one-line ``wrmsse_champion`` note (name + value, computed) —
+  wave 28: which committed candidate actually wins the pooled test WRMSSE,
+  reported next to the WAPE-primary headline.
+- **L1/L2 forecast-shape note** (wave 28): the L1-vs-L2 discussion (MAE/WAPE
+  optimisation targets the conditional median — flat, mean-reverting curves on
+  spiky series; the M5 competition's WRMSSE targets the conditional mean —
+  spike-tracking) is tested empirically here by the ``lgbm_l2`` candidate and
+  the ``ensemble_l2`` blend; the measured trade-off of BOTH metrics for BOTH
+  ensembles is reported as measured, never asserted.
 - **Rolling next-week service** (``weekly_rolling`` block) — the headline of
   a demand forecast is the NEXT week; later weeks roll forward. ``next_week``
   pools WAPE over h=1..7 of ALL 10 origins (each origin's first-week forecast
@@ -130,6 +154,14 @@ LGBM_PARAM_KEYS = (
     "min_child_samples",
     "colsample_bytree",
 )
+#: wave 28 — the pure-L2 arm's tree count: one deterministic early-stopping
+#: pass on the tuner's nested split (mirrors m5_tune's protocol, but the eval
+#: metric is l2 instead of l1; the cap mirrors m5_tune.TUNE_N_ESTIMATORS_CAP —
+#: the constant is duplicated here to keep m5_track importable without the
+#: tuner (m5_tune imports m5_track, not the other way round)).
+LGBM_L2_ES_DAYS = 56
+LGBM_L2_ES_ROUNDS = 50
+LGBM_L2_ES_CAP = 800
 # TSB smoothing constants — repo convention (intermittent.ALPHA), fixed a priori.
 TSB_ALPHA_D = 0.1
 TSB_ALPHA_P = 0.1
@@ -138,11 +170,23 @@ TSB_ALPHA_P = 0.1
 # the pool widens to four — xgb (a second global booster, different bias
 # profile) earned its slot on selection WAPE (0.4694 vs lgbm 0.4718 on the
 # wave-27 feature space) and improved the best-three blend (0.4603 vs 0.4616).
+# Wave 28: the pool widens again to five with lgbm_l2 (the pure-L2 arm) — the
+# WAPE-ranked convex_ensemble keeps its headline semantics; ensemble_l2 is
+# the same rule under selection WRMSSE (comparison/demo material).
 ENSEMBLE_GRID_STEP = 0.05
-ENSEMBLE_POOL = ("lgbm", "xgb", "auto_ets", "auto_ces")
-ENSEMBLE_TOP_K = 3  # best three of the pool by selection WAPE enter the blend
+ENSEMBLE_POOL = ("lgbm", "lgbm_l2", "xgb", "auto_ets", "auto_ces")
+ENSEMBLE_TOP_K = 3  # best three of the pool by the ensemble's metric enter the blend
 STATISTICAL_CANDIDATES = ("seasonal_naive", "window_avg_28", "adida", "tsb")
-CANDIDATES = (*STATISTICAL_CANDIDATES, "auto_ets", "auto_ces", "lgbm", "xgb", "convex_ensemble")
+CANDIDATES = (
+    *STATISTICAL_CANDIDATES,
+    "auto_ets",
+    "auto_ces",
+    "lgbm",
+    "lgbm_l2",
+    "xgb",
+    "convex_ensemble",
+    "ensemble_l2",
+)
 NAIVE = "seasonal_naive"
 DENSE_CLASSES = ("smooth", "erratic")
 #: demo catalog quota per (store x class) cell -> 3 stores x 2 classes x 4 = 24.
@@ -150,7 +194,17 @@ CATALOG_PER_CELL = 4
 #: candidates whose per-series curves the demo sidecar retains (every shipped
 #: curve candidate plus any candidate the demo blend needs verifiable — the
 #: payload raises if a committed ensemble member has no sidecar curves).
-SIDECAR_CANDIDATES = ("seasonal_naive", "auto_ets", "auto_ces", "lgbm", "xgb", "convex_ensemble")
+#: wave 28: lgbm_l2 and ensemble_l2 join (the demo ships both L1/L2 curves).
+SIDECAR_CANDIDATES = (
+    "seasonal_naive",
+    "auto_ets",
+    "auto_ces",
+    "lgbm",
+    "lgbm_l2",
+    "xgb",
+    "convex_ensemble",
+    "ensemble_l2",
+)
 #: the demo sidecar artifact (per-series catalog curves at the test origins).
 CATALOG_FORECASTS_NAME = "catalog_forecasts.parquet"
 CATALOG_RULE = (
@@ -502,6 +556,87 @@ def _xgb_forecast(
     return _boost_forecast(model, train, hist_exog, future_exog, series_ids, name="xgb")
 
 
+def _early_stop_l2_n_estimators(
+    prep: pd.DataFrame,
+    cutoff: pd.Timestamp,
+    params: dict[str, Any],
+    seed: int,
+) -> int:
+    """The pure-L2 arm's tree count: one deterministic L2 early-stopping pass.
+
+    Mirrors :func:`demand_forecasting.m5_tune._early_stop_fit` on the tuner's
+    nested split — the fit rows end at ``cutoff`` (``LGBM_L2_ES_DAYS`` before
+    the last SELECTION origin), the eval block is the trailing window of the
+    same training history (teacher-forced features, all SELECTION data —
+    leakage-free) — but the early-stopping metric is ``l2``, not the tuner's
+    ``l1``: the committed ``m5_lgbm`` tree count was chosen by an L1 rule, and
+    the wave-28 comparison isolates exactly that choice. Returns
+    ``best_iteration_`` (>= 1; the cap when stopping never triggers).
+    Determinism: n_jobs=1 + force_row_wise + fixed seed, no RNG in the path.
+    """
+    import lightgbm as lgb
+    from lightgbm import LGBMRegressor
+
+    fit_params = {k: v for k, v in params.items() if k != "n_estimators"}
+    model = LGBMRegressor(
+        random_state=seed,
+        verbosity=-1,
+        n_jobs=1,
+        force_row_wise=True,
+        objective="regression",
+        n_estimators=LGBM_L2_ES_CAP,
+        **fit_params,
+    )
+    feature_cols = [c for c in prep.columns if c not in ("unique_id", "ds", "y")]
+    fit_mask = prep["ds"] <= cutoff
+    es_mask = ~fit_mask
+    if fit_mask.sum() == 0 or es_mask.sum() == 0:
+        raise ValueError("nested early-stopping split is empty")
+    model.fit(
+        prep.loc[fit_mask, feature_cols],
+        prep.loc[fit_mask, "y"],
+        eval_set=[(prep.loc[es_mask, feature_cols], prep.loc[es_mask, "y"])],
+        eval_metric="l2",
+        callbacks=[lgb.early_stopping(LGBM_L2_ES_ROUNDS, verbose=False)],
+    )
+    best = getattr(model, "best_iteration_", None) or LGBM_L2_ES_CAP
+    return int(max(best, 1))
+
+
+def _lgbm_l2_forecast(
+    train: pd.DataFrame,
+    hist_exog: pd.DataFrame,
+    future_exog: pd.DataFrame,
+    seed: int,
+    n_estimators: int | None = None,
+    series_ids: list[str] | None = None,
+    lgbm_params: dict[str, Any] | None = None,
+) -> np.ndarray:
+    """Global LightGBM L2 forecast at one origin: (n_series, h) — wave 28.
+
+    The pure-L2 arm: :func:`_lgbm_forecast`'s mlforecast pipeline and feature
+    space with the objective pinned to ``regression`` (squared error) and the
+    tree count from :func:`_early_stop_l2_n_estimators` (selection data only).
+    Verification finding (wave 28): ``LGBMRegressor``'s DEFAULT objective is
+    already squared error — verified bitwise on this LightGBM build — so a
+    literal same-params copy of ``lgbm`` would be a duplicate and measure
+    nothing; the track's L1 character lived in the ``eval_metric="l1"``
+    early stopping and the WAPE selection layers. Holding every other
+    committed ``m5_lgbm`` param fixed isolates the stopping-metric variable.
+    Determinism: n_jobs=1 + fixed seed + force_row_wise.
+
+    ``n_estimators`` (the smoke-test override) wins over the params block,
+    exactly like :func:`_lgbm_forecast` — in smoke runs the L2 arm then
+    coincides with ``lgbm`` by construction (documented, asserted nowhere).
+    """
+    params = {**(lgbm_params or LGBM_KWARGS), "objective": "regression"}
+    if n_estimators is not None:
+        params["n_estimators"] = n_estimators
+    return _lgbm_forecast(
+        train, hist_exog, future_exog, seed, series_ids=series_ids, lgbm_params=params
+    )
+
+
 def _boost_forecast(
     model: Any,
     train: pd.DataFrame,
@@ -696,6 +831,62 @@ def ensemble_weights(preds: list[np.ndarray], y: np.ndarray) -> np.ndarray:
     return best_w
 
 
+def ensemble_weights_l2(
+    preds: list[np.ndarray],
+    y: np.ndarray,
+    scales: np.ndarray,
+    volumes: np.ndarray,
+) -> np.ndarray:
+    """Simplex-grid weights over K candidates minimising pooled WRMSSE — wave 28.
+
+    Identical grid/walk/tie conventions to :func:`ensemble_weights`
+    (:data:`ENSEMBLE_GRID_STEP` 0.05, ties resolve to the first grid point in
+    lexicographic order — deterministic); only the objective changes: the
+    pooled WRMSSE (unweighted mean of the per-(series x origin) unit ratios,
+    zero/NaN-scale units excluded — :func:`wrmsse_units`) of the convex
+    combination over the stacked selection units. ``preds[i]`` is (n, h) for
+    member i; ``scales``/``volumes`` are (n,) per-unit naive-28 MSEs and
+    training volumes, origin-major stacked like ``y``. Returns a (K,) weight
+    vector summing to 1. Pure, hand-testable.
+    """
+    k = len(preds)
+    if k < 2:
+        raise ValueError("ensemble needs at least two members")
+    y = np.asarray(y, dtype=float)
+    scales = np.asarray(scales, dtype=float)
+    volumes = np.asarray(volumes, dtype=float)
+    h = int(np.asarray(preds[0]).shape[-1])  # unit window length (HORIZON in the track)
+    grid = np.round(np.arange(0.0, 1.0 + 1e-9, ENSEMBLE_GRID_STEP), 2)
+    best_w: np.ndarray | None = None
+    best_err = float("inf")
+
+    def _walk(depth: int, prefix: list[float]) -> None:
+        nonlocal best_w, best_err
+        if depth == k - 1:
+            w = np.array([*prefix, 1.0 - sum(prefix)])
+            if w[-1] < -1e-9:
+                return
+            w = np.clip(w, 0.0, 1.0)
+            combo = np.zeros_like(preds[0], dtype=float)
+            for wi, pi in zip(w, preds, strict=True):
+                combo += wi * pi
+            err_windows = (combo - y).reshape(-1, h)
+            pooled, _ = wrmsse_units(err_windows, scales, volumes)
+            score = pooled if pooled == pooled else float("inf")  # NaN ranks last
+            if score < best_err - 1e-12:
+                best_err, best_w = score, w
+            return
+        for g in grid:
+            if sum(prefix) + g > 1.0 + 1e-9:
+                break
+            _walk(depth + 1, [*prefix, float(g)])
+
+    _walk(0, [])
+    if best_w is None:  # pragma: no cover - the all-zero prefix always fits
+        raise ValueError("no point on the ensemble simplex grid")
+    return best_w
+
+
 def paired_bootstrap_wape(
     abs_err_a: np.ndarray,
     abs_err_b: np.ndarray,
@@ -793,41 +984,107 @@ def _series_train_history(
     }
 
 
+def _ensemble_selection_score(
+    forecasts: dict[str, dict[int, np.ndarray]],
+    selection: list[int],
+    act_sel: np.ndarray,
+    scale_sel: np.ndarray,
+    vol_sel: np.ndarray,
+    metric: str,
+    cand: str,
+) -> float:
+    """One pool member's selection score under the ensemble's metric.
+
+    ``wape`` = pooled WAPE of the stacked selection forecasts; ``wrmsse`` =
+    pooled WRMSSE over the stacked (series x origin) units (the wave-28
+    ``ensemble_l2`` ranking — the L2-selected blend the M5 metric would pick).
+    """
+    stacked = _stack_preds(forecasts, selection, cand)
+    if metric == "wape":
+        return wape(act_sel, stacked)
+    if metric == "wrmsse":
+        err_windows = (stacked - act_sel).reshape(-1, stacked.shape[-1])
+        pooled, _ = wrmsse_units(err_windows, scale_sel, vol_sel)
+        return pooled
+    raise ValueError(f"unknown ensemble metric {metric!r}")
+
+
 def _ensemble_blend(
     forecasts: dict[str, dict[int, np.ndarray]],
     selection: list[int],
     act_sel: np.ndarray,
+    scale_sel: np.ndarray,
+    vol_sel: np.ndarray,
+    *,
+    metric: str,
+    name: str,
 ) -> tuple[list[str], np.ndarray, dict[str, float]]:
-    """Fit and apply the convex ensemble: best THREE of :data:`ENSEMBLE_POOL`.
+    """Fit and apply a convex ensemble: best THREE of :data:`ENSEMBLE_POOL`.
 
-    Selection WAPE ranks the pool; the top :data:`ENSEMBLE_TOP_K` members get
-    :func:`ensemble_weights` fit on the stacked selection predictions (simplex
-    grid step 0.05); the blend is written into ``forecasts['convex_ensemble']``
-    for EVERY origin. Returns (members, weights, selection_wape).
+    The pool is ranked on the SELECTION origins under ``metric`` (``wape``
+    for the headline ``convex_ensemble`` — wave 25/27 semantics; ``wrmsse``
+    for the wave-28 ``ensemble_l2``); the top-ranked :data:`ENSEMBLE_TOP_K`
+    members get weights fit on the stacked selection predictions over the
+    simplex grid step 0.05 — :func:`ensemble_weights` minimising pooled Σ|err|
+    for ``wape``, :func:`ensemble_weights_l2` minimising pooled WRMSSE for
+    ``wrmsse``. Wave-28 dedup rule: a candidate whose stacked selection
+    forecasts are BITWISE identical to an already-admitted member is skipped —
+    it carries no new information and would only displace a diverse member
+    (measured: the wave-28 lgbm_l2 arm coincided with lgbm — LightGBM's
+    default loss is already squared error and the L2 early stop re-derived the
+    same tree count — and ranking it separately regressed the headline blend
+    0.4907 → 0.4953 by pushing auto_ets out). The deduped candidate's metrics
+    row stays committed; only the blend skips it. The blend is written into
+    ``forecasts[name]`` for EVERY origin. Returns (members, weights, selection
+    scores per pool member). Deterministic: NaN scores rank last, ties resolve
+    to the pool-member name, the ranked order fixes the dedup admission order.
     """
-    sel_wapes = {c: wape(act_sel, _stack_preds(forecasts, selection, c)) for c in ENSEMBLE_POOL}
+    scores = {
+        c: _ensemble_selection_score(forecasts, selection, act_sel, scale_sel, vol_sel, metric, c)
+        for c in ENSEMBLE_POOL
+    }
     ranked = sorted(
         ENSEMBLE_POOL,
-        key=lambda c: (
-            float("inf") if sel_wapes[c] != sel_wapes[c] else sel_wapes[c],
-            c,
-        ),
+        key=lambda c: (float("inf") if scores[c] != scores[c] else scores[c], c),
     )
-    members = ranked[:ENSEMBLE_TOP_K]
-    ens_preds_sel = [_stack_preds(forecasts, selection, c) for c in members]
-    ens_w = ensemble_weights(ens_preds_sel, act_sel)
+    members: list[str] = []
+    member_bytes: list[bytes] = []
+    ens_preds_sel: list[np.ndarray] = []
+    for cand in ranked:
+        if len(members) >= ENSEMBLE_TOP_K:
+            break
+        stacked = _stack_preds(forecasts, selection, cand)
+        stacked_bytes = stacked.tobytes()
+        if stacked_bytes in member_bytes:
+            logger.info(
+                "m5 ensemble %s (%s): %s skipped — selection forecasts bitwise "
+                "identical to an admitted member (no new information)",
+                name,
+                metric,
+                cand,
+            )
+            continue
+        members.append(cand)
+        member_bytes.append(stacked_bytes)
+        ens_preds_sel.append(stacked)
+    if metric == "wape":
+        ens_w = ensemble_weights(ens_preds_sel, act_sel)
+    else:
+        ens_w = ensemble_weights_l2(ens_preds_sel, act_sel, scale_sel, vol_sel)
     for o in forecasts[members[0]]:
         combo = np.zeros_like(forecasts[members[0]][o])
         for wi, member in zip(ens_w, members, strict=True):
             combo += wi * forecasts[member][o]
-        forecasts["convex_ensemble"][o] = combo
+        forecasts[name][o] = combo
     logger.info(
-        "m5 ensemble: %s by selection WAPE %s; weights %s",
+        "m5 ensemble %s (%s): %s scores %s; weights %s",
+        name,
+        metric,
         members,
-        {c: round(v, 4) for c, v in sel_wapes.items()},
+        {c: round(v, 4) for c, v in scores.items()},
         {m: round(float(w), 2) for m, w in zip(members, ens_w, strict=True)},
     )
-    return members, ens_w, sel_wapes
+    return members, ens_w, scores
 
 
 def _stack_preds(
@@ -892,6 +1149,45 @@ def run_m5_track(
     if n_estimators is not None:  # smoke-test override wins over params.yaml
         lgbm_params["n_estimators"] = n_estimators
     logger.info("m5 lgbm params: %s", {k: lgbm_params[k] for k in lgbm_params})
+    # wave 28 — the pure-L2 arm's config: committed m5_lgbm params + explicit
+    # regression objective + the L2-early-stopped tree count (selection data
+    # only). In smoke runs the n_estimators override wins for BOTH arms, so
+    # lgbm_l2 then coincides with lgbm by construction (documented).
+    if n_estimators is not None:
+        lgbm_l2_params = {**lgbm_params, "objective": "regression"}
+    else:
+        last_sel_date = pd.Timestamp(dates[selection[-1]])
+        cutoff = last_sel_date - pd.to_timedelta(LGBM_L2_ES_DAYS - 1, unit="D")
+        train_last = y_all[y_all["ds"] <= last_sel_date]
+        hist_last, _ = split_exogenous(x_enc, series_ids, last_sel_date, HORIZON)
+        _attach_panel_features(train_last, hist_last, hist_last, s_all)  # idempotent
+        train_m_last = train_last.merge(
+            hist_last, on=["unique_id", "ds"], how="left", validate="1:1"
+        )
+        from lightgbm import LGBMRegressor
+
+        prep = _mlforecast_for(
+            LGBMRegressor(
+                random_state=seed,
+                verbosity=-1,
+                n_jobs=1,
+                force_row_wise=True,
+                n_estimators=10,
+            )
+        ).preprocess(
+            train_m_last,
+            id_col="unique_id",
+            time_col="ds",
+            target_col="y",
+            static_features=[],
+        )
+        n_l2 = _early_stop_l2_n_estimators(prep, cutoff, lgbm_params, seed)
+        lgbm_l2_params = {
+            **lgbm_params,
+            "n_estimators": n_l2,
+            "objective": "regression",
+        }
+        logger.info("m5 lgbm_l2 params: %s", {k: lgbm_l2_params[k] for k in lgbm_l2_params})
     for k, o in enumerate(origins):
         odate = pd.Timestamp(dates[o])
         t_o = time.time()
@@ -902,6 +1198,15 @@ def run_m5_track(
         _attach_panel_features(train, hist_exog, future_exog, s_all)
         preds["lgbm"] = _lgbm_forecast(
             train, hist_exog, future_exog, seed, series_ids=series_ids, lgbm_params=lgbm_params
+        )
+        preds["lgbm_l2"] = _lgbm_l2_forecast(
+            train,
+            hist_exog,
+            future_exog,
+            seed,
+            n_estimators=n_estimators,
+            series_ids=series_ids,
+            lgbm_params=lgbm_l2_params,
         )
         preds["xgb"] = _xgb_forecast(train, hist_exog, future_exog, seed, series_ids=series_ids)
         for name, mat in preds.items():
@@ -948,9 +1253,32 @@ def run_m5_track(
     q80 = np.quantile(np.abs(resid_scaled), 0.8, axis=0)  # per horizon day
     q80 = np.maximum(q80, 1e-9)
 
-    # ---- ensemble: best THREE of the pool by SELECTION WAPE, simplex-grid
-    #      weights (selection origins only; fills convex_ensemble per origin)
-    ens_members, ens_w, sel_wapes = _ensemble_blend(forecasts, selection, act_sel)
+    # ---- ensembles on the SELECTION origins only (wave 28: two blends share
+    #      the widened five-member pool): convex_ensemble = best THREE by
+    #      selection WAPE with simplex-grid weights minimising pooled Σ|err|
+    #      (the headline, wave 25/27 semantics); ensemble_l2 = best THREE by
+    #      selection WRMSSE with weights minimising pooled selection WRMSSE
+    #      (the L2-selected comparison blend — demo/report material)
+    sel_unit_scales = np.concatenate([scales[o] for o in selection])
+    sel_unit_volumes = np.concatenate([volumes[o] for o in selection])
+    ens_members, ens_w, sel_wapes = _ensemble_blend(
+        forecasts,
+        selection,
+        act_sel,
+        sel_unit_scales,
+        sel_unit_volumes,
+        metric="wape",
+        name="convex_ensemble",
+    )
+    l2_members, l2_w, sel_wrmsse = _ensemble_blend(
+        forecasts,
+        selection,
+        act_sel,
+        sel_unit_scales,
+        sel_unit_volumes,
+        metric="wrmsse",
+        name="ensemble_l2",
+    )
 
     test_block = _metrics_block(forecasts, actuals, scales, volumes, test, dense_mask, n_series)
     selection_block = _metrics_block(
@@ -1000,6 +1328,24 @@ def run_m5_track(
             ),
         },
         "baseline": NAIVE,
+    }
+    # wave 28 — the one-line WRMSSE note: which committed candidate actually
+    # wins the pooled test WRMSSE, next to the WAPE-primary headline (the
+    # demo/report surface reads this; computed, never asserted).
+    pooled_test = test_block["pooled"]
+    wrmsse_champ = min(
+        (c for c in CANDIDATES if c in pooled_test),
+        key=lambda c: (
+            pooled_test[c]["wrmsse"]
+            if pooled_test[c]["wrmsse"] == pooled_test[c]["wrmsse"]
+            else float("inf")
+        ),
+    )
+    headline["wrmsse_champion"] = {
+        "candidate": wrmsse_champ,
+        "wrmsse": pooled_test[wrmsse_champ]["wrmsse"],
+        "note": "best pooled test WRMSSE among the committed candidates; the "
+        "WAPE-primary headline stays convex_ensemble (wave 28)",
     }
 
     # ---- probabilistic block (per-series scaled split-conformal 80% band,
@@ -1078,7 +1424,21 @@ def run_m5_track(
             "members": ens_members,
             "weights": [float(w) for w in ens_w],
             "rule": "best three of the pool by selection WAPE; weights simplex-grid-fit "
-            "on selection origins only (step 0.05, ties -> first grid point)",
+            "on selection origins only (step 0.05, ties -> first grid point); "
+            "pool members whose selection forecasts are bitwise identical to an "
+            "admitted member are skipped (wave 28 dedup — a duplicate carries no "
+            "new information and would only displace a diverse member)",
+            "ensemble_l2": {
+                "selection_metric": "wrmsse",
+                "selection_wrmsse": sel_wrmsse,
+                "members": l2_members,
+                "weights": [float(w) for w in l2_w],
+                "rule": "best three of the pool by selection WRMSSE (pooled, "
+                "zero-scale units excluded); weights simplex-grid-fit minimising "
+                "pooled selection WRMSSE (step 0.05, selection origins only, "
+                "ties -> first grid point); same bitwise-identity dedup as the "
+                "WAPE blend — wave 28 comparison/demo material",
+            },
         },
         "selection": selection_block,
         "test": test_block,

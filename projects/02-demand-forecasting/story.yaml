@@ -242,25 +242,38 @@ sections:
       intermittent by Syntetos-Boylan ADI/CV²), 10 weekly rolling origins —
       the last 2 (2016-05-10, 2016-05-17) scored once on the 28-day horizon.
       The champion is a convex ensemble of the three best selection-WAPE
-      candidates (lgbm × 0.45 + auto_ets × 0.45 + auto_ces × 0.10, weights
+      candidates (xgb × 0.35 + lgbm × 0.20 + auto_ets × 0.45, weights
       grid-fit on a 0.05 simplex over the selection origins only):
 
       | candidate | test WAPE | test WRMSSE | win rate vs naive |
       |---|---|---|---|
       | seasonal_naive (floor) | 0.603 | 0.762 | — |
       | auto_ets | 0.503 | 0.611 | 88.2% |
-      | lgbm | 0.495 | 0.599 | 88.8% |
-      | **convex_ensemble** | **0.491** | **0.597** | **90.2%** |
+      | lgbm | 0.498 | 0.596 | 87.8% |
+      | **convex_ensemble** | **0.491** | **0.596** | **88.8%** |
 
       The ensemble beats the seasonal-naive floor by **−0.112 WAPE** (95%
-      paired cluster bootstrap CI **[−0.122, −0.102]**; lgbm −0.108, CI
-      [−0.120, −0.0965]) and −0.165 WRMSSE (CI [−0.176, −0.155]) — in BOTH
-      volume classes (dense 0.568→0.464, intermittent 0.749→0.604 test
+      paired cluster bootstrap CI **[−0.122, −0.103]**; lgbm −0.106, CI
+      [−0.118, −0.094]) and −0.166 WRMSSE (CI [−0.177, −0.155]) — in BOTH
+      volume classes (dense 0.568→0.464, intermittent 0.749→0.603 test
       WAPE), the mirror image of the sparse panel below. The per-series
-      scaled split-conformal 80% band covers 77.9% of test actuals at 13.53
+      scaled split-conformal 80% band covers 77.7% of test actuals at 13.34
       units mean width (target 80% — slightly under-covering, stated as
-      measured; dense 77.2% / intermittent 80.4%). Full tables:
+      measured; dense 76.9% / intermittent 80.6%). Full tables:
       `reports_m5/metrics.json` + `probabilistic.json`.
+
+      **Wave 28 — L1-vs-L2 selection is a measured wash.** The pure-L2 arm
+      `lgbm_l2` (same booster and features, explicit squared-error objective,
+      L2 early stop) reproduced `lgbm` **bitwise**, and the WRMSSE-selected
+      blend `ensemble_l2` (weights xgb × 0.45 + lgbm × 0.20 + auto_ets ×
+      0.35, fitted on the selection origins only) posts test WAPE **0.4905**
+      / WRMSSE **0.5952** vs the WAPE blend's 0.4907 / 0.5958 — both moves
+      far inside the bootstrap noise, though 0.5952 makes it the committed
+      pooled-test-WRMSSE champion. The flat-looking curves are not a
+      loss-function bug: they are the conditional mean of noisy daily demand
+      (curve day-to-day variation ≈ 5.4 units vs ≈ 12.2 realized; spike-day
+      MAE ≈ 13 for every candidate), so the conformal band, not a pointier
+      curve, is the honest answer to spike uncertainty.
 
       **Rolling next-week service** (h≤7 pooled over ALL 10 origins — the
       deployment shape: each week the model is re-run, only the first week

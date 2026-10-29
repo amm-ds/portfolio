@@ -191,6 +191,24 @@ def test_ensemble_curve_uses_committed_rule(tiny_m5_payload) -> None:
             assert win["curves"]["convex_ensemble"] == pytest.approx(expected, abs=2e-4)
 
 
+def test_ensemble_l2_curve_uses_committed_rule(tiny_m5_payload) -> None:
+    """Wave 28: the ensemble_l2 curve is verified against the committed
+    WRMSSE-ranked members + weights exactly like convex_ensemble."""
+    _, _, payload = tiny_m5_payload
+    l2 = payload["groups"]["ensemble"]["ensemble_l2"]
+    members = l2["members"]
+    weights = l2["weights"]
+    assert len(members) == len(weights) == 3
+    assert sum(weights) == pytest.approx(1.0, abs=1e-6)
+    for entry in payload["catalog"]:
+        for win in entry["origins"].values():
+            expected = [
+                sum(w * win["curves"][m][i] for w, m in zip(weights, members, strict=True))
+                for i in range(len(win["actual"]))
+            ]
+            assert win["curves"]["ensemble_l2"] == pytest.approx(expected, abs=2e-4)
+
+
 def test_wape_entries_match_hand_computation(tiny_m5_payload) -> None:
     """Per-series WAPE in the payload is Σ|err|/Σy of the committed curves."""
     _, _, payload = tiny_m5_payload

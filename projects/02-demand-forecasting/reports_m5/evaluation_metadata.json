@@ -72,7 +72,7 @@
     "polars": "2.0.0",
     "numpy": "2.5.4"
   },
-  "runtime_seconds": 1572.982,
+  "runtime_seconds": 1886.742,
   "determinism": "VECLIB_MAXIMUM_THREADS=1 pinned in cli.py before numpy; LightGBM n_jobs=1 + fixed seed + force_row_wise; statsforecast n_jobs=1; statsforecast models are closed-form/seed-free",
   "metric_definitions": {
     "mae": "mean |actual - forecast| over the scored (series x day) cells",
