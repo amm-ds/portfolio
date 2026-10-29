@@ -119,8 +119,16 @@ export interface ChurnPayload {
 // --- forecast workbench payload (`projects/02-demand-forecasting/reports_m5/demo_payload.json`, schema v4) ---
 
 /** Candidate model names the demo can draw (per-series curves in each window;
- * `convex_ensemble` applies the committed selection rule to its members). */
-export type ForecastModel = "seasonal_naive" | "auto_ets" | "lgbm" | "convex_ensemble";
+ * `convex_ensemble` applies the committed selection rule to its members; the
+ * `_l2` pair are the wave-28 L1/L2 comparison candidates — `lgbm_l2`
+ * reproduces `lgbm`, `ensemble_l2` is the WRMSSE-selected blend). */
+export type ForecastModel =
+  | "seasonal_naive"
+  | "auto_ets"
+  | "lgbm"
+  | "lgbm_l2"
+  | "convex_ensemble"
+  | "ensemble_l2";
 
 /** The scored window of one catalog series at one test origin. */
 export interface ForecastWindow {
@@ -174,6 +182,8 @@ export interface ForecastWorkbenchPayload {
         wrmsse: { diff: number; ci95: [number, number]; spans_zero: boolean };
       };
       baseline: string;
+      /** Wave-28 note: best pooled test WRMSSE among the committed candidates. */
+      wrmsse_champion?: { candidate: string; wrmsse: number; note: string };
     };
     test_pooled: Record<string, ForecastPooledMetrics>;
     test_by_class: Record<string, Record<string, ForecastPooledMetrics | null>>;
@@ -191,6 +201,14 @@ export interface ForecastWorkbenchPayload {
       members: string[];
       weight_on_a: number;
       rule: string;
+      /** Wave-28: the WRMSSE-selected twin blend (xgb + lgbm + auto_ets). */
+      ensemble_l2?: {
+        selection_metric: string;
+        selection_wrmsse: Record<string, number>;
+        members: string[];
+        weights: number[];
+        rule: string;
+      };
     };
     band: {
       method: string;

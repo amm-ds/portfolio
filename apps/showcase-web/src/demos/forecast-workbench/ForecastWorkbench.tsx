@@ -12,6 +12,9 @@ import { useWorkbenchState } from "./useWorkbenchState";
 const HORIZONS = [7, 14, 21, 28];
 const NAIVE = "seasonal_naive";
 
+/** Every demo chip, in display order — the workbench opens with all of them. */
+const ALL_MODEL_KEYS = MODELS.map((m) => m.key).join(",");
+
 const MODEL_LABELS = Object.fromEntries(MODELS.map((m) => [m.key, m.label]));
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
@@ -25,7 +28,7 @@ const FALLBACK_MANIFEST: DemoManifest = {
   modes: ["browser"],
   hero: {
     label: "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
-    value: "0.498 vs 0.603",
+    value: "0.491 vs 0.603",
     ci: "paired bootstrap CI [−0.115, −0.095] on the −0.105 gap; 89.3% per-series win rate; 80% band covers 78.7% (protocol m5_direct_v1, horizon 28)",
   },
   scenarios: [
@@ -63,7 +66,7 @@ function ChipRow({
   active,
   onPick,
 }: {
-  options: { key: string; label: ReactNode }[];
+  options: { key: string; label: ReactNode; tooltip?: string }[];
   active: (key: string) => boolean;
   onPick: (key: string) => void;
 }) {
@@ -75,6 +78,7 @@ function ChipRow({
           type="button"
           className={`chip demo-preset ${active(o.key) ? "fwb-active" : ""}`}
           aria-pressed={active(o.key)}
+          title={o.tooltip}
           onClick={() => onPick(o.key)}
         >
           {o.label}
@@ -129,7 +133,7 @@ function Workbench({
   const firstSeries = payload.catalog[0]?.series_id ?? "";
   const firstOrigin = payload.origins[0]?.origin ?? "";
   const state = useWorkbenchState(
-    { series: firstSeries, models: "seasonal_naive,lgbm", origin: firstOrigin, horizon: 7 },
+    { series: firstSeries, models: ALL_MODEL_KEYS, origin: firstOrigin, horizon: 28 },
     manifest.scenarios,
   );
   const { values, setValue } = state;
@@ -250,6 +254,7 @@ function Workbench({
                       {m.label}
                     </>
                   ),
+                  tooltip: m.tooltip,
                 }))}
                 active={(k) => modelsOn.includes(k)}
                 onPick={toggleModel}
@@ -353,7 +358,7 @@ function Workbench({
               (protocol <code className="wb-tag">m5_direct_v1</code>) for a
               balanced 24-series catalog, scored on the two test origins{" "}
               {payload.origins.map((o) => o.origin).join(" and ")}. The headline
-              is the pooled gap: ensemble WAPE 0.498 vs the seasonal-naive
+              is the pooled gap: ensemble WAPE 0.491 vs the seasonal-naive
               floor 0.603 (95% CI [−0.115, −0.095]).
             </p>
             {entry.class === "intermittent" ? (

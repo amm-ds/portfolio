@@ -16,7 +16,10 @@ const CURVES = {
   seasonal_naive: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
   auto_ets: [11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12],
   lgbm: [10, 11, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14],
+  // wave-28 L1/L2 pair: lgbm_l2 reproduces lgbm bitwise; ensemble_l2 tracks the blend
+  lgbm_l2: [10, 11, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14],
   convex_ensemble: [11, 12, 13, 12, 11, 11, 13, 13, 12, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13],
+  ensemble_l2: [11, 12, 13, 12, 11, 11, 13, 13, 12, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13],
 };
 const ACTUAL = [10, 12, 15, 12, 11, 9, 13, 15, 14, 11, 10, 12, 16, 15, 12, 10, 11, 14, 16, 13, 11, 10, 13, 15, 14, 12, 11, 13];
 const HISTORY = [9, 10, 11, 10, 12, 13, 11, 10];
@@ -30,7 +33,14 @@ function windowOf(shape: string) {
       p10: CURVES.lgbm.map((v) => Math.max(0, v - 4)),
       p90: CURVES.lgbm.map((v) => v + 4),
     },
-    wape: { seasonal_naive: 0.2, auto_ets: 0.18, lgbm: 0.15, convex_ensemble: 0.16 },
+    wape: {
+      seasonal_naive: 0.2,
+      auto_ets: 0.18,
+      lgbm: 0.15,
+      lgbm_l2: 0.15,
+      convex_ensemble: 0.16,
+      ensemble_l2: 0.16,
+    },
     shape,
   };
 }
@@ -63,12 +73,15 @@ const PAYLOAD: ForecastWorkbenchPayload = {
       seasonal_naive: { mae: 5.77, wape: 0.6032, rmae: 1.0, wrmsse: 0.7617, wrmsse_weighted: 0.7197, peak_mae: 14.43 },
       auto_ets: { mae: 4.82, wape: 0.5035, rmae: 0.8347, wrmsse: 0.6105, wrmsse_weighted: 0.5891, peak_mae: 12.95 },
       lgbm: { mae: 4.9, wape: 0.5121, rmae: 0.849, wrmsse: 0.6108, wrmsse_weighted: 0.5851, peak_mae: 12.81 },
+      lgbm_l2: { mae: 4.9, wape: 0.5121, rmae: 0.849, wrmsse: 0.6108, wrmsse_weighted: 0.5851, peak_mae: 12.81 },
       convex_ensemble: { mae: 4.77, wape: 0.4983, rmae: 0.826, wrmsse: 0.6043, wrmsse_weighted: 0.5828, peak_mae: 12.89 },
+      ensemble_l2: { mae: 4.76, wape: 0.4979, rmae: 0.825, wrmsse: 0.6039, wrmsse_weighted: 0.5824, peak_mae: 12.9 },
     },
     test_by_class: {},
     win_rate_vs_naive: {
       seasonal_naive: { pooled: 0.0, dense: 0.0, intermittent: 0.0 },
       convex_ensemble: { pooled: 0.8933, dense: 0.8898, intermittent: 0.9051 },
+      ensemble_l2: { pooled: 0.8917, dense: 0.8883, intermittent: 0.9036 },
     },
     classes: { counts: { dense: 463, intermittent: 137 }, thresholds: { adi: 1.32, cv2: 0.49 } },
     ensemble: {
@@ -238,54 +251,72 @@ describe("ForecastWorkbench", () => {
   it("renders the chart and exactly three KPI tiles on the default selection", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     expect(
       screen.getByRole("img", { name: "forecast curves versus actuals for the selected series" }),
     ).toBeInTheDocument();
     const tiles = document.querySelectorAll(".wb-kpi-band .wb-kpi");
     expect(tiles).toHaveLength(3);
     expect(screen.getByText("band coverage")).toBeInTheDocument();
-    expect(screen.getByText("peak-day MAE @ 7d")).toBeInTheDocument();
-    // the demo opens on the next-week view (h=7); default selection: lgbm
-    // beats the naive on the fixture window
-    const wapeTile = screen.getByText("WAPE @ 7d").closest(".wb-kpi")!;
+    expect(screen.getByText("peak-day MAE @ 28d")).toBeInTheDocument();
+    // the demo opens on the full scored window (h=28) with every candidate
+    // selected; LightGBM leads the fixture window
+    const wapeTile = screen.getByText("WAPE @ 28d").closest(".wb-kpi")!;
     expect(wapeTile.textContent).toMatch(/LightGBM vs naive [\d.]+%/);
-    // the committed pooled chip is quoted only at the full scored horizon
-    expect(wapeTile.textContent).not.toMatch(/pooled/);
-    fireEvent.click(screen.getByRole("button", { name: "28d" }));
-    expect(screen.getByText("WAPE @ 28d").closest(".wb-kpi")!.textContent).toMatch(
-      /pooled −9\.1 pts committed/,
+    // the committed pooled chip is quoted at the full scored horizon
+    expect(wapeTile.textContent).toMatch(/pooled −9\.1 pts committed/);
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(screen.getByText("WAPE @ 7d").closest(".wb-kpi")!.textContent).not.toMatch(/pooled/);
+  });
+
+  it("opens with horizon 28d and every model chip selected", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    expect(
+      (screen.getByRole("button", { name: "28d" }) as HTMLButtonElement).getAttribute("aria-pressed"),
+    ).toBe("true");
+    for (const name of ["seasonal naive", "AutoETS", "LightGBM", "lgbm l2", "ensemble", "ensemble l2"]) {
+      const chip = screen.getByRole("button", { name });
+      expect(chip.getAttribute("aria-pressed"), name).toBe("true");
+    }
+    // the wave-28 L2 chips carry the comparison tooltip
+    expect(screen.getByRole("button", { name: "lgbm l2" }).getAttribute("title")).toBe(
+      "same booster, L2-selected blend — the wave-28 L1/L2 comparison",
+    );
+    expect(screen.getByRole("button", { name: "ensemble l2" }).getAttribute("title")).toBe(
+      "same booster, L2-selected blend — the wave-28 L1/L2 comparison",
     );
   });
 
-  it("adds a curve when a model chip is toggled on", async () => {
+  it("removes a curve when a model chip is toggled off and restores it on re-toggle", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     const polylinesBefore = document.querySelectorAll(".demo-chart polyline").length;
-    fireEvent.click(screen.getByRole("button", { name: /ensemble/ }));
+    fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
     const after = document.querySelectorAll(".demo-chart polyline").length;
-    expect(after).toBe(polylinesBefore + 1);
-    fireEvent.click(screen.getByRole("button", { name: /ensemble/ }));
+    expect(after).toBe(polylinesBefore - 1);
+    fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
     expect(document.querySelectorAll(".demo-chart polyline").length).toBe(polylinesBefore);
   });
 
   it("rescales the scored window when the horizon toggle moves", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
-    // lgbm curve: 7 visible window points on the default next-week view
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    // default: full scored window — 28 visible window points on the lgbm curve
     const pointsAt = () => lgbmPolylines()[0].getAttribute("points")!.trim().split(" ").length;
-    expect(pointsAt()).toBe(7);
-    fireEvent.click(screen.getByRole("button", { name: "28d" }));
-    expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument();
     expect(pointsAt()).toBe(28);
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument();
+    expect(pointsAt()).toBe(7);
   });
 
   it("shows the honest-gap note for an intermittent series only", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     // default series is dense -> no honest-gap note
     expect(screen.queryByTestId("honest-gap")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
@@ -293,7 +324,7 @@ describe("ForecastWorkbench", () => {
     expect(note.textContent).toContain("The honest gap");
     expect(note.textContent).toContain("90.5% of intermittent series");
     // verdict notice reacts to the selection too
-    expect(document.querySelector(".wb-notice")!.textContent).toContain("h = 7");
+    expect(document.querySelector(".wb-notice")!.textContent).toContain("h = 28");
   });
 
   it("renders the demo at /demos/forecast-workbench inside App", async () => {
@@ -317,13 +348,13 @@ describe("ForecastWorkbench", () => {
   it("keeps every chart coordinate finite across series, origin, model and horizon changes", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
-    // default view: naive + LightGBM + band on the next-week window
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+    // default view: every candidate + band on the full scored window
     expect(lgbmPolylines().length).toBeGreaterThan(0);
     expect(document.querySelector(".demo-chart path[d]")).not.toBeNull();
     expectFiniteChartGeometry();
-    // toggle the ensemble on (band indices shift by one)
-    fireEvent.click(screen.getByRole("button", { name: /ensemble/ }));
+    // toggle the ensemble off (band indices shift by one)
+    fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
     expectFiniteChartGeometry();
     // switch origin
     fireEvent.click(screen.getByRole("button", { name: "2016-05-17" }));
@@ -331,16 +362,16 @@ describe("ForecastWorkbench", () => {
     // switch to an intermittent series
     fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
     expectFiniteChartGeometry();
-    // full scored window
-    fireEvent.click(screen.getByRole("button", { name: "28d" }));
-    expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument();
+    // next-week window
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument();
     expectFiniteChartGeometry();
   });
 
   it("renders three dynamic cards below the chart that update with the horizon toggle", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     // the churn-style card row sits in the secondary band under the chart
     expect(screen.getByText("error composition")).toBeInTheDocument();
     expect(screen.getByText("band calibration")).toBeInTheDocument();
@@ -351,28 +382,28 @@ describe("ForecastWorkbench", () => {
       screen.getByText("error composition").closest(".wb-secondary-panel")!;
     const bandCard = () =>
       screen.getByText("band calibration").closest(".wb-secondary-panel")!;
-    // next-week headlines
-    expect(errCard().textContent).toMatch(/wape @7d 0\.\d{3}/);
-    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
-    const errBefore = errCard().textContent;
-    // full horizon: every card recomputes client-side
-    fireEvent.click(screen.getByRole("button", { name: "28d" }));
+    // full-horizon headlines (the demo opens at h=28)
     expect(errCard().textContent).toMatch(/wape @28d 0\.\d{3}/);
-    expect(errCard().textContent).not.toBe(errBefore);
     expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
+    const errBefore = errCard().textContent;
+    // next-week window: every card recomputes client-side
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(errCard().textContent).toMatch(/wape @7d 0\.\d{3}/);
+    expect(errCard().textContent).not.toBe(errBefore);
+    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
     expect(
       screen.getByText("model verdict").closest(".wb-secondary-panel")!.textContent,
-    ).toMatch(/h = 28/);
+    ).toMatch(/h = 7/);
   });
 
   it("collapses the band card when LightGBM is deselected", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     expect(screen.queryByText(/enable LightGBM/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /LightGBM/ }));
     expect(screen.getByText("enable LightGBM to see its band")).toBeInTheDocument();
-    // re-enabling restores the live band strip
+    // re-enabling restores the live band grid
     fireEvent.click(screen.getByRole("button", { name: /LightGBM/ }));
     expect(screen.queryByText(/enable LightGBM/)).toBeNull();
     expect(
@@ -383,7 +414,7 @@ describe("ForecastWorkbench", () => {
   it("names the seasonal naive as the honest per-series winner on the intermittent series", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
     const verdictCard = screen.getByText("model verdict").closest(".wb-secondary-panel")!;
     expect(verdictCard.textContent).toContain("seasonal naive wins this window");
@@ -404,10 +435,10 @@ describe("ForecastWorkbench", () => {
     );
   });
 
-  it("renders the band card compact — coverage gauge, hit strip and a tight/loose footer — and recomputes with the horizon", async () => {
+  it("renders the band card as weekly hit rows — gauge on top, w1..wk labels, one row per week at 28/14/7 — plus the tight/loose footer", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     const bandCard = () => screen.getByText("band calibration").closest(".wb-secondary-panel")!;
     // coverage gauge: per-series fill against the 80% target + pooled marker
     const gauge = bandCard().querySelector(".fwb-cov-gauge")!;
@@ -415,15 +446,31 @@ describe("ForecastWorkbench", () => {
     expect(gauge.querySelector(".fwb-cov-marker.target")).not.toBeNull();
     expect(gauge.querySelector(".fwb-cov-marker.committed")).not.toBeNull();
     // the folded labels: day count, target legend, pooled committed, mean width
-    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
+    expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
     expect(bandCard().textContent).toMatch(/mean width [\d.]+u/);
     expect(bandCard().textContent).toMatch(/80% target/);
     expect(bandCard().textContent).toMatch(/78\.7% committed/);
-    // the per-day hit strip: one square per scored day, hover titles kept
-    const days = bandCard().querySelectorAll(".fwb-band-day");
-    expect(days).toHaveLength(7);
-    expect(days[0].getAttribute("title")).toMatch(/\(day \+1\): inside|outside/);
-    // the old plain chips row is gone; the removed extras stay gone too
+
+    const rowsAt = () => Array.from(bandCard().querySelectorAll(".fwb-band-week"));
+    const labelsAt = () => rowsAt().map((r) => r.querySelector(".fwb-band-week-label")!.textContent);
+    // h=28: 4 labeled weekly rows of 7 squares (28 total), hover titles kept
+    expect(labelsAt()).toEqual(["w1", "w2", "w3", "w4"]);
+    for (const row of rowsAt()) {
+      expect(row.querySelectorAll(".fwb-band-day")).toHaveLength(7);
+    }
+    expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(28);
+    expect(bandCard().querySelector(".fwb-band-day")!.getAttribute("title")).toMatch(
+      /\(day \+1\): inside|outside/,
+    );
+    // h=14: 2 rows; h=7: a single full-width row — the card never dead-ends
+    fireEvent.click(screen.getByRole("button", { name: "14d" }));
+    expect(labelsAt()).toEqual(["w1", "w2"]);
+    expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(14);
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
+    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
+    expect(labelsAt()).toEqual(["w1"]);
+    expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(7);
+    // the removed extras stay gone
     expect(bandCard().querySelector(".figure-card .demo-readouts")).toBeNull();
     expect(bandCard().querySelector('svg[aria-label="mean band width by horizon day"]')).toBeNull();
     expect(bandCard().querySelector(".fwb-cov-week")).toBeNull();
@@ -435,22 +482,23 @@ describe("ForecastWorkbench", () => {
     const before = bandCard().textContent;
     fireEvent.click(screen.getByRole("button", { name: "28d" }));
     expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
-    expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(28);
     expect(bandCard().textContent).not.toBe(before);
   });
 
-  it("renders the verdict card as ordered horizontal WAPE bars — naive grey reference, best crowned, committed chip at h=28 — and recomputes with the horizon", async () => {
+  it("renders the verdict card as ordered horizontal WAPE bars — naive grey reference, best crowned, fixed scale label — and keeps bar widths pinned when models toggle", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     const verdictCard = () => screen.getByText("model verdict").closest(".wb-secondary-panel")!;
-    // default selection: naive + LightGBM -> one bar per model
+    // default selection: every candidate -> one bar per model
     const items = verdictCard().querySelectorAll(".fwb-verdict-item");
-    expect(items).toHaveLength(2);
+    expect(items).toHaveLength(6);
     for (const item of Array.from(items)) {
       // dot + name + tinted bar fill + value label at the bar end + peak-day MAE
       expect(item.querySelector(".fwb-dot")).not.toBeNull();
-      expect(item.querySelector(".fwb-verdict-name")!.textContent).toMatch(/seasonal naive|LightGBM/);
+      expect(item.querySelector(".fwb-verdict-name")!.textContent).toMatch(
+        /seasonal naive|AutoETS|LightGBM|lgbm l2|ensemble|ensemble l2/,
+      );
       expect(item.querySelector(".fwb-bar-fill")).not.toBeNull();
       expect(item.querySelector(".fwb-bar-value")!.textContent).toMatch(/^\d+\.\d{3}$/);
       expect(item.querySelector(".fwb-verdict-peak")!.textContent).toMatch(/^\d+\.\d$/);
@@ -461,12 +509,14 @@ describe("ForecastWorkbench", () => {
     }
     expect(verdictCard().querySelector(".fwb-verdict-head")).toBeNull();
     expect(verdictCard().querySelector(".fwb-weekstrip")).toBeNull();
-    // bars share one scale and are ordered best-first (ascending WAPE)
+    // bars share one FIXED scale and are ordered best-first (ascending WAPE)
     const values = () =>
       Array.from(verdictCard().querySelectorAll(".fwb-bar-value")).map((e) => Number(e.textContent));
     const fills = () => Array.from(verdictCard().querySelectorAll<HTMLElement>(".fwb-bar-fill"));
     const vals = values();
-    expect(vals[0]).toBeLessThanOrEqual(vals[1]);
+    for (let i = 1; i < vals.length; i++) {
+      expect(vals[i]).toBeGreaterThanOrEqual(vals[i - 1]);
+    }
     expect(fills()[0].style.width).not.toBe("");
     // the naive is the grey reference bar
     const naiveItem = Array.from(items).find((i) =>
@@ -477,14 +527,43 @@ describe("ForecastWorkbench", () => {
     );
     // the best bar carries the crown
     expect(verdictCard().querySelector(".fwb-verdict-item.best .fwb-verdict-crown")).not.toBeNull();
-    // below the full scored horizon the committed pooled chip is not quoted
-    expect(verdictCard().textContent).not.toMatch(/pts committed/);
+    // the fixed common scale: printed axis label, derived from every payload
+    // candidate, not the selected subset
+    const scaleLabel = () => verdictCard().querySelector(".fwb-verdict-scale")!;
+    expect(scaleLabel().textContent).toMatch(/wape@28d scale max 0\.\d{3} · 6 candidates/);
+    const scaleBefore = scaleLabel().textContent;
+
+    // toggle a subset OFF: another bar's width must be pixel-identical and
+    // the scale label must persist unchanged
+    const lightgbmRow = () =>
+      Array.from(verdictCard().querySelectorAll(".fwb-verdict-item")).find((i) =>
+        i.querySelector(".fwb-verdict-name")!.textContent!.includes("LightGBM"),
+      )!;
+    const widthBefore = (lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width;
+    fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
+    fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
+    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(4);
+    expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
+    expect(scaleLabel().textContent).toBe(scaleBefore);
+    // toggling back restores the full set at the same widths
+    fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
+    fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
+    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(6);
+    expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
+
     // bars and peak-day MAEs change with the horizon toggle
     const before = { vals: values(), peaks: peaksAt(verdictCard()) };
-    fireEvent.click(screen.getByRole("button", { name: "28d" }));
+    fireEvent.click(screen.getByRole("button", { name: "7d" }));
     expect(values()).not.toEqual(before.vals);
     expect(peaksAt(verdictCard())).not.toEqual(before.peaks);
-    // at h=28 the pooled committed chip appears
+    // below the full scored horizon the committed pooled chip is not quoted
+    expect(verdictCard().textContent).not.toMatch(/pts committed/);
+    // …but the fixed-scale label follows the horizon
+    expect(verdictCard().querySelector(".fwb-verdict-scale")!.textContent).toMatch(
+      /wape@7d scale max 0\.\d{3}/,
+    );
+    // back at h=28 the pooled committed chip reappears
+    fireEvent.click(screen.getByRole("button", { name: "28d" }));
     expect(verdictCard().textContent).toMatch(/pooled −9\.1 pts committed/);
     expect(verdictCard().textContent).toMatch(/h = 28/);
   });
@@ -492,7 +571,7 @@ describe("ForecastWorkbench", () => {
   it("pins the series picker controls above a scrollable store list", async () => {
     mockFetch();
     renderDemo();
-    await waitFor(() => expect(screen.getByText("WAPE @ 7d")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     const group = document.querySelector(".wb-group-series")!;
     // prev/next/surprise stay pinned at the top of the selector…
     const readouts = group.querySelector(".demo-readouts")!;

@@ -79,6 +79,37 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
     expect(band.per_horizon_width).toHaveLength(28);
   });
 
+  it("ships the wave-28 L1/L2 comparison candidates with their committed numbers", () => {
+    const { headline, test_pooled, win_rate_vs_naive, ensemble } = payload.groups;
+    // per-series curves for both new candidates in every scored window
+    for (const entry of payload.catalog) {
+      for (const win of Object.values(entry.origins)) {
+        expect(win.curves.lgbm_l2, entry.series_id).toBeDefined();
+        expect(win.curves.ensemble_l2, entry.series_id).toBeDefined();
+      }
+    }
+    // lgbm_l2 reproduces lgbm bitwise: identical committed pooled numbers
+    expect(test_pooled.lgbm_l2.mae).toBe(test_pooled.lgbm.mae);
+    expect(test_pooled.lgbm_l2.wape).toBe(test_pooled.lgbm.wape);
+    expect(test_pooled.lgbm_l2.wrmsse).toBe(test_pooled.lgbm.wrmsse);
+    // ensemble_l2 trades both metrics by 0.0002 / 0.0006 — inside noise
+    expect(test_pooled.ensemble_l2.wape).toBeCloseTo(0.4905, 3);
+    expect(test_pooled.ensemble_l2.wrmsse).toBeCloseTo(0.5952, 3);
+    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.4907, 3);
+    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.5958, 3);
+    expect(win_rate_vs_naive.ensemble_l2.pooled).toBeCloseTo(0.8867, 3);
+    // the headline wrmsse_champion note carries ensemble_l2 @ 0.5952
+    expect(headline.wrmsse_champion?.candidate).toBe("ensemble_l2");
+    expect(headline.wrmsse_champion?.wrmsse).toBeCloseTo(0.5952, 3);
+    // ensemble_l2 composition: xgb .45 + lgbm .20 + auto_ets .35 on selection WRMSSE
+    const l2 = ensemble.ensemble_l2;
+    expect(l2?.selection_metric).toBe("wrmsse");
+    expect(l2?.members).toEqual(["xgb", "lgbm", "auto_ets"]);
+    expect(l2?.weights[0]).toBeCloseTo(0.45, 2);
+    expect(l2?.weights[1]).toBeCloseTo(0.2, 2);
+    expect(l2?.weights[2]).toBeCloseTo(0.35, 2);
+  });
+
   it("per-series WAPEs are consistent with the shipped curves", () => {
     for (const entry of payload.catalog.slice(0, 4)) {
       for (const win of Object.values(entry.origins)) {

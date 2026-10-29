@@ -251,18 +251,8 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "m5:class_comparison",
       "m5:wape_bars",
       "m5:win_rate",
-      "m5:wrmsse_bars",
       "uci:fold_stability",
-      "uci:forecast_vs_actual",
-      "uci:metrics_bars",
-      "uci:multistep_band_calibration",
-      "uci:multistep_candidate_comparison",
-      "uci:multistep_class_scoreboard",
-      "uci:multistep_error_vs_horizon",
-      "uci:multistep_peak_capture",
-      "uci:multistep_peak_day_scatter",
-      "uci:multistep_routing",
-      "uci:probabilistic_band"
+      "uci:multistep_error_vs_horizon"
     ],
     "has_roadmap": true,
     "metrics_keys": [
@@ -296,6 +286,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "hpo_importance",
       "nab_alert_budget",
       "nab_score_distribution",
+      "nab_timeline_nyc_taxi",
       "nab_timelines",
       "pr_curves",
       "telemetry_flags",
@@ -417,8 +408,8 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     "figure_names": [
       "actual_vs_pred_top5",
       "borough_mae",
-      "eda_trips_profile",
       "gbm_vs_nn",
+      "hour_borough_heatmap",
       "p90_band",
       "weather_elasticity",
       "zone_demand_map",
@@ -529,7 +520,7 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
     "hero": {
       "ci": "paired bootstrap CI [−0.115, −0.095] on the −0.105 gap; 89.3% per-series win rate; 80% band covers 78.7% (protocol m5_direct_v1, horizon 28)",
       "label": "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
-      "value": "0.498 vs 0.603"
+      "value": "0.491 vs 0.603"
     },
     "hook": "Pick a store-product series from the committed M5 track, compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two scored-once test origins, and slide the horizon — watch the curves, the 80% band and the per-series WAPE respond.",
     "href": "/demos/forecast-workbench",

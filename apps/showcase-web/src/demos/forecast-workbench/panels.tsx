@@ -174,8 +174,10 @@ export function ErrorCompositionPanel({
  * coverage for this series × origin × visible horizon as a filled bar, a
  * marker at the 80% target and the pooled committed coverage as a second
  * marker, with the day-count and mean-width folded as small labels), the
- * per-day hit strip (teal = actual inside p10/p90, pink = outside, hover
- * shows the day, band and actual) and one footer sentence on where the band
+ * per-day hit grid (rows of 7 by week, w1..wk labeled on the left; teal =
+ * actual inside p10/p90, pink = outside, hover shows the day, band and
+ * actual; rows fill the card so short horizons grow instead of leaving dead
+ * space) and one footer sentence on where the band
  * hugs or floats off the actuals. Recomputes client-side from the payload
  * arrays for the selected series and horizon. Collapses to a placeholder
  * when LightGBM is deselected (the churn demo's disabled-state pattern).
@@ -263,19 +265,25 @@ export function BandCalibrationPanel({
           <span>mean width {cal.meanWidth.toFixed(1)}u</span>
         </div>
       </div>
-      <div className="fwb-band-strip" role="img" aria-label="per-day band hit indicator">
-        {Array.from({ length: cal.n }, (_, i) => {
-          const hit = window.actual[i] >= window.band.p10[i] && window.actual[i] <= window.band.p90[i];
-          return (
-            <span
-              key={i}
-              className={`fwb-band-day ${hit ? "hit" : "miss"}`}
-              title={`${shortDate(forecastDates, i)} (day +${i + 1}): ${
-                hit ? "inside" : "outside"
-              } [${window.band.p10[i].toFixed(1)}, ${window.band.p90[i].toFixed(1)}] vs actual ${window.actual[i].toFixed(1)}`}
-            />
-          );
-        })}
+      <div className="fwb-band-weeks" role="img" aria-label="per-day band hit indicator, one row per week">
+        {Array.from({ length: Math.ceil(cal.n / 7) }, (_, w) => (
+          <div className="fwb-band-week" key={w}>
+            <span className="fwb-band-week-label">w{w + 1}</span>
+            {Array.from({ length: Math.min(7, cal.n - w * 7) }, (_, j) => {
+              const i = w * 7 + j;
+              const hit = window.actual[i] >= window.band.p10[i] && window.actual[i] <= window.band.p90[i];
+              return (
+                <span
+                  key={i}
+                  className={`fwb-band-day ${hit ? "hit" : "miss"}`}
+                  title={`${shortDate(forecastDates, i)} (day +${i + 1}): ${
+                    hit ? "inside" : "outside"
+                  } [${window.band.p10[i].toFixed(1)}, ${window.band.p90[i].toFixed(1)}] vs actual ${window.actual[i].toFixed(1)}`}
+                />
+              );
+            })}
+          </div>
+        ))}
       </div>
     </Card>
   );
@@ -330,8 +338,12 @@ export function VerdictPanel({
   const intermWinRate =
     payload.groups.win_rate_vs_naive.convex_ensemble?.intermittent ?? null;
 
-  // shared scale with headroom so the value label always clears the track end
-  const maxWape = Math.max(...rows.map((r) => r.wape), 1e-6) * 1.08;
+  // FIXED common scale: the maximum window WAPE@h across EVERY candidate
+  // curve shipped in the payload for this series × origin — never recomputed
+  // from the selected subset, so toggling a model never moves another bar's
+  // width. Headroom keeps the value label clear of the track end.
+  const scaleMax = Math.max(...Object.values(window.curves).map((c) => wapeAt(window.actual, c, h)), 1e-6);
+  const scale = scaleMax * 1.08;
 
   let comment: ReactNode;
   if (entry.class === "intermittent") {
@@ -362,7 +374,7 @@ export function VerdictPanel({
     <Card comment={comment}>
       <div className="fwb-verdict">
         {rows.map((r) => {
-          const pct = (r.wape / maxWape) * 100;
+          const pct = (r.wape / scale) * 100;
           return (
             <div
               key={r.key}
@@ -390,12 +402,21 @@ export function VerdictPanel({
             </div>
           );
         })}
-        {committedChip !== null && (
-          <p className="fwb-verdict-committed">
-            pooled {committedChip > 0 ? "+" : "−"}
-            {Math.abs(committedChip * 100).toFixed(1)} pts committed
+        <div className="fwb-verdict-foot">
+          {committedChip !== null && (
+            <p className="fwb-verdict-committed">
+              pooled {committedChip > 0 ? "+" : "−"}
+              {Math.abs(committedChip * 100).toFixed(1)} pts committed
+            </p>
+          )}
+          <p
+            className="fwb-verdict-scale"
+            title="maximum window WAPE@h across every candidate curve in the payload — the scale does not depend on the selected subset"
+          >
+            wape@{h}d scale max {scaleMax.toFixed(3)} · {Object.keys(window.curves).length}{" "}
+            candidates
           </p>
-        )}
+        </div>
       </div>
     </Card>
   );
