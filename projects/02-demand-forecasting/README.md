@@ -128,10 +128,18 @@ snap_weekend + event distances + price momentum/relative/missing + panel
 statics item_age/hist_mean/hist_max/dept_mean/cat_mean — no series-identity
 feature; lgbm runs the wave-27 25-trial tuned config from a seeded Optuna
 study on the selection origins, `cli tune-m5`, block `m5_lgbm:` in
-params.yaml; xgb carries a modest a-priori config for booster diversity), and
-a **convex_ensemble** of the best THREE of {lgbm, xgb, auto_ets, auto_ces} by
-SELECTION WAPE, weights grid-fit on a 0.05 simplex over the selection origins
-only (the committed rule picked xgb × 0.35 + lgbm × 0.20 + auto_ets × 0.45).
+params.yaml; xgb carries a modest a-priori config for booster diversity),
+a pure-L2 LightGBM arm **lgbm_l2** (wave 28: same pipeline and features,
+`objective=regression` with the tree count re-derived under an L2
+early-stopping pass on the selection-only nested split), and two ensemble candidates — a **convex_ensemble** of the best THREE of
+{lgbm, lgbm_l2, xgb, auto_ets, auto_ces} by SELECTION WAPE, weights
+grid-fit on a 0.05 simplex over the selection origins only (the committed
+rule picked xgb × 0.35 + lgbm × 0.20 + auto_ets × 0.45; wave 28 widened the
+pool with the pure-L2 arm and added a bitwise-identity dedup — a candidate
+whose selection forecasts are identical to an admitted member is skipped,
+it would only displace a diverse member), and **ensemble_l2** — the same
+rule with SELECTION WRMSSE as the ranking and weight-fitting metric (the
+L2-selected comparison blend; wave 28, comparison/demo material).
 Volume classes per series:
 Syntetos-Boylan ADI/CV² on each series' real history up to the last
 selection origin — **463 dense + 137 intermittent** series. Nothing reads the
@@ -154,8 +162,10 @@ evaluation_metadata.json):
 | auto_ets | 0.503 | 0.6105 | 4.819 | 88.2% |
 | auto_ces | 0.515 | 0.6119 | 4.931 | 83.0% |
 | lgbm | 0.4975 | 0.5964 | 4.762 | 87.8% |
+| lgbm_l2 | 0.4975 | 0.5964 | 4.762 | 87.8% |
 | xgb | 0.4955 | 0.6001 | 4.7425 | 86.5% |
 | **convex_ensemble (champion)** | **0.491** | **0.5958** | **4.697** | **88.8%** |
+| ensemble_l2 | 0.4905 | 0.5952 | 4.695 | 88.7% |
 
 - **The gap vs the naive floor is real and significant** — 95% paired cluster
   bootstrap over series (2,000 reps, fixed seeds): convex_ensemble
@@ -167,6 +177,27 @@ evaluation_metadata.json):
   ~0.012 wide) — the honest gain of the pass is the wider booster pool: xgb
   enters the ensemble (test 0.496 on its own) and the champion blend improves
   to 0.491, with the next-week service number (below) the clearest mover.
+- **L1 vs L2 forecast shape (wave 28)** — the flat look of the shipped curves
+  is not a loss-function bug. Verification: LightGBM's default objective is
+  already squared error, so the track's L1 character lived in the tuner's l1
+  early-stopping and the WAPE selection layers. The pure-L2 arm `lgbm_l2`
+  (same pipeline/features, explicit `objective=regression`, tree count
+  re-derived under an L2 early stop on the selection-only nested split)
+  reproduced `lgbm` **bitwise** — the L2 stop re-derived the same 279 trees —
+  and is committed as a candidate but deduped from the ensemble ranking (a
+  duplicate carries no new information; measured: ranking it separately
+  regressed the headline blend 0.4907 → 0.4953 by pushing auto_ets out). The
+  WRMSSE-selected `ensemble_l2` (same best-three, weights xgb × 0.45 + lgbm ×
+  0.20 + auto_ets × 0.35 minimising selection WRMSSE) lands test WAPE
+  **0.4905** / WRMSSE **0.5952** vs the WAPE blend's 0.4907 / 0.5958 — it
+  edges BOTH metrics by 0.0002 / 0.0006, far inside the ±0.01 bootstrap noise,
+  and is the committed pooled-test-WRMSSE champion (0.5952). Stated as
+  measured: on this panel L1-vs-L2 selection is a wash; the curves are smooth
+  because the conditional mean of noisy daily demand IS smooth (curve
+  day-to-day variation ≈ 5.4 units vs ≈ 12.2 for realized demand; spike-day
+  MAE sits at ~13 for every candidate) — spike-tracking point forecasts are
+  not on the table at this horizon, and the band, not a pointier curve, is the
+  honest answer to spike uncertainty.
 - **Bands** — per-series scaled split-conformal 80% band around the point
   forecast: per-horizon-day width = the 0.8-quantile of |lgbm residual| /
   series scale over the 8 selection origins, scaled back by the series'
@@ -207,8 +238,10 @@ held-out estimate — the held-out estimate stays the 28-day test block above):
 | auto_ets | 0.4352 | 0.7998 | 0.7962 | 0.8109 |
 | auto_ces | 0.4388 | 0.8064 | 0.8075 | 0.8030 |
 | lgbm | 0.4327 | 0.7951 | 0.7915 | 0.8063 |
+| lgbm_l2 | 0.4327 | 0.7951 | 0.7915 | 0.8063 |
 | xgb | 0.4297 | 0.7896 | 0.7876 | 0.7957 |
 | **convex_ensemble (champion)** | **0.4233** | **0.7780** | **0.7736** | **0.7915** |
+| ensemble_l2 | 0.4234 | 0.7781 | 0.7740 | 0.7909 |
 
 - The next-week gap vs the floor is real and significant — paired cluster
   bootstrap over series on the h≤7 metric: lgbm **−0.1115 WAPE** (CI
@@ -231,10 +264,12 @@ held-out estimate — the held-out estimate stays the 28-day test block above):
 | auto_ets | 0.4283 | 0.4668 | 0.5422 | 0.5710 |
 | auto_ces | 0.4345 | 0.4891 | 0.5598 | 0.5723 |
 | lgbm | 0.4205 | 0.4553 | 0.5367 | 0.5715 |
+| lgbm_l2 | 0.4205 | 0.4553 | 0.5367 | 0.5715 |
 | xgb | 0.4146 | 0.4515 | 0.5356 | 0.5738 |
 | **convex_ensemble (champion)** | **0.4136** | **0.4498** | **0.5298** | **0.5636** |
+| ensemble_l2 | 0.4128 | 0.4488 | 0.5298 | 0.5646 |
 
-  Week 1 carries **28.0%** of the value (the share of the champion's
+  Week 1 carries **28.0%** of the value (the share of convex_ensemble's
   absolute-error reduction vs the floor delivered in wk1) and week 4 error
   is **1.36×** week 1 (0.4136 → 0.5636; the floor degrades 1.22× the same
   way) — the further out the week, the more every candidate converges to the
@@ -263,7 +298,7 @@ held-out estimate — the held-out estimate stays the 28-day test block above):
   measures from the inside).
 
 Reproduce: `uv run python -m demand_forecasting.cli evaluate-m5` (writes
-`reports_m5/`, ~24 min; offline, checksum-pinned) or
+`reports_m5/`, ~31 min; offline, checksum-pinned) or
 `build-report-m5` to rebuild the HTML report from the committed artifacts.
 
 ## Data-generating process (UCI track — SECONDARY)

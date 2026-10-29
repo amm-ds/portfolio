@@ -211,6 +211,37 @@ def test_ensemble_weights_simplex_toy():
             assert err(combo) <= err(cand) + 1e-9
 
 
+def test_ensemble_weights_l2_diverges_from_wape():
+    """Hand-built case where the L1 and L2 grids pick DIFFERENT members.
+
+    Two (series x origin) units, h=2. Unit 1: y=[100, 0], naive-28 scale
+    10,000 — A errs [0, +5] (MSE 12.5 -> RMSSE 0.0354, Σ|err|=5), B errs
+    [-50, 0] (MSE 1250 -> RMSSE 0.3536, Σ|err|=50). Unit 2: y=[0, 0],
+    scale 1 — A errs [+5, 0] (RMSSE 3.5355, Σ|err|=5), B is exact (0, 0).
+    Pooled WAPE ranks A (10/100 vs 50/100); pooled WRMSSE ranks B
+    ((0.3536+0)/2 vs (0.0354+3.5355)/2). The lexicographic tie convention is
+    checked with duplicated members.
+    """
+    from demand_forecasting.m5_track import ensemble_weights_l2
+
+    y = np.array([[100.0, 0.0], [0.0, 0.0]])
+    a = np.array([[100.0, 5.0], [5.0, 0.0]])
+    b = np.array([[50.0, 0.0], [0.0, 0.0]])
+    scales = np.array([10_000.0, 1.0])
+    volumes = np.array([100.0, 0.0])
+    w_wape = ensemble_weights([a, b], y)
+    assert list(w_wape) == [1.0, 0.0]  # A minimises pooled Σ|err|
+    w_l2 = ensemble_weights_l2([a, b], y, scales, volumes)
+    assert w_l2.shape == (2,)
+    assert w_l2.sum() == pytest.approx(1.0)
+    assert list(w_l2) == [0.0, 1.0]  # B minimises pooled WRMSSE
+    # tie (identical members) resolves to the first lexicographic point ON
+    # THE OPTIMAL FACE: b strictly minimises WRMSSE here, so all weight lands
+    # on the last member — exactly like ensemble_weights' tie convention
+    w_tie = ensemble_weights_l2([a, a, b], y, scales, volumes)
+    assert list(w_tie) == [0.0, 0.0, 1.0]
+
+
 def test_bootstrap_pairs_on_shared_draws():
     y = np.ones(4)
     a = y + np.array([0.1, 0.1, 0.1, 0.1])
@@ -391,6 +422,15 @@ def test_tiny_track_run_twice_byte_identical(tiny_m5_dir: Path):
             assert key in pooled[cand]
     assert pooled["lgbm"]["rmae"] >= 0.0
     assert set(r1.probabilistic["candidates"]) == {"lgbm", "convex_ensemble"}
+    # wave 28 — the L2 ensemble sub-block + the computed WRMSSE champion note
+    ens = r1.metrics["ensemble"]
+    l2_block = ens["ensemble_l2"]
+    assert len(l2_block["members"]) == len(l2_block["weights"]) == 3
+    assert sum(l2_block["weights"]) == pytest.approx(1.0, abs=1e-9)
+    assert set(l2_block["selection_wrmsse"]) == set(ens["pool"])
+    champ = r1.metrics["headline"]["wrmsse_champion"]
+    assert champ["candidate"] in r1.metrics["candidates"]
+    assert champ["wrmsse"] == pytest.approx(pooled[champ["candidate"]]["wrmsse"])
 
 
 # ---------------------------------------------------------------------------

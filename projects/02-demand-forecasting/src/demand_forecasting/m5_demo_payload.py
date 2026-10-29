@@ -9,8 +9,9 @@ headline track without retraining:
   event-driven / slow-mover);
 - per catalog series x the 2 scored test origins: the 56-day history tail,
   the 28-day actuals, and curves for ``seasonal_naive`` / ``auto_ets`` /
-  ``auto_ces`` / ``lgbm`` / ``xgb`` / ``convex_ensemble``, plus the lgbm
-  p10/p90 conformal band and per-series test WAPE per candidate;
+  ``auto_ces`` / ``lgbm`` / ``lgbm_l2`` / ``xgb`` / ``convex_ensemble`` /
+  ``ensemble_l2``, plus the lgbm p10/p90 conformal band and per-series test
+  WAPE per candidate;
 - the committed headline block (``reports_m5/metrics.json`` +
   ``probabilistic.json``) verbatim under ``groups``.
 
@@ -75,22 +76,35 @@ HISTORY_DAYS = 56
 #: drift-guard tolerance on recomputed pooled test WAPEs (absolute).
 DRIFT_TOL = 1e-9
 #: sidecar candidates whose curves ship in the payload (all per-series fits
-#: are exactly verifiable against a live re-run; lgbm/xgb/ensemble come from
-#: the committed global run via the sidecar). auto_ces ships explicitly —
-#: it entered the set as a wave-25 ensemble member and stays shipped for
-#: backward compatibility even though the wave-27 blend does not use it;
-#: xgb joined in wave 27 (new ensemble member).
-CURVE_CANDIDATES = ("seasonal_naive", "auto_ets", "auto_ces", "lgbm", "xgb", "convex_ensemble")
+#: are exactly verifiable against a live re-run; lgbm/lgbm_l2/xgb/ensembles
+#: come from the committed global run via the sidecar). auto_ces ships
+#: explicitly — it entered the set as a wave-25 ensemble member and stays
+#: shipped for backward compatibility even though the wave-27/28 blend does
+#: not use it; xgb joined in wave 27 (new ensemble member); wave 28 adds the
+#: L1/L2 pair lgbm_l2 + ensemble_l2 (new keys inside the open-keyed curves
+#: map — schema_version stays 4, the manifest contract is unchanged).
+CURVE_CANDIDATES = (
+    "seasonal_naive",
+    "auto_ets",
+    "auto_ces",
+    "lgbm",
+    "lgbm_l2",
+    "xgb",
+    "convex_ensemble",
+    "ensemble_l2",
+)
 
 CURVE_PROVENANCE = (
-    "every curve (seasonal_naive, auto_ets, auto_ces, lgbm, xgb, "
-    "convex_ensemble) "
+    "every curve (seasonal_naive, auto_ets, auto_ces, lgbm, lgbm_l2, xgb, "
+    "convex_ensemble, ensemble_l2) "
     "is copied from reports_m5/catalog_forecasts.parquet, the sidecar the "
     "committed evaluate run retains for this exact catalog — the lgbm and "
-    "xgb curves are the committed global 600-series models (no "
+    "lgbm_l2 curves are the committed global 600-series models (no "
     "catalog-subset refit); the "
-    "ensemble curve is the committed selection rule applied in-run; "
-    "per-series test WAPEs in each window are computed from these curves"
+    "ensemble curves are the committed selection rules applied in-run "
+    "(convex_ensemble under selection WAPE, ensemble_l2 under selection "
+    "WRMSSE); per-series test WAPEs in each window are computed from these "
+    "curves"
 )
 
 
