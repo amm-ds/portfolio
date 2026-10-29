@@ -474,16 +474,6 @@ def persist_solver_best(cfg: VRPConfig, tuning: TwoOptTuning, alns_tuning: AlnsT
     return params_path
 
 
-def _solver_gaps(evaln: InstanceEvaluation) -> dict[str, float | None]:
-    """Gap per solver run; None when no best-known reference exists."""
-    gaps: dict[str, float | None] = {}
-    for r in evaln.runs:
-        gaps[r.solver] = (
-            None if evaln.best_known is None else gap_pct(r.total_distance, evaln.best_known)
-        )
-    return gaps
-
-
 @dataclass(frozen=True)
 class GapTables:
     """Per-run Polars frames feeding the gap, runtime and profile figures."""

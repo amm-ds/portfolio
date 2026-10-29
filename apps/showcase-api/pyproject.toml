@@ -12,21 +12,19 @@ dependencies = [
     "05-ml-pipeline-churn",
     "fastapi>=0.115",
     "portfolio-core",
-    "portfolio-eval",
     "pydantic>=2.9",
     "sse-starlette>=2.1",
     "uvicorn>=0.30",
 ]
 
 [project.scripts]
-showcase-api = "showcase_api.main:app"
+showcase-api = "showcase_api.__main__:main"
 
 [tool.uv.sources]
 06-routing-optimization = { workspace = true }
 02-demand-forecasting = { workspace = true }
 05-ml-pipeline-churn = { workspace = true }
 portfolio-core = { workspace = true }
-portfolio-eval = { workspace = true }
 
 [build-system]
 requires = ["hatchling"]
