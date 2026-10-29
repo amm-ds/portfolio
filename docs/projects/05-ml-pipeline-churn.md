@@ -11,7 +11,7 @@ showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-ope
 > policy, with a bootstrap 95% CI of [−485, −343].
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
-> [Try the threshold sandbox →](https://amm-ds.github.io/portfolio/demos/churn-sandbox)
+> [Threshold sandbox source →](https://github.com/amm-ds/portfolio/tree/main/apps/showcase-web/src/demos/churn-sandbox) (interactive when the showcase app is running)
 
 ## What it shows
 

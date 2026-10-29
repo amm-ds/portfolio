@@ -17,8 +17,6 @@ The weaknesses are not in the code — they are in **credibility and reach**:
 
 **Overall weighted score: 7.7 / 10** — architect-level engineering artifacts, junior-level public presence.
 
-![Radar of dimension scores](audit_radar.png)
-
 ---
 
 ## 2. Scores by dimension
@@ -54,8 +52,6 @@ The weaknesses are not in the code — they are in **credibility and reach**:
 ---
 
 ## 4. Per-project review
-
-![Per-project scores and priority matrix](audit_projects_priorities.png)
 
 ### 01 — RAG & Agentic AI Assistant — **9.0** (flagship)
 

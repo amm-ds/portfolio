@@ -288,7 +288,7 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   reconciliation), the M5 protocol decisions (§N), pipeline diagram, changelog
 - Dataset card: [UCI Online Retail II](../data-registry/uci-online-retail-ii.md)
 - Drift response runbook: [drift-response.md](../runbooks/drift-response.md)
-- [Evaluation report](/projects/02-demand-forecasting/report) — standalone
-  themed HTML report of the M5 headline track (served by the showcase API
-  from the committed `reports_m5/report.html`)
+- [Evaluation report](https://github.com/amm-ds/portfolio/blob/main/projects/02-demand-forecasting/reports_m5/report.html) — standalone
+  themed HTML report of the M5 headline track (also served by the showcase API
+  at `/projects/02-demand-forecasting/report`)
 - Source: `projects/02-demand-forecasting/src/demand_forecasting/`
