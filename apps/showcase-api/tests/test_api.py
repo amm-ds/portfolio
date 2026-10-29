@@ -39,6 +39,32 @@ def test_health_readiness_reflects_missing_artifacts(
     assert client.get("/health").json()["ready"] is False
 
 
+def test_ready_controls_status_without_changing_liveness(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setattr(main, "_readiness", lambda: False)
+    unready = client.get("/ready")
+    assert unready.status_code == 503
+    assert unready.json() == {"status": "unavailable", "ready": False}
+    assert unready.headers["Cache-Control"] == "no-store"
+    assert client.get("/health").status_code == 200
+
+    monkeypatch.setattr(main, "_readiness", lambda: True)
+    ready = client.get("/ready")
+    assert ready.status_code == 200
+    assert ready.json() == {"status": "ok", "ready": True}
+
+
+def test_console_script_invokes_uvicorn(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import uvicorn
+    from showcase_api.__main__ import main as launch
+
+    calls = []
+    monkeypatch.setattr(uvicorn, "run", lambda *args, **kwargs: calls.append((args, kwargs)))
+    launch()
+    assert calls == [
+        (("showcase_api.main:app",), {"host": "0.0.0.0", "port": 8000})  # noqa: S104
+    ]
+
+
 def test_projects_index(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from showcase_api import main
 
@@ -750,6 +776,117 @@ def test_solve_returns_503_when_capacity_busy(monkeypatch) -> None:
     r = client.post("/projects/06-routing-optimization/solve", json=_vrptw_payload(5))
     assert r.status_code == 503
     assert "busy" in r.json()["error"]
+
+
+def test_solve_timeout_retains_slot_until_worker_finishes(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """A client timeout must not free capacity still used by the abandoned worker."""
+    import threading
+
+    from fastapi import HTTPException
+    from routing_optimization.schemas import Problem
+
+    semaphore = threading.BoundedSemaphore(1)
+    worker_started = threading.Event()
+    worker_release = threading.Event()
+    worker_finished = threading.Event()
+    monkeypatch.setattr(main, "_SOLVE_SEMAPHORE", semaphore)
+
+    def slow_solve(_problem):  # type: ignore[no-untyped-def]
+        worker_started.set()
+        assert worker_release.wait(2)
+
+    def timeout_after_worker_starts(fn):  # type: ignore[no-untyped-def]
+        def run() -> None:
+            try:
+                fn()
+            finally:
+                worker_finished.set()
+
+        thread = threading.Thread(target=run)
+        thread.start()
+        assert worker_started.wait(2)
+        timeout_after_worker_starts.thread = thread
+        raise HTTPException(status_code=504, detail="timed out")
+
+    timeout_after_worker_starts.thread = None
+    monkeypatch.setattr(main, "_solve_routing_inner", slow_solve)
+    monkeypatch.setattr(main, "_run_with_timeout", timeout_after_worker_starts)
+    problem = Problem.model_validate(_vrptw_payload(1))
+
+    with pytest.raises(HTTPException, match="timed out"):
+        main.solve_routing(problem)
+    assert not semaphore.acquire(blocking=False)
+
+    worker_release.set()
+    assert worker_finished.wait(2)
+    timeout_after_worker_starts.thread.join(2)
+    assert semaphore.acquire(blocking=False)
+    semaphore.release()
+
+
+def test_forecast_workers_share_a_bounded_capacity(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Two forecasts run; a third fails fast until a worker releases its slot."""
+    import threading
+
+    from fastapi import HTTPException
+
+    semaphore = threading.BoundedSemaphore(2)
+    both_started = threading.Event()
+    worker_release = threading.Event()
+    lock = threading.Lock()
+    started = 0
+    responses = []
+    errors = []
+    monkeypatch.setattr(main, "_FORECAST_SEMAPHORE", semaphore)
+    monkeypatch.setattr(main, "_run_with_timeout", lambda fn: fn())
+
+    class BlockingRegressor:
+        def predict(self, _row):  # type: ignore[no-untyped-def]
+            nonlocal started
+            with lock:
+                started += 1
+                if started == 2:
+                    both_started.set()
+            assert worker_release.wait(2)
+            return np.array([2.0])
+
+    artifacts = {
+        "model": {
+            "model": BlockingRegressor(),
+            "feature_names": ["lag_1"],
+            "target_transform": None,
+        },
+        "meta": {"model_name": "blocking"},
+    }
+    monkeypatch.setattr(main.serving, "cached_artifacts", lambda _path: artifacts)
+    request = main.DemandForecastRequest(series_id="S1", features={"lag_1": 1.0})
+
+    def call_forecast() -> None:
+        try:
+            responses.append(main.forecast_demand(request))
+        except Exception as exc:  # pragma: no cover - asserted below
+            errors.append(exc)
+
+    threads = [threading.Thread(target=call_forecast) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    try:
+        assert both_started.wait(2)
+        with pytest.raises(HTTPException) as exc_info:
+            main.forecast_demand(request)
+        assert exc_info.value.status_code == 503
+    finally:
+        worker_release.set()
+        for thread in threads:
+            thread.join(2)
+
+    assert not errors
+    assert len(responses) == 2
+    assert all(response.forecast == 2.0 for response in responses)
+    assert semaphore.acquire(blocking=False)
+    assert semaphore.acquire(blocking=False)
+    semaphore.release()
+    semaphore.release()
 
 
 # --- Route manifest 404 / cache headers / kill switch / IP hashing ------------

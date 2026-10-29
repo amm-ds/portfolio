@@ -119,8 +119,6 @@ DVC_YAML = """stages:
 
 CONFIG_PY = '''"""Configuration: pydantic models only — no constants in logic."""
 
-from pydantic import Field
-
 from portfolio_core.config import Settings as CoreSettings
 from portfolio_core.schemas import PortfolioBaseModel
 

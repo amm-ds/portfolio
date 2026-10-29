@@ -17,10 +17,6 @@ _SENTENCE_RE = re.compile(r"[^.!?\n]+[.!?]?\s*")
 _PARAGRAPH_RE = re.compile(r"\n\s*\n")
 
 
-def _words(text: str) -> list[str]:
-    return text.split()
-
-
 def _sentences(paragraph: str) -> list[str]:
     return [m.group(0).strip() for m in _SENTENCE_RE.finditer(paragraph) if m.group(0).strip()]
 

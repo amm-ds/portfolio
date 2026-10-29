@@ -273,12 +273,5 @@ def inference_backend() -> str:
     return _backend()
 
 
-def _provider_configured() -> bool:
-    from portfolio_core.config import get_settings
-
-    settings = get_settings()
-    return bool(settings.llm_api_key and settings.llm_base_url)
-
-
 if __name__ == "__main__":
     app()

@@ -25,7 +25,6 @@ from typing import Any
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
-from fastapi.routing import APIRoute
 from portfolio_core.demo import DemoManifest, load_demo_index, to_registry_entry
 from portfolio_core.logging import get_logger, setup_logging
 from portfolio_core.manifest import load_index
@@ -143,7 +142,7 @@ def _project_dir(pid: str) -> Path:
 
 @app.get("/health")
 def health() -> JSONResponse:
-    """Liveness + readiness in one cheap call (Docker HEALTHCHECK hits this).
+    """Cheap liveness response; ``ready`` is retained for existing clients.
 
     ``ready`` is True when every demo payload file and every served-model
     bundle the live endpoints need is present on disk. ``sha`` identifies the
@@ -156,6 +155,17 @@ def health() -> JSONResponse:
             "sha": os.environ.get("BUILD_SHA", "dev"),
             "version": __version__,
         },
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.get("/ready")
+def readiness() -> JSONResponse:
+    """Readiness probe: unlike liveness, unready artifacts produce a 503."""
+    ready = _readiness()
+    return JSONResponse(
+        {"status": "ok" if ready else "unavailable", "ready": ready},
+        status_code=200 if ready else 503,
         headers={"Cache-Control": "no-store"},
     )
 
@@ -501,8 +511,8 @@ def _run_with_timeout[T](fn: Callable[[], T], seconds: float = _LIVE_TIMEOUT_S) 
     """Run CPU-bound inference work on a worker thread with a wall-clock cap.
 
     On timeout the worker is abandoned (it cannot be killed mid-predict) and
-    the caller gets a 504; the solve semaphore is still released by the
-    endpoint's finally block, so one slow solve cannot exhaust capacity.
+    the caller gets a 504. Bounded callers release their capacity in the worker
+    itself, so an abandoned worker continues to occupy its slot until it exits.
     """
     pool = ThreadPoolExecutor(max_workers=1)
     try:
@@ -513,6 +523,27 @@ def _run_with_timeout[T](fn: Callable[[], T], seconds: float = _LIVE_TIMEOUT_S) 
         ) from e
     finally:
         pool.shutdown(wait=False)
+
+
+def _run_bounded_with_timeout[T](
+    fn: Callable[[], T], semaphore: threading.BoundedSemaphore, busy_detail: str
+) -> T:
+    """Run at capacity or fail fast; the worker owns and releases its slot."""
+    if not semaphore.acquire(blocking=False):
+        raise HTTPException(status_code=503, detail=busy_detail)
+
+    def _worker() -> T:
+        try:
+            return fn()
+        finally:
+            semaphore.release()
+
+    return _run_with_timeout(_worker)
+
+
+# Shared cap for both forecast endpoints; abandoned timed-out workers still count.
+_FORECAST_SEMAPHORE = threading.BoundedSemaphore(2)
+_FORECAST_BUSY_DETAIL = "forecast capacity busy (2 concurrent forecasts max) — retry shortly"
 
 
 # --- Served forecasts (Project 07) -----------------------------------------
@@ -586,7 +617,7 @@ def forecast_mobility(request: ForecastRequest) -> ForecastResponse:
             p90=round(max(0.0, p90), 3),
         )
 
-    return _run_with_timeout(_predict)
+    return _run_bounded_with_timeout(_predict, _FORECAST_SEMAPHORE, _FORECAST_BUSY_DETAIL)
 
 
 # --- Served forecasts (Project 02) ------------------------------------------
@@ -659,7 +690,7 @@ def forecast_demand(request: DemandForecastRequest) -> DemandForecastResponse:
         model_name = _model_label(meta, model)
         return DemandForecastResponse(forecast=round(max(0.0, pred), 4), model=model_name)
 
-    return _run_with_timeout(_predict)
+    return _run_bounded_with_timeout(_predict, _FORECAST_SEMAPHORE, _FORECAST_BUSY_DETAIL)
 
 
 def _model_label(meta: dict[str, Any], model: Any) -> str:
@@ -800,17 +831,11 @@ def solve_routing(problem: Problem) -> SolveResponse:
             status_code=422,
             detail=f"too many customers: {problem.n_customers} > {_MAX_SOLVE_CUSTOMERS} cap",
         )
-    if not _SOLVE_SEMAPHORE.acquire(blocking=False):
-        raise HTTPException(
-            status_code=503,
-            detail="solve capacity busy (2 concurrent solves max) — retry shortly",
-        )
-    try:
-        return _run_with_timeout(lambda: _solve_routing_inner(problem))
-    finally:
-        # On timeout the abandoned worker may still hold its slot briefly; the
-        # semaphore is released here regardless so capacity recovers.
-        _SOLVE_SEMAPHORE.release()
+    return _run_bounded_with_timeout(
+        lambda: _solve_routing_inner(problem),
+        _SOLVE_SEMAPHORE,
+        "solve capacity busy (2 concurrent solves max) — retry shortly",
+    )
 
 
 def _solve_routing_inner(problem: Problem) -> SolveResponse:
@@ -951,9 +976,8 @@ def _index_html() -> str:
 
 # --- SPA catch-all + route manifest -------------------------------------------
 # The catch-all serves the React build for known client-side routes and returns
-# a real JSON 404 (with request_id) for everything else. The manifest combines
-# the API routes registered above (collected at startup) with the known SPA
-# routes from route_manifest.json — generated by scripts/gen_route_manifest.py
+# a real JSON 404 (with request_id) for everything else. Known SPA routes come
+# from route_manifest.json — generated by scripts/gen_route_manifest.py
 # (App.tsx routes + project ids + demo ids) and committed at build/CI time.
 
 _MANIFEST_FILE = Path(__file__).with_name("route_manifest.json")
@@ -990,19 +1014,7 @@ def _spa_patterns() -> list[str]:
         return patterns
 
 
-def _api_patterns() -> list[tuple[str, str]]:
-    """(method, path-pattern) for every API route, path params as ``*``."""
-    out = []
-    for route in app.routes:
-        if isinstance(route, APIRoute):
-            pattern = re.sub(r"\{[^}]+\}", "*", route.path)
-            for method in route.methods or ():
-                out.append((method, pattern))
-    return out
-
-
 _SPA_PATTERNS = _spa_patterns()
-_API_PATTERNS = _api_patterns()
 
 
 @app.get("/{full_path:path}", include_in_schema=False)
