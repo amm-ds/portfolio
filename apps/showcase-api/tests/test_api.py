@@ -970,3 +970,15 @@ def test_every_committed_project_story_parses() -> None:
     assert len(ids) >= 10, ids
     bad = [pid for pid in ids if client.get(f"/projects/{pid}/story").status_code != 200]
     assert not bad, f"story endpoints failing: {bad}"
+
+
+def test_indexes_serialize_compact_no_spaces() -> None:
+    """The pre-ETag FastAPI serializer emitted compact JSON; the docker
+    smoke greps '"id":"01-rag-agent"'. The cached-payload path must too."""
+    r = client.get("/projects")
+    assert r.status_code == 200
+    assert '"id": "01-rag-agent"' not in r.text
+    assert '"id":"01-rag-agent"' in r.text
+    d = client.get("/demos")
+    assert d.status_code == 200
+    assert ": " not in d.text.split('"hero"')[0]

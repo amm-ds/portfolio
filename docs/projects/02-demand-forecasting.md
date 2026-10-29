@@ -16,8 +16,14 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 > origins, the deployment shape) the ensemble posts next-week WAPE **0.4233**
 > vs the floor's **0.5442** (95% paired bootstrap CI **[−0.1288, −0.1130]** on
 > the −0.1208 gap), measurably beating the naive floor in both volume classes
-> (always-beats-naive: **yes**). The mirror image is the UCI sparse track
-> kept below as the secondary study, where the zero forecast stays the
+> (always-beats-naive: **yes**). The wave-28 L1/L2 pass tested the
+> "flat-curves" feedback: the pure-L2 arm `lgbm_l2` reproduced `lgbm`
+> bitwise (LightGBM's default loss is already squared error — the L1
+> character lived in the early-stopping/selection layers), and the
+> WRMSSE-selected `ensemble_l2` edged both test metrics by 0.0002/0.0006 —
+> a wash, stated as measured; the flatness is the conditional mean of noisy
+> daily demand, not a loss-function bug. The mirror image is the UCI sparse
+> track kept below as the secondary study, where the zero forecast stays the
 > ceiling.
 
 [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
@@ -63,8 +69,10 @@ stated deviation from the official M5 lag-1 scale):
 | auto_ets | 0.503 | 0.611 | 88.2% |
 | auto_ces | 0.515 | 0.612 | 83.0% |
 | lgbm | 0.498 | 0.596 | 87.8% |
+| lgbm_l2 | 0.498 | 0.596 | 87.8% |
 | xgb | 0.496 | 0.600 | 86.5% |
 | **convex_ensemble (champion)** | **0.491** | **0.596** | **88.8%** |
+| ensemble_l2 | 0.491 | 0.595 | 88.7% |
 
 - **The gap vs the floor is significant** — 95% paired cluster bootstrap
   over series (2,000 reps): ensemble **−0.1125 WAPE** (CI **[−0.1228,
@@ -72,7 +80,8 @@ stated deviation from the official M5 lag-1 scale):
   WAPE (CI [−0.1184, −0.0935] — a 17.5% relative cut) / −0.1652 WRMSSE (CI
   [−0.1770, −0.1535]). Both CIs exclude zero.
 - **The champion is a selection-fitted convex ensemble** — best three of
-  {lgbm, xgb, auto_ets, auto_ces} by SELECTION WAPE, weights grid-fit on a
+  {lgbm, lgbm_l2, xgb, auto_ets, auto_ces} by SELECTION WAPE (bitwise-identical
+  selection curves deduped — wave 28), weights grid-fit on a
   0.05 simplex over the selection origins: xgb × 0.35 + lgbm × 0.20 +
   auto_ets × 0.45. The wave-27 refinement widened the feature space per the
   M5-winning-solution practice (56/84-day means, snap_weekend,
@@ -83,6 +92,20 @@ stated deviation from the official M5 lag-1 scale):
   tuning lever moved lgbm's pooled test WAPE only within noise (0.495 →
   0.498), and the honest gain of the pass is the wider pool and the
   next-week service number.
+- **L1 vs L2 forecast shape (wave 28)** — the "flat curves" feedback, tested
+  rather than assumed: LightGBM's default objective is already squared error
+  (verified bitwise), so the pure-L2 arm `lgbm_l2` (explicit
+  `objective=regression`, L2-stopped tree count on the selection-only nested
+  split) reproduced `lgbm` bitwise — the L2 early stop re-derived the same
+  279 trees — and is deduped from the ensemble ranking (ranking the duplicate
+  separately regressed the blend 0.4907 → 0.4953 by displacing auto_ets). The
+  WRMSSE-selected `ensemble_l2` (xgb × 0.45 + lgbm × 0.20 + auto_ets × 0.35)
+  lands test WAPE **0.4905** / WRMSSE **0.5952** vs the WAPE blend's 0.4907 /
+  0.5958 — both metrics, by margins far inside the bootstrap noise. Stated as
+  measured: L1-vs-L2 selection is a wash on this panel; the flatness is the
+  conditional mean of noisy daily demand (curve day-to-day variation ≈ 5.4
+  units vs ≈ 12.2 realized), and the conformal band — not a pointier curve —
+  is the honest answer to spike uncertainty.
 - **Win rates** — the ensemble clears the seasonal-naive floor on **88.8%**
   of series (dense 88.6%, intermittent 89.8%); every serious candidate lands
   in the 82.8–88.8% band, so on dense weekly-seasonal demand the pooled
@@ -237,7 +260,7 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   reported as such.
 - 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 30 min
   (multi-step the bulk of it — 14 model fits × 14 horizons × 20 origins,
-  joblib-parallel); M5 ≈ 24 min; 165 offline tests.
+  joblib-parallel); M5 ≈ 31 min; 176 offline tests.
 
 ![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run against the 1.0 in-sample-scale reference line (the MASE scale is the naive's in-sample error from a quieter period, NOT the naive's own holdout error — the seasonal-naive itself lands at 1.310 on this window). MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 

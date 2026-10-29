@@ -189,7 +189,11 @@ def _cached_payload(root: Path, kind: str, compute: Callable[[], Any]) -> tuple[
     """
     key = (Path(root), kind)
     if key not in _PAYLOAD_CACHE:
-        body = json.dumps(compute(), sort_keys=True)
+        # compact separators — FastAPI's serializer emits no spaces, and the
+        # docker smoke (plus any byte-comparing consumers) greps the compact
+        # form ('"id":"01-rag-agent"'); json.dumps' default would insert a
+        # space after every ':' and break them.
+        body = json.dumps(compute(), sort_keys=True, separators=(",", ":"))
         etag = '"' + hashlib.sha256(body.encode()).hexdigest()[:16] + '"'
         _PAYLOAD_CACHE[key] = (etag, body)
     return _PAYLOAD_CACHE[key]
