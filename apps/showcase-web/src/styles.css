@@ -2626,16 +2626,35 @@ button.chip.demo-preset.fwb-active {
   font-variant-numeric: tabular-nums;
 }
 
-/* band calibration card: the per-day hit strip fills the card body; teal =
-   actual inside the p10/p90 band, pink = outside */
-.wb-secondary .fwb-band-strip {
+/* band calibration card: the per-day hit grid fills the card body in rows of
+   7 by week (w1..wk labeled on the left); teal = actual inside p10/p90,
+   pink = outside. Rows flex to fill the slot, so at h=7 the single row's
+   squares grow instead of leaving dead space. */
+.wb-secondary .fwb-band-weeks {
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0.25rem 0.7rem 0.45rem;
+}
+
+.fwb-band-week {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  align-items: stretch;
   gap: 3px;
-  align-content: center;
-  padding: 0.2rem 0.7rem 0.4rem;
+}
+
+.fwb-band-week-label {
+  flex: 0 0 auto;
+  width: 1.4em;
+  display: flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
 }
 
 /* coverage gauge above the hit strip: the per-series coverage for this
@@ -2725,8 +2744,8 @@ button.chip.demo-preset.fwb-active {
 }
 
 .fwb-band-day {
-  width: 14px;
-  height: 14px;
+  flex: 1 1 0;
+  min-width: 0;
   border-radius: 2px;
   border: 1px solid var(--border);
 }
@@ -2758,8 +2777,10 @@ button.chip.demo-preset.fwb-active {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 0.45rem;
-  padding: 0.35rem 0.7rem 0.5rem;
+  /* tight spacing: all six candidates + committed chip + scale label must
+     fit the 280px secondary band without clipping the best row */
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem 0.4rem;
 }
 
 /* every row shares one column grid so the bars and the peak column line up */
@@ -2832,11 +2853,34 @@ button.chip.demo-preset.fwb-active {
   color: var(--muted);
 }
 
+/* footer line under the bars: the committed pooled chip (full scored horizon
+   only) on the left and the fixed common-scale axis label on the right */
+.fwb-verdict-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin: 0.05rem 0 0;
+}
+
 .fwb-verdict-committed {
-  margin: 0.1rem 0 0;
+  margin: 0;
   font-family: var(--mono);
   font-size: 0.68rem;
   color: var(--muted);
+  white-space: nowrap;
+}
+
+/* fixed common-scale axis label: the maximum window WAPE@h across every
+   payload candidate — printed so a bar's width can be read against a scale
+   that never depends on the selected subset */
+.fwb-verdict-scale {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* scorer card: header row (label + submit) on top of a 2×2 field grid; the

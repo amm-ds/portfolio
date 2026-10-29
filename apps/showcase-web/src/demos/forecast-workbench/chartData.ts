@@ -2,24 +2,43 @@ import type { LineSeries } from "../charts/LineChart";
 import type { CatalogEntry, ForecastWindow } from "../types";
 
 export const C_TEAL = "#2dd4bf";
+export const C_TEAL_LIGHT = "#5eead4";
 export const C_PINK = "#f472b6";
 export const C_AMBER = "#fbbf24";
 export const C_GRAY = "#64748b";
 export const C_LILAC = "#a78bfa";
+export const C_VIOLET = "#7c3aed";
 export const C_HIST = "#94a3b8";
 
-/** Demo candidates: naive dashed grey, AutoETS thin, lgbm accent, ensemble bold. */
+/** Demo candidates: naive dashed grey, AutoETS thin, lgbm accent, ensemble
+ * bold; the wave-28 L2 arms get distinct-but-related hues (lighter teal,
+ * deep violet) so the near-duplicate curves stay tellable apart. */
 export const MODELS: {
   key: string;
   label: string;
   color: string;
   width: number;
   dashed?: boolean;
+  tooltip?: string;
 }[] = [
   { key: "seasonal_naive", label: "seasonal naive", color: C_GRAY, width: 2, dashed: true },
   { key: "auto_ets", label: "AutoETS", color: C_LILAC, width: 1.5 },
   { key: "lgbm", label: "LightGBM", color: C_TEAL, width: 2 },
+  {
+    key: "lgbm_l2",
+    label: "lgbm l2",
+    color: C_TEAL_LIGHT,
+    width: 1.5,
+    tooltip: "same booster, L2-selected blend — the wave-28 L1/L2 comparison",
+  },
   { key: "convex_ensemble", label: "ensemble", color: C_AMBER, width: 3 },
+  {
+    key: "ensemble_l2",
+    label: "ensemble l2",
+    color: C_VIOLET,
+    width: 2.5,
+    tooltip: "same booster, L2-selected blend — the wave-28 L1/L2 comparison",
+  },
 ];
 
 export interface ForecastChartSpec {

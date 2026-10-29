@@ -15,6 +15,7 @@ const HORIZONS = [7, 14, 21, 28];
 const MODEL_SELECTIONS: string[][] = [
   ["seasonal_naive", "lgbm"],
   ["seasonal_naive", "auto_ets", "lgbm", "convex_ensemble"],
+  ["seasonal_naive", "auto_ets", "lgbm", "lgbm_l2", "convex_ensemble", "ensemble_l2"],
   ["convex_ensemble"],
 ];
 
@@ -98,5 +99,21 @@ describe("assembleChartData — real-payload sweep", () => {
   it("no band is emitted when lgbm is not selected", () => {
     const win = payload.catalog[0].origins[payload.origins[0].origin];
     expect(assembleChartData(win, ["seasonal_naive", "convex_ensemble"], 28).band).toBeNull();
+  });
+
+  it("carries the wave-28 L2 curves with distinct colors when all models are on", () => {
+    const win = payload.catalog[0].origins[payload.origins[0].origin];
+    const spec = assembleChartData(
+      win,
+      ["seasonal_naive", "auto_ets", "lgbm", "lgbm_l2", "convex_ensemble", "ensemble_l2"],
+      28,
+    );
+    // history + actual + 6 candidates + 2 band edges
+    expect(spec.series).toHaveLength(10);
+    expect(spec.band).not.toBeNull();
+    const byName = new Map(spec.series.map((s) => [s.name, s]));
+    expect(byName.get("lgbm_l2")?.color).not.toBe(byName.get("lgbm")?.color);
+    expect(byName.get("ensemble_l2")?.color).not.toBe(byName.get("convex_ensemble")?.color);
+    expect(byName.get("lgbm_l2")?.color).not.toBe(byName.get("ensemble_l2")?.color);
   });
 });
