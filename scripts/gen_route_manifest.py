@@ -18,11 +18,13 @@ with the wheel, so the Docker image ships it without re-running this script).
 Usage::
 
     uv run python scripts/gen_route_manifest.py
+    uv run python scripts/gen_route_manifest.py --check
 
-Run it whenever App.tsx routes, project ids, or demo ids change (CI should
-fail the build when the committed file drifts — regenerate and commit).
+Run it whenever App.tsx routes, project ids, or demo ids change. CI uses
+``--check`` to reject a stale committed manifest without rewriting it.
 """
 
+import argparse
 import json
 import re
 import sys
@@ -84,6 +86,12 @@ def spa_routes() -> list[str]:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check", action="store_true", help="fail if the committed manifest is stale; do not write"
+    )
+    args = parser.parse_args()
+
     routes = spa_routes()
     if not routes:
         print("error: no SPA routes discovered — check paths", file=sys.stderr)
@@ -98,6 +106,23 @@ def main() -> int:
         ],
         "spa_routes": routes,
     }
+    if args.check:
+        try:
+            committed = json.loads(OUT_FILE.read_text())
+        except (OSError, json.JSONDecodeError) as e:
+            print(f"error: cannot read {OUT_FILE.relative_to(REPO_ROOT)}: {e}", file=sys.stderr)
+            return 1
+        expected = {key: value for key, value in payload.items() if key != "generated_at"}
+        actual = {key: value for key, value in committed.items() if key != "generated_at"}
+        if actual != expected:
+            print(
+                "error: route manifest is stale; run scripts/gen_route_manifest.py",
+                file=sys.stderr,
+            )
+            return 1
+        print(f"route manifest is current ({len(routes)} routes)")
+        return 0
+
     OUT_FILE.write_text(json.dumps(payload, indent=2) + "\n")
     print(f"wrote {OUT_FILE.relative_to(REPO_ROOT)} ({len(routes)} routes)")
     for r in routes:

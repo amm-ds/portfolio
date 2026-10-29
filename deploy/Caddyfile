@@ -1,8 +1,7 @@
-# Caddy reverse proxy — automatic TLS via Let's Encrypt (DNS via Cloudflare).
-# Domain comes from the DOMAIN env var (docker-compose.prod.yml passes it through):
-#   DOMAIN=example.com docker compose -f deploy/docker-compose.prod.yml up -d
-# Fallback without env: hardcode the domain instead of the placeholder, e.g.
-#   example.com {
+# Caddy reverse proxy — automatic public TLS for the configured DOMAIN.
+# DOMAIN is required by docker-compose.prod.yml; Caddy terminates TLS and is the
+# only published service. Keep the API private so forwarding headers can only
+# arrive through this proxy.
 
 {$DOMAIN} {
     encode zstd gzip
