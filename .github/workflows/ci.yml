@@ -274,9 +274,11 @@ jobs:
           # NB: bare /projects is a JSON API route (project index), not the SPA.
           for route in /projects/06-routing-optimization /services; do
             rc=$(curl -s -o /tmp/deep.html -w '%{http_code}' "http://localhost:8000$route")
-            echo "GET $route -> $rc"; head -c 160 /tmp/deep.html; echo
+            echo "GET $route -> $rc ($(wc -c < /tmp/deep.html) bytes)"
+            cat /tmp/deep.html
+            echo
             test "$rc" = "200"
-            grep -qE 'id="?root"?' /tmp/deep.html
+            grep -qE 'id="?root"?' /tmp/deep.html || { echo "ROOT-GREP-FAILED"; exit 1; }
           done
           # Project-index API answers JSON.
           curl -fsS http://localhost:8000/projects | grep -q '"id":"01-rag-agent"'
