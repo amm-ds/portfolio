@@ -5,9 +5,9 @@ problem framing to production systems with the engineering artifacts
 (decision records, evaluation harnesses, runbooks) that keep them operable.
 
 **The full services page — offerings with per-line evidence, frameworks,
-process, and engagement models — lives on the interactive site:**
+process, and engagement models — lives in the showcase app:**
 
-→ **[amm-ds.github.io/portfolio/services](https://amm-ds.github.io/portfolio/services/)**
+→ **[Services page source](https://github.com/amm-ds/portfolio/blob/main/apps/showcase-web/src/pages/Services.tsx)** (interactive when the app is running; public deployment is tracked in [the deployment runbook](https://github.com/amm-ds/portfolio/blob/main/deploy/DEPLOY.md))
 
 Each offering there links to the public experiment that proves it
 (retrieval agents, demand forecasting, churn pipelines, routing benchmarks,
