@@ -45,7 +45,7 @@ pipeline diagram.
 ## Results (real runs, this machine — CPU ladder, full-data run on Apple MPS)
 
 Bounded test split: **1000 rows**, perfectly stratified (250 per class),
-seed 42. Every run below is scored on that identical, untouched split with the
+seed 42. Every run below is scored on that identical, shared split with the
 platform's `classification_metrics` + weighted F1. Full numbers in
 [`reports/metrics.json`](reports/metrics.json).
 
@@ -115,7 +115,7 @@ wall-clock estimate (~45–50 min/epoch on this CPU) unless `--force-cpu` /
 **The full run** (this machine, Apple Silicon MPS, torch 2.14.1, batch 32 —
 verified by an up-front memory probe at 256 MiB allocated — seed 42, 2
 epochs, val macro-F1 0.9433 → **0.9464**): **0.9460 test macro-F1** on the
-untouched 1000-row split, **+4.4 pp over the 3.6k-row models**. Honest
+shared 1000-row split, **+4.4 pp over the 3.6k-row models**. Honest
 measured wall-clock: **27.5 min for epoch 1 (1651 s), 18.0 min for epoch 2
 (1079 s)** — the training loop totalled ~46 min, the whole command ~47 min
 end-to-end — versus the ~50 s / 3.6k-row CPU epoch this path is gated on
@@ -146,7 +146,7 @@ a better headline — its peak 0.9477 vs the shipped 0.9464 is the validation
 split under a different LR schedule, inside run-to-run noise. Figure:
 `reports/figures/epochs_probe.*`.
 
-Scaling story (all on the same untouched 1000-row test split, seed 42):
+Scaling evidence (all on the same shared 1000-row test split, seed 42):
 
 | Train rows | Run | Test macro-F1 | Δ vs 3.6k |
 |---|---|---|---|
@@ -154,7 +154,9 @@ Scaling story (all on the same untouched 1000-row test split, seed 42):
 | 18k | `distilbert_fulldata_20k` (evidence) | 0.9270 | +2.5 pp |
 | 108k | `distilbert_full_120k` | **0.9460** | +4.4 pp |
 
-The dominant confusion pair is **stable across the whole curve**:
+The bounded and full runs differ in data, device and training setup, so these
+increments are **not controlled estimates of data scaling alone**. The dominant
+confusion pair is **stable across the measured runs**:
 Business → Sci/Tech, 24/250 at 3.6k → 15/250 at 20k → 14/250 at 120k — the
 same hybrid technology-business headlines (e.g. *"Amazon Snaps Up China's
 Largest Web Retailer…"*) still trip the model, just nearly half as often.
@@ -175,13 +177,15 @@ from **0.8880** (defaults) to **0.8953** (best trial: lr 3.82e-5, warmup
 0.042, wd 0.018, 2 epochs; 2/12 trials pruned). The tuned model reproduces
 its trial's validation score bit-for-bit when retrained (`reports/hpo_study.json`).
 
-But validation gains did not transfer: on the untouched test split the
+But validation gains did not transfer: on the shared test split the
 HPO-retrained model scored **0.9011** macro-F1 vs the wave-2 artifact's
-**0.9021**. Per the project's honesty rule, the reported `distilbert_tuned`
-run is therefore the **wave-2 artifact** (decision persisted in
+**0.9021**. The reported `distilbert_tuned` run is therefore the **wave-2
+artifact** (decision persisted in
 [`reports/selection.json`](reports/selection.json), margin +0.0010 — i.e.
-noise). Lesson: at 1k test rows, a +0.7 pp validation improvement is inside
-sampling noise; HPO here is a *process* demonstration, not a guaranteed win.
+noise). **This choice uses test macro-F1, so the test split is not a clean
+final holdout for the tuned-versus-artifact comparison.** Lesson: at 1k test
+rows, a +0.7 pp validation improvement is inside sampling noise; HPO here is a
+*process* demonstration, not a guaranteed win.
 
 **Seed variance — is the HPO gain even real?** The `hpo-seeds` stage re-ran
 the study under 3 fixed sampler seeds (6 trials each, epochs 2–3 budget):
@@ -221,7 +225,7 @@ per-class comparison vs the TF-IDF baseline in
 `reports/figures/per_class_f1_comparison.*`.
 
 **Misclassified examples** — selected model (`distilbert_tuned`, wave-2
-artifact per `reports/selection.json`) on the untouched 1,000-row bounded
+artifact per `reports/selection.json`) on the shared 1,000-row bounded
 test split; reproduced by running the committed artifact on the committed
 test split — the reproduced predictions bit-match `reports/metrics.json`
 (accuracy 0.9020, macro-F1 0.9020969724519001). Full list with all 8
@@ -248,17 +252,12 @@ cannot express.
 **Honest limits.** Deliberately bounded showcase at the core: 4k train / 1k
 test stratified subsample for the bounded ladder, ≤4 epochs, max_length 128.
 The HPO studies (12-trial main + 3×6 seed variance) are small-budget
-demonstrations — at 400 validation rows, hyperparameter rankings and
-seed-to-seed variance carry more noise than the gains being chased, as both
-the val→test regression and the seed study show. What is *not* noise: the
-scaling curve (0.9021 → 0.9270 → 0.9460 test macro-F1 at 3.6k / 18k / 108k
-train rows) and the calibration result (−71 % ECE). The full-data fine-tune
-was trained on Apple Silicon MPS — a second-class citizen compared to CUDA
-(see the quirks above), and its measured ~18 min/epoch steady-state
-wall-clock is machine-specific.
-Treat the bounded numbers as the cheap, reproducible lower bound of the
-scaling curve — the full run confirms the published ~0.93–0.95 headroom is
-real and reachable on a laptop GPU.
+demonstrations whose gains sit within seed noise. Test macro-F1 also selects
+`distilbert_tuned`, so that comparison is not an unbiased final-holdout result.
+The measured ladder is 0.9021 → 0.9270 → 0.9460 test macro-F1 at 3.6k / 18k /
+108k train rows, but data size, device and training setup vary together; it is
+not a controlled scaling estimate. Temperature scaling cuts ECE by 71% on the
+shared test split. Full-data MPS timings are machine-specific.
 
 Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 

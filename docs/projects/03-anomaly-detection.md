@@ -47,7 +47,7 @@ IsolationForest has been run on NAB so far, so the family ranking above is
 IsolationForest's alone (strongest on realTraffic, 0.728 PR-AUC / 0.310
 range-F1); the cross-detector winner claim lives on the synthetic ladder
 only — tuned IsolationForest by ROC-AUC (0.9171), tuned OCSVM by PR-AUC
-(0.1355). The honest delta vs. the synthetic track (PR-AUC 0.916, residuals
+(0.1355). The honest delta vs. the synthetic track (ROC-AUC 0.916, residuals
 0.9999): injected synthetic anomalies are trivially separable; LOF's
 local-density blindness is structural and tuning-resistant. New: a
 downsampled single-series interactive timeline, `nab_timeline_nyc_taxi`

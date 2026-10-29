@@ -23,8 +23,8 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 > WRMSSE-selected `ensemble_l2` edged both test metrics by 0.0002/0.0006 —
 > a wash, stated as measured; the flatness is the conditional mean of noisy
 > daily demand, not a loss-function bug. The mirror image is the UCI sparse
-> track kept below as the secondary study, where the zero forecast stays the
-> ceiling.
+> track kept below as the secondary study, where conservative selective routing
+> assigns zero to 945 of 1,069 lumpy series and peak-capable models to the rest.
 
 [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
@@ -254,13 +254,13 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   story: erratic 1.422 vs 1.510 for the champion, lumpy 2.874 vs 2.777
   against. The nowcast ladder above stays committed as
   the labelled one-day-ahead track.
-- UCI reconciliation: w=0.75 this run, incoherence 536.7 → 134.2 (coherence
-  property exact); store MAE 749.1 → 719.8. Synthetic: w=0.00 this run (store
+- UCI reconciliation: w=0.50 this run, incoherence 447.2 → 223.6 (coherence
+  property exact); store MAE 746.0 → 731.0. Synthetic: w=0.00 this run (store
   MAE 24.133 → 24.133, incoherence 26.688 → 26.688), accuracy effect null and
   reported as such.
 - 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 30 min
   (multi-step the bulk of it — 14 model fits × 14 horizons × 20 origins,
-  joblib-parallel); M5 ≈ 31 min; 176 offline tests.
+  joblib-parallel); M5 ≈ 31 min; offline tests cover both tracks.
 
 ![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run against the 1.0 in-sample-scale reference line (the MASE scale is the naive's in-sample error from a quieter period, NOT the naive's own holdout error — the seasonal-naive itself lands at 1.310 on this window). MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
 

@@ -21,7 +21,8 @@ and returns to the depot. Objective: minimize total travel distance. Solomon's
 instances are the canonical VRPTW benchmark; each 100-customer file pins the
 coordinates, demand, time window and service time of every customer plus the
 fleet capacity, and published best-known solutions provide the reference for
-optimality gaps.
+distance and vehicle-count gaps. Except for the explicitly certified small
+cases below, these references are not claimed to be proven optima.
 
 This project answers a question every optimization engagement starts with:
 *how close do classical construction + improvement heuristics get to the best
@@ -160,15 +161,15 @@ Verdict, honestly stated:
 Key findings:
 
 - **ALNS closes the gap**: 13.63 % → **4.23 %** mean gap (−9.4 points, −69 %
-  of the remaining tuned-2-opt distance-to-optimum), winning on **56/56**
+  of the remaining tuned-2-opt distance-to-best-known), winning on **56/56**
   instances, in ~0.8 s/instance. Chosen by the seeded knob search (12 trials
   on a 6-instance subset): segment 100, reaction 0.5, uniform init weights —
   persisted to `params.yaml` as `alns_best`.
 - **Constraint-aware construction remains the first big lever** (randomized →
   savings −68 % of baseline distance); the metaheuristic is the second.
 - **Single digits on every family**; best on wide-window R2/RC2 (~3 %).
-  Honest residuals: C2 6.50 % (wide horizon, few-vehicle optimum — destroy
-  size 10 under-diversifies there), C103 11.67 % / C203 19.48 % (tight chains
+  Honest residuals: C2 6.50 % (wide horizon, few-vehicle best-known reference —
+  destroy size 10 under-diversifies there), C103 11.67 % / C203 19.48 % (tight chains
   that resist q-customer destroy/repair).
 - **Negative gaps are real and reported**: ALNS lands *below* the published
   reference on 8 instances (best RC202 −3.85 %, RC105 −2.78 %). The SINTEF
@@ -185,7 +186,7 @@ Why the improvement happens, in measured deltas:
   feasibility instead of a random permutation.
 - **clarke_wright → two_opt (−3.7 %) → two_opt_tuned (−0.45 %)** — local
   polish inside one route topology.
-- **→ alns: another −69 % of the remaining distance-to-optimum.** 2-opt only
+- **→ alns: another −69 % of the remaining distance-to-best-known.** 2-opt only
   reorders or swaps pieces of existing routes; it cannot move a customer to a
   different route. ALNS's destroy (random / worst / Shaw time-window
   relatedness removal) + regret-2 repair re-sequences customers *across*
@@ -266,7 +267,7 @@ uv run pytest projects/06-routing-optimization -q
   ranking: ALNS wins 43/56 intra-ladder).
 - Hierarchical-objective reporting per the SINTEF convention (vehicles first,
   distance second) — landed; the fleet column above (ALNS 11.0 mean vehicles
-  vs 10-vehicle C1 optima) shows where it matters.
+  vs 10-vehicle C1 best-known references) shows where it matters.
 - OR-Tools CP-SAT cross-check arm (verdict above: hinted probe only, ties
   ALNS on the 100-customer benchmark within a 10 s budget at ~5× the runtime;
   certifies small instances to optimality).

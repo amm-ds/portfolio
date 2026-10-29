@@ -5,8 +5,8 @@ series from the Numenta Anomaly Benchmark (AWS CloudWatch, traffic sensors,
 known-cause system failures) with labelled event windows, plus a seeded
 synthetic telemetry stream (CPU, memory, latency) that remains the
 clearly-labelled CI / fast path. Three classical detectors compete behind
-explicit data-quality gates, with event-based metrics (PR-AUC, range-F1)
-leading and time-ordered train/test splits throughout.
+explicit data-quality gates, with pointwise PR-AUC kept distinct from
+event-aware range-F1 and time-ordered train/test splits throughout.
 
 > **Showcase status:** working showcase on the standard platform (flagship
 > projects are `01-rag-agent` and `07-open-data-mobility`). See the
@@ -124,40 +124,47 @@ spanning `realAWSCloudwatch`, `realKnownCause`, and `realTraffic`, each
 checksum-pinned, with labelled anomaly windows from `combined_windows.json`
 (cite Ahmad, Lavin, Purdy & Agha 2017, Neurocomputing).
 
-**Event-based metrics** (audit recommendation): a labelled window counts as
-detected when at least one alert falls inside it (lead tolerance 0, documented
-in `nab.py`); range precision counts alerts outside any window. Results on the
-current snapshot (IsolationForest, train-anchored 2% alert threshold, 9 of 12
-series evaluable — the other 3 have all labelled windows inside the train
-split and are excluded from aggregates, not scored as misses):
+**Pointwise and event-aware metrics stay distinct** (audit recommendation):
+ROC-AUC and PR-AUC rank individual minutes; they are not event metrics. For the
+event-aware view, a labelled window counts as detected when at least one alert
+falls inside it (lead tolerance 0, documented in `nab.py`), while range recall
+additionally weights overlap and range precision penalizes alerts outside any
+window. Results on the current snapshot (IsolationForest, train-anchored 2%
+alert threshold, 9 of 12 series evaluable — the other 3 have all labelled
+windows inside the train split and are excluded from aggregates, not scored as
+misses):
 
-| family | PR-AUC | range-F1 | range prec./rec. | events |
+| NAB group | pointwise PR-AUC | range-F1 | range prec./rec. | windows touched (alerts emitted) |
 |---|---|---|---|---|
-| realAWSCloudwatch | 0.404 | 0.088 | 0.049 / 0.500 | 3/3, 132 alerts |
-| realKnownCause | 0.438 | 0.074 | 0.040 / 0.938 | 8/9, 1 289 alerts |
-| realTraffic | 0.728 | 0.310 | 0.232 / 0.750 | 5/5, 188 alerts |
-| **overall** | **0.527** | **0.157** | **0.107 / 0.729** | **16/17, 1 609 alerts** |
+| realAWSCloudwatch | 0.404 | 0.088 | 0.049 / 0.500 | 3/3 (132) |
+| realKnownCause | 0.438 | 0.074 | 0.040 / 0.938 | 8/9 (1 289) |
+| realTraffic | 0.728 | 0.310 | 0.232 / 0.750 | 5/5 (188) |
+| **overall** | **0.527** | **0.157** | **0.107 / 0.729** | **16/17 (1 609)** |
 
-The event-window verdict leads: 16 of 17 labelled windows detected (range
-recall 0.729) at 0.107 range precision — 1 609 alerts for 16 events. Honest
+The event-window verdict leads: at least one alert touches 16 of 17 labelled
+windows, while overlap-weighted range recall is 0.729 and range precision is
+0.107. The fixed-threshold run emits 1 609 alerts in total; that is observed
+alert load, not the minimum required to detect those windows. Honest
 detector-vs-family note: only IsolationForest has been run on NAB so far, so
-the family ranking is IsolationForest's alone (strongest on realTraffic,
-weakest range recall on realAWSCloudwatch at 0.500); the cross-detector
-winner claim exists on the synthetic ladder only — tuned IsolationForest by
-ROC-AUC (0.9171), tuned OCSVM by PR-AUC (0.1355), LOF at chance either way.
-(ROC-AUC 0.735 overall, reported secondary per the audit.) The adaptive
-streaming mode runs on NAB too: its drift trigger fires on 31 of 120 chunks on
-real series — the median/IQR trigger calibrated on synthetic is too twitchy
-for real score noise, an honest finding for the tuning backlog.
+the benchmark-group results are IsolationForest's alone (strongest on
+realTraffic, weakest range recall on realAWSCloudwatch at 0.500); the
+cross-detector winner claim exists on the synthetic ladder only — tuned
+IsolationForest by ROC-AUC (0.9171), tuned OCSVM by PR-AUC (0.1355), LOF at
+chance either way. (NAB ROC-AUC 0.735 overall, reported secondary per the
+audit.) The adaptive streaming mode runs on NAB too: its drift trigger fires
+on 31 of 120 chunks on real series — the median/IQR trigger calibrated on
+synthetic is too twitchy for real score noise, an honest finding for the
+tuning backlog.
 
-**The honest delta** — synthetic PR-AUC 0.916 vs. NAB 0.527 (and residual
-features hit 0.9999 on synthetic): the synthetic track's injected anomalies
-are *trivially separable*, so it can demonstrate pipeline mechanics, HPO
-behavior, and detector-family failure modes, but it **cannot** rank solutions
-on the property clients care about — precision at real anomaly rarity. On NAB
-the champion finds most events (range recall 0.73) but fires 1 609 alerts to
-catch 16 windows (range precision 0.11): the real problem is the
-false-positive firehose, exactly what the synthetic track could never show.
+**The honest delta** — synthetic untuned IsolationForest scores **ROC-AUC
+0.9158 / PR-AUC 0.1239**, versus NAB pointwise PR-AUC 0.527 (residual features
+later reach 0.9999 ROC-AUC on synthetic). The synthetic track's injected
+anomalies are *trivially separable*, so it can demonstrate pipeline mechanics,
+HPO behavior, and detector-family failure modes, but it **cannot** rank
+solutions on precision at real anomaly rarity. On NAB the champion touches
+16/17 windows while emitting 1 609 alerts (range precision 0.107): the real
+problem is the false-positive firehose, exactly what the synthetic track could
+never show.
 Figures: `nab_timelines` (six representative series, true vs. detected
 windows), the downsampled single-series `nab_timeline_nyc_taxi` (3 of 4
 labelled windows detected, 179 alerts, every 2nd test-window minute),

@@ -792,3 +792,52 @@ def test_m5_weekly_blocks_table_and_growth_quote_match_committed_weekly_block() 
     m = re.search(rf"[Ww]eek 4 error\s+is\s+\*\*([\d.]+){MULT}\*\*", sub)
     assert m, "error-growth quote missing from README"
     assert float(m.group(1)) == pytest.approx(growth, abs=5e-3)
+
+
+# ---------------------------------------------------------------------------
+# Story drift guards: corrected M5/service/reconciliation values and attribution
+# ---------------------------------------------------------------------------
+
+
+def test_story_corrected_numbers_match_committed_artifacts() -> None:
+    """The lean story must carry the same evidence as the detailed README."""
+    story = " ".join((PROJECT / "story.yaml").read_text().split())
+    metrics = _m5_metrics()
+    probabilistic = _m5_probabilistic()
+
+    win = metrics["test"]["win_rate_vs_naive"]["convex_ensemble"]
+    assert 100.0 * win["pooled"] == pytest.approx(88.8, abs=5e-2)
+    assert 100.0 * win["dense"] == pytest.approx(88.6, abs=5e-2)
+    assert 100.0 * win["intermittent"] == pytest.approx(89.8, abs=5e-2)
+    assert "88.8% pooled / 88.6% dense / 89.8% intermittent" in story
+
+    weekly = metrics["weekly_rolling"]["weekly_blocks"]["convex_ensemble"]
+    assert weekly["wk1"] == pytest.approx(0.4136, abs=5e-5)
+    assert weekly["wk4"] == pytest.approx(0.5636, abs=5e-5)
+    assert "**0.4136→0.5636**" in story
+
+    lgbm_band = probabilistic["candidates"]["lgbm"]
+    assert 100.0 * lgbm_band["coverage_80"] == pytest.approx(77.7, abs=5e-2)
+    assert 100.0 * lgbm_band["coverage_80_by_class"]["dense"] == pytest.approx(76.9, abs=5e-2)
+    assert 100.0 * lgbm_band["coverage_80_by_class"]["intermittent"] == pytest.approx(
+        80.6, abs=5e-2
+    )
+    assert "77.7% at 13.535 units mean width (**76.9% dense / 80.6%" in story
+
+    assert len(metrics["candidates"]) == 11
+    assert "M5 evaluates **11 candidates**" in story
+    assert "The committed global LightGBM is 0.498" in story
+    assert metrics["test"]["pooled"]["lgbm"]["wape"] == pytest.approx(0.498, abs=5e-4)
+
+    reconciliation = _load_metrics(PROJECT / "reports_uci" / "reconciliation.json")
+    assert reconciliation["shrinkage"] == pytest.approx(0.50)
+    assert reconciliation["incoherence_before"] == pytest.approx(447.2, abs=5e-2)
+    assert reconciliation["incoherence_after"] == pytest.approx(223.6, abs=5e-2)
+    assert reconciliation["store_mae_before"] == pytest.approx(746.0, abs=5e-2)
+    assert reconciliation["store_mae_after"] == pytest.approx(731.0, abs=5e-2)
+    assert "447.2→223.6" in story
+    assert "746.0→731.0" in story
+
+    # Fast-path figures must not read as real-panel evidence.
+    assert "seeded synthetic CI hierarchy—not M5 or UCI" in story
+    assert "synthetic HGB study" in story

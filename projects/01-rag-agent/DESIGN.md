@@ -7,7 +7,7 @@ Status: implemented and evaluated. See [README](README.md) for results and
 
 | # | Requirement | How it is met |
 |---|---|---|
-| R1 | Answers grounded **only** in retrieved evidence, with per-claim citations | Agent tools are the *only* corpus access; system prompt enforces citation; output schema (`AnalysisResult`) makes citations mandatory |
+| R1 | Answers constrained to retrieved evidence, with citations and measured unsupported-claim failures | Agent tools are the *only* corpus access; the system prompt requires citation and the output schema (`AnalysisResult`) makes citations mandatory; verification and evaluation expose residual grounding failures |
 | R2 | Structured, machine-checkable agent output | `output_type=AnalysisResult` (pydantic); invalid outputs fail the run loudly (`UnexpectedModelBehavior`) |
 | R3 | Works offline / in CI | Platform factory (ADR-0004) returns a deterministic FunctionModel when no `LLM_BASE_URL`/`LLM_API_KEY` is set; `MOCK_ANALYSIS_JSON` drives the full pipeline incl. `chat` |
 | R4 | Reproducible data | Deterministic article ids, bounded streaming scan, dataset contract with sha256, DVC stages + lock |
@@ -202,9 +202,10 @@ measured lever is abstention; repair quality at local-model scale is weak
 (33 repair calls over 29 answers, mean claim-support fraction 0.84).
 Overhead: mean 171 s verify latency per answer, **+157% over the agent phase**
 (local, contention-inflated; repair calls dominate — `max_repair_calls` trades
-taxonomy gain for latency directly). Verdict: grounding never gets worse and
-the target taxonomy improves, but the RAGAS faithfulness delta is unresolved
-at n=30; keep verify on by default.
+taxonomy gain for latency directly). Verdict: the target taxonomy improves,
+but 14 unsupported-claim outcomes remain and the RAGAS faithfulness delta is
+unresolved at n=30; keep verify on by default without treating it as a
+grounding guarantee.
 
 ## 4. SLOs and operating envelope
 

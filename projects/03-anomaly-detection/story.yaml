@@ -1,343 +1,184 @@
 project_id: 03-anomaly-detection
-headline: On real NAB event windows the IsolationForest champion detects 16 of
-  17 labelled incidents (range recall 0.729) but fires 1 609 alerts for those
-  16 windows (range precision 0.107; PR-AUC 0.527, range-F1 0.157 overall).
-data_note: Headline numbers are real data — 12 series from the Numenta
-  Anomaly Benchmark (research benchmark; cite Ahmad, Lavin, Purdy & Agha 2017)
-  — with a seeded synthetic telemetry stream (n = 20 000) as the labelled CI
-  fast path and an NSL-KDD transfer probe.
-limits: Does not show multivariate transfer — NAB results are univariate
-  per-series IsolationForest runs, the synthetic ladder ranks detectors only
-  on trivially separable injected anomalies, and NSL-KDD is a single transfer
-  probe at 56.9% test prevalence.
+headline: "On nine evaluable NAB series, fixed-budget IsolationForest alerts in
+  16 of 17 labelled windows (overlap-weighted range recall 0.729) but emits
+  1,609 alerts; pointwise PR-AUC is 0.527 and range-F1 only 0.157."
+data_note: "Headline evidence is 12 real Numenta Anomaly Benchmark series
+  (research benchmark; cite Ahmad et al. 2017), with a seeded 20,000-row
+  synthetic telemetry stream for CI and an NSL-KDD transfer probe."
+limits: "NAB evaluates univariate IsolationForest on nine usable series, not
+  multivariate detector transfer; synthetic anomalies are trivially separable,
+  and the NSL-KDD probe has 56.9% test prevalence rather than realistic rarity."
 sections:
   - id: background
     text_md: |
-      Operations teams watch CPU, memory, and latency telemetry to catch
-      incidents before users do. The expensive failures are the silent ones:
-      a latency creep that turns into an outage, a CPU saturation that burns
-      the autoscaling budget — each missed minute is paid for later, in
-      multiples. Labeled incident history rarely exists and anomalies are
-      rare (order of 2% of minutes); unlabeled, imbalanced, and streaming,
-      this is anomaly detection at its hardest. The full design rationale
-      lives in `DESIGN.md`.
+      **Finding an incident is not enough if on-call cannot absorb the alerts.**
+      A missed anomaly can become an outage; a false page spends engineer time
+      and teaches people to ignore the next one.
 
-      The economics that frame every choice below:
-
-      | event | typical cost shape |
-      |---|---|
-      | missed incident | outage minutes × user impact + recovery, paid in multiples of the warning window |
-      | false page | engineer minutes × alert fatigue, erodes trust until real pages get ignored |
-      | detector retraining | cheap here — the full pipeline with 90 HPO trials runs in ~80 s |
-
-      **Business summary:** Operations telemetry exists to catch
-      incidents before users notice, and both kinds of error carry real
-      money. A missed incident is paid for later, in outage minutes and
-      recovery, in multiples of the warning window that was wasted; a
-      false page burns engineer time and erodes trust until real alerts
-      start being ignored. So the buying question is not which detector
-      has the highest score, but which one minimizes the total bill at a
-      fixed alert budget — the number of pages on-call can actually
-      absorb.
-
+      This project therefore evaluates detection and alert load together. It
+      compares unsupervised detectors under time-ordered splits, then tests the
+      champion on real labelled incident windows. The main question is not
+      “which AUC looks best?” but “what does a fixed page budget actually buy?”
   - id: objectives
     text_md: |
-      Compare three detector families — IsolationForest, Local Outlier
-      Factor (LOF), and One-Class SVM — on the same telemetry stream under
-      rules that make the comparison like-for-like:
+      **The benchmark must make false positives as visible as misses.** The
+      comparison uses four controls:
 
-      - **Time-ordered split:** detectors train on the past only (first 70%
-        of the timeline) and are scored on a later window, so metrics
-        reflect deployment conditions rather than memorization.
-      - **Fixed a-priori threshold:** alerts fire at the assumed 2%
-        contamination quantile — never tuned against ground truth.
-      - **Seeded random baseline:** anything that cannot beat coin-flip has
-        no business paging anyone at 3 a.m.
-      - **Untuned vs. tuned rows:** every family is reported with and
-        without HPO, so tuning gains (or the lack of them) are visible per
-        family.
-      - **Event-based metrics on real data:** on NAB, PR-AUC and range-F1
-        lead — a labelled window counts as detected when at least one alert
-        falls inside it.
-
-      **Business summary:** The evaluation rules exist to make the
-      comparison between detector families fair and portable. Detectors
-      train only on the past, alert at a fixed threshold that is never
-      tuned against the answers, and must beat a coin-flip baseline
-      before they are allowed to page anyone. A client can re-run the
-      identical harness on their own telemetry and get numbers that mean
-      the same thing, which turns a vendor shoot-out into a repeatable
-      procurement test.
+      - Train on the first 70% of time and score a later window.
+      - Fix the alert threshold at the assumed 2% contamination budget, without
+        tuning it against test labels.
+      - Report untuned and tuned detectors against a seeded random baseline.
+      - Separate **pointwise ranking metrics** (ROC-AUC and PR-AUC) from
+        **event-aware range precision/recall/F1**. A NAB window is detected when
+        at least one alert lands inside; overlap-weighted range recall is not
+        the same statistic as the raw fraction of windows touched.
     metrics_keys: [random, isolation_forest]
-
   - id: data
     text_md: |
-      The primary track is real data: a bounded subset of 12 series from the
-      [Numenta Anomaly Benchmark](https://github.com/numenta/NAB) spanning
-      AWS CloudWatch metrics, traffic sensors, and known-cause system
-      failures — each fetched as a checksum-pinned CSV with labelled anomaly
-      windows from `combined_windows.json` (dataset card:
-      [NAB registry](https://amm-ds.github.io/portfolio/data-registry/nab/),
-      import manifest: `data-registry/imports/nab.json`; cite Ahmad, Lavin,
-      Purdy & Agha 2017, Neurocomputing).
+      **Real incident windows headline; synthetic data only checks mechanics.**
 
-      - **NAB — real-data track (default `data_source`):** headlines the
-        evaluation; its labelled windows make event-based scoring possible.
-      - **Synthetic telemetry — the seeded CI / fast path:** a generator
-        (n = 20 000 one-minute rows, seed 42) with 2% injected anomalies
-        across daily-seasonality CPU/memory/latency channels. It regenerates
-        bit-identical offline in every CI run and answers pipeline questions
-        fast — but its anomalies are trivially separable, so it cannot rank
-        detectors on real-world precision.
-      - **NSL-KDD — secondary real-data track:** the [NSL-KDD data
-        registry](https://amm-ds.github.io/portfolio/data-registry/nsl-kdd/)
-        entry (UNB/CIC network-flow benchmark) behind the same
-        `DatasetContract` shape — a transfer probe, caveats stated below.
+      - **NAB:** 12 checksum-pinned univariate series across AWS CloudWatch,
+        traffic, and known-cause failures, with labels from
+        `combined_windows.json`. Nine have evaluable test events; three have all
+        labelled windows inside train and are excluded, not counted as misses.
+      - **Synthetic CI path:** 20,000 seeded one-minute CPU/memory/latency rows
+        with 2% injected anomalies. It is bit-reproducible offline, but its
+        anomalies are trivially separable and cannot establish real precision.
+      - **NSL-KDD probe:** a checksum-pinned network-flow transfer test behind
+        the same dataset-contract shape. Its 56.9% test prevalence and flow
+        semantics prevent direct comparison with rare telemetry incidents.
 
-      Ground-truth labels are used for **evaluation only** — no detector
-      ever sees them.
-
-      **Business summary:** The headline numbers come from a public
-      benchmark of real system telemetry with labelled incident windows,
-      so they reflect real anomaly rarity rather than a lab setup. A
-      synthetic stream — regenerated identically on every run, with 2%
-      injected anomalies — serves as the fast offline path for testing
-      pipeline changes. Its anomalies are trivially easy to separate, so
-      it is labelled as a mechanics check and is never used to rank
-      detectors for a buying decision.
-
+      Ground-truth labels are used for evaluation only.
   - id: eda
     text_md: |
-      The raw signals in `eda_signals_overview` (below, first two days) show
-      clean daily seasonality: CPU and memory trace smooth sinusoids,
-      latency wanders around 120 ms. Injected anomalies appear as sharp,
-      simultaneous spikes in CPU and latency while memory stays on its
-      seasonal path — the signature of a resource incident rather than
-      sensor noise.
+      **The synthetic anomalies form a blob, and that predicts detector failure.**
+      CPU and latency spike together while memory follows its seasonal path.
+      Their mean k-NN distance from other points is ≈18.9 versus ≈8.5 for normal
+      rows, yet spacing inside the anomaly group is uniform.
 
-      The EDA question that decides this project: are anomalies *spread out*
-      or *clustered* in feature space? k-nearest-neighbor distances answer
-      it: anomalies sit far from normal points (≈ 18.9 vs. ≈ 8.5) but at
-      uniform spacing *among themselves* — a compact, self-similar cluster.
-      Hold that fact; it predicts the results.
-
-      **Business summary:** Exploratory analysis answered the one
-      question that decides this project: are anomalies spread out, or
-      clustered together? They sit far from normal points but tightly
-      packed among themselves — a compact, self-similar group. That
-      single fact predicts which detector families will fail before any
-      training budget is spent, because methods that assume anomalies
-      are sparse and unusual cannot see a blob of similar ones. Catching
-      that early is what saves a client from deploying the wrong tool.
+      That combination defeats purely local density reasoning: points inside a
+      self-similar anomaly cluster can look normal to LOF even while the whole
+      cluster sits far from normal telemetry. The EDA is a synthetic diagnostic,
+      not evidence about NAB incident structure.
     figures: [eda_signals_overview]
-
   - id: training
     text_md: |
-      Feature engineering is pure polars ETL: three raw signals plus rolling
-      mean and standard deviation per signal over 10- and 60-minute windows
-      (12 engineered columns); warm-up rows lacking a full window are
-      dropped for a complete-case matrix.
-      All three detectors fit on the **first 70% of the timeline only** —
-      13 958 rows — and each family gets its own study: ~30 seeded TPE
-      trials with median pruning, maximizing PR-AUC on the last 20% of the
-      train window. IsolationForest searches tree count and subsampling; LOF
-      neighborhood size; One-Class SVM searches `nu` and the RBF `gamma` on
-      log scales. The test window is never touched during search; tuned
-      detectors refit on the full train window before scoring. DQ gates
-      (null rate ≤ 1% per column, CPU/memory within [0, 100], latency > 0)
-      run before anything trains and halt the pipeline on violation.
-      `telemetry_flags` shows the test-window flags the champion produces;
-      `hpo_importance` shows what the search moved.
+      **Every detector gets the same past-only search and the same test window.**
+      Polars builds raw signals plus rolling mean/std over 10- and 60-minute
+      windows; incomplete warm-up rows are dropped and data-quality gates halt
+      invalid input.
+
+      IsolationForest, LOF, and One-Class SVM fit on 13,958 training rows. Each
+      receives about 30 seeded TPE trials with median pruning, maximizing PR-AUC
+      on the last 20% of train only. Tuned models refit on the full training
+      window before the untouched test window is scored.
 
       ```mermaid
       flowchart LR
           A[raw telemetry] --> B[DQ gates]
           B --> C[rolling features]
           C --> D[train window]
-          D --> E[fit window 80%]
-          D --> F[validation 20%]
+          D --> E[fit 80%]
+          D --> F[validate 20%]
           F --> G[best params]
           E --> H[tuned refit]
           G --> H
       ```
-
-      **Business summary:** Every detector is tuned and validated
-      strictly on past data: the timeline is split in time order, the
-      test window is never touched during tuning, and each family gets a
-      seeded search over its own knobs. Leakage — letting future
-      information into training — is how detectors end up impressive in
-      testing and disappointing in production, and it is excluded by
-      construction here. The detector you would deploy is exactly the
-      detector that was measured, with no gap between the lab number and
-      the operational reality.
     figures: [telemetry_flags, hpo_importance]
-
   - id: evaluation
     text_md: |
-      Each detector, untuned and tuned, scores the 5 983 test-window rows
-      against a seeded random baseline (uniform scores, same seed). Ranking
-      quality is ROC-AUC and PR-AUC; `pr_curves` overlays both against the
-      prevalence floor — PR-AUC matters more at 1.89% prevalence, where a
-      naive "everything is normal" classifier already scores 0.019.
+      **Ranking quality and operating cost answer different questions.** On the
+      5,983-row synthetic test window, ROC-AUC measures overall ranking while
+      PR-AUC exposes performance at 1.89% prevalence. Neither is an event metric.
 
-      Binary alert flags use one fixed operating point per model: the top 2%
-      of its scores (the assumed contamination quantile), never tuned
-      against ground truth. `threshold_sweep` traces the champion's
-      precision/recall across alert budgets with the 2% point marked — the
-      operating point is a staffing dial, not a mystery.
+      Binary flags use each model's fixed top-2% score threshold.
+      `threshold_sweep` then shows the precision/recall trade-off across alert
+      budgets: at 120 synthetic flags, recall and precision are both roughly
+      15%, so the operating point—not AUC alone—sets on-call load.
 
-      ```mermaid
-      flowchart LR
-          A[anomaly score] --> B{score >= threshold?}
-          B -->|yes| C[page on-call]
-          B -->|no| D[stay silent]
-          C --> E[count TP/FP]
-          D --> E
-          E --> F[ROC-AUC + PR-AUC]
-      ```
+      NAB retains pointwise PR-AUC but adds event-aware range metrics and raw
+      alert counts. There is no lead tolerance: at least one alert inside a
+      labelled window marks that window detected. Range recall additionally
+      weights overlap, while range precision penalizes alerts outside windows.
 
-      On NAB the same discipline is enforced event-first: threshold sweeps
-      stay on the budget curve, and series with no evaluable test events are
-      excluded from aggregates — never scored as misses. Adaptive
-      thresholding re-anchors on drift in streaming mode: the median/IQR
-      trigger calibrated on synthetic fires on 31 of 120 real NAB chunks
-      (`adaptive_stream`) — too twitchy as calibrated, so headline metrics
-      stay on the fixed budget curve.
-
-      **Business summary:** A single accuracy score hides the trade-off
-      a buyer actually faces, so the report pairs ranking quality with
-      precision and recall at a stated alert budget — the fraction of
-      minutes allowed to page. That makes the numbers negotiable in plain
-      terms: at 120 pages per window you catch about 15% of incidents,
-      and the curve shows what a bigger or smaller budget buys. It turns
-      a vanity metric into a staffing conversation — how many engineer
-      interruptions per week is this level of coverage worth?
+      Adaptive median/IQR thresholding fires on 31 of 120 real NAB chunks after
+      synthetic calibration—too twitchy for this evidence. Headline NAB results
+      therefore stay on the fixed, train-anchored 2% budget.
     figures: [pr_curves, threshold_sweep, adaptive_stream]
-
   - id: results
     text_md: |
-      The headline is the event window, not the point: on NAB the champion
-      (IsolationForest, fixed train-anchored 2% threshold) detects 16 of 17
-      labelled incident windows — range recall 0.729 — at 0.107 range
-      precision, 1 609 alerts for 16 events; PR-AUC 0.527 and range-F1 0.157
-      overall, on 9 of 12 series evaluable (the other 3 have all labelled
-      windows inside the train split; excluded from aggregates, not scored
-      as misses):
+      **NAB's central finding is alert overload, not a clean detector win.** At
+      the fixed threshold, IsolationForest touches 16 of 17 windows and emits
+      1,609 alerts; those alerts are the observed load, not the minimum needed
+      to detect 16 incidents. Overlap-weighted range recall is 0.729, range
+      precision 0.107, and range-F1 0.157.
 
-      | family | PR-AUC | range-F1 | events (alerts) |
+      | NAB group | pointwise PR-AUC | range-F1 | windows touched (alerts emitted) |
       |---|---|---|---|
-      | realTraffic | 0.728 | 0.310 | 5/5, 188 |
-      | realKnownCause | 0.438 | 0.074 | 8/9, 1 289 |
-      | realAWSCloudwatch | 0.404 | 0.088 | 3/3, 132 |
-      | **overall** | **0.527** | **0.157** | **16/17, 1 609** |
+      | realTraffic | 0.728 | 0.310 | 5/5 (188) |
+      | realKnownCause | 0.438 | 0.074 | 8/9 (1,289) |
+      | realAWSCloudwatch | 0.404 | 0.088 | 3/3 (132) |
+      | **overall** | **0.527** | **0.157** | **16/17 (1,609)** |
 
-      Which detector wins where, honestly: on NAB only IsolationForest has
-      been run per series, so the family ranking above is IsolationForest's
-      alone — strongest on realTraffic (PR-AUC 0.728, range-F1 0.310, 5/5
-      events), thinnest on realAWSCloudwatch by range recall (0.500) and on
-      realKnownCause by precision (1 289 of the 1 609 alerts come from that
-      family). The cross-detector verdict exists on the synthetic ladder
-      only: tuned IsolationForest wins ROC-AUC (0.9171), tuned OCSVM wins
-      PR-AUC (0.1355), and LOF stays at chance either way — re-running the
-      full ladder on NAB is roadmap work, not a reported result.
-      `nab_timelines` shows six representative series (2x3 panels, series
-      id per panel) with true vs. detected windows; the downsampled
-      single-series `nab_timeline_nyc_taxi` makes the one real miss
-      interactive — nyc_taxi detects 3 of its 4 labelled windows (range
-      recall 0.750) with 179 alerts fired. `nab_score_distribution` and
-      `nab_alert_budget` show the budget curve: the firehose is the
-      finding — 1 609 alerts for 16 windows, range precision 0.107.
+      Only IsolationForest has run per series on NAB, so this is not a
+      cross-detector NAB leaderboard. The missed window is visible in
+      `nab_timeline_nyc_taxi`: 3 of 4 touched, with 179 alerts emitted.
+      `nab_score_distribution` shows why thresholding is hard—in-window scores
+      overlap normal traffic—and `nab_alert_budget` makes the operating cost
+      explicit.
 
-      The seeded synthetic stream stays the CI / fast path, and the
-      synthetic-to-real drop is why: injected anomalies are trivially
-      separable, so the seeded track demonstrates pipeline mechanics, HPO
-      behavior, and detector-family failure modes — but cannot expose the
-      property clients pay for, precision at real anomaly rarity. Held-out
-      window ladder (ROC-AUC / PR-AUC): random 0.509 / 0.019; LOF 0.527 /
-      0.019; OCSVM 0.337 / 0.024; tuned LOF 0.505 / 0.025; **tuned OCSVM
-      0.906 / 0.136**; IsolationForest 0.916 / 0.124, tuned 0.917 / 0.121.
-      Tuning rescued OCSVM: `gamma=0.013` replaced the failed
-      `gamma="scale"` default (parameter importance 0.99), a ~6× tighter
-      kernel that carves the anomaly blob out instead of folding it in. LOF
-      was not rescued: its best neighborhood size saturated at the search
-      cap (200) and test ROC-AUC fell 0.527 → 0.505 — inside a
-      self-similar anomaly cluster every point looks normal to a purely
-      local method. Rolling-median residuals de-cluster that blob (0.9158 →
-      0.9999 ROC-AUC). Exact values in `reports/metrics.json`,
-      `reports/nab_metrics.json`, and `reports/report.html`.
+      **The synthetic ladder tells a narrower, different story.** Untuned
+      IsolationForest scores **ROC-AUC 0.9158 / PR-AUC 0.1239**; tuned
+      IsolationForest leads ROC-AUC at 0.9171 / 0.1208, while tuned OCSVM leads
+      PR-AUC at 0.9056 / **0.1355**. Random is 0.5091 / 0.0194, and LOF remains
+      near chance after tuning (0.5054 / 0.0254). Thus 0.916 is ROC-AUC, not
+      PR-AUC, and synthetic PR-AUC is 0.124—not 0.916.
 
-      **Business summary:** On real data the champion finds 16 of 17
-      labelled incident windows, which is the good news. The finding is
-      the firehose: those 16 windows required 1 609 alerts, because the
-      detector's scores for real incidents overlap the normal traffic and
-      no threshold separates them cleanly. Buying a more accurate
-      detector is not the next dollar here — the next dollar goes to
-      alert budgeting (choosing the page volume on-call can absorb) and
-      to deduplicating alerts into incidents, which is where a client
-      would actually feel the improvement.
-    figures:
-      - nab_timelines
-      - nab_timeline_nyc_taxi
-      - nab_score_distribution
-      - nab_alert_budget
-    metrics_keys:
-      [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
+      Tuning rescues OCSVM by replacing `gamma="scale"` with 0.013; it does not
+      rescue LOF's local-density blindness. Rolling-median residuals do break up
+      the synthetic anomaly blob, lifting IsolationForest to 0.9999 ROC-AUC /
+      0.9960 PR-AUC. That synthetic improvement is not a NAB result.
 
+      A separate NSL-KDD transfer probe reaches 0.8817 ROC-AUC / 0.8916 PR-AUC,
+      but its 56.9% prevalence, labelled split, unseen attack categories, and
+      different semantics make it a probe rather than evidence of production
+      telemetry transfer.
+    figures: [nab_timelines, nab_timeline_nyc_taxi, nab_score_distribution, nab_alert_budget]
+    metrics_keys: [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
   - id: conclusions
     text_md: |
-      - **Detector families make different bets.** Density- and
-        boundary-based methods assume anomalies are sparse and dissimilar; a
-        repeated, self-similar incident signature defeats them —
-        IsolationForest and residual features still see it. Skipping that
-        check is how silent incidents reach production.
-      - **Tuning is verdict-changing — but only sometimes.** One-Class SVM
-        went from below-chance (0.337) to PR-AUC champion (0.136) because
-        one scale-sensitive knob (`gamma`) was wrong by default; LOF stayed
-        at chance — a structural failure. HPO is cheap (90 trials, ~80 s) —
-        run it and report both.
-      - **Point metrics flatter; event metrics tell the truth.** The
-        synthetic track's 0.916 PR-AUC collapsed to 0.527 on NAB once
-        scoring counted windows, not minutes — methodology, not modeling,
-        surfaced the firehose.
-      - **Guardrails make results trustworthy.** DQ gates, a time-ordered
-        split, in-train-window validation only, a fixed threshold, and a
-        seeded random floor mean a client can plan an alert budget around
-        the numbers.
+      **The honest deliverable is an evaluation harness that exposes when not to
+      deploy.** Synthetic IsolationForest ROC-AUC 0.916 coexists with PR-AUC
+      0.1239; NAB pointwise PR-AUC is 0.527, and event-aware metrics plus 1,609
+      emitted alerts reveal the operational failure that a single AUC hides.
 
-      **Results quality:** the headline is weak-and-known on real NAB data —
-      16/17 events found, but at 0.107 range precision the 1,609 alerts are
-      the finding. The actionable output is the alert-budget curve: pick
-      the alert volume on-call can absorb and read off the recall it buys —
-      more AUC is not where the next dollar goes.
+      Detector choices should follow failure structure: tuning can repair a bad
+      OCSVM scale parameter, not LOF's blindness to a self-similar blob.
+      Residual features are promising on synthetic data but still require NAB
+      validation. Likewise, adaptive thresholds and the NSL-KDD probe do not
+      establish multivariate or cross-domain readiness.
 
-      Detail: `DESIGN.md`, `README.md`.
-
-      **Business summary:** The deliverable is not a model with a
-      flattering accuracy number — point-in-time scores collapsed once
-      scoring counted incident windows instead of minutes. It is an
-      evaluation harness that says when to distrust the model, which
-      detector bets suit which failure pattern, and what an alert budget
-      buys in incidents caught. That is what de-risks deployment on a
-      client's critical path: the known limits are measured and stated,
-      so nobody discovers them during an outage.
+      The next useful work is alert deduplication, per-series budgets, and a
+      full detector ladder on NAB. Until range precision improves, the result
+      supports alert-budget design—not unattended paging or savings claims.
     metrics_keys: [ocsvm_tuned, isolation_forest_tuned, random]
 roadmap:
   - status: delivered
-    text: NAB real-data track — 12 series, event metrics; PR-AUC 0.527 / range-F1 0.157 (16/17 events, 0.107 precision).
+    text: "NAB event-aware evaluation, synthetic detector/HPO ladder, residual probe, and separate pointwise versus event reporting."
   - status: delivered
-    text: Adaptive streaming — unit-tested; synthetic calibration fired 31/120 NAB chunks (too twitchy), fixed budget stays.
-  - status: delivered
-    text: Rolling-median residuals — de-cluster the anomaly blob the EDA predicted; IsolationForest ROC-AUC 0.9158→0.9999.
-  - status: delivered
-    text: NSL-KDD transfer probe — 125,973 checksum-pinned records; champion transfers at 0.8817 ROC-AUC / 0.8916 PR-AUC.
+    text: "Adaptive streaming and NSL-KDD transfer probes, with 31/120 over-triggering and high-prevalence caveats retained."
+  - status: remaining
+    text: "Run all detector families and residual features on NAB; add event deduplication and per-series budgets to reduce alert load."
+  - status: deferred
+    text: "No unattended paging or adaptive-threshold rollout until real-data precision and drift calibration improve."
 figure_captions:
-  eda_signals_overview: Two days (2,880 minutes) of the seeded synthetic telemetry stream. CPU, memory and latency follow clean daily seasonality; the injected anomalies appear as simultaneous CPU+latency spikes while memory keeps its seasonal path.
-  telemetry_flags: The champion detector's flags (pink crosses) on the synthetic test window against the ground-truth anomaly strip, at the fixed 2% alert budget. Flags track the simultaneous CPU+latency spikes; memory stays on its seasonal path.
-  hpo_importance: Parameter importance and trial history for the One-Class SVM HPO study. gamma carries 99% of the importance — the search replaced the failing gamma="scale" default with gamma=0.0131 (best val PR-AUC 0.126 at nu=0.0598).
-  pr_curves: Precision-recall curves for every detector plus the seeded random baseline on the synthetic test window, with the 1.9% prevalence floor dashed. Tuned runs separate from the floor (best AP 0.136); untuned runs hug it.
-  threshold_sweep: The champion's precision and recall traced across alert budgets on the synthetic test window, with the fixed 2% operating point marked — recall 15% and precision 14% there, 17 of 120 flags hitting real incidents. The operating point is a staffing dial, not a mystery.
-  adaptive_stream: The anomaly-score stream under adaptive (dashed) vs fixed (dotted) thresholding in streaming simulation. The rolling median/IQR trigger re-anchors on drift; calibrated on synthetic it fired on 31 of 120 real NAB chunks — too twitchy for real rarity, so headline metrics stay on the fixed budget curve.
-  nab_timelines: Six representative NAB series (2×3 panels) over the test window — amber bands are the labelled anomaly windows, pink crosses are the champion's alerts. 897 alerts across these panels mostly miss the windows; nyc_taxi misses one labelled event, the other five detect theirs.
-  nab_timeline_nyc_taxi: The realKnownCause/nyc_taxi test window downsampled to every 2nd minute (1,540 of 3,079 points) — amber bands are the 4 labelled windows, pink crosses are the champion's 179 alerts. 3 of 4 windows are detected (range recall 0.750, PR-AUC 0.462); hover the series to see the missed window the aggregate table only counts.
-  nab_score_distribution: The champion's anomaly scores pooled over all evaluable NAB series, split by in-window vs outside-window minutes (log-count y axis). In-window scores overlap the normal mass — at NAB rarity no threshold separates them cleanly.
-  nab_alert_budget: Event-level range-F1 of each detector family across alert budgets (flagged fraction of the window, log x). Range-F1 peaks at a small budget; more pages mostly add false alarms — the budget curve, not AUC, is where the next dollar goes.
+  eda_signals_overview: "Two days (2,880 minutes) of the seeded synthetic stream. CPU, memory, and latency follow daily seasonality; injected anomalies appear as simultaneous CPU+latency spikes."
+  telemetry_flags: "Synthetic test-window flags at the fixed 2% alert budget, compared with ground-truth anomalous minutes. The flags track simultaneous CPU+latency spikes; this is not a NAB result."
+  hpo_importance: "One-Class SVM tuning on synthetic train-only validation: gamma carries 99% of importance, moving from the failing `scale` default to 0.0131 (best validation PR-AUC 0.126)."
+  pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.9% prevalence floor. Tuned OCSVM leads AP at 0.136; these curves do not measure event-window recall."
+  threshold_sweep: "Synthetic precision and recall across alert budgets, with the fixed 2% point marked: 120 flags, about 15% recall and 14% precision, including 17 hits on anomalous minutes. This is point-level load, not 17 incidents."
+  adaptive_stream: "Adaptive versus fixed thresholds in streaming simulation. Synthetic-calibrated median/IQR drift detection fires on 31 of 120 real NAB chunks, so it remains too twitchy for the headline operating point."
+  nab_timelines: "Six representative NAB test windows: amber bands are labelled events and pink crosses are IsolationForest alerts. These panels contain 897 alerts; nyc_taxi misses one window while the other five series touch theirs."
+  nab_timeline_nyc_taxi: "The NAB nyc_taxi test window downsampled to every second minute: 3 of 4 labelled windows touched, range recall 0.750, pointwise PR-AUC 0.462, and 179 alerts emitted. The miss remains visible rather than averaged away."
+  nab_score_distribution: "IsolationForest scores across evaluable NAB series, split by in-window versus outside-window minutes. Their overlap explains why no tested threshold cleanly separates incidents from normal traffic."
+  nab_alert_budget: "Event-aware range-F1 by NAB benchmark group across alert budgets. Only IsolationForest is evaluated here; the curve exposes the trade-off between event detection and false-alert load, not a cross-detector ranking."

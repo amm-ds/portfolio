@@ -1,59 +1,98 @@
 project_id: 01-rag-agent
-headline: "On a 65-question graded golden set over a bounded 593-article Wikipedia
-  slice, the agent reaches retrieval recall@5 0.831 (vs a 0.031 seeded-random
-  floor) with hosted RAGAS faithfulness 0.685 [0.605, 0.760] and citations
-  where expected in 96.4% [90.9, 100] of answers; the sealed 15-question
-  held-out set scores lower — recall@5 0.600, faithfulness 0.62 [0.45, 0.79]
-  — and that gap bounds how far the headline travels."
-data_note: "Real data: a bounded topical slice of 593 articles (≈3.5 MB of
-  text) from the English Wikipedia dump `20231101.en`, streamed from Hugging
-  Face; licensed CC BY-SA 3.0 / GFDL with attribution required."
-limits: "Does not show behavior beyond this bounded, homogeneous corpus —
-  the held-out recall drop (0.831 → 0.600) and the 18 of 65 hosted answers
-  that still contained unsupported claims mean results must be re-measured
-  before reuse on larger or noisier corpora."
+headline: "On 65 tuning questions, retrieval recall@5 is 0.831 and hosted RAGAS
+  faithfulness 0.685 [0.605, 0.760], but 18 answers still contain unsupported
+  claims; sealed 15-question recall falls to 0.600."
+data_note: "The corpus is 593 articles (≈3.5 MB) from English Wikipedia dump
+  `20231101.en`, CC BY-SA 3.0 / GFDL with attribution required."
+limits: "Evidence is bounded to this homogeneous Wikipedia slice: held-out
+  retrieval drops to 0.600, grounding remains imperfect, and hosted/local
+  provider comparisons use different question counts and judges."
 sections:
 - id: background
-  text_md: "LLM assistants fail silently where it hurts a business: they sound\nconfident while inventing facts. Retrieval-grounded design removes that\nfailure mode by construction — the model speaks only from evidence it\nwas shown, and every claim carries an auditable citation.\n\nThe failure modes this design eliminates:\n\n- **Hallucination by omission** — nothing forces a lookup, so the model\n  answers from memory.\n- **Unverifiable confidence** — fluent answers with no source to check.\n- **Untestable quality** — demos that impress once, with no measurement\n  behind the claim.\n\nThis project builds that assistant as a reproducible pipeline: a\nbounded, checksum-pinned Wikipedia slice, a local embeddings index, and\nan agent whose only window into the corpus is two retrieval tools.\nEvery quality claim below is measured on a graded question set.\n\n**Business summary:** A confident wrong answer is worse than no
-answer: it reaches a customer, a regulator, or a contract, and the
-business owns the mistake. This assistant is built so that failure mode
-is impossible by construction — every claim carries a citation to the
-exact source passage it relied on, so an answer can be checked in
-seconds rather than trusted on faith. That is the difference between
-the model said so and here is the evidence, and it is what makes the
-tool usable where a wrong answer has a real cost.\n"
+  text_md: |
+    **Citations make an answer auditable; they do not make hallucinations
+    impossible.** This project attacks silent fabrication with retrieval tools,
+    structured citations, and a verification loop—and reports the unsupported
+    claims that still survive.
+
+    The pipeline is deliberately inspectable: a checksum-pinned Wikipedia
+    slice, CPU retrieval, and an agent whose only corpus access is
+    `search_documents` and `read_excerpt`. Quality comes from measured
+    retrieval, generation, and abstention behavior, not from a persuasive demo.
 - id: objectives
-  text_md: "The deliverable is a question-answering agent with three hard\nproperties, each enforced rather than prompted:\n\n- **Typed, validated output** — the model must return a structured\n  `AnalysisResult` (summary, citations, confidence); a schema-invalid\n  response fails the run loudly instead of reaching a user.\n- **Evidence grounding** — the only corpus access is\n  `search_documents` / `read_excerpt`; the system prompt forbids outside\n  knowledge.\n- **Operational SLOs** — retrieval recall ≥ 0.60 on the graded set,\n  an end-to-end latency target, and a per-query cost a client can\n  budget against (≤ $0.01).\n\nThe provider fallback chain makes \"works everywhere\" explicit:\n\n```mermaid\nflowchart LR\n    Q[User question] --> A[Agent]\n    A -->|LLM_BASE_URL + LLM_API_KEY set| L[OpenAI-compatible provider]\n    A -->|no credentials| O[Local Ollama]\n    L --> R[Structured AnalysisResult]\n    O --> R\n    A -->|no provider at all| E[Loud error + setup guidance]\n```\n\n\
-    Retrieval runs CPU-only and the LLM defaults to a local model, so data\nnever leaves the machine — the evaluation included — and `evaluate\n--offline` keeps a retrieval-only CI path without any provider.\n\n**Business summary:** A client should not have to take quality on
-faith, so the acceptance criteria are written down before any demo
-exists. Every answer must cite its sources, because a claim that can be
-checked is the only kind a business can safely act on. The performance
-targets are explicit — retrieval recall of at least 0.60, an
-end-to-end latency target, and a per-query cost capped at $0.01 — so a
-procurement conversation starts from numbers, not impressions.\n"
+  text_md: |
+    **The goal is a useful answer with evidence, or a calibrated refusal.** The
+    acceptance criteria are concrete:
+
+    - Return schema-valid `AnalysisResult(summary, citations, confidence)`;
+      invalid output fails loudly after bounded retries.
+    - Reach retrieval recall ≥0.60, cite relevant evidence when available, and
+      abstain on questions outside the corpus.
+    - Measure end-to-end latency and cost; the operating target is ≤$0.01 per
+      query, while the full hosted evaluation is metered separately.
+
+    Retrieval is CPU-only. With local Ollama, prompts and corpus excerpts stay
+    on the machine; with an OpenAI-compatible hosted provider they leave it.
+    `evaluate --offline` runs retrieval-only CI without either provider.
 - id: data
-  text_md: "The corpus is a topical slice of the English Wikipedia dump\n`20231101.en`, streamed from Hugging Face and bounded by construction.\n\n- **Bounded scope** — five diverse topics (Climate, Renewable energy,\n  Aviation, Machine learning, Photosynthesis), at most 120 articles per\n  topic plus exact-title anchor articles collected outside the pattern\n  quota. Result: 593 articles (≈3.5 MB of text).\n- **Quality gates** — null-rate and length-range checks halt the\n  pipeline loudly on violation; DVC tracks every artifact for\n  reproducibility.\n\nThe source dataset is registered in the\n[data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/):\nsnapshot `20231101.en` of English Wikipedia, streamed via `datasets`,\nlicensed **CC BY-SA 3.0 / GFDL (attribution required)**. The derived\ncorpus ships with its own sha256-pinned contract at\n`data/raw/dataset_contract.json`, and every transformation replays via\n`dvc repro` in the project directory.\n\n**Business\
-    \ implication:** License trail, checksum and snapshot date sit\nin one file — the legal and reproducibility questions procurement asks,\nanswered up front.\n"
+  text_md: |
+    **A small, known corpus makes every claim reproducible.** The bounded scan
+    collects five topics—Climate, Renewable energy, Aviation, Machine learning,
+    and Photosynthesis—with at most 120 patterned articles per topic plus
+    exact-title anchors: 593 articles in total.
+
+    Null-rate and length gates stop bad input. DVC tracks the transformations,
+    and `data/raw/dataset_contract.json` pins the derived corpus by sha256.
+    Source, snapshot, license, and attribution are recorded in the
+    [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/).
 - id: eda
-  text_md: "The composition figure `eda_corpus_composition` shows what the bounded\nscan actually collected, and it shaped the pipeline in one concrete way.\n\n- **Near-symmetric topic coverage** — ≈102–125 articles per topic, so\n  no single theme dominates retrieval behavior.\n- **Right-skewed article lengths** — most articles run 500–2,000 words,\n  with a long tail of large articles truncated at 12,000 characters to\n  keep embedding cost predictable.\n\nThe finding that mattered: the Wikipedia dump order is not topical, so\nnaive pattern quotas fill on peripheral articles (journals, albums,\nlists) long before flagship pages appear in the stream — several famous\ntitles (e.g. \"Photosynthesis\", \"Renewable energy\") are entirely absent\nfrom this dump. Exact-title anchors and eval questions were verified\nagainst the real corpus, not assumed.\n\n**Business summary:** Before promising any coverage, we measured\nwhat the source data actually contains, and it paid off immediately.\nThe public Wikipedia dump turned out to be missing several famous\narticles entirely — discovering that mid-project would have meant a\ndeadline slip, not a footnote. Setting scope from measurement rather\nthan assumption is the habit that turns data-availability surprises\ninto planned work.\n"
-  figures:
-  - eda_corpus_composition
+  text_md: |
+    **The scan changed the corpus design.** Topic coverage is near-balanced
+    (≈102–125 articles), while article length is right-skewed; a 12,000-character
+    cap bounds embedding cost.
+
+    More importantly, dump order is not topical: naive quotas fill with
+    peripheral pages, and several expected flagship titles are absent from this
+    dump. Exact-title anchors and evaluation questions were therefore checked
+    against the collected corpus rather than assumed to exist.
+  figures: [eda_corpus_composition]
 - id: training
-  text_md: "\"Training\" is index construction — classical chunking and ranking\ndiscipline, measured rather than tuned by feel. The runtime path:\n\n```mermaid\nflowchart LR\n    Q[Question] --> E[Embed MiniLM]\n    E --> F[FAISS top-5k]\n    F --> X[Cross-encoder rerank]\n    X --> A[Agent loop]\n    A --> D[Draft AnalysisResult]\n    D --> S[Claim split]\n    S --> N[Entailment check]\n    N --> P[Repair ≤2 / drop]\n    P --> O[Support floor 0.6]\n    O -->|below floor| B[Abstain]\n    O --> C[Cited answer]\n    A -.-> T{{Corpus access}}\n    A <-.->|ADR-0004 env-hosted ⇄ local| L{{Provider seam}}\n```\n\nQuestion in, cited answer out: the only corpus access is two retrieval\ntools, the dotted seam is the only LLM boundary (ADR-0004), and the\nverify loop is a hard gate, not a prompt.\n\nEvery engine choice is a measured trade-off, not a default:\n\n| Component | Choice | Why | Measured |\n|---|---|---|---|\n| Embeddings | `all-MiniLM-L6-v2` (80 MB, CPU) | smallest encoder that saturates\
-    \ recall on this corpus | recall@5 0.831 — exact tie with BGE-small (`model_comparison`) |\n| Reranker | `ms-marco-MiniLM` cross-encoder | the reading LLM consumes the top-1 passage, not the top-k | MRR@5 0.718 → 0.808 with rerank on (`retrieval_funnel`) |\n| Index | FAISS `IndexFlatIP` (exact) | 593 articles: brute force is exact and still milliseconds | recall@5 0.831 at ≈800 input tokens/query (`retrieval_hpo_frontier`) |\n| Provider | env OpenAI-compatible ⇄ local Ollama (ADR-0004) | one code path, no runtime mock; data never leaves the machine locally | hosted 65-q pass metered $3.58 cloud-equivalent, 79.6% cached reads |\n\n- **Paragraph-aware chunking** — paragraphs first, then sentence\n  boundaries, then word windows with overlap; guarantees unit-tested at\n  200/400/800 tokens so the size trade-off is measurable.\n\n**Business summary:** The whole pipeline runs on a commodity CPU,\nso there is no GPU budget and no dependence on a single vendor. The\nmodel provider sits behind one seam in the code, so swapping between a\nhosted API and a local model is a configuration change, not a\nre-engineering project. Every engine choice — chunk size, embeddings\nmodel, reranker — was picked on measured accuracy per unit of compute,\nso the cost of running this in production is known before a contract\nis signed.\n"
-  figures:
-  - retrieval_funnel
+  text_md: |
+    **Retrieval quality comes from ranking discipline, not a larger model.** The
+    chosen path is MiniLM embeddings → exact FAISS search → cross-encoder rerank
+    → agent draft → claim verification → cited answer or abstention.
+
+    | Choice | Measured reason on this corpus |
+    |---|---|
+    | 200-token, paragraph-aware chunks | recall@5 0.831 at ≈800 input tokens/query for top-3 |
+    | MiniLM (80 MB, CPU) | ties BGE-small at recall@5 0.831 |
+    | Cross-encoder rerank | MRR@5 0.718 → 0.808; recall@5 unchanged |
+    | Exact FAISS `IndexFlatIP` | exact search is inexpensive at 593 articles |
+
+    Hosted and local providers share one code path. The hosted 65-question
+    evaluation metered $3.58 in **cloud-equivalent rate-card cost**, not billed
+    spend; local API cost is $0, but local compute and latency are not free.
+  figures: [retrieval_funnel]
 - id: evaluation
-  text_md: "Quality is measured, not demoed. The golden set is 65 graded questions\n(44 single-hop, 11 multi-hop, 10 unanswerable) with known relevant\narticles.\n\n- **Bounded HPO grid** — chunk sizes × top_k × encoder arm × rerank\n  ablation, with two floors any ranker must beat: a **seeded uniform-random\n  baseline** (chance) and a **deterministic word-match baseline** (lexical,\n  the fair naive comparator — `retrieval_lexical_chunks_200`);\n  `chunk_size_sweep` renders the grid.\n- **Two judge layers** — a rubric judge (provider model default;\n  `JUDGE=keyword` = the deterministic CI floor); and, behind\n  `evaluate --ragas`, the RAGAS set scored by the active provider.\n- **Sealed held-out set** — 15 fresh questions (8 single-hop, 2\n  multi-hop, 5 unanswerable) written after tuning froze, programmatically gated\n  for answerability and freshness.\n  `evaluate --heldout` scores it separately under\n  `detail.heldout` — retrieval metrics plus one verify-on pass, no RAGAS:\n  a hosted\
-    \ run costs a fraction of the tuning pass.\n- **Verify-then-answer loop** — every drafted answer is claim-split and\n  entailment-checked against the full text of its cited chunks;\n  unsupported claims are repaired (≤2 calls) or dropped; answers below\n  min_support (0.6) abstain.\n- **Operations** — latency and tokens persist to `reports/cost_telemetry.json`\n  (spread: `latency_histogram`); hosted runs add a per-phase meter with a\n  hard USD cap; schema-invalid output is retried (≤2) before counting\n  as format failure. Everything lands in `reports/metrics.json`; `evaluate --offline`\n  keeps a CI-safe retrieval-only path.\n\n**Business summary:** Quality is checked on every change by a harness
-that runs in ordinary continuous integration — no paid API keys, no
-GPU. The headline numbers come from a $0 local run, so the evaluation
-itself does not distort the cost picture. A client can audit the gates
-or reproduce them, and the same checks keep protecting the system after
-handover, when the original team is gone.\n"
-  figures:
-  - chunk_size_sweep
-  - latency_histogram
+  text_md: |
+    **Three different evaluators answer three different questions.** Retrieval
+    HPO uses a 65-question golden set (44 single-hop, 11 multi-hop, 10
+    unanswerable) with seeded-random and deterministic lexical floors.
+
+    - The **rubric judge** scores answer-level faithfulness and drives the
+      failure taxonomy; the provider model is the default and `JUDGE=keyword`
+      is the deterministic CI/fallback floor.
+    - Optional **RAGAS** separately scores faithfulness, relevancy, and context
+      metrics with the active provider; its values are not interchangeable with
+      rubric-judge scores.
+    - The **claim verifier** checks drafted claims against cited chunks, repairs
+      or drops unsupported text (≤2 repair calls), and abstains below 0.6 support.
+
+    A sealed 15-question set (8 single-hop, 2 multi-hop, 5 unanswerable), written
+    after tuning froze, gets retrieval plus one verify-on agent/rubric-judge
+    pass—deliberately no RAGAS. Latency, tokens, and per-phase hosted estimates
+    persist in `reports/metrics.json` and `reports/cost_telemetry.json`.
+  figures: [chunk_size_sweep, latency_histogram]
   metrics_keys:
   - retrieval_chunks_200
   - retrieval_random_chunks_200
@@ -64,23 +103,40 @@ handover, when the original team is gone.\n"
   - retrieval_rerank_off_chunks_200
   - rag_agent
 - id: results
-  text_md: "Retrieval first — everything downstream depends on it (65-question\ngolden set, seeded random floor; `retrieval_hpo_frontier` sweep,\nencoder tie in `model_comparison`):\n\n| Configuration | recall@5 | recall@10 | MRR@5 |\n|---|---|---|---|\n| chunks=200, top_k=10 | 0.831 | 0.846 | 0.808 |\n| random baseline | 0.031 | 0.046 | 0.018 |\n| lexical (word match) | 0.677 | 0.754 | 0.500 |\n| **chosen: MiniLM, chunks=200, top_k=3, rerank ON** | **0.831** | — | **0.808** |\n\nWord-matching is the fair naive floor — no model, yet it already finds\ntwo-thirds of answers; embeddings beat it by +0.154 recall@5 (0.831 vs\n0.677) and by +0.308 MRR@5 — that delta is the priced value of the\nindex.\n\nProvider A/B — local `qwen3.6-q4` (30-q subset) vs hosted\n`kimi-for-coding` (full 65 q); hosted costs are **cloud-equivalent\nestimates** at the kimi-k2.8 card (membership quota, never billed):\n\n| Pass | Taxonomy | RAGAS faithfulness | Verify overhead |\n|---|---|---|---|\n| local qwen3.6-q4,\
-    \ verify ON (n=30) | 15 correct / 14 unsupported / 1 format | 0.606 | 33 repair calls |\n| hosted kimi-for-coding, verify ON (n=65) | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] | 39 repair calls |\n\n- **Grounding tracks the provider** — hosted faithfulness 0.685\n  [0.605, 0.760] vs 0.606 local (directional, not controlled);\n  relevancy 0.878; refusal accuracy 0.9.\n- **Verify overhead is calls, not minutes** — hosted p50/p95 latency\n  23 s / 175 s (p95: one runaway tool-loop cut off by the token guard);\n  output-retry recovered the one schema-invalid draft.\n- **Metered cost (hosted, full 65-q run)** — $3.58 cloud-equivalent over\n  922 calls (agent $1.79 / RAGAS $1.13 / verify $0.47 / judge $0.19);\n  79.6% cache reads; the USD cap is real — a first pass tripped at $3.04.\n- **Held-out confirmation (sealed 15-question set)** — written after\n  tuning froze, it scores lower, honestly: recall@5 0.600 / MRR@5 0.567\n  vs a 0.022 floor; faithfulness\
-    \ 0.62 [0.45, 0.79]; refusal accuracy 1.0\n  on the unanswerable. Cost $0.25 — cheap enough to run every wave; the\n  recall gap vs tuning (0.831 → 0.600) is the overfitting signal it\n  exists to catch.\n\nRetrieval is solid; grounding is still the bottleneck (`failure_taxonomy`\ncharts the 44/18/2/1 hosted mix).\n\n**Live demo chat is disabled by default.** In the showcase deployment the\nchat endpoints are an LLM cost proxy: they register only when\n`RAG_CHAT_ENABLED=1` is set at server start (fail closed), so the public\nsite ships with live chat OFF. Instead of a live session, the page shows a\nrecorded-transcript excerpt precomputed from the committed evaluation\nartifacts (`reports/question_traces.json`, hosted 65-question run) —\nper-question outcomes quoted verbatim, not regenerated answers:\n\n| # | Question | Type | Recorded outcome |\n|---|---|---|---|\n| 1 | What are the main components of the Earth's climate system? | single-hop | answered with citation (relevant article at top rank 1); judged correct (faithfulness 0.9) |\n| 2 | What design factors determine the efficiency of a wind turbine? | single-hop | answered with citation, but unsupported claims kept — verdict unsupported-claim (faithfulness 0.2) |\n| 3 | How does climate change adaptation relate to greenhouse gas inventories in national climate policy? | multi-hop | cited and retrieval hit, yet unsupported claims kept (faithfulness 0.25) — grounding, not retrieval, is the failure |\n| 4 | What are the main components of an aircraft? | single-hop | verify loop abstained below the 0.6 support floor — a refusal, not a guess (verdict unsupported-claim, faithfulness 0.1) |\n| 5 | Who won the FIFA World Cup in 2018? | unanswerable | abstained as expected; nothing in the corpus supports it (judged correct) |\n\n**Business summary:** The decision this supports is where the assistant
-should run and what it will cost, and the evidence is laid out for
-exactly that choice. Retrieval reaches recall@5 0.831 on a graded
-question set, while a sealed held-out set written after tuning froze
-scores lower, honestly — recall@5 0.600 — and that gap is the
-overfitting signal a client should expect to see managed. Answer
-grounding is the known weakness: 18 of 65 hosted answers still
-contained unsupported claims, reported as a measured failure mix, not
-hidden. A full hosted evaluation pass costs $3.58 cloud-equivalent with
-a per-phase cost table, so budgeting starts from a metered bill, not a
-guess.\n"
-  figures:
-  - model_comparison
-  - retrieval_hpo_frontier
-  - failure_taxonomy
+  text_md: |
+    **Retrieval beats both naive floors; generation remains the bottleneck.**
+
+    | Retrieval configuration | recall@5 | recall@10 | MRR@5 |
+    |---|---|---|---|
+    | MiniLM, 200-token chunks | **0.831** | 0.846 | **0.808** |
+    | lexical word match | 0.677 | 0.754 | 0.500 |
+    | seeded random | 0.031 | 0.046 | 0.018 |
+
+    | Verify-on provider pass | Failure taxonomy | RAGAS faithfulness |
+    |---|---|---|
+    | local qwen3.6-q4, 30-question subset | 15 correct / 14 unsupported / 1 format | 0.606 |
+    | hosted kimi-for-coding, all 65 | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] |
+
+    The provider gap is directional, not controlled: question counts and judge
+    models differ. Hosted relevancy is 0.878, refusal accuracy 0.900, and
+    cite-when-expected 0.964 [0.909, 1.000]. Latency is p50 23 s / **p95 175 s**;
+    the tail is driven by a runaway tool loop stopped by the token guard.
+
+    The full hosted evaluation used 922 calls and metered **$3.58
+    cloud-equivalent** across agent, RAGAS, verification, and rubric judging;
+    79.6% of input reads were cached. This was membership-quota usage, never a
+    billed $3.58. A first pass stopped cleanly at the $3.04 USD cap.
+
+    **The sealed set is the warning against over-reading the tuning result:**
+    recall@5 0.600 and MRR@5 0.567 (random floor 0.022), rubric-judge
+    faithfulness 0.62 [0.45, 0.79], and 5/5 correct refusals. Its 66-call hosted
+    pass metered $0.25 cloud-equivalent; it did not run RAGAS.
+
+    Live showcase chat is disabled by default (`RAG_CHAT_ENABLED=1` opts in).
+    The page instead quotes committed traces, including a correct cited answer,
+    an unsupported answer with faithfulness 0.2, a multi-hop grounding failure,
+    a support-floor abstention, and a correct refusal on an unanswerable question.
+  figures: [model_comparison, retrieval_hpo_frontier, failure_taxonomy]
   metrics_keys:
   - retrieval_chunks_200
   - retrieval_random_chunks_200
@@ -88,31 +144,32 @@ guess.\n"
   - retrieval_rerank_on_chunks_200
   - rag_agent
 - id: conclusions
-  text_md: "Limits first — caveats a client should hear before reuse:\n\n- **Judge noise is real at n=30** — faithfulness moved 0.651→0.606\n  across runs; small deltas are directional; the wide CIs say so.\n- **Repair quality at local-model scale is weak** — the levers are\n  claim removal and abstention, not fluent rewriting; a stronger\n  judge may help.\n- **The HPO grid is small and the corpus homogeneous** — BGE-small\n  tying MiniLM is evidence about *this* scale, not a universal claim;\n  the same harness will show it on noisier corpora.\n- **Corpus coverage is bounded by the dump** — famous anchor titles\n  verified absent from `20231101.en`, and per-topic quotas saturate\n  with peripheral articles.\n\nLessons that transfer:\n\n- **Typed outputs that fail loudly beat prompt promises.**\n- **Evidence-only tool access makes grounding enforceable.**\n- **A seeded random floor quantifies \"better\" before spend.**\n- **Verify before you trust** — entailment checking turned \"looks\n\
-    \  grounded\" into a measured 18→14 delta.\n\n**Results quality:** retrieval is strong (recall@5 0.831 vs 0.031\nrandom — the headline holds up). Generation grounding is\nacceptable-with-caveats — hosted faithfulness 0.685 [0.605, 0.760] is\nreal, but judge noise at n=30 makes small deltas directional and the\nverify loop repairs by removal and abstention, not rewriting. Weak\nspots are known and measured, not hidden.\n\nEverything ships as working code — `reports/metrics.json`,\n`reports/question_traces.json`, `reports/report.html`; see `DESIGN.md`\nand `README.md`.\n\n**Business summary:** What transfers to a client project is the
-discipline, not just the code: bound the data scope first, compare
-every model against the simplest naive baseline, measure before
-spending, and keep a written list of what is still unknown. Judge
-noise, weak repair quality at local-model scale, and the bounded
-corpus are stated openly rather than smoothed over. Delivered as
-working code with a reproducible evaluation, the same setup can be
-re-pointed at a client's own documents in days.\n"
+  text_md: |
+    **The transferable result is the measurement discipline, not a claim of
+    solved grounding.** Tool restrictions and citations help audit answers, but
+    18 of 65 hosted answers still kept unsupported claims.
+
+    - Local verify-on A/B moved unsupported answers 18→14 and correct answers
+      12→15, mainly through removal and abstention; RAGAS faithfulness moved
+      0.651→0.606 with overlapping intervals, so no improvement is claimed.
+    - Judge noise at n=30, weak local repair quality, a small HPO grid, and the
+      bounded corpus all limit generalization. MiniLM's tie with BGE-small is
+      evidence at this scale only.
+    - Typed outputs, naive floors, sealed evaluation, and explicit cost/latency
+      telemetry are the reusable engineering controls. Full traces and metrics
+      remain in `reports/` for inspection.
 roadmap:
 - status: delivered
-  text: 'Provider fallback (ADR-0004): hosted ⇄ local Ollama, one code path, loud error + --offline CI path.'
-- status: delivered
-  text: 'Client onboarding: prepare-corpus --source client runs chunk→embed→index→evaluate with a license flag.'
-- status: delivered
-  text: 'Cost telemetry + hard USD cap: hosted 65-q pass $3.58 (79.6% cache); cap stopped a first pass at $3.04.'
-- status: delivered
-  text: 'LLM rubric judge + RAGAS on 65 questions: keyword CI floor 0.44 [0.29, 0.61]; RAGAS also scored local at $0.'
-- status: delivered
-  text: 'Verify-then-answer loop: A/B on 30 q — unsupported 18→14, correct 12→15, 33 repairs; on by default.'
+  text: "Reproducible retrieval, provider seam, verify-on answers, separate rubric/RAGAS judges, sealed evaluation, and metered cost/latency."
+- status: remaining
+  text: "Improve grounding and repair quality, then re-measure on noisier corpora; current local A/B mainly gains through abstention."
+- status: deferred
+  text: "No broad-corpus quality claim or always-on public chat: held-out retrieval drops and live hosted calls need an explicit cost budget."
 figure_captions:
-  eda_corpus_composition: What the bounded Wikipedia scan actually collected — articles per topic (left) and the word-length distribution of all 593 articles (right). Coverage is near-balanced (≈102–125 articles per topic) and most articles run 500–2,000 words, with the long tail truncated at 12,000 characters.
-  retrieval_funnel: The aggregate retrieval funnel at the chosen configuration across the 65 golden questions — 975 embedding candidates (15 per question) narrow to 195 after reranking (3 per question), and 54 of 65 questions keep a relevant article in the final top-k. Reranking is what turns candidate volume into a citable top-3.
-  chunk_size_sweep: Retrieval recall across the three tested chunk sizes (200/400/800 tokens) with the seeded random and lexical word-matching floors. 200-token chunks hold full recall@5 at the lowest context cost — chunk size, not model size, sets retrieval quality.
-  latency_histogram: Per-answer latency across the hosted 65-question run. Typical answers land near the p50 of 23 s, while the long tail (p95 ≈160 s) is a single runaway tool loop cut off by the token guard.
-  model_comparison: recall@5, recall@10 and MRR@5 for the two candidate encoders on the 65-question golden set. MiniLM and BGE-small tie exactly at recall@5 0.831, so the cheaper 80 MB CPU MiniLM ships — the encoder choice is a price decision, not a quality one.
-  retrieval_hpo_frontier: Retrieval recall@k against estimated input tokens per query, one curve per chunk size across the tested top_k values; the star marks the chosen configuration. That point (chunks=200, top_k=3, rerank on) reaches recall 0.831 at ≈800 input tokens per query — the quality-cost knee of the grid.
-  failure_taxonomy: How the hosted 65-question run scored per answer — 44 fully correct, 18 unsupported-claim, 2 retrieval-miss, 1 format failure. Retrieval is solid; grounding is the bottleneck the verify loop exists to shrink.
+  eda_corpus_composition: "The bounded Wikipedia corpus: articles per topic and word-length distribution across all 593 articles. Coverage is near-balanced; the long tail is truncated at 12,000 characters."
+  retrieval_funnel: "Across 65 golden questions, 975 embedding candidates narrow to 195 reranked passages; 54 questions retain a relevant article in the final top-3. Reranking improves rank quality, not recall@5."
+  chunk_size_sweep: "Retrieval recall for 200/400/800-token chunks against seeded-random and lexical floors on the 65-question set. All three sizes tie at recall@5 0.831; 200 tokens minimizes context cost."
+  latency_histogram: "Per-answer latency for the hosted 65-question run: p50 23 s and p95 175 s. The tail is driven by a runaway tool loop stopped by the token guard."
+  model_comparison: "MiniLM and BGE-small tie at recall@5 0.831 on the 65-question set; MiniLM has slightly higher MRR@5 (0.808 vs 0.805). The smaller CPU model is therefore the measured default here."
+  retrieval_hpo_frontier: "Recall@k against estimated input tokens per query across chunk sizes and top-k values. The starred 200-token/top-3/rerank-on configuration reaches recall@5 0.831 at ≈800 input tokens."
+  failure_taxonomy: "Hosted 65-question outcomes under the rubric-judge taxonomy: 44 correct, 18 unsupported-claim, 2 retrieval-miss, and 1 format failure. Grounding, not retrieval volume, is the main remaining failure mode."
