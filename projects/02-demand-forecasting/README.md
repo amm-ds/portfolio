@@ -740,9 +740,9 @@ What the audit-driven statistical baselines reveal on **real** data:
   MAE from wholesale spikes). MAE, MASE, bias and WAPE are the numbers to
   plan with — the champion's test-window bias is −1.444 units (mild
   over-forecasting) with WAPE 1.142.
-- **Reconciliation pays off on the test window**: w=0.50 — incoherence 474.3 →
-  237.2 (exactly ×(1−w), property-tested); store-level MAE 746.2 → 743.4
-  (−0.4% this run — coherence is a guarantee, accuracy gains depend on
+- **Reconciliation pays off on the test window**: w=0.50 — incoherence 447.2 →
+  223.6 (exactly ×(1−w), property-tested); store-level MAE 746.0 → 731.0
+  (−2.0% this run — coherence is a guarantee, accuracy gains depend on
   parent-model quality, stated plainly; the shrinkage grid is estimated on
   origin 2 and the store-level backtest re-fits HGB — per the wave-13 platform
   note its OpenMP reductions jitter run-to-run, so these numbers are the
@@ -875,8 +875,8 @@ uv run pytest projects/02-demand-forecasting -q
 Delivered: the **M5 headline track** (wave 24, protocol `m5_direct_v1`) —
 the committed checksum-pinned Walmart M5 subset (600 series, top-3 stores ×
 top-200 items), 10 weekly rolling origins (8 selection + 2 scored once),
-28-day horizon, 8 candidates from seasonal_naive to a global LightGBM and a
-selection-fitted convex ensemble, ADI/CV² volume classes, WRMSSE with the
+28-day horizon, 11 candidates from seasonal_naive through global boosting and
+two selection-fitted ensembles, ADI/CV² volume classes, WRMSSE with the
 documented naive-28 denominator, paired-bootstrap CIs on every headline gap,
 split-conformal 80% bands, and the churn-style `forecast-workbench` demo
 payload (`cli demo-payload-m5`, schema v4) served by the showcase API — and

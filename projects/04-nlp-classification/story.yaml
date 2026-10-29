@@ -1,197 +1,85 @@
 project_id: 04-nlp-classification
-headline: The full 120k DistilBERT fine-tune reaches 0.9460 accuracy and 0.9460 macro-F1 on the untouched 1,000-row stratified test split (bounded 3.6k-row ladder tops out at 0.9020 / 0.9021).
-data_note: Real AG News corpus — 127,600 news items (120k standard train split) from HuggingFace fancyzhx/ag_news; license recorded as "unknown" on the HF dataset card.
-limits: The serving table is probe-hardware data (Apple M4 Max, CPU batch=1, n=200) and its int8 quality number is measured on a 2,000-row train sample, not the test split; the bounded CPU ladder is a 4k-train / 1k-test subsample, not the full corpus.
+headline: Full-data DistilBERT reaches 0.9460 accuracy and macro-F1 on the 1,000-row test split; the bounded 3.6k-row ladder reaches 0.9020 / 0.9021.
+data_note: Real AG News corpus — 127,600 items (120k standard train split) from HuggingFace `fancyzhx/ag_news`; the dataset card records the license as unknown.
+limits: Test macro-F1 selects `distilbert_tuned`, so that bounded comparison is not a clean final holdout; the bounded and full runs also differ in data, device and training setup, so their gap is not an isolated data-scale effect.
 sections:
   - id: background
     text_md: |
-      Newsrooms, aggregators, and compliance teams face the same scaling
-      problem: a continuous stream of short news items that someone must
-      route to the right desk. Manual triage does not scale, and keyword
-      rules break on the first unfamiliar headline.
-
-      - **The pain:** continuous news volume no manual desk can triage.
-      - **The trap:** rule/keyword systems that shatter on unseen wording.
-      - **The real question:** what each approach costs and delivers on a
-        fixed budget — not which technology sounds newer.
-      - **The benchmark:** AG News, a real, public, widely studied
-        four-topic corpus.
-
-      **Business summary:** Newsrooms and compliance teams face the same
-      scaling problem: a continuous stream of short items that someone
-      must route to the right desk, and manual triage does not scale.
-      The trap in this purchase is comparing technologies instead of
-      outcomes — keyword rules break on the first unfamiliar headline,
-      and bigger models cost more per item routed. So the ladder below
-      is framed as a cost-versus-delivery trade-off on a fixed budget,
-      which is what makes it actionable for an actual routing decision.
-
+      Route short news items to World, Sports, Business or Sci/Tech without
+      brittle keyword rules. The practical question is what each modeling rung
+      delivers under a fixed compute budget, using the public four-topic AG News
+      benchmark rather than a technology-only comparison.
   - id: objectives
     text_md: |
-      Target: maximize macro-F1 across the four AG News categories while
-      keeping every run reproducible on a laptop — and report the full
-      ladder, not just the winner.
+      Maximize macro-F1 while keeping the full ladder reproducible and visible.
 
       | Criterion | Target | Verified by |
       |---|---|---|
-      | Naive floors | majority + seeded random runs included | macro-F1 exposes what accuracy hides |
-      | Classical anchor | TF-IDF + LogisticRegression always reported | `baseline_tfidf_logreg` row |
-      | HPO discipline | seeded Optuna study, best params persisted | `reports/hpo_study.json` |
-      | Selection discipline | HPO model must beat artifact on test or lose | `reports/selection.json` |
-      | Reproducibility | seeded end-to-end, CPU-feasible | bit-exact validation scores on re-run |
-      | Headline scale | full 120k fine-tune on laptop GPU (MPS) | test macro-F1, wall-clock documented |
-
-      **Business summary:** The working rule: a small, reproducible,
-      rigorously selected model is worth more than a larger undocumented
-      one, because a number you cannot audit cannot justify a budget.
-      Every run is seeded so it reproduces exactly on a laptop, the
-      simple classical baseline is always reported alongside the neural
-      models, and selection is disciplined — a tuned model ships only if
-      it beats the existing artifact on the held-out test set. Every
-      number in this project can be re-derived in an afternoon, which is
-      precisely what a skeptical reviewer needs.
-
+      | Naive floors | majority + seeded random | macro-F1 exposes what accuracy hides |
+      | Classical anchor | TF-IDF + LogisticRegression | `baseline_tfidf_logreg` |
+      | HPO discipline | seeded Optuna, persisted parameters | `reports/hpo_study.json` |
+      | Selection disclosure | test-based choice reported explicitly | `reports/selection.json` |
+      | Reproducibility | seeded, laptop-feasible runs | bit-exact validation re-runs |
+      | Full-data evidence | 120k fine-tune on Apple MPS | test macro-F1 + wall clock |
   - id: data
     text_md: |
-      AG News (HF `fancyzhx/ag_news`) is a real corpus of 127,600 news items
-      (headline + description) across World, Sports, Business and Sci/Tech,
-      collected for research purposes; license recorded as `unknown` on the
-      HF card. Dataset card:
-      [data-registry/ag-news](https://amm-ds.github.io/portfolio/data-registry/ag-news/)
-      — 120k rows in the standard train split.
+      AG News contains 127,600 headline + description items across four classes;
+      the standard train split has 120k rows. Its license is recorded as
+      `unknown`. See [the dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/).
 
-      Two bounded views are used, both seeded and per-class stratified:
-
-      - **CPU ladder:** a 4,000-train / 1,000-test subsample (seeds
-        42/43/44; 250 test rows per class) sized for laptop and CI
-        reproducibility, documented in `DESIGN.md`.
-      - **Headline run:** the full 120k train split (108k train / 12k val
-        after the same stratified carve-out), behind an accelerator gate
-        described in `README.md`.
-
-      **Business summary:** The corpus is a real, public collection of
-      127,600 news items, and its license posture is documented honestly
-      as unknown rather than assumed — the kind of candor a legal review
-      checks first. Every subsample is seeded and class-stratified, and
-      the snapshot carries a sha256 checksum contract, so the exact data
-      any model saw can be reconstructed bit-for-bit. These are exactly
-      the artefacts a compliance review asks for before a model is
-      allowed near production data.
-
+      - **Bounded ladder:** seeded, stratified 4,000-train / 1,000-test sample
+        (3,600 train / 400 validation after carve-out; 250 test rows per class).
+      - **Full run:** 108k train / 12k validation from the full 120k split,
+        evaluated on the same bounded 1,000-row test sample.
   - id: eda
     text_md: |
-      The subsample preserves the source balance exactly — each split is
-      uniformly 25% per class (`eda_class_balance`), so no class can win by
-      prior alone. Text lengths cluster at 20–50 words, well inside the
-      128-token truncation budget, so the cap discards almost nothing and
-      model-to-model comparisons stay fair.
-
-      - **Balance:** every split is exactly 25% World / Sports / Business /
-        Sci/Tech.
-      - **Length:** train texts cluster at 20–50 words; the 128-token cap
-        truncates almost nothing.
-      - **Consequence:** metric differences between runs are model
-        effects, not artifacts of class priors or truncation.
-
-      **Business summary:** Headline metric first: macro-F1 is the
-      average per-topic score, the measure accuracy can hide behind —
-      a model can score well on accuracy simply by guessing the most
-      common topic. Every split here is exactly 25% per topic, so no run
-      can win by exploiting class imbalance, and texts are short enough
-      that the length cap truncates almost nothing. The claim therefore
-      survives a shift in the production class mix — though per-class
-      monitoring stays mandatory once the model is deployed, because
-      real traffic will not stay this tidy.
+      The bounded splits are exactly 25% per class, and texts cluster at 20–50
+      words, within the 128-token budget. This removes class-prior and material
+      truncation differences within the bounded comparison; it does not remove
+      the bounded-versus-full training confound.
     figures: [eda_class_balance]
-
   - id: training
     text_md: |
-      All neural candidates train through one hand-written PyTorch loop:
-      AdamW, a manual linear warmup+decay LR schedule, per-epoch validation
-      macro-F1, patience-1 early stopping that restores the best state
-      dict — fully seeded, nothing hidden inside a framework `Trainer`.
+      One hand-written PyTorch loop implements AdamW, linear warmup/decay,
+      validation macro-F1 and patience-1 early stopping with best-state restore.
 
       ```mermaid
       flowchart LR
-          A[Tokenized batch] --> B[AdamW step]
-          B --> C[LR schedule]
-          C --> D[val macro-F1]
-          D --> E{Improved?}
-          E -- yes --> F[save best state]
-          E -- no --> G[Patience minus 1]
-          G -- zero --> H[early stop]
-          F --> I[next / done]
-          H --> I
+          A[Tokenized batch] --> B[AdamW + LR schedule]
+          B --> C[val macro-F1]
+          C --> D{Improved?}
+          D -- yes --> E[save best state]
+          D -- no --> F[patience / early stop]
       ```
 
-      - **Bounded rungs:** DistilBERT with defaults, DistilBERT retrained
-        on the Optuna winner (seeded TPE, median pruning, 12 trials over lr
-        / warmup / weight decay / epochs), and roberta-base as a second
-        encoder — each with its own tokenizer and batched dynamic padding
-        (~3x epoch speedup at the fixed 128 cap).
-      - **Headline run:** the full 120k fine-tune on Apple-Silicon MPS,
-        measured at ~18–27 min/epoch.
-      - **Why two epochs?** a 4-epoch probe of the headline run (early
-        stopping disabled, same hypers, seed 42) peaks at val macro-F1
-        0.9477 in epoch 3 — +0.0003 over epoch 2, −0.0003 by epoch 4, with
-        val loss rising again while train loss keeps falling: extra epochs
-        overfit, not improve (`reports/history_probe4.json`).
-
-      The `training_curve`, `epochs_probe` and `hpo_history` figures track
-      loss, the epoch-budget probe, and per-trial validation F1.
-
-      **Business summary:** The neural models train through one
-      hand-written loop rather than a black-box framework trainer: the
-      optimizer, the learning-rate schedule, the early-stopping rule,
-      and every seed are visible code, not defaults. A buyer auditing
-      the training process can read each decision and its test instead
-      of trusting a vendor's summary. The epoch budget was set by
-      measurement — a four-epoch probe showed validation quality peaks
-      at epoch 3 within noise, so extra epochs overfit rather than
-      improve.
+      - **Bounded rungs:** default DistilBERT, an Optuna-retrained candidate
+        (seeded TPE, median pruning, 12 trials) and roberta-base, with dynamic
+        padding (~3× epoch speedup at the fixed cap).
+      - **Full run:** Apple-Silicon MPS, measured at ~18–27 min/epoch.
+      - **Epoch probe:** with early stopping disabled, validation macro-F1
+        peaks at 0.9477 in epoch 3 (+0.0003 over epoch 2, −0.0003 by epoch 4)
+        while validation loss rises; extra epochs overfit rather than improve.
     figures: [training_curve, epochs_probe, hpo_history]
-
   - id: evaluation
     text_md: |
-      Every run is scored on the same untouched 1,000-row stratified test
-      split with the platform's standard classification metrics; macro-F1
-      is the headline because on a balanced set it exposes the
-      majority-class failure mode that accuracy masks. Selection is
-      explicit: the reported `distilbert_tuned` run is whichever of the
-      HPO-retrained model and the earlier artifact scores higher on this
-      split, decision persisted in `reports/selection.json`.
+      All runs use the same 1,000-row stratified test sample and standard
+      classification metrics. **That sample is not untouched by model
+      selection:** `distilbert_tuned` is whichever of the HPO-retrained model
+      and earlier artifact has higher test macro-F1, persisted in
+      `reports/selection.json`. The bounded tuned comparison is therefore
+      selection-biased and needs a fresh holdout for an unbiased final claim.
 
-      ```mermaid
-      flowchart LR
-          A[Untouched test split] --> B[Predict all runs]
-          B --> C[Metrics + macro-F1]
-          C --> D{HPO vs artifact}
-          D -- higher test F1 --> E[Reported as distilbert_tuned]
-          D -- lower test F1 --> F[Artifact kept]
-      ```
-
-      The documented caveat: validation wins did not transfer — threshold
-      and HPO choices that lifted validation macro-F1 (0.8880 → 0.8953)
-      scored lower on test (0.9011 vs 0.9021). The
-      `confusion_matrix_selected` figure shows where the selected model
-      still errs.
-
-      **Business summary:** Every candidate — baseline, tuned, and
-      retrained alike — is scored on the same untouched test split, and
-      that split is used for nothing else. This is an anti-marketing
-      device: nobody can cherry-pick the test set that flatters their
-      model, and no tuning decision leaks through it. Selection is
-      explicit and persisted — when validation-time tuning gains did
-      not transfer to test (a documented null result), the earlier
-      artifact kept the title. The numbers survive a skeptical re-run,
-      which is the point.
+      Validation gains did not transfer: HPO improved validation macro-F1
+      0.8880 → 0.8953, but the retrained candidate scored 0.9011 on test versus
+      the artifact's 0.9021, so the artifact won by 0.0010. This negative result
+      and the selection limitation are reported rather than hidden.
     figures: [confusion_matrix_selected]
-
   - id: results
     text_md: |
-      Headline: the full 120k DistilBERT fine-tune on Apple-Silicon MPS
-      (seed 42, 2 epochs) reaches **test macro-F1 0.9460** (val 0.9433 →
-      0.9464; ~18–27 min/epoch).
+      The full run reaches **0.9460 test macro-F1** (validation 0.9433 →
+      0.9464; ~18–27 min/epoch). Its +4.4 pp gap over the bounded model is
+      measured, but data size, device and training setup vary together; it is
+      not a controlled estimate of data scaling alone.
 
       | # | run | accuracy | f1_macro |
       |---|---|---|---|
@@ -200,13 +88,12 @@ sections:
       | 3 | `baseline_tfidf_logreg` | 0.8720 | 0.8714 |
       | 4 | `encoder_b` (roberta-base) | 0.8980 | 0.8982 |
       | 5 | `distilbert` (bounded) | 0.9020 | 0.9021 |
-      | 6 | `distilbert_tuned` (bounded) | 0.9020 | 0.9021 |
+      | 6 | `distilbert_tuned` (bounded; test-selected) | 0.9020 | 0.9021 |
       | 7 | `distilbert_full_120k` | 0.9460 | 0.9460 |
 
-      Serving economics — **probe-hardware numbers, not the headline**
-      (measured on this Apple M4 Max, CPU batch=1 end-to-end, n=200; $1/M-in +
-      $4/M-out card; int8 quality on a 2000-row train sample — hardware and
-      sample specifics are in `reports/latency_probe.json`):
+      Serving is probe evidence from an Apple M4 Max (CPU batch=1, n=200;
+      $1/M-input + $4/M-output tokens). Int8 quality uses a 2,000-row **train**
+      sample, not test.
 
       | variant | MB | p50 ms | pred/s | $/1k | acc | f1 |
       |---|---|---|---|---|---|---|
@@ -215,113 +102,58 @@ sections:
       | `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
       | `distilbert_full_120k` int8 | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
 
-      **int8:** halves size, no measured quality loss (sample macro-F1
-      0.9627 → 0.9637), but slower at batch=1 (13.2 vs 8.7 ms) — memory,
-      not speed.
+      - **Measured ladder:** 0.1000 → 0.2533 → 0.8714 → 0.9021 → 0.9270
+        (20k evidence) → 0.9460 macro-F1. Treat the last two increments as
+        run-to-run evidence, not controlled scaling effects.
+      - **HPO null result:** seed bests 0.8953 / 0.8852 / 0.8926 (mean
+        0.8910 ± 0.0042); gains sit inside seed noise and did not transfer.
+      - **Calibration:** validation-fitted temperature T=0.843 cuts test ECE
+        0.0467 → 0.0133 (−71%) without changing predictions.
+      - **Serving trade-off:** int8 halves size with no measured loss on its
+        train sample (0.9627 → 0.9637) but is slower at batch=1.
+      - **Error floor:** Business → Sci/Tech counts fall 24/250 → 15/250 →
+        14/250 across 3.6k / 20k / full runs; hybrid headlines remain difficult.
 
-      - **Scaling curve:** 0.10 → 0.2533 → 0.8714 → 0.9021 → 0.9270 (20k
-        evidence) → **0.9460** (+4.4 pp over bounded) on the untouched
-        test split — laptop-GPU-confirmed headroom.
-      - **HPO null result:** validation macro-F1 rose 0.8880 → 0.8953 but
-        test scored 0.9011 vs the artifact's 0.9021; seeds 42/43/44 give
-        0.8953 / 0.8852 / 0.8926 (mean 0.8910 ± 0.0042) — inside seed
-        noise; the artifact kept the `distilbert_tuned` title.
-      - **Error floor:** Business → Sci/Tech stays dominant (24/250 →
-        15/250 → 14/250, visible per class in `per_class_f1_comparison`) —
-        hybrid tech-business headlines; more data shrinks the frequency,
-        not the pair (labeling-ambiguity floor).
+      `reports/history_fulldata.json` is the shipped two-epoch full-data run;
+      `reports/history_probe4.json` is a separate four-epoch probe with early
+      stopping disabled. Their early epochs differ because total step count
+      changes the LR schedule; the probe is not a better headline.
 
-      **Full-data run vs 4-epoch probe — which history is which.** Both
-      history files come from the *same full 120k data*, not from the
-      bounded subsample: `reports/history_fulldata.json` is the shipped
-      headline run (2 epochs, early stopping enabled, val macro-F1
-      0.9433 → 0.9464), while `reports/history_probe4.json` is a probe of
-      that same full-data fine-tune with the budget raised to 4 epochs
-      and early stopping disabled (seed 42, val macro-F1 peaking at
-      0.9477 in epoch 3). The probe's epochs 1–2 do not bit-match the
-      shipped run — the LR schedule depends on the total step count —
-      and its +0.0003 third-epoch blip is inside run-to-run noise. Read
-      the probe as "extra epochs overfit", not as a better result.
-
-      **Misclassified examples** (selected model = `distilbert_tuned`,
-      wave-2 artifact per `reports/selection.json`, on the untouched
-      1,000-row bounded test split; reproduced from the committed model
-      + test split, predictions bit-match `metrics.json` — full list in
-      `reports/misclassification_examples.json`):
+      Representative bounded-test errors from the test-selected artifact
+      (full list in `reports/misclassification_examples.json`):
 
       | text snippet | true | predicted |
       |---|---|---|
-      | "Amazon Snaps Up China's Largest Web Retailer (NewsFactor) NewsFactor - Amazon.com (Nasdaq: AMZN) has said it will buy Joyo.com Limited --…" | Business | Sci/Tech |
-      | "India's Tata makes powerful debut Shares in Indian software services giant Tata Consultancy close 16 higher on their market debut, raisi…" | World | Business |
-      | "Dell Exits Low-End China Consumer PC Market HONG KONG (Reuters) - Dell Inc. &lt;DELL.O&gt;, the world's largest PC maker, said on Monda…" | Sci/Tech | Business |
-      | "Future Doctors, Crossing Borders Students at the Mount Sinai School of Medicine learn that diet and culture shape health in East Harlem." | World | Sci/Tech |
-      | "U.S. Misses Cut in Olympic 100 Free ATHENS, Greece - Top American sprinters Jason Lezak and Ian Crocker missed the cut in the Olympic 100…" | World | Sports |
-      | "103 arrests for Internet fraud, related crimes since June: US (AFP) AFP - US authorities arrested at least 103 suspects and filed 117 cri…" | Sci/Tech | World |
-
-      **Business summary:** The decision here is funding: a full-data
-      fine-tune of the neural model beats the classical TF-IDF approach
-      by about 7.5 percentage points of macro-F1 (0.9460 vs 0.8714 on
-      the held-out test set) at roughly $0.07 per 1,000 items scored
-      under the reference pricing card. That trade is worth it when
-      routing accuracy pays — misrouted items reach the wrong desk — and
-      not when latency or interpretability dominates, where TF-IDF at
-      0.2 milliseconds per item remains the right answer. Two honest
-      caveats ship with the number: the compressed int8 variant halves
-      model size with no measured quality loss but is actually slower
-      at batch size 1, and the tuning gains over defaults sat inside
-      seed noise — only wins surviving all three checks are reported.
+      | "Amazon Snaps Up China's Largest Web Retailer…" | Business | Sci/Tech |
+      | "India's Tata makes powerful debut…" | World | Business |
+      | "Dell Exits Low-End China Consumer PC Market…" | Sci/Tech | Business |
+      | "Future Doctors, Crossing Borders…" | World | Sci/Tech |
+      | "U.S. Misses Cut in Olympic 100 Free…" | World | Sports |
+      | "103 arrests for Internet fraud…" | Sci/Tech | World |
     figures: [per_class_f1_comparison]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_full_120k]
-
   - id: conclusions
     text_md: |
-      Bag-of-words knows which words predict a topic; encoders know how
-      they compose — worth ~7.5 pp macro-F1 here at full data, and the gap
-      widens with scale. Just as important, the disciplined HPO + selection
-      process prevented shipping a "better-on-validation" model that was
-      actually worse on test.
-
-      - **What survives scrutiny:** the scaling curve (0.9021 → 0.9270 →
-        0.9460 test macro-F1) and the persistent Business → Sci/Tech
-        labeling-ambiguity floor.
-      - **Limits:** the bounded ladder is a deliberately small
-        showcase (≤4 epochs, 128-token cap, CPU budget); the HPO studies
-        are small-budget demonstrations whose gains sit inside seed noise;
-        and full-data timings are Apple-Silicon-MPS-specific (~18–27
-        min/epoch), though the quality result is not.
-
-      **Results quality:** the headline is strong — 0.9460 macro-F1 on an
-      untouched 1,000-row test split with a monotone scaling ladder behind
-      it (0.9021 → 0.9270 → 0.9460). The known weaknesses are the
-      non-transferring HPO gains (inside seed noise, reported as a null
-      result) and the Business → Sci/Tech labeling floor — both stated
-      above, not left for a client to discover.
-
-      **Business summary:** Treat this project as the auditable lower
-      bound of a scaling decision, not as the ceiling. The 0.9460
-      headline on an untouched test split, with a monotone ladder behind
-      it (0.9021 at bounded scale, 0.9270 at 20k, 0.9460 at full data),
-      gives a concrete basis for funding full-scale training — more
-      data demonstrably keeps paying. The known weaknesses are stated,
-      not buried: tuning gains that did not transfer to test, and a
-      Business-versus-Sci/Tech confusion floor caused by genuinely
-      ambiguous headlines. And TF-IDF remains the right answer where
-      latency or interpretability dominates — that is a routing
-      decision, not a research verdict.
+      Full-data DistilBERT delivers the strongest measured score, while TF-IDF
+      remains the low-latency, interpretable option. HPO did not beat defaults
+      beyond noise, int8 bought memory rather than speed, and Business/Sci-Tech
+      ambiguity persists. The bounded selection and bounded-versus-full
+      confound limit causal or unbiased-holdout interpretations; fresh-holdout
+      selection and controlled scale runs are the next evidence needed.
     metrics_keys: [distilbert_full_120k]
 roadmap:
   - status: delivered
-    text: Full 120k fine-tune — 0.9460 test macro-F1 (val 0.9433→0.9464), ~18–27 min/epoch on Apple-Silicon MPS.
+    text: Full 120k run — 0.9460 test macro-F1; measured MPS timings and epoch probe.
   - status: delivered
-    text: Multi-seed HPO null result — 0.8953/0.8852/0.8926 (mean 0.8910±0.0042), inside seed noise; artifact kept.
-  - status: delivered
-    text: Temperature scaling — T=0.843 on validation cuts test ECE 0.0467→0.0133 (−71%) with zero change to predictions.
-  - status: delivered
-    text: 20k scaling rung — 0.9270 test macro-F1 (+2.5 pp over bounded 0.9021); superseded by the full-120k headline.
+    text: HPO, seed-noise and calibration evidence — null tuning result retained; ECE −71%.
+  - status: remaining
+    text: Fresh-holdout model selection and controlled data-scale comparisons.
+  - status: deferred
+    text: Multi-label Business/Sci-Tech routing — a different label and metric contract.
 figure_captions:
-  eda_class_balance: The bounded subsample mirrors the source corpus exactly — every split is uniformly 25% World / Sports / Business / Sci/Tech (left), and train texts cluster at 20–50 words (right). No run can win by class prior, and the 128-token cap truncates almost nothing.
-  training_curve: Train/validation loss and validation macro-F1 per epoch for the full-120k headline run. Val macro-F1 plateaus within two epochs while train loss keeps falling — extra epochs overfit, not improve.
-  epochs_probe: "The 4-epoch probe of the full-120k run (seed 42, early stopping disabled): train loss falls while val macro-F1 peaks at 0.9477 in epoch 3 (+0.0003 over epoch 2, −0.0003 by epoch 4). The measured gain does not materialize — a plateau, not progress."
-  hpo_history: Validation macro-F1 of every trial in the seeded 12-trial Optuna study, with the running best overlaid. Best val 0.8953 — but the gain over defaults sits inside seed noise and did not transfer to test.
-  confusion_matrix_selected: Confusion matrix of the selected model on the untouched 1,000-row stratified test split. Business → Sci/Tech stays the dominant off-diagonal pair — hybrid tech-business headlines, a labeling-ambiguity floor that more data shrinks in frequency but does not remove.
-  per_class_f1_comparison: Per-class F1 of the selected model against the TF-IDF baseline on the bounded test split. The encoder lead is broad, and the residual gap concentrates in Business/Sci-Tech — the same labeling-ambiguity floor the confusion matrix shows.
+  eda_class_balance: The bounded splits are uniformly 25% per class and train texts cluster at 20–50 words. Class priors and the 128-token cap do not explain the bounded differences.
+  training_curve: Full-120k train/validation loss and validation macro-F1. Validation quality plateaus within two epochs while training loss keeps falling.
+  epochs_probe: The four-epoch full-data probe peaks at validation macro-F1 0.9477 in epoch 3 (+0.0003, then −0.0003). The plateau and rising validation loss indicate overfitting, not a better headline.
+  hpo_history: Seeded 12-trial Optuna validation macro-F1 and running best. Best validation 0.8953 did not transfer to test and sits inside seed noise.
+  confusion_matrix_selected: Confusion matrix for the test-selected bounded model on the 1,000-row test sample. Business → Sci/Tech remains the dominant off-diagonal pair.
+  per_class_f1_comparison: Per-class F1 for the test-selected bounded model and TF-IDF baseline. The residual gap concentrates in Business/Sci-Tech.

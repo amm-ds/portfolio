@@ -7,7 +7,7 @@ showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-ope
 
 > **TL;DR:** subscription businesses where a missed churner costs five times a
 > false alarm, and the base rate makes "do nothing" look accurate.
-> The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs that do-nothing
+> The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs that contact-everyone
 > policy, with a bootstrap 95% CI of [−485, −343].
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
@@ -18,7 +18,7 @@ showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-ope
 Churn is asymmetric economics for any subscription business: a missed
 churner costs about five times a false alarm. This project delivers a
 production-grade decision pipeline that cuts that decision cost by **41.9%**
-(1,035 → 601) vs a do-nothing policy on real IBM telco data:
+(1,035 → 601) vs a contact-everyone policy on real IBM telco data:
 
 A single self-contained `sklearn.Pipeline` — custom `OutlierCapper` and
 `MissingValueIndicator` transformers, median imputation, scaling, one-hot
@@ -48,7 +48,7 @@ threshold.
 | selected (cost-HPO XGB) | 0.150 | 0.8387 | 0.6512 | 0.028 | 619 |
 | selected + isotonic | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
 
-![Cost-aware selection plus isotonic calibration cuts business cost 41.9% versus the do-nothing policy](../assets/projects/05-ml-pipeline-churn/business_cost_curve.png){ width="100%" }
+![Cost-aware selection plus isotonic calibration cuts business cost 41.9% versus the contact-everyone policy](../assets/projects/05-ml-pipeline-churn/business_cost_curve.png){ width="100%" }
 
 - Cost-aware HPO selected **XGBoost** on real data (synthetic track's winner
   was a logistic) — the winner tracks the data. Deliverable vs naive:

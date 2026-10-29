@@ -79,19 +79,19 @@ same search picked a logistic - the winner tracks the data.
 
 | run | threshold | ROC-AUC | accuracy | P (macro) | R (macro) | F1 (macro) | ECE | business cost |
 |---|---|---|---|---|---|---|---|---|
-| naive majority | cost-optimal | 0.5000 | **0.735** ⚠️ | 0.1327 | 0.5000 | 0.2098 | - | 1,035 |
+| naive base rate (contact-everyone optimum) | 0.000 | 0.5000 | 0.265 | 0.1327 | 0.5000 | 0.2098 | - | 1,035 |
 | logreg, default | 0.500 | 0.8292 | 0.731 | 0.6999 | 0.7503 | 0.7022 | - | 691 |
 | logreg, tuned | 0.300 | 0.8292 | 0.620 | 0.6861 | 0.7253 | 0.6151 | - | 611 |
-| selected (cost-HPO XGB) | 0.150 | 0.8387 | 0.663 | 0.6890 | 0.7398 | 0.6512 | 0.028 | 619 |
-| selected + isotonic | 0.175 | 0.8317 | 0.690 | 0.6982 | 0.7539 | 0.6745 | **0.016** | **601** |
+| selected raw (cost-HPO XGB) | 0.150 | 0.8387 | 0.663 | 0.6890 | 0.7398 | 0.6512 | 0.028 | 619 |
+| selected + isotonic (served) | 0.175 | 0.8317 | 0.690 | 0.6982 | 0.7539 | 0.6745 | **0.016** | **601** |
 
 Key findings:
 
-- **Against the naive floor, the deliverable cuts business cost 1,035 -> 601
-  (-41.9%) at t=0.175.** Paired bootstrap: **-416, 95% CI [-485, -343] -
-  significant**. The naive row's "accuracy" is 0.735: never alarming is the
-  accuracy trap, inverted - on a 26.5% base rate the ignore-all policy looks
-  accurate and burns 1,035 cost units.
+- **Against the naive contact-everyone comparator, the deliverable cuts
+  business cost 1,035 -> 601 (-41.9%) at t=0.175.** Paired bootstrap: **-416,
+  95% CI [-485, -343] - significant**. Contact-none is a different policy with
+  0.735 accuracy; the naive constant-probability run instead minimizes cost by
+  contacting everyone (0.265 accuracy).
 - **The winner changes on real data.** XGBoost beats the logistic family on
   CV business cost (the synthetic track's winner); after isotonic calibration
   it also holds the holdout cost optimum (601 vs the tuned logistic's 611 -
@@ -103,18 +103,21 @@ Key findings:
 - **The operating point does not transfer - the procedure does.** Synthetic
   t*=0.700 vs telco t*=0.175: the threshold must be re-derived per regime on
   the cost curve; re-tuning alone moved the logistic 691 -> 611.
-- **Fairness slices** (at t=0.150): recall is uniform across gender
-  (0.90 both) and *higher* for senior citizens (0.97 vs 0.88 - they churn at
-  41.7% and are easier to catch). The real gap is by contract: month-to-month
-  recall 0.98 vs one-year 0.47 and two-year 0.00 - the cost-optimal threshold
-  is tuned to the dominant short-contract churn and misses nearly all 45
-  long-contract churners in the holdout. That is a business choice (they cost
-  little at FN=5), not a bug - and the cost-surface figure shows exactly
-  where a different FN cost would move it.
+- **Raw-model fairness slices (not the served policy):** at raw XGB t=0.150,
+  recall is 0.902 female / 0.906 male and 0.969 senior / 0.880 non-senior.
+  Contract recall is 0.976 month-to-month, 0.472 one-year and 0.000 two-year:
+  the raw model misses **19 of 36** one-year churners and **all 9** two-year
+  churners. The served model is isotonic-calibrated at t=0.175, so these raw
+  counts do not describe its decisions.
+- **Same-holdout limitation:** thresholds are selected and their costs are
+  reported on this same holdout. The bootstrap holds thresholds fixed and does
+  not measure selection instability; fresh data is needed for an independent
+  policy estimate.
 - Permutation importance on the selected model ranks `tenure_months`,
-  `monthly_charges`, and `contract` first - matching the EDA splits
+  `monthly_charges`, and `contract` first - matching the real-telco EDA splits
   (churners: ~74 vs ~61 mean monthly charges, ~18 vs ~38 months tenure;
-  fiber-optic internet churns at 41.9%).
+  fiber-optic internet churns at 41.9%). The outlier and NaN examples elsewhere
+  in the project are synthetic CI fixtures, not real-telco EDA findings.
 
 ## Reproduce
 
@@ -157,28 +160,21 @@ uv run pytest projects/05-ml-pipeline-churn -q
   data bug to silently bypass the guards built during training.
 - **DQ as a gate, not a hope**: the pipeline halts loudly
   (`DQGateError`) if null rates or ranges drift out of contract.
-- **Models are products, not Kaggle scores**: every claim is relative to a
-  visible naive floor (cost 440 → 282, −35.9%, bootstrap 95% CI [−237, −87]),
-  classification metrics are paired with calibration and a business-cost
-  curve, and the deliverable includes the *operating threshold* (0.700), not
-  just AUC.
-- **Honest uncertainty**: permutation importance carries error bars; cost
-  deltas carry paired bootstrap CIs; the `age_was_missing`-style flags are
-  evaluated rather than assumed useful.
-- **Full reproducibility**: seeded end-to-end run in ~10 s (including HPO),
-  with DVC stages, a dataset contract (SHA-256), and CI-friendly tests.
+- **Models are products, not Kaggle scores**: on the real telco holdout, cost
+  falls 1,035 → 601 (−41.9%) versus contact everyone, with bootstrap 95% CI
+  [−485, −343] for the paired delta. The served operating threshold is 0.175;
+  classification metrics, calibration and the cost curve remain visible.
+- **Honest uncertainty and limitations**: permutation importance carries error
+  bars; cost deltas carry fixed-threshold paired bootstrap CIs; same-holdout
+  threshold selection and raw-versus-served fairness are labeled explicitly.
+- **Full reproducibility**: seeded real-data and synthetic-CI tracks, DVC
+  stages, a dataset contract (SHA-256), and offline tests.
 
 ## Roadmap
 
-Delivered in waves 7 + 11: cost-aware HPO objective, `prepare --input
-client.csv` onboarding, paired bootstrap CIs, and XGBoost/LightGBM arms in
-the selection (logistic still wins).
-
-Remaining:
-
-- **Real-data track**: swap the synthetic generator for a public telco churn
-  export behind the same `DatasetContract`, or onboard a client extract
-  directly via `prepare --input`.
-- **Wider boosting search spaces**: the wave-11 arms used deliberately tight
-  ranges to stay fast; budget-aware widening (early stopping, successive
-  halving) is the next step if a client needs the last few percent.
+- **Delivered:** real telco data behind DQ gates; cost-aware HPO selected
+  XGBoost; isotonic serving at t=0.175; client CSV onboarding.
+- **Remaining:** freeze the threshold before scoring and validate cost and
+  served-policy fairness on fresh data.
+- **Deferred:** drift and seasonality analysis until a time-stamped source is
+  available; wider boosting searches only with a defined compute budget.

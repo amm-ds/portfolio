@@ -1,245 +1,219 @@
 project_id: 09-agentic-workflows
 headline: >-
-  A hosted Plan→Execute→Critique workflow passed 15/15 tuning tasks on every
-  deterministic grader — answers, exact tool set, step budget, latency — and
-  its held-out split at 7/7 answers plus 3/3 graceful refusals, at median
-  18.2 s per task and ~85k in / ~12k out tokens per suite (~$0.13
-  cloud-equivalent); the held-out set is small (n=10), so generalization is
-  verified on unseen prompts, not proven at scale.
+  A hosted Plan→Execute→Critique workflow passed 15/15 tuning tasks on all
+  deterministic graders, plus 7/7 held-out answers and 3/3 refusal probes, at
+  median 18.2 s and ~$0.13 cloud-equivalent per tuning suite; this bounded
+  evaluation supports a supervised pilot, not production readiness or a
+  generalization guarantee.
 data_note: >-
-  Mostly synthetic data — a 12-document "Atlas Valley" field-station handbook
-  authored in code — plus one real arm: project 01's Wikipedia slice (3,589
-  chunks over five topics, CC BY-SA) queried read-only through 01's persisted
-  FAISS index.
+  The suite uses a synthetic 12-document Atlas Valley handbook plus read-only
+  retrieval over project 01's 3,589-chunk, five-topic Wikipedia slice (CC
+  BY-SA).
 limits: >-
-  Bounded research-ops scenarios only — lookup, arithmetic, conversion, and
-  note-keeping over two fixed corpora with capped retries and budgets; this
-  does not show open-ended autonomy, and the held-out set is small (n=10,
-  3 should-fail probes).
+  Evaluation covers fixed research-ops tasks over two corpora with capped
+  retries and budgets; the held-out sample is only n=10 (including 3 refusal
+  probes), so broader autonomy and unseen-domain performance remain untested.
 figure_captions:
   suite_summary: >-
-    Graded outcomes (passed/total) across the three splits: the 15-task
-    tuning suite on four graders, 7 held-out answer tasks on two, and 3
-    should-fail probes on refusal grade. Everything passes — 15/15 on
-    every tuning grader, 7/7 held-out answers with exact tool sets, 3/3
-    graceful refusals.
+    Deterministic grades by split: 15/15 tuning tasks on each of four graders,
+    7/7 held-out answers with exact tool sets, and 3/3 graceful refusals. The
+    small held-out split is a check, not a generalization guarantee.
   node_waterfall: >-
-    Per-task stacked bars of node visits (plan / execute / critique);
-    each segment is one visit, its width that visit's latency, with the
-    60 s budget marked by the arrow. Median run is 18.2 s and p95 31.1 s
-    — all 15 tasks finish far under budget; retries appear as new
-    labelled segments (#2, #3), never as one stretched visit.
+    Node visits per task, stacked by latency, against the 60 s budget. Median
+    latency is 18.2 s and p95 is 31.1 s; retries appear as separate labelled
+    visits rather than one stretched segment.
   tool_usage_matrix: >-
-    Captured calls per task (columns) per tool (rows); a bright cell is a
-    planned call, a bright column under a rarely-expected tool is the
-    exact-set miss driver. This run is clean — 30 captured calls, 100%
-    call precision and tool recall, zero unplanned invocations (the
-    previous run had 8).
+    Captured calls by task and tool. The final tuning run records 30 planned
+    calls, 100% call precision and tool recall, and zero unplanned
+    invocations; an earlier run had 8 unplanned calls.
   cost_latency_bars: >-
-    Stacked input/output tokens per task (bars, left axis), the
-    cloud-equivalent cost labelled above each bar, and latency against
-    the dashed 60 s budget line (right axis). The whole 15-task suite
-    cost $0.13 of the $2.00 cap (~$0.0088 per task mean) at a labelled rate
-    card — a cost estimate, never a billed amount.
+    Input/output tokens, cloud-equivalent cost, and latency per task against
+    the 60 s budget. The 15-task suite totals $0.13 of the $2.00 cap
+    (~$0.0088 per task mean) at the labelled rate card, not billed spend.
 roadmap:
-- status: delivered
-  text: >-
-    Plan→Execute→Critique graphs on pydantic-graph, typed WorkflowState,
-    bounded retries, critique loop-back — 73 tests.
-- status: delivered
-  text: >-
-    Evaluation harness: 15 tuning + 10 held-out tasks (3 refusal probes),
-    deterministic graders, fully offline.
-- status: delivered
-  text: >-
-    HITL checkpointing: typed ApprovalRequest + full state serialize; CLI
-    resumes approve or reject-with-feedback.
-- status: delivered
-  text: >-
-    Cross-project retrieval: search_documents on 01's FAISS index
-    read-only; t15 grades a two-article multi-hop lookup.
+  - status: remaining
+    text: Expand held-out tasks and refusal probes across more corpora, models, and repeated runs.
+  - status: remaining
+    text: Run a supervised pilot with reviewer outcomes and failure monitoring before unattended use.
+  - status: deferred
+    text: Open-ended autonomy remains out of scope until coverage and approval controls are validated.
 sections:
-- id: background
-  text_md: "Single-shot agents are the demo; workflows are the product. A one-shot answer can impress in a demo, but real work is a chain of dependent steps — a mistake in the middle corrupts everything after it, which is why unsupervised runs need grading, budgets, and checkpoints. This project\nturns the agentic-AI flagship into multi-step, stateful workflows —\nplanning, tool orchestration, bounded retries, self-critique, and human\ncheckpoints — under the same typed contracts and evaluation discipline as\nthe rest of the platform. The question is not whether an LLM can answer,\nbut whether it can be trusted through a multi-step procedure.\n\n- **Explicit graphs over free-form loops** — a pydantic-graph\n  Plan→Execute→Critique workflow makes every transition, retry bound, and\n  loop-back auditable code, not prompt folklore.\n- **Deterministic grading** — a 15-task tuning suite graded by offline,\n  code-level evaluators turns \"the agent works\" into per-task pass rates a\n  client can inspect; a 10-task held-out set guards against prompt\n  overfitting.\n- **Bounded autonomy** — retries are capped, latency and cost budgets are\n  enforced per task and per suite by the spend ledger, and consequential\n\
-    \  actions pause at a human checkpoint serialized to disk.\n\nThe result is an agent stack that fails loudly and measurably rather than\nfluently.\n\n**Business summary:** A one-shot answer can impress in a demo, but
-real work is a chain of dependent steps, and a mistake in the middle
-corrupts everything after it. So the question a client should ask is not
-whether an AI model can answer, but whether it can be trusted through a
-multi-step procedure without a human watching each step. That is a
-decision about where agents may run unsupervised, and it needs graded
-evidence against explicit cost and time budgets — not a demo. This
-project builds that evidence: workflows whose every transition, retry
-limit, and pause-for-approval is auditable code, graded per task by
-deterministic evaluators.\n"
-  figures: []
-  metrics_keys: []
-- id: objectives
-  text_md: "- **Typed multi-step graphs with recoverable failures** — typed state\n  threaded through Plan→Execute→Critique; validation failures take a\n  bounded repair path, never an unbounded retry loop.\n- **Step-level evaluation criteria with per-run budgets** — answer\n  success, exact tool-set selection, step budget, and a 60 s per-task\n  latency budget, accumulated per node with per-node step traces.\n- **Auditable human-in-the-loop** — a checkpoint node serializes the full\n  typed state to disk so a human can approve, reject with feedback, or\n  audit the run after the fact.\n- **Deterministic grading** — graders are code-level and run fully\n  offline; no LLM judge. Cost is a labelled cloud-equivalent estimate\n  enforced by ledger caps ($0.25 per task, $2.00 per suite), never a\n  billed amount.\n\n**Business summary:** The deliverable is an operating decision, not a
-prototype: which tasks may run end-to-end unattended, which must pause
-at a human checkpoint before consequential actions, and what each run
-costs in time and money. Every claim is backed by a recorded run, graded
-by code-level evaluators — answer correctness, exact tool selection,
-step count, and a 60-second per-task latency budget — rather than by an
-AI judge marking its own homework. Cost is capped by a spend ledger
-($0.25 per task, $2.00 per suite) as a labelled estimate, so budgets are
-enforced during the run, not discovered on the invoice.\n"
-  figures: []
-  metrics_keys: []
-- id: data
-  text_md: 'Two corpora back the suite. The synthetic domain is a "research ops"
+  - id: background
+    text_md: |
+      **Bounded workflows make agent behavior inspectable; they do not make it
+      production-safe by default.** This project replaces a free-form loop
+      with a typed Plan→Execute→Critique graph, deterministic tools, explicit
+      retry limits, budget enforcement, and human checkpoints.
 
-    world: the Atlas Valley field-station handbook, 12 in-code documents
+      The evaluation asks a narrow question: can the hosted workflow complete
+      fixed research-ops procedures with the planned tools and graceful
+      refusals? Passing that check is evidence for a supervised pilot, not a
+      basis for unattended deployment.
+    figures: []
+    metrics_keys: []
+  - id: objectives
+    text_md: |
+      **Build an auditable candidate for supervised operation.**
 
-    covering fuel, solar, water, batteries, comms, caches, and cold storage.
+      - Thread typed state through Plan→Execute→Critique with bounded repair
+        and critique loop-back.
+      - Grade answer success, exact tool-set selection, step count, and a 60 s
+        per-task latency budget with deterministic code.
+      - Enforce $0.25 per-task and $2.00 per-suite cloud-equivalent ledger
+        caps; these are estimates, not billed amounts.
+      - Serialize human-approval checkpoints so consequential runs can pause,
+        resume, or be rejected with feedback.
+    figures: []
+    metrics_keys: []
+  - id: data
+    text_md: |
+      **Deterministic corpora and tools make the expected answers exact.** The
+      synthetic Atlas Valley handbook contains 12 in-code documents. The real
+      arm reuses project 01's persisted FAISS index read-only: 3,589 Wikipedia
+      chunks across climate, renewable energy, aviation, machine learning, and
+      photosynthesis.
 
-    The real-data arm reuses project 01''s Wikipedia slice: 3,589 chunks over
+      | tool | implementation | deterministic basis |
+      |---|---|---|
+      | `calculator` | locked-down AST evaluator | fixed arithmetic |
+      | `unit_convert` | fixed conversion table | table lookup only |
+      | `search_handbook` | keyword search | fixed 12-document corpus |
+      | `search_documents` | FAISS + MiniLM over project 01 | pre-built, read-only index |
+      | `note_store` | per-run notebook | same input, same note |
+      | `math_*` toolset | `PrefixedToolset` composition | fixed functions, no name collisions |
 
-    five topics (climate, renewable energy, aviation, machine learning,
+      Tasks live in `data/tasks.json` and `data/tasks_heldout.json`; recorded
+      runs are graded offline. Suite-integrity tests pin expected answers to
+      actual tool outputs.
+    figures: []
+    metrics_keys: []
+  - id: eda
+    text_md: |
+      **Tool traces exposed behavioral failures that answer accuracy alone
+      missed.** Five task categories exercise lookup, calculation, conversion,
+      multi-step chaining, and note-keeping over one to three tools.
 
-    photosynthesis), retrieved through 01''s persisted FAISS index — read-only,
+      | category | typical chain |
+      |---|---|
+      | lookup | `search_handbook` / `search_documents` |
+      | calculation | `search_handbook` → `calculator` |
+      | conversion | `unit_convert` |
+      | multi-step | 2–3 tools |
+      | note-keeping | `note_store` |
 
-    no re-indexing. Every tool is deterministic, so every ground truth in the
+      An earlier hosted run made 8 unplanned calls: `note_store` on 4 tasks,
+      `calculator` on 2, and `search_documents` on 2. The traces linked them
+      to planner “supplement” steps and scratchpad-friendly tool wording.
+      Tightening those contracts yielded zero unplanned calls in the final
+      run—evidence on this suite, not proof that the behavior is solved
+      elsewhere.
+    figures:
+      - tool_usage_matrix
+    metrics_keys: []
+  - id: training
+    text_md: |
+      **The executable graph, not model training, is the artifact.**
 
-    suite is exact and the whole evaluation runs offline. Tasks and expected
+      ```mermaid
+      graph LR
+          U[user] --> P[Plan]
+          P --> E[Execute]
+          E -->|repair ≤ max retries| E
+          E --> C[Critique]
+          C -->|revise, ≤1| E
+          C -->|pass| R[WorkflowResult]
+          E -->|retries exhausted| F[End failure]
+      ```
 
-    answers live in `data/tasks.json` (tuning) and `data/tasks_heldout.json`
+      Critique revises through Execute, never Plan, and audits tools against
+      the plan. Consequential runs pause at a typed approval gate:
 
-    (held-out); graded run records land in `data/run_records.json`.
+      ```mermaid
+      graph LR
+          P[Plan] --> H[Approval gate]
+          H -->|approve| E[Execute]
+          H -->|reject + feedback| P
+      ```
 
+      Tool descriptions are behavioral contracts: the AST-locked calculator
+      rejects non-arithmetic work, conversion uses fixed factors, document
+      retrieval fails loudly if project 01's index is absent, and `note_store`
+      is called only when recording is requested. Per-call traces capture
+      name, arguments, latency, result size, and success.
+    figures: []
+    metrics_keys: []
+  - id: evaluation
+    text_md: |
+      **Run and grading are separate, so a live run can be re-scored offline
+      without another model call.** Fifteen tuning tasks use deterministic
+      `pydantic-evals` graders for answer keywords, exact tool set, step
+      budget, and latency; no LLM judge is used.
 
-    | tool | implementation | why it is deterministic |
+      - `data/run_records.json` supports reproducible offline grading.
+      - The ledger resets per suite and enforces task and suite caps through
+        live budget limits.
+      - Ten held-out tasks (7 answers + 3 should-fail probes) check prompt
+        overfitting and refusal behavior; `RefusalSuccess` requires a stated
+        refusal without a crash or fabricated number.
+      - Offline tooling decomposes expected, extra, and missing calls.
+      - Offline tests cover graph behavior, checkpoints, tools, documents,
+        budgets, capture, and graders.
 
-    |---|---|---|
+      This design supports bounded evaluation and a supervised pilot. It does
+      not estimate performance on open-ended tasks or new domains.
+    figures:
+      - cost_latency_bars
+    metrics_keys:
+      - agentic_suite
+  - id: results
+    text_md: |
+      **The hosted run passed every bounded check.** On `kimi-for-coding`,
+      plain `run-all` with per-call capture produced 15/15 tuning passes on
+      answer success, exact tool set, step budget, and latency budget.
 
-    | `calculator` | locked-down AST evaluator | fixed arithmetic, no model call |
+      - 30 captured calls; call precision 100%, tool recall 100%, and zero
+        unplanned invocations.
+      - Median latency 18.2 s; p95 31.1 s against the 60 s budget.
+      - ~85k input + ~12k output tokens; $0.13 total of the $2.00 cap
+        (~$0.0088 per task mean), cloud-equivalent rather than billed.
 
-    | `unit_convert` | fixed conversion table | table lookup only |
+      Two tuning tasks were re-scoped and disclosed: t15 added `calculator`
+      for the 119-year arithmetic gap, and t05 clarified “before inverter
+      losses” because both 38.4 and 36.9 kWh were defensible under the old
+      wording.
 
-    | `search_handbook` | keyword search over 12 docs | corpus is in code |
+      | held-out split | n | result |
+      |---|---|---|
+      | answer tasks | 7 | answer success 7/7; exact tool set 7/7; 12 planned calls |
+      | should-fail probes | 3 | graceful refusal 3/3 |
 
-    | `search_documents` | FAISS + MiniLM over 01''s index | pre-built index, read-only |
+      The first held-out run caught h10 inventing a 1 kg/L conversion basis;
+      tightening conversion docstrings produced a stated refusal. This is a
+      useful negative finding, but n=10 remains too small for a generalization
+      claim.
 
-    | `note_store` | per-run in-memory notebook | same input, same note |
+      The recorded t15 trace shows the intended chain over project 01's real
+      corpus: two `search_documents` lookups followed by
+      `calculator(expr='2022 - 1903')`, answer 119, zero retries, 31.1 s, and
+      7,709 input / 862 output tokens. A separate checkpoint record demonstrates
+      pause, reject-with-feedback, and re-plan behavior; neither demonstrates
+      unattended production operation.
+    figures:
+      - suite_summary
+      - node_waterfall
+    metrics_keys:
+      - agentic_suite
+  - id: conclusions
+    text_md: |
+      **The evidence supports a supervised pilot with explicit boundaries.**
+      Typed graphs make transitions auditable, deterministic graders make this
+      suite reproducible, and tool traces expose failures that fluent answers
+      can hide.
 
-    | `math_*` toolset | composed via `PrefixedToolset` | two toolsets, zero name collisions |
-
-
-    **Business summary:** Every tool in the suite is deterministic —
-    fixed arithmetic, fixed conversion tables, keyword search over a
-    fixed corpus — so every expected answer is exact and the whole
-    evaluation runs offline. Ground truths cannot silently drift,
-    because suite-integrity tests pin expected answers to actual tool
-    outputs. For a client this is the trust anchor: correctness is
-    pinned to verifiable code, not to a model''s fluency on the day.
-
-    '
-  figures: []
-  metrics_keys: []
-- id: eda
-  text_md: 'The corpus is small and fully enumerable, which is the point: five task
-
-    categories exercise one to three tools each, and expected answers are
-
-    pinned to actual tool outputs by suite-integrity tests — ground truths
-
-    cannot silently drift from the domain.
-
-
-    | category | what it exercises | typical chain |
-
-    |---|---|---|
-
-    | lookup | retrieval (handbook + real corpus) | `search_handbook` / `search_documents` |
-
-    | calculation | doc-grounded arithmetic | `search_handbook` → `calculator` |
-
-    | conversion | unit translation | `unit_convert` |
-
-    | multi-step | chained tool calls | 2–3 tools |
-
-    | note-keeping | notebook state | `note_store` |
-
-
-    Per-call tool traces make over-calling visible as `tool_usage_matrix`.
-
-    On an earlier hosted run `note_store` fired on 4 tasks that never asked
-
-    for it and `search_documents` on 2 — the exact-set miss driver grading
-
-    recorded. The traces also showed *why*: the planner added "supplement"
-
-    steps, and `note_store`''s docstring invited scratchpad use. The final run
-
-    shows zero unplanned calls — the matrix is the x-ray that made the fix
-
-    verifiable.
-
-
-    **Business summary:** The task suite is composed deliberately: five
-    categories, each exercising one to three tools, so the grading can
-    say not just whether the agent passed but where its behavior is
-    risky. Per-call tool traces did exactly that — they showed the
-    planner calling tools nobody asked for, and showed why: tool
-    descriptions that invited scratchpad use. After rewording, the
-    final run has zero unplanned calls. The takeaway for a client: with
-    reliable hosting, the failures left are behavioral — extra-tool
-    noise that traces make visible and fixable — not infrastructural.
-
-    '
-  figures:
-  - tool_usage_matrix
-  metrics_keys: []
-- id: training
-  text_md: "The workflow *is* the artifact — a pydantic-graph\nPlan→Execute→Critique→End over typed `WorkflowState`, one agent per node:\n\n```mermaid\ngraph LR\n    U[user] --> P[Plan]\n    P --> E[Execute]\n    E -->|repair ≤ max retries| E\n    E --> C[Critique]\n    C -->|revise, ≤1| E\n    C -->|pass| R[WorkflowResult]\n    E -->|retries exhausted| F[End failure]\n```\n\nA static SVG rendering of this typed graph (including the approval-gate lane)\nships with the docs page at `docs/assets/projects/09-agentic-workflows/workflow_graph.svg`.\n\nEvery transition and loop bound in that graph is executable code;\nCritique `revise` loops back to **Execute** (never Plan) and audits tools\nagainst the plan. Consequential runs pause at a human checkpoint (typed\nstate on disk) and resume along the same graph:\n\n```mermaid\ngraph LR\n    P[Plan] --> H[Approval gate]\n    H -->|approve| E[Execute]\n    H -->|reject + feedback| P\n```\n\n**Tool design — each tool is a contract:** the `calculator` is\nAST-locked (cross-unit questions go to `unit_convert`, never an invented\ndensity); `search_documents` mounts 01's FAISS index read-only (a missing\nindex fails loudly).\
-    \ Traces turned docstrings into behavioral contracts:\n`note_store` said \"working memory\" and ran unrequested on 4 tasks —\nrewording it and giving Critique the plan/tools audit removed all 8\nunplanned calls. Wording is behavior.\n\n**Toolset** (per-call traces: name, args, latency, size, ok):\n\n| tool | signature | guardrail | this run |\n|---|---|---|---|\n| `calculator` | `(expr) -> float` | AST only; exp ≤ 64 | 11 / 11 (0 unplanned) |\n| `unit_convert` | `(value, from, to) -> float` | fixed tables; no invented factors | 3 / 3 |\n| `search_handbook` | `(query, top_k=3) -> list[str]` | 12-doc corpus in code | 13 / 13 |\n| `search_documents` | `(query, top_k=3) -> list[str]` | read-only FAISS (01) | 2 / 2 |\n| `note_store` | `(ctx, action, note=\"\") -> list[str]` | only when \"record\" is requested | 1 / 1 |\n"
-  figures: []
-  metrics_keys: []
-- id: evaluation
-  text_md: "Fifteen tuning tasks graded by `pydantic-evals` with deterministic\nevaluators: answer success (all expected keywords present), tool selection\n(exact tool-set match), step budget, and a 60 s per-task latency budget.\nToken usage is accumulated per node (`StepTrace`); cost is a labelled\ncloud-equivalent estimate at the reference card, enforced by the spend\nledger. Code lives in `evals.py` (suite + grading), `figures.py`\n(builders) and `report.py` (report/metrics) after the audit-P1 split.\n\n- **Run and evaluate are separate DVC stages** — `run` needs a live\n  model; `evaluate` is fully offline from `data/run_records.json`, so a\n  run is paid for once and graded reproducibly forever.\n- **No LLM judge** — grading is code, which means the same run always\n  yields the same scores.\n- **Budget wiring** — the ledger resets at suite start, caps the suite at\n  $2.00, and a $0.25 per-task cap aborts a task mid-run; `budget_limits`\n  rides every live call; `cost_latency_bars`\
-    \ renders the per-task\n  tokens/cost/latency profile.\n- **Held-out set** — `run-all --heldout` / `evaluate --heldout` grade 10\n  unseen tasks (7 answer + 3 designed-to-fail probes) into\n  `metrics.json detail.heldout`; probes grade `RefusalSuccess` (no crash,\n  stated refusal), not keywords.\n- **Trajectory decomposition** — `detail.tooling` decomposes the\n  exact-set score offline: per-tool expected vs extra calls and unused\n  expected slots.\n- **Tests** — 73 offline tests cover the graph, HITL, tools, documents,\n  budget paths, tool capture, eval machinery, and the held-out graders.\n\n**Business summary:** Quality is graded, not demoed: fifteen tuning
-tasks scored by deterministic, code-level evaluators — answer keywords,
-exact tool-set match, step budget, latency budget — with no AI judge
-involved, so the same run always yields the same scores. Running and
-grading are separate stages: a run is paid for once, then graded
-reproducibly forever from recorded traces. A held-out set of 10 unseen
-tasks — including 3 designed-to-fail probes — guards against prompt
-overfitting. For a client, that turns agent quality into a contract term
-with numbers attached, not a demo impression.\n"
-  figures:
-  - cost_latency_bars
-  metrics_keys:
-  - agentic_suite
-- id: results
-  text_md: "Hosted run on `kimi-for-coding`, plain `run-all`, per-call capture on:\n**15/15 ok, and all four graders 15/15 — answers, exact tool set, step\nbudget, latency budget**. `suite_summary` puts the whole verification\nstory in one chart: tuning 15/15 on every grader, held-out answers 7/7,\nshould-fail probes 3/3 refusals.\n\n- tool selection **15/15** exact-set (from 8/15 two waves ago): 30\n  captured calls, call precision **100%**, tool recall **100%** — zero\n  unplanned calls (the previous run had 8)\n- latency: median **18.2 s**, p95 31.1 s — comfortably inside the 60 s\n  budget (`node_waterfall`)\n- tokens: ~85k in + ~12k out; suite total **$0.13** of the $2.00 cap\n  (~$0.0088 per task mean, cloud-equivalent)\n\nTwo tasks were honestly re-scoped while tuning — disclosed, not silent\ngrader edits: t15's expected set gained `calculator` (the 119-year gap is\narithmetic the suite itself demands elsewhere), and t05's prompt now pins\n\"before inverter losses\" (both 38.4 and 36.9\
-    \ kWh were defensible readings\nof the old wording).\n\n**Held-out set** (audit finding 6): 10 unseen tasks over the same\ncorpora, run only after the tuning set was clean. Small by design —\nn=10 with 3 should-fail — it checks what the tuning set cannot: prompt\noverfitting, and failure behavior.\n\n| split | n | result |\n|---|---|---|\n| answer tasks | 7 | answer success 7/7, exact tool set 7/7, 12 calls all planned |\n| should-fail probes | 3 | graceful refusal 3/3 (no crash, no fabricated number) |\n\nAn example trace, replayed from the committed run record (`data/run_records.json`, task t15 — the real-data multi-hop lookup over 01's Wikipedia index; 31.1 s, 7,709 in / 862 out tokens, zero retries) and the committed human checkpoint (`data/checkpoint.json`):\n\n| step | node | action | intermediate output |\n|---|---|---|---|\n| 1 | Plan | 3-step plan: two `search_documents` lookups + one `calculator` gap | 217 out tokens, 4.1 s |\n| 2 | Execute | `search_documents(query='Wright brothers first controlled sustained flight powered aircraft year')` | 1,908 chars, ok, 11.9 s |\n| 3 | Execute | `search_documents(query='wind power supplied over 2000 TWh electricity year', top_k=3)` | 1,973 chars, ok, 11.9 s |\n| 4 | Execute | `calculator(expr='2022 - 1903')` | `119`, ok, 0.0 s |\n| 5 | Execute | draft answer, self-confidence 0.99 | — |\n| 6 | Critique | audit of tools used vs plan; verdict pass | 4.1 s |\n| 7 | Approval gate | HITL checkpoint — 'Convert 48 km to miles' paused at `awaiting_approval`; the committed state records a reject-with-feedback → re-plan cycle | human decision point, state on disk |\n\nThe probes matter: the first held-out run caught h10 confabulating (\"40 kg\n≈ 40 L via a 1 kg/L basis\"); tightening the conversion docstrings turned\nit into a stated refusal. A pass-only suite can never see that failure\nclass.\n\n**Business summary:** The hosted run passed everything: 15 of 15
-tuning tasks on all four graders — answers, exact tool selection, step
-budget, latency — with held-out answers at 7 of 7 and
-designed-to-fail probes refused gracefully at 3 of 3. Median latency
-was 18.2 s against the 60 s budget, and the whole suite cost $0.13 of
-the $2.00 cap — about $0.0088 per task mean as a labelled cloud-equivalent
-estimate, never a billed amount. Two tasks were honestly re-scoped
-during tuning and the changes are disclosed in the report, not hidden.
-At roughly $0.01 and 18 s per task with enforced budgets, graded agents
-become an operating tier a business can delegate to — with human
-checkpoints for the irreversible steps.\n"
-  figures:
-  - suite_summary
-  - node_waterfall
-  metrics_keys:
-  - agentic_suite
-- id: conclusions
-  text_md: "Three lessons generalize beyond this domain:\n\n- **Explicit graphs buy auditability** — every transition, retry, and\n  loop bound is code, and the same typed state that drives execution\n  serializes verbatim into the human-checkpoint file.\n- **Deterministic graders make agent quality measurable** — answer\n  success and exact tool-set selection surfaced real behavior differences\n  between a flaky local 32B and a hosted coding model without an LLM\n  judge — and then verified the fix.\n- **Tool docstrings are behavioral contracts** — the 8/15 exact-set miss\n  was caused by wording (\"working memory\", planner \"supplements\"), not by\n  model capability; per-call traces located it, prompt/docstring surgery\n  removed it, and the held-out set confirmed the fix generalizes.\n\nThe machinery is trustworthy — 73 tests cover the graph, HITL, tools,\ndocuments, budget paths, tool capture, eval harness, and held-out graders.\n\n**Results quality: strong on answers, tool discipline,\
-    \ and budgets.**\n15/15 on every grader under enforced cost caps is production-grade; the\nheld-out set adds the honest caveat (n=10, 3 probes) that this verifies\ngeneralization on unseen prompts and refusal behavior, not just the\ntuning tasks. The residual risks are known: retrieval fuzziness on the\nreal corpus and probe coverage, both addressed by more data, not more\nmachinery.\n\n**Business summary:** The recommendation is narrow on purpose:
-adopt this pattern where actions are consequential and auditable —
-human checkpoints for irreversible steps, enforced budgets for
-everything else. The evidence supports it with an honest caveat
-attached: 15 of 15 on every grader is production-grade, but the
-held-out set is small (n=10, 3 probes), so it verifies generalization
-on unseen prompts and refusal behavior rather than proving it at
-scale. The residual risks are known and stated — retrieval fuzziness
-on the real corpus and probe coverage — and both are addressed by
-more data, not more machinery. One operating rule carries over
-directly: treat a small local model as a cheap profiling environment,
-not as a serving tier.\n"
-  figures: []
-  metrics_keys: []
+      **Results quality: promising within the evaluated envelope.** All 15
+      tuning tasks and 10 small held-out checks passed, but repeated-run
+      stability, retrieval fuzziness, new domains, and broader refusal coverage
+      remain unresolved. Human checkpoints and enforced budgets are pilot
+      controls, not production or generalization guarantees.
+    figures: []
+    metrics_keys: []

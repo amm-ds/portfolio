@@ -1,76 +1,48 @@
 project_id: 07-open-data-mobility
-headline: "On a strict Q4-2024 temporal holdout (584,855 zone-hours) the served
-  GBM forecasts next-hour taxi pickups at MAE 4.67 pickups/hour — 28.4% below
-  \"same hour last week\" — with a p90 staffing band covering 90.8% of realized
-  zone-hours against a 90% target; the uncertainty is measured too: sparse
-  N/A-borough zones under-cover at 84.7%, so bands there are flagged, not
-  trusted."
-data_note: "Real data: 41.2M NYC TLC yellow-taxi trips (2024, 12
-  checksum-pinned monthly Parquet files, ~1.5 GB compressed) joined with NOAA
-  GHCN-Daily weather (Central Park, public domain); both licensed for
-  commercial use and re-downloaded by the pipeline — the raw data is NOT
-  shipped in the repo."
-limits: "Does not show causal effects or horizons beyond one hour: one
-  vehicle class, one city, one year of associative hour-ahead forecasts;
-  weather elasticities are raw groupbys without hour-of-week normalisation,
-  and yellow-trained weights do not transfer to green-taxi demand without
-  per-service retraining."
+headline: >-
+  On the strict Q4-2024 holdout (584,855 zone-hours), served `gbm_tuned` reaches
+  MAE 4.676 pickups/hour, 28.3% below same-hour-yesterday persistence (MASE 0.763);
+  its p90 band covers 90.8% overall but only 84.7% in sparse N/A-borough zones.
+data_note: >-
+  Real 2024 data: 41.2M NYC TLC yellow-taxi trips in 12 checksum-pinned Parquet
+  files (~1.5 GB) joined with public-domain NOAA Central Park weather; raw data is downloaded, not shipped.
+limits: >-
+  One city, vehicle class, year and hour-ahead horizon; results are associative,
+  not causal, weather ratios lack hour-of-week normalization, and yellow-trained weights need per-service retraining.
 figure_captions:
   hour_borough_heatmap: >-
-    Mean pickups per zone-hour by hour of day × borough over the full-year
-    2024 curated grid — the demand surface every forecast below operates on.
-    Manhattan peaks at 103.7 pickups/zone-hour at 18:00 while the Bronx tops
-    out at 0.23; weekdays are twin-peaked everywhere (the line view is
-    `eda_trips_profile`, same committed numbers).
+    Full-year mean pickups by hour and borough. Manhattan peaks at 103.7
+    pickups/zone-hour at 18:00; the Bronx tops out at 0.23.
   zone_hour_heatmap: >-
-    Hour-of-week pickup demand for the top 30 zones by volume, grouped by
-    borough, for the week of 2024-10-07 (first full Monday of the test
-    window). Midtown's 18:00 weekday peak stands out while the airports run
-    flat around the clock.
+    Top-30-zone demand for the week of 2024-10-07. Midtown's weekday evening peak
+    contrasts with flatter airport demand.
   zone_demand_map: >-
-    Mean pickups per zone-hour for all 265 TLC zones across 2024, on official
-    TLC boundaries. Demand concentrates in the Midtown/Manhattan cores and at
-    JFK/EWR; the busiest zone averages 213.9 pickups/hour.
+    Full-year mean pickups for all 265 TLC zones on official boundaries. Demand
+    concentrates in Manhattan and at JFK/EWR; the busiest zone averages 213.9 pickups/hour.
   actual_vs_pred_top5: >-
-    Day-over-day actual (pink), GBM (teal) and TemporalNet (sky) pickups for
-    the five busiest zones on a 14-day test slice. Both models track the
-    daily shape; city-wide the served GBM scores MAE 4.67 vs 6.52 for "same
-    hour last week".
+    Fourteen days of actual, served-GBM and TemporalNet demand in the five busiest
+    zones. City-wide served `gbm_tuned` MAE is 4.676 versus 6.517 for same hour yesterday.
   borough_mae: >-
-    Test MAE by borough for every run, naive lag-24 persistence in grey.
-    Manhattan drives the absolute error simply because its volume is highest
-    — in the Bronx persistence still edges the GBM.
+    Test MAE by borough and run, with same-hour-yesterday lag-24 persistence in grey.
+    Manhattan's volume drives absolute error; persistence still edges the default GBM in the Bronx.
   zone_fan: >-
-    Per-zone forecast fans for the two busiest zones: GBM mean with the p90
-    band (shaded) against actuals, over the same 14-day window as the
-    city-wide band. The band carries the same 90.8% calibration.
+    Served-GBM mean and p90 band against actuals for the two busiest zones over
+    14 test days. City-wide empirical coverage is 90.8%.
   gbm_vs_nn: >-
-    Holdout run ladder — MAE bars with a MASE parity line (left) and MAPE
-    (right), naive lag-24 in grey. The served GBM removes 28.4% of error vs
-    persistence (MASE 0.76); the tuned xGB variant is best (−31.2%), and the
-    neural net wins MAPE only.
+    Q4 run ladder with same-hour-yesterday lag-24 in grey. Served `gbm_tuned` removes
+    28.3% of MAE (MASE 0.763); xGB is best on test at −31.2%, while the NN wins MAPE only.
   p90_band: >-
-    City-wide actual vs GBM mean and p90 upper band over 14 days of the test
-    window, summed across 265 zones. The band covers 90.8% of realized
-    zone-hours against a 90% target.
+    City-wide actual, served-GBM mean and p90 upper band over 14 test days.
+    The band covers 90.8% of zone-hours against a 90% target.
   weather_elasticity: >-
-    Ratio of mean pickups on rain (≥1 mm) vs dry hours, by borough, on the
-    test window. Rain cuts outer-borough demand 7–10% (Queens 0.92×, Staten
-    Island 0.93×) while Manhattan holds at 0.97× and EWR rises to 1.08× —
-    directional, not causal.
+    Raw rain-versus-dry pickup ratios on the test window. Outer-borough demand falls
+    7–10%, Manhattan holds at 0.97× and EWR rises to 1.08×; directional, not causal.
 sections:
   - id: background
     text_md: |
-      Taxi and ride-hail demand is the classic urban-mobility planning
-      problem: fleets must be staged before demand arrives, drivers shifted
-      between boroughs, and surge/pricing policies tuned hour by hour.
-
-      - **Every decision is a forecast:** staging and shift choices are
-        hour-ahead, zone-level demand estimates — a wrong one is either an
-        idle fleet or missed pickups.
-      - **The data is real and messy:** 41.2M NYC TLC yellow-taxi trips
-        (2024) joined with NOAA weather, processed under a laptop-scale
-        memory budget.
+      Stage taxis before demand arrives at zone-hour granularity. The pipeline
+      turns 41.2M raw trips into a zero-filled 265-zone × hour grid, a next-hour
+      forecast and a p90 staffing buffer.
 
       ```mermaid
       flowchart LR
@@ -79,355 +51,126 @@ sections:
           C --> D[staffing decisions]
       ```
 
-      That chain moves 41.2M raw trip events into a 2.33M-row
-      zone × hour demand grid, adds a p90 uncertainty band to the
-      next-hour forecast, and drives staffing and fleet decisions.
-
-      This project builds that forecast from the ground up on **real,
-      messy, public data** — not a clean Kaggle extract — and quantifies
-      how much weather moves the numbers a planner would act on: on a strict
-      future holdout the model removes 28.4% of forecast error vs "same hour
-      last week".
-
-      **Business summary:** Fleets must be staged and drivers shifted
-      before demand arrives, so every staging choice is an hour-ahead
-      bet on where pickups will happen — a wrong one is either an idle
-      fleet or missed revenue. The signal that de-risks that bet is a
-      demand forecast for each of the city's 265 taxi zones, hour by
-      hour, with an uncertainty band a dispatcher can staff against. On
-      real, messy public data — 41.2M trips joined with weather — this
-      project turns that guesswork into a scheduled decision, cutting
-      forecast error by 28.4% against the "same hour last week" rule on
-      a strict future holdout.
+      Served `gbm_tuned` reduces Q4 MAE by 28.3% versus the same-hour-yesterday
+      rule; sparse-zone coverage remains an explicit exception.
     figures: []
     metrics_keys: []
-
   - id: objectives
     text_md: |
-      The target is **next-hour pickup demand for every NYC taxi zone**
-      (265 zones), with two model families and a calibrated uncertainty band,
-      answering two business questions: how much better than "same hour
-      last week" do modern models get, and what does rain do to curb
-      demand?
+      Deliver next-hour demand for every zone plus a calibrated upper band, and
+      measure directional weather associations without calling them causal.
 
-      - **Point forecast plus buffer:** a gradient-boosted (GBM) mean
-        plus a calibrated **p90 (90th-percentile) upper band** per
-        zone-hour — the number a dispatcher can staff against.
-      - **Weather claims:** every weather statement is labelled
-        directional, not causal.
-      - **Success gates:**
-
-      | criterion | target | why it matters |
+      | criterion | target | reason |
       |---|---|---|
-      | MAE vs naive lag-24 | ≥ 20% reduction | clearly beats "same hour last week" |
-      | p90 band coverage | ≈ 90% (±2 pp) | buffers a client can staff against |
-      | peak RAM | < 8 GB | runs on a laptop, not a cluster |
-      | reproduction | one command, minutes of compute | auditable inside the client's environment |
-
-      The deliverable is a forecast plus a defensible buffer size, not a
-      leaderboard entry.
-
-      **Business summary:** The deliverable is a staffing decision, not
-      a leaderboard entry: expected demand per zone and hour, plus a
-      calibrated p90 upper band — the 90th percentile, the demand level
-      exceeded only about one hour in ten — which sizes how many extra
-      vehicles to hold. The targets are set to be decision-grade: beat
-      "same hour last week" by at least 20% on error, keep the band
-      within two points of its 90% target, and stay under an 8 GB memory
-      footprint so it runs on a laptop. A second question is answered
-      with care: what rain does and does not tell you — every weather
-      claim is labelled directional, not causal.
+      | MAE vs lag-24 | ≥20% reduction | beat same hour yesterday |
+      | p90 coverage | ≈90% (±2 pp) | defensible staffing buffer |
+      | peak RAM | <8 GB | laptop-scale pipeline |
+      | reproduction | one command, minutes | auditable reruns |
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
-
   - id: data
     text_md: |
-      Two public datasets, both licensed for commercial use and
-      re-obtainable by a single command:
+      - **NYC TLC yellow taxis:** 41.2M trips in 12 monthly 2024 Parquet files,
+        checksum-pinned and joined to the zone lookup ([dataset card](https://amm-ds.github.io/portfolio/data-registry/nyc-tlc/)).
+      - **NOAA GHCN-Daily:** Central Park precipitation, snowfall and temperature;
+        public domain, QC failures treated as missing ([dataset card](https://amm-ds.github.io/portfolio/data-registry/noaa-ghcn/)).
 
-      - **NYC TLC yellow-taxi trip records** — 12 consecutive monthly
-        Parquet files (2024-01 … 2024-12): 41.2M trips, ~1.5 GB
-        compressed, downloaded anonymously under NYC TLC terms of use and
-        checksum-pinned so any upstream republication fails loudly; joined
-        with the TLC taxi-zone lookup (LocationID → borough/zone). Dataset
-        card: [data-registry/nyc-tlc](https://amm-ds.github.io/portfolio/data-registry/nyc-tlc/).
-      - **NOAA GHCN-Daily** (Central Park station USW00094728, public
-        domain, US Government work) — daily precipitation, snowfall, and
-        max/min temperature; quality-control flags honoured, failed QC ⇒
-        treated as missing. Dataset card:
-        [data-registry/noaa-ghcn](https://amm-ds.github.io/portfolio/data-registry/noaa-ghcn/).
-
-      The bounded slice — one vehicle class, one city, one year — is the
-      declared laptop-friendly boundary: large enough to be credible at real
-      scale, small enough to re-run in minutes.
-
-      **Nothing raw ships in this repo.** A first run downloads ~1.5 GB — the
-      12 monthly Parquet files, the TLC zone lookup, and the NOAA extract —
-      before any stage executes, so budget a long download up front; every
-      later stage runs offline from the pinned local copies.
-
-      **Business summary:** Both inputs are public and licensed for
-      commercial use: a full year of New York yellow-taxi trip records —
-      41.2M trips across 12 monthly files — and a public-domain weather
-      station's daily precipitation and temperature. Each is
-      checksum-pinned, so any upstream republication that changes the
-      data fails loudly rather than silently shifting the results. The
-      whole analysis re-obtains by a single command — after a one-off
-      ~1.5 GB download, since no raw data ships in the repo — and reproduces
-      inside a client's own environment, with no proprietary data
-      dependency; the bounded slice (one vehicle class, one city, one
-      year) is deliberate — credible at real scale, small enough to
-      re-run in minutes.
+      The declared boundary is one vehicle class, city and year. No raw data ships:
+      the first run downloads ~1.5 GB, then later stages use pinned local copies.
     figures: []
     metrics_keys: []
-
   - id: eda
     text_md: |
-      Demand is sharply structured, and that structure drove the key
-      engineering decision.
-
-      - **Twin-peaked weekdays:** morning and evening rush profiles
-        flatten on weekends — visible in the `hour_borough_heatmap`
-        and the `zone_hour_heatmap`.
-      - **Geography concentrates volume:** Manhattan dominates while outer
-        boroughs and airports (EWR, "Unknown" zones) run sparse — mapped
-        directly in `zone_demand_map`.
-      - **Sparsity is the trap:** many zone-hours have **zero** pickups, so
-        the curated table is reindexed onto the complete zone × hour grid
-        (265 × 8,784 = 2,327,760 rows) with explicit zeros. Without it, lag
-        features silently misalign — "previous observed hour" is not t-1h
-        for a sparse zone.
-
-      Demand is hour-and-borough driven, not evenly spread.
-
-      **Business summary:** Demand is sharply structured: weekdays are
-      twin-peaked (morning and evening rush), weekends flatten, and
-      Manhattan dominates volume in every hour. The trap is sparsity —
-      many zone-hours have zero pickups — so the data is rebuilt on a
-      complete zone-by-hour grid with explicit zeros before any feature
-      is computed; without that, "last hour" silently means the wrong
-      thing in quiet zones. The staffing consequence: the 18:00
-      Manhattan peak and the flat, around-the-clock airports need very
-      different plans, and this analysis is what turns a city-wide
-      average into per-zone staffing decisions.
+      Weekdays are twin-peaked, weekends flatten, and Manhattan dominates volume.
+      Sparse zone-hours are the key engineering trap: the curated table reindexes
+      to all **265 × 8,784 = 2,327,760** zone-hours with explicit zeros before
+      lag computation. Otherwise “previous observed hour” silently is not t−1h.
     figures: [zone_hour_heatmap, zone_demand_map]
     metrics_keys: []
-
   - id: training
     text_md: |
-      The pipeline is lazy/streaming **Polars** end-to-end: raw trips are
-      never materialised.
+      Lazy/streaming Polars scans each month, applies DQ gates and aggregates to
+      zone-hours at ~2 GB observed peak RAM. Models are HistGradientBoosting mean
+      and p90 quantile variants plus a hand-written torch TemporalNet loop; the
+      target uses log1p space for multiplicative demand.
 
-      - **Bounded compute:** each month is scanned, cleaned, and
-        aggregated to the zone-hour grain under a ~2 GB RAM peak.
-      - **DQ contracts per month:** null-rate ceilings, range checks,
-        freshness, row-count floor; failures halt the pipeline loudly.
-      - **Models:** a gradient-boosting mean (sklearn
-        `HistGradientBoosting`, NaN-native) plus a **p90 quantile GBM** for
-        uncertainty bands; and **TemporalNet**, a small torch MLP trained
-        with a fully hand-written loop (DataLoader, Adam, gradient
-        clipping, early stopping). The target is trained in log1p space
-        because demand is multiplicative.
-      - **Leak-proof tuning:** splits are purely temporal (train <
-        2024-10-01 ≤ test) with a 24-hour-embargoed expanding-window CV
-        for early stopping; **Optuna** (30 GBM trials with median pruning,
-        10 NN trials) sees the last train-side validation fold only — the
-        test window is never touched.
+      Splits are strictly temporal (train < 2024-10-01 ≤ test), with 24-hour-
+      embargoed expanding-window CV. Optuna (30 GBM, 10 NN trials, plus challenger
+      arms) sees only train-side validation, never the Q4 test window.
 
       ```mermaid
       flowchart LR
-          A[per-month DQ gates] --> B[zone-hour grid]
+          A[monthly DQ gates] --> B[zero-filled grid]
           B --> C[lags + calendar]
-          C --> T[Optuna tuning]
-          T --> G[GBM mean, p90]
+          C --> T[train-side Optuna]
+          T --> G[GBM mean + p90]
           T --> N[TemporalNet]
-          G --> P[predictions.parquet]
+          G --> P[predictions]
           N --> P
       ```
-
-      The method section is the audit trail: no leakage inflates the
-      numbers before the headline error rates are trusted.
-
-      **Business summary:** The pipeline streams the raw data month by
-      month, never materialising the full 41.2M trips, with a memory
-      peak around 2 GB — it fits on a laptop, not a cluster.
-      Data-quality contracts run per month and halt the pipeline loudly
-      on violation, and tuning follows a leak-proof protocol: temporal
-      splits only, with the test window never touched. So a client can
-      read the method as an audit trail, verify the protocol, and re-run
-      the entire fit before betting a fleet plan on the model.
     figures: []
     metrics_keys: []
-
   - id: evaluation
     text_md: |
-      Holdout: **October–December 2024** (584,855 zone-hours), a pure
-      temporal split so drift is priced in by design; every model is
-      compared against **naive lag-24 persistence** (same hour last week).
+      The holdout is October–December 2024 (584,855 zone-hours), scored against
+      **naive lag-24 persistence: the same hour yesterday**, not last week.
+      Metrics include MAE/RMSE/MAPE/MASE, borough slices, permutation importance
+      and p90 coverage. Serving selection uses embargoed validation, not test.
 
-      - **Metric set:** MAE/RMSE/MAPE overall and per borough
-        (`borough_mae`), permutation importance of the tuned GBM, and p90
-        calibration against the 90% target; `actual_vs_pred_top5` shows the
-        fit on the busiest zones.
-      - **Leak-proof tuning:** Optuna saw only the last expanding-window
-        validation fold (24 h embargo, train side); the test window is
-        never touched.
-      - **Deployment-shaped protocol:** scoring the most recent quarter —
-        not a random shuffle — is the closest analogue to deploying
-        forward; `zone_fan` renders per-zone forecast fans for dispatcher
-        drill-down.
-
-      That question does not stop at delivery: monitoring is running software,
-      not a runbook. The scheduled Thursday `drift-observatory` workflow
-      (`.github/workflows/drift-observatory.yml`) scores each newly published
-      TLC month against the **persisted serving
-      model** (`mobility.cli drift-check --month YYYY-MM`, reports in
-      `reports/drift/`): light DQ gates, training-identical features, MAE
-      vs the pinned test baseline; beyond the ±15% tolerance it exits 1
-      and opens an issue per `docs/runbooks/drift-response.md`, while
-      unpublished months exit 2. First scored month (2024-11): +8.2% vs
-      pinned, inside tolerance — but that month is in-window, so this is a
-      wiring check; the observatory's real value starts with the first
-      unseen month.
-
-      **Business summary:** Evaluation mimics deployment: models are
-      scored on a pure future quarter rather than a random shuffle, so
-      drift is priced in by design, and every model is compared against
-      the "same hour last week" rule. Just as important is what happens
-      after delivery: a scheduled workflow scores each newly published
-      month of data against the persisted serving model, with light
-      quality gates and a ±15% tolerance. Breach the tolerance and the
-      check fails and opens a tracked issue with a response runbook —
-      the client inherits a monitoring contract, not just a model,
-      instead of waiting for the next quarterly review to find out the
-      forecast has gone stale.
+      The scheduled drift observatory scores newly published TLC months against
+      the persisted model with training-identical features and a ±15% tolerance;
+      regressions can open an issue through the response runbook. The first
+      2024-11 check is +8.2% and in-window, so it verifies wiring, not unseen drift.
     figures: [actual_vs_pred_top5, borough_mae, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
-
   - id: results
     text_md: |
-      Q4 holdout run ladder (pickups/hour); lower is better, ΔMAE vs the
-      naive lag-24 floor, bold row = ladder's best, ← served marks the
-      incumbent:
+      Q4 holdout ladder; ΔMAE is versus same-hour-yesterday lag-24. **Served is
+      `gbm_tuned`, selected on validation, not the better-on-test xGB challenger.**
 
       | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
       |---|---|---|---|---|---|
-      | naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | 1.063 | — |
-      | gbm_mean ← served | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
-      | gbm_tuned (30 trials) | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
-      | **gbm_xgb_tuned (15 trials) ← best** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
-      | gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
+      | naive_lag24 (same hour yesterday) | 6.517 | 23.367 | 89.4% | 1.063 | — |
+      | gbm_mean | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
+      | gbm_tuned ← served | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
+      | **gbm_xgb_tuned ← best test MAE** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
+      | gbm_lgbm_tuned | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
       | temporal_net | 5.510 | 19.686 | 54.5% | 0.899 | −15.5% |
-      | temporal_net_tuned (10 trials) | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
+      | temporal_net_tuned | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
 
-      MASE 1.0 = persistence parity; served GBM 0.76 (`gbm_vs_nn`).
+      MASE normalizes by in-sample lag-24 error; parity is 1.0.
 
-      - **The demand surface:** `hour_borough_heatmap` — Manhattan averages
-        103.7 pickups/zone-hour at its 18:00 peak while the Bronx tops out at
-        0.23; the ladder below is scored against that volume spread.
-      - **GBM tuning was flat:** tuned ≈ defaults within noise — tuning
-        will not rescue weak features.
-      - **Challengers lost on validation:** xgb beat the incumbent on the
-        Q4 test (−4.1% MAE) but lost on embargoed validation — `gbm_tuned`
-        stays served; serving keys on validation.
-      - **p90 calibration: 90.8% overall** (`p90_band`; target 90%):
-        Manhattan 91.4% / Queens 89.6% tight; sparse N/A zones 84.7%
-        under-cover (flagged, not filled); Staten Island 98.5%.
-      - **Importance is temporal**: lag_168 0.80 > lag_24 0.64 > lag_1
-        0.55 > hour 0.32; weather ≈ 0 for point MAE — a negative result,
-        reported not hidden; the payoff is the elasticity signal
-        (`weather_elasticity`): rain ≥1 mm drops outer-borough demand
-        7–10% (Queens 0.92×, Staten Island 0.93×), Manhattan holds 0.97×,
-        EWR rises 1.08× — directional, not causal.
-      - **Cross-service transfer:** yellow-trained GBMs lose MAE to green
-        persistence (0.296 vs 0.212; green demand is far sparser) but win
-        RMSE (−17%) and MAPE (−19%); per-service retraining is
-        recommended.
-      - **Serving is live:** the showcase API returned JFK (zone 132):
-        223.827 point / 251.811 p90.
-
-      **Business summary:** The served model removes 28.4% of forecast
-      error versus "same hour last week" on a strict future quarter, and
-      the challenger that scored better on the test window was kept out
-      of serving because it lost on embargoed validation — serving keys
-      on validation, not on the flattering split. The p90 band is
-      calibrated where it matters: 90.8% coverage overall against the
-      90% target, which yields a defensible buffer of extra vehicles per
-      hour. The exception is stated, not hidden: sparse zones with no
-      borough assignment under-cover at 84.7%, so staff from the band in
-      dense boroughs and fall back to simple rules in the flagged zones.
+      - **Tuning:** default and tuned GBMs are flat within noise. xGB beats the
+        incumbent on Q4 (−4.1% relative MAE) but loses on embargoed validation,
+        so `gbm_tuned` remains served. NN tuning buys −6.0% MAE at a −5.6% MAPE cost.
+      - **Uncertainty:** p90 coverage is 90.8% overall; Manhattan 91.4%, Queens
+        89.6%, sparse N/A zones 84.7% (under-cover) and Staten Island 98.5%.
+      - **Negative weather result for point accuracy:** importance is lag_168
+        0.80 > lag_24 0.64 > lag_1 0.55 > hour 0.32; weather is ≈0. Raw rain
+        ratios still show outer-borough drops of 7–10%, directional only.
+      - **Transfer:** yellow-trained GBMs lose green-taxi MAE to persistence
+        (0.296 vs 0.212) but win RMSE (−17%) and MAPE (−19%); retrain per service.
+      - **Serving probe:** the showcase API returned JFK zone 132 point 223.827
+        and p90 251.811.
     figures: [hour_borough_heatmap, gbm_vs_nn, p90_band, weather_elasticity]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
-
   - id: conclusions
     text_md: |
-      Lessons that transfer to the next engagement:
-
-      - **Scale is a discipline, not a budget:** 41.2M rows processed
-        month-by-month through streaming aggregation, observed peak under
-        3 GB — it runs on a laptop.
-      - **Data contracts earn trust:** per-month DQ gates caught a 2002
-        trip inside a 2024 file and 5–13% null passenger counts before they
-        could poison the lag features.
-      - **Baselines anchor the comparison:** the raw-count NN scored *below*
-        persistence until a log1p target transform fixed the loss
-        geometry — visible only because the naive baseline was always in
-        the comparison.
-      - **Calibration is a deliverable:** the p90 band turns a forecast
-        into a staffing number; the flagged N/A-zone under-coverage shows
-        where not to trust it.
-      - **Monitoring is software, not a runbook:** the drift observatory
-        scores every new TLC month against the persisted serving model and
-        opens an issue on regression (`docs/runbooks/drift-response.md`) —
-        2024-11 (+8.2%, within tolerance) is only the wiring check.
-      - The served model ships with a model card
-        ([MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md))
-        — intended use, slices, limits: the procurement one-pager — and the
-        persisted artifact follows the
-        [SERVING.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/SERVING.md)
-        contract (`projects/07-open-data-mobility/SERVING.md`).
-
-      **Results quality: strong on dense zones, caveated on sparse
-      ones.** The 28.4% error cut and 90.8% band hold on dense zones;
-      flagged N/A zones under-cover at 84.7% — staff from the band in
-      dense boroughs, fall back to persistence rules in flagged zones.
-
-      **Business summary:** The lesson for a buyer is about procurement
-      leverage: this level of rigour — 41.2M rows, a strict temporal
-      holdout, calibrated uncertainty bands, and an automated drift
-      monitor — runs on a laptop under a 3 GB memory footprint and
-      re-runs in minutes. Enterprise-grade discipline does not require
-      enterprise-grade infrastructure, and the re-runnability is the
-      guarantee: the client's own team can reproduce every number rather
-      than take them on trust. The known limits ship with the results —
-      sparse zones under-cover, and per-service retraining is
-      recommended when transferring to a different fleet — so the honest
-      caveats are part of the deliverable.
+      Streaming aggregation, explicit zero-filled grids and temporal validation
+      make the 41.2M-row result reproducible on a laptop. The served model's
+      measured result is **MAE 4.676, −28.3% versus same hour yesterday, MASE
+      0.763**. The p90 band is useful where calibrated and flagged where sparse;
+      weather and green-transfer findings remain bounded, and the first drift
+      report is only a wiring check. [MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md)
+      and `SERVING.md` document intended use and the artifact contract.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
-
 roadmap:
   - status: delivered
-    text: >-
-      Streaming Polars pipeline: 41.2M raw trips → zero-filled 265 × 8,784
-      zone×hour grid (<3 GB peak RAM).
+    text: Streaming 41.2M-trip pipeline with temporal ladder, p90 calibration and served `gbm_tuned`.
   - status: delivered
-    text: >-
-      Temporal holdout run ladder (naive vs GBM vs TemporalNet, tuned
-      variants) with p90 band calibrated at 90.8%.
-  - status: delivered
-    text: >-
-      Serving artifact (tuned GBM + p90 + zones) per SERVING.md — showcase
-      API forecast endpoint verified live.
-  - status: delivered
-    text: >-
-      Green-taxi transfer study: GBM loses MAE to persistence, wins RMSE —
-      per-service retraining recommended.
-  - status: delivered
-    text: >-
-      Drift observability: weekly scoring of new TLC months vs the pinned
-      model; 2024-11 +8.2%, within ±15%.
-  - status: delivered
-    text: >-
-      Zone-level geo views on TLC boundaries: demand choropleth, per-zone
-      MAPE residual map, per-zone forecast fan.
+    text: Green-transfer study and drift-observatory wiring; negative and in-window findings retained.
+  - status: remaining
+    text: Score the first genuinely unseen drift month and retrain per service before transfer.
+  - status: deferred
+    text: Causal weather claims and longer-horizon forecasts — different study contracts.

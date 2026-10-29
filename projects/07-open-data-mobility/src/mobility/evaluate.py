@@ -688,7 +688,7 @@ def fig_gbm_vs_nn(runs: list[RunResult]) -> go.Figure:
         line={"dash": "dot", "color": "#fbbf24"},
     )
     fig.add_annotation(
-        text="1.0 = 'same hour last week' parity",
+        text="1.0 = 'same hour yesterday' parity",
         xref="x domain",
         x=1.0,
         xanchor="right",

@@ -5,8 +5,8 @@ trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 
 > **TL;DR:** NYC taxi fleet planners staging vehicles and driver shifts one hour
 > ahead across 265 zones — demand must be forecast before it arrives.
-> The GBM removes **28.4% of forecast error** vs "same hour last week" on a
-> strict future holdout, with a 90.8%-calibrated p90 staffing band.
+> The served tuned GBM removes **28.3% of forecast error** vs "same hour
+> yesterday" on a strict future holdout, with a 90.8%-calibrated p90 staffing band.
 >
 > [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
 
@@ -20,28 +20,23 @@ temporal splits.
 
 ## Key results (temporal holdout Oct–Dec 2024, 584,855 zone-hours)
 
-The GBM removes **28.4% of forecast error** vs the "same hour last week"
-baseline on a strict future holdout — and the features, not the tuner, carry
-the signal: 30 trials of HPO moved MAE by 0.2%. Tuned challengers (xgb/lgbm)
-won on the Q4 test window but lost on the embargoed validation window, so the
-serving rule kept the incumbent — switching on test results would be test-set
-selection. MASE normalises by last-week persistence error (1.0 = no better
-than "same hour last week"); lower is better; ΔMAE vs naive is the error
-change vs the naive lag-24 floor. The bold row is the ladder's best
-(MAE/RMSE/MASE), and the served model is the `gbm_mean` incumbent, marked
-← served.
+The served `gbm_tuned` removes **28.3% of forecast error** vs the same-hour-
+yesterday lag-24 baseline. Tuning moves the default GBM only within noise;
+the xGB challenger wins on Q4 but loses on embargoed validation, so it is not
+promoted on test performance. MASE normalises by in-sample lag-24 error
+(1.0 = no better than persistence); ΔMAE is measured against the same floor.
 
 | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
 |---|---|---|---|---|---|
-| naive lag-24 (persistence) | 6.52 | 23.37 | 89.4% | 1.063 | — |
-| GBM mean ← served | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
-| GBM tuned (30 Optuna trials) | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
-| **GBM xgb tuned (15 trials) ← best** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
+| naive lag-24 (same hour yesterday) | 6.517 | 23.367 | 89.4% | 1.063 | — |
+| GBM mean | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
+| GBM tuned (30 Optuna trials) ← served | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
+| **GBM xgb tuned (15 trials) ← best test MAE** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
 | GBM lgbm tuned (15 trials) | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
 | TemporalNet (torch, log1p target) | 5.510 | 19.686 | 54.5% | 0.899 | −15.5% |
 | TemporalNet tuned (10 trials) | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
 
-![The served GBM removes 28.3% of forecast error vs last-week persistence while tuned challengers that won the Q4 test window lose on the embargoed validation window.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
+![The served tuned GBM removes 28.3% of forecast error vs same-hour-yesterday persistence while the xGB challenger that won the Q4 test window loses on embargoed validation.](../assets/projects/07-open-data-mobility/gbm_vs_nn.png){ width="100%" }
 
 p90 band calibration **90.8%** overall (target 90%; sparse N/A
 zones under-cover at 84.7%, flagged). Per-borough GBM MAE peaks in Manhattan

@@ -41,6 +41,7 @@ non-yellow service class.
 | temporal_net_tuned | 5.178 | 21.580 | 57.5% | 0.845 |
 
 MASE = MAE ÷ in-sample seasonal-naive-24 error (scale ≈ 6.13 pickups/hour).
+Lag 24 is the same hour yesterday, not the same hour last week.
 
 Served-model slices (gbm_tuned): per-borough test MAE — Manhattan 14.2,
 Unknown 4.5, Queens 2.2, Brooklyn 1.2, N/A 0.9, Bronx 0.5, EWR 0.3,

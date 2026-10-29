@@ -20,9 +20,9 @@ window (DESIGN.md §Hyperparameter optimisation):
 
 | run | MAE | RMSE | MAPE | MASE | ΔMAE vs naive |
 |---|---|---|---|---|---|
-| naive_lag24 (persistence) | 6.517 | 23.367 | 89.4% | 1.063 | — |
+| naive_lag24 (same hour yesterday) | 6.517 | 23.367 | 89.4% | 1.063 | — |
 | gbm_mean (defaults) | 4.667 | **15.096** | 62.0% | 0.761 | −28.4% |
-| gbm_tuned (30 Optuna trials) | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
+| **gbm_tuned (30 Optuna trials; served)** | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
 | gbm_xgb_tuned (15 trials) | 4.487 | 14.785 | 58.2% | 0.732 | −31.2% |
 | gbm_lgbm_tuned (15 trials) | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
 | temporal_net (64-32 MLP) | 5.510 | 19.686 | **54.5%** | 0.899 | −15.5% |
@@ -30,8 +30,8 @@ window (DESIGN.md §Hyperparameter optimisation):
 
 MAE/MAPE are scale-dependent; MASE normalises by the in-sample
 seasonal-naive-24 error (≈6.13 pickups/hour), so every run is readable as a
-fraction of "how wrong is last-week persistence" — 1.0 = no better than
-persistence.
+fraction of "how wrong is same-hour-yesterday persistence" — 1.0 = no better
+than persistence. Lag 24 is yesterday; lag 168 is the separate last-week feature.
 
 - **Challenger arms (wave 11):** xgb/lgbm tuned on the identical embargoed
   validation window (Apr 22+ fold, 500k-row cap, test untouched). Both lost to
@@ -49,9 +49,9 @@ persistence.
   default config was already near the achievable frontier. NN tuning bought a
   real −6.0% MAE (smaller 32-16 net, higher LR) at a −5.6% MAPE cost — the
   tuned NN is the reported NN on MAE, the untuned one remains best on MAPE.
-- **So what (client):** against "same hour last week", the production GBM
-  removes ~28% of forecast error city-wide; per-borough buffers can be sized
-  from the calibrated p90 band.
+- **So what (client):** against "same hour yesterday", served `gbm_tuned`
+  removes 28.3% of forecast error city-wide (MAE 4.676, MASE 0.763);
+  per-borough buffers can be sized from the calibrated p90 band.
 - **p90 uncertainty band calibration: 90.8%** overall (target 90%). By borough:
   Manhattan 91.4%, Queens 89.6%, Brooklyn 88.6%, Bronx 91.4% — tight; the
   sparse N/A zones under-cover at 84.7% (bands too tight where data is thin)

@@ -77,7 +77,8 @@ Verified on the train window (k=20 nearest-neighbor distance, euclidean):
   trace, so the blob lands inside the learned boundary. Test ROC-AUC 0.337.
 - **IsolationForest isolates by random partitioning**: a point in a distant
   blob gets isolated in a handful of splits no matter how dense the blob is.
-  Test ROC-AUC 0.916, PR-AUC 0.124 — the clear champion.
+  Untuned test ROC-AUC is 0.9158, but PR-AUC is only 0.1239; these are distinct
+  pointwise ranking metrics, and the later tuned OCSVM leads PR-AUC.
 
 Production remedies (roadmap): residual features against a rolling median to
 de-cluster anomalies, subspace ensembles, and cost-aware thresholds.
@@ -92,13 +93,14 @@ cleanest, most auditable story.
 - 0.5.0 (2026-10-15): wave-13 external audit — NAB real data becomes the
   primary track (`data_source="nab"` default; synthetic generator stays the
   labelled CI/fast path): 12 checksum-pinned series across
-  realAWSCloudwatch/realKnownCause/realTraffic with event-based metrics
-  leading (window detected if >=1 alert inside, lead tolerance 0; range
-  precision/recall/F1; PR-AUC primary, ROC-AUC secondary). Headline: overall
-  PR-AUC 0.527 / range-F1 0.157 (16/17 events, 1609 alerts, range precision
-  0.107) vs. synthetic PR-AUC 0.916 — the honest real-vs-synthetic delta:
-  injected anomalies are trivially separable, so the synthetic track cannot
-  expose the false-positive firehose. New figures `nab_timelines`,
+  realAWSCloudwatch/realKnownCause/realTraffic with pointwise ROC-AUC/PR-AUC
+  kept distinct from event-aware range precision/recall/F1 (window detected
+  if >=1 alert inside, lead tolerance 0; range recall also weights overlap).
+  Headline: overall pointwise PR-AUC 0.527 / range-F1 0.157 (16/17 windows
+  touched, 1609 alerts emitted, range precision 0.107). Synthetic untuned
+  IsolationForest instead scores ROC-AUC 0.9158 / PR-AUC 0.1239: the injected
+  anomalies are trivially separable, so the synthetic track cannot expose the
+  real-data false-positive firehose. New figures `nab_timelines`,
   `nab_score_distribution`, `nab_alert_budget`; adaptive streaming runs on
   NAB (drift trigger fires on 31/120 chunks — recalibration remaining);
   series without evaluable test windows are excluded from aggregates, never

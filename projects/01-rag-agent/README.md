@@ -17,10 +17,10 @@ cap).
 ## Problem
 
 Give a user (or downstream system) answers that are **traceable to evidence**:
-every claim cites the exact Wikipedia passage it came from, the assistant
-refuses to answer beyond the retrieved context, and the quality of both
-retrieval and generation is measured on a graded question set — not demoed
-anecdotally.
+the agent is constrained to retrieved Wikipedia passages, returns citations, and
+can abstain when support is insufficient. This reduces unauditable answers but
+does not eliminate unsupported claims; retrieval, generation, and abstention are
+therefore measured on a graded question set rather than demoed anecdotally.
 
 ## Design summary
 
@@ -174,13 +174,13 @@ scored the refusal 0.0). RAGAS faithfulness did **not** improve (0.651 → 0.606
 CIs overlapping) and answer relevancy dropped (0.879 → 0.720) as answers got
 shorter or became refusals. Judge noise is comparable to the delta — the same
 run judged a duplicated question 1.0 and 0.2 — so a 30-question pass cannot
-resolve effects this size. The loop works as designed and never makes an answer
-less grounded (repairs/drops only remove unsupported content), but per-claim
-repair quality at this local-model scale is weak; the measured lever that moves
-the taxonomy is the support floor. Verdict: **keep verify on (default) — the
-failure taxonomy improves and ungrounded content never ships — but treat the
-faithfulness delta as unresolved at n=30**, and prefer retrieval-side or
-prompt-side grounding gains over repair-call volume.
+resolve effects this size. Repairs/drops are designed to remove claims judged
+unsupported, but 14 unsupported-claim outcomes remain and verifier/judge errors
+are still possible. Per-claim repair quality at this local-model scale is weak;
+the measured lever that moves the taxonomy is the support floor. Verdict:
+**keep verify on (default) — the failure taxonomy improves, but grounding is
+not guaranteed and the faithfulness delta is unresolved at n=30**; prefer
+retrieval-side or prompt-side grounding gains over repair-call volume.
 
 **Overhead** (`metrics.json → detail.verify`, local, run under machine
 contention): mean verify latency **171 s per answer**, i.e. **+157% on top of
