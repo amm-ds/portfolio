@@ -152,6 +152,16 @@ describe("PlotlyFigure", () => {
     expect(mocks.react).not.toHaveBeenCalled();
   });
 
+  it("falls back to the iframe when Plotly.react rejects", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+    mocks.react.mockRejectedValue(new Error("renderer failed"));
+    const onPayload = vi.fn();
+    render(<PlotlyFigure pid="p" name="render_failure" onPayload={onPayload} />);
+
+    await waitFor(() => expect(screen.getByTitle("Figure: render_failure")).toBeInTheDocument());
+    expect(onPayload).toHaveBeenLastCalledWith(null);
+  });
+
   it("purges the plot on unmount", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
     const { unmount } = render(<PlotlyFigure pid="p" name="cleanup_fig" />);

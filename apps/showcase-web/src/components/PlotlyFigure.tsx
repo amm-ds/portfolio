@@ -174,19 +174,23 @@ export function PlotlyFigure({
       try {
         plotlyRef.current =
           plotlyRef.current ?? (await import("plotly.js-dist-min")).default;
+        if (disposed) return;
+        await plotlyRef.current.react(
+          el,
+          payload.data,
+          buildLayout(payload.layout, el.clientWidth),
+          { responsive: true, displayModeBar: false },
+        );
+        // The plot is painted — swap the skeleton out (only if still mounted:
+        // a resize re-render may finish after unmount).
+        if (!disposed) setRendered(true);
       } catch {
-        return;
+        // Import and renderer failures use the same HTML fallback as missing JSON.
+        if (!disposed) {
+          setFailed(true);
+          onPayloadRef.current?.(null);
+        }
       }
-      if (disposed) return;
-      await plotlyRef.current.react(
-        el,
-        payload.data,
-        buildLayout(payload.layout, el.clientWidth),
-        { responsive: true, displayModeBar: false },
-      );
-      // The plot is painted — swap the skeleton out (only if still mounted:
-      // a resize re-render may finish after unmount).
-      if (!disposed) setRendered(true);
     };
     void render();
 

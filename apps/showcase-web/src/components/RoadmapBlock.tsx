@@ -11,8 +11,8 @@ export function shortMilestone(text: string): string {
 /**
  * Story roadmap as a visual timeline: one node per milestone on a horizontal
  * progress line (delivered = accent-filled dot, open/deferred = hollow dot),
- * short label under each node, full text on hover. Renders nothing when
- * the story has no roadmap yet.
+ * with the full milestone as both the visible label and hover text. Renders
+ * nothing when the story has no roadmap yet.
  */
 export function RoadmapBlock({ roadmap }: { roadmap: RoadmapItemData[] | undefined }) {
   if (!roadmap || roadmap.length === 0) return null;

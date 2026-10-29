@@ -568,6 +568,29 @@ describe("ForecastWorkbench", () => {
     expect(verdictCard().textContent).toMatch(/h = 28/);
   });
 
+  it("derives evidence and the chart origin label from the payload", async () => {
+    mockFetch();
+    renderDemo();
+    await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
+
+    const evidence = document.querySelector(".wb-evidence")!;
+    expect(evidence.textContent).toContain("ensemble WAPE 0.498 vs the seasonal-naive floor 0.603");
+    expect(evidence.textContent).toContain("gap −0.105; 95% CI [−0.115, −0.095]");
+    expect(evidence.textContent).toContain("463 dense + 137 intermittent series, 6 candidates");
+    expect(evidence.textContent).toContain("WRMSSE 0.604 vs 0.762");
+    expect(document.querySelector(".wb-canvas-slot .figure-comment")!.textContent).toContain(
+      "from origin 2016-05-10",
+    );
+    expect(document.querySelector(".wb-canvas-slot .figure-comment")!.textContent).not.toContain(
+      "from origin 2016-03-15",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "2016-05-17" }));
+    expect(document.querySelector(".wb-canvas-slot .figure-comment")!.textContent).toContain(
+      "from origin 2016-05-17",
+    );
+  });
+
   it("pins the series picker controls above a scrollable store list", async () => {
     mockFetch();
     renderDemo();

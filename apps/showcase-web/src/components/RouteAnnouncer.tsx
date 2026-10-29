@@ -12,7 +12,10 @@ export function RouteAnnouncer() {
   const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
-    document.getElementById("main")?.focus();
+    // Reset navigation before moving focus. Without preventScroll, focusing
+    // main scrolls its top behind the taller wrapped nav on mobile.
+    window.scrollTo(0, 0);
+    document.getElementById("main")?.focus({ preventScroll: true });
     // Read the title in a macrotask: this component sits above the routed
     // tree, so its passive effect can flush before usePageMeta has set
     // document.title for the new route.

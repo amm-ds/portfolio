@@ -1,5 +1,5 @@
 import type { LineSeries } from "../charts/LineChart";
-import type { CatalogEntry, ForecastWindow } from "../types";
+import type { ForecastWindow } from "../types";
 
 export const C_TEAL = "#2dd4bf";
 export const C_TEAL_LIGHT = "#5eead4";
@@ -126,6 +126,3 @@ export function assembleChartData(
 
   return { x, series, band, yMax: max * 1.08, take };
 }
-
-/** Type helper for the component: the per-origin window map of a catalog entry. */
-export type OriginWindow = CatalogEntry["origins"][string];

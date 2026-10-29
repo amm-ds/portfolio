@@ -64,6 +64,12 @@ export interface RoadmapItemData {
 
 export interface ProjectStoryData {
   project_id: string;
+  /** Headline result with its uncertainty, when authored. */
+  headline?: string | null;
+  /** Data provenance, size and licensing note. */
+  data_note?: string | null;
+  /** What the case study does not establish. */
+  limits?: string | null;
   sections: StorySectionData[];
   /** Finalized roadmap (optional while stories are being authored). */
   roadmap?: RoadmapItemData[];
@@ -154,28 +160,4 @@ export async function scoreChurn(
     throw new ApiError(path, res.status);
   }
   return (await res.json()) as ChurnScoreResult;
-}
-
-export interface DemandForecastResult {
-  forecast: number;
-  model: string;
-}
-
-/** Live per-series demand forecast for the forecast workbench; 503 means
- * serving artifacts are not built, 422 an unknown series_id. */
-export async function forecastDemand(
-  projectId: string,
-  seriesId: string,
-  features: Record<string, number>,
-): Promise<DemandForecastResult> {
-  const path = `/projects/${projectId}/forecast`;
-  const res = await fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ series_id: seriesId, features }),
-  });
-  if (!res.ok) {
-    throw new ApiError(path, res.status);
-  }
-  return (await res.json()) as DemandForecastResult;
 }

@@ -24,7 +24,7 @@ describe("shortMilestone", () => {
 });
 
 describe("RoadmapBlock", () => {
-  it("renders one timeline node per milestone with short labels and status classes", () => {
+  it("renders one timeline node per milestone with full labels and status classes", () => {
     render(<RoadmapBlock roadmap={ROADMAP} />);
     expect(screen.getByText("roadmap")).toBeInTheDocument();
     const nodes = document.querySelectorAll(".roadmap-node");
@@ -33,7 +33,7 @@ describe("RoadmapBlock", () => {
     expect(document.querySelectorAll(".roadmap-node.delivered .roadmap-dot")).toHaveLength(2);
     expect(document.querySelectorAll(".roadmap-node.remaining .roadmap-dot")).toHaveLength(1);
     expect(document.querySelectorAll(".roadmap-node.deferred .roadmap-dot")).toHaveLength(1);
-    // labels are the short forms, full text lives on the title attribute
+    // labels contain the full milestone, also available on the title attribute
     expect(nodes[0].textContent).toContain("Baseline retrieval with citations.");
     expect(nodes[3].textContent).toContain("Multilingual corpus");
     expect(nodes[1].getAttribute("title")).toBe("Reranked index with eval harness");
