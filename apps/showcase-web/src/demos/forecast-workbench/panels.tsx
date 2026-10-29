@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { CatalogEntry, ForecastWorkbenchPayload, ForecastWindow } from "../types";
+import { DemoFigure } from "../workbench";
 import { C_GRAY, MODELS } from "./chartData";
 import { bandCalibration, peakAbsError, wapeAt, weeklyAbsError } from "./kpis";
 
@@ -15,18 +16,6 @@ function shortDate(dates: string[], day: number): string {
   const parts = d ? d.split("-") : [];
   if (parts.length !== 3) return `day +${day + 1}`;
   return `${MONTHS[Number(parts[1]) - 1] ?? parts[1]} ${Number(parts[2])}`;
-}
-
-/** Card with the shared figure-card chrome (viz region + commentary band). */
-function Card({ comment, children }: { comment: ReactNode; children: ReactNode }) {
-  return (
-    <div className="figure-card">
-      {children}
-      <footer className="figure-card-band">
-        <p className="figure-comment">{comment}</p>
-      </footer>
-    </div>
-  );
 }
 
 /**
@@ -79,7 +68,7 @@ export function ErrorCompositionPanel({
   const base = pad.t + plotH;
 
   return (
-    <Card
+    <DemoFigure
       comment={
         selfOnly ? (
           <>
@@ -165,7 +154,7 @@ export function ErrorCompositionPanel({
           })}
         </svg>
       </div>
-    </Card>
+    </DemoFigure>
   );
 }
 
@@ -225,7 +214,7 @@ export function BandCalibrationPanel({
 
   const target = 0.8;
   return (
-    <Card
+    <DemoFigure
       comment={
         tightest && loosest ? (
           <>
@@ -285,16 +274,16 @@ export function BandCalibrationPanel({
           </div>
         ))}
       </div>
-    </Card>
+    </DemoFigure>
   );
 }
 
 /** Compact disabled-state placeholder for the band card when lgbm is off. */
 export function BandPlaceholder() {
   return (
-    <Card comment={<>The conformal band belongs to the LightGBM candidate — switch it on to audit its coverage here.</>}>
+    <DemoFigure comment={<>The conformal band belongs to the LightGBM candidate — switch it on to audit its coverage here.</>}>
       <p className="state-box fwb-band-off">enable LightGBM to see its band</p>
-    </Card>
+    </DemoFigure>
   );
 }
 
@@ -371,7 +360,7 @@ export function VerdictPanel({
   }
 
   return (
-    <Card comment={comment}>
+    <DemoFigure comment={comment}>
       <div className="fwb-verdict">
         {rows.map((r) => {
           const pct = (r.wape / scale) * 100;
@@ -418,6 +407,6 @@ export function VerdictPanel({
           </p>
         </div>
       </div>
-    </Card>
+    </DemoFigure>
   );
 }

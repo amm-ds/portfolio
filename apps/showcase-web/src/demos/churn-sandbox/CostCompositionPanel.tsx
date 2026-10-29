@@ -1,5 +1,6 @@
 import type { ConfusionRow } from "../types";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
+import { DemoFigure } from "../workbench";
 import { fnCostSeries, fpCostSeries } from "./kpis";
 
 const C_FP = "#fbbf24";
@@ -54,7 +55,14 @@ export function CostCompositionPanel({
   const cursorX = px(thresholds[cursorIdx]);
 
   return (
-    <div className="figure-card">
+    <DemoFigure
+      comment={
+        <>
+          FN cost (pink) falls and FP cost (amber) rises as the threshold increases; the
+          cheapest cutoff minimizes their sum, not necessarily the point where they cross.
+        </>
+      }
+    >
       <div className="demo-chart cost-composition" ref={wrapRef}>
         <svg
           width="100%"
@@ -103,12 +111,6 @@ export function CostCompositionPanel({
           />
         </svg>
       </div>
-      <footer className="figure-card-band">
-        <p className="figure-comment">
-          FN cost (pink) dominates at low thresholds, FP cost (amber) at high — the minimum is
-          where they cross.
-        </p>
-      </footer>
-    </div>
+    </DemoFigure>
   );
 }

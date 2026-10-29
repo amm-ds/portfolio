@@ -1,11 +1,16 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
+
+beforeEach(() => {
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+});
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 
 describe("App shell (temporary smoke)", () => {
@@ -24,19 +29,22 @@ describe("App shell (temporary smoke)", () => {
     expect(focusables[0]?.getAttribute("href")).toBe("#main");
   });
 
-  it("moves focus to #main and announces document.title on the 404 route", async () => {
+  it("resets scroll and focuses #main without hiding it behind the nav", async () => {
+    const scrollTo = vi.mocked(window.scrollTo);
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
     render(
       <MemoryRouter initialEntries={["/no-such-page"]}>
         <App />
       </MemoryRouter>,
     );
-    await waitFor(() =>
-      expect(document.title).toContain("Page not found"),
-    );
+    const routedMain = document.getElementById("main")!;
+    await waitFor(() => expect(document.title).toContain("Page not found"));
     expect(document.head.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe(
       "noindex",
     );
-    expect(document.activeElement).toBe(document.getElementById("main"));
+    expect(scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(document.activeElement).toBe(routedMain);
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true });
     const live = screen.getByRole("status", { hidden: true });
     expect(live.className).toBe("visually-hidden");
     // announced via a macrotask after the route meta effect runs

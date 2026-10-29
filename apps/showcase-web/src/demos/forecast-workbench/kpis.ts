@@ -26,15 +26,6 @@ export function peakDayMae(actual: number[], pred: number[], h: number): number 
   return sum / k;
 }
 
-/** Truncate the lgbm band to the first `h` days. */
-export function bandAt(
-  window: ForecastWindow,
-  h: number,
-): { p10: number[]; p90: number[] } {
-  const n = Math.max(0, Math.min(h, window.actual.length));
-  return { p10: window.band.p10.slice(0, n), p90: window.band.p90.slice(0, n) };
-}
-
 /** The best (lowest WAPE@h) candidate among the selected models — the KPI
  * headline. `seasonal_naive` is the floor, never the "best" unless it is the
  * only selection. */

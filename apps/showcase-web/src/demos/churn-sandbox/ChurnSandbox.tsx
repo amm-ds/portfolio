@@ -1,9 +1,9 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { LineChart, type LineMarker } from "../charts/LineChart";
 import { SegmentLegend, type HBarSegment } from "../charts/StackedHBar";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { ChurnPayload, ConfusionRow, DemoManifest } from "../types";
-import { DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
+import { DemoFigure, DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import { contactCount, costAt, nearestIndex, recallAt, rowCost, savings } from "./kpis";
 import { CostCompositionPanel } from "./CostCompositionPanel";
 import { fetchChurnPayload, fetchManifest } from "./payload";
@@ -148,20 +148,6 @@ const FALLBACK_MANIFEST: DemoManifest = {
   payload: { path: "reports/demo_payload.json", schema_version: 1, required_keys: [] },
 };
 
-/** Card with the shared figure-card chrome (chart region + commentary band).
- * The chart region is position:relative and its only child is the chart, so
- * an absolutely-filled chart can never overlay sibling chrome. */
-function Figure({ comment, children }: { comment: ReactNode; children: ReactNode }) {
-  return (
-    <div className="figure-card">
-      {children}
-      <footer className="figure-card-band">
-        <p className="figure-comment">{comment}</p>
-      </footer>
-    </div>
-  );
-}
-
 // --- cost curve panel ------------------------------------------------------------
 
 function CostCurvePanel({
@@ -202,10 +188,10 @@ function CostCurvePanel({
   }
 
   return (
-    <Figure
+    <DemoFigure
       comment={
         <>
-          Cost = FP + N×FN on the untouched holdout; drag the cursor and the curve refits
+          Cost = FP + N×FN on the untouched holdout; drag the cursor and the curve recomputes
           when the multiplier changes — the star marks the threshold the pipeline committed to.
         </>
       }
@@ -232,7 +218,7 @@ function CostCurvePanel({
         />
       </div>
       <p className="demo-hint">drag the chart to move the threshold</p>
-    </Figure>
+    </DemoFigure>
   );
 }
 
@@ -254,7 +240,7 @@ function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number 
   const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
   let x = 0;
   return (
-    <Figure
+    <DemoFigure
       comment={
         <>
           The pink slice is churners the campaign misses at the cursor; every amber contact
@@ -294,7 +280,7 @@ function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number 
       <p className="demo-hint">
         confusion-matrix counts at t = {row.t.toFixed(2)}, normalized per 1,000 customers
       </p>
-    </Figure>
+    </DemoFigure>
   );
 }
 
@@ -324,7 +310,7 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
   const barW = Math.max(W - barX - countW - pad - 12, 0);
   const rowH = rows.length > 0 ? H / rows.length : H;
   return (
-    <Figure
+    <DemoFigure
       comment={
         <>
           Alarm burden by contract at the cursor — most of it lands on month-to-month
@@ -373,7 +359,7 @@ function SlicesPanel({ slices, cursorT }: { slices: Record<string, ConfusionRow[
           })}
         </svg>
       </div>
-    </Figure>
+    </DemoFigure>
   );
 }
 
@@ -496,6 +482,30 @@ function ChurnSandboxWorkbench({
               </div>
             </div>
           </div>
+          <div className="wb-control-group wb-group-threshold">
+            <label className="wb-rail-title" htmlFor="alarm-threshold">
+              Alarm threshold
+            </label>
+            <div className="demo-control">
+              <div className="wb-slider-row">
+                <input
+                  id="alarm-threshold"
+                  type="range"
+                  className="wb-slider"
+                  min={0}
+                  max={payload.thresholds.length - 1}
+                  step={1}
+                  value={cursorIdx}
+                  aria-valuetext={`t = ${cursorT.toFixed(2)}`}
+                  style={{
+                    "--fill": `${(cursorIdx / Math.max(payload.thresholds.length - 1, 1)) * 100}%`,
+                  } as CSSProperties}
+                  onChange={(e) => moveCursor(Number(e.target.value))}
+                />
+                <span className="chip wb-value-badge">{cursorT.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
           <div className="wb-control-group wb-group-presets">
             <span className="wb-rail-title">Preset customers</span>
             <div className="demo-control">
@@ -509,6 +519,7 @@ function ChurnSandboxWorkbench({
                       setForm({ ...c.features });
                       setPresetKey((k) => k + 1);
                       setCustomer({ label: shortLabel(c.label), probability: c.churn_probability });
+                      setScore(c.churn_probability);
                     }}
                   >
                     {c.label}

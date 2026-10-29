@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ForecastWindow } from "../types";
-import {
-  bandAt,
-  bestModelAt,
-  peakAbsError,
-  peakDayMae,
-  verdictText,
-  wapeAt,
-} from "./kpis";
+import { bestModelAt, peakAbsError, peakDayMae, verdictText, wapeAt } from "./kpis";
 
 // 4-day fixture: actual [10, 20, 10, 40]; naive flat 10; lgbm [12, 18, 14, 30].
 const ACTUAL = [10, 20, 10, 40];
@@ -48,14 +41,6 @@ describe("peakDayMae", () => {
     expect(peakDayMae(ACTUAL, LGBM, 1)).toBeCloseTo(2);
     // naive on the top day: |10-40| = 30
     expect(peakDayMae(ACTUAL, NAIVE, 4)).toBeCloseTo(30);
-  });
-});
-
-describe("bandAt", () => {
-  it("truncates the band to the first h days", () => {
-    const win = windowOf({ seasonal_naive: NAIVE });
-    expect(bandAt(win, 2)).toEqual({ p10: [8, 8], p90: [16, 20] });
-    expect(bandAt(win, 28).p10).toHaveLength(4);
   });
 });
 

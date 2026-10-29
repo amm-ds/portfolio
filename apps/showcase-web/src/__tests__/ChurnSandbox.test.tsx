@@ -298,12 +298,31 @@ describe("ChurnSandbox", () => {
     }
   });
 
+  it("synchronizes the labelled native threshold range with cost and outcomes", async () => {
+    mockFetch(payloadFetch());
+    renderDemo();
+    const slider = (await screen.findByLabelText("Alarm threshold")) as HTMLInputElement;
+    expect(slider.type).toBe("range");
+    expect(slider.step).toBe("1");
+    expect(slider.value).toBe("1");
+    expect(slider).toHaveAttribute("aria-valuetext", "t = 0.30");
+
+    fireEvent.change(slider, { target: { value: "3" } });
+    expect(slider.value).toBe("3");
+    expect(screen.getByText("threshold t = 0.70")).toBeInTheDocument();
+    expect(screen.getByText("cost at t: 405")).toBeInTheDocument();
+    expect(screen.getByText("TP 35")).toBeInTheDocument();
+    expect(screen.getByText("FP 80")).toBeInTheDocument();
+    expect(screen.getByText("FN 65")).toBeInTheDocument();
+    expect(screen.getByText("TN 820")).toBeInTheDocument();
+  });
+
   it("keeps control group labels outside the input boxes, ahead of them in the DOM", async () => {
     mockFetch(payloadFetch());
     renderDemo();
     await screen.findByText("cost at t: 335");
     const groups = document.querySelectorAll(".wb-control-group");
-    expect(groups).toHaveLength(3);
+    expect(groups).toHaveLength(4);
     const labelTexts: string[] = [];
     for (const group of Array.from(groups)) {
       const label = group.querySelector(".wb-rail-title");
@@ -316,14 +335,22 @@ describe("ChurnSandbox", () => {
       ).toBeTruthy();
       labelTexts.push(label!.textContent!);
     }
-    expect(labelTexts).toEqual(["FP/FN cost ratio", "Preset customers", "Score a customer"]);
+    expect(labelTexts).toEqual([
+      "FP/FN cost ratio",
+      "Alarm threshold",
+      "Preset customers",
+      "Score a customer",
+    ]);
     for (const text of labelTexts) {
       expect(text[0]).toMatch(/[A-Z]/);
     }
-    // the slider box holds the range input plus the live multiplier badge
+    // each slider box holds a range input plus its live value badge
     const sliderBox = document.querySelector(".wb-group-slider .demo-control")!;
     expect(sliderBox.querySelector('input[type="range"]')).not.toBeNull();
     expect(sliderBox.querySelector(".wb-value-badge")!.textContent).toBe("5×");
+    const thresholdBox = document.querySelector(".wb-group-threshold .demo-control")!;
+    expect(thresholdBox.querySelector('input[type="range"]')).not.toBeNull();
+    expect(thresholdBox.querySelector(".wb-value-badge")!.textContent).toBe("0.30");
   });
 
   it("renders the canvas chart footer with full commentary and no fig id or clamp", async () => {
@@ -337,6 +364,8 @@ describe("ChurnSandbox", () => {
     expect(comment.className).not.toContain("line-clamp");
     // the full two-sentence commentary renders untrimmed
     expect(comment.textContent).toContain("Cost = FP + N×FN on the untouched holdout");
+    expect(comment.textContent).toContain("the curve recomputes when the multiplier changes");
+    expect(comment.textContent).not.toContain("refits");
     expect(comment.textContent).toContain("the star marks the threshold the pipeline committed to");
   });
 
@@ -427,20 +456,23 @@ describe("ChurnSandbox", () => {
     );
   });
 
-  it("pins a labeled customer marker on the cost curve when a preset is selected", async () => {
+  it("updates the customer marker and score result when a preset is selected", async () => {
     mockFetch(payloadFetch());
     renderDemo();
     const svg = await screen.findByRole("img", { name: "campaign cost over alarm threshold" });
     const markerTexts = () =>
       Array.from(svg.querySelectorAll("text")).map((el) => el.textContent);
-    // one customer is selected by default — the first preset is marked
+    // one customer is selected by default — the first preset is marked and scored
     expect(markerTexts()).toContain("at-risk fiber");
+    expect(screen.getByTestId("score-result").textContent).toContain("72.0%");
     fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
-    // marker line labeled with the short preset form appears in the SVG
     expect(markerTexts()).toContain("at-risk fiber");
-    // switching presets moves the marker to the other customer
+    // switching presets moves the marker and replaces, rather than retaining, the score
     fireEvent.click(screen.getByRole("button", { name: "sticky dsl customer" }));
     expect(markerTexts()).toContain("sticky dsl");
+    expect(screen.getByTestId("score-result").textContent).toContain("11.0%");
+    expect(screen.getByTestId("score-result").textContent).toContain("No alarm at t = 0.30");
+    expect(screen.getByTestId("score-result").textContent).not.toContain("72.0%");
   });
 
   it("keeps the scorer form in the controls column, with no under strip", async () => {
@@ -474,8 +506,14 @@ describe("ChurnSandbox", () => {
       expect(comment.textContent!.length).toBeGreaterThan(40);
       expect(comment.className).not.toContain("line-clamp");
     }
-    // the cost-composition panel is the third one and still labeled
-    expect(screen.getByText("cost composition")).toBeInTheDocument();
+    // the cost-composition panel is the third one and explains the summed cost correctly
+    const costPanel = screen.getByText("cost composition").closest(".wb-secondary-panel")!;
+    expect(costPanel.querySelector(".figure-comment")!.textContent).toContain(
+      "cheapest cutoff minimizes their sum",
+    );
+    expect(costPanel.querySelector(".figure-comment")!.textContent).not.toContain(
+      "minimum is where they cross",
+    );
   });
 
   it("cost-composition panel rescales with the FN slider and tracks the cursor", async () => {

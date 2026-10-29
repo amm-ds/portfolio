@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { LineChart } from "../charts/LineChart";
 import type { CatalogEntry, DemoManifest, ForecastWorkbenchPayload } from "../types";
-import { DemoWorkbench, KpiTile, Notice } from "../workbench";
+import { DemoFigure, DemoWorkbench, KpiTile, Notice } from "../workbench";
 import { C_HIST, C_PINK, C_TEAL, MODELS, assembleChartData } from "./chartData";
 import { bestModelAt, peakDayMae, verdictText, wapeAt } from "./kpis";
 import { BandCalibrationPanel, BandPlaceholder, ErrorCompositionPanel, VerdictPanel } from "./panels";
@@ -29,7 +29,7 @@ const FALLBACK_MANIFEST: DemoManifest = {
   hero: {
     label: "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
     value: "0.491 vs 0.603",
-    ci: "paired bootstrap CI [−0.115, −0.095] on the −0.105 gap; 89.3% per-series win rate; 80% band covers 78.7% (protocol m5_direct_v1, horizon 28)",
+    ci: "paired bootstrap CI [−0.123, −0.103] on the −0.112 gap; 88.8% per-series win rate; 80% band covers 77.7% (protocol m5_direct_v1, horizon 28)",
   },
   scenarios: [
     { name: "base", controls: { models: "seasonal_naive,lgbm", origin: "2016-05-10", horizon: 28 } },
@@ -47,17 +47,6 @@ const FALLBACK_MANIFEST: DemoManifest = {
 function shortId(sid: string): string {
   const parts = sid.split("_");
   return parts.slice(0, -1).join("_") || sid;
-}
-
-function Figure({ comment, children }: { comment: ReactNode; children: ReactNode }) {
-  return (
-    <div className="figure-card">
-      {children}
-      <footer className="figure-card-band">
-        <p className="figure-comment">{comment}</p>
-      </footer>
-    </div>
-  );
 }
 
 /** A row of selectable chips (models / origin / horizon share the shape). */
@@ -181,6 +170,15 @@ function Workbench({
   const committedGap =
     h === 28 && best && pooled[best] && pooled[NAIVE] ? pooled[best].wape - pooled[NAIVE].wape : null;
   const band = payload.groups.band.candidates.lgbm;
+  const ensemblePooled = pooled.convex_ensemble;
+  const naivePooled = pooled[NAIVE];
+  const ensembleGap = payload.groups.headline.convex_ensemble_vs_naive.wape;
+  const intermittentWinRate =
+    payload.groups.win_rate_vs_naive.convex_ensemble.intermittent;
+  const classCounts = payload.groups.classes.counts;
+  const candidateCount = Object.keys(pooled).length;
+  const signed = (value: number) =>
+    `${value < 0 ? "−" : value > 0 ? "+" : ""}${Math.abs(value).toFixed(3)}`;
 
   const stores = [...new Set(payload.catalog.map((e) => e.store))].sort();
 
@@ -287,7 +285,7 @@ function Workbench({
         <ForecastChart
           entry={entry}
           window={window}
-          historyStart={originBlock.history_start}
+          origin={origin}
           modelsOn={modelsOn}
           h={h}
         />
@@ -355,32 +353,36 @@ function Workbench({
             <h4 className="wb-evidence-tag">what this shows</h4>
             <p className="wb-evidence-line">
               Per-series forecast curves recomputed by the committed M5 track
-              (protocol <code className="wb-tag">m5_direct_v1</code>) for a
-              balanced 24-series catalog, scored on the two test origins{" "}
+              (protocol <code className="wb-tag">{payload.protocol}</code>) for a
+              balanced {payload.catalog.length}-series catalog, scored on the test origins{" "}
               {payload.origins.map((o) => o.origin).join(" and ")}. The headline
-              is the pooled gap: ensemble WAPE 0.491 vs the seasonal-naive
-              floor 0.603 (95% CI [−0.115, −0.095]).
+              is the pooled gap: ensemble WAPE {ensemblePooled.wape.toFixed(3)} vs the
+              seasonal-naive floor {naivePooled.wape.toFixed(3)} (gap {signed(ensembleGap.diff)};
+              95% CI [{signed(ensembleGap.ci95[0])}, {signed(ensembleGap.ci95[1])}]).
             </p>
             {entry.class === "intermittent" ? (
               <p className="wb-evidence-line" data-testid="honest-gap">
                 The honest gap: this is an intermittent series — the band runs
                 wide and the seasonal naive can still win individual windows
-                (the ensemble wins 90.5% of intermittent series; the 80% band
-                covers 78.7% of actuals, just under target). Per-series WAPEs
-                here are computed from the payload curves; the LightGBM curve
-                is a documented catalog-subset refit.
+                {intermittentWinRate !== null &&
+                  ` (the ensemble wins ${(intermittentWinRate * 100).toFixed(1)}% of intermittent series; `}
+                the {(payload.groups.band.level * 100).toFixed(0)}% band covers{" "}
+                {(band.coverage_80 * 100).toFixed(1)}% of actuals
+                {band.coverage_80 < payload.groups.band.level ? ", just under target" : ""}
+                {intermittentWinRate !== null ? ")" : ""}. Per-series WAPEs here are computed
+                from the committed payload curves.
               </p>
             ) : (
               <p className="wb-evidence-line">
                 On dense series the candidates trade the weekly shape against
-                event days. Per-series WAPEs here are computed from the payload
-                curves; the LightGBM curve is a documented catalog-subset refit.
+                event days. Per-series WAPEs here are computed from the committed payload curves.
               </p>
             )}
             <p className="wb-evidence-line">
               <a href="/projects/02-demand-forecasting">Read the project report</a>{" "}
-              for the full track — 463 dense + 137 intermittent series, 8
-              candidates, WRMSSE with the documented naive-28 denominator.
+              for the full track — {classCounts.dense} dense + {classCounts.intermittent}{" "}
+              intermittent series, {candidateCount} candidates, WRMSSE with the documented
+              naive-28 denominator.
             </p>
           </div>
           <div className="wb-result-block">
@@ -389,7 +391,9 @@ function Workbench({
               <span className="wb-tag">
                 ensemble win rate {(payload.groups.win_rate_vs_naive.convex_ensemble.pooled * 100).toFixed(1)}%
               </span>
-              <span className="wb-tag">WRMSSE 0.604 vs 0.762</span>
+              <span className="wb-tag">
+                WRMSSE {ensemblePooled.wrmsse.toFixed(3)} vs {naivePooled.wrmsse.toFixed(3)}
+              </span>
               <span className="wb-tag">
                 band {(band.coverage_80 * 100).toFixed(1)}% @ {(band.mean_band_width).toFixed(1)}u
               </span>
@@ -430,13 +434,13 @@ function Workbench({
 function ForecastChart({
   entry,
   window,
-  historyStart,
+  origin,
   modelsOn,
   h,
 }: {
   entry: CatalogEntry;
   window: CatalogEntry["origins"][string];
-  historyStart: string;
+  origin: string;
   modelsOn: string[];
   h: number;
 }) {
@@ -450,10 +454,10 @@ function ForecastChart({
   ];
 
   return (
-    <Figure
+    <DemoFigure
       comment={
         <>
-          {entry.series_id} ({entry.class}, {window.shape}) from origin {historyStart} — history
+          {entry.series_id} ({entry.class}, {window.shape}) from origin {origin} — history
           tail, 28-day actuals and the selected candidates; the domain clips to the visible window.
         </>
       }
@@ -479,6 +483,6 @@ function ForecastChart({
         />
       </div>
       <p className="demo-hint">history tail ends at the origin; +1…+{take} is the scored window</p>
-    </Figure>
+    </DemoFigure>
   );
 }
