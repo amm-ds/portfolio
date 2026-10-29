@@ -7,7 +7,7 @@ baseline, an honest delta, and the code to verify it.
 ## Flagships
 
 - **[Urban mobility demand intelligence](projects/07-open-data-mobility.md)** —
-  41.2M real trips, **−28.4% forecast error** vs the "same hour last week"
+  41.2M real trips, **−28.3% forecast error** vs the "same hour yesterday"
   rule, a 90.8%-calibrated staffing band, and a drift observatory that opens
   an issue when the model degrades.
 - **[RAG & agentic assistant](projects/01-rag-agent.md)** — answers only from
@@ -44,9 +44,9 @@ navigation on the left.
 ```bash
 make setup          # uv sync + pre-commit
 make test           # ruff + mypy + pytest with coverage gates
-dvc repro           # reproduce all pipelines (downloads public data)
+(cd projects/02-demand-forecasting && uv run dvc repro)  # reproduce one project
 make docs-serve     # docs at http://127.0.0.1:8000
 make docker-up      # showcase app (FastAPI + React) at http://localhost:8000 —
-                    # serves the real artifacts: forecast/score/solve endpoints,
-                    # per-project story/metrics/figures, RAG chat
+                    # real committed artifacts: forecast/score/solve and stories.
+                    # RAG chat is opt-in and its index is not baked into the image.
 ```

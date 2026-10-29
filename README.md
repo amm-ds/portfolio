@@ -39,7 +39,7 @@ Ten projects, all working showcases on the same platform.
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
 | 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | pydantic-ai agent, 65-q golden set, provider A/B (local qwen3.6 vs hosted kimi, recall@5 0.831, per-phase cost metering) |
-| 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | UCI Online Retail II (real) + synthetic | Leakage-proof time-CV, LightGBM vs PyTorch vs ETS, reconciliation |
+| 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | Walmart M5 + UCI Retail II (real) + synthetic | Rolling time-CV, statistical/GBM ensembles, sparse-demand routing, reconciliation |
 | 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | NAB (real) + seeded synthetic CI path | Event-based metrics (PR-AUC, range-F1), detector HPO, threshold sweeps |
 | 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News 120k (real) | Hand-written fine-tuning loop, macro-F1 0.946, calibration analysis |
 | 05 | [Churn Modeling, sklearn Pipelines](projects/05-ml-pipeline-churn/) | Classical ML | IBM telco churn (real) + synthetic | Pipeline-embedded preprocessing, cost-aware HPO, fairness slices |
@@ -59,12 +59,12 @@ built on the same platform, designed for deepening.
 | Project | Result |
 |---|---|
 | 01 RAG agent | Retrieval config by measurement: recall@5 **0.831 vs 0.031 random** (65-question golden set); verify loop cut unsupported claims **60%→47%** locally and holds at **28% (18/65) on a hosted model**, RAGAS faithfulness **0.685 [0.61, 0.76]** vs 0.606 local; all four LLM phases metered — the full 65-question run cost **$3.58 cloud-equivalent** (agent $1.79 / RAGAS $1.13 / verify $0.47 / judge $0.19) under a hard $3 cap that stopped a runaway mid-run |
-| 02 Forecasting | Real-data primary (UCI Online Retail II), frozen holiday-quarter test window: selection champion **hgb_tuned MAE 9.545 / MASE 1.078** — running at **0.843 relative MAE of the seasonal-naive floor** (11.323; the naive's own MASE is 1.310 there, its scale being in-sample error from a quieter period — no run dips below MASE 1.0); `lgbm_tuned` posts the nominally best test-window MAE (9.409) inside fold noise — tuned configs do not transfer across regimes |
+| 02 Forecasting | Real-data primary (Walmart M5, 600 series): selection-fitted ensemble **WAPE 0.491 vs 0.603 seasonal naive** on the frozen 28-day test, gap **−0.1125 [−0.1228, −0.1026]**, with wins in both volume classes; UCI Retail II remains the sparse secondary study, using conservative selective routing rather than a universal model |
 | 03 Anomaly detection | Real-data primary (NAB, event-based): **PR-AUC 0.527, range-F1 0.157** — the synthetic headline (ROC-AUC 0.916) was the pipeline check, and this repo says so; seeded synthetic stays as the CI fast path |
 | 04 NLP | Ladder to a full 120k fine-tune: test macro-F1 **0.9460** (naive 0.10 → TF-IDF 0.87 → bounded fine-tune 0.902 → full 0.9460 on Apple-Silicon MPS); val→test non-transfer and the Business/Sci-Tech labeling floor documented |
 | 05 Churn | Real-data primary (IBM telco): cost-aware HPO selects XGBoost; business cost **1,035 → 601 (−41.9%)**, paired bootstrap CI **[−485, −343]**; isotonic improves both ECE and the cost optimum on real data — the synthetic conclusion did not transfer |
 | 06 VRPTW | Hand-written ALNS: **4.23% mean distance gap vs best-known across all 56 Solomon instances** (+3.73 mean vehicles — both criteria reported; vehicles-first ranking 43/56); the hinted CP-SAT cross-check could not improve any incumbent |
-| 07 Mobility | Zone-hour demand over 41.2M trips: GBM MAE 4.67 (−28.4% vs naive); **p90 band 90.8% coverage** (N/A zones flagged); permutation importance shows weather ≈ 0 for point MAE — its value is the elasticity signal |
+| 07 Mobility | Zone-hour demand over 41.2M trips: served `gbm_tuned` MAE **4.676 (−28.3% vs same-hour-yesterday persistence, MASE 0.763)**; **p90 band 90.8% coverage** (sparse N/A-borough zones under-cover at 84.7%); permutation importance shows weather ≈ 0 for point MAE — its value is the directional elasticity signal |
 | 08 Inference | Local serving benchmark (author run): 19 cells / 760 requests / 0 failures; **MLX ≈ 2.9× GGUF tok/s on Apple Silicon**; 4-bit quantization costs serving headroom, not structured-output validity |
 | 09 Agentic | Full 15-task hosted run on `kimi-for-coding` (per-call tool capture): **15/15 on every grader** — answer success, exact tool set (up from 8/15: per-call traces located the unplanned calls, prompt/docstring surgery removed them), step budget, latency budget (median **18.2 s**/task, p95 31.1 s vs the 60 s cap); sealed held-out set: **7/7 answers with exact tool sets, 3/3 should-fail refusals**; ledger **$0.086** of the $2.00 suite cap (~$0.009/task cloud-equivalent); t15 retrieves two-article facts from 01's real Wikipedia index |
 | 10 Uplift | Hillstrom RCT: ATE +0.68pp, CUPED covariate lesson, power analysis; T-learner **+$2,812/wave vs random** at 25% budget (own paired CI [+$718, +$4,767] — established); **mail-everyone ($16,103) beats it at $0.01/email** (paired CI [−$13,125, −$5,808] below zero) — the value is concentration (~42% of conversions at ¼ volume); targeting wins above ≈$0.30/email (break-even grid); Qini curve-area ranking not established (spans zero; the paired response−T profit CI [−$3,617, −$48] is what favors T) |
@@ -72,11 +72,11 @@ built on the same platform, designed for deepening.
 ## Engineering practices
 
 - **Architecture decision records** for every platform-level choice
-  ([architecture/](architecture/adr/)) and a [reference architecture](architecture/platform.md).
+  ([ADRs](docs/architecture/adr/)) and a [reference architecture](docs/architecture/platform.md).
 - **Contracts:** pydantic models at every boundary; hypothesis property tests on
   validators; mypy strict on shared libs.
 - **Reproducibility:** committed `uv.lock`; `dvc repro` per project; dataset
-  cards pin URLs + checksums in [data-registry/](data-registry/).
+  cards pin URLs + checksums in [data-registry/](docs/data-registry/).
 - **Operability:** SLOs in design docs, runbooks for drift / LLM cost /
   pipeline restore ([docs/runbooks/](docs/runbooks/)).
 - **Review culture:** PR template with design questions, engineering playbook
@@ -92,30 +92,34 @@ The showcase app serves the pipelines' real artifacts over HTTP. Run
 - `POST /projects/05-ml-pipeline-churn/score` — churn propensity scoring (05)
 - `POST /projects/06-routing-optimization/solve` — VRPTW routing solver (06)
 - Per-project story / metrics / figure APIs: `GET /projects/{id}/{story,metrics,figures}`
-- RAG chat API: `POST /rag/chat` (streaming variant included), retrieval index baked in
+- Opt-in RAG chat API: `POST /rag/chat` (streaming variant included), disabled by default
 
-Artifact-backed endpoints return **503 until the artifacts exist** — each 503 names
-the exact rebuild command, and the artifacts regenerate from a clean clone with
-`dvc repro`.
+The 02/05/07 serving bundles are committed and cached after their first load;
+06 is computed from the request. If artifacts are absent, their endpoints
+return **503** with rebuild instructions. Reproduce a pipeline from its project
+directory, for example `cd projects/02-demand-forecasting && uv run dvc repro`.
+The standard image deliberately contains neither the RAG package nor its
+retrieval index; see [deployment](deploy/DEPLOY.md) before enabling chat.
 
-Public deploy in minutes: set `DOMAIN` in `deploy/` and
-`docker compose -f deploy/docker-compose.prod.yml up -d` (Caddy provisions TLS
-automatically) — see `deploy/DEPLOY.md`. The docs site is always live:
-https://amm-ds.github.io/portfolio/
+For the single-container public deploy, set the required `DOMAIN` and
+`IP_HASH_SALT`, then follow the exact `IMAGE`/`TAG` build/run flow in
+[deploy/DEPLOY.md](deploy/DEPLOY.md). Caddy provisions TLS and waits for API
+readiness. The docs site is always live: https://amm-ds.github.io/portfolio/
 
 ## Reproduce in 3 commands
 
 ```bash
 git clone https://github.com/amm-ds/portfolio.git && cd portfolio
 make setup     # uv sync + pre-commit
-dvc repro      # downloads pinned public data, runs all pipelines
+cd projects/02-demand-forecasting && uv run dvc repro  # or choose another project
 ```
 
 …or open in GitHub Codespaces (`.devcontainer/`) — the environment builds itself.
 
-The showcase app runs without an LLM key (deterministic mock provider); set
-`LLM_BASE_URL`/`LLM_API_KEY` in `.env` for a live provider (see
-[.env.example](.env.example)).
+The ordinary showcase endpoints need no LLM key. RAG chat is disabled by
+default and there is no production mock provider; a deliberately enabled local
+Project 01 uses Ollama unless `LLM_BASE_URL`/`LLM_API_KEY` configure a hosted
+provider (see [.env.example](.env.example)).
 
 ## Services & engagement
 

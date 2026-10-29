@@ -4,17 +4,14 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!--
-      Static SEO fallback for the GitHub Pages deploy (https://amm-ds.github.io/portfolio).
-      vite only replaces import.meta.env inside src/, so these URLs are hardcoded here;
-      deploys serving another domain must rewrite them (see scripts/gen_sitemap.py).
-    -->
+    <!-- Static SEO defaults; scripts/gen_sitemap.py rewrites them for VITE_SITE_URL. -->
     <link rel="canonical" href="https://amm-ds.github.io/portfolio/" />
     <meta
       name="description"
       content="Live showcase of the amm-ds public ML/AI portfolio: reproducible case studies with metrics, interactive figures and published pipelines."
     />
     <meta name="theme-color" content="#0f172a" />
+    <meta name="build-sha" content="dev" />
     <meta property="og:site_name" content="amm-ds — ML/AI Engineering Portfolio" />
     <meta property="og:title" content="amm-ds — ML/AI Engineering Portfolio" />
     <meta

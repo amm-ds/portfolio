@@ -1,4 +1,4 @@
-# Multi-stage image: React/TS web build → uv workspace runtime (FastAPI).
+# Multi-stage image: static metadata → React/TS web build → uv runtime (FastAPI).
 #
 # The image serves the showcase app (API + static web). Figure specs
 # (projects/*/reports/figures/) and serving bundles
@@ -16,11 +16,29 @@
 
 # Base images pinned by digest (multi-arch manifest-list digests, so builds
 # stay reproducible on both amd64 and arm64). Bump deliberately, not casually.
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim@sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58 AS metadata
+WORKDIR /metadata
+ARG VITE_SITE_URL=https://amm-ds.github.io/portfolio
+ARG VITE_BUILD_SHA=dev
+ENV VITE_SITE_URL=${VITE_SITE_URL} \
+    VITE_BUILD_SHA=${VITE_BUILD_SHA}
+COPY scripts/gen_sitemap.py scripts/gen_sitemap.py
+COPY projects projects
+COPY apps/showcase-web/index.html apps/showcase-web/index.html
+COPY apps/showcase-web/public apps/showcase-web/public
+RUN python scripts/gen_sitemap.py
+
 FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS web
 WORKDIR /web
+ARG VITE_SITE_URL=https://amm-ds.github.io/portfolio
+ARG VITE_BUILD_SHA=dev
+ENV VITE_SITE_URL=${VITE_SITE_URL} \
+    VITE_BUILD_SHA=${VITE_BUILD_SHA}
 COPY apps/showcase-web/package.json apps/showcase-web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY apps/showcase-web/ ./
+COPY --from=metadata /metadata/apps/showcase-web/index.html index.html
+COPY --from=metadata /metadata/apps/showcase-web/public public
 RUN npm run build
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim@sha256:e5b65587bce7de595f299855d7385fe7fca39b8a74baa261ba1b7147afa78e58 AS runtime
@@ -62,9 +80,9 @@ ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=4)"
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=4)"
 
-# Trust proxy headers only from explicitly allowed IPs (loopback by default;
-# the prod compose network sets FORWARDED_ALLOW_IPS to its Caddy container so
-# the rate limiter keys on real clients, not the proxy — see deploy/).
+# Trust proxy headers only from explicitly allowed IPs (loopback by default).
+# The isolated prod compose network uses "*" because only Caddy can reach the
+# unpublished API port; restrict it to the proxy IP for any other topology.
 CMD ["sh", "-c", "uvicorn showcase_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips ${FORWARDED_ALLOW_IPS:-127.0.0.1}"]

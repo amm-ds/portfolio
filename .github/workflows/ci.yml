@@ -22,6 +22,7 @@ jobs:
       python: ${{ steps.filter.outputs.python }}
       web: ${{ steps.filter.outputs.web }}
       docs: ${{ steps.filter.outputs.docs }}
+      deployment: ${{ steps.filter.outputs.deployment }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
         with:
@@ -44,6 +45,15 @@ jobs:
               - 'docs/**'
               - 'mkdocs.yml'
               - 'README.md'
+            deployment:
+              - 'Dockerfile'
+              - '.dockerignore'
+              - 'deploy/**'
+              - '.env.example'
+              - 'apps/showcase-web/index.html'
+              - 'apps/showcase-web/public/robots.txt'
+              - 'apps/showcase-web/public/sitemap.xml'
+              - '.github/workflows/ci.yml'
 
   gate:
     needs: changes
@@ -64,6 +74,9 @@ jobs:
       - name: Demo contract check
         if: needs.changes.outputs.python == 'true'
         run: uv run python scripts/check_demo_contract.py
+      - name: SPA route manifest freshness
+        if: needs.changes.outputs.python == 'true' || needs.changes.outputs.web == 'true'
+        run: uv run python scripts/gen_route_manifest.py --check
       - name: "Mypy (libs strict + projects/apps typed)"
         if: needs.changes.outputs.python == 'true'
         run: uv run mypy libs projects apps
@@ -239,25 +252,35 @@ jobs:
           }}
 
   docker:
-    needs: [gate, tests]
-    if: needs.changes.outputs.python == 'true' || needs.changes.outputs.web == 'true'
+    needs: [changes, gate, tests]
+    if: >-
+      ${{ always() && !cancelled() && needs.gate.result == 'success' &&
+      (needs.tests.result == 'success' || needs.tests.result == 'skipped') &&
+      (needs.changes.outputs.python == 'true' || needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.deployment == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - name: Validate production compose and Caddyfile
+        run: |
+          DOMAIN=example.com IP_HASH_SALT=ci-smoke-salt \
+            docker compose -f deploy/docker-compose.prod.yml config --quiet
+          docker run --rm -e DOMAIN=example.com \
+            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - name: Build showcase image
-        run: docker build -t amm-ds-portfolio .
+        run: docker build --build-arg VITE_BUILD_SHA="$GITHUB_SHA" -t amm-ds-portfolio .
       - name: Smoke test
-        # Verifies the real deployment surface of the image: the SPA (baked
-        # web build) + the API, including a live forecast from the git-baked
-        # serving artifacts. The forecast assert guards the artifact-baking
-        # regression: it would 503 if the artifacts went missing from git.
+        # Verifies the SPA plus real responses from all three artifact-backed
+        # serving endpoints, using each committed metadata example as input.
         run: |
           trap "docker rm -f showcase" EXIT
-          docker run -d --name showcase -p 8000:8000 amm-ds-portfolio
+          docker run -d --name showcase -p 8000:8000 \
+            -e BUILD_SHA="$GITHUB_SHA" -e IP_HASH_SALT=ci-smoke-salt amm-ds-portfolio
           # poll readiness (cold joblib loads on a 2-vCPU runner can exceed a
           # fixed sleep; a previous run flaked here)
           for i in $(seq 1 60); do
-            if curl -fsS http://localhost:8000/health 2>/dev/null | grep -q '"ready":true'; then
+            if curl -fsS http://localhost:8000/ready >/dev/null 2>&1; then
               echo "ready after ${i}s"; break
             fi
             sleep 1
@@ -270,6 +293,7 @@ jobs:
           grep -c 'root' /tmp/root.html
           test "$root_code" = "200"
           grep -qE 'id="?root"?' /tmp/root.html
+          grep -q "$GITHUB_SHA" /tmp/root.html
           # Deep links must return the SPA shell (client-side routing fallback).
           # NB: bare /projects is a JSON API route (project index), not the SPA.
           for route in /projects/06-routing-optimization /services; do
@@ -285,18 +309,43 @@ jobs:
           # Story/metrics APIs must answer JSON for a real project.
           curl -fsS http://localhost:8000/projects/05-ml-pipeline-churn/metrics \
             | grep -q 'selected_model_calibrated'
-          # Live forecast endpoint: build the request from the serving artifact's
-          # example_row so the smoke test tracks whichever track the artifact
-          # was built from (the UCI track).
-          body=$(python3 -c "
+          # Build all three requests from committed serving metadata.
+          python3 - <<'PY'
           import json
-          meta = json.load(open('projects/02-demand-forecasting/reports/models/serving/meta.json'))
-          row = dict(meta['example_row'])
-          sid = row.pop('series_id')
-          print(json.dumps({'series_id': sid, 'features': row}))
-          ")
-          curl -fsS -o /dev/null -w '%{http_code}\n' \
+          from pathlib import Path
+
+          root = Path("projects")
+          meta = json.loads((root / "02-demand-forecasting/reports/models/serving/meta.json").read_text())
+          row = dict(meta["example_row"])
+          series_id = row.pop("series_id")
+          Path("/tmp/body-02.json").write_text(json.dumps({"series_id": series_id, "features": row}))
+          meta = json.loads((root / "05-ml-pipeline-churn/reports/models/serving/meta.json").read_text())
+          Path("/tmp/body-05.json").write_text(json.dumps({"features": meta["example_row"]}))
+          meta = json.loads((root / "07-open-data-mobility/reports/models/serving/meta.json").read_text())
+          Path("/tmp/body-07.json").write_text(json.dumps(meta["example"]))
+          PY
+          curl -fsS -o /tmp/response-02.json \
             -X POST http://localhost:8000/projects/02-demand-forecasting/forecast \
-            -H 'content-type: application/json' \
-            -d "$body" \
-            | grep -q '^200$'
+            -H 'content-type: application/json' --data-binary @/tmp/body-02.json
+          curl -fsS -o /tmp/response-05.json \
+            -X POST http://localhost:8000/projects/05-ml-pipeline-churn/score \
+            -H 'content-type: application/json' --data-binary @/tmp/body-05.json
+          curl -fsS -o /tmp/response-07.json \
+            -X POST http://localhost:8000/projects/07-open-data-mobility/forecast \
+            -H 'content-type: application/json' --data-binary @/tmp/body-07.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          demand = json.loads(Path("/tmp/response-02.json").read_text())
+          assert isinstance(demand["forecast"], (int, float))
+          assert isinstance(demand["model"], str) and demand["model"]
+          churn = json.loads(Path("/tmp/response-05.json").read_text())
+          assert 0 <= churn["churn_probability"] <= 1
+          assert isinstance(churn["decision"]["alarm"], bool)
+          mobility = json.loads(Path("/tmp/response-07.json").read_text())
+          assert mobility["zone_id"] == 132
+          assert isinstance(mobility["prediction"], (int, float))
+          assert isinstance(mobility["p90"], (int, float))
+          print("02/05/07 serving responses valid")
+          PY

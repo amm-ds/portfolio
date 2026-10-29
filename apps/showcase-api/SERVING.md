@@ -5,7 +5,15 @@ results/figures routes. 02/05/07 read persisted serving artifacts from
 `projects/<pid>/reports/models/serving/` (503 with build instructions when
 absent); 06 is a pure function of the request body. Shared loader:
 `showcase_api.serving.load_artifacts` / `cached_artifacts` (per-directory
-lazy cache; joblib load happens once, not per request).
+lazy in-process cache, including missing-artifact results; restart the process
+after replacing a bundle). 06 does not load artifacts.
+
+Other caching is deliberate: `/projects` and `/demos` are compact JSON payloads
+held in memory per projects root and revalidated with ETags; figures and demo
+payloads use ETags plus `max-age=3600, stale-while-revalidate=86400`; `/health`
+and `/ready` are `no-store`; hashed `/assets/` files are immutable for one year; and SPA HTML
+and other static files require revalidation. There is no response cache for
+POST inference or RAG answers.
 
 ## `POST /projects/02-demand-forecasting/forecast`
 
@@ -131,6 +139,7 @@ Routes:
   `/demos/{id}` and `status` is `live`.
 - `GET /demos/{id}/manifest` — the validated `DemoManifest` as JSON.
 - `GET /demos/{id}/payload` — the project's committed payload JSON. The
-  response carries `Cache-Control: max-age=300`. Errors: 404 for an unknown
+  response carries an ETag and `Cache-Control: public, max-age=3600,
+  stale-while-revalidate=86400`. Errors: 404 for an unknown
   demo id or when the payload file is missing, 409 when the payload's keys or
   `schema_version` don't satisfy the manifest's `payload` ref.

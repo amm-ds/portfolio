@@ -38,5 +38,6 @@ See ADR-0006.
 - Zero secrets in CI; eval harness runs against the mock with fixed expectations
   and against the real provider in release runs (results documented per release).
 - Cost/latency SLOs are measured identically across providers; runbook
-  `llm-cost-incident.md` documents the fallback chain (provider → local mock
-  with degraded retrieval-only answers).
+  `llm-cost-incident.md` documents provider/Ollama operation, budget guards,
+  and the public RAG kill switch. Runtime mocks and retrieval-only fallback are
+  not production modes.

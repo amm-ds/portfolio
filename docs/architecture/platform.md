@@ -88,5 +88,8 @@ imports a provider SDK directly.
   OpenTelemetry-compatible spans (see runbook `llm-cost-incident.md`).
 - SLOs are documented per project in `DESIGN.md` (e.g., Project 01: p95 latency,
   cost/query budget, fallback chain).
-- Rollback = re-run `dvc repro` from the last good commit; every stage is
-  deterministic given its inputs (pinned versions, seeds, checksums).
+- Pipeline restore = run `uv run dvc repro` inside the affected project. The
+  single-container deployment instead rolls back by selecting the previous
+  `IMAGE`/`TAG` and recreating the API (brief interruption); see
+  `deploy/DEPLOY.md` for readiness checks, trusted-proxy boundaries, budgets,
+  and the RAG kill switch.

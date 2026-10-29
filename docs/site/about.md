@@ -8,8 +8,9 @@ reproducible pipelines, evaluation harnesses, SLOs, runbooks) that make systems
 operable, not just trainable.
 
 This repository doubles as the public portfolio and the project showcase:
-everything here reproduces from a clean clone (`make setup && dvc repro`) and is
-served by the [showcase app](../index.md#quick-start).
+each pipeline reproduces from a clean clone (`make setup`, then `uv run dvc
+repro` inside its project directory) and is served by the
+[showcase app](../index.md#quick-start).
 
 ## Services
 
