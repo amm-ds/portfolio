@@ -68,9 +68,9 @@ sections:
           CELL --> REP["metrics.json + report.html + figures"]
       ```
 
-      **Business summary:** A mid-size model answered in under a second for
-      pennies of power — on that one laptop. Re-run the harness on your own
-      hardware before deciding.
+      **Business summary:** This section introduces the benchmark: five setups,
+      760 requests, zero failures, and a 4-bit model answering in 0.81 s per
+      request.
     figures: []
     metrics_keys: []
   - id: objectives
@@ -94,7 +94,7 @@ sections:
       gets recorded.
 
       ```mermaid
-      flowchart TB
+      flowchart LR
           subgraph CELL["one cell: model x engine x quantization x concurrency"]
               M["model artifact tag"]
               Q["quantization: Q4_K_M / Q8_0 / QAT-int4 / MXFP4 / 4-bit MLX"]
@@ -116,9 +116,9 @@ sections:
           RULES --> VERDICT["verdict from recorded trade-offs"]
       ```
 
-      **Business summary:** The goal was a decision rule, not one speed
-      ranking — every choice backed by recorded latency, throughput,
-      quality, and cost.
+      **Business summary:** This section lists the study targets. It records
+      latency, throughput, quality, and failures at concurrency 1 through 8,
+      plus cost from measured tokens and stated power draw.
     figures: []
     metrics_keys: []
   - id: data
@@ -161,8 +161,9 @@ sections:
       `reports/report.html`, and the figures. The published percentiles
       re-aggregate offline from the raw record. No re-run needed.
 
-      **Business summary:** The benchmark uses a tiny home-made task with
-      exact right-or-wrong answers, so every setup faces the same questions.
+      **Business summary:** This section defines the task: 8 general-knowledge
+      prompts, each with a keyword checklist and a fixed answer schema, so every
+      setup answers the same questions under the same rules.
     figures: []
     metrics_keys: []
   - id: eda
@@ -179,9 +180,10 @@ sections:
       makes quality scores comparable across arms. One parser scores every
       arm, so the checker itself can't create fake gaps.
 
-      **Business summary:** Every answer was checked word for word before
-      any speed number was believed — and one model's silent reasoning mode
-      was caught before it could skew the race.
+      **Business summary:** This section checks answers before timings: all 760
+      responses match the schema and keyword checklists, scoring 1.00 in every
+      cell. A smoke pass caught one model's silent reasoning mode before the
+      runs.
     figures:
       - quality_quant
     metrics_keys: []
@@ -196,7 +198,7 @@ sections:
       tokens-per-second chart shows what the grid measured.
 
       ```mermaid
-      flowchart TB
+      flowchart LR
           subgraph MODELS["five serving setups"]
               A["qwen3.6:35b-a3b - 3B-active MoE, Q4_K_M"]
               B["gpt-oss:20b - dense, MXFP4"]
@@ -238,9 +240,9 @@ sections:
         *Limit:* electricity only — no metered wall power, no hardware
         amortization.
 
-      **Business summary:** On this laptop the compact 4-bit model was
-      fastest, cheapest per token, and just as accurate on the bounded task —
-      each win with its caveat stated.
+      **Business summary:** This section compares the five serving setups. The
+      4-bit MoE model answers in 0.81 s, makes 7× the dense 32B's tokens per
+      second, and matches every arm at 1.00 quality.
     figures:
       - toks_per_s
     metrics_keys: []
@@ -260,9 +262,9 @@ sections:
       for trusting repeats (the attempt sits under revision notes in
       Details).
 
-      **Business summary:** Use the benchmark as a procurement gate — re-run
-      the grid on the target stack, keep packaging labels honest, and treat
-      these cells as one worked example, not a portable SLA.
+      **Business summary:** This section names the winner — the 4-bit MoE model —
+      and shows latency rising from 0.81 s at one request to 7.80 s at eight;
+      only the procedure transfers, not the values.
     figures:
       - latency_concurrency
     metrics_keys: []
@@ -286,18 +288,17 @@ sections:
       - **Cost:** about $0.12 per 1M output tokens for the winner,
         electricity only; the cloud rate card stays a labelled hypothetical.
 
-      **Business summary:** The compact 4-bit model won every dimension
-      measured here — speed, throughput, bounded-task quality, and power
-      cost — and the heavier arms trailed far behind on speed.
+      **Business summary:** This section lists the committed results: the
+      winner's 0.63/0.81 s median/p95 latency and 67.7 tok/s, a 2.9×
+      MLX-over-llama.cpp packaging gap, and cost near $0.12 per 1M output
+      tokens.
     figures:
       - engine_panel
     metrics_keys: []
   - id: conclusions
     text_md: |
       The deliverable is the harness; the published numbers are a worked
-      example from one machine. Measure the endpoint that will ship, label
-      confounded engine/quantization comparisons, and record unavailable
-      arms explicitly.
+      example from one machine.
 
       ## Exact numbers
 
@@ -375,10 +376,8 @@ sections:
       | quality | schema-valid rate, keyword quality rate, failures |
       | cost | measured tok/s × declared 100 W draw × $0.30/kWh; cloud card hypothetical |
 
-      The bounded default (3 models × 3 concurrency levels) targets under
-      45 minutes; `--full` adds qwen3:32b, concurrency 2, and the
-      quant/engine cells. Re-running the protocol is meaningful; carrying
-      its absolute results to another machine is not.
+      The bounded default (3 models × 3 rungs) targets under 45 minutes;
+      `--full` adds qwen3:32b, concurrency 2, and the quant/engine cells.
 
       ## Limits
 
@@ -397,37 +396,27 @@ sections:
         recorded, not forced.
       - **Quality generality:** perfect bounded-task scores do not show that
         quantization never affects model quality.
-      - **Repeat grid:** re-measurement on a quiet, dedicated machine (and
-        across further machines and Ollama builds) is deferred until
-        dedicated hardware access exists; quantization-matched engine
-        isolation likewise waits on suitable builds.
+      - **Repeat grid:** re-measurement on quiet, dedicated hardware is deferred
+        until access exists; quantization-matched engine isolation waits on
+        suitable builds.
 
       ## Revision notes
 
-      **Committed run (2026-10-15):** full-grid raw record
-      `data/bench_run.json` — 19 cells, 760 requests, Ollama 0.40.4, zero
-      failures; the published percentiles re-aggregate offline via
-      `report`.
-
-      **Repeat attempt (2026-10-30):** the same 11-cell bounded shape (440
-      requests) ran on this machine under Ollama 0.40.12 while a virtual
-      machine and background jobs co-ran. Quality held — every cell kept
-      schema-valid and keyword rates at 1.00 — but llama.cpp latency cells
-      were 10–30× slower (mean TTFT reached 44 s on the qwen3.6 c=8 cell)
-      and the gpt-oss c=8 cell hit ten 180 s read timeouts, while the MLX
-      cells matched their committed cells. The gap is co-tenant
-      memory-bandwidth contention on the llama.cpp path, not the 0.40.12
-      build. The attempt is evidence about repeat methodology — single-machine
-      repeats need a quiet, dedicated host — not about the serving arms. Raw
-      record: `data/bench_run_repeat.json`.
-
-      **Results quality: acceptable with caveats.** The aggregate cells are
-      internally consistent for this bounded task, and the raw 760-request
-      record is committed for independent re-aggregation. One quiet-machine
-      run cannot establish portable latency, throughput, quality, or cost;
-      the repeat attempt was dominated by co-tenant load rather than the new
-      build, and the electricity view excludes wall power and hardware
-      amortization.
+      - **Committed run (2026-10-15):** full-grid raw record
+        `data/bench_run.json` — 19 cells, 760 requests, Ollama 0.40.4, zero
+        failures; the published percentiles re-aggregate offline via `report`.
+      - **Repeat attempt (2026-10-30):** the same 11-cell bounded shape (440
+        requests) ran under Ollama 0.40.12 while a virtual machine and background
+        jobs co-ran. Quality held — every cell kept schema-valid and keyword
+        rates at 1.00 — but llama.cpp latency cells were 10–30× slower (mean
+        TTFT reached 44 s on the qwen3.6 c=8 cell), the gpt-oss c=8 cell hit ten
+        180 s read timeouts, and the MLX cells matched their committed cells.
+        The gap is co-tenant memory-bandwidth contention on the llama.cpp path,
+        not the 0.40.12 build. Raw record: `data/bench_run_repeat.json`.
+      - **Results quality: acceptable with caveats.** The aggregate cells are
+        internally consistent for this bounded task, and the raw 760-request
+        record is committed for independent re-aggregation; one quiet-machine
+        run cannot establish portable latency, throughput, quality, or cost.
 
       ## Reproduce
 
@@ -440,9 +429,8 @@ sections:
       uv run python -m inference_serving.cli report
       ```
 
-      **Business summary:** Take the harness, not the headline numbers —
-      re-run the grid on the target hardware and decide from that record;
-      the published values are one honest worked example from a single
-      laptop.
+      **Business summary:** This section records the final grid, protocol,
+      limits, and reproduction commands: 19 cells, 760 requests, zero failures,
+      and the 4-bit MoE model leading every measured dimension on this machine.
     figures: []
     metrics_keys: []

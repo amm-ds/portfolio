@@ -851,12 +851,14 @@ def build_report(cfg: MobilityConfig | None = None) -> Path:
         )
         + "</ul>",
     )
+    first_plotly = True
     for name in figures:
-        report.add_html(
-            name.replace("_", " ").title(),
-            f'<p><a href="figures/{name}.html">interactive figure</a> '
-            f"(<code>figures/{name}.html</code>)</p>",
+        # the standalone .html stays on disk for the API figure route; the
+        # report itself embeds the div so committed reports self-contain
+        report.add_figure(
+            name.replace("_", " ").title(), figures[name], include_plotlyjs=first_plotly
         )
+        first_plotly = False
     return report.write(cfg.reports_dir / "report.html")
 
 

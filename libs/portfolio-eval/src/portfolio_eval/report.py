@@ -24,13 +24,18 @@ _HTML = """<!doctype html>
 <title>{title} — evaluation report</title>
 <style>
 body {{ font-family: Inter, system-ui, sans-serif; background: #0f172a; color: #e2e8f0;
-       max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }}
-h1 {{ color: #2dd4bf; }} h2 {{ color: #38bdf8; }}
-table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-th, td {{ border: 1px solid #334155; padding: 0.4rem 0.8rem; text-align: left; }}
+       max-width: 1400px; margin: 2.5rem auto; padding: 0 2.5rem; line-height: 1.55; }}
+h1 {{ color: #2dd4bf; margin-bottom: 0.25rem; }}
+h2 {{ color: #38bdf8; margin: 2.25rem 0 0.75rem; }}
+.table-wrap {{ overflow-x: auto; margin: 1rem 0 1.5rem; }}
+table {{ border-collapse: collapse; width: 100%; margin: 0; font-size: 0.92rem; }}
+th, td {{ border: 1px solid #334155; padding: 0.45rem 0.9rem; text-align: left;
+         white-space: nowrap; }}
+td {{ white-space: normal; }}
 th {{ background: #1e293b; }}
 code {{ background: #1e293b; padding: 0.1rem 0.35rem; border-radius: 4px; }}
-.mermaid {{ background: #f8fafc; border-radius: 8px; padding: 1rem; margin: 0.5rem 0;
+.plotly-graph-div {{ margin: 1.5rem 0; }}
+.mermaid {{ background: #f8fafc; border-radius: 8px; padding: 1rem; margin: 1rem 0;
            overflow-x: auto; }}
 </style>
 <script type="module">
@@ -64,7 +69,10 @@ class EvalReport:
             tag = "th" if line_no == 0 else "td"
             cells = "".join(f"<{tag}>{c.strip()}</{tag}>" for c in line.strip("|").split("|"))
             rows.append(f"<tr>{cells}</tr>")
-        self.sections.append(f"<h2>{heading}</h2><table>{''.join(rows)}</table>")
+        # wrapped so wide tables scroll within the margins instead of overflowing
+        self.sections.append(
+            f'<h2>{heading}</h2><div class="table-wrap"><table>{"".join(rows)}</table></div>'
+        )
 
     def add_html(self, heading: str, html: str) -> None:
         self.sections.append(f"<h2>{heading}</h2>{html}")
@@ -78,11 +86,15 @@ class EvalReport:
         caption: str | None = None,
     ) -> None:
         """Embed a Plotly figure as an interactive div (CDN bundle only on the
-        first figure of the report), with an optional lead-in caption."""
+        first figure of the report), with an optional lead-in caption.
+
+        The div is rendered at 100% of the report width so figures read
+        comfortably at the full column and reflow on small screens."""
         div = fig.to_html(
             full_html=False,
             include_plotlyjs="cdn" if include_plotlyjs else False,
-            config={"displaylogo": False},
+            config={"displaylogo": False, "responsive": True},
+            default_width="100%",
         )
         lead = f"<p>{caption}</p>" if caption else ""
         self.add_html(heading, lead + div)
