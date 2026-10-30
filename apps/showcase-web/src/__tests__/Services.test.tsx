@@ -15,23 +15,28 @@ function renderServices() {
 }
 
 describe("Services page (wave 8)", () => {
-  it("renders the hero and exactly 5 offering cards (one per service line)", () => {
+  it("renders the hero and exactly 7 generic offering cards (one per service line)", () => {
     renderServices();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "ML/AI engineering, end to end",
     );
     const offerings = document.querySelectorAll(".offering-card");
-    expect(offerings).toHaveLength(5);
+    expect(offerings).toHaveLength(7);
     const titles = [...document.querySelectorAll(".offering-card h3")].map(
       (el) => el.textContent,
     );
     expect(titles).toEqual([
       "AI/LLM systems",
-      "Predictive analytics",
-      "ML engineering & MLOps",
+      "Machine learning",
       "Optimization",
-      "Anomaly detection",
+      "Data engineering",
+      "MLOps",
+      "Interactive dashboards",
+      "Full-stack product engineering",
     ]);
+    // no anomaly-specific or otherwise vertical-specific offering card
+    expect(titles).not.toContain("Anomaly detection");
+    expect(titles).not.toContain("Predictive analytics");
     // offering cards use the shared Card surface
     document.querySelectorAll(".offering-card").forEach((el) => {
       expect(el.classList.contains("accent-card")).toBe(true);
@@ -41,19 +46,32 @@ describe("Services page (wave 8)", () => {
   it("each offering has an outcome line, technical chips, evidence and a success sentence", () => {
     renderServices();
     expect(screen.getByText(/Assistants and agents that cite their sources/)).toBeInTheDocument();
-    // technical elements rendered as short, specific chips (scoped — some names also appear in prose)
+    // technical elements rendered as short, generic chips (scoped — some names also appear in prose)
     const chipTexts = [...document.querySelectorAll(".chip")].map((el) => el.textContent);
     for (const chip of [
       "APIs (FastAPI/REST)",
-      "Inference & serving",
-      "Data pipelines (Polars/DVC)",
-      "Viz (Plotly/React)",
-      "Eval/HPO (Optuna)",
-      "MLOps/CI (Actions/Docker)",
+      "Retrieval pipelines",
+      "Structured output",
+      "Eval harnesses",
       "Leakage-proof CV",
+      "Calibrated models",
+      "Cost curves",
+      "Optuna HPO",
+      "Exact & heuristics",
       "Benchmark instances",
-      "Alert budgets",
-      "uv",
+      "Runtime budgets",
+      "Polars/DVC pipelines",
+      "DQ gates",
+      "Checksum pinning",
+      "CI eval gates",
+      "Docker + uv",
+      "Clean-clone runs",
+      "React + Plotly",
+      "Live endpoints",
+      "Pinned payloads",
+      "FastAPI + React",
+      "Docker Compose",
+      "Caddy deploy",
     ]) {
       expect(chipTexts).toContain(chip);
     }
@@ -85,26 +103,36 @@ describe("Services page (wave 8)", () => {
       "/projects/10-uplift-experimentation",
     ]);
     expect(proofLinks).toContainEqual([
-      "proof: inference serving benchmark",
-      "/projects/08-inference-serving",
-    ]);
-    expect(proofLinks).toContainEqual([
       "proof: vehicle routing benchmark",
       "/projects/06-routing-optimization",
     ]);
     expect(proofLinks).toContainEqual([
-      "proof: incident detection w/ alert budget",
-      "/projects/03-anomaly-detection",
+      "proof: NYC mobility data pipeline",
+      "/projects/07-open-data-mobility",
     ]);
+    expect(proofLinks).toContainEqual([
+      "proof: demand forecast pipeline",
+      "/projects/02-demand-forecasting",
+    ]);
+    expect(proofLinks).toContainEqual([
+      "proof: inference serving benchmark",
+      "/projects/08-inference-serving",
+    ]);
+    expect(proofLinks).toContainEqual(["proof: served demand API", "/projects/07-open-data-mobility"]);
+    // the anomaly card is gone — no offering links to it as its proof anymore
+    expect(proofLinks.every(([, href]) => href !== "/projects/03-anomaly-detection")).toBe(true);
     // every offering carries exactly one metric-first success sentence
     const cards = document.querySelectorAll(".offering-card");
-    expect(cards).toHaveLength(5);
+    expect(cards).toHaveLength(7);
     cards.forEach((card) => {
       expect(card.textContent).toMatch(/how success is measured ::/);
       expect(card.textContent).toMatch(/measured (on|by|as)/);
       expect(card.textContent).not.toMatch(/revenue/i);
     });
-    expect(screen.getByText("faithfulness/relevance eval harness")).toBeInTheDocument();
+    // measured literals are quoted from the committed reports
+    expect(screen.getByText(/4\.23% above published best-known across 56 Solomon cases/)).toBeInTheDocument();
+    expect(screen.getByText(/\$601 vs \$1,035 per 1,400 customers/)).toBeInTheDocument();
+    expect(screen.getByText(/faithfulness\/relevance eval harness/)).toBeInTheDocument();
   });
 
   it("has no proof band and no contact/availability block (Contact owns those)", () => {
@@ -159,14 +187,44 @@ describe("Services page (wave 8)", () => {
     expect(table.classList.contains("table-scroll")).toBe(true);
   });
 
+  it("serves AWS and Azure from local SVGs (no CC0 CDN source) with documented provenance", () => {
+    renderServices();
+    const providerSection = document.querySelector(".providers-grid")!;
+    const awsImg = providerSection.querySelector('[alt="AWS logo"]')!;
+    const azureImg = providerSection.querySelector('[alt="Microsoft Azure logo"]')!;
+    expect(awsImg.getAttribute("src")).toBe("/logos/aws.svg");
+    expect(azureImg.getAttribute("src")).toBe("/logos/azure.svg");
+    // Google Cloud still has a Simple Icons entry and stays on the CDN
+    const gcImg = providerSection.querySelector('[alt="Google Cloud logo"]')!;
+    expect(gcImg.getAttribute("src")).toBe("https://cdn.simpleicons.org/googlecloud");
+    // every local logo file exists and carries a source/license note
+    for (const f of ["aws", "azure", "ragas", "pydantic-ai"]) {
+      const svg = readFileSync(`public/logos/${f}.svg`, "utf8");
+      expect(svg).toContain("<svg");
+      expect(svg).toMatch(/source/i);
+    }
+    const notes = readFileSync("public/logos/README.md", "utf8");
+    expect(notes).toMatch(/trademark/i);
+  });
+
+  it("serves RAGAS and pydantic-ai logos locally (never had Simple Icons entries)", () => {
+    renderServices();
+    const frameworks = document.querySelector(".frameworks-grid:not(.providers-grid)")!;
+    expect(frameworks.querySelector('[alt="RAGAS logo"]')!.getAttribute("src")).toBe(
+      "/logos/ragas.svg",
+    );
+    expect(frameworks.querySelector('[alt="pydantic-ai logo"]')!.getAttribute("src")).toBe(
+      "/logos/pydantic-ai.svg",
+    );
+  });
+
   it("degrades a provider logo to a letter tile on image error", () => {
     renderServices();
     const providerTiles = document.querySelectorAll(".providers-grid .framework-tile");
-    // Google Cloud is the first provider still served a CDN logo (AWS/Azure are
-    // letter tiles by design — their Simple Icons entries were removed).
-    fireEvent.error(providerTiles[2].querySelector("img")!);
-    expect(screen.getByText("Gc")).toBeInTheDocument();
-    expect(providerTiles[2].querySelector("img")).toBeNull();
+    // AWS is the first provider tile, served from the local SVG
+    fireEvent.error(providerTiles[0].querySelector("img")!);
+    expect(screen.getByText("Aw")).toBeInTheDocument();
+    expect(providerTiles[0].querySelector("img")).toBeNull();
   });
 
   it("ships a horizontal process timeline (4-up, 2-up, 1-up) with breathing room", () => {
@@ -190,6 +248,14 @@ describe("Services page (wave 8)", () => {
     expect(tiles[0].querySelector("img")).toBeNull();
   });
 
+  it("degrades a local logo to a letter tile on image error", () => {
+    renderServices();
+    const ragasTile = document.querySelector('.framework-tile[title="RAGAS"]')!;
+    fireEvent.error(ragasTile.querySelector("img")!);
+    expect(screen.getByText("Ra")).toBeInTheDocument();
+    expect(ragasTile.querySelector("img")).toBeNull();
+  });
+
   it("framework logos carry explicit dimensions and meaningful alt text", () => {
     renderServices();
     const imgs = [...document.querySelectorAll(".framework-tile img")];
@@ -199,10 +265,5 @@ describe("Services page (wave 8)", () => {
       expect(img.getAttribute("height")).toBe("22");
       expect(img.getAttribute("alt")).toMatch(/logo$/);
     });
-    // AWS and Azure have no CC0-licensed icon source anymore — letter tiles, no <img>
-    const providerSection = document.querySelector(".providers-grid")!;
-    const providerImgs = [...providerSection.querySelectorAll("img")].map((i) => i.getAttribute("alt"));
-    expect(providerImgs).not.toContain("AWS logo");
-    expect(providerImgs).not.toContain("Microsoft Azure logo");
   });
 });

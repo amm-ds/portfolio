@@ -2,11 +2,12 @@ import type { Metrics, ProjectStoryData } from "../api";
 import { useScrollSpy } from "../hooks/useScrollSpy";
 import { RoadmapBlock } from "./RoadmapBlock";
 import { StorySection } from "./StorySection";
-import { StorySummary } from "./StorySummary";
 
 /**
  * Case-study layout: sticky section rail (scroll-spy) + rendered sections,
- * with the roadmap block at the end (after conclusions).
+ * with the roadmap block at the end (after conclusions). Authored summary
+ * fields (headline/data_note/limits) stay optional schema only — the summary
+ * itself leads the Background section prose.
  */
 export function CaseStudy({
   projectId,
@@ -21,9 +22,7 @@ export function CaseStudy({
   const active = useScrollSpy(ids);
 
   return (
-    <>
-      <StorySummary headline={story.headline} dataNote={story.data_note} limits={story.limits} />
-      <div className="story-layout">
+    <div className="story-layout">
         <nav className="rail" aria-label="Case study sections">
           {story.sections.map((s, i) => (
             <a
@@ -50,7 +49,6 @@ export function CaseStudy({
           ))}
           <RoadmapBlock roadmap={story.roadmap} />
         </div>
-      </div>
-    </>
+    </div>
   );
 }

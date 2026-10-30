@@ -142,7 +142,7 @@ describe("StorySection business-summary card", () => {
     expect(card?.textContent).toContain("retention budget is a cost-minimization");
   });
 
-  it("still renders the legacy **Business implication:** marker as a card", () => {
+  it("treats the legacy **Business implication:** marker as plain prose (fallback removed)", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
       <StorySection
@@ -155,11 +155,10 @@ describe("StorySection business-summary card", () => {
         metrics={null}
       />,
     );
-    const card = document.querySelector(".bi-card");
-    expect(card).not.toBeNull();
-    expect(card?.getAttribute("aria-label")).toBe("Business summary");
-    expect(card?.textContent).toContain("legacy tail text");
-    expect(document.querySelector(".story-main .prose")?.textContent).toContain("Setup prose.");
+    expect(document.querySelector(".bi-card")).toBeNull();
+    const prose = document.querySelector(".story-main .prose")!;
+    expect(prose.textContent).toContain("Setup prose.");
+    expect(prose.textContent).toContain("Business implication: legacy tail text.");
   });
 
   it("keeps the rest of the section content unchanged outside the card", () => {
