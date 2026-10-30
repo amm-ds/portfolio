@@ -161,8 +161,8 @@ export function ProjectDetail() {
       <div className="state-box">
         <h1>Unknown project</h1>
         <p>
-          We couldn't find an experiment called <code>{id}</code>. It may have been renamed
-          or retired — browse the current experiments instead.
+          I couldn't find an experiment called <code>{id}</code>. It may have been
+          renamed or retired — browse the current experiments instead.
         </p>
         <p>
           <Link to="/projects">← all experiments</Link>

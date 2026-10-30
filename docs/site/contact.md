@@ -6,7 +6,7 @@ and US hours.
 
 ## Start a conversation
 
-The fastest route is a **GitHub inquiry** — it opens a tracked thread we can
+The fastest route is a **GitHub inquiry** — it opens a tracked thread I can
 move to email or a call from:
 
 → [Open an inquiry](https://github.com/amm-ds/portfolio/issues/new?title=Inquiry%3A%20&body=%2A%2AContext%2A%2A%3A%20%28what%20you%27re%20building%20or%20deciding%29%0A%2A%2ATimeline%2A%2A%3A%20%0A%2A%2AWhat%20done%20looks%20like%2A%2A%3A%20)

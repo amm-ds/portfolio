@@ -7,6 +7,11 @@
 [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization/DESIGN.md) ·
 [Dataset card](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)
 
+> Routing planner for the 56 standard Solomon 100-customer problems with time
+> windows. A hand-written search returns feasible plans within 4.2% of
+> best-known routes in ~1 second each, using 3.7 more vehicles than best-known
+> on average; an exact solver certifies small cases only.
+>
 > **TL;DR:** fleet operators running last-mile and field-service routes, where
 > every percent of distance is fuel, driver hours and CO₂, every day.
 > The solver ladder lands **4.23%** from published best-known optima on all 56

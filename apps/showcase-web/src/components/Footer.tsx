@@ -15,6 +15,7 @@ export function Footer() {
           <Link to="/projects">Projects</Link>
           <Link to="/services">Services</Link>
           <Link to="/contact">Contact</Link>
+          <Link to="/glossary">Glossary</Link>
           <a href="https://github.com/amm-ds/portfolio" target="_blank" rel="noreferrer">
             GitHub
           </a>

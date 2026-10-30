@@ -4,6 +4,11 @@
 (MineThatData, ~64k customers, sha256-pinned from the author's site) ·
 **Status:** working showcase on the standard platform
 
+> On 64,000-customer randomized email data, uplift targeting beat random
+> targeting by +$2,812 (+69%) at a 25% send budget, CI [+$718, +$4,767]; at
+> $0.01 per email, mailing everyone still wins. Targeting pays when sending
+> is costly. Data: Hillstrom MineThatData, March 2008.
+>
 > A campaign owner who mails "most likely to convert" targets sure things —
 > and wastes the budget that persuadables would repay.
 > Headline: on the canonical Hillstrom benchmark, the recommended top-25%

@@ -4,6 +4,11 @@
 benchmark (synthetic task, no download) · **Status:** working showcase on
 the standard platform
 
+> One laptop, one run: five LLM serving setups, 760 requests, zero failures.
+> A 4-bit mixture-of-experts model answers in 0.81 s per request at about
+> $0.12 per 1M output tokens (electricity only). The reusable asset is the
+> harness for re-measuring any stack on target hardware.
+>
 > Anyone deciding between local and cloud LLM serving usually gets vendor
 > rate cards, not measurements of the stack they would actually run.
 > Headline: the 4-bit MoE arm serves locally at ~$0.12 per 1M output tokens
