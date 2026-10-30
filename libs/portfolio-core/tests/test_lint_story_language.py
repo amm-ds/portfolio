@@ -319,7 +319,7 @@ def test_changelog_phrases_banned_outside_conclusions(tmp_path):
     assert all(f.location == "section background" for f in hits)
 
 
-@pytest.mark.parametrize("n_words", [119, 120])
+@pytest.mark.parametrize("n_words", [149, 150])
 def test_first_section_cap_boundary_ok(tmp_path, n_words):
     body = (
         "project_id: 99-test\n"
@@ -338,12 +338,12 @@ def test_first_section_over_cap_is_error(tmp_path):
         "sections:\n"
         "  - id: background\n"
         "    text_md: |\n"
-        f"      {'word ' * 121}\n"
+        f"      {'word ' * 151}\n"
     )
     findings = _lint(tmp_path, body)
     hits = [f for f in findings if f.rule == "first-section-cap"]
     assert len(hits) == 1
-    assert "121 words" in hits[0].message
+    assert "151 words" in hits[0].message
 
 
 def test_bare_pp_is_error_dotted_pp_is_fine(tmp_path):
