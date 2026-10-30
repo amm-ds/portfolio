@@ -75,6 +75,57 @@ describe("renderMarkdown", () => {
     expect(container.querySelector("img")).toBeNull();
     expect(container.textContent).toContain("<script>alert(1)</script>");
   });
+
+  it("renders [text](url) as an external anchor for allowed schemes", () => {
+    const { container } = render(
+      <>{renderMarkdown("see the [M5 dataset](https://www.kaggle.com/c/m5-forecasting-accuracy)")}</>,
+    );
+    const a = container.querySelector("a");
+    expect(a?.textContent).toBe("M5 dataset");
+    expect(a?.getAttribute("href")).toBe("https://www.kaggle.com/c/m5-forecasting-accuracy");
+    expect(a?.getAttribute("target")).toBe("_blank");
+    expect(a?.getAttribute("rel")).toContain("noopener");
+  });
+
+  it("renders mailto links and keeps link text inside lists and tables", () => {
+    const { container } = render(
+      <>{renderMarkdown("- mail [me](mailto:hi@example.com)\n\n| a |\n|---|\n| [x](https://example.com) |")}</>,
+    );
+    const links = container.querySelectorAll("a");
+    expect(links).toHaveLength(2);
+    expect(links[0].getAttribute("href")).toBe("mailto:hi@example.com");
+    expect(container.querySelector("td a")?.textContent).toBe("x");
+  });
+
+  it("leaves disallowed schemes and relative paths as literal text", () => {
+    const { container } = render(
+      <>{renderMarkdown("a [click](javascript:alert(1)) and a [relative](/glossary)")}</>,
+    );
+    expect(container.querySelector("a")).toBeNull();
+    expect(container.textContent).toContain("a [click](javascript:alert(1))");
+    expect(container.textContent).toContain("and a [relative](/glossary)");
+  });
+
+  it("does not glossary-link terms inside link text", () => {
+    const { container } = render(
+      <>{renderMarkdown("the [baseline docs](https://example.com/baseline) page")}</>,
+    );
+    const a = container.querySelector("a");
+    expect(a?.textContent).toBe("baseline docs");
+    expect(a?.querySelector(".glossary-term")).toBeNull();
+    expect(container.querySelectorAll("a")).toHaveLength(1);
+  });
+
+  it("renders ATX headings below the section h2 without ever emitting h1/h2", () => {
+    const { container } = render(
+      <>{renderMarkdown("## Exact numbers\n\nbody\n\n### Deeper\n\nmore")}</>,
+    );
+    const h3 = container.querySelector("h3.md-heading");
+    const h4 = container.querySelector("h4.md-heading");
+    expect(h3?.textContent).toBe("Exact numbers");
+    expect(h4?.textContent).toBe("Deeper");
+    expect(container.querySelector("h1, h2")).toBeNull();
+  });
 });
 
 describe("renderMarkdown tables", () => {

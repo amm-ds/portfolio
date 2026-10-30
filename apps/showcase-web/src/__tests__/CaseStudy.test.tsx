@@ -85,14 +85,14 @@ describe("CaseStudy section rail", () => {
       sections: [
         {
           id: "background",
-          title: "The short version",
+          title: "Background",
           text_md: "A baseline model anchors the comparison.",
           figures: [],
           metrics_keys: [],
         },
         {
           id: "results",
-          title: "What this does not show",
+          title: "Results",
           text_md: "Back to the baseline in the results section.",
           figures: [],
           metrics_keys: [],

@@ -24,14 +24,14 @@ CANONICAL_SECTIONS: tuple[str, ...] = (
 )
 
 SECTION_TITLES: dict[str, str] = {
-    "background": "The short version",
-    "objectives": "The question",
-    "data": "The data",
-    "eda": "How we judged it",
-    "training": "What we found",
-    "evaluation": "What it means",
-    "results": "What this does not show",
-    "conclusions": "Details",
+    "background": "Background",
+    "objectives": "Target & objectives",
+    "data": "Data",
+    "eda": "Exploratory analysis",
+    "training": "Training & methods",
+    "evaluation": "Evaluation setup",
+    "results": "Results",
+    "conclusions": "Conclusions & lessons",
 }
 
 
@@ -58,6 +58,12 @@ class StorySection(PortfolioBaseModel):
         for fig in self.figures:
             if not fig.strip():
                 raise ValueError("figure names must be non-empty")
+        if len(self.figures) > 3:
+            raise ValueError(
+                f"section {self.id!r} lists {len(self.figures)} figures; the showcase "
+                "renders at most 3 figure cards per section — move the rest to an "
+                "adjacent section or express them as prose diagrams"
+            )
         return self
 
 

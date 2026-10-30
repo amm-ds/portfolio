@@ -9,21 +9,23 @@ export function shortMilestone(text: string): string {
 }
 
 /**
- * Story roadmap as a visual timeline: one node per milestone on a horizontal
- * progress line (delivered = accent-filled dot, open/deferred = hollow dot),
- * with the full milestone as both the visible label and hover text. Renders
- * nothing when the story has no roadmap yet.
+ * Story roadmap as a visual timeline of shipped work: one node per delivered
+ * milestone on a horizontal progress line (accent-filled dot), with the full
+ * milestone as both the visible label and hover text. Open or deferred items
+ * are authoring state, not visitor content — the published roadmap shows
+ * completed milestones only. Renders nothing when nothing is delivered yet.
  */
 export function RoadmapBlock({ roadmap }: { roadmap: RoadmapItemData[] | undefined }) {
-  if (!roadmap || roadmap.length === 0) return null;
+  const delivered = roadmap?.filter((r) => r.status === "delivered") ?? [];
+  if (delivered.length === 0) return null;
 
   return (
     <Card className="roadmap">
       <div className="roadmap-head">
         <h2 className="roadmap-title">roadmap</h2>
       </div>
-      <ol className="roadmap-track" style={{ "--n": roadmap.length } as React.CSSProperties}>
-        {roadmap.map((r, i) => (
+      <ol className="roadmap-track" style={{ "--n": delivered.length } as React.CSSProperties}>
+        {delivered.map((r, i) => (
           <li key={i} className={`roadmap-node ${r.status}`} title={r.text}>
             <span className="roadmap-dot" aria-label={r.status} role="img" />
             <span className="roadmap-label">{shortMilestone(r.text)}</span>

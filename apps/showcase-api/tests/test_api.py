@@ -189,7 +189,7 @@ def test_story_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no
     assert r.status_code == 200
     body = r.json()
     assert [s["id"] for s in body["sections"]] == ["background", "results"]
-    assert body["sections"][0]["title"] == "The short version"
+    assert body["sections"][0]["title"] == "Background"
     assert body["sections"][1]["figures"] == ["bars"]
 
 

@@ -239,14 +239,14 @@ def test_section_titles_fixed_template() -> None:
     from portfolio_core.story import SECTION_TITLES
 
     assert SECTION_TITLES == {
-        "background": "The short version",
-        "objectives": "The question",
-        "data": "The data",
-        "eda": "How we judged it",
-        "training": "What we found",
-        "evaluation": "What it means",
-        "results": "What this does not show",
-        "conclusions": "Details",
+        "background": "Background",
+        "objectives": "Target & objectives",
+        "data": "Data",
+        "eda": "Exploratory analysis",
+        "training": "Training & methods",
+        "evaluation": "Evaluation setup",
+        "results": "Results",
+        "conclusions": "Conclusions & lessons",
     }
 
 
@@ -262,5 +262,14 @@ def test_load_story_fills_fixed_template_titles(tmp_path: Path) -> None:
     )
     loaded = load_story(tmp_path)
     assert loaded is not None
-    assert loaded.sections[0].title == "The short version"
-    assert loaded.sections[1].title == "Details"
+    assert loaded.sections[0].title == "Background"
+    assert loaded.sections[1].title == "Conclusions & lessons"
+
+
+def test_section_figures_capped_at_three() -> None:
+    from pydantic import ValidationError
+
+    ok = _section("results", figures=["a", "b", "c"])
+    assert ok.figures == ["a", "b", "c"]
+    with pytest.raises(ValidationError):
+        _section("results", figures=["a", "b", "c", "d"])

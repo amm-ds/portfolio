@@ -123,7 +123,7 @@ sections:
       history beats the baseline on every metric** — per-service retraining
       is the fix, and the green service now ships as an identical serving
       bundle (Details).
-    figures: []
+    figures: [gbm_vs_nn]
     metrics_keys: []
   - id: evaluation
     text_md: |
@@ -150,7 +150,7 @@ sections:
       - **Trained weights are per-service.** Yellow-taxi models lose to the
         baseline on green taxis until retrained on that service's own
         history; Manhattan's volume dominates absolute error everywhere else.
-    figures: [hour_borough_heatmap, gbm_vs_nn, p90_band, weather_elasticity]
+    figures: [hour_borough_heatmap, p90_band, weather_elasticity]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
   - id: conclusions
     text_md: |

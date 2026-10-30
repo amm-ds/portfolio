@@ -13,15 +13,27 @@ Checks (per story.yaml):
           the last one, dropping a section or caption block)
   ERROR   first section (background) over FIRST_SECTION_WORD_CAP words — the
           opening must stay skimmable
-  ERROR   "In plain terms" outside the background section and
-          "Business summary" outside the evaluation section (StorySection.tsx
-          renders the trailing marker paragraph as the takeaway card; the
-          markers are section-typed)
+  ERROR   more than one summary-card marker in a section, or a marker that does
+          not open the section's final paragraph (StorySection.tsx renders the
+          trailing marker paragraph as the takeaway card; the renderer takes
+          the LAST marker, so anything after an earlier one is swallowed)
+  ERROR   more than 3 figure cards in a section — the showcase renders at most
+          3 per section; move the rest or express them as prose diagrams
   ERROR   changelog/wave narrative ("run and wave record", "wave 15",
-          "wave-2", "changelog") in the main sections — revision history
-          belongs in conclusions only
+          "wave-2", "changelog") in the main sections, or in conclusions
+          before the `### Revision notes` heading — revision history belongs
+          in that subsection only
   ERROR   bare "pp" for percentage points — write "pp." (a bare "pp" reads as
           "pages"); "pp." is a protected token for sentence splitting
+  WARNING section with no figure and no mermaid diagram — every section should
+          carry a visual (story template: at least one per section)
+  WARNING glossary term (apps/showcase-web/src/lib/glossary.json) used in
+          section prose but never in a position the renderer auto-links
+          (all its occurrences are inside code spans/fenced blocks, which
+          lib/markdown.tsx never links) — its first use stays unlinked
+  WARNING section word budget (main sections) and main-thread total budget
+          (all main sections combined; conclusions is collapsed <details>)
+  WARNING Flesch reading ease below FLESCH_MIN in a main section
   WARNING glossary term (apps/showcase-web/src/lib/glossary.json) used in
           section prose but never in a position the renderer auto-links
           (all its occurrences are inside code spans/fenced blocks, which
@@ -61,11 +73,13 @@ MAIN_THREAD_WORD_BUDGET = 1200  # soft total across main sections (warning);
 # ~a five-minute read for the always-visible thread (conclusions is collapsed)
 FLESCH_MIN = 50.0  # per-section reading-ease floor (warning)
 
-PLAIN_TERMS_PHRASE = "in plain terms"
-PLAIN_TERMS_SECTION = "background"
-BUSINESS_SUMMARY_PHRASE = "business summary"
-BUSINESS_SUMMARY_SECTION = "evaluation"
-CHANGELOG_SECTION = "conclusions"  # wave/changelog narrative allowed only here
+#: Trailing takeaway markers (StorySection.tsx renders the final marker paragraph
+#: as the section's summary card). New stories standardize on the business form.
+CARD_MARKERS = ("**business summary:**", "**in plain terms:**")
+CHANGELOG_SECTION = "conclusions"  # wave/changelog narrative lives in revision notes
+REVISION_NOTES_HEADING_RE = re.compile(
+    r"^#{2,6}\s*revision notes\s*$", re.MULTILINE | re.IGNORECASE
+)
 
 #: Changelog phrasing that must stay inside conclusions (revision-history home).
 BANNED_CHANGELOG_RE = re.compile(
@@ -215,16 +229,19 @@ def flesch_ease(text: str) -> float | None:
 _TOP_KEY_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_-]*):(?:\s|$)")
 _SECTION_ITEM_RE = re.compile(r"^(\s*)-\s+id:\s*([A-Za-z0-9_-]+)\s*$")
 _TEXT_MD_RE = re.compile(r"^(\s*)text_md:\s*(.*?)\s*$")
+_FIGURES_KEY_RE = re.compile(r"^(\s*)figures:\s*(.*?)\s*$")
+_FIGURE_ITEM_RE = re.compile(r"^\s*-\s+(\S.*?)\s*$")
 _BLOCK_SCALAR_RE = re.compile(r"^([|>])([+-]?)$")
 _DOC_MARK_RE = re.compile(r"^\s*(?:---|\.\.\.)\s*$")
 
 
 @dataclass
 class ParsedStory:
-    """What the lint needs from a story.yaml: ordered section prose."""
+    """What the lint needs from a story.yaml: ordered section prose + figures."""
 
     section_ids: list[str]
     sections: dict[str, str]  # id → raw markdown (first occurrence wins)
+    figures: dict[str, list[str]]  # id → figure names (first occurrence wins)
 
 
 def duplicate_top_level_keys(raw: str) -> list[tuple[str, int]]:
@@ -251,9 +268,10 @@ def _unquote(value: str) -> str:
 
 def parse_story(raw: str) -> ParsedStory:
     """Minimal stdlib parser for the story.yaml subset the lint reads: the
-    ``sections:`` list with its ``text_md`` block scalars."""
+    ``sections:`` list with its ``text_md`` block scalars and figure lists."""
     section_ids: list[str] = []
     sections: dict[str, str] = {}
+    figures: dict[str, list[str]] = {}
     current_id: str | None = None
     i = 0
     lines = raw.splitlines()
@@ -272,6 +290,12 @@ def parse_story(raw: str) -> ParsedStory:
         if not line.startswith((" ", "\t")):
             if _TOP_KEY_RE.match(line):
                 current_id = None  # left the sections list
+            continue
+        fm = _FIGURES_KEY_RE.match(line)
+        if fm and current_id is not None:
+            if current_id not in figures:
+                names, i = _parse_figures_value(fm.group(2), lines, i, len(fm.group(1)))
+                figures[current_id] = names
             continue
         m = _TEXT_MD_RE.match(line)
         if not m or current_id is None:
@@ -301,7 +325,49 @@ def parse_story(raw: str) -> ParsedStory:
         while block and block[-1] == "":
             block.pop()
         sections[current_id] = "\n".join(block) if style == "|" else _fold_lines(block)
-    return ParsedStory(section_ids, sections)
+    return ParsedStory(section_ids, sections, figures)
+
+
+def _parse_figures_value(
+    value: str, lines: list[str], i: int, indent: int
+) -> tuple[list[str], int]:
+    """Figure names after ``figures:`` — flow style (``[a, b]``, possibly on a
+    later, more-indented line) or a block list of ``- name`` lines. Returns
+    (names, next line)."""
+    if value:
+        return [_unquote(n.strip()) for n in value.strip("[]").split(",") if n.strip()], i
+    # Multi-line flow list: the "[" may open on a subsequent indented line.
+    j = i
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if (
+        j < len(lines)
+        and len(lines[j]) - len(lines[j].lstrip()) > indent
+        and lines[j].lstrip().startswith("[")
+    ):
+        acc: list[str] = []
+        while j < len(lines):
+            acc.append(lines[j].strip())
+            if "]" in lines[j]:
+                break
+            j += 1
+        joined = " ".join(acc)
+        return [_unquote(n.strip()) for n in joined.strip("[]").split(",") if n.strip()], j + 1
+    names: list[str] = []
+    while i < len(lines):
+        nxt = lines[i]
+        if not nxt.strip():
+            i += 1
+            continue
+        stripped = len(nxt) - len(nxt.lstrip())
+        if stripped <= indent:
+            break
+        item = _FIGURE_ITEM_RE.match(nxt)
+        if not item:
+            break
+        names.append(_unquote(item.group(1)))
+        i += 1
+    return names, i
 
 
 def _fold_lines(block: list[str]) -> str:
@@ -401,36 +467,58 @@ def _check_structure(raw: str, parsed: ParsedStory, project: str, errors: list[F
         errors.append(Finding("ERROR", project, "file", "parse", "no sections found in story.yaml"))
 
 
-def _check_phrase_placement(sid: str, text: str, project: str, out: list[Finding]) -> None:
-    if sid != PLAIN_TERMS_SECTION and re.search(
-        rf"\b{re.escape(PLAIN_TERMS_PHRASE)}\b", text, re.IGNORECASE
-    ):
-        out.append(
+def _check_summary_card(
+    sid: str, text: str, project: str, errors: list[Finding], warnings: list[Finding]
+) -> None:
+    """Exactly one trailing summary card per section (the renderer takes the
+    LAST marker and everything after it as the card). Missing card: warning so
+    not-yet-rewritten stories stay green; multiples or a non-final marker: error."""
+    low = text.lower()
+    count = sum(low.count(m) for m in CARD_MARKERS)
+    if count == 0:
+        warnings.append(
             Finding(
-                "ERROR",
+                "WARNING",
                 project,
                 f"section {sid}",
-                "plain-terms-placement",
-                f"'{PLAIN_TERMS_PHRASE}' belongs only in the {PLAIN_TERMS_SECTION} section",
+                "no-summary-card",
+                "section has no trailing **Business summary:** card",
             )
         )
-    if sid != BUSINESS_SUMMARY_SECTION and re.search(
-        rf"\b{re.escape(BUSINESS_SUMMARY_PHRASE)}\b", text, re.IGNORECASE
-    ):
-        out.append(
+        return
+    if count > 1:
+        errors.append(
             Finding(
                 "ERROR",
                 project,
                 f"section {sid}",
-                "business-summary-placement",
-                f"'{BUSINESS_SUMMARY_PHRASE}' belongs only in {BUSINESS_SUMMARY_SECTION}",
+                "summary-card-count",
+                f"{count} summary-card markers; exactly one trailing card per section",
+            )
+        )
+    blocks = re.split(r"\n\s*\n", text.rstrip())
+    last = blocks[-1].lower() if blocks else ""
+    if not any(m in last for m in CARD_MARKERS):
+        errors.append(
+            Finding(
+                "ERROR",
+                project,
+                f"section {sid}",
+                "summary-card-placement",
+                "summary-card marker must open the section's final paragraph block",
             )
         )
 
 
 def _check_changelog(sid: str, text: str, project: str, out: list[Finding]) -> None:
     if sid == CHANGELOG_SECTION:
-        return
+        # Allowed inside the collapsed `### Revision notes` subsection only.
+        # Stories without that heading are legacy: conclusions as a whole stays
+        # the revision-history home (no findings).
+        m = REVISION_NOTES_HEADING_RE.search(text)
+        if m is None:
+            return
+        text = text[: m.start()]
     for m in BANNED_CHANGELOG_RE.finditer(text):
         out.append(
             Finding(
@@ -438,9 +526,38 @@ def _check_changelog(sid: str, text: str, project: str, out: list[Finding]) -> N
                 project,
                 f"section {sid}",
                 "changelog-phrase",
-                f"changelog phrasing '{m.group(0)}' belongs only in {CHANGELOG_SECTION}",
+                f"changelog phrasing '{m.group(0)}' belongs only in the revision notes block",
             )
         )
+
+
+def _check_figures(
+    parsed: ParsedStory, project: str, errors: list[Finding], warnings: list[Finding]
+) -> None:
+    for sid in parsed.section_ids:
+        figs = parsed.figures.get(sid, [])
+        text = parsed.sections.get(sid, "")
+        if len(figs) > 3:
+            errors.append(
+                Finding(
+                    "ERROR",
+                    project,
+                    f"section {sid}",
+                    "figure-cap",
+                    f"{len(figs)} figure cards; the showcase renders at most 3 per section",
+                )
+            )
+        has_mermaid = re.search(r"^\s*```mermaid", text, re.MULTILINE) is not None
+        if not figs and not has_mermaid:
+            warnings.append(
+                Finding(
+                    "WARNING",
+                    project,
+                    f"section {sid}",
+                    "no-visual",
+                    "section has no figure card and no mermaid diagram",
+                )
+            )
 
 
 def _check_pp(sid: str, text: str, project: str, out: list[Finding]) -> None:
@@ -529,9 +646,10 @@ def lint_story(path: Path, glossary: re.Pattern[str]) -> list[Finding]:
     _check_structure(raw, parsed, project, errors)
     for sid in parsed.section_ids:
         text = parsed.sections[sid]
-        _check_phrase_placement(sid, text, project, errors)
+        _check_summary_card(sid, text, project, errors, warnings)
         _check_changelog(sid, text, project, errors)
         _check_pp(sid, text, project, errors)
+    _check_figures(parsed, project, errors, warnings)
     for term, sid in unlinked_glossary_uses(parsed.sections, parsed.section_ids, glossary).items():
         warnings.append(
             Finding(

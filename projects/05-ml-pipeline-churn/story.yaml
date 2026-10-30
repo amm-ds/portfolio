@@ -95,7 +95,7 @@ sections:
       9 two-year churners; gender recall is near-uniform (0.902 versus 0.906).
       Contract, tenure and charges drive the ranking — and long-contract
       churners are exactly who the raw policy loses.
-    figures: [calibration_curve, business_cost_curve, permutation_importance, fairness_slices]
+    figures: [calibration_curve, business_cost_curve, permutation_importance]
     metrics_keys: [naive_majority, logreg_threshold_0.300, selected_model, selected_model_calibrated]
   - id: evaluation
     text_md: |
@@ -124,6 +124,7 @@ sections:
         the served calibrated policy.
       - One operator, 21 columns: transfer to other customer bases is
         plausible, not measured.
+    figures: [fairness_slices]
   - id: conclusions
     text_md: |
       Full evidence: exact tables, parameter records, and reproduction

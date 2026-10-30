@@ -33,7 +33,7 @@ MATCHER = lsl.glossary_matcher(lsl.load_glossary(lsl.GLOSSARY_JSON))
 
 def _write_story(tmp_path: Path, body: str) -> Path:
     d = tmp_path / "99-test"
-    d.mkdir()
+    d.mkdir(parents=True, exist_ok=True)
     f = d / "story.yaml"
     f.write_text(body, encoding="utf-8")
     return f
@@ -186,6 +186,10 @@ def test_parse_story_matches_yaml_on_committed_stories():
                 f.parent.name,
                 section["id"],
             )
+            assert parsed.figures.get(section["id"], []) == (section.get("figures") or []), (
+                f.parent.name,
+                section["id"],
+            )
 
 
 # --- lint_story rule behavior ---------------------------------------------------
@@ -196,23 +200,105 @@ def test_clean_story_has_no_errors(tmp_path):
     assert [f for f in findings if f.level == "ERROR"] == []
 
 
-def test_plain_terms_outside_background_is_error(tmp_path):
+def test_second_card_marker_in_one_section_is_error(tmp_path):
     body = CLEAN_STORY.replace(
-        "  - id: evaluation\n    text_md: |\n      **Business summary:**",
-        "  - id: evaluation\n    text_md: |\n      **In plain terms:**",
+        "      **In plain terms:** a small system that works.",
+        "      **In plain terms:** a small system that works.\n\n      **Business summary:** a second card",
     )
     findings = _lint(tmp_path, body)
-    assert any(f.rule == "plain-terms-placement" for f in findings)
-    assert not any(f.rule == "business-summary-placement" for f in findings)
+    assert any(f.rule == "summary-card-count" for f in findings)
 
 
-def test_business_summary_outside_evaluation_is_error(tmp_path):
+def test_marker_not_in_final_block_is_error(tmp_path):
     body = CLEAN_STORY.replace(
-        "      **In plain terms:** a small system", "      **Business summary:** a small system"
+        "      **In plain terms:** a small system that works. The naive baseline is beaten\n"
+        "      by a wide margin, with a holdout scored once at the end.",
+        "      Intro prose first.\n\n"
+        "      **In plain terms:** a small system\n\n"
+        "      Trailing prose after the card.",
     )
     findings = _lint(tmp_path, body)
-    assert any(f.rule == "business-summary-placement" for f in findings)
-    assert not any(f.rule == "plain-terms-placement" for f in findings)
+    assert any(f.rule == "summary-card-placement" for f in findings)
+
+
+def test_missing_card_warns_not_errors(tmp_path):
+    body = (
+        "project_id: 99-test\n"
+        "sections:\n"
+        "  - id: background\n"
+        "    text_md: |\n"
+        "      Plain prose with no summary card at all.\n"
+    )
+    findings = _lint(tmp_path, body)
+    assert not any(f.level == "ERROR" for f in findings)
+    assert any(f.rule == "no-summary-card" for f in findings)
+
+
+def test_more_than_three_figures_in_section_is_error(tmp_path):
+    body = (
+        "project_id: 99-test\n"
+        "sections:\n"
+        "  - id: results\n"
+        "    text_md: |\n"
+        "      **Business summary:** four figures is one too many here.\n"
+        "    figures: [one, two, three, four]\n"
+    )
+    findings = _lint(tmp_path, body)
+    hits = [f for f in findings if f.rule == "figure-cap"]
+    assert len(hits) == 1
+    assert "4 figure cards" in hits[0].message
+
+
+def test_block_style_figures_are_counted(tmp_path):
+    body = (
+        "project_id: 99-test\n"
+        "sections:\n"
+        "  - id: results\n"
+        "    text_md: |\n"
+        "      **Business summary:** three is the cap and three is fine.\n"
+        "    figures:\n"
+        "      - one\n"
+        "      - two\n"
+        "      - three\n"
+    )
+    findings = _lint(tmp_path, body)
+    assert not any(f.rule == "figure-cap" for f in findings)
+
+
+def test_changelog_in_conclusions_requires_revision_notes_heading(tmp_path):
+    body = (
+        "project_id: 99-test\n"
+        "sections:\n"
+        "  - id: conclusions\n"
+        "    text_md: |\n"
+        "      Main-thread wrap-up stays clean.\n\n"
+        "      ### Revision notes\n\n"
+        "      **Run and wave record.** Wave 3 added the holdout gate.\n"
+    )
+    findings = _lint(tmp_path, body)
+    assert not any(f.rule == "changelog-phrase" for f in findings)
+    # wave narrative before the heading is flagged even inside conclusions
+    body2 = body.replace(
+        "      Main-thread wrap-up stays clean.\n\n      ### Revision notes\n\n",
+        "      Wave 2 shipped first.\n\n      ### Revision notes\n\n",
+    )
+    findings2 = _lint(tmp_path, body2)
+    hits = [f for f in findings2 if f.rule == "changelog-phrase"]
+    assert len(hits) == 1 and "Wave 2" in hits[0].message
+
+
+def test_conclusions_without_revision_notes_heading_stay_grandfathered(tmp_path):
+    # Legacy stories predate the subsection contract: their conclusions keep
+    # the old blanket allowance until they adopt the skeleton.
+    body = (
+        "project_id: 99-test\n"
+        "sections:\n"
+        "  - id: conclusions\n"
+        "    text_md: |\n"
+        "      **Run and wave record.** Wave 3 added the holdout gate.\n"
+    )
+    findings = _lint(tmp_path, body)
+    assert not any(f.rule == "changelog-phrase" for f in findings)
 
 
 def test_changelog_phrases_banned_outside_conclusions(tmp_path):
@@ -342,7 +428,9 @@ def test_main_exit_codes_and_summary(tmp_path, capsys):
     rc = lsl.main(["--projects-root", str(tmp_path), "--glossary", str(glossary)])
     out = capsys.readouterr().out
     assert rc == 1  # the dirty story carries a pp-abbreviation ERROR
-    assert "2 stories — 1 error, 0 warnings" in out
+    # warnings: 3 sections × 2 stories without a figure/diagram (6 no-visual)
+    # plus a low reading-ease on both evaluation sections (2)
+    assert "2 stories — 1 error, 8 warnings" in out
     assert "97-dirty" in out and "pp-abbreviation" in out
 
 

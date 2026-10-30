@@ -250,15 +250,20 @@ describe("StorySection conclusions details block", () => {
     expect(details?.querySelector("summary")?.textContent).toBe(
       "Technical details, revision notes, and reproduction",
     );
-    // existing prose and takeaway card still render inside the block
+    // existing prose renders inside the block
     expect(details?.querySelector(".story-main .prose")?.textContent).toContain(
       "Reproduction notes and revision log.",
     );
-    expect(details?.querySelector(".bi-card")).not.toBeNull();
-    // the h2 stays above the details block
+    // the takeaway card stays visible above the collapsed block
+    expect(details?.querySelector(".bi-card")).toBeNull();
+    const card = document.querySelector(".bi-card");
+    expect(card).not.toBeNull();
+    expect(card?.textContent).toContain("the recipe is reusable");
+    // document order: h2, then the card, then the details block
     const h2 = document.querySelector("section > h2")!;
     expect(h2.textContent).toContain("Details");
-    expect(h2.nextElementSibling).toBe(details);
+    expect(h2.nextElementSibling).toBe(card);
+    expect(card?.nextElementSibling).toBe(details);
   });
 
   it("keeps non-conclusions sections as the plain two-column layout", () => {
