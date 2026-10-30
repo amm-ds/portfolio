@@ -62,7 +62,7 @@ jobs:
           echo "m5 demo payload: BYTE_IDENTICAL across runs"
       - name: Upload regenerated M5 reports
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v6.0.0
         with:
           name: nightly-m5-reports
           path: projects/02-demand-forecasting/reports_m5/
@@ -250,7 +250,7 @@ jobs:
           uv run python -m agentic_workflows.cli evaluate --heldout
       - name: Upload regenerated reports
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v6.0.0
         with:
           name: nightly-offline-sweeps
           path: |
@@ -299,7 +299,7 @@ jobs:
           echo "weekly pipeline smoke completed: projects/$P"
       - name: Upload weekly regenerated reports
         if: always()
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v6.0.0
         with:
           name: nightly-weekly-pipeline-reports
           path: |
