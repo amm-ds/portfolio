@@ -21,7 +21,7 @@ const MODEL_LABELS = Object.fromEntries(MODELS.map((m) => [m.key, m.label]));
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "forecast-workbench",
   title: "demand forecast workbench",
-  hook: "Pick a store-product series from the committed M5 track, compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two scored-once test origins, and slide the horizon — watch the curves, the 80% band and the per-series WAPE respond.",
+  hook: "Pick a committed M5 store-product series, compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two scored-once test origins, and slide the horizon — curves, 80% band and per-series WAPE respond.",
   project: "02-demand-forecasting",
   group: "plan operations",
   skills: ["time series forecasting", "prediction intervals", "demand classification"],
@@ -29,7 +29,7 @@ const FALLBACK_MANIFEST: DemoManifest = {
   hero: {
     label: "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
     value: "0.491 vs 0.603",
-    ci: "paired bootstrap CI [−0.123, −0.103] on the −0.112 gap; 88.8% per-series win rate; 80% band covers 77.7% (protocol m5_direct_v1, horizon 28)",
+    ci: "paired bootstrap CI [−0.123, −0.103] on the −0.112 gap; 88.8% per-series win rate; 80% band covers 77.7% (m5_direct_v1, horizon 28)",
   },
   scenarios: [
     { name: "base", controls: { models: "seasonal_naive,lgbm", origin: "2016-05-10", horizon: 28 } },
@@ -40,7 +40,11 @@ const FALLBACK_MANIFEST: DemoManifest = {
     { name: "short-window", controls: { models: "seasonal_naive,convex_ensemble", origin: "2016-05-10", horizon: 7 } },
   ],
   live_endpoints: [],
-  payload: { path: "reports_m5/demo_payload.json", schema_version: 4, required_keys: [] },
+  payload: {
+    path: "reports_m5/demo_payload.json",
+    schema_version: 4,
+    required_keys: ["demo", "project", "protocol", "catalog", "groups", "origins", "evaluation_metadata"],
+  },
 };
 
 /** Short display name: strip the trailing `_<STORE>` token from the id. */

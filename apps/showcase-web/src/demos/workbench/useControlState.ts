@@ -21,7 +21,7 @@ function readQuery(): URLSearchParams {
 
 /**
  * Owns a demo's numeric control state. Values serialize to URL query params
- * (`?fn_ratio=5&threshold=0.175`) via `history.replaceState`, so a workbench
+ * (`?fn_ratio=5&threshold=0.15`) via `history.replaceState`, so a workbench
  * state is shareable; on mount the query string overrides the defaults (values
  * are coerced to numbers, non-numeric entries ignored).
  */

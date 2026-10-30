@@ -38,15 +38,31 @@ function MoreInformation({
             {children}
           </div>
         </div>
-        {manifest.skills.length > 0 && (
+        {(manifest.skills.length > 0 || manifest.live_endpoints.length > 0) && (
           <div className="wb-evidence-chrome">
-            <div className="wb-skills">
-              {manifest.skills.map((skill) => (
-                <span key={skill} className="chip">
-                  {skill}
-                </span>
-              ))}
-            </div>
+            {manifest.skills.length > 0 && (
+              <div className="wb-skills">
+                {manifest.skills.map((skill) => (
+                  <span key={skill} className="chip">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            )}
+            {manifest.live_endpoints.length > 0 && (
+              <div className="wb-endpoints">
+                {manifest.live_endpoints.map((e) => (
+                  <div key={`${e.method} ${e.path}`} className="wb-endpoint">
+                    <span className={`wb-method wb-method-${e.method.toLowerCase()}`}>
+                      {e.method}
+                    </span>
+                    <code>{e.path}</code>
+                    <span className="wb-endpoint-label">{e.label}</span>
+                    <span className="wb-endpoint-cost">{e.cost}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -63,7 +79,7 @@ function MoreInformation({
  * state for:
  *
  * ```tsx
- * const state = useControlState({ fn_ratio: 5, threshold: 0.175 }, manifest.scenarios);
+ * const state = useControlState({ fn_ratio: 5, threshold: 0.15 }, manifest.scenarios);
  * return (
  *   <DemoWorkbench
  *     manifest={manifest}
@@ -142,8 +158,30 @@ export function DemoWorkbench({
           </Link>
           <h1 className="demo-title">{manifest.title}</h1>
           <p className="demo-hook">{manifest.hook}</p>
+          {manifest.hero && (
+            <p className="demo-experiment-strip wb-hero">
+              <span className="wb-hero-label">{manifest.hero.label}</span> —{" "}
+              <strong>{manifest.hero.value}</strong>
+              {manifest.hero.ci && <span className="wb-hero-ci"> · {manifest.hero.ci}</span>}
+            </p>
+          )}
         </div>
         <div className="wb-actions">
+          {manifest.scenarios.length > 0 && (
+            <div className="wb-scenarios" role="group" aria-label="scenarios">
+              {manifest.scenarios.map((s) => (
+                <button
+                  key={s.name}
+                  type="button"
+                  className={`chip wb-scenario${state.activeScenario === s.name ? " active" : ""}`}
+                  aria-pressed={state.activeScenario === s.name}
+                  onClick={() => state.applyScenario(s.name)}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
           <button type="button" className="chip wb-reset" onClick={state.reset}>
             reset
           </button>

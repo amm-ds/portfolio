@@ -35,7 +35,7 @@ const MANIFEST = {
   modes: ["browser", "live"],
   hero: null,
   scenarios: [
-    { name: "base", controls: { fn_ratio: 5, threshold: 0.175 } },
+    { name: "base", controls: { fn_ratio: 5, threshold: 0.15 } },
     { name: "high-cost-miss", controls: { fn_ratio: 9, threshold: 0.12 } },
   ],
   live_endpoints: [

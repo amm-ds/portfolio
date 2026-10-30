@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it } from "vitest";
 import type { DemoManifest } from "../types";
@@ -7,7 +7,7 @@ import { KpiTile } from "./KpiTile";
 import { Notice } from "./Notice";
 import { useControlState } from "./useControlState";
 
-/** Minimal manifest: one scenario, one live endpoint, one skill. */
+/** Minimal manifest: two scenarios, one live endpoint, one skill, one hero. */
 const MANIFEST: DemoManifest = {
   id: "test-demo",
   title: "test demo",
@@ -16,8 +16,15 @@ const MANIFEST: DemoManifest = {
   group: "testing",
   skills: ["synthetic data"],
   modes: ["browser", "live"],
-  hero: null,
-  scenarios: [{ name: "base", controls: { ratio: 5 } }],
+  hero: {
+    label: "headline metric",
+    value: "1.23 vs 4.56",
+    ci: "paired bootstrap CI [−0.3, −0.1]",
+  },
+  scenarios: [
+    { name: "base", controls: { ratio: 5 } },
+    { name: "wide", controls: { ratio: 9 } },
+  ],
   live_endpoints: [
     { method: "POST", path: "/projects/01-demo-project/score", label: "scoring", cost: "free-local" },
   ],
@@ -101,10 +108,42 @@ describe("DemoWorkbench", () => {
     expect(screen.queryByRole("button", { name: "copy link" })).toBeNull();
   });
 
-  it("keeps only the reset action in the header (scenarios live in URL state)", () => {
+  it("renders the manifest hero as a concise strip under the hook", () => {
     renderWorkbench();
-    expect(screen.getByRole("button", { name: "reset" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "base" })).toBeNull();
+    const hero = document.querySelector(".wb-hero")!;
+    expect(hero).not.toBeNull();
+    expect(hero.textContent).toContain("headline metric");
+    expect(hero.textContent).toContain("1.23 vs 4.56");
+    expect(hero.textContent).toContain("paired bootstrap CI [−0.3, −0.1]");
+    // sits inside the heading, after the hook
+    const heading = document.querySelector(".wb-heading")!;
+    const hook = heading.querySelector(".demo-hook")!;
+    expect(
+      hook.compareDocumentPosition(hero) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("renders manifest scenarios as chips in the header and applies them", () => {
+    renderWorkbench();
+    const base = screen.getByRole("button", { name: "base" });
+    const wide = screen.getByRole("button", { name: "wide" });
+    for (const chip of [base, wide]) {
+      expect(chip.classList.contains("wb-scenario")).toBe(true);
+    }
+    // controls start at the defaults -> the matching scenario is active
+    expect(base.getAttribute("aria-pressed")).toBe("true");
+    expect(wide.getAttribute("aria-pressed")).toBe("false");
+    expect(base.classList.contains("active")).toBe(true);
+    // applying a scenario pushes its controls through the shared state
+    fireEvent.click(wide);
+    expect(wide.classList.contains("active")).toBe(true);
+    expect(base.getAttribute("aria-pressed")).toBe("false");
+    const slider = screen.getByLabelText("ratio control") as HTMLInputElement;
+    expect(slider.value).toBe("9");
+    // reset restores the defaults and re-activates the base scenario
+    fireEvent.click(screen.getByRole("button", { name: "reset" }));
+    expect(base.classList.contains("active")).toBe(true);
+    expect(slider.value).toBe("5");
   });
 
   it("renders the KPI band with exactly the four tiles, no notice inside", () => {
@@ -180,5 +219,22 @@ describe("DemoWorkbench", () => {
     expect(more.querySelector("summary")!.textContent).toContain("more information");
     expect(more.querySelectorAll(".wb-evidence-col")).toHaveLength(2);
     expect(more.querySelector(".wb-evidence-cols")).not.toBeNull();
+  });
+
+  it("lists live endpoints with method, path, label and cost in the drawer footer", () => {
+    renderWorkbench();
+    const more = document.querySelector(".wb-more")!;
+    const endpoints = more.querySelector(".wb-endpoints")!;
+    expect(endpoints).not.toBeNull();
+    const row = endpoints.querySelector(".wb-endpoint")!;
+    expect(row.querySelector(".wb-method")!.textContent).toBe("POST");
+    expect(row.querySelector(".wb-method-post")).not.toBeNull();
+    expect(row.querySelector("code")!.textContent).toBe("/projects/01-demo-project/score");
+    expect(row.querySelector(".wb-endpoint-label")!.textContent).toBe("scoring");
+    expect(row.querySelector(".wb-endpoint-cost")!.textContent).toBe("free-local");
+    // the endpoint block sits in the chrome footer, next to the skills chips
+    const chrome = more.querySelector(".wb-evidence-chrome")!;
+    expect(chrome.contains(endpoints)).toBe(true);
+    expect(chrome.querySelector(".wb-skills")).not.toBeNull();
   });
 });

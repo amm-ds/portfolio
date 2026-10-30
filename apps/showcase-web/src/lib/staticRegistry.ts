@@ -172,7 +172,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
     "topic": "Inference & Serving"
   },
   {
-    "data": "Public tool-using benchmarks + synthetic task suites",
+    "data": "Synthetic 12-doc \"Atlas Valley\" handbook + read-only Wikipedia slice from project 01 (CC BY-SA)",
     "domain": "Agentic AI / multi-step LLM workflows",
     "id": "09-agentic-workflows",
     "order": 9,
@@ -386,6 +386,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     "has_roadmap": true,
     "metrics_keys": [
       "alns",
+      "alns_fleet",
       "clarke_wright",
       "ortools_cp",
       "randomized",
@@ -518,11 +519,11 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
   {
     "group": "plan operations",
     "hero": {
-      "ci": "paired bootstrap CI [−0.115, −0.095] on the −0.105 gap; 89.3% per-series win rate; 80% band covers 78.7% (protocol m5_direct_v1, horizon 28)",
+      "ci": "paired bootstrap CI [−0.123, −0.103] on the −0.112 gap; 88.8% per-series win rate; 80% band covers 77.7% (m5_direct_v1, horizon 28)",
       "label": "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
       "value": "0.491 vs 0.603"
     },
-    "hook": "Pick a store-product series from the committed M5 track, compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two scored-once test origins, and slide the horizon — watch the curves, the 80% band and the per-series WAPE respond.",
+    "hook": "Pick a committed M5 store-product series, compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two scored-once test origins, and slide the horizon — curves, 80% band and per-series WAPE respond.",
     "href": "/demos/forecast-workbench",
     "id": "forecast-workbench",
     "project": "02-demand-forecasting",
