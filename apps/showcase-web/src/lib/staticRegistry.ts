@@ -249,10 +249,12 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "hpo_importance",
       "m5:band_calibration",
       "m5:class_comparison",
+      "m5:horizon_growth",
       "m5:wape_bars",
       "m5:win_rate",
       "uci:fold_stability",
-      "uci:multistep_error_vs_horizon"
+      "uci:multistep_error_vs_horizon",
+      "uci:multistep_routing"
     ],
     "has_roadmap": true,
     "metrics_keys": [
