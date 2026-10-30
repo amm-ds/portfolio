@@ -1,26 +1,32 @@
-"""Hinted cross-check solver: time-bounded OR-Tools CP-SAT model for the VRPTW.
+"""Time-bounded OR-Tools CP-SAT models for the VRPTW — hinted and unhinted.
 
-An incumbent-improvement probe for our hand-written ladder — NOT an
-independent baseline, because the construction-heuristic plan is injected as a
-solution hint and returned unchanged when the time limit expires. A classic
-CP-SAT routing model: one circuit per (bounded) vehicle over the
-depot + customers, time and capacity propagated along arcs, objective = total
-distance.
+The hinted arm is an incumbent-improvement probe for our hand-written ladder —
+NOT an independent baseline, because the construction-heuristic plan is
+injected as a solution hint and returned unchanged when the time limit
+expires. The unhinted arm (:func:`ortools_cp_unhinted`) is the honest
+equal-budget comparison: the same model and the same wall-time budget with no
+hint and a fleet cap independent of any incumbent, so whatever it returns is
+entirely its own work (``None`` when the limit expires before any feasible
+solution exists). A classic CP-SAT routing model: one circuit per (bounded)
+vehicle over the depot + customers, time and capacity propagated along arcs,
+objective = total distance.
 
 The model is kept small enough for a ~10 s single-worker solve on the
-100-customer Solomon instances by (a) capping the fleet at the hinted fleet
-plus a small slack and (b) building travel arcs only where a necessary
-time-window condition holds (``ready_i + service_i + dist_ij <= due_j``) —
-the vast majority of the 100-by-100 arc graph can never appear in a feasible
-solution. Window bounds are posted once per (vehicle, node) via the node's
-single incoming arc, not per arc.
+100-customer Solomon instances by (a) capping the fleet and (b) building
+travel arcs only where a necessary time-window condition holds
+(``ready_i + service_i + dist_ij <= due_j``) — the vast majority of the
+100-by-100 arc graph can never appear in a feasible solution. Window bounds
+are posted once per (vehicle, node) via the node's single incoming arc, not
+per arc.
 
 Determinism-within-limit: single search worker, fixed seed, fixed hint. The
 time bound makes bit-exact reproducibility impossible to promise across
 machines, so callers should treat the result as best-effort within the limit
 (tests assert feasibility and near-determinism, not exact equality). When the
-limit expires before CP-SAT confirms any solution (status UNKNOWN), the
-hinted plan is returned unchanged — the arm never makes things worse.
+hinted model's limit expires before CP-SAT confirms any solution (status
+UNKNOWN), the hinted plan is returned unchanged — that arm never makes
+things worse. The unhinted arm has no such floor: it reports exactly what the
+solver achieved, including ``None``.
 """
 
 import time
@@ -169,30 +175,18 @@ def _add_solution_hint(
         model.add_hint(arcs[key], 1)
 
 
-def ortools_cp(
-    problem: Problem,
-    hint: RoutePlan,
-    time_limit_s: float = 10.0,
-    max_vehicles: int = 20,
-    fleet_slack: int = 3,
-    seed: int = 42,
-) -> RoutePlan:
-    """Time-bounded CP-SAT solution of the VRPTW, hinted by ``hint``.
+def _build_model(
+    problem: Problem, fleet: int
+) -> tuple[cp_model.CpModel, dict[tuple[int, int, int], cp_model.IntVar], list[list[float]], int]:
+    """Build the CP-SAT model (circuits, time/capacity, exactly-once, distance objective).
 
-    The model fleet is ``min(instance fleet, max_vehicles, hint fleet +
-    fleet_slack)`` so the hint is always inside the model — a feasible
-    incumbent exists from the start and the limit only ever improves on it.
-    Travel arcs are built only between customers whose time windows make them
-    consecutive-compatible (necessary condition), which keeps the model small
-    enough for the wall-time limit. Feasibility of the returned plan is
-    re-verified by ``_finish``; if the limit expires before CP-SAT confirms a
-    solution, the hint is returned unchanged.
+    Shared by the hinted and unhinted arms; the only differences are the fleet
+    cap chosen by the caller and whether a solution hint is added.
     """
     dist = distance_matrix(problem)
     customers = problem.customers
     n = problem.n_customers
     depot = problem.depot
-    fleet = min(problem.max_vehicles, max_vehicles, hint.n_vehicles + fleet_slack)
     horizon = depot.due_time
     capacity = problem.vehicle_capacity
     big_m = int(horizon + max(max(row) for row in dist))
@@ -235,16 +229,67 @@ def ortools_cp(
         model.add(sum(arcs[(v, i, j)] for v in range(fleet) for i in preds[j] if i != j) == 1)
 
     model.minimize(sum(round(dist[i][j]) * lit for (v, i, j), lit in arcs.items() if i != j))
+    return model, arcs, dist, n
 
-    _add_solution_hint(model, arcs, hint, fleet, n)
 
+def _solve(
+    model: cp_model.CpModel, time_limit_s: float, seed: int
+) -> tuple[cp_model.CpSolver, "cp_model.CpSolverStatus", float]:
+    """Single-worker, fixed-seed solve against the wall-time budget."""
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = time_limit_s
     solver.parameters.num_search_workers = 1
     solver.parameters.random_seed = seed
     t0 = time.perf_counter()
     status = solver.solve(model)
-    runtime = time.perf_counter() - t0
+    return solver, status, time.perf_counter() - t0
+
+
+def _extract_plan(
+    solver: cp_model.CpSolver,
+    arcs: dict[tuple[int, int, int], cp_model.IntVar],
+    dist: list[list[float]],
+    n: int,
+    fleet: int,
+    solver_name: str,
+    problem: Problem,
+) -> RoutePlan | None:
+    """Routes from a feasible solve, or None when the assignment is degenerate."""
+    routes: list[list[int]] | None = _extract_routes(solver, arcs, n, fleet)
+    if routes is not None and len({c for r in routes for c in r}) != n:
+        # customers parked on a depot-less circuit vanish from the depot
+        # chains — degenerate solution, treat as no usable incumbent
+        logger.warning("%s %s: incomplete coverage", solver_name, problem.name)
+        return None
+    if routes is None:
+        return None
+    return _finish(problem, solver_name, routes, dist)
+
+
+def ortools_cp(
+    problem: Problem,
+    hint: RoutePlan,
+    time_limit_s: float = 10.0,
+    max_vehicles: int = 20,
+    fleet_slack: int = 3,
+    seed: int = 42,
+) -> RoutePlan:
+    """Time-bounded CP-SAT solution of the VRPTW, hinted by ``hint``.
+
+    The model fleet is ``min(instance fleet, max_vehicles, hint fleet +
+    fleet_slack)`` so the hint is always inside the model — a feasible
+    incumbent exists from the start and the limit only ever improves on it.
+    Travel arcs are built only between customers whose time windows make them
+    consecutive-compatible (necessary condition), which keeps the model small
+    enough for the wall-time limit. Feasibility of the returned plan is
+    re-verified by ``_finish``; if the limit expires before CP-SAT confirms a
+    solution, the hint is returned unchanged.
+    """
+    fleet = min(problem.max_vehicles, max_vehicles, hint.n_vehicles + fleet_slack)
+    model, arcs, dist, n = _build_model(problem, fleet)
+    _add_solution_hint(model, arcs, hint, fleet, n)
+
+    solver, status, runtime = _solve(model, time_limit_s, seed)
     logger.info(
         "ortools_cp %s: status=%s objective=%s bound=%s (%.1fs)",
         problem.name,
@@ -254,15 +299,45 @@ def ortools_cp(
         runtime,
     )
 
-    routes: list[list[int]] | None = None
-    if status in _FEASIBLE_STATUSES:
-        routes = _extract_routes(solver, arcs, n, fleet)
-        if routes is not None and len({c for r in routes for c in r}) != n:
-            # customers parked on a depot-less circuit vanish from the depot
-            # chains — degenerate solution, treat as no usable incumbent
-            logger.warning("ortools_cp %s: incomplete coverage, falling back to hint", problem.name)
-            routes = None
-    if routes is None:  # limit hit before any usable solution: fall back to the hint
+    plan = _extract_plan(solver, arcs, dist, n, fleet, "ortools_cp", problem)
+    if plan is None:  # limit hit before any usable solution: fall back to the hint
         logger.warning("ortools_cp %s: no usable incumbent, falling back to hint", problem.name)
-        routes = [list(r) for r in hint.routes]
-    return _finish(problem, "ortools_cp", routes, dist)
+        return _finish(problem, "ortools_cp", [list(r) for r in hint.routes], dist)
+    return plan
+
+
+def ortools_cp_unhinted(
+    problem: Problem,
+    time_limit_s: float = 10.0,
+    max_vehicles: int = 20,
+    seed: int = 42,
+) -> tuple[RoutePlan | None, str, float]:
+    """Equal-budget CP-SAT solve with **no solution hint**.
+
+    The same model and wall-time budget as :func:`ortools_cp`, but nothing is
+    injected and nothing is fallen back to: the fleet cap is
+    ``min(instance fleet, max_vehicles)``, and the returned value is exactly
+    what CP-SAT achieved — ``(None, status, runtime)`` when the limit expires
+    before any feasible solution exists. This is the honest independent
+    comparison the hinted arm cannot make.
+    """
+    fleet = min(problem.max_vehicles, max_vehicles)
+    model, arcs, dist, n = _build_model(problem, fleet)
+
+    solver, status, runtime = _solve(model, time_limit_s, seed)
+    status_name = solver.status_name(status)
+    logger.info(
+        "ortools_cp_unhinted %s: status=%s objective=%s bound=%s (%.1fs)",
+        problem.name,
+        status_name,
+        solver.objective_value,
+        solver.best_objective_bound,
+        runtime,
+    )
+
+    if status not in _FEASIBLE_STATUSES:
+        return None, status_name, runtime
+    plan = _extract_plan(solver, arcs, dist, n, fleet, "ortools_cp_unhinted", problem)
+    if plan is None:
+        return None, f"{status_name} (degenerate)", runtime
+    return plan, status_name, runtime

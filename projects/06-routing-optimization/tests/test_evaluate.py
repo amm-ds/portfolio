@@ -171,6 +171,7 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "two_opt_tuned",
         "alns",
         "ortools_cp",
+        "alns_fleet",
     }
     assert set(data["instances"]["TINY"]["solvers"]) == {
         "nearest_neighbor",
@@ -180,12 +181,21 @@ def test_solve_and_evaluate_offline(tmp_path: Path, tiny_text: str) -> None:
         "two_opt_tuned",
         "alns",
         "ortools_cp",
+        "alns_fleet",
     }
     # the tuned runs are never worse than the randomized floor, and the HPO
     # winners are persisted to the (overridden) params.yaml
     solvers = data["instances"]["TINY"]["solvers"]
     assert solvers["two_opt_tuned"]["distance"] <= solvers["randomized"]["distance"]
     assert solvers["alns"]["distance"] <= solvers["randomized"]["distance"]
+    assert solvers["alns_fleet"]["distance"] <= solvers["randomized"]["distance"]
+    # the unhinted arm is recorded per instance (tiny instance solves; on the
+    # real benchmark it reports UNKNOWN honestly when nothing is found)
+    unhinted = data["unhinted_cp_sat"]
+    assert set(unhinted) == {"TINY"}
+    assert unhinted["TINY"]["status"] in ("OPTIMAL", "FEASIBLE")
+    assert unhinted["TINY"]["runtime_s"] > 0
+    assert "total_distance" in unhinted["TINY"]
     assert data["tuning"]["solver_best"]["restarts"] >= 1
     assert data["tuning"]["alns_best"]["segment_length"] >= 5
     assert "families" in data

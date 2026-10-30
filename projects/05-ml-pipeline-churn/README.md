@@ -103,6 +103,12 @@ Key findings:
 - **The operating point does not transfer - the procedure does.** Synthetic
   t*=0.700 vs telco t*=0.175: the threshold must be re-derived per regime on
   the cost curve; re-tuning alone moved the logistic 691 -> 611.
+- **The cost model itself is a sensitivity, re-run in `reports/sensitivity.json`:**
+  at FN=3/5/8 the served-isotonic optimum is 510/601/699 at t*=0.200/0.175/0.100
+  and every CI excludes zero; the naive comparator is fn-independent (1,035),
+  so absolute savings shrink as FN rises. Calibration's cost edge is not
+  universal either — isotonic helps at FN=5 (619 -> 601) and slightly hurts
+  at FN=8 (691 -> 699).
 - **Raw-model fairness slices (not the served policy):** at raw XGB t=0.150,
   recall is 0.902 female / 0.906 male and 0.969 senior / 0.880 non-senior.
   Contract recall is 0.976 month-to-month, 0.472 one-year and 0.000 two-year:
@@ -136,9 +142,9 @@ uv run python -m churn_pipeline.cli prepare --input client.csv
 dvc repro projects/05-ml-pipeline-churn
 uv run dvc metrics show projects/05-ml-pipeline-churn   # run ladder from the lockfile
 # cost-model sensitivity experiments (see DESIGN.md "Experiment versioning"):
-uv run dvc exp run --queue --set-param fn_cost=3 -n fn3 .
-uv run dvc exp run --queue --set-param fn_cost=8 -n fn8 .
-uv run dvc exp run --run-all && uv run dvc exp show --no-pager
+uv run python -m churn_pipeline.cli sensitivity            # FN=3/5/8 -> reports/sensitivity.json
+# canonical tracking is queued DVC experiments (needs a working libomp for the
+# experiment venv): uv run dvc exp run --queue --set-param fn_cost=3 -n fn3  # etc.
 ```
 
 Deterministic: seed 42 controls data generation, the split, CV, the Optuna
@@ -174,6 +180,12 @@ uv run pytest projects/05-ml-pipeline-churn -q
 
 - **Delivered:** real telco data behind DQ gates; cost-aware HPO selected
   XGBoost; isotonic serving at t=0.175; client CSV onboarding.
+- **Delivered:** FN-cost sensitivity re-run (`cli sensitivity`, unblocked
+  after the monorepo DVC graph fixes documented in DESIGN.md): served cost
+  510 / 601 / 699 and t*=0.200 / 0.175 / 0.100 at FN=3/5/8, every paired-
+  bootstrap CI excluding zero; the production FN=5 variant reproduces the
+  committed baseline bit-for-bit (`matches_baseline` in
+  `reports/sensitivity.json`).
 - **Remaining:** freeze the threshold before scoring and validate cost and
   served-policy fairness on fresh data.
 - **Deferred:** drift and seasonality analysis until a time-stamped source is

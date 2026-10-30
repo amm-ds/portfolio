@@ -141,46 +141,82 @@ flowchart LR
   telco) — the cost-curve procedure does. Holdout: cost 1,035 → 601
   (−41.9%), bootstrap −416 [−485, −343]; slice gap is contractual
   (month-to-month recall 0.98 vs two-year 0.00 at FN=5).
+- 2026-10-29 · Wave 14 — FN-cost sensitivity, re-run. The monorepo DVC graph
+  blockers are resolved (01's overlapping outs fixed upstream; this wave fixed
+  07's `train_arms` duplicate out), so `dvc exp run --queue` validates and
+  queues again — but the queued runner still fails in the experiment temp
+  venv on this machine (libomp exists only in the repaired workspace venv),
+  which "Experiment versioning" below documents honestly. The numbers come
+  from the identical evaluation code path via the new `churn_pipeline
+  sensitivity` command (re-scores the persisted artifacts under FN=3/5/8,
+  writes `reports/sensitivity.json`, touches nothing else; the FN=5 variant
+  reproduces the committed baseline bit-for-bit). Measured: naive 1,035
+  throughout; calibrated 510/601/699 at t*=0.200/0.175/0.100; deltas
+  −547/−416/−344 with CIs [−618, −474]/[−485, −343]/[−426, −258]; the raw
+  model beats the calibrated one at FN=8 (691 vs 699) — calibration's cost
+  edge is cost-model dependent. New test: sensitivity self-check +
+  baseline-untouched guard.
 
 ## Experiment versioning
 
-What-if sensitivity of the operating point to the FN-cost assumption,
-intended to be tracked as queued DVC experiments:
+What-if sensitivity of the operating point to the FN-cost assumption. The
+intended tracking mechanism is queued DVC experiments:
 
 ```bash
-uv run dvc exp run --queue --set-param fn_cost=3 -n fn3 .
-uv run dvc exp run --queue --set-param fn_cost=8 -n fn8 .
+uv run dvc exp run --queue --set-param fn_cost=3 -n fn3
+uv run dvc exp run --queue --set-param fn_cost=8 -n fn8
 uv run dvc exp run --run-all
 uv run dvc exp show --no-pager
 ```
 
-Trimmed `dvc exp show --no-pager --csv` (2026-10-15, workspace row carries
-this project's production params: model_family=logreg, C=0.6494,
-l1_ratio=0.4540, hpo_objective=cost):
+**Graph blocker — resolved (2026-10-29).** `dvc exp run` validates the whole
+monorepo pipeline graph. It originally failed on an overlapping-outs
+declaration in `projects/01-rag-agent/dvc.yaml`; after that was fixed the
+same check failed on `projects/07-open-data-mobility/dvc.yaml:train_arms`,
+which declared `reports/models/predictions_baseline.parquet` as both a dep
+and an out (the arms write `predictions_arms.parquet` — see the comment in
+`arms.py`). The 07 declaration was corrected in this wave and
+`dvc exp run --queue` now validates and queues cleanly.
 
+**Runner blocker — environmental, documented (2026-10-29).** On this machine
+`dvc exp run --run-all` still cannot execute the experiments: DVC reproduces
+queued experiments in a temporary venv under `.dvc/tmp/exps/`, and the
+xgboost/lightgbm wheels need libomp, which exists only in the repaired
+workspace venv (see "Options considered" wave 11/12 — `brew install libomp`
+is the documented prerequisite and this machine instead carries the venv
+repair). The failure is at import time in the *temp* venv, not a pipeline
+bug. The numbers below therefore come from the identical evaluation code
+path run in the workspace venv via the project's sensitivity command:
+
+```bash
+uv run python -m churn_pipeline.cli sensitivity            # fn_cost 3, 5, 8
 ```
-Experiment,rev,typ,Created
-,workspace,baseline,,
-,main,baseline,2026-10-15T02:29:38,
-```
 
-Sensitivity results (identical code path to the queued experiments —
-`cli evaluate --params-file <variant>`; nothing applied to the baseline):
+`churn_pipeline sensitivity` re-scores the persisted artifacts under
+alternative FN costs — same `evaluate_holdout` code path as `evaluate`,
+thresholds re-derived per variant on the same 1,409-row holdout, nothing
+applied back to the baseline (writes only `reports/sensitivity.json`). The
+variant equal to the production `fn_cost` reproduces the committed baseline
+bit-for-bit (`matches_baseline`), which is the self-check that the what-if
+pass is faithful. Queued DVC experiments remain the canonical tracking
+mechanism on machines with a working libomp.
 
-| variant | fn_cost | naive cost | selected cost | delta vs naive (95% CI) | t* |
+Sensitivity results (real telco holdout, 1,409 rows, FP=1; 2026-10-29):
+
+| variant | fn_cost | naive cost | raw selected cost (t*) | calibrated cost (t*) | Δ vs naive, raw vs naive (95% CI) |
 |---|---|---|---|---|---|
-| fn3 | 3 | 264 | 210 | −54 [−92, −18] | 0.775 |
-| baseline | 5 | 440 | 283 | −157 [−236, −86] | 0.700 |
-| fn8 | 8 | 704 | 387 | −317 [−447, −197] | 0.625 |
+| fn3 | 3 | 1,035 | 488 (0.325) | 510 (0.200) | −547 [−618, −474] |
+| fn5 | 5 | 1,035 | 619 (0.150) | 601 (0.175) | −416 [−485, −343] — reproduces the committed baseline |
+| fn8 | 8 | 1,035 | 691 (0.100) | 699 (0.100) | −344 [−426, −258] |
 
 Reading: the more a missed churner costs relative to a false alarm, the
-lower the optimal threshold (alarm earlier) and the larger the absolute
-saving. The logistic stays the cost-aware winner across the whole range.
-
-**Blocker (as of 2026-10-15):** `dvc exp run` (queued or in-place) validates
-the whole monorepo pipeline graph and currently fails on an unrelated
-overlapping-outs declaration in `projects/01-rag-agent/dvc.yaml`
-(`evaluate_retrieval` declares both `reports` and `reports/metrics.json` as
-outs; verbatim: "The output paths ... overlap and are thus in the same
-tracked directory"). Re-queue once that project's outs are disambiguated;
-the table above is exactly what the experiments will reproduce.
+lower the cost-optimal threshold (alarm earlier) and the smaller the
+absolute saving — the naive contact-everyone comparator has no missed
+churners to inflate, so its 1,035 cost is fn-independent. The XGBoost
+selection is never in doubt: every variant's CI excludes zero. One honest
+wrinkle: isotonic calibration's cost advantage is itself cost-model
+dependent — it helps at fn=5 (619 → 601) but slightly hurts at fn=8
+(691 → 699); the earlier synthetic conclusion ("calibration does not move
+the optimum") was not universal either. The earlier synthetic-track
+sensitivity (t* 0.775 / 0.700 / 0.625 at fn 3/5/8, logistic winner
+throughout) showed the same directional story on the 8.8%-churn regime.

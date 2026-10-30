@@ -1,14 +1,4 @@
 project_id: 07-open-data-mobility
-headline: >-
-  On the strict Q4-2024 holdout (584,855 zone-hours), served `gbm_tuned` reaches
-  MAE 4.676 pickups/hour, 28.3% below same-hour-yesterday persistence (MASE 0.763);
-  its p90 band covers 90.8% overall but only 84.7% in sparse N/A-borough zones.
-data_note: >-
-  Real 2024 data: 41.2M NYC TLC yellow-taxi trips in 12 checksum-pinned Parquet
-  files (~1.5 GB) joined with public-domain NOAA Central Park weather; raw data is downloaded, not shipped.
-limits: >-
-  One city, vehicle class, year and hour-ahead horizon; results are associative,
-  not causal, weather ratios lack hour-of-week normalization, and yellow-trained weights need per-service retraining.
 figure_captions:
   hour_borough_heatmap: >-
     Full-year mean pickups by hour and borough. Manhattan peaks at 103.7
@@ -40,6 +30,19 @@ figure_captions:
 sections:
   - id: background
     text_md: |
+      **Result.** On the strict Q4-2024 holdout (584,855 zone-hours), served
+      `gbm_tuned` reaches MAE 4.676 pickups/hour, 28.3% below
+      same-hour-yesterday persistence (MASE 0.763); its p90 band covers 90.8%
+      overall but only 84.7% in sparse N/A-borough zones.
+
+      **Data.** Real 2024 data: 41.2M NYC TLC yellow-taxi trips in 12
+      checksum-pinned Parquet files (~1.5 GB) joined with public-domain NOAA
+      Central Park weather; raw data is downloaded, not shipped.
+
+      **Limits.** One city, vehicle class, year and hour-ahead horizon;
+      results are associative, not causal, weather ratios lack hour-of-week
+      normalization, and yellow-trained weights need per-service retraining.
+
       Stage taxis before demand arrives at zone-hour granularity. The pipeline
       turns 41.2M raw trips into a zero-filled 265-zone × hour grid, a next-hour
       forecast and a p90 staffing buffer.
@@ -53,6 +56,12 @@ sections:
 
       Served `gbm_tuned` reduces Q4 MAE by 28.3% versus the same-hour-yesterday
       rule; sparse-zone coverage remains an explicit exception.
+
+      **Business summary:** the served artifact forecasts next-hour demand for
+      every NYC zone at 28.3% less error than yesterday-same-hour, and its
+      calibrated p90 band (90.8% coverage, sparse zones excepted at 84.7%)
+      sizes per-zone staffing buffers; treat the band as unusable for staffing
+      decisions in the zones it under-covers.
     figures: []
     metrics_keys: []
   - id: objectives
@@ -119,8 +128,11 @@ sections:
 
       The scheduled drift observatory scores newly published TLC months against
       the persisted model with training-identical features and a ±15% tolerance;
-      regressions can open an issue through the response runbook. The first
-      2024-11 check is +8.2% and in-window, so it verifies wiring, not unseen drift.
+      regressions can open an issue through the response runbook. Two months are
+      scored now (local snapshot): 2024-11 at +8.2% and 2024-12 at +7.9%, both
+      in-window — so the wiring, the DQ gates and the reporting contract are
+      verified, but no month has yet exceeded tolerance, meaning true
+      unseen-drift behavior is still unmeasured.
     figures: [actual_vs_pred_top5, borough_mae, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
   - id: results
@@ -149,9 +161,22 @@ sections:
         0.80 > lag_24 0.64 > lag_1 0.55 > hour 0.32; weather is ≈0. Raw rain
         ratios still show outer-borough drops of 7–10%, directional only.
       - **Transfer:** yellow-trained GBMs lose green-taxi MAE to persistence
-        (0.296 vs 0.212) but win RMSE (−17%) and MAPE (−19%); retrain per service.
+        (0.296 vs 0.212) but win RMSE (−17%) and MAPE (−19%); retrain per
+        service. The control now exists: a GBM fit on green Jan–Feb itself
+        (`gbm_green_retrained`, `reports/green_transfer.json`) beats green
+        persistence on **all three** metrics — MAE 0.1805 vs 0.212, RMSE
+        0.688 vs 1.100, MAPE 66.4% vs 81.8% — so the mixed transfer was a
+        service-distribution gap, not a sparsity law: per-service retraining
+        is the fix, measured.
       - **Serving probe:** the showcase API returned JFK zone 132 point 223.827
         and p90 251.811.
+
+      **Business summary:** served as-is for yellow-taxi next-hour planning
+      (−28.3% MAE vs persistence on a strict temporal holdout); size staffing
+      buffers from the p90 band except in the flagged sparse zones (84.7%
+      coverage); and for any second vehicle service, budget a per-service
+      retraining run first — two months of green history already beat
+      persistence on every metric measured.
     figures: [hour_borough_heatmap, gbm_vs_nn, p90_band, weather_elasticity]
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
   - id: conclusions
@@ -160,17 +185,26 @@ sections:
       make the 41.2M-row result reproducible on a laptop. The served model's
       measured result is **MAE 4.676, −28.3% versus same hour yesterday, MASE
       0.763**. The p90 band is useful where calibrated and flagged where sparse;
-      weather and green-transfer findings remain bounded, and the first drift
-      report is only a wiring check. [MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md)
+      weather findings remain directional, the drift observatory has scored two
+      months in-window (wiring verified, unseen drift still unmeasured), and
+      the green-transfer question is settled: yellow weights transfer mixed,
+      per-service retraining beats persistence on every metric at two months of
+      history. [MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md)
       and `SERVING.md` document intended use and the artifact contract.
+
+      **Business summary:** keep serving `gbm_tuned` for yellow-taxi planning;
+      the buffer band is decision-grade except in sparse zones; extend to a new
+      vehicle service only behind a green-scale retraining run, and treat the
+      drift observatory as a watchdog whose alarm path is wired but untested by
+      a real regression so far.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 roadmap:
   - status: delivered
     text: Streaming 41.2M-trip pipeline with temporal ladder, p90 calibration and served `gbm_tuned`.
   - status: delivered
-    text: Green-transfer study and drift-observatory wiring; negative and in-window findings retained.
+    text: Green-transfer study + per-service retraining control (green-trained GBM beats persistence on all metrics); drift 2024-11 and 2024-12 scored in-window.
   - status: remaining
-    text: Score the first genuinely unseen drift month and retrain per service before transfer.
+    text: Score the first genuinely unseen drift month (2025-01+ needs a network fetch) and productionize per-service retraining.
   - status: deferred
     text: Causal weather claims and longer-horizon forecasts — different study contracts.

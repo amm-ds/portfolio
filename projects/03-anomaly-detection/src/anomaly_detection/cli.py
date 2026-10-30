@@ -158,6 +158,26 @@ def nab() -> None:
     )
 
 
+@app.command("nab-sweep")
+def nab_sweep() -> None:
+    """NAB detector-family x feature-set sweep + dedup/per-series budget metrics."""
+    config = get_config()
+    from anomaly_detection.nab_sweep import run_nab_sweep
+
+    result = run_nab_sweep(config)
+    best = max(
+        result["grid"].items(),
+        key=lambda kv: kv[1]["overall"]["pr_auc"] or 0.0,
+    )
+    st = best[1]["overall"]["streams"]
+    typer.echo(
+        f"NAB sweep: best pointwise config {best[0]} "
+        f"(PR-AUC={best[1]['overall']['pr_auc']:.3f}); alert load raw "
+        f"{st['raw']['alerts_fired']} -> budgeted {st['budgeted']['alerts_fired']} "
+        f"(recall {st['raw']['range_recall']:.3f} -> {st['budgeted']['range_recall']:.3f})"
+    )
+
+
 @app.command()
 def nsl() -> None:
     """NSL-KDD production track: fetch, map, and run the transfer probe."""

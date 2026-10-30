@@ -53,14 +53,23 @@ See [DESIGN.md](DESIGN.md) for the full requirements/options/decision record.
      regret-2 insertion, operator weights adapted per segment, simulated-
      annealing acceptance; starts from the tuned 2-opt plan, iteration-capped
      from config.
-- `ortools_solver.py` — `ortools_cp`, an **ALNS-hinted CP-SAT cross-check**
-  (not an independent baseline): a time-bounded OR-Tools CP-SAT model
-  (per-vehicle circuits over time-window-filtered arcs, fleet capped at the
-  hinted fleet + slack, ALNS plan injected as the hint). Single worker, fixed
-  seed — deterministic within the limit; when the limit expires before CP-SAT
-  confirms a solution, the hinted plan is returned, so the arm never degrades
-  the incumbent. On all 56 instances it ended `UNKNOWN` at the hint with no
-  improvement — see the cross-check section below.
+  6. `alns_fleet` — the identical seeded ALNS optimizing the hierarchical
+     fleet-first objective instead: acceptance and incumbents score
+     `distance + 10,000 × vehicles`, a per-vehicle penalty larger than any
+     achievable distance gain, so one fewer vehicle always beats a shorter
+     route. Labeled separately in every table and figure.
+- `ortools_solver.py` — two time-bounded OR-Tools CP-SAT arms: `ortools_cp`,
+  an **ALNS-hinted incumbent-improvement probe** (not an independent
+  baseline: a time-bounded CP-SAT model (per-vehicle circuits over
+  time-window-filtered arcs, fleet capped at the hinted fleet + slack, ALNS
+  plan injected as the hint). Single worker, fixed seed — deterministic
+  within the limit; when the limit expires before CP-SAT confirms a
+  solution, the hinted plan is returned, so the arm never degrades the
+  incumbent. On all 56 instances it ended `UNKNOWN` at the hint with no
+  improvement — see the cross-check section below. And
+  `ortools_cp_unhinted`, the same model at the **same wall-time budget with
+  no hint and no fallback** — the honest equal-budget comparison: whatever
+  it returns is entirely its own work.
 - `tuning.py` — seeded random-search HPO, run twice: over the 2-opt stage
   (budget, acceptance, tail exchange, restarts; all instances) and over the
   ALNS knobs (segment length, reaction factor, init weights; 6-instance
@@ -86,17 +95,22 @@ hierarchical objective, so both numbers matter.
 
 | solver | mean distance gap | mean distance | mean vehicles | mean veh Δ | mean runtime |
 |---|---|---|---|---|---|
-| randomized (feasible floor) | 316.95 % | 3868.55 | 18.3 | +11.09 | 2.4 ms |
-| nearest_neighbor | 71.64 % | 1694.18 | 14.0 | +6.75 | 4.1 ms |
-| clarke_wright | 18.31 % | 1200.06 | 13.0 | +5.79 | 11.3 ms |
-| two_opt (untuned) | 13.75 % | 1158.34 | 13.0 | +5.79 | 15.0 ms |
-| two_opt_tuned (HPO) | 13.63 % | 1156.92 | 13.0 | +5.79 | 36.3 ms |
-| **alns (HPO-tuned)** | **4.23 %** | **1062.02** | **11.0** | **+3.73** | 2.77 s |
-| ortools_cp (ALNS-hinted, 10 s/instance) | 4.23 % | 1062.02 | 11.0 | +3.73 | 13.6 s |
+| randomized (feasible floor) | 316.95 % | 3868.55 | 18.3 | +11.09 | 0.6 ms |
+| nearest_neighbor | 71.64 % | 1694.18 | 14.0 | +6.75 | 1.1 ms |
+| clarke_wright | 18.31 % | 1200.06 | 13.0 | +5.79 | 3.2 ms |
+| two_opt (untuned) | 13.75 % | 1158.34 | 13.0 | +5.79 | 4.1 ms |
+| two_opt_tuned (HPO) | 13.63 % | 1156.92 | 13.0 | +5.79 | 9.2 ms |
+| **alns (HPO-tuned)** | **4.23 %** | **1062.02** | **11.0** | **+3.73** | 1.15 s |
+| **alns_fleet (vehicles-first)** | **4.30 %** | 1062.23 | **10.9** | **+3.66** | 1.14 s |
+| ortools_cp (ALNS-hinted, 10 s/instance) | 4.23 % | 1062.02 | 11.0 | +3.73 | 12.0 s |
+| ortools_cp_unhinted (10 s/instance) | no feasible plan on any of the 56 | — | — | — | 13.1 s |
 
 Runtimes are wall-clock on a shared machine (the heuristics are normally
-sub-10 ms; the ALNS mean here was inflated by load — best-case ALNS is
-~0.8 s/instance). Distances and gaps are seeded and deterministic.
+sub-10 ms; ALNS here ran on a quieter machine than the committed wave — the
+load-insensitive statement is the ordering, not the seconds). Distances and
+gaps are seeded and deterministic. The unhinted arm's verdict is a status,
+not a gap: `UNKNOWN` on all 56 instances means CP-SAT produced no feasible
+plan within the budget, so there is no distance to report.
 
 Per-family mean distance gap / mean vehicle delta (figure `family_gap`, now a
 two-panel view of both criteria):
@@ -112,11 +126,13 @@ two-panel view of both criteria):
 
 Ranking under the two conventions (instances won, intra-ladder):
 
-- **Distance-only**: ALNS wins 56/56.
-- **Vehicles-first (benchmark convention)**: ALNS wins 43/56 —
-  `nearest_neighbor` "wins" 10 and `randomized` 3 by using fewer vehicles at
-  far worse distance. Distance-only comparison flatters; the vehicle column is
-  the honest one for fleet planning.
+- **Distance-only**: ALNS wins 52/56; the fleet-first run (`alns_fleet`) wins
+  the other 4 — a different search path under the hierarchical objective
+  occasionally lands in a better-distance optimum.
+- **Vehicles-first (benchmark convention)**: ALNS wins 38/56, `alns_fleet`
+  5/56 — `nearest_neighbor` "wins" 10 and `randomized` 3 by using fewer
+  vehicles at far worse distance. Distance-only comparison flatters; the
+  vehicle column is the honest one for fleet planning.
 - **Vs the published references**: no run of any solver uses fewer vehicles
   than best-known (best is ALNS at +3.73 mean); the vehicle gap is largest
   exactly where the references' hierarchical objective bites hardest
@@ -143,12 +159,19 @@ Verdict, honestly stated:
   benchmark.** On all 56 instances it ended its budget at `UNKNOWN` — it could
   not even register its own hinted solution in time — and the arm returned the
   ALNS plan unchanged: identical distances, identical vehicle counts
-  (ortools_cp ties ALNS 56/56, wins 0 on tie-break order), at **~5× the
-  runtime**. The meaningful claim the run supports is narrower than
-  "independent comparison": a state-of-the-art exact solver, given an order of
-  magnitude more time **and a head-start hint**, could not shave anything off
-  any of the 56 ALNS plans — the incumbent quality is not a symptom of a
-  weakly-searched neighborhood.
+  (ortools_cp ties ALNS 56/56, wins 0 on tie-break order), at **~10× the
+  runtime** of this solve's ALNS mean. The meaningful claim the run supports
+  is narrower than "independent comparison": a state-of-the-art exact solver,
+  given an order of magnitude more time **and a head-start hint**, could not
+  shave anything off any of the 56 ALNS plans — the incumbent quality is not a
+  symptom of a weakly-searched neighborhood.
+- **The unhinted equal-budget arm settles what the hinted tie could not.**
+  Same model, same 10 s/instance, no hint, no fallback: status UNKNOWN on all
+  56 instances — no feasible plan at all. The hinted arm's tie was a
+  head-start artifact; from scratch, the exact model produces nothing on
+  100-customer problems at this budget. ALNS's ~1 s feasible plans are the
+  measured state of the art *at this scale and budget* — not "CP-SAT matched
+  us" but "CP-SAT could not start".
 - **Where CP-SAT does dominate: small problems.** On a 25-customer prefix of
   C101 it certifies the optimum instantly, improving the 2-opt hint
   286.3 → 191.8 (−33 %) in 2.9 s; on the 5-customer test instance it proves
@@ -161,16 +184,22 @@ Verdict, honestly stated:
 Key findings:
 
 - **ALNS closes the gap**: 13.63 % → **4.23 %** mean gap (−9.4 points, −69 %
-  of the remaining tuned-2-opt distance-to-best-known), winning on **56/56**
-  instances, in ~0.8 s/instance. Chosen by the seeded knob search (12 trials
-  on a 6-instance subset): segment 100, reaction 0.5, uniform init weights —
-  persisted to `params.yaml` as `alns_best`.
+  of the remaining tuned-2-opt distance-to-best-known), winning on **52/56**
+  instances (the fleet-first twin wins the other 4), in ~1 s/instance. Chosen
+  by the seeded knob search (12 trials on a 6-instance subset): segment 100,
+  reaction 0.5, uniform init weights — persisted to `params.yaml` as
+  `alns_best`.
+- **Fleet-first is nearly free:** `alns_fleet` (hierarchical objective via a
+  10,000/vehicle search penalty) trades +0.07 pp mean gap (4.30 % vs 4.23 %)
+  for −0.07 mean vehicles (+3.66 vs +3.73) and wins 5/56 under the benchmark
+  convention — the vehicle/distance trade moves at less than a tenth of a
+  point of gap, in the direction a fleet client would pick.
 - **Constraint-aware construction remains the first big lever** (randomized →
   savings −68 % of baseline distance); the metaheuristic is the second.
 - **Single digits on every family**; best on wide-window R2/RC2 (~3 %).
   Honest residuals: C2 6.50 % (wide horizon, few-vehicle best-known reference —
-  destroy size 10 under-diversifies there), C103 11.67 % / C203 19.48 % (tight chains
-  that resist q-customer destroy/repair).
+  destroy size 10 under-diversifies there), C103 11.67 % / C203 19.48 % (tight
+  chains that resist q-customer destroy/repair).
 - **Negative gaps are real and reported**: ALNS lands *below* the published
   reference on 8 instances (best RC202 −3.85 %, RC105 −2.78 %). The SINTEF
   table mixes conventions (hierarchical vehicle-first objective, double
@@ -196,8 +225,7 @@ Honest caveats: `nearest_neighbor`, `randomized` and occasionally
 `clarke_wright` exceed the stated 25-vehicle fleet on tight R1/RC1 instances
 (e.g. CW needs 31 on R101) — reported, not hidden; distance stays valid and
 the vehicle count flags where a construction heuristic fragments. The
-remaining roadmap item is the hierarchical objective (fewest vehicles first,
-then distance).
+hierarchical-objective roadmap item is delivered above (`alns_fleet`).
 
 Figures (`reports/figures/`, HTML + JSON for the showcase API):
 
@@ -212,8 +240,10 @@ Figures (`reports/figures/`, HTML + JSON for the showcase API):
 - `alns_convergence_C101` / `alns_convergence_RC105` — two-panel ALNS traces:
   best distance vs iteration at 6 checkpoints (top) and destroy-operator
   weights per adapted segment (bottom).
-- `pareto_gap_runtime` — mean-runtime vs mean-gap scatter across all seven
-  solvers (log-x), annotated with the mean vehicle-count delta.
+- `pareto_gap_runtime` — mean-runtime vs mean-gap scatter across all eight
+  ladder solvers (log-x), annotated with the mean vehicle-count delta.
+  (The unhinted CP-SAT arm has no point to plot: no feasible plan on any
+  instance.)
 - `route_map_C101` — best C101 plan (ALNS: 11 vehicles, 860.21, gap 3.77 %).
 - `route_map_C101_before_after.svg` — static two-panel C101 map (committed
   copy in `docs/assets/projects/06-routing-optimization/`): the improvement
@@ -263,15 +293,18 @@ uv run pytest projects/06-routing-optimization -q
 - ALNS behind the same `RoutePlan` contract (mean distance gap 13.63 % →
   4.23 %, single digits on every family).
 - Full 56-instance benchmark with per-family reporting on both criteria:
-  distance gap and vehicle count vs the best-known references (vehicles-first
-  ranking: ALNS wins 43/56 intra-ladder).
-- Hierarchical-objective reporting per the SINTEF convention (vehicles first,
-  distance second) — landed; the fleet column above (ALNS 11.0 mean vehicles
-  vs 10-vehicle C1 best-known references) shows where it matters.
-- OR-Tools CP-SAT cross-check arm (verdict above: hinted probe only, ties
-  ALNS on the 100-customer benchmark within a 10 s budget at ~5× the runtime;
-  certifies small instances to optimality).
+  distance gap and vehicle count vs the best-known references (intra-ladder:
+  ALNS 52/56 on distance, 38/56 vehicles-first; the fleet-first twin takes
+  4 and 5).
+- Hierarchical fleet-first objective — landed as `alns_fleet` (vehicles-first
+  search via a 10,000/vehicle penalty): +4.30 % mean gap, +3.66 mean
+  vehicles, 5/56 wins under the benchmark convention — the vehicle/distance
+  trade moves at under a tenth of a point of gap.
+- OR-Tools CP-SAT arms (verdict above): the hinted probe ties ALNS on the
+  100-customer benchmark within a 10 s budget at ~10× the runtime and
+  certifies small instances to optimality; the equal-budget unhinted
+  comparison ends UNKNOWN on all 56 — no feasible plan — so the independent-
+  solver question is answered with measured evidence rather than deferred.
 
-Deferred (engagement-dependent): unhinted independent-solver comparison
-(PyVRP or OR-Tools routing at equal budget); Gehring–Homberger 200–1000
+Deferred (engagement-dependent): larger Gehring–Homberger 200–1000
 customer instances; solver-as-a-service endpoint.

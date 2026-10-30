@@ -1,16 +1,4 @@
 project_id: 08-inference-serving
-headline: >-
-  One author run on a 128 GB Apple-Silicon Mac with Ollama 0.40.4 measured
-  Q4_K_M qwen3.6:35b-a3b at 0.81 s p95 latency (c=1), 7.80 s (c=8), and about
-  $0.12 per 1M output tokens in electricity only; the protocol is portable,
-  these absolute results are not.
-data_note: >-
-  Fully synthetic fixed task: 8 locally generated general-knowledge prompts
-  with keyword checklists, no download or external data, so no license applies.
-limits: >-
-  Aggregate reports are committed but the raw `data/bench_run.json` record is
-  not; treat this single-machine run as illustrative and regenerate it with
-  `bench --full` before making a deployment decision.
 figure_captions:
   quality_quant: >-
     Schema-valid and keyword quality rates at concurrency 1 for 4-bit,
@@ -31,8 +19,10 @@ figure_captions:
     llama.cpp Q8_0 at 6.4 tok/s and 7.12 s. Quantization and packaging differ
     together, so this compares combinations, not engines in isolation.
 roadmap:
+  - status: delivered
+    text: "Full-grid raw record committed — data/bench_run.json (760 requests, 2026-10-15) alongside the aggregates; the published percentiles re-aggregate offline via report."
   - status: remaining
-    text: Repeat the full grid across machines and Ollama builds, retaining raw run records.
+    text: Repeat the grid on a quiet, dedicated machine and across additional machines and Ollama builds — the 2026-10-30 same-machine attempt was invalidated by co-tenant load (Results).
   - status: remaining
     text: Add measured wall power and hardware amortization to the electricity-only cost view.
   - status: deferred
@@ -40,7 +30,22 @@ roadmap:
 sections:
   - id: background
     text_md: |
-      **The useful output is a repeatable serving decision, not a portable speed claim.**
+      **One author run on a 128 GB Apple-Silicon Mac with Ollama 0.40.4
+      benchmarked five serving arms through 19 cells and 760 requests with
+      zero failures; the Q4_K_M 3B-active MoE reached 0.81 s p95 latency at
+      concurrency 1 (7.80 s at c=8) at about $0.12 per 1M output tokens in
+      electricity-only cost.**
+
+      Data: fully synthetic fixed task — 8 locally generated general-knowledge
+      prompts with keyword checklists; no download or external data, so no
+      license applies.
+
+      Limits: all cells come from one machine and one Ollama build, so the
+      absolute numbers describe this hardware, not serving in general. A
+      same-machine repeat attempt on a second build ran under heavy co-tenant
+      load and could not re-measure latency (Results); the protocol should be
+      re-run on a quiet, dedicated target before any capacity decision.
+
       Latency percentiles, throughput, structured-output reliability, and cost
       are measured against the same local Ollama OpenAI-compatible endpoint
       used by the portfolio's LLM projects (ADR-0004).
@@ -49,9 +54,16 @@ sections:
       single-digit-second p95 through concurrency 8. Its roughly $0.12 per 1M
       output tokens covers declared electricity assumptions only: zero API
       spend, no hardware amortization, and no measured wall power.
+
+      **Business summary:** Self-hosting this workload class on a 128 GB
+      Apple-Silicon Mac costs about $0.12 per 1M output tokens in
+      electricity-only terms and delivers sub-second p95 at concurrency 1; the
+      portable asset is the harness for re-measuring any candidate stack, not
+      these absolute numbers.
   - id: objectives
     text_md: |
-      **Choose a serving arm from measured trade-offs, not vendor numbers.**
+      **The decision is a serving arm plus a validated harness, chosen from
+      measured trade-offs rather than vendor numbers.**
 
       - Record p50/p95/p99 latency, TTFT, aggregate and per-request tok/s,
         schema validity, keyword quality, and failures by model × engine ×
@@ -64,16 +76,18 @@ sections:
         and a separately labelled hypothetical cloud rate card.
   - id: data
     text_md: |
-      **A fixed synthetic suite makes cells comparable; it does not make their
-      absolute timings portable.** Eight general-knowledge prompts each carry
-      a keyword checklist and require the same pydantic `Answer` schema,
-      `temperature 0`, bounded `max_tokens`, and disabled reasoning.
+      **Eight general-knowledge prompts each carry a keyword checklist and
+      require the same pydantic `Answer` schema, `temperature 0`, bounded
+      `max_tokens`, and disabled reasoning, so cells are directly comparable;
+      absolute timings remain machine-specific.**
 
       `prepare` writes `data/prompts.json`; benchmark runs write
-      `data/bench_run.json`. The committed evidence is the aggregate
-      `reports/metrics.json`, `reports/report.html`, and figures—not the raw
-      run record. Re-run the protocol on target hardware instead of treating
-      these cells as a reproducible raw dataset.
+      `data/bench_run.json`. The committed evidence is the raw full-grid
+      record `data/bench_run.json` (760 requests, 2026-10-15) plus the
+      aggregate `reports/metrics.json`, `reports/report.html`, and figures —
+      the percentiles in this story can be re-aggregated from the raw record
+      without re-running the bench. Re-run the protocol on target hardware
+      instead of treating these cells as a reproducible raw dataset.
   - id: eda
     text_md: |
       **The smoke pass caught a serving configuration failure before timing.**
@@ -115,9 +129,9 @@ sections:
       weights; that missing cell is recorded rather than silently omitted.
   - id: evaluation
     text_md: |
-      **The protocol is the reusable artifact.** Each model × engine ×
-      concurrency cell repeats the 8-prompt suite five times (40 requests)
-      under an asyncio semaphore, with cooldown between cells.
+      **Each model × engine × concurrency cell repeats the 8-prompt suite five
+      times (40 requests) under an asyncio semaphore, with cooldown between
+      cells; the protocol is built to be re-run on any target stack.**
 
       | dimension | setup |
       |---|---|
@@ -135,9 +149,12 @@ sections:
       - latency_concurrency
   - id: results
     text_md: |
-      **Nineteen cells completed 760 requests with zero failures, but only as
-      one author run.** Aggregate artifacts are committed; the raw run record
-      is not. Regenerate with `bench --full && report` before quoting results.
+      **Nineteen cells completed 760 requests with zero failures, as one author
+      run on a quiet machine with Ollama 0.40.4; the raw record is committed,
+      and a 2026-10-30 repeat attempt showed why single-machine repeats need a
+      dedicated host.** Aggregate artifacts and the raw run record are
+      committed; regenerate with `bench --full && report` on the deployment
+      target before quoting results there.
 
       - **Latency:** qwen3.6 p95 grows from 0.81 s (c=1) to 7.80 s (c=8), with
         an approximately linear concurrency pattern across arms in this run.
@@ -152,17 +169,41 @@ sections:
       - **Cost:** about $0.12 per 1M output tokens assumes 100 W draw and
         $0.30/kWh. It is electricity only, excludes hardware amortization, and
         is not a measured total cost of ownership.
+
+      **Repeat attempt (2026-10-30):** the same 11-cell bounded shape (440
+      requests) ran on this machine under Ollama 0.40.12 while a virtual
+      machine and background jobs co-ran. Quality held — every cell kept
+      schema-valid and keyword rates at 1.00 — but llama.cpp latency cells
+      were 10–30× slower (mean TTFT reached 44 s on the qwen3.6 c=8 cell) and
+      the gpt-oss c=8 cell hit ten 180 s read timeouts, while the MLX cells
+      matched their committed cells. The gap is co-tenant memory-bandwidth
+      contention on the llama.cpp path, not the 0.40.12 build. The attempt is
+      evidence about repeat methodology — single-machine repeats need a quiet,
+      dedicated host — not about the serving arms.
+
+      **Business summary:** On this machine, qwen3.6:35b-a3b-q4_K_M is the
+      serving pick: 0.81 s p95 at c=1 (7.80 s at c=8), about 7× the tok/s of
+      dense qwen3:32b, and 1.00 schema-valid and keyword rates in this bounded
+      task. Confirm on the deployment target before committing capacity.
     figures:
       - toks_per_s
       - engine_panel
   - id: conclusions
     text_md: |
-      **Use the harness on the target stack; keep the published numbers as a
-      worked example.** Measure the endpoint that will ship, label confounded
-      engine/quantization comparisons, and record unavailable arms explicitly.
+      **The deliverable is the harness; the published numbers are a worked
+      example from one machine.** Measure the endpoint that will ship, label
+      confounded engine/quantization comparisons, and record unavailable arms
+      explicitly.
 
       **Results quality: acceptable with caveats.** The aggregate cells are
-      internally consistent for this bounded task, but one run on one Mac
-      cannot establish portable latency, throughput, quality, or cost. The
-      committed report preserves the measurements; the absent raw run record
-      limits independent re-aggregation.
+      internally consistent for this bounded task, and the raw 760-request
+      record is now committed for independent re-aggregation. One quiet-machine
+      run cannot establish portable latency, throughput, quality, or cost; the
+      2026-10-30 repeat attempt was dominated by co-tenant load rather than the
+      new build, and the electricity view excludes wall power and hardware
+      amortization.
+
+      **Business summary:** Use the benchmark as the procurement gate: run
+      `bench --full` on the target stack, keep confounded engine/quant
+      comparisons labeled, and treat the published cells as one worked
+      example — not a portable SLA or a total-cost figure.

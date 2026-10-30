@@ -744,6 +744,28 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.17.0 (2026-10-30)** — wave 23 (roadmap experiments round): (1) the
+  nowcast sparse interval is non-degenerate — `probabilistic.sparse_history_band`
+  gives predicted-zero rows [0, q80 of the series' calibration-fold actuals]
+  (pooled q80 fallback) instead of the zero-aware band's ±0 width; UCI last
+  fold: 0.925 coverage at 6.01 units mean width vs the zero-aware band's
+  0.861 at 0.00 (all 75,880 test rows predict zero), still conservative
+  against the 80% target; the band figure draws the new band. (2) Cost-aware
+  routing arm (`multihorizon._route_cost` + `routing.cost_aware` block): the
+  per-series pick minimises summed newsvendor cost on the selection origins
+  at q=0.90 (order = method forecast + q0.90 of its per-series selection
+  residuals, holding 1.0 / stockout 3.0 — the wave-22 assumptions); same
+  pools/eligibility as the MAE router, property-tested to read no test
+  origins. Scored once on the test origins: +0.57 lumpy MAE [0.40, 0.78]
+  buys −0.045 lumpy newsvendor cost per unit-demand at q=0.90 [−0.079,
+  −0.016] (CI excludes zero); q=0.80/0.95 and erratic are washes; pooled MAE
+  7.47 → 8.13 [0.43, 0.92]. New tests `tests/test_wave23.py` pin the band
+  math, the block shape, and the selection-only property. Known landmine
+  (pre-existing, not this wave): the reconciliation store-level HGB backtest
+  is NOT byte-stable across processes (OpenMP reduction order) — re-running
+  `cli evaluate` re-rolls `reconciliation.json` (~5% swings observed), which
+  the README drift guard pins to the committed sample; the pinned anchor was
+  restored after the wave-23 run.
 - **0.16.0 (2026-10-29)** — wave 27 (model-refinement round, research-led):
   the lgbm feature space extended per the M5-winning-solution practice
   (56/84-day rolling means at lag 1, rolling mean 28 at lag 7, day-of-month,

@@ -379,6 +379,87 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     return cfg.reports_dir / "report.html"
 
 
+def sensitivity_core(cfg: ChurnConfig, fn_costs: list[float]) -> Path:
+    """What-if FN-cost sensitivity of the persisted pipeline (baseline untouched).
+
+    Re-scores the committed artifacts under alternative FN-cost assumptions —
+    the same evaluation code path as ``evaluate``, but only the cost model
+    changes: thresholds re-derive per variant on the same 1,409-row holdout,
+    and each variant's paired-bootstrap CI is recomputed at its own operating
+    points. Nothing is written except ``reports/sensitivity.json``: metrics.json,
+    figures and the served artifact remain the fn_cost=5 baseline.
+
+    The variant matching the production ``fn_cost`` doubles as a self-check:
+    it must reproduce the baseline's reported costs bit-for-bit.
+    """
+    paths = artifact_paths(cfg)
+    models = {}
+    for key in ("logreg", "selected", "selected_calibrated"):
+        with paths[key].open("rb") as fh:
+            models[key] = pickle.load(fh)  # noqa: S301 - serving artifact persisted by this pipeline
+    holdout = pd.read_parquet(paths["holdout"])
+    X_test = holdout[list(dict.fromkeys(feature_cols(cfg) + slice_cols(cfg)))]
+    y_test = holdout[TARGET_COL].astype(int)
+    meta = json.loads((cfg.data_dir / "model_meta.json").read_text())
+    base_rate = float(meta["train_churn_rate"])
+
+    baseline_metrics = json.loads((cfg.reports_dir / "metrics.json").read_text())
+    baseline_naive = float(baseline_metrics["naive_majority"]["business_cost"])
+
+    variants: dict[str, Any] = {}
+    for fn_cost in fn_costs:
+        variant_cfg = cfg.model_copy(update={"fn_cost": float(fn_cost)})
+        _runs, _figures, summary = evaluate_holdout(
+            variant_cfg, models, X_test, y_test, train_base_rate=base_rate
+        )
+        ci = summary["cost_delta_ci"]
+        key = f"fn{fn_cost:g}"
+        variants[key] = {
+            "fn_cost": float(fn_cost),
+            "fp_cost": float(variant_cfg.fp_cost),
+            "naive_cost": summary["naive_cost"],
+            "naive_opt": summary["naive_opt"],
+            "selected_cost": summary["selected_cost"],
+            "selected_opt": summary["selected_opt"],
+            "calibrated_cost": summary["calibrated_cost"],
+            "calibrated_opt": summary["calibrated_opt"],
+            "cost_delta_ci": {
+                "point": ci["point"],
+                "lo": ci["lo"],
+                "hi": ci["hi"],
+                "significant_95": ci["significant_95"],
+                "n_boot": ci["n_boot"],
+            },
+            "matches_baseline": (
+                float(fn_cost) == float(cfg.fn_cost) and summary["naive_cost"] == baseline_naive
+            ),
+        }
+        log.info(
+            "sensitivity %s: naive=%.0f selected=%.0f calibrated=%.0f t*=%.3f CI [%s, %s]",
+            key,
+            summary["naive_cost"],
+            summary["selected_cost"],
+            summary["calibrated_cost"],
+            summary["calibrated_opt"],
+            f"{ci['lo']:.0f}",
+            f"{ci['hi']:.0f}",
+        )
+
+    out = {
+        "baseline_fn_cost": float(cfg.fn_cost),
+        "note": (
+            "What-if re-scoring of the persisted artifacts under alternative "
+            "FN-cost assumptions; thresholds re-derived per variant on the "
+            "same holdout. The variant equal to the production fn_cost must "
+            "reproduce the baseline metrics (matches_baseline)."
+        ),
+        "variants": variants,
+    }
+    out_path = cfg.reports_dir / "sensitivity.json"
+    out_path.write_text(json.dumps(out, indent=2) + "\n")
+    return out_path
+
+
 OptInput = Annotated[
     Path | None,
     typer.Option(
@@ -416,6 +497,34 @@ def evaluate(
 ) -> None:
     """Score the holdout: metrics, calibration, importance, cost curve."""
     evaluate_core(load_config(params_file, n, seed))
+
+
+@app.command()
+def sensitivity(
+    fn_cost: Annotated[
+        list[float] | None,
+        typer.Option(
+            "--fn-cost",
+            help="FN cost to re-score (repeatable); the production value is included "
+            "as a self-check. Defaults: 3, 5, 8.",
+        ),
+    ] = None,
+    n: OptN = None,
+    seed: OptSeed = None,
+    params_file: OptParams = Path("params.yaml"),
+) -> None:
+    """What-if FN-cost sensitivity of the persisted pipeline (baseline untouched)."""
+    if fn_cost is None:
+        fn_cost = [3.0, 5.0, 8.0]
+    out_path = sensitivity_core(load_config(params_file, n, seed), fn_cost)
+    data = json.loads(out_path.read_text())
+    for key, v in data["variants"].items():
+        typer.echo(
+            f"{key}: naive={v['naive_cost']:.0f} calibrated={v['calibrated_cost']:.0f} "
+            f"t*={v['calibrated_opt']:.3f} CI [{v['cost_delta_ci']['lo']:.0f}, "
+            f"{v['cost_delta_ci']['hi']:.0f}] matches_baseline={v['matches_baseline']}"
+        )
+    typer.echo(f"sensitivity written to {out_path}")
 
 
 @app.command("build-serving")

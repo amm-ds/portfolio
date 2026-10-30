@@ -1,28 +1,36 @@
 project_id: 01-rag-agent
-headline: "On 65 tuning questions, retrieval recall@5 is 0.831 and hosted RAGAS
-  faithfulness 0.685 [0.605, 0.760], but 18 answers still contain unsupported
-  claims; sealed 15-question recall falls to 0.600."
-data_note: "The corpus is 593 articles (≈3.5 MB) from English Wikipedia dump
-  `20231101.en`, CC BY-SA 3.0 / GFDL with attribution required."
-limits: "Evidence is bounded to this homogeneous Wikipedia slice: held-out
-  retrieval drops to 0.600, grounding remains imperfect, and hosted/local
-  provider comparisons use different question counts and judges."
 sections:
 - id: background
   text_md: |
-    **Citations make an answer auditable; they do not make hallucinations
-    impossible.** This project attacks silent fabrication with retrieval tools,
-    structured citations, and a verification loop—and reports the unsupported
-    claims that still survive.
+    **On 65 tuning questions, retrieval recall@5 is 0.831 and hosted RAGAS
+    faithfulness 0.685 [0.605, 0.760], but 18 answers still contain unsupported
+    claims; the sealed 15-question held-out set falls to 0.600 recall.** That
+    gap between tuning-set and held-out numbers frames everything below.
 
-    The pipeline is deliberately inspectable: a checksum-pinned Wikipedia
+    The corpus is 593 articles (≈3.5 MB) from English Wikipedia dump
+    `20231101.en`, CC BY-SA 3.0 / GFDL with attribution required. Evidence is
+    bounded to this homogeneous Wikipedia slice: held-out retrieval drops to
+    0.600, grounding remains imperfect, and hosted/local provider comparisons
+    use different question counts and judges, so cross-provider deltas are
+    directional only.
+
+    The pipeline is built to be inspectable: a checksum-pinned Wikipedia
     slice, CPU retrieval, and an agent whose only corpus access is
-    `search_documents` and `read_excerpt`. Quality comes from measured
-    retrieval, generation, and abstention behavior, not from a persuasive demo.
+    `search_documents` and `read_excerpt`. Every quality claim below comes
+    from measured retrieval, generation, and abstention behavior on graded
+    question sets, each with seeded floors and bootstrap intervals.
+
+    **Business summary:** a question-answering assistant whose answers carry
+    auditable citations, evaluated end-to-end for $3.58 cloud-equivalent per
+    full 65-question pass ($0.25 for the sealed regression gate; local
+    inference $0 API at ≈$0.0068/query cloud-equivalent). Retrieval is solid
+    (0.831 recall@5); answer grounding is the open risk — 18 of 65 hosted
+    answers kept unsupported claims — so high-stakes answers still need human
+    review of the cited passages.
 - id: objectives
   text_md: |
-    **The goal is a useful answer with evidence, or a calibrated refusal.** The
-    acceptance criteria are concrete:
+    **The deliverable is a useful answer with evidence, or a calibrated
+    refusal.** The acceptance criteria are concrete:
 
     - Return schema-valid `AnalysisResult(summary, citations, confidence)`;
       invalid output fails loudly after bounded retries.
@@ -136,6 +144,14 @@ sections:
     The page instead quotes committed traces, including a correct cited answer,
     an unsupported answer with faithfulness 0.2, a multi-hop grounding failure,
     a support-floor abstention, and a correct refusal on an unanswerable question.
+
+    **Business summary:** retrieval is ready to serve on this corpus (0.831
+    recall@5 vs 0.677 lexical floor); answer generation is not yet trustworthy
+    unattended — 18 of 65 hosted answers kept unsupported claims with the
+    verify loop on, and the sealed set shows tuning numbers do not repeat on
+    fresh questions (0.600 recall@5). Budget p50 23 s per hosted answer and
+    one evaluation pass at $3.58 cloud-equivalent; the 175 s p95 tail is a
+    runaway loop the token guard catches, not normal operation.
   figures: [model_comparison, retrieval_hpo_frontier, failure_taxonomy]
   metrics_keys:
   - retrieval_chunks_200
@@ -145,9 +161,9 @@ sections:
   - rag_agent
 - id: conclusions
   text_md: |
-    **The transferable result is the measurement discipline, not a claim of
-    solved grounding.** Tool restrictions and citations help audit answers, but
-    18 of 65 hosted answers still kept unsupported claims.
+    **Grounding is not solved; the measurement setup is the reusable
+    deliverable.** Tool restrictions and citations make answers auditable, but
+    18 of 65 hosted answers still kept unsupported claims after verification.
 
     - Local verify-on A/B moved unsupported answers 18→14 and correct answers
       12→15, mainly through removal and abstention; RAGAS faithfulness moved
@@ -156,8 +172,16 @@ sections:
       bounded corpus all limit generalization. MiniLM's tie with BGE-small is
       evidence at this scale only.
     - Typed outputs, naive floors, sealed evaluation, and explicit cost/latency
-      telemetry are the reusable engineering controls. Full traces and metrics
-      remain in `reports/` for inspection.
+      telemetry are the engineering controls that transfer to the next corpus.
+      Full traces and metrics remain in `reports/` for inspection.
+
+    **Business summary:** take the controls, not the leaderboard position:
+    graded question sets with seeded floors, a sealed regression gate that
+    re-runs for $0.25 cloud-equivalent, per-phase cost metering under a hard
+    USD cap, and a verify loop that converts some fabrication into measured
+    refusals. Any production claim needs a repeat of this measurement on the
+    target corpus — the held-out drop says tuning-set scores will not transfer
+    as-is.
 roadmap:
 - status: delivered
   text: "Reproducible retrieval, provider seam, verify-on answers, separate rubric/RAGAS judges, sealed evaluation, and metered cost/latency."

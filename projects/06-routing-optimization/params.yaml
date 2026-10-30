@@ -87,6 +87,9 @@ convergence_instances:
 - RC105
 alns_max_iterations: 120
 alns_destroy_q: 10
+# Fleet-first ALNS arm: per-vehicle search penalty (dominates any distance
+# gain, making the arm's objective hierarchical: vehicles first, then distance).
+alns_fleet_vehicle_penalty: 10000.0
 alns_hpo_trials: 12
 alns_hpo_instances:
 - C101

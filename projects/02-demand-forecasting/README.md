@@ -568,6 +568,23 @@ scored origins, 95% CI on the gap (negative = champion better):
     flips in routing's favour (−0.137, CI excludes zero) while lumpy stays a
     wash (+0.066, CI spans zero) — the same over-ordering story as the
     order-up-to layer, now priced at the quantile of the committed band.
+- **Wave-23 cost-aware routing** (the roadmap's "test cost-aware routing",
+  `metrics.json → _multistep.routing.cost_aware`): the per-series routing
+  pick minimises summed newsvendor cost on the selection origins at q=0.90
+  (same pools, eligibility, and no-test-reads property as the MAE router;
+  order = method forecast + q0.90 of its selection residuals per series,
+  holding 1.0 / stockout 3.0) — then both arms are scored once on the test
+  origins. The cost rule routes **878 of 1,069 lumpy series to zero** (vs 945
+  for the MAE router) and concedes **+0.57 lumpy MAE** [0.40, 0.78] to win
+  the lumpy newsvendor cost at q=0.90: **2.168 vs 2.213 per unit-demand**
+  [−0.079, −0.016], CI excluding zero. At q=0.80/0.95 and on the 15 erratic
+  series the cost comparison is a wash (all CIs span zero), and pooled MAE
+  rises 7.47 → 8.13 [0.43, 0.92]. The selection-origin self-check holds
+  (cost rule totals 4.53M vs the MAE rule's 4.72M cost units). Read: at high
+  service levels on spike-driven lumpy demand, routing on cost instead of
+  MAE is a measured trade — small but real newsvendor gains for a real MAE
+  penalty — and which objective to route on is now a business choice with
+  prices on both sides, not an assertion.
 
 ### Related work — external benchmarks
 
@@ -754,18 +771,26 @@ What the audit-driven statistical baselines reveal on **real** data:
   |---|---|---|---|---|
   | synthetic | 0.727 | 0.741 | 26.49 units | optimistic (under-covers) |
   | UCI real | 0.919 | 0.861 | 0.00 units | conservative — but degenerate |
+  | UCI real, wave-23 sparse history band | — | 0.925 | 6.01 units | conservative — non-degenerate |
 
   Honest reading: on clean synthetic data the band under-covers (0.741 vs
   0.80 target → optimistic). On intermittent demand the champion's median
-  sits on the zero atom for ~100% of test-window rows, so the zero-aware
-  band collapses to the point forecast (avg width 0.00 units) and its 0.861
-  "coverage" only means 86.1% of actuals were exactly zero — the conservative
-  verdict is a degenerate band, not a useful one. The quantile band covers
-  0.919 pooled precisely because it is wide where the conformal band is
-  empty. Per-bin calibration is explicit in `probabilistic.json` (per-horizon
-  coverage and width arrays, `calibration_verdict`) and the figure states the
-  achieved coverage and width; per-series (or clustered) conformal remains
-  the fix direction.
+  sits on the zero atom for 100% of test-window rows (75,880 of 75,880
+  predicted zero), so the zero-aware band collapses to the point forecast
+  (avg width 0.00 units) and its 0.861 "coverage" only means 86.1% of
+  actuals were exactly zero — the conservative verdict is a degenerate band,
+  not a useful one. The quantile band covers 0.919 pooled precisely because
+  it is wide where the conformal band is empty. The wave-23 sparse history
+  band (`probabilistic.json → sparse_history_band`) fixes the degeneracy
+  without tuning: predicted-zero rows take [0, q80 of the series'
+  calibration-fold history] (leakage-safe: all calibration folds precede the
+  scored fold), giving 0.925 coverage at 6.01 units mean width — width is
+  honest and coverage improves, because small non-zero actuals now fall
+  inside the band. It still over-covers against the 80% target; per-series
+  (or clustered) conformal remains the tightening direction. Per-bin
+  calibration is explicit in `probabilistic.json` (per-horizon coverage and
+  width arrays, `calibration_verdict`) and the figure states the achieved
+  coverage and width.
 
 Figures (HTML + JSON per track, `reports/figures/` synthetic,
 `reports_uci/figures/` real) — the audit list:
@@ -919,7 +944,11 @@ remains:
    al. 2019) is the documented next step, not a proven win.
 4. **Returns-aware demand**: model cancellations/returns as their own flow
    instead of excluding them, for net-demand forecasting.
-5. **Cost-aware routing**: the order-up-to simulation and the wave-22
-   newsvendor layer both show MAE-optimal routing can over-order at high
-   service levels on spike-driven series — a cost-aware variant of the
-   routing rule is the natural follow-up.
+5. ~~**Cost-aware routing**~~ — delivered (wave 23): the per-series pick now
+   also runs as a newsvendor-cost rule at q=0.90, scored once on the test
+   origins — lumpy newsvendor 2.168 vs 2.213 per unit-demand at q=0.90
+   (CI excludes zero) for +0.57 lumpy MAE; the MAE-versus-cost trade-off is
+   measured, not asserted (`_multistep.routing.cost_aware`). Also delivered
+   in wave 23: the non-degenerate sparse nowcast interval (predicted-zero
+   rows take [0, history q80] — 0.925 coverage at 6.01 units width vs the
+   zero-width band's 0.861; `probabilistic.json → sparse_history_band`).

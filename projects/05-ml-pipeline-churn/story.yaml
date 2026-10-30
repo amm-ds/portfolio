@@ -1,10 +1,20 @@
 project_id: 05-ml-pipeline-churn
-headline: Cost-aware threshold tuning cuts holdout decision cost 41.9% (1,035 → 601) versus the naive contact-everyone comparator; the paired bootstrap delta is −416 (95% CI [−485, −343]).
-data_note: Real IBM telco churn data (7,043 customers, IBM sample-data license) behind a sha256-pinned DatasetContract; a labeled 8.8%-churn synthetic twin supports offline CI.
-limits: Operating thresholds are selected and scored on the same 1,409-row holdout, so cost and slice results are optimistically biased; the snapshot has no time axis, and fairness covers only contract, gender and senior-citizen slices.
 sections:
   - id: background
     text_md: |
+      **Result.** Cost-aware threshold tuning cuts holdout decision cost 41.9%
+      (1,035 → 601) versus the naive contact-everyone comparator; the paired
+      bootstrap delta is −416 (95% CI [−485, −343]).
+
+      **Data.** Real IBM telco churn data (7,043 customers, IBM sample-data
+      license) behind a sha256-pinned DatasetContract; a labeled 8.8%-churn
+      synthetic twin supports offline CI.
+
+      **Limits.** Operating thresholds are selected and scored on the same
+      1,409-row holdout, so cost and slice results are optimistically biased;
+      the snapshot has no time axis, and fairness covers only contract,
+      gender and senior-citizen slices.
+
       Turn churn scores into a retention-contact policy under asymmetric costs:
       a false alarm costs 1 voucher and a missed churner costs 5. Accuracy is
       the wrong target when a silent policy scores 0.735 by never contacting
@@ -16,6 +26,12 @@ sections:
       | FN cost | 5 | one lost customer |
       | holdout churn rate | 26.5% | 374 of 1,409 customers |
       | threshold grid | 41 points (0.00–1.00) | cost-optimum search |
+
+      **Business summary:** on the committed 1,409-customer holdout, serving
+      the calibrated model at t=0.175 contacts fewer customers than the naive
+      blast and still cuts decision cost by 41.9% — a budget line a retention
+      team can act on, with the sampling uncertainty (95% CI [−485, −343])
+      attached to the saving.
   - id: objectives
     text_md: |
       - Embed preprocessing in a fitted sklearn Pipeline that accepts raw CRM rows.
@@ -137,6 +153,14 @@ sections:
         isotonic improves ECE 0.028 → 0.016 and same-holdout cost 619 → 601.
       - **Regime dependence:** synthetic t*=0.700 versus telco t*=0.175; the
         procedure transfers, not the cutoff.
+      - **Cost-model sensitivity** (`reports/sensitivity.json`, re-scored via
+        `cli sensitivity`): served-isotonic cost and threshold move with the
+        FN price — 510 at t=0.200 (FN=3), 601 at t=0.175 (FN=5), 699 at
+        t=0.100 (FN=8) — and every variant's paired-bootstrap CI excludes
+        zero. The naive comparator stays 1,035 throughout (contact-everyone
+        has no missed churners), so the absolute saving shrinks as FN rises.
+        Calibration's cost edge is itself cost-model dependent: isotonic helps
+        at FN=5 (619 → 601) but slightly hurts at FN=8 (691 → 699).
       - **Raw-model fairness, not served-policy fairness:** at raw XGB t=0.150,
         gender recall is 0.902 female / 0.906 male and senior recall is 0.969
         versus 0.880 non-senior. Contract recall is 0.976 month-to-month,
@@ -147,6 +171,12 @@ sections:
       - **Drivers:** permutation importance ranks contract, tenure and charges
         as the main signal. The naive row's accuracy is 0.265 at contact-all;
         contact-none would score 0.735 accuracy but is a different policy.
+
+      **Business summary:** the served policy is contact at t=0.175 on the
+      calibrated model — 601 versus 1,035 for the naive blast (−41.9%), CI
+      [−485, −343]. The threshold must be re-derived when the FN:FP price
+      ratio changes (0.200 at FN=3, 0.100 at FN=8): the procedure and its
+      savings are stable, the cutoff is not a constant.
     figures: [calibration_curve, business_cost_curve, permutation_importance, fairness_slices]
     metrics_keys: [naive_majority, logreg_threshold_0.300, selected_model, selected_model_calibrated]
   - id: conclusions
@@ -156,13 +186,25 @@ sections:
       measured effects, and the bootstrap quantifies cost uncertainty at fixed
       thresholds. The raw-model slices expose a severe long-contract recall
       trade-off, while same-holdout threshold selection means the 601 cost and
-      served operating point still need evaluation on fresh data.
+      served operating point still need evaluation on fresh data. The
+      FN-cost sensitivity run bounds the threshold's stability: the operating
+      point moves monotonically with the missed-churner price, so the served
+      cutoff must be re-derived (not copied) when the cost model changes.
+
+      **Business summary:** deployable as-is on raw CRM rows with the DQ gates
+      as the contract; expected value is a ~42% decision-cost cut at FN=5,
+      stable in sign across FN=3–8, with re-derivation of the cutoff on any
+      price change and an explicit watch item: two-year-contract churners are
+      missed by the raw policy, so served-policy fairness on fresh data is the
+      gate before rollout.
     figures: [bootstrap_ci]
 roadmap:
   - status: delivered
     text: Real telco pipeline — DQ gates, cost-aware HPO, calibration and serving at t=0.175.
   - status: delivered
     text: Evidence pack — fixed-threshold bootstrap CI, cost surface and raw-model fairness slices.
+  - status: delivered
+    text: FN-cost sensitivity re-run — t*=0.200/0.175/0.100 at FN=3/5/8, every CI excludes zero; queued-DVC path re-validated.
   - status: remaining
     text: Freeze the threshold before evaluation and validate cost and fairness on fresh data.
   - status: deferred

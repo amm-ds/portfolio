@@ -63,19 +63,25 @@ than persistence. Lag 24 is yesterday; lag 168 is the separate last-week feature
   point accuracy).
 
 Cross-service transfer (green taxi, March 2024, yellow-trained models,
-197,160 zone-hours — features from green's own Jan–Feb history):
+197,160 zone-hours — features from green's own Jan–Feb history; plus a
+green-trained control arm fit on that same Jan–Feb history):
 
 | run | MAE | RMSE | MAPE |
 |---|---|---|---|
-| naive lag-24 (green persistence) | **0.212** | 1.100 | 81.8% |
+| naive lag-24 (green persistence) | 0.212 | 1.100 | 81.8% |
 | gbm_mean (yellow-trained) | 0.294 | 0.911 | **66.6%** |
-| gbm_tuned (yellow-trained) | 0.296 | **0.908** | 66.7% |
+| gbm_tuned (yellow-trained) | 0.296 | 0.908 | 66.7% |
+| **gbm_green_retrained (green Jan–Feb)** | **0.180** | **0.688** | **66.4%** |
 
-- **Honest finding: transfer is mixed.** Yellow-trained GBMs *lose* MAE to
-  green persistence (green demand is an order of magnitude sparser and
-  burst-light, so yellow's burst-tuned patterns add noise) but *win* RMSE
-  (−17%) and MAPE (−19%) — they trim the big errors. Per-service retraining
-  on green history is advised before production use. Figure:
+- **Honest finding: yellow-to-green transfer is mixed — and the control
+  settles why.** Yellow-trained GBMs *lose* MAE to green persistence (green
+  demand is an order of magnitude sparser and burst-light, so yellow's
+  burst-tuned patterns add noise) but *win* RMSE (−17%) and MAPE (−19%). A GBM
+  fit on green's own two months of history (`gbm_green_retrained`, default GBM
+  family, 337k zone-hours) beats green persistence on **all three** metrics —
+  MAE 0.180 vs 0.212 (−15%), RMSE 0.688 vs 1.100 (−37%), MAPE 66.4% vs 81.8%
+  — so the transfer gap is a service-distribution problem with a measured fix,
+  not a law of sparse demand: retrain per service before transfer. Figure:
   `reports/figures/green_transfer`.
 
 Serving (showcase API): `uv run python -m mobility.cli build-serving-artifact`
@@ -123,8 +129,12 @@ Artifacts per scored month in `reports/drift/`: `<month>.json` (machine
 report), `<month>_mae.html`/`.json` (themed figure vs the pinned baseline),
 `<month>.dq.json` (gate detail), and a running `DRIFT.md` digest. The manual
 DVC stage (`dvc repro drift_check`, month from `params.yaml` `drift.month`)
-writes the same `reports/drift` out. First scored month (2024-11, seeded from
-the local snapshot): MAE 5.059 vs pinned 4.676 (+8.2%, within tolerance).
+writes the same `reports/drift` out. Months scored so far (from the local
+snapshot): 2024-11 — MAE 5.059 vs pinned 4.676 (+8.2%, within tolerance);
+2024-12 — MAE 5.046 vs pinned 4.676 (+7.9%, within tolerance). Two in-window
+months verify the wiring, the DQ gates and the reporting contract; no scored
+month has exceeded tolerance yet, so true unseen-drift behavior remains
+unmeasured (2025-01+ needs a network fetch).
 
 Weather elasticity (mean hourly pickups, rain ≥1 mm vs dry, test window):
 
@@ -188,3 +198,17 @@ checksum-pinned in `data/raw/checksums.json`, verified loudly on every run).
   expanding-window CV — metrics you can trust on drifting data.
 - **Decision-grade uncertainty:** calibrated p90 bands and directional
   weather elasticity, with honest caveats about causal limits.
+
+## Roadmap
+
+- **Delivered:** streaming 41.2M-trip pipeline with the temporal run ladder,
+  p90 calibration (90.8% coverage) and the served `gbm_tuned` artifact.
+- **Delivered:** green-transfer study plus the per-service retraining control
+  (`gbm_green_retrained` beats green persistence on MAE/RMSE/MAPE at two
+  months of green history); drift observatory scored 2024-11 (+8.2%) and
+  2024-12 (+7.9%) in-window against the pinned artifact.
+- **Remaining:** score the first genuinely unseen drift month (2025-01+ needs
+  a network fetch — exit 2 until published) and productionize per-service
+  retraining behind a scheduled green-scale fit.
+- **Deferred:** causal weather claims and longer-horizon forecasts — different
+  study contracts, not tuning knobs.

@@ -26,3 +26,25 @@ def test_transfer_figure_marks_mixed_result() -> None:
     assert "Mixed transfer" in fig.layout.title.text
     assert "wins on RMSE" in fig.layout.title.text
     assert list(fig.data[0].x) == ["naive_lag24", "gbm_mean", "gbm_tuned"]  # reference first
+
+
+def test_transfer_figure_includes_green_retrained_arm() -> None:
+    """The per-service retraining control renders as the fourth bar, last."""
+    result = {
+        "window": "2024-03 green taxi (n=100 zone-hours)",
+        "features_from": "green Jan-Feb history",
+        "overall": {
+            "naive_lag24": {"mae": 0.212, "rmse": 1.10, "mape_pct": 81.8},
+            "gbm_mean": {"mae": 0.294, "rmse": 0.911, "mape_pct": 66.6},
+            "gbm_tuned": {"mae": 0.296, "rmse": 0.908, "mape_pct": 66.7},
+            "gbm_green_retrained": {"mae": 0.205, "rmse": 0.87, "mape_pct": 70.1},
+        },
+    }
+    fig = fig_green_transfer(result)
+    assert list(fig.data[0].x) == [
+        "naive_lag24",
+        "gbm_mean",
+        "gbm_tuned",
+        "gbm_green_retrained",
+    ]
+    assert "green-trained control" in fig.layout.title.text

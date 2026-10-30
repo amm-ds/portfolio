@@ -10,12 +10,21 @@ import pytest
 from anomaly_detection.config import AnomalyConfig
 from anomaly_detection.nab import (
     NAB_SERIES,
+    build_series_features,
     evaluate_series,
     match_events,
     parse_series_csv,
     range_f1,
     run_nab,
     windows_to_mask,
+)
+from anomaly_detection.nab_sweep import (
+    DETECTORS,
+    FEATURE_SETS,
+    STREAMS,
+    cooldown_budget,
+    episode_firing_times,
+    run_nab_sweep,
 )
 
 BASE = datetime(2020, 1, 1)
@@ -134,3 +143,87 @@ def test_run_nab_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Non
     for name in ("nab_timelines", "nab_score_distribution", "nab_alert_budget"):
         assert (config.figures_dir / f"{name}.json").exists()
     assert (config.reports_path / "nab_metrics.json").exists()
+
+
+def test_build_series_features_feature_set_axis() -> None:
+    df = pl.DataFrame(
+        {
+            "timestamp": pl.datetime_range(
+                datetime(2020, 1, 1), datetime(2020, 1, 1, 0, 59), "1m", eager=True
+            ),
+            "value": [float(i % 7) for i in range(60)],
+        }
+    )
+    rolling = build_series_features(df, [10, 60], feature_set="rolling")
+    with_res = build_series_features(df, [10, 60], feature_set="rolling_residual")
+    assert "value_resmed10" not in rolling.columns
+    assert "value_resmed10" in with_res.columns
+    assert with_res.height == rolling.height  # same drop-null warm-up contract
+    with pytest.raises(ValueError, match="unknown feature_set"):
+        build_series_features(df, [10], feature_set="bogus")
+
+
+def test_episode_firing_times_collapses_runs() -> None:
+    scores = np.array([0.1, 0.9, 0.95, 0.2, 0.8, 0.1, 0.7])
+    alerts = np.array([1, 2, 4, 6])
+    firings, n_runs = episode_firing_times(alerts, scores)
+    assert n_runs == 3  # runs {1,2}, {4}, {6}
+    assert firings.tolist() == [2, 4, 6]  # max-score minute of each run
+    empty, zero = episode_firing_times(np.array([], dtype=int), scores)
+    assert zero == 0 and empty.size == 0
+
+
+def test_cooldown_budget_rate_caps_pages() -> None:
+    # hourly series: cooldown 24 h = 24 steps
+    step_ns = 3_600_000_000_000.0
+    firings = np.array([0, 5, 23, 24, 48, 70])
+    kept = cooldown_budget(firings, step_ns, cooldown_hours=24.0)
+    assert kept.tolist() == [0, 24, 48]  # 5/23 within 24 h of 0; 70 within 24 h of 48
+    assert cooldown_budget(np.array([], dtype=int), step_ns).size == 0
+
+
+def test_run_nab_sweep_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Full sweep stage on one fixture series with fetch + series list stubbed."""
+    import anomaly_detection.nab as nab_module
+    import anomaly_detection.nab_sweep as sweep_module
+
+    config = AnomalyConfig(
+        windows=[5, 10],
+        n_estimators=50,
+        data_dir=str(tmp_path / "d"),
+        reports_dir=str(tmp_path / "r"),
+    )
+    series_path, windows = _fixture_series(tmp_path / "fixture.csv")
+    labels = {"famA/seriesA.csv": windows}
+
+    def fake_fetch(url: str, dest: Path, expected_sha256: str | None = None) -> Path:
+        if "combined_windows" in url:
+            dest.write_text(json.dumps(labels))
+        else:
+            dest.write_text(series_path.read_text())
+        return dest
+
+    # fetch_series/fetch_labels resolve ``fetch`` inside anomaly_detection.nab;
+    # the series list is read from the sweep module's own import.
+    monkeypatch.setattr(nab_module, "fetch", fake_fetch)
+    monkeypatch.setattr(sweep_module, "NAB_SERIES", {"famA": [("seriesA", "a" * 64)]})
+
+    report = run_nab_sweep(config)
+    assert report["data_source"] == "nab"
+    assert set(report["grid"]) == {f"{d}+{f}" for d in DETECTORS for f in FEATURE_SETS}
+    for entry in report["grid"].values():
+        overall = entry["overall"]
+        assert 0.0 <= overall["range_f1"] <= 1.0
+        for stream in STREAMS:
+            st = overall["streams"][stream]
+            assert st["alerts_fired"] >= 0 and st["episodes"] >= 0
+        # the load ladder never increases pages: raw >= deduped >= budgeted
+        assert (
+            overall["streams"]["raw"]["alerts_fired"]
+            >= overall["streams"]["deduped"]["alerts_fired"]
+            >= overall["streams"]["budgeted"]["alerts_fired"]
+        )
+        assert set(entry["by_family"]) == {"famA"}
+    series = report["series"]["famA/seriesA|isolation_forest+rolling"]
+    assert set(series["streams"]) == set(STREAMS)
+    assert (config.reports_path / "nab_sweep.json").exists()

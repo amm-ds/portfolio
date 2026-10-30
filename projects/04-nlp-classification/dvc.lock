@@ -315,3 +315,59 @@ stages:
       hash: md5
       md5: 7bc54090f07b42b52ed672997a8259bc
       size: 216
+  fresh_holdout:
+    cmd: uv run python -m nlp_classification.cli fresh-holdout
+    deps:
+    - path: data/label_names.json
+      hash: md5
+      md5: 7eea068586088c3bb50b948dc46cbb6f
+      size: 43
+    - path: data/test
+      hash: md5
+      md5: df4fd99f20135b89b05f7e54603c9f80.dir
+      size: 2041508
+      nfiles: 5
+    - path: data/train
+      hash: md5
+      md5: 35d73b99a678de69579400c4e27c9e7f.dir
+      size: 12405685
+      nfiles: 7
+    - path: data/val
+      hash: md5
+      md5: 48842bf1ab2efe7267f78ddbeb3ac7fa.dir
+      size: 1169653
+      nfiles: 6
+    - path: params.yaml
+      hash: md5
+      md5: 3830ef058ad8c70bd467e7f3a9d02b5f
+      size: 958
+    - path: reports/models/baseline.joblib
+      hash: md5
+      md5: e6c54ba1c00cc7bc324bf66a6fd9fc3b
+      size: 559932
+    - path: reports/models/distilbert.pt
+      hash: md5
+      md5: 1a6531167249afbb729032db39508e18
+      size: 267866937
+    - path: reports/models/distilbert_tuned.pt
+      hash: md5
+      md5: 28bb8bda08c5aa7dde5a60256fe19ab3
+      size: 267867597
+    - path: reports/models/encoder_b.pt
+      hash: md5
+      md5: d7ec82b4f102cb6748eceec363384ae9
+      size: 498675723
+    - path: reports/selection.json
+      hash: md5
+      md5: 7d632994bac3b1fe7aa79a10c5bb840f
+      size: 591
+    - path: src/nlp_classification
+      hash: md5
+      md5: d03d08a08d9226f4443c50dc30202fe0.dir
+      size: 267840
+      nfiles: 25
+    outs:
+    - path: reports/fresh_holdout.json
+      hash: md5
+      md5: 2a18bad9d915ba74818b6a5093c2eb23
+      size: 3879

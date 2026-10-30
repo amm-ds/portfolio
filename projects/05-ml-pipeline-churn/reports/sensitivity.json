@@ -1,0 +1,60 @@
+{
+  "baseline_fn_cost": 5.0,
+  "note": "What-if re-scoring of the persisted artifacts under alternative FN-cost assumptions; thresholds re-derived per variant on the same holdout. The variant equal to the production fn_cost must reproduce the baseline metrics (matches_baseline).",
+  "variants": {
+    "fn3": {
+      "fn_cost": 3.0,
+      "fp_cost": 1.0,
+      "naive_cost": 1035.0,
+      "naive_opt": 0.0,
+      "selected_cost": 488.0,
+      "selected_opt": 0.325,
+      "calibrated_cost": 510.0,
+      "calibrated_opt": 0.2,
+      "cost_delta_ci": {
+        "point": -547.0,
+        "lo": -618.025,
+        "hi": -474.0,
+        "significant_95": true,
+        "n_boot": 2000
+      },
+      "matches_baseline": false
+    },
+    "fn5": {
+      "fn_cost": 5.0,
+      "fp_cost": 1.0,
+      "naive_cost": 1035.0,
+      "naive_opt": 0.0,
+      "selected_cost": 619.0,
+      "selected_opt": 0.15,
+      "calibrated_cost": 601.0,
+      "calibrated_opt": 0.175,
+      "cost_delta_ci": {
+        "point": -416.0,
+        "lo": -485.0,
+        "hi": -343.0,
+        "significant_95": true,
+        "n_boot": 2000
+      },
+      "matches_baseline": true
+    },
+    "fn8": {
+      "fn_cost": 8.0,
+      "fp_cost": 1.0,
+      "naive_cost": 1035.0,
+      "naive_opt": 0.0,
+      "selected_cost": 691.0,
+      "selected_opt": 0.1,
+      "calibrated_cost": 699.0,
+      "calibrated_opt": 0.1,
+      "cost_delta_ci": {
+        "point": -344.0,
+        "lo": -426.0,
+        "hi": -257.9500000000003,
+        "significant_95": true,
+        "n_boot": 2000
+      },
+      "matches_baseline": false
+    }
+  }
+}

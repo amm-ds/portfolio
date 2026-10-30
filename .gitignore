@@ -13,6 +13,12 @@ build/
 
 # Data & artifacts (DVC-tracked, never committed raw)
 data/
+# ...except 08's raw bench record: the story's evidence commit preserves the
+# full-grid run record (760 requests) alongside the aggregates so the published
+# percentiles can be re-aggregated without re-running hours of local inference.
+# (Git cannot re-include a file under an excluded dir, so this line documents
+# the intent; the file is force-added like the 02 sidecar below.)
+!projects/08-inference-serving/data/bench_run.json
 *.parquet
 # ...except the M5 demo sidecar: the demo payload copies the committed
 # global model's catalog curves from it, so it is versioned like the

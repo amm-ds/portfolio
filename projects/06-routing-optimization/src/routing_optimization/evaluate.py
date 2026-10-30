@@ -42,7 +42,7 @@ from routing_optimization.figures import (
     runtime_figure,
     solver_profile_figure,
 )
-from routing_optimization.ortools_solver import ortools_cp
+from routing_optimization.ortools_solver import ortools_cp, ortools_cp_unhinted
 from routing_optimization.parser import parse_solomon_file
 from routing_optimization.reporting import (
     family_markdown,
@@ -50,6 +50,7 @@ from routing_optimization.reporting import (
     gap_pct,
     results_markdown,
     summary_markdown,
+    unhinted_markdown,
 )
 from routing_optimization.schemas import AlnsTuning, Problem, RoutePlan, TwoOptTuning
 from routing_optimization.solver import alns, two_opt
@@ -336,6 +337,11 @@ def run_solve(cfg: VRPConfig) -> Path:
     tuned_starts = {inst: plans["two_opt_tuned"] for inst, plans in plans_by_inst.items()}
     alns_hpo = run_alns_hpo(problem_by_name, tuned_starts, cfg)
 
+    # Equal-budget unhinted CP-SAT comparison (no hint, same wall budget):
+    # recorded per instance; a None plan means CP-SAT produced no feasible
+    # solution within the budget — reported as such, never back-filled.
+    unhinted: dict[str, dict[str, Any]] = {}
+
     for problem in problems:
         inst = problem.name
         runs = runs_by_inst[inst]
@@ -394,6 +400,49 @@ def run_solve(cfg: VRPConfig) -> Path:
         )
         plans["ortools_cp"] = cp_plan
 
+        # Fleet-first ALNS: identical seeded search, but the acceptance and
+        # incumbent criteria optimize distance + penalty x vehicles — the
+        # hierarchical vehicles-first objective the benchmark ranks by.
+        t0 = time.perf_counter()
+        fleet_plan = alns(
+            problem,
+            start=tuned_starts[inst],
+            seed=cfg.seed,
+            max_iterations=cfg.alns_max_iterations,
+            segment_length=alns_hpo.tuning.segment_length,
+            reaction_factor=alns_hpo.tuning.reaction_factor,
+            init_weights=alns_hpo.tuning.init_weights,
+            destroy_q=cfg.alns_destroy_q,
+            vehicle_penalty=cfg.alns_fleet_vehicle_penalty,
+        )
+        runs.append(
+            SolverRun(
+                "alns_fleet",
+                fleet_plan.total_distance,
+                fleet_plan.n_vehicles,
+                time.perf_counter() - t0,
+                base_solver="two_opt_tuned",
+            )
+        )
+        plans["alns_fleet"] = fleet_plan
+
+        # Unhinted CP-SAT at the same wall-time budget: no hint, no fallback.
+        t0 = time.perf_counter()
+        unhinted_plan, unhinted_status, _unhinted_solve_s = ortools_cp_unhinted(
+            problem,
+            time_limit_s=cfg.ortools_time_limit_s,
+            max_vehicles=cfg.ortools_max_vehicles,
+            seed=cfg.seed,
+        )
+        entry: dict[str, Any] = {
+            "status": unhinted_status,
+            "runtime_s": round(time.perf_counter() - t0, 6),
+        }
+        if unhinted_plan is not None:
+            entry["total_distance"] = round(unhinted_plan.total_distance, 4)
+            entry["n_vehicles"] = unhinted_plan.n_vehicles
+        unhinted[inst] = entry
+
         best = min(runs, key=lambda r: r.total_distance)
         instances_payload[inst] = {
             "n_customers": problem.n_customers,
@@ -437,6 +486,7 @@ def run_solve(cfg: VRPConfig) -> Path:
     }
     payload["convergence"] = convergence
     payload["alns_convergence"] = alns_convergence
+    payload["unhinted_cp_sat"] = unhinted
     cfg.reports_dir.mkdir(parents=True, exist_ok=True)
     solutions_path = cfg.reports_dir / "solutions.json"
     solutions_path.write_text(json.dumps(payload, indent=2))
@@ -697,12 +747,18 @@ def _markdown_reports(evaluations: list[InstanceEvaluation]) -> MarkdownReports:
     )
 
 
-def _write_results_md(cfg: VRPConfig, reports: MarkdownReports) -> None:
-    """Write ``reports/results.md`` from the three markdown sections."""
+def _write_results_md(cfg: VRPConfig, reports: MarkdownReports, unhinted: dict[str, Any]) -> None:
+    """Write ``reports/results.md`` from the markdown sections + unhinted arm."""
+    unhinted_section = ""
+    if unhinted:
+        unhinted_section = (
+            "\n\n## Equal-budget unhinted CP-SAT (no hint, "
+            f"{unhinted['time_limit_s']:g} s/instance)\n\n" + unhinted_markdown(unhinted)
+        )
     (cfg.reports_dir / "results.md").write_text(
         f"# Routing optimization — evaluation results\n\n## Summary (mean over instances)\n\n"
         f"{reports.summary}\n\n## Per-family results\n\n{reports.family}\n\n"
-        f"## Per-instance results\n\n{reports.detail}\n"
+        f"## Per-instance results\n\n{reports.detail}\n{unhinted_section}"
     )
 
 
@@ -846,6 +902,41 @@ def _family_metrics(
     }
 
 
+def _unhinted_summary(solutions: dict[str, Any], cfg: VRPConfig) -> dict[str, Any]:
+    """Aggregate the equal-budget unhinted CP-SAT runs from ``solutions.json``.
+
+    Counts statuses honestly: a None plan (no feasible solution within the
+    budget) is a result, not a failure to report. Mean gap is computed only
+    over the instances CP-SAT actually solved.
+    """
+    unhinted: dict[str, dict[str, Any]] = solutions.get("unhinted_cp_sat", {})
+    if not unhinted:
+        return {}
+    references = load_references(cfg.best_known_path, cfg.best_known_supplement_path)
+    statuses: dict[str, int] = {}
+    for entry in unhinted.values():
+        statuses[entry["status"]] = statuses.get(entry["status"], 0) + 1
+    solved_gaps = [
+        gap_pct(entry["total_distance"], ref.distance)
+        for inst, entry in unhinted.items()
+        if "total_distance" in entry
+        and (ref := references.get(canonical_instance_name(inst))) is not None
+    ]
+    return {
+        "time_limit_s": cfg.ortools_time_limit_s,
+        "hinted": False,
+        "n_instances": len(unhinted),
+        "n_solved": len(solved_gaps),
+        "statuses": dict(sorted(statuses.items())),
+        "mean_gap_pct_solved": round(sum(solved_gaps) / len(solved_gaps), 4)
+        if solved_gaps
+        else None,
+        "mean_runtime_s": round(
+            sum(entry["runtime_s"] for entry in unhinted.values()) / len(unhinted), 4
+        ),
+    }
+
+
 def _metrics_payload(
     evaluations: list[InstanceEvaluation],
     solutions: dict[str, Any],
@@ -856,6 +947,7 @@ def _metrics_payload(
         "summary": _summary_metrics(stats),
         "instances": _instance_metrics(evaluations),
         "ranking": _ranking_metrics(evaluations),
+        "unhinted_cp_sat": solutions.get("unhinted_cp_sat", {}),
         "tuning": {
             "solver_best": solutions.get("solver_best"),
             "hpo": solutions.get("hpo"),
@@ -883,7 +975,8 @@ def run_evaluate(cfg: VRPConfig) -> Path:
     figures = _build_figures(cfg, evaluations, solutions, tables, stats)
     _write_figures(figures, cfg.reports_dir / "figures")
     reports = _markdown_reports(evaluations)
-    _write_results_md(cfg, reports)
+    unhinted = _unhinted_summary(solutions, cfg)
+    _write_results_md(cfg, reports, unhinted)
     metrics = _metrics_payload(evaluations, solutions, stats)
     metrics_path = cfg.reports_dir / "metrics.json"
     metrics_path.write_text(json.dumps(metrics, indent=2))

@@ -61,12 +61,12 @@ def load_full_train(
     return train_part, val_part
 
 
-def stratified_subsample[T: Dataset](dataset: T, n_samples: int, seed: int) -> T:
-    """Draw exactly ``n_samples`` rows with per-class proportional sampling.
+def stratified_subsample_indices(dataset: Dataset, n_samples: int, seed: int) -> list[int]:
+    """Indices picked by the seeded per-class stratified draw (deterministic).
 
-    The per-class quotas come from a seeded ``numpy.random.RandomState`` so the
-    subsample is deterministic and the class balance of the source split is
-    preserved (AG News is balanced; this stays correct if it were not).
+    Split out of :func:`stratified_subsample` so callers (the fresh-holdout
+    stage) can recompute exactly which rows a persisted split contains and
+    take its complement — the same RNG stream, so identical draws.
     """
     labels = np.asarray(dataset[LABEL_COLUMN])
     classes, counts = np.unique(labels, return_counts=True)
@@ -87,8 +87,17 @@ def stratified_subsample[T: Dataset](dataset: T, n_samples: int, seed: int) -> T
     if len(picked) < n_samples:
         extra = rng.choice(remainder, size=n_samples - len(picked), replace=False)
         picked.extend(int(i) for i in extra)
-    picked = sorted(picked[:n_samples])
-    return cast(T, dataset.select(picked))
+    return sorted(picked[:n_samples])
+
+
+def stratified_subsample[T: Dataset](dataset: T, n_samples: int, seed: int) -> T:
+    """Draw exactly ``n_samples`` rows with per-class proportional sampling.
+
+    The per-class quotas come from a seeded ``numpy.random.RandomState`` so the
+    subsample is deterministic and the class balance of the source split is
+    preserved (AG News is balanced; this stays correct if it were not).
+    """
+    return cast(T, dataset.select(stratified_subsample_indices(dataset, n_samples, seed)))
 
 
 def stratified_split[T: Dataset](dataset: T, val_fraction: float, seed: int) -> tuple[T, T]:

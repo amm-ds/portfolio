@@ -2,7 +2,12 @@
 
 Wave 7 shipped the quantile + global split-conformal pair; wave 17 replaced
 the global conformal width with per predicted-zero-bin calibration (the
-global q80 degenerates on zero-heavy demand).
+global q80 degenerates on zero-heavy demand); wave 23 adds the non-degenerate
+sparse interval: rows the model predicts as zero get the per-series training
+history q80 as an upper bound ([0, q80]) instead of the zero-bin's ±0 width,
+so the band carries honest width at the zero atom (the nowcast UCI track's
+zero-aware band collapses to width 0.00 there — the committed negative result
+the sparse history band replaces for reporting).
 
 Two complementary 80% bands on top of the tuned HGB config:
 
@@ -14,7 +19,12 @@ Two complementary 80% bands on top of the tuned HGB config:
   nonzero). A *global* width degenerates on zero-heavy demand — with >80% of
   residuals exactly 0 the global q80 collapses to 0 (UCI wave-7 artefact).
   The band is applied to the last fold only (classic split-conformal:
-  coverage is marginal and exchangeability-based).
+  coverage is marginal and exchangeability-based);
+- **sparse history band** (wave 23) — same bin split, but predicted-zero rows
+  take [0, q80 of that series' calibration-fold actuals] (pooled q80 fallback
+  for a series absent from the calibration folds): zero width is impossible
+  wherever the history saw any demand, and coverage at predicted-zero rows
+  remains honest because the upper bound still has to contain the actuals.
 
 Outputs ``reports/probabilistic.json`` (empirical coverages, per-horizon
 coverage AND average width on the test window, calibration verdict) and
@@ -168,6 +178,45 @@ def _bin_q80(bin_resid: np.ndarray, pooled_resid: np.ndarray) -> float:
     return float(np.quantile(bin_resid, TARGET_COVERAGE))
 
 
+def sparse_history_band(
+    last: dict[str, np.ndarray],
+    cal_series: np.ndarray,
+    cal_y: np.ndarray,
+    widths: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    """Non-degenerate band for predicted-zero rows (wave 23).
+
+    Rows the p50 predicts as zero take ``[0, q80 of the same series'
+    calibration-fold actuals]`` (all calibration folds precede the scored
+    fold, so the history is leakage-safe); a series with no calibration rows
+    falls back to the pooled calibration q80. Rows predicted nonzero keep the
+    zero-aware ±width band. Returns (lo, hi, summary dict).
+    """
+    series_last = last["series"].astype(str)
+    zero_rows = last["p50"] <= 0
+    lo = np.maximum(last["p50"] - widths, 0.0)
+    hi = last["p50"] + widths
+    cal_s = cal_series.astype(str)
+    pooled_q80 = float(np.quantile(cal_y, TARGET_COVERAGE)) if cal_y.size else 0.0
+    hist_q80: dict[str, float] = {}
+    for sid in np.unique(series_last[zero_rows]):
+        hist = cal_y[cal_s == sid]
+        hist_q80[str(sid)] = float(np.quantile(hist, TARGET_COVERAGE)) if hist.size else pooled_q80
+    for r in np.flatnonzero(zero_rows):
+        lo[r] = 0.0
+        hi[r] = hist_q80[series_last[r]]
+    summary = {
+        "definition": "p50 <= 0 rows: [0, q80 of the series' calibration-fold actuals] "
+        "(pooled q80 fallback); p50 > 0 rows: the zero-aware ±q80 width",
+        "zero_rows": int(zero_rows.sum()),
+        "nonzero_rows": int((~zero_rows).sum()),
+        "fallback_series": int(
+            sum(1 for sid in np.unique(series_last[zero_rows]) if not np.any(cal_s == sid))
+        ),
+    }
+    return lo, hi, summary
+
+
 def run_probabilistic(
     settings: DemandSettings, config: ForecastConfig, multistep: Any | None = None
 ) -> dict[str, Any]:
@@ -185,6 +234,8 @@ def run_probabilistic(
     per_fold: list[dict[str, float]] = []
     cal_p50: list[np.ndarray] = []  # calibration (all earlier folds) p50 + |resid|
     cal_absres: list[np.ndarray] = []
+    cal_y: list[np.ndarray] = []  # calibration actuals (sparse-history band input)
+    cal_series: list[np.ndarray] = []
     for k, (train_rows, val_rows) in enumerate(folds):
         models = _fit_quantile_models(x[train_rows], y[train_rows], config)
         preds = {q: models[q].predict(x[val_rows]) for q in QUANTILES}
@@ -199,6 +250,8 @@ def run_probabilistic(
         if k < len(folds) - 1:
             cal_p50.append(preds[0.5])
             cal_absres.append(np.abs(y[val_rows] - preds[0.5]))
+            cal_y.append(y[val_rows])
+            cal_series.append(features["series_id"].to_numpy()[val_rows])
         if k == len(folds) - 1:
             last = {
                 "dates": features["date"].to_numpy()[val_rows],
@@ -219,6 +272,22 @@ def run_probabilistic(
     conformal_cov = coverage(last["y_true"], last["conf_lo"], last["conf_hi"])
     zero_mask = last["p50"] <= 0
     quantile_cov_pooled = float(np.mean([f["quantile_band_coverage"] for f in per_fold]))
+
+    # wave 23: the non-degenerate sparse band — predicted-zero rows take
+    # [0, q80 of the series' calibration-fold actuals] instead of ±0 width.
+    sparse_lo, sparse_hi, sparse_summary = sparse_history_band(
+        last, np.concatenate(cal_series), np.concatenate(cal_y), widths
+    )
+    last["sparse_lo"] = sparse_lo
+    last["sparse_hi"] = sparse_hi
+    sparse_cov = coverage(last["y_true"], sparse_lo, sparse_hi)
+    sparse_horizon = horizon_band_stats({**last, "conf_lo": sparse_lo, "conf_hi": sparse_hi})
+    sparse_verdict = calibration_verdict(sparse_horizon["coverage_horizon_set"])
+    sparse_zero_cov = (
+        coverage(last["y_true"][zero_mask], sparse_lo[zero_mask], sparse_hi[zero_mask])
+        if zero_mask.any()
+        else None
+    )
 
     # test-window band evaluation: per-horizon (h=1..14) coverage AND average
     # width over the final 14 days, plus a calibration verdict for the champion.
@@ -260,6 +329,24 @@ def run_probabilistic(
             "calibration_verdict_rule": "coverage pooled over horizons 1..14 of the test "
             "window: |coverage - target| <= 0.05 -> calibrated; above target -> "
             "conservative; below -> optimistic",
+            # wave 23: the zero-bin width collapses to 0 on zero-heavy panels
+            # (see sparse_history_band below) — kept as the documented negative
+            # result, no longer the reported band.
+        },
+        "sparse_history_band": {
+            **sparse_summary,
+            "coverage_last_fold": sparse_cov,
+            "coverage_last_fold_zero_rows": sparse_zero_cov,
+            "avg_width_last_fold": float(np.mean(sparse_hi - sparse_lo)),
+            **sparse_horizon,
+            "calibration_verdict": sparse_verdict,
+            "vs_zero_aware": {
+                "zero_aware_coverage": conformal_cov,
+                "zero_aware_avg_width_horizon_set": horizon["avg_width_horizon_set"],
+                "coverage_delta": sparse_cov - conformal_cov,
+                "width_delta_horizon_set": sparse_horizon["avg_width_horizon_set"]
+                - horizon["avg_width_horizon_set"],
+            },
         },
         "mae_p50_pooled": float(np.mean([f["mae_p50"] for f in per_fold])),
     }
@@ -294,13 +381,16 @@ def run_probabilistic(
 def figure_probabilistic_band(
     features: pl.DataFrame, last: dict[str, np.ndarray], result: dict[str, Any]
 ) -> go.Figure:
-    """Actual vs p50 with the zero-aware conformal band for two example series.
+    """Actual vs p50 with the reported band for two example series.
 
-    The band is the per predicted-zero-bin split-conformal band (see
-    :func:`_zero_bin_widths`) — the quantile p10/p90 band stays in
-    ``probabilistic.json`` but is not drawn: its global coverage is the number
-    the old figure complained about. An updatemenu toggles the band off
-    ("actual only"); the achieved last-fold coverage is stated in the subtitle.
+    Wave 23 draws the non-degenerate sparse history band
+    (:func:`sparse_history_band`) — predicted-zero rows get [0, history q80]
+    instead of the zero-aware band's ±0 width; older artifacts without that
+    block fall back to the zero-aware band. The quantile p10/p90 band stays
+    in ``probabilistic.json`` but is not drawn: its global coverage is the
+    number the old figure complained about. An updatemenu toggles the band
+    off ("actual only"); the achieved last-fold coverage is stated in the
+    subtitle.
     """
     volume = (
         features.group_by("series_id")
@@ -310,6 +400,10 @@ def figure_probabilistic_band(
     examples = volume.head(EXAMPLE_N)["series_id"].to_list()
     short = _display_series(examples)  # strip the shared country prefix (long legend names clip)
     fig = go.Figure()
+    # wave 23: draw the non-degenerate sparse history band when present
+    # (falls back to the zero-aware band for older artifacts).
+    band_lo = last.get("sparse_lo", last["conf_lo"])
+    band_hi = last.get("sparse_hi", last["conf_hi"])
     for sid in examples:
         mask = last["series"] == sid
         x = last["dates"][mask]
@@ -324,7 +418,7 @@ def figure_probabilistic_band(
         )
         fig.add_scatter(
             x=x,
-            y=last["conf_hi"][mask],
+            y=band_hi[mask],
             name=f"{label} band upper",
             mode="lines",
             line={"width": 0},
@@ -332,7 +426,7 @@ def figure_probabilistic_band(
         )
         fig.add_scatter(
             x=x,
-            y=last["conf_lo"][mask],
+            y=band_lo[mask],
             name=f"{label} band lower",
             mode="lines",
             fill="tonexty",
@@ -340,9 +434,16 @@ def figure_probabilistic_band(
             line={"width": 0},
             showlegend=False,
         )
-    conf = result["split_conformal"]
+    conf = (
+        result["sparse_history_band"]
+        if "sparse_history_band" in result
+        else result["split_conformal"]
+    )
+    band_name = (
+        "the sparse history band" if "sparse_history_band" in result else "the zero-aware band"
+    )
     fig.update_layout(
-        title="Actual vs p50 with the zero-aware conformal band",
+        title=f"Actual vs p50 with {band_name}",
         # updatemenu: the band can be removed interactively ("actual only").
         # Buttons sit in the free band between the two-line title and the plot.
         updatemenus=[
@@ -371,13 +472,16 @@ def figure_probabilistic_band(
             }
         ],
     )
-    bins = (
-        f"; zero-bin {_fmt_bin(conf['coverage_last_fold_zero_bin'])}, "
-        f"nonzero-bin {_fmt_bin(conf['coverage_last_fold_nonzero_bin'])}"
-        if conf["coverage_last_fold_zero_bin"] is not None
-        or conf["coverage_last_fold_nonzero_bin"] is not None
-        else ""
-    )
+    if "sparse_history_band" in result:
+        bins = f"; predicted-zero rows {_fmt_bin(conf['coverage_last_fold_zero_rows'])}"
+    else:
+        bins = (
+            f"; zero-bin {_fmt_bin(conf['coverage_last_fold_zero_bin'])}, "
+            f"nonzero-bin {_fmt_bin(conf['coverage_last_fold_nonzero_bin'])}"
+            if conf["coverage_last_fold_zero_bin"] is not None
+            or conf["coverage_last_fold_nonzero_bin"] is not None
+            else ""
+        )
     add_takeaway(
         fig,
         f"test window, two highest-volume series — {TARGET_COVERAGE:.0%} target{bins}; "
