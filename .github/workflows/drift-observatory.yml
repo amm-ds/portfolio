@@ -32,9 +32,10 @@ jobs:
           python-version: "3.12"
 
       - name: Install workspace (runtime deps only)
-        run: uv sync --all-packages
+        # --locked: fail loudly if uv.lock is stale relative to the manifests
+        # instead of silently re-resolving in CI.
+        run: uv sync --all-packages --locked
 
-      # The pinned serving artifacts are DVC outs; without a remote we cannot
       # No pipeline state needed: drift-check scores a published month against
       # the committed serving bundle (reports/models/serving) without retraining.
 

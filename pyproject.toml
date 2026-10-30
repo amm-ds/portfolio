@@ -10,8 +10,17 @@ dependencies = []
 [tool.uv.workspace]
 members = ["libs/*", "projects/*", "apps/showcase-api"]
 
+[tool.uv.sources]
+# The dev group references 02's [nn] extra (torch for temporal_net); uv needs
+# an explicit workspace source for a member named in a dependency group.
+02-demand-forecasting = { workspace = true }
+
 [dependency-groups]
 dev = [
+    # torch backs project 02's temporal_net arm only; it is an [nn] extra there
+    # so the showcase-api serving image skips it. Referencing the extra here
+    # keeps dev/CI/training environments (uv sync --all-packages --dev) NN-capable.
+    "02-demand-forecasting[nn]",
     "dvc>=3.55",
     "hypothesis>=6.119",
     "kaleido>=0.2",
@@ -76,15 +85,10 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 # --import-mode=importlib: test modules share basenames across packages.
+# Long-running per-project splits (02 unit vs models) are handled by the CI
+# matrix cell selection; the nightly workflow runs the entire suite.
 addopts = "-q --import-mode=importlib --timeout=600 --cov=libs --cov-report=term-missing"
 testpaths = ["libs", "projects", "apps"]
-markers = [
-    # Full demo-payload rebuilds (projects/02 tests/test_demo_payload.py::
-    # test_deterministic / test_write_demo_payload_roundtrip) — ~20 min each,
-    # serial-only. CI cells exclude them (-m "not slow"); run them locally or
-    # via the proposed nightly job with -m "slow".
-    "slow: full payload-rebuild tests, serial-only, excluded from CI cells",
-]
 
 [tool.coverage.run]
 source = ["libs"]

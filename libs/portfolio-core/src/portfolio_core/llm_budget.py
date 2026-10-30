@@ -37,7 +37,14 @@ _KIMI_OUTPUT_MTORK_USD = Decimal("4.00")
 # Prompt-cache read discount vs the input rate (rate card ~$0.16-0.30/Mtok).
 _CACHED_TOKEN_PRICE_FRACTION = Decimal("0.30")
 
-_OLLAMA_MARKERS = (":", "qwen", "llama", "mistral", "gemma", "deepseek")
+# Name-based local-model heuristic: any marker match prices the model at $0
+# (cloud-equivalent reference label). Covers Ollama tags ("qwen3:32b" — the
+# ":" marker), local-runner model ids ("local-model" from the LM Studio
+# preset in .env.example), and the usual open-weights families served
+# locally. Hosted models with these substrings are practically nonexistent;
+# an unknown name that misses every marker falls through to the kimi
+# reference card with a warning (see model_rate_card).
+_LOCAL_MODEL_MARKERS = (":", "local", "qwen", "llama", "mistral", "gemma", "deepseek")
 
 
 class BudgetExceededError(RuntimeError):
@@ -66,7 +73,7 @@ class UsdRecord:
 
 def _model_is_local(model_name: str) -> bool:
     lowered = model_name.lower()
-    return any(marker in lowered for marker in _OLLAMA_MARKERS)
+    return any(marker in lowered for marker in _LOCAL_MODEL_MARKERS)
 
 
 def model_rate_card(model_name: str, settings: Settings | None = None) -> RateCard:

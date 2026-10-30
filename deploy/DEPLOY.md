@@ -28,6 +28,7 @@ export IMAGE=amm-ds-portfolio
 export BUILD_SHA="$(git rev-parse HEAD)"
 export TAG="$(git rev-parse --short HEAD)"
 export DOMAIN=portfolio.example.com       # replace with your real DNS name
+export ACME_EMAIL=you@example.com         # ACME renewal advisories go here
 export IP_HASH_SALT="$(openssl rand -hex 32)"
 
 # Keep IP_HASH_SALT in the host's protected environment, not in git.
@@ -39,11 +40,11 @@ docker compose -f deploy/docker-compose.prod.yml up -d
 docker compose -f deploy/docker-compose.prod.yml ps
 ```
 
-`DOMAIN` and `IP_HASH_SALT` are required by Compose; there is no placeholder
-hostname or production default salt. Caddy waits for the API `/ready` probe to
-return 200 before starting. Reuse the same exported variables for
-every later Compose command, or place them in a protected environment file
-passed with `--env-file` (never commit that file).
+`DOMAIN`, `ACME_EMAIL`, and `IP_HASH_SALT` are required by Compose; there is
+no placeholder hostname, ACME contact, or production default salt. Caddy
+waits for the API `/ready` probe to return 200 before starting. Reuse the
+same exported variables for every later Compose command, or place them in a
+protected environment file passed with `--env-file` (never commit that file).
 
 ## Configuration
 
@@ -66,6 +67,8 @@ its metadata stage.
 | `BUILD_SHA` | `dev` | SHA returned by `/health`; set it to the image's source commit. |
 | `IP_HASH_SALT` | required in prod compose | Salt for the 12-character client-IP hashes in logs. Use a long random value and rotate only deliberately. |
 | `RATE_LIMIT_PER_MINUTE` | `30` | Per-client-IP POST token-bucket refill rate; burst is 10. In-memory, per process, and reset on restart. |
+| `DAILY_LIVE_BUDGET` | `1000` | Per-process, per-UTC-day cap on the live POST inference calls (`/forecast`, `/score`, `/solve`). At 80% a WARNING logs once per day; past the cap the endpoints answer 503 (with the demo-replay hint) until the day rolls over. |
+| `LIVE_KILL_SWITCH` | unset | Circuit breaker: exactly `1` makes every live POST endpoint answer 503 immediately ("live inference temporarily disabled" + demo-replay hint). Recreate the container with the variable emptied to restore. |
 | `RAG_CHAT_ENABLED` | unset | Kill switch. Only exactly `1` registers `/rag/chat` and `/rag/chat/stream`; unset/empty disables them. |
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | unset | Optional OpenAI-compatible provider. Without it, Project 01 uses Ollama. |
 | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | host gateway / `qwen3:32b` | Optional local-provider connection for the opt-in RAG path. |
@@ -89,6 +92,65 @@ off (a brief interruption is expected):
 ```bash
 RAG_CHAT_ENABLED= docker compose -f deploy/docker-compose.prod.yml up -d --no-deps api
 ```
+
+## Live-inference kill switch and daily budget
+
+The artifact-backed POST endpoints (`/projects/02…/forecast`,
+`/projects/05…/score`, `/projects/07…/forecast`, `/projects/06…/solve`) share
+two fail-closed guardrails (see the `LiveGuard` in `showcase_api.main`):
+
+- Kill switch. Set `LIVE_KILL_SWITCH=1` (recreate the API) or drop a
+  `/tmp/live_disabled` file inside the container. Every live call then
+  answers 503 with a hint that the precomputed demo replay still works.
+  The file flag is the in-incident breaker (the compose container's `/tmp` is
+  an ephemeral tmpfs, so it vanishes on recreate); the env var is the durable
+  one. Either way, read-only artifact GETs are unaffected.
+
+  ```bash
+  # fastest circuit break — no recreate; survives until the container restarts
+  docker compose -f deploy/docker-compose.prod.yml exec api touch /tmp/live_disabled
+  # restore
+  docker compose -f deploy/docker-compose.prod.yml exec api rm /tmp/live_disabled
+
+  # durable switch
+  LIVE_KILL_SWITCH=1 docker compose -f deploy/docker-compose.prod.yml up -d --no-deps api
+  ```
+
+- Daily budget. `DAILY_LIVE_BUDGET` (default 1000) caps live POST calls per
+  process per UTC day; the counter is in-memory and resets on restart/day
+  rollover, and a one-time WARNING logs at 80%. It is a floor against
+  runaway clients, not a quota system.
+
+## Logs
+
+Both containers log to stdout and Docker's `json-file` driver with
+10 MB × 3 rotation (`max-size: 10m`, `max-file: "3"` per service):
+
+```bash
+docker compose -f deploy/docker-compose.prod.yml logs --since 24h api
+docker compose -f deploy/docker-compose.prod.yml logs caddy   # access + TLS
+```
+
+API request lines carry method, path, status, latency, request id, and a
+12-char salted client-IP hash — never raw IPs or bodies. Expect one
+`WARNING` at API startup when `IP_HASH_SALT` is unset (the built-in default
+salt is public; see the configuration table above). To retain logs beyond
+the rotation window, ship them off-host with your log collector of choice;
+the app writes nothing else to disk.
+
+## Automated vs manual boundary
+
+Nothing deploys or rolls back automatically: pushing to `main` builds and
+verifies in CI, but the image that serves production is built, tagged,
+launched, smoke-tested, and rolled back by a human on the host using the
+commands in this guide. Scheduled GitHub Actions touch the repo only — the
+nightly validation suite, the weekly drift observatory (which files an issue
+on regression), and the rotating pipeline repro. All three stop at
+notifications/artifacts; none of them reaches the VPS. Day-2 operations that
+remain manual by design: enabling RAG chat (kill switch + provider + budget
+review), rotating `IP_HASH_SALT` (log-hash correlations reset), raising
+`DAILY_LIVE_BUDGET`, and any rollback (record the known-good tag first, then
+re-create the API and re-run the smoke test).
 
 ## Trusted proxy boundary
 

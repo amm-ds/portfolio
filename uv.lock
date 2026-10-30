@@ -88,9 +88,13 @@ dependencies = [
     { name = "statsforecast" },
     { name = "statsmodels" },
     { name = "threadpoolctl" },
-    { name = "torch" },
     { name = "typer" },
     { name = "xgboost" },
+]
+
+[package.optional-dependencies]
+nn = [
+    { name = "torch" },
 ]
 
 [package.metadata]
@@ -108,7 +112,7 @@ requires-dist = [
     { name = "statsforecast", specifier = ">=2.1.1" },
     { name = "statsmodels", specifier = ">=0.14" },
     { name = "threadpoolctl", specifier = ">=3.0" },
-    { name = "torch", specifier = ">=2.4" },
+    { name = "torch", marker = "extra == 'nn'", specifier = ">=2.4" },
     { name = "typer", specifier = ">=0.12" },
     { name = "xgboost", specifier = ">=2.0" },
 ]
@@ -577,6 +581,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
+    { name = "02-demand-forecasting", extra = ["nn"] },
     { name = "dvc" },
     { name = "hypothesis" },
     { name = "kaleido" },
@@ -595,6 +600,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "02-demand-forecasting", extras = ["nn"], editable = "projects/02-demand-forecasting" },
     { name = "dvc", specifier = ">=3.55" },
     { name = "hypothesis", specifier = ">=6.119" },
     { name = "kaleido", specifier = ">=0.2" },

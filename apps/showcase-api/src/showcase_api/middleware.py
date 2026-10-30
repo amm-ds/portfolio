@@ -189,14 +189,44 @@ def request_id_from(scope: Scope) -> str:
     return uuid.uuid4().hex[:12]
 
 
+_DEFAULT_IP_HASH_SALT = "dev-salt"
+_salt_warning_emitted = False
+
+
+def _resolve_salt(explicit: str | None = None) -> str:
+    """Salt for client-IP log hashing.
+
+    Falls back to the well-known built-in default when ``IP_HASH_SALT`` is
+    unset or empty, warning ONCE per process on that default path: the
+    default is public, so hashes produced with it are reversible against a
+    dictionary of known IPs. Production compose requires ``IP_HASH_SALT``
+    (``:?``); this warning guards every other runtime (bare uvicorn, ad-hoc
+    containers, forgotten --env-file).
+    """
+    global _salt_warning_emitted
+    salt = explicit if explicit is not None else os.environ.get("IP_HASH_SALT", "")
+    if not salt:
+        salt = _DEFAULT_IP_HASH_SALT
+        if explicit is None and not _salt_warning_emitted:
+            _salt_warning_emitted = True
+            logger.warning(
+                "IP_HASH_SALT is not set — client-IP hashes in request logs fall back "
+                "to the built-in default salt %r and are reversible against a public "
+                "IP dictionary. Set IP_HASH_SALT for any shared or long-lived "
+                "deployment (see deploy/DEPLOY.md).",
+                _DEFAULT_IP_HASH_SALT,
+            )
+    return salt
+
+
 def hash_client_ip(ip: str, salt: str | None = None) -> str:
     """Privacy-preserving client key for logs: sha256(ip + salt), 12 hex chars.
 
     Salt comes from ``IP_HASH_SALT`` (read once by the middleware at process
-    startup; default ``dev-salt``). The raw IP never reaches the logs.
+    startup; default ``dev-salt``, with a one-time WARNING — see
+    :func:`_resolve_salt`). The raw IP never reaches the logs.
     """
-    s = (salt if salt is not None else os.environ.get("IP_HASH_SALT", "dev-salt")).encode()
-    return hashlib.sha256(s + ip.encode()).hexdigest()[:12]
+    return hashlib.sha256(_resolve_salt(salt).encode() + ip.encode()).hexdigest()[:12]
 
 
 class RequestLoggingMiddleware:
@@ -208,7 +238,7 @@ class RequestLoggingMiddleware:
 
     def __init__(self, app: ASGIApp, salt: str | None = None):
         self.app = app
-        self._salt = salt if salt is not None else os.environ.get("IP_HASH_SALT", "dev-salt")
+        self._salt = _resolve_salt(salt)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":

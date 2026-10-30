@@ -1,5 +1,8 @@
 # Production compose for the single-container showcase app. See DEPLOY.md for
-# the exact IMAGE/TAG build and rollout flow; DOMAIN and IP_HASH_SALT are required.
+# the exact IMAGE/TAG build and rollout flow. DOMAIN, IP_HASH_SALT, and
+# ACME_EMAIL are required (no production placeholders).
+name: amm-ds-portfolio
+
 services:
   api:
     image: ${IMAGE:-amm-ds-portfolio}:${TAG:-latest}
@@ -56,11 +59,16 @@ services:
         max-file: "3"
 
   caddy:
-    image: caddy:2-alpine
+    # Pinned by digest (multi-arch manifest list, like the Dockerfile base
+    # images): tag-only pulls are mutable. Bump deliberately, not casually.
+    image: caddy:2-alpine@sha256:eb4d35b7452d1ab6171fbdbe8d9275b2301dad6dad92115d91e19fb9b24d510f
     restart: unless-stopped
     environment:
       # Required public hostname; Caddy provisions TLS for it automatically.
       DOMAIN: ${DOMAIN:?Set DOMAIN to the public DNS name}
+      # ACME account contact (required): certificate expiry/renewal advisories
+      # from the CA go here. Caddy's `email` global option takes this verbatim.
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL to the operator's address}
     ports:
       - "80:80"
       - "443:443"

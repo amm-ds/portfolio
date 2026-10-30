@@ -65,10 +65,13 @@ COPY apps/showcase-api apps/showcase-api
 
 # Install ONLY showcase-api and its dependency subtree (workspace members
 # 02/05/06 + libs/portfolio-{core,eval}); the other project packages (and
-# their heavy deps: transformers, torch/stack, ragas, dvc, ...) stay out of
-# the image — ~140 fewer distributions. This is a build-time flag only: the
-# lockfile and the dev flow (`uv sync --all-packages`) are unaffected.
-RUN uv sync --package showcase-api --no-dev
+# their heavy deps: transformers, torch — 02's torch is its [nn] extra,
+# ragas, dvc, ...) stay out of the image — ~140 fewer distributions. This is
+# a build-time flag only: the lockfile and the dev flow (`uv sync
+# --all-packages --dev`) are unaffected. --frozen: use uv.lock verbatim and
+# never rewrite/re-check it inside the build; CI (--locked) already asserts
+# the lockfile is current for the checked-out sources.
+RUN uv sync --package showcase-api --no-dev --frozen
 
 COPY --from=web /web/dist apps/showcase-web/dist
 
