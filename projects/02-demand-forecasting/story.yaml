@@ -54,7 +54,7 @@ sections:
     scores once); 10 weekly origins on M5 (8 select, 2 test). Metrics match
     decisions—MAE; WAPE (error as a share of demand, 0.491 ≈ 49%); MASE
     (error over the seasonal-naive's, 1.0 = no improvement)—with paired bootstrap CIs.
-  figures: [eda_series_overview, eda_units_distribution]
+  figures: [eda_series_overview, eda_units_distribution, m5:win_rate]
 - id: training
   text_md: |
     M5 evaluates **11 candidates**—seasonal naive, three statistical baselines,
@@ -90,7 +90,7 @@ sections:
     unit-demand (CI [−0.079, −0.016]); at q=0.80/0.95 or on erratic demand it is a
     wash; pooled MAE rises 7.47 → 8.13 (CI [0.43, 0.92]). The routing objective is a
     measured choice, not an assertion.
-  figures: [hpo_history, hpo_importance]
+  figures: [hpo_history, hpo_importance, m5:class_comparison]
 - id: evaluation
   text_md: |
     **For dense M5-like demand, plan with the ensemble; for sparse UCI-like demand, plan
@@ -116,7 +116,7 @@ sections:
     what wins dense loses sparse—moving one winner between regimes is exactly
     what these experiments argue against. UCI zeros may be closed days, not true zero
     demand, which no model here can tell apart.
-  figures: [m5:wape_bars, m5:band_calibration, m5:class_comparison, m5:win_rate, uci:multistep_error_vs_horizon]
+  figures: [m5:wape_bars, m5:band_calibration, uci:multistep_error_vs_horizon]
   metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 - id: conclusions
   text_md: |

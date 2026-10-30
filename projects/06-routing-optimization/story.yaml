@@ -96,7 +96,7 @@ sections:
       **Tuning's honest negatives.** Randomized restarts never pay (the
       search keeps k=1), tuning 2-opt moves the mean gap only 13.75% →
       13.63%, and move budgets saturate at about twenty accepted moves.
-    figures: [solver_profile, gap_pct, family_gap, pareto_gap_runtime, alns_convergence_C101, route_map_C101]
+    figures: [solver_profile, gap_pct, route_map_C101]
     metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, alns_fleet, ortools_cp]
   - id: evaluation
     text_md: |
@@ -128,6 +128,7 @@ sections:
         stable benchmarks.
       - The evidence is 100-customer scale; larger instances remain deferred
         forward work.
+    figures: [family_gap, pareto_gap_runtime, alns_convergence_C101]
   - id: conclusions
     text_md: |
       Full evidence: exact tables, tuning records, and the ladder definition.

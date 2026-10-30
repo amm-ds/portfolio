@@ -24,20 +24,17 @@ describe("shortMilestone", () => {
 });
 
 describe("RoadmapBlock", () => {
-  it("renders one timeline node per milestone with full labels and status classes", () => {
+  it("renders one timeline node per delivered milestone with full labels", () => {
     render(<RoadmapBlock roadmap={ROADMAP} />);
     expect(screen.getByText("roadmap")).toBeInTheDocument();
     const nodes = document.querySelectorAll(".roadmap-node");
-    expect(nodes).toHaveLength(4);
-    // delivered dots are accent-filled, others hollow (class-driven)
-    expect(document.querySelectorAll(".roadmap-node.delivered .roadmap-dot")).toHaveLength(2);
-    expect(document.querySelectorAll(".roadmap-node.remaining .roadmap-dot")).toHaveLength(1);
-    expect(document.querySelectorAll(".roadmap-node.deferred .roadmap-dot")).toHaveLength(1);
+    // open/deferred items are authoring state; visitors see shipped work only
+    expect(nodes).toHaveLength(2);
+    expect(nodes[0].classList.contains("delivered")).toBe(true);
+    expect(nodes[1].classList.contains("delivered")).toBe(true);
     // labels contain the full milestone, also available on the title attribute
     expect(nodes[0].textContent).toContain("Baseline retrieval with citations.");
-    expect(nodes[3].textContent).toContain("Multilingual corpus");
     expect(nodes[1].getAttribute("title")).toBe("Reranked index with eval harness");
-    expect(nodes[3].getAttribute("title")).toContain("licensing unclear");
     // nodes sit on the horizontal track
     expect(document.querySelector(".roadmap-track")).not.toBeNull();
     // container is the shared Card
@@ -62,11 +59,17 @@ describe("RoadmapBlock", () => {
     expect(screen.queryByText(/delivered$/)).toBeNull();
   });
 
-  it("renders nothing for an empty or missing roadmap", () => {
+  it("renders nothing when no milestone is delivered yet", () => {
     const { container: c1 } = render(<RoadmapBlock roadmap={[]} />);
     expect(c1.firstChild).toBeNull();
     cleanup();
     const { container: c2 } = render(<RoadmapBlock roadmap={undefined} />);
     expect(c2.firstChild).toBeNull();
+    cleanup();
+    // open/deferred-only roadmaps have nothing to show visitors yet
+    const { container: c3 } = render(
+      <RoadmapBlock roadmap={[{ status: "remaining", text: "Open thing" }]} />,
+    );
+    expect(c3.firstChild).toBeNull();
   });
 });

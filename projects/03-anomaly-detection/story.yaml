@@ -57,7 +57,7 @@ sections:
     alert streams: raw (every above-threshold minute pages),
     deduped (runs page once at the max-score minute), budgeted (one page
     per series per 24 h). On-call load is measured, not asserted.
-  figures: [eda_signals_overview]
+  figures: [eda_signals_overview, nab_score_distribution]
 - id: training
   text_md: |
     budget, IsolationForest touches 16 of 17 labelled NAB windows, emitting 1,609
@@ -99,7 +99,7 @@ sections:
     the diagnosis is synthetic-specific. The NSL-KDD probe reaches 0.8817 / 0.8916,
     but its 56.9% prevalence, labelled split, and unseen attack
     categories make it a probe, not transfer evidence.
-  figures: [telemetry_flags, hpo_importance]
+  figures: [telemetry_flags, hpo_importance, nab_tune_surface]
 - id: evaluation
   text_md: |
     **Deploy the alert-budget layer, not a different detector.** No family is worth
@@ -122,7 +122,7 @@ sections:
     fixed. The NSL-KDD probe does not establish transfer, and the synthetic stream
     cannot show real precision at all. No claim is made for multivariate detectors,
     drifted telemetry, or unattended paging.
-  figures: [nab_timelines, nab_timeline_nyc_taxi, nab_score_distribution, nab_alert_budget, nab_tune_surface]
+  figures: [nab_timelines, nab_timeline_nyc_taxi, nab_alert_budget]
   metrics_keys: [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 - id: conclusions
   text_md: |

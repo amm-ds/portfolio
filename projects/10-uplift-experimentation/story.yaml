@@ -102,7 +102,7 @@ sections:
       and 0.57%). Purchases are rare — about 0.9% baseline — so small gaps
       need honest uncertainty, and the two emails are read separately rather
       than pooled. The per-arm table is under Details.
-    figures: [eda_segment_profile]
+    figures: [eda_segment_profile, recommended_arm_distribution]
   - id: training
     text_md: |
       **What we found, with every score computed out-of-fold.** Five-fold
@@ -159,6 +159,7 @@ sections:
         run about 2× hot — planning values, not a validated policy.
         Mail-everyone-Mens still leads unconstrained profit at $49.8k until
         sends cost ≈$0.31.
+    figures: [cuped_variance, profit_frontier_multi_arm]
   - id: evaluation
     text_md: |
       **What it means: adopt targeted sending only when sends are budgeted or
@@ -185,8 +186,7 @@ sections:
       but that is specific to this strong-overlap, near-constant-propensity
       regime — not a general ranking of learners.
     figures:
-      [qini_curves, profit_frontier, cuped_variance, qini_per_arm,
-       profit_frontier_multi_arm, recommended_arm_distribution]
+      [qini_curves, profit_frontier, qini_per_arm]
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
     text_md: |

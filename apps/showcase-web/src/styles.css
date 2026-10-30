@@ -1761,6 +1761,18 @@ button:disabled {
   margin: 1.6rem 0;
 }
 
+/* Subsection headings inside story prose (## → h3, ### → h4). */
+.md-heading {
+  color: var(--text);
+  font-size: 1.02rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  margin: 1.5rem 0 0.5rem;
+}
+.md-heading:first-child {
+  margin-top: 0;
+}
+
 /* --- Home presentation sections --- */
 
 .page-title {

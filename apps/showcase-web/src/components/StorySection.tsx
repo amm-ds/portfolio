@@ -51,6 +51,12 @@ export function StorySection({
   linkedTerms?: Set<string>;
 }) {
   const [proseMd, implication, implicationLabel] = splitBusinessImplication(section.text_md);
+  const card =
+    implication && implicationLabel ? (
+      <BusinessImplication label={implicationLabel}>
+        {renderMarkdown(implication, linkedTerms)}
+      </BusinessImplication>
+    ) : null;
   const figures = section.figures.map((name) => (
     <FigureCard
       key={name}
@@ -59,17 +65,16 @@ export function StorySection({
       caption={figureCaptions[name]}
     />
   ));
+  const main = (
+    <div className="story-main">
+      <div className="prose">{renderMarkdown(proseMd, linkedTerms)}</div>
+      {section.id !== "conclusions" && card}
+      {metrics && <StoryMetricsTable metrics={metrics} metricsKeys={section.metrics_keys} />}
+    </div>
+  );
   const body = (
     <div className="story-cols">
-      <div className="story-main">
-        <div className="prose">{renderMarkdown(proseMd, linkedTerms)}</div>
-        {implication && implicationLabel && (
-          <BusinessImplication label={implicationLabel}>
-            {renderMarkdown(implication, linkedTerms)}
-          </BusinessImplication>
-        )}
-        {metrics && <StoryMetricsTable metrics={metrics} metricsKeys={section.metrics_keys} />}
-      </div>
+      {main}
       {section.figures.length > 0 && <div className="story-figs">{figures}</div>}
     </div>
   );
@@ -81,10 +86,14 @@ export function StorySection({
         {section.title}
       </h2>
       {section.id === "conclusions" ? (
-        <details className="story-details">
-          <summary>Technical details, revision notes, and reproduction</summary>
-          {body}
-        </details>
+        <>
+          {/* The takeaway stays visible; the evidence lives in the collapsed block. */}
+          {card}
+          <details className="story-details">
+            <summary>Technical details, revision notes, and reproduction</summary>
+            {body}
+          </details>
+        </>
       ) : (
         body
       )}

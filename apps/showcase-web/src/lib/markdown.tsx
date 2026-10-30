@@ -1,21 +1,32 @@
-import { Fragment, type ReactNode } from "react";
+import { createElement, Fragment, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { MermaidDiagram } from "../components/MermaidDiagram";
 import glossary from "./glossary.json";
 
 // Minimal, safe markdown → React renderer. Supports what story.yaml prose
-// uses: paragraphs, **bold**, *emphasis*, `code`, -/* / N. / N) lists (with
-// GFM-style indented continuation lines for wrapped items), pipe tables,
-// thematic breaks (---/***/___), and fenced code blocks (```lang; ```mermaid
-// renders as a diagram). Everything is rendered as React text nodes — no HTML
-// injection surface.
+// uses: paragraphs, **bold**, *emphasis*, `code`, [links](https://…) (https:,
+// http:, mailto: only; anything else drops the URL and keeps the text), -/* /
+// N. / N) lists (with GFM-style indented continuation lines for wrapped
+// items), pipe tables, ATX headings (## → h3, ### → h4, capped so the outline
+// never jumps above the section h2), thematic breaks (---/***/___), and fenced
+// code blocks (```lang; ```mermaid renders as a diagram). Everything is
+// rendered as React text nodes — no HTML injection surface.
 //
 // Glossary auto-linking: the first occurrence of each glossary term (per call,
 // or page-wide when the caller threads a shared Set) becomes a link to
 // /glossary#<slug>, case-insensitive with word boundaries, longest term first,
-// never inside code. No raw HTML injection anywhere.
+// never inside code or link text/URLs. No raw HTML injection anywhere.
 
-const INLINE_RE = /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*)/g;
+const INLINE_RE =
+  /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*|\[[^\]\n]+\]\((?:https?:\/\/|mailto:)[^)\s]+\))/gi;
+
+// Story links are public-facing references (docs, datasets, source files).
+// Only http(s)/mailto URLs ever tokenize as links — other schemes and relative
+// paths render as literal text, so there is no anchor surface at all (no
+// javascript:, no scheme confusion). URLs containing parentheses are not
+// supported; use encoded forms.
+const LINK_TOKEN_RE = /^\[([^\]\n]+)\]\(([^)\n]+)\)$/i;
+const ALLOWED_LINK_SCHEMES = /^(?:https?:|mailto:)/i;
 
 // --- Glossary auto-linking -------------------------------------------------------
 // One shared matcher for all terms: longest first so multi-word terms win,
@@ -95,6 +106,19 @@ function renderInline(text: string, keyPrefix: string, state: GlossaryLinkState)
     if (part.startsWith("`") && part.endsWith("`") && part.length > 1) {
       return <code key={key}>{part.slice(1, -1)}</code>;
     }
+    const link = LINK_TOKEN_RE.exec(part);
+    if (link) {
+      // Allowed schemes become external anchors; anything else keeps the text
+      // and drops the URL. Link text stays plain — never nested glossary tips.
+      if (ALLOWED_LINK_SCHEMES.test(link[2].trim())) {
+        return (
+          <a key={key} href={link[2].trim()} target="_blank" rel="noopener noreferrer">
+            {link[1]}
+          </a>
+        );
+      }
+      return <span key={key}>{link[1]}</span>;
+    }
     if (part.startsWith("**") && part.endsWith("**") && part.length > 3) {
       return (
         <strong key={key}>{linkGlossaryTerms(part.slice(2, -2), key, state)}</strong>
@@ -109,6 +133,13 @@ function renderInline(text: string, keyPrefix: string, state: GlossaryLinkState)
 
 const UL_ITEM_RE = /^\s*[-*]\s+/;
 const OL_ITEM_RE = /^\s*\d+[.)]\s+/;
+// ATX heading: # … ###### (optional closing hashes). Story prose is a section
+// body under the section h2, so `#`/`##` map to h3, `###` to h4, and deeper
+// levels keep sliding — the outline can never jump above its parent.
+const HEADING_RE = /^\s*(#{1,6})\s+(.+?)\s*#*\s*$/;
+function headingLevel(markers: string): number {
+  return Math.min(Math.max(markers.length + 1, 3), 6);
+}
 // GFM separator row: only pipes, dashes, colons and whitespace; needs a dash.
 const TABLE_SEP_RE = /^\s*\|?[\s:|-]+\|?\s*$/;
 const FENCE_RE = /^\s*```/;
@@ -260,6 +291,17 @@ export function renderMarkdown(md: string, linkedTerms?: Set<string>): ReactNode
     } else if (HR_RE.test(line)) {
       flushBlock();
       out.push(<hr key={`b${key++}`} className="md-break" />);
+    } else if (HEADING_RE.test(line)) {
+      flushBlock();
+      const hm = HEADING_RE.exec(line)!;
+      const level = headingLevel(hm[1]);
+      out.push(
+        createElement(
+          `h${level}`,
+          { key: `b${key++}`, className: "md-heading" },
+          hm[2],
+        ),
+      );
     } else if (line.trim() === "") {
       flushBlock();
     } else {

@@ -109,7 +109,7 @@ sections:
       Business predicted as Sci/Tech: 24 of 250 bounded test items, falling to
       15 of 250 at 20k rows and 14 of 250 at full data. Hybrid headlines
       remain the open problem.
-    figures: [training_curve, epochs_probe, hpo_history, scale_ladder]
+    figures: [training_curve, epochs_probe, hpo_history]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_scale_4000, distilbert_scale_12000, distilbert_scale_40000, distilbert_full_120k]
   - id: evaluation
     text_md: |
@@ -140,7 +140,7 @@ sections:
       - Tuning ties the default within noise at this scale; a larger tuning
         budget might separate them, and this project does not show that it
         would not.
-    figures: [confusion_matrix_selected, per_class_f1_comparison]
+    figures: [confusion_matrix_selected, per_class_f1_comparison, scale_ladder]
   - id: conclusions
     text_md: |
       Full evidence: exact tables, run identities, revision notes, and

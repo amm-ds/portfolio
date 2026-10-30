@@ -97,10 +97,11 @@ describe("ProjectDetail story handling", () => {
     expect(screen.getByText(/\+50% vs naive_last/)).toBeInTheDocument();
     // figures: story 200 case fetches plotly JSON (404 in this mock) → iframe fallback renders async
     await waitFor(() => expect(document.querySelector("iframe")).not.toBeNull());
-    // roadmap renders at the end of the case study as a timeline with one node per item
+    // roadmap renders at the end of the case study as a timeline of delivered milestones
     expect(screen.getByText("Baseline retrieval with citations")).toBeInTheDocument();
-    expect(screen.getByText("Streaming UX polish")).toBeInTheDocument();
-    expect(screen.getByText(/Multilingual corpus/)).toBeInTheDocument();
+    // open/deferred items are authoring state, not visitor content
+    expect(screen.queryByText("Streaming UX polish")).toBeNull();
+    expect(screen.queryByText(/Multilingual corpus/)).toBeNull();
     expect(document.querySelectorAll(".roadmap-node.delivered .roadmap-dot")).toHaveLength(1);
     // figure_captions from the story payload thread through to the figure footer
     expect(document.querySelector(".figure-comment")!.textContent).toContain(
