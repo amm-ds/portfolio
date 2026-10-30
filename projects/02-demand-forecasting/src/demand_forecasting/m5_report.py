@@ -741,13 +741,6 @@ def _business_insights(metrics: dict[str, Any], prob: dict[str, Any]) -> str:
     )
 
 
-def _figure_link(name: str) -> str:
-    return (
-        f'<p><a href="figures/{name}.html">interactive figure</a> '
-        f"(<code>figures/{name}.html</code>) — {FIGURE_CAPTIONS[name]}</p>"
-    )
-
-
 def _protocol_html(metrics: dict[str, Any], meta: dict[str, Any]) -> str:
     origins = metrics["origins"]
     defs = "".join(f"<li><code>{c}</code> — {CANDIDATE_DEFINITIONS[c]}</li>" for c in CANDIDATES)
@@ -830,8 +823,15 @@ def build_report(reports_dir: Path) -> Path:
         _band_table(prob),
     )
     report.add_html("Business insights", _business_insights(metrics, prob))
+    first_plotly = True
     for name in REPORT_FIGURES:
-        report.add_html(f"Figure: {name.replace('_', ' ')}", _figure_link(name))
+        report.add_figure(
+            f"Figure: {name.replace('_', ' ')}",
+            figures[name],
+            include_plotlyjs=first_plotly,
+            caption=FIGURE_CAPTIONS.get(name),
+        )
+        first_plotly = False
     report.add_html("Protocol", _protocol_html(metrics, meta))
     path = report.write(reports_dir / "report.html")
     logger.info("m5 report -> %s", path)

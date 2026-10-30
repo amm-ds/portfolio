@@ -94,14 +94,19 @@ def build_report(run: BenchRun, cfg: BenchConfig) -> Path:
         )
 
     figures = all_figures(run, cfg)
+    first_plotly = True
     for name, fig in figures.items():
-        html_path = save_html(fig, figures_dir / f"{name}.html")
+        save_html(fig, figures_dir / f"{name}.html")
         save_json(fig, figures_dir / f"{name}.json")
-        report.add_html(
-            name.replace("_", " ").title(),
-            f'<p><a href="figures/{html_path.name}">interactive figure</a> '
-            f"(<code>{html_path.name}</code>)</p>",
-        )
+        report.add_figure(name.replace("_", " ").title(), fig, include_plotlyjs=first_plotly)
+        first_plotly = False
+    # Carry the case-study diagrams (measurement contract, harness) so the
+    # report and the story page stay in lockstep.
+    from portfolio_eval.report import mermaid_blocks_from_story
+
+    project_dir = cfg.reports_dir.parent
+    for heading, code in mermaid_blocks_from_story(project_dir).items():
+        report.add_mermaid(f"Diagram — {heading}", code)
 
     (cfg.reports_dir / "metrics.json").write_text(
         json.dumps(

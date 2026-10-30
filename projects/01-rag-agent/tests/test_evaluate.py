@@ -286,7 +286,50 @@ def test_write_reports_produces_all_artifacts(
     assert (config.reports_dir / "figures" / "chunk_size_sweep.html").exists()
     assert (config.reports_dir / "figures" / "chunk_size_sweep.json").exists()
     html = (config.reports_dir / "report.html").read_text(encoding="utf-8")
-    assert "figures/chunk_size_sweep.html" in html
+    # the figure is embedded as an interactive div (self-contained report),
+    # not a relative link to a gitignored sibling file
+    assert 'class="plotly-graph-div"' in html
+    assert 'href="figures/' not in html
+
+
+def test_rebuild_report_from_artifacts(
+    config: RAGConfig, scores_sample: list[RetrievalScores]
+) -> None:
+    from rag_agent.reporting import rebuild_report_from_artifacts
+
+    figures = {"chunk_size_sweep": sweep_figure(scores_sample)}
+    rag_run = _synthetic_rag_run()
+    extra = {"n_questions": 2, "rag": rag_run.eval_result.to_dict()}
+    _write_reports(config, scores_sample, rag_run, figures, extra, random_scores=scores_sample)
+    # the committed per-question artifact the offline rebuild consumes
+    trace_row = {
+        "question": "why are plants green",
+        "category": "single_hop",
+        "expected_behavior": "answer",
+        "top_rank": 1,
+        "retrieved_relevant": True,
+        "cited_relevant": True,
+        "faithfulness": 0.9,
+        "abstained": False,
+        "format_ok": True,
+        "output_retries": 0,
+        "error": "",
+    }
+    (config.reports_dir / "question_traces.json").write_text(json.dumps([trace_row]) + "\n")
+
+    path = rebuild_report_from_artifacts(config)
+
+    assert path == config.reports_dir / "report.html"
+    html = path.read_text(encoding="utf-8")
+    # figures re-embedded from the committed Plotly JSON payloads
+    assert 'class="plotly-graph-div"' in html
+    assert "Chunk Size Sweep" in html
+    # per-question trace section re-appended from the committed traces
+    assert "<h2>Per-question trace</h2>" in html
+    # detail/_meta blocks survive the metrics.json rewrite
+    metrics = json.loads((config.reports_dir / "metrics.json").read_text(encoding="utf-8"))
+    assert metrics["detail"]["n_questions"] == 2
+    assert metrics["retrieval_chunks_50"]["recall@5"] == 0.5
 
 
 def test_cost_telemetry_shape_and_write(config: RAGConfig) -> None:
