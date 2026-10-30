@@ -3,69 +3,75 @@ short_version: "On NAB at a fixed 2% alert budget, IsolationForest catches 16 of
 sections:
 - id: background
   text_md: |
-    **The detector catches 16 of 17 incidents — and raises 1,609 alerts doing
-    it.** At a fixed 2% alert budget on the nine evaluable Numenta Anomaly
-    Benchmark (NAB) series, IsolationForest touches 16 of 17 labelled
-    incident windows, firing 1,609 pages. Pointwise PR-AUC
-    (precision-recall area under the curve) is 0.527. Range-F1 (event-aware
-    precision-recall mean) is 0.157. The system diagram shows the fix:
-    page the deduplicated stream, not the raw score.
+    **The detector catches 16 of 17 incidents — and raises 1,609 alerts
+    doing it.** The stage is the Numenta Anomaly Benchmark (NAB): twelve
+    series — AWS CloudWatch, traffic, known-cause failures — with
+    labelled windows. At a fixed 2% alert budget on the nine evaluable
+    series, IsolationForest touches 16 of 17 windows. Pointwise PR-AUC
+    is 0.527; event-aware range-F1 is 0.157. The system diagram shows
+    the fix: page the deduplicated stream, not the raw score.
 
     ```mermaid
     flowchart LR
       subgraph Sense["Telemetry input"]
-        NAB["NAB: 12 series, 9 evaluable<br/>AWS, traffic, known-cause"]
-        SYN["Synthetic CI stream<br/>20,000 seeded rows"]
+        NAB["NAB: 9 evaluable series"]
+        SYN["Synthetic stream"]
       end
-      subgraph Detect["Detection at a fixed 2% alert budget"]
-        FE["Rolling features<br/>plus residuals"] --> SC["IsolationForest<br/>anomaly scores"]
+      subgraph Detect["Fixed 2% budget"]
+        FE["Rolling features"] --> SC["IsolationForest scores"]
       end
       NAB --> FE
       SYN --> FE
-      SC --> TH["Train-anchored top-2% threshold<br/>never tuned on labels"]
-      TH --> EP["Episode dedup:<br/>one page per burst"]
-      EP --> CAP["24 h per-series page cap"]
-      CAP --> PG["Budgeted page stream"]
-      subgraph Judge["Event-aware scoring"]
-        LB["combined_windows.json labels"] --> RR["Range recall / range-F1<br/>vs pointwise PR-AUC"]
-      end
-      PG --> RR
+      SC --> TH["Top-2% train threshold"]
+      TH --> B["Dedup + 24 h page cap"]
+      B --> RR["Event-aware scoring<br/>16 of 17 windows"]
     ```
+
+    Read it left to right: the detector scores every minute against a
+    train-anchored top-2% threshold, then the budget stage — dedup, a
+    24 h cap — shrinks the stream before a person sees it. That cap is
+    the story: 1,609 alerts become 80 pages. What keeps both numbers
+    honest?
 
     **Business summary:** The detector finds 16 of 17 NAB incidents but
     fires 1,609 alerts; one page per series per day cuts that to 80 at
-    modest recall cost.
+    small recall cost.
   figures: []
 - id: objectives
   text_md: |
-    **The benchmark must make false positives as visible as misses.** Four
-    controls were fixed up front. The measurement-contract diagram lays
-    them out.
+    **The benchmark must make false positives as visible as misses.**
+    Anomaly detection is too often graded as one area-under-curve number
+    on shuffled splits. That hides what an on-call engineer actually
+    feels — alert storms and silent misses. So four controls were fixed
+    before any detector ran, and the measurement-contract diagram lays
+    them out as three gates: past-only splits, a frozen operating point
+    with a seeded random floor, and two metric families kept apart. The
+    common shortcut — tuning the alert threshold until the test labels
+    look good — stays out by design.
 
     ```mermaid
     flowchart LR
       subgraph Splits["Past-only splits"]
-        A["Train: first 70% of each series"]
-        B["Hyperparameter slice: last 20% of training<br/>~30 seeded TPE trials"]
-        C["Scored window: the later span<br/>fit once, never re-tuned"]
-        A --> B
-        A --> C
+        A["Train first 70%"] --> B["Tune last 20%"] --> C["Score later span"]
       end
-      subgraph Point["Fixed operating point"]
-        D["Train-anchored top-2% threshold<br/>the assumed contamination budget"]
-        E["No threshold tuning against test labels"]
-        D --> E
+      subgraph Point["Frozen point, fair floor"]
+        D["Top-2% threshold"] --> F["Seeded random floor"]
       end
-      subgraph Compare["Fair comparison"]
-        F["Untuned and tuned detectors"] --> G["Seeded random baseline floor"]
+      subgraph Metrics["Two metric families"]
+        H["Pointwise ROC-AUC, PR-AUC"] --> I["Event-aware range-F1"]
       end
-      subgraph Metrics["Two metric families, side by side"]
-        H["Pointwise ranking: ROC-AUC, PR-AUC"]
-        I["Event-aware range precision,<br/>range recall, range-F1"]
-      end
-      C --> H
-      C --> I
+      C --> D
+      F --> H
     ```
+
+    Read the left gate first: training takes the first 70% of each
+    series, the hyperparameter search gets only the last 20% of that
+    training span, and the later window is scored once. The middle gate
+    fixes the threshold at the top 2% of training scores, the assumed
+    contamination budget, before any scoring happens. The right gate
+    splits the reading: pointwise ROC-AUC and PR-AUC rank every minute,
+    while event-aware range precision, recall, and F1 count a window as
+    detected once one alert lands inside it.
 
     - Train on the first 70% of each series. Score a later window. Never the same data.
     - Fix the threshold at the assumed 2% contamination budget. Never tune it on test labels.
@@ -73,6 +79,9 @@ sections:
     - Keep two metric families apart. Pointwise ranking uses ROC-AUC and
       PR-AUC, area-under-curve scores. Event-aware range scores count a
       window as detected once one alert lands inside it.
+
+    With the contract fixed, the next question is which data can carry
+    headline evidence under it.
 
     **Business summary:** Four fixed rules keep the comparison honest:
     past-only training, a frozen threshold, a seeded random floor, and
@@ -82,35 +91,36 @@ sections:
 - id: data
   text_md: |
     **Real incident windows headline. Synthetic data only checks
-    mechanics.** NAB (primary) is twelve pinned single-metric series from
-    AWS CloudWatch, traffic, and known-cause failures. Labels come from
-    `combined_windows.json`. Nine series have test events in the scored
-    span. Three hold every label inside the training span. They are
-    excluded, not counted as misses. The synthetic path is a seeded
-    20,000-row one-minute CPU/memory/latency stream with 2% injected
-    anomalies. It is reproducible but easy to separate, so it shows
-    mechanics, not real precision. The NSL-KDD probe is a pinned
-    network-flow test. Its 56.9% prevalence blocks comparison with rare
-    telemetry. Labels are used for evaluation only.
-    The data-lineage diagram shows the three sources.
+    mechanics.** Three sources were pinned because they answer three
+    different questions. NAB (primary) is twelve single-metric series
+    from AWS CloudWatch, traffic, and known-cause failures. Labels come
+    from `combined_windows.json`. Nine series have test events in the
+    scored span; three hold every label inside the training span. Those
+    three are excluded, not counted as misses — scoring them would
+    require a model fit on its own incidents. The synthetic path is a
+    seeded 20,000-row one-minute CPU/memory/latency stream with 2%
+    injected anomalies: fully reproducible, but trivially separable, so
+    it shows pipeline mechanics, not real precision. The NSL-KDD probe is
+    a pinned network-flow test set whose 56.9% prevalence blocks any
+    comparison with rare telemetry. Labels are used for evaluation only.
 
     ```mermaid
     flowchart LR
-      subgraph NABline["NAB - headline evidence"]
-        N1["12 univariate series, checksum-pinned"] --> N2{"Labelled windows vs scored span"}
-        N2 -->|"9 evaluable series"| N3["Event-aware scoring<br/>16 of 17 windows touched"]
-        N2 -->|"3 all windows in train"| N4["Excluded, not misses"]
-      end
-      subgraph SYNline["Synthetic CI - mechanics only"]
-        S1["20,000 seeded one-minute rows"] --> S2["2% injected anomalies<br/>trivially separable"]
-      end
-      subgraph NSLline["NSL-KDD - transfer probe"]
-        K1["125,973 train / 22,544 test flows"] --> K2["Same contract, 56.9% prevalence<br/>not comparable rarity"]
-      end
-      N3 --> E["Headline metrics"]
-      S2 --> M["Pipeline mechanics, tuning, streaming"]
-      K2 --> P["Contract check only"]
+      N1["NAB: 12 series"] --> N2{"Windows in scored span?"}
+      N2 -->|"9 evaluable"| N3["16 of 17 touched"]
+      N2 -->|"3 all in train"| N4["Excluded, not misses"]
+      N3 --> H["Headline metrics"]
+      H --> S1["Synthetic: mechanics only"]
+      S1 --> K1["NSL-KDD: contract probe"]
     ```
+
+    The data-lineage diagram shows the three sources and what each is
+    allowed to claim, read left to right. The NAB series lead: the twelve
+    series hit one decision — do labelled windows fall in the scored span?
+    Nine say yes and carry the headline; three say no and leave the study.
+    The synthetic and probe sources stay humble behind it: synthetic rows
+    feed mechanics and tuning checks, the probe flow checks the contract
+    only — neither carries a headline claim.
 
     **Business summary:** NAB's nine evaluable series carry the headline; a
     synthetic stream checks the pipeline; the NSL-KDD probe checks the
@@ -118,22 +128,30 @@ sections:
   figures: []
 - id: eda
   text_md: |
-    **The synthetic anomalies form a blob.** The injected points spike CPU
-    and latency at once. Memory keeps its seasonal path. The
-    signals-overview figure shows the daily cycle the spikes ride on.
-    Their mean distance to the 20 nearest neighbours (k-NN) is ≈20.5.
-    Normal rows average ≈9.5. The cluster sits far from normal telemetry.
-    Yet a local detector can rate inner points as normal.
+    **The synthetic anomalies form a blob; the real ones hide in plain
+    sight.** Start with the signals-overview figure: two days (2,880
+    minutes) of the seeded stream. CPU, memory, and latency follow a
+    clear daily cycle, and every injected anomaly spikes CPU and latency
+    at once while memory keeps its seasonal path. The blob is tight —
+    mean distance to the 20 nearest neighbours (k-NN) is ≈20.5 against
+    ≈9.5 for normal rows — which is exactly why a local detector can
+    still rate inner blob points as normal: the failure that shows up
+    later in LOF is visible here first.
 
-    NAB shows the opposite problem. In-window and outside scores overlap
-    a lot, as the score-distribution figure shows. No tested threshold
-    separates incidents from normal traffic.
+    NAB shows the opposite problem. The score-distribution figure splits
+    IsolationForest scores into in-window and outside-window minutes;
+    the two histograms overlap so much that no tested threshold
+    separates incidents from normal traffic. Pointwise quality is real
+    but thin; the open question is what it costs a person.
 
     The judging rules: one past-only parameter search, one fixed top-2%
     threshold, three scored alert streams. Raw pages every
     above-threshold minute. Deduped pages each burst once, at its peak
     score. Budgeted allows one page per series per 24 h. On-call load is
     measured.
+
+    So the sweep that follows asks: does any detector family make the
+    overlap problem go away?
 
     **Business summary:** Injected anomalies form one blob that fools
     local detectors; real NAB scores overlap too much for a clean
@@ -146,7 +164,8 @@ sections:
     over the headline recipe. Pointwise PR-AUC spans 0.515–0.574, best
     with LOF on rolling+residual features. Raw range recall spans
     0.688–0.750, raw alerts 1,609–3,586. The telemetry-flags figure shows
-    the fixed budget's synthetic flags.
+    the budget's synthetic flags tracking the simultaneous CPU+latency
+    spikes ground truth marks.
 
     **Finding 2 — budgeting the page stream fixes load without
     retraining.** Episode dedup plus the 24 h cap cuts pages twenty- to
@@ -160,8 +179,11 @@ sections:
     five series. IsolationForest adopts (0.5%, 24 h; validation range-F1
     0.318 vs 0.237). One committed test pass transfers it: pages fall
     66 → 33 and 80 → 46, range-F1 to 0.433 and 0.382. The
-    tuning-importance and operating-point-surface figures carry the
-    evidence. LOF's flat surface (+0.042 at best) keeps the default. OCSVM's
+    operating-point-surface figure carries the decision: one line per
+    threshold budget, the ring on the documented (2%, 24 h) default. The
+    tuning-importance figure shows gamma at 99% of OCSVM's search. LOF's
+    flat surface (+0.042 at best) keeps
+    the default. OCSVM's
     marginal adoption (0.5%, 72 h; +0.056) fails on test (−0.043/+0.033
     range-F1). Six windows cannot certify a peak whose neighbours average
     0.168 against its 0.206; sub-0.1 gains are noise.
@@ -175,29 +197,36 @@ sections:
     appears on NAB. The NSL-KDD probe (0.8817 / 0.8916) stays a probe at
     56.9% prevalence.
 
+    Which stream pages a person? The next section grades that.
+
     **Business summary:** Switching detectors is not worth it; capping
     pages is. Dedup plus a daily page per series turns 1,609 alerts into
     80; tuning halves that again for IsolationForest.
   figures: [telemetry_flags, hpo_importance, nab_tune_surface]
 - id: evaluation
   text_md: |
-    **Deploy the alert-budget layer, not a different detector.** Pointwise
-    and event-aware numbers answer different questions; three figures keep
-    them apart. The precision-recall curves figure ranks detectors on the
-    synthetic window against its 1.9% prevalence floor. Tuned OCSVM leads
-    average precision at 0.136. A ranking is not a page policy. The
-    threshold-sweep figure marks the fixed 2% operating point on synthetic
-    data: 120 flags, about 15% precision and 15% recall, seventeen hits
-    on anomalous minutes. That is point load, not seventeen incidents. The
-    streaming-simulation figure shows why adaptive thresholds stay out:
-    synthetic-calibrated median/IQR triggers fire on 31 of 120 real NAB
-    chunks.
+    **Deploy the alert-budget layer, not a different detector.** The
+    evaluation asks three questions, and the three figures keep them
+    apart. Question one: which detector ranks anomalous minutes best?
+    The precision-recall curves figure answers it on the synthetic
+    window against its 1.9% prevalence floor — look for how little the
+    curves lift above that floor; tuned OCSVM leads average precision at
+    0.136. A ranking is not a page policy. Question two: what does the
+    fixed operating point cost? The threshold-sweep figure marks the 2%
+    point on synthetic data: 120 flags, precision and recall both near
+    15%, seventeen hits on anomalous minutes — point load, not seventeen
+    incidents. Question three: can the threshold adapt to drift? The
+    streaming-simulation figure says no for now: synthetic-calibrated
+    median/IQR triggers fire on 31 of 120 real NAB chunks, too twitchy
+    for the headline.
 
     On NAB the measured trade: one page per incident per day costs
-    0.13–0.25 of range recall and buys twenty- to thirty-fold fewer pages.
-    Range-F1 rises in every sweep cell; tuning halves the pages again
-    where it transfers. What remains is on-call capacity versus recall
-    cost — a staffing call.
+    0.13–0.25 of range recall and buys twenty- to thirty-fold fewer
+    pages. Range-F1 rises in every sweep cell; tuning halves the pages
+    again where it transfers. What remains is on-call capacity versus
+    recall cost — a staffing call.
+
+    The next section reads the evidence panel by panel.
 
     **Business summary:** Budgeting pages works where better detectors do
     not: 80 pages instead of 1,609, each incident paged about once a day,
@@ -207,19 +236,26 @@ sections:
   text_md: |
     **What the evidence shows, panel by panel.** The timeline-panels
     figure holds six representative NAB windows: amber bands are labelled
-    events, pink crosses alerts, 897 alerts in all. The nyc_taxi timeline
-    figure zooms the hardest series: 3 of 4 windows touched, range recall
-    0.750, pointwise PR-AUC 0.462, 179 alerts, the miss left visible. The
-    alert-budget figure plots range-F1 against the alert budget per NAB
-    group — the trade deployment prices.
+    events, pink crosses alerts, 897 alerts in all. Read any panel
+    bottom-up: find the amber band first, then count how many crosses
+    land inside it versus outside — the outside crosses are an on-call
+    engineer's night. The nyc_taxi timeline figure zooms the hardest
+    series: 3 of 4 windows touched, range recall 0.750, pointwise PR-AUC
+    0.462, 179 alerts, the miss left visible rather than averaged away.
+    The alert-budget figure then prices the trade: range-F1 against the
+    alert budget per NAB group. Only IsolationForest sits on that curve —
+    it is a budget dial, not a detector ranking.
 
     **What this does not show: production readiness.** Range precision
-    stays low: 0.107 fixed budget, 0.306 budgeted; pages still mostly fire
-    outside incidents. Adaptive thresholds fired on 31 of 120 real NAB
-    chunks — too twitchy for the headline. The NSL-KDD probe does not
+    stays low: 0.107 fixed budget, 0.306 budgeted; pages still mostly
+    fire outside incidents. Adaptive thresholds fired on 31 of 120 real
+    NAB chunks — too twitchy for the headline. The NSL-KDD probe does not
     establish transfer; the synthetic stream shows no real precision. No
-    claim covers multivariate detectors, drifted telemetry, or unattended
-    paging.
+    claim covers multivariate detectors, drifted telemetry, or
+    unattended paging.
+
+    The full records behind every number — exact tables, protocol,
+    limits, and reproduction — sit in the conclusions.
 
     **Business summary:** Panels show false alarms crowding real
     incidents; the budget curve prices recall versus load. Use it to set

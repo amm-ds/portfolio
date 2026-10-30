@@ -3,34 +3,29 @@ short_version: "One honest protocol, two demand regimes: on dense Walmart M5 dai
 sections:
 - id: background
   text_md: |
-    **One honest protocol, two demand regimes.** On dense Walmart M5 daily sales
-    an ensemble cuts forecast error to 49% of demand versus 60% for the
-    seasonal-naive baseline; on sparse, mostly-zero retail demand the winner
-    flips — a router that forecasts zero for 945 of 1,069 lumpy series. The
-    architecture diagram shows both tracks and the one protocol they share.
+    **One honest protocol, two demand regimes.** On dense Walmart M5 daily
+    sales an ensemble cuts forecast error to 49% of demand versus 60% for
+    the seasonal-naive baseline; on sparse, mostly-zero retail demand the
+    winner flips — a router that forecasts zero for 945 of 1,069 lumpy
+    series. The architecture diagram shows both tracks and the one protocol
+    they share.
 
     ```mermaid
     graph LR
-      subgraph Dense["Dense regime - M5 Walmart daily sales"]
-        M5["600 store-item series<br/>463 dense class"] --> FE["Shift-only lags<br/>calendar features"]
-      end
-      subgraph Sparse["Sparse regime - UCI online retail"]
-        UCI["1600 country-product series<br/>89% zeros, 1069 lumpy"] --> RT{"Per-series router"}
-      end
-      FE --> ENS["Convex ensemble of tuned boosters"]
-      RT -->|"945 lumpy series"| Z["Forecast zero"]
-      RT -->|"124 series"| PK["Peak-capable models"]
-      ENS --> HB["Frozen scored-once holdout"]
-      Z --> HB
-      PK --> HB
+      M5["Dense M5: 600 series"] -->|"ensemble wins, 0.491"| HB["Frozen holdout, scored once"]
+      U["Sparse UCI: 89% zeros"] -->|"zero: 945 of 1,069"| HB
     ```
 
-    M5 gives 600 daily series; UCI Online Retail II gives 405,416 rows, 89% of
-    them zero.
+    Read the two tracks into the shared node on the right: each regime is
+    scored once on a frozen holdout under identical rules — only the winner
+    differs, and the edges say who wins where.
+
+    M5 gives 600 daily series; UCI Online Retail II gives 405,416 rows, 89%
+    of them zero.
 
     **Business summary:** This section introduces the two regimes and their
-    opposite winners: an ensemble cuts dense Walmart error from 60% to 49%; a
-    router forecasts zero for 945 of 1,069 lumpy series.
+    opposite winners: an ensemble cuts dense Walmart error from 60% to 49%;
+    a router forecasts zero for 945 of 1,069 lumpy series.
   figures: []
 - id: objectives
   text_md: |
@@ -40,15 +35,26 @@ sections:
 
     ```mermaid
     graph LR
-      S["New demand series"] --> M{"Classify by ADI<br/>average inter-demand interval<br/>and CV2, squared variability"}
-      M -->|"smooth or erratic"| D["Dense track<br/>global boosted models plus ensemble"]
-      M -->|"intermittent or lumpy"| L["Sparse track<br/>statistical intermittent methods"]
-      D --> B1["Must beat the seasonal-naive floor<br/>or stay simple"]
-      L --> B2["Forecast zero by default<br/>model peaks only where they pay"]
-      B1 --> R["Report error, coverage, and width<br/>with paired bootstrap intervals"]
+      S["New demand series"] --> M{"Classify by<br/>ADI and CV2"}
+      M -->|"smooth or erratic"| D["Dense track<br/>boosters + ensemble"]
+      M -->|"intermittent or lumpy"| L["Sparse track<br/>intermittent methods"]
+      D --> B1["Beat naive floor<br/>or stay simple"]
+      L --> B2["Zero by default<br/>model peaks that pay"]
+      B1 --> R["Error, coverage, width<br/>+ bootstrap intervals"]
       B2 --> R
-      R --> P["No inventory-savings claim<br/>without cost validation"]
+      R --> P["No savings claim<br/>without cost check"]
     ```
+
+    Read it at the router first: every series is classified by ADI (average
+    inter-demand interval) and CV² (squared variability), and the class —
+    not the algorithm — picks the track: smooth series get global boosted
+    models and the ensemble, intermittent ones get methods built for
+    mostly-zero demand. Each track then answers to the
+    same two bosses: beat the seasonal-naive floor or stay simple, and
+    report every gap with an interval. The last node is the discipline: no
+    inventory-savings claim without a cost check at the end. One global
+    champion was never the plan; the regime diagnosis itself is the
+    reusable result.
 
     Success means:
 
@@ -60,6 +66,8 @@ sections:
       that helps accuracy.
     - Report band coverage and width alike, including zero-width bands and cases
       where the simple rule stays better.
+
+    Which datasets make the two regimes concrete?
 
     **Business summary:** This section sets the goals: beat simple rules where
     data allows, use past-only lags scored once, reconcile the hierarchy, and
@@ -78,27 +86,22 @@ sections:
     pipeline evidence, not real-world evidence. Every track carries a dataset
     contract, quality gates, and DVC stages.
 
-    The evaluation contract diagram fixes the split discipline every track obeys:
-    choose on the past, score once on the future.
+    The evaluation contract diagram fixes the split discipline every track
+    obeys: choose on the past, score once on the future.
 
     ```mermaid
     graph LR
-      subgraph UCI["UCI nowcast ladder"]
-        U1["4 expanding origins<br/>7-day embargo"] --> US["Origins 1-3: select"]
-        U1 --> UT["Origin 4: test window<br/>scored once"]
-      end
-      subgraph M5["M5 direct track"]
-        W1["10 weekly origins"] --> MS["8 selection origins<br/>candidates, tuning, blending"]
-        W1 --> MT["2 test origins<br/>28-day horizon, scored once"]
-      end
-      subgraph Scoring["Scoring"]
-        US --> SC["Pooled error metrics<br/>paired bootstrap intervals"]
-        MS --> SC
-        UT --> SC
-        MT --> SC
-      end
-      SC --> L["Committed headline numbers<br/>never reselected"]
+      S["Choose on the past:<br/>UCI origins 1-3, M5 8 of 10"] --> T["Score once:<br/>UCI 4th origin, 7-day embargo;<br/>M5 2 origins, 28-day horizon"] --> C["Committed headlines:<br/>pooled metrics, bootstrap intervals"]
     ```
+
+    Read the contract as three stops. Selection origins choose the model;
+    test origins score it exactly once, behind a 7-day embargo on UCI and a
+    28-day horizon on M5; only then do numbers become committed headlines.
+    Random splits were rejected outright: with daily time series they leak
+    the future into training, and any gap quoted without that discipline
+    would be unverifiable.
+
+    With the datasets pinned, what do they look like inside?
 
     **Business summary:** This section fixes the datasets and rules: M5 Walmart
     sales, UCI online retail (89% zeros), a synthetic panel. Models are chosen
@@ -107,20 +110,31 @@ sections:
 - id: eda
   text_md: |
     **Why one global mean fails.** The synthetic panel mixes trend, weekly
-    season, and wide, skewed levels. The series overview and units distribution
-    figures show why one pooled average fails. UCI shows the opposite problem:
-    89% zero rows. M5 sits between: its 600 series split into 463 dense and 137
-    intermittent by ADI (average inter-demand interval) and CV² (squared
-    variability). So every result below is by class; the class comparison figure
-    holds those numbers.
+    season, and wide, skewed levels. The series overview and units
+    distribution figures show why one pooled average fails. UCI shows the
+    opposite problem: 89% zero rows. M5 sits between: its 600 series split
+    into 463 dense and 137 intermittent by ADI (average inter-demand
+    interval) and CV² (squared variability). So every result below is by
+    class; the class comparison figure holds those numbers.
 
-    EDA also set the judging rules: choose on the past, score once on the future,
-    keep baselines as floors, and put a paired bootstrap interval on every gap.
-    Data this different is why one champion was never the plan.
+    Read the figures in that order. The series overview draws four
+    representative daily series from the seeded synthetic hierarchy — the
+    trend-plus-weekly structure the fast-path models must capture, and
+    nothing claimed as real-panel evidence. The units distribution shows a
+    wide, right-skewed spread of daily units: one pooled mean scores MAE
+    31.8 on that panel, which is why series-aware features are tested
+    instead of assumed. The class comparison figure keeps the M5 split
+    honest: 463 dense and 137 intermittent series, reported separately
+    everywhere below.
 
-    **Business summary:** This section profiles the data: M5's 600 series split
-    into 463 dense and 137 intermittent, while UCI is 89% zeros. That split
-    orders every result below.
+    EDA also set the judging rules: choose on the past, score once on the
+    future, keep baselines as floors, and put a paired bootstrap interval on
+    every gap. Data this different is why one champion was never the plan —
+    so where does each regime's champion come from?
+
+    **Business summary:** This section profiles the data: M5's 600 series
+    split into 463 dense and 137 intermittent, while UCI is 89% zeros. That
+    split orders every result below.
   figures: [eda_series_overview, eda_units_distribution, m5:class_comparison]
 - id: training
   text_md: |
@@ -132,18 +146,26 @@ sections:
     improves in step; per-series, 88.8% pooled / 88.6% dense / 89.8% intermittent
     series improve. Exact tables live in the conclusions.
 
-    Tuning was seeded and cheap: the HPO history and importance figures show the
-    56-trial synthetic study, where regularization dominates and the best trial
-    cuts cross-validation error only modestly — small, honest gains, not a
-    leaderboard.
+    Tuning was seeded and cheap: the HPO history and importance figures show
+    the 56-trial synthetic HGB study, where regularization dominates and the
+    best trial cuts cross-validation error only modestly — small, honest
+    gains, not a leaderboard. Read the history figure as a mostly-flat
+    curve: the default already works, and the search buys single-digit
+    hundredths. The importance figure explains why, with the top two
+    parameters carrying 66% of search importance. Tuning ran on the
+    synthetic panel rather than on M5 so the study stays cheap and
+    repeatable; the modest delta is the honest price of that choice.
 
     Sparse UCI inverts the answer. The selection champion posts 9.545 MAE (mean
     absolute error) against the seasonal naive's 11.323, and no run reaches MASE
-    1.0. The routing effect figure shows what routing adds on scored origins: the
-    router forecasts zero for 945 of 1,069 lumpy series and reserves peak-capable
-    models for the rest. Cost-aware routing at a 0.90 service level moves 67 of
-    those series back to models, pays +0.57 lumpy MAE, and wins the newsvendor
-    cost comparison — a measured trade-off, not an assertion.
+    1.0. The routing effect figure shows what routing adds on scored origins:
+    the router forecasts zero for 945 of 1,069 lumpy series and reserves
+    peak-capable models for the rest. Cost-aware routing at a 0.90 service
+    level moves 67 of those series back to models, pays +0.57 lumpy MAE, and
+    wins the newsvendor cost comparison — a measured trade-off, not an
+    assertion.
+
+    Do these gains survive honest grading?
 
     **Business summary:** This section trains and selects the forecasters: on
     dense Walmart sales the ensemble cuts error from 60% to 49%; on sparse
@@ -153,19 +175,25 @@ sections:
   text_md: |
     **Metrics match decisions.** MAE drives selection; WAPE headlines the dense
     track; MASE keeps the sparse track comparable; every gap carries a paired
-    bootstrap interval.
+    bootstrap interval. Each metric answers one question, so none is allowed
+    to stand in for the others: MAE is the selector because a planner can
+    audit it row by row, WAPE scales error by demand, and MASE divides by
+    the seasonal naive's error, so 1.0 means no improvement over the floor.
 
-    Error is not flat, and the evaluation figures say so. The fold stability
-    figure shows every UCI model degrading on later folds — drift exposed before
-    deployment. The horizon growth figure shows M5 error climbing
-    **0.4136→0.5636** from week 1 to week 4, which is why the service number is
-    reforecast weekly. The win rate figure bounds the ensemble's edge: 88.8% of series
-    improve against the seasonal naive and the rest are flat or worse — coverage,
+    Error is not flat, and the evaluation figures say so. Start with the
+    fold stability figure: every UCI model degrades on later folds — drift
+    exposed before deployment, not after. Then the horizon growth figure:
+    M5 error climbs **0.4136→0.5636** from week 1 to week 4, which is why
+    the service number is reforecast weekly instead of trusted for a month.
+    The win rate figure bounds the ensemble's edge: 88.8% of series improve
+    against the seasonal naive and the rest are flat or worse — coverage,
     not perfection.
 
     For planning: dense, M5-like demand plans with the ensemble; sparse, UCI-like
     demand plans with the router. Neither supports an inventory-savings claim;
     both support a pilot.
+
+    Where does all of this land in one ranking?
 
     **Business summary:** This section grades the candidates on both tracks:
     88.8% of M5 series improve under the ensemble, weekly error grows across the
@@ -176,21 +204,29 @@ sections:
   text_md: |
     **The headline ranking is in the WAPE bars figure: convex ensemble 0.491,
     committed global LightGBM 0.498, seasonal naive 0.603** on the pooled,
-    scored-once 28-day test. The band calibration figure shows the cost of
-    honesty: 80% bands that cover 77.7%. The multi-step error figure carries the
-    sparse track.
+    scored-once 28-day test. Read the bars as a tight race, not a blowout:
+    the ensemble and the single booster sit within 0.007 of each other, and
+    both sit far below the seasonal rule. The band calibration figure shows
+    the cost of honesty: 80% bands that cover 77.7% — slightly under
+    target rather than tuned to look exact. The multi-step error figure
+    carries the sparse track, with MAE and MASE on separate axes so
+    incompatible units never share one; the sawtooth in
+    that figure is weekday composition across weekly origins, not
+    instability.
 
     **What these numbers do not show: savings.** Stockouts, promotions, and
     returns are unmodeled, so no safety-stock or cost claim follows — the
-    newsvendor layer is a measuring stick, not a P&L. Later-horizon error grows
-    on both tracks, and the synthetic ladder shows mechanics only, not real-world
-    accuracy. Regime transfer is unproven — what wins dense loses sparse. And UCI
-    zeros may be closed days rather than true zero demand, which no model here
-    can tell apart.
+    newsvendor layer is a measuring stick, not a P&L. Later-horizon error
+    grows on both tracks, and the synthetic ladder shows mechanics only, not
+    real-world accuracy. Regime transfer is unproven — what wins dense loses
+    sparse. And UCI zeros may be closed days rather than true zero demand,
+    which no model here can tell apart.
 
-    **Business summary:** This section states the final ranking: ensemble 0.491,
-    LightGBM 0.498, seasonal rule 0.603. The 80% prediction bands cover 77.7%
-    of outcomes, and no savings claim is made.
+    What survives into the final record?
+
+    **Business summary:** This section states the final ranking: ensemble
+    0.491, LightGBM 0.498, seasonal rule 0.603. The 80% prediction bands
+    cover 77.7% of outcomes, and no savings claim is made.
   figures: [m5:wape_bars, m5:band_calibration, uci:multistep_error_vs_horizon]
   metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 - id: conclusions
@@ -307,14 +343,13 @@ sections:
 
     ```mermaid
     graph LR
-      N["New panel of series"] --> Q{"Zero-share and ADI diagnosis"}
-      Q -->|"dense, M5-like"| E["Deploy the convex ensemble<br/>reforecast weekly"]
-      Q -->|"sparse, UCI-like"| R["Deploy the mostly-zero router<br/>with zero-aware bands"]
-      Q -->|"unknown or mixed"| V["Pilot first<br/>measure before scaling"]
-      E --> H["Hold to protocol:<br/>frozen windows, floors, intervals"]
-      R --> H
-      V --> H
-      H --> X["No transfer claim across regimes"]
+      Q{"Zero-share + ADI<br/>regime diagnosis"}
+      Q -->|"dense, M5-like"| E["Convex ensemble"]
+      Q -->|"sparse, UCI-like"| R["Mostly-zero router"]
+      Q -->|"unknown or mixed"| V["Pilot first"]
+      E --> X["Frozen windows, floors, intervals;<br/>no transfer claim across regimes"]
+      R --> X
+      V --> X
     ```
 
     **Business summary:** This section records the final numbers, protocol,
