@@ -32,9 +32,9 @@ from portfolio_core.logging import get_logger
 from portfolio_eval.ml import regression_metrics
 
 from mobility.config import MobilityConfig, get_config
+from mobility.gbm import _make_gbm
 from mobility.model import (
     _fit_net,
-    _make_gbm,
     _nn_data,
     _temporal_val_split,
     _xy,

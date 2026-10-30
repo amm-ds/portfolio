@@ -435,13 +435,13 @@ stages:
       size: 2703
     - path: reports/models/serving
       hash: md5
-      md5: 00a84165746acbbd9ac7e1af9714b3f6.dir
-      size: 6818947
-      nfiles: 3
+      md5: 20ed4bef3206dd8f0e8b8948d2c72239.dir
+      size: 7576418
+      nfiles: 7
     - path: src/mobility/drift.py
       hash: md5
-      md5: 9ae95777ff88df5747816e728305754a
-      size: 18024
+      md5: 1457961e50b3788d6252564a66a8e5cb
+      size: 18010
     - path: src/mobility/features.py
       hash: md5
       md5: 277e07c11ec4924cfde689a962be1176
@@ -452,8 +452,8 @@ stages:
       size: 7960
     - path: src/mobility/serving.py
       hash: md5
-      md5: 42eae6a25af5ff8abf178f6c6c7dec9b
-      size: 5149
+      md5: dd6f266a20b211237173bebb6b3e75ae
+      size: 13275
     - path: src/mobility/validate.py
       hash: md5
       md5: 43da8a4b6b40e428302f32fa59b06b81
@@ -466,6 +466,6 @@ stages:
     outs:
     - path: reports/drift
       hash: md5
-      md5: 5e3eaf52db7b08e6f4e33c92fafd7d0e.dir
-      size: 20577
-      nfiles: 5
+      md5: a7b2dff69bdb4397a1a9e49b0ef94446.dir
+      size: 68694
+      nfiles: 13

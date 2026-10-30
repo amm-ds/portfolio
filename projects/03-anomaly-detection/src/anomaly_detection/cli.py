@@ -178,6 +178,31 @@ def nab_sweep() -> None:
     )
 
 
+@app.command("nab-tune")
+def nab_tune() -> None:
+    """Select per-family (threshold budget, cooldown) on train-side validation;
+    score the NAB test window once per adopted operating point."""
+    config = get_config()
+    from anomaly_detection.nab_tune import run_nab_tune
+
+    result = run_nab_tune(config)
+    for detector, sel in result["selection"]["families"].items():
+        typer.echo(
+            f"{detector}: budget={sel['budget']:.3f} cooldown={sel['cooldown_hours']:.0f}h "
+            f"adopted={sel['adopted']} "
+            f"(val range-F1 {sel['val_range_f1']:.3f} vs default {sel['val_range_f1_default']:.3f})"
+        )
+    vs = result["vs_default_sweep_budgeted"]
+    if vs.get("available"):
+        for cell, row in vs["cells"].items():
+            typer.echo(
+                f"{cell}: budgeted alerts {row['default_budgeted']['alerts_fired']} -> "
+                f"{row['tuned_budgeted']['alerts_fired']} "
+                f"(range-F1 {row['default_budgeted']['range_f1']:.3f} -> "
+                f"{row['tuned_budgeted']['range_f1']:.3f})"
+            )
+
+
 @app.command()
 def nsl() -> None:
     """NSL-KDD production track: fetch, map, and run the transfer probe."""

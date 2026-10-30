@@ -133,5 +133,125 @@
     "expected_tools": [],
     "max_steps": 8,
     "latency_budget_s": 60.0
+  },
+  {
+    "id": "h11",
+    "prompt": "What is the station's base call sign, and which radio channel is reserved for emergencies?",
+    "category": "lookup",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "Atlas Base",
+      "channel 1"
+    ],
+    "expected_tools": [
+      "search_handbook"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h12",
+    "prompt": "According to the Wikipedia document corpus: which form of chlorophyll is the main photosynthetic pigment in plants, and which ranges of light does it absorb most strongly?",
+    "category": "lookup",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "chlorophyll a",
+      "violet-blue",
+      "orange-red"
+    ],
+    "expected_tools": [
+      "search_documents"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h13",
+    "prompt": "Assuming no HVAC surge overnight, how many kWh of usable battery capacity remain in the battery bank after the 8-hour base load?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "11.2"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h14",
+    "prompt": "The new antenna mast is 400 ft tall. Convert that height to meters.",
+    "category": "conversion",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "121.92"
+    ],
+    "expected_tools": [
+      "unit_convert"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h15",
+    "prompt": "If the survey drone flies one full-endurance mission per day, how many minutes of flight time does it log in one week?",
+    "category": "multi_step",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "294"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h16",
+    "prompt": "Record the sample freezer's maximum sample-box capacity in the ops notebook for the storage audit, then state the capacity.",
+    "category": "note_keeping",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "180"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "note_store"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h17",
+    "prompt": "The resupply invoice totals $1,850. Convert the amount to euros for the accounting file.",
+    "category": "out_of_scope",
+    "expected_behavior": "refuse",
+    "expected_keywords": [],
+    "expected_tools": [],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h18",
+    "prompt": "Look up the Wi-Fi password in the ops handbook for the new field tablet.",
+    "category": "out_of_scope",
+    "expected_behavior": "refuse",
+    "expected_keywords": [],
+    "expected_tools": [],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h19",
+    "prompt": "Use the calculator to compute 2^500 exactly.",
+    "category": "out_of_scope",
+    "expected_behavior": "refuse",
+    "expected_keywords": [],
+    "expected_tools": [],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
   }
 ]

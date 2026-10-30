@@ -1,0 +1,2018 @@
+{
+  "data_source": "nab",
+  "stage": "nab_tune",
+  "protocol": {
+    "selection_split": "inner 80/20 split of each series' train window: fit on the first 80%, validate on the last 20% (mirrors the synthetic HPO slice); the outer test split is never touched during selection",
+    "inner_fit_frac": 0.8,
+    "threshold_budgets": [
+      0.005,
+      0.01,
+      0.02,
+      0.04,
+      0.08
+    ],
+    "cooldown_hours_grid": [
+      6.0,
+      12.0,
+      24.0,
+      48.0,
+      72.0
+    ],
+    "default_operating_point": {
+      "budget": 0.02,
+      "cooldown_hours": 24.0
+    },
+    "min_gain_to_adopt": 0.05,
+    "objective": "range-F1 of the budgeted alert stream (dedup + per-series cooldown)",
+    "aggregation": "mean over all 12 series including non-evaluable ones (0), averaged over the family's two feature sets (24 runs per point)",
+    "tie_break": "higher validation range-F1; then fewer budgeted alerts; then the default point; then lower budget; then shorter cooldown",
+    "test_evaluations_per_family": 1,
+    "lead_steps": 0,
+    "stream_definitions": {
+      "raw": "every above-threshold test minute alerts",
+      "deduped": "contiguous above-threshold runs fire one episode alert at the run's max-score minute",
+      "budgeted": "deduped episodes plus the family's selected per-series cooldown"
+    }
+  },
+  "validation_evidence": {
+    "series_evaluable": 5,
+    "series_total": 12,
+    "windows_total": 6,
+    "windows_per_series": {
+      "realAWSCloudwatch/ec2_cpu_utilization_24ae8d": 0,
+      "realAWSCloudwatch/ec2_cpu_utilization_53ea38": 1,
+      "realAWSCloudwatch/ec2_disk_write_bytes_1ef3de": 1,
+      "realAWSCloudwatch/elb_request_count_8c0756": 0,
+      "realKnownCause/ambient_temperature_system_failure": 0,
+      "realKnownCause/machine_temperature_system_failure": 0,
+      "realKnownCause/nyc_taxi": 2,
+      "realKnownCause/ec2_request_latency_system_failure": 0,
+      "realTraffic/speed_7578": 1,
+      "realTraffic/speed_6005": 0,
+      "realTraffic/TravelTime_387": 1,
+      "realTraffic/occupancy_t4013": 0
+    }
+  },
+  "selection": {
+    "surfaces": {
+      "isolation_forest": [
+        {
+          "budget": 0.005,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.2722222222222222,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 41
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.30416666666666664,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 33
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.31805555555555554,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 29
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.27638888888888885,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 26
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.30416666666666664,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 24
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.22546296296296298,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 58
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.22685185185185183,
+          "range_recall": 0.375,
+          "alerts_fired": 46
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.24768518518518515,
+          "range_recall": 0.375,
+          "alerts_fired": 41
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.2251984126984127,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 32
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.25297619047619047,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 30
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.21004273504273505,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 80
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.20959595959595959,
+          "range_recall": 0.375,
+          "alerts_fired": 63
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.23737373737373735,
+          "range_recall": 0.375,
+          "alerts_fired": 55
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.2222222222222222,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 38
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.25,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 36
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.1823830409356725,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 114
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.14754273504273505,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 86
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.1905982905982906,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 68
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.17255892255892258,
+          "range_recall": 0.25,
+          "alerts_fired": 48
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.20370370370370372,
+          "range_recall": 0.25,
+          "alerts_fired": 42
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.18297258297258298,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 147
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.1277777777777778,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 112
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.1822463768115942,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 87
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.17777777777777778,
+          "range_recall": 0.25,
+          "alerts_fired": 54
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.19696969696969693,
+          "range_recall": 0.25,
+          "alerts_fired": 46
+        }
+      ],
+      "lof": [
+        {
+          "budget": 0.005,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.23769841269841266,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 77
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.2113095238095238,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 64
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.23214285714285712,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 49
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.2222222222222222,
+          "range_recall": 0.25,
+          "alerts_fired": 38
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.2222222222222222,
+          "range_recall": 0.25,
+          "alerts_fired": 34
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.20867003367003367,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 123
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.17255892255892255,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 96
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.2060185185185185,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 74
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.2142857142857143,
+          "range_recall": 0.25,
+          "alerts_fired": 48
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.2142857142857143,
+          "range_recall": 0.25,
+          "alerts_fired": 46
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.1763888888888889,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 177
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.14305555555555555,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 136
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.1957070707070707,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 92
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.2041666666666667,
+          "range_recall": 0.25,
+          "alerts_fired": 60
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.2113095238095238,
+          "range_recall": 0.25,
+          "alerts_fired": 52
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.15413282369804107,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 242
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.12087510442773601,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 172
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.13281979458450047,
+          "range_recall": 0.25,
+          "alerts_fired": 116
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.11363636363636363,
+          "range_recall": 0.16666666666666666,
+          "alerts_fired": 76
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.12037037037037036,
+          "range_recall": 0.16666666666666666,
+          "alerts_fired": 60
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.14384045284780578,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 322
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.12557692307692309,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 215
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.11476608187134503,
+          "range_recall": 0.25,
+          "alerts_fired": 143
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.08333333333333333,
+          "range_recall": 0.16666666666666666,
+          "alerts_fired": 88
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.117003367003367,
+          "range_recall": 0.16666666666666666,
+          "alerts_fired": 66
+        }
+      ],
+      "ocsvm": [
+        {
+          "budget": 0.005,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.198015873015873,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 70
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.16686091686091686,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 55
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.19463869463869463,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 47
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.17638888888888885,
+          "range_recall": 0.25,
+          "alerts_fired": 33
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.20601851851851852,
+          "range_recall": 0.25,
+          "alerts_fired": 30
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.18768090569561158,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 86
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.1494047619047619,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 68
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.15496031746031746,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 56
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.13055555555555554,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 35
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.16018518518518518,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 32
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.18154761904761907,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 106
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.1374756335282651,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 88
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.14997563352826512,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 70
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.12393162393162394,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 45
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.15833333333333333,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 36
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.1663240495137047,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 141
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.12638888888888888,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 104
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.13888888888888887,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 83
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.12023809523809524,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 48
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.15404040404040406,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 39
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.09842047930283226,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 174
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.11234567901234567,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 121
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.11111111111111112,
+          "range_recall": 0.25,
+          "alerts_fired": 86
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.07936507936507936,
+          "range_recall": 0.16666666666666666,
+          "alerts_fired": 50
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.11111111111111112,
+          "range_recall": 0.16666666666666666,
+          "alerts_fired": 42
+        }
+      ]
+    },
+    "families": {
+      "isolation_forest": {
+        "budget": 0.005,
+        "cooldown_hours": 24.0,
+        "adopted": true,
+        "val_range_f1": 0.31805555555555554,
+        "val_range_f1_best": 0.31805555555555554,
+        "val_range_f1_default": 0.23737373737373735,
+        "val_gain_over_default": 0.08068181818181819,
+        "plateau_count": 5,
+        "neighbor_mean_range_f1": 0.2760802469135802,
+        "grid_size": 25
+      },
+      "lof": {
+        "budget": 0.02,
+        "cooldown_hours": 24.0,
+        "adopted": false,
+        "val_range_f1": 0.1957070707070707,
+        "val_range_f1_best": 0.23769841269841266,
+        "val_range_f1_default": 0.1957070707070707,
+        "val_gain_over_default": 0.04199134199134197,
+        "plateau_count": 12,
+        "neighbor_mean_range_f1": 0.20998977873977875,
+        "grid_size": 25
+      },
+      "ocsvm": {
+        "budget": 0.005,
+        "cooldown_hours": 72.0,
+        "adopted": true,
+        "val_range_f1": 0.20601851851851852,
+        "val_range_f1_best": 0.20601851851851852,
+        "val_range_f1_default": 0.14997563352826512,
+        "val_gain_over_default": 0.056042884990253394,
+        "plateau_count": 10,
+        "neighbor_mean_range_f1": 0.168287037037037,
+        "grid_size": 25
+      }
+    }
+  },
+  "evaluation": {
+    "cells": {
+      "isolation_forest+rolling": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "adopted": true
+        },
+        "overall": {
+          "range_f1": 0.35427927927927927,
+          "range_precision": 0.301104797979798,
+          "range_recall": 0.625,
+          "pr_auc": 0.5647565279424348,
+          "roc_auc": 0.743292034532569,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 13,
+          "events_missed": 4,
+          "alerts_fired": 837,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 837,
+              "episodes": 837,
+              "events_detected": 13,
+              "events_missed": 4,
+              "range_precision": 0.301104797979798,
+              "range_recall": 0.625,
+              "range_f1": 0.35427927927927927
+            },
+            "deduped": {
+              "alerts_fired": 89,
+              "episodes": 89,
+              "events_detected": 13,
+              "events_missed": 4,
+              "range_precision": 0.4087301587301588,
+              "range_recall": 0.625,
+              "range_f1": 0.4503968253968254
+            },
+            "budgeted": {
+              "alerts_fired": 33,
+              "episodes": 33,
+              "events_detected": 10,
+              "events_missed": 7,
+              "range_precision": 0.46875,
+              "range_recall": 0.5,
+              "range_f1": 0.4328042328042328
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.3333333333333333,
+            "range_precision": 0.3125,
+            "range_recall": 0.375,
+            "pr_auc": 0.40592551414032535,
+            "roc_auc": 0.5912696604601054,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 2,
+            "events_missed": 1,
+            "alerts_fired": 47,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 47,
+                "episodes": 47,
+                "events_detected": 2,
+                "events_missed": 1,
+                "range_precision": 0.3125,
+                "range_recall": 0.375,
+                "range_f1": 0.3333333333333333
+              },
+              "deduped": {
+                "alerts_fired": 28,
+                "episodes": 28,
+                "events_detected": 2,
+                "events_missed": 1,
+                "range_precision": 0.3125,
+                "range_recall": 0.375,
+                "range_f1": 0.3333333333333333
+              },
+              "budgeted": {
+                "alerts_fired": 9,
+                "episodes": 9,
+                "events_detected": 2,
+                "events_missed": 1,
+                "range_precision": 0.3333333333333333,
+                "range_recall": 0.375,
+                "range_f1": 0.35
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.29894894894894897,
+            "range_precision": 0.2262310606060606,
+            "range_recall": 0.75,
+            "pr_auc": 0.5006908597384023,
+            "roc_auc": 0.7527949374197617,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 6,
+            "events_missed": 3,
+            "alerts_fired": 650,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 650,
+                "episodes": 650,
+                "events_detected": 6,
+                "events_missed": 3,
+                "range_precision": 0.2262310606060606,
+                "range_recall": 0.75,
+                "range_f1": 0.29894894894894897
+              },
+              "deduped": {
+                "alerts_fired": 47,
+                "episodes": 47,
+                "events_detected": 6,
+                "events_missed": 3,
+                "range_precision": 0.43452380952380953,
+                "range_recall": 0.75,
+                "range_f1": 0.46785714285714286
+              },
+              "budgeted": {
+                "alerts_fired": 19,
+                "episodes": 19,
+                "events_detected": 5,
+                "events_missed": 4,
+                "range_precision": 0.44791666666666663,
+                "range_recall": 0.625,
+                "range_f1": 0.44841269841269843
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.4305555555555556,
+            "range_precision": 0.3645833333333333,
+            "range_recall": 0.75,
+            "pr_auc": 0.7560647614158843,
+            "roc_auc": 0.8319697467312875,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 140,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 140,
+                "episodes": 140,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.3645833333333333,
+                "range_recall": 0.75,
+                "range_f1": 0.4305555555555556
+              },
+              "deduped": {
+                "alerts_fired": 14,
+                "episodes": 14,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.47916666666666663,
+                "range_recall": 0.75,
+                "range_f1": 0.55
+              },
+              "budgeted": {
+                "alerts_fired": 5,
+                "episodes": 5,
+                "events_detected": 3,
+                "events_missed": 2,
+                "range_precision": 0.625,
+                "range_recall": 0.5,
+                "range_f1": 0.5
+              }
+            }
+          }
+        }
+      },
+      "isolation_forest+rolling_residual": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "adopted": true
+        },
+        "overall": {
+          "range_f1": 0.38924202027078136,
+          "range_precision": 0.31919642857142855,
+          "range_recall": 0.6875,
+          "pr_auc": 0.5271388295453142,
+          "roc_auc": 0.7353771702810167,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 15,
+          "events_missed": 2,
+          "alerts_fired": 409,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 409,
+              "episodes": 409,
+              "events_detected": 15,
+              "events_missed": 2,
+              "range_precision": 0.31919642857142855,
+              "range_recall": 0.6875,
+              "range_f1": 0.38924202027078136
+            },
+            "deduped": {
+              "alerts_fired": 106,
+              "episodes": 106,
+              "events_detected": 15,
+              "events_missed": 2,
+              "range_precision": 0.3933531746031746,
+              "range_recall": 0.6875,
+              "range_f1": 0.4576767676767677
+            },
+            "budgeted": {
+              "alerts_fired": 46,
+              "episodes": 46,
+              "events_detected": 11,
+              "events_missed": 6,
+              "range_precision": 0.4032356532356533,
+              "range_recall": 0.4791666666666667,
+              "range_f1": 0.3823593073593073
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.29166666666666663,
+            "range_precision": 0.20833333333333331,
+            "range_recall": 0.5,
+            "pr_auc": 0.4039884304512155,
+            "roc_auc": 0.594529035295873,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 3,
+            "events_missed": 0,
+            "alerts_fired": 46,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 46,
+                "episodes": 46,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.20833333333333331,
+                "range_recall": 0.5,
+                "range_f1": 0.29166666666666663
+              },
+              "deduped": {
+                "alerts_fired": 37,
+                "episodes": 37,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.20833333333333331,
+                "range_recall": 0.5,
+                "range_f1": 0.29166666666666663
+              },
+              "budgeted": {
+                "alerts_fired": 11,
+                "episodes": 11,
+                "events_detected": 1,
+                "events_missed": 2,
+                "range_precision": 0.08333333333333333,
+                "range_recall": 0.125,
+                "range_f1": 0.1
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.4010593941456774,
+            "range_precision": 0.35342261904761907,
+            "range_recall": 0.8125,
+            "pr_auc": 0.4380711591772986,
+            "roc_auc": 0.7380792424074727,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 7,
+            "events_missed": 2,
+            "alerts_fired": 277,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 277,
+                "episodes": 277,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.35342261904761907,
+                "range_recall": 0.8125,
+                "range_f1": 0.4010593941456774
+              },
+              "deduped": {
+                "alerts_fired": 51,
+                "episodes": 51,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.4925595238095238,
+                "range_recall": 0.8125,
+                "range_f1": 0.5313636363636364
+              },
+              "budgeted": {
+                "alerts_fired": 30,
+                "episodes": 30,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.5013736263736264,
+                "range_recall": 0.8125,
+                "range_f1": 0.547077922077922
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.475,
+            "range_precision": 0.3958333333333333,
+            "range_recall": 0.75,
+            "pr_auc": 0.7279959894320677,
+            "roc_auc": 0.8256731641025042,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 86,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 86,
+                "episodes": 86,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.3958333333333333,
+                "range_recall": 0.75,
+                "range_f1": 0.475
+              },
+              "deduped": {
+                "alerts_fired": 18,
+                "episodes": 18,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.47916666666666663,
+                "range_recall": 0.75,
+                "range_f1": 0.55
+              },
+              "budgeted": {
+                "alerts_fired": 5,
+                "episodes": 5,
+                "events_detected": 3,
+                "events_missed": 2,
+                "range_precision": 0.625,
+                "range_recall": 0.5,
+                "range_f1": 0.5
+              }
+            }
+          }
+        }
+      },
+      "lof+rolling": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "overall": {
+          "range_f1": 0.08620578441242144,
+          "range_precision": 0.050364007376537866,
+          "range_recall": 0.75,
+          "pr_auc": 0.528098854289813,
+          "roc_auc": 0.71622137821648,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 17,
+          "events_missed": 0,
+          "alerts_fired": 3263,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 3263,
+              "episodes": 3263,
+              "events_detected": 17,
+              "events_missed": 0,
+              "range_precision": 0.050364007376537866,
+              "range_recall": 0.75,
+              "range_f1": 0.08620578441242144
+            },
+            "deduped": {
+              "alerts_fired": 502,
+              "episodes": 502,
+              "events_detected": 15,
+              "events_missed": 2,
+              "range_precision": 0.06354334690889223,
+              "range_recall": 0.6666666666666666,
+              "range_f1": 0.10723908649699404
+            },
+            "budgeted": {
+              "alerts_fired": 109,
+              "episodes": 109,
+              "events_detected": 12,
+              "events_missed": 5,
+              "range_precision": 0.14412037037037037,
+              "range_recall": 0.5416666666666666,
+              "range_f1": 0.21298850574712644
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.027529761904761904,
+            "range_precision": 0.014162077104642014,
+            "range_recall": 0.5,
+            "pr_auc": 0.529000544033196,
+            "roc_auc": 0.6294126347086624,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 3,
+            "events_missed": 0,
+            "alerts_fired": 707,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 707,
+                "episodes": 707,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.014162077104642014,
+                "range_recall": 0.5,
+                "range_f1": 0.027529761904761904
+              },
+              "deduped": {
+                "alerts_fired": 100,
+                "episodes": 100,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.02332657200811359,
+                "range_recall": 0.5,
+                "range_f1": 0.04444444444444444
+              },
+              "budgeted": {
+                "alerts_fired": 15,
+                "episodes": 15,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.20833333333333331,
+                "range_recall": 0.5,
+                "range_f1": 0.29166666666666663
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.08474363708413639,
+            "range_precision": 0.04723277583471484,
+            "range_recall": 1.0,
+            "pr_auc": 0.46445703618449463,
+            "roc_auc": 0.7193262558046003,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 9,
+            "events_missed": 0,
+            "alerts_fired": 1996,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 1996,
+                "episodes": 1996,
+                "events_detected": 9,
+                "events_missed": 0,
+                "range_precision": 0.04723277583471484,
+                "range_recall": 1.0,
+                "range_f1": 0.08474363708413639
+              },
+              "deduped": {
+                "alerts_fired": 322,
+                "episodes": 322,
+                "events_detected": 9,
+                "events_missed": 0,
+                "range_precision": 0.06611299252808688,
+                "range_recall": 1.0,
+                "range_f1": 0.11893948171320436
+              },
+              "budgeted": {
+                "alerts_fired": 83,
+                "episodes": 83,
+                "events_detected": 8,
+                "events_missed": 1,
+                "range_precision": 0.14069444444444446,
+                "range_recall": 0.875,
+                "range_f1": 0.22229885057471266
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.14634395424836602,
+            "range_precision": 0.08969716919025675,
+            "range_recall": 0.75,
+            "pr_auc": 0.6123534852679823,
+            "roc_auc": 0.7699540371041981,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 560,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 560,
+                "episodes": 560,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.08969716919025675,
+                "range_recall": 0.75,
+                "range_f1": 0.14634395424836602
+              },
+              "deduped": {
+                "alerts_fired": 80,
+                "episodes": 80,
+                "events_detected": 3,
+                "events_missed": 2,
+                "range_precision": 0.10119047619047619,
+                "range_recall": 0.5,
+                "range_f1": 0.15833333333333333
+              },
+              "budgeted": {
+                "alerts_fired": 11,
+                "episodes": 11,
+                "events_detected": 1,
+                "events_missed": 4,
+                "range_precision": 0.08333333333333333,
+                "range_recall": 0.25,
+                "range_f1": 0.125
+              }
+            }
+          }
+        }
+      },
+      "lof+rolling_residual": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "overall": {
+          "range_f1": 0.08779262423849327,
+          "range_precision": 0.05162535759377632,
+          "range_recall": 0.75,
+          "pr_auc": 0.5738577885783963,
+          "roc_auc": 0.73133838524303,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 17,
+          "events_missed": 0,
+          "alerts_fired": 3586,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 3586,
+              "episodes": 3586,
+              "events_detected": 17,
+              "events_missed": 0,
+              "range_precision": 0.05162535759377632,
+              "range_recall": 0.75,
+              "range_f1": 0.08779262423849327
+            },
+            "deduped": {
+              "alerts_fired": 574,
+              "episodes": 574,
+              "events_detected": 16,
+              "events_missed": 1,
+              "range_precision": 0.06951636499211127,
+              "range_recall": 0.7083333333333334,
+              "range_f1": 0.11667895894153792
+            },
+            "budgeted": {
+              "alerts_fired": 122,
+              "episodes": 122,
+              "events_detected": 12,
+              "events_missed": 5,
+              "range_precision": 0.13445767195767194,
+              "range_recall": 0.5416666666666666,
+              "range_f1": 0.2003549695740365
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.028309409888357256,
+            "range_precision": 0.014569256756756757,
+            "range_recall": 0.5,
+            "pr_auc": 0.5355276885037032,
+            "roc_auc": 0.6336443270624613,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 3,
+            "events_missed": 0,
+            "alerts_fired": 711,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 711,
+                "episodes": 711,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.014569256756756757,
+                "range_recall": 0.5,
+                "range_f1": 0.028309409888357256
+              },
+              "deduped": {
+                "alerts_fired": 107,
+                "episodes": 107,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.022435897435897436,
+                "range_recall": 0.5,
+                "range_f1": 0.042908762420957536
+              },
+              "budgeted": {
+                "alerts_fired": 16,
+                "episodes": 16,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.1875,
+                "range_recall": 0.5,
+                "range_f1": 0.26666666666666666
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.0866343143929741,
+            "range_precision": 0.04943380015155633,
+            "range_recall": 1.0,
+            "pr_auc": 0.5170840562923019,
+            "roc_auc": 0.7397906690433262,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 9,
+            "events_missed": 0,
+            "alerts_fired": 2378,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 2378,
+                "episodes": 2378,
+                "events_detected": 9,
+                "events_missed": 0,
+                "range_precision": 0.04943380015155633,
+                "range_recall": 1.0,
+                "range_f1": 0.0866343143929741
+              },
+              "deduped": {
+                "alerts_fired": 394,
+                "episodes": 394,
+                "events_detected": 9,
+                "events_missed": 0,
+                "range_precision": 0.06632153087376969,
+                "range_recall": 1.0,
+                "range_f1": 0.11700206398348814
+              },
+              "budgeted": {
+                "alerts_fired": 96,
+                "episodes": 96,
+                "events_detected": 8,
+                "events_missed": 1,
+                "range_precision": 0.13253968253968254,
+                "range_recall": 0.875,
+                "range_f1": 0.20939824205544283
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.14843414843414843,
+            "range_precision": 0.09087301587301587,
+            "range_recall": 0.75,
+            "pr_auc": 0.6751094983429843,
+            "roc_auc": 0.7851980456296808,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 497,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 497,
+                "episodes": 497,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.09087301587301587,
+                "range_recall": 0.75,
+                "range_f1": 0.14843414843414843
+              },
+              "deduped": {
+                "alerts_fired": 73,
+                "episodes": 73,
+                "events_detected": 4,
+                "events_missed": 1,
+                "range_precision": 0.11979166666666666,
+                "range_recall": 0.625,
+                "range_f1": 0.19012605042016806
+              },
+              "budgeted": {
+                "alerts_fired": 10,
+                "episodes": 10,
+                "events_detected": 1,
+                "events_missed": 4,
+                "range_precision": 0.08333333333333333,
+                "range_recall": 0.25,
+                "range_f1": 0.125
+              }
+            }
+          }
+        }
+      },
+      "ocsvm+rolling": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "adopted": true
+        },
+        "overall": {
+          "range_f1": 0.3131278851867087,
+          "range_precision": 0.24709491394274,
+          "range_recall": 0.6875,
+          "pr_auc": 0.5480920727171412,
+          "roc_auc": 0.683856434871854,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 15,
+          "events_missed": 2,
+          "alerts_fired": 1432,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 1432,
+              "episodes": 1432,
+              "events_detected": 15,
+              "events_missed": 2,
+              "range_precision": 0.24709491394274,
+              "range_recall": 0.6875,
+              "range_f1": 0.3131278851867087
+            },
+            "deduped": {
+              "alerts_fired": 117,
+              "episodes": 117,
+              "events_detected": 15,
+              "events_missed": 2,
+              "range_precision": 0.3021469271469271,
+              "range_recall": 0.6875,
+              "range_f1": 0.366820987654321
+            },
+            "budgeted": {
+              "alerts_fired": 35,
+              "episodes": 35,
+              "events_detected": 7,
+              "events_missed": 10,
+              "range_precision": 0.2791666666666667,
+              "range_recall": 0.2916666666666667,
+              "range_f1": 0.23737373737373735
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.16111111111111112,
+            "range_precision": 0.0992063492063492,
+            "range_recall": 0.5,
+            "pr_auc": 0.4538869832550181,
+            "roc_auc": 0.5329645107497804,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 3,
+            "events_missed": 0,
+            "alerts_fired": 183,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 183,
+                "episodes": 183,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.0992063492063492,
+                "range_recall": 0.5,
+                "range_f1": 0.16111111111111112
+              },
+              "deduped": {
+                "alerts_fired": 35,
+                "episodes": 35,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.0992063492063492,
+                "range_recall": 0.5,
+                "range_f1": 0.16111111111111112
+              },
+              "budgeted": {
+                "alerts_fired": 7,
+                "episodes": 7,
+                "events_detected": 0,
+                "events_missed": 3,
+                "range_precision": 0.0,
+                "range_recall": 0.0,
+                "range_f1": 0.0
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.3578179989944696,
+            "range_precision": 0.28374505928853755,
+            "range_recall": 0.8125,
+            "pr_auc": 0.458651333396073,
+            "roc_auc": 0.6435300905933867,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 7,
+            "events_missed": 2,
+            "alerts_fired": 970,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 970,
+                "episodes": 970,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.28374505928853755,
+                "range_recall": 0.8125,
+                "range_f1": 0.3578179989944696
+              },
+              "deduped": {
+                "alerts_fired": 58,
+                "episodes": 58,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.3548534798534798,
+                "range_recall": 0.8125,
+                "range_f1": 0.42685185185185187
+              },
+              "budgeted": {
+                "alerts_fired": 24,
+                "episodes": 24,
+                "events_detected": 5,
+                "events_missed": 4,
+                "range_precision": 0.3375,
+                "range_recall": 0.625,
+                "range_f1": 0.3787878787878788
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.42045454545454547,
+            "range_precision": 0.35833333333333334,
+            "range_recall": 0.75,
+            "pr_auc": 0.7301497847866477,
+            "roc_auc": 0.8382195099911928,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 279,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 279,
+                "episodes": 279,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.35833333333333334,
+                "range_recall": 0.75,
+                "range_f1": 0.42045454545454547
+              },
+              "deduped": {
+                "alerts_fired": 24,
+                "episodes": 24,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.4523809523809524,
+                "range_recall": 0.75,
+                "range_f1": 0.5125
+              },
+              "budgeted": {
+                "alerts_fired": 4,
+                "episodes": 4,
+                "events_detected": 2,
+                "events_missed": 3,
+                "range_precision": 0.5,
+                "range_recall": 0.25,
+                "range_f1": 0.3333333333333333
+              }
+            }
+          }
+        }
+      },
+      "ocsvm+rolling_residual": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "adopted": true
+        },
+        "overall": {
+          "range_f1": 0.3017294037180677,
+          "range_precision": 0.21899972387328914,
+          "range_recall": 0.6875,
+          "pr_auc": 0.5152492946421285,
+          "roc_auc": 0.6701558907196369,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 15,
+          "events_missed": 2,
+          "alerts_fired": 1299,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 1299,
+              "episodes": 1299,
+              "events_detected": 15,
+              "events_missed": 2,
+              "range_precision": 0.21899972387328914,
+              "range_recall": 0.6875,
+              "range_f1": 0.3017294037180677
+            },
+            "deduped": {
+              "alerts_fired": 133,
+              "episodes": 133,
+              "events_detected": 15,
+              "events_missed": 2,
+              "range_precision": 0.2500090187590187,
+              "range_recall": 0.6875,
+              "range_f1": 0.3429100529100529
+            },
+            "budgeted": {
+              "alerts_fired": 35,
+              "episodes": 35,
+              "events_detected": 8,
+              "events_missed": 9,
+              "range_precision": 0.28425925925925927,
+              "range_recall": 0.3125,
+              "range_f1": 0.2468253968253968
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.21111111111111114,
+            "range_precision": 0.13392857142857142,
+            "range_recall": 0.5,
+            "pr_auc": 0.4379308177093473,
+            "roc_auc": 0.5181647565033471,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 3,
+            "events_missed": 0,
+            "alerts_fired": 106,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 106,
+                "episodes": 106,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.13392857142857142,
+                "range_recall": 0.5,
+                "range_f1": 0.21111111111111114
+              },
+              "deduped": {
+                "alerts_fired": 51,
+                "episodes": 51,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.13392857142857142,
+                "range_recall": 0.5,
+                "range_f1": 0.21111111111111114
+              },
+              "budgeted": {
+                "alerts_fired": 6,
+                "episodes": 6,
+                "events_detected": 0,
+                "events_missed": 3,
+                "range_precision": 0.0,
+                "range_recall": 0.0,
+                "range_f1": 0.0
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.23157710004309207,
+            "range_precision": 0.154022981143677,
+            "range_recall": 0.8125,
+            "pr_auc": 0.4168112004316293,
+            "roc_auc": 0.6350225403365772,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 7,
+            "events_missed": 2,
+            "alerts_fired": 971,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 971,
+                "episodes": 971,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.154022981143677,
+                "range_recall": 0.8125,
+                "range_f1": 0.23157710004309207
+              },
+              "deduped": {
+                "alerts_fired": 55,
+                "episodes": 55,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.24109848484848487,
+                "range_recall": 0.8125,
+                "range_f1": 0.34619047619047616
+              },
+              "budgeted": {
+                "alerts_fired": 25,
+                "episodes": 25,
+                "events_detected": 6,
+                "events_missed": 3,
+                "range_precision": 0.3527777777777778,
+                "range_recall": 0.6875,
+                "range_f1": 0.40714285714285714
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.4625,
+            "range_precision": 0.36904761904761907,
+            "range_recall": 0.75,
+            "pr_auc": 0.6980457382113148,
+            "roc_auc": 0.8183277807079099,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 222,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 222,
+                "episodes": 222,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.36904761904761907,
+                "range_recall": 0.75,
+                "range_f1": 0.4625
+              },
+              "deduped": {
+                "alerts_fired": 27,
+                "episodes": 27,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.375,
+                "range_recall": 0.75,
+                "range_f1": 0.4714285714285715
+              },
+              "budgeted": {
+                "alerts_fired": 4,
+                "episodes": 4,
+                "events_detected": 2,
+                "events_missed": 3,
+                "range_precision": 0.5,
+                "range_recall": 0.25,
+                "range_f1": 0.3333333333333333
+              }
+            }
+          }
+        }
+      }
+    },
+    "families": {
+      "isolation_forest": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "adopted": true
+        },
+        "overall": {
+          "range_f1": 0.3717606497750303,
+          "range_precision": 0.3101506132756133,
+          "range_recall": 0.65625,
+          "pr_auc": 0.5459476787438745,
+          "roc_auc": 0.7393346024067928,
+          "series_evaluated": 18,
+          "series_total": 24,
+          "events_detected": 28,
+          "events_missed": 6,
+          "alerts_fired": 1246,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 1246,
+              "episodes": 1246,
+              "events_detected": 28,
+              "events_missed": 6,
+              "range_precision": 0.3101506132756133,
+              "range_recall": 0.65625,
+              "range_f1": 0.3717606497750303
+            },
+            "deduped": {
+              "alerts_fired": 195,
+              "episodes": 195,
+              "events_detected": 28,
+              "events_missed": 6,
+              "range_precision": 0.4010416666666667,
+              "range_recall": 0.65625,
+              "range_f1": 0.45403679653679657
+            },
+            "budgeted": {
+              "alerts_fired": 79,
+              "episodes": 79,
+              "events_detected": 21,
+              "events_missed": 13,
+              "range_precision": 0.4359928266178266,
+              "range_recall": 0.4895833333333333,
+              "range_f1": 0.40758177008177005
+            }
+          }
+        }
+      },
+      "lof": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "overall": {
+          "range_f1": 0.08699920432545734,
+          "range_precision": 0.050994682485157095,
+          "range_recall": 0.75,
+          "pr_auc": 0.5509783214341046,
+          "roc_auc": 0.7237798817297549,
+          "series_evaluated": 18,
+          "series_total": 24,
+          "events_detected": 34,
+          "events_missed": 0,
+          "alerts_fired": 6849,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 6849,
+              "episodes": 6849,
+              "events_detected": 34,
+              "events_missed": 0,
+              "range_precision": 0.050994682485157095,
+              "range_recall": 0.75,
+              "range_f1": 0.08699920432545734
+            },
+            "deduped": {
+              "alerts_fired": 1076,
+              "episodes": 1076,
+              "events_detected": 31,
+              "events_missed": 3,
+              "range_precision": 0.06652985595050175,
+              "range_recall": 0.6875,
+              "range_f1": 0.11195902271926599
+            },
+            "budgeted": {
+              "alerts_fired": 231,
+              "episodes": 231,
+              "events_detected": 24,
+              "events_missed": 10,
+              "range_precision": 0.13928902116402117,
+              "range_recall": 0.5416666666666666,
+              "range_f1": 0.20667173766058147
+            }
+          }
+        }
+      },
+      "ocsvm": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "adopted": true
+        },
+        "overall": {
+          "range_f1": 0.3074286444523882,
+          "range_precision": 0.23304731890801458,
+          "range_recall": 0.6875,
+          "pr_auc": 0.531670683679635,
+          "roc_auc": 0.6770061627957455,
+          "series_evaluated": 18,
+          "series_total": 24,
+          "events_detected": 30,
+          "events_missed": 4,
+          "alerts_fired": 2731,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 2731,
+              "episodes": 2731,
+              "events_detected": 30,
+              "events_missed": 4,
+              "range_precision": 0.23304731890801458,
+              "range_recall": 0.6875,
+              "range_f1": 0.3074286444523882
+            },
+            "deduped": {
+              "alerts_fired": 250,
+              "episodes": 250,
+              "events_detected": 30,
+              "events_missed": 4,
+              "range_precision": 0.2760779729529729,
+              "range_recall": 0.6875,
+              "range_f1": 0.35486552028218704
+            },
+            "budgeted": {
+              "alerts_fired": 70,
+              "episodes": 70,
+              "events_detected": 15,
+              "events_missed": 19,
+              "range_precision": 0.28171296296296294,
+              "range_recall": 0.3020833333333333,
+              "range_f1": 0.24209956709956706
+            }
+          }
+        }
+      }
+    }
+  },
+  "vs_default_sweep_budgeted": {
+    "available": true,
+    "sourced_from": "nab_sweep.json",
+    "cells": {
+      "isolation_forest+rolling": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "adopted": true
+        },
+        "default_budgeted": {
+          "alerts_fired": 66,
+          "episodes": 66,
+          "events_detected": 13,
+          "events_missed": 4,
+          "range_precision": 0.34684343434343434,
+          "range_recall": 0.6041666666666666,
+          "range_f1": 0.38780193236714977
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 33,
+          "episodes": 33,
+          "events_detected": 10,
+          "events_missed": 7,
+          "range_precision": 0.46875,
+          "range_recall": 0.5,
+          "range_f1": 0.4328042328042328
+        },
+        "delta_alerts_fired": -33,
+        "delta_range_f1": 0.04500230043708303,
+        "delta_range_recall": -0.10416666666666663
+      },
+      "isolation_forest+rolling_residual": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "adopted": true
+        },
+        "default_budgeted": {
+          "alerts_fired": 80,
+          "episodes": 80,
+          "events_detected": 12,
+          "events_missed": 5,
+          "range_precision": 0.3061921738392327,
+          "range_recall": 0.5625,
+          "range_f1": 0.3153151598803773
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 46,
+          "episodes": 46,
+          "events_detected": 11,
+          "events_missed": 6,
+          "range_precision": 0.4032356532356533,
+          "range_recall": 0.4791666666666667,
+          "range_f1": 0.3823593073593073
+        },
+        "delta_alerts_fired": -34,
+        "delta_range_f1": 0.06704414747893,
+        "delta_range_recall": -0.08333333333333331
+      },
+      "lof+rolling": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "default_budgeted": {
+          "alerts_fired": 109,
+          "episodes": 109,
+          "events_detected": 12,
+          "events_missed": 5,
+          "range_precision": 0.14412037037037037,
+          "range_recall": 0.5416666666666666,
+          "range_f1": 0.21298850574712644
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 109,
+          "episodes": 109,
+          "events_detected": 12,
+          "events_missed": 5,
+          "range_precision": 0.14412037037037037,
+          "range_recall": 0.5416666666666666,
+          "range_f1": 0.21298850574712644
+        },
+        "delta_alerts_fired": 0,
+        "delta_range_f1": 0.0,
+        "delta_range_recall": 0.0
+      },
+      "lof+rolling_residual": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "default_budgeted": {
+          "alerts_fired": 122,
+          "episodes": 122,
+          "events_detected": 12,
+          "events_missed": 5,
+          "range_precision": 0.13445767195767194,
+          "range_recall": 0.5416666666666666,
+          "range_f1": 0.2003549695740365
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 122,
+          "episodes": 122,
+          "events_detected": 12,
+          "events_missed": 5,
+          "range_precision": 0.13445767195767194,
+          "range_recall": 0.5416666666666666,
+          "range_f1": 0.2003549695740365
+        },
+        "delta_alerts_fired": 0,
+        "delta_range_f1": 0.0,
+        "delta_range_recall": 0.0
+      },
+      "ocsvm+rolling": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "adopted": true
+        },
+        "default_budgeted": {
+          "alerts_fired": 87,
+          "episodes": 87,
+          "events_detected": 11,
+          "events_missed": 6,
+          "range_precision": 0.24337121212121213,
+          "range_recall": 0.5208333333333334,
+          "range_f1": 0.2806590752242926
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 35,
+          "episodes": 35,
+          "events_detected": 7,
+          "events_missed": 10,
+          "range_precision": 0.2791666666666667,
+          "range_recall": 0.2916666666666667,
+          "range_f1": 0.23737373737373735
+        },
+        "delta_alerts_fired": -52,
+        "delta_range_f1": -0.04328533785055527,
+        "delta_range_recall": -0.22916666666666669
+      },
+      "ocsvm+rolling_residual": {
+        "operating_point": {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "adopted": true
+        },
+        "default_budgeted": {
+          "alerts_fired": 91,
+          "episodes": 91,
+          "events_detected": 9,
+          "events_missed": 8,
+          "range_precision": 0.19314814814814815,
+          "range_recall": 0.4375,
+          "range_f1": 0.21420595533498757
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 35,
+          "episodes": 35,
+          "events_detected": 8,
+          "events_missed": 9,
+          "range_precision": 0.28425925925925927,
+          "range_recall": 0.3125,
+          "range_f1": 0.2468253968253968
+        },
+        "delta_alerts_fired": -56,
+        "delta_range_f1": 0.03261944149040924,
+        "delta_range_recall": -0.125
+      }
+    }
+  }
+}

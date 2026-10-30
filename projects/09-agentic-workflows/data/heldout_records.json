@@ -627,5 +627,655 @@
     "input_tokens": 8431,
     "output_tokens": 1661,
     "error": null
+  },
+  {
+    "task_id": "h11",
+    "status": "ok",
+    "answer": "Based on the station handbook, the station's base call sign is 'Atlas Base', and Channel 1 is reserved for emergencies.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 599,
+        "output_tokens": 1445,
+        "latency_s": 45.664
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4006,
+        "output_tokens": 277,
+        "latency_s": 9.57
+      },
+      {
+        "node": "critique",
+        "input_tokens": 642,
+        "output_tokens": 527,
+        "latency_s": 12.817
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='station base call sign emergency radio channel', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 684,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the handbook for the station's base call sign and the reserved emergency radio channel. \u2192 search_handbook"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 68.65,
+    "input_tokens": 5247,
+    "output_tokens": 2249,
+    "error": null
+  },
+  {
+    "task_id": "h12",
+    "status": "ok",
+    "answer": "According to the Wikipedia document corpus, **Chlorophyll a** is the main form of chlorophyll that serves as the primary photosynthetic pigment in plants. It is essential for oxygenic photosynthesis because of its role as the primary electron donor in the electron transport chain.\n\nIt absorbs most energy from wavelengths of **violet-blue and orange-red light**.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_documents",
+      "search_documents"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 615,
+        "output_tokens": 617,
+        "latency_s": 15.432
+      },
+      {
+        "node": "execute",
+        "input_tokens": 17376,
+        "output_tokens": 2017,
+        "latency_s": 62.313
+      },
+      {
+        "node": "critique",
+        "input_tokens": 772,
+        "output_tokens": 1414,
+        "latency_s": 35.381
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_documents",
+        "node": "execute",
+        "args_brief": "query='main photosynthetic pigment plants form of chlorophyll', top_k=5",
+        "latency_s": 9.322,
+        "result_chars": 3236,
+        "ok": true
+      },
+      {
+        "name": "search_documents",
+        "node": "execute",
+        "args_brief": "query='chlorophyll a absorption spectral peaks wavelengths light ranges', top_k\u2026",
+        "latency_s": 0.01,
+        "result_chars": 3234,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the Wikipedia document corpus to identify which form of chlorophyll is considered the main photosynthetic pigment in plants.",
+      "2. Search the Wikipedia document corpus for the specific light absorption ranges (spectral peaks) of this primary form of chlorophyll."
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 113.256,
+    "input_tokens": 18763,
+    "output_tokens": 4048,
+    "error": null
+  },
+  {
+    "task_id": "h13",
+    "status": "ok",
+    "answer": "According to the station's battery bank specifications, the total usable capacity is 24 kWh and the base load power consumption is 1.6 kW.\n\nUsing the formula *Energy = Power \u00d7 time*, the energy consumed by the base load over 8 hours is:\n$$1.6 \\text{ kW} \\times 8 \\text{ h} = 12.8 \\text{ kWh}$$\n\nSubtracting this consumption from the total usable capacity:\n$$24 \\text{ kWh} - 12.8 \\text{ kWh} = 11.2 \\text{ kWh}$$\n\nThere are **11.2 kWh** of usable battery capacity remaining.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 607,
+        "output_tokens": 1136,
+        "latency_s": 27.098
+      },
+      {
+        "node": "execute",
+        "input_tokens": 9989,
+        "output_tokens": 1267,
+        "latency_s": 36.905
+      },
+      {
+        "node": "critique",
+        "input_tokens": 840,
+        "output_tokens": 1196,
+        "latency_s": 32.997
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='battery bank specifications usable capacity base load power consumption'\u2026",
+        "latency_s": 0.0,
+        "result_chars": 875,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='24 - (1.6 * 8)'",
+        "latency_s": 0.0,
+        "result_chars": 4,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the handbook for the station's battery bank specifications to find the total usable capacity (kWh) and the power consumption of the base load (kW). \u2192 search_handbook",
+      "2. Calculate the energy consumed by the base load over 8 hours (base load power multiplied by 8), then subtract that amount from the usable battery capacity to determine the remaining capacity. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 97.125,
+    "input_tokens": 11436,
+    "output_tokens": 3599,
+    "error": null
+  },
+  {
+    "task_id": "h14",
+    "status": "ok",
+    "answer": "The new antenna mast, which is 400 ft tall, converts to 121.92 meters.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "unit_convert"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 599,
+        "output_tokens": 236,
+        "latency_s": 6.858
+      },
+      {
+        "node": "execute",
+        "input_tokens": 3852,
+        "output_tokens": 245,
+        "latency_s": 7.8
+      },
+      {
+        "node": "critique",
+        "input_tokens": 622,
+        "output_tokens": 333,
+        "latency_s": 9.094
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "unit_convert",
+        "node": "execute",
+        "args_brief": "value=400.0, from_unit='ft', to_unit='m'",
+        "latency_s": 0.0,
+        "result_chars": 6,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Use the unit_convert tool to convert 400 feet to meters. \u2192 unit_convert"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 23.895,
+    "input_tokens": 5073,
+    "output_tokens": 814,
+    "error": null
+  },
+  {
+    "task_id": "h15",
+    "status": "ok",
+    "answer": "The survey drone's full-endurance mission duration is 42 minutes \\[1]. Therefore, flying one mission per day results in **294 minutes** of flight time logged in one week (42 \u00d7 7).",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 607,
+        "output_tokens": 492,
+        "latency_s": 12.044
+      },
+      {
+        "node": "execute",
+        "input_tokens": 8863,
+        "output_tokens": 889,
+        "latency_s": 22.377
+      },
+      {
+        "node": "critique",
+        "input_tokens": 685,
+        "output_tokens": 279,
+        "latency_s": 7.213
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='survey drone full-endurance mission duration', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 200,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='42 * 7'",
+        "latency_s": 0.0,
+        "result_chars": 5,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the handbook for the survey drone's full-endurance mission duration. \u2192 search_handbook",
+      "2. Calculate the total flight time in minutes by multiplying the single mission duration by 7 days. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 41.741,
+    "input_tokens": 10155,
+    "output_tokens": 1660,
+    "error": null
+  },
+  {
+    "task_id": "h16",
+    "status": "ok",
+    "answer": "The maximum sample-box capacity of the sample freezer is **180 sample boxes**.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "note_store"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 604,
+        "output_tokens": 759,
+        "latency_s": 23.305
+      },
+      {
+        "node": "execute",
+        "input_tokens": 6442,
+        "output_tokens": 502,
+        "latency_s": 35.317
+      },
+      {
+        "node": "critique",
+        "input_tokens": 659,
+        "output_tokens": 827,
+        "latency_s": 36.905
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='sample freezer maximum sample-box capacity', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 511,
+        "ok": true
+      },
+      {
+        "name": "note_store",
+        "node": "execute",
+        "args_brief": "action='append', note='Sample freezer maximum sample-box capacity: 180 sample b\u2026",
+        "latency_s": 0.0,
+        "result_chars": 89,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook to find the maximum sample-box capacity of the sample freezer. \u2192 search_handbook",
+      "2. Record the maximum sample-box capacity in the ops notebook for the storage audit. \u2192 note_store"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 95.644,
+    "input_tokens": 7705,
+    "output_tokens": 2088,
+    "error": null
+  },
+  {
+    "task_id": "h17",
+    "status": "ok",
+    "answer": "The resupply invoice totals $1,850. Converting this amount to euros cannot be completed with the available tools (unit_convert only supports physical unit conversions like length, mass, volume, and temperature\u2014not currencies). This is outside the scope of the supported conversion capabilities.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: revise \u2192 re-execute",
+      "execute (attempt 1)",
+      "execute (attempt 2)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 603,
+        "output_tokens": 964,
+        "latency_s": 46.245
+      },
+      {
+        "node": "execute",
+        "input_tokens": 5723,
+        "output_tokens": 2154,
+        "latency_s": 188.03
+      },
+      {
+        "node": "critique",
+        "input_tokens": 676,
+        "output_tokens": 1756,
+        "latency_s": 348.94
+      },
+      {
+        "node": "execute",
+        "input_tokens": 1888,
+        "output_tokens": 353,
+        "latency_s": 14.775
+      },
+      {
+        "node": "critique",
+        "input_tokens": 5847,
+        "output_tokens": 4819,
+        "latency_s": 119.824
+      }
+    ],
+    "tool_calls": [],
+    "plan_steps": [
+      "1. Convert $1,850 USD to EUR using unit_convert. \u2192 unit_convert"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.85,
+    "retries": 1,
+    "critique_loops": 1,
+    "duration_s": 1430.923,
+    "input_tokens": 14737,
+    "output_tokens": 10046,
+    "error": null
+  },
+  {
+    "task_id": "h18",
+    "status": "ok",
+    "answer": "Based on multiple searches of the ops handbook using various keywords (field tablet, wifi password, network credentials, tablet, new equipment), I was unable to locate any document containing Wi-Fi password information for a new field tablet. The search returned no relevant results matching these queries.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.90)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook",
+      "search_handbook"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 597,
+        "output_tokens": 446,
+        "latency_s": 11.166
+      },
+      {
+        "node": "execute",
+        "input_tokens": 33950,
+        "output_tokens": 1353,
+        "latency_s": 36.548
+      },
+      {
+        "node": "critique",
+        "input_tokens": 3235,
+        "output_tokens": 5076,
+        "latency_s": 130.464
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='new field tablet Wi-Fi password network credentials', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='field tablet wifi password', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='field tablet', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='tablet wifi network', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='Wi-Fi password field device network credentials equipment', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='field equipment device new', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='wifi wi-fi network password access', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='network station operations equipment device credentials', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 567,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='field device setup configuration', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='tablet', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 2,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='field operations supplies items', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 378,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='new equipment device items supplies', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 178,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the ops handbook for the Wi-Fi password associated with the new field tablet using search_handbook. \u2192 search_handbook"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.85,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 178.308,
+    "input_tokens": 37782,
+    "output_tokens": 6875,
+    "error": null
+  },
+  {
+    "task_id": "h19",
+    "status": "ok",
+    "answer": "Workflow could not complete: execute failed after 2 attempts: exponent too large",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "execute (attempt 2)",
+      "workflow failed"
+    ],
+    "tools_used": [],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 594,
+        "output_tokens": 280,
+        "latency_s": 7.699
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='2**500'",
+        "latency_s": 0.0,
+        "result_chars": 0,
+        "ok": false
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='2 ** 500'",
+        "latency_s": 0.0,
+        "result_chars": 0,
+        "ok": false
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='2**500'",
+        "latency_s": 0.0,
+        "result_chars": 0,
+        "ok": false
+      }
+    ],
+    "plan_steps": [
+      "1. Compute 2^500 using the calculator. \u2192 calculator"
+    ],
+    "critique_verdict": null,
+    "confidence": 0.0,
+    "retries": 2,
+    "critique_loops": 0,
+    "duration_s": 67.131,
+    "input_tokens": 594,
+    "output_tokens": 280,
+    "error": null
   }
 ]

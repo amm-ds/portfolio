@@ -7,9 +7,18 @@ from pathlib import Path
 import joblib
 import numpy as np
 import polars as pl
+import pytest
 from mobility.config import MobilityConfig
 from mobility.features import FEATURE_COLUMNS
-from mobility.serving import build_serving_artifact, load_serving_artifact
+from mobility.gbm import _make_gbm, hpo_result
+from mobility.schemas import ServingRegistry
+from mobility.serving import (
+    build_service_bundle,
+    build_serving_artifact,
+    load_service_bundle,
+    load_serving_artifact,
+    predict_service,
+)
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 _spec = importlib.util.spec_from_file_location(
@@ -33,7 +42,7 @@ def _tiny_models() -> tuple[HistGradientBoostingRegressor, HistGradientBoostingR
 
 
 def _fixture_context(cfg: MobilityConfig) -> None:
-    """Minimal on-disk context: tiny tuned models, zones, test features."""
+    """Minimal on-disk context: tiny tuned models, zones, yellow + green frames."""
     cfg.models_dir.mkdir(parents=True, exist_ok=True)
     cfg.features_dir.mkdir(parents=True, exist_ok=True)
     cfg.curated_dir.mkdir(parents=True, exist_ok=True)
@@ -47,6 +56,7 @@ def _fixture_context(cfg: MobilityConfig) -> None:
         {"location_id": [1, 2], "borough": ["Manhattan", "Queens"], "zone": ["A", "B"]}
     ).write_parquet(cfg.zones_path)
     demand = make_zone_hour_demand()
+    demand.write_parquet(cfg.green_zone_hour_demand_path)  # per-service fit input
     demand.select(
         [
             "zone_id",
@@ -125,3 +135,88 @@ def test_serving_arm_selection_rule(cfg: MobilityConfig) -> None:
     # tie keeps the incumbent (strict improvement required)
     _hpo("xgb", 3.0)
     assert select_serving_arm(cfg)[0] == "gbm_tuned"
+
+
+def test_gbm_factory_matches_model_family(cfg: MobilityConfig) -> None:
+    """mobility.gbm is the torch-free home of the default GBM family."""
+    gbm = _make_gbm(cfg.gbm.model_dump(), seed=cfg.seed)
+    assert isinstance(gbm, HistGradientBoostingRegressor)
+    assert gbm.random_state == cfg.seed
+    p90 = _make_gbm(cfg.gbm.model_dump(), seed=cfg.seed, quantile=0.9)
+    assert p90.loss == "quantile" and p90.quantile == 0.9
+    assert not (cfg.models_dir / "hpo_gbm.json").exists()
+    assert hpo_result(cfg, "gbm") is None  # missing HPO file → None, no crash
+
+
+# ---------------------------------------------------------------------------
+# Wave 15: per-service (green) retraining bundle + typed registry/prediction
+# ---------------------------------------------------------------------------
+
+
+def test_per_service_green_bundle_roundtrip(cfg: MobilityConfig) -> None:
+    _fixture_context(cfg)
+    out = build_serving_artifact(cfg, zone_id=1)
+
+    # root yellow bundle keeps the exact wave-7 three-file contract
+    assert (out / "model.joblib").exists()
+    assert (out / "meta.json").exists()
+    assert (out / "zones.json").exists()
+
+    # green sub-bundle in the identical contract shape
+    green = out / "green"
+    assert (green / "model.joblib").exists()
+    assert (green / "meta.json").exists()
+    assert (green / "zones.json").exists()
+
+    # typed registry indexes both services
+    registry = ServingRegistry.model_validate_json((out / "services.json").read_text())
+    assert set(registry.services) == {"yellow", "green"}
+    assert registry.services["yellow"].dir == "."
+    assert registry.services["green"].dir == "green"
+    assert registry.services["green"].train_runs == ["gbm_green_served"]
+    assert registry.services["yellow"].n_features == len(FEATURE_COLUMNS)
+
+    artifact = load_service_bundle(cfg, "green")
+    bundle, meta, zones = artifact["bundle"], artifact["meta"], artifact["zones"]
+    assert bundle["feature_names"] == FEATURE_COLUMNS
+    assert bundle["target_transform"] is None
+    assert meta["train_runs"] == ["gbm_green_served"]
+    assert meta["service"] == "green"
+    assert meta["fit"]["train_rows"] > 0
+    assert set(meta["example"]["features"]) == set(FEATURE_COLUMNS)
+    assert {z["location_id"] for z in zones} == {1, 2}
+    # yellow loads through the same loader, unchanged run name
+    assert load_service_bundle(cfg, "yellow")["meta"]["train_runs"] == ["gbm_tuned"]
+
+
+def test_predict_service_typed(cfg: MobilityConfig) -> None:
+    """predict_service is the typed reference the showcase API mirrors."""
+    _fixture_context(cfg)
+    build_serving_artifact(cfg, zone_id=1)
+
+    green_example = load_service_bundle(cfg, "green")["meta"]["example"]
+    forecast = predict_service(cfg, "green", 1, green_example["features"])
+    assert forecast.service == "green"
+    assert forecast.zone_id == 1
+    assert forecast.borough == "Manhattan"  # zone 1 in the fixture
+    assert forecast.zone == "A"
+    assert np.isfinite(forecast.prediction) and forecast.prediction >= 0
+    assert forecast.p90 >= forecast.prediction  # quantile band sits above the mean
+
+    yellow_example = load_service_bundle(cfg, "yellow")["meta"]["example"]
+    yellow_fc = predict_service(cfg, "yellow", 1, yellow_example["features"])
+    assert yellow_fc.service == "yellow"
+    assert yellow_fc.prediction >= 0 and yellow_fc.p90 >= yellow_fc.prediction
+
+    with pytest.raises(ValueError, match="unknown zone_id"):
+        predict_service(cfg, "green", 999, green_example["features"])
+    with pytest.raises(ValueError, match="missing features"):
+        predict_service(cfg, "green", 1, {"lag_1": 1.0})
+    with pytest.raises(FileNotFoundError):
+        predict_service(cfg, "fhv", 1, green_example["features"])
+
+
+def test_build_service_bundle_rejects_unknown_service(cfg: MobilityConfig) -> None:
+    _fixture_context(cfg)
+    with pytest.raises(ValueError, match="no per-service fit"):
+        build_service_bundle(cfg, "fhv")

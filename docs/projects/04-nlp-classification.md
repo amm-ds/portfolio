@@ -43,6 +43,33 @@ validation macro-F1 (0.8880 → 0.8953) but the gain sat inside seed noise
 (mean 0.8910 ± 0.0042 over 3 seeds) and did not transfer to test — the
 honesty rule kept the original artifact as `distilbert_tuned`.
 
+**Controlled data-scale ladder — the bounded↔full confound is closed
+(roadmap item, delivered).** `train-nn --full-data --subset N` trains seeded,
+stratified rungs on one device with identical hypers; subset 4,000 reproduces
+the bounded rows exactly, so the 3.6k rung exists as same-rows CPU/MPS twins
+that separate the device component from the data component. Every rung is
+scored on the shared 1,000-row test split and a disjoint 1,000-row fresh
+holdout; per-rung wall-clock and device provenance live in
+`reports/scale_meta_<N>.json`; figure `scale_ladder`.
+
+| Train rows | Run | Device | Val F1 | Test macro-F1 | Fresh macro-F1 |
+|---|---|---|---|---|---|
+| 3.6k | `distilbert` (legacy bounded) | CPU | 0.8880 | 0.9021 | 0.8962 |
+| 3.6k | `distilbert_scale_4000` | MPS | 0.8849 | 0.9019 | 0.9067 |
+| 10.8k | `distilbert_scale_12000` | MPS | 0.9120 | 0.9170 | 0.9219 |
+| 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | 0.9428 |
+| 108k | `distilbert_full_120k` | MPS | 0.9464 | **0.9460** | 0.9529 |
+
+- **Device component measured, not assumed:** the same-rows twins differ by
+  0.0002 macro-F1 on the test split and 0.0105 on the fresh holdout — the
+  bounded↔full gap is **not** a device artifact.
+- **Data component measured:** at fixed device each 3× step buys +1.5 / +1.6 /
+  +1.3 pp on the test split — a monotone, decelerating curve that reproduces
+  on the fresh holdout (+1.5 / +2.1 / +1.0 pp). The legacy CPU 18k evidence
+  run (0.9270) lands between the 10.8k and 36k rungs, as its size predicts.
+- Rung wall-clock on this machine (batch 32, 2 epochs, shared-machine load):
+  84 s / 292 s / 995 s for 3.6k / 10.8k / 36k.
+
 **Serving economics** (probe-hardware numbers, not the headline — measured
 on this machine, an Apple M4 Max, CPU, torch 2.14.1, 12 threads; batch=1
 end-to-end, n=200 predictions per variant; cost at a declared $1/M-input +
@@ -96,7 +123,10 @@ in `reports/misclassification_examples.json`:
 
 Full ladder:
 `projects/04-nlp-classification/reports/metrics.json`; decision record:
-`reports/selection.json`; interactive figures in `reports/figures/`.
+`reports/selection.json`; fresh-holdout reading: `reports/fresh_holdout.json`;
+scale rungs: `reports/models/distilbert_scale_<N>.pt` +
+`reports/history_scale_<N>.json` + `reports/scale_meta_<N>.json`;
+interactive figures in `reports/figures/`.
 
 ![Business → Sci/Tech stays the dominant confusion pair at full data — a labeling-ambiguity floor, not a data-scale problem](../assets/projects/04-nlp-classification/confusion_matrix_selected.png){ width="100%" }
 

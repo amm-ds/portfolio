@@ -36,6 +36,37 @@ ENCODER_B_MODEL_PATH = "encoder_b.pt"
 FULLDATA_MODEL_PATH = "distilbert_fulldata.pt"
 
 
+# Controlled data-scale ladder artifacts (``train-nn --full-data --subset N``):
+# per-rung names so evidence runs never clobber the headline full-data artifact.
+def scaled_model_name(subset: int) -> str:
+    """State-dict file name for a ``--subset N`` ladder rung."""
+    return f"distilbert_scale_{subset}.pt"
+
+
+def scaled_history_name(subset: int) -> str:
+    """Training-history file name for a ``--subset N`` ladder rung."""
+    return f"history_scale_{subset}.json"
+
+
+def scaled_meta_name(subset: int) -> str:
+    """Provenance sidecar (device, rows, wall-clock) for a ladder rung."""
+    return f"scale_meta_{subset}.json"
+
+
+def existing_scale_rungs(cfg: NLPConfig) -> list[int]:
+    """Configured ladder subsets whose model artifact is persisted (ascending).
+
+    Lets ``evaluate``/``fresh-holdout`` include exactly the rungs that exist —
+    on machines that never ran the ladder this is empty and both commands are
+    unchanged (the same conditional pattern as the full-data artifact).
+    """
+    return [
+        n
+        for n in sorted(cfg.scale_ladder.subsets)
+        if (cfg.models_dir / scaled_model_name(n)).is_file()
+    ]
+
+
 # ---------------------------------------------------------------------------
 # (a) sklearn baseline
 # ---------------------------------------------------------------------------

@@ -329,7 +329,7 @@ class TestHeldoutSuite:
     """The held-out set (audit finding 6): unseen prompts + designed-to-fail probes."""
 
     def test_suite_shape_and_disjointness(self) -> None:
-        assert len(evals.HELDOUT_SUITE) == 10
+        assert len(evals.HELDOUT_SUITE) == 19
         ids = [task.id for task in evals.HELDOUT_SUITE]
         assert len(ids) == len(set(ids))
         assert all(task.id.startswith("h") for task in evals.HELDOUT_SUITE)
@@ -341,8 +341,8 @@ class TestHeldoutSuite:
         assert {"lookup", "calculation", "conversion", "multi_step", "note_keeping"} <= categories
         answer = [t for t in evals.HELDOUT_SUITE if t.expected_behavior == "answer"]
         refuse = [t for t in evals.HELDOUT_SUITE if t.expected_behavior == "refuse"]
-        assert len(answer) == 7
-        assert len(refuse) == 3
+        assert len(answer) == 13
+        assert len(refuse) == 6
         for task in answer:
             assert task.expected_keywords, task.id
             assert task.expected_tools, task.id
@@ -367,6 +367,68 @@ class TestHeldoutSuite:
     def test_tasks_json_round_trip(self) -> None:
         payload = evals.tasks_json(list(evals.HELDOUT_SUITE))
         assert evals.parse_tasks(payload) == list(evals.HELDOUT_SUITE)
+
+
+class TestHeldoutExpansion:
+    """The 2026-10-30 expansion wave: 6 new answer tasks (h11-h16) + 3 new
+    refusal probes (h17-h19) stay inside the same contracts as the original
+    ten — exact tool sets from the five-tool research toolset, ground-truth
+    keywords present in the corpora the prompts point at, and probes that are
+    deterministically impossible rather than merely unlikely."""
+
+    EXPANSION_IDS = tuple(f"h{n:02d}" for n in range(11, 20))
+
+    def _expansion(self) -> list[EvalTask]:
+        by_id = {t.id: t for t in evals.HELDOUT_SUITE}
+        return [by_id[task_id] for task_id in self.EXPANSION_IDS]
+
+    def test_ids_present_and_contiguous(self) -> None:
+        ids = [task.id for task in evals.HELDOUT_SUITE]
+        for task_id in self.EXPANSION_IDS:
+            assert ids.index(task_id) == ids.index("h10") + self.EXPANSION_IDS.index(task_id) + 1
+
+    def test_answer_tasks_use_only_suite_tools(self) -> None:
+        toolset_tools = {
+            "calculator",
+            "unit_convert",
+            "search_handbook",
+            "search_documents",
+            "note_store",
+        }
+        answers = [t for t in self._expansion() if t.expected_behavior == "answer"]
+        assert len(answers) == 6
+        for task in answers:
+            assert set(task.expected_tools) <= toolset_tools, task.id
+            assert task.expected_keywords, task.id
+
+    def test_expansion_spans_both_corpora_and_five_categories(self) -> None:
+        answers = [t for t in self._expansion() if t.expected_behavior == "answer"]
+        uses_docs = any("search_documents" in t.expected_tools for t in answers)
+        uses_handbook = any("search_handbook" in t.expected_tools for t in answers)
+        assert uses_docs and uses_handbook
+        categories = {t.category for t in answers}
+        assert categories == {"lookup", "calculation", "conversion", "multi_step", "note_keeping"}
+
+    def test_handbook_ground_truth_facts_present(self) -> None:
+        """The new handbook answers must be findable in the corpus the prompt points at."""
+        from agentic_workflows.tools import HANDBOOK
+
+        haystack = " ".join(f"{d.title} {' '.join(d.keywords)} {d.body}" for d in HANDBOOK).lower()
+        by_id = {t.id: t for t in evals.HELDOUT_SUITE}
+        for task_id, fact in (("h11", "atlas base"), ("h13", "1.6"), ("h15", "42"), ("h16", "180")):
+            assert fact in haystack, task_id
+        assert by_id["h11"].expected_keywords == ["Atlas Base", "channel 1"]
+
+    def test_new_probes_have_no_ground_truth_and_distinct_axes(self) -> None:
+        probes = [t for t in self._expansion() if t.expected_behavior == "refuse"]
+        assert [t.id for t in probes] == ["h17", "h18", "h19"]
+        for task in probes:
+            assert task.category == "out_of_scope", task.id
+            assert task.expected_keywords == [], task.id
+            assert task.expected_tools == [], task.id
+        prompts = " ".join(t.prompt.lower() for t in probes)
+        # one probe per refusal axis: conversion table, corpus absence, AST bound
+        assert "euro" in prompts and "wi-fi" in prompts and "2^500" in prompts
 
 
 class TestRefusalGrader:
@@ -433,9 +495,9 @@ class TestHeldoutEvaluation:
         (config.reports_dir / "metrics.json").write_text('{"agentic_suite": {}}')
 
         detail = evals.write_heldout_metrics(self._records(), list(evals.HELDOUT_SUITE), config)
-        assert detail["n_tasks"] == 10
-        assert detail["n_answer"] == 7
-        assert detail["n_should_fail"] == 3
+        assert detail["n_tasks"] == 19
+        assert detail["n_answer"] == 13
+        assert detail["n_should_fail"] == 6
         assert detail["answer_success"] == 1.0
         assert detail["tool_selection"] == 1.0
         assert detail["should_fail_pass_rate"] == 1.0
@@ -467,8 +529,9 @@ class TestHeldoutEvaluation:
             for r in records
         ]
         detail = evals.write_heldout_metrics(records, list(evals.HELDOUT_SUITE), config)
-        assert detail["should_fail_pass_rate"] == pytest.approx(2 / 3, abs=1e-3)
-        assert detail["tool_selection"] == pytest.approx(6 / 7, abs=1e-3)
+        # one fabricated probe fails of six; one wrong tool set of thirteen answers
+        assert detail["should_fail_pass_rate"] == pytest.approx(5 / 6, abs=1e-3)
+        assert detail["tool_selection"] == pytest.approx(12 / 13, abs=1e-3)
         assert detail["per_task"]["h01"]["tool_selection"] == 0.0
         assert detail["per_task"][bad_probe.task_id]["refusal_success"] == 0.0
 
@@ -484,6 +547,8 @@ class TestSuiteHonesty:
         assert unit_convert(-20, "c", "f") == -4.0
         # held-out h05: drone range 8 km in miles
         assert "4.971" in str(unit_convert(8, "km", "mi"))
+        # held-out h14 (expansion wave): antenna mast 400 ft in meters
+        assert unit_convert(400, "ft", "m") == 121.92
 
     def test_calculation_answers_match_tool_output(self) -> None:
         from agentic_workflows.tools import calculator
@@ -501,14 +566,18 @@ class TestSuiteHonesty:
         assert "133.3" in str(calculator("240/1.8"))
         assert calculator("1.8*8*30") == 432.0
         assert calculator("2*7") == 14.0 and calculator("14*250") == 3500.0
+        # held-out h13/h15 (expansion wave): base-load-only remainder, weekly
+        # drone endurance (42 min x 7 days)
+        assert calculator("24-1.6*8") == 11.2
+        assert calculator("42*7") == 294.0
 
     def test_refuse_probes_are_actually_impossible(self) -> None:
         """Each should-fail probe must raise in the tools it tempts."""
-        from agentic_workflows.tools import unit_convert
+        from agentic_workflows.tools import HANDBOOK, calculator, search_handbook, unit_convert
 
         task_by_id = {task.id: task for task in evals.HELDOUT_SUITE}
         probes = [t for t in evals.HELDOUT_SUITE if t.expected_behavior == "refuse"]
-        assert {task.id for task in probes} == {"h08", "h09", "h10"}
+        assert {task.id for task in probes} == {"h08", "h09", "h10", "h17", "h18", "h19"}
         # h08: energy -> volume is not a unit conversion
         with pytest.raises(ValueError, match="unknown unit"):
             unit_convert(24, "kwh", "l")
@@ -517,3 +586,16 @@ class TestSuiteHonesty:
             unit_convert(40, "kg", "l")
         # h09 names a tool that does not exist in the toolset
         assert "inventory" in task_by_id["h09"].prompt.lower()
+        # h17: currency has no row in the fixed conversion table
+        with pytest.raises(ValueError, match="unknown unit"):
+            unit_convert(1850, "usd", "eur")
+        # h18: no handbook document contains the requested fact at all
+        assert all(
+            "password" not in doc.body.lower() and "wi-fi" not in doc.body.lower()
+            for doc in HANDBOOK
+        )
+        hits = search_handbook("What is the Wi-Fi password")
+        assert hits == []
+        # h19: the AST-locked calculator rejects exponents beyond the bound
+        with pytest.raises(ValueError, match="exponent too large"):
+            calculator("2**500")

@@ -979,66 +979,75 @@
       }
     },
     "heldout": {
-      "n_tasks": 10,
-      "n_answer": 7,
-      "n_should_fail": 3,
+      "n_tasks": 19,
+      "n_answer": 13,
+      "n_should_fail": 6,
       "answer_success": 1.0,
       "tool_selection": 1.0,
-      "step_budget": 1.0,
-      "latency_budget": 1.0,
-      "should_fail_pass_rate": 1.0,
+      "step_budget": 0.947,
+      "latency_budget": 0.632,
+      "should_fail_pass_rate": 0.833,
       "tooling": {
-        "n_tasks": 7,
-        "n_calls": 12,
-        "n_expected_calls": 12,
+        "n_tasks": 13,
+        "n_calls": 22,
+        "n_expected_calls": 22,
         "call_precision": 1.0,
         "tool_recall": 1.0,
         "exact_set_rate": 1.0,
         "per_tool": {
           "calculator": {
-            "calls": 4,
-            "expected_calls": 4,
+            "calls": 6,
+            "expected_calls": 6,
             "extra_calls": 0,
             "tasks": [
               "h03",
               "h04",
-              "h06"
+              "h06",
+              "h13",
+              "h15"
             ]
           },
           "note_store": {
-            "calls": 1,
-            "expected_calls": 1,
+            "calls": 2,
+            "expected_calls": 2,
             "extra_calls": 0,
             "tasks": [
-              "h07"
+              "h07",
+              "h16"
             ]
           },
           "search_documents": {
-            "calls": 1,
-            "expected_calls": 1,
+            "calls": 3,
+            "expected_calls": 3,
             "extra_calls": 0,
             "tasks": [
-              "h02"
+              "h02",
+              "h12"
             ]
           },
           "search_handbook": {
-            "calls": 5,
-            "expected_calls": 5,
+            "calls": 9,
+            "expected_calls": 9,
             "extra_calls": 0,
             "tasks": [
               "h01",
               "h03",
               "h04",
               "h06",
-              "h07"
+              "h07",
+              "h11",
+              "h13",
+              "h15",
+              "h16"
             ]
           },
           "unit_convert": {
-            "calls": 1,
-            "expected_calls": 1,
+            "calls": 2,
+            "expected_calls": 2,
             "extra_calls": 0,
             "tasks": [
-              "h05"
+              "h05",
+              "h14"
             ]
           }
         },
@@ -1124,6 +1133,84 @@
             "exact_set": true
           },
           "h07": {
+            "expected": [
+              "note_store",
+              "search_handbook"
+            ],
+            "called": [
+              "note_store",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h11": {
+            "expected": [
+              "search_handbook"
+            ],
+            "called": [
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h12": {
+            "expected": [
+              "search_documents"
+            ],
+            "called": [
+              "search_documents"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h13": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h14": {
+            "expected": [
+              "unit_convert"
+            ],
+            "called": [
+              "unit_convert"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 1,
+            "exact_set": true
+          },
+          "h15": {
+            "expected": [
+              "calculator",
+              "search_handbook"
+            ],
+            "called": [
+              "calculator",
+              "search_handbook"
+            ],
+            "extra": [],
+            "missing": [],
+            "n_calls": 2,
+            "exact_set": true
+          },
+          "h16": {
             "expected": [
               "note_store",
               "search_handbook"
@@ -1439,6 +1526,360 @@
           ],
           "critique_verdict": "pass",
           "answer": "The conversion cannot be completed as specified. Converting 40 kg of ration packs to liters requires a density (mass-to-volume) factor, and the Atlas Valley ops handbook does not provide one. The handbook's only ration-pack fact is that each pack weighs 0.6 kg (cache doc); its water doc covers tank capacity and consumption budgets only, with no density or kg-to-liter conversion for rations. The unit conversion tool also cannot bridge kg to liters, as that is a cross-dimensional conversion. Without an invented density (which would be unsupported), 40 kg of ration packs cannot be expressed in liters. What can be stated from the handbook: 40 kg \u00f7 0.6 kg/pack \u2248 66.67 ration packs. To log a water volume, a density for the ration packs (or a direct liter figure) would need to be supplied.",
+          "error": null
+        },
+        "h11": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 68.65,
+          "tools_used": [
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='station base call sign emergency radio channel', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 684,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "Based on the station handbook, the station's base call sign is 'Atlas Base', and Channel 1 is reserved for emergencies.",
+          "error": null
+        },
+        "h12": {
+          "category": "lookup",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 113.256,
+          "tools_used": [
+            "search_documents",
+            "search_documents"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='main photosynthetic pigment plants form of chlorophyll', top_k=5",
+              "latency_s": 9.322,
+              "result_chars": 3236,
+              "ok": true
+            },
+            {
+              "name": "search_documents",
+              "node": "execute",
+              "args_brief": "query='chlorophyll a absorption spectral peaks wavelengths light ranges', top_k\u2026",
+              "latency_s": 0.01,
+              "result_chars": 3234,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "According to the Wikipedia document corpus, **Chlorophyll a** is the main form of chlorophyll that serves as the primary photosynthetic pigment in plants. It is essential for oxygenic photosynthesis because of its role as the primary electron donor in the electron transport chain.\n\nIt absorbs most energy from wavelengths of **violet-blue and orange-red light**.",
+          "error": null
+        },
+        "h13": {
+          "category": "calculation",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 97.125,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='battery bank specifications usable capacity base load power consumption'\u2026",
+              "latency_s": 0.0,
+              "result_chars": 875,
+              "ok": true
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='24 - (1.6 * 8)'",
+              "latency_s": 0.0,
+              "result_chars": 4,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "According to the station's battery bank specifications, the total usable capacity is 24 kWh and the base load power consumption is 1.6 kW.\n\nUsing the formula *Energy = Power \u00d7 time*, the energy consumed by the base load over 8 hours is:\n$$1.6 \\text{ kW} \\times 8 \\text{ h} = 12.8 \\text{ kWh}$$\n\nSubtracting this consumption from the total usable capacity:\n$$24 \\text{ kWh} - 12.8 \\text{ kWh} = 11.2 \\text{ kWh}$$\n\nThere are **11.2 kWh** of usable battery capacity remaining.",
+          "error": null
+        },
+        "h14": {
+          "category": "conversion",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 23.895,
+          "tools_used": [
+            "unit_convert"
+          ],
+          "tool_calls": [
+            {
+              "name": "unit_convert",
+              "node": "execute",
+              "args_brief": "value=400.0, from_unit='ft', to_unit='m'",
+              "latency_s": 0.0,
+              "result_chars": 6,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The new antenna mast, which is 400 ft tall, converts to 121.92 meters.",
+          "error": null
+        },
+        "h15": {
+          "category": "multi_step",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 41.741,
+          "tools_used": [
+            "search_handbook",
+            "calculator"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='survey drone full-endurance mission duration', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 200,
+              "ok": true
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='42 * 7'",
+              "latency_s": 0.0,
+              "result_chars": 5,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The survey drone's full-endurance mission duration is 42 minutes \\[1]. Therefore, flying one mission per day results in **294 minutes** of flight time logged in one week (42 \u00d7 7).",
+          "error": null
+        },
+        "h16": {
+          "category": "note_keeping",
+          "expected_behavior": "answer",
+          "success": 1.0,
+          "refusal_success": null,
+          "tool_selection": 1.0,
+          "duration_s": 95.644,
+          "tools_used": [
+            "search_handbook",
+            "note_store"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='sample freezer maximum sample-box capacity', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 511,
+              "ok": true
+            },
+            {
+              "name": "note_store",
+              "node": "execute",
+              "args_brief": "action='append', note='Sample freezer maximum sample-box capacity: 180 sample b\u2026",
+              "latency_s": 0.0,
+              "result_chars": 89,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "The maximum sample-box capacity of the sample freezer is **180 sample boxes**.",
+          "error": null
+        },
+        "h17": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 1430.923,
+          "tools_used": [],
+          "tool_calls": [],
+          "critique_verdict": "pass",
+          "answer": "The resupply invoice totals $1,850. Converting this amount to euros cannot be completed with the available tools (unit_convert only supports physical unit conversions like length, mass, volume, and temperature\u2014not currencies). This is outside the scope of the supported conversion capabilities.",
+          "error": null
+        },
+        "h18": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "success": null,
+          "refusal_success": 1.0,
+          "tool_selection": null,
+          "duration_s": 178.308,
+          "tools_used": [
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook",
+            "search_handbook"
+          ],
+          "tool_calls": [
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='new field tablet Wi-Fi password network credentials', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='field tablet wifi password', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='field tablet', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='tablet wifi network', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='Wi-Fi password field device network credentials equipment', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='field equipment device new', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='wifi wi-fi network password access', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='network station operations equipment device credentials', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 567,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='field device setup configuration', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='tablet', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 2,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='field operations supplies items', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 378,
+              "ok": true
+            },
+            {
+              "name": "search_handbook",
+              "node": "execute",
+              "args_brief": "query='new equipment device items supplies', top_k=5",
+              "latency_s": 0.0,
+              "result_chars": 178,
+              "ok": true
+            }
+          ],
+          "critique_verdict": "pass",
+          "answer": "Based on multiple searches of the ops handbook using various keywords (field tablet, wifi password, network credentials, tablet, new equipment), I was unable to locate any document containing Wi-Fi password information for a new field tablet. The search returned no relevant results matching these queries.",
+          "error": null
+        },
+        "h19": {
+          "category": "out_of_scope",
+          "expected_behavior": "refuse",
+          "success": null,
+          "refusal_success": 0.0,
+          "tool_selection": null,
+          "duration_s": 67.131,
+          "tools_used": [],
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2 ** 500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false
+            },
+            {
+              "name": "calculator",
+              "node": "execute",
+              "args_brief": "expr='2**500'",
+              "latency_s": 0.0,
+              "result_chars": 0,
+              "ok": false
+            }
+          ],
+          "critique_verdict": null,
+          "answer": "Workflow could not complete: execute failed after 2 attempts: exponent too large",
           "error": null
         }
       }

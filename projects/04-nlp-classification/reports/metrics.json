@@ -41,6 +41,27 @@
     "f1_macro": 0.9020969724519001,
     "f1_weighted": 0.9020969724519002
   },
+  "distilbert_scale_4000": {
+    "accuracy": 0.902,
+    "precision_macro": 0.9020443653001564,
+    "recall_macro": 0.9019999999999999,
+    "f1_macro": 0.9018641659152324,
+    "f1_weighted": 0.9018641659152324
+  },
+  "distilbert_scale_12000": {
+    "accuracy": 0.917,
+    "precision_macro": 0.9170703687615738,
+    "recall_macro": 0.9169999999999999,
+    "f1_macro": 0.917004783753359,
+    "f1_weighted": 0.917004783753359
+  },
+  "distilbert_scale_40000": {
+    "accuracy": 0.933,
+    "precision_macro": 0.9332732132443465,
+    "recall_macro": 0.9329999999999999,
+    "f1_macro": 0.9330859861076457,
+    "f1_weighted": 0.9330859861076456
+  },
   "distilbert_full_120k": {
     "accuracy": 0.946,
     "precision_macro": 0.9460586042925074,

@@ -129,8 +129,16 @@ def evaluate_sweep_series(
     config: AnomalyConfig,
     detector: str,
     feature_set: str,
+    threshold_budget: float | None = None,
+    cooldown_hours: float = COOLDOWN_HOURS,
 ) -> dict[str, Any]:
-    """One (detector, feature set, series) run: fit, score, three alert streams."""
+    """One (detector, feature set, series) run: fit, score, three alert streams.
+
+    ``threshold_budget`` overrides the fixed ``config.contamination`` budget for
+    the train-anchored threshold quantile (used by the wave-15 operating-point
+    evaluation, which adopts a train-side-validated budget); ``cooldown_hours``
+    overrides the default 24 h per-series page cap.
+    """
     from datetime import datetime
 
     feat = build_series_features(df, config.windows, feature_set=feature_set)
@@ -158,12 +166,13 @@ def evaluate_sweep_series(
     evaluable = len(test_windows) > 0
     has_positives = bool(y_test.any())
 
-    threshold = float(np.quantile(ref_scores, 1.0 - config.contamination))
+    budget = config.contamination if threshold_budget is None else threshold_budget
+    threshold = float(np.quantile(ref_scores, 1.0 - budget))
     alert_idx = np.flatnonzero(scores >= threshold)
     step_ns = float(np.median(np.diff(times.astype("datetime64[ns]"))))
 
     firings, n_runs = episode_firing_times(alert_idx, scores)
-    budgeted = cooldown_budget(firings, step_ns)
+    budgeted = cooldown_budget(firings, step_ns, cooldown_hours=cooldown_hours)
 
     streams = {
         "raw": _stream_metrics(
@@ -186,6 +195,8 @@ def evaluate_sweep_series(
         "pr_auc": float(average_precision_score(y_test, scores)) if has_positives else None,
         "roc_auc": float(roc_auc_score(y_test, scores)) if has_positives else None,
         "threshold": threshold,
+        "threshold_budget": float(budget),
+        "cooldown_hours": float(cooldown_hours),
         "streams": streams,
         # payloads the alert-budget curve would need (kept out of the JSON)
         "scores": scores,

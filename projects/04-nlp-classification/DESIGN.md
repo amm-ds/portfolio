@@ -69,18 +69,36 @@ Full run ladder:
 | random_uniform | 0.2540 | 0.2533 | seeded chance floor |
 | baseline_tfidf_logreg | 0.8720 | 0.8714 | TF-IDF 1-2g 8k + LogisticRegression |
 | encoder_b | 0.8980 | 0.8982 | roberta-base, defaults, 2 epochs (val F1 0.9106) |
-| distilbert | 0.9020 | 0.9021 | wave-2 defaults (val F1 0.8880) |
+| distilbert | 0.9020 | 0.9021 | wave-2 defaults (val F1 0.8880), CPU |
 | distilbert_tuned | 0.9020 | 0.9021 | selection winner = wave-2 artifact |
-| distilbert_fulldata_20k | 0.9270 | 0.9270 | full-data path evidence (20k subset: 18k train/2k val, 2 ep) |
+| distilbert_scale_4000 | 0.9020 | 0.9019 | controlled ladder 3.6k rung, MPS (val F1 0.8849, 84 s) |
+| distilbert_scale_12000 | 0.9170 | 0.9170 | controlled ladder 10.8k rung, MPS (val F1 0.9120, 292 s) |
+| distilbert_scale_40000 | 0.9330 | 0.9331 | controlled ladder 36k rung, MPS (val F1 0.9320, 995 s) |
+| distilbert_fulldata_20k | 0.9270 | 0.9270 | pre-ladder CPU evidence (20k subset: 18k train/2k val, 2 ep) |
 | distilbert_full_120k | 0.9460 | 0.9460 | full 120k fine-tune on Apple MPS (108k train/12k val, 2 ep) |
+
+Controlled data-scale ladder (roadmap item, delivered 2026-10-30): seeded
+`--subset N` rungs of the full split trained on one device with identical
+hypers — subset 4,000 reproduces the bounded 3.6k rows exactly (same seeded
+draw), giving same-rows CPU/MPS twins. Per-rung artifacts:
+`reports/models/distilbert_scale_<N>.pt` + `reports/history_scale_<N>.json`
++ `reports/scale_meta_<N>.json` (device, row counts, wall-clock); subset runs
+no longer clobber `distilbert_fulldata.pt`. Measured on the shared test split
+and the fresh holdout: device effect ≤0.011 macro-F1 (twins at 3.6k: 0.9021
+CPU vs 0.9019 MPS test; 0.8962 vs 0.9067 fresh — depth + fp noise, inside the
+±1.9 pp CI); data effect at fixed device +1.5/+1.6/+1.3 pp per 3× step (test)
+and +1.5/+2.1/+1.0 pp (fresh). Figure: `reports/figures/scale_ladder.*`.
 
 Full-data path: `train-nn --full-data [--device auto|mps|cpu]` — auto picks
 CUDA → Apple MPS → CPU, and on CPU (or `--force-cpu`) it warns with an honest
 wall-clock estimate (full 120k ≈ 45–50 min/epoch measured on this CPU).
-Evidence run `--subset 20000 --force-cpu`: val F1 0.9189, test macro-F1 0.9270.
+Pre-ladder evidence run `--subset 20000 --force-cpu`: val F1 0.9189, test
+macro-F1 0.9270 (today the same command writes `distilbert_scale_20000.pt`;
+superseded by the controlled ladder above).
 **Full run on MPS** (batch 32 verified by an up-front memory probe, seed 42,
 2 epochs): val macro-F1 0.9433 → 0.9464, test macro-F1 0.9460 (+4.4 pp over
-the 3.6k-row models); scaling curve 0.9021 → 0.9270 → 0.9460. MPS quirks:
+the 3.6k-row models; in the controlled ladder this increment is measured at
+fixed device — see the table above). MPS quirks:
 libomp-dependent classical deps (lightgbm) coexist with torch MPS in one
 process, MPS has no OOM recovery (batch probed with a synthetic step before
 training), and epoch wall-clock varies with shared machine load (measured:
@@ -110,19 +128,35 @@ Error analysis: dominant confusion Business → Sci/Tech (24/250); examples and
 per-class comparison in `reports/error_analysis.md` and
 `reports/figures/per_class_f1_comparison.*`.
 
-Fresh-holdout reading (2026-10-29, `cli fresh-holdout`, no retraining):
+Fresh-holdout reading (2026-10-29, `cli fresh-holdout`, no retraining;
+scale rungs scored 2026-10-30 through the same command):
 1,000-row stratified holdout drawn from the 6,600-row complement of the
 bounded test split (seeds 43/45, disjoint by construction). Macro-F1:
 TF-IDF 0.8785, wave-2 artifact 0.8962, HPO-retrained 0.9031 (**fresh winner,
 +0.0069 — the test split's +0.0010 verdict flips; both inside noise**),
 encoder_b 0.9074, full-data model 0.9529 (confirms the bounded 0.9460 on
-untouched data). Confidence-routed serving (TF-IDF max-proba router, escalate
+untouched data). Controlled-ladder rungs on the same holdout: 3.6k MPS twin
+0.9067, 10.8k 0.9219, 36k 0.9428 — the same-device data-scale slope as the
+test split. Confidence-routed serving (TF-IDF max-proba router, escalate
 below τ to the served transformer): τ=0.50 escalates 24.6% and reaches
 0.9020 macro-F1, above either constituent alone. Full table:
 `reports/fresh_holdout.json`.
 
 ## Changelog
 
+- 2026-10-30 · v0.7.0 — Controlled data-scale ladder (roadmap item closed):
+  `train-nn --full-data --subset N` now persists per-rung artifacts
+  (`distilbert_scale_<N>.pt`, `history_scale_<N>.json`, `scale_meta_<N>.json`
+  provenance sidecar) instead of overwriting `distilbert_fulldata.pt`; new
+  `scale_ladder` config block declares the rungs. Measured on MPS (seed 42,
+  identical hypers): 3.6k twin rung val F1 0.8849 / test 0.9019 / fresh
+  0.9067 (84 s), 10.8k rung 0.9120 / 0.9170 / 0.9219 (292 s), 36k rung
+  0.9320 / 0.9331 / 0.9428 (995 s). Same-rows twins at 3.6k bracket the
+  device effect (Δ 0.0002 test / 0.0105 fresh); the same-device slope is
+  +1.3–1.6 pp per 3× step on both splits. `evaluate` scores persisted rungs
+  into `metrics.json` and renders `reports/figures/scale_ladder.*`;
+  `fresh-holdout` scores them on the fresh holdout. Tests:
+  `tests/test_scale_ladder.py`.
 - 2026-10-29 · v0.6.0 — Fresh-holdout + routing roadmap experiments (no
   retraining): `stratified_subsample_indices` exposes the seeded draw so
   `fresh_holdout.py` can take the exact complement of the bounded test split

@@ -18,7 +18,7 @@
 | `documents.py` | Cross-project arm: `search_documents` loads project 01's persisted FAISS index + chunk metadata **read-only** (`rag_agent.index` workspace dependency) — dense retrieval over 3.5k Wikipedia chunks, no re-indexing |
 | `workflow.py` | pydantic-graph `Plan → Execute → Critique → End` workflow with typed state, a bounded repair path on validation failure, a one-shot critique loop-back (now auditing tools used against the plan), per-node step traces, and hosted/local model presets |
 | `hitl.py` | Human-in-the-loop checkpoint: plan, pause with a typed `ApprovalRequest`, serialize to `data/checkpoint.json`, resume via CLI (approve / reject-with-feedback) |
-| `evals.py` | 15-task tuning suite + 10-task held-out set (3 designed-to-fail refusal probes) with exact ground truths, `pydantic-evals` graders (answer success, tool selection, step budget, latency budget, refusal success), spend-ledger budget wiring, per-call tool-trace capture |
+| `evals.py` | 15-task tuning suite + 19-task held-out set (13 answer tasks across five categories + 6 designed-to-fail refusal probes) with exact ground truths, `pydantic-evals` graders (answer success, tool selection, step budget, latency budget, refusal success), spend-ledger budget wiring, per-call tool-trace capture |
 | `figures.py` / `report.py` | The four story figure builders and the report/metrics assembly (`reports/metrics.json` + `detail.tooling` + `detail.heldout`, HTML report) — split out of `evals.py` (audit P1), re-exported for import stability |
 | `cli.py` | `prepare [--heldout]` / `run` / `run-all [--heldout]` / `evaluate [--heldout]` / `checkpoint request|approve|reject` |
 
@@ -65,22 +65,48 @@ and 36.9 kWh were defensible readings of the old wording).
 
 ### Held-out set (audit finding 6)
 
-10 unseen tasks over the same corpora (`data/tasks_heldout.json`; 7 answer
-tasks across all five categories + 3 designed-to-fail probes that ask for a
-nonexistent tool or an impossible conversion — graded by `RefusalSuccess`:
-no crash, a stated refusal). Run on hosted **after** the tuning set was
-clean (`run-all --heldout` → `evaluate --heldout`):
+19 unseen tasks over the same corpora (`data/tasks_heldout.json`; 13 answer
+tasks across all five categories + 6 designed-to-fail probes that ask for a
+nonexistent capability, an impossible conversion, or an absent fact — graded
+by `RefusalSuccess`: no crash, a stated refusal). The original 10 (h01-h10)
+ran on hosted **after** the tuning set was clean; the 2026-10-30 expansion
+wave added 6 answer tasks over previously unexercised corpus facts (radio
+call sign, battery base-load-only remainder, ft→m conversion, weekly drone
+endurance, freezer box capacity, and the photosynthesis topic of 01's
+Wikipedia slice) and 3 refusal probes (currency conversion, fact absent from
+the handbook, arithmetic outside the calculator's AST bounds). The new tasks
+ran under the existing $0.25/$2.00 guards on local Ollama
+(`qwen3.6:35b-a3b-q4_K_M`; hosted credentials blanked for the run, metered
+**$0.00** by the local rate card — 27 metered calls, 111k in / 32k out
+tokens, ~35 min for 9 tasks). Records are mixed-provider by design
+(`data/heldout_records.json`): h01-h10 hosted, h11-h19 local.
 
 | split | n | result |
 |---|---|---|
-| answer tasks | 7 | answer success 7/7, exact tool set 7/7 (12 calls, all planned) |
-| should-fail probes | 3 | graceful refusal 3/3 — no crash, no fabricated number |
+| answer tasks | 13 | answer success 13/13, exact tool set 13/13 (22 calls, all planned; precision/recall/exact-set 100%) |
+| should-fail probes | 6 | graceful refusal 5/6 — h17/h18 stated grounded refusals; h19 see below |
 
-Honest caveat: n=10 (7 + 3) is a small sample — the held-out set checks for
-prompt overfitting and confabulation/failure behavior, it does not
-re-estimate the headline rates. It already earned its keep once: the first
-held-out run caught a probe confabulating a "1 kg/L basis" conversion; the
-conversion docstrings now forbid invented factors. Details in
+Measured negatives, kept honest:
+
+- **h19 (2^500):** the model kept calling the capped calculator (both
+  bounded-retry Execute visits burned on "exponent too large") and the graph
+  exited through its failure End — whose message ("Workflow could not
+  complete: …") carries no refusal marker, so `RefusalSuccess` scores it a
+  miss. A failure-message wording gap, not confabulation: no fabricated
+  number left the workflow.
+- **Latency budget is provider-sensitive:** the 60 s ceiling was tuned on
+  the hosted endpoint (all 12 hosted held-out tasks ran 9.0-40.9 s); 7/9
+  local tasks exceeded it (67.1-1,430.9 s on this machine's qwen3.6
+  generation speeds). h17's critique revise → re-execute loop on ~2.5 min
+  generations also produced the suite's only step-budget miss (10 > 8).
+  Step budget overall 18/19; the USD caps were never at risk ($0.00 local).
+
+Honest caveat: n=19 (13 + 6) is still a small sample — the held-out set
+checks for prompt overfitting and confabulation/failure behavior, it does
+not re-estimate the headline rates. It already earned its keep twice: the
+first hosted run caught a probe confabulating a "1 kg/L basis" conversion
+(conversion docstrings now forbid invented factors), and the local wave
+exposed the failure-message wording gap. Details in
 `metrics.json detail.heldout`.
 
 ### Repeat stability (2026-10-29)
@@ -118,7 +144,10 @@ estimates price local inference at $0. All hosted runs to date (8 suite
 runs incl. tuning iterations, held-out runs, and the two 2026-10-29 repeat
 passes) totaled ~$0.65 cloud-equivalent combined — each individual run sits
 under the $2.00 cap (repeat passes metered $0.10 and $0.09 on the ledger), so
-the cap was never raised.
+the cap was never raised. The 2026-10-30 held-out expansion (9 new tasks)
+ran entirely on local Ollama: $0.00 metered of the $2.00 suite cap, with the
+hosted credentials blanked for the process so no hosted quota could be
+touched.
 
 ## Reproduce
 

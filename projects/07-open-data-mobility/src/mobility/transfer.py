@@ -29,7 +29,7 @@ from portfolio_eval.ml import regression_metrics
 
 from mobility.config import MobilityConfig, get_config
 from mobility.features import FEATURE_COLUMNS, _with_features
-from mobility.model import _make_gbm
+from mobility.gbm import _make_gbm
 
 logger = get_logger(__name__)
 

@@ -55,12 +55,15 @@ Monitoring is running software, not just a runbook: the scheduled
 TLC month against the persisted serving model with training-identical
 features, no retraining (mechanics, exit codes, and response steps:
 [project README](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
-and [drift-response runbook](../runbooks/drift-response.md)). Two months are
-scored from the local snapshot — 2024-11 at **+8.2%** and 2024-12 at **+7.9%**
-relative MAE, both inside the ±15% tolerance — so the wiring, DQ gates, and
-reporting contract are verified, but no month has exceeded tolerance yet and
-true unseen-drift behavior remains unmeasured. Reports accumulate in
-`reports/drift/`.
+and [drift-response runbook](../runbooks/drift-response.md)). Three months
+scored: 2024-11 at **+8.2%** and 2024-12 at **+7.9%** relative MAE from the
+local snapshot, and the first genuinely unseen month **2025-01**, fetched
+live through the checksum machinery — MAE **4.442** vs pinned 4.676
+(**−5.0%**, within tolerance), MAPE 59.6%, ΔMAE vs naive +34.6%, p90
+coverage 87.4% (slight under-cover vs the 90% target). Unseen-window
+behavior is now measured: no month has regressed through 2025-01, so the
+alarm path remains unwalked only because no scored month exceeded tolerance.
+Reports accumulate in `reports/drift/`.
 
 ## Cross-service transfer (green taxi)
 
@@ -72,10 +75,21 @@ three** metrics (MAE 0.180 vs 0.212, RMSE 0.688 vs 1.100, MAPE 66.4% vs
 81.8%): the gap is a service-distribution difference with a measured fix, so
 budget a per-service retraining run before extending to a new vehicle class.
 
+Per-service retraining is productionized (wave 15): the green model is fit on
+all **534,240** curated green zone-hours with the measured control recipe
+(default GBM family on the service's own history + quantile-0.9 p90 twin) and
+persisted as `gbm_green_served` under `reports/models/serving/green/` in the
+identical three-file contract, indexed by a typed `services.json` registry
+(`yellow` root, `green` subdir). The showcase API forecast endpoint routes it:
+`service` is an optional request field (default `"yellow"`, response echoes
+the selected service; unknown service → 422), verified by deterministic API
+tests against the committed bundles.
+
 ## Serving
 
 The tuned GBM pair is persisted per `SERVING.md`; the showcase API forecast
-endpoint is verified live (JFK zone 132 → 223.827 point / 251.811 p90).
+endpoint is verified live (JFK zone 132 → 223.827 point / 251.811 p90), for
+both the yellow bundle and the per-service green bundle above.
 
 ## Where things live
 

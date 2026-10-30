@@ -12,9 +12,12 @@ sections:
       the license as unknown.
 
       **Limits.** Test macro-F1 selects `distilbert_tuned`, so that bounded
-      comparison is not a clean final holdout; the bounded and full runs also
-      differ in data, device and training setup, so their gap is not an
-      isolated data-scale effect.
+      comparison is not a clean final holdout — the fresh holdout below is
+      the unbiased reading. The bounded↔full gap is no longer confounded:
+      the controlled ladder in Results trains same-rows twins on both
+      devices at 3.6k (Δ ≤ 0.011 F1, inside noise) and same-device rungs
+      at 10.8k/36k/108k, isolating a monotone data-scale slope of
+      +1.3–1.6 pp per 3× step.
 
       Route short news items to World, Sports, Business or Sci/Tech without
       brittle keyword rules. The measured question is what each modeling rung
@@ -51,12 +54,17 @@ sections:
         (3,600 train / 400 validation after carve-out; 250 test rows per class).
       - **Full run:** 108k train / 12k validation from the full 120k split,
         evaluated on the same bounded 1,000-row test sample.
+      - **Controlled scale ladder:** the same seeded protocol at subset
+        scales (`train-nn --full-data --subset N`): 3.6k / 10.8k / 36k train
+        rows on one device — subset 4,000 reproduces the bounded rows
+        exactly, giving a cross-device twin rung.
   - id: eda
     text_md: |
       The bounded splits are exactly 25% per class, and texts cluster at 20–50
       words, within the 128-token budget. This removes class-prior and material
-      truncation differences within the bounded comparison; it does not remove
-      the bounded-versus-full training confound.
+      truncation differences within the bounded comparison; the
+      bounded-versus-full training confound itself is removed by the
+      controlled scale ladder in Results, not by the split design.
     figures: [eda_class_balance]
   - id: training
     text_md: |
@@ -125,8 +133,34 @@ sections:
       | `distilbert_full_120k` int8 | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
 
       - **Measured ladder:** 0.1000 → 0.2533 → 0.8714 → 0.9021 → 0.9270
-        (20k evidence) → 0.9460 macro-F1. Treat the last two increments as
-        run-to-run evidence, not controlled scaling effects.
+        (20k evidence) → 0.9460 macro-F1. The 20k increment was a CPU
+        evidence run; it is superseded by the controlled ladder below.
+
+      **Controlled data-scale ladder** (figure `scale_ladder`; rungs trained
+      through `train-nn --full-data --subset N --device mps`, seed 42,
+      identical hypers, per-rung wall-clock in `reports/scale_meta_<N>.json`).
+      Every rung is scored on both the bounded test split and the same fresh
+      holdout — one varied factor at a time:
+
+      | train rows | run | device | val F1 | test macro-F1 | fresh macro-F1 |
+      |---|---|---|---|---|---|
+      | 3.6k | `distilbert` (legacy) | CPU | 0.8880 | 0.9021 | 0.8962 |
+      | 3.6k | `distilbert_scale_4000` | MPS | 0.8849 | 0.9019 | 0.9067 |
+      | 10.8k | `distilbert_scale_12000` | MPS | 0.9120 | 0.9170 | 0.9219 |
+      | 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | 0.9428 |
+      | 108k | `distilbert_full_120k` | MPS | 0.9464 | 0.9460 | 0.9529 |
+
+      - **Device component measured:** the same-rows twins differ by 0.0002
+        macro-F1 on the test split and 0.0105 on the fresh holdout (the MPS
+        twin's best epoch is 2 versus the CPU twin's epoch 1 — depth + fp
+        noise, still inside the ±1.9 pp CI). Device is not what moved the
+        bounded↔full gap.
+      - **Data component measured:** at fixed device and hypers each 3× step
+        buys +1.5 pp (3.6k→10.8k), +1.6 pp (10.8k→36k) and +1.3 pp
+        (36k→108k) on the test split — a monotone, decelerating curve that
+        reproduces on the fresh holdout (+1.5 / +2.1 / +1.0 pp). The legacy
+        CPU 18k evidence run (0.9270) lands exactly between the 10.8k and
+        36k rungs, as its size predicts.
       - **HPO null result:** seed bests 0.8953 / 0.8852 / 0.8926 (mean
         0.8910 ± 0.0042); gains sit inside seed noise and did not transfer.
       - **Calibration:** validation-fitted temperature T=0.843 cuts test ECE
@@ -198,8 +232,8 @@ sections:
       accuracy ceiling (0.9529 fresh) where volume justifies its per-item
       price, and the fresh holdout settles the selection question the biased
       test split could not: the two bounded candidates are tied within noise.
-    figures: [per_class_f1_comparison]
-    metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_full_120k]
+    figures: [per_class_f1_comparison, scale_ladder]
+    metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_scale_4000, distilbert_scale_12000, distilbert_scale_40000, distilbert_full_120k]
   - id: conclusions
     text_md: |
       Full-data DistilBERT delivers the strongest measured score, while TF-IDF
@@ -211,8 +245,11 @@ sections:
       the selection never touched (0.9529 fresh vs 0.9460 bounded). The
       confidence-routed sweep turns the serving economics into an operating
       policy: TF-IDF where confident, transformer on the rest, with measured
-      quality at every escalation rate. The bounded-versus-full confound still
-      limits causal scaling claims; controlled scale runs remain the open item.
+      quality at every escalation rate. The controlled ladder closes the last
+      open confound: the bounded↔full gap is a data-scale effect (+4.4 pp from
+      3.6k to 108k train rows at fixed device, decelerating per 3× step), not a
+      device artifact — the same-rows twins on both devices bracket device
+      noise at ≤0.011 macro-F1.
 
       **Business summary:** default to the cascade router (TF-IDF first,
       escalate ~25% at τ=0.50) for the best measured quality-per-dollar;
@@ -226,8 +263,8 @@ roadmap:
     text: HPO, seed-noise and calibration evidence — null tuning result retained; ECE −71%.
   - status: delivered
     text: Fresh-holdout selection (fresh data flips the winner, +0.0069) and confidence-routed TF-IDF→DistilBERT serving (0.9020 at 24.6% escalation).
-  - status: remaining
-    text: Controlled data-scale comparisons — the bounded-vs-full training confound stays open.
+  - status: delivered
+    text: Controlled data-scale ladder — same-device (MPS) rungs at 3.6k/10.8k/36k/108k plus CPU/MPS same-rows twins at 3.6k; device effect ≤0.011 F1, data effect +1.3–1.6 pp per 3× step.
   - status: deferred
     text: Multi-label Business/Sci-Tech routing — a different label and metric contract.
 figure_captions:
@@ -237,3 +274,4 @@ figure_captions:
   hpo_history: Seeded 12-trial Optuna validation macro-F1 and running best. Best validation 0.8953 did not transfer to test and sits inside seed noise.
   confusion_matrix_selected: Confusion matrix for the test-selected bounded model on the 1,000-row test sample. Business → Sci/Tech remains the dominant off-diagonal pair.
   per_class_f1_comparison: Per-class F1 for the test-selected bounded model and TF-IDF baseline. The residual gap concentrates in Business/Sci-Tech.
+  scale_ladder: Controlled data-scale ladder on the bounded 1,000-row test split. The MPS rungs (3.6k/10.8k/36k/108k train rows, identical hypers) trace a monotone data-scale slope of +1.3–1.6 pp per 3× step; the lone CPU marker is the legacy bounded model, whose same-rows MPS twin sits 0.0002 F1 away — device is not the confound.

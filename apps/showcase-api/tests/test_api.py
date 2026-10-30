@@ -391,6 +391,95 @@ def test_forecast_503_without_artifacts(tmp_path: Path, monkeypatch) -> None:  #
     assert r.status_code == 503
 
 
+# --- Project 07: per-service forecast (wave 15 green bundle) -------------------
+# These hit the committed serving bundle (a deployable artifact per the repo
+# .gitignore policy), so the example rows and expected outputs are fixed.
+
+
+_MOBILITY_FORECAST_URL = "/projects/07-open-data-mobility/forecast"
+
+
+def _mobility_example(service_dir: Path) -> dict:
+    """The bundle's own committed example row — a fixed input with a fixed output."""
+    meta = json.loads((service_dir / "meta.json").read_text())
+    return {"zone_id": meta["example"]["zone_id"], "features": meta["example"]["features"]}
+
+
+def _mobility_expected(service_dir: Path, body: dict) -> tuple[float, float]:
+    """Recompute prediction/p90 straight from the bundle, independently of the
+    endpoint — the test encodes the serving math like 02's _SumRegressor does,
+    so it guards the wiring (routing, feature order, transform) rather than the
+    model quality, and survives bundle rebuilds."""
+    import joblib
+
+    bundle = joblib.load(service_dir / "model.joblib")
+    meta = json.loads((service_dir / "meta.json").read_text())
+    feature_names = list(meta.get("feature_names") or bundle.get("feature_names") or [])
+    row = np.array([[float(body["features"][f]) for f in feature_names]])
+    pred = float(bundle["gbm"].predict(row)[0])
+    p90 = float(bundle["p90"].predict(row)[0])
+    if bundle.get("target_transform") == "log1p":
+        pred = float(np.expm1(pred))
+        p90 = float(np.expm1(p90))
+    return round(max(0.0, pred), 3), round(max(0.0, p90), 3)
+
+
+def test_mobility_forecast_defaults_to_yellow_service() -> None:
+    """No service field: the response is exactly the yellow forecast plus the
+    new echo key — pre-wave-15 clients only see an additive field."""
+    from showcase_api import main
+
+    body = _mobility_example(main._SERVING_DIR)
+    r = client.post(_MOBILITY_FORECAST_URL, json=body)
+    assert r.status_code == 200
+    expected_pred, expected_p90 = _mobility_expected(main._SERVING_DIR, body)
+    assert r.json() == {
+        "zone_id": body["zone_id"],
+        "borough": "Queens",
+        "zone": "JFK Airport",
+        "prediction": expected_pred,
+        "p90": expected_p90,
+        "service": "yellow",
+    }
+
+
+def test_mobility_forecast_green_service_matches_committed_bundle() -> None:
+    """service="green" routes to the committed green bundle: the response must
+    equal a direct prediction from that bundle's own model + example row, and
+    differ from yellow on the same body (proving routing, not just the echo)."""
+    from showcase_api import main
+
+    green_dir = main._SERVING_DIR / "green"
+    green_meta = json.loads((green_dir / "meta.json").read_text())
+    assert green_meta["service"] == "green"  # the committed green metadata
+    assert green_meta["train_runs"] == ["gbm_green_served"]
+    body = _mobility_example(green_dir)
+    r = client.post(_MOBILITY_FORECAST_URL, json={**body, "service": "green"})
+    assert r.status_code == 200
+    payload = r.json()
+    assert payload["service"] == "green"
+    expected_pred, expected_p90 = _mobility_expected(green_dir, body)
+    assert payload["prediction"] == expected_pred
+    assert payload["p90"] == expected_p90
+    yellow_pred, _ = _mobility_expected(main._SERVING_DIR, body)
+    assert expected_pred != yellow_pred
+
+
+def test_mobility_forecast_unknown_service_is_422() -> None:
+    r = client.post(
+        _MOBILITY_FORECAST_URL,
+        json={"zone_id": 132, "features": {"lag_1": 1.0}, "service": "uber"},
+    )
+    assert r.status_code == 422
+
+
+def test_health_ready_still_true_with_green_bundle() -> None:
+    """Wiring green into the endpoint must not flip readiness: every bundle and
+    demo payload the live endpoints need is committed."""
+    body = client.get("/health").json()
+    assert body["ready"] is True
+
+
 # --- Project 02: served demand forecast --------------------------------------
 
 

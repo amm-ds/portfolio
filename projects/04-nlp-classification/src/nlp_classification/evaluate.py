@@ -7,11 +7,13 @@ baseline, the wave-2 DistilBERT artifact, a second encoder (``encoder_b``),
 and ``distilbert_tuned`` — the winner of an honest selection between the
 HPO-retrained model and the wave-2 artifact (see ``reports/selection.json``).
 When the full-data artifact exists, the 120k fine-tune
-(``distilbert_full_120k``) is scored alongside them.
+(``distilbert_full_120k``) is scored alongside them, and when controlled
+scale-ladder artifacts exist (``train-nn --full-data --subset N``), each
+persisted rung (``distilbert_scale_<N>``) is scored too.
 
 Figures (EDA, HPO panels, confusion matrix and per-class comparison of the
-selected model, training curve) are written as HTML for the report and JSON
-for the showcase API.
+selected model, training curve, and the controlled data-scale ladder when its
+rungs exist) are written as HTML for the report and JSON for the showcase API.
 """
 
 import json
@@ -40,12 +42,15 @@ from nlp_classification.model import (
     TUNED_MODEL_PATH,
     TrainingHistory,
     build_nn_model,
+    existing_scale_rungs,
     load_baseline,
     load_nn_state_dict,
     predict_baseline,
     predict_majority,
     predict_nn,
     predict_random_uniform,
+    scaled_meta_name,
+    scaled_model_name,
 )
 from nlp_classification.shims import Dataset
 
@@ -202,6 +207,62 @@ def training_curve_figure(history: TrainingHistory) -> go.Figure:
     return apply_theme(fig)
 
 
+# Documented training-path property of the legacy full-data rung (DESIGN.md):
+# the full 120k split less the 10% stratified carve-out, trained on Apple MPS.
+FULLDATA_TRAIN_ROWS = 108_000
+
+
+def scale_ladder_figure(rows: list[dict[str, Any]]) -> go.Figure:
+    """Controlled data-scale ladder: test macro-F1 vs training rows, by device.
+
+    Each entry of ``rows`` is one rung: run label, ``train_rows``, ``device``
+    and ``f1_macro`` on the bounded test split. Rungs sharing a device were
+    trained with identical hypers, so their slope isolates the data-scale
+    effect; the lone CPU rung is the legacy bounded model, twin to the 3.6k
+    rung of the accelerator series.
+    """
+    fig = go.Figure()
+    for device in sorted({str(r["device"]) for r in rows}):
+        pts = sorted((r for r in rows if r["device"] == device), key=lambda r: int(r["train_rows"]))
+        fig.add_scatter(
+            x=[int(p["train_rows"]) for p in pts],
+            y=[float(p["f1_macro"]) for p in pts],
+            mode="lines+markers" if len(pts) > 1 else "markers",
+            name=device,
+            text=[str(p["run"]) for p in pts],
+        )
+    f1s = [float(r["f1_macro"]) for r in rows]
+    fig.update_layout(
+        title="Data-scale ladder — test macro-F1 vs train rows",
+        xaxis_title="training rows (log scale)",
+        yaxis_title="macro-F1 (bounded test split)",
+        xaxis_type="log",
+        yaxis_range=[max(0.0, min(f1s) - 0.01), min(1.0, max(f1s) + 0.01)],
+    )
+    cpu = next((r for r in rows if r["device"] == "cpu"), None)
+    twin = next(
+        (
+            r
+            for r in rows
+            if cpu is not None
+            and r["device"] != "cpu"
+            and int(r["train_rows"]) == int(cpu["train_rows"])
+        ),
+        None,
+    )
+    if cpu is not None and twin is not None:
+        gap = abs(float(twin["f1_macro"]) - float(cpu["f1_macro"]))
+        note = (
+            f"same-rows twins on both devices at {int(cpu['train_rows']):,} rows "
+            f"bracket the device effect (Δ {gap:.4f} F1); the {twin['device']} slope "
+            "is the controlled data-scale effect"
+        )
+    else:
+        note = "rungs sharing a device differ in data size only"
+    add_takeaway(fig, note)
+    return apply_theme(fig)
+
+
 def error_analysis(
     y_true: list[int],
     y_pred: list[int],
@@ -275,6 +336,14 @@ def _load_label_names(data_dir: Path) -> list[str]:
     return cast(list[str], json.loads((data_dir / "label_names.json").read_text()))
 
 
+def _read_scale_meta(cfg: NLPConfig, subset: int) -> dict[str, Any] | None:
+    """Provenance sidecar written by ``train-nn --full-data --subset N``."""
+    path = Path(cfg.reports_dir) / scaled_meta_name(subset)
+    if not path.exists():
+        return None
+    return cast(dict[str, Any], json.loads(path.read_text()))
+
+
 def _predict_with(
     cfg: NLPConfig, model_name: str, state_path: Path, test_ds: Dataset, n_labels: int
 ) -> list[int]:
@@ -292,8 +361,10 @@ def _predict_with(
 
 
 def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
-    """Score all six runs on the bounded test split and build the report.
+    """Score all runs on the bounded test split and build the report.
 
+    The six core runs are always scored; the full-data model and any
+    persisted controlled-scale rungs are scored when their artifacts exist.
     Returns the metrics dict exactly as written to ``reports/metrics.json``.
     """
     train_ds = Dataset.load_from_disk(str(cfg.train_dir))
@@ -330,12 +401,56 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
     run_tuned, selection = select_tuned_run(y_true, y_pred_hpo, y_pred_wave2, cfg.selection_path)
     runs = [run_majority, run_random, run_base, run_wave2, run_encoder_b, run_tuned]
 
+    # controlled data-scale ladder rungs (``train-nn --full-data --subset N``):
+    # the full-split protocol at bounded scales, scored on this same test split.
+    # Device/row annotations come from each rung's provenance sidecar; rungs
+    # without one are still scored into metrics.json, only the figure point
+    # is skipped (the metrics are never fabricated from defaults).
+    ladder_rows: list[dict[str, Any]] = [
+        {
+            "run": "distilbert (bounded CPU rung)",
+            "train_rows": len(train_ds),
+            "device": "cpu",
+            "f1_macro": f1_macro_of(run_wave2),
+        }
+    ]
+    for n in existing_scale_rungs(cfg):
+        y_pred_scale = _predict_with(
+            cfg, cfg.model_name, cfg.models_dir / scaled_model_name(n), test_ds, len(labels)
+        )
+        run_scale = run_result(f"distilbert_scale_{n}", y_true, y_pred_scale)
+        runs.append(run_scale)
+        scale_meta = _read_scale_meta(cfg, n)
+        if scale_meta is not None and "train_rows" in scale_meta and "device" in scale_meta:
+            ladder_rows.append(
+                {
+                    "run": run_scale.name,
+                    "train_rows": int(scale_meta["train_rows"]),
+                    "device": str(scale_meta["device"]),
+                    "f1_macro": f1_macro_of(run_scale),
+                }
+            )
+        else:
+            logger.warning(
+                "scale rung %d has no provenance sidecar — metrics kept, figure point skipped",
+                n,
+            )
+
     # full-data run (only when the --full-data artifact exists; the artifact is
     # the current full-data model — the 120k fine-tune by default)
     fulldata_path = cfg.models_dir / FULLDATA_MODEL_PATH
     if fulldata_path.exists():
         y_pred_full = _predict_with(cfg, cfg.model_name, fulldata_path, test_ds, len(labels))
-        runs.append(run_result("distilbert_full_120k", y_true, y_pred_full))
+        run_full = run_result("distilbert_full_120k", y_true, y_pred_full)
+        runs.append(run_full)
+        ladder_rows.append(
+            {
+                "run": run_full.name,
+                "train_rows": FULLDATA_TRAIN_ROWS,
+                "device": "mps",  # documented training path (DESIGN.md)
+                "f1_macro": f1_macro_of(run_full),
+            }
+        )
 
     # the selected model drives the diagnostic figures and the calibration note
     y_pred_selected = y_pred_hpo if selection["winner"] == "hpo_retrained" else y_pred_wave2
@@ -369,6 +484,8 @@ def evaluate(cfg: NLPConfig) -> dict[str, dict[str, float]]:
         if study is not None:
             figures["hpo_history"] = hpo_history_figure(study)
             figures["hpo_importance"] = hpo_importance_figure(study)
+    if len(ladder_rows) > 1:  # the lone CPU row alone is not a ladder
+        figures["scale_ladder"] = scale_ladder_figure(ladder_rows)
 
     analysis = error_analysis(y_true, y_pred_selected, texts, labels)
     (Path(cfg.reports_dir) / "error_analysis.md").write_text(error_analysis_markdown(analysis))

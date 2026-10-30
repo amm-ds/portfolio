@@ -1,9 +1,12 @@
 project_id: 09-agentic-workflows
 figure_captions:
   suite_summary: >-
-    Deterministic grades by split: 15/15 tuning tasks on each of four graders,
-    7/7 held-out answers with exact tool sets, and 3/3 graceful refusals. The
-    small held-out split is a check, not a generalization guarantee.
+    Deterministic grades by split: 15/15 tuning tasks on each of four graders;
+    held-out answers 13/13 on answers and exact tool sets; should-fail probes
+    5/6 graceful refusals. Held-out records mix the hosted run (h01-h10) with
+    the local-Ollama expansion wave (h11-h19, metered $0) — the step/latency
+    misses sit on local tasks, whose generations exceed the hosted-tuned 60 s
+    budget. The held-out split is a check, not a generalization guarantee.
   node_waterfall: >-
     Node visits per task, stacked by latency, against the 60 s budget. Median
     latency is 18.2 s and p95 is 31.1 s; retries appear as separate labelled
@@ -20,18 +23,19 @@ sections:
   - id: background
     text_md: |
       **A hosted Plan→Execute→Critique workflow passed 15/15 tuning tasks on
-      all deterministic graders, plus 7/7 held-out answers and 3/3 refusal
-      probes, at median 18.2 s and ~$0.13 cloud-equivalent per tuning suite;
-      this bounded evaluation supports a supervised pilot, not production
-      readiness or a generalization guarantee.**
+      all deterministic graders, and the held-out set (expanded to 19 tasks on
+      2026-10-30) passes 13/13 answers with exact tool sets and 5/6 refusal
+      probes, at ~$0.13 cloud-equivalent per tuning suite; this bounded
+      evaluation supports a supervised pilot, not production readiness or a
+      generalization guarantee.**
 
       Data: a synthetic 12-document Atlas Valley handbook plus read-only
       retrieval over project 01's 3,589-chunk, five-topic Wikipedia slice
       (CC BY-SA).
 
       Limits: evaluation covers fixed research-ops tasks over two corpora with
-      capped retries and budgets; the held-out sample is only n=10 (including
-      3 refusal probes), so broader autonomy and unseen-domain performance
+      capped retries and budgets; the held-out sample is only n=19 (including
+      6 refusal probes), so broader autonomy and unseen-domain performance
       remain untested.
 
       This project replaces a free-form agent loop with a typed
@@ -142,9 +146,12 @@ sections:
       - `data/run_records.json` supports reproducible offline grading.
       - The ledger resets per suite and enforces task and suite caps through
         live budget limits.
-      - Ten held-out tasks (7 answers + 3 should-fail probes) check prompt
-        overfitting and refusal behavior; `RefusalSuccess` requires a stated
-        refusal without a crash or fabricated number.
+      - Nineteen held-out tasks (13 answers + 6 should-fail probes) check
+        prompt overfitting and refusal behavior; `RefusalSuccess` requires a
+        stated refusal without a crash or fabricated number. The records are
+        mixed-provider: h01-h10 ran on hosted `kimi-for-coding`, the h11-h19
+        expansion wave on local Ollama `qwen3.6:35b-a3b-q4_K_M` — the
+        expansion doubles as the first cross-model evidence.
       - Offline tooling decomposes expected, extra, and missing calls.
       - Offline tests cover graph behavior, checkpoints, tools, documents,
         budgets, capture, and graders.
@@ -175,13 +182,45 @@ sections:
 
       | held-out split | n | result |
       |---|---|---|
-      | answer tasks | 7 | answer success 7/7; exact tool set 7/7; 12 planned calls |
-      | should-fail probes | 3 | graceful refusal 3/3 |
+      | answer tasks | 13 | answer success 13/13; exact tool set 13/13; 22 planned calls, zero unplanned |
+      | should-fail probes | 6 | graceful refusal 5/6 |
 
       The first held-out run caught h10 inventing a 1 kg/L conversion basis;
       tightening conversion docstrings produced a stated refusal. This is a
-      useful negative finding, but n=10 remains too small for a generalization
-      claim.
+      useful negative finding, but n=19 remains too small for a
+      generalization claim.
+
+      **Held-out expansion (2026-10-30, roadmap item):** the set grew from 10
+      to 19 tasks — 6 new answer tasks (h11-h16) over previously unexercised
+      corpus facts (radio call sign and emergency channel, battery base-load
+      remainder, ft→m conversion, weekly drone endurance, freezer box
+      capacity, and the photosynthesis topic of 01's Wikipedia slice) plus 3
+      new refusal probes (h17 currency conversion, h18 fact absent from the
+      handbook, h19 arithmetic outside the calculator's AST bounds). The new
+      tasks ran under the existing $0.25/$2.00 guards on the local Ollama
+      provider (`qwen3.6:35b-a3b-q4_K_M`; hosted credentials blanked for the
+      run, metered **$0.00** by the local rate card — 27 metered calls,
+      111,492 in / 31,659 out tokens, ~35 min wall for 9 tasks).
+
+      - New answers 6/6 with 6/6 exact tool sets; across all 13 held-out
+        answers the tooling decomposition stays at 100% call precision, 100%
+        tool recall, and zero unplanned invocations.
+      - New probes 2/3: h17 and h18 stated grounded refusals (the conversion
+        table has no currencies; the handbook has no Wi-Fi password after 12
+        keyword searches). h19 kept calling the capped calculator (`2**500`
+        raises "exponent too large"), burned both bounded-retry Execute
+        visits, and exited through the graph's failure End — whose message
+        ("Workflow could not complete: …") carries no refusal marker, so
+        `RefusalSuccess` scores it a miss. That is a failure-message wording
+        gap, not confabulation: no fabricated number left the workflow.
+      - Latency is provider-sensitive: the 60 s budget was tuned on the
+        hosted endpoint (all 12 hosted held-out tasks ran 9.0-40.9 s), but
+        7/9 local tasks exceeded it (67.1-1,430.9 s; qwen3.6 generates slowly
+        on this machine and h17's critique revise → re-execute loop on
+        ~2.5 min generations also pushed its step count to 10 > 8, the
+        suite's single step-budget miss). Local runs are $0 but not
+        budget-comparable on wall time; per-task and suite USD caps were
+        never at risk.
 
       The recorded t15 trace shows the intended chain over project 01's real
       corpus: two `search_documents` lookups followed by
@@ -225,11 +264,17 @@ sections:
       can hide.
 
       **Results quality: promising within the evaluated envelope.** All 15
-      tuning tasks and 10 small held-out checks passed, and two repeat hosted
-      passes confirmed answer and tool-set stability while showing latency and
+      tuning tasks passed on the record run, and two repeat hosted passes
+      confirmed answer and tool-set stability while showing latency and
       step-count variation (one step-budget miss in each pass, scored by the
-      deterministic grader). Retrieval fuzziness, new domains, broader refusal
-      coverage, and pilot-time failure rates remain unresolved. Human
+      deterministic grader). The held-out set now at 19 checks passes 13/13
+      answers with exact tool sets and 5/6 refusals: hosted h01-h10 fully
+      clean; local h11-h19 clean on answers and tool discipline, with one
+      probe miss (the graph's failure-End message carries no refusal marker —
+      a wording gap, not confabulation) and 7/9 latency misses against the
+      hosted-tuned 60 s budget, which is a provider-speed difference, not an
+      answer-quality signal. Retrieval fuzziness, new domains, broader
+      refusal coverage, and pilot-time failure rates remain unresolved. Human
       checkpoints and enforced budgets are pilot controls, not production or
       generalization guarantees.
 
@@ -241,9 +286,9 @@ sections:
 roadmap:
   - status: delivered
     text: "Repeat hosted stability evidence — two full tuning-suite passes on kimi-for-coding kept 15/15 answers and exact tool sets with zero unplanned calls; one step-budget excursion caught by graders (Results)."
-  - status: remaining
-    text: Expand held-out tasks and refusal probes across more corpora and models.
-  - status: remaining
-    text: Run a supervised pilot with reviewer outcomes and failure monitoring before unattended use — needs a review team and production tasks.
+  - status: delivered
+    text: "Held-out suite grew 10 → 19 (2026-10-30): +6 answer tasks over unexercised handbook/Wikipedia facts and +3 refusal probes (currency, absent fact, AST bound); local Ollama qwen3.6, metered $0.00: 6/6 answers, 6/6 tool sets, 2/3 refusals; 7/9 local tasks break the hosted-tuned 60 s budget (Results)."
+  - status: deferred
+    text: Supervised pilot with reviewer outcomes and failure monitoring before unattended use — needs an external review team and production tasks; the pilot decision stays re-verifiable per re-run at ~$0.10–0.15 cloud-equivalent (Results).
   - status: deferred
     text: Open-ended autonomy remains out of scope until coverage and approval controls are validated.

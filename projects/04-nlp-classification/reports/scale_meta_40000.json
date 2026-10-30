@@ -1,0 +1,17 @@
+{
+  "generated_by": "train-nn --full-data --subset 40000 --device mps",
+  "subset": 40000,
+  "train_rows": 36000,
+  "val_rows": 4000,
+  "device": "mps",
+  "batch_size": 32,
+  "epochs_requested": 2,
+  "learning_rate": 2e-05,
+  "weight_decay": 0.01,
+  "warmup_ratio": 0.1,
+  "early_stop_patience": 1,
+  "seed": 42,
+  "wall_clock_s": 994.6,
+  "model": "reports/models/distilbert_scale_40000.pt",
+  "history": "reports/history_scale_40000.json"
+}

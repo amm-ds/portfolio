@@ -1,0 +1,42 @@
+{
+  "feature_names": [
+    "lag_1",
+    "lag_2",
+    "lag_24",
+    "lag_168",
+    "hour",
+    "day_of_week",
+    "month",
+    "prcp_mm",
+    "tmax_c",
+    "tmin_c",
+    "snow_mm"
+  ],
+  "n_features": 11,
+  "built_at": "2026-10-30T07:15:02.440061+00:00",
+  "train_runs": [
+    "gbm_green_served"
+  ],
+  "example": {
+    "zone_id": 132,
+    "features": {
+      "lag_1": 0.0,
+      "lag_2": 0.0,
+      "lag_24": 0.0,
+      "lag_168": 0.0,
+      "hour": 11.5,
+      "day_of_week": 4.0,
+      "month": 2.0,
+      "prcp_mm": 0.0,
+      "tmax_c": 8.9,
+      "tmin_c": 2.2,
+      "snow_mm": 0.0
+    }
+  },
+  "service": "green",
+  "fit": {
+    "recipe": "default GBM family per-service (gbm_mean config) + quantile-0.9 p90",
+    "train_rows": 534240,
+    "evidence": "wave-14 control gbm_green_retrained (green Jan-Feb -> March)"
+  }
+}

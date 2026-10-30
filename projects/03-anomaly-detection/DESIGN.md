@@ -90,6 +90,26 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.7.0 (2026-10-30): wave-15 operating-point tuning (`nab-tune`, artifact
+  `reports/nab_tune.json`, figure `nab_tune_surface`): the (threshold budget,
+  per-series cooldown) operating point is selected per detector family on
+  train-side validation only — inner 80/20 split of each series' train window
+  (fit on 80%, validate on the last 20%, mirroring the HPO slice), budgeted
+  alert stream scored on the 6 labelled windows overlapping the validation
+  slices (5 of 12 series), mean over 12 series × 2 feature sets; budgets
+  0.5–8% × cooldowns 6–72 h, conservative adoption (argmax ties → fewer pages
+  → default → simpler point; ≥0.05 validation range-F1 margin over the
+  documented (2%, 24 h) default). One test pass per family through the
+  unmodified sweep machinery (`evaluate_sweep_series` gained optional
+  `threshold_budget`/`cooldown_hours` overrides; sweep numbers unchanged,
+  regenerated bit-identically). Measured verdict: IsolationForest adopts
+  (0.5%, 24 h) and transfers (budgeted 66 → 33 / 80 → 46 pages, range-F1
+  0.388 → 0.433 / 0.315 → 0.382); LOF keeps the default (flat surface, best
+  gain +0.042); OCSVM's marginal adoption (0.5%, 72 h, +0.056) fails to
+  transfer on test (−0.043/+0.033 F1) — published as the measured limit of
+  6-window validation evidence. New tests pin the split bounds, the
+  test-row exclusion, grid monotonicity, the adoption/tie-break rules, and
+  the offline stage.
 - 0.6.0 (2026-10-29): wave-14 roadmap sweep (`nab-sweep`, artifact
   `reports/nab_sweep.json`): 12 series × 3 detectors (isolation_forest / lof /
   ocsvm, untuned) × 2 feature sets (rolling vs rolling+residual), all under

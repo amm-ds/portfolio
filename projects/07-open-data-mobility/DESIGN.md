@@ -131,6 +131,44 @@ flowchart LR
 
 ## Changelog
 
+- 2026-10-30 (wave 15, API slice) — roadmap closure: the showcase API
+  `POST /projects/07-open-data-mobility/forecast` endpoint now accepts an
+  optional `service=yellow|green` request field (default yellow, echoed in
+  the response), routing through the committed `services.json` registry with
+  a dir-escape guard and a bundle-meta service cross-check; unknown service
+  → 422. apps/showcase-api tests pin default-yellow parity with the
+  pre-field response, green routing against the committed green bundle
+  (differs from yellow on the same body), and unchanged readiness. No
+  project-07 code or measured metric changed — the last `remaining` roadmap
+  item is delivered.
+- 2026-10-30 (wave 15) — roadmap closure. (1) Drift observatory scored the
+  first genuinely unseen month: `drift-check --month 2025-01` fetched
+  `yellow_tripdata_2025-01.parquet` live through the checksum machinery
+  (no pin for drift months; the 59 MB file is cached under `data/drift/raw`
+  for idempotent re-runs), passed the light DQ gates (3,330,979 cleaned
+  rows), and scored MAE 4.442 vs pinned 4.676 (**−5.0%**, in-window; MAPE
+  59.6%, ΔMAE vs naive +34.6%, p90 coverage 87.4% — slight under-cover).
+  Three months are now in `reports/drift` and `dvc.lock`. (2) Per-service
+  retraining productionized: `build-serving-artifact` now also fits the
+  green bundle (`gbm_green_served`: default `gbm_mean` family + quantile-0.9
+  p90 twin on all 534,240 curated green zone-hours — the measured wave-14
+  control recipe over all available green history) and persists it under
+  `serving/green/` in the identical three-file contract, plus a typed
+  `services.json` registry (`mobility.schemas.ServingRegistry`) and
+  `predict_service` (typed reference; unknown zone/missing features →
+  `ValueError`, mirroring the API's 422s). The showcase API read the yellow
+  root bundle unchanged; the endpoint `service` field landed the same day
+  (see the wave-15 API-slice entry above). (3) `mobility/gbm.py` extracted (torch-free) as the home of
+  `_make_gbm`/`hpo_result` so `serving`/`drift` stay torch-free — the
+  wave-11 process boundary extended. Note: `reports/models/serving` is a
+  git-committed deployable (`.gitignore` exception), so the `serving` DVC
+  stage cannot be `dvc repro`'d ("already tracked by SCM"); build it via the
+  CLI and commit the files, and refresh `dvc.lock` with
+  `dvc repro --single-item drift_check` (a full `dvc repro` walks upstream
+  and re-runs `tune` after deleting its outs — minutes, and it wiped
+  `hpo_gbm.json`/`hpo_nn.json` when interrupted mid-run on 2026-10-30;
+  they were restored from the DVC cache and the drift evidence regenerated
+  deterministically).
 - 2026-10-29 (wave 14) — transfer study gained the per-service retraining
   control (`gbm_green_retrained`: default GBM family fit on green Jan–Feb,
   337k zone-hours): beats green persistence on all metrics on green March
@@ -186,11 +224,36 @@ queued experiments answer it without touching the committed pipeline state.
 - Challenger arms (xgboost/lightgbm) run in a **torch-free subprocess**
   (`mobility train-arms`, module `mobility.arms`): xgboost/lightgbm's OpenMP
   runtime cannot coexist with torch's in one process on macOS — whichever
-  loads second segfaults the first at fit time. `model.py`/`tune.py` therefore
-  never import xgboost/lightgbm; `train-arms` runs
+  loads second segfaults the first at fit time (also at **joblib unpickle**
+  time: loading an lgbm-fitted estimator in a torch-importing process crashes
+  the same way — observed on 2026-10-30 when a missing `hpo_gbm.json` let
+  the serving arm selection fall through to `gbm_lgbm_tuned`). `model.py`/
+  `tune.py` therefore never import xgboost/lightgbm; `train-arms` runs
   `python -c "from mobility.arms import fit_arms; fit_arms()"`.
 - Serving decision rule: a challenger replaces `gbm_tuned` only on a strictly
   better **validation** MAE (never test). Wave-11 outcome: both challengers
   lost on validation (xgb 3.182 vs 3.165; lgbm 3.173 vs 3.165) → the served
   artifact stays `gbm_tuned`, even though both beat it on the Q4 test window
   (xgb −4.1% MAE) — switching on test results would be test-set selection.
+
+## Wave 15 notes
+
+- Per-service serving extension: the contract is **directory-based** — a
+  service bundle is the same three files under `serving/<service>/`, so the
+  showcase API's directory-parameterized loader needed no change to read it;
+  the endpoint-level `service` field (apps/showcase-api) now routes it
+  (optional, default yellow, echoed in the response; unknown service → 422).
+  `mobility.serving` gained `fit_service_gbms` / `build_service_bundle` /
+  `load_service_bundle` / `predict_service`, and `build_serving_artifact`
+  writes the yellow root bundle + green bundle + `services.json` registry in
+  one command. The green fit deliberately avoids importing
+  `mobility.transfer` (which pulls torch via `mobility.model`): the green
+  feature frame is built from `_with_features` directly, and the GBM factory
+  moved to `mobility/gbm.py`.
+- Drift evidence hygiene: `reports/drift` is a DVC out of the manual
+  `drift_check` stage; refresh it with `dvc repro --single-item drift_check`
+  (or `dvc commit drift_check -f` after CLI runs). A bare `dvc repro
+  drift_check` walks upstream stages and re-runs `tune` (deleting its outs
+  first) — expensive and, interrupted, it left `hpo_gbm.json`/`hpo_nn.json`
+  deleted on 2026-10-30 (restored from the DVC cache; drift reports
+  regenerated deterministically, byte-level metrics identical).

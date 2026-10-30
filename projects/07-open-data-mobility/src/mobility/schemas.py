@@ -101,3 +101,40 @@ class DemandRow(PortfolioBaseModel):
     tmin_c: float | None = Field(default=None, ge=-60.0, le=60.0)
     snow_mm: float | None = Field(default=None, ge=0.0)
     target: int = Field(ge=0)
+
+
+class ServiceEntry(PortfolioBaseModel):
+    """One per-service bundle in the serving registry (``services.json``).
+
+    ``dir`` is the bundle directory relative to ``reports/models/serving/``
+    (``"."`` = the root yellow bundle). Every listed bundle obeys the same
+    three-file contract as the root (SERVING.md), so the showcase API loader
+    can serve any entry from its directory unchanged.
+    """
+
+    dir: str = Field(min_length=1)
+    train_runs: list[str] = Field(min_length=1)
+    n_features: int = Field(gt=0)
+    built_at: str = Field(min_length=1)
+
+
+class ServingRegistry(PortfolioBaseModel):
+    """Typed index of the per-service bundles under ``reports/models/serving/``."""
+
+    services: dict[str, ServiceEntry] = Field(min_length=1)
+
+
+class ServiceForecast(PortfolioBaseModel):
+    """Typed response of :func:`mobility.serving.predict_service`.
+
+    Field-for-field the showcase API's forecast response plus the service
+    name; the mobility-side function is the reference implementation the API
+    mirrors (apps/showcase-api serves the yellow bundle at the root path).
+    """
+
+    service: str = Field(min_length=1)
+    zone_id: int = Field(ge=1)
+    borough: str = Field(min_length=1)
+    zone: str = Field(min_length=1)
+    prediction: float = Field(ge=0.0)
+    p90: float = Field(ge=0.0)
