@@ -30,7 +30,8 @@ pydantic output models.
 
 The deterministic mock mode is **removed from production paths** (test-only via
 `portfolio_core.llm.mock_model_for_tests`), and the default provider chain is:
-env-configured OpenAI-compatible endpoint → **local Ollama** (default `qwen3:32b`).
+env-configured OpenAI-compatible endpoint → **local Ollama** (default model
+per ADR-0006: `qwen3.6:35b-a3b-q4_K_M`, `OLLAMA_MODEL` overrides).
 See ADR-0006.
 
 ## Consequences

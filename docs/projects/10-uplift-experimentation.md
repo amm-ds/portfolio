@@ -10,7 +10,7 @@
 > T-learner targeting beats random by **+$2,812 (+69%)** at equal budget,
 > with the profit ranking established by paired-bootstrap CIs.
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/10-uplift-experimentation)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/10-uplift-experimentation)
 
 ## What it shows
 

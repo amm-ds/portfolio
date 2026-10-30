@@ -8,21 +8,22 @@ working showcase on the standard platform
 > evidence, not a demo.
 > Headline: a 15-task deterministic suite grades a hosted multi-step
 > workflow at 15/15 on every grader — answers, exact tool-set, step budget,
-> latency — for ~$0.01 cloud-equivalent per task, and a 10-task held-out
+> latency — for $0.13 cloud-equivalent per suite (~$0.0088/task mean) of the
+> $2.00 cap, and a 10-task held-out
 > set (3 designed-to-fail probes) verifies the behavior generalizes beyond
 > the tuning prompts.
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows)
 
-Single-shot agents are the demo; workflows are the product. A one-shot
-answer can impress in a demo, but real work is a chain of dependent steps —
-a mistake in the middle corrupts everything after it, which is why
-unsupervised runs need grading, budgets, and checkpoints. This project is
-the platform's dedicated agentic-AI-workflows showcase: multi-step, stateful
-LLM workflows as explicit typed graphs — planning, tool orchestration,
-bounded retries, self-critique, and human-in-the-loop checkpoints — graded by
-a deterministic evaluation harness with per-run cost and latency budgets,
-plus a cross-project retrieval arm on real data.
+Single-shot answers are not the deliverable this project grades: real work
+is a chain of dependent steps — a mistake in the middle corrupts everything
+after it, which is why unsupervised runs need grading, budgets, and
+checkpoints. This project is the platform's dedicated agentic-AI-workflows
+showcase: multi-step, stateful LLM workflows as explicit typed graphs —
+planning, tool orchestration, bounded retries, self-critique, and
+human-in-the-loop checkpoints — graded by a deterministic evaluation harness
+with per-run cost and latency budgets, plus a cross-project retrieval arm on
+real data.
 
 ## Key results (full 15-task hosted run, `kimi-for-coding`)
 
@@ -125,6 +126,24 @@ the real-data multi-hop lookup over 01's Wikipedia index; 31.1 s, 7,709 in /
 | 5 | Execute | draft answer, self-confidence 0.99 | — |
 | 6 | Critique | audit of tools used vs plan; verdict pass | 4.1 s |
 | 7 | Approval gate | HITL checkpoint — 'Convert 48 km to miles' paused at `awaiting_approval`; the committed state records a reject-with-feedback → re-plan cycle | human decision point, state on disk |
+
+## Repeat stability (2026-10-29)
+
+Two further hosted passes of the full 15-task suite on `kimi-for-coding`
+(`run-all` → `evaluate`, same $0.25/$2.00 caps) kept answer success at 15/15
+and exact tool sets at 15/15 with zero unplanned calls. Suite
+cloud-equivalent estimates were $0.148 and $0.144 against $0.131 for the
+record run (metered ledger view $0.10 and $0.09 of the $2.00 cap); median
+latency moved from 18.2 s to 24.1 s and 20.8 s (p95 41.0 s / 41.5 s), inside
+the 60 s budget in every task. Each pass scored one step-budget miss (t03,
+then t10) when Critique requested a revision and added an Execute visit —
+caught by the deterministic step grader. Captured calls rose from 30 to
+33–35 (repeated same-tool lookups, exact sets unchanged), and one repeat
+exercised the repair path: the AST-locked calculator rejected a
+non-arithmetic `floor()` expression and the bounded retry recovered. Within
+the evaluated envelope the workflow is repeatable; the held-out sample stays
+n=10, so this remains evidence for a supervised pilot, not a
+generalization guarantee.
 
 ## Architecture
 

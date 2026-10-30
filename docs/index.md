@@ -24,7 +24,9 @@ baseline, an honest delta, and the code to verify it.
 - An agentic-workflow suite where **15/15 tuning tasks pass every grader**
   (answers, exact tool set, step + latency budgets) on a hosted model, with a
   sealed held-out set adding **7/7 answers and 3/3 should-fail refusals** —
-  for $0.086 of a metered $2.00 budget cap.
+  for **$0.13 cloud-equivalent** of the metered $2.00 suite cap
+  (~$0.0088/task), with two repeat hosted passes confirming 15/15 answers and
+  exact tool sets.
 
 ## Talk to me
 
