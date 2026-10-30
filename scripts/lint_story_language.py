@@ -300,32 +300,41 @@ def parse_story(raw: str) -> ParsedStory:
         m = _TEXT_MD_RE.match(line)
         if not m or current_id is None:
             continue
-        indent = len(m.group(1))
-        value = m.group(2)
-        bm = _BLOCK_SCALAR_RE.match(value)
-        if not bm:
-            sections[current_id] = _unquote(value)
-            continue
-        style, _chomp = bm.groups()
-        block: list[str] = []
-        content_indent: int | None = None
-        while i < len(lines):
-            nxt = lines[i]
-            if not nxt.strip():
-                block.append("")
-                i += 1
-                continue
-            stripped = len(nxt) - len(nxt.lstrip())
-            if stripped <= indent:
-                break
-            if content_indent is None:
-                content_indent = stripped
-            block.append(nxt[content_indent:])
-            i += 1
-        while block and block[-1] == "":
-            block.pop()
-        sections[current_id] = "\n".join(block) if style == "|" else _fold_lines(block)
+        i = _parse_text_md(m, lines, i, sections, current_id)
     return ParsedStory(section_ids, sections, figures)
+
+
+def _parse_text_md(
+    m: re.Match[str], lines: list[str], i: int, sections: dict[str, str], current_id: str
+) -> int:
+    """Consume a ``text_md:`` value (plain, block `|`, or folded `>`) into
+    ``sections[current_id]``; returns the next line index."""
+    indent = len(m.group(1))
+    value = m.group(2)
+    bm = _BLOCK_SCALAR_RE.match(value)
+    if not bm:
+        sections[current_id] = _unquote(value)
+        return i
+    style, _chomp = bm.groups()
+    block: list[str] = []
+    content_indent: int | None = None
+    while i < len(lines):
+        nxt = lines[i]
+        if not nxt.strip():
+            block.append("")
+            i += 1
+            continue
+        stripped = len(nxt) - len(nxt.lstrip())
+        if stripped <= indent:
+            break
+        if content_indent is None:
+            content_indent = stripped
+        block.append(nxt[content_indent:])
+        i += 1
+    while block and block[-1] == "":
+        block.pop()
+    sections[current_id] = "\n".join(block) if style == "|" else _fold_lines(block)
+    return i
 
 
 def _parse_figures_value(
