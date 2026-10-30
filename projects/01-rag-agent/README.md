@@ -308,9 +308,10 @@ uv run pytest projects/01-rag-agent -q
   separate rubric/RAGAS judges with bootstrap CIs, a sealed 15-question
   held-out regression gate ($0.25 cloud-equivalent per re-run), and per-phase
   cost/latency metering under a hard USD cap.
-- **Remaining:** improve grounding and repair quality, then re-measure on
-  noisier corpora — the current local A/B gains mainly through abstention,
-  and repair quality at local-model scale is weak.
+- **Deferred:** grounding and repair improvement, then re-measurement on
+  noisier corpora — blocked on a fresh external corpus (the data registry
+  holds only this Wikipedia slice); the current local A/B gains mainly come
+  through abstention, and repair quality at local-model scale is weak.
 - **Deferred:** no broad-corpus quality claim and no always-on public chat —
   held-out retrieval drops to 0.600, and live hosted calls need an explicit
   cost budget (`RAG_CHAT_ENABLED=1` stays opt-in).

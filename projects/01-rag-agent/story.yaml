@@ -185,8 +185,8 @@ sections:
 roadmap:
 - status: delivered
   text: "Reproducible retrieval, provider seam, verify-on answers, separate rubric/RAGAS judges, sealed evaluation, and metered cost/latency."
-- status: remaining
-  text: "Improve grounding and repair quality, then re-measure on noisier corpora; current local A/B mainly gains through abstention."
+- status: deferred
+  text: "Grounding and repair improvement, then re-measurement on noisier corpora — blocked on a fresh external corpus (the data registry holds only this Wikipedia slice); the current local A/B gains mainly come through abstention."
 - status: deferred
   text: "No broad-corpus quality claim or always-on public chat: held-out retrieval drops and live hosted calls need an explicit cost budget."
 figure_captions:

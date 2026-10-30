@@ -186,7 +186,8 @@ uv run pytest projects/05-ml-pipeline-churn -q
   bootstrap CI excluding zero; the production FN=5 variant reproduces the
   committed baseline bit-for-bit (`matches_baseline` in
   `reports/sensitivity.json`).
-- **Remaining:** freeze the threshold before scoring and validate cost and
-  served-policy fairness on fresh data.
-- **Deferred:** drift and seasonality analysis until a time-stamped source is
-  available; wider boosting searches only with a defined compute budget.
+- **Deferred:** frozen-threshold validation of cost and served-policy
+  fairness on fresh data, plus drift and seasonality analysis — the IBM
+  snapshot has no time axis, so a new time-stamped feed from the data owner
+  is the prerequisite; wider boosting searches only with a defined compute
+  budget.

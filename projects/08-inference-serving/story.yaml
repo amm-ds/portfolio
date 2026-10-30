@@ -21,10 +21,10 @@ figure_captions:
 roadmap:
   - status: delivered
     text: "Full-grid raw record committed — data/bench_run.json (760 requests, 2026-10-15) alongside the aggregates; the published percentiles re-aggregate offline via report."
-  - status: remaining
-    text: Repeat the grid on a quiet, dedicated machine and across additional machines and Ollama builds — the 2026-10-30 same-machine attempt was invalidated by co-tenant load (Results).
-  - status: remaining
-    text: Add measured wall power and hardware amortization to the electricity-only cost view.
+  - status: deferred
+    text: Repeat the grid on a quiet, dedicated machine and across additional machines and Ollama builds — needs dedicated hardware access (the 2026-10-30 same-machine attempt was invalidated by co-tenant load, Results).
+  - status: deferred
+    text: Measured wall power and hardware amortization in the cost view — needs a wall-power meter on the target machine; the committed view is electricity-only at declared assumptions.
   - status: deferred
     text: Isolate engine effects with quantization-matched artifacts when suitable builds exist.
 sections:
