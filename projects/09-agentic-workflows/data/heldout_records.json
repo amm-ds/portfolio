@@ -1,0 +1,631 @@
+[
+  {
+    "task_id": "h01",
+    "status": "ok",
+    "answer": "The survey drone has a maximum payload of 2.5 kg and a flight time of up to 42 minutes per charge.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.98)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 450,
+        "output_tokens": 101,
+        "latency_s": 3.197
+      },
+      {
+        "node": "execute",
+        "input_tokens": 2881,
+        "output_tokens": 219,
+        "latency_s": 5.94
+      },
+      {
+        "node": "critique",
+        "input_tokens": 501,
+        "output_tokens": 75,
+        "latency_s": 2.356
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='survey drone specifications maximum payload flight time per charge', top\u2026",
+        "latency_s": 0.0,
+        "result_chars": 391,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Look up the survey drone's specifications (maximum payload and flight time per charge) in the handbook. \u2192 search_handbook"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.98,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 13.817,
+    "input_tokens": 3832,
+    "output_tokens": 395,
+    "error": null
+  },
+  {
+    "task_id": "h02",
+    "status": "ok",
+    "answer": "According to the Wikipedia document corpus (article \"Dilution (neural networks)\"), the technique of randomly removing connections between neurons in a neural network was first introduced with the name \"dropout\" by Geoffrey Hinton, et al. in 2012.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.97)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_documents"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 464,
+        "output_tokens": 116,
+        "latency_s": 2.333
+      },
+      {
+        "node": "execute",
+        "input_tokens": 3504,
+        "output_tokens": 311,
+        "latency_s": 36.281
+      },
+      {
+        "node": "critique",
+        "input_tokens": 565,
+        "output_tokens": 89,
+        "latency_s": 2.214
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_documents",
+        "node": "execute",
+        "args_brief": "query=\"who introduced the name 'dropout' for randomly removing connections in a\u2026",
+        "latency_s": 30.394,
+        "result_chars": 3062,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the Wikipedia document corpus for information about who introduced the name 'dropout' for randomly removing connections in a neural network and in what year. \u2192 search_documents"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.97,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 40.881,
+    "input_tokens": 4533,
+    "output_tokens": 516,
+    "error": null
+  },
+  {
+    "task_id": "h03",
+    "status": "ok",
+    "answer": "The generator can run for approximately 133.3 hours on a full 240 L tank at full load. This is based on the handbook's stated full-load fuel consumption of 1.8 L/h (gen-fuel doc): 240 L \u00f7 1.8 L/h = 133.33 h. For context, the station's fuel reserve policy requires a minimum of 72 h of full-load runtime, so a full tank provides roughly 61 hours of margin above that minimum.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.97)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 453,
+        "output_tokens": 171,
+        "latency_s": 3.195
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4712,
+        "output_tokens": 420,
+        "latency_s": 11.083
+      },
+      {
+        "node": "critique",
+        "input_tokens": 635,
+        "output_tokens": 121,
+        "latency_s": 2.712
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='generator fuel consumption rate at full load L/hr', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 558,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='240 / 1.8'",
+        "latency_s": 0.0,
+        "result_chars": 10,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the generator's fuel consumption rate at full load (L/hr or similar) \u2192 search_handbook",
+      "2. Compute runtime: 240 L divided by the full-load consumption rate to get hours \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.97,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 17.032,
+    "input_tokens": 5800,
+    "output_tokens": 712,
+    "error": null
+  },
+  {
+    "task_id": "h04",
+    "status": "ok",
+    "answer": "The station's prime diesel generator burns 1.8 L/h under full load. Running 8 hours per day for 30 days: 1.8 L/h \u00d7 8 h/day \u00d7 30 days = 432 liters of diesel burned in the month.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.98)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 462,
+        "output_tokens": 178,
+        "latency_s": 4.498
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4661,
+        "output_tokens": 306,
+        "latency_s": 8.979
+      },
+      {
+        "node": "critique",
+        "input_tokens": 570,
+        "output_tokens": 77,
+        "latency_s": 1.915
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='generator diesel fuel consumption rate liters per hour', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 537,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='1.8 * 8 * 30'",
+        "latency_s": 0.0,
+        "result_chars": 5,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the generator's diesel fuel consumption rate (liters per hour). \u2192 search_handbook",
+      "2. Compute total liters burned: consumption rate \u00d7 8 hours/day \u00d7 30 days. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.98,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 15.433,
+    "input_tokens": 5693,
+    "output_tokens": 561,
+    "error": null
+  },
+  {
+    "task_id": "h05",
+    "status": "ok",
+    "answer": "The drone's rated range of 8 km is approximately 4.97 miles (about 5 miles).",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "unit_convert"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 451,
+        "output_tokens": 94,
+        "latency_s": 2.595
+      },
+      {
+        "node": "execute",
+        "input_tokens": 2782,
+        "output_tokens": 192,
+        "latency_s": 4.167
+      },
+      {
+        "node": "critique",
+        "input_tokens": 461,
+        "output_tokens": 69,
+        "latency_s": 2.208
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "unit_convert",
+        "node": "execute",
+        "args_brief": "value=8.0, from_unit='km', to_unit='mi'",
+        "latency_s": 0.0,
+        "result_chars": 5,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Convert 8 kilometers to miles using the unit conversion tool. \u2192 unit_convert"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 8.996,
+    "input_tokens": 3694,
+    "output_tokens": 355,
+    "error": null
+  },
+  {
+    "task_id": "h06",
+    "status": "ok",
+    "answer": "Satellite uplink windows open twice per day \u2014 at 06:10\u201306:40 UTC and 18:20\u201318:50 UTC \u2014 so 2 \u00d7 7 = 14 windows open per week. Each window can transfer at most 250 MB, giving a total weekly transfer capacity of 14 \u00d7 250 = 3,500 MB.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.98)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 456,
+        "output_tokens": 169,
+        "latency_s": 4.785
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4793,
+        "output_tokens": 474,
+        "latency_s": 10.799
+      },
+      {
+        "node": "critique",
+        "input_tokens": 638,
+        "output_tokens": 112,
+        "latency_s": 3.165
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='satellite uplink window how often windows open transfer capacity per win\u2026",
+        "latency_s": 0.0,
+        "result_chars": 469,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='2 * 7'",
+        "latency_s": 0.0,
+        "result_chars": 4,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='2 * 7 * 250'",
+        "latency_s": 0.0,
+        "result_chars": 6,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the handbook for satellite uplink window details: how often windows open and the transfer capacity per window. \u2192 search_handbook",
+      "2. Compute total weekly transfer capacity by multiplying windows per week by capacity per window. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.98,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 18.81,
+    "input_tokens": 5887,
+    "output_tokens": 755,
+    "error": null
+  },
+  {
+    "task_id": "h07",
+    "status": "ok",
+    "answer": "The weather station must be calibrated every 45 days, with an accepted temperature drift tolerance of +/-0.4 \u00b0C between calibrations. This interval has been recorded in the ops notebook. In short: calibration is required once every 45 days.",
+    "steps_taken": [
+      "plan (3 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.98)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "note_store"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 455,
+        "output_tokens": 224,
+        "latency_s": 5.207
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4668,
+        "output_tokens": 427,
+        "latency_s": 7.972
+      },
+      {
+        "node": "critique",
+        "input_tokens": 592,
+        "output_tokens": 132,
+        "latency_s": 2.599
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='weather station calibration interval', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 367,
+        "ok": true
+      },
+      {
+        "name": "note_store",
+        "node": "execute",
+        "args_brief": "action='append', note='Weather station calibration interval: every 45 days (acc\u2026",
+        "latency_s": 0.0,
+        "result_chars": 126,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Look up the weather station's calibration interval in the operations handbook. \u2192 search_handbook",
+      "2. Record the calibration interval in the ops notebook via note_store. \u2192 note_store",
+      "3. State how often calibration is required based on the recorded interval."
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.98,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 15.851,
+    "input_tokens": 5715,
+    "output_tokens": 783,
+    "error": null
+  },
+  {
+    "task_id": "h08",
+    "status": "ok",
+    "answer": "The conversion of 24 kWh of battery capacity into liters of water cannot be completed. Step 1 of the plan was executed: the station handbook was searched (twice, with different queries) for an energy-to-water equivalence factor (kWh per liter). The handbook corpus contains only three relevant documents \u2014 battery (24 kWh usable capacity, 1.6 kW base load, 0.9 kW HVAC surge), water (5,000 L main tank, 1,200 L bladder, 85 L/person/day for 6 crew), and solar-spec (320 Wp panels, 3.2 kWh/day each, 12 panels, 96% inverter efficiency). None of these documents states any kWh-per-liter equivalence factor. Additionally, converting energy (kWh) to volume (liters) is a cross-dimensional conversion that the unit conversion tool explicitly cannot perform. Without a documented equivalence factor, any numeric answer would be invented, so the task must be reported as not feasible with the available tools and data.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.97)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "search_handbook"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 461,
+        "output_tokens": 198,
+        "latency_s": 5.621
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4954,
+        "output_tokens": 823,
+        "latency_s": 20.231
+      },
+      {
+        "node": "critique",
+        "input_tokens": 918,
+        "output_tokens": 164,
+        "latency_s": 4.711
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='energy-to-water equivalence factor kWh per liter battery water tanks', t\u2026",
+        "latency_s": 0.0,
+        "result_chars": 520,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='kWh per liter conversion equivalence energy water', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 520,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the energy-to-water equivalence factor (kWh per liter) needed to compare the battery bank with water tanks. \u2192 search_handbook",
+      "2. Convert 24 kWh to liters using the retrieved factor. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.92,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 30.722,
+    "input_tokens": 6333,
+    "output_tokens": 1185,
+    "error": null
+  },
+  {
+    "task_id": "h09",
+    "status": "ok",
+    "answer": "I cannot report the current diesel stock in the generator tank because no real-time station inventory tool exists in the current toolset. The available tools cover handbook/document search, arithmetic, unit conversion, and note-taking \u2014 none can query live inventory data.\n\nAlternatives I can offer:\n1. Calculate an estimate from user-provided data (tank capacity, last known level, consumption rate, refills) using the calculator.\n2. Log the request as a note in the ops notebook for follow-up (only if explicitly requested).\n\nAwaiting user clarification on how to proceed.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.98)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 459,
+        "output_tokens": 359,
+        "latency_s": 6.016
+      },
+      {
+        "node": "execute",
+        "input_tokens": 1390,
+        "output_tokens": 516,
+        "latency_s": 12.611
+      },
+      {
+        "node": "critique",
+        "input_tokens": 652,
+        "output_tokens": 120,
+        "latency_s": 2.829
+      }
+    ],
+    "tool_calls": [],
+    "plan_steps": [
+      "1. Clarify that no real-time station inventory tool exists in the current toolset",
+      "2. Offer alternatives: calculate from user-provided data or log a note"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.98,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 21.627,
+    "input_tokens": 2501,
+    "output_tokens": 995,
+    "error": null
+  },
+  {
+    "task_id": "h10",
+    "status": "ok",
+    "answer": "The conversion cannot be completed as specified. Converting 40 kg of ration packs to liters requires a density (mass-to-volume) factor, and the Atlas Valley ops handbook does not provide one. The handbook's only ration-pack fact is that each pack weighs 0.6 kg (cache doc); its water doc covers tank capacity and consumption budgets only, with no density or kg-to-liter conversion for rations. The unit conversion tool also cannot bridge kg to liters, as that is a cross-dimensional conversion. Without an invented density (which would be unsupported), 40 kg of ration packs cannot be expressed in liters. What can be stated from the handbook: 40 kg \u00f7 0.6 kg/pack \u2248 66.67 ration packs. To log a water volume, a density for the ration packs (or a direct liter figure) would need to be supplied.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.95)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 449,
+        "output_tokens": 584,
+        "latency_s": 8.632
+      },
+      {
+        "node": "execute",
+        "input_tokens": 7197,
+        "output_tokens": 821,
+        "latency_s": 21.613
+      },
+      {
+        "node": "critique",
+        "input_tokens": 785,
+        "output_tokens": 256,
+        "latency_s": 7.358
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='ration packs density kg to liter conversion factor water log', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 557,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='standard density ration packs volume liters mass volume relationship', t\u2026",
+        "latency_s": 0.0,
+        "result_chars": 733,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='40 / 0.6'",
+        "latency_s": 0.0,
+        "result_chars": 9,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the handbook for the standard density or kg-to-liter conversion factor for ration packs (water log context) to determine the correct mass-to-volume relationship. \u2192 search_handbook",
+      "2. Compute the volume in liters from 40 kg using the density/conversion factor obtained from the handbook (volume = mass \u00f7 density). \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.85,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 37.654,
+    "input_tokens": 8431,
+    "output_tokens": 1661,
+    "error": null
+  }
+]

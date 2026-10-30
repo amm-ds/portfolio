@@ -19,6 +19,13 @@ data/
 # (Git cannot re-include a file under an excluded dir, so this line documents
 # the intent; the file is force-added like the 02 sidecar below.)
 !projects/08-inference-serving/data/bench_run.json
+# ...except 09's deterministic grading inputs: `evaluate`/`evaluate --heldout`
+# regrade these committed run records fully offline (no LLM). Same force-add
+# convention as 08 — git cannot re-include under an excluded parent dir.
+!projects/09-agentic-workflows/data/run_records.json
+!projects/09-agentic-workflows/data/heldout_records.json
+!projects/09-agentic-workflows/data/tasks.json
+!projects/09-agentic-workflows/data/tasks_heldout.json
 *.parquet
 # ...except the M5 demo sidecar: the demo payload copies the committed
 # global model's catalog curves from it, so it is versioned like the

@@ -1,0 +1,990 @@
+[
+  {
+    "task_id": "t01",
+    "status": "ok",
+    "answer": "The sample freezer is set to a temperature setpoint of -20 \u00b0C with an alarm band of \u00b13 \u00b0C (i.e., alarms trigger at approximately -23 \u00b0C to -17 \u00b0C). The freezer has a capacity of up to 180 sample boxes.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.97)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 447,
+        "output_tokens": 129,
+        "latency_s": 4.412
+      },
+      {
+        "node": "execute",
+        "input_tokens": 2900,
+        "output_tokens": 261,
+        "latency_s": 6.754
+      },
+      {
+        "node": "critique",
+        "input_tokens": 541,
+        "output_tokens": 139,
+        "latency_s": 2.505
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='sample freezer temperature setpoint alarm band specifications', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 478,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the sample freezer specifications, including its temperature setpoint and alarm band configuration. \u2192 search_handbook"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.97,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 16.064,
+    "input_tokens": 3888,
+    "output_tokens": 529,
+    "error": null
+  },
+  {
+    "task_id": "t02",
+    "status": "ok",
+    "answer": "Hourly check-ins use channel 3 at 146.46 MHz. (Channel 1 is reserved for emergencies, and the base call sign is \"Atlas Base.\")",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.98)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 448,
+        "output_tokens": 162,
+        "latency_s": 4.088
+      },
+      {
+        "node": "execute",
+        "input_tokens": 2866,
+        "output_tokens": 221,
+        "latency_s": 5.533
+      },
+      {
+        "node": "critique",
+        "input_tokens": 497,
+        "output_tokens": 77,
+        "latency_s": 2.001
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='radio channel and frequency used for hourly check-ins', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 148,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the radio channel and frequency used for hourly check-ins. \u2192 search_handbook"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.98,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 11.657,
+    "input_tokens": 3811,
+    "output_tokens": 460,
+    "error": null
+  },
+  {
+    "task_id": "t03",
+    "status": "ok",
+    "answer": "The generator burns 75.6 liters of diesel in one week. Calculation: 1.8 L/h \u00d7 6 h/day = 10.8 L/day; 10.8 L/day \u00d7 7 days = 75.6 L/week. (Source: station handbook, \"Generator fuel consumption\" \u2014 prime diesel generator burns 1.8 L/h under full load, scheduled to run 6 h/day.)",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.97)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 448,
+        "output_tokens": 182,
+        "latency_s": 3.164
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4738,
+        "output_tokens": 439,
+        "latency_s": 10.65
+      },
+      {
+        "node": "critique",
+        "input_tokens": 638,
+        "output_tokens": 189,
+        "latency_s": 3.596
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='generator fuel consumption rate liters per hour operating schedule', top\u2026",
+        "latency_s": 0.0,
+        "result_chars": 537,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='1.8 * 6 * 7'",
+        "latency_s": 0.0,
+        "result_chars": 4,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the generator's fuel consumption rate (liters per hour or similar) and its operating schedule. \u2192 search_handbook",
+      "2. Compute liters burned in one week from the consumption rate and operating hours (e.g., L/hr \u00d7 hours/day \u00d7 7). \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.97,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 17.443,
+    "input_tokens": 5824,
+    "output_tokens": 810,
+    "error": null
+  },
+  {
+    "task_id": "t04",
+    "status": "ok",
+    "answer": "After a typical 8-hour night, **8.5 kWh** of usable capacity remains in the battery bank.\n\nBreakdown (from the handbook):\n- Usable battery capacity: 24 kWh (LiFePO4 bank)\n- Base load: 1.6 kW \u00d7 8 h = 12.8 kWh\n- HVAC surge: 0.9 kW \u00d7 ~3 h = 2.7 kWh\n- Total consumed: 12.8 + 2.7 = 15.5 kWh\n- Remaining: 24 \u2212 15.5 = **8.5 kWh**\n\nNote: the handbook specifies the HVAC surge lasts about 3 hours, not the full 8-hour night, so the surge is only applied for 3 h.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.95)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 464,
+        "output_tokens": 215,
+        "latency_s": 3.689
+      },
+      {
+        "node": "execute",
+        "input_tokens": 5315,
+        "output_tokens": 725,
+        "latency_s": 14.035
+      },
+      {
+        "node": "critique",
+        "input_tokens": 810,
+        "output_tokens": 189,
+        "latency_s": 5.513
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='battery bank specifications total usable capacity kWh', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 341,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='typical nightly load profile base load HVAC surge kW', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 560,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='24 - (1.6 * 8 + 0.9 * 3)'",
+        "latency_s": 0.0,
+        "result_chars": 3,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the handbook for battery bank specifications (total usable capacity in kWh) and the typical nightly load profile (base load kW and HVAC surge kW). \u2192 search_handbook",
+      "2. Compute total energy consumed over 8 hours: (base load + HVAC surge) \u00d7 8 h, then subtract from usable battery capacity to find remaining kWh. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.85,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 23.272,
+    "input_tokens": 6589,
+    "output_tokens": 1129,
+    "error": null
+  },
+  {
+    "task_id": "t05",
+    "status": "ok",
+    "answer": "The solar array's total daily energy yield before inverter losses is 38.4 kWh/day.\n\nFrom the station handbook (solar-spec doc): each 320 Wp panel delivers an average yield of 3.2 kWh/day in the valley, and the array has 12 panels. Total daily energy yield = 12 panels \u00d7 3.2 kWh/day = 38.4 kWh/day (before inverter losses).\n\nNote: The inverter runs at 96% efficiency, so if inverter losses were applied, the net yield would be 38.4 \u00d7 0.96 = 36.864 kWh/day \u2014 but the question asks for the yield before inverter losses, which is 38.4 kWh/day.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.95)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 456,
+        "output_tokens": 345,
+        "latency_s": 8.62
+      },
+      {
+        "node": "execute",
+        "input_tokens": 6973,
+        "output_tokens": 828,
+        "latency_s": 20.112
+      },
+      {
+        "node": "critique",
+        "input_tokens": 771,
+        "output_tokens": 134,
+        "latency_s": 2.806
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='solar array specifications number of panels panel wattage peak sun hours\u2026",
+        "latency_s": 0.0,
+        "result_chars": 332,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='(12 * 320 * 3.2) / 1000'",
+        "latency_s": 0.0,
+        "result_chars": 6,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='12 * 3.2'",
+        "latency_s": 0.0,
+        "result_chars": 4,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for solar array specifications including number of panels, panel wattage, and peak sun hours or daily irradiance data. \u2192 search_handbook",
+      "2. Calculate total daily energy yield by multiplying total panel capacity (kW) by peak sun hours to get kWh before inverter losses. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.9,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 31.581,
+    "input_tokens": 8200,
+    "output_tokens": 1307,
+    "error": null
+  },
+  {
+    "task_id": "t06",
+    "status": "ok",
+    "answer": "The station's total water storage lasts the crew 12 full days at the budgeted consumption rate.\n\nCalculation:\n- Total water storage: 5,000 L (main tank) + 1,200 L (secondary bladder) = 6,200 L\n- Budgeted daily consumption: 85 L per person per day \u00d7 6 crew members = 510 L/day\n- Days of supply: 6,200 L \u00f7 510 L/day = 12.16 days \u2192 floor = 12 full days",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.98)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 457,
+        "output_tokens": 174,
+        "latency_s": 3.001
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4791,
+        "output_tokens": 534,
+        "latency_s": 12.135
+      },
+      {
+        "node": "critique",
+        "input_tokens": 672,
+        "output_tokens": 174,
+        "latency_s": 3.055
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='station total water storage capacity and budgeted daily consumption rate\u2026",
+        "latency_s": 0.0,
+        "result_chars": 524,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='(5000 + 1200) / (85 * 6)'",
+        "latency_s": 0.0,
+        "result_chars": 9,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Look up the station's total water storage capacity and the budgeted consumption rate from the station handbook. \u2192 search_handbook",
+      "2. Divide total water storage by the daily consumption rate and take the floor to get full days. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.98,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 18.227,
+    "input_tokens": 5920,
+    "output_tokens": 882,
+    "error": null
+  },
+  {
+    "task_id": "t07",
+    "status": "ok",
+    "answer": "The 48 km one-way distance to the relay station converts to 29.8258 miles (approximately 29.83 miles).",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "unit_convert"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 450,
+        "output_tokens": 99,
+        "latency_s": 3.069
+      },
+      {
+        "node": "execute",
+        "input_tokens": 2801,
+        "output_tokens": 206,
+        "latency_s": 5.99
+      },
+      {
+        "node": "critique",
+        "input_tokens": 484,
+        "output_tokens": 76,
+        "latency_s": 2.604
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "unit_convert",
+        "node": "execute",
+        "args_brief": "value=48.0, from_unit='km', to_unit='mi'",
+        "latency_s": 0.0,
+        "result_chars": 7,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Convert 48 km to miles using the standard conversion factor (1 km = 0.621371 miles). \u2192 unit_convert"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 11.699,
+    "input_tokens": 3735,
+    "output_tokens": 381,
+    "error": null
+  },
+  {
+    "task_id": "t08",
+    "status": "ok",
+    "answer": "25 kg of ration packs is approximately 55.12 lb (55.1156 lb).",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "unit_convert"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 445,
+        "output_tokens": 110,
+        "latency_s": 3.583
+      },
+      {
+        "node": "execute",
+        "input_tokens": 2795,
+        "output_tokens": 196,
+        "latency_s": 5.017
+      },
+      {
+        "node": "critique",
+        "input_tokens": 471,
+        "output_tokens": 106,
+        "latency_s": 2.879
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "unit_convert",
+        "node": "execute",
+        "args_brief": "value=25.0, from_unit='kg', to_unit='lb'",
+        "latency_s": 0.0,
+        "result_chars": 7,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Convert 25 kilograms to pounds using the standard conversion factor (1 kg \u2248 2.20462 lb). \u2192 unit_convert"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 11.51,
+    "input_tokens": 3711,
+    "output_tokens": 412,
+    "error": null
+  },
+  {
+    "task_id": "t09",
+    "status": "ok",
+    "answer": "-20 \u00b0C is equal to -4 \u00b0F. Using the formula F = C \u00d7 9/5 + 32: F = -20 \u00d7 9/5 + 32 = -36 + 32 = -4 \u00b0F.",
+    "steps_taken": [
+      "plan (1 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "unit_convert"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 444,
+        "output_tokens": 98,
+        "latency_s": 2.508
+      },
+      {
+        "node": "execute",
+        "input_tokens": 2796,
+        "output_tokens": 223,
+        "latency_s": 6.16
+      },
+      {
+        "node": "critique",
+        "input_tokens": 497,
+        "output_tokens": 114,
+        "latency_s": 3.084
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "unit_convert",
+        "node": "execute",
+        "args_brief": "value=-20.0, from_unit='c', to_unit='f'",
+        "latency_s": 0.0,
+        "result_chars": 4,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Convert -20 \u00b0C to Fahrenheit using the temperature conversion formula (F = C \u00d7 9/5 + 32). \u2192 unit_convert"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 11.791,
+    "input_tokens": 3737,
+    "output_tokens": 435,
+    "error": null
+  },
+  {
+    "task_id": "t10",
+    "status": "ok",
+    "answer": "A total of 500 MB can be transferred via satellite uplink per day. The station handbook (satellite-window doc) states that satellite uplink windows open daily at 06:10-06:40 and 18:20-18:50 UTC \u2014 two windows per day \u2014 and each window can transfer at most 250 MB. Total = 2 windows \u00d7 250 MB = 500 MB per day. (For context, the science data budget doc notes instruments produce 1,800 MB/day compressed 4:1 to 450 MB, which fits within this 500 MB uplink capacity.)",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.97)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 450,
+        "output_tokens": 184,
+        "latency_s": 4.518
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4759,
+        "output_tokens": 493,
+        "latency_s": 12.852
+      },
+      {
+        "node": "critique",
+        "input_tokens": 689,
+        "output_tokens": 77,
+        "latency_s": 2.528
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='satellite uplink data rate transfer capacity bandwidth MB per pass', top\u2026",
+        "latency_s": 0.0,
+        "result_chars": 469,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='2 * 250'",
+        "latency_s": 0.0,
+        "result_chars": 5,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for satellite uplink data rate / transfer capacity information (e.g., bandwidth or MB per pass/day figures). \u2192 search_handbook",
+      "2. If the handbook gives a rate and pass duration/frequency, compute total MB per day with the calculator. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.97,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 19.931,
+    "input_tokens": 5898,
+    "output_tokens": 754,
+    "error": null
+  },
+  {
+    "task_id": "t11",
+    "status": "ok",
+    "answer": "Across both supply caches there are 65 ration packs in total, with a combined weight of 39 kg. Cache Alpha (at km 4.2 north) holds 40 ration packs and cache Bravo (at km 7.8 north) holds 25 ration packs, giving 40 + 25 = 65 packs. At 0.6 kg per pack, the combined weight is 65 \u00d7 0.6 kg = 39 kg.",
+    "steps_taken": [
+      "plan (3 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 1.00)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 455,
+        "output_tokens": 368,
+        "latency_s": 6.079
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4970,
+        "output_tokens": 412,
+        "latency_s": 10.271
+      },
+      {
+        "node": "critique",
+        "input_tokens": 696,
+        "output_tokens": 148,
+        "latency_s": 3.911
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='supply caches ration packs count weight', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 745,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='(40 + 25) * 0.6'",
+        "latency_s": 0.0,
+        "result_chars": 4,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for details on both supply caches, specifically the number of ration packs in each cache and the weight per pack (or total weight per cache). \u2192 search_handbook",
+      "2. Add the ration pack counts from both caches to get the total number of packs. \u2192 calculator",
+      "3. Compute the combined weight: multiply total packs by per-pack weight (or add per-cache weights). If the handbook gives weight in grams or other non-kg units, first use unit_convert to kilograms before summing. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 1.0,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 20.32,
+    "input_tokens": 6121,
+    "output_tokens": 928,
+    "error": null
+  },
+  {
+    "task_id": "t12",
+    "status": "ok",
+    "answer": "The station's total water storage is 6,200 liters, computed from the handbook's water storage specs: the main tank holds 5,000 L and the secondary bladder holds 1,200 L (5,000 + 1,200 = 6,200 L). This figure has been recorded in the ops notebook for the weekly log.",
+    "steps_taken": [
+      "plan (3 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.99)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator",
+      "note_store"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 457,
+        "output_tokens": 254,
+        "latency_s": 5.975
+      },
+      {
+        "node": "execute",
+        "input_tokens": 6854,
+        "output_tokens": 432,
+        "latency_s": 13.048
+      },
+      {
+        "node": "critique",
+        "input_tokens": 645,
+        "output_tokens": 145,
+        "latency_s": 2.9
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='water storage tank dimensions capacity', top_k=5",
+        "latency_s": 0.0,
+        "result_chars": 657,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='5000 + 1200'",
+        "latency_s": 0.0,
+        "result_chars": 6,
+        "ok": true
+      },
+      {
+        "name": "note_store",
+        "node": "execute",
+        "args_brief": "action='append', note='Weekly log \u2014 total station water storage: 6,200 L (main \u2026",
+        "latency_s": 0.0,
+        "result_chars": 102,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for water storage details (tank dimensions, capacity, or number of tanks) to determine total water storage. \u2192 search_handbook",
+      "2. Compute the total water storage in liters from the handbook data (e.g., volume from dimensions, or sum/convert capacities as needed). \u2192 calculator",
+      "3. Record the computed liter figure in the ops notebook for the weekly log. \u2192 note_store"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.99,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 21.956,
+    "input_tokens": 7956,
+    "output_tokens": 831,
+    "error": null
+  },
+  {
+    "task_id": "t13",
+    "status": "ok",
+    "answer": "The station's fuel reserve policy requires a minimum reserve of 72 hours of generator runtime at full load. The prime diesel generator consumes 1.8 L/h under full load, so the required on-hand diesel is 72 h \u00d7 1.8 L/h = 129.6 L. Therefore, at least 129.6 liters of diesel must be on hand (and resupply is ordered as soon as stocks drop below that figure).",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.95)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 451,
+        "output_tokens": 179,
+        "latency_s": 4.282
+      },
+      {
+        "node": "execute",
+        "input_tokens": 4704,
+        "output_tokens": 425,
+        "latency_s": 10.247
+      },
+      {
+        "node": "critique",
+        "input_tokens": 632,
+        "output_tokens": 73,
+        "latency_s": 2.494
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='fuel reserve policy diesel quantity', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 506,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='72 * 1.8'",
+        "latency_s": 0.0,
+        "result_chars": 5,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the fuel reserve policy and the diesel quantity/rate it specifies. \u2192 search_handbook",
+      "2. If the policy gives a rate or non-liter unit, convert/compute the required liters; otherwise the handbook value is the answer. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.95,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 17.044,
+    "input_tokens": 5787,
+    "output_tokens": 677,
+    "error": null
+  },
+  {
+    "task_id": "t14",
+    "status": "ok",
+    "answer": "No. One satellite uplink window cannot carry the compressed daily science data. The station's instruments produce 1,800 MB of science data per day, which is compressed 4:1 down to 450 MB before uplink (1,800 / 4 = 450 MB). Each satellite uplink window (06:10-06:40 or 18:20-18:50 UTC) can transfer at most 250 MB. Since 250 MB < 450 MB, a single window falls short by 200 MB \u2014 it would take both daily windows (500 MB combined) to cover the day's compressed science data.",
+    "steps_taken": [
+      "plan (2 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.97)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_handbook",
+      "search_handbook",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 456,
+        "output_tokens": 218,
+        "latency_s": 3.863
+      },
+      {
+        "node": "execute",
+        "input_tokens": 5093,
+        "output_tokens": 586,
+        "latency_s": 13.0
+      },
+      {
+        "node": "critique",
+        "input_tokens": 739,
+        "output_tokens": 340,
+        "latency_s": 7.927
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='satellite uplink window capacity data rate duration', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 469,
+        "ok": true
+      },
+      {
+        "name": "search_handbook",
+        "node": "execute",
+        "args_brief": "query='compressed daily science data volume', top_k=3",
+        "latency_s": 0.0,
+        "result_chars": 300,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='1800 / 4'",
+        "latency_s": 0.0,
+        "result_chars": 5,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the station handbook for the satellite uplink window capacity (data rate \u00d7 window duration) and the compressed daily science data volume. \u2192 search_handbook",
+      "2. Compute the uplink window capacity (rate \u00d7 duration) and compare it to the compressed daily science data volume to answer yes/no with the numbers. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.87,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 24.814,
+    "input_tokens": 6288,
+    "output_tokens": 1144,
+    "error": null
+  },
+  {
+    "task_id": "t15",
+    "status": "ok",
+    "answer": "According to the Wikipedia document corpus:\n\n- The Wright brothers made the first controlled, sustained flight of a powered, heavier-than-air aircraft with the Wright Flyer on December 17, **1903**, near Kitty Hawk, North Carolina.\n- Wind power supplied over 2000 TWh of electricity in **2022** (over 7% of world electricity and about 2% of world energy).\n\nThe two events are separated by 2022 \u2212 1903 = **119 years**.",
+    "steps_taken": [
+      "plan (3 steps)",
+      "execute (attempt 1)",
+      "draft (self-confidence 0.99)",
+      "critique",
+      "critique: pass"
+    ],
+    "tools_used": [
+      "search_documents",
+      "search_documents",
+      "calculator"
+    ],
+    "steps": [
+      {
+        "node": "plan",
+        "input_tokens": 486,
+        "output_tokens": 217,
+        "latency_s": 4.141
+      },
+      {
+        "node": "execute",
+        "input_tokens": 6473,
+        "output_tokens": 501,
+        "latency_s": 22.812
+      },
+      {
+        "node": "critique",
+        "input_tokens": 750,
+        "output_tokens": 144,
+        "latency_s": 4.111
+      }
+    ],
+    "tool_calls": [
+      {
+        "name": "search_documents",
+        "node": "execute",
+        "args_brief": "query='Wright brothers first controlled sustained flight powered aircraft year'\u2026",
+        "latency_s": 11.935,
+        "result_chars": 1908,
+        "ok": true
+      },
+      {
+        "name": "search_documents",
+        "node": "execute",
+        "args_brief": "query='wind power supplied over 2000 TWh electricity year', top_k=3",
+        "latency_s": 11.938,
+        "result_chars": 1973,
+        "ok": true
+      },
+      {
+        "name": "calculator",
+        "node": "execute",
+        "args_brief": "expr='2022 - 1903'",
+        "latency_s": 0.0,
+        "result_chars": 5,
+        "ok": true
+      }
+    ],
+    "plan_steps": [
+      "1. Search the Wikipedia document corpus for the Wright brothers' first controlled, sustained flight of a powered aircraft to find the year. \u2192 search_documents",
+      "2. Search the Wikipedia document corpus for when wind power supplied over 2000 TWh of electricity to find the year. \u2192 search_documents",
+      "3. Compute the difference between the two years to find how many years separate the events. \u2192 calculator"
+    ],
+    "critique_verdict": "pass",
+    "confidence": 0.99,
+    "retries": 0,
+    "critique_loops": 0,
+    "duration_s": 31.102,
+    "input_tokens": 7709,
+    "output_tokens": 862,
+    "error": null
+  }
+]
