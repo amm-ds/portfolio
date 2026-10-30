@@ -52,7 +52,8 @@ Churn probability + cost-threshold alarm.
 
 - Body: `{"features": {name: float | str, ...}}` — string values are allowed,
   `feature_names` include categoricals (`contract`, `internet_service`).
-- Errors: 503 (artifacts not built), 422 on missing feature names.
+- Errors: 503 (artifacts not built; "busy" when the 4-slot scoring capacity
+  is full — retry), 422 on missing feature names.
 - 200: `{"churn_probability": float,
   "decision": {"alarm": bool, "threshold": float, "expected_cost_note": str}}`
   where `alarm = churn_probability >= threshold` (threshold and the fp/fn cost

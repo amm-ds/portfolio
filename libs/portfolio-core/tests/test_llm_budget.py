@@ -83,6 +83,15 @@ class TestRateCard:
         assert card.usd_per_mtok_output == Decimal("0")
         assert "cloud-equivalent" in card.label
 
+    def test_local_runner_model_names_are_free(self) -> None:
+        """Local-server presets must price at $0: the LM Studio preset in
+        .env.example uses the model id 'local-model', which the name
+        heuristic must classify as local (no ollama tag/family marker)."""
+        for model in ("local-model", "LM-Studio-qwen", "my-local-assistant"):
+            card = model_rate_card(model, Settings())
+            assert card.usd_per_mtok_input == Decimal("0"), model
+            assert "cloud-equivalent" in card.label, model
+
     def test_unknown_model_warns_and_uses_reference_card(self, caplog) -> None:
         import logging
 

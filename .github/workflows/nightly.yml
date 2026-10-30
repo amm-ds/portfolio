@@ -1,6 +1,7 @@
-# Nightly drift guards: the expensive byte-identity / full-rebuild checks that
-# are too slow for PR CI. PR CI runs the fast guards on every push; this job
-# proves the expensive reproducibility contracts nightly and on demand.
+# Nightly validation: the expensive reproducibility and resilience checks that
+# PR CI deliberately skips or only samples. Every job is bounded (explicit
+# timeouts, matrix cells, ISO-week/month rotation gates); a failure files one
+# summary issue — nothing here deploys or blocks a PR.
 name: nightly
 
 on:
@@ -9,12 +10,28 @@ on:
     - cron: "17 3 * * *"
   workflow_dispatch:
 
+# A fresh nightly supersedes a still-running one (free-runner minutes); a
+# nightly never queues behind a stale duplicate.
+concurrency:
+  group: nightly
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
+env:
+  # Same loky cap as CI: nested per-core joblib workers thrash on 2 vCPUs.
+  LOKY_MAX_CPU_COUNT: "1"
+
 jobs:
-  slow-drift-guards:
+  # ---------------------------------------------------------------------
+  # 1. Determinism: full-scale run-twice byte identity for 02's M5 track.
+  #    metrics + probabilistic reports AND the demo payload (both are
+  #    timestamp-free by design, so byte-identity is the contract).
+  # ---------------------------------------------------------------------
+  determinism:
     runs-on: ubuntu-latest
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
       - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
@@ -24,8 +41,8 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install workspace
-        run: uv sync --all-packages --dev
-      - name: M5 track run-twice byte-identity
+        run: uv sync --all-packages --dev --locked
+      - name: "M5 track run-twice byte-identity (metrics + probabilistic)"
         working-directory: projects/02-demand-forecasting
         run: |
           uv run python -m demand_forecasting.cli evaluate-m5
@@ -35,3 +52,353 @@ jobs:
           cmp reports_m5/metrics.json /tmp/m5_run1.json
           cmp reports_m5/probabilistic.json /tmp/m5_prob1.json
           echo "m5 metrics + probabilistic: BYTE_IDENTICAL across runs"
+      - name: "M5 demo payload run-twice byte-identity"
+        working-directory: projects/02-demand-forecasting
+        run: |
+          uv run python -m demand_forecasting.cli demo-payload-m5
+          cp reports_m5/demo_payload.json /tmp/demo_payload_run1.json
+          uv run python -m demand_forecasting.cli demo-payload-m5
+          cmp reports_m5/demo_payload.json /tmp/demo_payload_run1.json
+          echo "m5 demo payload: BYTE_IDENTICAL across runs"
+      - name: Upload regenerated M5 reports
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
+        with:
+          name: nightly-m5-reports
+          path: projects/02-demand-forecasting/reports_m5/
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------
+  # 2. Full workspace suite: same per-project matrix as PR CI, but ungated
+  #    (nightly runs everything, including cells CI's path filter skips).
+  # ---------------------------------------------------------------------
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - { name: libs, path: libs, cov: "--cov=libs --cov-fail-under=80" }
+          - { name: 01-rag-agent, path: projects/01-rag-agent, cov: "--cov=src" }
+          - name: 02-unit
+            path: projects/02-demand-forecasting
+            cov: "--cov=src"
+            unit_args: "unit-only"
+          - name: 02-models
+            path: projects/02-demand-forecasting
+            cov: "--cov=src tests/test_multihorizon.py tests/test_multistep_metrics.py tests/test_peak_models.py"
+          - { name: 03-anomaly-detection, path: projects/03-anomaly-detection, cov: "--cov=src" }
+          - { name: 04-nlp-classification, path: projects/04-nlp-classification, cov: "--cov=src" }
+          - { name: 05-ml-pipeline-churn, path: projects/05-ml-pipeline-churn, cov: "--cov=src" }
+          - { name: 06-routing-optimization, path: projects/06-routing-optimization, cov: "--cov=src" }
+          - { name: 07-open-data-mobility, path: projects/07-open-data-mobility, cov: "--cov=src" }
+          - { name: 08-inference-serving, path: projects/08-inference-serving, cov: "--cov=src" }
+          - { name: 09-agentic-workflows, path: projects/09-agentic-workflows, cov: "--cov=src" }
+          - { name: 10-uplift-experimentation, path: projects/10-uplift-experimentation, cov: "--cov=src" }
+          - { name: showcase-api, path: apps/showcase-api, cov: "--cov=src" }
+    name: tests · ${{ matrix.suite.name }}
+    steps:
+      - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --all-packages --dev --locked
+      - name: Pytest (${{ matrix.suite.name }})
+        working-directory: ${{ matrix.suite.path }}
+        run: >-
+          uv run pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900 --durations=30"
+          ${{ matrix.suite.cov }}
+          ${{
+            matrix.suite.unit_args == 'unit-only'
+            && '--ignore=tests/test_multihorizon.py --ignore=tests/test_multistep_metrics.py --ignore=tests/test_peak_models.py'
+            || ''
+          }}
+
+  # ---------------------------------------------------------------------
+  # 3. Extended hypothesis: the property tests with a ~10x example budget
+  #    (the `nightly` profile registered in libs/portfolio-core/tests/
+  #    conftest.py) and a fresh deterministic seed per night.
+  # ---------------------------------------------------------------------
+  hypothesis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --all-packages --dev --locked
+      - name: Property tests ×1000 examples (seeded per night)
+        env:
+          HYP_SEED: nightly-${{ github.run_id }}
+        run: >-
+          uv run pytest -m hypothesis --hypothesis-profile nightly
+          --hypothesis-seed "$HYP_SEED" --hypothesis-show-statistics
+          -o addopts="--import-mode=importlib -q"
+          libs/portfolio-core/tests projects/06-routing-optimization/tests
+
+  # ---------------------------------------------------------------------
+  # 4. Container serving soak: build the production image and run a bounded
+  #    3-minute mixed load against it — GET-heavy (the SPA + JSON endpoints)
+  #    plus a trickle of live POSTs under the rate limit, finishing with an
+  #    intentional burst to prove the 429 path. Zero 5xx is the contract.
+  # ---------------------------------------------------------------------
+  soak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
+      - name: Build showcase image
+        run: docker build --build-arg VITE_BUILD_SHA="$GITHUB_SHA" -t amm-ds-portfolio .
+      - name: "Soak: 3 min mixed load, then rate-limiter burst"
+        run: |
+          trap "docker rm -f nightly-soak" EXIT
+          docker run -d --name nightly-soak -p 8000:8000 \
+            -e BUILD_SHA="$GITHUB_SHA" -e IP_HASH_SALT=nightly-soak-salt amm-ds-portfolio
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:8000/ready >/dev/null 2>&1; then
+              echo "ready after ${i}s"; break
+            fi
+            sleep 1
+          done
+          curl -fsS http://localhost:8000/ready >/dev/null || {
+            echo "container never became ready"; docker logs nightly-soak; exit 1; }
+
+          BODY=$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          meta = json.loads(Path("projects/05-ml-pipeline-churn/reports/models/serving/meta.json").read_text())
+          print(json.dumps({"features": meta["example_row"]}))
+          PY
+          )
+
+          five_xx=0; ok=0; n429=0
+          start=$SECONDS
+          while [ $((SECONDS - start)) -lt 180 ]; do
+            for path in / /projects /demos \
+              /projects/02-demand-forecasting/metrics /projects/02-demand-forecasting/story \
+              /projects/05-ml-pipeline-churn/metrics /projects/05-ml-pipeline-churn/story \
+              /projects/07-open-data-mobility/metrics /projects/07-open-data-mobility/story; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8000$path")
+              case "$code" in
+                2*) ok=$((ok + 1));;
+                5*) five_xx=$((five_xx + 1)); echo "GET $path -> $code";;
+              esac
+            done
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -X POST http://localhost:8000/projects/05-ml-pipeline-churn/score \
+              -H 'content-type: application/json' --data-binary "$BODY")
+            case "$code" in
+              2*) ok=$((ok + 1));;
+              5*) five_xx=$((five_xx + 1)); echo "POST /score -> $code";;
+            esac
+            sleep 2
+          done
+
+          # Rate-limiter proof: burst past the 10-token bucket.
+          for _ in $(seq 1 12); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -X POST http://localhost:8000/projects/05-ml-pipeline-churn/score \
+              -H 'content-type: application/json' --data-binary "$BODY")
+            [ "$code" = "429" ] && n429=$((n429 + 1))
+          done
+
+          echo "soak: ok=$ok 429s=$n429 5xx=$five_xx"
+          test "$five_xx" -eq 0
+          test "$n429" -ge 1
+          curl -fsS http://localhost:8000/ready >/dev/null  # still healthy at the end
+          # unhandled exceptions would leave tracebacks in the request log
+          test "$(docker logs nightly-soak 2>&1 | grep -c 'Traceback')" = "0"
+
+  # ---------------------------------------------------------------------
+  # 5. Offline 08/09 sweeps: the arms that need NO live model server.
+  #    (inference_serving bench and agentic_workflows run-all need
+  #    Ollama/a hosted provider — infeasible on this runner by design.)
+  # ---------------------------------------------------------------------
+  offline-sweeps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --all-packages --dev --locked
+      - name: "08 offline — regenerate serving report from committed bench runs"
+        working-directory: projects/08-inference-serving
+        run: uv run python -m inference_serving.cli report
+      - name: "09 offline — regrade committed run records (keyword judges)"
+        working-directory: projects/09-agentic-workflows
+        # The committed reports/metrics.json is the product of BOTH grading
+        # passes (tuning suite, then --heldout adds detail.heldout) — verified
+        # to reproduce byte-identically from the committed records.
+        run: |
+          uv run python -m agentic_workflows.cli evaluate
+          uv run python -m agentic_workflows.cli evaluate --heldout
+      - name: Upload regenerated reports
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
+        with:
+          name: nightly-offline-sweeps
+          path: |
+            projects/08-inference-serving/reports/
+            projects/09-agentic-workflows/reports/metrics.json
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------
+  # 6. Rotating weekly small-project pipeline repro: one small project per
+  #    ISO week (pool chosen for bounded downloads + seeded, timestamp-free
+  #    outputs). The reproduced artifacts must match the committed outs —
+  #    drift fails the job. 01/02/04/07/08/09 are excluded by design (heavy
+  #    downloads, transformer training, or live-model stages).
+  # ---------------------------------------------------------------------
+  weekly-dvc-repro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        run: uv sync --all-packages --dev --locked
+      - name: "Weekly repro — ISO-week rotation over the small projects"
+        run: |
+          case $(( 10#$(date -u +%V) % 4 )) in
+            0) P=03-anomaly-detection ;;
+            1) P=05-ml-pipeline-churn ;;
+            2) P=06-routing-optimization ;;
+            3) P=10-uplift-experimentation ;;
+          esac
+          echo "weekly repro: projects/$P (ISO week $(date -u +%V))"
+          (cd "projects/$P" && uv run dvc repro)
+      - name: Reproduced artifacts must match the committed outs
+        run: |
+          dirty=$(git status --porcelain -- projects/03-anomaly-detection projects/05-ml-pipeline-churn \
+            projects/06-routing-optimization projects/10-uplift-experimentation)
+          if [ -n "$dirty" ]; then
+            echo "repro drifted from the committed artifacts:"
+            echo "$dirty"
+            echo "$dirty" > /tmp/repro-drift.txt
+            exit 1
+          fi
+          echo "repro outputs byte-match the committed artifacts"
+      - name: Upload drift report
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
+        with:
+          name: nightly-dvc-repro-drift
+          path: /tmp/repro-drift.txt
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------
+  # 7. Heavy pipelines, monthly (1st of the month or manual dispatch):
+  #    07 full repro (real TLC month) and 01 corpus + retrieval index +
+  #    offline retrieval eval (the LLM eval stages need Ollama/a hosted
+  #    provider and stay manual — see deploy/DEPLOY.md's boundary).
+  # ---------------------------------------------------------------------
+  heavy-monthly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 420
+    steps:
+      - uses: actions/checkout@11d5960a3267505838078e36cf38b85af677262 # v4.3.1
+      - name: "Gate — first of the month, or manual dispatch"
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$(date -u +%d)" = "01" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "heavy monthly: running"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "heavy monthly: not the 1st — no-op"
+          fi
+      - uses: astral-sh/setup-uv@e4db8464a088ece1b920f60402e813ea4de65b8f # v4.2.0
+        if: steps.gate.outputs.run == 'true'
+        with:
+          enable-cache: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+      - name: Install workspace
+        if: steps.gate.outputs.run == 'true'
+        run: uv sync --all-packages --dev --locked
+      - name: "07 full pipeline repro (TLC month download + train + serving)"
+        if: steps.gate.outputs.run == 'true'
+        working-directory: projects/07-open-data-mobility
+        run: uv run dvc repro
+      - name: "07 repro must match the committed artifacts"
+        if: steps.gate.outputs.run == 'true'
+        working-directory: projects/07-open-data-mobility
+        run: |
+          dirty=$(git status --porcelain -- .)
+          if [ -n "$dirty" ]; then
+            echo "07 repro drifted from the committed artifacts:"
+            echo "$dirty"
+            exit 1
+          fi
+          echo "07 repro outputs byte-match the committed artifacts"
+      - name: "01 corpus + retrieval index (LLM-free stages)"
+        if: steps.gate.outputs.run == 'true'
+        working-directory: projects/01-rag-agent
+        run: |
+          uv run python -m rag_agent.cli prepare-corpus
+          uv run python -m rag_agent.cli build-index
+      - name: "01 retrieval-only eval (offline; LLM phases stay manual)"
+        if: steps.gate.outputs.run == 'true'
+        working-directory: projects/01-rag-agent
+        run: uv run python -m rag_agent.cli evaluate --offline
+
+  # ---------------------------------------------------------------------
+  # 8. Failure notification: one summary issue per failed nightly.
+  # ---------------------------------------------------------------------
+  notify:
+    needs: [determinism, tests, hypothesis, soak, offline-sweeps, weekly-dvc-repro, heavy-monthly]
+    if: always() && !cancelled() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Ensure nightly label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh label create nightly --color f59e0b --description "Nightly validation failure" || true
+      - name: Open failure issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEEDS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          FAILED=$(python3 - <<'PY'
+          import json
+          import os
+
+          needs = json.loads(os.environ["NEEDS"])
+          for name, ctx in needs.items():
+              if ctx["result"] not in ("success", "skipped"):
+                  print(f"- {name}: {ctx['result']}")
+          PY
+          )
+          gh issue create \
+            --title "Nightly validation failed ($(date -u +%Y-%m-%d))" \
+            --label nightly \
+            --body "The overnight validation workflow failed. Failed jobs:${FAILED}
+          Run: ${RUN_URL}
+          Investigate the failing job(s) first; the artifacts attached to the run (M5 reports, offline-sweep reports, repro drift report) carry the evidence."

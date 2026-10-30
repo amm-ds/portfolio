@@ -577,6 +577,33 @@ def test_churn_score_happy_path_and_guards(tmp_path: Path, monkeypatch) -> None:
     assert r.status_code == 422
 
 
+def test_churn_score_returns_503_when_capacity_busy(tmp_path: Path, monkeypatch) -> None:
+    """Four concurrent scores max; a fifth request gets a fast 503."""
+    import threading
+
+    import showcase_api.main as main_mod
+
+    _write_churn_artifact(tmp_path / "serving")
+    monkeypatch.setattr(main_mod, "_CHURN_SERVING_DIR", tmp_path / "serving")
+
+    s = threading.BoundedSemaphore(4)
+    for _ in range(4):
+        s.acquire()
+    monkeypatch.setattr(main_mod, "_CHURN_SEMAPHORE", s)
+    r = client.post(
+        "/projects/05-ml-pipeline-churn/score",
+        json={
+            "features": {
+                "tenure_months": 1.0,
+                "monthly_charges": 90.0,
+                "contract": "month-to-month",
+            }
+        },
+    )
+    assert r.status_code == 503
+    assert "busy" in r.json()["error"]
+
+
 # --- Project 06: served VRPTW solving ----------------------------------------
 
 
@@ -1055,6 +1082,29 @@ def test_hash_client_ip_is_salted_truncated_sha256() -> None:
     assert hash_client_ip("203.0.113.7", salt="other") != h
     assert hash_client_ip("203.0.113.8", salt="test-salt") != h
     assert hash_client_ip("1.2.3.4") == hash_client_ip("1.2.3.4", salt="dev-salt")
+
+
+def test_missing_ip_hash_salt_warns_once_and_falls_back(caplog, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Unset/empty IP_HASH_SALT must not fail open silently: the middleware
+    falls back to the public default salt and logs a one-time WARNING."""
+    import logging
+
+    from showcase_api import middleware
+
+    monkeypatch.delenv("IP_HASH_SALT", raising=False)
+    monkeypatch.setattr(middleware, "_salt_warning_emitted", False)
+    with caplog.at_level(logging.WARNING, logger="showcase_api.middleware"):
+        mw1 = middleware.RequestLoggingMiddleware(lambda *a: None)
+        mw2 = middleware.RequestLoggingMiddleware(lambda *a: None)
+    assert mw1._salt == "dev-salt" and mw2._salt == "dev-salt"
+    warnings = [r for r in caplog.records if "IP_HASH_SALT" in r.getMessage()]
+    assert len(warnings) == 1
+    # an explicit salt (even via the env) suppresses the warning entirely
+    monkeypatch.setattr(middleware, "_salt_warning_emitted", False)
+    monkeypatch.setenv("IP_HASH_SALT", "from-env")
+    with caplog.at_level(logging.WARNING, logger="showcase_api.middleware"):
+        middleware.RequestLoggingMiddleware(lambda *a: None)
+    assert [r for r in caplog.records if "IP_HASH_SALT" in r.getMessage()] == warnings
 
 
 def test_request_log_line_contains_hashed_ip_not_raw(caplog) -> None:  # type: ignore[no-untyped-def]

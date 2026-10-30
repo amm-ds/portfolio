@@ -2,10 +2,13 @@
 
 Nothing here contains training logic; it reads the artifacts projects produce
 (reports/metrics.json, reports/figures/*.html, reports/models/serving/*) and
-delegates chat to Project 01's agent when that package is installed (it is, in
-the workspace/Docker image). Served inference: 02/05/07 read persisted serving
-artifacts (503 with build instructions when absent); 06 solves VRPTW instances
-purely from the request body with the tuned config from its params.yaml.
+delegates chat to Project 01's agent when that package is installed (it is in
+the dev workspace; the standard production image deliberately omits both the
+package and the retrieval index — see the Dockerfile header — so /rag/chat
+fails closed with a 503 there until they are mounted). Served inference:
+02/05/07 read persisted serving artifacts (503 with build instructions when
+absent); 06 solves VRPTW instances purely from the request body with the
+tuned config from its params.yaml.
 """
 
 import hashlib
@@ -717,6 +720,15 @@ def _model_label(meta: dict[str, Any], model: Any) -> str:
 _CHURN_ID = "05-ml-pipeline-churn"
 _CHURN_SERVING_DIR = _project_dir(_CHURN_ID) / "reports" / "models" / "serving"
 
+# Concurrency bound for the scoring endpoint, same pattern as the solve and
+# forecast caps: sync endpoint → threadpool workers, so a threading
+# semaphore. Churn predict is milliseconds (one DataFrame row through a small
+# pipeline), but an unbounded burst would still pile up scoring threads; a
+# 4-slot bound keeps fast clients served while slow outliers wait for the
+# next attempt instead of stacking CPU work (audit pass 3, finding 3).
+_CHURN_SEMAPHORE = threading.BoundedSemaphore(4)
+_CHURN_BUSY_DETAIL = "scoring capacity busy (4 concurrent scores max) — retry shortly"
+
 
 class ChurnScoreRequest(BaseModel):
     # String values are allowed: feature_names include categoricals such as
@@ -737,7 +749,11 @@ class ChurnScoreResponse(BaseModel):
 
 @app.post(f"/projects/{_CHURN_ID}/score", response_model=ChurnScoreResponse)
 def score_churn(request: ChurnScoreRequest) -> ChurnScoreResponse:
-    """Churn probability + cost-threshold alarm from the persisted pipeline."""
+    """Churn probability + cost-threshold alarm from the persisted pipeline.
+
+    Guarded like the forecast endpoints: 4 concurrent scores max (fast 503
+    beyond that) and the shared 10 s wall-clock cap.
+    """
     _LIVE_GUARD.gate()
     artifacts = serving.cached_artifacts(_CHURN_SERVING_DIR)
     if artifacts is None:
@@ -753,26 +769,30 @@ def score_churn(request: ChurnScoreRequest) -> ChurnScoreResponse:
     missing = [f for f in feature_names if f not in request.features]
     if missing:
         raise HTTPException(status_code=422, detail=f"missing features: {', '.join(missing)}")
-    row = {f: request.features[f] for f in feature_names}
-    import pandas as pd  # typed package; root override covers missing stubs
 
-    proba = float(model.predict_proba(pd.DataFrame([row]))[0, 1])
-    decision_cfg: dict[str, Any] = dict(bundle.get("decision") or {})
-    threshold = float(decision_cfg.get("threshold", 0.5))
-    fp_cost = decision_cfg.get("fp_cost", 1)
-    fn_cost = decision_cfg.get("fn_cost", 1)
-    note = (
-        f"alarm at p>={threshold:g}: expected cost {fp_cost} per false positive vs "
-        f"{fn_cost} per missed churner (fn_cost weighted {fn_cost}x an fp)"
-    )
-    return ChurnScoreResponse(
-        churn_probability=round(proba, 4),
-        decision=ChurnDecision(
-            alarm=proba >= threshold,
-            threshold=threshold,
-            expected_cost_note=note,
-        ),
-    )
+    def _predict() -> ChurnScoreResponse:
+        row = {f: request.features[f] for f in feature_names}
+        import pandas as pd  # typed package; root override covers missing stubs
+
+        proba = float(model.predict_proba(pd.DataFrame([row]))[0, 1])
+        decision_cfg: dict[str, Any] = dict(bundle.get("decision") or {})
+        threshold = float(decision_cfg.get("threshold", 0.5))
+        fp_cost = decision_cfg.get("fp_cost", 1)
+        fn_cost = decision_cfg.get("fn_cost", 1)
+        note = (
+            f"alarm at p>={threshold:g}: expected cost {fp_cost} per false positive vs "
+            f"{fn_cost} per missed churner (fn_cost weighted {fn_cost}x an fp)"
+        )
+        return ChurnScoreResponse(
+            churn_probability=round(proba, 4),
+            decision=ChurnDecision(
+                alarm=proba >= threshold,
+                threshold=threshold,
+                expected_cost_note=note,
+            ),
+        )
+
+    return _run_bounded_with_timeout(_predict, _CHURN_SEMAPHORE, _CHURN_BUSY_DETAIL)
 
 
 # --- Served VRPTW solving (Project 06) --------------------------------------

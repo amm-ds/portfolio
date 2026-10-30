@@ -1,7 +1,14 @@
 # Caddy reverse proxy — automatic public TLS for the configured DOMAIN.
-# DOMAIN is required by docker-compose.prod.yml; Caddy terminates TLS and is the
-# only published service. Keep the API private so forwarding headers can only
-# arrive through this proxy.
+# DOMAIN and ACME_EMAIL are required by docker-compose.prod.yml; Caddy
+# terminates TLS and is the only published service. Keep the API private so
+# forwarding headers can only arrive through this proxy.
+
+{
+    # ACME account email (ACME_EMAIL): the CA sends certificate expiry and
+    # problem advisories to this address. Required by the compose env — there
+    # is intentionally no default: an unset email fails `caddy validate`.
+    email {$ACME_EMAIL}
+}
 
 {$DOMAIN} {
     encode zstd gzip
