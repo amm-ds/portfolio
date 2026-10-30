@@ -16,9 +16,13 @@ def _section(sid: str, **kw: object) -> StorySection:
     return StorySection(id=sid, title="T", text_md="body", **kw)  # type: ignore[arg-type]
 
 
+_SHORT = "Plain short copy used for cards and SEO."
+
+
 def test_full_canonical_story_roundtrip(tmp_path: Path) -> None:
     story = ProjectStory(
         project_id="01-demo",
+        short_version=_SHORT,
         sections=[
             StorySection(id=sid, title="", text_md=f"content of {sid}")
             for sid in CANONICAL_SECTIONS
@@ -49,6 +53,7 @@ def test_duplicate_sections_rejected() -> None:
     with pytest.raises(ValidationError):
         ProjectStory(
             project_id="p",
+            short_version=_SHORT,
             sections=[_section("background"), _section("background")],
         )
 
@@ -79,6 +84,7 @@ def test_load_story_missing(tmp_path: Path) -> None:
 def test_story_ordering_and_figures() -> None:
     story = ProjectStory(
         project_id="p",
+        short_version=_SHORT,
         sections=[
             StorySection(id="background", title="B", text_md="x", figures=["overview"]),
             StorySection(id="results", title="R", text_md="y", metrics_keys=["gbm_mean"]),
@@ -91,6 +97,7 @@ def test_story_ordering_and_figures() -> None:
 def test_roadmap_block_roundtrip(tmp_path: Path) -> None:
     story = ProjectStory(
         project_id="p",
+        short_version=_SHORT,
         sections=[_section("background")],
         roadmap=[
             RoadmapItem(status="delivered", text="Shipped thing"),
@@ -118,7 +125,7 @@ def test_roadmap_status_validated() -> None:
 
 
 def test_header_fields_default_to_none() -> None:
-    story = ProjectStory(project_id="p", sections=[_section("background")])
+    story = ProjectStory(project_id="p", short_version=_SHORT, sections=[_section("background")])
     assert story.headline is None
     assert story.data_note is None
     assert story.limits is None
@@ -127,6 +134,7 @@ def test_header_fields_default_to_none() -> None:
 def test_header_fields_parsed() -> None:
     story = ProjectStory(
         project_id="p",
+        short_version=_SHORT,
         headline="MAE 12.3 ± 1.1 on the holdout month.",
         data_note="Real, 1.1M rows, CC-BY-4.0.",
         limits="Does not cover cross-city transfer.",
@@ -144,6 +152,7 @@ def test_header_fields_roundtrip(tmp_path: Path) -> None:
         yaml.safe_dump(
             {
                 "project_id": "p",
+                "short_version": _SHORT,
                 "headline": "Result with uncertainty.",
                 "data_note": "Synthetic, 50k rows, MIT.",
                 "limits": "Not a causal claim.",
@@ -166,6 +175,92 @@ def test_header_fields_reject_wrong_types(field: str) -> None:
     with pytest.raises(ValidationError):
         ProjectStory(
             project_id="p",
+            short_version=_SHORT,
             sections=[_section("background")],
             **{field: 42},  # type: ignore[arg-type]
         )
+
+
+def test_short_version_required() -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        ProjectStory(project_id="p", sections=[_section("background")])
+
+
+def test_short_version_parsed_and_length_capped() -> None:
+    from pydantic import ValidationError
+
+    story = ProjectStory(
+        project_id="p",
+        short_version="A forecast pipeline that beats the seasonal-naive floor on real demand.",
+        sections=[_section("background")],
+    )
+    assert story.short_version == (
+        "A forecast pipeline that beats the seasonal-naive floor on real demand."
+    )
+
+    with pytest.raises(ValidationError):
+        ProjectStory(project_id="p", short_version="", sections=[_section("background")])
+    with pytest.raises(ValidationError):
+        ProjectStory(project_id="p", short_version="x" * 281, sections=[_section("background")])
+
+
+def test_short_version_rejects_wrong_type() -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        ProjectStory(
+            project_id="p",
+            short_version=42,  # type: ignore[arg-type]
+            sections=[_section("background")],
+        )
+
+
+def test_short_version_roundtrip(tmp_path: Path) -> None:
+    import yaml
+
+    (tmp_path / "story.yaml").write_text(
+        yaml.safe_dump(
+            {
+                "project_id": "p",
+                "short_version": "Plain short copy used for cards and SEO.",
+                "sections": [{"id": "background", "text_md": "x"}],
+            },
+            sort_keys=False,
+        )
+    )
+    loaded = load_story(tmp_path)
+    assert loaded is not None
+    assert loaded.short_version == "Plain short copy used for cards and SEO."
+
+
+def test_section_titles_fixed_template() -> None:
+    from portfolio_core.story import SECTION_TITLES
+
+    assert SECTION_TITLES == {
+        "background": "The short version",
+        "objectives": "The question",
+        "data": "The data",
+        "eda": "How we judged it",
+        "training": "What we found",
+        "evaluation": "What it means",
+        "results": "What this does not show",
+        "conclusions": "Details",
+    }
+
+
+def test_load_story_fills_fixed_template_titles(tmp_path: Path) -> None:
+    (tmp_path / "story.yaml").write_text(
+        "project_id: p\n"
+        f"short_version: {_SHORT}\n"
+        "sections:\n"
+        "  - id: background\n"
+        "    text_md: x\n"
+        "  - id: conclusions\n"
+        "    text_md: y\n"
+    )
+    loaded = load_story(tmp_path)
+    assert loaded is not None
+    assert loaded.sections[0].title == "The short version"
+    assert loaded.sections[1].title == "Details"

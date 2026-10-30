@@ -1,4 +1,5 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProjectStoryData } from "../api";
 import { CaseStudy } from "../components/CaseStudy";
@@ -69,5 +70,44 @@ describe("CaseStudy section rail", () => {
     render(<CaseStudy projectId={story.project_id} story={story} metrics={null} />);
     expect(screen.queryByRole("region", { name: "Case study summary" })).toBeNull();
     expect(screen.getByRole("heading", { name: /Results/ })).not.toBeNull();
+  });
+
+  it("links each glossary term only at its first page-wide occurrence", () => {
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        disconnect() {}
+      },
+    );
+    const story: ProjectStoryData = {
+      project_id: "01-rag-agent",
+      sections: [
+        {
+          id: "background",
+          title: "The short version",
+          text_md: "A baseline model anchors the comparison.",
+          figures: [],
+          metrics_keys: [],
+        },
+        {
+          id: "results",
+          title: "What this does not show",
+          text_md: "Back to the baseline in the results section.",
+          figures: [],
+          metrics_keys: [],
+        },
+      ],
+    };
+    render(
+      <MemoryRouter>
+        <CaseStudy projectId={story.project_id} story={story} metrics={null} />
+      </MemoryRouter>,
+    );
+    // one shared Set threads both sections: the second occurrence stays plain
+    const links = document.querySelectorAll("a.glossary-term");
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe("/glossary#baseline");
+    expect(links[0].textContent).toContain("baseline");
   });
 });

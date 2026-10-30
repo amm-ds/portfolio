@@ -77,6 +77,16 @@ jobs:
       - name: Demo contract check
         if: needs.changes.outputs.python == 'true'
         run: uv run python scripts/check_demo_contract.py
+      - name: Story language lint
+        # Plain-language gate over projects/*/story.yaml (stdlib-only script;
+        # blocks on ERROR-level findings, reports warnings). Makefile: lint-story.
+        if: needs.changes.outputs.python == 'true'
+        run: uv run python scripts/lint_story_language.py
+      - name: Short-copy freshness
+        # Project cards, README rows, docs openings, and project SEO text all
+        # derive from each story's short_version; fail if any surface drifts.
+        if: needs.changes.outputs.python == 'true' || needs.changes.outputs.docs == 'true'
+        run: uv run python scripts/check_short_copy.py --check
       - name: SPA route manifest freshness
         if: needs.changes.outputs.python == 'true' || needs.changes.outputs.web == 'true'
         run: uv run python scripts/gen_route_manifest.py --check

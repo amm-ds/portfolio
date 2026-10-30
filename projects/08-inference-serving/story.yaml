@@ -1,4 +1,9 @@
 project_id: 08-inference-serving
+short_version: >-
+  One laptop, one run: five LLM serving setups, 760 requests, zero failures.
+  A 4-bit mixture-of-experts model answers in 0.81 s per request at about
+  $0.12 per 1M output tokens (electricity only). The reusable asset is the
+  harness for re-measuring any stack on target hardware.
 figure_captions:
   quality_quant: >-
     Schema-valid and keyword quality rates at concurrency 1 for 4-bit,
@@ -22,7 +27,7 @@ roadmap:
   - status: delivered
     text: "Full-grid raw record committed — data/bench_run.json (760 requests, 2026-10-15) alongside the aggregates; the published percentiles re-aggregate offline via report."
   - status: deferred
-    text: Repeat the grid on a quiet, dedicated machine and across additional machines and Ollama builds — needs dedicated hardware access (the 2026-10-30 same-machine attempt was invalidated by co-tenant load, Results).
+    text: Repeat the grid on a quiet, dedicated machine and across additional machines and Ollama builds — needs dedicated hardware access (the 2026-10-30 same-machine attempt was invalidated by co-tenant load, Details).
   - status: deferred
     text: Measured wall power and hardware amortization in the cost view — needs a wall-power meter on the target machine; the committed view is electricity-only at declared assumptions.
   - status: deferred
@@ -30,82 +35,144 @@ roadmap:
 sections:
   - id: background
     text_md: |
-      **One author run on a 128 GB Apple-Silicon Mac with Ollama 0.40.4
-      benchmarked five serving arms through 19 cells and 760 requests with
-      zero failures; the Q4_K_M 3B-active MoE reached 0.81 s p95 latency at
-      concurrency 1 (7.80 s at c=8) at about $0.12 per 1M output tokens in
-      electricity-only cost.**
+      **One laptop, one run.** Five ways of serving local language models
+      were measured across 19 cells and 760 requests, zero failures, on a
+      quiet 128 GB Mac. The winner — a 4-bit "mixture-of-experts" model —
+      answers in 0.81 s at single-request load (7.80 s at 8 concurrent),
+      makes about 7× the tokens per second of the dense 32B alternative, and
+      costs about $0.12 per 1M output tokens in electricity. The catch: one
+      machine, one build, one author run — the values describe this
+      hardware, not serving generally.
 
-      Data: fully synthetic fixed task — 8 locally generated general-knowledge
-      prompts with keyword checklists; no download or external data, so no
-      license applies.
-
-      Limits: all cells come from one machine and one Ollama build, so the
-      absolute numbers describe this hardware, not serving in general. A
-      same-machine repeat attempt on a second build ran under heavy co-tenant
-      load and could not re-measure latency (Results); the protocol should be
-      re-run on a quiet, dedicated target before any capacity decision.
-
-      Latency percentiles, throughput, structured-output reliability, and cost
-      are measured against the same local Ollama OpenAI-compatible endpoint
-      used by the portfolio's LLM projects (ADR-0004).
-
-      On this machine, the 4-bit mixture-of-experts (MoE) arm stays below
-      single-digit-second p95 through concurrency 8. Its roughly $0.12 per 1M
-      output tokens covers declared electricity assumptions only: zero API
-      spend, no hardware amortization, and no measured wall power.
-
-      **Business summary:** Self-hosting this workload class on a 128 GB
-      Apple-Silicon Mac costs about $0.12 per 1M output tokens in
-      electricity-only terms and delivers sub-second p95 at concurrency 1; the
-      portable asset is the harness for re-measuring any candidate stack, not
-      these absolute numbers.
+      **In plain terms:** a mid-size model on a laptop answers a small
+      structured task in under a second for pennies of electricity; before
+      any capacity decision, re-measure on the machine that will ship.
+    figures: []
+    metrics_keys: []
   - id: objectives
     text_md: |
-      **The decision is a serving arm plus a validated harness, chosen from
-      measured trade-offs rather than vendor numbers.**
+      Which local serving setup — model × engine × quantization — should
+      serve this workload class, chosen from measurements instead of vendor
+      numbers?
 
-      - Record p50/p95/p99 latency, TTFT, aggregate and per-request tok/s,
-        schema validity, keyword quality, and failures by model × engine ×
-        concurrency.
-      - Compare llama.cpp/GGUF with MLX/safetensors while labelling the
-        quantization confound.
-      - Compare quantizations on one runner, including the quantized Q8_0
-        baseline.
-      - Publish an electricity-only cost estimate with declared assumptions
-        and a separately labelled hypothetical cloud rate card.
+      The study had to record latency percentiles (p50/p95/p99) and
+      time-to-first-token, throughput per request and in aggregate,
+      structured-output reliability, and failures, across concurrency levels
+      1–8. Engine comparisons must carry the packaging they ride on;
+      quantizations must be compared on one runner with a quantized baseline;
+      cost must be published as electricity-only with declared assumptions,
+      next to a clearly hypothetical cloud rate card.
+    figures: []
+    metrics_keys: []
   - id: data
     text_md: |
-      **Eight general-knowledge prompts each carry a keyword checklist and
-      require the same pydantic `Answer` schema, `temperature 0`, bounded
-      `max_tokens`, and disabled reasoning, so cells are directly comparable;
-      absolute timings remain machine-specific.**
-
-      `prepare` writes `data/prompts.json`; benchmark runs write
-      `data/bench_run.json`. The committed evidence is the raw full-grid
-      record `data/bench_run.json` (760 requests, 2026-10-15) plus the
-      aggregate `reports/metrics.json`, `reports/report.html`, and figures —
-      the percentiles in this story can be re-aggregated from the raw record
-      without re-running the bench. Re-run the protocol on target hardware
-      instead of treating these cells as a reproducible raw dataset.
+      The task is fully synthetic: 8 locally generated general-knowledge
+      prompts, each carrying a keyword checklist, answered under an enforced
+      schema (one sentence, a confidence score, a citation), at temperature 0
+      with a bounded token budget and reasoning disabled. Nothing is
+      downloaded and no external data is used, so no license applies. Because
+      every cell answers identical prompts under identical constraints, cells
+      are directly comparable — while absolute timings stay machine-specific.
+      The committed evidence is `data/prompts.json`, the raw full-grid record
+      `data/bench_run.json`, `reports/metrics.json`, `reports/report.html`,
+      and the figures; the published percentiles re-aggregate offline from
+      the raw record without re-running the benchmark.
+    figures: []
+    metrics_keys: []
   - id: eda
     text_md: |
-      **The smoke pass caught a serving configuration failure before timing.**
-      Qwen3.6 defaulted to thinking mode and exhausted the bounded token
-      budget, producing zero valid answers. Setting `reasoning_effort: none`
-      (`low` for gpt-oss) made decode bounded and comparable.
+      Judging rests on a fixed, replayable protocol. Each cell runs the
+      8-prompt suite five times (40 requests) at one concurrency level,
+      throttled by an async semaphore with cooldown between cells. Latency is
+      recorded as nearest-rank p50/p95/p99 plus mean time-to-first-token;
+      throughput as aggregate and per-request output tokens per second;
+      reliability as schema-valid rate, keyword quality rate, and failures.
 
-      The endpoint also accepted `response_format` with `json_schema`, allowing
-      schema validity to be measured rather than inferred. The identical
-      keyword parser runs across every quantization arm; these checks concern
-      the serving harness and bounded task, not general model intelligence.
+      A smoke pass caught a configuration failure before any timing: one
+      model defaulted to extended "thinking" and exhausted the token budget,
+      scoring zero valid answers until reasoning was switched off. That fix
+      is what makes quality scores comparable across arms — and the same
+      parser scores every arm, so differences are not an artifact of the
+      checker.
     figures:
       - quality_quant
+    metrics_keys: []
   - id: training
     text_md: |
-      **There is no training: the method is the serving configuration.**
-      Ollama 0.40.x selects llama.cpp for GGUF and MLX for safetensors,
-      verified through `/api/ps`.
+      There is no training step — the "method" is the serving configuration,
+      and the findings are measurements. Each strength below is paired with
+      its limit.
+
+      - **Latency:** the 4-bit mixture-of-experts model answers in 0.81 s
+        (p95) with one request in flight and 7.80 s at 8 concurrent — a
+        near-linear slowdown, so single-request speed does not predict
+        saturated behaviour. *Limit:* the pattern describes this machine and
+        this run only.
+      - **Throughput:** output tokens per second are flat-to-declining as
+        concurrency rises on unified memory, and the 3B-active MoE serves
+        about 7× the tokens/s of the dense 32B model. *Limit:* per-request
+        speed falls as concurrency grows; aggregate gains are modest.
+      - **Engine + packaging:** the MLX-packaged 4-bit model reaches about
+        2.9× the tokens/s of the llama.cpp Q8_0 build at concurrency 1 (18.8
+        vs 6.4 tok/s; 2.47 s vs 7.12 s p95). *Limit:* quantization and
+        packaging differ together, so this compares combinations, not
+        engines in isolation — and one engine build is missing entirely.
+      - **Bounded quality:** every arm — including the quantized Q8_0
+        baseline — scored 1.00 on schema validity and keyword quality.
+        *Limit:* a small, structured task cannot support broad "quantization
+        never hurts quality" claims.
+      - **Cost:** the winning arm comes to about $0.12 per 1M output tokens
+        from measured tokens/s and declared 100 W / $0.30-per-kWh
+        assumptions. *Limit:* electricity only — no hardware amortization, no
+        measured wall power, not a total cost of ownership.
+    figures: []
+    metrics_keys: []
+  - id: evaluation
+    text_md: |
+      On this machine, the 4-bit mixture-of-experts model is the serving
+      choice: sub-second single-request answers, the best throughput
+      measured, perfect bounded-task quality scores, and the lowest
+      electricity cost per million tokens. What transfers is not these values
+      but the verdict procedure — the winner was picked by recorded
+      trade-offs on the endpoint that ran. A later repeat under
+      heavy background load degraded only one engine path — evidence that
+      quiet hardware is a prerequisite for trusting repeats (Details).
+
+      **Business summary:** use the benchmark as a procurement gate — run the
+      full grid on the target stack, keep confounded engine/quantization
+      comparisons labelled, and treat the published cells as one worked
+      example from one machine, not a portable SLA or a total-cost figure.
+    figures:
+      - latency_concurrency
+    metrics_keys: []
+  - id: results
+    text_md: |
+      - **Portability:** all cells come from one machine, one Ollama build,
+        one author run; the absolute numbers describe this hardware.
+      - **Cost completeness:** the $0.12-per-1M figure is electricity only;
+        hardware amortization and measured wall power are excluded by design.
+      - **Quality generality:** perfect bounded-task scores do not show that
+        quantization never affects model quality.
+      - **Engine causality:** engine differences are confounded with
+        packaging and quantization.
+    figures:
+      - toks_per_s
+      - engine_panel
+    metrics_keys: []
+  - id: conclusions
+    text_md: |
+      The deliverable is the harness; the published numbers are a worked
+      example from one machine. Measure the endpoint that will ship, label
+      confounded engine/quantization comparisons, and record unavailable
+      arms explicitly.
+
+      ### Harness and hardware detail
+
+      There is no training: the method is the serving configuration. Ollama
+      0.40.x selects llama.cpp for GGUF artifacts and MLX for safetensors,
+      verified through `/api/ps` `runner`. The endpoint is the same local
+      Ollama OpenAI-compatible endpoint used by the portfolio's LLM projects
+      (ADR-0004).
 
       ```mermaid
       graph LR
@@ -125,13 +192,10 @@ sections:
       | gemma4 q8_0 / -qat (`--full`) | dense | Q8_0 / QAT-int4 | llama.cpp |
 
       Engine comparisons are engine-plus-packaging comparisons. No MLX build
-      exists for qwen3.6:35b-a3b because conversion fails on switch-expert
-      weights; that missing cell is recorded rather than silently omitted.
-  - id: evaluation
-    text_md: |
-      **Each model × engine × concurrency cell repeats the 8-prompt suite five
-      times (40 requests) under an asyncio semaphore, with cooldown between
-      cells; the protocol is built to be re-run on any target stack.**
+      exists for qwen3.6:35b-a3b — conversion fails on switch-expert weights;
+      that missing cell is recorded rather than silently omitted.
+
+      ### Protocol detail
 
       | dimension | setup |
       |---|---|
@@ -143,67 +207,41 @@ sections:
 
       The bounded default (3 models × 3 concurrency levels) targets under 45
       minutes; `--full` adds qwen3:32b, concurrency 2, and the quant/engine
-      cells. Re-running this protocol is meaningful; carrying its absolute
+      cells. Re-running the protocol is meaningful; carrying its absolute
       results to another machine is not.
-    figures:
-      - latency_concurrency
-  - id: results
-    text_md: |
-      **Nineteen cells completed 760 requests with zero failures, as one author
-      run on a quiet machine with Ollama 0.40.4; the raw record is committed,
-      and a 2026-10-30 repeat attempt showed why single-machine repeats need a
-      dedicated host.** Aggregate artifacts and the raw run record are
-      committed; regenerate with `bench --full && report` on the deployment
-      target before quoting results there.
 
-      - **Latency:** qwen3.6 p95 grows from 0.81 s (c=1) to 7.80 s (c=8), with
-        an approximately linear concurrency pattern across arms in this run.
-      - **Throughput:** decode is flat-to-declining with concurrency on unified
-        memory; the 3B-active MoE serves about 7× dense qwen3:32b tok/s.
-      - **Engine + packaging:** gemma4 MLX 4-bit reaches about 2.9× the tok/s
-        of llama.cpp Q8_0 at c=1. Different quantization prevents a pure
-        engine-speed conclusion.
-      - **Bounded quality:** all arms score 1.00 for schema validity and keyword
-        quality, including the quantized Q8_0 baseline. This does not support a
-        general claim that quantization never affects quality.
-      - **Cost:** about $0.12 per 1M output tokens assumes 100 W draw and
-        $0.30/kWh. It is electricity only, excludes hardware amortization, and
-        is not a measured total cost of ownership.
+      ### Committed run and repeat attempt
+
+      Full-grid raw record: `data/bench_run.json` — 19 cells, 760 requests,
+      2026-10-15, Ollama 0.40.4, zero failures; the published percentiles
+      re-aggregate offline via `report`.
 
       **Repeat attempt (2026-10-30):** the same 11-cell bounded shape (440
       requests) ran on this machine under Ollama 0.40.12 while a virtual
       machine and background jobs co-ran. Quality held — every cell kept
       schema-valid and keyword rates at 1.00 — but llama.cpp latency cells
-      were 10–30× slower (mean TTFT reached 44 s on the qwen3.6 c=8 cell) and
-      the gpt-oss c=8 cell hit ten 180 s read timeouts, while the MLX cells
-      matched their committed cells. The gap is co-tenant memory-bandwidth
-      contention on the llama.cpp path, not the 0.40.12 build. The attempt is
-      evidence about repeat methodology — single-machine repeats need a quiet,
-      dedicated host — not about the serving arms.
-
-      **Business summary:** On this machine, qwen3.6:35b-a3b-q4_K_M is the
-      serving pick: 0.81 s p95 at c=1 (7.80 s at c=8), about 7× the tok/s of
-      dense qwen3:32b, and 1.00 schema-valid and keyword rates in this bounded
-      task. Confirm on the deployment target before committing capacity.
-    figures:
-      - toks_per_s
-      - engine_panel
-  - id: conclusions
-    text_md: |
-      **The deliverable is the harness; the published numbers are a worked
-      example from one machine.** Measure the endpoint that will ship, label
-      confounded engine/quantization comparisons, and record unavailable arms
-      explicitly.
+      were 10–30× slower (mean TTFT reached 44 s on the qwen3.6 c=8 cell)
+      and the gpt-oss c=8 cell hit ten 180 s read timeouts, while the MLX
+      cells matched their committed cells. The gap is co-tenant
+      memory-bandwidth contention on the llama.cpp path, not the 0.40.12
+      build. The attempt is evidence about repeat methodology — single-machine
+      repeats need a quiet, dedicated host — not about the serving arms. Raw
+      record: `data/bench_run_repeat.json`.
 
       **Results quality: acceptable with caveats.** The aggregate cells are
       internally consistent for this bounded task, and the raw 760-request
-      record is now committed for independent re-aggregation. One quiet-machine
-      run cannot establish portable latency, throughput, quality, or cost; the
-      2026-10-30 repeat attempt was dominated by co-tenant load rather than the
-      new build, and the electricity view excludes wall power and hardware
+      record is committed for independent re-aggregation. One quiet-machine
+      run cannot establish portable latency, throughput, quality, or cost;
+      the repeat attempt was dominated by co-tenant load rather than the new
+      build, and the electricity view excludes wall power and hardware
       amortization.
 
-      **Business summary:** Use the benchmark as the procurement gate: run
-      `bench --full` on the target stack, keep confounded engine/quant
-      comparisons labeled, and treat the published cells as one worked
-      example — not a portable SLA or a total-cost figure.
+      ### Reproduce on the target machine
+
+      ```bash
+      uv run python -m inference_serving.cli prepare
+      uv run python -m inference_serving.cli bench --full
+      uv run python -m inference_serving.cli report
+      ```
+    figures: []
+    metrics_keys: []

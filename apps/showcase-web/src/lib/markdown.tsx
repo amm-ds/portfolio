@@ -1,5 +1,7 @@
 import { Fragment, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { MermaidDiagram } from "../components/MermaidDiagram";
+import glossary from "./glossary.json";
 
 // Minimal, safe markdown → React renderer. Supports what story.yaml prose
 // uses: paragraphs, **bold**, *emphasis*, `code`, -/* / N. / N) lists (with
@@ -7,10 +9,86 @@ import { MermaidDiagram } from "../components/MermaidDiagram";
 // thematic breaks (---/***/___), and fenced code blocks (```lang; ```mermaid
 // renders as a diagram). Everything is rendered as React text nodes — no HTML
 // injection surface.
+//
+// Glossary auto-linking: the first occurrence of each glossary term (per call,
+// or page-wide when the caller threads a shared Set) becomes a link to
+// /glossary#<slug>, case-insensitive with word boundaries, longest term first,
+// never inside code. No raw HTML injection anywhere.
 
 const INLINE_RE = /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*)/g;
 
-function renderInline(text: string, keyPrefix: string): ReactNode[] {
+// --- Glossary auto-linking -------------------------------------------------------
+// One shared matcher for all terms: longest first so multi-word terms win,
+// case-insensitive, word boundaries via lookarounds (letters/digits/hyphen
+// disallowed on both sides, so "macro-F1" links but "macro-F1-style" does not
+// match at its hyphen edge and "MASE" does not match inside "MASEs").
+const GLOSSARY_BY_LOWER = new Map(glossary.map((e) => [e.term.toLowerCase(), e]));
+const GLOSSARY_RE = new RegExp(
+  `(?<![A-Za-z0-9-])(${[...glossary]
+    .sort((a, b) => b.term.length - a.term.length)
+    .map((e) => e.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|")})(?![A-Za-z0-9-])`,
+  "gi",
+);
+
+/** Link state is render-safe: external sets are precomputed and never mutated. */
+interface GlossaryLinkState {
+  linked: Set<string>;
+  /** Local calls record their own first occurrences; external sets only check. */
+  record: boolean;
+}
+
+const FENCED_CODE_RE = /```[\s\S]*?(?:```|$)/g;
+const INLINE_CODE_ONLY_RE = /`[^`\n]+`/g;
+
+/**
+ * Return glossary slugs present in prose, in first-occurrence order, excluding
+ * fenced and inline code. CaseStudy uses this to precompute which section owns
+ * each term's first link without mutating React state during render.
+ */
+export function glossaryTermsInMarkdown(md: string): string[] {
+  const text = md.replace(FENCED_CODE_RE, " ").replace(INLINE_CODE_ONLY_RE, " ");
+  const slugs: string[] = [];
+  for (const match of text.matchAll(GLOSSARY_RE)) {
+    const entry = GLOSSARY_BY_LOWER.get(match[1].toLowerCase());
+    if (entry && !slugs.includes(entry.slug)) slugs.push(entry.slug);
+  }
+  return slugs;
+}
+
+/**
+ * Link terms allowed by `state` to their /glossary#slug anchors. Local state
+ * records first occurrences; external precomputed state is read-only.
+ */
+function linkGlossaryTerms(text: string, keyPrefix: string, state: GlossaryLinkState): ReactNode {
+  const segments = text.split(GLOSSARY_RE);
+  if (segments.length === 1) return text;
+  const out: ReactNode[] = [];
+  segments.forEach((seg, i) => {
+    if (i % 2 === 0) {
+      if (seg) out.push(seg);
+      return;
+    }
+    const entry = GLOSSARY_BY_LOWER.get(seg.toLowerCase());
+    const skip = entry ? (state.record ? state.linked.has(entry.slug) : !state.linked.has(entry.slug)) : true;
+    if (!entry || skip) {
+      out.push(seg);
+      return;
+    }
+    if (state.record) state.linked.add(entry.slug);
+    out.push(
+      <Link key={`${keyPrefix}-g${i}`} className="glossary-term" to={`/glossary#${entry.slug}`}>
+        {seg}
+        <span className="glossary-tip" role="tooltip">
+          {entry.definition}
+        </span>
+      </Link>,
+    );
+  });
+  return out.length === 1 ? out[0] : <Fragment key={keyPrefix}>{out}</Fragment>;
+}
+
+function renderInline(text: string, keyPrefix: string, state: GlossaryLinkState): ReactNode[] {
   const parts = text.split(INLINE_RE);
   return parts.map((part, i) => {
     const key = `${keyPrefix}-${i}`;
@@ -18,12 +96,14 @@ function renderInline(text: string, keyPrefix: string): ReactNode[] {
       return <code key={key}>{part.slice(1, -1)}</code>;
     }
     if (part.startsWith("**") && part.endsWith("**") && part.length > 3) {
-      return <strong key={key}>{part.slice(2, -2)}</strong>;
+      return (
+        <strong key={key}>{linkGlossaryTerms(part.slice(2, -2), key, state)}</strong>
+      );
     }
     if (part.startsWith("*") && part.endsWith("*") && part.length > 1) {
-      return <em key={key}>{part.slice(1, -1)}</em>;
+      return <em key={key}>{linkGlossaryTerms(part.slice(1, -1), key, state)}</em>;
     }
-    return part;
+    return linkGlossaryTerms(part, key, state);
   });
 }
 
@@ -55,6 +135,7 @@ function renderTable(
   headerLine: string,
   rowLines: string[],
   keyPrefix: string,
+  state: GlossaryLinkState,
 ): ReactNode {
   const header = splitTableCells(headerLine);
   const rows = rowLines.map(splitTableCells);
@@ -64,7 +145,7 @@ function renderTable(
         <thead>
           <tr>
             {header.map((c, ci) => (
-              <th key={ci}>{renderInline(c, `${keyPrefix}h${ci}`)}</th>
+              <th key={ci}>{renderInline(c, `${keyPrefix}h${ci}`, state)}</th>
             ))}
           </tr>
         </thead>
@@ -72,7 +153,7 @@ function renderTable(
           {rows.map((r, ri) => (
             <tr key={ri}>
               {r.map((c, ci) => (
-                <td key={ci}>{renderInline(c, `${keyPrefix}r${ri}c${ci}`)}</td>
+                <td key={ci}>{renderInline(c, `${keyPrefix}r${ri}c${ci}`, state)}</td>
               ))}
             </tr>
           ))}
@@ -83,11 +164,11 @@ function renderTable(
 }
 
 /** Render one blank-line-separated block of lines (no fences). */
-function renderBlock(lines: string[], keyPrefix: string): ReactNode {
+function renderBlock(lines: string[], keyPrefix: string, state: GlossaryLinkState): ReactNode {
   const sepIdx = lines.findIndex((l, i) => i >= 1 && isTableSeparator(l));
   if (sepIdx > 0 && lines[sepIdx - 1].includes("|")) {
     const rowLines = lines.slice(sepIdx + 1).filter((l) => l.includes("|"));
-    return renderTable(lines[sepIdx - 1], rowLines, keyPrefix);
+    return renderTable(lines[sepIdx - 1], rowLines, keyPrefix, state);
   }
   // A list starts when the block's FIRST line is an item. Later lines either
   // match the item pattern (new item), are indented 2+ spaces (continuation
@@ -113,13 +194,13 @@ function renderBlock(lines: string[], keyPrefix: string): ReactNode {
     const list = ordered ? (
       <ol key={keyPrefix}>
         {items.map((text, li) => (
-          <li key={li}>{renderInline(text, `${keyPrefix}i${li}`)}</li>
+          <li key={li}>{renderInline(text, `${keyPrefix}i${li}`, state)}</li>
         ))}
       </ol>
     ) : (
       <ul key={keyPrefix}>
         {items.map((text, li) => (
-          <li key={li}>{renderInline(text, `${keyPrefix}i${li}`)}</li>
+          <li key={li}>{renderInline(text, `${keyPrefix}i${li}`, state)}</li>
         ))}
       </ul>
     );
@@ -127,13 +208,13 @@ function renderBlock(lines: string[], keyPrefix: string): ReactNode {
       return (
         <Fragment key={keyPrefix}>
           {list}
-          {renderBlock(rest, `${keyPrefix}x`)}
+          {renderBlock(rest, `${keyPrefix}x`, state)}
         </Fragment>
       );
     }
     return list;
   }
-  return <p key={keyPrefix}>{renderInline(lines.join(" "), keyPrefix)}</p>;
+  return <p key={keyPrefix}>{renderInline(lines.join(" "), keyPrefix, state)}</p>;
 }
 
 function renderCodeBlock(code: string, lang: string, keyPrefix: string): ReactNode {
@@ -147,15 +228,18 @@ function renderCodeBlock(code: string, lang: string, keyPrefix: string): ReactNo
   );
 }
 
-export function renderMarkdown(md: string): ReactNode[] {
+export function renderMarkdown(md: string, linkedTerms?: Set<string>): ReactNode[] {
   const out: ReactNode[] = [];
   const lines = md.split("\n");
+  // External sets are precomputed by the case study and read-only. Without one,
+  // this call owns a local set and records first occurrences within the call.
+  const state: GlossaryLinkState = { linked: linkedTerms ?? new Set<string>(), record: !linkedTerms };
   let block: string[] = [];
   let key = 0;
 
   const flushBlock = () => {
     if (block.length > 0) {
-      out.push(renderBlock(block, `b${key++}`));
+      out.push(renderBlock(block, `b${key++}`, state));
       block = [];
     }
   };

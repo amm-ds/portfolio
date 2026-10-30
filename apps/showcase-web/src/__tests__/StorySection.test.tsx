@@ -181,3 +181,90 @@ describe("StorySection business-summary card", () => {
     expect(document.querySelector(".story-main .prose")?.textContent).toBe("Numbers.");
   });
 });
+
+describe("StorySection **In plain terms:** marker", () => {
+  const WITH_PLAIN = {
+    ...BASE,
+    text_md:
+      "Framing paragraph with some *context*.\n\n" +
+      "**In plain terms:** the model flags the customers most likely to leave.\n",
+  };
+
+  it("renders the trailing **In plain terms:** paragraph as the card", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(
+      <StorySection projectId="05-ml-pipeline-churn" section={WITH_PLAIN} index={0} metrics={null} />,
+    );
+    const card = document.querySelector(".bi-card");
+    expect(card).not.toBeNull();
+    expect(card?.getAttribute("aria-label")).toBe("In plain terms");
+    expect(card?.querySelector(".bi-label")?.textContent).toBe("In plain terms");
+    expect(card?.textContent).toContain("the model flags the customers most likely to leave");
+    // the marker itself is stripped from the plain prose
+    expect(document.querySelector(".story-main .prose")?.textContent).not.toContain(
+      "In plain terms",
+    );
+  });
+
+  it("prefers **In plain terms:** over a later **Business summary:** marker", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(
+      <StorySection
+        projectId="05-ml-pipeline-churn"
+        section={{
+          ...BASE,
+          text_md:
+            "Setup prose.\n\n" +
+            "**In plain terms:** preferred tail.\n\n" +
+            "**Business summary:** later tail.\n",
+        }}
+        index={0}
+        metrics={null}
+      />,
+    );
+    const card = document.querySelector(".bi-card")!;
+    expect(card.textContent).toContain("preferred tail");
+    // the In-plain-terms tail (not the later Business summary marker) is the card content
+    const prose = document.querySelector(".story-main .prose")!;
+    expect(prose.textContent).not.toContain("preferred tail");
+  });
+});
+
+describe("StorySection conclusions details block", () => {
+  const CONCLUSIONS = {
+    ...BASE,
+    id: "conclusions",
+    title: "Details",
+    text_md: "Reproduction notes and revision log.\n\n**In plain terms:** the recipe is reusable.\n",
+  };
+
+  it("wraps the conclusions body in a native collapsed details block after the h2", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(
+      <StorySection projectId="01-rag-agent" section={CONCLUSIONS} index={7} metrics={null} />,
+    );
+    const details = document.querySelector("details.story-details");
+    expect(details).not.toBeNull();
+    // collapsed by default
+    expect(details?.hasAttribute("open")).toBe(false);
+    expect(details?.querySelector("summary")?.textContent).toBe(
+      "Technical details, revision notes, and reproduction",
+    );
+    // existing prose and takeaway card still render inside the block
+    expect(details?.querySelector(".story-main .prose")?.textContent).toContain(
+      "Reproduction notes and revision log.",
+    );
+    expect(details?.querySelector(".bi-card")).not.toBeNull();
+    // the h2 stays above the details block
+    const h2 = document.querySelector("section > h2")!;
+    expect(h2.textContent).toContain("Details");
+    expect(h2.nextElementSibling).toBe(details);
+  });
+
+  it("keeps non-conclusions sections as the plain two-column layout", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    render(<StorySection projectId="01-rag-agent" section={BASE} index={0} metrics={null} />);
+    expect(document.querySelector("details.story-details")).toBeNull();
+    expect(document.querySelector(".story-cols")).not.toBeNull();
+  });
+});
