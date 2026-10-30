@@ -62,14 +62,24 @@ would blur that signal.
   the rate card answers "what would this cost hosted").
 - **Stages**: `run` (live LLM) and `evaluate` (offline grading) are separate
   DVC stages so grading is reproducible without a provider.
-- **Held-out set**: `HELDOUT_SUITE` is 10 unseen tasks over the same corpora
-  (7 answer tasks + 3 designed-to-fail probes). Probes ask for what the tools
-  cannot do; they are graded by `RefusalSuccess` (status `ok` + a refusal
-  marker in the answer — a fabricated number or a crash fails). `run-all
-  --heldout` / `evaluate --heldout` run and grade them; the summary lands in
-  `metrics.json detail.heldout`. Small by design (n=10): it checks for
-  prompt overfitting and confabulation, it does not re-measure the headline
-  rates.
+- **Held-out set**: `HELDOUT_SUITE` is 19 unseen tasks over the same corpora
+  (13 answer tasks + 6 designed-to-fail probes). The original 10 (audit wave:
+  7 answers + 3 probes) were joined on 2026-10-30 by an expansion wave: 6
+  answer tasks over previously unexercised corpus facts (radio call sign,
+  battery base-load-only remainder, ft→m conversion, weekly drone endurance,
+  freezer box capacity, and the photosynthesis topic of 01's Wikipedia slice)
+  and 3 refusal probes on axes the original three did not cover (currency
+  conversion — unknown unit; a fact absent from the deterministic corpus;
+  arithmetic outside the AST evaluator's bounded operations). Probes ask for
+  what the tools cannot do; they are graded by `RefusalSuccess` (status `ok` +
+  a refusal marker in the answer — a fabricated number or a crash fails).
+  `run-all --heldout` / `evaluate --heldout` run and grade them; the summary
+  lands in `metrics.json detail.heldout`. Small by design relative to tuning:
+  it checks for prompt overfitting and confabulation, it does not re-measure
+  the headline rates. The committed records are mixed-provider by design:
+  h01–h10 are the hosted `kimi-for-coding` run, h11–h19 the local Ollama
+  (`qwen3.6:35b-a3b-q4_K_M`) run — the expansion wave doubles as the first
+  cross-model evidence.
 
 ### HITL design
 
@@ -172,3 +182,15 @@ checkpoints; toolsets composed via `FunctionToolset` + `PrefixedToolset`.
   `search_documents + calculator` (the year-gap subtraction is arithmetic)
   and the t05 prompt pinned to "before inverter losses" to remove ground-
   truth ambiguity.
+- 2026-10-30 — Held-out expansion wave (roadmap): `HELDOUT_SUITE` grew from
+  10 to 19 tasks — 6 new answer tasks (h11-h16) over previously unexercised
+  handbook/Wikipedia facts (incl. the photosynthesis topic) and 3 new
+  refusal probes (h17 currency, h18 absent corpus fact, h19 calculator AST
+  bound). The new tasks ran under the existing budget guards on the local
+  Ollama provider (`qwen3.6:35b-a3b-q4_K_M`, metered $0 by the local rate
+  card; hosted credentials blanked for the run, no hosted spend), graded
+  offline into `detail.heldout`; the committed records are mixed-provider
+  (h01-h10 hosted, h11-h19 local). Validity tests pin every new ground
+  truth to tool output (`tests/test_evals.py::TestHeldoutExpansion`,
+  `TestSuiteHonesty`; `tests/test_documents.py::TestRealCorpusIntegration`
+  pins the h12 photosynthesis facts against 01's real index).

@@ -74,9 +74,24 @@ single-series interactive timeline, `nab_timeline_nyc_taxi`
 (3 of 4 labelled windows detected, 179 alerts), makes the one real miss
 hoverable.
 
+**The operating point is now tuned, train-side only (wave 15).** The (alert
+budget, per-series cooldown) pair is selected per detector family on an inner
+80/20 split of each series' train window — the budgeted alert stream is
+scored on the 6 labelled windows overlapping those validation slices, and a
+grid point is adopted only when it beats the documented (2%, 24 h) default by
+≥ 0.05 validation range-F1; the NAB test window is then scored exactly once
+per family (artifact `reports/nab_tune.json`, figure `nab_tune_surface`).
+Measured verdict: IsolationForest adopts (0.5%, 24 h) and the gain transfers
+— budgeted pages 66 → 33 (rolling) and 80 → 46 (rolling+residual), range-F1
+0.388 → 0.433 / 0.315 → 0.382 at ≈0.08–0.10 of range recall. LOF keeps the
+default (flat validation surface). OCSVM's marginal adoption (0.5%, 72 h)
+fails to transfer (−0.043/+0.033 test range-F1): six validation windows
+cannot certify a fragile peak — published as the measured limit of the
+evidence, not silently rolled back (that would be test-origin tuning).
+
 ## Artifacts
 
-- NAB metrics: `reports/nab_metrics.json` · NAB sweep + alert budgets: `reports/nab_sweep.json` · synthetic ladder: `reports/metrics.json` (7 runs)
+- NAB metrics: `reports/nab_metrics.json` · NAB sweep + alert budgets: `reports/nab_sweep.json` · train-side operating-point tuning: `reports/nab_tune.json` · synthetic ladder: `reports/metrics.json` (7 runs)
 - Probes: `reports/detect.json` (adaptive stream), `reports/residual_probe.json`,
   `reports/nsl_probe.json`
 - Evaluation report: `reports/report.html`

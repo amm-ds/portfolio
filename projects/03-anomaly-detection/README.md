@@ -247,6 +247,45 @@ most raw pages were re-alerts of the same incident minutes:
 The recall cost of the cap is ≈0.13–0.25. The 24 h cooldown is a documented
 operating assumption, not a tuned optimum.
 
+## Wave 15: train-side operating-point tuning (`nab-tune`)
+
+The roadmap item the sweep left open: tune the (threshold budget, per-series
+cooldown) operating point **per detector family on train-side validation only**,
+then evaluate once on NAB (artifact
+[`reports/nab_tune.json`](reports/nab_tune.json), figure `nab_tune_surface`).
+The protocol (`src/anomaly_detection/nab_tune.py`):
+
+1. **Selection surface — no test data.** Each series' train window is split
+   80/20 (fit on the first 80%, validate on the last 20% — the same convention
+   as the synthetic HPO). Candidate budgets flag that fraction of the
+   *fit-slice* scores; the budgeted alert stream is scored with the headline
+   event metrics on the 6 labelled windows overlapping the validation slices
+   (5 of 12 series), aggregated as the mean over all 12 series × both feature
+   sets (24 runs per grid point; budgets 0.5–8%, cooldowns 6–72 h).
+2. **Conservative adoption.** The grid argmax (ties → fewer pages → the
+   default → simpler point) is adopted only when it beats the documented
+   (2%, 24 h) default by ≥ 0.05 validation range-F1; otherwise the default
+   stands and the item closes with a measured "no robust gain".
+3. **One test pass.** Each family is refit on the full train window and scored
+   once on the test window at its adopted point, through the unmodified sweep
+   machinery; the comparison table below is read from the committed
+   `reports/nab_sweep.json` (same conventions, default operating point).
+
+| family | adopted point | validation F1 (vs default) | test verdict (budgeted stream) |
+|---|---|---|---|
+| isolation_forest | (0.5%, 24 h) | 0.318 vs 0.237 (+0.081) | **transfers**: 66 → 33 and 80 → 46 pages, range-F1 0.388 → 0.433 / 0.315 → 0.382 (recall −0.08/−0.10) |
+| lof | default kept | best gain +0.042 (< margin) | unchanged, as designed |
+| ocsvm | (0.5%, 72 h) | 0.206 vs 0.150 (+0.056) | **fails to transfer**: range-F1 −0.043 / +0.033 across its two cells |
+
+The measured takeaway: the tuned IsolationForest operating point is a real,
+protocol-driven improvement (half the pages, better range-F1); sub-0.1
+validation gains on 6 windows are noise-shaped — OCSVM's adopted point sits on
+a fragile peak (grid neighbours average 0.168 against its 0.206) that the test
+pass punishes in one cell and barely rewards in the other. The 24 h cap is now
+validated for LOF/OCSVM rather than assumed, and the default remains the
+published operating point for both. Selection saw only rows and windows left
+of the 70% train split; the test window was scored exactly once per family.
+
 ## Reproduce
 
 ```bash
@@ -261,6 +300,7 @@ uv run python -m anomaly_detection.cli tune
 uv run python -m anomaly_detection.cli evaluate
 uv run python -m anomaly_detection.cli nab            # NAB headline track (12 series, event metrics)
 uv run python -m anomaly_detection.cli nab-sweep      # detector x feature sweep + alert budgets
+uv run python -m anomaly_detection.cli nab-tune       # train-side operating-point selection + one test pass
 # or via DVC:
 dvc repro projects/03-anomaly-detection
 ```
@@ -290,18 +330,21 @@ uv run pytest projects/03-anomaly-detection -q
 
 Delivered so far: Optuna HPO, seeded random baseline, adaptive-threshold
 streaming, rolling-median residual features, NSL-KDD transfer probe, the NAB
-real-data primary track with event-based metrics — and the wave-14 sweep: all
+real-data primary track with event-based metrics — the wave-14 sweep: all
 three detector families × both feature sets on NAB (PR-AUC 0.515–0.574, no
 winner; residuals do not transfer their synthetic dominance), plus episode
 deduplication and a 24 h per-series page budget that cut alerts 20–30× while
 *improving* range-F1 in every cell (headline config 1,609 → 80 pages,
-range-F1 0.157 → 0.315, recall 0.729 → 0.562). What remains:
+range-F1 0.157 → 0.315, recall 0.729 → 0.562) — and the wave-15 tuning: the
+alert operating point is now selected per family on train-side validation
+(inner 80/20 split of each train window, 6 windows / 5 series), evaluated
+once on NAB test. IsolationForest adopts (0.5%, 24 h) and transfers (budgeted
+80 → 46 pages, range-F1 0.315 → 0.382); LOF keeps the default; OCSVM's
+marginal adoption fails to transfer (−0.043/+0.033 test F1) — the measured
+limit of 6-window validation evidence, published as such. What remains:
 
 - **Recalibrate the adaptive drift trigger on real data** — the median/IQR
   trigger tuned on synthetic fires on 26% of NAB chunks; it needs a
   higher z threshold or a variance-normalised statistic before production use.
-- **Tune the alert-budget operating point** — the 24 h per-series cap is a
-  documented assumption; per-family thresholds and cooldowns chosen on
-  train-side validation (never against test labels) are the next step.
 - **Range precision is still the wall** (0.05–0.12 raw across the sweep) —
   unattended paging stays deferred until real-data precision improves.

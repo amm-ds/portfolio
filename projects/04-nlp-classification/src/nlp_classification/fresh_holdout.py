@@ -9,8 +9,9 @@ Two bounded experiments over the persisted artifacts — no retraining:
    contains (the seeded draw is deterministic), takes the complement inside
    the full AG News test partition (7.6k rows), draws a fresh seeded
    stratified holdout from it, and scores both selection candidates plus the
-   TF-IDF baseline, ``encoder_b`` and — when the artifact exists — the full
-   120k fine-tune. The point is an unbiased reading of the two candidates;
+   TF-IDF baseline, ``encoder_b``, any persisted controlled-scale rungs
+   (``distilbert_scale_<N>``) and — when the artifact exists — the full 120k
+   fine-tune. The point is an unbiased reading of the two candidates;
    no further selection is applied.
 
 2. **Confidence-routed serving** (the cost-sensitive routing item). Serve
@@ -52,10 +53,12 @@ from nlp_classification.model import (
     NN_MODEL_PATH,
     TUNED_MODEL_PATH,
     build_nn_model,
+    existing_scale_rungs,
     load_baseline,
     load_nn_state_dict,
     predict_baseline,
     predict_proba_nn,
+    scaled_model_name,
 )
 from nlp_classification.shims import Dataset
 
@@ -158,6 +161,14 @@ def run_fresh_holdout(cfg: NLPConfig, loader: Any = load_ag_news) -> dict[str, A
     if fulldata_path.exists():
         proba = _proba_distilbert(cfg, fulldata_path, fresh, n_labels)
         runs["distilbert_full_120k"] = _metrics_dict(
+            y_true, [int(v) for v in proba.argmax(axis=-1)]
+        )
+
+    # controlled data-scale rungs: same fresh holdout, same scoring protocol —
+    # the unbiased reading of the data-scale effect at each bounded rung.
+    for n in existing_scale_rungs(cfg):
+        proba = _proba_distilbert(cfg, cfg.models_dir / scaled_model_name(n), fresh, n_labels)
+        runs[f"distilbert_scale_{n}"] = _metrics_dict(
             y_true, [int(v) for v in proba.argmax(axis=-1)]
         )
 

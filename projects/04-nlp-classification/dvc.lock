@@ -339,8 +339,8 @@ stages:
       nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 3830ef058ad8c70bd467e7f3a9d02b5f
-      size: 958
+      md5: 7268569477a89d59713e60aa61268fa9
+      size: 1294
     - path: reports/models/baseline.joblib
       hash: md5
       md5: e6c54ba1c00cc7bc324bf66a6fd9fc3b
@@ -363,11 +363,11 @@ stages:
       size: 591
     - path: src/nlp_classification
       hash: md5
-      md5: d03d08a08d9226f4443c50dc30202fe0.dir
-      size: 267840
+      md5: 7dbced0e1b4a73e0552f946ce7803269.dir
+      size: 287637
       nfiles: 25
     outs:
     - path: reports/fresh_holdout.json
       hash: md5
-      md5: 2a18bad9d915ba74818b6a5093c2eb23
-      size: 3879
+      md5: f46aa47c56a89cca843a808be962c626
+      size: 4551

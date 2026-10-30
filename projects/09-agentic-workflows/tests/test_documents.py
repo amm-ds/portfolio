@@ -2,9 +2,9 @@
 
 Unit tests build a tiny fixture FAISS index (deterministic fake embedder — no
 network, no dependency on 01's data) and point the tool at it; one integration
-test loads 01's real index and is skip-marked when it is absent. The t15
-ground-truth facts are pinned against the fixture so graders cannot drift
-from the corpus.
+test loads 01's real index and is skip-marked when it is absent. The t15 and
+held-out h12 ground-truth facts are pinned against the fixture/real index so
+graders cannot drift from the corpus.
 """
 
 from __future__ import annotations
@@ -180,5 +180,25 @@ class TestRealCorpusIntegration:
             assert any("aviation-122#c000" in hit and "1903" in hit for hit in wright)
             wind = search_documents("wind power supplied TWh world electricity share 2022")
             assert any("renewable-energy-122#c000" in hit and "2022" in hit for hit in wind)
+        finally:
+            get_retriever.cache_clear()
+
+    def test_real_index_finds_h12_facts(self) -> None:
+        """Held-out expansion task h12 (photosynthesis, previously unexercised
+        Wikipedia topic): the top hit must name chlorophyll a and carry both
+        absorbed-wavelength keywords inside the tool's 600-char excerpt."""
+        get_retriever.cache_clear()
+        try:
+            task = next(t for t in evals.HELDOUT_SUITE if t.id == "h12")
+            assert task.expected_tools == ["search_documents"]
+            hits = search_documents(
+                "which form of chlorophyll is the main photosynthetic pigment "
+                "and which light wavelengths does it absorb"
+            )
+            assert hits, "expected at least one hit"
+            top = hits[0].lower()
+            assert "chlorophyll a" in top
+            for keyword in task.expected_keywords:
+                assert keyword.lower() in top, keyword
         finally:
             get_retriever.cache_clear()

@@ -90,8 +90,25 @@ persists the tuned GBM pair + zone reference to `reports/models/serving/`
 
 ```
 POST /projects/07-open-data-mobility/forecast {"zone_id": 132, "features": {...}}
-→ {"zone_id":132,"borough":"Queens","zone":"JFK Airport","prediction":223.827,"p90":251.811}
+→ {"zone_id":132,"borough":"Queens","zone":"JFK Airport","prediction":223.827,"p90":251.811,"service":"yellow"}
 ```
+
+Per-service retraining is productionized (wave 15): the same command also
+fits the green bundle — the measured wave-14 control recipe (default GBM
+family on the service's own history + quantile-0.9 p90 twin) over all
+534,240 curated green zone-hours — and persists it under
+`reports/models/serving/green/` in the identical three-file contract, plus a
+typed `services.json` registry (`mobility.schemas.ServingRegistry`) indexing
+`yellow` (root, dir `.`) and `green` (dir `green`). The showcase API's
+loader is directory-parameterized, so the green bundle is loadable as-is;
+`mobility.serving.predict_service(cfg, service, zone_id, features)` is the
+typed mobility-side reference for per-service inference (unknown zone /
+missing features raise `ValueError`, mirroring the API's 422s). The
+showcase API endpoint routes per service now: the forecast request accepts
+an optional `service=yellow|green` field (default yellow), resolved through
+the `services.json` registry and echoed in the response (unknown service →
+422); apps/showcase-api tests pin default-yellow parity, green routing
+against the committed green bundle, and unchanged readiness.
 
 Per-borough test MAE (gbm_mean): Manhattan 14.2, Unknown 4.5, Queens 2.2,
 Brooklyn 1.2, N/A 0.9, Bronx 0.5, EWR 0.3, Staten Island 0.2 pickups/hour.
@@ -129,12 +146,14 @@ Artifacts per scored month in `reports/drift/`: `<month>.json` (machine
 report), `<month>_mae.html`/`.json` (themed figure vs the pinned baseline),
 `<month>.dq.json` (gate detail), and a running `DRIFT.md` digest. The manual
 DVC stage (`dvc repro drift_check`, month from `params.yaml` `drift.month`)
-writes the same `reports/drift` out. Months scored so far (from the local
-snapshot): 2024-11 — MAE 5.059 vs pinned 4.676 (+8.2%, within tolerance);
-2024-12 — MAE 5.046 vs pinned 4.676 (+7.9%, within tolerance). Two in-window
-months verify the wiring, the DQ gates and the reporting contract; no scored
-month has exceeded tolerance yet, so true unseen-drift behavior remains
-unmeasured (2025-01+ needs a network fetch).
+writes the same `reports/drift` out. Months scored so far: 2024-11 — MAE
+5.059 vs pinned 4.676 (+8.2%, within tolerance); 2024-12 — MAE 5.046 vs
+pinned 4.676 (+7.9%, within tolerance); and the first genuinely unseen month
+**2025-01**, fetched live through the checksum machinery — MAE **4.442** vs
+pinned 4.676 (**−5.0%**, within tolerance), MAPE 59.6%, ΔMAE vs naive +34.6%,
+p90 coverage 87.4% (slight under-cover vs the 90% target). Unseen-window
+behavior is now measured: three months scored, none regressed, so the alarm
+path remains unwalked only because no month has exceeded tolerance.
 
 Weather elasticity (mean hourly pickups, rain ≥1 mm vs dry, test window):
 
@@ -207,8 +226,16 @@ checksum-pinned in `data/raw/checksums.json`, verified loudly on every run).
   (`gbm_green_retrained` beats green persistence on MAE/RMSE/MAPE at two
   months of green history); drift observatory scored 2024-11 (+8.2%) and
   2024-12 (+7.9%) in-window against the pinned artifact.
-- **Remaining:** score the first genuinely unseen drift month (2025-01+ needs
-  a network fetch — exit 2 until published) and productionize per-service
-  retraining behind a scheduled green-scale fit.
-- **Deferred:** causal weather claims and longer-horizon forecasts — different
-  study contracts, not tuning knobs.
+- **Delivered (wave 15):** the first genuinely unseen drift month —
+  2025-01, fetched live through the checksum machinery — scored in-window
+  (MAE 4.442 vs pinned 4.676, −5.0%; p90 coverage 87.4%); and per-service
+  retraining productionized as the `gbm_green_served` serving bundle +
+  typed `services.json` registry + `predict_service` reference
+  implementation.
+- **Delivered:** the showcase API forecast endpoint routes per service — the
+  request accepts an optional `service=yellow|green` field (default yellow),
+  resolved through the `services.json` registry and echoed in the response
+  (unknown service → 422); apps/showcase-api tests pin default-yellow parity,
+  green routing against the committed green bundle, and unchanged readiness.
+- **Deferred:** causal weather claims and longer-horizon forecasts —
+  different study contracts, not tuning knobs.

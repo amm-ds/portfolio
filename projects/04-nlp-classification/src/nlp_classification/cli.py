@@ -34,6 +34,9 @@ from nlp_classification.model import (
     resolve_device,
     save_baseline,
     save_nn_state_dict,
+    scaled_history_name,
+    scaled_meta_name,
+    scaled_model_name,
     train_baseline,
     train_nn,
 )
@@ -101,7 +104,9 @@ def train_nn_cmd(
     subset: int | None = typer.Option(
         None,
         "--subset",
-        help="Bounded per-class stratified subset of the full split (evidence runs).",
+        help="Bounded per-class stratified subset of the full split — a controlled "
+        "data-scale ladder rung, saved to distilbert_scale_<N>.pt (+ sidecar) so "
+        "the headline full-data artifact is never overwritten.",
     ),
     force_cpu: bool = typer.Option(
         False, "--force-cpu", help="Run the full-data path on CPU despite the wall-clock estimate."
@@ -139,8 +144,14 @@ def train_nn_cmd(
                 f"({len(train_part):,} rows) — this is a bounded evidence run, "
                 "not the full 120k GPU job."
             )
-        model_path = cfg.models_dir / FULLDATA_MODEL_PATH
-        history_path = Path(cfg.reports_dir) / "history_fulldata.json"
+        if subset is not None:
+            # Ladder rung: per-subset artifact paths (never clobber the
+            # headline full-data model) + a provenance sidecar for the story.
+            model_path = cfg.models_dir / scaled_model_name(subset)
+            history_path = Path(cfg.reports_dir) / scaled_history_name(subset)
+        else:
+            model_path = cfg.models_dir / FULLDATA_MODEL_PATH
+            history_path = Path(cfg.reports_dir) / "history_fulldata.json"
     else:
         train_part = _load_split(cfg, "train")
         val_part = _load_split(cfg, "val")
@@ -157,6 +168,28 @@ def train_nn_cmd(
     model, history = train_nn(cfg, train_tok, val_tok, n_labels, device_obj)
     save_nn_state_dict(model, model_path)
     history.to_json(history_path)
+    if full_data and subset is not None:
+        # Provenance sidecar: the controlled ladder compares rungs, so each
+        # carries its device, row counts, hypers and measured wall-clock.
+        meta = {
+            "generated_by": f"train-nn --full-data --subset {subset} --device {device_obj.type}",
+            "subset": subset,
+            "train_rows": len(train_part),
+            "val_rows": len(val_part),
+            "device": device_obj.type,
+            "batch_size": cfg.batch_size,
+            "epochs_requested": cfg.epochs,
+            "learning_rate": cfg.learning_rate,
+            "weight_decay": cfg.weight_decay,
+            "warmup_ratio": cfg.warmup_ratio,
+            "early_stop_patience": cfg.early_stop_patience,
+            "seed": cfg.seed,
+            "wall_clock_s": round(time.perf_counter() - started, 1),
+            "model": str(model_path),
+            "history": str(history_path),
+        }
+        meta_path = Path(cfg.reports_dir) / scaled_meta_name(subset)
+        meta_path.write_text(json.dumps(meta, indent=2) + "\n")
     best = history.best_epoch()
     typer.echo(
         f"model saved to {model_path} "

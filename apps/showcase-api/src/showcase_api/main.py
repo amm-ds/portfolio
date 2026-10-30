@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import TimeoutError as FutureTimeout
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -551,7 +551,11 @@ _FORECAST_BUSY_DETAIL = "forecast capacity busy (2 concurrent forecasts max) —
 
 # --- Served forecasts (Project 07) -----------------------------------------
 # Loads the compact serving artifact built by `mobility.cli build-serving-artifact`;
-# see projects/07-open-data-mobility/SERVING.md for the contract.
+# see projects/07-open-data-mobility/SERVING.md for the contract. Wave 15 added
+# per-service bundles: services.json registers each service's bundle dir (the
+# loader is directory-parameterized, so green/ loads as-is) and the request's
+# `service` field selects one. Yellow stays the default and its path is
+# untouched; the green bundle is cached per directory like the root one.
 
 _MOBILITY_ID = "07-open-data-mobility"
 _SERVING_DIR = _project_dir(_MOBILITY_ID) / "reports" / "models" / "serving"
@@ -560,6 +564,9 @@ _SERVING_DIR = _project_dir(_MOBILITY_ID) / "reports" / "models" / "serving"
 class ForecastRequest(BaseModel):
     zone_id: int = Field(ge=1)
     features: dict[str, float] = Field(min_length=1, max_length=64)
+    # Per-service bundle selection: "yellow" (default, the root bundle) or
+    # "green" (serving/green/, wave 15). Anything else is a 422.
+    service: Literal["yellow", "green"] = "yellow"
 
 
 class ForecastResponse(BaseModel):
@@ -568,23 +575,65 @@ class ForecastResponse(BaseModel):
     zone: str
     prediction: float
     p90: float
+    # The selected service, echoed back; additive for pre-wave-15 clients.
+    service: Literal["yellow", "green"]
 
 
-def _serving_artifacts() -> tuple[Any, dict[str, Any], list[dict[str, Any]]] | None:
-    """Load the serving bundle once and cache it (joblib load is ~10 ms per call
-    on a 6.5 MB artifact — not per-request material, and caching removes the
-    disk-amplification concern entirely)."""
-    artifacts = serving.cached_artifacts(_SERVING_DIR, extra_json=("zones.json",))
+def _service_dir(service: str) -> Path:
+    """Resolve a service name to its bundle dir under ``_SERVING_DIR``.
+
+    ``services.json`` (written by build-serving-artifact) is the registry; its
+    ``dir`` values must stay inside the serving bundle so a corrupted registry
+    can never shift resolution outside it. When the registry is absent (a
+    pre-wave-15 yellow-only bundle) the legacy layout applies: yellow = the
+    root bundle, green = green/.
+    """
+    registry_file = _SERVING_DIR / "services.json"
+    if registry_file.is_file():
+        registry = json.loads(registry_file.read_text())
+        services = registry.get("services") if isinstance(registry, dict) else None
+        entry = services.get(service) if isinstance(services, dict) else None
+        if not isinstance(entry, dict):
+            raise HTTPException(status_code=422, detail=f"unknown service {service!r}")
+        resolved = (_SERVING_DIR / str(entry.get("dir") or ".")).resolve()
+        root = _SERVING_DIR.resolve()
+        if resolved != root and root not in resolved.parents:
+            raise HTTPException(
+                status_code=422, detail=f"service {service!r} dir escapes the serving bundle"
+            )
+        return resolved
+    return _SERVING_DIR / "green" if service == "green" else _SERVING_DIR
+
+
+def _service_artifacts(service: str) -> tuple[Any, dict[str, Any], list[dict[str, Any]]] | None:
+    """The cached (model, meta, zones) triple for a service's bundle dir.
+
+    ``None`` when that bundle is absent — the caller raises the 503 with build
+    instructions, same as the pre-wave-15 behavior for the root bundle.
+    """
+    artifacts = serving.cached_artifacts(_service_dir(service), extra_json=("zones.json",))
     if artifacts is None:
         return None
+    # Cross-check against the bundle meta: a meta that declares a service must
+    # match the requested one (green/meta.json carries service: "green"; the
+    # yellow root meta declares none, which means yellow).
+    declared = artifacts["meta"].get("service")
+    if declared is not None and declared != service:
+        raise HTTPException(
+            status_code=422, detail=f"bundle declares service {declared!r}, not {service!r}"
+        )
     return artifacts["model"], artifacts["meta"], artifacts["zones"]
 
 
 @app.post(f"/projects/{_MOBILITY_ID}/forecast", response_model=ForecastResponse)
 def forecast_mobility(request: ForecastRequest) -> ForecastResponse:
-    """Zone-hour demand forecast from the persisted tuned GBM (+p90 band)."""
+    """Zone-hour demand forecast from the persisted GBM pair (+p90 band).
+
+    ``service`` selects the per-service bundle: "yellow" (default, unchanged
+    behavior) or "green" (retrained green-taxi bundle, same contract).
+    """
     _LIVE_GUARD.gate()
-    artifacts = _serving_artifacts()
+    artifacts = _service_artifacts(request.service)
     if artifacts is None:
         raise HTTPException(
             status_code=503,
@@ -618,6 +667,7 @@ def forecast_mobility(request: ForecastRequest) -> ForecastResponse:
             zone=str(zone_row.get("zone", "?")),
             prediction=round(max(0.0, pred), 3),
             p90=round(max(0.0, p90), 3),
+            service=request.service,
         )
 
     return _run_bounded_with_timeout(_predict, _FORECAST_SEMAPHORE, _FORECAST_BUSY_DETAIL)

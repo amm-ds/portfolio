@@ -45,6 +45,23 @@ class HPOMultiSeed(PortfolioBaseModel):
     startup_trials: int = Field(default=2, ge=1)
 
 
+class ScaleLadder(PortfolioBaseModel):
+    """Controlled data-scale ladder: seeded ``--subset N`` rungs on one device.
+
+    Each subset trains DistilBERT on a seeded per-class stratified slice of the
+    full AG News train split (same hypers, same device) so data size is the only
+    varied factor. ``evaluate`` and ``fresh-holdout`` score whichever rung
+    artifacts exist under ``reports/models/distilbert_scale_<N>.pt``.
+    """
+
+    subsets: list[int] = Field(
+        default_factory=lambda: [4000, 12000, 40000],
+        min_length=1,
+        description="Pre-carveout row counts for the ladder rungs (subset 4000 "
+        "reproduces the bounded 3.6k rows — the cross-device twin rung).",
+    )
+
+
 class NLPConfig(PortfolioBaseModel):
     """Bounded run configuration for AG News text classification."""
 
@@ -91,6 +108,9 @@ class NLPConfig(PortfolioBaseModel):
     hpo: HPOConfig = Field(default_factory=HPOConfig)
     hpo_best: HPOBest | None = None
     hpo_seeds: HPOMultiSeed = Field(default_factory=HPOMultiSeed)
+
+    # Controlled data-scale ladder (roadmap: bounded-vs-full confound)
+    scale_ladder: ScaleLadder = Field(default_factory=ScaleLadder)
 
     # Fresh-holdout selection + confidence-routed serving (roadmap experiments)
     fresh_holdout_samples: int = Field(

@@ -9,9 +9,9 @@ working showcase on the standard platform
 > Headline: a 15-task deterministic suite grades a hosted multi-step
 > workflow at 15/15 on every grader — answers, exact tool-set, step budget,
 > latency — for $0.13 cloud-equivalent per suite (~$0.0088/task mean) of the
-> $2.00 cap, and a 10-task held-out
-> set (3 designed-to-fail probes) verifies the behavior generalizes beyond
-> the tuning prompts.
+> $2.00 cap, and a 19-task held-out
+> set (13 answer tasks + 6 designed-to-fail probes) verifies the behavior
+> generalizes beyond the tuning prompts.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows)
 
@@ -41,18 +41,19 @@ unprompted extra calls count as misses.
 | step budget | 15/15 |
 | latency | median **18.2 s**, p95 31.1 s per task; 60 s budget held 15/15 |
 | tokens / cost | ~85k in + ~12k out; suite total **$0.13** cloud-equivalent of the $2.00 suite cap (~$0.0088/task mean) |
-| held-out set | 7/7 answer success, 7/7 exact tool set, **3/3 should-fail probes refused gracefully** (`detail.heldout`) |
+| held-out set | 13/13 answer success, 13/13 exact tool set (22 calls, all planned), **5/6 should-fail probes refused gracefully** (`detail.heldout`) |
 
 One chart tells the whole verification story — the tuning suite passes all
-four graders 15/15, held-out answers pass 7/7, and all three
-designed-to-fail probes refuse gracefully:
+four graders 15/15, held-out answers pass 13/13, and 5 of 6
+designed-to-fail probes refuse gracefully (the one miss is a
+failure-message wording gap, detailed below):
 
-![Outcomes by split: tuning suite 15/15 on every grader, held-out answers 7/7, should-fail probes 3/3 refusals — the full verification story in one chart.](../assets/projects/09-agentic-workflows/suite_summary.png){ width="100%" }
+![Outcomes by split: tuning suite 15/15 on every grader, held-out answers 13/13, should-fail probes 5/6 refusals — the full verification story in one chart.](../assets/projects/09-agentic-workflows/suite_summary.png){ width="100%" }
 
-| suite | 15 tuning tasks + 10 held-out, 5 categories — 14 tuning tasks over the deterministic Atlas Valley corpus, 1 real-data lookup over 01's Wikipedia index (t15), held-out tasks reuse both corpora unseen |
+| suite | 15 tuning tasks + 19 held-out, 5 categories — 14 tuning tasks over the deterministic Atlas Valley corpus, 1 real-data lookup over 01's Wikipedia index (t15), held-out tasks reuse both corpora unseen |
 |---|---|
 | graders | answer success (exact keywords), tool selection (exact tool set), step budget, latency budget — deterministic `pydantic-evals` evaluators; `evaluate` runs fully offline from `data/run_records.json` |
-| should-fail probes | 3 held-out tasks ask for a nonexistent tool or an impossible conversion; `RefusalSuccess` grades the failure behavior (no crash + a stated refusal) — a fabricated number fails |
+| should-fail probes | 6 held-out tasks ask for a nonexistent capability, an impossible conversion, or an absent fact; `RefusalSuccess` grades the failure behavior (no crash + a stated refusal) — a fabricated number fails |
 | capture | every run record carries per-node `StepTrace`s plus per-call `tool_calls` (name, args, latency, result size, ok), the plan's step list, and the critique verdict |
 | budgets | spend-ledger caps: $2.00 suite (`LLM_SUITE_COST_LIMIT_USD`), $0.25 per task; `budget_limits` on every live call |
 | model | hosted `kimi-for-coding` via the repo-root `.env` (ADR-0004); local Ollama or any OpenAI-compatible server (e.g. LM Studio: `http://localhost:1234/v1`) through the same branch |
@@ -141,9 +142,48 @@ caught by the deterministic step grader. Captured calls rose from 30 to
 33–35 (repeated same-tool lookups, exact sets unchanged), and one repeat
 exercised the repair path: the AST-locked calculator rejected a
 non-arithmetic `floor()` expression and the bounded retry recovered. Within
-the evaluated envelope the workflow is repeatable; the held-out sample stays
-n=10, so this remains evidence for a supervised pilot, not a
-generalization guarantee.
+the evaluated envelope the workflow is repeatable; the held-out sample is
+now n=19 after the 2026-10-30 expansion below, and this remains evidence
+for a supervised pilot, not a generalization guarantee.
+
+## Held-out expansion (2026-10-30) and measured local-provider limits
+
+The held-out set grew from 10 to **19 tasks**: +6 answer tasks (h11–h16)
+over previously unexercised corpus facts (radio call sign and emergency
+channel, battery base-load-only remainder, ft→m conversion, weekly drone
+endurance, freezer box capacity, and the photosynthesis topic of 01's
+Wikipedia slice) plus +3 designed-to-fail probes (h17 currency conversion,
+h18 fact absent from the handbook, h19 arithmetic outside the calculator's
+AST bounds). The new tasks ran under the existing $0.25/$2.00 guards on the
+local Ollama provider (`qwen3.6:35b-a3b-q4_K_M`; hosted credentials blanked
+for the run, metered **$0.00** by the local rate card — 27 metered calls,
+111k in / 32k out tokens, ~35 min for 9 tasks); records are mixed-provider
+by design (h01–h10 hosted, h11–h19 local).
+
+| split | n | result |
+|---|---|---|
+| answer tasks | 13 | answer success 13/13, exact tool set 13/13 (22 calls, all planned; precision/recall/exact-set 100%) |
+| should-fail probes | 6 | graceful refusal 5/6 — h17/h18 stated grounded refusals; h19 see below |
+
+Measured negatives, kept honest:
+
+- **h19 (2^500):** the model kept calling the capped calculator (both
+  bounded-retry Execute visits burned on "exponent too large") and the graph
+  exited through its failure End — whose message carries no refusal marker,
+  so `RefusalSuccess` scores it a miss. A failure-message wording gap, not
+  confabulation: no fabricated number left the workflow.
+- **Latency budget is provider-sensitive:** the 60 s ceiling was tuned on the
+  hosted endpoint (all 12 hosted held-out tasks ran 9.0–40.9 s); **7/9 local
+  tasks exceeded it** (67.1–1,430.9 s on this machine's qwen3.6 generation
+  speeds — 12/19 held-out latency passes overall). h17's critique revise →
+  re-execute loop on ~2.5 min generations also produced the suite's only
+  step-budget miss (10 > 8; step budget 18/19 overall). The USD caps were
+  never at risk ($0.00 local).
+
+Honest caveat: n=19 (13 + 6) is still a small sample — the held-out set
+checks for prompt overfitting and confabulation/failure behavior, it does
+not re-estimate the headline rates. Details in `metrics.json →
+detail.heldout`.
 
 ## Architecture
 

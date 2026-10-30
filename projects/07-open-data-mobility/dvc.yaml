@@ -130,9 +130,11 @@ stages:
     cmd: uv run python -m mobility.cli build-serving-artifact
     deps:
       - src/mobility/serving.py
+      - src/mobility/gbm.py
       - reports/models/gbm_tuned.joblib
       - reports/models/gbm_p90_tuned.joblib
       - data/curated/zones.parquet
+      - data/curated/green_zone_hour_demand.parquet
       - data/features/test.parquet
     outs:
       - reports/models/serving
@@ -151,6 +153,10 @@ stages:
   # newest published month). Scores `drift.month` against the persisted
   # serving artifact — no retraining. Exit 2 (month not published yet) is
   # expected for the newest months and is not a repro failure signal here.
+  # Use `dvc repro --single-item drift_check` (or `dvc commit drift_check -f`
+  # after CLI runs): a bare `dvc repro` walks upstream stages and re-runs
+  # `tune` after deleting its outs — expensive, and an interrupted run leaves
+  # them deleted (happened 2026-10-30; restored from the DVC cache).
   drift_check:
     cmd: uv run python -m mobility.cli drift-check --month ${drift.month}
     deps:

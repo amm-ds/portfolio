@@ -30,6 +30,12 @@ hpo_seeds:
   n_trials: 6
   epochs_max: 3
   startup_trials: 2
+# Controlled data-scale ladder: seeded --subset rungs of the full split trained
+# on one device (train-nn --full-data --subset N). evaluate/fresh-holdout
+# score whichever distilbert_scale_<N>.pt artifacts exist; subset 4000
+# reproduces the bounded 3.6k rows (the cross-device twin rung).
+scale_ladder:
+  subsets: [4000, 12000, 40000]
 # Filled by the hpo stage (see reports/hpo_best.json and reports/hpo_study.json).
 hpo_best:
   learning_rate: 3.818145165896875e-05

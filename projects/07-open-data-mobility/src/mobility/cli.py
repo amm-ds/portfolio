@@ -91,9 +91,9 @@ def train_nn_cmd() -> None:
 
 @app.command("build-serving-artifact")
 def build_serving_artifact_cmd() -> None:
-    """Persist the tuned GBM pair + zones for the showcase API (SERVING.md)."""
+    """Persist the yellow GBM pair + per-service (green) bundle + registry."""
     out = build_serving_artifact(_cfg())
-    typer.echo(f"serving artifact -> {out}")
+    typer.echo(f"serving artifact -> {out} (yellow root + green/ per-service bundle)")
 
 
 @app.command("transfer")

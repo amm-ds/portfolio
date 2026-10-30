@@ -128,11 +128,14 @@ sections:
 
       The scheduled drift observatory scores newly published TLC months against
       the persisted model with training-identical features and a ±15% tolerance;
-      regressions can open an issue through the response runbook. Two months are
-      scored now (local snapshot): 2024-11 at +8.2% and 2024-12 at +7.9%, both
-      in-window — so the wiring, the DQ gates and the reporting contract are
-      verified, but no month has yet exceeded tolerance, meaning true
-      unseen-drift behavior is still unmeasured.
+      regressions can open an issue through the response runbook. Three months
+      are scored: 2024-11 at +8.2% and 2024-12 at +7.9% from the local snapshot,
+      and the first genuinely unseen month **2025-01** (fetched live through the
+      checksum machinery) at **−5.0%** — MAE 4.442 vs pinned 4.676, MAPE 59.6%,
+      ΔMAE vs naive +34.6% — all in-window. Unseen-window behavior is now
+      measured: no regression through 2025-01. The month's p90 coverage is
+      87.4%, a slight under-cover versus the 90% target, consistent with the
+      flagged sparse-zone behavior.
     figures: [actual_vs_pred_top5, borough_mae, zone_fan]
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
   - id: results
@@ -167,9 +170,16 @@ sections:
         persistence on **all three** metrics — MAE 0.1805 vs 0.212, RMSE
         0.688 vs 1.100, MAPE 66.4% vs 81.8% — so the mixed transfer was a
         service-distribution gap, not a sparsity law: per-service retraining
-        is the fix, measured.
+        is the fix, measured. Wave 15 productionizes it: the same recipe
+        (default GBM family on the service's own history, quantile-0.9 p90
+        twin) is fit on all 534,240 curated green zone-hours and persisted
+        as `gbm_green_served` under `reports/models/serving/green/` in the
+        identical three-file contract, indexed by the typed `services.json`
+        registry and served by `mobility.serving.predict_service`.
       - **Serving probe:** the showcase API returned JFK zone 132 point 223.827
-        and p90 251.811.
+        and p90 251.811 (default yellow); the forecast endpoint now also
+        accepts an optional `service=yellow|green` field, routes through the
+        `services.json` registry, and echoes the selected service.
 
       **Business summary:** served as-is for yellow-taxi next-hour planning
       (−28.3% MAE vs persistence on a strict temporal holdout); size staffing
@@ -185,18 +195,22 @@ sections:
       make the 41.2M-row result reproducible on a laptop. The served model's
       measured result is **MAE 4.676, −28.3% versus same hour yesterday, MASE
       0.763**. The p90 band is useful where calibrated and flagged where sparse;
-      weather findings remain directional, the drift observatory has scored two
-      months in-window (wiring verified, unseen drift still unmeasured), and
-      the green-transfer question is settled: yellow weights transfer mixed,
-      per-service retraining beats persistence on every metric at two months of
-      history. [MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md)
+      weather findings remain directional, the drift observatory has scored
+      three months including the first genuinely unseen one (2025-01 at −5.0%
+      vs the pinned MAE, in-window; coverage 87.4%), and the green-transfer
+      question is settled and productionized: per-service retraining beats
+      persistence on every metric at two months of history, and the green
+      service now ships as a contract-identical serving bundle
+      (`gbm_green_served`). [MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md)
       and `SERVING.md` document intended use and the artifact contract.
 
       **Business summary:** keep serving `gbm_tuned` for yellow-taxi planning;
-      the buffer band is decision-grade except in sparse zones; extend to a new
-      vehicle service only behind a green-scale retraining run, and treat the
-      drift observatory as a watchdog whose alarm path is wired but untested by
-      a real regression so far.
+      the buffer band is decision-grade except in sparse zones; green-taxi
+      demand is servable from the per-service retrained bundle (evidence: the
+      control beat persistence on every metric at two months of green
+      history); and the drift observatory has now seen a genuinely unseen
+      month without regression — the alarm path remains unwalked only because
+      no scored month has regressed.
     figures: []
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 roadmap:
@@ -204,7 +218,18 @@ roadmap:
     text: Streaming 41.2M-trip pipeline with temporal ladder, p90 calibration and served `gbm_tuned`.
   - status: delivered
     text: Green-transfer study + per-service retraining control (green-trained GBM beats persistence on all metrics); drift 2024-11 and 2024-12 scored in-window.
-  - status: remaining
-    text: Score the first genuinely unseen drift month (2025-01+ needs a network fetch) and productionize per-service retraining.
+  - status: delivered
+    text: >-
+      First genuinely unseen drift month scored (2025-01 fetched live: MAE
+      4.442 vs pinned 4.676, −5.0%, in-window; coverage 87.4%) and per-service
+      retraining productionized (`gbm_green_served` bundle + typed
+      `services.json` registry + `predict_service`).
+  - status: delivered
+    text: >-
+      Showcase-API `service` field live: POST
+      /projects/07-open-data-mobility/forecast accepts optional
+      service=yellow|green (default yellow), routes via services.json, echoes
+      it; API tests pin default-yellow parity, green routing on the committed
+      bundle (differs from yellow), 422 on unknown service.
   - status: deferred
     text: Causal weather claims and longer-horizon forecasts — different study contracts.

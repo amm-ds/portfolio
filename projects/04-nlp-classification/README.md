@@ -146,17 +146,37 @@ a better headline — its peak 0.9477 vs the shipped 0.9464 is the validation
 split under a different LR schedule, inside run-to-run noise. Figure:
 `reports/figures/epochs_probe.*`.
 
-Scaling evidence (all on the same shared 1000-row test split, seed 42):
+Scaling evidence — the controlled data-scale ladder (roadmap item, delivered):
+all rungs use the same seeded stratified protocol and identical hypers; the
+MPS rungs vary **data size only**, and the 3.6k rung exists on both devices
+(same rows by construction) to separate the device component. Every rung is
+scored on the shared 1,000-row test split *and* the same 1,000-row fresh
+holdout; per-rung wall-clock and device provenance live in
+`reports/scale_meta_<N>.json`.
 
-| Train rows | Run | Test macro-F1 | Δ vs 3.6k |
-|---|---|---|---|
-| 3.6k | `distilbert` / `distilbert_tuned` | 0.9021 | — |
-| 18k | `distilbert_fulldata_20k` (evidence) | 0.9270 | +2.5 pp |
-| 108k | `distilbert_full_120k` | **0.9460** | +4.4 pp |
+| Train rows | Run | Device | Val F1 | Test macro-F1 | Δ vs 3.6k (same device) | Fresh macro-F1 |
+|---|---|---|---|---|---|---|
+| 3.6k | `distilbert` (legacy bounded) | CPU | 0.8880 | 0.9021 | — | 0.8962 |
+| 3.6k | `distilbert_scale_4000` | MPS | 0.8849 | 0.9019 | — | 0.9067 |
+| 10.8k | `distilbert_scale_12000` | MPS | 0.9120 | 0.9170 | +1.5 pp | 0.9219 |
+| 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | +3.1 pp | 0.9428 |
+| 108k | `distilbert_full_120k` | MPS | 0.9464 | **0.9460** | +4.4 pp | 0.9529 |
 
-The bounded and full runs differ in data, device and training setup, so these
-increments are **not controlled estimates of data scaling alone**. The dominant
-confusion pair is **stable across the measured runs**:
+- **Device component measured, not assumed:** the same-rows twins differ by
+  0.0002 macro-F1 on the test split and 0.0105 on the fresh holdout (the MPS
+  twin's best-restored epoch is 2, the CPU twin's is 1 — depth + fp noise,
+  still inside the ±1.9 pp CI). The bounded↔full gap is **not** a device
+  artifact.
+- **Data component measured:** at fixed device each 3× step buys +1.5 / +1.6 /
+  +1.3 pp on the test split — a monotone, decelerating curve that reproduces
+  on the fresh holdout (+1.5 / +2.1 / +1.0 pp). The earlier CPU 18k evidence
+  run (0.9270, artifact since overwritten) lands exactly between the 10.8k
+  and 36k rungs, as its size predicts.
+- MPS rung wall-clock measured end-to-end on this machine: 84 s / 292 s /
+  995 s for the 3.6k / 10.8k / 36k rungs (batch 32, 2 epochs, shared-machine
+  load inflates the largest — epoch time tracks load, as the full run did).
+
+The dominant confusion pair is **stable across the measured runs**:
 Business → Sci/Tech, 24/250 at 3.6k → 15/250 at 20k → 14/250 at 120k — the
 same hybrid technology-business headlines (e.g. *"Amazon Snaps Up China's
 Largest Web Retailer…"*) still trip the model, just nearly half as often.
@@ -257,11 +277,12 @@ demonstrations whose gains sit within seed noise. Test macro-F1 also selects
 — the fresh-holdout run (`reports/fresh_holdout.json`) settles it: the fresh
 winner is the HPO-retrained model by +0.0069, i.e. both candidates are tied
 within noise, and the full-data model keeps its edge on untouched data
-(0.9529 fresh vs 0.9460 bounded). The measured ladder is 0.9021 → 0.9270 →
-0.9460 test macro-F1 at 3.6k / 18k / 108k train rows, but data size, device
-and training setup vary together; it is not a controlled scaling estimate.
-Temperature scaling cuts ECE by 71% on the shared test split. Full-data MPS
-timings are machine-specific.
+(0.9529 fresh vs 0.9460 bounded). The controlled scale ladder removes the
+last confound — same-rows CPU/MPS twins at 3.6k bracket the device effect at
+≤0.011 macro-F1, and the same-device rungs isolate a data-scale slope of
++1.3–1.6 pp per 3× step on both the test split and the fresh holdout.
+Temperature scaling cuts ECE by 71% on the shared test split. Full-data and
+rung MPS timings are machine-specific.
 
 Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 
@@ -269,6 +290,7 @@ Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 - `hpo_history.{html,json}` — per-trial validation macro-F1 + best-so-far
 - `hpo_importance.{html,json}` — fANOVA parameter importance over the study
 - `training_curve.{html,json}` — train/val loss + val macro-F1 per epoch
+- `scale_ladder.{html,json}` — controlled data-scale ladder: test macro-F1 vs train rows, by device
 - `confusion_matrix_selected.{html,json}` — selected model, counts
 - `per_class_f1_comparison.{html,json}` — selected model vs TF-IDF baseline, per class
 
@@ -285,16 +307,23 @@ uv run python -m nlp_classification.cli hpo              # 12-trial study, media
 uv run python -m nlp_classification.cli hpo-seeds          # 3-seed variance study (~1 h CPU)
 uv run python -m nlp_classification.cli train-tuned      # retrains with HPO best params
 uv run python -m nlp_classification.cli train-encoder-b  # roberta-base candidate
-uv run python -m nlp_classification.cli evaluate         # seven-run ladder + selection + calibration
+uv run python -m nlp_classification.cli evaluate         # full ladder (incl. scale rungs when trained) + selection + calibration
 
 # fresh-holdout selection reading + confidence-routed serving (no retraining):
 uv run python -m nlp_classification.cli fresh-holdout      # -> reports/fresh_holdout.json (~1 min)
 
 # full-data path (accelerator-gated; auto = CUDA → MPS → CPU):
 uv run python -m nlp_classification.cli train-nn --full-data            # full 120k on MPS (~47 min measured)
-uv run python -m nlp_classification.cli evaluate                        # seven-run ladder + selection + calibration
+uv run python -m nlp_classification.cli evaluate                        # full ladder + selection + calibration
 
-# bounded evidence run on CPU:
+# controlled data-scale ladder (one device, per-rung artifacts; ~1.5/5/17 min on MPS):
+uv run python -m nlp_classification.cli train-nn --full-data --subset 4000 --device mps    # 3.6k twin rung
+uv run python -m nlp_classification.cli train-nn --full-data --subset 12000 --device mps   # 10.8k rung
+uv run python -m nlp_classification.cli train-nn --full-data --subset 40000 --device mps   # 36k rung
+# each rung writes reports/models/distilbert_scale_<N>.pt + history_scale_<N>.json
+# + scale_meta_<N>.json (device/rows/wall-clock); evaluate + fresh-holdout pick them up
+
+# bounded evidence run on CPU (any subset size; never clobbers the full-data artifact):
 uv run python -m nlp_classification.cli train-nn --full-data --subset 20000 --force-cpu
 
 # or everything at once
@@ -346,9 +375,17 @@ existing pipeline:
   τ=0.50, 75.4% of items stay on TF-IDF economics and routed macro-F1 is
   0.9020 — above either constituent alone (0.8785 / 0.8962). Artifacts:
   `reports/fresh_holdout.json`; DVC stage `fresh_holdout`.
-- **Controlled data-scale comparisons — remaining:** the bounded-vs-full gap
-  (+2.5 pp at 20k, +4.4 pp at 108k train rows) still confounds data size with
-  device and training setup; same-device scale sweeps would isolate it.
+- **Controlled data-scale comparisons — delivered:** the bounded-vs-full
+  confound is closed by a controlled ladder. `train-nn --full-data --subset N`
+  trains seeded per-class stratified rungs (3.6k / 10.8k / 36k) on one device
+  with identical hypers — subset 4000 reproduces the bounded rows exactly,
+  giving same-rows CPU/MPS twins. Measured: device effect ≤0.011 macro-F1
+  (twins at 3.6k); data effect at fixed device +1.5 / +1.6 / +1.3 pp per 3×
+  step on the test split, reproducing on the fresh holdout (+1.5 / +2.1 /
+  +1.0 pp). Rung artifacts: `reports/models/distilbert_scale_<N>.pt`,
+  `reports/history_scale_<N>.json`, `reports/scale_meta_<N>.json`; scored as
+  `distilbert_scale_<N>` rows by `evaluate` and `fresh-holdout`; figure
+  `reports/figures/scale_ladder.*`.
 - **Multi-label extension** for hybrid Business/Sci-Tech articles — the
   dominant observed error mode — deferred deliberately: it is a different
   problem contract (multi-hot labels, different metrics), not a tuning knob.

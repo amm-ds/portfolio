@@ -1,0 +1,20 @@
+{
+  "services": {
+    "yellow": {
+      "dir": ".",
+      "train_runs": [
+        "gbm_tuned"
+      ],
+      "n_features": 11,
+      "built_at": "2026-10-30T07:10:39.922033+00:00"
+    },
+    "green": {
+      "dir": "green",
+      "train_runs": [
+        "gbm_green_served"
+      ],
+      "n_features": 11,
+      "built_at": "2026-10-30T07:15:02.440061+00:00"
+    }
+  }
+}

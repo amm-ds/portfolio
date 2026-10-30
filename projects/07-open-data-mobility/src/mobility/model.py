@@ -23,10 +23,10 @@ import polars as pl
 import torch
 from portfolio_core.logging import get_logger
 from portfolio_core.timecv import TimeSeriesCV
-from sklearn.ensemble import HistGradientBoostingRegressor
 
 from mobility.config import MobilityConfig, get_config
 from mobility.features import FEATURE_COLUMNS
+from mobility.gbm import _make_gbm, hpo_result  # re-export (torch-free home: mobility.gbm)
 
 logger = get_logger(__name__)
 
@@ -48,40 +48,6 @@ def _bounded_train(train: pl.DataFrame, cfg: MobilityConfig) -> pl.DataFrame:
         )
         return train.tail(cfg.max_train_rows)
     return train
-
-
-def _make_gbm(
-    params: dict[str, Any], *, seed: int, quantile: float | None = None
-) -> HistGradientBoostingRegressor:
-    """GBM from a plain param dict (HPO output); quantile=None → squared error."""
-    max_iter = (
-        int(params.get("quantile_max_iter", 200))
-        if quantile is not None
-        else int(params["max_iter"])
-    )
-    return HistGradientBoostingRegressor(
-        loss="quantile" if quantile is not None else "squared_error",
-        quantile=quantile,
-        max_iter=max_iter,
-        learning_rate=float(params["learning_rate"]),
-        max_leaf_nodes=int(params["max_leaf_nodes"]),
-        min_samples_leaf=int(params["min_samples_leaf"]),
-        l2_regularization=float(params["l2_regularization"]),
-        max_features=float(params.get("max_features", 1.0)),
-        early_stopping=True,
-        validation_fraction=0.1,
-        n_iter_no_change=20,
-        random_state=seed,
-    )
-
-
-def hpo_result(cfg: MobilityConfig, kind: str) -> dict[str, Any] | None:
-    """Best HPO params for ``kind`` ∈ {gbm, nn}; None when tuning has not run."""
-    path = cfg.models_dir / f"hpo_{kind}.json"
-    if not path.exists():
-        return None
-    result: dict[str, Any] = json.loads(path.read_text())
-    return result
 
 
 def train_baselines(cfg: MobilityConfig | None = None) -> pl.DataFrame:

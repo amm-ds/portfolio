@@ -1065,6 +1065,8 @@
       "pr_auc": 0.41291501423291865,
       "roc_auc": 0.5766735940550413,
       "threshold": -3.054739620977909e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 50,
@@ -1116,6 +1118,8 @@
       "pr_auc": 0.3871260642610488,
       "roc_auc": 0.5543406385792556,
       "threshold": 2.25920627691667e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 58,
@@ -1167,6 +1171,8 @@
       "pr_auc": 0.6263192978496721,
       "roc_auc": 0.6902654449272624,
       "threshold": 2.3311703454698027,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 203,
@@ -1218,6 +1224,8 @@
       "pr_auc": 0.6319907014283255,
       "roc_auc": 0.7037943195415328,
       "threshold": 1.9872173119095016,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 219,
@@ -1269,6 +1277,8 @@
       "pr_auc": 0.4654772868317157,
       "roc_auc": 0.47241325020467284,
       "threshold": 7.435526763722663e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 109,
@@ -1320,6 +1330,8 @@
       "pr_auc": 0.4597310592893368,
       "roc_auc": 0.4799389130297877,
       "threshold": -0.00013861746765044366,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 112,
@@ -1371,6 +1383,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 1.360673726469308e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 7,
@@ -1413,6 +1427,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": -3.860437360406199e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 8,
@@ -1455,6 +1471,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 1.3992392583829862,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 14,
@@ -1497,6 +1515,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 1.5003778316335286,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 13,
@@ -1539,6 +1559,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": -9.781106276277225e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 14,
@@ -1581,6 +1603,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 3.8247486600090445e-08,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 16,
@@ -1623,6 +1647,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": -5.650048571365085e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 62,
@@ -1665,6 +1691,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": -9.562663161322149e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 30,
@@ -1707,6 +1735,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 94838991172494.83,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 389,
@@ -1749,6 +1779,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 94838991172494.83,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 388,
@@ -1791,6 +1823,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 0.00019339582846633618,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 182,
@@ -1833,6 +1867,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 3.2905480819772016e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 107,
@@ -1875,6 +1911,8 @@
       "pr_auc": 0.39893601404773205,
       "roc_auc": 0.6058657268651696,
       "threshold": 1.4501204056993622e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 78,
@@ -1922,6 +1960,8 @@
       "pr_auc": 0.42085079664138225,
       "roc_auc": 0.6347174320124904,
       "threshold": 4.149783815188268e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 36,
@@ -1969,6 +2009,8 @@
       "pr_auc": 0.4316817902167197,
       "roc_auc": 0.5685598244900623,
       "threshold": 1.3609151877982686,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 101,
@@ -2016,6 +2058,8 @@
       "pr_auc": 0.4390646755790809,
       "roc_auc": 0.5634943345833898,
       "threshold": 1.3286007178376023,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 91,
@@ -2063,6 +2107,8 @@
       "pr_auc": 0.4422966796783204,
       "roc_auc": 0.5935157712948879,
       "threshold": -9.733959976534005e-06,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 104,
@@ -2110,6 +2156,8 @@
       "pr_auc": 0.4161305761293578,
       "roc_auc": 0.5563905999769065,
       "threshold": 4.168910548827629e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 99,
@@ -2157,6 +2205,8 @@
       "pr_auc": 0.2290983597972683,
       "roc_auc": 0.6262802265074994,
       "threshold": -9.690056916589196e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 521,
@@ -2204,6 +2254,8 @@
       "pr_auc": 0.23267472325504931,
       "roc_auc": 0.6357116620752985,
       "threshold": 3.0865880597946704e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 508,
@@ -2251,6 +2303,8 @@
       "pr_auc": 0.26805690403222837,
       "roc_auc": 0.5708677685950414,
       "threshold": 1.309030933481725,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 643,
@@ -2298,6 +2352,8 @@
       "pr_auc": 0.25303232830952,
       "roc_auc": 0.5777303336394245,
       "threshold": 1.2999176762913909,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 667,
@@ -2345,6 +2401,8 @@
       "pr_auc": 0.2873886611204136,
       "roc_auc": 0.6515717783899603,
       "threshold": -0.002390453078282645,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 624,
@@ -2392,6 +2450,8 @@
       "pr_auc": 0.2932762683574546,
       "roc_auc": 0.647415059687787,
       "threshold": -9.57345434846957e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 636,
@@ -2439,6 +2499,8 @@
       "pr_auc": 0.7305051703928771,
       "roc_auc": 0.9401895982533541,
       "threshold": -4.1291797387463074e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 631,
@@ -2490,6 +2552,8 @@
       "pr_auc": 0.5921029157985318,
       "roc_auc": 0.9234403599791613,
       "threshold": -7.977966160963024e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 538,
@@ -2541,6 +2605,8 @@
       "pr_auc": 0.37102131742068184,
       "roc_auc": 0.7455357240284468,
       "threshold": 1.4575609011169428,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 905,
@@ -2592,6 +2658,8 @@
       "pr_auc": 0.6138068870282103,
       "roc_auc": 0.803231407202888,
       "threshold": 1.4500573260457204,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 1195,
@@ -2643,6 +2711,8 @@
       "pr_auc": 0.5700257621790619,
       "roc_auc": 0.639257631833202,
       "threshold": -0.00010735094432612964,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 512,
@@ -2694,6 +2764,8 @@
       "pr_auc": 0.5616003410508745,
       "roc_auc": 0.6301942404705942,
       "threshold": 1.1663676445940607e-07,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 559,
@@ -2745,6 +2817,8 @@
       "pr_auc": 0.5027961892965707,
       "roc_auc": 0.6868605498245903,
       "threshold": 2.2199039481640703e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 201,
@@ -2804,6 +2878,8 @@
       "pr_auc": 0.46195126188928304,
       "roc_auc": 0.6686793419210793,
       "threshold": 4.8153823051406974e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 179,
@@ -2863,6 +2939,8 @@
       "pr_auc": 0.6416606805767451,
       "roc_auc": 0.8128883319534264,
       "threshold": 1.3513022262537815,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 354,
@@ -2922,6 +3000,8 @@
       "pr_auc": 0.6237275418920287,
       "roc_auc": 0.8187572880226553,
       "threshold": 1.3522097747377497,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 426,
@@ -2981,6 +3061,8 @@
       "pr_auc": 0.4705239625020683,
       "roc_auc": 0.6124356975740985,
       "threshold": 8.394246616888949e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 234,
@@ -3040,6 +3122,8 @@
       "pr_auc": 0.40872083599413866,
       "roc_auc": 0.5995969676853116,
       "threshold": -0.00017101155627457747,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 183,
@@ -3099,6 +3183,8 @@
       "pr_auc": 0.5403637194668933,
       "roc_auc": 0.7578493750936032,
       "threshold": 3.7838655819744105e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 99,
@@ -3150,6 +3236,8 @@
       "pr_auc": 0.46555573576633025,
       "roc_auc": 0.7244856056543522,
       "threshold": 1.8201043970600406e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 64,
@@ -3201,6 +3289,8 @@
       "pr_auc": 0.5770892427083233,
       "roc_auc": 0.7480131986414869,
       "threshold": 1.3987681474383438,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 94,
@@ -3252,6 +3342,8 @@
       "pr_auc": 0.5777694679394487,
       "roc_auc": 0.7594436473083371,
       "threshold": 1.3578062797401567,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 90,
@@ -3303,6 +3395,8 @@
       "pr_auc": 0.5066669477827485,
       "roc_auc": 0.670855254576286,
       "threshold": -4.704662472929682e-08,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 89,
@@ -3354,6 +3448,8 @@
       "pr_auc": 0.4036473563240495,
       "roc_auc": 0.662883893502616,
       "threshold": 4.46838200218757e-08,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 51,
@@ -3405,6 +3501,8 @@
       "pr_auc": 0.7402246816415663,
       "roc_auc": 0.8262095188147371,
       "threshold": 6.630980486921345e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 48,
@@ -3456,6 +3554,8 @@
       "pr_auc": 0.7366221191421792,
       "roc_auc": 0.8364363445653598,
       "threshold": 1.7710442487550715e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 44,
@@ -3507,6 +3607,8 @@
       "pr_auc": 0.47141705293640335,
       "roc_auc": 0.8070669988199816,
       "threshold": 1.7222658074747723,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 96,
@@ -3558,6 +3660,8 @@
       "pr_auc": 0.6679969688295175,
       "roc_auc": 0.8366330142913334,
       "threshold": 1.7231949482271127,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 87,
@@ -3609,6 +3713,8 @@
       "pr_auc": 0.8083536624949279,
       "roc_auc": 0.9234954765963026,
       "threshold": -5.4097587565136296e-08,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 71,
@@ -3660,6 +3766,8 @@
       "pr_auc": 0.819379544832784,
       "roc_auc": 0.9345745378261441,
       "threshold": -0.0001011589153451645,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 56,
@@ -3711,6 +3819,8 @@
       "pr_auc": 0.6090141818763377,
       "roc_auc": 0.7206562431182558,
       "threshold": -2.0621525320674294e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 86,
@@ -3758,6 +3868,8 @@
       "pr_auc": 0.5703322904422059,
       "roc_auc": 0.7087984686531261,
       "threshold": -1.182593519638564e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 76,
@@ -3805,6 +3917,8 @@
       "pr_auc": 0.6033191580096764,
       "roc_auc": 0.7144224416851591,
       "threshold": 1.4967971899332413,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 96,
@@ -3852,6 +3966,8 @@
       "pr_auc": 0.5883961828635036,
       "roc_auc": 0.7148120542747278,
       "threshold": 1.4487475564473078,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 102,
@@ -3899,6 +4015,8 @@
       "pr_auc": 0.4733511890313343,
       "roc_auc": 0.6434197821557435,
       "threshold": -0.0007621275357288698,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 51,
@@ -3946,6 +4064,8 @@
       "pr_auc": 0.4167080579560859,
       "roc_auc": 0.5992411024342317,
       "threshold": -2.3576550122683673e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 32,
@@ -3993,6 +4113,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": -2.395544700106722e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 27,
@@ -4035,6 +4157,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": -8.365975013441274e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 26,
@@ -4077,6 +4201,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 1.4345686857720281,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 242,
@@ -4119,6 +4245,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 1.4710304433169508,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 182,
@@ -4161,6 +4289,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 2.137256898186241e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 278,
@@ -4203,6 +4333,8 @@
       "pr_auc": null,
       "roc_auc": null,
       "threshold": 7.890613813148468e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 295,
@@ -4245,6 +4377,8 @@
       "pr_auc": 0.9189554207297489,
       "roc_auc": 0.9490434782608697,
       "threshold": -5.410168840702667e-17,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 54,
@@ -4296,6 +4430,8 @@
       "pr_auc": 0.8770335587118175,
       "roc_auc": 0.9317846790890268,
       "threshold": -5.853607529249238e-16,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 42,
@@ -4347,6 +4483,8 @@
       "pr_auc": 0.7623242448578668,
       "roc_auc": 0.7883726708074535,
       "threshold": 1.3806208524665164,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 126,
@@ -4398,6 +4536,8 @@
       "pr_auc": 0.7689353433359319,
       "roc_auc": 0.8041490683229813,
       "threshold": 1.4026359369974661,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 126,
@@ -4449,6 +4589,8 @@
       "pr_auc": 0.9087445028336812,
       "roc_auc": 0.947743271221532,
       "threshold": 0.00011965154666961907,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 144,
@@ -4500,6 +4642,8 @@
       "pr_auc": 0.8580496118450746,
       "roc_auc": 0.921167701863354,
       "threshold": 3.708514731134987e-05,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
       "streams": {
         "raw": {
           "alerts_fired": 107,

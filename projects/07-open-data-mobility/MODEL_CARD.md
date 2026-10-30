@@ -4,10 +4,12 @@
 
 Next-hour yellow-taxi pickup-demand forecasts per NYC taxi zone (265 zones),
 with a p90 upper uncertainty band, served at
-`POST /projects/07-open-data-mobility/forecast`. Intended for operational
-planning: fleet staging, driver shift timing, and staffing buffers. Horizon is
-**one hour**; the model is a point forecaster + quantile band, not a
-long-range planner, and not a causal model of demand.
+`POST /projects/07-open-data-mobility/forecast`. The request accepts an
+optional `service=yellow|green` field (default `yellow`) selecting the
+per-service serving bundle; the response echoes the selected service.
+Intended for operational planning: fleet staging, driver shift timing, and
+staffing buffers. Horizon is **one hour**; the model is a point forecaster +
+quantile band, not a long-range planner, and not a causal model of demand.
 
 ## Data
 
@@ -26,7 +28,11 @@ same-day weather. Target: next-hour pickups. Train < 2024-10-01 ≤ test
 **Green-taxi transfer caveat:** yellow-trained weights do **not** transfer
 cleanly to green demand (March 2024: MAE 0.296 vs persistence 0.212 — wins
 RMSE/MAPE, loses MAE). Per-service retraining is required before serving any
-non-yellow service class.
+non-yellow service class — and now exists for green: `gbm_green_served`
+(bundle under `reports/models/serving/green/`, wave 15) applies the measured
+control recipe to all curated green history and is served via the endpoint's
+`service` field; its honest out-of-sample evidence remains the wave-14
+control (beats green persistence on MAE/RMSE/MAPE at two months of history).
 
 ## Metrics (Q4 2024 holdout, 584,855 zone-hours)
 

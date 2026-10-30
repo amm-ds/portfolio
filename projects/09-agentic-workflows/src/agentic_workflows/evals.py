@@ -5,11 +5,15 @@ research-ops corpus with exact ground truths — keyword checks the final answer
 must contain and the exact set of tools a correct solution needs — plus one
 cross-project lookup over project 01's real Wikipedia corpus via
 ``search_documents``. The held-out set (``HELDOUT_SUITE``, audit finding 6) is
-10 unseen tasks over the same corpora, 3 of them designed-to-fail probes that
-grade graceful refusal. Grading runs through ``pydantic-evals`` (``Dataset`` +
-custom ``Evaluator`` subclasses); reports, figures and metrics aggregation
-live in :mod:`agentic_workflows.report` and :mod:`agentic_workflows.figures`
-(audit P1 split — re-exported here for import stability).
+19 unseen tasks over the same corpora, 6 of them designed-to-fail probes that
+grade graceful refusal: the original 10 (audit wave) plus a 2026-10-30
+expansion wave (+6 answer tasks across both corpora and all five categories,
++3 refusal probes covering the currency-conversion, missing-corpus-fact and
+calculator-AST-limit axes). Grading runs through ``pydantic-evals``
+(``Dataset`` + custom ``Evaluator`` subclasses); reports, figures and metrics
+aggregation live in :mod:`agentic_workflows.report` and
+:mod:`agentic_workflows.figures` (audit P1 split — re-exported here for
+import stability).
 
 Two entry points, matching the DVC stages:
 
@@ -248,10 +252,11 @@ TASK_SUITE: tuple[EvalTask, ...] = (
 )
 
 # ---------------------------------------------------------------------------
-# Held-out suite: 10 unseen tasks over the same corpora (audit finding 6).
-# 7 answer tasks across all five categories + 3 designed-to-fail probes that
-# ask for what the tools cannot do; those grade graceful refusal, not success.
-# Ground truths verified against tool outputs (see tests/test_evals.py).
+# Held-out suite: 19 unseen tasks over the same corpora (audit finding 6 +
+# 2026-10-30 expansion wave). 13 answer tasks across all five categories and
+# both corpora + 6 designed-to-fail probes that ask for what the tools cannot
+# do; those grade graceful refusal, not success. Ground truths verified
+# against tool outputs (see tests/test_evals.py and tests/test_documents.py).
 # ---------------------------------------------------------------------------
 
 HELDOUT_SUITE: tuple[EvalTask, ...] = (
@@ -338,6 +343,98 @@ HELDOUT_SUITE: tuple[EvalTask, ...] = (
     EvalTask(
         id="h10",
         prompt="Convert 40 kg of ration packs to liters for the water log.",
+        category="out_of_scope",
+        expected_behavior="refuse",
+    ),
+    # --- 2026-10-30 expansion wave (roadmap: expand held-out tasks and
+    # refusal probes across more corpora and models) -----------------------
+    # Answer tasks: unused handbook/Wikipedia facts, same exact grading.
+    EvalTask(
+        id="h11",
+        prompt=(
+            "What is the station's base call sign, and which radio channel is "
+            "reserved for emergencies?"
+        ),
+        category="lookup",
+        expected_keywords=["Atlas Base", "channel 1"],
+        expected_tools=["search_handbook"],
+    ),
+    # Wikipedia arm, previously unexercised topic (photosynthesis): the top
+    # hit "Chlorophyll a" (photosynthesis-091#c000) states the absorbed
+    # wavelengths inside the 600-char excerpt (pinned against the real index
+    # in tests/test_documents.py).
+    EvalTask(
+        id="h12",
+        prompt=(
+            "According to the Wikipedia document corpus: which form of "
+            "chlorophyll is the main photosynthetic pigment in plants, and "
+            "which ranges of light does it absorb most strongly?"
+        ),
+        category="lookup",
+        expected_keywords=["chlorophyll a", "violet-blue", "orange-red"],
+        expected_tools=["search_documents"],
+    ),
+    EvalTask(
+        id="h13",
+        prompt=(
+            "Assuming no HVAC surge overnight, how many kWh of usable battery "
+            "capacity remain in the battery bank after the 8-hour base load?"
+        ),
+        category="calculation",
+        expected_keywords=["11.2"],
+        expected_tools=["search_handbook", "calculator"],
+    ),
+    # Unit pair neither suite has used yet (ft -> m); the prompt is
+    # self-contained, so the exact tool set is unit_convert alone.
+    EvalTask(
+        id="h14",
+        prompt="The new antenna mast is 400 ft tall. Convert that height to meters.",
+        category="conversion",
+        expected_keywords=["121.92"],
+        expected_tools=["unit_convert"],
+    ),
+    EvalTask(
+        id="h15",
+        prompt=(
+            "If the survey drone flies one full-endurance mission per day, "
+            "how many minutes of flight time does it log in one week?"
+        ),
+        category="multi_step",
+        expected_keywords=["294"],
+        expected_tools=["search_handbook", "calculator"],
+    ),
+    EvalTask(
+        id="h16",
+        prompt=(
+            "Record the sample freezer's maximum sample-box capacity in the "
+            "ops notebook for the storage audit, then state the capacity."
+        ),
+        category="note_keeping",
+        expected_keywords=["180"],
+        expected_tools=["search_handbook", "note_store"],
+    ),
+    # Refusal probes, three axes the original three did not cover: an unknown
+    # unit the conversion table has no row for (currency), a fact absent from
+    # the deterministic corpus, and an arithmetic request outside the AST
+    # evaluator's bounded operations.
+    EvalTask(
+        id="h17",
+        prompt=(
+            "The resupply invoice totals $1,850. Convert the amount to euros "
+            "for the accounting file."
+        ),
+        category="out_of_scope",
+        expected_behavior="refuse",
+    ),
+    EvalTask(
+        id="h18",
+        prompt="Look up the Wi-Fi password in the ops handbook for the new field tablet.",
+        category="out_of_scope",
+        expected_behavior="refuse",
+    ),
+    EvalTask(
+        id="h19",
+        prompt="Use the calculator to compute 2^500 exactly.",
         category="out_of_scope",
         expected_behavior="refuse",
     ),

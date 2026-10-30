@@ -100,18 +100,36 @@ curl -s localhost:8000/projects/06-routing-optimization/solve \
 
 ## `POST /projects/07-open-data-mobility/forecast`
 
-Zone-hour demand forecast from the persisted tuned GBM pair (+p90 band).
-Contract: `projects/07-open-data-mobility/SERVING.md`.
+Zone-hour demand forecast from the persisted GBM pair (+p90 band), per
+service (wave 15). Contract: `projects/07-open-data-mobility/SERVING.md`.
 
-- Body: `{"zone_id": int, "features": {name: float, ...}}`
-- Errors: 503 (artifacts not built), 422 on unknown `zone_id` or missing
-  feature names.
-- 200: `{"zone_id", "borough", "zone", "prediction", "p90"}`
+- Body: `{"zone_id": int, "features": {name: float, ...}, "service": "yellow" |
+  "green"}` — `service` is optional (default `"yellow"`, unchanged behavior).
+  Bundle selection comes from the bundle's `services.json` registry (yellow =
+  the root bundle, green = `serving/green/`, same three-file contract);
+  pre-wave-15 bundles without `services.json` fall back to the legacy layout
+  (yellow = root, green = `green/`). Both bundles are cached per directory
+  by the shared loader.
+- Errors: 503 (selected bundle not built), 422 on unknown `zone_id`, missing
+  feature names, or unknown `service` — anything outside the registry (or a
+  bundle meta declaring a different `service` than requested).
+- 200: `{"zone_id", "borough", "zone", "prediction", "p90", "service"}` —
+  `service` echoes the selected bundle; the key is additive for pre-wave-15
+  clients.
 
 ```bash
+# default yellow bundle
 curl -s localhost:8000/projects/07-open-data-mobility/forecast \
   -H 'content-type: application/json' \
   -d '{"zone_id": 132, "features": {"lag_24": 5.0, "lag_168": 4.0, "hour": 8.0}}'
+
+# green-taxi bundle (green meta example row)
+curl -s localhost:8000/projects/07-open-data-mobility/forecast \
+  -H 'content-type: application/json' \
+  -d '{"zone_id": 132, "service": "green",
+       "features": {"lag_1": 0.0, "lag_2": 0.0, "lag_24": 0.0, "lag_168": 0.0,
+                    "hour": 11.5, "day_of_week": 4.0, "month": 2.0,
+                    "prcp_mm": 0.0, "tmax_c": 8.9, "tmin_c": 2.2, "snow_mm": 0.0}}'
 ```
 
 ## Interactive demos (`GET /demos`, `/demos/{id}/manifest`, `/demos/{id}/payload`)
