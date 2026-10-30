@@ -288,6 +288,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "nab_score_distribution",
       "nab_timeline_nyc_taxi",
       "nab_timelines",
+      "nab_tune_surface",
       "pr_curves",
       "telemetry_flags",
       "threshold_sweep"
@@ -321,6 +322,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "epochs_probe",
       "hpo_history",
       "per_class_f1_comparison",
+      "scale_ladder",
       "training_curve"
     ],
     "has_roadmap": true,
@@ -328,6 +330,9 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "baseline_tfidf_logreg",
       "distilbert",
       "distilbert_full_120k",
+      "distilbert_scale_12000",
+      "distilbert_scale_4000",
+      "distilbert_scale_40000",
       "distilbert_tuned",
       "encoder_b"
     ],

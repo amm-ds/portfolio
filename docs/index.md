@@ -9,7 +9,9 @@ baseline, an honest delta, and the code to verify it.
 - **[Urban mobility demand intelligence](projects/07-open-data-mobility.md)** —
   41.2M real trips, **−28.3% forecast error** vs the "same hour yesterday"
   rule, a 90.8%-calibrated staffing band, and a drift observatory that opens
-  an issue when the model degrades.
+  an issue when the model degrades — three months scored to date, including
+  the first genuinely unseen one (2025-01, in-window at −5.0%), with none
+  regressed.
 - **[RAG & agentic assistant](projects/01-rag-agent.md)** — answers only from
   retrieved evidence with per-claim citations; a verify-then-answer loop
   cut unsupported claims from 60% to 47% locally, and a sealed held-out set
@@ -23,10 +25,13 @@ baseline, an honest delta, and the code to verify it.
   Solomon VRPTW instances — hand-written, seeded, machine-validated.
 - An agentic-workflow suite where **15/15 tuning tasks pass every grader**
   (answers, exact tool set, step + latency budgets) on a hosted model, with a
-  sealed held-out set adding **7/7 answers and 3/3 should-fail refusals** —
+  sealed held-out set — now **19 tasks** after the 2026-10-30 expansion —
+  adding **13/13 answers and 5/6 should-fail refusals** (the one miss is a
+  failure-message wording gap, not confabulation)
   for **$0.13 cloud-equivalent** of the metered $2.00 suite cap
   (~$0.0088/task), with two repeat hosted passes confirming 15/15 answers and
-  exact tool sets.
+  exact tool sets; the local-provider held-out wave meters $0.00 but breaks
+  the hosted-tuned 60 s latency budget on 7/9 tasks.
 
 ## Talk to me
 

@@ -7,18 +7,19 @@ export const IMPACT_LINES: Record<string, string> = {
   "02-demand-forecasting":
     "champion runs at 0.843 relative MAE of the seasonal-naive floor on real intermittent demand (MASE 1.078 vs the naive's own 1.310)",
   "03-anomaly-detection":
-    "catches 73% of real incidents; alert budget quantifies the false-positive cost",
-  "04-nlp-classification": "full-data fine-tune reaches 0.946 macro-F1 on a laptop GPU",
+    "16 of 17 labelled windows touched at 1,609 alerts — episode dedup + a 24 h page cap cuts pages to 80 and raises range-F1 0.157 → 0.315; train-side operating-point tuning halves IsolationForest pages again (80 → 46, range-F1 0.315 → 0.382) while OCSVM's marginal adoption fails to transfer — the measured limit of 6-window validation",
+  "04-nlp-classification":
+    "full-data fine-tune reaches 0.946 macro-F1 on a laptop GPU; a controlled same-device ladder isolates the data effect (+1.3–1.6 pp per 3× rows) from device noise (≤0.011 macro-F1)",
   "05-ml-pipeline-churn":
     "cuts retention-campaign cost 41.9% vs the naive policy (CI excludes zero)",
   "06-routing-optimization":
     "within 4.23% of best-known solutions on all 56 instances (+3.73 vehicles)",
   "07-open-data-mobility":
-    "−28.3% demand error on 41.2M trips; p90 staffing band calibrated at 90.8%",
+    "−28.3% demand error on 41.2M trips; p90 staffing band calibrated at 90.8%; the first unseen drift month (2025-01) scores in-window at −5.0%, and green-taxi demand serves from a per-service retrained bundle routed by an optional API `service` field",
   "08-inference-serving":
     "measured latency/throughput frontier across engines, quants, concurrency",
   "09-agentic-workflows":
-    "15/15 on every grader on a hosted model + held-out 7/7 answers, 3/3 should-fail refusals — suite $0.13 of the $2.00 cap, cloud-equivalent",
+    "15/15 on every grader on a hosted model + held-out 13/13 answers, 5/6 should-fail refusals (n=19 suite) — suite $0.13 of the $2.00 cap, cloud-equivalent; the local-provider wave meters $0.00 but breaks the hosted-tuned 60 s budget on 7/9 tasks",
   "10-uplift-experimentation":
     "targeting profit advantage established by paired bootstrap; mail-everyone named as the bar",
 };
@@ -39,13 +40,13 @@ export const SUMMARIES: Record<string, string> = {
   "03-anomaly-detection":
     "Unsupervised incident detection on telemetry streams with an explicit alert budget, quantifying the recall vs false-positive cost trade-off.",
   "04-nlp-classification":
-    "Fine-tuned transformer classifiers for news-topic tagging that reach strong macro-F1 on a single laptop GPU through a reproducible training pipeline.",
+    "Fine-tuned transformer classifiers for news-topic tagging that reach 0.946 macro-F1 on a single laptop GPU, with a controlled data-scale ladder separating device noise from the measured data-scaling slope.",
   "05-ml-pipeline-churn":
     "An end-to-end churn pipeline — features, training, CI-evaluated model registry — that prescribes who to target and cuts retention-campaign cost.",
   "06-routing-optimization":
     "Heuristics and exact methods for vehicle routing that come within a few percent of best-known solutions on standard benchmark instances.",
   "07-open-data-mobility":
-    "A reproducible pipeline over 41.2M real taxi trips joined with weather data, producing demand forecasts with calibrated staffing bands.",
+    "A reproducible pipeline over 41.2M real taxi trips joined with weather data, producing demand forecasts with calibrated staffing bands, a scored drift observatory, and per-service (yellow/green) serving bundles.",
   "08-inference-serving":
     "A serving benchmark that measures the latency/throughput frontier of open models across inference engines, quantizations, and concurrency levels.",
   "09-agentic-workflows":

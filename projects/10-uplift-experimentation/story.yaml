@@ -247,11 +247,13 @@ sections:
       costs, and prospective performance remain unmeasured — the next spend is
       a fresh randomized holdout, not a rollout.
 roadmap:
-  - status: remaining
-    text: Validate the budgeted policy prospectively on a fresh randomized campaign holdout — requires a new live campaign, not derivable from the 2008 snapshot.
-  - status: remaining
-    text: Replace revenue-minus-send-cost with measured margin and fatigue costs before deployment.
-  - status: remaining
-    text: Randomize and empirically evaluate the recommended multi-arm channel mix.
+  - status: delivered
+    text: Hillstrom experimentation stack — RCT validation, power/CUPED, T/X-learners, paired-bootstrap policy CIs, and cost-sensitivity grid on the pinned snapshot.
+  - status: deferred
+    text: Prospective validation of the budgeted policy on a fresh randomized campaign holdout — requires a new live campaign; not derivable from the 2008 snapshot.
+  - status: deferred
+    text: Replace revenue-minus-send-cost profit with measured margin and fatigue costs before deployment — needs per-order margin and contact-fatigue data the snapshot does not carry.
+  - status: deferred
+    text: Empirical evaluation of the recommended multi-arm channel mix — requires randomizing per-customer arm assignment; until then the mix stays a model-estimated planning value.
   - status: deferred
     text: Revisit CUPED only with stronger pre-treatment covariates; current gains are negligible.

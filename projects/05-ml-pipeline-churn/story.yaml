@@ -205,10 +205,8 @@ roadmap:
     text: Evidence pack — fixed-threshold bootstrap CI, cost surface and raw-model fairness slices.
   - status: delivered
     text: FN-cost sensitivity re-run — t*=0.200/0.175/0.100 at FN=3/5/8, every CI excludes zero; queued-DVC path re-validated.
-  - status: remaining
-    text: Freeze the threshold before evaluation and validate cost and fairness on fresh data.
   - status: deferred
-    text: Drift and seasonality claims — the source snapshot has no time axis.
+    text: Frozen-threshold validation of cost and served-policy fairness on fresh data, plus any drift or seasonality claim — the IBM snapshot has no time axis; a new time-stamped feed from the data owner is the prerequisite.
 figure_captions:
   eda_churn_profile: Real telco churn by contract, charges and tenure. Month-to-month churn is 42.7% versus 2.8% for two-year contracts; synthetic outlier/NaN fixtures are separate CI evidence.
   calibration_curve: Raw versus isotonic reliability on the 1,409-row holdout. Isotonic improves ECE 0.028 → 0.016 and the same-holdout cost optimum 619 → 601.
