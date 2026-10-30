@@ -203,7 +203,8 @@ def test_clean_story_has_no_errors(tmp_path):
 def test_second_card_marker_in_one_section_is_error(tmp_path):
     body = CLEAN_STORY.replace(
         "      **In plain terms:** a small system that works.",
-        "      **In plain terms:** a small system that works.\n\n      **Business summary:** a second card",
+        "      **In plain terms:** a small system that works.\n\n"
+        "      **Business summary:** a second card",
     )
     findings = _lint(tmp_path, body)
     assert any(f.rule == "summary-card-count" for f in findings)
@@ -428,7 +429,7 @@ def test_main_exit_codes_and_summary(tmp_path, capsys):
     rc = lsl.main(["--projects-root", str(tmp_path), "--glossary", str(glossary)])
     out = capsys.readouterr().out
     assert rc == 1  # the dirty story carries a pp-abbreviation ERROR
-    # warnings: 3 sections × 2 stories without a figure/diagram (6 no-visual)
+    # warnings: 3 sections x 2 stories without a figure/diagram (6 no-visual),
     # plus a low reading-ease on both evaluation sections (2)
     assert "2 stories — 1 error, 8 warnings" in out
     assert "97-dirty" in out and "pp-abbreviation" in out
