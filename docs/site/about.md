@@ -2,7 +2,7 @@
 
 **Alejandro Mérida Maroto (amm-ds)** — Data Scientist & ML Engineer.
 
-End-to-end systems: data engineering, classical ML, deep learning, and
+I build end-to-end systems: data engineering, classical ML, deep learning, and
 agentic AI — with the engineering artifacts around the code (decision records,
 reproducible pipelines, evaluation harnesses, SLOs, runbooks) that make systems
 operable, not just trainable.

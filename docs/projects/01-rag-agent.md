@@ -2,6 +2,11 @@
 
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship — complete
 
+> A question-answering assistant that answers only from a pinned 593-article
+> Wikipedia corpus and cites every claim. Retrieval finds the right passage
+> 83% of the time, but 18 of 65 hosted answers kept unsupported claims—answers
+> are auditable, yet not trustworthy unattended.
+>
 > Teams routing questions at a knowledge base need answers they can audit —
 > every claim traced to a source, every unsupported claim dropped or refused.
 > This agent answers only from retrieved evidence with per-claim citations:

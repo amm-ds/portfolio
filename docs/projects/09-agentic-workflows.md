@@ -4,6 +4,11 @@
 handbook + project 01's Wikipedia FAISS index (read-only) · **Status:**
 working showcase on the standard platform
 
+> An auditable plan-act-review AI workflow with fixed tools and budgets
+> passed all automated checks: 15/15 fixed tasks, 13/13 unseen answers, 5/6
+> should-fail probes, ~$0.13 per suite. Ready for supervised pilots, not
+> unattended use. Data: synthetic handbook, real Wikipedia chunks.
+>
 > A client deciding where LLM agents may run unsupervised needs graded
 > evidence, not a demo.
 > Headline: a 15-task deterministic suite grades a hosted multi-step

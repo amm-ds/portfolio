@@ -5,6 +5,11 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 (sparse secondary track); seeded synthetic hierarchy (CI fast path) ·
 **Status:** working showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
+> One honest protocol, two demand regimes: on dense Walmart M5 daily sales a
+> tuned ensemble cuts forecast error to 49% vs 60% for the seasonal-naive
+> baseline; on sparse 89%-zero retail demand the winner is the opposite—mostly-zero
+> routing for 945 of 1,069 lumpy series.
+>
 > The headline experiment now runs on the committed Walmart M5 subset — the
 > dense-demand regime where ML demonstrably wins. Under protocol
 > `m5_direct_v1` (10 weekly rolling origins, the last 2 scored once on a

@@ -27,6 +27,7 @@ describe("Footer", () => {
       { text: "Projects", href: "/projects" },
       { text: "Services", href: "/services" },
       { text: "Contact", href: "/contact" },
+      { text: "Glossary", href: "/glossary" },
       { text: "GitHub", href: "https://github.com/amm-ds/portfolio" },
       { text: "LinkedIn", href: LINKEDIN_URL },
       { text: SITE_EMAIL, href: `mailto:${SITE_EMAIL}` },

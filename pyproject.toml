@@ -1,7 +1,7 @@
 [project]
 name = "amm-ds-portfolio"
 version = "0.1.0"
-description = "Architect-level ML/AI portfolio: reproducible monorepo platform with agentic AI, classical ML, deep learning, and open-data showcases."
+description = "Personal ML/AI engineering portfolio: reproducible systems across agentic AI, classical ML, deep learning, and open-data showcases."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }

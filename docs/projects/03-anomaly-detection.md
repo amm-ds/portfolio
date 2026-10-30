@@ -4,6 +4,11 @@
 Benchmark (12 series; seeded synthetic telemetry as the labelled CI fast path;
 NSL-KDD transfer probe) · **Status:** working showcase
 
+> On NAB at a fixed 2% alert budget, IsolationForest catches 16 of 17
+> labelled incident windows but fires 1,609 alerts. Deduplication plus a
+> one-page-per-day cap cuts that to 80 pages at modest recall cost—page the
+> alert stream, not the detector score.
+>
 > On-call engineers pay for missed incidents in outage multiples and for
 > false pages in alert fatigue — the detector choice is a budget question.
 > On real NAB telemetry the champion finds 16 of 17 labelled events (range

@@ -3,6 +3,11 @@
 **Domain:** Deep learning NLP · **Data:** AG News (real, HuggingFace `fancyzhx/ag_news`) ·
 **Status:** Working showcase
 
+> News sorter for AG News' four topics: a language model trained on all 120k
+> articles scores 95% macro-F1 on a fresh holdout, vs 88% for a keyword model
+> 40x faster and free; routing doubtful items to it keeps that quality while
+> 3 of 4 items ride at keyword cost. License unknown.
+>
 > Newsrooms, aggregators, and compliance teams routing a continuous stream of
 > headlines need topic triage that keyword rules break on at the first
 > unfamiliar wording. A full-data DistilBERT fine-tune on a laptop GPU

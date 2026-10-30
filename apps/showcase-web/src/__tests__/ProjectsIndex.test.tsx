@@ -267,7 +267,7 @@ describe("ProjectsIndex", () => {
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
     const rag = cardOf("RAG Agent");
-    expect(rag.querySelector(".summary")!.textContent).toContain("retrieval-augmented agent");
+    expect(rag.querySelector(".summary")!.textContent).toContain("question-answering assistant");
     // sub-topic chip, dataset tag, status chip
     expect(rag.textContent).toContain("Agentic AI & LLM");
     expect(rag.textContent).toContain("data: docs");
@@ -313,27 +313,29 @@ describe("ProjectsIndex", () => {
     expect(document.querySelector(".key-number")).toBeNull();
   });
 
-  it("renders a one-line impact statement on each card (wording from docs/projects/index.md)", async () => {
+  it("renders the story short_version on each card and no hand-maintained impact line", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(document.querySelectorAll(".project-card .impact")).toHaveLength(7));
-    // exact wording of the "Impact in one line" column for project 01
+    await waitFor(() => expect(document.querySelectorAll(".project-card .summary")).toHaveLength(7));
+    // exact generated short_version for project 01 (story.yaml → lib/storyShort.ts)
     expect(
       screen.getByText(
-        "retrieval recall@5 0.83 vs 0.03 random; verify loop cut unsupported-claim share 60%→47% in an on/off A/B (committed hosted 65-q run: 18/65)",
+        "A question-answering assistant that answers only from a pinned 593-article Wikipedia corpus and cites every claim. Retrieval finds the right passage 83% of the time, but 18 of 65 hosted answers kept unsupported claims—answers are auditable, yet not trustworthy unattended.",
       ),
     ).toBeInTheDocument();
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
-    expect(cardOf("Routing").querySelector(".impact")?.textContent).toContain(
-      "within 4.23% of best-known solutions",
+    expect(cardOf("Routing").querySelector(".summary")?.textContent).toContain(
+      "within 4.2% of best-known routes",
     );
+    // single-source copy: no separate impact line remains on cards
+    expect(document.querySelectorAll(".project-card .impact")).toHaveLength(0);
   });
 
   it("shows an empty state when /projects returns []", async () => {

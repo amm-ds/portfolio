@@ -3,6 +3,11 @@
 **Domain:** data engineering + ML · **Data:** NYC TLC yellow-taxi 2024 (41.2M
 trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 
+> Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi
+> trips and public weather: on a strict Oct-Dec holdout the model was 28%
+> more accurate than same-hour-yesterday; its 90% upper band reached 91%
+> coverage (sparse zones excepted).
+>
 > **TL;DR:** NYC taxi fleet planners staging vehicles and driver shifts one hour
 > ahead across 265 zones — demand must be forecast before it arrives.
 > The served tuned GBM removes **28.3% of forecast error** vs "same hour

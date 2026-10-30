@@ -80,7 +80,7 @@ export function Home() {
         </p>
         <p className="hero-sub">
           I design, build and evaluate ML systems end to end, and I keep the code, metrics and
-          case studies public so the results can be checked before we talk.
+          case studies public so the results can be checked before you reach out.
         </p>
         <HeroTerminal />
       </section>
