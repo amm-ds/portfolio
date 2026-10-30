@@ -10,8 +10,8 @@ showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-ope
 > The pipeline cuts decision cost by **41.9%** (1,035 → 601) vs that contact-everyone
 > policy, with a bootstrap 95% CI of [−485, −343].
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
-> [Threshold sandbox source →](https://github.com/amm-ds/portfolio/tree/main/apps/showcase-web/src/demos/churn-sandbox) (interactive when the showcase app is running)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn) ·
+> [Churn sandbox demo source →](https://github.com/amm-ds/portfolio/tree/main/apps/showcase-web/src/demos/churn-sandbox) (runs interactively in the showcase app: `make docker-up` → http://localhost:8000/demos/churn-sandbox)
 
 ## What it shows
 
@@ -57,14 +57,24 @@ threshold.
 ![Paired-bootstrap distribution of the cost delta: all 2,000 resamples sit below zero — the −416 saving's 95% CI excludes zero](../assets/projects/05-ml-pipeline-churn/bootstrap_ci.png){ width="100%" }
 - Base rate 26.5% (vs 8.8% synthetic): the operating point does NOT transfer
   (t*=0.175 vs 0.700) - the cost-curve procedure does. Calibration verdict
-  flips too: isotonic improves both ECE and cost on telco.
+  flips too: isotonic improves both ECE and the cost optimum on telco.
+- **Cost-model sensitivity** (`reports/sensitivity.json`, re-scored via
+  `cli sensitivity`): the served-isotonic cost and threshold move with the
+  missed-churner price — 510 at t=0.200 (FN=3), 601 at t=0.175 (FN=5),
+  699 at t=0.100 (FN=8) — and every variant's paired-bootstrap CI excludes
+  zero. Calibration's cost edge is itself cost-model dependent: isotonic
+  helps at FN=5 (619 → 601) but slightly hurts at FN=8 (691 → 699). The
+  naive comparator stays 1,035 throughout.
 
 ![The cost-optimal threshold moves with the base rate — 0.175 on telco versus 0.700 on synthetic — while the cost-curve procedure transfers](../assets/projects/05-ml-pipeline-churn/cost_surface.png){ width="100%" }
 
 - Fairness slices: recall uniform across gender (0.90 both), higher for
   seniors (0.97 vs 0.88); the real gap is contractual (month-to-month 0.98 vs
   two-year 0.00 at FN=5) - a stated business choice, movable on the cost
-  surface.
+  surface. These slices are **raw-model** counts at t=0.150: the raw policy
+  misses 19 of 36 one-year and all 9 two-year churners — the served artifact
+  is isotonic-calibrated at t=0.175, so the counts must not be attributed to
+  serving.
 - Figures include `fairness_slices` (grouped bars) and `cost_surface`
   (FN cost x threshold heatmap with the operating point marked).
 - 5/5 DQ gates on the pinned snapshot; full pipeline ~10 s, deterministic:
@@ -79,9 +89,10 @@ threshold.
 
 ## Artifacts
 
-- Figures: interactive versions in the [interactive case study](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn), served from `reports/figures/` (HTML + JSON for the showcase app)
+- Figures: interactive versions in the [case study on GitHub](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn), served from `reports/figures/` (HTML + JSON for the showcase app)
 - Metrics: `reports/metrics.json` (5-run ladder + `_meta.cost_delta_ci`) ·
-  Report: `reports/report.html` · DQ: `reports/dq_report.md`
+  Report: `reports/report.html` · DQ: `reports/dq_report.md` ·
+  Sensitivity: `reports/sensitivity.json` (FN=3/5/8 re-score)
 - Selection record: `data/model_selection.json` · Dataset identity card:
   `data/dataset_contract.json` (SHA-256, seeded source)
 

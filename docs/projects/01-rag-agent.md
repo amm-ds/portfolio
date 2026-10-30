@@ -9,7 +9,7 @@
 > claims from 60% to 47% of answers locally, holding at 28% (18/65) on the
 > hosted run, where RAGAS faithfulness reaches 0.685 [0.61, 0.76].
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
 
 A grounded question-answering agent over a curated topical slice of English
 Wikipedia. A `pydantic-ai` agent answers **only** from retrieved evidence and

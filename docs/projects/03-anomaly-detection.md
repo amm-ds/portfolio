@@ -7,9 +7,11 @@ NSL-KDD transfer probe) · **Status:** working showcase
 > On-call engineers pay for missed incidents in outage multiples and for
 > false pages in alert fatigue — the detector choice is a budget question.
 > On real NAB telemetry the champion finds 16 of 17 labelled events (range
-> recall 0.729), but at 0.107 range precision the firehose is the finding.
+> recall 0.729), but at 0.107 range precision the firehose is the finding —
+> and the delivered fix is a page budget: episode dedup + a 24 h per-series
+> cap cut alerts 1,609 → 80 while *raising* range-F1 0.157 → 0.315.
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection)
 
 Unsupervised anomaly detection, **real data first**: 12 series from the
 [Numenta Anomaly Benchmark](https://github.com/numenta/NAB) (AWS CloudWatch,
@@ -42,25 +44,43 @@ budget; bold = overall champion.*
 | **overall** | **0.527** | **0.157** | **0.107 / 0.729** | **16/17, 1 609 alerts** |
 
 The event-window verdict leads: 16 of 17 labelled windows detected (range
-recall 0.729) at 0.107 range precision — 1 609 alerts for 16 events. Only
-IsolationForest has been run on NAB so far, so the family ranking above is
-IsolationForest's alone (strongest on realTraffic, 0.728 PR-AUC / 0.310
-range-F1); the cross-detector winner claim lives on the synthetic ladder
-only — tuned IsolationForest by ROC-AUC (0.9171), tuned OCSVM by PR-AUC
-(0.1355). The honest delta vs. the synthetic track (ROC-AUC 0.916, residuals
-0.9999): injected synthetic anomalies are trivially separable; LOF's
-local-density blindness is structural and tuning-resistant. New: a
-downsampled single-series interactive timeline, `nab_timeline_nyc_taxi`
+recall 0.729) at 0.107 range precision — 1 609 alerts for 16 events. A
+detector × feature sweep on NAB (12 series × IsolationForest/LOF/OCSVM ×
+rolling vs rolling+residual features, all untuned at the same train-anchored
+2% threshold) leaves **no winner**: pointwise PR-AUC spans 0.515–0.574 (best
+is LOF on rolling+residual, 0.574; the headline IsolationForest+residual
+recipe sits at 0.527), raw range recall 0.688–0.750 with 1 609–3 586 alerts
+emitted — rolling-median residuals do **not** transfer their synthetic
+dominance to real incidents. The deliverable is therefore the alert-budget
+layer, not a different detector: episode dedup + a 24 h per-series cap cut
+pages 20–30× and *raise* range-F1 in every sweep cell, because most raw
+pages were burst re-alerts inside incidents:
+
+| sweep cell (raw → budgeted) | alerts | range recall | range-F1 |
+|---|---|---|---|
+| isolation_forest + rolling | 1,864 → 66 | 0.729 → 0.604 | 0.154 → 0.388 |
+| isolation_forest + rolling_residual | 1,609 → 80 | 0.729 → 0.562 | 0.157 → 0.315 |
+| lof + rolling | 3,263 → 109 | 0.750 → 0.542 | 0.086 → 0.213 |
+| lof + rolling_residual | 3,586 → 122 | 0.750 → 0.542 | 0.088 → 0.200 |
+| ocsvm + rolling | 2,412 → 87 | 0.688 → 0.521 | 0.086 → 0.281 |
+| ocsvm + rolling_residual | 2,253 → 91 | 0.688 → 0.438 | 0.102 → 0.214 |
+
+The cross-detector winner claim lives on the synthetic ladder only — tuned
+IsolationForest by ROC-AUC (0.9171), tuned OCSVM by PR-AUC (0.1355). The
+honest delta vs. the synthetic track (ROC-AUC 0.916, residuals 0.9999):
+injected synthetic anomalies are trivially separable; LOF's local-density
+blindness is structural and tuning-resistant. New: a downsampled
+single-series interactive timeline, `nab_timeline_nyc_taxi`
 (3 of 4 labelled windows detected, 179 alerts), makes the one real miss
 hoverable.
 
 ## Artifacts
 
-- NAB metrics: `reports/nab_metrics.json` · synthetic ladder: `reports/metrics.json` (7 runs)
+- NAB metrics: `reports/nab_metrics.json` · NAB sweep + alert budgets: `reports/nab_sweep.json` · synthetic ladder: `reports/metrics.json` (7 runs)
 - Probes: `reports/detect.json` (adaptive stream), `reports/residual_probe.json`,
   `reports/nsl_probe.json`
 - Evaluation report: `reports/report.html`
-- Figures: interactive versions live in the [showcase app case study](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection);
+- Figures: interactive versions live in the [case study on GitHub](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection);
   static artifacts (HTML + JSON) in `reports/figures/`
 - DQ report: `reports/dq_report.html` — 8/8 gates passing
 

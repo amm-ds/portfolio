@@ -19,6 +19,7 @@ themselves versioned and refreshable.
 | `ag-news-train.dvc` | AG News (HF auto-converted parquet) | [ag-news](../docs/data-registry/ag-news.md) |
 | `wikipedia-20231101-en-0000.dvc` | Wikipedia 20231101.en (HF, shard 0) | [wikipedia](../docs/data-registry/wikipedia.md) |
 | `hillstrom.csv.dvc` | Hillstrom email marketing (MineThatData, author's site) | [hillstrom](../docs/data-registry/hillstrom.md) |
+| `telco-churn.dvc` | Telco churn, IBM sample (IBM mirror) | [telco-churn](../docs/data-registry/telco-churn.md) |
 
 ## Usage
 

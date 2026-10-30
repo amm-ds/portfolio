@@ -14,13 +14,25 @@ repro` inside its project directory) and is served by the
 
 ## Services
 
-- **ML/AI systems design & delivery** — from problem framing and data contracts
-  to deployed, monitored models.
-- **Agentic AI / LLM applications** — RAG, structured tool use, evaluation
-  harnesses, cost/latency SLOs (see Project 01).
-- **Data engineering** — reproducible pipelines over large open/commercial data
-  (see Project 07).
-- **MLOps & reproducibility audits** — versioning, CI gates, review culture.
+Seven offerings, each backed by a public case study (details on the
+[Services](services.md) page):
+
+- **AI/LLM systems** — RAG, structured tool use, eval harnesses, cost/latency
+  budgets with fallback chains (see Projects 01, 09).
+- **Machine learning** — leakage-proof backtests, calibrated models,
+  business-cost threshold analysis, pinned CI evaluation (see Projects 02,
+  05, 10).
+- **Optimization** — routing, scheduling, allocation against benchmark
+  instances, with the optimality gap stated (see Project 06).
+- **Data engineering** — versioned, DQ-gated pipelines over large
+  open/commercial data (see Project 07).
+- **MLOps & reproducibility audits** — CI evaluation gates, Docker + uv
+  environments, runbooks (see Projects 05, 08).
+- **Interactive dashboards** — decision tools over live endpoints with
+  parity-tested payloads (see the showcase app demos).
+- **Full-stack product engineering** — typed APIs, React frontends, and
+  one-command deployments that run from a clean clone (see Project 07 and
+  the showcase app).
 
 ## Contact & availability
 

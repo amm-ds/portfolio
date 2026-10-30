@@ -14,11 +14,11 @@ export const IMPACT_LINES: Record<string, string> = {
   "06-routing-optimization":
     "within 4.23% of best-known solutions on all 56 instances (+3.73 vehicles)",
   "07-open-data-mobility":
-    "−28.4% demand error on 41.2M trips; p90 staffing band calibrated at 90.8%",
+    "−28.3% demand error on 41.2M trips; p90 staffing band calibrated at 90.8%",
   "08-inference-serving":
     "measured latency/throughput frontier across engines, quants, concurrency",
   "09-agentic-workflows":
-    "15/15 on every grader on a hosted model + held-out 7/7 answers, 3/3 should-fail refusals — ledger $0.086 of the $2.00 suite cap (cloud-equivalent)",
+    "15/15 on every grader on a hosted model + held-out 7/7 answers, 3/3 should-fail refusals — suite $0.13 of the $2.00 cap, cloud-equivalent",
   "10-uplift-experimentation":
     "targeting profit advantage established by paired bootstrap; mail-everyone named as the bar",
 };
@@ -45,11 +45,11 @@ export const SUMMARIES: Record<string, string> = {
   "06-routing-optimization":
     "Heuristics and exact methods for vehicle routing that come within a few percent of best-known solutions on standard benchmark instances.",
   "07-open-data-mobility":
-    "A reproducible pipeline over 41M+ real taxi trips joined with weather data, producing demand forecasts with calibrated staffing bands.",
+    "A reproducible pipeline over 41.2M real taxi trips joined with weather data, producing demand forecasts with calibrated staffing bands.",
   "08-inference-serving":
     "A serving benchmark that measures the latency/throughput frontier of open models across inference engines, quantizations, and concurrency levels.",
   "09-agentic-workflows":
-    "Agentic workflows (planning, tool use, graded tasks) that run a fixed task suite on hosted models at a measured per-task cost.",
+    "Agentic workflows (planning, tool use, graded tasks) that run a deterministic 15-task suite — a synthetic handbook corpus plus real Wikipedia retrieval via 01's index — on a hosted model at a measured, budget-capped per-suite cost.",
   "10-uplift-experimentation":
     "Uplift modeling with paired-bootstrap evaluation that identifies who to target for retention campaigns — and when mailing everyone wins.",
 };

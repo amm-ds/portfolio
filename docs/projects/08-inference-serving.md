@@ -10,7 +10,7 @@ the standard platform
 > with single-digit-second p95 through concurrency 8 — measured on the real
 > endpoint, 760 requests, zero failures.
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/08-inference-serving)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/08-inference-serving)
 
 Every project in this portfolio serves LLMs through one local Ollama
 endpoint (ADR-0004 — no redundant gateway, see the project's DESIGN.md), and
@@ -24,9 +24,12 @@ validated schemas, so the numbers describe real traffic, not a lab proxy.
 Full run: 19 cells, **760 requests, zero failures, schema-valid rate 1.00 and
 keyword-quality 1.00 in every cell** (8 fixed prompts x 5 repeats per cell,
 `temperature 0`, `max_tokens 128`, reasoning disabled). One caveat before
-reading on: these numbers are a single **author run** on one machine — **not
-committed to the repo** and not universal. Regenerate on your hardware with
-`bench --full && report` and compare cell-for-cell.
+reading on: these numbers are a single **author run** on one machine — not
+universal. The raw full-grid record is committed at
+[`data/bench_run.json`](https://github.com/amm-ds/portfolio/blob/main/projects/08-inference-serving/data/bench_run.json)
+(760 requests, 2026-10-15), so the published percentiles re-aggregate offline
+with `report`; regenerate on your hardware with `bench --full && report` and
+compare cell-for-cell.
 
 Each cell shows p95 latency in seconds / aggregate output tok/s for that
 model at the given concurrency; the bold row is the fastest arm at every

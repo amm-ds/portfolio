@@ -26,7 +26,7 @@ subset (600 daily store-item series, primary headline); UCI Online Retail II
 > track kept below as the secondary study, where conservative selective routing
 > assigns zero to 945 of 1,069 lumpy series and peak-capable models to the rest.
 
-[Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
+[Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
 ## What it shows
 
@@ -266,7 +266,7 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
 
 ## Artifacts
 
-- Figures: interactive versions live in the [showcase app case study](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting);
+- Figures: interactive versions live in the [case study on GitHub](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting);
   static artifacts (`.html` + `.json`, per track) in `reports_m5/figures/`,
   `reports/figures/` and `reports_uci/figures/`
 - Metrics: `reports_m5/metrics.json` (+ `probabilistic.json`, `evaluation_metadata.json`) ·
@@ -285,7 +285,8 @@ edges the ML pack on this window by 0.1 units — fold-noise level).*
   design summary, real numbers, reproduce commands, client takeaways, roadmap
 - [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting/DESIGN.md) — requirements,
   options considered (global vs per-series, validation protocol, HPO, NN,
-  reconciliation), the M5 protocol decisions (§N), pipeline diagram, changelog
+  reconciliation), the M5 protocol decisions (section N — the M5 headline
+  pivot), pipeline diagram, changelog
 - Dataset card: [UCI Online Retail II](../data-registry/uci-online-retail-ii.md)
 - Drift response runbook: [drift-response.md](../runbooks/drift-response.md)
 - [Evaluation report](https://github.com/amm-ds/portfolio/blob/main/projects/02-demand-forecasting/reports_m5/report.html) — standalone

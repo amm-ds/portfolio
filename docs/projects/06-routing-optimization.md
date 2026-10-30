@@ -12,7 +12,7 @@
 > The solver ladder lands **4.23%** from published best-known optima on all 56
 > Solomon instances, in auditable seeded code.
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
 
 ![ALNS plans feasible, capacity- and time-window-valid routes for all 100 C101 customers on the clustered family, within 3.77% of best-known distance.](../assets/projects/06-routing-optimization/route_map_C101.png){ width="100%" }
 
@@ -35,7 +35,12 @@ against published best-known solutions. Every solution is machine-validated
 Mean gap to published best-known distance, lower is better; the benchmark's
 vehicles-first ranking is reported alongside the gap (see the story results).
 Δ gap is the change in mean gap vs `nearest_neighbor` (the construction
-incumbent), in percentage points; the bold row is the ladder's best.
+incumbent), in percentage points; the bold row is the ladder's best. The
+4.23% mean carries a one-sample test against a zero gap — 95% CI 3.1–5.3 pp,
+t(55) = 7.63, p ≈ 2×10⁻¹⁰ — read narrowly: per-instance gaps cluster by
+family and are deterministic given the seed, so the CI describes spread
+across instances, not sampling uncertainty about a population mean (and
+best-known references are not proven optima).
 
 | solver | mean gap to best-known | Δ gap vs nn | mean runtime |
 |---|---|---|---|
@@ -43,21 +48,29 @@ incumbent), in percentage points; the bold row is the ladder's best.
 | nearest_neighbor | 71.64 % | — | <10 ms/instance |
 | clarke_wright | 18.31 % | −53.33 pp | <10 ms/instance |
 | two_opt_tuned (HPO) | 13.63 % | −58.01 pp | <10 ms/instance |
-| **alns (HPO-tuned) ← best** | **4.23 %** | **−67.41 pp** | **~0.8–2.8 s/instance** |
-| ortools_cp (ALNS-hinted cross-check, 10 s budget) | 4.23 % | −67.41 pp | 13.6 s/instance |
+| **alns (HPO-tuned) ← best** | **4.23 %** | **−67.41 pp** | **~1.1 s/instance (committed run 2.8 s under load)** |
+| alns_fleet (vehicles-first) | 4.30 % | −67.34 pp | ~1.1 s/instance |
+| ortools_cp (ALNS-hinted probe, 10 s budget) | 4.23 % | −67.41 pp | 12.0 s/instance |
+| ortools_cp_unhinted (equal 10 s budget) | no feasible plan on any of the 56 | — | 13.1 s/instance |
 
-Two criteria throughout: ALNS wins 56/56 instances on distance (13.63 % →
-4.23 %, single digits on every family: C1 4.48 %, C2 6.50 %, R1 4.10 %, R2
-3.04 %, RC1 4.75 %, RC2 3.00 %), and under the vehicles-first ranking it wins
-43/56 intra-ladder with a mean of +3.73 vehicles vs best-known (up to +6–8 on
-R2/RC2). The hinted CP-SAT arm is an incumbent-improvement probe, not an
-independent baseline: it ended UNKNOWN on all 56 within its 10 s budget and
-returned the ALNS plan unchanged, while certifying small subproblems to
-optimality (25-customer C101 prefix: 191.8 in 2.9 s). All artifacts live in
+Two criteria throughout: ALNS wins 52/56 instances on distance intra-ladder
+(the fleet-first variant `alns_fleet` wins the other 4 — the hierarchical
+search path occasionally lands in a better-distance optimum), and under the
+vehicles-first ranking ALNS wins 38/56 with `alns_fleet` winning 5/56 (the
+naive solvers take the rest on fleet size at far worse distance); mean +3.73
+vehicles vs best-known (up to +6–8 on R2/RC2). ALNS also undercuts 8
+published references (best RC202 −3.85%). The hinted CP-SAT arm is an
+incumbent-improvement probe, not an independent baseline: it ended UNKNOWN on
+all 56 within its 10 s budget and returned the ALNS plan unchanged at ~10× the
+ALNS runtime, while certifying small subproblems to optimality (25-customer
+C101 prefix: 191.8 in 2.9 s). The unhinted arm at the equal 10 s budget
+produced no feasible plan on any instance — from scratch, the exact model
+yields nothing at this scale and budget. All artifacts live in
 `projects/06-routing-optimization/reports/`: interactive figures (instance
 maps, per-family gaps, convergence descents, runtime-vs-gap Pareto) with
 `results.md` / `metrics.json` / `report.html` for the full per-instance and
-per-family tables — interactive versions in the [interactive case study](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization).
+per-family tables — interactive versions in the
+[case study on GitHub](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization).
 
 ![Before/after of the improvement heuristic on Solomon C101 — left: HPO-tuned 2-opt on the Clarke–Wright plan (15 routes, 1046.53 total distance); right: ALNS on the same instance (11 routes, 860.21). The metaheuristic consolidates the construction plan's overlapping short routes into fewer, longer ones, cutting distance 17.8% (1046.5 → 860.2, matching `alns_convergence_C101`); the after-plan sits 3.77% above the best-known 828.94. Routes reproduced from the committed solution artifact; both plans verified capacity- and time-window-feasible by the project validator.](../assets/projects/06-routing-optimization/route_map_C101_before_after.svg){ width="100%" }
 
@@ -67,9 +80,12 @@ per-family tables — interactive versions in the [interactive case study](https
 
 Delivered (retrospective): ALNS behind the `RoutePlan` contract (13.63 % →
 4.23 % mean gap, dual criteria, HPO-tuned); full 56-instance dual-criteria
-benchmark; hierarchical-objective (vehicles-first) reporting per the SINTEF
-convention; CP-SAT hinted cross-check arm (ties ALNS 56/56 at ~5× runtime,
-certifies small subproblems optimal in seconds).
+benchmark (intra-ladder: ALNS 52/56 on distance, 38/56 vehicles-first; the
+fleet-first twin takes 4 and 5); hierarchical fleet-first objective landed as
+`alns_fleet` (−0.07 mean vehicles at +0.07 pp gap); CP-SAT arms — the hinted
+incumbent-improvement probe (UNKNOWN on all 56 at 100 customers, incumbents
+unchanged at ~10× runtime, small subproblems certified optimal in seconds) and
+the equal-budget unhinted comparison (no feasible plan on any instance).
 
 ## Reproduce
 

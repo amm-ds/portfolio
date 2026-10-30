@@ -8,7 +8,7 @@
 > unfamiliar wording. A full-data DistilBERT fine-tune on a laptop GPU
 > reaches **0.9460 test macro-F1**, ~7.5 pp above the strong TF-IDF baseline.
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
 
 Fine-tuned transformers vs. a TF-IDF + LogisticRegression baseline on news
 topic classification — a hand-written PyTorch training loop, seeded Optuna

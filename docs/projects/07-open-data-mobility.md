@@ -8,7 +8,7 @@ trips) + NOAA GHCN-Daily weather · **Status:** flagship — complete
 > The served tuned GBM removes **28.3% of forecast error** vs "same hour
 > yesterday" on a strict future holdout, with a 90.8%-calibrated p90 staffing band.
 >
-> [Interactive case study with figures →](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
+> [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
 
 ![Zone-hour pickup demand concentrates in Midtown/Manhattan cores and the JFK/EWR airports — the busiest zone averages 213.9 pickups/hour across the 265-zone grid.](../assets/projects/07-open-data-mobility/zone_demand_map.png){ width="100%" }
 
@@ -50,15 +50,27 @@ with documented non-causal caveats.
 
 ## Drift observatory
 
-Monitoring is running software, not just a runbook. The scheduled Thursday
-`.github/workflows/drift-observatory.yml` workflow scores each newly
-published TLC month against the persisted serving model
-(`mobility.cli drift-check --month YYYY-MM`, no retraining): regression
-beyond the ±15% tolerance exits 1 and opens an issue per
-`docs/runbooks/drift-response.md`; months not yet published exit 2.
-First scored month (2024-11): +8.2% vs pinned, within tolerance — a wiring
-check, since real value starts with the first unseen month. Reports
-accumulate in `reports/drift/`.
+Monitoring is running software, not just a runbook: the scheduled
+`.github/workflows/drift-observatory.yml` workflow scores each newly published
+TLC month against the persisted serving model with training-identical
+features, no retraining (mechanics, exit codes, and response steps:
+[project README](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility)
+and [drift-response runbook](../runbooks/drift-response.md)). Two months are
+scored from the local snapshot — 2024-11 at **+8.2%** and 2024-12 at **+7.9%**
+relative MAE, both inside the ±15% tolerance — so the wiring, DQ gates, and
+reporting contract are verified, but no month has exceeded tolerance yet and
+true unseen-drift behavior remains unmeasured. Reports accumulate in
+`reports/drift/`.
+
+## Cross-service transfer (green taxi)
+
+Yellow-trained weights transfer mixed: they lose green-taxi MAE to green
+persistence (0.296 vs 0.212) but win RMSE (−17%) and MAPE (−19%). The control
+arm settles why — a GBM retrained on green's own two months of history
+(`gbm_green_retrained`, 337k zone-hours) beats green persistence on **all
+three** metrics (MAE 0.180 vs 0.212, RMSE 0.688 vs 1.100, MAPE 66.4% vs
+81.8%): the gap is a service-distribution difference with a measured fix, so
+budget a per-service retraining run before extending to a new vehicle class.
 
 ## Serving
 

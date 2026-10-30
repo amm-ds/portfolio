@@ -1,5 +1,11 @@
 # Pre-Publish Review — 2026-10-14
 
+> **Historical snapshot, superseded.** This review records the platform state
+> on 2026-10-14. Later audits and release waves have moved project numbers,
+> coverage totals, and platform facts forward — verify any figure here against
+> the [external audit response (2026-10-15)](2026-10-15-external-audit-response.md)
+> and the current project pages (`docs/projects/index.md`) before quoting it.
+
 State of the platform before opening the site to the public: three independent audits
 (backend/security, frontend/coherence, content/consistency), their fixes, and the
 state of every project and its roadmap.

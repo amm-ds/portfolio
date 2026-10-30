@@ -10,8 +10,9 @@ done. Everything here is enforced by tooling, not by goodwill.
 2. **Lint / format.** ruff (`E,F,I,UP,B,SIM,RUF`), line length 100, enforced by
    pre-commit and CI. Never argue with the formatter.
 3. **Tests.** pytest + hypothesis property tests on every validator. Coverage
-   gates: ≥80% on `libs/*`, ≥60% on projects. A bug fix without a regression
-   test is not a fix.
+   gates: ≥80% on `libs/*` (hard gate in `make test` and the CI libs cell);
+   project and app suites run with coverage measured per package. A bug fix
+   without a regression test is not a fix.
 4. **Config.** Zero hardcoded constants in logic. Every knob is a field on a
    pydantic `BaseModel` / `pydantic-settings` class with a documented default.
 5. **Data.** No raw data in git. Dataset cards pin source, license, checksum,
