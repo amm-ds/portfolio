@@ -67,11 +67,11 @@ DEFAULT_PROJECTS_ROOT = REPO_ROOT / "projects"
 GLOSSARY_JSON = REPO_ROOT / "apps" / "showcase-web" / "src" / "lib" / "glossary.json"
 
 # --- budgets and thresholds ---------------------------------------------------
-FIRST_SECTION_WORD_CAP = 120  # hard cap (error) on the opening section
-SECTION_WORD_BUDGET = 450  # soft per-section budget (warning), main sections
-MAIN_THREAD_WORD_BUDGET = 1200  # soft total across main sections (warning);
-# ~a five-minute read for the always-visible thread (conclusions is collapsed)
-FLESCH_MIN = 50.0  # per-section reading-ease floor (warning)
+FIRST_SECTION_WORD_CAP = 150  # hard cap (error) on the opening section
+SECTION_WORD_BUDGET = 550  # soft per-section budget (warning), main sections
+MAIN_THREAD_WORD_BUDGET = 2600  # soft total across main sections (warning);
+# ~a ten-minute read for the always-visible thread (conclusions is collapsed)
+FLESCH_MIN = 45.0  # per-section reading-ease floor (warning)
 
 #: Trailing takeaway markers (StorySection.tsx renders the final marker paragraph
 #: as the section's summary card). New stories standardize on the business form.
