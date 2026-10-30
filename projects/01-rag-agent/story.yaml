@@ -38,9 +38,9 @@ sections:
     unsupported claims, and a sealed 15-question set drops retrieval to 0.600.
     The system is auditable, not yet trustworthy unattended.
 
-    **Business summary:** Every sentence carries its source, and the right page is
-    usually found. But one answer in four asserts something its citations do not
-    support, so a person must read the cited passage before acting.
+    **Business summary:** This section introduces the assistant and its headline
+    numbers: the right article is found 83% of the time, but 18 of 65 hosted
+    answers kept unsupported claims.
   figures: []
 - id: objectives
   text_md: |
@@ -48,7 +48,7 @@ sections:
     The decision flow below is the contract every question follows.
 
     ```mermaid
-    graph TD
+    graph LR
       Q["Question arrives"] --> D{"Relevant passage<br/>in the corpus?"}
       D -->|"no - outside the corpus"| Z["Calibrated refusal"]
       D -->|"yes"| A["Draft with citations"]
@@ -73,9 +73,9 @@ sections:
     on the machine; with a hosted provider they leave it. That is a user choice.
     An offline mode runs checks with no provider at all.
 
-    **Business summary:** The product promises one thing: an answer you can
-    check, or an honest refusal. Quality, refusal discipline, and cost all carry
-    measured targets.
+    **Business summary:** This section defines what the product must do: answer
+    with citations or refuse, find the right article at least 60% of the time,
+    and stay under $0.01 per query.
   figures: []
 - id: data
   text_md: |
@@ -116,8 +116,9 @@ sections:
     Null and length gates stop bad input before indexing; both question sets are
     graded by hand.
 
-    **Business summary:** Anyone can rebuild the corpus from the recorded
-    source. Every number in this story comes from that one pinned base.
+    **Business summary:** This section records how the corpus was built: five
+    topics, 593 articles capped at 12,000 characters, pinned by a sha256
+    contract with source and license in the data registry.
   figures: []
 - id: eda
   text_md: |
@@ -131,9 +132,9 @@ sections:
     question was checked against the corpus itself, not assumed. A small corpus
     makes checks cheap; nothing about coverage is taken on faith.
 
-    **Business summary:** The knowledge base is small, balanced, and seen in
-    full on purpose. Breadth was traded for checkability: a person looked at
-    every article and every test question.
+    **Business summary:** This section shows the corpus makeup: 102–125 articles
+    per topic, article lengths cut off at 12,000 characters, and every anchor
+    title and test question verified against the corpus.
   figures: [eda_corpus_composition]
 - id: training
   text_md: |
@@ -159,9 +160,9 @@ sections:
     the hosted pass classified 18 of 65 answers as keeping unsupported claims.
     Full run records live in the conclusions.
 
-    **Business summary:** Finding the right page was engineered, measured, and
-    solved on this corpus. Writing claims the sources support is the remaining
-    problem — that is where the effort went next.
+    **Business summary:** This section builds and measures the retrieval
+    pipeline. The chosen setup finds the right article 83% of the time, beating
+    word-match search (68%) and random ranking (3%).
   figures: [retrieval_funnel, chunk_size_sweep, model_comparison]
 - id: evaluation
   text_md: |
@@ -171,7 +172,7 @@ sections:
     per-phase cost metering under a hard cap.
 
     ```mermaid
-    graph TD
+    graph LR
       subgraph Tuning["Tuning set - 65 questions"]
         T1["Rubric judge<br/>failure taxonomy"]
         T2["RAGAS scores<br/>faithfulness, relevancy"]
@@ -207,9 +208,9 @@ sections:
     lower on every axis in a 30-question comparison; the counts and judges
     differ, so no firm claim is made.
 
-    **Business summary:** Trust the measurement setup, not the headline: it
-    catches fabrication, refuses out-of-corpus questions, and prices every run.
-    High-stakes answers still need a human reading the cited passage.
+    **Business summary:** This section grades 65 questions under the measurement
+    contract: refusal accuracy 0.900, p50 latency 23 s, $3.58 per hosted pass.
+    The sealed 15-question set drops recall to 0.600.
   figures: [latency_histogram]
   metrics_keys:
   - retrieval_chunks_200
@@ -238,9 +239,9 @@ sections:
     grounding failure, a support-floor abstention — show failure instead of
     hiding it. No quality claim is made for any corpus beyond this one.
 
-    **Business summary:** Treat this as a measured prototype, not a product ready
-    for your documents. The setup transfers; the accuracy claim stops at this
-    corpus.
+    **Business summary:** This section reads the results: 44 of 65 hosted answers
+    correct, 18 unsupported, 2 retrieval misses, 1 format failure. The accuracy
+    claim stops at this corpus.
   figures: [retrieval_hpo_frontier, failure_taxonomy]
   metrics_keys:
   - retrieval_chunks_200
@@ -267,65 +268,59 @@ sections:
     | local qwen3.6-q4, 30-question subset | 15 correct / 14 unsupported / 1 format | 0.606 |
     | hosted kimi-for-coding, all 65 | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] |
 
-    Sealed held-out pass (15 questions: 8 single-hop, 2 multi-hop, 5
-    unanswerable; hosted pass dated 2026-10-18): recall@5 0.600, recall@10 0.667,
-    MRR@5 0.567 (random MRR@5 floor 0.022); rubric-judge faithfulness
-    0.62 [0.45, 0.79] (n=10 answerable); 5/5 correct refusals; 66 calls, $0.25
-    cloud-equivalent, 47% cached. Retrieval funnel: 975 embedding candidates →
-    195 reranked passages → 54 questions with a relevant article in the final
-    top-3. Hosted tuning pass: p50 23 s and p95 175 s per answer; $3.58
-    cloud-equivalent over 922 calls (agent 64 / RAGAS 605 / verify 125 /
-    judge 128), 79.6% of input tokens cached. Local verify A/B on the first-30
-    subset: verify-on moved outcomes from 12 correct / 18 unsupported-claim to
-    15 correct / 14 unsupported-claim (+1 format failure, an output-retry hiccup
-    under load); RAGAS faithfulness moved 0.651 [0.52, 0.78] → 0.606 [0.44, 0.78]
-    with overlapping intervals, so no improvement is claimed. Hosted RAGAS on the
-    tuning pass: relevancy 0.878, context precision 0.760; refusal accuracy 0.900
-    [0.70, 1.0], cite-when-expected 0.964 [0.909, 1.000], false-abstention rate
-    0.036 [0.00, 0.09]. Verify pass: mean claim-support fraction 0.9487 across 64
-    verified answers, 2 verify abstentions, 39 repair calls.
+    - Sealed held-out pass (15 questions: 8 single-hop, 2 multi-hop, 5
+      unanswerable; hosted pass dated 2026-10-18): recall@5 0.600, recall@10
+      0.667, MRR@5 0.567 (random floor 0.022); rubric-judge faithfulness 0.62
+      [0.45, 0.79] (n=10 answerable); 5/5 correct refusals; 66 calls, $0.25
+      cloud-equivalent, 47% cached.
+    - Retrieval funnel: 975 embedding candidates → 195 reranked passages → 54
+      questions with a relevant article in the final top-3.
+    - Hosted tuning pass: p50 23 s, p95 175 s per answer; $3.58 cloud-equivalent
+      over 922 calls (agent 64 / RAGAS 605 / verify 125 / judge 128), 79.6% of
+      input tokens cached.
+    - Local verify A/B, first-30 subset: 12 correct / 18 unsupported-claim → 15
+      correct / 14 unsupported-claim (+1 format failure, a retry hiccup); RAGAS
+      faithfulness 0.651 [0.52, 0.78] → 0.606 [0.44, 0.78] — no improvement
+      claimed.
+    - Hosted RAGAS, tuning pass: relevancy 0.878, context precision 0.760;
+      refusal accuracy 0.900 [0.70, 1.0], cite-when-expected 0.964 [0.909,
+      1.000], false-abstention rate 0.036 [0.00, 0.09].
+    - Verify pass: mean claim-support fraction 0.9487 over 64 verified answers,
+      2 verify abstentions, 39 repair calls.
 
     ## Protocol
 
-    65 tuning questions (44 single-hop, 11 multi-hop, 10 unanswerable) drive all
-    selection; the sealed 15-question set (8 single-hop, 2 multi-hop, 5
-    unanswerable) is written after tuning froze and scored once per pass. Floors:
-    seeded random ranking and word-match search, scored per configuration.
-    Judges: a rubric judge for the failure taxonomy, hosted RAGAS for
-    faithfulness and relevancy, and a claim verifier that checks each drafted
-    claim against its cited chunk and abstains below a 0.6 support floor (at most
-    2 repair calls). Intervals are the 95% ranges reported by the judges. Recall@k
-    is the share of questions whose relevant article appears in the top k; MRR@5
-    is the reciprocal rank of the first relevant hit, averaged. Cost is a
-    cloud-equivalent rate-card estimate at the kimi-k2.8-preview reference card
-    ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is
-    membership-quota, never billed spend.
+    - Tuning: 65 questions (44 single-hop, 11 multi-hop, 10 unanswerable) drive
+      selection; sealed: 15 (8 single-hop, 2 multi-hop, 5 unanswerable), written
+      after tuning froze, scored once per pass.
+    - Floors: seeded random and word-match search, scored per configuration.
+    - Judges: rubric judge (failure taxonomy), hosted RAGAS (faithfulness,
+      relevancy), claim verifier (per-claim support vs cited chunk, abstains
+      below 0.6, at most 2 repairs).
+    - Metrics: recall@k = relevant article in the top k; MRR@5 = averaged
+      reciprocal rank of the first relevant hit; intervals are the judges' 95%
+      ranges.
+    - Cost: cloud-equivalent rate-card at the kimi-k2.8-preview card
+      ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key
+      is membership-quota, never billed.
 
     ## Limits
 
-    Judge noise at n=30 is comparable to the local A/B deltas. Local repair
-    quality is weak, so verify gains come mainly through abstention. The HPO grid
-    is small, and MiniLM's tie with BGE-small is evidence at this 593-article
-    scale only; the sealed drop says tuning numbers do not repeat on fresh
-    questions. Grounding and repair improvement is deferred — blocked on a fresh
-    external corpus (the data registry holds only this Wikipedia slice). No
-    broad-corpus quality claim and no always-on public chat: held-out retrieval
-    drops, and live hosted calls need an explicit cost budget.
+    - Judge noise at n=30 matches the local A/B deltas.
+    - Local repair quality is weak; verify gains come mainly via abstention.
+    - The HPO grid is small; MiniLM's tie with BGE-small holds at 593 articles.
+    - The sealed drop says tuning numbers do not repeat on fresh questions.
+    - Grounding and repair improvement is deferred — blocked on a fresh external
+      corpus (the registry holds only this Wikipedia slice).
+    - No broad-corpus claim and no always-on chat: held-out retrieval drops, and
+      live hosted calls need a cost budget.
 
     ## Revision notes
 
-    Wave 15 added per-phase cost metering under a hard USD cap: the first hosted
-    pass stopped cleanly at the $3.04 cap, and the completed run metered $3.58
-    cloud-equivalent over 922 calls (agent 64 / RAGAS 605 / verify 125 / judge
-    128), 79.6% of input reads cached—membership-quota usage, never billed spend;
-    the local model costs $0 API at ≈$0.0068/query cloud-equivalent but pays in
-    compute and latency. Wave 16 added the sealed held-out gate (15 questions: 8
-    single-hop, 2 multi-hop, 5 unanswerable; hosted pass dated 2026-10-18):
-    recall@5 0.600 / recall@10 0.667, MRR@5 0.567 (random floor 0.022),
-    rubric-judge faithfulness 0.62 [0.45, 0.79] (n=10 answerable), 5/5 correct
-    refusals, 66 calls, $0.25 cloud-equivalent, 47% cached. Retrieval funnel
-    across the tuning set: 975 embedding candidates narrow to 195 reranked
-    passages, and 54 questions keep a relevant article in the final top-3.
+    - Wave 15: per-phase cost metering under a hard USD cap; the first hosted
+      pass stopped cleanly at $3.04. Local model: $0 API at ≈$0.0068/query
+      cloud-equivalent, paid in compute and latency.
+    - Wave 16: the sealed held-out gate (numbers above).
 
     ## Reproduce
 
@@ -340,7 +335,7 @@ sections:
     `reports/metrics.json`, and `reports/cost_telemetry.json`.
 
     ```mermaid
-    graph TD
+    graph LR
       subgraph Draft["Hosted answer pass"]
         A["Agent draft"] --> J["Rubric judge"]
         A --> RG["RAGAS scores"]
@@ -363,9 +358,9 @@ sections:
       S15 --> OUT
     ```
 
-    **Business summary:** The reusable asset is the measurement setup — floors, a
-    sealed gate, per-phase metering, and a verify loop that turns some fabrication
-    into refusals. Grounding itself is not solved.
+    **Business summary:** This section records the final numbers, protocol,
+    limits, and reproduction steps. Final state: recall@5 0.831 on tuning
+    questions, 0.600 sealed; 18 of 65 hosted answers kept unsupported claims.
   figures: []
 roadmap:
 - status: delivered
