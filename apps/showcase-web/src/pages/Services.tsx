@@ -26,7 +26,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "AI/LLM systems",
     outcome: "Assistants and agents that cite their sources and stay inside their budgets.",
-    elements: ["APIs (FastAPI/REST)", "Inference & serving", "Eval/HPO (Optuna)"],
+    elements: ["APIs (FastAPI/REST)", "Retrieval pipelines", "Structured output", "Eval harnesses"],
     deliverables: [
       "agent service (FastAPI)",
       "retrieval index pipeline",
@@ -41,15 +41,15 @@ const OFFERINGS: Offering[] = [
       "Success is measured on the eval harness — faithfulness and answer relevance against a documented baseline, plus per-task cost and latency budgets — never on demo impressions.",
   },
   {
-    title: "Predictive analytics",
+    title: "Machine learning",
     outcome:
-      "Models evaluated the way the business will judge them — with costs, not vanity scores.",
-    elements: ["Data pipelines", "Viz (Plotly/React)", "Leakage-proof CV"],
+      "Models evaluated the way the business will judge them — against named naive baselines and costed errors, not vanity scores.",
+    elements: ["Leakage-proof CV", "Calibrated models", "Cost curves", "Optuna HPO"],
     deliverables: [
       "leakage-proof backtests",
       "calibrated models with uncertainty bands",
       "business-cost threshold analysis",
-      "interactive reports & dashboards",
+      "pinned CI evaluation reports",
     ],
     evidence: [
       { label: "proof: demand forecast workbench", to: "/projects/02-demand-forecasting" },
@@ -60,28 +60,6 @@ const OFFERINGS: Offering[] = [
     ],
     success:
       "Success is measured by leakage-proof backtest metrics against named naive baselines — relative MAE/WRMSSE for demand, cost-curve deltas for churn, paired-bootstrap uplift for targeting.",
-  },
-  {
-    title: "ML engineering & MLOps",
-    outcome: "A setup where bad models and broken pipelines cannot ship silently.",
-    elements: [
-      "Data pipelines (Polars/DVC)",
-      "MLOps/CI (Actions/Docker)",
-      "uv",
-      "Eval/HPO (Optuna)",
-    ],
-    deliverables: [
-      "CI gates for evaluation & data quality",
-      "dockerized, uv-managed environments",
-      "prioritized remediation gap report",
-      "team playbook, runbooks & handover docs",
-    ],
-    evidence: [
-      { label: "proof: inference serving benchmark", to: "/projects/08-inference-serving" },
-      { label: "proof: CI-evaluated churn pipeline", to: "/projects/05-ml-pipeline-churn" },
-    ],
-    success:
-      "Success is measured by the gates themselves: models ship only with a CI evaluation report against pinned baselines, and the system runs from a clean clone with measured latency/throughput SLOs.",
   },
   {
     title: "Optimization",
@@ -97,23 +75,80 @@ const OFFERINGS: Offering[] = [
       { label: "proof: vehicle routing benchmark", to: "/projects/06-routing-optimization" },
     ],
     success:
-      "Success is measured as the gap to best-known solutions on standard benchmark instances (within 4.23% across 56 CVRPLIB cases) under stated runtime budgets.",
+      "Success is measured as the gap to best-known solutions on standard benchmark instances — 4.23% above published best-known across 56 Solomon cases (95% CI 3.1–5.3 pp) — under stated runtime budgets.",
   },
   {
-    title: "Anomaly detection",
+    title: "Data engineering",
     outcome:
-      "Incident and fraud detection with an explicit alert budget — the recall vs false-positive trade-off quantified, not hand-waved.",
-    elements: ["Unsupervised detection", "Streaming telemetry", "Alert budgets"],
+      "Pipelines that turn raw operational dumps into versioned, tested, analysis-ready datasets.",
+    elements: ["Polars/DVC pipelines", "DQ gates", "Checksum pinning"],
     deliverables: [
-      "detection service over telemetry streams",
-      "recall-vs-alert-budget evaluation",
-      "alerting integration with drift runbook",
+      "versioned raw→feature pipelines",
+      "data-quality gates in CI",
+      "checksum-pinned, rebuildable datasets",
+      "documented data registry entries",
     ],
     evidence: [
-      { label: "proof: incident detection w/ alert budget", to: "/projects/03-anomaly-detection" },
+      { label: "proof: NYC mobility data pipeline", to: "/projects/07-open-data-mobility" },
+      { label: "proof: demand forecast pipeline", to: "/projects/02-demand-forecasting" },
     ],
     success:
-      "Success is measured as recall at a fixed alert budget versus naive detectors, with the false-positive cost curve published rather than implied.",
+      "Success is measured on the holdout the pipeline feeds: the committed 07 pipeline turns 41.2M raw trips into a 265-zone × hour grid whose served model cuts next-hour MAE by 28.3% versus same-hour-yesterday (MASE 0.763).",
+  },
+  {
+    title: "MLOps",
+    outcome: "A setup where bad models and broken pipelines cannot ship silently.",
+    elements: ["CI eval gates", "Docker + uv", "Clean-clone runs"],
+    deliverables: [
+      "CI gates for evaluation & data quality",
+      "dockerized, uv-managed environments",
+      "pinned-baseline comparison on every run",
+      "runbooks & handover docs",
+    ],
+    evidence: [
+      { label: "proof: inference serving benchmark", to: "/projects/08-inference-serving" },
+      { label: "proof: CI-evaluated churn pipeline", to: "/projects/05-ml-pipeline-churn" },
+    ],
+    success:
+      "Success is measured by the gates themselves: models ship only with a CI evaluation report against pinned baselines, and serving runs from a clean clone against measured SLOs (p95 0.81 s at c=1 rising to 7.80 s at c=8 on the committed bench).",
+  },
+  {
+    title: "Interactive dashboards",
+    outcome:
+      "Decision tools people actually use — live demos over committed payloads, not screenshots.",
+    elements: ["React + Plotly", "Live endpoints", "Pinned payloads"],
+    deliverables: [
+      "demo frontend over the served API",
+      "precomputed payload contracts",
+      "parity tests pinning every shown number",
+      "keyboard-navigable, axe-checked components",
+    ],
+    evidence: [
+      { label: "live demo: forecast workbench", to: "/demos/forecast-workbench" },
+      { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
+      { label: "proof: demand forecast workbench", to: "/projects/02-demand-forecasting" },
+    ],
+    success:
+      "Success is measured by the pinned payload contracts: every number the dashboard shows is verified in CI — pooled test WAPE 0.491 vs 0.603 seasonal-naive, decision cost $601 vs $1,035 per 1,400 customers.",
+  },
+  {
+    title: "Full-stack product engineering",
+    outcome:
+      "Working product slices — typed API, web UI, deployment — that run from a clean clone.",
+    elements: ["FastAPI + React", "Docker Compose", "Caddy deploy"],
+    deliverables: [
+      "typed API service with contract tests",
+      "React frontend on shared component patterns",
+      "one-command environment (uv + Docker)",
+      "deployment manifests with rollback notes",
+    ],
+    evidence: [
+      { label: "proof: served demand API", to: "/projects/07-open-data-mobility" },
+      { label: "live demo: forecast workbench", to: "/demos/forecast-workbench" },
+      { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
+    ],
+    success:
+      "Success is measured as working software from a clean clone: reproducible uv + Docker environments, API contract tests in CI, and deployed demos whose payloads pass parity checks on every change.",
   },
 ];
 
@@ -162,7 +197,7 @@ export function Services() {
   usePageMeta({
     title: "Services",
     description:
-      "Freelance ML/AI engineering offerings — AI/LLM systems, predictive analytics, MLOps, optimization, anomaly detection — each backed by a public, reproducible case study with measured baselines.",
+      "Freelance ML/AI engineering offerings — AI/LLM systems, machine learning, optimization, data engineering, MLOps, interactive dashboards, and full-stack product engineering — each backed by a public, reproducible case study with measured baselines.",
     canonical: "/services",
   });
 

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" role="img" aria-labelledby="title">
+  <title id="title">RAGAS logo</title>
+  <!--
+    Hand-traced vector recreation of the official RAGAS mark (the docs ship
+    only a 50x50 PNG, no SVG source). Source geometry:
+    https://docs.ragas.io/_static/imgs/ragas-logo.png (fill #ffcb4c).
+    Unofficial reconstruction for identification only; RAGAS is a trademark
+    of Exploding Gradients. See logos/README.md.
+  -->
+  <path fill="#ffcb4c" fill-rule="evenodd" d="M6 2 26 22 39 34 47 42 45 44 8 44 5 41 5 3 Z M15 23 16.5 23.2 25 34 16 34 13.8 24 Z"/>
+</svg>

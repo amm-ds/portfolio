@@ -4,9 +4,8 @@ import { BusinessImplication } from "./BusinessImplication";
 import { StoryMetricsTable } from "./StoryMetricsTable";
 import { FigureCard } from "./FigureCard";
 
-// Repo story.yaml files now use `**Business summary:**`; the old marker is
-// still matched as a fallback for one transition window (new marker wins).
-const BI_MARKERS = ["**Business summary:**", "**Business implication:**"];
+// Story YAML uses `**Business summary:**` as the trailing takeaway marker.
+const BI_MARKER = "**Business summary:**";
 
 /**
  * Split off the trailing `**Business summary:** ...` paragraph (rendered
@@ -14,14 +13,11 @@ const BI_MARKERS = ["**Business summary:**", "**Business implication:**"];
  * marker return the text unchanged with a null tail.
  */
 function splitBusinessImplication(md: string): [string, string | null] {
-  for (const marker of BI_MARKERS) {
-    const idx = md.lastIndexOf(marker);
-    if (idx === -1) continue;
-    const tail = md.slice(idx + marker.length).trim();
-    if (tail === "") return [md, null];
-    return [md.slice(0, idx).trimEnd(), tail];
-  }
-  return [md, null];
+  const idx = md.lastIndexOf(BI_MARKER);
+  if (idx === -1) return [md, null];
+  const tail = md.slice(idx + BI_MARKER.length).trim();
+  if (tail === "") return [md, null];
+  return [md.slice(0, idx).trimEnd(), tail];
 }
 
 /** One case-study section: markdown prose + results table left, native plotly figures right. */

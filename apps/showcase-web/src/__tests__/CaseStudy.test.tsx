@@ -5,6 +5,8 @@ import { CaseStudy } from "../components/CaseStudy";
 
 const STORY: ProjectStoryData = {
   project_id: "01-rag-agent",
+  // Optional schema fields — authored content leads the Background section
+  // prose; the layout must not surface a standalone summary region.
   headline: "Measured answer quality improved; the judged subset remains uncertain.",
   data_note: "A bounded, licensed Wikipedia slice.",
   limits: "Does not establish quality beyond this corpus.",
@@ -19,8 +21,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("CaseStudy summary and section rail", () => {
-  it("renders authored summary fields before the rail and marks the active section", () => {
+describe("CaseStudy section rail", () => {
+  it("renders the section rail and marks the active section", () => {
     let callback: IntersectionObserverCallback | null = null;
     vi.stubGlobal(
       "IntersectionObserver",
@@ -35,12 +37,13 @@ describe("CaseStudy summary and section rail", () => {
 
     render(<CaseStudy projectId={STORY.project_id} story={STORY} metrics={null} />);
 
-    const summary = screen.getByRole("region", { name: "Case study summary" });
-    expect(summary).toHaveTextContent(STORY.headline!);
-    expect(summary).toHaveTextContent(STORY.data_note!);
-    expect(summary).toHaveTextContent(STORY.limits!);
+    // no standalone summary region: the authored fields lead the Background prose
+    expect(screen.queryByRole("region", { name: "Case study summary" })).toBeNull();
+    // the rail and sections render in the story layout
     const layout = document.querySelector(".story-layout")!;
-    expect(summary.compareDocumentPosition(layout) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(layout).not.toBeNull();
+    expect(screen.getByRole("navigation", { name: "Case study sections" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: /Background/ })).not.toBeNull();
 
     const background = screen.getByRole("link", { name: "01 background" });
     const results = screen.getByRole("link", { name: "02 results" });
@@ -61,9 +64,10 @@ describe("CaseStudy summary and section rail", () => {
     expect(results).not.toHaveAttribute("aria-current");
   });
 
-  it("omits the summary when no summary fields are authored", () => {
+  it("renders sections without summary fields authored", () => {
     const story = { ...STORY, headline: null, data_note: null, limits: null };
     render(<CaseStudy projectId={story.project_id} story={story} metrics={null} />);
     expect(screen.queryByRole("region", { name: "Case study summary" })).toBeNull();
+    expect(screen.getByRole("heading", { name: /Results/ })).not.toBeNull();
   });
 });

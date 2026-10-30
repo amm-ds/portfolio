@@ -5,12 +5,14 @@ export interface Framework {
   url: string;
   /** simpleicons slug; absent → render the letter tile directly. */
   slug?: string;
+  /** Local SVG under /logos (self-hosted, see public/logos/README.md); wins over slug. */
+  logo?: string;
   letters: string;
 }
 
 export const FRAMEWORKS: Framework[] = [
   { name: "pydantic", url: "https://pydantic.dev", slug: "pydantic", letters: "Pd" },
-  { name: "pydantic-ai", url: "https://ai.pydantic.dev", letters: "PA" },
+  { name: "pydantic-ai", url: "https://ai.pydantic.dev", logo: "/logos/pydantic-ai.svg", letters: "PA" },
   { name: "Ollama", url: "https://ollama.com", slug: "ollama", letters: "Ol" },
   { name: "scikit-learn", url: "https://scikit-learn.org", slug: "scikitlearn", letters: "Sk" },
   { name: "PyTorch", url: "https://pytorch.org", slug: "pytorch", letters: "Pt" },
@@ -22,14 +24,15 @@ export const FRAMEWORKS: Framework[] = [
   { name: "React", url: "https://react.dev", slug: "react", letters: "Re" },
   { name: "TypeScript", url: "https://typescriptlang.org", slug: "typescript", letters: "Ts" },
   { name: "Optuna", url: "https://optuna.org", slug: "optuna", letters: "Op" },
-  { name: "RAGAS", url: "https://ragas.io", letters: "Ra" },
+  { name: "RAGAS", url: "https://ragas.io", logo: "/logos/ragas.svg", letters: "Ra" },
   { name: "pydantic-evals", url: "https://ai.pydantic.dev/evals/", letters: "Pe" },
   { name: "Hugging Face", url: "https://huggingface.co", slug: "huggingface", letters: "Hf" },
 ];
 
-/** One framework logo tile; degrades to a mono initial-letter tile if the CDN image fails. */
+/** One framework logo tile; degrades to a mono initial-letter tile if the image fails. */
 export function FrameworkTile({ fw }: { fw: Framework }) {
   const [imgFailed, setImgFailed] = useState(false);
+  const src = fw.logo ?? (fw.slug ? `https://cdn.simpleicons.org/${fw.slug}` : null);
   return (
     <a
       className="framework-tile"
@@ -39,9 +42,9 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
       title={fw.name}
       aria-label={fw.name}
     >
-      {fw.slug && !imgFailed ? (
+      {src && !imgFailed ? (
         <img
-          src={`https://cdn.simpleicons.org/${fw.slug}`}
+          src={src}
           alt={`${fw.name} logo`}
           width={22}
           height={22}
@@ -57,12 +60,13 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
 }
 
 /** Deployment providers — same tile pattern as frameworks.
- * AWS and Azure render as letter tiles: their brand icons were removed from
- * Simple Icons (no CC0-licensed source anymore), so the CDN slug no longer
- * resolves and the logo usage is dropped rather than hotlinking unofficial art. */
+ * AWS and Azure are served from self-hosted SVGs: their brand icons were
+ * removed from Simple Icons (no CC0-licensed source anymore), so local copies
+ * with documented sources are used instead of hotlinking unofficial art
+ * (see public/logos/README.md). */
 export const PROVIDERS: Framework[] = [
-  { name: "AWS", url: "https://aws.amazon.com", letters: "Aw" },
-  { name: "Microsoft Azure", url: "https://azure.microsoft.com", letters: "Az" },
+  { name: "AWS", url: "https://aws.amazon.com", logo: "/logos/aws.svg", letters: "Aw" },
+  { name: "Microsoft Azure", url: "https://azure.microsoft.com", logo: "/logos/azure.svg", letters: "Az" },
   { name: "Google Cloud", url: "https://cloud.google.com", slug: "googlecloud", letters: "Gc" },
   { name: "Docker", url: "https://docker.com", slug: "docker", letters: "Dk" },
 ];
