@@ -111,8 +111,6 @@ export interface ChurnPayload {
     contract: string[];
     internet_service: string[];
   };
-  /** Optional URL of the written project report, surfaced in the evidence drawer. */
-  report?: string;
   roc_auc: number;
 }
 

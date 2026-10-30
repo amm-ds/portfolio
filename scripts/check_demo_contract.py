@@ -7,6 +7,10 @@ For each demo manifest (parsed via ``portfolio_core.demo.load_demo``):
   - if the payload carries a top-level ``schema_version``, it must equal the
     manifest's.
 
+Also gates the baked SPA snapshot (apps/showcase-web/src/lib/staticRegistry.ts)
+on freshness via ``gen_static_registry --check``, so a manifest/story/demo edit
+that forgot to re-bake the registry fails here instead of drifting.
+
 Catches drift between the demo contract (manifest) and the artifacts the
 showcase API serves before push. Exits non-zero with a message per violation.
 """
@@ -20,6 +24,9 @@ from portfolio_core.demo import load_demo_index
 
 REPO = Path(__file__).resolve().parents[1]
 errors: list[str] = []
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gen_static_registry  # noqa: E402
 
 
 def check_demo(projects_root: Path) -> None:
@@ -62,6 +69,15 @@ def check_demo(projects_root: Path) -> None:
         print(f"no demo.yaml files found under {projects_root}")
 
 
+def check_static_registry() -> None:
+    """The baked SPA snapshot must match a fresh render of the same loaders."""
+    err = gen_static_registry.stale_error()
+    if err is not None:
+        errors.append(err)
+    else:
+        print("OK: static registry snapshot is current")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -72,6 +88,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     check_demo(args.projects_root)
+    check_static_registry()
     if errors:
         for e in errors:
             print("ERROR:", e)

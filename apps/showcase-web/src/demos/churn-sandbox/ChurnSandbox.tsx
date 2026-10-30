@@ -138,14 +138,18 @@ const FALLBACK_MANIFEST: DemoManifest = {
     ci: "paired bootstrap CI [−485, −343]",
   },
   scenarios: [
-    { name: "base", controls: { fn_ratio: 5, threshold: 0.175 } },
+    { name: "base", controls: { fn_ratio: 5, threshold: 0.15 } },
     { name: "high-cost-miss", controls: { fn_ratio: 9, threshold: 0.12 } },
     { name: "default-threshold", controls: { fn_ratio: 5, threshold: 0.5 } },
   ],
   live_endpoints: [
     { method: "POST", path: "/projects/05-ml-pipeline-churn/score", label: "live customer scoring", cost: "free-local" },
   ],
-  payload: { path: "reports/demo_payload.json", schema_version: 1, required_keys: [] },
+  payload: {
+    path: "reports/demo_payload.json",
+    schema_version: 1,
+    required_keys: ["demo", "project", "holdout_n", "model", "cost_model", "headline", "thresholds", "overall", "slices", "calibration", "customers", "feature_domains", "roc_auc"],
+  },
 };
 
 // --- cost curve panel ------------------------------------------------------------
@@ -633,11 +637,6 @@ function ChurnSandboxWorkbench({
             <p className="wb-evidence-line">
               {payload.cost_model.note.charAt(0).toUpperCase() + payload.cost_model.note.slice(1)}
             </p>
-            {payload.report && (
-              <p className="wb-evidence-line">
-                <a href={payload.report}>Read the project report</a>
-              </p>
-            )}
           </div>
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">metrics results</h4>

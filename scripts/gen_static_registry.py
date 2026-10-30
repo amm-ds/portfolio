@@ -16,8 +16,12 @@ because the copy-guard test forbids certain wording anywhere under src/.
 Regenerate after changing any manifest/story/demo file:
 
     uv run python scripts/gen_static_registry.py
+
+CI/local contract checks use ``--check`` to reject a stale snapshot without
+rewriting it (same pattern as scripts/gen_route_manifest.py).
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -133,7 +137,8 @@ def ts_const(name: str, ts_type: str, value: object) -> str:
     return f"export const {name}: {ts_type}[] = {payload};\n"
 
 
-def main() -> None:
+def build() -> str:
+    """Render the snapshot TypeScript module (without writing it)."""
     if not PROJECTS_ROOT.is_dir():
         sys.exit(f"gen_static_registry: {PROJECTS_ROOT} not found")
     projects = [m.model_dump() for m in load_index(PROJECTS_ROOT)]
@@ -145,13 +150,45 @@ def main() -> None:
     out += "\n" + ts_const("STATIC_PROJECTS", "StaticProject", projects)
     out += "\n" + ts_const("STATIC_STORIES", "StaticStorySummary", story_summaries())
     out += "\n" + ts_const("STATIC_DEMO_REGISTRY", "StaticDemoRegistryEntry", demos)
+    return out
 
+
+def stale_error() -> str | None:
+    """Error message when the committed snapshot differs from a fresh render."""
+    try:
+        committed = OUT.read_text(encoding="utf-8")
+    except OSError as e:
+        return f"cannot read {OUT}: {e}"
+    if committed != build():
+        return f"{OUT} is stale; run scripts/gen_static_registry.py"
+    return None
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="fail if the committed snapshot is stale; do not write",
+    )
+    args = parser.parse_args()
+
+    if args.check:
+        err = stale_error()
+        if err is not None:
+            print(f"error: {err}", file=sys.stderr)
+            return 1
+        print(f"static registry is current ({OUT})")
+        return 0
+
+    out = build()
     OUT.write_text(out, encoding="utf-8")
     print(
-        f"wrote {OUT} ({len(projects)} projects, "
-        f"{len(demos)} demos, {out.encode('utf-8').__len__()} bytes)"
+        f"wrote {OUT} ({len(load_index(PROJECTS_ROOT))} projects, "
+        f"{len(load_demo_index(PROJECTS_ROOT))} demos, {out.encode('utf-8').__len__()} bytes)"
     )
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
