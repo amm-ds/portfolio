@@ -70,6 +70,8 @@ export interface ProjectStoryData {
   data_note?: string | null;
   /** What the case study does not establish. */
   limits?: string | null;
+  /** Single plain-text source for card/README/docs/SEO/social short copy. */
+  short_version?: string | null;
   sections: StorySectionData[];
   /** Finalized roadmap (optional while stories are being authored). */
   roadmap?: RoadmapItemData[];

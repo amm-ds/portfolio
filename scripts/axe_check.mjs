@@ -31,6 +31,7 @@ const ROUTES = [
   "/",
   "/projects",
   "/projects/05-ml-pipeline-churn",
+  "/glossary",
   "/demos/churn-sandbox",
   "/demos/forecast-workbench",
 ];

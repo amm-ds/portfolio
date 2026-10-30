@@ -24,14 +24,14 @@ CANONICAL_SECTIONS: tuple[str, ...] = (
 )
 
 SECTION_TITLES: dict[str, str] = {
-    "background": "Background",
-    "objectives": "Target & objectives",
-    "data": "Data",
-    "eda": "Exploratory analysis",
-    "training": "Training & methods",
-    "evaluation": "Evaluation setup",
-    "results": "Results",
-    "conclusions": "Conclusions & lessons",
+    "background": "The short version",
+    "objectives": "The question",
+    "data": "The data",
+    "eda": "How we judged it",
+    "training": "What we found",
+    "evaluation": "What it means",
+    "results": "What this does not show",
+    "conclusions": "Details",
 }
 
 
@@ -86,6 +86,16 @@ class ProjectStory(PortfolioBaseModel):
     limits: str | None = Field(
         default=None,
         description="One sentence: what the story does not show.",
+    )
+    short_version: str = Field(
+        min_length=1,
+        max_length=280,
+        description=(
+            "Required. The single plain-text source for card/README/docs/SEO/social copy: "
+            "one short paragraph (≤ 280 chars) stating what was built, the headline "
+            "measured result with its uncertainty, and the data used. Everything "
+            "short-form derives from this — no parallel hand-written summaries."
+        ),
     )
     sections: list[StorySection] = Field(min_length=1)
     roadmap: list[RoadmapItem] = Field(

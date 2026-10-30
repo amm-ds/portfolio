@@ -48,6 +48,28 @@ describe("App routing", () => {
     }
   });
 
+  it("renders the Glossary at /glossary with its description list", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    render(
+      <MemoryRouter initialEntries={["/glossary"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Glossary"),
+    );
+    expect(document.querySelector("dl.glossary-list")).not.toBeNull();
+    expect(document.title).toContain("Glossary");
+  });
+
   it("uses the full-width layout everywhere; only demos drop the footer", async () => {
     vi.stubGlobal(
       "fetch",

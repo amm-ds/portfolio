@@ -177,6 +177,7 @@ def test_story_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no
 
     (tmp_path / "01-demo" / "story.yaml").write_text(
         "project_id: 01-demo\n"
+        "short_version: Demo short copy.\n"
         "sections:\n"
         "  - id: background\n"
         "    text_md: Why this exists.\n"
@@ -188,7 +189,7 @@ def test_story_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no
     assert r.status_code == 200
     body = r.json()
     assert [s["id"] for s in body["sections"]] == ["background", "results"]
-    assert body["sections"][0]["title"] == "Background"
+    assert body["sections"][0]["title"] == "The short version"
     assert body["sections"][1]["figures"] == ["bars"]
 
 

@@ -1,46 +1,36 @@
 project_id: 05-ml-pipeline-churn
+short_version: |
+  A churn scorer on real IBM telco data (7,043 customers): serving the calibrated model at a 0.175 threshold cuts decision cost 42% (601 vs 1,035 for contacting everyone; 95% bootstrap interval -485 to -343). The cutoff must be re-derived when a missed churner's price changes.
 sections:
   - id: background
     text_md: |
-      **Result.** Cost-aware threshold tuning cuts holdout decision cost 41.9%
-      (1,035 → 601) versus the naive contact-everyone comparator; the paired
-      bootstrap delta is −416 (95% CI [−485, −343]).
+      **On a 1,409-customer holdout, the calibrated model at a 0.175
+      threshold cuts decision cost 41.9%—601 vs 1,035 for contacting
+      everyone—paired-bootstrap interval −485 to −343 on the saving.**
 
-      **Data.** Real IBM telco churn data (7,043 customers, IBM sample-data
-      license) behind a sha256-pinned DatasetContract; a labeled 8.8%-churn
-      synthetic twin supports offline CI.
+      **Data.** Real IBM telco data (7,043 customers, IBM sample-data
+      license), sha256-pinned; a synthetic twin (8.8% churn) supports CI.
 
-      **Limits.** Operating thresholds are selected and scored on the same
-      1,409-row holdout, so cost and slice results are optimistically biased;
-      the snapshot has no time axis, and fairness covers only contract,
-      gender and senior-citizen slices.
+      **Limits.** Thresholds are selected and scored on the same holdout—cost
+      and slice figures are optimistically biased; the snapshot has no time
+      axis; fairness slices: contract, gender, senior-citizen status only.
 
-      Turn churn scores into a retention-contact policy under asymmetric costs:
-      a false alarm costs 1 voucher and a missed churner costs 5. Accuracy is
-      the wrong target when a silent policy scores 0.735 by never contacting
-      anyone; the deliverable is an auditable threshold and its measured cost.
-
-      | cost parameter | value | meaning |
-      |---|---|---|
-      | FP cost | 1 | one retention voucher / false alarm |
-      | FN cost | 5 | one lost customer |
-      | holdout churn rate | 26.5% | 374 of 1,409 customers |
-      | threshold grid | 41 points (0.00–1.00) | cost-optimum search |
-
-      **Business summary:** on the committed 1,409-customer holdout, serving
-      the calibrated model at t=0.175 contacts fewer customers than the naive
-      blast and still cuts decision cost by 41.9% — a budget line a retention
-      team can act on, with the sampling uncertainty (95% CI [−485, −343])
-      attached to the saving.
+      **In plain terms:** it hands retention a budget line, not a scoreboard. A
+      false alarm costs one voucher; a missed churner costs five; the scored
+      list is 42% cheaper than contacting everyone—explore in
+      [the churn sandbox](https://amm-ds.github.io/portfolio/demos/churn-sandbox).
   - id: objectives
     text_md: |
-      - Embed preprocessing in a fitted sklearn Pipeline that accepts raw CRM rows.
-      - Compare every run on one holdout and cost model, including a naive
-        constant-probability baseline whose cost optimum is contact everyone.
-      - Select among logistic and boosting models with seeded Optuna on CV
-        business cost, with per-trial threshold tuning.
-      - Report calibration, paired-bootstrap uncertainty, data-quality gates
-        and fairness slices alongside the operating threshold.
+      Turn churn scores into a retention-contact policy under asymmetric
+      costs: a false alarm spends one retention voucher, a missed churner
+      costs five. Accuracy is the wrong target here — a policy that contacts
+      nobody scores 73.5% accurate while saving nothing.
+
+      The question: what contact threshold minimizes the expected bill, how
+      uncertain is that saving, and how stable is the threshold when the
+      price of a missed churner moves? Every candidate — including a naive
+      constant-probability baseline whose cheapest choice is contacting
+      everyone — answers on the same holdout under the same cost model.
   - id: data
     text_md: |
       The primary track is the real IBM telco panel: 7,043 customers × 21
@@ -49,41 +39,107 @@ sections:
       The HF id cited in planning does not exist; the raw IBM mirror is the
       implemented source.
 
-      | project column | telco source | role |
-      |---|---|---|
-      | tenure_months | tenure | numeric feature |
-      | monthly_charges | MonthlyCharges | numeric feature |
-      | contract | Contract | categorical feature + fairness slice |
-      | internet_service | InternetService | categorical feature |
-      | gender / senior_citizen | gender / SeniorCitizen | fairness slices |
-      | churned | Churn | target |
-
-      A stratified 80/20 split yields 5,634 train / 1,409 holdout rows; 20% of
-      train is reserved for calibration. The separate synthetic CI generator
-      (8.8% churn, 2% NaN age, 3% NaN support_calls, one 9,999 charge outlier)
-      never substitutes for the real-data results.
+      A stratified 80/20 split yields 5,634 training rows and the 1,409-row
+      holdout; 20% of training is reserved for calibration, so the holdout is
+      untouched by fitting, tuning and calibration. A separate synthetic CI
+      generator (8.8% churn, planted nulls and one outlier charge) exercises
+      the same data-quality gates offline and never substitutes for the
+      real-data results.
   - id: eda
     text_md: |
-      **Real telco EDA:** churn concentrates in short contracts and among
-      seniors and fiber customers; churners have higher charges and shorter tenure.
+      Real churn concentrates where commitment is low: month-to-month
+      customers churn at 42.7% versus 2.8% on two-year contracts, senior
+      citizens at 41.7%, fiber-optic subscribers at 41.9%. Churners pay more
+      (~$74 versus ~$61 mean monthly charges) and leave sooner (~18 versus
+      ~38 mean months of tenure).
 
-      | segment | rows | churn rate |
-      |---|---|---|
-      | month-to-month | 3,875 | 42.7% |
-      | one-year | 1,473 | 11.3% |
-      | two-year | 1,695 | 2.8% |
-      | senior citizens | 1,142 | 41.7% |
-      | fiber-optic internet | 3,096 | 41.9% |
-
-      Mean monthly charges are ~74 for churners versus ~61 otherwise; mean
-      tenure is ~18 versus ~38 months. The outlier-charge and NaN examples are
-      **synthetic CI fixtures**, not features of this real EDA; their purpose is
-      to exercise the same DQ and preprocessing contract offline.
-    figures: [eda_churn_profile]
+      Every candidate is judged on the same holdout under one cost model:
+      ranking quality (ROC-AUC), macro F1, business cost across a 41-point
+      threshold grid, and, for selected models, calibration error — with PR
+      curves read against the 26.5% base-rate floor, permutation importance,
+      and fairness slices by contract, gender and senior status. The paired
+      bootstrap resamples holdout rows at fixed thresholds, so its interval
+      captures cost sampling variation, not threshold-selection instability.
+    figures: [eda_churn_profile, precision_recall_curve, cost_surface]
   - id: training
     text_md: |
-      One fitted Pipeline owns outlier capping, missingness flags, imputation,
-      scaling and one-hot encoding, so training and serving share preprocessing.
+      All data-quality gates pass before training: null rates are 0.000 for
+      tenure and charges, values sit inside their allowed ranges, and churn is
+      binary. One fitted pipeline owns outlier capping, missingness flags,
+      imputation, scaling and one-hot encoding, so training and serving share
+      preprocessing exactly.
+
+      **The naive policy is the expensive one.** Contacting everyone costs
+      1,035; doing nothing is cheaper only if missed churners are free, which
+      they are not at five vouchers each.
+
+      **Cost beats accuracy as an objective.** A default-threshold logistic
+      model costs 691; re-tuning its threshold cuts that to 611. An earlier
+      F1-driven selection picked a different family — the objective changes
+      the winner, which is why the cost model leads here.
+
+      **The served model.** A gradient-boosted model chosen by seeded search
+      on out-of-fold business cost, then isotonic-calibrated on the training
+      side only, costs 601 at threshold 0.175 — the 41.9% cut, with the
+      paired-bootstrap interval [−485, −343] excluding zero. Calibration
+      improves error 0.028 → 0.016 and cost 619 → 601.
+
+      **The cutoff is not a constant.** Re-scoring under different missed-
+      churner prices moves the served threshold — 0.200 when a churner costs
+      3, 0.175 when 5, 0.100 when 8 — and every variant's interval still
+      excludes zero. Calibration's edge is itself price-dependent: it helps
+      at five (619 → 601) and slightly hurts at eight (691 → 699).
+
+      **The strongest signal hides the weakest slice.** The raw model recalls
+      month-to-month churners at 0.976 but misses 19 of 36 one-year and all
+      9 two-year churners; gender recall is near-uniform (0.902 versus 0.906).
+      Contract, tenure and charges drive the ranking — and long-contract
+      churners are exactly who the raw policy loses.
+    figures: [calibration_curve, business_cost_curve, permutation_importance, fairness_slices]
+    metrics_keys: [naive_majority, logreg_threshold_0.300, selected_model, selected_model_calibrated]
+  - id: evaluation
+    text_md: |
+      The artifact is deployable as-is: raw CRM rows in, gated and
+      preprocessed inside the pipeline, scored and thresholded out. The
+      measured value is a 42% decision-cost cut with its uncertainty attached
+      — a budget line a retention team can act on. Two watch items ride with
+      it: the saving is read on the same holdout that chose the threshold, so
+      it is optimistic; and the raw model's blind spot for two-year
+      churners means served-policy fairness on fresh data is the gate before
+      rollout.
+
+      **Business summary:** deploy on raw CRM rows with the data-quality
+      gates as the contract; expect a ~42% decision-cost cut at a 5× missed-
+      churner price, stable in sign from 3× to 8×; re-derive — never copy —
+      the cutoff whenever the price ratio changes.
+  - id: results
+    text_md: |
+      - Thresholds are selected and scored on the same 1,409-row holdout, so
+        the 601 cost and every slice figure are optimistically biased; the
+        bootstrap quantifies cost sampling variation only, not
+        threshold-selection instability.
+      - The snapshot has no time axis: nothing here is a drift, seasonality
+        or causal claim, and the deferred next step is a time-stamped feed.
+      - Fairness numbers describe the raw model at its own threshold, not
+        the served calibrated policy.
+      - One operator, 21 columns: transfer to other customer bases is
+        plausible, not measured.
+  - id: conclusions
+    text_md: |
+      Full evidence: exact tables, parameter records, and reproduction
+      pointers.
+
+      **Cost model:**
+
+      | cost parameter | value | meaning |
+      |---|---|---|
+      | FP cost | 1 | one retention voucher / false alarm |
+      | FN cost | 5 | one lost customer |
+      | holdout churn rate | 26.5% | 374 of 1,409 customers |
+      | threshold grid | 41 points (0.00–1.00) | cost-optimum search |
+
+      **Pipeline** (one fitted sklearn Pipeline owns preprocessing, so
+      training and serving share it):
 
       ```mermaid
       flowchart LR
@@ -97,20 +153,7 @@ sections:
           H --> I[predict_proba]
       ```
 
-      An earlier grid search retains the logistic baseline. Seeded Optuna
-      (25 trials, median pruning) searches LogisticRegression,
-      HistGradientBoosting, XGBoost and LightGBM on out-of-fold business cost at
-      each trial's own threshold. XGBoost wins telco (n_estimators 211,
-      learning_rate 0.0309, max_depth 3, subsample 0.5187; CV cost 2,416);
-      logistic wins the synthetic track (CV cost 1,220). An earlier F1 objective
-      picked HistGB, demonstrating that the objective changes the winner. The
-      isotonic twin uses only the train-side calibration split.
-  - id: evaluation
-    text_md: |
-      Each candidate is scored with ROC-AUC, macro metrics, business cost and,
-      for selected models, ECE. The constant base-rate `naive_majority` run has
-      only two decision regimes; at FN=5 its cheaper choice is **contact
-      everyone**, not do nothing.
+      **Judging procedure:**
 
       ```mermaid
       flowchart LR
@@ -120,24 +163,30 @@ sections:
           D --> E[raw vs isotonic comparison]
       ```
 
-      The holdout is excluded from fitting, HPO and calibration, **but it is
-      used both to choose each displayed threshold and to report its cost**.
-      These are same-holdout optima, not an independent assessment of a frozen
-      policy. The paired bootstrap resamples rows at fixed thresholds; its CI
-      captures cost sampling variation, not threshold-selection instability.
+      **Column mapping** (project name → telco source → role):
 
-      Diagnostics include PR curves with the base-rate floor, calibration,
-      permutation importance (5 repeats), the threshold × FN-cost surface and
-      raw-model fairness slices.
-    figures: [calibration_curve, precision_recall_curve, cost_surface]
-  - id: results
-    text_md: |
-      **▶ Try [the churn threshold sandbox](https://amm-ds.github.io/portfolio/demos/churn-sandbox)
-      on the committed holdout payload.**
+      | project column | telco source | role |
+      |---|---|---|
+      | tenure_months | tenure | numeric feature |
+      | monthly_charges | MonthlyCharges | numeric feature |
+      | contract | Contract | categorical feature + fairness slice |
+      | internet_service | InternetService | categorical feature |
+      | gender / senior_citizen | gender / SeniorCitizen | fairness slices |
+      | churned | Churn | target |
 
-      All real-data DQ gates pass before training: null rates are 0.000 for
-      tenure and charges; tenure is within [0, 72], charges within
-      [18.25, 118.75], and churn is binary.
+      **EDA segments** (real telco; the synthetic twin's planted nulls and
+      9,999 outlier charge are CI fixtures, not features of this data):
+
+      | segment | rows | churn rate |
+      |---|---|---|
+      | month-to-month | 3,875 | 42.7% |
+      | one-year | 1,473 | 11.3% |
+      | two-year | 1,695 | 2.8% |
+      | senior citizens | 1,142 | 41.7% |
+      | fiber-optic internet | 3,096 | 41.9% |
+
+      **Holdout results** (same-holdout optima; run ids as recorded in
+      `reports/metrics.json`):
 
       | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
       |---|---|---|---|---|---|
@@ -148,55 +197,50 @@ sections:
       | selected + isotonic ← served | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
 
       - **Cost:** 1,035 → 601 (−41.9%) versus contact everyone; paired
-        bootstrap delta −416, 95% CI [−485, −343], significant at 95%.
-      - **Model and calibration:** XGBoost replaces the synthetic winner;
-        isotonic improves ECE 0.028 → 0.016 and same-holdout cost 619 → 601.
+        bootstrap delta −416, 95% CI [−485, −343], 2,000 resamples at fixed
+        thresholds, significant at 95%.
+      - **Model record:** seeded Optuna (25 trials, median pruning) searched
+        logistic, HistGradientBoosting, XGBoost and LightGBM on out-of-fold
+        business cost at each trial's own threshold. XGBoost wins telco
+        (n_estimators 211, learning_rate 0.0309, max_depth 3, subsample
+        0.5187; CV cost 2,416); logistic wins the synthetic track (CV cost
+        1,220). The isotonic twin uses only the train-side calibration split.
       - **Regime dependence:** synthetic t*=0.700 versus telco t*=0.175; the
         procedure transfers, not the cutoff.
       - **Cost-model sensitivity** (`reports/sensitivity.json`, re-scored via
-        `cli sensitivity`): served-isotonic cost and threshold move with the
-        FN price — 510 at t=0.200 (FN=3), 601 at t=0.175 (FN=5), 699 at
-        t=0.100 (FN=8) — and every variant's paired-bootstrap CI excludes
-        zero. The naive comparator stays 1,035 throughout (contact-everyone
-        has no missed churners), so the absolute saving shrinks as FN rises.
-        Calibration's cost edge is itself cost-model dependent: isotonic helps
-        at FN=5 (619 → 601) but slightly hurts at FN=8 (691 → 699).
-      - **Raw-model fairness, not served-policy fairness:** at raw XGB t=0.150,
-        gender recall is 0.902 female / 0.906 male and senior recall is 0.969
-        versus 0.880 non-senior. Contract recall is 0.976 month-to-month,
-        0.472 one-year and 0.000 two-year: the raw policy misses **19 of 36**
-        one-year churners and **all 9** two-year churners. The figure uses the
-        raw model; the served artifact is isotonic-calibrated at t=0.175, so
-        these counts must not be attributed to serving.
-      - **Drivers:** permutation importance ranks contract, tenure and charges
-        as the main signal. The naive row's accuracy is 0.265 at contact-all;
-        contact-none would score 0.735 accuracy but is a different policy.
+        `cli sensitivity`):
 
-      **Business summary:** the served policy is contact at t=0.175 on the
-      calibrated model — 601 versus 1,035 for the naive blast (−41.9%), CI
-      [−485, −343]. The threshold must be re-derived when the FN:FP price
-      ratio changes (0.200 at FN=3, 0.100 at FN=8): the procedure and its
-      savings are stable, the cutoff is not a constant.
-    figures: [calibration_curve, business_cost_curve, permutation_importance, fairness_slices]
-    metrics_keys: [naive_majority, logreg_threshold_0.300, selected_model, selected_model_calibrated]
-  - id: conclusions
-    text_md: |
-      Pipeline-embedded preprocessing and DQ gates make the artifact deployable
-      on raw rows. Cost-aware selection, calibration and thresholding each have
-      measured effects, and the bootstrap quantifies cost uncertainty at fixed
-      thresholds. The raw-model slices expose a severe long-contract recall
-      trade-off, while same-holdout threshold selection means the 601 cost and
-      served operating point still need evaluation on fresh data. The
-      FN-cost sensitivity run bounds the threshold's stability: the operating
-      point moves monotonically with the missed-churner price, so the served
-      cutoff must be re-derived (not copied) when the cost model changes.
+      | FN cost | served threshold | served cost | naive cost | delta 95% CI |
+      |---|---|---|---|---|
+      | 3 | 0.200 | 510 | 1,035 | [−618, −474] |
+      | 5 | 0.175 | 601 | 1,035 | [−485, −343] |
+      | 8 | 0.100 | 699 | 1,035 | [−426, −258] |
 
-      **Business summary:** deployable as-is on raw CRM rows with the DQ gates
-      as the contract; expected value is a ~42% decision-cost cut at FN=5,
-      stable in sign across FN=3–8, with re-derivation of the cutoff on any
-      price change and an explicit watch item: two-year-contract churners are
-      missed by the raw policy, so served-policy fairness on fresh data is the
-      gate before rollout.
+      Calibration's cost edge is itself cost-model dependent: isotonic helps
+      at FN=5 (619 → 601) but slightly hurts at FN=8 (691 → 699). The naive
+      comparator stays 1,035 throughout (contact-everyone has no missed
+      churners), so the absolute saving shrinks as FN rises.
+      - **Fairness slices** (raw model at t=0.150, from
+        `reports/figures/fairness_slices.json` — not the served policy):
+        gender recall 0.902 female / 0.906 male; senior recall 0.969 versus
+        0.880 non-senior; contract recall 0.976 month-to-month, 0.472
+        one-year, 0.000 two-year — the raw policy misses **19 of 36** one-
+        year churners and **all 9** two-year churners. The served artifact is
+        isotonic-calibrated at t=0.175, so these counts must not be
+        attributed to serving.
+      - **Drivers:** permutation importance (5 repeats) ranks contract,
+        tenure and charges as the main signal. The naive row's accuracy is
+        0.265 at contact-all; contact-none would score 0.735 accuracy but is
+        a different policy.
+      - **Try it:** [the churn threshold sandbox](https://amm-ds.github.io/portfolio/demos/churn-sandbox)
+        replays the committed holdout payload.
+
+      **Reproduction:** pipeline stages and the evaluate/threshold grid run
+      through the project CLI on the pinned dataset; the FN-cost variants
+      re-score the persisted artifacts via `cli sensitivity`
+      (`reports/sensitivity.json`). The served artifact's record —
+      family, parameters, threshold rule, holdout minimum — is persisted in
+      `reports/models/serving/meta.json`.
     figures: [bootstrap_ci]
 roadmap:
   - status: delivered

@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { render, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { renderMarkdown } from "../lib/markdown";
 
@@ -301,9 +302,11 @@ describe("prose density (wave 10)", () => {
       "| naive | 587.1 |",
     ].join("\n");
     const { container } = render(
-      <div className="story-section">
-        <div className="prose">{renderMarkdown(dense)}</div>
-      </div>,
+      <MemoryRouter>
+        <div className="story-section">
+          <div className="prose">{renderMarkdown(dense)}</div>
+        </div>
+      </MemoryRouter>,
     );
     const kids = [...container.querySelector(".prose")!.children];
     expect(kids[0].tagName).toBe("P");
@@ -312,5 +315,86 @@ describe("prose density (wave 10)", () => {
     expect(kids[1].querySelector("strong")?.textContent).toBe("GBDT");
     expect(kids[2].classList.contains("table-scroll")).toBe(true);
     expect(kids[2].querySelector("tbody tr")).not.toBeNull();
+  });
+});
+
+describe("renderMarkdown glossary auto-linking", () => {
+  function renderWithRouter(md: string, linked?: Set<string>) {
+    return render(<MemoryRouter>{renderMarkdown(md, linked)}</MemoryRouter>);
+  }
+
+  it("links the first occurrence of a term to /glossary#slug", () => {
+    const { container } = renderWithRouter(
+      "The holdout estimates generalization; a second holdout mention stays plain.",
+    );
+    const links = container.querySelectorAll("a.glossary-term");
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe("/glossary#holdout");
+    expect(links[0].textContent).toContain("holdout");
+    expect(container.textContent).toContain("a second holdout mention stays plain.");
+  });
+
+  it("links terms inside bold and emphasis without losing formatting", () => {
+    const { container } = renderWithRouter(
+      "A **baseline model** and an *honest baseline* both link.",
+    );
+    const links = container.querySelectorAll("a.glossary-term");
+    expect(links).toHaveLength(1);
+    expect(links[0].childNodes[0].textContent).toBe("baseline");
+    expect(links[0].closest("strong")?.textContent).toContain(" model");
+    expect(container.querySelector("em")?.textContent).toContain("honest baseline");
+    expect(container.querySelector("em a.glossary-term")).toBeNull();
+  });
+
+  it("matches case-insensitively and respects word boundaries", () => {
+    const { container } = renderWithRouter(
+      "wape and MASE are metrics; MASEs and baselines are not linked.",
+    );
+    const hrefs = [...container.querySelectorAll("a.glossary-term")].map((a) =>
+      a.getAttribute("href"),
+    );
+    expect(hrefs).toEqual(["/glossary#wape", "/glossary#mase"]);
+    // plural/inflected forms and the rest of the sentence stay plain text
+    expect(container.textContent).toContain("MASEs and baselines are not linked.");
+    expect(container.querySelector("code")).toBeNull();
+  });
+
+  it("links multi-word terms whole (longest first) and never inside code", () => {
+    const md =
+      "A `confidence interval` in code stays plain; a real confidence interval links; " +
+      "so does p50/p95 latency.";
+    const { container } = renderWithRouter(md);
+    const hrefs = [...container.querySelectorAll("a.glossary-term")].map((a) =>
+      a.getAttribute("href"),
+    );
+    expect(hrefs).toEqual(["/glossary#confidence-interval", "/glossary#p50-p95-latency"]);
+    expect(container.querySelector("code")?.textContent).toBe("confidence interval");
+  });
+
+  it("never links terms inside fenced code blocks", () => {
+    const md = "```\nbaseline\n```\n\nThe baseline model links.";
+    const { container } = renderWithRouter(md);
+    const links = container.querySelectorAll("a.glossary-term");
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute("href")).toBe("/glossary#baseline");
+    expect(container.querySelector("pre.code-block")?.textContent).toContain("baseline");
+  });
+
+  it("treats an externally threaded Set as an allow-list without mutation", () => {
+    const linked = new Set<string>(["baseline"]);
+    const first = renderWithRouter("A baseline model.", linked);
+    expect(first.container.querySelectorAll("a.glossary-term")).toHaveLength(1);
+    const second = renderWithRouter("Back to the baseline again.", linked);
+    expect(second.container.querySelectorAll("a.glossary-term")).toHaveLength(1);
+    expect(linked.size).toBe(1); // renderers never mutate caller-owned state
+  });
+
+  it("renders an accessible CSS tooltip carrying the definition", () => {
+    const { container } = renderWithRouter("Calibration matters more than raw accuracy.");
+    const link = container.querySelector("a.glossary-term")!;
+    expect(link.getAttribute("href")).toBe("/glossary#calibration");
+    const tip = link.querySelector('.glossary-tip[role="tooltip"]');
+    expect(tip).not.toBeNull();
+    expect(tip?.textContent).toContain("predicted probabilities");
   });
 });

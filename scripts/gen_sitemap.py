@@ -24,6 +24,7 @@ STATIC_ROUTES = [
     "/experiments",
     "/services",
     "/contact",
+    "/glossary",
     "/demos/churn-sandbox",
     "/demos/forecast-workbench",
 ]

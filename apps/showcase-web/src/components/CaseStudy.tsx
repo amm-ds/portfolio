@@ -1,4 +1,5 @@
 import type { Metrics, ProjectStoryData } from "../api";
+import { glossaryTermsInMarkdown } from "../lib/markdown";
 import { useScrollSpy } from "../hooks/useScrollSpy";
 import { RoadmapBlock } from "./RoadmapBlock";
 import { StorySection } from "./StorySection";
@@ -20,6 +21,19 @@ export function CaseStudy({
 }) {
   const ids = story.sections.map((s) => `sec-${s.id}`);
   const active = useScrollSpy(ids);
+  // Precompute which section owns each glossary term's first link. This is a
+  // local, render-safe derivation: React Strict Mode may discard a render, so
+  // child renderers never mutate shared link state.
+  const seenGlossary = new Set<string>();
+  const linkedTermsBySection = story.sections.map((section) => {
+    const owned = new Set<string>();
+    for (const slug of glossaryTermsInMarkdown(section.text_md)) {
+      if (seenGlossary.has(slug)) continue;
+      seenGlossary.add(slug);
+      owned.add(slug);
+    }
+    return owned;
+  });
 
   return (
     <div className="story-layout">
@@ -45,6 +59,7 @@ export function CaseStudy({
               index={i}
               metrics={metrics}
               figureCaptions={story.figure_captions}
+              linkedTerms={linkedTermsBySection[i]}
             />
           ))}
           <RoadmapBlock roadmap={story.roadmap} />

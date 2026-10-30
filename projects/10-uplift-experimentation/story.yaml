@@ -1,4 +1,9 @@
 project_id: 10-uplift-experimentation
+short_version: >-
+  On 64,000-customer randomized email data, uplift targeting beat random
+  targeting by +$2,812 (+69%) at a 25% send budget, CI [+$718, +$4,767]; at
+  $0.01 per email, mailing everyone still wins. Targeting pays when sending
+  is costly. Data: Hillstrom MineThatData, March 2008.
 figure_captions:
   eda_segment_profile: >-
     Arm sizes, outcomes, and pre-period spend across Mens (21,307), Womens
@@ -41,95 +46,68 @@ figure_captions:
 sections:
   - id: background
     text_md: |
-      **At a 25% send budget, the T-learner earns +$2,812 (+69%) versus random
-      with a positive 95% paired-bootstrap CI [+$718, +$4,767]; unconstrained
-      mail-everyone still maximizes profit at $0.01/email, and the Mens per-arm
-      Qini CI [−0.47, 24.21] spans zero.**
+      **Targeting pays when sending is costly.** On 64,000 randomized email
+      customers, a model ranking by measured lift beat random targeting by
+      +$2,812 (+69%) profit at a 25% send budget, CI [+$718, +$4,767]. At
+      $0.01 per email, mailing everyone still made the most ($16,103)—the edge
+      appears only under a send budget or higher cost.
 
-      Data: real Hillstrom MineThatData email data — 64,000 customers in a
-      March 2008 randomized campaign, sha256-pinned from the author's site and
-      published for research use without a formal license file; attribute
-      MineThatData/Hillstrom.
+      Data: the real Hillstrom MineThatData campaign (March 2008),
+      checksum-pinned.
 
-      Limits: "profit" is revenue ($114 per conversion) minus send cost only,
-      with no COGS or margin; multi-arm policy money is model-estimated
-      planning value, and one 2008 snapshot cannot establish prospective
-      campaign performance.
+      Limits: "profit" is revenue minus send cost only—no margin, no
+      fatigue—one historical campaign cannot guarantee future
+      results.
 
-      Response models rank customers by purchase likelihood and concentrate on
-      "sure things" the campaign cannot create; randomized assignment plus
-      uplift modeling targets incremental conversions instead.
-
-      The Hillstrom campaign supplies 64,000 customers across Mens, Womens, and
-      no-email arms. The primary decision uses Mens versus control; the secondary
-      multi-arm read asks which channel to recommend.
-
-      | cost parameter | value | meaning |
-      |---|---|---|
-      | `revenue_per_conversion` | $114 | mean spend among converters; revenue, not margin |
-      | `cost_per_email` | $0.01 | marginal send cost only |
-      | policy budget | 25% | maximum share mailed by the budgeted policy |
-      | base conversion rate | ~0.9% | rare-outcome regime |
-
-      **Business summary:** Targeting only creates value under a constraint.
-      At $0.01/email, mailing everyone maximizes raw profit ($16,103); the
-      T-learner's advantage appears at a 25% send budget (+$2,812 vs random,
-      CI [+$718, +$4,767]) and above the ≈$0.30/email break-even.
+      **In plain terms:** uplift asks "who buys *because of* the email?" not
+      "who buys anyway?". The answer pays only when sends are expensive
+      or the list must be trimmed—otherwise, send to everyone.
   - id: objectives
     text_md: |
-      **The objective is a budgeted send policy: maximize profit at a 25% send
-      fraction, with paired-bootstrap uncertainty attached to every policy
-      comparison.**
+      **The question: does ranking customers by modeled uplift beat simpler
+      policies at a fixed 25% send budget — and where does that advantage
+      disappear?** The anchor is the randomized assignment: because customers
+      were allocated to arms by chance, the email's effect is measurable
+      without modeling assumptions, and the models only reorder customers
+      inside that anchor.
 
-      - Check randomization and estimate the treatment effect before modeling.
-      - Measure CUPED variance reduction from strictly pre-treatment covariates.
-      - Size the experiment at alpha 0.05 and power 0.8.
-      - Compare response, T-learner, and X-learner policies against random,
-        treat-everyone, and no-campaign baselines using out-of-fold Qini and
-        profit with paired-bootstrap intervals.
-      - Separate unconstrained profit maximization from efficiency at a 25%
-        send budget, and recommend on the budgeted money metric.
+      - Verify the randomization and estimate the campaign effect before
+        modeling.
+      - Attach paired-bootstrap uncertainty to every policy comparison.
+      - Test whether a variance-reduction adjustment (CUPED) sharpens the
+        estimate.
+      - Compare response, T-learner, and X-learner rankings against random
+        and mail-everyone baselines on profit, and stress-test the verdict
+        against send cost.
   - id: data
     text_md: |
-      **Randomized assignment identifies the treatment effect without modeling
-      assumptions; the learners only rank customers within that anchor.** The
-      checksum-pinned March 2008 snapshot contains recency, prior-year spend,
-      merchandise flags, zip class, newbie status, channel, visit, conversion,
-      and spend. Upstream drift fails the sha256 gate; provenance is linked in
+      **Randomized assignment is why the numbers mean what they say.** The
+      checksum-pinned March 2008 snapshot holds 64,000 customers with
+      recency, prior-year spend, merchandise flags, channel, and
+      visit/conversion/spend outcomes; upstream drift fails the sha256 gate,
+      and provenance is linked in
       [data-registry/hillstrom](https://amm-ds.github.io/portfolio/data-registry/hillstrom/).
 
-      The primary frame keeps Mens E-Mail and No E-Mail (42,613 customers) so
-      the treatment estimand is unambiguous. The full 64,000-customer frame
-      supports secondary per-arm scores and best-arm planning.
-
-      | project column | source | role |
-      |---|---|---|
-      | treatment | segment | Mens = 1, control = 0 |
-      | conversion | conversion | primary outcome (~0.9% base) |
-      | visit / spend | visit / spend | secondary outcomes |
-      | `log_history` | history | feature + CUPED covariate |
-      | recency, mens, womens, newbie | same | numeric/binary features |
-      | channel, zip_code | same | categorical features |
+      The primary read keeps the Mens-email and no-email arms (42,613
+      customers) so the comparison is unambiguous; the full three-arm frame
+      supports per-arm reads and channel-choice planning. The column mapping
+      lives under Details.
   - id: eda
     text_md: |
-      **Randomization is balanced, but the conversion signal is small and
-      arm-specific.** Mean prior spend is about $242 in every arm. Emails raise
-      visits strongly, while only Mens shows a material conversion increase.
-
-      | segment | n | visit rate | conversion rate | mean prior spend |
-      |---|---|---|---|---|
-      | Mens E-Mail | 21,307 | 0.183 | 0.0125 | ~$243 |
-      | Womens E-Mail | 21,387 | 0.151 | 0.0088 | ~$243 |
-      | No E-Mail | 21,306 | 0.106 | 0.0057 | ~$241 |
-
-      That rare, asymmetric outcome motivates power analysis, cautious
-      intervals, and separate per-arm reads rather than assuming both emails
-      behave alike.
+      **How we judged it: check the randomization first, then trust small
+      differences only with wide intervals.** The three arms look alike
+      before the campaign — about $242 mean prior spend in each — so the
+      design did its job. Both emails lifted store visits (18.3% and 15.1%
+      vs 10.6% without); only the Mens email lifted purchases (1.25% vs 0.88%
+      and 0.57%). Purchases are rare — about 0.9% baseline — so small gaps
+      need honest uncertainty, and the two emails are read separately rather
+      than pooled. The per-arm table is under Details.
     figures: [eda_segment_profile]
   - id: training
     text_md: |
-      **Every evaluated score is out-of-fold.** Five-fold cross-fitting keeps a
-      row's evaluation prediction separate from any model trained on that row.
+      **What we found, with every score computed out-of-fold.** Five-fold
+      cross-fitting means the model scoring a customer never trained on that
+      customer, so rankings cannot grade their own homework.
 
       ```mermaid
       flowchart LR
@@ -141,40 +119,90 @@ sections:
           T --> O
       ```
 
-      The response model fits treated outcomes only; the T-learner scores
-      mu1 − mu0; the X-learner imputes per-arm effects before a
-      propensity-weighted combination. Base learners are HistGradientBoosting
-      inside a one-hot ColumnTransformer. The regularized logistic propensity
-      is clipped to [0.05, 0.95]. Implementation trade-offs are in `DESIGN.md`.
+      Three ways to rank customers. A *response model* scores who is likely
+      to buy, so it chases "sure things" who would buy anyway. *Uplift*
+      modeling targets the incremental purchase instead: the T-learner fits
+      one model per arm and scores treated-minus-control; the X-learner
+      imputes each arm's effect and combines the two propensity-weighted.
+      Base learners are gradient boosting over pre-treatment features only.
+
+      The randomized anchor is solid: Mens conversion is 1.25% versus 0.57%
+      control — an average treatment effect of +0.68 percentage points
+      (SE 0.09). The experiment is comfortably powered: 3,063 customers per
+      arm are needed at the standard 5% significance and 80% power; 21,306
+      are available. The CUPED adjustment — using pre-campaign spend to soak
+      up noise — leaves the effect unchanged and removes only 0.08% of
+      conversion variance (0.52% for visits), a useful negative finding.
+
+      Policy verdicts, each with 1,000 paired bootstraps (the same resampled
+      customers for every policy, so differences are fair):
+
+      - *Qini* — area between the ranking curve and random — measures ranking
+        quality. At a 25% send budget the T-learner earns $6,838 [$4,430,
+        $9,370] against $4,026 for random: **+$2,812 (+69%), CI [+$718,
+        +$4,767], entirely positive**, capturing about 61 of the ~145
+        incremental conversions (42%) with a quarter of the sends. Its Qini
+        of 12.03 [0.77, 24.39] trails the response model's 13.01 [1.83,
+        24.36] — but the response-minus-T difference CI [−8.18, 9.52] spans
+        zero, so that curve ranking is **not established**.
+      - That is budget efficiency, not the profit maximum: at $0.01 per email
+        mail-everyone earns $16,103 and T-minus-full-mail is −$9,265
+        [−$13,125, −$5,808]. The verdict flips with cost — the
+        profit-maximizing share drops below "everyone" near $0.20 per email,
+        and above ≈$0.30 the T-learner list beats mail-everyone outright
+        ($1,618 vs −$4,777 at $0.50).
+      - Per-arm reads are humbler than the two-arm read: the Mens per-arm
+        Qini of 12.03 [−0.47, 24.21] spans zero, Womens is 3.37 [−6.78,
+        13.75]. Best-channel planning favors Mens for 76.0% of customers,
+        Womens 20.2%, none 3.8%; that money is model-estimated ($35.5k at
+        25% budget vs $16.6k random), not randomized, and predicted deciles
+        run about 2× hot — planning values, not a validated policy.
+        Mail-everyone-Mens still leads unconstrained profit at $49.8k until
+        sends cost ≈$0.31.
   - id: evaluation
     text_md: |
-      **Qini diagnoses ranking; profit at the stated budget drives the policy.**
-      Both are computed out-of-fold, with paired uncertainty.
+      **What it means: adopt targeted sending only when sends are budgeted or
+      costly; otherwise mail everyone.** The randomized basis makes the
+      budgeted comparison credible and its interval is entirely positive; the
+      unestablished parts are the Qini ranking between models and either
+      per-arm Qini, so the decision rests on profit at the stated budget and
+      cost threshold, not curve area.
 
-      - **Qini:** sort by score and plot incremental conversions by targeted
-        fraction; the coefficient is area above the random line in conversion
-        units.
-      - **Profit frontier:** `profit(f) = inc(f) × $114 − mailed(f) × $0.01`.
-        Full-mail answers the unconstrained raw-profit question; the 25% point
-        answers the fixed-budget efficiency question. They are not interchangeable.
-      - **Paired uncertainty:** 1,000 seeded row bootstraps reuse each resample
-        across policies. Difference intervals determine whether comparisons
-        span zero.
-      - **Cost sensitivity:** recompute the profit-maximizing fraction and the
-        mail-everyone comparison across send costs, including analytic break-even.
-      - **Deciles:** compare predicted ordering with empirical arm contrasts;
-        random and treat-everyone have Qini 0 by construction.
+      **Business summary:** the deployable claim is budgeted efficiency —
+      +69% versus random targeting at a 25% budget, CI [+$718, +$4,767]. At
+      $0.01 per email, mail everyone instead (−$9,265). Margin, fatigue
+      costs, and prospective performance remain unmeasured: the next spend is
+      a fresh randomized holdout, not a rollout.
     figures: [uplift_by_decile, cost_sensitivity]
   - id: results
     text_md: |
-      **The experiment is precise enough for the ATE, but model-ranking evidence
-      is mixed.** Mens conversion is 1.253% versus 0.573% control: ATE +0.68pp,
-      SE 0.09pp. Power analysis requires 3,063 customers per arm at alpha 0.05
-      and power 0.8; 21,306 are available.
+      **What this does not show.** "Profit" is revenue ($114 per conversion)
+      minus send cost — no COGS, no margin, no fatigue from repeated contact.
+      One March 2008 campaign cannot establish what a future campaign will
+      do. The per-arm Qini intervals span zero, the response-versus-T Qini
+      ranking is unsettled, and all multi-arm money is model-estimated
+      planning value, not a randomized outcome. The X-learner trails here,
+      but that is specific to this strong-overlap, near-constant-propensity
+      regime — not a general ranking of learners.
+    figures:
+      [qini_curves, profit_frontier, cuped_variance, qini_per_arm,
+       profit_frontier_multi_arm, recommended_arm_distribution]
+    metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
+  - id: conclusions
+    text_md: |
+      **Established: the small Mens effect and the budgeted T-learner
+      advantage over random at 25% budget. Unestablished: the
+      response-versus-T Qini ranking and either per-arm Qini.** Claim the
+      budgeted profit comparison, not a universal Qini winner or a full-mail
+      recommendation. CUPED's tiny reduction and the X-learner's weak result
+      remain useful negative findings. Revalidate prospectively on a fresh
+      randomized holdout with real margin and fatigue costs before any
+      rollout.
 
-      CUPED leaves ATE unchanged and removes only 0.08% of conversion variance
-      (0.52% for visit). Adding recency reaches 0.12% / 0.95%: prior spend is a
-      weak covariate for this rare outcome, not an automatic variance win.
+      ### Exact policy results
+
+      Seed 42, out-of-fold; profit = incremental conversions × $114 revenue −
+      mailed × $0.01 send cost.
 
       | policy | Qini [95% CI] | profit @25% [95% CI] | Δ profit vs random |
       |---|---|---|---|
@@ -184,68 +212,72 @@ sections:
       | random | 0.0 | $4,026 | — |
       | treat-everyone | 0.0 | full-mail $16,103 | — |
 
-      The budgeted T-versus-random profit delta is **+$2,812 (+69%), 95% CI
-      [+$718, +$4,767]**, entirely positive. The top-25% list captures about 61
-      of 145 incremental conversions (42%) using one quarter of the sends.
+      Paired difference intervals (1,000 seeded row bootstraps reusing each
+      resample across policies; T-learner vs random at budget [+$718,
+      +$4,767] is entirely positive):
 
-      **That is budget efficiency, not the unconstrained profit maximum.** At
-      $0.01/email, mail-everyone earns $16,103, and T-minus-full-mail is
-      −$9,265 [−$13,125, −$5,808]. The profit-maximizing fraction drops below
-      full mail around $0.20/email; above the ≈$0.30 analytic break-even,
-      top-25% beats mail-everyone. At $0.50, the values are $1,618 and −$4,777.
+      | comparison | 95% CI | spans zero? |
+      |---|---|---|
+      | response − T-learner, Qini | [−8.18, 9.52] | yes — ranking not established |
+      | response − T-learner, profit @25% | [−$3,617, −$48] | no — favors T |
+      | T-learner − X-learner, profit @25% | [−$323, $4,343] | yes |
+      | T-learner − mail-everyone, profit | [−$13,125, −$5,808] | no — favors full mail |
 
-      Response-minus-T Qini difference CI [−8.18, 9.52] spans zero, so curve-area
-      ranking is not established. Response-minus-T budget-profit difference CI
-      [−$3,617, −$48] favors T; T-minus-X profit CI [−$323, $4,343] spans zero.
-      The X-learner trails in this strong-overlap, near-constant-propensity
-      regime; that is not a universal learner ranking.
+      ### Cost sensitivity (send cost sweep)
 
-      **Per-arm and multi-arm reads carry different uncertainty.** The empirical
-      Mens per-arm Qini is 12.03 **[−0.47, 24.21]**, spanning zero even though
-      its point estimate matches the two-arm T-learner. Womens is 3.37
-      [−6.78, 13.75], also spanning zero. These per-arm intervals must not be
-      replaced by the separate two-arm interval above.
+      | send cost | profit-maximizing share | best profit | mail-everyone |
+      |---|---|---|---|
+      | $0.01 | 100% | $16,103 | $16,103 |
+      | $0.10 | 100% | $12,268 | $12,268 |
+      | $0.20 | 90% | $8,065 | $8,007 |
+      | $0.30 | 90% | $4,230 | $3,745 |
+      | $0.50 | 25% | $1,618 | −$4,777 |
 
-      Best-arm recommendations are Mens 76.0%, Womens 20.2%, none 3.8%. Policy
-      money is model-estimated from summed predicted uplift: $35.5k [35.1k,
-      36.0k] at 25% budget versus $29.5k single-arm and $16.6k random; paired
-      model-based differences exclude zero. No randomized assignment realizes
-      the recommended mix, and deciles run about 2× hot, so these are planning
-      values. Unconstrained mail-everyone-Mens still leads at $49.8k until sends
-      cost ≈$0.31.
+      Analytic break-even ≈$0.30 per email. The top-25% list captures about
+      61 of 145 incremental conversions (42%) using one quarter of the sends.
 
-      **Business summary:** Adopt the T-learner top-25% list only under a send
-      budget or higher send cost — it does not beat mail-everyone at $0.01
-      (−$9,265, CI below zero), and the response-vs-T Qini ranking is not
-      established. The per-arm and multi-arm numbers are planning values, not
-      validated policies.
-    figures:
-      [qini_curves, profit_frontier, cuped_variance, qini_per_arm,
-       profit_frontier_multi_arm, recommended_arm_distribution]
-    metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
-  - id: conclusions
-    text_md: |
-      **The established claims are the small Mens ATE and the budgeted
-      T-learner advantage over random at 25% budget; the unestablished ones are
-      the response-versus-T Qini ranking and either per-arm Qini.** Claim the
-      budgeted profit comparison, not a universal Qini winner or a full-mail
-      recommendation.
+      ### EDA and experiment tables
 
-      At $0.01/email, mailing everyone makes more raw profit; targeting creates
-      value by concentrating conversions under a send constraint or higher send
-      cost. CUPED's tiny reduction and the X-learner's weak result remain useful
-      negative findings. Multi-arm channel choice stays model-estimated until a
-      randomized policy is evaluated.
+      | segment | n | visit rate | conversion rate | mean prior spend |
+      |---|---|---|---|---|
+      | Mens E-Mail | 21,307 | 0.183 | 0.0125 | ~$243 |
+      | Womens E-Mail | 21,387 | 0.151 | 0.0088 | ~$243 |
+      | No E-Mail | 21,306 | 0.106 | 0.0057 | ~$241 |
 
-      **Results quality: acceptable with caveats.** Revalidate prospectively on
-      a fresh randomized holdout with real margin and fatigue costs. Use profit
-      intervals for the stated constraint, retain out-of-fold evaluation, and do
-      not turn one historical snapshot into a deployment guarantee.
+      | cost parameter | value | meaning |
+      |---|---|---|
+      | `revenue_per_conversion` | $114 | mean spend among converters; revenue, not margin |
+      | `cost_per_email` | $0.01 | marginal send cost only |
+      | policy budget | 25% | maximum share mailed by the budgeted policy |
+      | base conversion rate | ~0.9% | rare-outcome regime |
 
-      **Business summary:** The deployable claim today is budgeted efficiency
-      (+69% vs random at 25% budget, CI entirely positive). Margin, fatigue
-      costs, and prospective performance remain unmeasured — the next spend is
-      a fresh randomized holdout, not a rollout.
+      | project column | source | role |
+      |---|---|---|
+      | treatment | segment | Mens = 1, control = 0 |
+      | conversion | conversion | primary outcome (~0.9% base) |
+      | visit / spend | visit / spend | secondary outcomes |
+      | `log_history` | history | feature + CUPED covariate |
+      | recency, mens, womens, newbie | same | numeric/binary features |
+      | channel, zip_code | same | categorical features |
+
+      ### Per-arm and multi-arm reads (exact)
+
+      Mens per-arm (randomized arm-vs-control pairs, 21,307 + 21,306): Qini
+      12.03 [−0.47, 24.21], incremental conversions at full send 145.0
+      [107.97, 181.88]. Womens (21,387 + 21,306): Qini 3.37 [−6.78, 13.75],
+      incremental 66.5 [33.10, 104.69]. Policy money is model-estimated from
+      summed predicted uplift: best-arm $35,514 [35.1k, 36.0k] at 25% budget
+      versus single-arm-Mens $29,487 and random $16,563; paired model-based
+      differences exclude zero. Unconstrained mail-everyone-Mens leads at
+      $49,819 until the ≈$0.31 model-estimated break-even. No randomized
+      assignment realizes the recommended mix, so these stay planning values.
+
+      ### Reproduce
+
+      ```bash
+      uv run python -m uplift_experimentation.cli all   # minutes, end-to-end
+      uv run dvc repro                                  # the same, staged
+      ```
 roadmap:
   - status: delivered
     text: Hillstrom experimentation stack — RCT validation, power/CUPED, T/X-learners, paired-bootstrap policy CIs, and cost-sensitivity grid on the pinned snapshot.

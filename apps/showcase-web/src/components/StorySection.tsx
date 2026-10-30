@@ -4,20 +4,32 @@ import { BusinessImplication } from "./BusinessImplication";
 import { StoryMetricsTable } from "./StoryMetricsTable";
 import { FigureCard } from "./FigureCard";
 
-// Story YAML uses `**Business summary:**` as the trailing takeaway marker.
+// Story YAML uses a trailing takeaway marker, rendered as its own card. New
+// stories use `**In plain terms:**`; legacy ones use `**Business summary:**`.
 const BI_MARKER = "**Business summary:**";
+const PLAIN_MARKER = "**In plain terms:**";
 
 /**
- * Split off the trailing `**Business summary:** ...` paragraph (rendered
- * as its own card) from the rest of the section prose. Sections without the
- * marker return the text unchanged with a null tail.
+ * Split off the trailing takeaway paragraph (rendered as its own card) from
+ * the rest of the section prose. Prefers `**In plain terms:**` when both
+ * markers exist. Sections without a marker return the text unchanged with a
+ * null tail.
  */
-function splitBusinessImplication(md: string): [string, string | null] {
-  const idx = md.lastIndexOf(BI_MARKER);
-  if (idx === -1) return [md, null];
-  const tail = md.slice(idx + BI_MARKER.length).trim();
-  if (tail === "") return [md, null];
-  return [md.slice(0, idx).trimEnd(), tail];
+function splitBusinessImplication(
+  md: string,
+): [string, string | null, "In plain terms" | "Business summary" | null] {
+  const plainIdx = md.lastIndexOf(PLAIN_MARKER);
+  const biIdx = md.lastIndexOf(BI_MARKER);
+  const idx = plainIdx !== -1 ? plainIdx : biIdx;
+  const marker = plainIdx !== -1 ? PLAIN_MARKER : BI_MARKER;
+  if (idx === -1) return [md, null, null];
+  const tail = md.slice(idx + marker.length).trim();
+  if (tail === "") return [md, null, null];
+  return [
+    md.slice(0, idx).trimEnd(),
+    tail,
+    plainIdx !== -1 ? "In plain terms" : "Business summary",
+  ];
 }
 
 /** One case-study section: markdown prose + results table left, native plotly figures right. */
@@ -27,6 +39,7 @@ export function StorySection({
   index,
   metrics,
   figureCaptions = {},
+  linkedTerms,
 }: {
   projectId: string;
   section: StorySectionData;
@@ -34,8 +47,10 @@ export function StorySection({
   metrics: Metrics | null;
   /** Story `figure_captions`, keyed by figure name. */
   figureCaptions?: Record<string, string>;
+  /** Shared glossary-linked slug set, threaded page-wide by the case study. */
+  linkedTerms?: Set<string>;
 }) {
-  const [proseMd, implication] = splitBusinessImplication(section.text_md);
+  const [proseMd, implication, implicationLabel] = splitBusinessImplication(section.text_md);
   const figures = section.figures.map((name) => (
     <FigureCard
       key={name}
@@ -44,6 +59,20 @@ export function StorySection({
       caption={figureCaptions[name]}
     />
   ));
+  const body = (
+    <div className="story-cols">
+      <div className="story-main">
+        <div className="prose">{renderMarkdown(proseMd, linkedTerms)}</div>
+        {implication && implicationLabel && (
+          <BusinessImplication label={implicationLabel}>
+            {renderMarkdown(implication, linkedTerms)}
+          </BusinessImplication>
+        )}
+        {metrics && <StoryMetricsTable metrics={metrics} metricsKeys={section.metrics_keys} />}
+      </div>
+      {section.figures.length > 0 && <div className="story-figs">{figures}</div>}
+    </div>
+  );
 
   return (
     <section id={`sec-${section.id}`} className="story-section">
@@ -51,16 +80,14 @@ export function StorySection({
         <span className="rail-num">{String(index + 1).padStart(2, "0")} </span>
         {section.title}
       </h2>
-      <div className="story-cols">
-        <div className="story-main">
-          <div className="prose">{renderMarkdown(proseMd)}</div>
-          {implication && (
-            <BusinessImplication>{renderMarkdown(implication)}</BusinessImplication>
-          )}
-          {metrics && <StoryMetricsTable metrics={metrics} metricsKeys={section.metrics_keys} />}
-        </div>
-        {section.figures.length > 0 && <div className="story-figs">{figures}</div>}
-      </div>
+      {section.id === "conclusions" ? (
+        <details className="story-details">
+          <summary>Technical details, revision notes, and reproduction</summary>
+          {body}
+        </details>
+      ) : (
+        body
+      )}
     </section>
   );
 }

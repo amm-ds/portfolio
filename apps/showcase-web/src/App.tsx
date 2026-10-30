@@ -20,6 +20,9 @@ const Services = lazy(() =>
 const Contact = lazy(() =>
   import("./pages/Contact").then((m) => ({ default: m.Contact })),
 );
+const Glossary = lazy(() =>
+  import("./pages/Glossary").then((m) => ({ default: m.Glossary })),
+);
 const ChurnSandbox = lazy(() => import("./demos/churn-sandbox/ChurnSandbox"));
 const ForecastWorkbench = lazy(
   () => import("./demos/forecast-workbench/ForecastWorkbench"),
@@ -147,6 +150,7 @@ export function App() {
             />
             <Route path="/services" element={<Services />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/glossary" element={<Glossary />} />
             <Route path="/about" element={<Navigate to="/services" replace />} />
             <Route path="*" element={<NotFoundRoute />} />
           </Routes>

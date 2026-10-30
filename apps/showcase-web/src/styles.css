@@ -705,14 +705,6 @@ select:focus-visible,
   margin: 0.85rem 0 0;
 }
 
-.project-card .impact {
-  font-size: 0.85rem;
-  color: var(--secondary);
-  margin: 0.75rem 0 0;
-  border-left: 2px solid var(--accent);
-  padding-left: 0.6rem;
-}
-
 /* --- Project detail / case study --- */
 
 .detail-header h1 {
@@ -882,6 +874,129 @@ select:focus-visible,
 
 .bi-card .bi-body p + p {
   margin-top: 0.85em;
+}
+
+/* --- Collapsed conclusions block: native <details> after the section h2 --- */
+
+.story-details {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+}
+
+.story-details > summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.story-details > summary:hover {
+  color: var(--accent);
+}
+
+.story-details[open] > summary {
+  margin-bottom: 0.9rem;
+  color: var(--accent);
+}
+
+/* --- Glossary: auto-linked terms in prose + the /glossary page --- */
+
+a.glossary-term {
+  position: relative;
+  color: var(--accent);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.18em;
+}
+
+a.glossary-term:hover,
+a.glossary-term:focus-visible {
+  text-decoration-style: solid;
+}
+
+a.glossary-term .glossary-tip {
+  display: none;
+}
+
+a.glossary-term:hover .glossary-tip,
+a.glossary-term:focus-visible .glossary-tip {
+  display: block;
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.45rem);
+  width: max-content;
+  max-width: 22rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.8rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text);
+  box-shadow: 0 6px 24px rgba(2, 6, 23, 0.55);
+  z-index: 50;
+}
+
+.glossary-page {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+.glossary-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.glossary-entry {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 0.9rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px dashed var(--border);
+}
+
+.glossary-entry:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.glossary-term-name {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--accent);
+  scroll-margin-top: 4rem;
+}
+
+.glossary-def {
+  margin: 0;
+}
+
+.glossary-def p {
+  margin: 0 0 0.45rem;
+  color: var(--text);
+}
+
+.glossary-example {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.glossary-example-label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--secondary);
+}
+
+@media (max-width: 640px) {
+  .glossary-entry {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
 }
 
 /* --- DataTable: shared table pattern (DataTable component + prose tables) --- */

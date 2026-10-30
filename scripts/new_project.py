@@ -62,6 +62,9 @@ order: {order}
 """
 
 STORY_YAML = """project_id: {dirname}
+short_version: >-
+  <one short paragraph, ≤ 280 chars: what was built, the headline measured result
+  with its uncertainty, and the data used — feeds card/README/docs/SEO/social copy>
 roadmap:
   - status: remaining
     text: <first roadmap item>
