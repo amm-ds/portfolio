@@ -5,11 +5,12 @@ sections:
   - id: background
     text_md: |
       **A churn scorer turns scores into a contact list with a price on it.**
-      On a 1,409-customer holdout, the calibrated model at a 0.175 threshold
-      cuts decision cost 41.9% — 601 versus 1,035 for contacting everyone —
-      with a paired-bootstrap 95% interval of −485 to −343 on the saving. The
-      decision diagram shows the served path from raw CRM row to contact
-      list.
+      For a retention team the deliverable is the priced list, not the
+      score. The decision diagram shows the served path: read it
+      left to right — one fitted pipeline scores each row, the 0.175
+      threshold splits "call" from "skip", and the bill box prices the
+      outcome at 601 versus 1,035 for contacting everyone, a 41.9% cut;
+      95% bootstrap interval −485 to −343.
 
       ```mermaid
       flowchart LR
@@ -20,7 +21,7 @@ sections:
           CUT -->|"above"| LIST["contact list"]
           CUT -->|"below"| SKIP["no contact"]
         end
-        subgraph BILL["expected bill, 1,409-row holdout"]
+        subgraph BILL["1,409-row holdout"]
           LIST --> COST["601 cost units<br/>FP x 1 + FN x 5"]
           ALL["contact everyone: 1,035"] --> DELTA["saving -41.9%<br/>95% interval -485 to -343"]
           COST --> DELTA
@@ -28,7 +29,9 @@ sections:
       ```
 
       The cost asymmetry is the point: a false alarm spends one retention
-      voucher, a missed churner costs five.
+      voucher, a missed churner costs five — accuracy-first scoring was
+      rejected because it prices both mistakes the same.
+      The next section asks what "best" means under that price split.
 
       **Business summary:** On 7,043 real telco customers, the served model
       cuts the retention-contact bill 42% versus contacting everyone; the
@@ -42,31 +45,21 @@ sections:
       Which contact threshold gives the lowest expected bill? How sure is
       the saving? And how far does the best threshold move when the price
       of a missed churner changes? The cost-model diagram shows the search.
-      Every candidate answers on the same holdout under the same cost
-      model.
+      Read it left to right: the stated cost model — a false alarm costs
+      1 voucher, a missed churner 5 — feeds the three candidates, all
+      answering on the same 1,409-row holdout under a 41-point threshold
+      grid, where the cheapest expected bill wins. The chain ends with
+      the two outputs: the served policy's saving with its interval, and
+      a stability check that re-runs the search as the missed-churner
+      price moves. An F1-first selection was tried and rejected: it picked
+      a different model family, proof that the objective changes the
+      winner.
 
       ```mermaid
       flowchart LR
-        subgraph COST["cost model - stated, not assumed"]
-          FP["false alarm FP = 1 voucher"]
-          FN["missed churner FN = 5 vouchers"]
-        end
-        subgraph CAND["every candidate answers on the same holdout"]
-          N["naive base rate<br/>its cheapest choice: contact everyone"]
-          L["logistic regression"]
-          X["gradient boosting"]
-        end
-        subgraph PICK["selection"]
-          G["41-point threshold grid"]
-          A["argmin of expected bill"]
-        end
-        COST --> G
-        N --> G
-        L --> G
-        X --> G
-        G --> A
-        A --> S["served policy<br/>saving with interval"]
-        A --> Q["stability check:<br/>threshold vs FN price"]
+        CM["cost model:<br/>FP 1, FN 5"] --> CD["candidates:<br/>naive, logistic, boosting"]
+        CD --> G["41-point threshold grid"] --> A["argmin of<br/>expected bill"]
+        A --> S["served policy:<br/>saving + interval"] --> Q["stability vs<br/>FN price"]
       ```
 
       Success means:
@@ -74,6 +67,8 @@ sections:
       - One cost model and one holdout, so every candidate is comparable.
       - A threshold with an interval on its saving.
       - A clear answer when the missed-churner price runs from 3 to 8.
+
+      The next section sets up the data those candidates answer on.
 
       **Business summary:** The goal is the cheapest contact list under a
       1-versus-5 cost split, with the saving's range and the threshold's
@@ -83,65 +78,60 @@ sections:
     text_md: |
       **One real panel, one synthetic twin, strict splits.** The primary
       track is the IBM telco panel: 7,043 customers × 21 columns at 26.5%
-      churn, loaded from the canonical GitHub mirror with a pinned sha256 and
-      a [dataset contract](https://amm-ds.github.io/portfolio/data-registry/telco-churn/).
+      churn, loaded from the canonical GitHub mirror with a pinned sha256
+      and a [dataset contract](https://amm-ds.github.io/portfolio/data-registry/telco-churn/).
       The HF id cited in planning does not exist; the raw IBM mirror is the
-      implemented source. The lineage diagram shows how the panel flows to
-      the scored-once holdout.
+      implemented source — a public mirror with a hash beat a re-hosted
+      copy, because the pin must travel with the citation. The lineage
+      diagram shows how the panel flows to the scored-once holdout. Read it
+      left to right: both sources pass the same data-quality gates — null
+      rates within bounds, values inside allowed ranges, churn strictly
+      binary — and only then split.
 
       ```mermaid
       flowchart LR
-        subgraph SRC["sources"]
-          IBM["IBM telco mirror<br/>7,043 customers, sha256-pinned"]
-          SYN["synthetic twin - CI only<br/>8.8% churn, planted nulls,<br/>one 9,999 outlier charge"]
-        end
-        subgraph GATES["dataset contract + DQ gates"]
-          DQ1["null rates within bounds"]
-          DQ2["values inside allowed ranges"]
-          DQ3["churn is binary"]
-        end
-        subgraph SPLIT["stratified 80/20, seed 42"]
-          TRAIN["train: 5,634 rows"]
-          HOLD["holdout: 1,409 rows<br/>scored once"]
-        end
-        subgraph TRAINSIDE["train side only"]
-          FIT["fit + seeded tuning"]
-          CAL["20% carve-out<br/>isotonic calibration"]
-        end
-        IBM --> DQ1
-        SYN --> DQ1
-        DQ1 --> DQ2 --> DQ3
-        DQ3 --> TRAIN
-        DQ3 --> HOLD
-        TRAIN --> FIT
-        TRAIN --> CAL
+        SRC["IBM mirror +<br/>synthetic twin"] --> DQ["contract gates:<br/>nulls, ranges, binary churn"]
+        DQ --> SP["stratified 80/20,<br/>seed 42"] --> TR["train 5,634:<br/>fit + calibrate"]
+        SP --> HO["holdout 1,409:<br/>scored once"]
       ```
 
-      The twin exercises the same gates offline and never substitutes for
-      the real-data results.
+      The split is stratified 80/20 at seed 42: 5,634 training rows and the
+      1,409-row holdout, which is scored once, after fitting, tuning and
+      calibration are finished. Calibration gets its own 20% carve-out on
+      the train side only, so the holdout never informs the isotonic fit.
+      The synthetic twin — 8.8% churn, planted nulls, one 9,999 outlier
+      charge — exists for CI: it exercises the same gates offline when the
+      network is unavailable, and never substitutes for the real-data
+      results. The next section profiles what churn looks like in this
+      panel.
 
-      **Business summary:** One real panel — 7,043 customers, sha256-pinned —
-      splits into train, calibration and a scored-once holdout; a synthetic
-      twin guards the pipeline in CI only.
+      **Business summary:** One real panel — 7,043 customers, sha256-pinned
+      — splits into train, calibration and a scored-once holdout; a
+      synthetic twin guards the pipeline in CI only.
     figures: []
   - id: eda
     text_md: |
       **Churn is highest where commitment is low.** The churn-profile figure
-      shows it. Month-to-month customers churn at 42.7%; two-year contracts
-      at 2.8%. Senior citizens churn at 41.7%; fiber-optic users at 41.9%.
-      Churners also pay more (about $74 vs $61 a month, on average) and
-      leave sooner (about 18 vs 38 months of tenure).
+      shows it — read the contract panel first: month-to-month customers
+      churn at 42.7%, two-year contracts at 2.8%. Senior citizens churn at
+      41.7%; fiber-optic users at 41.9%. Churners also pay more (about $74
+      vs $61 a month, on average) and leave sooner (about 18 vs 38 months
+      of tenure).
 
       These facts set the rules for judging models. Every model is scored
       on the same holdout under one cost model: ROC-AUC (how often a random
       churner outranks a random stayer), macro F1 (the precision-recall
       balance, averaged over both classes), business cost over a 41-point
-      threshold grid, and, for the top models, calibration error. The
-      precision-recall figure is read against the 26.5% base rate. The
-      cost-surface figure maps cost over thresholds and missed-churner
-      prices before any cutoff is picked. The paired bootstrap resamples
-      holdout rows at fixed thresholds. It prices the noise in the cost,
-      not the choice of threshold.
+      threshold grid, and, for the top models, calibration error. Three
+      figures carry the reading. The precision-recall figure is read
+      against the 26.5% base-rate floor — a curve hugging that floor adds
+      nothing. The cost-surface figure maps cost over thresholds and
+      missed-churner prices before any cutoff is picked: find the dark
+      valley, watch its floor drift left as the missed-churner price rises,
+      and check the starred point — the served cutoff, t=0.175. The paired
+      bootstrap resamples holdout rows at fixed thresholds; it prices the
+      noise in the cost, not the choice of threshold. The next section runs
+      the candidates under these rules.
 
       **Business summary:** Churn is highest where commitment is low —
       month-to-month, senior, fiber — and churners pay more and leave
@@ -168,9 +158,7 @@ sections:
       pruning) chose a gradient-boosted model on out-of-fold business cost;
       isotonic calibration on the training side only improves ECE (expected
       calibration error) 0.028 → 0.016 and the cost optimum 619 → 601 at
-      threshold 0.175 — the 41.9% cut, its interval excluding zero. The
-      calibration figure and the cost-curve figure carry the raw-versus-
-      isotonic comparison.
+      threshold 0.175 — the 41.9% cut, its interval excluding zero.
 
       **The cutoff is not a constant.** Re-scoring under different
       missed-churner prices moves the served threshold — 0.200 when a
@@ -183,8 +171,15 @@ sections:
       recalls month-to-month churners at 0.976 but misses 19 of 36 one-year
       and all 9 two-year churners; gender recall is near-uniform (0.902
       versus 0.906). The permutation-importance figure ranks contract,
-      tenure and charges on top — and long-contract churners are exactly who
-      the raw policy loses.
+      tenure and charges on top — and long-contract churners are exactly
+      who the raw policy loses.
+
+      Read the figures at face value: the calibration figure overlays the
+      raw and isotonic reliability curves — the straighter line wins; the
+      cost-curve figure is read by its minimum, 601 versus the naive flat
+      line at 1,035; the permutation-importance figure is read top-down,
+      where contract, tenure and charges sit. The next section checks the
+      served artifact against the measurement contract.
 
       **Business summary:** Cost, not accuracy, picks the winner: a
       calibrated boosted model serves at 0.175 for 601 versus 1,035; the
@@ -194,33 +189,39 @@ sections:
   - id: evaluation
     text_md: |
       **Deployable as-is, optimistic by construction.** The artifact takes
-      raw CRM rows in and returns a scored, thresholded contact list; the
-      measurement chain behind the headline number is fixed up front. The
-      evaluation-contract diagram shows how a probability becomes a
-      thresholded cost with an interval on the saving.
+      raw CRM rows in and returns a scored, thresholded contact list. The
+      measurement chain behind the headline number is fixed up front: every
+      candidate scores probabilities on the same frozen holdout, a 41-point
+      threshold grid prices each cutoff under the 1-versus-5 cost model,
+      the argmin picks the threshold, and 2,000 paired bootstrap resamples
+      at fixed thresholds turn the raw-versus-isotonic cost gap into a 95%
+      interval. The evaluation-contract diagram shows the chain; read it
+      left to right — scoring, grid, argmin, interval — then the two watch
+      items hanging off the end.
 
       ```mermaid
       flowchart LR
         subgraph HOLDOUT["one frozen holdout - 1,409 rows"]
-          P["predict_proba per candidate"]
+          S["score every candidate"]
           G["41-point threshold grid"]
-          C["business cost at each threshold"]
           A["cost-optimal threshold"]
         end
-        subgraph HEADLINE["headline comparison"]
-          R["raw vs isotonic at each optimum"]
-          B["2,000 paired bootstrap resamples"]
-          I["95% interval on the saving<br/>fixed thresholds only"]
+        subgraph EVIDENCE["headline evidence"]
+          I["2,000 paired resamples:<br/>95% interval -485 to -343"]
         end
-        P --> G --> C --> A --> R --> B --> I
-        I --> W1["watch: same-holdout optimism"]
-        I --> W2["watch: served-policy fairness gate"]
+        S --> G --> A --> I
+        I --> W["two watch items:<br/>same-holdout optimism,<br/>served-policy fairness"]
       ```
 
-      Two watch items ride with the measured 42% saving. It is read on the
-      same holdout that chose the threshold, so it is optimistic. And the
-      raw model's blind spot for two-year churners makes served-policy
-      fairness on fresh data the gate before rollout.
+      The optimism is structural, not a bug to fix here: the interval is
+      read on the same holdout that chose the threshold. The obvious
+      alternative — a fresh time-split — is impossible with this snapshot,
+      because the data carries no time axis and later months cannot be
+      re-scored. The fix, a time-stamped feed from the data owner, is the
+      first requirement before rollout. The second watch item is the raw
+      model's blind spot for two-year churners, which makes served-policy
+      fairness on fresh data the gate before rollout. The next section
+      lists what the measured numbers do and do not support.
 
       **Business summary:** Deploy on raw CRM rows behind the data-quality
       gates; expect a ~42% cost cut at a 5× missed-churner price, stable
@@ -228,7 +229,13 @@ sections:
     figures: []
   - id: results
     text_md: |
-      What the measured numbers support — and what they do not:
+      What the measured numbers support — and what they do not. Every claim
+      below is traceable to a committed artifact, and the caveats are part
+      of the results, not fine print. The fairness-slices figure is read
+      slice by slice: each bar is a group's recall under the raw model at
+      its own threshold. Look at the contract panel first — 0.976
+      month-to-month against 0.000 two-year; the gender bars sit nearly
+      level, so the blind spot is contract-shaped, not demographic.
 
       - The headline is a decision-cost cut: **601 versus 1,035 (−41.9%)
         at threshold 0.175, interval [−485, −343]** — a budget line a
@@ -243,6 +250,8 @@ sections:
         total there (0 of 9 two-year churners recalled).
       - One operator, 21 columns: transfer to other customer bases is
         plausible, not measured.
+
+      That is the honest ledger; the conclusions hold the full record.
 
       **Business summary:** The saving is real but read on the same holdout
       that chose the threshold; treat 601 as a budget line with optimism

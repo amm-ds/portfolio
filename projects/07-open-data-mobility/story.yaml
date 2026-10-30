@@ -36,35 +36,36 @@ sections:
   - id: background
     text_md: |
       **Next-hour taxi demand, zone by zone, on one laptop.** The input:
-      41.2M real 2024 yellow-taxi trips plus public weather. On a strict
-      October–December holdout (584,855 zone-hours) the served model cuts
-      average error to 4.68 pickups per hour — 28% below the
+      41.2M real 2024 yellow-taxi trips plus public Central Park weather.
+      On a strict October–December holdout (584,855 zone-hours) the served
+      model cuts average error to 4.68 pickups per hour — 28% below the
       same-hour-yesterday rule — and its 90% upper band covers 90.8% of
-      outcomes. Two flags: sparse zones under-cover at 84.7%; weather links
-      are directional only.
+      outcomes. Two flags: sparse zones under-cover at 84.7%; weather
+      links are directional only.
 
-      The pipeline diagram shows how trips and weather become an hourly
-      zone forecast.
+      The pipeline diagram traces one straight path, left to right: two
+      public feeds, one prepared zone-hour panel, one forecasting model.
+      Read it as a promise that every box is replayable — then ask how
+      good the forecast is.
 
       ```mermaid
       flowchart LR
           subgraph SRC["public sources"]
-              TLC["NYC TLC yellow taxis 2024<br/>12 monthly Parquet files, 41.2M trips"]
-              NOAA["NOAA GHCN-Daily, Central Park<br/>rain, snow, temperature"]
+              TLC["TLC yellow taxis 2024, 41.2M trips"]
+              WX["NOAA Central Park weather"]
           end
-          subgraph PANEL["prepared panel"]
-              J["zone lookup join<br/>checksums + data-quality gates"]
-              Z["zero-filled grid<br/>265 zones x 8,784 hours"]
+          subgraph PREP["prepared panel"]
+              J["join + data-quality gates"]
+              Z["zero-filled grid, 265 zones x 8,784 hours"]
           end
           subgraph FIT["forecast"]
-              F["lag, calendar and weather features"]
-              G["tuned GBM: mean + p90 twin"]
+              F["lag, calendar, weather features"]
+              G["tuned GBM, mean + p90 twin"]
           end
-          SRC --> J
-          J --> Z
-          Z --> F
-          F --> G
-          G --> S["served three-file bundle<br/>showcase API"]
+          TLC --> J
+          WX --> J
+          J --> Z --> F --> G
+          G --> S["served three-file bundle, showcase API"]
       ```
 
       **Business summary:** Last quarter of 2024: the model beat the
@@ -76,32 +77,46 @@ sections:
     text_md: |
       **The question: can next-hour demand be forecast for all 265 zones,
       with a calibrated upper band a dispatcher can staff against, on one
-      laptop?** Success had four measurable bars:
+      laptop?** Success had four measurable bars, each chosen so an
+      outsider can check it:
 
-      - At least 20% less error than the same-hour-yesterday baseline.
+      - At least 20% less error than the same-hour-yesterday baseline —
+        the rule every dispatcher already trusts, so the model must beat
+        real practice, not just beat chance.
       - A 90% upper band whose empirical coverage lands within about 2
-        percentage points of the target.
-      - The full pipeline under 8 GB of RAM.
+        percentage points of the target — an honest band, not a
+        decorative one.
+      - The full pipeline under 8 GB of RAM, so any auditor can replay
+        the study on ordinary hardware. Cloud instances were ruled out
+        for exactly that reason.
       - One-command reruns an auditor can replay end to end.
 
       Weather stays a side question, read as association only — no causal
       claims. The evaluation contract diagram fixes the judging rules
-      before any modeling.
+      before any modeling: the left box is the train side (January
+      through September 2024 features, with an embargoed expanding
+      validation window where all tuning happens); the middle box is the
+      test side (October through December, 584,855 zone-hours) scored
+      once; the right box is the judge — four error readings plus the
+      band-coverage check. Read it as a one-way gate: only the frozen
+      winner crosses to the test side, and nothing learned there flows
+      back. With the bars fixed, the next question is where the data
+      comes from.
 
       ```mermaid
       flowchart LR
           subgraph TRAIN["train side"]
-              T["January-September 2024 features"]
-              V["embargoed expanding validation<br/>all tuning happens here"]
+              T["Jan-Sep 2024 features"]
+              V["embargoed validation, all tuning here"]
           end
-          subgraph TEST["test side - scored once"]
-              Q["October-December 2024<br/>584,855 zone-hours"]
+          subgraph TEST["test side, scored once"]
+              Q["Oct-Dec 2024, 584,855 zone-hours"]
           end
           subgraph JUDGE["judging"]
-              M["error in pickups, squared error,<br/>percent error, ratio vs baseline"]
-              C["p90 band vs 90 percent coverage target"]
+              M["four error readings vs yesterday rule"]
+              C["p90 band vs 90 percent coverage"]
           end
-          TRAIN --> V
+          T --> V
           V -->|frozen winner| Q
           Q --> M
           Q --> C
@@ -121,29 +136,28 @@ sections:
       domain; failed checks become missing
       ([dataset card](https://amm-ds.github.io/portfolio/data-registry/noaa-ghcn/)).
 
-      The lineage diagram shows how the two feeds become one training panel.
+      The lineage diagram reads left to right as the build order. Both
+      feeds first pass row checks — keys, zones, and timestamps on the
+      taxi side, station quality flags on the weather side — because a
+      bad row caught here is cheaper than a bad forecast later. The
+      checked rows then meet at one zone lookup join: 263 mapped zones
+      plus two honest buckets, N/A and Unknown, for trips that match no
+      zone. Splitting those out was deliberate; hiding them inside a
+      nearest zone would have invented demand where there is none. The
+      join output is reindexed into the zero-filled grid, and the grid
+      is written as a partitioned panel so the roughly 1.5 GB download
+      happens once and every later run starts from the pinned local
+      copies. The boundary stays deliberate: one vehicle class, one
+      city, one year. With the panel built, the next question is what
+      it actually looks like — and what trap it hides.
 
       ```mermaid
       flowchart LR
-          subgraph TLC["NYC TLC feed"]
-              A["12 monthly Parquet files"]
-              B["row checks: keys, zones, timestamps"]
-          end
-          subgraph NOAA["NOAA GHCN-Daily feed"]
-              W["Central Park station"]
-              X["quality failures become missing"]
-          end
-          A --> B
-          W --> X
-          B --> J["zone lookup join<br/>263 mapped zones + N/A and Unknown buckets"]
-          X --> J
-          J --> G["zero-filled grid<br/>265 x 8,784 = 2,327,760 zone-hours"]
-          G --> P["partitioned panel<br/>reused after first download"]
+          A["TLC: 12 monthly Parquet, 41.2M trips"] --> J["row checks + zone lookup join"]
+          W["NOAA: Central Park weather"] --> J
+          J --> G["zero-filled grid, 265 x 8,784 zone-hours"]
+          G --> P["partitioned panel, reused after download"]
       ```
-
-      The boundary is deliberate: one vehicle class, one city, one year. No
-      raw data ships — the first run downloads about 1.5 GB; later runs reuse
-      the pinned local copies.
 
       **Business summary:** Two public feeds — 41.2M taxi trips plus Central
       Park weather — join into one zone-hour panel, and nothing downloads
@@ -164,11 +178,17 @@ sections:
 
       One data trap matters most: the panel is reindexed to all 265 × 8,784
       = 2,327,760 zone-hours with explicit zeros, so "previous hour" truly
-      means one hour back. The zone demand map figure shows why that
-      discipline pays — full-year mean pickups for the 263 mapped zones, the
-      busiest averaging 213.9 per hour. The zone-hour heatmap figure adds
-      one week, 2024-10-07: Midtown's weekday evening peak contrasts with
-      flat airport demand.
+      means one hour back. Skipping the reindex was rejected — lags would
+      silently jump over empty hours and every lag feature would lie.
+
+      The two figures read the demand the model must learn. In the zone
+      demand map, look first at the color concentration: Manhattan and the
+      two airports glow while most of the 263 mapped zones stay dark; the
+      busiest zone averages 213.9 pickups per hour. In the zone-hour
+      heatmap, read each row as one day — Midtown's weekday evenings burn
+      bright against the flat airport bands, the weekly rhythm that
+      calendar features must carry. With the rules and the demand shape
+      fixed, the question is which model earns the forecast.
 
       **Business summary:** Rules were set before modeling: strict time
       split, yesterday rule as bar, four error readings, and a 90% band
@@ -179,14 +199,22 @@ sections:
     text_md: |
       **The served model is a tuned gradient-boosting regressor: 4.676
       pickups of average error on the holdout, 28.3% below the baseline, a
-      MASE of 0.763 where 1.0 would mean no improvement.** Selection
-      followed a fixed rule — best score on the embargoed validation window
-      among candidates that clear the baseline. There the xGB challenger
-      scored 3.182 and the LightGBM challenger 3.173 against the
-      incumbent's 3.165, so `gbm_tuned` serves even though the run-ladder
-      figure shows xGB best on test at 4.487 (−31.2%). Default and tuned
-      GBMs sit −0.2% apart, flat within noise. The neural challenger trails
-      on absolute error (5.178 vs 4.676) and wins only the percentage
+      MASE of 0.763 where 1.0 would mean no improvement.** The run-ladder
+      figure puts every candidate on one test. Read the grey bar first —
+      that is the same-hour-yesterday baseline — then each model's bar as
+      its MAE on the holdout, lower being better: the served `gbm_tuned`
+      clears the grey bar by a wide margin, and the ladder also shows the
+      two challengers that beat it.
+
+      Selection followed a fixed rule — best score on the embargoed
+      validation window among candidates that clear the baseline. There
+      the xGB challenger scored 3.182 and the LightGBM challenger 3.173
+      against the incumbent's 3.165, so `gbm_tuned` serves even though the
+      ladder shows xGB best on test at 4.487 (−31.2%). Picking the
+      best-on-test candidate was rejected — that is leakage wearing a
+      costume, and it would void the holdout. Default and tuned GBMs sit
+      −0.2% apart, flat within noise. The neural challenger trails on
+      absolute error (5.178 vs 4.676) and wins only the percentage
       metric.
 
       The p90 band is calibrated where data is dense — 90.8% coverage
@@ -194,7 +222,9 @@ sections:
       sparse zones, so those zones are flagged. Feature importance agrees
       with the calendar shape: last week's hour (0.80) beats yesterday's
       hour (0.64), last hour (0.55), and hour of day (0.32); weather adds
-      about zero to point accuracy.
+      about zero to point accuracy, so it stays a side read rather than a
+      selling point. The next question is what that error is worth at
+      dispatch time.
 
       **Business summary:** A tuned booster serves, picked on a window the
       test never saw — 28% less error than the yesterday rule, flagging the
@@ -204,19 +234,24 @@ sections:
   - id: evaluation
     text_md: |
       Operationally, −28.3% means 1.8 fewer missed pickups per zone-hour,
-      where the baseline misses by 6.5. The actual-versus-predicted figure
-      tracks 14 days in the five busiest zones. The borough error figure
-      shows Manhattan's volume driving absolute error while persistence
-      still edges the default GBM in the Bronx. The zone fan figure shows
-      the band wrapping the two busiest zones day by day. Together they
-      turn the forecast into a staffing buffer: plan for the upper line and
-      demand stays under it 9 times in 10, except in the flagged sparse
-      zones.
+      where the baseline misses by 6.5. Three figures turn the forecast
+      into a staffing decision. In the actual-versus-predicted figure,
+      follow one zone's line across the 14 test days: the served model's
+      line sits on the actual curve through the weekday swings, and the
+      gaps that remain are the honest error. In the borough error figure,
+      compare each borough's bar against the grey persistence bar —
+      Manhattan's absolute error looks largest only because its volume is
+      largest, while the Bronx shows the one place persistence still edges
+      the default GBM. In the zone fan figure, read the shaded band as the
+      staffing buffer: plan to the upper line and demand stays under it 9
+      times in 10, except in the flagged sparse zones.
 
       Since training, a drift observatory re-scores each newly published
       month against the persisted model inside a ±15% tolerance — including
       2025-01, a month that did not exist at training time (exact drift
-      numbers in conclusions).
+      numbers in conclusions). A month outside tolerance opens the response
+      runbook; so far every scored month stays in-window. What remains is
+      to say what holds city-wide and what refuses to transfer.
 
       **Business summary:** Serve it for yellow-taxi next-hour planning, size
       staffing from the 90% band, and keep the flagged sparse zones on
@@ -225,20 +260,26 @@ sections:
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
   - id: results
     text_md: |
-      The hour-borough heatmap figure holds the demand context: Manhattan
-      peaks at 103.7 pickups per zone-hour at 18:00 while the Bronx tops
-      out at 0.73. The city-wide band figure shows the p90 line tracking
+      The hour-borough heatmap figure holds the demand context. Read it
+      cell by cell: rows are hours, columns are boroughs, and the color
+      scale spans two orders of magnitude — Manhattan peaks at 103.7
+      pickups per zone-hour at 18:00 while the Bronx tops out at 0.73.
+      That contrast, not any single number, is what the model must
+      absorb. The city-wide band figure shows the p90 line tracking
       actuals at 90.8% coverage — on target where zones are busy, tight at
       84.7% in sparse zones, and flagged there. The weather elasticity
-      figure reads association only: outer-borough demand dips 7–10% on wet
-      hours, Manhattan holds at 0.97×, EWR rises to 1.08× — no hour-of-week
-      normalization, so not causal.
+      figure reads association only: outer-borough demand dips 7–10% on
+      wet hours, Manhattan holds at 0.97×, EWR rises to 1.08× — no
+      hour-of-week normalization, so not causal.
 
-      Per-service weights are a hard boundary. Yellow-trained models lose
-      the green-taxi March test to persistence on average error (0.296 vs
-      0.212); retrained on two months of green history, the same recipe wins
-      on all three metrics (average error 0.1805 vs 0.212). Nothing here
-      speaks to other cities, fleets, or horizons beyond one hour.
+      Per-service weights are a hard boundary, and it was measured rather
+      than assumed. Yellow-trained models lose the green-taxi March test
+      to persistence on average error (0.296 vs 0.212); retrained on two
+      months of green history, the same recipe wins on all three metrics
+      (average error 0.1805 vs 0.212). Shipping one universal model was
+      the rejected alternative. Nothing here speaks to other cities,
+      fleets, or horizons beyond one hour. The full record — every run,
+      the protocol, and the limits — lives in the conclusions.
 
       **Business summary:** The band is decision-grade where zones are busy
       and says where it is not; weather shifts demand only modestly; a
@@ -382,13 +423,13 @@ sections:
       ```mermaid
       flowchart LR
           Q["new zone-hour batch"] --> D{"zone class"}
-          D -->|"dense"| B["serve gbm_tuned mean + p90<br/>staff to the upper line"]
-          D -->|"sparse, flagged"| M["manual watch<br/>band under-covers at 84.7%"]
-          D -->|"new vehicle service"| R["retrain on 2 months of own history<br/>then serve the per-service bundle"]
+          D -->|"dense"| B["serve gbm_tuned<br/>mean + p90"]
+          D -->|"sparse, flagged"| M["manual watch<br/>band at 84.7%"]
+          D -->|"new service"| R["retrain on 2 months<br/>own history"]
           B --> O["drift observatory<br/>monthly, ±15% tolerance"]
           M --> O
           R --> O
-          O --> X["regression opens the response runbook"]
+          O --> X["regression opens<br/>response runbook"]
       ```
 
       **Business summary:** A tuned booster serves next-hour yellow-taxi

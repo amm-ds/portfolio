@@ -42,4 +42,23 @@ describe("MermaidDiagram", () => {
       ),
     );
   });
+
+  it("ignores the SPA fallback HTML (200 + text/html) and uses runtime rendering", async () => {
+    mocks.render.mockResolvedValue({ svg: '<svg data-mock="runtime"></svg>' });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("<!doctype html><html></html>", {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      ),
+    );
+    render(<MermaidDiagram code="graph LR; A-->B;" />);
+    await waitFor(() =>
+      expect(document.querySelector('.mermaid-host svg[data-mock="runtime"]')).not.toBeNull(),
+    );
+    expect(mocks.render).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
 });

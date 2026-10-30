@@ -54,17 +54,20 @@ sections:
       only under a budget or a higher send cost. Data: the real Hillstrom
       MineThatData campaign, March 2008, checksum-pinned.
 
-      The diagram shows when targeted sending pays.
-
       ```mermaid
       flowchart LR
-          C{"send cost and budget"} -->|"cheap sends, no cap"| E["mail everyone<br/>$16,103 at $0.01"]
-          C -->|"budgeted or costly sends"| T["rank by uplift<br/>top 25% earns +69% vs random"]
-          C -->|"evidence upgrade"| R["fresh randomized holdout first"]
-          E --> V["read profit at the stated cost"]
+          C{"send cost and budget"} -->|"cheap, no cap"| E["mail everyone: $16,103"]
+          C -->|"capped or costly"| T["rank by uplift: +69% at 25%"]
+          E --> V["profit at the stated cost"]
           T --> V
-          R --> V
+          V --> R["revalidate on a fresh<br/>holdout per campaign"]
       ```
+
+      Read the targeting-decision diagram as a route map: cheap, uncapped
+      sends go to everyone; capped or costly sends rank by uplift; every
+      new campaign revalidates on a fresh holdout first.
+
+      Is the +69% edge real? The next section sets the judging rules.
 
       **Business summary:** On one real 2008 campaign, targeting the top
       quarter by measured lift beat random mailing by 69% at that budget;
@@ -78,34 +81,51 @@ sections:
       measurable with no modeling at all; models only reorder customers
       within it.
 
-      The checklist:
+      The checklist, with the rejected shortcut behind each step:
 
-      - Check the randomization. Estimate the campaign effect first.
-      - Put a paired-bootstrap confidence interval on every policy gap.
+      - Check the randomization first: if the arms differed before the
+        campaign, nothing downstream is believable. Estimate the plain
+        campaign effect before any model exists.
+      - Put a paired-bootstrap confidence interval on every policy gap,
+        reusing the same resampled customers for every policy. Unpaired
+        intervals are easier but cannot rank policies honestly.
       - Test whether a noise-reduction tweak (CUPED) sharpens the read.
-      - Rank customers three ways: response, T-learner, and X-learner.
-        Judge each list on profit against random and mail-everyone.
-        Stress-test the verdict against send cost.
+        Variance tricks are cheap, so the only question is whether they
+        move the estimate or just the standard error.
+      - Rank customers three ways — response, T-learner, X-learner — and
+        judge each list on profit against random and mail-everyone.
+        Ranking metrics like Qini are reported, but profit at the stated
+        budget is the verdict. That is the decision the business
+        actually faces.
+      - Stress-test the verdict against send cost: $0.01 per email is one
+        channel's price in 2008, not a law of nature.
 
       The measurement contract diagram fixes how policies are judged.
 
       ```mermaid
       flowchart LR
           subgraph ANCHOR["anchor: randomized assignment"]
-              A["Mens email 21,307<br/>Womens email 21,387<br/>no email 21,306"]
+              A["Mens / Womens / control<br/>21,307 / 21,387 / 21,306"]
           end
           subgraph SCORES["scores - out of fold only"]
-              S1["response model"]
-              S2["T-learner"]
-              S3["X-learner"]
+              direction LR
+              S1["response model"] --- S2["T-learner"] --- S3["X-learner"]
           end
           subgraph JUDGE["judging"]
-              P["profit = conversions x $114 - sends x cost"]
-              B["1,000 paired bootstraps<br/>same resample for every policy"]
+              P["profit = conversions x $114<br/>- sends x cost"] --> B["1,000 paired bootstraps,<br/>same resample every policy"]
           end
           ANCHOR --> SCORES --> JUDGE
           JUDGE --> V["verdict at $0.01-$0.50 per email"]
       ```
+
+      Read the measurement contract diagram as a pipeline. The randomized
+      anchor feeds three scorers, all fit out of fold so no model grades
+      its own homework. The judging box turns scores into profit and
+      attaches 1,000 paired bootstraps. The verdict node states the
+      send-cost range the conclusion covers.
+
+      What data carries this contract? The next section walks the
+      snapshot.
 
       **Business summary:** The goal was a fair policy race: check the
       assignment, rank customers three ways, and judge each list on profit,
@@ -119,20 +139,29 @@ sections:
       conversion, and spend outcomes. Upstream drift fails the sha256 gate.
       Provenance: [data-registry/hillstrom](https://amm-ds.github.io/portfolio/data-registry/hillstrom/).
 
-      The lineage diagram shows how the snapshot becomes analysis frames.
+      The build is one pinned snapshot, then two analysis frames. The
+      primary read keeps the Mens and no-email arms (42,613) so the
+      comparison stays unambiguous — one email, one holdout. The full
+      three-arm frame supports per-arm reads and channel planning, where
+      both emails are judged separately. Column roles are fixed at load:
+      segment becomes the treatment indicator, conversion is the primary
+      outcome with visit and spend alongside, and only pre-treatment
+      columns — log spend history, recency, merchandise flags, channel,
+      zip — may touch the models. That last rule is leakage control:
+      anything recorded after the send would let a model cheat.
 
       ```mermaid
       flowchart LR
           subgraph RAW["pinned snapshot"]
-              H["64,000 customers<br/>sha256 gate on upstream drift"]
+              H["64,000 customers<br/>sha256-gated"]
           end
           subgraph FRAMES["analysis frames"]
-              T["primary two-arm read<br/>Mens + control, 42,613"]
-              F["full three-arm frame<br/>per-arm reads + channel planning"]
+              direction LR
+              T["two-arm read<br/>Mens + control, 42,613"] --- F["three-arm frame<br/>per-arm reads"]
           end
           subgraph MAP["column roles"]
-              M["treatment, conversion<br/>visit, spend"]
-              X["log_history, recency<br/>mens, womens, newbie, channel, zip"]
+              direction LR
+              M["treatment, conversion<br/>visit, spend"] --- X["log_history, recency<br/>mens, womens, newbie, channel, zip"]
           end
           RAW --> T
           RAW --> F
@@ -140,9 +169,14 @@ sections:
           F --> MAP
       ```
 
-      The primary read keeps the Mens and no-email arms (42,613) so the
-      comparison stays unambiguous; the three-arm frame supports per-arm
-      reads and channel planning.
+      The lineage diagram shows how the snapshot becomes analysis frames.
+      Read it left to right: the pinned snapshot feeds both frames, and
+      each frame declares its columns. When a later section quotes a
+      number, the frame it came from matters — two-arm for the headline
+      policy race, three-arm for per-arm reads.
+
+      Do the arms actually look equal before the campaign? The next
+      section checks.
 
       **Business summary:** One pinned 2008 snapshot of 64,000 customers,
       checksum-checked, with a two-arm main read and a three-arm frame for
@@ -151,18 +185,32 @@ sections:
   - id: eda
     text_md: |
       **Check the randomization first, then trust small differences only
-      with wide intervals.** The three arms look alike before the campaign
-      — about $242 mean prior spend in each — so the design did its job
-      (arm sizes and outcomes in the segment profile figure). Both emails
-      lifted store visits: 18.3% Mens and 15.1% Womens, against 10.6% with
-      none. Purchases moved less: 1.25% Mens, 0.88% Womens, 0.57%
-      control — only the Mens email clearly converts. Purchases are rare —
-      near 0.9% baseline — so small gaps need honest intervals; the two
-      emails are read separately, not pooled.
+      with wide intervals.** The three arms look alike before the
+      campaign: about 21,300 customers and about $242 mean prior spend in
+      each. Prior spend is the strongest baseline available, so a broken
+      randomization would show there first — it does not; the design did
+      its job. The segment-profile figure carries the check: read the
+      pre-period panel first, where the bars should be near-identical,
+      then the outcome panels, which are anything but.
+
+      Both emails lifted store visits: 18.3% Mens and 15.1% Womens,
+      against 10.6% with none. Purchases moved less: 1.25% Mens, 0.88%
+      Womens, 0.57% control — only the Mens email clearly converts, a
+      gap of 0.68 percentage points on a 0.57% base. Purchases are rare,
+      near 0.9% baseline, so small gaps need honest intervals before
+      anyone acts on them.
+
+      The two emails are read separately, never pooled. Pooling would
+      double the sample and narrow every interval, but it would average
+      a converting email with a non-converting one and could call both
+      a win or both a loss. Two clean reads beat one precise smear.
+
+      With the anchor verified, the modeling question opens: who exactly
+      should get the email? The next section builds the three rankings.
 
       **Business summary:** The randomization held — the groups started
-      equal — and the first honest read is: the Mens email moved visits and
-      purchases, the Womens email visits only.
+      equal — and the first honest read is: the Mens email moved visits
+      and purchases, the Womens email visits only.
     figures: [eda_segment_profile]
   - id: training
     text_md: |
@@ -216,18 +264,30 @@ sections:
   - id: evaluation
     text_md: |
       **Use targeted sends only when sends are budgeted or costly; otherwise
-      mail everyone.** The budgeted gap rests on random assignment, so it is
-      credible: its interval is entirely positive. What stays open: the
-      Qini ranking across models and either per-arm Qini. The decision
-      rests on profit at the stated budget and cost.
+      mail everyone.** The budgeted gap rests on random assignment, so it
+      is credible: its interval is entirely positive. What stays open: the
+      Qini ranking across models, and either per-arm Qini. The decision
+      rests on profit at the stated budget and cost, and this section is
+      where both get stress-tested.
 
-      Treat the ranking as coarse. The decile figure compares predicted and
-      real uplift by ten equal groups: the order is broadly useful but
-      non-monotone, and sizes run about 2× hot — good enough to sort a
-      list, not to promise person-level effects. The cost-sensitivity
-      figure carries the stress test — mail-everyone wins raw profit at
-      $0.01; the top-25% list overtakes above ≈$0.30 ($1,618 vs −$4,777 at
-      $0.50).
+      Treat the ranking as coarse. The decile figure compares predicted
+      and real uplift across ten equal groups: read the leftmost decile
+      first — that is who a targeted send reaches at a small budget —
+      then scan right for monotone decline. The order is broadly useful
+      but non-monotone, and predicted sizes run about 2× hot: good
+      enough to sort a mailing list, not to promise any one customer an
+      effect.
+
+      The cost-sensitivity figure carries the stress test, sweeping the
+      send cost from $0.01 to $0.50. Mail-everyone wins raw profit at
+      $0.01; the best targeting share drops below everyone near $0.20;
+      above ≈$0.30 the top-25% list wins outright — $1,618 versus
+      −$4,777 at $0.50. The sweep matters because $0.01 is one
+      channel's price in 2008, and margins only get thinner once
+      fatigue and COGS count.
+
+      Which claims survive the stress test? The next section separates
+      the established from the unproven.
 
       **Business summary:** The deployable claim is budgeted efficiency:
       +69% versus random at a 25% budget, CI [+$718, +$4,767]. At $0.01 per
@@ -237,18 +297,33 @@ sections:
     text_md: |
       **Established: the small Mens effect and the budgeted T-learner win
       over random. Not established: the response-versus-T Qini ranking and
-      either per-arm Qini.** The Qini curves figure carries the ranking
-      with 95% paired-bootstrap bands. The profit-frontier figure carries
-      the money: at $114 per conversion and $0.01 per email, mail-everyone
-      tops raw profit at $16,103; at the 25% budget the T-learner beats
-      random by +$2,812 (+69%). The per-arm Qini figure shows both arm
-      curves spanning zero.
+      either per-arm Qini.** The Qini curves figure carries the ranking.
+      Read it as a race down the mailing list: the horizontal axis is the
+      targeted fraction, the vertical axis is incremental conversions
+      captured so far, each curve is one ranking, and the random diagonal
+      is the floor. A good curve bows up and away from the diagonal; the
+      area between them is the Qini coefficient. The 95% paired-bootstrap
+      bands are the honest part — look for whether they separate the
+      curves. They do not: response-minus-T is [−8.18, 9.52], spanning
+      zero.
+
+      The profit-frontier figure carries the money: at $114 per
+      conversion and $0.01 per email, mail-everyone tops raw profit at
+      $16,103, since sends are nearly free; at the 25% budget the
+      T-learner curve beats random by +$2,812 (+69%), CI [+$718,
+      +$4,767]. The per-arm Qini figure shows both arm curves — Mens
+      12.03 [−0.47, 24.21], Womens 3.37 [−6.78, 13.75] — and both span
+      zero.
 
       Not shown here: "profit" is revenue minus send cost — no
       COGS, no margin, no fatigue from repeat contact. One March 2008
       campaign cannot speak for the next one. All multi-arm money is
-      model-estimated, not a randomized outcome. The X-learner trails here,
-      but only in this strong-overlap, near-constant-propensity regime.
+      model-estimated, not a randomized outcome. The X-learner trails
+      here, but only in this strong-overlap, near-constant-propensity
+      regime — a statement about this dataset, not the method.
+
+      The exact records behind these numbers — every interval, the
+      power read, the cost grid — live in the conclusions.
 
       **Business summary:** The solid findings are the Mens effect and the
       +69% budgeted win over random; model rankings, per-arm effects, and
@@ -377,12 +452,11 @@ sections:
 
       ```mermaid
       flowchart LR
-          S{"next send decision"} -->|"sends cost at least about $0.30<br/>or a 25% budget applies"| T["rank by T-learner uplift<br/>+69% vs random at the budget"]
-          S -->|"sends cost $0.01"| E["mail everyone<br/>$16,103 beats any list"]
-          S -->|"evidence upgrade"| R["fresh randomized holdout<br/>with real margin + fatigue costs"]
-          T --> V["revalidate on each new campaign"]
+          S{"next send decision"} -->|"costly or budgeted"| T["rank by T-learner<br/>+69% vs random"]
+          S -->|"sends at $0.01"| E["mail everyone<br/>$16,103 profit"]
+          T --> V["revalidate each campaign"]
           E --> V
-          R --> V
+          V --> R["evidence upgrade:<br/>fresh randomized holdout"]
       ```
 
       **Business summary:** Rank by measured lift only when sends are

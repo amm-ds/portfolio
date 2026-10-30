@@ -72,10 +72,13 @@ export function MermaidDiagram({ code }: { code: string }) {
     (async () => {
       // Pre-rendered SVG path: static file hashed by the exact source the
       // runtime renderer would receive. Any non-200 (or fetch error, e.g.
-      // relative URL in tests) falls through to runtime rendering.
+      // relative URL in tests) falls through to runtime rendering. The
+      // SPA fallback serves index.html with 200 for unknown paths, so the
+      // payload must actually be SVG before we accept it.
       try {
         const res = await fetch(`/diagrams/${sha1Hex(code)}.svg`);
-        if (res.ok) {
+        const contentType = res.headers.get("content-type") ?? "";
+        if (res.ok && contentType.includes("image/svg")) {
           const svg = await res.text();
           if (cancelled || !hostRef.current) return;
           hostRef.current.innerHTML = svg;
