@@ -98,3 +98,24 @@ stages:
       - reports/figures
     metrics:
       - reports/metrics.json
+
+  # Manual stage (run explicitly via `dvc repro fresh_holdout` or the CLI).
+  # Roadmap experiment over the persisted artifacts — no retraining: scores
+  # them on a fresh holdout drawn from the complement of the bounded test
+  # split and runs the TF-IDF -> transformer routing sweep.
+  fresh_holdout:
+    cmd: uv run python -m nlp_classification.cli fresh-holdout
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/train
+      - data/test
+      - data/val
+      - data/label_names.json
+      - reports/models/baseline.joblib
+      - reports/models/distilbert.pt
+      - reports/models/distilbert_tuned.pt
+      - reports/models/encoder_b.pt
+      - reports/selection.json
+    outs:
+      - reports/fresh_holdout.json

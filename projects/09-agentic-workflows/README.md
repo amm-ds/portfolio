@@ -83,6 +83,21 @@ held-out run caught a probe confabulating a "1 kg/L basis" conversion; the
 conversion docstrings now forbid invented factors. Details in
 `metrics.json detail.heldout`.
 
+### Repeat stability (2026-10-29)
+
+Two further hosted passes of the 15-task tuning suite on `kimi-for-coding`
+(`run-all` → `evaluate`, same $0.25/$2.00 caps) kept **answer success 15/15**
+and **exact tool sets 15/15** in both passes, with zero unplanned calls and
+every task inside the 60 s latency budget. Suite cloud-equivalent estimates
+were $0.148 / $0.144 (metrics basis) against $0.131 for the record run; the
+metered ledger view was $0.10 / $0.09 of the $2.00 cap. Median task latency
+moved from 18.2 s (record run) to 24.1 s / 20.8 s. Each pass scored one
+step-budget miss — t03 in the first pass, t10 in the second — when Critique
+requested a revision and added an Execute visit; the deterministic step
+grader caught both. Captured calls rose from 30 to 33–35 (repeated same-tool
+lookups, exact sets unchanged). Stability holds for answers and tool
+discipline; latency and step count vary run to run on a hosted endpoint.
+
 Figures (in `reports/figures/`, `.html` + `.json` per figure):
 `suite_summary` (outcomes by split: tuning × 4 graders, held-out answers,
 should-fail probes), `tool_usage_matrix` (captured calls per task × tool),
@@ -99,9 +114,10 @@ not pay-per-token, so nothing is a billed amount. `run-all` resets the spend
 ledger, caps the suite at `LLM_SUITE_COST_LIMIT_USD` ($2.00), enforces a
 $0.25 per-task cap through the meter callback (a capped task is recorded as
 `budget_exceeded`, the suite continues), and prints the totals. The same
-estimates price local inference at $0. All hosted runs of this wave (6 suite
-runs incl. tuning iterations + held-out runs) totaled ~$0.46
-cloud-equivalent combined — each individual run sits under the $2.00 cap, so
+estimates price local inference at $0. All hosted runs to date (8 suite
+runs incl. tuning iterations, held-out runs, and the two 2026-10-29 repeat
+passes) totaled ~$0.65 cloud-equivalent combined — each individual run sits
+under the $2.00 cap (repeat passes metered $0.10 and $0.09 on the ledger), so
 the cap was never raised.
 
 ## Reproduce
@@ -114,10 +130,10 @@ uv run python -m agentic_workflows.cli prepare --heldout
 # 2. Live run — needs a provider (ADR-0004):
 #    hosted:  LLM_BASE_URL/LLM_API_KEY/LLM_MODEL in the repo-root .env
 #             (Kimi Code membership endpoint is the reference hosted setup)
-#    local:   Ollama with qwen3:32b pulled — or LM Studio, an equivalent
-#             OpenAI-compatible local preset the same branch serves:
-#             LLM_BASE_URL=http://localhost:1234/v1, LLM_API_KEY=lm-studio
-ollama pull qwen3:32b
+#    local:   Ollama with the platform default model pulled — or LM Studio,
+#             an equivalent OpenAI-compatible local preset the same branch
+#             serves: LLM_BASE_URL=http://localhost:1234/v1, LLM_API_KEY=lm-studio
+ollama pull qwen3.6:35b-a3b-q4_K_M
 uv run python -m agentic_workflows.cli run-all
 uv run python -m agentic_workflows.cli run-all --heldout   # held-out set
 

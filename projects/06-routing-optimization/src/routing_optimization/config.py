@@ -123,6 +123,14 @@ class VRPConfig(Settings):
     alns_destroy_q: int = Field(
         default=10, ge=1, description="Customers removed per ALNS destroy operation."
     )
+    alns_fleet_vehicle_penalty: float = Field(
+        default=10_000.0,
+        gt=0,
+        description="Fleet-first ALNS arm: per-vehicle penalty added to the search objective "
+        "(distance + penalty x vehicles). 10,000 exceeds the worst Solomon total distance "
+        "(~6.5k), so any vehicle reduction beats any distance gain — a hierarchical "
+        "vehicles-first objective under a single scalar weight.",
+    )
     alns_hpo_trials: int = Field(
         default=12, ge=1, description="Seeded search trials for ALNS knobs."
     )

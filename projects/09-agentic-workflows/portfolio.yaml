@@ -10,6 +10,6 @@ techniques:
 - pydantic-evals
 - cross-project RAG retrieval
 - LLM cost budgeting
-data: Public tool-using benchmarks + synthetic task suites
+data: Synthetic 12-doc "Atlas Valley" handbook + read-only Wikipedia slice from project 01 (CC BY-SA)
 status: working
 order: 9

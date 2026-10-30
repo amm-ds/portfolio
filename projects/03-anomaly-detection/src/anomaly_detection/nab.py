@@ -172,24 +172,31 @@ def range_f1(detected: list[bool], alerts_fp: int) -> dict[str, float]:
     return {"range_precision": precision, "range_recall": recall, "range_f1": f1}
 
 
-def build_series_features(df: pl.DataFrame, windows: list[int]) -> pl.DataFrame:
-    """Rolling features for one univariate series (same recipe as telemetry)."""
-    exprs = (
-        [
-            pl.col("value").rolling_mean(window_size=w, min_samples=w).alias(f"value_rmean{w}")
-            for w in windows
-        ]
-        + [
-            pl.col("value").rolling_std(window_size=w, min_samples=w).alias(f"value_rstd{w}")
-            for w in windows
-        ]
-        + [
+def build_series_features(
+    df: pl.DataFrame, windows: list[int], feature_set: str = "rolling_residual"
+) -> pl.DataFrame:
+    """Rolling features for one univariate series (same recipe as telemetry).
+
+    ``feature_set="rolling"`` keeps value + rolling mean/std;
+    ``"rolling_residual"`` (the headline NAB recipe) additionally keeps the
+    rolling-median residual columns — the sweep's feature axis.
+    """
+    if feature_set not in ("rolling", "rolling_residual"):
+        raise ValueError(f"unknown feature_set {feature_set!r}")
+    exprs = [
+        pl.col("value").rolling_mean(window_size=w, min_samples=w).alias(f"value_rmean{w}")
+        for w in windows
+    ] + [
+        pl.col("value").rolling_std(window_size=w, min_samples=w).alias(f"value_rstd{w}")
+        for w in windows
+    ]
+    if feature_set == "rolling_residual":
+        exprs += [
             (pl.col("value") - pl.col("value").rolling_median(window_size=w, min_samples=w)).alias(
                 f"value_resmed{w}"
             )
             for w in windows
         ]
-    )
     return df.select("timestamp", "value", *exprs).drop_nulls()
 
 

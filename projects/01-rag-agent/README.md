@@ -299,6 +299,22 @@ uv run pytest projects/01-rag-agent -q
 - **Provider portability**: one code path runs against any OpenAI-compatible
   endpoint or local Ollama (ADR-0004, amended wave 10) — no runtime mocks.
 
+## Roadmap
+
+- **Delivered:** reproducible retrieval (checksum-pinned corpus, CPU FAISS +
+  MiniLM + cross-encoder rerank), a provider seam running one code path on
+  local Ollama or any OpenAI-compatible endpoint, the verify-then-answer loop
+  (batched claim entailment, capped repair, support-floor abstention),
+  separate rubric/RAGAS judges with bootstrap CIs, a sealed 15-question
+  held-out regression gate ($0.25 cloud-equivalent per re-run), and per-phase
+  cost/latency metering under a hard USD cap.
+- **Remaining:** improve grounding and repair quality, then re-measure on
+  noisier corpora — the current local A/B gains mainly through abstention,
+  and repair quality at local-model scale is weak.
+- **Deferred:** no broad-corpus quality claim and no always-on public chat —
+  held-out retrieval drops to 0.600, and live hosted calls need an explicit
+  cost budget (`RAG_CHAT_ENABLED=1` stays opt-in).
+
 ## Data attribution
 
 Corpus text is from Wikipedia (`wikimedia/wikipedia`, dump `20231101.en`),

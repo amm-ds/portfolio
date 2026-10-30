@@ -42,6 +42,11 @@ uv run python -m inference_serving.cli report     # offline figures + report.htm
 `bench` needs a live Ollama with the models pulled; `report` is offline.
 DVC: `prepare → bench (--full) → report` (`dvc.yaml`).
 
+The raw full-grid record behind the committed aggregates is versioned at
+`data/bench_run.json` (760 requests, 2026-10-15; narrow ignore exception,
+force-added like the 02 sidecar), so the published percentiles can be
+re-aggregated with `report` without re-running hours of local inference.
+
 ## Tests
 
 Offline only: percentile/tok-s math from fixture records, output validation,

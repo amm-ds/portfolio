@@ -195,3 +195,31 @@ def test_dq_gate_failure_raises(small_cfg: ChurnConfig, monkeypatch: pytest.Monk
     monkeypatch.setattr(synthetic_module, "churn", lambda seed, n: broken)
     with pytest.raises(Exception, match="DQ gates failed"):
         cli.prepare_core(small_cfg)
+
+
+def test_sensitivity_reuses_baseline_artifacts(small_cfg: ChurnConfig, params_file: Path) -> None:
+    """What-if variants re-score the persisted pipeline; the production-fn_cost
+    variant must reproduce the baseline costs, and metrics.json must not move."""
+    from churn_pipeline.cli import sensitivity_core
+
+    prepare_core(small_cfg)
+    train_core(small_cfg, params_file=params_file)
+    evaluate_core(small_cfg)
+    metrics_before = (small_cfg.reports_dir / "metrics.json").read_text()
+
+    out = sensitivity_core(small_cfg, fn_costs=[float(small_cfg.fn_cost), 8.0])
+    data = json.loads(out.read_text())
+
+    assert data["baseline_fn_cost"] == float(small_cfg.fn_cost)
+    keys = list(data["variants"])
+    assert len(keys) == 2 and keys[0].startswith("fn") and keys[1].startswith("fn")
+    prod_key = f"fn{small_cfg.fn_cost:g}"
+    assert data["variants"][prod_key]["matches_baseline"]
+    for variant in data["variants"].values():
+        assert variant["naive_cost"] > 0
+        assert variant["calibrated_cost"] > 0
+        assert 0.0 <= variant["calibrated_opt"] <= 1.0
+        ci = variant["cost_delta_ci"]
+        assert ci["lo"] <= ci["point"] <= ci["hi"]
+    # the baseline artifact is untouched by the what-if pass
+    assert (small_cfg.reports_dir / "metrics.json").read_text() == metrics_before

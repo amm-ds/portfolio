@@ -2,43 +2,49 @@
   "summary": {
     "alns": {
       "mean_gap_pct": 4.2322,
-      "mean_runtime_s": 2.769791,
+      "mean_runtime_s": 1.150169,
       "mean_n_vehicles": 10.96,
       "mean_vehicle_delta": 3.73
     },
+    "alns_fleet": {
+      "mean_gap_pct": 4.2993,
+      "mean_runtime_s": 1.144825,
+      "mean_n_vehicles": 10.89,
+      "mean_vehicle_delta": 3.66
+    },
     "clarke_wright": {
       "mean_gap_pct": 18.3138,
-      "mean_runtime_s": 0.011329,
+      "mean_runtime_s": 0.003228,
       "mean_n_vehicles": 13.02,
       "mean_vehicle_delta": 5.79
     },
     "nearest_neighbor": {
       "mean_gap_pct": 71.6395,
-      "mean_runtime_s": 0.00406,
+      "mean_runtime_s": 0.001107,
       "mean_n_vehicles": 13.98,
       "mean_vehicle_delta": 6.75
     },
     "ortools_cp": {
       "mean_gap_pct": 4.2322,
-      "mean_runtime_s": 13.554744,
+      "mean_runtime_s": 11.999629,
       "mean_n_vehicles": 10.96,
       "mean_vehicle_delta": 3.73
     },
     "randomized": {
       "mean_gap_pct": 316.9487,
-      "mean_runtime_s": 0.002362,
+      "mean_runtime_s": 0.000619,
       "mean_n_vehicles": 18.32,
       "mean_vehicle_delta": 11.09
     },
     "two_opt": {
       "mean_gap_pct": 13.7535,
-      "mean_runtime_s": 0.014958,
+      "mean_runtime_s": 0.00406,
       "mean_n_vehicles": 13.02,
       "mean_vehicle_delta": 5.79
     },
     "two_opt_tuned": {
       "mean_gap_pct": 13.6272,
-      "mean_runtime_s": 0.036306,
+      "mean_runtime_s": 0.00922,
       "mean_n_vehicles": 13.02,
       "mean_vehicle_delta": 5.79
     }
@@ -57,49 +63,56 @@
           "n_vehicles": 20,
           "gap_pct": 76.6518,
           "vehicle_delta": 10,
-          "runtime_s": 0.003269
+          "runtime_s": 0.001171
         },
         "clarke_wright": {
           "distance": 1127.4833,
           "n_vehicles": 15,
           "gap_pct": 36.0151,
           "vehicle_delta": 5,
-          "runtime_s": 0.008529
+          "runtime_s": 0.002936
         },
         "randomized": {
           "distance": 4147.4248,
           "n_vehicles": 27,
           "gap_pct": 400.3287,
           "vehicle_delta": 17,
-          "runtime_s": 0.003381
+          "runtime_s": 0.000742
         },
         "two_opt": {
           "distance": 1046.5304,
           "n_vehicles": 15,
           "gap_pct": 26.2492,
           "vehicle_delta": 5,
-          "runtime_s": 0.023491
+          "runtime_s": 0.007325
         },
         "two_opt_tuned": {
           "distance": 1046.5304,
           "n_vehicles": 15,
           "gap_pct": 26.2492,
           "vehicle_delta": 5,
-          "runtime_s": 0.040404
+          "runtime_s": 0.012402
         },
         "alns": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 1.607194
+          "runtime_s": 0.460779
         },
         "ortools_cp": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 9.670743
+          "runtime_s": 10.965605
+        },
+        "alns_fleet": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 0.460921
         }
       }
     },
@@ -116,49 +129,56 @@
           "n_vehicles": 17,
           "gap_pct": 78.8073,
           "vehicle_delta": 7,
-          "runtime_s": 0.004832
+          "runtime_s": 0.001077
         },
         "clarke_wright": {
           "distance": 1118.967,
           "n_vehicles": 15,
           "gap_pct": 34.9877,
           "vehicle_delta": 5,
-          "runtime_s": 0.008747
+          "runtime_s": 0.002663
         },
         "randomized": {
           "distance": 4162.4299,
           "n_vehicles": 24,
           "gap_pct": 402.1389,
           "vehicle_delta": 14,
-          "runtime_s": 0.001878
+          "runtime_s": 0.000666
         },
         "two_opt": {
           "distance": 1080.9912,
           "n_vehicles": 15,
           "gap_pct": 30.4064,
           "vehicle_delta": 5,
-          "runtime_s": 0.009368
+          "runtime_s": 0.002674
         },
         "two_opt_tuned": {
           "distance": 1071.3472,
           "n_vehicles": 15,
           "gap_pct": 29.243,
           "vehicle_delta": 5,
-          "runtime_s": 0.028506
+          "runtime_s": 0.008081
         },
         "alns": {
           "distance": 898.0456,
           "n_vehicles": 12,
           "gap_pct": 8.3366,
           "vehicle_delta": 2,
-          "runtime_s": 1.658334
+          "runtime_s": 0.471118
         },
         "ortools_cp": {
           "distance": 898.0456,
           "n_vehicles": 12,
           "gap_pct": 8.3366,
           "vehicle_delta": 2,
-          "runtime_s": 12.447662
+          "runtime_s": 11.143323
+        },
+        "alns_fleet": {
+          "distance": 898.0456,
+          "n_vehicles": 12,
+          "gap_pct": 8.3366,
+          "vehicle_delta": 2,
+          "runtime_s": 0.466633
         }
       }
     },
@@ -175,49 +195,56 @@
           "n_vehicles": 15,
           "gap_pct": 76.8749,
           "vehicle_delta": 5,
-          "runtime_s": 0.003091
+          "runtime_s": 0.001098
         },
         "clarke_wright": {
           "distance": 1081.2959,
           "n_vehicles": 14,
           "gap_pct": 30.5818,
           "vehicle_delta": 4,
-          "runtime_s": 0.072264
+          "runtime_s": 0.023732
         },
         "randomized": {
           "distance": 4253.4452,
           "n_vehicles": 19,
           "gap_pct": 413.6639,
           "vehicle_delta": 9,
-          "runtime_s": 0.00182
+          "runtime_s": 0.000596
         },
         "two_opt": {
           "distance": 1001.9941,
           "n_vehicles": 14,
           "gap_pct": 21.005,
           "vehicle_delta": 4,
-          "runtime_s": 0.029815
+          "runtime_s": 0.007784
         },
         "two_opt_tuned": {
           "distance": 994.2455,
           "n_vehicles": 14,
           "gap_pct": 20.0693,
           "vehicle_delta": 4,
-          "runtime_s": 0.062685
+          "runtime_s": 0.016631
         },
         "alns": {
           "distance": 924.6978,
           "n_vehicles": 12,
           "gap_pct": 11.6704,
           "vehicle_delta": 2,
-          "runtime_s": 1.68415
+          "runtime_s": 0.498009
         },
         "ortools_cp": {
           "distance": 924.6978,
           "n_vehicles": 12,
           "gap_pct": 11.6704,
           "vehicle_delta": 2,
-          "runtime_s": 13.063528
+          "runtime_s": 10.885317
+        },
+        "alns_fleet": {
+          "distance": 924.6978,
+          "n_vehicles": 12,
+          "gap_pct": 11.6704,
+          "vehicle_delta": 2,
+          "runtime_s": 0.496559
         }
       }
     },
@@ -234,49 +261,56 @@
           "n_vehicles": 14,
           "gap_pct": 76.5413,
           "vehicle_delta": 4,
-          "runtime_s": 0.003446
+          "runtime_s": 0.001057
         },
         "clarke_wright": {
           "distance": 996.7845,
           "n_vehicles": 13,
           "gap_pct": 20.8546,
           "vehicle_delta": 3,
-          "runtime_s": 0.010012
+          "runtime_s": 0.002405
         },
         "randomized": {
           "distance": 4168.2091,
           "n_vehicles": 17,
           "gap_pct": 405.3722,
           "vehicle_delta": 7,
-          "runtime_s": 0.004426
+          "runtime_s": 0.000591
         },
         "two_opt": {
           "distance": 963.2997,
           "n_vehicles": 13,
           "gap_pct": 16.7947,
           "vehicle_delta": 3,
-          "runtime_s": 0.009597
+          "runtime_s": 0.002217
         },
         "two_opt_tuned": {
           "distance": 963.2997,
           "n_vehicles": 13,
           "gap_pct": 16.7947,
           "vehicle_delta": 3,
-          "runtime_s": 0.024465
+          "runtime_s": 0.006765
         },
         "alns": {
           "distance": 868.1095,
           "n_vehicles": 11,
           "gap_pct": 5.2535,
           "vehicle_delta": 1,
-          "runtime_s": 1.929414
+          "runtime_s": 0.561352
         },
         "ortools_cp": {
           "distance": 868.1095,
           "n_vehicles": 11,
           "gap_pct": 5.2535,
           "vehicle_delta": 1,
-          "runtime_s": 13.835852
+          "runtime_s": 11.132536
+        },
+        "alns_fleet": {
+          "distance": 868.1095,
+          "n_vehicles": 11,
+          "gap_pct": 5.2535,
+          "vehicle_delta": 1,
+          "runtime_s": 0.564967
         }
       }
     },
@@ -293,49 +327,56 @@
           "n_vehicles": 19,
           "gap_pct": 90.6073,
           "vehicle_delta": 9,
-          "runtime_s": 0.003972
+          "runtime_s": 0.001088
         },
         "clarke_wright": {
           "distance": 1122.0507,
           "n_vehicles": 15,
           "gap_pct": 35.3597,
           "vehicle_delta": 5,
-          "runtime_s": 0.017235
+          "runtime_s": 0.002556
         },
         "randomized": {
           "distance": 4301.0832,
           "n_vehicles": 25,
           "gap_pct": 418.8654,
           "vehicle_delta": 15,
-          "runtime_s": 0.001877
+          "runtime_s": 0.000628
         },
         "two_opt": {
           "distance": 1047.5414,
           "n_vehicles": 15,
           "gap_pct": 26.3712,
           "vehicle_delta": 5,
-          "runtime_s": 0.030589
+          "runtime_s": 0.007199
         },
         "two_opt_tuned": {
           "distance": 1047.5414,
           "n_vehicles": 15,
           "gap_pct": 26.3712,
           "vehicle_delta": 5,
-          "runtime_s": 0.04115
+          "runtime_s": 0.011544
         },
         "alns": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 1.651451
+          "runtime_s": 0.464463
         },
         "ortools_cp": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 13.74464
+          "runtime_s": 11.062765
+        },
+        "alns_fleet": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 0.465068
         }
       }
     },
@@ -352,49 +393,56 @@
           "n_vehicles": 17,
           "gap_pct": 77.3217,
           "vehicle_delta": 7,
-          "runtime_s": 0.003416
+          "runtime_s": 0.001106
         },
         "clarke_wright": {
           "distance": 1033.861,
           "n_vehicles": 13,
           "gap_pct": 24.7208,
           "vehicle_delta": 3,
-          "runtime_s": 0.008456
+          "runtime_s": 0.002574
         },
         "randomized": {
           "distance": 4254.4345,
           "n_vehicles": 24,
           "gap_pct": 413.2379,
           "vehicle_delta": 14,
-          "runtime_s": 0.00221
+          "runtime_s": 0.000615
         },
         "two_opt": {
           "distance": 968.6866,
           "n_vehicles": 13,
           "gap_pct": 16.8585,
           "vehicle_delta": 3,
-          "runtime_s": 0.021568
+          "runtime_s": 0.005423
         },
         "two_opt_tuned": {
           "distance": 968.6866,
           "n_vehicles": 13,
           "gap_pct": 16.8585,
           "vehicle_delta": 3,
-          "runtime_s": 0.03976
+          "runtime_s": 0.011281
         },
         "alns": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 1.548586
+          "runtime_s": 0.459534
         },
         "ortools_cp": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 9.10476
+          "runtime_s": 11.352003
+        },
+        "alns_fleet": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 0.467335
         }
       }
     },
@@ -411,49 +459,56 @@
           "n_vehicles": 17,
           "gap_pct": 99.8374,
           "vehicle_delta": 7,
-          "runtime_s": 0.00374
+          "runtime_s": 0.00108
         },
         "clarke_wright": {
           "distance": 1088.5537,
           "n_vehicles": 14,
           "gap_pct": 31.3188,
           "vehicle_delta": 4,
-          "runtime_s": 0.008878
+          "runtime_s": 0.002511
         },
         "randomized": {
           "distance": 4346.9476,
           "n_vehicles": 20,
           "gap_pct": 424.3983,
           "vehicle_delta": 10,
-          "runtime_s": 0.001753
+          "runtime_s": 0.000604
         },
         "two_opt": {
           "distance": 1012.0124,
           "n_vehicles": 14,
           "gap_pct": 22.0851,
           "vehicle_delta": 4,
-          "runtime_s": 0.020762
+          "runtime_s": 0.006293
         },
         "two_opt_tuned": {
           "distance": 1012.0124,
           "n_vehicles": 14,
           "gap_pct": 22.0851,
           "vehicle_delta": 4,
-          "runtime_s": 0.023987
+          "runtime_s": 0.008529
         },
         "alns": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 1.726272
+          "runtime_s": 0.470176
         },
         "ortools_cp": {
           "distance": 860.2051,
           "n_vehicles": 11,
           "gap_pct": 3.7717,
           "vehicle_delta": 1,
-          "runtime_s": 10.709029
+          "runtime_s": 11.151127
+        },
+        "alns_fleet": {
+          "distance": 860.2051,
+          "n_vehicles": 11,
+          "gap_pct": 3.7717,
+          "vehicle_delta": 1,
+          "runtime_s": 0.470803
         }
       }
     },
@@ -470,49 +525,56 @@
           "n_vehicles": 15,
           "gap_pct": 83.4964,
           "vehicle_delta": 5,
-          "runtime_s": 0.004728
+          "runtime_s": 0.001142
         },
         "clarke_wright": {
           "distance": 909.202,
           "n_vehicles": 11,
           "gap_pct": 9.6825,
           "vehicle_delta": 1,
-          "runtime_s": 0.007038
+          "runtime_s": 0.002468
         },
         "randomized": {
           "distance": 4012.8326,
           "n_vehicles": 19,
           "gap_pct": 384.092,
           "vehicle_delta": 9,
-          "runtime_s": 0.002339
+          "runtime_s": 0.000622
         },
         "two_opt": {
           "distance": 861.2358,
           "n_vehicles": 11,
           "gap_pct": 3.896,
           "vehicle_delta": 1,
-          "runtime_s": 0.005328
+          "runtime_s": 0.001448
         },
         "two_opt_tuned": {
           "distance": 861.2358,
           "n_vehicles": 11,
           "gap_pct": 3.896,
           "vehicle_delta": 1,
-          "runtime_s": 0.034164
+          "runtime_s": 0.009803
         },
         "alns": {
           "distance": 828.9369,
           "n_vehicles": 10,
           "gap_pct": -0.0004,
           "vehicle_delta": 0,
-          "runtime_s": 1.842508
+          "runtime_s": 0.495133
         },
         "ortools_cp": {
           "distance": 828.9369,
           "n_vehicles": 10,
           "gap_pct": -0.0004,
           "vehicle_delta": 0,
-          "runtime_s": 10.884936
+          "runtime_s": 11.218267
+        },
+        "alns_fleet": {
+          "distance": 828.9369,
+          "n_vehicles": 10,
+          "gap_pct": -0.0004,
+          "vehicle_delta": 0,
+          "runtime_s": 0.494684
         }
       }
     },
@@ -529,49 +591,56 @@
           "n_vehicles": 14,
           "gap_pct": 97.9083,
           "vehicle_delta": 4,
-          "runtime_s": 0.003756
+          "runtime_s": 0.001198
         },
         "clarke_wright": {
           "distance": 898.223,
           "n_vehicles": 11,
           "gap_pct": 8.358,
           "vehicle_delta": 1,
-          "runtime_s": 0.008231
+          "runtime_s": 0.002647
         },
         "randomized": {
           "distance": 4302.1828,
           "n_vehicles": 16,
           "gap_pct": 418.9981,
           "vehicle_delta": 6,
-          "runtime_s": 0.001732
+          "runtime_s": 0.000568
         },
         "two_opt": {
           "distance": 879.0968,
           "n_vehicles": 11,
           "gap_pct": 6.0507,
           "vehicle_delta": 1,
-          "runtime_s": 0.007198
+          "runtime_s": 0.001327
         },
         "two_opt_tuned": {
           "distance": 879.0968,
           "n_vehicles": 11,
           "gap_pct": 6.0507,
           "vehicle_delta": 1,
-          "runtime_s": 0.028013
+          "runtime_s": 0.006788
         },
         "alns": {
           "distance": 828.9369,
           "n_vehicles": 10,
           "gap_pct": -0.0004,
           "vehicle_delta": 0,
-          "runtime_s": 1.958278
+          "runtime_s": 0.554905
         },
         "ortools_cp": {
           "distance": 828.9369,
           "n_vehicles": 10,
           "gap_pct": -0.0004,
           "vehicle_delta": 0,
-          "runtime_s": 12.566316
+          "runtime_s": 11.717595
+        },
+        "alns_fleet": {
+          "distance": 828.9369,
+          "n_vehicles": 10,
+          "gap_pct": -0.0004,
+          "vehicle_delta": 0,
+          "runtime_s": 0.623457
         }
       }
     },
@@ -588,49 +657,56 @@
           "n_vehicles": 10,
           "gap_pct": 161.6742,
           "vehicle_delta": 7,
-          "runtime_s": 0.004258
+          "runtime_s": 0.001054
         },
         "clarke_wright": {
           "distance": 1029.6628,
           "n_vehicles": 9,
           "gap_pct": 74.0589,
           "vehicle_delta": 6,
-          "runtime_s": 0.011008
+          "runtime_s": 0.00258
         },
         "randomized": {
           "distance": 4197.3978,
           "n_vehicles": 15,
           "gap_pct": 609.5473,
           "vehicle_delta": 12,
-          "runtime_s": 0.001741
+          "runtime_s": 0.000579
         },
         "two_opt": {
           "distance": 889.2116,
           "n_vehicles": 9,
           "gap_pct": 50.3164,
           "vehicle_delta": 6,
-          "runtime_s": 0.044978
+          "runtime_s": 0.01189
         },
         "two_opt_tuned": {
           "distance": 889.2116,
           "n_vehicles": 9,
           "gap_pct": 50.3164,
           "vehicle_delta": 6,
-          "runtime_s": 0.05007
+          "runtime_s": 0.014576
         },
         "alns": {
           "distance": 636.267,
           "n_vehicles": 4,
           "gap_pct": 7.5575,
           "vehicle_delta": 1,
-          "runtime_s": 4.528178
+          "runtime_s": 1.132336
         },
         "ortools_cp": {
           "distance": 636.267,
           "n_vehicles": 4,
           "gap_pct": 7.5575,
           "vehicle_delta": 1,
-          "runtime_s": 11.681766
+          "runtime_s": 10.704895
+        },
+        "alns_fleet": {
+          "distance": 636.267,
+          "n_vehicles": 4,
+          "gap_pct": 7.5575,
+          "vehicle_delta": 1,
+          "runtime_s": 1.272795
         }
       }
     },
@@ -647,49 +723,56 @@
           "n_vehicles": 9,
           "gap_pct": 121.2298,
           "vehicle_delta": 6,
-          "runtime_s": 0.003541
+          "runtime_s": 0.00111
         },
         "clarke_wright": {
           "distance": 824.2928,
           "n_vehicles": 7,
           "gap_pct": 39.3422,
           "vehicle_delta": 4,
-          "runtime_s": 0.010533
+          "runtime_s": 0.002672
         },
         "randomized": {
           "distance": 4101.8291,
           "n_vehicles": 12,
           "gap_pct": 593.3919,
           "vehicle_delta": 9,
-          "runtime_s": 0.003465
+          "runtime_s": 0.000571
         },
         "two_opt": {
           "distance": 784.6626,
           "n_vehicles": 7,
           "gap_pct": 32.6429,
           "vehicle_delta": 4,
-          "runtime_s": 0.023425
+          "runtime_s": 0.006015
         },
         "two_opt_tuned": {
           "distance": 784.6626,
           "n_vehicles": 7,
           "gap_pct": 32.6429,
           "vehicle_delta": 4,
-          "runtime_s": 0.028987
+          "runtime_s": 0.008043
         },
         "alns": {
           "distance": 621.6367,
           "n_vehicles": 4,
           "gap_pct": 5.0843,
           "vehicle_delta": 1,
-          "runtime_s": 1.710205
+          "runtime_s": 1.396226
         },
         "ortools_cp": {
           "distance": 621.6367,
           "n_vehicles": 4,
           "gap_pct": 5.0843,
           "vehicle_delta": 1,
-          "runtime_s": 11.185353
+          "runtime_s": 10.831992
+        },
+        "alns_fleet": {
+          "distance": 621.6367,
+          "n_vehicles": 4,
+          "gap_pct": 5.0843,
+          "vehicle_delta": 1,
+          "runtime_s": 1.39061
         }
       }
     },
@@ -706,49 +789,56 @@
           "n_vehicles": 8,
           "gap_pct": 131.1798,
           "vehicle_delta": 5,
-          "runtime_s": 0.004287
+          "runtime_s": 0.001162
         },
         "clarke_wright": {
           "distance": 805.8357,
           "n_vehicles": 6,
           "gap_pct": 36.312,
           "vehicle_delta": 3,
-          "runtime_s": 0.010616
+          "runtime_s": 0.002531
         },
         "randomized": {
           "distance": 4369.8753,
           "n_vehicles": 12,
           "gap_pct": 639.191,
           "vehicle_delta": 9,
-          "runtime_s": 0.002434
+          "runtime_s": 0.000581
         },
         "two_opt": {
           "distance": 780.8523,
           "n_vehicles": 6,
           "gap_pct": 32.0859,
           "vehicle_delta": 3,
-          "runtime_s": 0.003889
+          "runtime_s": 0.001355
         },
         "two_opt_tuned": {
           "distance": 780.8523,
           "n_vehicles": 6,
           "gap_pct": 32.0859,
           "vehicle_delta": 3,
-          "runtime_s": 0.013095
+          "runtime_s": 0.003133
         },
         "alns": {
           "distance": 706.354,
           "n_vehicles": 6,
           "gap_pct": 19.4841,
           "vehicle_delta": 3,
-          "runtime_s": 4.354545
+          "runtime_s": 1.230761
         },
         "ortools_cp": {
           "distance": 706.354,
           "n_vehicles": 6,
           "gap_pct": 19.4841,
           "vehicle_delta": 3,
-          "runtime_s": 11.145134
+          "runtime_s": 11.28909
+        },
+        "alns_fleet": {
+          "distance": 706.354,
+          "n_vehicles": 6,
+          "gap_pct": 19.4841,
+          "vehicle_delta": 3,
+          "runtime_s": 1.2751
         }
       }
     },
@@ -765,49 +855,56 @@
           "n_vehicles": 9,
           "gap_pct": 153.9965,
           "vehicle_delta": 6,
-          "runtime_s": 0.002458
+          "runtime_s": 0.001104
         },
         "clarke_wright": {
           "distance": 734.2916,
           "n_vehicles": 4,
           "gap_pct": 24.3298,
           "vehicle_delta": 1,
-          "runtime_s": 0.006331
+          "runtime_s": 0.002554
         },
         "randomized": {
           "distance": 4249.6537,
           "n_vehicles": 10,
           "gap_pct": 619.5485,
           "vehicle_delta": 7,
-          "runtime_s": 0.003433
+          "runtime_s": 0.000552
         },
         "two_opt": {
           "distance": 681.663,
           "n_vehicles": 4,
           "gap_pct": 15.4187,
           "vehicle_delta": 1,
-          "runtime_s": 0.012489
+          "runtime_s": 0.003395
         },
         "two_opt_tuned": {
           "distance": 668.4562,
           "n_vehicles": 4,
           "gap_pct": 13.1826,
           "vehicle_delta": 1,
-          "runtime_s": 0.037259
+          "runtime_s": 0.010086
         },
         "alns": {
           "distance": 643.5437,
           "n_vehicles": 4,
           "gap_pct": 8.9644,
           "vehicle_delta": 1,
-          "runtime_s": 6.428864
+          "runtime_s": 2.209768
         },
         "ortools_cp": {
           "distance": 643.5437,
           "n_vehicles": 4,
           "gap_pct": 8.9644,
           "vehicle_delta": 1,
-          "runtime_s": 10.085858
+          "runtime_s": 11.467816
+        },
+        "alns_fleet": {
+          "distance": 643.5437,
+          "n_vehicles": 4,
+          "gap_pct": 8.9644,
+          "vehicle_delta": 1,
+          "runtime_s": 1.714343
         }
       }
     },
@@ -824,49 +921,56 @@
           "n_vehicles": 9,
           "gap_pct": 144.4613,
           "vehicle_delta": 6,
-          "runtime_s": 0.00332
+          "runtime_s": 0.001106
         },
         "clarke_wright": {
           "distance": 678.5058,
           "n_vehicles": 4,
           "gap_pct": 15.2197,
           "vehicle_delta": 1,
-          "runtime_s": 0.009764
+          "runtime_s": 0.002533
         },
         "randomized": {
           "distance": 3977.3408,
           "n_vehicles": 11,
           "gap_pct": 575.4077,
           "vehicle_delta": 8,
-          "runtime_s": 0.001934
+          "runtime_s": 0.000602
         },
         "two_opt": {
           "distance": 630.625,
           "n_vehicles": 4,
           "gap_pct": 7.0889,
           "vehicle_delta": 1,
-          "runtime_s": 0.020021
+          "runtime_s": 0.00415
         },
         "two_opt_tuned": {
           "distance": 630.544,
           "n_vehicles": 4,
           "gap_pct": 7.0751,
           "vehicle_delta": 1,
-          "runtime_s": 0.028638
+          "runtime_s": 0.008298
         },
         "alns": {
           "distance": 620.4184,
           "n_vehicles": 4,
           "gap_pct": 5.3557,
           "vehicle_delta": 1,
-          "runtime_s": 5.263072
+          "runtime_s": 2.637313
         },
         "ortools_cp": {
           "distance": 620.4184,
           "n_vehicles": 4,
           "gap_pct": 5.3557,
           "vehicle_delta": 1,
-          "runtime_s": 12.280198
+          "runtime_s": 11.232227
+        },
+        "alns_fleet": {
+          "distance": 620.4184,
+          "n_vehicles": 4,
+          "gap_pct": 5.3557,
+          "vehicle_delta": 1,
+          "runtime_s": 2.792982
         }
       }
     },
@@ -883,49 +987,56 @@
           "n_vehicles": 7,
           "gap_pct": 136.7713,
           "vehicle_delta": 4,
-          "runtime_s": 0.003246
+          "runtime_s": 0.001085
         },
         "clarke_wright": {
           "distance": 719.3955,
           "n_vehicles": 5,
           "gap_pct": 22.2443,
           "vehicle_delta": 2,
-          "runtime_s": 0.010599
+          "runtime_s": 0.002525
         },
         "randomized": {
           "distance": 4053.5117,
           "n_vehicles": 10,
           "gap_pct": 588.7987,
           "vehicle_delta": 7,
-          "runtime_s": 0.002574
+          "runtime_s": 0.00056
         },
         "two_opt": {
           "distance": 672.959,
           "n_vehicles": 5,
           "gap_pct": 14.3535,
           "vehicle_delta": 2,
-          "runtime_s": 0.012411
+          "runtime_s": 0.003709
         },
         "two_opt_tuned": {
           "distance": 682.8006,
           "n_vehicles": 5,
           "gap_pct": 16.0259,
           "vehicle_delta": 2,
-          "runtime_s": 0.027757
+          "runtime_s": 0.005818
         },
         "alns": {
           "distance": 621.0136,
           "n_vehicles": 4,
           "gap_pct": 5.5266,
           "vehicle_delta": 1,
-          "runtime_s": 5.053101
+          "runtime_s": 2.645494
         },
         "ortools_cp": {
           "distance": 621.0136,
           "n_vehicles": 4,
           "gap_pct": 5.5266,
           "vehicle_delta": 1,
-          "runtime_s": 12.405408
+          "runtime_s": 10.282514
+        },
+        "alns_fleet": {
+          "distance": 621.0136,
+          "n_vehicles": 4,
+          "gap_pct": 5.5266,
+          "vehicle_delta": 1,
+          "runtime_s": 2.340258
         }
       }
     },
@@ -942,49 +1053,56 @@
           "n_vehicles": 7,
           "gap_pct": 121.5497,
           "vehicle_delta": 4,
-          "runtime_s": 0.003336
+          "runtime_s": 0.001076
         },
         "clarke_wright": {
           "distance": 718.4426,
           "n_vehicles": 5,
           "gap_pct": 22.1239,
           "vehicle_delta": 2,
-          "runtime_s": 0.013811
+          "runtime_s": 0.002515
         },
         "randomized": {
           "distance": 4163.5235,
           "n_vehicles": 10,
           "gap_pct": 607.7332,
           "vehicle_delta": 7,
-          "runtime_s": 0.001565
+          "runtime_s": 0.000541
         },
         "two_opt": {
           "distance": 660.5476,
           "n_vehicles": 5,
           "gap_pct": 12.2826,
           "vehicle_delta": 2,
-          "runtime_s": 0.009242
+          "runtime_s": 0.003225
         },
         "two_opt_tuned": {
           "distance": 660.3411,
           "n_vehicles": 5,
           "gap_pct": 12.2475,
           "vehicle_delta": 2,
-          "runtime_s": 0.028968
+          "runtime_s": 0.009233
         },
         "alns": {
           "distance": 588.2863,
           "n_vehicles": 3,
           "gap_pct": -0.0006,
           "vehicle_delta": 0,
-          "runtime_s": 5.428069
+          "runtime_s": 2.029849
         },
         "ortools_cp": {
           "distance": 588.2863,
           "n_vehicles": 3,
           "gap_pct": -0.0006,
           "vehicle_delta": 0,
-          "runtime_s": 12.189838
+          "runtime_s": 10.800557
+        },
+        "alns_fleet": {
+          "distance": 588.2863,
+          "n_vehicles": 3,
+          "gap_pct": -0.0006,
+          "vehicle_delta": 0,
+          "runtime_s": 2.07815
         }
       }
     },
@@ -1001,49 +1119,56 @@
           "n_vehicles": 6,
           "gap_pct": 94.6609,
           "vehicle_delta": 3,
-          "runtime_s": 0.004246
+          "runtime_s": 0.001031
         },
         "clarke_wright": {
           "distance": 702.2481,
           "n_vehicles": 4,
           "gap_pct": 19.365,
           "vehicle_delta": 1,
-          "runtime_s": 0.008365
+          "runtime_s": 0.002386
         },
         "randomized": {
           "distance": 4008.2711,
           "n_vehicles": 8,
           "gap_pct": 581.308,
           "vehicle_delta": 5,
-          "runtime_s": 0.001628
+          "runtime_s": 0.00054
         },
         "two_opt": {
           "distance": 636.7616,
           "n_vehicles": 4,
           "gap_pct": 8.2339,
           "vehicle_delta": 1,
-          "runtime_s": 0.011475
+          "runtime_s": 0.003295
         },
         "two_opt_tuned": {
           "distance": 636.7616,
           "n_vehicles": 4,
           "gap_pct": 8.2339,
           "vehicle_delta": 1,
-          "runtime_s": 0.034913
+          "runtime_s": 0.008787
         },
         "alns": {
           "distance": 588.3238,
           "n_vehicles": 3,
           "gap_pct": 0.0006,
           "vehicle_delta": 0,
-          "runtime_s": 5.836617
+          "runtime_s": 2.185935
         },
         "ortools_cp": {
           "distance": 588.3238,
           "n_vehicles": 3,
           "gap_pct": 0.0006,
           "vehicle_delta": 0,
-          "runtime_s": 11.872992
+          "runtime_s": 10.837782
+        },
+        "alns_fleet": {
+          "distance": 588.3238,
+          "n_vehicles": 3,
+          "gap_pct": 0.0006,
+          "vehicle_delta": 0,
+          "runtime_s": 2.397087
         }
       }
     },
@@ -1060,49 +1185,56 @@
           "n_vehicles": 33,
           "gap_pct": 49.261,
           "vehicle_delta": 14,
-          "runtime_s": 0.003481
+          "runtime_s": 0.001145
         },
         "clarke_wright": {
           "distance": 2141.6808,
           "n_vehicles": 31,
           "gap_pct": 29.7359,
           "vehicle_delta": 12,
-          "runtime_s": 0.014049
+          "runtime_s": 0.003743
         },
         "randomized": {
           "distance": 3544.7403,
           "n_vehicles": 41,
           "gap_pct": 114.7286,
           "vehicle_delta": 22,
-          "runtime_s": 0.002404
+          "runtime_s": 0.000778
         },
         "two_opt": {
           "distance": 2032.0041,
           "n_vehicles": 31,
           "gap_pct": 23.0921,
           "vehicle_delta": 12,
-          "runtime_s": 0.023764
+          "runtime_s": 0.006907
         },
         "two_opt_tuned": {
           "distance": 2029.1428,
           "n_vehicles": 31,
           "gap_pct": 22.9188,
           "vehicle_delta": 12,
-          "runtime_s": 0.064857
+          "runtime_s": 0.018967
         },
         "alns": {
           "distance": 1687.3625,
           "n_vehicles": 22,
           "gap_pct": 2.2148,
           "vehicle_delta": 3,
-          "runtime_s": 1.792087
+          "runtime_s": 0.829109
         },
         "ortools_cp": {
           "distance": 1687.3625,
           "n_vehicles": 22,
           "gap_pct": 2.2148,
           "vehicle_delta": 3,
-          "runtime_s": 10.603284
+          "runtime_s": 11.636671
+        },
+        "alns_fleet": {
+          "distance": 1687.3625,
+          "n_vehicles": 22,
+          "gap_pct": 2.2148,
+          "vehicle_delta": 3,
+          "runtime_s": 0.640813
         }
       }
     },
@@ -1119,108 +1251,122 @@
           "n_vehicles": 28,
           "gap_pct": 48.1225,
           "vehicle_delta": 11,
-          "runtime_s": 0.004349
+          "runtime_s": 0.00114
         },
         "clarke_wright": {
           "distance": 1835.8,
           "n_vehicles": 27,
           "gap_pct": 23.5297,
           "vehicle_delta": 10,
-          "runtime_s": 0.010583
+          "runtime_s": 0.003522
         },
         "randomized": {
           "distance": 3357.3369,
           "n_vehicles": 34,
           "gap_pct": 125.9129,
           "vehicle_delta": 17,
-          "runtime_s": 0.002229
+          "runtime_s": 0.000679
         },
         "two_opt": {
           "distance": 1798.7025,
           "n_vehicles": 27,
           "gap_pct": 21.0335,
           "vehicle_delta": 10,
-          "runtime_s": 0.023398
+          "runtime_s": 0.006932
         },
         "two_opt_tuned": {
           "distance": 1790.9974,
           "n_vehicles": 27,
           "gap_pct": 20.515,
           "vehicle_delta": 10,
-          "runtime_s": 0.045008
+          "runtime_s": 0.012613
         },
         "alns": {
           "distance": 1594.8893,
           "n_vehicles": 20,
           "gap_pct": 7.319,
           "vehicle_delta": 3,
-          "runtime_s": 1.884718
+          "runtime_s": 1.032471
         },
         "ortools_cp": {
           "distance": 1594.8893,
           "n_vehicles": 20,
           "gap_pct": 7.319,
           "vehicle_delta": 3,
-          "runtime_s": 15.398975
+          "runtime_s": 14.252062
+        },
+        "alns_fleet": {
+          "distance": 1600.5257,
+          "n_vehicles": 20,
+          "gap_pct": 7.6983,
+          "vehicle_delta": 3,
+          "runtime_s": 1.108071
         }
       }
     },
     "R103": {
       "best_known": 1292.68,
       "best_known_vehicles": 13,
-      "best_solver": "alns",
-      "best_solver_benchmark_convention": "alns",
-      "best_distance": 1325.4983,
-      "best_gap_pct": 2.5388,
+      "best_solver": "alns_fleet",
+      "best_solver_benchmark_convention": "alns_fleet",
+      "best_distance": 1318.8866,
+      "best_gap_pct": 2.0273,
       "solvers": {
         "nearest_neighbor": {
           "distance": 1893.3315,
           "n_vehicles": 23,
           "gap_pct": 46.4656,
           "vehicle_delta": 10,
-          "runtime_s": 0.004499
+          "runtime_s": 0.001066
         },
         "clarke_wright": {
           "distance": 1565.9205,
           "n_vehicles": 22,
           "gap_pct": 21.1375,
           "vehicle_delta": 9,
-          "runtime_s": 0.012458
+          "runtime_s": 0.003285
         },
         "randomized": {
           "distance": 3489.0863,
           "n_vehicles": 28,
           "gap_pct": 169.9111,
           "vehicle_delta": 15,
-          "runtime_s": 0.003275
+          "runtime_s": 0.000721
         },
         "two_opt": {
           "distance": 1498.1272,
           "n_vehicles": 22,
           "gap_pct": 15.8931,
           "vehicle_delta": 9,
-          "runtime_s": 0.039117
+          "runtime_s": 0.009255
         },
         "two_opt_tuned": {
           "distance": 1516.3282,
           "n_vehicles": 22,
           "gap_pct": 17.3011,
           "vehicle_delta": 9,
-          "runtime_s": 0.051354
+          "runtime_s": 0.014596
         },
         "alns": {
           "distance": 1325.4983,
           "n_vehicles": 17,
           "gap_pct": 2.5388,
           "vehicle_delta": 4,
-          "runtime_s": 2.087316
+          "runtime_s": 0.76918
         },
         "ortools_cp": {
           "distance": 1325.4983,
           "n_vehicles": 17,
           "gap_pct": 2.5388,
           "vehicle_delta": 4,
-          "runtime_s": 18.232302
+          "runtime_s": 13.902326
+        },
+        "alns_fleet": {
+          "distance": 1318.8866,
+          "n_vehicles": 16,
+          "gap_pct": 2.0273,
+          "vehicle_delta": 3,
+          "runtime_s": 1.042403
         }
       }
     },
@@ -1237,49 +1383,56 @@
           "n_vehicles": 17,
           "gap_pct": 50.4258,
           "vehicle_delta": 8,
-          "runtime_s": 0.003893
+          "runtime_s": 0.001098
         },
         "clarke_wright": {
           "distance": 1239.0883,
           "n_vehicles": 16,
           "gap_pct": 23.0096,
           "vehicle_delta": 7,
-          "runtime_s": 0.01072
+          "runtime_s": 0.002879
         },
         "randomized": {
           "distance": 3292.936,
           "n_vehicles": 24,
           "gap_pct": 226.9039,
           "vehicle_delta": 15,
-          "runtime_s": 0.002122
+          "runtime_s": 0.000638
         },
         "two_opt": {
           "distance": 1209.1593,
           "n_vehicles": 16,
           "gap_pct": 20.0384,
           "vehicle_delta": 7,
-          "runtime_s": 0.012022
+          "runtime_s": 0.002899
         },
         "two_opt_tuned": {
           "distance": 1203.8216,
           "n_vehicles": 16,
           "gap_pct": 19.5086,
           "vehicle_delta": 7,
-          "runtime_s": 0.029813
+          "runtime_s": 0.007604
         },
         "alns": {
           "distance": 1060.9348,
           "n_vehicles": 13,
           "gap_pct": 5.3236,
           "vehicle_delta": 4,
-          "runtime_s": 2.205825
+          "runtime_s": 1.28135
         },
         "ortools_cp": {
           "distance": 1060.9348,
           "n_vehicles": 13,
           "gap_pct": 5.3236,
           "vehicle_delta": 4,
-          "runtime_s": 17.777159
+          "runtime_s": 14.709045
+        },
+        "alns_fleet": {
+          "distance": 1099.9402,
+          "n_vehicles": 13,
+          "gap_pct": 9.1958,
+          "vehicle_delta": 4,
+          "runtime_s": 1.380583
         }
       }
     },
@@ -1296,49 +1449,56 @@
           "n_vehicles": 26,
           "gap_pct": 59.5886,
           "vehicle_delta": 12,
-          "runtime_s": 0.003715
+          "runtime_s": 0.001145
         },
         "clarke_wright": {
           "distance": 1650.68,
           "n_vehicles": 21,
           "gap_pct": 19.8655,
           "vehicle_delta": 7,
-          "runtime_s": 0.013109
+          "runtime_s": 0.003188
         },
         "randomized": {
           "distance": 3210.8414,
           "n_vehicles": 32,
           "gap_pct": 133.1579,
           "vehicle_delta": 18,
-          "runtime_s": 0.003031
+          "runtime_s": 0.000698
         },
         "two_opt": {
           "distance": 1598.7508,
           "n_vehicles": 21,
           "gap_pct": 16.0946,
           "vehicle_delta": 7,
-          "runtime_s": 0.024352
+          "runtime_s": 0.007632
         },
         "two_opt_tuned": {
           "distance": 1597.3613,
           "n_vehicles": 21,
           "gap_pct": 15.9937,
           "vehicle_delta": 7,
-          "runtime_s": 0.053895
+          "runtime_s": 0.01284
         },
         "alns": {
           "distance": 1457.2429,
           "n_vehicles": 18,
           "gap_pct": 5.8189,
           "vehicle_delta": 4,
-          "runtime_s": 1.827014
+          "runtime_s": 0.755501
         },
         "ortools_cp": {
           "distance": 1457.2429,
           "n_vehicles": 18,
           "gap_pct": 5.8189,
           "vehicle_delta": 4,
-          "runtime_s": 12.825206
+          "runtime_s": 12.039192
+        },
+        "alns_fleet": {
+          "distance": 1465.2615,
+          "n_vehicles": 18,
+          "gap_pct": 6.4012,
+          "vehicle_delta": 4,
+          "runtime_s": 0.865975
         }
       }
     },
@@ -1355,49 +1515,56 @@
           "n_vehicles": 20,
           "gap_pct": 43.593,
           "vehicle_delta": 8,
-          "runtime_s": 0.007553
+          "runtime_s": 0.001126
         },
         "clarke_wright": {
           "distance": 1497.5936,
           "n_vehicles": 20,
           "gap_pct": 19.6132,
           "vehicle_delta": 8,
-          "runtime_s": 0.011734
+          "runtime_s": 0.003172
         },
         "randomized": {
           "distance": 3147.963,
           "n_vehicles": 28,
           "gap_pct": 151.4287,
           "vehicle_delta": 16,
-          "runtime_s": 0.004221
+          "runtime_s": 0.000706
         },
         "two_opt": {
           "distance": 1483.3503,
           "n_vehicles": 20,
           "gap_pct": 18.4756,
           "vehicle_delta": 8,
-          "runtime_s": 0.020869
+          "runtime_s": 0.004517
         },
         "two_opt_tuned": {
           "distance": 1484.2357,
           "n_vehicles": 20,
           "gap_pct": 18.5463,
           "vehicle_delta": 8,
-          "runtime_s": 0.02403
+          "runtime_s": 0.006606
         },
         "alns": {
           "distance": 1318.8271,
           "n_vehicles": 16,
           "gap_pct": 5.3351,
           "vehicle_delta": 4,
-          "runtime_s": 2.009729
+          "runtime_s": 0.818654
         },
         "ortools_cp": {
           "distance": 1318.8271,
           "n_vehicles": 16,
           "gap_pct": 5.3351,
           "vehicle_delta": 4,
-          "runtime_s": 16.213981
+          "runtime_s": 11.135518
+        },
+        "alns_fleet": {
+          "distance": 1318.8271,
+          "n_vehicles": 16,
+          "gap_pct": 5.3351,
+          "vehicle_delta": 4,
+          "runtime_s": 0.779313
         }
       }
     },
@@ -1414,49 +1581,56 @@
           "n_vehicles": 18,
           "gap_pct": 51.9776,
           "vehicle_delta": 8,
-          "runtime_s": 0.003468
+          "runtime_s": 0.001111
         },
         "clarke_wright": {
           "distance": 1350.1265,
           "n_vehicles": 17,
           "gap_pct": 22.221,
           "vehicle_delta": 7,
-          "runtime_s": 0.009608
+          "runtime_s": 0.002998
         },
         "randomized": {
           "distance": 3259.7785,
           "n_vehicles": 24,
           "gap_pct": 195.0934,
           "vehicle_delta": 14,
-          "runtime_s": 0.002068
+          "runtime_s": 0.000644
         },
         "two_opt": {
           "distance": 1315.1734,
           "n_vehicles": 17,
           "gap_pct": 19.0569,
           "vehicle_delta": 7,
-          "runtime_s": 0.00828
+          "runtime_s": 0.002198
         },
         "two_opt_tuned": {
           "distance": 1315.1734,
           "n_vehicles": 17,
           "gap_pct": 19.0569,
           "vehicle_delta": 7,
-          "runtime_s": 0.037043
+          "runtime_s": 0.009837
         },
         "alns": {
           "distance": 1170.619,
           "n_vehicles": 14,
           "gap_pct": 5.971,
           "vehicle_delta": 4,
-          "runtime_s": 2.057894
+          "runtime_s": 1.034539
         },
         "ortools_cp": {
           "distance": 1170.619,
           "n_vehicles": 14,
           "gap_pct": 5.971,
           "vehicle_delta": 4,
-          "runtime_s": 16.289303
+          "runtime_s": 11.979534
+        },
+        "alns_fleet": {
+          "distance": 1170.619,
+          "n_vehicles": 14,
+          "gap_pct": 5.971,
+          "vehicle_delta": 4,
+          "runtime_s": 0.829432
         }
       }
     },
@@ -1473,49 +1647,56 @@
           "n_vehicles": 16,
           "gap_pct": 58.8639,
           "vehicle_delta": 7,
-          "runtime_s": 0.003462
+          "runtime_s": 0.001112
         },
         "clarke_wright": {
           "distance": 1141.7516,
           "n_vehicles": 14,
           "gap_pct": 18.8235,
           "vehicle_delta": 5,
-          "runtime_s": 0.007951
+          "runtime_s": 0.002699
         },
         "randomized": {
           "distance": 3444.1884,
           "n_vehicles": 24,
           "gap_pct": 258.4411,
           "vehicle_delta": 15,
-          "runtime_s": 0.002678
+          "runtime_s": 0.000617
         },
         "two_opt": {
           "distance": 1086.9221,
           "n_vehicles": 14,
           "gap_pct": 13.1174,
           "vehicle_delta": 5,
-          "runtime_s": 0.011694
+          "runtime_s": 0.002749
         },
         "two_opt_tuned": {
           "distance": 1087.0583,
           "n_vehicles": 14,
           "gap_pct": 13.1315,
           "vehicle_delta": 5,
-          "runtime_s": 0.032337
+          "runtime_s": 0.008115
         },
         "alns": {
           "distance": 1012.2835,
           "n_vehicles": 12,
           "gap_pct": 5.3496,
           "vehicle_delta": 3,
-          "runtime_s": 1.278174
+          "runtime_s": 0.988336
         },
         "ortools_cp": {
           "distance": 1012.2835,
           "n_vehicles": 12,
           "gap_pct": 5.3496,
           "vehicle_delta": 3,
-          "runtime_s": 14.760699
+          "runtime_s": 11.71931
+        },
+        "alns_fleet": {
+          "distance": 1012.2835,
+          "n_vehicles": 12,
+          "gap_pct": 5.3496,
+          "vehicle_delta": 3,
+          "runtime_s": 0.896526
         }
       }
     },
@@ -1532,49 +1713,56 @@
           "n_vehicles": 18,
           "gap_pct": 46.5735,
           "vehicle_delta": 7,
-          "runtime_s": 0.004953
+          "runtime_s": 0.001147
         },
         "clarke_wright": {
           "distance": 1352.5825,
           "n_vehicles": 17,
           "gap_pct": 13.2124,
           "vehicle_delta": 6,
-          "runtime_s": 0.008086
+          "runtime_s": 0.002978
         },
         "randomized": {
           "distance": 2774.6246,
           "n_vehicles": 25,
           "gap_pct": 132.2386,
           "vehicle_delta": 14,
-          "runtime_s": 0.001397
+          "runtime_s": 0.000638
         },
         "two_opt": {
           "distance": 1330.321,
           "n_vehicles": 17,
           "gap_pct": 11.3491,
           "vehicle_delta": 6,
-          "runtime_s": 0.009631
+          "runtime_s": 0.003019
         },
         "two_opt_tuned": {
           "distance": 1330.321,
           "n_vehicles": 17,
           "gap_pct": 11.3491,
           "vehicle_delta": 6,
-          "runtime_s": 0.010492
+          "runtime_s": 0.004848
         },
         "alns": {
           "distance": 1213.7108,
           "n_vehicles": 14,
           "gap_pct": 1.5887,
           "vehicle_delta": 3,
-          "runtime_s": 0.803867
+          "runtime_s": 0.815973
         },
         "ortools_cp": {
           "distance": 1213.7108,
           "n_vehicles": 14,
           "gap_pct": 1.5887,
           "vehicle_delta": 3,
-          "runtime_s": 12.195298
+          "runtime_s": 12.343966
+        },
+        "alns_fleet": {
+          "distance": 1213.7108,
+          "n_vehicles": 14,
+          "gap_pct": 1.5887,
+          "vehicle_delta": 3,
+          "runtime_s": 0.848816
         }
       }
     },
@@ -1582,7 +1770,7 @@
       "best_known": 1118.84,
       "best_known_vehicles": 10,
       "best_solver": "alns",
-      "best_solver_benchmark_convention": "alns",
+      "best_solver_benchmark_convention": "alns_fleet",
       "best_distance": 1156.2277,
       "best_gap_pct": 3.3416,
       "solvers": {
@@ -1591,49 +1779,56 @@
           "n_vehicles": 18,
           "gap_pct": 53.2013,
           "vehicle_delta": 8,
-          "runtime_s": 0.005027
+          "runtime_s": 0.001097
         },
         "clarke_wright": {
           "distance": 1193.3959,
           "n_vehicles": 14,
           "gap_pct": 6.6637,
           "vehicle_delta": 4,
-          "runtime_s": 0.011031
+          "runtime_s": 0.002753
         },
         "randomized": {
           "distance": 3285.0229,
           "n_vehicles": 25,
           "gap_pct": 193.6097,
           "vehicle_delta": 15,
-          "runtime_s": 0.00415
+          "runtime_s": 0.000642
         },
         "two_opt": {
           "distance": 1179.1197,
           "n_vehicles": 14,
           "gap_pct": 5.3877,
           "vehicle_delta": 4,
-          "runtime_s": 0.00753
+          "runtime_s": 0.002046
         },
         "two_opt_tuned": {
           "distance": 1179.1197,
           "n_vehicles": 14,
           "gap_pct": 5.3877,
           "vehicle_delta": 4,
-          "runtime_s": 0.027012
+          "runtime_s": 0.006056
         },
         "alns": {
           "distance": 1156.2277,
           "n_vehicles": 14,
           "gap_pct": 3.3416,
           "vehicle_delta": 4,
-          "runtime_s": 2.148156
+          "runtime_s": 0.856671
         },
         "ortools_cp": {
           "distance": 1156.2277,
           "n_vehicles": 14,
           "gap_pct": 3.3416,
           "vehicle_delta": 4,
-          "runtime_s": 16.861668
+          "runtime_s": 11.884979
+        },
+        "alns_fleet": {
+          "distance": 1160.3945,
+          "n_vehicles": 13,
+          "gap_pct": 3.7141,
+          "vehicle_delta": 3,
+          "runtime_s": 0.873676
         }
       }
     },
@@ -1650,49 +1845,56 @@
           "n_vehicles": 18,
           "gap_pct": 64.1649,
           "vehicle_delta": 8,
-          "runtime_s": 0.004621
+          "runtime_s": 0.001075
         },
         "clarke_wright": {
           "distance": 1249.3019,
           "n_vehicles": 15,
           "gap_pct": 13.9126,
           "vehicle_delta": 5,
-          "runtime_s": 0.008624
+          "runtime_s": 0.002862
         },
         "randomized": {
           "distance": 3389.8661,
           "n_vehicles": 24,
           "gap_pct": 209.0913,
           "vehicle_delta": 14,
-          "runtime_s": 0.001395
+          "runtime_s": 0.000645
         },
         "two_opt": {
           "distance": 1214.8968,
           "n_vehicles": 15,
           "gap_pct": 10.7755,
           "vehicle_delta": 5,
-          "runtime_s": 0.005299
+          "runtime_s": 0.002425
         },
         "two_opt_tuned": {
           "distance": 1214.8968,
           "n_vehicles": 15,
           "gap_pct": 10.7755,
           "vehicle_delta": 5,
-          "runtime_s": 0.034203
+          "runtime_s": 0.008277
         },
         "alns": {
           "distance": 1121.8358,
           "n_vehicles": 13,
           "gap_pct": 2.2901,
           "vehicle_delta": 3,
-          "runtime_s": 2.546826
+          "runtime_s": 0.884953
         },
         "ortools_cp": {
           "distance": 1121.8358,
           "n_vehicles": 13,
           "gap_pct": 2.2901,
           "vehicle_delta": 3,
-          "runtime_s": 17.095951
+          "runtime_s": 13.196884
+        },
+        "alns_fleet": {
+          "distance": 1121.8358,
+          "n_vehicles": 13,
+          "gap_pct": 2.2901,
+          "vehicle_delta": 3,
+          "runtime_s": 1.170344
         }
       }
     },
@@ -1709,49 +1911,56 @@
           "n_vehicles": 13,
           "gap_pct": 44.8652,
           "vehicle_delta": 4,
-          "runtime_s": 0.003655
+          "runtime_s": 0.001101
         },
         "clarke_wright": {
           "distance": 1043.9086,
           "n_vehicles": 12,
           "gap_pct": 6.2892,
           "vehicle_delta": 3,
-          "runtime_s": 0.01129
+          "runtime_s": 0.002688
         },
         "randomized": {
           "distance": 3316.8071,
           "n_vehicles": 22,
           "gap_pct": 237.7123,
           "vehicle_delta": 13,
-          "runtime_s": 0.002469
+          "runtime_s": 0.000649
         },
         "two_opt": {
           "distance": 1030.7765,
           "n_vehicles": 12,
           "gap_pct": 4.9521,
           "vehicle_delta": 3,
-          "runtime_s": 0.005285
+          "runtime_s": 0.001871
         },
         "two_opt_tuned": {
           "distance": 1030.7765,
           "n_vehicles": 12,
           "gap_pct": 4.9521,
           "vehicle_delta": 3,
-          "runtime_s": 0.01643
+          "runtime_s": 0.005048
         },
         "alns": {
           "distance": 1003.1855,
           "n_vehicles": 11,
           "gap_pct": 2.1428,
           "vehicle_delta": 2,
-          "runtime_s": 2.497306
+          "runtime_s": 0.938747
         },
         "ortools_cp": {
           "distance": 1003.1855,
           "n_vehicles": 11,
           "gap_pct": 2.1428,
           "vehicle_delta": 2,
-          "runtime_s": 17.35596
+          "runtime_s": 11.460405
+        },
+        "alns_fleet": {
+          "distance": 1003.1855,
+          "n_vehicles": 11,
+          "gap_pct": 2.1428,
+          "vehicle_delta": 2,
+          "runtime_s": 0.887222
         }
       }
     },
@@ -1768,49 +1977,56 @@
           "n_vehicles": 13,
           "gap_pct": 48.2719,
           "vehicle_delta": 9,
-          "runtime_s": 0.002722
+          "runtime_s": 0.001053
         },
         "clarke_wright": {
           "distance": 1401.2702,
           "n_vehicles": 15,
           "gap_pct": 11.8895,
           "vehicle_delta": 11,
-          "runtime_s": 0.013369
+          "runtime_s": 0.003013
         },
         "randomized": {
           "distance": 3524.7372,
           "n_vehicles": 14,
           "gap_pct": 181.4454,
           "vehicle_delta": 10,
-          "runtime_s": 0.001772
+          "runtime_s": 0.000573
         },
         "two_opt": {
           "distance": 1329.5266,
           "n_vehicles": 15,
           "gap_pct": 6.1608,
           "vehicle_delta": 11,
-          "runtime_s": 0.029155
+          "runtime_s": 0.00772
         },
         "two_opt_tuned": {
           "distance": 1339.2194,
           "n_vehicles": 15,
           "gap_pct": 6.9348,
           "vehicle_delta": 11,
-          "runtime_s": 0.052658
+          "runtime_s": 0.015163
         },
         "alns": {
           "distance": 1296.9195,
           "n_vehicles": 14,
           "gap_pct": 3.5572,
           "vehicle_delta": 10,
-          "runtime_s": 2.222978
+          "runtime_s": 0.999875
         },
         "ortools_cp": {
           "distance": 1296.9195,
           "n_vehicles": 14,
           "gap_pct": 3.5572,
           "vehicle_delta": 10,
-          "runtime_s": 10.049281
+          "runtime_s": 12.420115
+        },
+        "alns_fleet": {
+          "distance": 1296.9195,
+          "n_vehicles": 14,
+          "gap_pct": 3.5572,
+          "vehicle_delta": 10,
+          "runtime_s": 0.932054
         }
       }
     },
@@ -1827,49 +2043,56 @@
           "n_vehicles": 13,
           "gap_pct": 46.7057,
           "vehicle_delta": 10,
-          "runtime_s": 0.003127
+          "runtime_s": 0.001099
         },
         "clarke_wright": {
           "distance": 1259.85,
           "n_vehicles": 14,
           "gap_pct": 5.7187,
           "vehicle_delta": 11,
-          "runtime_s": 0.009822
+          "runtime_s": 0.00303
         },
         "randomized": {
           "distance": 3612.2327,
           "n_vehicles": 13,
           "gap_pct": 203.1159,
           "vehicle_delta": 10,
-          "runtime_s": 0.003066
+          "runtime_s": 0.000565
         },
         "two_opt": {
           "distance": 1237.5569,
           "n_vehicles": 14,
           "gap_pct": 3.848,
           "vehicle_delta": 11,
-          "runtime_s": 0.005356
+          "runtime_s": 0.001603
         },
         "two_opt_tuned": {
           "distance": 1237.5569,
           "n_vehicles": 14,
           "gap_pct": 3.848,
           "vehicle_delta": 11,
-          "runtime_s": 0.025653
+          "runtime_s": 0.007007
         },
         "alns": {
           "distance": 1179.4209,
           "n_vehicles": 13,
           "gap_pct": -1.0304,
           "vehicle_delta": 10,
-          "runtime_s": 2.394188
+          "runtime_s": 1.199497
         },
         "ortools_cp": {
           "distance": 1179.4209,
           "n_vehicles": 13,
           "gap_pct": -1.0304,
           "vehicle_delta": 10,
-          "runtime_s": 15.729533
+          "runtime_s": 12.516898
+        },
+        "alns_fleet": {
+          "distance": 1179.4209,
+          "n_vehicles": 13,
+          "gap_pct": -1.0304,
+          "vehicle_delta": 10,
+          "runtime_s": 1.186872
         }
       }
     },
@@ -1886,49 +2109,56 @@
           "n_vehicles": 9,
           "gap_pct": 55.3195,
           "vehicle_delta": 6,
-          "runtime_s": 0.00597
+          "runtime_s": 0.001104
         },
         "clarke_wright": {
           "distance": 1109.1498,
           "n_vehicles": 12,
           "gap_pct": 18.0575,
           "vehicle_delta": 9,
-          "runtime_s": 0.008751
+          "runtime_s": 0.003155
         },
         "randomized": {
           "distance": 3651.3897,
           "n_vehicles": 10,
           "gap_pct": 288.6524,
           "vehicle_delta": 7,
-          "runtime_s": 0.001872
+          "runtime_s": 0.000568
         },
         "two_opt": {
           "distance": 1070.5706,
           "n_vehicles": 12,
           "gap_pct": 13.9511,
           "vehicle_delta": 9,
-          "runtime_s": 0.015341
+          "runtime_s": 0.003829
         },
         "two_opt_tuned": {
           "distance": 1073.8577,
           "n_vehicles": 12,
           "gap_pct": 14.301,
           "vehicle_delta": 9,
-          "runtime_s": 0.037307
+          "runtime_s": 0.009551
         },
         "alns": {
           "distance": 962.8493,
           "n_vehicles": 9,
           "gap_pct": 2.4853,
           "vehicle_delta": 6,
-          "runtime_s": 3.630374
+          "runtime_s": 1.881139
         },
         "ortools_cp": {
           "distance": 962.8493,
           "n_vehicles": 9,
           "gap_pct": 2.4853,
           "vehicle_delta": 6,
-          "runtime_s": 15.528429
+          "runtime_s": 13.748685
+        },
+        "alns_fleet": {
+          "distance": 993.6067,
+          "n_vehicles": 9,
+          "gap_pct": 5.7591,
+          "vehicle_delta": 6,
+          "runtime_s": 1.647596
         }
       }
     },
@@ -1945,49 +2175,56 @@
           "n_vehicles": 6,
           "gap_pct": 35.5346,
           "vehicle_delta": 4,
-          "runtime_s": 0.004267
+          "runtime_s": 0.001183
         },
         "clarke_wright": {
           "distance": 867.2488,
           "n_vehicles": 8,
           "gap_pct": 5.0549,
           "vehicle_delta": 6,
-          "runtime_s": 0.008456
+          "runtime_s": 0.003074
         },
         "randomized": {
           "distance": 3578.3296,
           "n_vehicles": 8,
           "gap_pct": 333.4637,
           "vehicle_delta": 6,
-          "runtime_s": 0.001584
+          "runtime_s": 0.000558
         },
         "two_opt": {
           "distance": 857.8224,
           "n_vehicles": 8,
           "gap_pct": 3.913,
           "vehicle_delta": 6,
-          "runtime_s": 0.006373
+          "runtime_s": 0.00161
         },
         "two_opt_tuned": {
           "distance": 857.8224,
           "n_vehicles": 8,
           "gap_pct": 3.913,
           "vehicle_delta": 6,
-          "runtime_s": 0.022348
+          "runtime_s": 0.005428
         },
         "alns": {
           "distance": 839.6703,
           "n_vehicles": 8,
           "gap_pct": 1.7141,
           "vehicle_delta": 6,
-          "runtime_s": 4.078466
+          "runtime_s": 1.338323
         },
         "ortools_cp": {
           "distance": 839.6703,
           "n_vehicles": 8,
           "gap_pct": 1.7141,
           "vehicle_delta": 6,
-          "runtime_s": 15.040919
+          "runtime_s": 11.413254
+        },
+        "alns_fleet": {
+          "distance": 839.6703,
+          "n_vehicles": 8,
+          "gap_pct": 1.7141,
+          "vehicle_delta": 6,
+          "runtime_s": 2.039648
         }
       }
     },
@@ -2004,49 +2241,56 @@
           "n_vehicles": 8,
           "gap_pct": 58.0396,
           "vehicle_delta": 5,
-          "runtime_s": 0.006713
+          "runtime_s": 0.001043
         },
         "clarke_wright": {
           "distance": 1150.3753,
           "n_vehicles": 12,
           "gap_pct": 15.6819,
           "vehicle_delta": 9,
-          "runtime_s": 0.010904
+          "runtime_s": 0.002802
         },
         "randomized": {
           "distance": 3539.4313,
           "n_vehicles": 9,
           "gap_pct": 255.9256,
           "vehicle_delta": 6,
-          "runtime_s": 0.00161
+          "runtime_s": 0.000515
         },
         "two_opt": {
           "distance": 1120.6603,
           "n_vehicles": 12,
           "gap_pct": 12.6937,
           "vehicle_delta": 9,
-          "runtime_s": 0.008035
+          "runtime_s": 0.002805
         },
         "two_opt_tuned": {
           "distance": 1120.6603,
           "n_vehicles": 12,
           "gap_pct": 12.6937,
           "vehicle_delta": 9,
-          "runtime_s": 0.030528
+          "runtime_s": 0.009157
         },
         "alns": {
           "distance": 1071.3509,
           "n_vehicles": 11,
           "gap_pct": 7.7352,
           "vehicle_delta": 8,
-          "runtime_s": 2.929414
+          "runtime_s": 1.160047
         },
         "ortools_cp": {
           "distance": 1071.3509,
           "n_vehicles": 11,
           "gap_pct": 7.7352,
           "vehicle_delta": 8,
-          "runtime_s": 10.660943
+          "runtime_s": 12.567308
+        },
+        "alns_fleet": {
+          "distance": 1071.3509,
+          "n_vehicles": 11,
+          "gap_pct": 7.7352,
+          "vehicle_delta": 8,
+          "runtime_s": 1.256542
         }
       }
     },
@@ -2063,49 +2307,56 @@
           "n_vehicles": 8,
           "gap_pct": 83.8606,
           "vehicle_delta": 5,
-          "runtime_s": 0.004012
+          "runtime_s": 0.001093
         },
         "clarke_wright": {
           "distance": 1065.7418,
           "n_vehicles": 10,
           "gap_pct": 17.6134,
           "vehicle_delta": 7,
-          "runtime_s": 0.012503
+          "runtime_s": 0.003072
         },
         "randomized": {
           "distance": 3582.4483,
           "n_vehicles": 8,
           "gap_pct": 295.3526,
           "vehicle_delta": 5,
-          "runtime_s": 0.002045
+          "runtime_s": 0.000554
         },
         "two_opt": {
           "distance": 1039.9251,
           "n_vehicles": 10,
           "gap_pct": 14.7643,
           "vehicle_delta": 7,
-          "runtime_s": 0.015005
+          "runtime_s": 0.004843
         },
         "two_opt_tuned": {
           "distance": 1035.524,
           "n_vehicles": 10,
           "gap_pct": 14.2786,
           "vehicle_delta": 7,
-          "runtime_s": 0.061136
+          "runtime_s": 0.014078
         },
         "alns": {
           "distance": 968.5962,
           "n_vehicles": 9,
           "gap_pct": 6.8926,
           "vehicle_delta": 6,
-          "runtime_s": 2.673312
+          "runtime_s": 1.426413
         },
         "ortools_cp": {
           "distance": 968.5962,
           "n_vehicles": 9,
           "gap_pct": 6.8926,
           "vehicle_delta": 6,
-          "runtime_s": 12.213956
+          "runtime_s": 12.874207
+        },
+        "alns_fleet": {
+          "distance": 968.5962,
+          "n_vehicles": 9,
+          "gap_pct": 6.8926,
+          "vehicle_delta": 6,
+          "runtime_s": 1.509708
         }
       }
     },
@@ -2122,49 +2373,56 @@
           "n_vehicles": 7,
           "gap_pct": 54.7539,
           "vehicle_delta": 5,
-          "runtime_s": 0.003481
+          "runtime_s": 0.001163
         },
         "clarke_wright": {
           "distance": 927.0165,
           "n_vehicles": 8,
           "gap_pct": 4.0878,
           "vehicle_delta": 6,
-          "runtime_s": 0.008627
+          "runtime_s": 0.002779
         },
         "randomized": {
           "distance": 3513.5758,
           "n_vehicles": 8,
           "gap_pct": 294.5134,
           "vehicle_delta": 6,
-          "runtime_s": 0.001898
+          "runtime_s": 0.000571
         },
         "two_opt": {
           "distance": 882.752,
           "n_vehicles": 8,
           "gap_pct": -0.8823,
           "vehicle_delta": 6,
-          "runtime_s": 0.015413
+          "runtime_s": 0.003917
         },
         "two_opt_tuned": {
           "distance": 891.7074,
           "n_vehicles": 8,
           "gap_pct": 0.1232,
           "vehicle_delta": 6,
-          "runtime_s": 0.039164
+          "runtime_s": 0.009067
         },
         "alns": {
           "distance": 859.3454,
           "n_vehicles": 7,
           "gap_pct": -3.5105,
           "vehicle_delta": 5,
-          "runtime_s": 3.768575
+          "runtime_s": 1.666585
         },
         "ortools_cp": {
           "distance": 859.3454,
           "n_vehicles": 7,
           "gap_pct": -3.5105,
           "vehicle_delta": 5,
-          "runtime_s": 13.278667
+          "runtime_s": 12.239396
+        },
+        "alns_fleet": {
+          "distance": 859.3454,
+          "n_vehicles": 7,
+          "gap_pct": -3.5105,
+          "vehicle_delta": 5,
+          "runtime_s": 1.550285
         }
       }
     },
@@ -2181,49 +2439,56 @@
           "n_vehicles": 5,
           "gap_pct": 48.5672,
           "vehicle_delta": 3,
-          "runtime_s": 0.004394
+          "runtime_s": 0.001246
         },
         "clarke_wright": {
           "distance": 778.3352,
           "n_vehicles": 5,
           "gap_pct": 7.0878,
           "vehicle_delta": 3,
-          "runtime_s": 0.008473
+          "runtime_s": 0.002767
         },
         "randomized": {
           "distance": 3521.4017,
           "n_vehicles": 8,
           "gap_pct": 384.4943,
           "vehicle_delta": 6,
-          "runtime_s": 0.001578
+          "runtime_s": 0.000538
         },
         "two_opt": {
           "distance": 776.9121,
           "n_vehicles": 5,
           "gap_pct": 6.892,
           "vehicle_delta": 3,
-          "runtime_s": 0.005585
+          "runtime_s": 0.001191
         },
         "two_opt_tuned": {
           "distance": 776.9121,
           "n_vehicles": 5,
           "gap_pct": 6.892,
           "vehicle_delta": 3,
-          "runtime_s": 0.009422
+          "runtime_s": 0.002557
         },
         "alns": {
           "distance": 761.1891,
           "n_vehicles": 5,
           "gap_pct": 4.7287,
           "vehicle_delta": 3,
-          "runtime_s": 5.869858
+          "runtime_s": 2.134909
         },
         "ortools_cp": {
           "distance": 761.1891,
           "n_vehicles": 5,
           "gap_pct": 4.7287,
           "vehicle_delta": 3,
-          "runtime_s": 11.619329
+          "runtime_s": 11.750685
+        },
+        "alns_fleet": {
+          "distance": 761.1891,
+          "n_vehicles": 5,
+          "gap_pct": 4.7287,
+          "vehicle_delta": 3,
+          "runtime_s": 2.170951
         }
       }
     },
@@ -2240,49 +2505,56 @@
           "n_vehicles": 7,
           "gap_pct": 48.2256,
           "vehicle_delta": 4,
-          "runtime_s": 0.003146
+          "runtime_s": 0.001052
         },
         "clarke_wright": {
           "distance": 1029.036,
           "n_vehicles": 10,
           "gap_pct": 13.1854,
           "vehicle_delta": 7,
-          "runtime_s": 0.013111
+          "runtime_s": 0.002716
         },
         "randomized": {
           "distance": 3369.0981,
           "n_vehicles": 10,
           "gap_pct": 270.5726,
           "vehicle_delta": 7,
-          "runtime_s": 0.00154
+          "runtime_s": 0.000632
         },
         "two_opt": {
           "distance": 991.1282,
           "n_vehicles": 10,
           "gap_pct": 9.0158,
           "vehicle_delta": 7,
-          "runtime_s": 0.012985
+          "runtime_s": 0.004424
         },
         "two_opt_tuned": {
           "distance": 991.1282,
           "n_vehicles": 10,
           "gap_pct": 9.0158,
           "vehicle_delta": 7,
-          "runtime_s": 0.040083
+          "runtime_s": 0.008571
         },
         "alns": {
           "distance": 960.5779,
           "n_vehicles": 9,
           "gap_pct": 5.6555,
           "vehicle_delta": 6,
-          "runtime_s": 3.444151
+          "runtime_s": 1.397032
         },
         "ortools_cp": {
           "distance": 960.5779,
           "n_vehicles": 9,
           "gap_pct": 5.6555,
           "vehicle_delta": 6,
-          "runtime_s": 11.877515
+          "runtime_s": 12.519465
+        },
+        "alns_fleet": {
+          "distance": 960.5779,
+          "n_vehicles": 9,
+          "gap_pct": 5.6555,
+          "vehicle_delta": 6,
+          "runtime_s": 1.280068
         }
       }
     },
@@ -2299,49 +2571,56 @@
           "n_vehicles": 9,
           "gap_pct": 76.9186,
           "vehicle_delta": 6,
-          "runtime_s": 0.003347
+          "runtime_s": 0.001092
         },
         "clarke_wright": {
           "distance": 1074.3245,
           "n_vehicles": 12,
           "gap_pct": 14.3665,
           "vehicle_delta": 9,
-          "runtime_s": 0.009606
+          "runtime_s": 0.003023
         },
         "randomized": {
           "distance": 3485.2371,
           "n_vehicles": 8,
           "gap_pct": 271.0186,
           "vehicle_delta": 5,
-          "runtime_s": 0.002379
+          "runtime_s": 0.000554
         },
         "two_opt": {
           "distance": 1046.2995,
           "n_vehicles": 12,
           "gap_pct": 11.3831,
           "vehicle_delta": 9,
-          "runtime_s": 0.012063
+          "runtime_s": 0.003363
         },
         "two_opt_tuned": {
           "distance": 1039.1588,
           "n_vehicles": 12,
           "gap_pct": 10.6229,
           "vehicle_delta": 9,
-          "runtime_s": 0.067017
+          "runtime_s": 0.013592
         },
         "alns": {
           "distance": 1020.0141,
           "n_vehicles": 11,
           "gap_pct": 8.5849,
           "vehicle_delta": 8,
-          "runtime_s": 1.786081
+          "runtime_s": 1.179944
         },
         "ortools_cp": {
           "distance": 1020.0141,
           "n_vehicles": 11,
           "gap_pct": 8.5849,
           "vehicle_delta": 8,
-          "runtime_s": 15.642659
+          "runtime_s": 12.822632
+        },
+        "alns_fleet": {
+          "distance": 1022.204,
+          "n_vehicles": 11,
+          "gap_pct": 8.818,
+          "vehicle_delta": 8,
+          "runtime_s": 1.340655
         }
       }
     },
@@ -2358,49 +2637,56 @@
           "n_vehicles": 4,
           "gap_pct": 45.7865,
           "vehicle_delta": 2,
-          "runtime_s": 0.003566
+          "runtime_s": 0.001103
         },
         "clarke_wright": {
           "distance": 889.6808,
           "n_vehicles": 8,
           "gap_pct": 0.4483,
           "vehicle_delta": 6,
-          "runtime_s": 0.007722
+          "runtime_s": 0.002884
         },
         "randomized": {
           "distance": 3381.8107,
           "n_vehicles": 7,
           "gap_pct": 281.8192,
           "vehicle_delta": 5,
-          "runtime_s": 0.001865
+          "runtime_s": 0.000535
         },
         "two_opt": {
           "distance": 864.9075,
           "n_vehicles": 8,
           "gap_pct": -2.3487,
           "vehicle_delta": 6,
-          "runtime_s": 0.007512
+          "runtime_s": 0.002313
         },
         "two_opt_tuned": {
           "distance": 863.079,
           "n_vehicles": 8,
           "gap_pct": -2.5551,
           "vehicle_delta": 6,
-          "runtime_s": 0.037195
+          "runtime_s": 0.008957
         },
         "alns": {
           "distance": 855.3503,
           "n_vehicles": 8,
           "gap_pct": -3.4277,
           "vehicle_delta": 6,
-          "runtime_s": 3.511717
+          "runtime_s": 1.534817
         },
         "ortools_cp": {
           "distance": 855.3503,
           "n_vehicles": 8,
           "gap_pct": -3.4277,
           "vehicle_delta": 6,
-          "runtime_s": 13.384483
+          "runtime_s": 19.074616
+        },
+        "alns_fleet": {
+          "distance": 855.3503,
+          "n_vehicles": 8,
+          "gap_pct": -3.4277,
+          "vehicle_delta": 6,
+          "runtime_s": 1.352968
         }
       }
     },
@@ -2417,108 +2703,122 @@
           "n_vehicles": 27,
           "gap_pct": 53.1672,
           "vehicle_delta": 13,
-          "runtime_s": 0.004563
+          "runtime_s": 0.001196
         },
         "clarke_wright": {
           "distance": 1999.3504,
           "n_vehicles": 23,
           "gap_pct": 17.8202,
           "vehicle_delta": 9,
-          "runtime_s": 0.010054
+          "runtime_s": 0.003349
         },
         "randomized": {
           "distance": 4203.2406,
           "n_vehicles": 36,
           "gap_pct": 147.6938,
           "vehicle_delta": 22,
-          "runtime_s": 0.003163
+          "runtime_s": 0.000742
         },
         "two_opt": {
           "distance": 1933.5652,
           "n_vehicles": 23,
           "gap_pct": 13.9436,
           "vehicle_delta": 9,
-          "runtime_s": 0.017997
+          "runtime_s": 0.005154
         },
         "two_opt_tuned": {
           "distance": 1928.2187,
           "n_vehicles": 23,
           "gap_pct": 13.6285,
           "vehicle_delta": 9,
-          "runtime_s": 0.046785
+          "runtime_s": 0.009893
         },
         "alns": {
           "distance": 1701.2479,
           "n_vehicles": 17,
           "gap_pct": 0.2533,
           "vehicle_delta": 3,
-          "runtime_s": 1.868231
+          "runtime_s": 0.72399
         },
         "ortools_cp": {
           "distance": 1701.2479,
           "n_vehicles": 17,
           "gap_pct": 0.2533,
           "vehicle_delta": 3,
-          "runtime_s": 10.939781
+          "runtime_s": 11.801185
+        },
+        "alns_fleet": {
+          "distance": 1701.2479,
+          "n_vehicles": 17,
+          "gap_pct": 0.2533,
+          "vehicle_delta": 3,
+          "runtime_s": 0.658737
         }
       }
     },
     "RC102": {
       "best_known": 1554.75,
       "best_known_vehicles": 12,
-      "best_solver": "alns",
-      "best_solver_benchmark_convention": "alns",
-      "best_distance": 1587.0051,
-      "best_gap_pct": 2.0746,
+      "best_solver": "alns_fleet",
+      "best_solver_benchmark_convention": "alns_fleet",
+      "best_distance": 1527.0914,
+      "best_gap_pct": -1.779,
       "solvers": {
         "nearest_neighbor": {
           "distance": 2302.7683,
           "n_vehicles": 21,
           "gap_pct": 48.1118,
           "vehicle_delta": 9,
-          "runtime_s": 0.005055
+          "runtime_s": 0.00111
         },
         "clarke_wright": {
           "distance": 1876.2027,
           "n_vehicles": 21,
           "gap_pct": 20.6755,
           "vehicle_delta": 9,
-          "runtime_s": 0.013149
+          "runtime_s": 0.003302
         },
         "randomized": {
           "distance": 3757.3119,
           "n_vehicles": 28,
           "gap_pct": 141.6666,
           "vehicle_delta": 16,
-          "runtime_s": 0.002221
+          "runtime_s": 0.000777
         },
         "two_opt": {
           "distance": 1847.9091,
           "n_vehicles": 21,
           "gap_pct": 18.8557,
           "vehicle_delta": 9,
-          "runtime_s": 0.010848
+          "runtime_s": 0.00281
         },
         "two_opt_tuned": {
           "distance": 1831.0439,
           "n_vehicles": 21,
           "gap_pct": 17.771,
           "vehicle_delta": 9,
-          "runtime_s": 0.037836
+          "runtime_s": 0.007633
         },
         "alns": {
           "distance": 1587.0051,
           "n_vehicles": 16,
           "gap_pct": 2.0746,
           "vehicle_delta": 4,
-          "runtime_s": 2.017885
+          "runtime_s": 0.779378
         },
         "ortools_cp": {
           "distance": 1587.0051,
           "n_vehicles": 16,
           "gap_pct": 2.0746,
           "vehicle_delta": 4,
-          "runtime_s": 15.774162
+          "runtime_s": 11.275453
+        },
+        "alns_fleet": {
+          "distance": 1527.0914,
+          "n_vehicles": 15,
+          "gap_pct": -1.779,
+          "vehicle_delta": 3,
+          "runtime_s": 0.763989
         }
       }
     },
@@ -2535,49 +2835,56 @@
           "n_vehicles": 20,
           "gap_pct": 69.6969,
           "vehicle_delta": 9,
-          "runtime_s": 0.003388
+          "runtime_s": 0.0011
         },
         "clarke_wright": {
           "distance": 1508.1599,
           "n_vehicles": 15,
           "gap_pct": 19.5368,
           "vehicle_delta": 4,
-          "runtime_s": 0.009282
+          "runtime_s": 0.002676
         },
         "randomized": {
           "distance": 4123.1983,
           "n_vehicles": 27,
           "gap_pct": 226.8048,
           "vehicle_delta": 16,
-          "runtime_s": 0.004334
+          "runtime_s": 0.000667
         },
         "two_opt": {
           "distance": 1480.1956,
           "n_vehicles": 15,
           "gap_pct": 17.3203,
           "vehicle_delta": 4,
-          "runtime_s": 0.009338
+          "runtime_s": 0.003
         },
         "two_opt_tuned": {
           "distance": 1480.1956,
           "n_vehicles": 15,
           "gap_pct": 17.3203,
           "vehicle_delta": 4,
-          "runtime_s": 0.031916
+          "runtime_s": 0.008013
         },
         "alns": {
           "distance": 1404.873,
           "n_vehicles": 14,
           "gap_pct": 11.3503,
           "vehicle_delta": 3,
-          "runtime_s": 1.833628
+          "runtime_s": 0.79513
         },
         "ortools_cp": {
           "distance": 1404.873,
           "n_vehicles": 14,
           "gap_pct": 11.3503,
           "vehicle_delta": 3,
-          "runtime_s": 14.221019
+          "runtime_s": 11.704049
+        },
+        "alns_fleet": {
+          "distance": 1404.873,
+          "n_vehicles": 14,
+          "gap_pct": 11.3503,
+          "vehicle_delta": 3,
+          "runtime_s": 0.907917
         }
       }
     },
@@ -2585,7 +2892,7 @@
       "best_known": 1135.48,
       "best_known_vehicles": 10,
       "best_solver": "alns",
-      "best_solver_benchmark_convention": "alns",
+      "best_solver_benchmark_convention": "alns_fleet",
       "best_distance": 1213.2966,
       "best_gap_pct": 6.8532,
       "solvers": {
@@ -2594,49 +2901,56 @@
           "n_vehicles": 15,
           "gap_pct": 56.6014,
           "vehicle_delta": 5,
-          "runtime_s": 0.004264
+          "runtime_s": 0.001049
         },
         "clarke_wright": {
           "distance": 1296.0497,
           "n_vehicles": 13,
           "gap_pct": 14.1411,
           "vehicle_delta": 3,
-          "runtime_s": 0.007224
+          "runtime_s": 0.002879
         },
         "randomized": {
           "distance": 4013.26,
           "n_vehicles": 25,
           "gap_pct": 253.4417,
           "vehicle_delta": 15,
-          "runtime_s": 0.002037
+          "runtime_s": 0.000667
         },
         "two_opt": {
           "distance": 1236.9906,
           "n_vehicles": 13,
           "gap_pct": 8.9399,
           "vehicle_delta": 3,
-          "runtime_s": 0.012127
+          "runtime_s": 0.004068
         },
         "two_opt_tuned": {
           "distance": 1236.9906,
           "n_vehicles": 13,
           "gap_pct": 8.9399,
           "vehicle_delta": 3,
-          "runtime_s": 0.088948
+          "runtime_s": 0.008332
         },
         "alns": {
           "distance": 1213.2966,
           "n_vehicles": 12,
           "gap_pct": 6.8532,
           "vehicle_delta": 2,
-          "runtime_s": 1.826674
+          "runtime_s": 0.697126
         },
         "ortools_cp": {
           "distance": 1213.2966,
           "n_vehicles": 12,
           "gap_pct": 6.8532,
           "vehicle_delta": 2,
-          "runtime_s": 17.266871
+          "runtime_s": 12.130707
+        },
+        "alns_fleet": {
+          "distance": 1230.0214,
+          "n_vehicles": 11,
+          "gap_pct": 8.3261,
+          "vehicle_delta": 1,
+          "runtime_s": 0.69452
         }
       }
     },
@@ -2653,49 +2967,56 @@
           "n_vehicles": 26,
           "gap_pct": 56.1489,
           "vehicle_delta": 13,
-          "runtime_s": 0.004745
+          "runtime_s": 0.001184
         },
         "clarke_wright": {
           "distance": 1984.787,
           "n_vehicles": 23,
           "gap_pct": 21.8079,
           "vehicle_delta": 10,
-          "runtime_s": 0.010604
+          "runtime_s": 0.003225
         },
         "randomized": {
           "distance": 3916.2449,
           "n_vehicles": 30,
           "gap_pct": 140.343,
           "vehicle_delta": 17,
-          "runtime_s": 0.001566
+          "runtime_s": 0.000717
         },
         "two_opt": {
           "distance": 1920.2732,
           "n_vehicles": 23,
           "gap_pct": 17.8487,
           "vehicle_delta": 10,
-          "runtime_s": 0.028631
+          "runtime_s": 0.00661
         },
         "two_opt_tuned": {
           "distance": 1901.1774,
           "n_vehicles": 23,
           "gap_pct": 16.6767,
           "vehicle_delta": 10,
-          "runtime_s": 0.046292
+          "runtime_s": 0.014659
         },
         "alns": {
           "distance": 1584.1476,
           "n_vehicles": 16,
           "gap_pct": -2.7796,
           "vehicle_delta": 3,
-          "runtime_s": 2.079538
+          "runtime_s": 0.837471
         },
         "ortools_cp": {
           "distance": 1584.1476,
           "n_vehicles": 16,
           "gap_pct": -2.7796,
           "vehicle_delta": 3,
-          "runtime_s": 14.379543
+          "runtime_s": 12.367372
+        },
+        "alns_fleet": {
+          "distance": 1584.1476,
+          "n_vehicles": 16,
+          "gap_pct": -2.7796,
+          "vehicle_delta": 3,
+          "runtime_s": 0.76357
         }
       }
     },
@@ -2712,108 +3033,122 @@
           "n_vehicles": 19,
           "gap_pct": 48.2149,
           "vehicle_delta": 8,
-          "runtime_s": 0.003686
+          "runtime_s": 0.00112
         },
         "clarke_wright": {
           "distance": 1598.2084,
           "n_vehicles": 17,
           "gap_pct": 12.1762,
           "vehicle_delta": 6,
-          "runtime_s": 0.012107
+          "runtime_s": 0.002823
         },
         "randomized": {
           "distance": 3894.4379,
           "n_vehicles": 28,
           "gap_pct": 173.3457,
           "vehicle_delta": 17,
-          "runtime_s": 0.002699
+          "runtime_s": 0.000693
         },
         "two_opt": {
           "distance": 1543.2265,
           "n_vehicles": 17,
           "gap_pct": 8.3171,
           "vehicle_delta": 6,
-          "runtime_s": 0.020183
+          "runtime_s": 0.004961
         },
         "two_opt_tuned": {
           "distance": 1543.2265,
           "n_vehicles": 17,
           "gap_pct": 8.3171,
           "vehicle_delta": 6,
-          "runtime_s": 0.055892
+          "runtime_s": 0.012626
         },
         "alns": {
           "distance": 1481.8056,
           "n_vehicles": 15,
           "gap_pct": 4.0061,
           "vehicle_delta": 4,
-          "runtime_s": 1.994506
+          "runtime_s": 0.688431
         },
         "ortools_cp": {
           "distance": 1481.8056,
           "n_vehicles": 15,
           "gap_pct": 4.0061,
           "vehicle_delta": 4,
-          "runtime_s": 11.399293
+          "runtime_s": 12.376302
+        },
+        "alns_fleet": {
+          "distance": 1481.8056,
+          "n_vehicles": 15,
+          "gap_pct": 4.0061,
+          "vehicle_delta": 4,
+          "runtime_s": 0.728613
         }
       }
     },
     "RC107": {
       "best_known": 1230.48,
       "best_known_vehicles": 11,
-      "best_solver": "alns",
-      "best_solver_benchmark_convention": "alns",
-      "best_distance": 1345.5724,
-      "best_gap_pct": 9.3535,
+      "best_solver": "alns_fleet",
+      "best_solver_benchmark_convention": "alns_fleet",
+      "best_distance": 1344.1012,
+      "best_gap_pct": 9.2339,
       "solvers": {
         "nearest_neighbor": {
           "distance": 1817.6742,
           "n_vehicles": 16,
           "gap_pct": 47.7207,
           "vehicle_delta": 5,
-          "runtime_s": 0.003818
+          "runtime_s": 0.001116
         },
         "clarke_wright": {
           "distance": 1406.3211,
           "n_vehicles": 14,
           "gap_pct": 14.2904,
           "vehicle_delta": 3,
-          "runtime_s": 0.008744
+          "runtime_s": 0.002732
         },
         "randomized": {
           "distance": 3869.1926,
           "n_vehicles": 27,
           "gap_pct": 214.4458,
           "vehicle_delta": 16,
-          "runtime_s": 0.002141
+          "runtime_s": 0.000708
         },
         "two_opt": {
           "distance": 1385.8399,
           "n_vehicles": 14,
           "gap_pct": 12.626,
           "vehicle_delta": 3,
-          "runtime_s": 0.012595
+          "runtime_s": 0.003299
         },
         "two_opt_tuned": {
           "distance": 1382.4572,
           "n_vehicles": 14,
           "gap_pct": 12.351,
           "vehicle_delta": 3,
-          "runtime_s": 0.036184
+          "runtime_s": 0.008623
         },
         "alns": {
           "distance": 1345.5724,
           "n_vehicles": 13,
           "gap_pct": 9.3535,
           "vehicle_delta": 2,
-          "runtime_s": 1.664441
+          "runtime_s": 0.646026
         },
         "ortools_cp": {
           "distance": 1345.5724,
           "n_vehicles": 13,
           "gap_pct": 9.3535,
           "vehicle_delta": 2,
-          "runtime_s": 15.254484
+          "runtime_s": 11.159338
+        },
+        "alns_fleet": {
+          "distance": 1344.1012,
+          "n_vehicles": 13,
+          "gap_pct": 9.2339,
+          "vehicle_delta": 2,
+          "runtime_s": 0.685062
         }
       }
     },
@@ -2830,49 +3165,56 @@
           "n_vehicles": 15,
           "gap_pct": 61.5955,
           "vehicle_delta": 5,
-          "runtime_s": 0.003726
+          "runtime_s": 0.001072
         },
         "clarke_wright": {
           "distance": 1279.5645,
           "n_vehicles": 13,
           "gap_pct": 12.2602,
           "vehicle_delta": 3,
-          "runtime_s": 0.011469
+          "runtime_s": 0.002671
         },
         "randomized": {
           "distance": 3714.9643,
           "n_vehicles": 24,
           "gap_pct": 225.9255,
           "vehicle_delta": 14,
-          "runtime_s": 0.003131
+          "runtime_s": 0.000657
         },
         "two_opt": {
           "distance": 1273.3673,
           "n_vehicles": 13,
           "gap_pct": 11.7165,
           "vehicle_delta": 3,
-          "runtime_s": 0.00402
+          "runtime_s": 0.001258
         },
         "two_opt_tuned": {
           "distance": 1269.0954,
           "n_vehicles": 13,
           "gap_pct": 11.3417,
           "vehicle_delta": 3,
-          "runtime_s": 0.011442
+          "runtime_s": 0.002904
         },
         "alns": {
           "distance": 1218.7896,
           "n_vehicles": 12,
           "gap_pct": 6.9283,
           "vehicle_delta": 2,
-          "runtime_s": 1.807012
+          "runtime_s": 0.602805
         },
         "ortools_cp": {
           "distance": 1218.7896,
           "n_vehicles": 12,
           "gap_pct": 6.9283,
           "vehicle_delta": 2,
-          "runtime_s": 17.317989
+          "runtime_s": 11.361239
+        },
+        "alns_fleet": {
+          "distance": 1218.7896,
+          "n_vehicles": 12,
+          "gap_pct": 6.9283,
+          "vehicle_delta": 2,
+          "runtime_s": 0.645689
         }
       }
     },
@@ -2889,108 +3231,122 @@
           "n_vehicles": 14,
           "gap_pct": 70.4286,
           "vehicle_delta": 10,
-          "runtime_s": 0.003809
+          "runtime_s": 0.001049
         },
         "clarke_wright": {
           "distance": 1654.1322,
           "n_vehicles": 16,
           "gap_pct": 17.5695,
           "vehicle_delta": 12,
-          "runtime_s": 0.009386
+          "runtime_s": 0.00302
         },
         "randomized": {
           "distance": 4677.9434,
           "n_vehicles": 13,
           "gap_pct": 232.4906,
           "vehicle_delta": 9,
-          "runtime_s": 0.001648
+          "runtime_s": 0.000592
         },
         "two_opt": {
           "distance": 1619.4823,
           "n_vehicles": 16,
           "gap_pct": 15.1067,
           "vehicle_delta": 12,
-          "runtime_s": 0.020725
+          "runtime_s": 0.00541
         },
         "two_opt_tuned": {
           "distance": 1616.1761,
           "n_vehicles": 16,
           "gap_pct": 14.8717,
           "vehicle_delta": 12,
-          "runtime_s": 0.038765
+          "runtime_s": 0.011049
         },
         "alns": {
           "distance": 1550.4691,
           "n_vehicles": 15,
           "gap_pct": 10.2015,
           "vehicle_delta": 11,
-          "runtime_s": 2.391809
+          "runtime_s": 0.836818
         },
         "ortools_cp": {
           "distance": 1550.4691,
           "n_vehicles": 15,
           "gap_pct": 10.2015,
           "vehicle_delta": 11,
-          "runtime_s": 14.739714
+          "runtime_s": 10.668222
+        },
+        "alns_fleet": {
+          "distance": 1550.4691,
+          "n_vehicles": 15,
+          "gap_pct": 10.2015,
+          "vehicle_delta": 11,
+          "runtime_s": 1.211329
         }
       }
     },
     "RC202": {
       "best_known": 1365.65,
       "best_known_vehicles": 3,
-      "best_solver": "alns",
+      "best_solver": "alns_fleet",
       "best_solver_benchmark_convention": "randomized",
-      "best_distance": 1313.1028,
-      "best_gap_pct": -3.8478,
+      "best_distance": 1286.582,
+      "best_gap_pct": -5.7898,
       "solvers": {
         "nearest_neighbor": {
           "distance": 2246.2485,
           "n_vehicles": 12,
           "gap_pct": 64.482,
           "vehicle_delta": 9,
-          "runtime_s": 0.003365
+          "runtime_s": 0.001034
         },
         "clarke_wright": {
           "distance": 1446.375,
           "n_vehicles": 14,
           "gap_pct": 5.9111,
           "vehicle_delta": 11,
-          "runtime_s": 0.010061
+          "runtime_s": 0.003
         },
         "randomized": {
           "distance": 4511.5502,
           "n_vehicles": 11,
           "gap_pct": 230.3592,
           "vehicle_delta": 8,
-          "runtime_s": 0.001918
+          "runtime_s": 0.000562
         },
         "two_opt": {
           "distance": 1436.3184,
           "n_vehicles": 14,
           "gap_pct": 5.1747,
           "vehicle_delta": 11,
-          "runtime_s": 0.011419
+          "runtime_s": 0.00305
         },
         "two_opt_tuned": {
           "distance": 1436.3184,
           "n_vehicles": 14,
           "gap_pct": 5.1747,
           "vehicle_delta": 11,
-          "runtime_s": 0.027936
+          "runtime_s": 0.006799
         },
         "alns": {
           "distance": 1313.1028,
           "n_vehicles": 12,
           "gap_pct": -3.8478,
           "vehicle_delta": 9,
-          "runtime_s": 2.663496
+          "runtime_s": 0.992974
         },
         "ortools_cp": {
           "distance": 1313.1028,
           "n_vehicles": 12,
           "gap_pct": -3.8478,
           "vehicle_delta": 9,
-          "runtime_s": 15.247824
+          "runtime_s": 11.697211
+        },
+        "alns_fleet": {
+          "distance": 1286.582,
+          "n_vehicles": 12,
+          "gap_pct": -5.7898,
+          "vehicle_delta": 9,
+          "runtime_s": 1.134308
         }
       }
     },
@@ -3007,49 +3363,56 @@
           "n_vehicles": 10,
           "gap_pct": 56.9898,
           "vehicle_delta": 7,
-          "runtime_s": 0.00325
+          "runtime_s": 0.001204
         },
         "clarke_wright": {
           "distance": 1120.1316,
           "n_vehicles": 9,
           "gap_pct": 6.7178,
           "vehicle_delta": 6,
-          "runtime_s": 0.010139
+          "runtime_s": 0.003035
         },
         "randomized": {
           "distance": 4356.5472,
           "n_vehicles": 11,
           "gap_pct": 315.0595,
           "vehicle_delta": 8,
-          "runtime_s": 0.002057
+          "runtime_s": 0.000606
         },
         "two_opt": {
           "distance": 1106.6844,
           "n_vehicles": 9,
           "gap_pct": 5.4367,
           "vehicle_delta": 6,
-          "runtime_s": 0.012946
+          "runtime_s": 0.003387
         },
         "two_opt_tuned": {
           "distance": 1106.6844,
           "n_vehicles": 9,
           "gap_pct": 5.4367,
           "vehicle_delta": 6,
-          "runtime_s": 0.019176
+          "runtime_s": 0.005174
         },
         "alns": {
           "distance": 1070.0327,
           "n_vehicles": 9,
           "gap_pct": 1.9448,
           "vehicle_delta": 6,
-          "runtime_s": 3.143288
+          "runtime_s": 1.625975
         },
         "ortools_cp": {
           "distance": 1070.0327,
           "n_vehicles": 9,
           "gap_pct": 1.9448,
           "vehicle_delta": 6,
-          "runtime_s": 12.482404
+          "runtime_s": 11.438835
+        },
+        "alns_fleet": {
+          "distance": 1070.0327,
+          "n_vehicles": 9,
+          "gap_pct": 1.9448,
+          "vehicle_delta": 6,
+          "runtime_s": 1.461448
         }
       }
     },
@@ -3066,49 +3429,56 @@
           "n_vehicles": 7,
           "gap_pct": 80.3486,
           "vehicle_delta": 4,
-          "runtime_s": 0.004679
+          "runtime_s": 0.001119
         },
         "clarke_wright": {
           "distance": 842.112,
           "n_vehicles": 5,
           "gap_pct": 5.467,
           "vehicle_delta": 2,
-          "runtime_s": 0.00903
+          "runtime_s": 0.00272
         },
         "randomized": {
           "distance": 4545.3678,
           "n_vehicles": 11,
           "gap_pct": 469.2668,
           "vehicle_delta": 8,
-          "runtime_s": 0.002033
+          "runtime_s": 0.000578
         },
         "two_opt": {
           "distance": 841.6688,
           "n_vehicles": 5,
           "gap_pct": 5.4115,
           "vehicle_delta": 2,
-          "runtime_s": 0.004798
+          "runtime_s": 0.001259
         },
         "two_opt_tuned": {
           "distance": 841.6688,
           "n_vehicles": 5,
           "gap_pct": 5.4115,
           "vehicle_delta": 2,
-          "runtime_s": 0.006438
+          "runtime_s": 0.001938
         },
         "alns": {
           "distance": 832.0166,
           "n_vehicles": 5,
           "gap_pct": 4.2027,
           "vehicle_delta": 2,
-          "runtime_s": 5.209639
+          "runtime_s": 2.360888
         },
         "ortools_cp": {
           "distance": 832.0166,
           "n_vehicles": 5,
           "gap_pct": 4.2027,
           "vehicle_delta": 2,
-          "runtime_s": 13.124618
+          "runtime_s": 12.220594
+        },
+        "alns_fleet": {
+          "distance": 832.0166,
+          "n_vehicles": 5,
+          "gap_pct": 4.2027,
+          "vehicle_delta": 2,
+          "runtime_s": 2.286439
         }
       }
     },
@@ -3125,49 +3495,56 @@
           "n_vehicles": 11,
           "gap_pct": 73.2511,
           "vehicle_delta": 7,
-          "runtime_s": 0.004008
+          "runtime_s": 0.001061
         },
         "clarke_wright": {
           "distance": 1412.745,
           "n_vehicles": 13,
           "gap_pct": 8.8695,
           "vehicle_delta": 9,
-          "runtime_s": 0.013216
+          "runtime_s": 0.002919
         },
         "randomized": {
           "distance": 4624.5605,
           "n_vehicles": 13,
           "gap_pct": 256.3796,
           "vehicle_delta": 9,
-          "runtime_s": 0.002112
+          "runtime_s": 0.00058
         },
         "two_opt": {
           "distance": 1353.2769,
           "n_vehicles": 13,
           "gap_pct": 4.2867,
           "vehicle_delta": 9,
-          "runtime_s": 0.022862
+          "runtime_s": 0.006741
         },
         "two_opt_tuned": {
           "distance": 1347.0559,
           "n_vehicles": 13,
           "gap_pct": 3.8073,
           "vehicle_delta": 9,
-          "runtime_s": 0.077211
+          "runtime_s": 0.019043
         },
         "alns": {
           "distance": 1308.7245,
           "n_vehicles": 13,
           "gap_pct": 0.8534,
           "vehicle_delta": 9,
-          "runtime_s": 2.824696
+          "runtime_s": 1.323197
         },
         "ortools_cp": {
           "distance": 1308.7245,
           "n_vehicles": 13,
           "gap_pct": 0.8534,
           "vehicle_delta": 9,
-          "runtime_s": 15.378641
+          "runtime_s": 11.159853
+        },
+        "alns_fleet": {
+          "distance": 1308.7245,
+          "n_vehicles": 13,
+          "gap_pct": 0.8534,
+          "vehicle_delta": 9,
+          "runtime_s": 0.954347
         }
       }
     },
@@ -3184,49 +3561,56 @@
           "n_vehicles": 8,
           "gap_pct": 61.8205,
           "vehicle_delta": 5,
-          "runtime_s": 0.006501
+          "runtime_s": 0.001046
         },
         "clarke_wright": {
           "distance": 1264.2706,
           "n_vehicles": 11,
           "gap_pct": 10.2895,
           "vehicle_delta": 8,
-          "runtime_s": 0.00926
+          "runtime_s": 0.002855
         },
         "randomized": {
           "distance": 4378.7822,
           "n_vehicles": 10,
           "gap_pct": 281.986,
           "vehicle_delta": 7,
-          "runtime_s": 0.002804
+          "runtime_s": 0.000598
         },
         "two_opt": {
           "distance": 1250.4722,
           "n_vehicles": 11,
           "gap_pct": 9.0858,
           "vehicle_delta": 8,
-          "runtime_s": 0.009838
+          "runtime_s": 0.002428
         },
         "two_opt_tuned": {
           "distance": 1248.508,
           "n_vehicles": 11,
           "gap_pct": 8.9144,
           "vehicle_delta": 8,
-          "runtime_s": 0.02014
+          "runtime_s": 0.005017
         },
         "alns": {
           "distance": 1182.5365,
           "n_vehicles": 10,
           "gap_pct": 3.1594,
           "vehicle_delta": 7,
-          "runtime_s": 2.91011
+          "runtime_s": 1.570848
         },
         "ortools_cp": {
           "distance": 1182.5365,
           "n_vehicles": 10,
           "gap_pct": 3.1594,
           "vehicle_delta": 7,
-          "runtime_s": 13.557037
+          "runtime_s": 13.525648
+        },
+        "alns_fleet": {
+          "distance": 1182.5365,
+          "n_vehicles": 10,
+          "gap_pct": 3.1594,
+          "vehicle_delta": 7,
+          "runtime_s": 1.151561
         }
       }
     },
@@ -3243,49 +3627,56 @@
           "n_vehicles": 7,
           "gap_pct": 56.3119,
           "vehicle_delta": 4,
-          "runtime_s": 0.003708
+          "runtime_s": 0.00107
         },
         "clarke_wright": {
           "distance": 1246.8631,
           "n_vehicles": 11,
           "gap_pct": 17.5022,
           "vehicle_delta": 8,
-          "runtime_s": 0.009335
+          "runtime_s": 0.002889
         },
         "randomized": {
           "distance": 4386.6878,
           "n_vehicles": 11,
           "gap_pct": 313.3939,
           "vehicle_delta": 8,
-          "runtime_s": 0.003865
+          "runtime_s": 0.000567
         },
         "two_opt": {
           "distance": 1186.9,
           "n_vehicles": 11,
           "gap_pct": 11.8514,
           "vehicle_delta": 8,
-          "runtime_s": 0.013365
+          "runtime_s": 0.003575
         },
         "two_opt_tuned": {
           "distance": 1189.6613,
           "n_vehicles": 11,
           "gap_pct": 12.1116,
           "vehicle_delta": 8,
-          "runtime_s": 0.039013
+          "runtime_s": 0.009937
         },
         "alns": {
           "distance": 1127.8949,
           "n_vehicles": 10,
           "gap_pct": 6.2909,
           "vehicle_delta": 7,
-          "runtime_s": 2.98768
+          "runtime_s": 1.145818
         },
         "ortools_cp": {
           "distance": 1127.8949,
           "n_vehicles": 10,
           "gap_pct": 6.2909,
           "vehicle_delta": 7,
-          "runtime_s": 16.195586
+          "runtime_s": 12.391922
+        },
+        "alns_fleet": {
+          "distance": 1127.8949,
+          "n_vehicles": 10,
+          "gap_pct": 6.2909,
+          "vehicle_delta": 7,
+          "runtime_s": 1.208548
         }
       }
     },
@@ -3302,56 +3693,64 @@
           "n_vehicles": 5,
           "gap_pct": 64.267,
           "vehicle_delta": 2,
-          "runtime_s": 0.004433
+          "runtime_s": 0.001117
         },
         "clarke_wright": {
           "distance": 865.0696,
           "n_vehicles": 6,
           "gap_pct": 4.4593,
           "vehicle_delta": 3,
-          "runtime_s": 0.010344
+          "runtime_s": 0.002788
         },
         "randomized": {
           "distance": 4322.0558,
           "n_vehicles": 8,
           "gap_pct": 421.8992,
           "vehicle_delta": 5,
-          "runtime_s": 0.001721
+          "runtime_s": 0.000565
         },
         "two_opt": {
           "distance": 856.9467,
           "n_vehicles": 6,
           "gap_pct": 3.4785,
           "vehicle_delta": 3,
-          "runtime_s": 0.006269
+          "runtime_s": 0.001562
         },
         "two_opt_tuned": {
           "distance": 845.6742,
           "n_vehicles": 6,
           "gap_pct": 2.1173,
           "vehicle_delta": 3,
-          "runtime_s": 0.027381
+          "runtime_s": 0.006349
         },
         "alns": {
           "distance": 838.2573,
           "n_vehicles": 6,
           "gap_pct": 1.2217,
           "vehicle_delta": 3,
-          "runtime_s": 4.228811
+          "runtime_s": 1.955392
         },
         "ortools_cp": {
           "distance": 838.2573,
           "n_vehicles": 6,
           "gap_pct": 1.2217,
           "vehicle_delta": 3,
-          "runtime_s": 12.277162
+          "runtime_s": 12.418735
+        },
+        "alns_fleet": {
+          "distance": 838.2573,
+          "n_vehicles": 6,
+          "gap_pct": 1.2217,
+          "vehicle_delta": 3,
+          "runtime_s": 1.49185
         }
       }
     }
   },
   "ranking": {
     "by_distance": {
-      "alns": 56,
+      "alns": 52,
+      "alns_fleet": 4,
       "clarke_wright": 0,
       "nearest_neighbor": 0,
       "ortools_cp": 0,
@@ -3360,13 +3759,240 @@
       "two_opt_tuned": 0
     },
     "by_vehicles_then_distance": {
-      "alns": 43,
+      "alns": 38,
+      "alns_fleet": 5,
       "clarke_wright": 0,
       "nearest_neighbor": 10,
       "ortools_cp": 0,
       "randomized": 3,
       "two_opt": 0,
       "two_opt_tuned": 0
+    }
+  },
+  "unhinted_cp_sat": {
+    "C101": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.415526
+    },
+    "C102": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.365362
+    },
+    "C103": {
+      "status": "UNKNOWN",
+      "runtime_s": 12.866619
+    },
+    "C104": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.238068
+    },
+    "C105": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.611315
+    },
+    "C106": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.688307
+    },
+    "C107": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.731839
+    },
+    "C108": {
+      "status": "UNKNOWN",
+      "runtime_s": 10.7277
+    },
+    "C109": {
+      "status": "UNKNOWN",
+      "runtime_s": 12.362364
+    },
+    "C201": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.420312
+    },
+    "C202": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.869564
+    },
+    "C203": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.047011
+    },
+    "C204": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.775384
+    },
+    "C205": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.050735
+    },
+    "C206": {
+      "status": "UNKNOWN",
+      "runtime_s": 12.993812
+    },
+    "C207": {
+      "status": "UNKNOWN",
+      "runtime_s": 12.800291
+    },
+    "C208": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.582217
+    },
+    "R101": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.72499
+    },
+    "R102": {
+      "status": "UNKNOWN",
+      "runtime_s": 12.632063
+    },
+    "R103": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.900433
+    },
+    "R104": {
+      "status": "UNKNOWN",
+      "runtime_s": 15.701516
+    },
+    "R105": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.916898
+    },
+    "R106": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.468405
+    },
+    "R107": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.142084
+    },
+    "R108": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.343233
+    },
+    "R109": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.338888
+    },
+    "R110": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.084364
+    },
+    "R111": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.432177
+    },
+    "R112": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.821785
+    },
+    "R201": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.936098
+    },
+    "R202": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.66528
+    },
+    "R203": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.518471
+    },
+    "R204": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.973142
+    },
+    "R205": {
+      "status": "UNKNOWN",
+      "runtime_s": 12.479826
+    },
+    "R206": {
+      "status": "UNKNOWN",
+      "runtime_s": 15.183174
+    },
+    "R207": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.232665
+    },
+    "R208": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.757285
+    },
+    "R209": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.416981
+    },
+    "R210": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.872926
+    },
+    "R211": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.613789
+    },
+    "RC101": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.617984
+    },
+    "RC102": {
+      "status": "UNKNOWN",
+      "runtime_s": 11.715515
+    },
+    "RC103": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.248597
+    },
+    "RC104": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.163848
+    },
+    "RC105": {
+      "status": "UNKNOWN",
+      "runtime_s": 10.581492
+    },
+    "RC106": {
+      "status": "UNKNOWN",
+      "runtime_s": 10.630328
+    },
+    "RC107": {
+      "status": "UNKNOWN",
+      "runtime_s": 12.64495
+    },
+    "RC108": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.001567
+    },
+    "RC201": {
+      "status": "UNKNOWN",
+      "runtime_s": 10.794589
+    },
+    "RC202": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.765485
+    },
+    "RC203": {
+      "status": "UNKNOWN",
+      "runtime_s": 14.487092
+    },
+    "RC204": {
+      "status": "UNKNOWN",
+      "runtime_s": 16.45187
+    },
+    "RC205": {
+      "status": "UNKNOWN",
+      "runtime_s": 15.33512
+    },
+    "RC206": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.018696
+    },
+    "RC207": {
+      "status": "UNKNOWN",
+      "runtime_s": 13.587963
+    },
+    "RC208": {
+      "status": "UNKNOWN",
+      "runtime_s": 15.057184
     }
   },
   "tuning": {
@@ -3401,6 +4027,7 @@
   "families": {
     "C1": {
       "alns": 4.4829,
+      "alns_fleet": 4.4829,
       "clarke_wright": 25.7643,
       "nearest_neighbor": 84.2274,
       "ortools_cp": 4.4829,
@@ -3410,6 +4037,7 @@
     },
     "C2": {
       "alns": 6.4966,
+      "alns_fleet": 6.4966,
       "clarke_wright": 31.6245,
       "nearest_neighbor": 133.1905,
       "ortools_cp": 6.4966,
@@ -3419,6 +4047,7 @@
     },
     "R1": {
       "alns": 4.1028,
+      "alns_fleet": 4.4941,
       "clarke_wright": 18.1678,
       "nearest_neighbor": 51.4252,
       "ortools_cp": 4.1028,
@@ -3428,6 +4057,7 @@
     },
     "R2": {
       "alns": 3.035,
+      "alns_fleet": 3.3538,
       "clarke_wright": 10.2901,
       "nearest_neighbor": 54.7258,
       "ortools_cp": 3.035,
@@ -3437,6 +4067,7 @@
     },
     "RC1": {
       "alns": 4.7549,
+      "alns_fleet": 4.4424,
       "clarke_wright": 16.5886,
       "nearest_neighbor": 55.1572,
       "ortools_cp": 4.7549,
@@ -3446,6 +4077,7 @@
     },
     "RC2": {
       "alns": 3.0033,
+      "alns_fleet": 2.7606,
       "clarke_wright": 9.5983,
       "nearest_neighbor": 65.9874,
       "ortools_cp": 3.0033,
@@ -3457,6 +4089,7 @@
   "family_vehicle_deltas": {
     "C1": {
       "alns": 1.0,
+      "alns_fleet": 1.0,
       "clarke_wright": 3.44,
       "nearest_neighbor": 6.44,
       "ortools_cp": 1.0,
@@ -3466,6 +4099,7 @@
     },
     "C2": {
       "alns": 1.0,
+      "alns_fleet": 1.0,
       "clarke_wright": 2.5,
       "nearest_neighbor": 5.12,
       "ortools_cp": 1.0,
@@ -3475,6 +4109,7 @@
     },
     "R1": {
       "alns": 3.42,
+      "alns_fleet": 3.25,
       "clarke_wright": 6.92,
       "nearest_neighbor": 8.75,
       "ortools_cp": 3.42,
@@ -3484,6 +4119,7 @@
     },
     "R2": {
       "alns": 6.73,
+      "alns_fleet": 6.73,
       "clarke_wright": 7.64,
       "nearest_neighbor": 5.36,
       "ortools_cp": 6.73,
@@ -3493,6 +4129,7 @@
     },
     "RC1": {
       "alns": 2.88,
+      "alns_fleet": 2.62,
       "clarke_wright": 5.88,
       "nearest_neighbor": 8.38,
       "ortools_cp": 2.88,
@@ -3502,6 +4139,7 @@
     },
     "RC2": {
       "alns": 6.75,
+      "alns_fleet": 6.75,
       "clarke_wright": 7.38,
       "nearest_neighbor": 6.0,
       "ortools_cp": 6.75,

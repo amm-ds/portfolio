@@ -9,7 +9,9 @@
 - An evaluation harness with step-level success criteria and per-run cost
   budgets — deterministic graders, no LLM in the judge.
 - Everything offline-capable in tests; the real run uses the platform model
-  factory (ADR-0004: env provider or local Ollama, default `qwen3:32b`).
+  factory (ADR-0004: env provider or local Ollama; platform default
+  `qwen3.6:35b-a3b-q4_K_M` per ADR-0006 — the initial local runs used
+  `qwen3:32b`, see "Model reliability" below).
 
 ## Options considered
 

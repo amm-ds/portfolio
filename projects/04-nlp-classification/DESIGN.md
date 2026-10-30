@@ -110,8 +110,35 @@ Error analysis: dominant confusion Business → Sci/Tech (24/250); examples and
 per-class comparison in `reports/error_analysis.md` and
 `reports/figures/per_class_f1_comparison.*`.
 
+Fresh-holdout reading (2026-10-29, `cli fresh-holdout`, no retraining):
+1,000-row stratified holdout drawn from the 6,600-row complement of the
+bounded test split (seeds 43/45, disjoint by construction). Macro-F1:
+TF-IDF 0.8785, wave-2 artifact 0.8962, HPO-retrained 0.9031 (**fresh winner,
++0.0069 — the test split's +0.0010 verdict flips; both inside noise**),
+encoder_b 0.9074, full-data model 0.9529 (confirms the bounded 0.9460 on
+untouched data). Confidence-routed serving (TF-IDF max-proba router, escalate
+below τ to the served transformer): τ=0.50 escalates 24.6% and reaches
+0.9020 macro-F1, above either constituent alone. Full table:
+`reports/fresh_holdout.json`.
+
 ## Changelog
 
+- 2026-10-29 · v0.6.0 — Fresh-holdout + routing roadmap experiments (no
+  retraining): `stratified_subsample_indices` exposes the seeded draw so
+  `fresh_holdout.py` can take the exact complement of the bounded test split
+  in the full AG News test partition; the new `fresh-holdout` CLI stage
+  (manual DVC stage `fresh_holdout`) draws a 1,000-row stratified fresh
+  holdout (seed 45) and scores every persisted artifact. Measured: fresh
+  data flips the tuned selection — HPO-retrained 0.9031 vs wave-2 artifact
+  0.8962 macro-F1 (+0.0069; the test split had it the other way by +0.0010:
+  both margins inside noise, the candidates are tied), encoder_b 0.9074,
+  full-data model 0.9529 (vs 0.9460 bounded). The same run delivers
+  cost-sensitive routing: TF-IDF max-probability router with escalation to
+  the served transformer, swept over τ ∈ {0.5 … 1.0}; at τ=0.50, 24.6%
+  escalation reaches 0.9020 macro-F1 — above either constituent (0.8785 /
+  0.8962). Artifact: `reports/fresh_holdout.json`; config keys
+  `fresh_holdout_samples`, `cascade_taus`; tests in
+  `tests/test_fresh_holdout.py`.
 - 2026-10-16 · v0.5.0 — Full 120k fine-tune delivered: `--device
   auto|mps|cpu` on `train-nn` (auto = CUDA → MPS → CPU; bounded path stays
   CPU-first), up-front MPS batch memory probe (`mps_safe_batch_size`), the

@@ -10,7 +10,7 @@ vehicles first, distance second). Shared math helpers (``gap_pct``,
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from routing_optimization.evaluate import InstanceEvaluation
@@ -98,6 +98,38 @@ def summary_markdown(evaluations: list[InstanceEvaluation]) -> str:
         lines.append(
             f"| {solver} | {mean_gap} | {mean_dist:.2f} | {mean_veh:.1f} "
             f"| {mean_delta} | {mean_rt:.1f} |"
+        )
+    return "\n".join(lines)
+
+
+def unhinted_markdown(summary: dict[str, Any]) -> str:
+    """Markdown block for the equal-budget unhinted CP-SAT arm.
+
+    ``summary`` is :func:`routing_optimization.evaluate._unhinted_summary`'s
+    output; renders the honest verdict — including the all-UNKNOWN case, where
+    the only correct statement is that no feasible plan was produced.
+    """
+    n = summary["n_instances"]
+    solved = summary["n_solved"]
+    statuses = ", ".join(f"{status} x{count}" for status, count in summary["statuses"].items())
+    gap = (
+        f"{summary['mean_gap_pct_solved']:.2f}% (solved instances only)"
+        if summary["mean_gap_pct_solved"] is not None
+        else "n/a (no instance solved)"
+    )
+    lines = [
+        f"- budget: {summary['time_limit_s']:g} s/instance, single worker, fixed seed — "
+        "identical to the hinted arm's budget, with no solution hint and no fallback",
+        f"- feasible solutions: **{solved} / {n} instances** (statuses: {statuses})",
+        f"- mean gap to best-known: {gap}",
+        f"- mean runtime: {summary['mean_runtime_s']:.1f} s/instance",
+    ]
+    if solved == 0:
+        lines.append(
+            "- verdict: at this budget an unhinted exact model produces **no feasible "
+            "VRPTW plan** on the 100-customer benchmark; the hinted arm's tie with ALNS "
+            "was a head-start artifact, not evidence that CP-SAT matched the "
+            "hand-written search from scratch."
         )
     return "\n".join(lines)
 

@@ -85,6 +85,25 @@ flowchart LR
 
 ## Changelog
 
+- **2026-10-29** — Wave 14 (fleet-first + honest comparison arms):
+  `alns(..., vehicle_penalty=)` adds the hierarchical fleet-first objective
+  (distance + 10,000 × vehicles; the penalty exceeds any achievable distance
+  gain, and regret-2 repair drops emptied routes so vehicle count can move).
+  The solve stage now runs `alns_fleet` on every instance: mean gap 4.30 % vs
+  ALNS 4.23 %, mean vehicles 10.89 vs 10.96 (+3.66 vs +3.73), and it wins
+  4/56 instances on distance plus 5/56 under the benchmark convention — the
+  vehicle/distance trade costs under a tenth of a point of gap.
+  `ortools_cp_unhinted` runs the same CP-SAT model at the same 10 s budget
+  with no hint and no fallback (fleet = min(instance, cap); on UNKNOWN it
+  reports None instead of substituting the hint): UNKNOWN on all 56
+  instances — no feasible plan — which retires the "independent comparison"
+  roadmap item with a measured verdict (the hinted tie was a head-start
+  artifact). Model build/solve factored into `_build_model`/`_solve` shared
+  by both arms; `reports/solutions.json` gains the `unhinted_cp_sat` block,
+  `metrics.json` mirrors it, and `results.md` prints the unhinted verdict.
+  New tests: unhinted feasibility/determinism/no-fallback, fleet-first
+  objective + determinism + zero-penalty name parity, committed-artifact
+  coverage of the unhinted block.
 - **2026-10-12** — Initial implementation. Solvers: time-oriented NN,
   TW-checked Clarke–Wright, first-improvement 2-opt with 2-opt* tail exchange.
   Evaluation against 10-instance subset; real run: mean gap 19.55 % (2-opt),

@@ -1,18 +1,4 @@
 project_id: 09-agentic-workflows
-headline: >-
-  A hosted Plan→Execute→Critique workflow passed 15/15 tuning tasks on all
-  deterministic graders, plus 7/7 held-out answers and 3/3 refusal probes, at
-  median 18.2 s and ~$0.13 cloud-equivalent per tuning suite; this bounded
-  evaluation supports a supervised pilot, not production readiness or a
-  generalization guarantee.
-data_note: >-
-  The suite uses a synthetic 12-document Atlas Valley handbook plus read-only
-  retrieval over project 01's 3,589-chunk, five-topic Wikipedia slice (CC
-  BY-SA).
-limits: >-
-  Evaluation covers fixed research-ops tasks over two corpora with capped
-  retries and budgets; the held-out sample is only n=10 (including 3 refusal
-  probes), so broader autonomy and unseen-domain performance remain untested.
 figure_captions:
   suite_summary: >-
     Deterministic grades by split: 15/15 tuning tasks on each of four graders,
@@ -30,30 +16,41 @@ figure_captions:
     Input/output tokens, cloud-equivalent cost, and latency per task against
     the 60 s budget. The 15-task suite totals $0.13 of the $2.00 cap
     (~$0.0088 per task mean) at the labelled rate card, not billed spend.
-roadmap:
-  - status: remaining
-    text: Expand held-out tasks and refusal probes across more corpora, models, and repeated runs.
-  - status: remaining
-    text: Run a supervised pilot with reviewer outcomes and failure monitoring before unattended use.
-  - status: deferred
-    text: Open-ended autonomy remains out of scope until coverage and approval controls are validated.
 sections:
   - id: background
     text_md: |
-      **Bounded workflows make agent behavior inspectable; they do not make it
-      production-safe by default.** This project replaces a free-form loop
-      with a typed Plan→Execute→Critique graph, deterministic tools, explicit
-      retry limits, budget enforcement, and human checkpoints.
+      **A hosted Plan→Execute→Critique workflow passed 15/15 tuning tasks on
+      all deterministic graders, plus 7/7 held-out answers and 3/3 refusal
+      probes, at median 18.2 s and ~$0.13 cloud-equivalent per tuning suite;
+      this bounded evaluation supports a supervised pilot, not production
+      readiness or a generalization guarantee.**
 
-      The evaluation asks a narrow question: can the hosted workflow complete
-      fixed research-ops procedures with the planned tools and graceful
-      refusals? Passing that check is evidence for a supervised pilot, not a
-      basis for unattended deployment.
-    figures: []
-    metrics_keys: []
+      Data: a synthetic 12-document Atlas Valley handbook plus read-only
+      retrieval over project 01's 3,589-chunk, five-topic Wikipedia slice
+      (CC BY-SA).
+
+      Limits: evaluation covers fixed research-ops tasks over two corpora with
+      capped retries and budgets; the held-out sample is only n=10 (including
+      3 refusal probes), so broader autonomy and unseen-domain performance
+      remain untested.
+
+      This project replaces a free-form agent loop with a typed
+      Plan→Execute→Critique graph, deterministic tools, explicit retry limits,
+      budget enforcement, and human checkpoints. The evaluation asks a narrow
+      question: can the hosted workflow complete fixed research-ops procedures
+      with the planned tools and graceful refusals? Passing that check is
+      evidence for a supervised pilot, not a basis for unattended deployment.
+
+      **Business summary:** A typed graph with deterministic tools and graded
+      checks lets one hosted evaluation answer "can this run supervised?" for
+      $0.13 cloud-equivalent and about five minutes of suite wall time — the
+      pilot decision is affordable to re-verify, and the same graders re-score
+      any future run offline for free.
   - id: objectives
     text_md: |
-      **Build an auditable candidate for supervised operation.**
+      **The objective is an auditable candidate for supervised operation.**
+      Typed state, deterministic grading, enforced budgets, and serializable
+      human checkpoints are the requirements.
 
       - Thread typed state through Plan→Execute→Critique with bounded repair
         and critique loop-back.
@@ -63,8 +60,6 @@ sections:
         caps; these are estimates, not billed amounts.
       - Serialize human-approval checkpoints so consequential runs can pause,
         resume, or be rejected with feedback.
-    figures: []
-    metrics_keys: []
   - id: data
     text_md: |
       **Deterministic corpora and tools make the expected answers exact.** The
@@ -85,8 +80,6 @@ sections:
       Tasks live in `data/tasks.json` and `data/tasks_heldout.json`; recorded
       runs are graded offline. Suite-integrity tests pin expected answers to
       actual tool outputs.
-    figures: []
-    metrics_keys: []
   - id: eda
     text_md: |
       **Tool traces exposed behavioral failures that answer accuracy alone
@@ -109,7 +102,6 @@ sections:
       elsewhere.
     figures:
       - tool_usage_matrix
-    metrics_keys: []
   - id: training
     text_md: |
       **The executable graph, not model training, is the artifact.**
@@ -140,8 +132,6 @@ sections:
       retrieval fails loudly if project 01's index is absent, and `note_store`
       is called only when recording is requested. Per-call traces capture
       name, arguments, latency, result size, and success.
-    figures: []
-    metrics_keys: []
   - id: evaluation
     text_md: |
       **Run and grading are separate, so a live run can be re-scored offline
@@ -167,9 +157,10 @@ sections:
       - agentic_suite
   - id: results
     text_md: |
-      **The hosted run passed every bounded check.** On `kimi-for-coding`,
-      plain `run-all` with per-call capture produced 15/15 tuning passes on
-      answer success, exact tool set, step budget, and latency budget.
+      **The hosted run passed every bounded check; two repeat passes confirmed
+      the answer and tool-set results.** On `kimi-for-coding`, plain `run-all`
+      with per-call capture produced 15/15 tuning passes on answer success,
+      exact tool set, step budget, and latency budget.
 
       - 30 captured calls; call precision 100%, tool recall 100%, and zero
         unplanned invocations.
@@ -198,6 +189,29 @@ sections:
       7,709 input / 862 output tokens. A separate checkpoint record demonstrates
       pause, reject-with-feedback, and re-plan behavior; neither demonstrates
       unattended production operation.
+
+      **Repeat stability (2026-10-29):** two further hosted passes of the full
+      15-task suite on `kimi-for-coding` (`run-all` → `evaluate`, same
+      $0.25/$2.00 caps) kept answer success at 15/15 and exact tool sets at
+      15/15 with zero unplanned calls. Suite cloud-equivalent estimates were
+      $0.148 and $0.144 against $0.131 for the record run — the metered
+      ledger view stayed at $0.10 and $0.09 of the $2.00 cap. Median latency
+      moved from 18.2 s to 24.1 s and 20.8 s (p95 41.0 s / 41.5 s), inside the
+      60 s budget in every task. Each pass scored one step-budget miss (t03,
+      then t10) when Critique requested a revision and added an Execute visit —
+      caught by the deterministic step grader; the record run had no critique
+      revisions. Captured calls rose from 30 to 33–35 (repeated same-tool
+      lookups, exact sets unchanged), and pass B's t06 exercised the repair
+      path: the AST-locked calculator rejected a non-arithmetic `floor()`
+      expression and the bounded retry recovered.
+
+      **Business summary:** Within the evaluated envelope the workflow is
+      repeatable: answer and tool-set graders passed on the record run and on
+      both repeat passes — one repeat scored a step-budget miss on t03, caught
+      by the deterministic grader — with zero unplanned tool calls and
+      per-suite cloud-equivalent cost around $0.10–0.15. That is enough
+      evidence to start a supervised pilot, not enough to remove the human
+      checkpoint.
     figures:
       - suite_summary
       - node_waterfall
@@ -211,9 +225,25 @@ sections:
       can hide.
 
       **Results quality: promising within the evaluated envelope.** All 15
-      tuning tasks and 10 small held-out checks passed, but repeated-run
-      stability, retrieval fuzziness, new domains, and broader refusal coverage
-      remain unresolved. Human checkpoints and enforced budgets are pilot
-      controls, not production or generalization guarantees.
-    figures: []
-    metrics_keys: []
+      tuning tasks and 10 small held-out checks passed, and two repeat hosted
+      passes confirmed answer and tool-set stability while showing latency and
+      step-count variation (one step-budget miss in each pass, scored by the
+      deterministic grader). Retrieval fuzziness, new domains, broader refusal
+      coverage, and pilot-time failure rates remain unresolved. Human
+      checkpoints and enforced budgets are pilot controls, not production or
+      generalization guarantees.
+
+      **Business summary:** The next dollar is a supervised pilot with
+      reviewer outcomes and failure monitoring — the graphs, graders, and
+      budgets are in place, and each hosted re-evaluation costs about
+      $0.10–0.15 cloud-equivalent; unattended deployment stays out of scope
+      until the pilot data exists.
+roadmap:
+  - status: delivered
+    text: "Repeat hosted stability evidence — two full tuning-suite passes on kimi-for-coding kept 15/15 answers and exact tool sets with zero unplanned calls; one step-budget excursion caught by graders (Results)."
+  - status: remaining
+    text: Expand held-out tasks and refusal probes across more corpora and models.
+  - status: remaining
+    text: Run a supervised pilot with reviewer outcomes and failure monitoring before unattended use — needs a review team and production tasks.
+  - status: deferred
+    text: Open-ended autonomy remains out of scope until coverage and approval controls are validated.

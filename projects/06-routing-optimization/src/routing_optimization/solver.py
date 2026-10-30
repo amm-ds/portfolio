@@ -359,6 +359,23 @@ def _weighted_index(weights: list[float], rng: random.Random) -> int:
     return len(weights) - 1
 
 
+def _operator_score(new_obj: float, best_obj: float, current_obj: float) -> float:
+    """ALNS operator reward: 3 for a new best objective, 2 for an improvement
+    over the current plan, 0 otherwise (acceptance can still add 1)."""
+    if new_obj < best_obj - _EPS:
+        return 3.0
+    if new_obj < current_obj - _EPS:
+        return 2.0
+    return 0.0
+
+
+def _sa_accept(delta: float, temp: float, rng: random.Random) -> bool:
+    """Simulated-annealing acceptance: downhill (within eps) always, uphill
+    with probability exp(-Δ/T). Extracted to keep ``alns`` under the
+    complexity budget; identical semantics to the inline form."""
+    return delta <= _EPS or rng.random() < math.exp(-delta / max(temp, 1e-9))
+
+
 def alns(
     problem: Problem,
     start: RoutePlan,
@@ -370,6 +387,7 @@ def alns(
     destroy_q: int = 10,
     trace: list[float] | None = None,
     stats: dict[str, list[list[float]]] | None = None,
+    vehicle_penalty: float = 0.0,
 ) -> RoutePlan:
     """Adaptive large-neighborhood search (Ropke & Pisinger, 2006).
 
@@ -379,6 +397,15 @@ def alns(
     geometrically-cooled simulated annealing. Operator weights adapt per
     segment from scores (new best 3 / improvement 2 / accepted 1). Fully
     seeded: one ``random.Random(seed)`` drives every decision.
+
+    ``vehicle_penalty`` reweights the search objective to
+    ``distance + penalty x n_vehicles`` — the hierarchical fleet-first
+    objective the benchmark ranks by, under a single scalar weight. With a
+    penalty larger than any achievable distance gain the search accepts a
+    longer route only when it drops a vehicle (repair drops emptied routes,
+    so vehicle count can actually move). The returned plan always reports its
+    true distance and vehicle count; only the incumbent/acceptance logic
+    changes. Runs with ``vehicle_penalty > 0`` are labeled ``alns_fleet``.
     """
     dist = distance_matrix(problem)
     rng = random.Random(seed)  # noqa: S311 - seeded ALNS RNG, not crypto
@@ -387,6 +414,9 @@ def alns(
         lambda rs, q: _destroy_worst(dist, rs, q, rng),
         lambda rs, q: _destroy_shaw(problem, dist, rs, q, rng),
     ]
+
+    def objective(routes: list[list[int]], total_dist: float) -> float:
+        return total_dist + vehicle_penalty * len(routes)
 
     weights_d = [0.6, 1.2, 1.0] if init_weights == "biased" else [1.0, 1.0, 1.0]
     weights_r = [1.0]
@@ -397,8 +427,10 @@ def alns(
 
     current = [list(r) for r in start.routes]
     current_dist = _total_distance(dist, current)
+    current_obj = objective(current, current_dist)
     best = [list(r) for r in current]
     best_dist = current_dist
+    best_obj = current_obj
     if trace is not None:
         trace.append(best_dist)
 
@@ -432,28 +464,26 @@ def alns(
             continue
         counts_r[0] += 1
         new_dist = _total_distance(dist, repaired)
+        new_obj = objective(repaired, new_dist)
 
-        score = 0.0
-        if new_dist < best_dist - _EPS:
-            score = 3.0
-        elif new_dist < current_dist - _EPS:
-            score = 2.0
+        score = _operator_score(new_obj, best_obj, current_obj)
         temp = temp0 * (temp_end / temp0) ** (it / max(max_iterations - 1, 1))
-        accepted = new_dist <= current_dist + _EPS or rng.random() < math.exp(
-            -(new_dist - current_dist) / max(temp, 1e-9)
-        )
+        accepted = _sa_accept(new_obj - current_obj, temp, rng)
         if accepted:
             score = max(score, 1.0)
             current, current_dist = repaired, new_dist
-            if new_dist < best_dist - _EPS:
+            current_obj = new_obj
+            if new_obj < best_obj - _EPS:
                 best = [list(r) for r in repaired]
                 best_dist = new_dist
+                best_obj = new_obj
         scores_d[di] += score
         scores_r[0] += score
         if trace is not None:
             trace.append(best_dist)
 
-    return _finish(problem, "alns", best, dist)
+    solver_name = "alns_fleet" if vehicle_penalty > 0 else "alns"
+    return _finish(problem, solver_name, best, dist)
 
 
 __all__ = [

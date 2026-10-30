@@ -78,6 +78,56 @@
     "calibration_verdict": "conservative",
     "calibration_verdict_rule": "coverage pooled over horizons 1..14 of the test window: |coverage - target| <= 0.05 -> calibrated; above target -> conservative; below -> optimistic"
   },
+  "sparse_history_band": {
+    "definition": "p50 <= 0 rows: [0, q80 of the series' calibration-fold actuals] (pooled q80 fallback); p50 > 0 rows: the zero-aware \u00b1q80 width",
+    "zero_rows": 75880,
+    "nonzero_rows": 0,
+    "fallback_series": 0,
+    "coverage_last_fold": 0.9245782814971006,
+    "coverage_last_fold_zero_rows": 0.9245782814971006,
+    "avg_width_last_fold": 6.009963099630999,
+    "horizon_coverage": [
+      0.8957564575645757,
+      1.0,
+      0.9354243542435424,
+      0.8985239852398524,
+      0.9003690036900369,
+      0.9169741697416974,
+      0.9252767527675276,
+      0.9308118081180812,
+      1.0,
+      0.9215867158671587,
+      0.9354243542435424,
+      0.9160516605166051,
+      0.9298892988929889,
+      0.9086715867158671
+    ],
+    "horizon_avg_width": [
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996,
+      6.009963099630996
+    ],
+    "coverage_horizon_set": 0.9296257248286769,
+    "avg_width_horizon_set": 6.009963099630999,
+    "calibration_verdict": "conservative",
+    "vs_zero_aware": {
+      "zero_aware_coverage": 0.8584343700579863,
+      "zero_aware_avg_width_horizon_set": 0.0,
+      "coverage_delta": 0.06614391143911436,
+      "width_delta_horizon_set": 6.009963099630999
+    }
+  },
   "mae_p50_pooled": 6.773578537203215,
   "multistep": {
     "protocol": "direct_multihorizon_v1",

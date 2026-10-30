@@ -72,7 +72,9 @@ from tenths of mm, TMAX/TMIN from tenths of °C, SNOW is whole mm
   need no imputation), strong tabular baseline, early stopping on the
   temporal tail of train.
 - **GBM p90** — same family, `loss="quantile", quantile=0.9` for staffing
-  buffers; calibration reported (91.1% coverage on test).
+  buffers; calibration reported for the served `gbm_tuned` band: 90.8%
+  coverage overall on the Q4 test window (Manhattan 91.4%, Queens 89.6%,
+  sparse N/A zones 84.7% under-cover, Staten Island 98.5%).
 - **TemporalNet** — 64-32 MLP, hand-written loop (DataLoader, Adam, MSE,
   gradient clipping, early stop on embargoed val MAE, seeded). Target trained
   in **log1p space**: demand is multiplicative, and a Gaussian loss on raw
@@ -129,6 +131,18 @@ flowchart LR
 
 ## Changelog
 
+- 2026-10-29 (wave 14) — transfer study gained the per-service retraining
+  control (`gbm_green_retrained`: default GBM family fit on green Jan–Feb,
+  337k zone-hours): beats green persistence on all metrics on green March
+  (MAE 0.180 vs 0.212, RMSE 0.688 vs 1.100, MAPE 66.4% vs 81.8%) — the
+  mixed yellow transfer is a service-distribution gap, and per-service
+  retraining is the measured fix. Drift observatory scored 2024-12 from the
+  local snapshot (MAE 5.046 vs pinned 4.676, +7.9%, in-window; 2024-11 was
+  +8.2%): two in-window months verify wiring, not unseen drift. Fixed the
+  stale p90 figure in "Model choices" (91.1% → the served-band 90.8% with
+  borough spread). `train_arms` dvc.yaml out corrected to
+  `predictions_arms.parquet` (it had duplicated `train_baselines`' out,
+  which blocked `dvc exp run` graph validation monorepo-wide).
 - 2026-10-13 (wave 7) — green-taxi expansion (bounded 2024-01..03 slice):
   transfer study shows yellow-trained GBMs lose MAE to green persistence
   (0.296 vs 0.212) but win RMSE/MAPE — per-service retraining recommended.

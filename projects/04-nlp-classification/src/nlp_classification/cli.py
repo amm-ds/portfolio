@@ -1,5 +1,5 @@
 """Typer CLI: prepare / train-baseline / train-nn [--full-data] / hpo /
-hpo-seeds / train-tuned / train-encoder-b / evaluate / all."""
+hpo-seeds / train-tuned / train-encoder-b / evaluate / fresh-holdout / all."""
 
 import json
 import time
@@ -15,6 +15,7 @@ from nlp_classification.data import label_names, load_full_train, tokenize_datas
 from nlp_classification.data import prepare as run_prepare
 from nlp_classification.evaluate import evaluate as run_evaluate
 from nlp_classification.evaluate import load_tokenizer
+from nlp_classification.fresh_holdout import run_fresh_holdout
 from nlp_classification.hpo import (
     persist_hpo,
     persist_seed_report,
@@ -248,6 +249,26 @@ def evaluate() -> None:
             continue  # nested dict (calibration, hpo_seeds) — not a scalar ladder row
         typer.echo(f"{run}: " + ", ".join(f"{k}={v:.4f}" for k, v in values.items()))
     typer.echo(f"report written to reports/report.html in {time.perf_counter() - started:.1f}s")
+
+
+@app.command(name="fresh-holdout")
+def fresh_holdout_cmd() -> None:
+    """Score persisted artifacts on a fresh holdout; run the routing sweep.
+
+    Roadmap experiment (no retraining): fresh-holdout selection reading +
+    confidence-routed TF-IDF -> transformer serving, written to
+    reports/fresh_holdout.json.
+    """
+    started = time.perf_counter()
+    doc = run_fresh_holdout(_cfg())
+    sel = doc["selection_on_fresh"]
+    typer.echo(
+        f"fresh holdout: n={doc['fresh_holdout']['n_fresh']} | "
+        f"fresh winner={sel['fresh_winner']} (margin {sel['margin_f1_macro']:+.4f} macro-F1, "
+        f"agrees_with_test_selection={sel['agrees_with_test_selection']}) | "
+        f"cascade rows={len(doc['cascade']['rows'])} "
+        f"in {time.perf_counter() - started:.1f}s"
+    )
 
 
 @app.command(name="all")

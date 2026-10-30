@@ -11,7 +11,7 @@ hero:
   ci: paired bootstrap CI [−485, −343]
 scenarios:
   - name: base
-    controls: {fn_ratio: 5, threshold: 0.175}
+    controls: {fn_ratio: 5, threshold: 0.15}
   - name: high-cost-miss
     controls: {fn_ratio: 9, threshold: 0.12}
   - name: default-threshold

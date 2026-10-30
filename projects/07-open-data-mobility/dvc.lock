@@ -414,10 +414,10 @@ stages:
       hash: md5
       md5: f44c6055826e3f0134c921aea33be7e5
       size: 440
-    - path: reports/models/predictions_baseline.parquet
+    - path: reports/models/predictions_arms.parquet
       hash: md5
-      md5: a6649c49e505f39b3a0e93ff50e33aea
-      size: 20268862
+      md5: c10dc82768e1bd37879ae518f896433d
+      size: 8664307
   drift_check:
     cmd: uv run python -m mobility.cli drift-check --month 2025-01
     deps:

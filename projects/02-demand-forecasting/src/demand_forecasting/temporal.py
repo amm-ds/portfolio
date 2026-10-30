@@ -8,11 +8,19 @@ time-ordered inner validation slice of the training window.
 The estimator exposes the sklearn-style ``fit(x, y) / predict(x)`` surface so
 it runs through the identical date-aligned backtest as the other models.
 Fully seeded and CPU-friendly (seconds per fold).
+
+torch is an OPTIONAL dependency (this project's ``[nn]`` extra): the showcase
+serving image installs 02 without it because the served champion is a sklearn
+pipeline, never this NN. The import below fails soft; the error only surfaces,
+loudly and with install instructions, when the temporal_net arm is built.
 """
 
 import contextlib
+from typing import Any
 
 import numpy as np
+
+from demand_forecasting.config import ForecastConfig
 
 # OpenMP runtime sharing (macOS): establish the gradient boosters' libomp
 # image *before* torch loads its own copy. Importing xgboost/lightgbm first
@@ -23,10 +31,19 @@ try:  # pragma: no cover - environment guard, not behaviour
     import xgboost  # noqa: F401
 except ImportError:  # boosters are optional arms; torch must still work
     pass
-import torch
-from torch import nn
 
-from demand_forecasting.config import ForecastConfig
+try:
+    import torch
+    from torch import nn
+except ImportError:  # pragma: no cover - only the no-torch image reaches this
+    torch = None  # type: ignore[assignment]
+    nn = None  # type: ignore[assignment]
+
+_NN_EXTRA_HINT = (
+    "temporal_net requires torch — install the [nn] extra "
+    "(`uv sync --all-packages --dev` includes it). The production serving "
+    "image omits torch on purpose; its serving bundles never unpickle this NN."
+)
 
 EMBED_DIM = 8
 HIDDEN = 64
@@ -36,24 +53,34 @@ GRAD_CLIP = 1.0
 BATCH = 1024
 
 
-class _TemporalMLP(nn.Module):
-    """Embedding lookup + MLP over [numeric features | series embedding]."""
+if nn is not None:
 
-    def __init__(self, n_series: int, n_numeric: int, embed_dim: int = EMBED_DIM) -> None:
-        super().__init__()
-        self.emb = nn.Embedding(n_series, embed_dim)
-        in_dim = n_numeric + embed_dim
-        self.net = nn.Sequential(
-            nn.Linear(in_dim, HIDDEN),
-            nn.ReLU(),
-            nn.Linear(HIDDEN, HIDDEN),
-            nn.ReLU(),
-            nn.Linear(HIDDEN, 1),
-        )
+    class _TemporalMLP(nn.Module):
+        """Embedding lookup + MLP over [numeric features | series embedding]."""
 
-    def forward(self, idx: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
-        out: torch.Tensor = self.net(torch.cat([self.emb(idx), x], dim=1)).squeeze(-1)
-        return out
+        def __init__(self, n_series: int, n_numeric: int, embed_dim: int = EMBED_DIM) -> None:
+            super().__init__()
+            self.emb = nn.Embedding(n_series, embed_dim)
+            in_dim = n_numeric + embed_dim
+            self.net = nn.Sequential(
+                nn.Linear(in_dim, HIDDEN),
+                nn.ReLU(),
+                nn.Linear(HIDDEN, HIDDEN),
+                nn.ReLU(),
+                nn.Linear(HIDDEN, 1),
+            )
+
+        def forward(self, idx: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+            out: torch.Tensor = self.net(torch.cat([self.emb(idx), x], dim=1)).squeeze(-1)
+            return out
+
+else:
+
+    class _TemporalMLP:  # type: ignore[no-redef]
+        """No-torch placeholder — constructing it names the missing [nn] extra."""
+
+        def __init__(self, *_args: Any, **_kwargs: Any) -> None:
+            raise ImportError(_NN_EXTRA_HINT)
 
 
 _THREADS_PINNED = False
@@ -83,6 +110,8 @@ class TemporalNet:
     """
 
     def __init__(self, config: ForecastConfig, seed: int) -> None:
+        if torch is None or nn is None:
+            raise ImportError(_NN_EXTRA_HINT)
         self._config = config
         self._seed = seed
         self._vocab: dict[str, int] = {}

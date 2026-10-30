@@ -118,7 +118,7 @@ generator **stays as the clearly-labelled CI / fast path** (the entire
 test-suite runs on it); NAB is the default `data_source` for real runs.
 
 **NAB** ([dataset card](https://amm-ds.github.io/portfolio/data-registry/nab/),
-[import manifest](../data-registry/imports/nab.json)): a bounded subset of 12
+[import manifest](../../docs/data-registry/imports/nab.json)): a bounded subset of 12
 series from the [Numenta Anomaly Benchmark](https://github.com/numenta/NAB)
 spanning `realAWSCloudwatch`, `realKnownCause`, and `realTraffic`, each
 checksum-pinned, with labelled anomaly windows from `combined_windows.json`
@@ -211,6 +211,42 @@ labeled transfer probe (not a leaderboard), unseen attack categories in test,
 flow statistics rather than telemetry semantics, ~57% prevalence vs. the 2%
 operating point, factorized (not one-hot) categoricals.
 
+## Wave 14: NAB detector-family × feature sweep + alert budgets
+
+The roadmap round the NAB track was missing: every detector family and both
+feature sets on the real benchmark, plus the alert-load layer (`cli
+nab-sweep`, artifact [`reports/nab_sweep.json`](reports/nab_sweep.json)). All
+six cells are untuned, share the headline conventions (70/30 time split,
+train-anchored 2% threshold, lead 0, mean over all 12 series), and each run
+scores three alert streams: **raw** (every above-threshold minute pages),
+**deduped** (contiguous runs fire one page at the run's max-score minute),
+**budgeted** (deduped pages plus a per-series cap of one page per 24 h).
+
+**No detector family wins NAB.** Pointwise PR-AUC spans 0.515–0.574 across
+the grid — best is LOF on rolling+residual features (0.574), IsolationForest
+on rolling features alone reaches 0.565, and the headline
+IsolationForest+residual recipe sits at 0.527 (bit-identical to the headline
+pass: 1,609 raw alerts). Raw range recall is 0.688–0.750 with 1,609–3,586
+alerts emitted. Rolling-median residuals — decisive on synthetic (0.9158 →
+0.9999 ROC-AUC) — do **not** transfer: the anomaly-blob diagnosis is a
+property of the injected data, not of NAB incidents.
+
+**Budgeting the page stream works without retraining.** Dedup + the 24 h
+per-series cap cut pages 20–30× and raise range-F1 in *every* cell, because
+most raw pages were re-alerts of the same incident minutes:
+
+| sweep cell (raw → budgeted) | alerts | range recall | range-F1 |
+|---|---|---|---|
+| isolation_forest + rolling | 1,864 → 66 | 0.729 → 0.604 | 0.154 → 0.388 |
+| isolation_forest + rolling_residual | 1,609 → 80 | 0.729 → 0.562 | 0.157 → 0.315 |
+| lof + rolling | 3,263 → 109 | 0.750 → 0.542 | 0.086 → 0.213 |
+| lof + rolling_residual | 3,586 → 122 | 0.750 → 0.542 | 0.088 → 0.200 |
+| ocsvm + rolling | 2,412 → 87 | 0.688 → 0.521 | 0.086 → 0.281 |
+| ocsvm + rolling_residual | 2,253 → 91 | 0.688 → 0.438 | 0.102 → 0.214 |
+
+The recall cost of the cap is ≈0.13–0.25. The 24 h cooldown is a documented
+operating assumption, not a tuned optimum.
+
 ## Reproduce
 
 ```bash
@@ -223,11 +259,13 @@ uv run python -m anomaly_detection.cli features
 uv run python -m anomaly_detection.cli train
 uv run python -m anomaly_detection.cli tune
 uv run python -m anomaly_detection.cli evaluate
+uv run python -m anomaly_detection.cli nab            # NAB headline track (12 series, event metrics)
+uv run python -m anomaly_detection.cli nab-sweep      # detector x feature sweep + alert budgets
 # or via DVC:
 dvc repro projects/03-anomaly-detection
 ```
 
-Tests (offline, synthetic fixtures only, ~5.7 s, 95% package coverage):
+Tests (offline, synthetic fixtures only, ~6 s, 94% package coverage):
 
 ```bash
 uv run pytest projects/03-anomaly-detection -q
@@ -251,14 +289,19 @@ uv run pytest projects/03-anomaly-detection -q
 ## Roadmap
 
 Delivered so far: Optuna HPO, seeded random baseline, adaptive-threshold
-streaming, rolling-median residual features, NSL-KDD transfer probe, and the
-NAB real-data primary track with event-based metrics. What remains:
+streaming, rolling-median residual features, NSL-KDD transfer probe, the NAB
+real-data primary track with event-based metrics — and the wave-14 sweep: all
+three detector families × both feature sets on NAB (PR-AUC 0.515–0.574, no
+winner; residuals do not transfer their synthetic dominance), plus episode
+deduplication and a 24 h per-series page budget that cut alerts 20–30× while
+*improving* range-F1 in every cell (headline config 1,609 → 80 pages,
+range-F1 0.157 → 0.315, recall 0.729 → 0.562). What remains:
 
 - **Recalibrate the adaptive drift trigger on real data** — the median/IQR
   trigger tuned on synthetic fires on 26% of NAB chunks; it needs a
   higher z threshold or a variance-normalised statistic before production use.
-- **Attack the false-positive firehose** on NAB: per-series alert budgets,
-  event deduplication / grouping, and per-family thresholds (range precision
-  0.11 overall is the real problem to solve).
-- **Residual features as the default** on both tracks, and the full run
-  ladder (LOF / tuned OCSVM included) re-run on NAB.
+- **Tune the alert-budget operating point** — the 24 h per-series cap is a
+  documented assumption; per-family thresholds and cooldowns chosen on
+  train-side validation (never against test labels) are the next step.
+- **Range precision is still the wall** (0.05–0.12 raw across the sweep) —
+  unattended paging stays deferred until real-data precision improves.

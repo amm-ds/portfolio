@@ -90,6 +90,17 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.6.0 (2026-10-29): wave-14 roadmap sweep (`nab-sweep`, artifact
+  `reports/nab_sweep.json`): 12 series × 3 detectors (isolation_forest / lof /
+  ocsvm, untuned) × 2 feature sets (rolling vs rolling+residual), all under
+  the headline conventions (train-anchored 2% threshold, lead 0, mean over all
+  12 series). Headline IsolationForest+residual reproduces bit-identically
+  (1,609 alerts, PR-AUC 0.527). No family wins: PR-AUC 0.515–0.574; residuals
+  do not transfer their synthetic dominance. Alert-load layer on every run:
+  episode dedup (contiguous runs fire one page at the max-score minute) plus a
+  per-series 24 h page budget — pages drop 20–30× and range-F1 improves in
+  every cell (headline 1,609 → 80 pages, F1 0.157 → 0.315, recall
+  0.729 → 0.562). New tests pin the dedup/budget math.
 - 0.5.0 (2026-10-15): wave-13 external audit — NAB real data becomes the
   primary track (`data_source="nab"` default; synthetic generator stays the
   labelled CI/fast path): 12 checksum-pinned series across

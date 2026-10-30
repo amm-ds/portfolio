@@ -25,6 +25,28 @@ RAW_DIR = PROJECT_ROOT / "data" / "raw"
 
 _COMMITTED = json.loads(SOLUTIONS.read_text(encoding="utf-8"))["instances"]
 _INSTANCES = sorted(_COMMITTED)
+_UNHINTED = json.loads(SOLUTIONS.read_text(encoding="utf-8")).get("unhinted_cp_sat", {})
+
+
+def test_unhinted_cp_sat_block_covers_all_instances() -> None:
+    """The equal-budget unhinted arm is recorded for every committed instance.
+
+    Structural honesty only: every instance carries a status and a runtime; a
+    solved instance must carry a positive distance/vehicle count; an unsolved
+    one must not invent metrics. The measured verdict (all-UNKNOWN at 10 s on
+    the 100-customer benchmark) is reported in README/story, not pinned here
+    against search-path noise.
+    """
+    assert set(_UNHINTED) == set(_INSTANCES)
+    for entry in _UNHINTED.values():
+        assert entry["status"]
+        assert entry["runtime_s"] > 0
+        if "total_distance" in entry:
+            assert entry["status"] in ("OPTIMAL", "FEASIBLE")
+            assert entry["total_distance"] > 0
+            assert entry["n_vehicles"] > 0
+        else:
+            assert entry["status"].startswith(("UNKNOWN", "INFEASIBLE"))
 
 
 def _committed_routes(name: str) -> list[list[int]]:

@@ -92,6 +92,19 @@ class NLPConfig(PortfolioBaseModel):
     hpo_best: HPOBest | None = None
     hpo_seeds: HPOMultiSeed = Field(default_factory=HPOMultiSeed)
 
+    # Fresh-holdout selection + confidence-routed serving (roadmap experiments)
+    fresh_holdout_samples: int = Field(
+        default=1000,
+        ge=10,
+        description="Seeded stratified fresh holdout drawn from the complement of the "
+        "bounded test split in the full AG News test partition (no retraining).",
+    )
+    cascade_taus: list[float] = Field(
+        default_factory=lambda: [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0],
+        description="TF-IDF confidence cutoffs swept by the routing experiment; an item "
+        "below the cutoff is escalated to the transformer.",
+    )
+
     # Locations (relative to the project working directory)
     data_dir: Path = Path("data")
     reports_dir: Path = Path("reports")

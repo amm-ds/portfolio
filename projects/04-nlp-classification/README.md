@@ -253,11 +253,15 @@ cannot express.
 test stratified subsample for the bounded ladder, ≤4 epochs, max_length 128.
 The HPO studies (12-trial main + 3×6 seed variance) are small-budget
 demonstrations whose gains sit within seed noise. Test macro-F1 also selects
-`distilbert_tuned`, so that comparison is not an unbiased final-holdout result.
-The measured ladder is 0.9021 → 0.9270 → 0.9460 test macro-F1 at 3.6k / 18k /
-108k train rows, but data size, device and training setup vary together; it is
-not a controlled scaling estimate. Temperature scaling cuts ECE by 71% on the
-shared test split. Full-data MPS timings are machine-specific.
+`distilbert_tuned`, so that comparison is not an unbiased final-holdout result
+— the fresh-holdout run (`reports/fresh_holdout.json`) settles it: the fresh
+winner is the HPO-retrained model by +0.0069, i.e. both candidates are tied
+within noise, and the full-data model keeps its edge on untouched data
+(0.9529 fresh vs 0.9460 bounded). The measured ladder is 0.9021 → 0.9270 →
+0.9460 test macro-F1 at 3.6k / 18k / 108k train rows, but data size, device
+and training setup vary together; it is not a controlled scaling estimate.
+Temperature scaling cuts ECE by 71% on the shared test split. Full-data MPS
+timings are machine-specific.
 
 Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 
@@ -282,6 +286,9 @@ uv run python -m nlp_classification.cli hpo-seeds          # 3-seed variance stu
 uv run python -m nlp_classification.cli train-tuned      # retrains with HPO best params
 uv run python -m nlp_classification.cli train-encoder-b  # roberta-base candidate
 uv run python -m nlp_classification.cli evaluate         # seven-run ladder + selection + calibration
+
+# fresh-holdout selection reading + confidence-routed serving (no retraining):
+uv run python -m nlp_classification.cli fresh-holdout      # -> reports/fresh_holdout.json (~1 min)
 
 # full-data path (accelerator-gated; auto = CUDA → MPS → CPU):
 uv run python -m nlp_classification.cli train-nn --full-data            # full 120k on MPS (~47 min measured)
@@ -327,9 +334,21 @@ existing pipeline:
   test macro-F1, +4.4 pp over the bounded models, ~18 min/epoch steady-state
   on MPS (27.5 min for epoch 1 under shared machine load; ~46 min training
   loop, ~47 min for the whole command).
-- **Cost-sensitive routing** on top of the calibrated probabilities
-  (temperature scaling already cuts ECE by 71 %; per-class thresholds for
-  imbalanced production mixes remain to be tuned).
+- **Fresh-holdout selection and cost-sensitive routing — delivered:**
+  `cli fresh-holdout` draws a 1,000-row holdout from the complement of the
+  bounded test split (disjoint by construction) and scores every persisted
+  artifact on it. Fresh data flips the tuned selection: the HPO-retrained
+  model beats the wave-2 artifact by +0.0069 macro-F1 (against the test
+  split's +0.0010 the other way) — both inside noise, i.e. the bounded
+  candidates are tied; the full-data model reads 0.9529 on the fresh holdout
+  versus 0.9460 bounded. The same run delivers confidence-routed serving:
+  TF-IDF where its max class probability ≥ τ, else the transformer. At
+  τ=0.50, 75.4% of items stay on TF-IDF economics and routed macro-F1 is
+  0.9020 — above either constituent alone (0.8785 / 0.8962). Artifacts:
+  `reports/fresh_holdout.json`; DVC stage `fresh_holdout`.
+- **Controlled data-scale comparisons — remaining:** the bounded-vs-full gap
+  (+2.5 pp at 20k, +4.4 pp at 108k train rows) still confounds data size with
+  device and training setup; same-device scale sweeps would isolate it.
 - **Multi-label extension** for hybrid Business/Sci-Tech articles — the
   dominant observed error mode — deferred deliberately: it is a different
   problem contract (multi-hot labels, different metrics), not a tuning knob.

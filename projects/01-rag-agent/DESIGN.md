@@ -9,7 +9,7 @@ Status: implemented and evaluated. See [README](README.md) for results and
 |---|---|---|
 | R1 | Answers constrained to retrieved evidence, with citations and measured unsupported-claim failures | Agent tools are the *only* corpus access; the system prompt requires citation and the output schema (`AnalysisResult`) makes citations mandatory; verification and evaluation expose residual grounding failures |
 | R2 | Structured, machine-checkable agent output | `output_type=AnalysisResult` (pydantic); invalid outputs fail the run loudly (`UnexpectedModelBehavior`) |
-| R3 | Works offline / in CI | Platform factory (ADR-0004) returns a deterministic FunctionModel when no `LLM_BASE_URL`/`LLM_API_KEY` is set; `MOCK_ANALYSIS_JSON` drives the full pipeline incl. `chat` |
+| R3 | Works offline / in CI | `evaluate --offline` is the retrieval-only CI path (no LLM calls); without a provider, `evaluate`/`chat` fail loudly with actionable guidance instead of silently degrading (ADR-0004 amended wave 10); test-only mocks live in `portfolio_core.llm.mock_model_for_tests` |
 | R4 | Reproducible data | Deterministic article ids, bounded streaming scan, dataset contract with sha256, DVC stages + lock |
 | R5 | Retrieval quality measured, not assumed | Graded question set; recall@5/10, MRR@5 per chunk size; RAG faithfulness/relevance/recall via judge |
 | R6 | Cost/latency awareness | Per-query latency (p50/p95), token usage recorded, estimated USD/query, cost-vs-quality frontier |
@@ -235,7 +235,7 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 | Failure | Behavior |
 |---|---|
-| No LLM credentials | Mock model; pipeline + chat fully functional offline (documented in output) |
+| No LLM provider available | `LLMProviderUnavailableError` with setup guidance; `evaluate --offline` for retrieval-only CI — the runtime mock was removed by owner directive (ADR-0004 amended wave 10) |
 | Embedding model download fails | `EmbeddingModelError` with HF connectivity hint; no keyword fallback |
 | Index/chunk metadata mismatch | `ValueError` on load (ntotal vs rows) |
 | Eval question references missing article | Skipped with warning; run continues on the resolvable subset |

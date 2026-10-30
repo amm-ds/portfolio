@@ -87,6 +87,13 @@ once per week**, with each horizon modelled directly:
   per-candidate ``rmsse`` (M5 convention) per class and pooled; the decision
   block gains a newsvendor order-quantile cost layer (documented cost
   assumptions, no savings claims). The headline claim quotes rmae.
+- **Wave-23 roadmap round** — the nowcast track's sparse interval is
+  non-degenerate (predicted-zero rows take [0, history q80] instead of the
+  zero-aware band's ±0 width — see probabilistic.sparse_history_band), and
+  the multistep block gains a cost-aware routing arm
+  (``routing.cost_aware``): the per-series pick minimises summed newsvendor
+  cost on the selection origins at q=0.90, scored once on the test origins
+  against the MAE-routed champion (MAE + newsvendor cost per class).
 
 Outputs are merged into the track's metrics.json (``_multistep`` block — the
 per-model nowcast blocks stay untouched), probabilistic.json (``multistep``
@@ -1666,6 +1673,9 @@ def run_multistep(
     # ---- routing: per-series best candidate on SELECTION origins only ----
     method_of = _route(by_origin, selection, horizons, units, sparse, n_series)
 
+    # ---- cost-aware routing (wave 23): same contract, newsvendor-cost pick ----
+    method_of_cost = _route_cost(by_origin, selection, horizons, units, sparse, n_series)
+
     # ---- convex ensemble: per-series weight on SELECTION origins only (no refits)
     ens = ensemble_weights(by_origin, selection, horizons, units, sparse, method_of, n_series)
     ens_ml_idx = np.array([ML_SPARSE.index(str(m)) for m in ens["ml_choice"]])
@@ -1684,6 +1694,22 @@ def run_multistep(
     )
     class_of_series = np.array([classes[s]["class"] for s in series_ids])
     cells["class"] = class_of_series[cells["series"]]
+
+    # ---- cost-aware routing arm: scored once on the test origins (wave 23) ----
+    ca_cells = _routed_cells(by_origin, test, horizons, units, sparse, method_of_cost)
+    cost_aware = _cost_aware_block(
+        by_origin,
+        selection,
+        horizons,
+        units,
+        method_of,
+        method_of_cost,
+        ca_cells,
+        cells,
+        class_of_series,
+        series_ids,
+        config,
+    )
 
     per_horizon = _per_horizon_metrics(cells, horizons)
     bands = _bands(by_origin, selection, test, horizons, units, sparse, cells)
@@ -1726,6 +1752,7 @@ def run_multistep(
         win_rates,
         pw_choice,
         ens,
+        cost_aware,
     )
     figures = _figures(block, horizons, bands["json"], cells, test, n_series)
     result = MultiStepResult(
@@ -1912,6 +1939,256 @@ def _route(
     stack = np.stack([cand_err[name] for name in pool], axis=1)
     method_of = np.array(pool, dtype=object)[np.argmin(stack, axis=1)]
     return method_of.copy()
+
+
+# ---------------------------------------------------------------------------
+# Cost-aware routing (wave 23): same pools + eligibility, but the per-series
+# pick minimises summed newsvendor cost at one service level on the SELECTION
+# origins — the roadmap answer to "MAE-optimal routing can over-order at high
+# service levels" (priced with the wave-22 cost assumptions, no savings claim)
+# ---------------------------------------------------------------------------
+
+# The service level the cost-aware router optimises (the wave-22 newsvendor
+# layer showed q=0.90 is where the MAE-routed over-ordering shows up first).
+COST_ROUTING_LEVEL = 0.90
+
+
+def _selection_errors(
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    pred_of: Any,
+) -> np.ndarray:
+    """Selection-origin residuals (actual - pred) stacked as (origin, series, h).
+
+    ``pred_of`` maps one origin score to its full (series, h) prediction.
+    """
+    out = np.empty((len(selection), units.shape[1], len(horizons)))
+    for k, o in enumerate(selection):
+        actual = np.column_stack([units[o + h] for h in horizons])
+        out[k] = actual - pred_of(by_origin[o])
+    return out
+
+
+def _routed_pred_of(method_of: np.ndarray) -> Any:
+    """The per-series routed prediction (all horizons) for _selection_errors."""
+
+    def pred(sc: OriginScore) -> np.ndarray:
+        n_h = sc.preds["direct_hgb"].shape[1]
+        return np.column_stack([_routed_pred(sc, j, method_of, method_of) for j in range(n_h)])
+
+    return pred
+
+
+def _route_cost(
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    sparse: np.ndarray,
+    n_series: int,
+) -> np.ndarray:
+    """Per-series method chosen by summed newsvendor cost on SELECTION origins.
+
+    The order for (origin, h) under method m is ``max(pred_m + q_level of
+    that method's selection residuals for the series, 0)`` — one order-up-to
+    quantile per series and method; the cost per cell is the documented
+    wave-22 assumption (holding 1.0 per ordered-but-unsold unit, stockout 3.0
+    per unmet unit). Pools and eligibility match :func:`_route`; the rule
+    reads no test-origin actual (property-tested alongside the router).
+    """
+    pool = (*STATISTICAL_METHODS, *ML_SPARSE, "direct_hgb")
+    n_h = len(horizons)
+    resid = {name: np.empty((len(selection), n_series, n_h)) for name in pool}
+    for k, o in enumerate(selection):
+        sc = by_origin[o]
+        actual = np.column_stack([units[o + h] for h in horizons])
+        for name in pool:
+            resid[name][k] = actual - sc.preds[name]
+    cand_cost = {name: np.zeros(n_series) for name in pool}
+    for name in pool:
+        q = np.quantile(resid[name], COST_ROUTING_LEVEL, axis=(0, 2))  # (n_series,)
+        for o in selection:
+            actual = np.column_stack([units[o + h] for h in horizons])
+            order = np.maximum(by_origin[o].preds[name] + q[:, None], 0.0)
+            cand_cost[name] += (
+                NEWSVENDOR_HOLDING_COST * np.maximum(order - actual, 0.0)
+                + NEWSVENDOR_STOCKOUT_COST * np.maximum(actual - order, 0.0)
+            ).sum(axis=1)
+    for name in STATISTICAL_METHODS:
+        cand_cost[name][~sparse] = np.inf
+    cand_cost["direct_hgb"][sparse] = np.inf
+    stack = np.stack([cand_cost[name] for name in pool], axis=1)
+    return np.array(pool, dtype=object)[np.argmin(stack, axis=1)].copy()
+
+
+def _routed_cells(
+    by_origin: dict[int, OriginScore],
+    test: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    sparse: np.ndarray,
+    method_of_cost: np.ndarray,
+) -> dict[str, Any]:
+    """Minimal long table for the cost-routed arm (row order matches _test_cells)."""
+    n_cells = units.shape[1] * len(test) * len(horizons)
+    cells: dict[str, Any] = {
+        "series": np.empty(n_cells, dtype=int),
+        "origin": np.empty(n_cells, dtype=int),
+        "h": np.empty(n_cells, dtype=int),
+        "y": np.empty(n_cells),
+        "pred": {"routed_cost": np.empty(n_cells)},
+    }
+    r = 0
+    n = units.shape[1]
+    for o in test:
+        sc = by_origin[o]
+        for j, h in enumerate(horizons):
+            sl = slice(r, r + n)
+            cells["series"][sl] = np.arange(n)
+            cells["origin"][sl] = o
+            cells["h"][sl] = h
+            cells["y"][sl] = units[o + h]
+            cells["pred"]["routed_cost"][sl] = _routed_pred(sc, j, sparse, method_of_cost)
+            r += n
+    return cells
+
+
+def _arm_selection_cost(
+    err: np.ndarray,
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+) -> float:
+    """Total selection-origin newsvendor cost of one routing arm at
+    :data:`COST_ROUTING_LEVEL` (the cost-aware rule's own objective)."""
+    q = np.quantile(err, COST_ROUTING_LEVEL, axis=(0, 2))
+    total = 0.0
+    for k in range(len(selection)):
+        actual = np.column_stack([units[o + h] for o in [selection[k]] for h in horizons])
+        pred = actual - err[k]
+        order = np.maximum(pred + q[:, None], 0.0)
+        total += float(
+            (
+                NEWSVENDOR_HOLDING_COST * np.maximum(order - actual, 0.0)
+                + NEWSVENDOR_STOCKOUT_COST * np.maximum(actual - order, 0.0)
+            ).sum()
+        )
+    return total
+
+
+def _cost_aware_block(
+    by_origin: dict[int, OriginScore],
+    selection: list[int],
+    horizons: list[int],
+    units: np.ndarray,
+    method_of: np.ndarray,
+    method_of_cost: np.ndarray,
+    ca_cells: dict[str, Any],
+    cells: dict[str, Any],
+    class_of_series: np.ndarray,
+    series_ids: list[str],
+    config: ForecastConfig,
+) -> dict[str, Any]:
+    """The routing.cost_aware block: MAE + newsvendor-cost comparison of the
+    cost-routed arm vs the MAE-routed champion on the scored test origins."""
+    from collections import Counter
+
+    y = ca_cells["y"]
+    ser = ca_cells["series"]
+    pred_mae = cells["pred"]["routed"]
+    pred_cost = ca_cells["pred"]["routed_cost"]
+    # ca_cells row order matches `cells` exactly (same origins/horizons order)
+    overall = _paired_bootstrap_mae(
+        pred_cost - y,
+        pred_mae - y,
+        ser,
+        config.bootstrap_reps,
+        config.seed + 9701,
+    )
+    # selection-origin residual stacks of both arms (test orders + self-check)
+    sel_mae = _selection_errors(by_origin, selection, horizons, units, _routed_pred_of(method_of))
+    sel_cost = _selection_errors(
+        by_origin, selection, horizons, units, _routed_pred_of(method_of_cost)
+    )
+    selection_cost = {
+        "routed": _arm_selection_cost(sel_mae, selection, horizons, units),
+        "routed_cost": _arm_selection_cost(sel_cost, selection, horizons, units),
+    }
+
+    per_class: dict[str, Any] = {}
+    for ci, cls in enumerate([str(c) for c in np.unique(class_of_series)]):
+        mask_cls = class_of_series[ser] == cls
+        idx = np.flatnonzero(mask_cls)
+        mae_cls = _paired_bootstrap_mae(
+            pred_cost[idx] - y[idx],
+            pred_mae[idx] - y[idx],
+            ser[idx],
+            config.bootstrap_reps,
+            config.seed + 9711 + ci,
+        )
+        per_q: dict[str, Any] = {}
+        for q in config.service_levels:
+            # test-cell orders: per-series order-up-to quantile of each arm's
+            # own selection residuals at level q
+            q_cost = np.quantile(sel_cost, q, axis=(0, 2))
+            q_mae = np.quantile(sel_mae, q, axis=(0, 2))
+            orders = {
+                "routed_cost": np.maximum(pred_cost[idx] + q_cost[ser[idx]], 0.0),
+                "routed": np.maximum(pred_mae[idx] + q_mae[ser[idx]], 0.0),
+            }
+            y_cls = y[idx]
+            cost_c = NEWSVENDOR_HOLDING_COST * np.maximum(
+                orders["routed_cost"] - y_cls, 0.0
+            ) + NEWSVENDOR_STOCKOUT_COST * np.maximum(y_cls - orders["routed_cost"], 0.0)
+            cost_m = NEWSVENDOR_HOLDING_COST * np.maximum(
+                orders["routed"] - y_cls, 0.0
+            ) + NEWSVENDOR_STOCKOUT_COST * np.maximum(y_cls - orders["routed"], 0.0)
+            denom = float(y_cls.sum())
+            per_q[f"q_{q:.2f}"] = {
+                "routed_cost_per_unit_demand": float(cost_c.sum() / denom)
+                if denom > 0
+                else float("nan"),
+                "routed_per_unit_demand": float(cost_m.sum() / denom)
+                if denom > 0
+                else float("nan"),
+                "routed_cost_minus_routed": _paired_bootstrap_cost(
+                    cost_c, cost_m, y_cls, ser[idx], config.bootstrap_reps, config.seed + 9721
+                ),
+            }
+        counts = Counter(str(method_of_cost[i]) for i in np.flatnonzero(class_of_series == cls))
+        per_class[cls] = {
+            "mae": {
+                "routed_cost": float(np.abs(pred_cost[idx] - y[idx]).mean()),
+                "routed": float(np.abs(pred_mae[idx] - y[idx]).mean()),
+                "routed_cost_minus_routed": mae_cls,
+            },
+            "newsvendor_per_unit_demand": per_q,
+            "method_choices": dict(sorted(counts.items())),
+        }
+    counts_all = Counter(str(m) for m in method_of_cost)
+    return {
+        "simulation": True,
+        "service_level": COST_ROUTING_LEVEL,
+        "label": "cost-aware routing — per-series pick minimises summed newsvendor "
+        "cost on the selection origins (documented cost assumptions, no savings claims)",
+        "cost_assumptions": {
+            "holding_cost_per_unit_ordered_unsold_per_day": NEWSVENDOR_HOLDING_COST,
+            "stockout_cost_per_unit_short_per_day": NEWSVENDOR_STOCKOUT_COST,
+            "order_rule": "order = max(pred + q_level(residuals on selection origins), 0) "
+            "per series and routing arm",
+        },
+        "selection_cost_at_routing_level": selection_cost,
+        "method_choices": {sid: str(method_of_cost[i]) for i, sid in enumerate(series_ids)},
+        "method_choice_counts": dict(sorted(counts_all.items())),
+        "overall_mae_test": {
+            "routed_cost": float(np.abs(pred_cost - y).mean()),
+            "routed": float(np.abs(pred_mae - y).mean()),
+            "routed_cost_minus_routed": overall,
+        },
+        "per_class": per_class,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -2670,6 +2947,7 @@ def _assemble_block(
     win_rates: dict[str, Any],
     pw_choice: dict[str, Any],
     ens: dict[str, Any],
+    cost_aware: dict[str, Any],
 ) -> dict[str, Any]:
     """The ``_multistep`` block of metrics.json (multi-step headline)."""
     del bands  # band numbers live in probabilistic.json (merged separately)
@@ -2776,6 +3054,7 @@ def _assemble_block(
                 if k not in ("ml_choice", "weights")  # numpy arrays, not JSON-safe
             },
             "per_class": {cls: entry["routing"] for cls, entry in bootstrap["per_class"].items()},
+            "cost_aware": cost_aware,
         },
         "headline_per_class": headline,
         "candidate_comparison": _candidate_comparison(cells, config),
