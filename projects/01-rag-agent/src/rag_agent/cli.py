@@ -197,6 +197,18 @@ def evaluate(
 
 
 @app.command()
+def rebuild_report() -> None:
+    """Rebuild report.html offline from committed artifacts (metrics.json,
+    figures/*.json, question_traces.json). For template changes; no model calls.
+    """
+    from rag_agent.reporting import rebuild_report_from_artifacts
+
+    config = load_config()
+    path = rebuild_report_from_artifacts(config)
+    typer.echo(f"report rebuilt from artifacts: {path}")
+
+
+@app.command()
 def chat(
     question: Annotated[
         str | None, typer.Argument(help="Single question mode (non-interactive).")

@@ -8,7 +8,7 @@ sides can depend on it without cycles.
 
 import json
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
 
@@ -458,6 +458,47 @@ def write_reports(
         write_question_traces(config, traces)
         inject_trace_section(config, traces)
     logger.info("report written: %s", config.reports_dir / "report.html")
+
+
+def rebuild_report_from_artifacts(config: RAGConfig) -> Path:
+    """Offline: rebuild report.html from committed metrics.json + figure JSONs.
+
+    For report-template changes (embedded figures, styling): reconstructs the
+    run table from metrics.json and figures from the committed Plotly payloads,
+    restores the ``detail``/``_meta`` blocks, and re-appends the per-question
+    trace section. No numbers change; nothing calls a model.
+    """
+    from portfolio_eval.report import ReportBuilder, figures_from_json, runs_from_metrics
+
+    metrics_path = config.reports_dir / "metrics.json"
+    old = json.loads(metrics_path.read_text(encoding="utf-8"))
+
+    builder = ReportBuilder(
+        title="01-rag-agent — evaluation report",
+        figures_dir=config.reports_dir / "figures",
+    )
+    for run in runs_from_metrics(config.reports_dir):
+        builder.add_run(run)
+    builder.build(config.reports_dir, figures=figures_from_json(config.reports_dir / "figures"))
+
+    # build() rewrote metrics.json from runs alone — restore the detail blocks.
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    for key in ("detail", "_meta"):
+        if key in old:
+            metrics[key] = old[key]
+    metrics_path.write_text(json.dumps(metrics, indent=2) + "\n", encoding="utf-8")
+
+    traces_path = config.reports_dir / "question_traces.json"
+    if traces_path.exists():
+        # committed rows carry computed keys (verdict) the dataclass rejects
+        keys = {f.name for f in fields(QuestionTrace)}
+        traces = [
+            QuestionTrace(**{k: v for k, v in t.items() if k in keys})
+            for t in json.loads(traces_path.read_text(encoding="utf-8"))
+        ]
+        if traces:
+            inject_trace_section(config, traces)
+    return config.reports_dir / "report.html"
 
 
 def write_question_traces(
