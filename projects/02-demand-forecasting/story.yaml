@@ -3,183 +3,337 @@ short_version: "One honest protocol, two demand regimes: on dense Walmart M5 dai
 sections:
 - id: background
   text_md: |
-    **On everyday Walmart store-item sales the tuned ensemble cuts forecast error to 49%
-    of demand versus 60% for the seasonal-naive baseline—and on sparse, mostly-zero
-    retail demand the winner flips: a router forecasting zero for 945 of
-    1,069 lumpy series.**
+    **One honest protocol, two demand regimes.** On dense Walmart M5 daily sales
+    an ensemble cuts forecast error to 49% of demand versus 60% for the
+    seasonal-naive baseline; on sparse, mostly-zero retail demand the winner
+    flips — a router that forecasts zero for 945 of 1,069 lumpy series. The
+    architecture diagram shows both tracks and the one protocol they share.
 
-    **Data.** A pinned Walmart M5 subset (600 series); UCI Online Retail II (405,416
-    rows, 89% zeros); a seeded synthetic hierarchy for CI only.
+    ```mermaid
+    graph LR
+      subgraph Dense["Dense regime - M5 Walmart daily sales"]
+        M5["600 store-item series<br/>463 dense class"] --> FE["Shift-only lags<br/>calendar features"]
+      end
+      subgraph Sparse["Sparse regime - UCI online retail"]
+        UCI["1600 country-product series<br/>89% zeros, 1069 lumpy"] --> RT{"Per-series router"}
+      end
+      FE --> ENS["Convex ensemble of tuned boosters"]
+      RT -->|"945 lumpy series"| Z["Forecast zero"]
+      RT -->|"124 series"| PK["Peak-capable models"]
+      ENS --> HB["Frozen scored-once holdout"]
+      Z --> HB
+      PK --> HB
+    ```
 
-    **Limits.** M5 bands cover 77.7% vs an 80% target; stockouts, returns, and
-    safety-stock policies are unmodeled.
+    M5 gives 600 daily series; UCI Online Retail II gives 405,416 rows, 89% of
+    them zero.
 
-    **In plain terms:** dense sellers earn a real ensemble—one error point saved in
-    eight; sparse, mostly-zero sellers earn restraint—predict zero except at peaks. One
-    model for both is the mistake these numbers rule out.
+    **Business summary:** Two datasets, two opposite answers, one ruler. Dense
+    sellers earn an ensemble; sparse, mostly-zero sellers earn restraint:
+    predict zero except at peaks.
+  figures: []
 - id: objectives
   text_md: |
-    **The deliverable is a defensible planning forecast, not a model file.** The measured
-    question: where does learned structure beat disciplined simplicity—and where does it
-    lose?
+    **The goal is a forecast a planner can defend, not a model file.** The
+    question: where does a learned model beat a simple rule — and where does it
+    lose? The routing decision diagram gives the answer in one picture.
 
-    - Beat mean, persistence, and seasonal-naive baselines where data support it,
+    ```mermaid
+    graph TD
+      S["New demand series"] --> M{"Classify by ADI<br/>average inter-demand interval<br/>and CV2, squared variability"}
+      M -->|"smooth or erratic"| D["Dense track<br/>global boosted models plus ensemble"]
+      M -->|"intermittent or lumpy"| L["Sparse track<br/>statistical intermittent methods"]
+      D --> B1["Must beat the seasonal-naive floor<br/>or stay simple"]
+      L --> B2["Forecast zero by default<br/>model peaks only where they pay"]
+      B1 --> R["Report error, coverage, and width<br/>with paired bootstrap intervals"]
+      B2 --> R
+      R --> P["No inventory-savings claim<br/>without cost validation"]
+    ```
+
+    Success means:
+
+    - Beat mean, last-value, and seasonal-naive rules where the data support it,
       with an interval on the gap.
-    - Use shift-only lags and frozen, scored-once test windows—never random
+    - Use past-only lags and frozen test windows, scored once — never random
       splits.
-    - Serve a store hierarchy with property-tested coherent reconciliation, without
-      assuming it improves accuracy.
-    - Report probabilistic coverage **and width**, including degenerate bands and
-      regimes where the simple forecast stays better.
+    - Reconcile a store hierarchy with property-tested math, without assuming
+      that helps accuracy.
+    - Report band coverage and width alike, including zero-width bands and cases
+      where the simple rule stays better.
+
+    **Business summary:** Simple where simple wins, learned where learning wins,
+    and every gap reported with its doubt range.
+  figures: []
 - id: data
   text_md: |
-    **Three datasets share one pipeline, not one conclusion.** M5 (primary): 600 daily
-    store-item series (CA_3/CA_1/TX_2 × top-200 items), 2011-01-29..2016-06-19, 16% zero
-    days, from the Nixtla `datasetsforecast` mirror, sha256-pinned; cite Makridakis
-    et al., IJF 2022. UCI Online Retail II (secondary): top 8 countries
-    × top 200 products over 374 days—405,416 rows, 89% zeros; returns excluded; Chen,
-    Gallino & Li 2012. Synthetic (CI only): seeded 730 days × 4 stores × 6 products,
-    injected trend and weekly seasonality—pipeline CI, not real-world evidence. Every
-    track carries a dataset contract, quality gates, DVC stages.
+    **Three datasets share one pipeline, not one conclusion.** M5 (primary): 600
+    daily store-item series — CA_3, CA_1, and TX_2 stores crossed with the
+    top-200 items — spanning 2011-01-29 to 2016-06-19 with 16% zero days,
+    sha256-pinned from the Nixtla datasetsforecast mirror; cite Makridakis et
+    al., IJF 2022. UCI Online Retail II (secondary): the top 8 countries crossed
+    with the top 200 products over 374 days — 405,416 rows, 89% zeros, returns
+    excluded; Chen, Gallino & Li 2012. Synthetic (CI only): a seeded panel of 730
+    days, 4 stores, and 6 products with injected trend and weekly seasonality —
+    pipeline evidence, not real-world evidence. Every track carries a dataset
+    contract, quality gates, and DVC stages.
+
+    The evaluation contract diagram fixes the split discipline every track obeys:
+    choose on the past, score once on the future.
+
+    ```mermaid
+    graph LR
+      subgraph UCI["UCI nowcast ladder"]
+        U1["4 expanding origins<br/>7-day embargo"] --> US["Origins 1-3: select"]
+        U1 --> UT["Origin 4: test window<br/>scored once"]
+      end
+      subgraph M5["M5 direct track"]
+        W1["10 weekly origins"] --> MS["8 selection origins<br/>candidates, tuning, blending"]
+        W1 --> MT["2 test origins<br/>28-day horizon, scored once"]
+      end
+      subgraph Scoring["Scoring"]
+        US --> SC["Pooled error metrics<br/>paired bootstrap intervals"]
+        MS --> SC
+        UT --> SC
+        MT --> SC
+      end
+      SC --> L["Committed headline numbers<br/>never reselected"]
+    ```
+
+    **Business summary:** Real retail data drives both tracks, plus a synthetic
+    set used only to guard the pipeline. The rules are fixed up front: models are
+    chosen on the past and scored once on the future.
+  figures: []
 - id: eda
   text_md: |
-    **Why one global mean fails.** The synthetic panel mixes trend,
-    weekly seasonality, and very different right-skewed levels—a global mean fails.
-    UCI shows the opposite: 89% zero rows. M5 is denser, but its 600
-    series still split into 463 dense and 137 intermittent by ADI/CV² (demand interval
-    vs variability), so results come by class.
+    **Why one global mean fails.** The synthetic panel mixes trend, weekly
+    season, and wide, skewed levels. The series overview and units distribution
+    figures show why one pooled average fails. UCI shows the opposite problem:
+    89% zero rows. M5 sits between: its 600 series split into 463 dense and 137
+    intermittent by ADI (average inter-demand interval) and CV² (squared
+    variability). So every result below is by class; the class comparison figure
+    holds those numbers.
 
-    **How we judged it.** Models are chosen on the past, scored once on the future:
-    four expanding origins with a 7-day embargo on UCI (1–3 select; holiday window
-    scores once); 10 weekly origins on M5 (8 select, 2 test). Metrics match
-    decisions—MAE; WAPE (error as a share of demand, 0.491 ≈ 49%); MASE
-    (error over the seasonal-naive's, 1.0 = no improvement)—with paired bootstrap CIs.
-  figures: [eda_series_overview, eda_units_distribution, m5:win_rate]
+    EDA also set the judging rules: choose on the past, score once on the future,
+    keep baselines as floors, and put a paired bootstrap interval on every gap.
+    Data this different is why one champion was never the plan.
+
+    **Business summary:** The data argues against one model for all: dense
+    series act nothing like mostly-zero ones. The demand-class split is the
+    finding that orders every result below.
+  figures: [eda_series_overview, eda_units_distribution, m5:class_comparison]
 - id: training
   text_md: |
-    M5 evaluates **11 candidates**—seasonal naive, three statistical baselines,
-    automatic ETS/CES, gradient boosting (plus a pure-L2 arm), two three-member
-    ensembles; the ensemble wins on dense data. Pooled test WAPE is 0.491
-    vs 0.603 naive (gap −0.1125, CI [−0.1228, −0.1026]), WRMSSE
-    0.596 vs 0.762; per-series wins: 88.8% pooled / 88.6% dense / 89.8% intermittent—not
-    evidence every series improves. By class, dense test WAPE moves
-    0.568 → 0.464 and intermittent 0.749 → 0.603. Next-week service: 0.4233 WAPE
-    vs 0.5442 naive (gap −0.1208, CI [−0.1288, −0.1130]); weekly
-    error grows **0.4136→0.5636** from week 1 to week 4—reforecast weekly. The limit:
-    the 80% bands cover 77.7%; LightGBM covers 77.7% at 13.535 units mean width
-    (**76.9% dense / 80.6% intermittent**) and the ensemble
-    77.7% at 13.342—reported, not fixed. The pure-L2 blend is a
-    wash (Details); reconciliation chooses w=0.50, cutting incoherence
-    447.2→223.6 while store MAE improves 746.0→731.0—coherence aids hierarchy,
-    not a weak parent forecast.
+    M5 evaluates **11 candidates** — seasonal naive, three statistical baselines,
+    automatic ETS and CES, gradient boosting with a pure-L2 arm, and two
+    three-member ensembles — and the ensemble wins on dense data. Pooled test
+    WAPE (error as a share of demand) is 0.491 versus 0.603 for the seasonal
+    naive, and MASE (error relative to that baseline, 1.0 means no improvement)
+    improves in step; per-series, 88.8% pooled / 88.6% dense / 89.8% intermittent
+    series improve. Exact tables live in the conclusions.
 
-    Sparse UCI inverts the answer. The selection champion (tuned boosting) posts
-    9.545 MAE / 1.078 MASE vs seasonal naive 11.323 / 1.310; no run
-    reaches MASE 1.0; automatic ETS loses to the naive floor (11.471).
-    Multi-horizon routing improves lumpy h=7 MAE to 6.09 vs 11.07 (CI [−7.74,
-    −2.88]) but beats the floor on only 21.89% of lumpy series [19.55, 24.32]: the pooled
-    gain is magnitude, not coverage. The router assigns zero to 945 of
-    1,069 lumpy series, peak-capable models to the rest; its 7.47 pooled MAE beats
-    zero's 9.28 and the added baselines. The zero-aware band—predicted-zero rows take
-    [0, the series' history 80th percentile] instead of a collapsed zero-width
-    interval—covers 92.5% of the last fold (93.0% across h=1..14) at 6.01 units mean
-    width; the old zero-width band "covered" 85.8% at 0.00 units—width is now honest,
-    coverage above target. Cost-aware routing prices this: at a 0.90 service
-    level it routes 878 of 1,069 lumpy series to zero (vs 945), pays +0.57 lumpy MAE
-    (CI [0.40, 0.78]), and wins the lumpy newsvendor cost 2.168 vs 2.213 per
-    unit-demand (CI [−0.079, −0.016]); at q=0.80/0.95 or on erratic demand it is a
-    wash; pooled MAE rises 7.47 → 8.13 (CI [0.43, 0.92]). The routing objective is a
-    measured choice, not an assertion.
-  figures: [hpo_history, hpo_importance, m5:class_comparison]
+    Tuning was seeded and cheap: the HPO history and importance figures show the
+    56-trial synthetic study, where regularization dominates and the best trial
+    cuts cross-validation error only modestly — small, honest gains, not a
+    leaderboard.
+
+    Sparse UCI inverts the answer. The selection champion posts 9.545 MAE (mean
+    absolute error) against the seasonal naive's 11.323, and no run reaches MASE
+    1.0. The routing effect figure shows what routing adds on scored origins: the
+    router forecasts zero for 945 of 1,069 lumpy series and reserves peak-capable
+    models for the rest. Cost-aware routing at a 0.90 service level moves 67 of
+    those series back to models, pays +0.57 lumpy MAE, and wins the newsvendor
+    cost comparison — a measured trade-off, not an assertion.
+
+    **Business summary:** Dense demand earns a real ensemble — about one error
+    point saved in eight. Sparse demand earns the opposite: forecast zero, stock
+    for peaks, and price the trade-off before believing it.
+  figures: [hpo_history, hpo_importance, uci:multistep_routing]
 - id: evaluation
   text_md: |
-    **For dense M5-like demand, plan with the ensemble; for sparse UCI-like demand, plan
-    with the router.** The ensemble's edge is bounded: a gap whose CI excludes zero,
-    88.8% of series improved, the rest flat or worse. The router's
-    conservatism is equally measured—mostly-zero forecasts, peak models where they
-    pay, over-ordering priced at high service. Neither supports an
-    inventory-savings claim; both support a pilot.
+    **Metrics match decisions.** MAE drives selection; WAPE headlines the dense
+    track; MASE keeps the sparse track comparable; every gap carries a paired
+    bootstrap interval.
 
-    **Business summary:** dense demand earns the ensemble (≈11 error points saved per
-    100 units; reforecast weekly as error grows 0.4136→0.5636); sparse demand earns
-    mostly-zero routing (6.09 lumpy MAE at h=7 vs 11.07). The transferable asset is the
-    protocol, not a model.
-  figures: [uci:fold_stability]
+    Error is not flat, and the evaluation figures say so. The fold stability
+    figure shows every UCI model degrading on later folds — drift exposed before
+    deployment. The horizon growth figure shows M5 error climbing
+    **0.4136→0.5636** from week 1 to week 4, which is why the service number is
+    reforecast weekly. The win rate figure bounds the ensemble's edge: 88.8% of series
+    improve against the seasonal naive and the rest are flat or worse — coverage,
+    not perfection.
+
+    For planning: dense, M5-like demand plans with the ensemble; sparse, UCI-like
+    demand plans with the router. Neither supports an inventory-savings claim;
+    both support a pilot.
+
+    **Business summary:** Pick the method by demand shape, then reforecast often
+    — weekly for M5-like data. The honest deliverable is a pilot with measured
+    uncertainty, not a promised savings number.
+  figures: [uci:fold_stability, m5:horizon_growth, m5:win_rate]
   metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 - id: results
   text_md: |
-    **What these numbers do not show: savings.** Stockouts, promotions, and returns are
-    unmodeled, so no safety-stock or cost claim follows—the newsvendor layer is a
-    measuring stick, not a P&L. Later-horizon error grows on both tracks, M5 bands
-    under-cover their 80% target, and the synthetic ladder shows mechanics only, not
-    real-world accuracy. Regime transfer is unproven:
-    what wins dense loses sparse—moving one winner between regimes is exactly
-    what these experiments argue against. UCI zeros may be closed days, not true zero
-    demand, which no model here can tell apart.
+    **The headline ranking is in the WAPE bars figure: convex ensemble 0.491,
+    committed global LightGBM 0.498, seasonal naive 0.603** on the pooled,
+    scored-once 28-day test. The band calibration figure shows the cost of
+    honesty: 80% bands that cover 77.7%. The multi-step error figure carries the
+    sparse track.
+
+    **What these numbers do not show: savings.** Stockouts, promotions, and
+    returns are unmodeled, so no safety-stock or cost claim follows — the
+    newsvendor layer is a measuring stick, not a P&L. Later-horizon error grows
+    on both tracks, and the synthetic ladder shows mechanics only, not real-world
+    accuracy. Regime transfer is unproven — what wins dense loses sparse. And UCI
+    zeros may be closed days rather than true zero demand, which no model here
+    can tell apart.
+
+    **Business summary:** Expect a better forecast, honestly bounded: roughly
+    eleven fewer error points per hundred units on dense data, mostly-zero
+    discipline on sparse data, and no savings promise until costs are modeled.
   figures: [m5:wape_bars, m5:band_calibration, uci:multistep_error_vs_horizon]
   metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 - id: conclusions
   text_md: |
-    **Regime diagnosis is the reusable result.** Exact records behind the numbers above:
+    **Regime diagnosis is the reusable result.** Exact records behind the numbers
+    above:
 
-    | M5 candidate (28-day scored-once test) | test WAPE | test WRMSSE | win rate vs naive |
+    ## Exact numbers
+
+    M5 candidates on the frozen 28-day scored-once test (pooled; WRMSSE is the
+    competition-scale weighted error):
+
+    | M5 candidate | test WAPE | test WRMSSE | win rate vs naive |
     |---|---|---|---|
     | seasonal_naive | 0.603 | 0.762 | — |
     | auto_ets | 0.503 | 0.611 | 88.2% |
     | lgbm | 0.498 | 0.596 | 87.8% |
     | **convex_ensemble** | **0.491** | **0.596** | **88.8%** |
 
-    The committed global LightGBM is 0.498. The headline gaps: WAPE −0.1125
-    [−0.1228, −0.1026] and WRMSSE −0.1659 [−0.1772, −0.1552] for the ensemble;
-    −0.1057 [−0.1184, −0.0935] WAPE for LightGBM. The pure-L2 blend arm reaches 0.4905
-    WAPE / 0.5952 WRMSSE vs the WAPE blend's 0.4907 / 0.5958 and is the pooled-test-WRMSSE
-    champion—inside bootstrap noise, so the WAPE-primary headline stays the convex blend.
+    Headline gaps: WAPE −0.1125 [−0.1228, −0.1026] and WRMSSE −0.1659
+    [−0.1772, −0.1552] for the ensemble; −0.1057 [−0.1184, −0.0935] WAPE for
+    LightGBM. By class (test WAPE): dense 0.568 → 0.464 and intermittent
+    0.749 → 0.603 from seasonal naive to ensemble. Next-week service WAPE:
+    ensemble 0.4233 vs naive 0.5442 (gap −0.1208 [−0.1288, −0.1130]); weekly
+    blocks grow 0.4136 (week 1) → 0.5636 (week 4). Bands: LightGBM covers 77.7%
+    at 13.535 units mean width (**76.9% dense / 80.6% intermittent**); the ensemble
+    covers 77.7% at 13.342. Pure-L2 arm: 0.4905 WAPE / 0.5952 WRMSSE vs the WAPE
+    blend's 0.4907 / 0.5958 — inside bootstrap noise; the L2 blend
+    (ensemble_l2) is the pooled-test-WRMSSE champion and lgbm_l2 is
+    bitwise-identical to lgbm.
 
-    **Revision and wave record.** Wave 20 added the direct multi-horizon protocol (20
-    weekly origins, models for h=1..14) and the peak-capable candidates; wave 21 added
-    per-class win rates with bootstrap CIs and the hurdle/ensemble candidates; wave 22
-    added the MA/ADIDA/reconciled baselines, rmae/rmsse reporting, and the newsvendor
-    decision layer (holding 1.0 / stockout 3.0, headline service level q=0.90); wave 23
-    replaced the degenerate zero-width nowcast band—the champion's median sat on the zero
-    atom for 100% of test-window rows (75,880 of 75,880 predicted zero)—with the
-    sparse-history interval (predicted-zero rows take [0, history-q80]), covering 92.5%
-    at 6.01 units mean width vs the old band's 85.8% at 0.00 units, and priced cost-aware
-    routing on the scored origins: lumpy newsvendor 2.168 vs 2.213 per unit-demand (CI
-    excludes zero) for +0.57 lumpy MAE; pooled MAE 7.47 → 8.13. The routing-level
-    self-check on the selection origins totals 4.53M (cost rule) vs 4.72M (MAE rule) cost
-    units. Wave 24 committed the M5 headline track; wave 26 the rolling next-week service
-    measurement (an operational measurement across all origins, not a new holdout); wave
-    27 expanded the M5 booster feature space; wave 28 added the L1/L2 comparison arms
-    (lgbm_l2 is bitwise-identical to lgbm; ensemble_l2 minimises selection WRMSSE).
+    UCI selection champion (tuned boosting): 9.545 MAE / 1.078 MASE vs seasonal
+    naive 11.323 / 1.310; no run reaches MASE 1.0; automatic ETS loses to the
+    naive floor (11.471). Multi-horizon routing: lumpy h=7 MAE 6.09 vs floor
+    11.07 (gap [−7.74, −2.88]) but beats the floor on only 21.89% of lumpy
+    series [19.55, 24.32]; the router assigns zero to 945 of 1,069 lumpy series;
+    routed pooled MAE 7.47 vs zero's 9.28. Zero-aware band: predicted-zero rows
+    take [0, the series' history 80th percentile]; coverage 92.5% on the last
+    fold (93.0% across h=1..14) at 6.01 units mean width, vs the old zero-width
+    band's 85.8% at 0.00 units. Cost-aware routing at q=0.90: 878 of 1,069 lumpy
+    series routed to zero (+0.57 lumpy MAE [0.40, 0.78]); lumpy newsvendor 2.168
+    vs 2.213 per unit-demand ([−0.079, −0.016]); pooled MAE 7.47 → 8.13 [0.43,
+    0.92]. Routing-level self-check on the selection origins: 4.53M (cost rule)
+    vs 4.72M (MAE rule) cost units. Reconciliation: shrinkage w=0.50, incoherence
+    447.2→223.6, store MAE 746.0→731.0.
 
-    **Reproduce.**
-    `uv run python -m demand_forecasting.cli all` (synthetic pipeline, ~2 min, offline),
-    `uv run python -m demand_forecasting.cli all --data-source uci` (sparse track, ~30 min),
-    `uv run python -m demand_forecasting.cli evaluate-m5` (M5 headline, ~27 min, offline),
-    `uv run python -m demand_forecasting.cli tune-m5` (seeded 25-trial booster study, ~25 min),
-    `uv run python -m demand_forecasting.cli hpo` (Optuna, resumable).
-    Selection versus test origins are recorded in `reports*/evaluation_metadata.json`;
-    full tables in `reports*/report.html`; the UCI nowcast ladder's committed headline is
-    the final-holdout window, with the legacy pooled figures retained in metrics for
+    ## Protocol
+
+    M5 (m5_direct_v1): 10 weekly origins (8 selection, 2 test), 28-day horizon,
+    at least 1,096 training days; classes by Syntetos-Boylan ADI/CV² (thresholds
+    1.32 / 0.49) on each series' real history up to the last selection origin:
+    463 dense, 137 intermittent. UCI nowcast ladder (rolling_origin_holdout_v1):
+    4 expanding origins with a 7-day embargo; origins 1–3 select, origin 4 (the
+    holiday window) scores once. UCI multi-step (direct_multihorizon_v1): 20
+    weekly origins (16 selection, 4 test) with models for h=1..14. Metrics: MAE
+    is mean |actual − forecast| over scored cells; WAPE is pooled absolute error
+    over pooled demand; MASE divides by the seasonal-naive error; WRMSSE is the
+    M5 competition scale. Gaps use a paired cluster bootstrap over series with
+    2,000 replications (seeds 53–56 headline, 2044 class and routing, 8843 win
+    rates, 9644–9763 cost-aware). Newsvendor assumptions: holding 1.0 / stockout
+    3.0 per unit per day, headline service level q=0.90 — documented assumptions,
+    no savings claims.
+
+    ## Limits
+
+    The 80% M5 bands cover 77.7%. Stockouts, promotions, returns, and
+    safety-stock policies are unmodeled — no savings or safety-stock claim until
+    they are validated on the target panel. Later-horizon error grows on both
+    tracks, so reforecast weekly. The synthetic ladder shows mechanics only, not
+    real-world accuracy. Regime transfer is unproven: what wins dense loses
+    sparse, and UCI zeros may be closed days, not true zero demand. The lumpy
+    routing gain is magnitude, not coverage — only 21.89% of lumpy series beat
+    the floor. Cost-aware routing pays only at the headline q=0.90 on lumpy
+    demand; at q=0.80/0.95 and on erratic demand it is a wash.
+
+    ## Revision notes
+
+    Wave 20 added the direct multi-horizon protocol (20 weekly origins, models
+    for h=1..14) and the peak-capable candidates; wave 21 added per-class win
+    rates with bootstrap CIs and the hurdle/ensemble candidates; wave 22 added the
+    MA/ADIDA/reconciled baselines, rmae/rmsse reporting, and the newsvendor
+    decision layer (holding 1.0 / stockout 3.0, headline service level q=0.90);
+    wave 23 replaced the degenerate zero-width nowcast band—the champion's median
+    sat on the zero atom for 100% of test-window rows (75,880 of 75,880 predicted
+    zero)—with the sparse-history interval (predicted-zero rows take [0,
+    history-q80]), covering 92.5% at 6.01 units mean width vs the old band's 85.8%
+    at 0.00 units, and priced cost-aware routing on the scored origins: lumpy
+    newsvendor 2.168 vs 2.213 per unit-demand (CI excludes zero) for +0.57 lumpy
+    MAE; pooled MAE 7.47 → 8.13. The routing-level self-check on the selection
+    origins totals 4.53M (cost rule) vs 4.72M (MAE rule) cost units. Wave 24
+    committed the M5 headline track; wave 26 the rolling next-week service
+    measurement (an operational measurement across all origins, not a new
+    holdout); wave 27 expanded the M5 booster feature space; wave 28 added the
+    L1/L2 comparison arms (lgbm_l2 is bitwise-identical to lgbm; ensemble_l2
+    minimises selection WRMSSE).
+
+    ## Reproduce
+
+    `uv run python -m demand_forecasting.cli all` (synthetic pipeline, ~2 min,
+    offline), `uv run python -m demand_forecasting.cli all --data-source uci`
+    (sparse track, ~30 min), `uv run python -m demand_forecasting.cli evaluate-m5`
+    (M5 headline, ~27 min, offline), `uv run python -m demand_forecasting.cli
+    tune-m5` (seeded 25-trial booster study, ~25 min), `uv run python -m
+    demand_forecasting.cli hpo` (Optuna, resumable). Selection versus test
+    origins are recorded in `reports*/evaluation_metadata.json`; full tables in
+    `reports*/report.html`; the UCI nowcast ladder's committed headline is the
+    final-holdout window, with the legacy pooled figures retained in metrics for
     comparison.
+
+    ```mermaid
+    graph TD
+      N["New panel of series"] --> Q{"Zero-share and ADI diagnosis"}
+      Q -->|"dense, M5-like"| E["Deploy the convex ensemble<br/>reforecast weekly"]
+      Q -->|"sparse, UCI-like"| R["Deploy the mostly-zero router<br/>with zero-aware bands"]
+      Q -->|"unknown or mixed"| V["Pilot first<br/>measure before scaling"]
+      E --> H["Hold to protocol:<br/>frozen windows, floors, intervals"]
+      R --> H
+      V --> H
+      H --> X["No transfer claim across regimes"]
+    ```
+
+    **Business summary:** Regime diagnosis is the reusable result: classify
+    demand, then pick the measured winner for that class. Everything else —
+    intervals, floors, scored-once tests — is there to keep that choice honest.
   figures: []
   metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
 - status: delivered
-  text: "M5: 11 candidates, frozen 28-day tests, next-week service, bootstrap gaps, class results, and measured 77.7% band coverage."
+  text: "Beat the seasonal-naive floor on M5: 11 candidates, frozen 28-day tests, next-week service."
 - status: delivered
-  text: "UCI/synthetic: leakage-safe ladders, direct horizons, conservative sparse routing, reconciliation, and explicit negative results."
+  text: "Reported class results, bootstrap gaps, and measured 77.7% band coverage."
 - status: delivered
-  text: "Non-degenerate sparse nowcast intervals: predicted-zero rows take [0, history-q80]; 92.5% coverage at 6.01 units width vs the zero-width band's 85.8%, still conservative."
+  text: "Built leakage-safe UCI ladders with direct horizons and conservative sparse routing."
 - status: delivered
-  text: "Cost-aware routing at q=0.90 priced on test origins: lumpy newsvendor 2.168 vs 2.213 per unit-demand (CI excludes zero) for +0.57 lumpy MAE — the trade-off is measured, not asserted."
-- status: deferred
-  text: "No savings or safety-stock claim until returns, stockouts, promotions, and operating costs are validated on the target panel."
+  text: "Shipped non-degenerate sparse nowcast intervals: 92.5% coverage at 6.01 units mean width."
+- status: delivered
+  text: "Priced cost-aware routing: newsvendor 2.168 vs 2.213 per unit-demand at q=0.90."
 figure_captions:
   m5:wape_bars: "Test-origin pooled WAPE for all 11 M5 candidates: convex_ensemble leads the headline blend at 0.491 versus seasonal naive 0.603. The committed global LightGBM is 0.498; `ensemble_l2` is a separate comparison at 0.4905."
   m5:class_comparison: "M5 test WAPE by ADI/CV² volume class (463 dense, 137 intermittent): dense 0.568→0.464 and intermittent 0.749→0.603 from seasonal naive to the ensemble. These are M5 results, not the UCI sparse panel."
   m5:win_rate: "M5 per-series wins against seasonal naive on the scored test origins: ensemble 88.8% pooled, 88.6% dense, and 89.8% intermittent. Candidates span 82.8–88.8%, so the pooled margin and per-series coverage tell different parts of the result."
   m5:band_calibration: "M5 per-series scaled split-conformal 80% bands on scored test origins. LightGBM covers 77.7% at 13.535 units mean width (76.9% dense / 80.6% intermittent); the ensemble covers 77.7% at 13.342, slightly below target."
+  m5:horizon_growth: "Horizon-wise MAE on the scored test origins: error grows sub-linearly with horizon, and at h=28 the committed LightGBM sits 0.85 units per day below the seasonal naive (5.61 vs 6.46)."
+  uci:multistep_routing: "Routing effect per class on scored origins — all-HGB MAE minus routed MAE, 95% paired bootstrap CI over series and origins: erratic +22.88 [11.83, 35.21] and lumpy +3.98 [3.34, 4.76]. Positive values mean routing helps."
   eda_series_overview: "Four representative daily series from the seeded synthetic CI hierarchy—not M5 or UCI. Each combines a slow trend with a weekly cycle, the structures the fast-path models must capture."
   eda_units_distribution: "Daily units pooled over the 24 synthetic CI series. The wide, right-skewed levels explain why one global mean scores MAE 31.8 and why series-aware features are tested."
   hpo_history: "Seeded 56-trial Optuna history for sklearn HGB on the synthetic track: CV MAE improves modestly from 8.619 (default) to 8.529 (best). This tuning result is not attributed to M5 or UCI."
