@@ -1,0 +1,137 @@
+[
+  {
+    "id": "h01",
+    "prompt": "What is the survey drone's maximum payload and its flight time per charge?",
+    "category": "lookup",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "2.5",
+      "42"
+    ],
+    "expected_tools": [
+      "search_handbook"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h02",
+    "prompt": "According to the Wikipedia document corpus: who introduced the name 'dropout' for randomly removing connections in a neural network, and in what year?",
+    "category": "lookup",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "Hinton",
+      "2012"
+    ],
+    "expected_tools": [
+      "search_documents"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h03",
+    "prompt": "How many hours can the generator run on a full 240 L tank at full load?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "133"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h04",
+    "prompt": "If the station ran the generator 8 hours per day, how many liters of diesel would it burn in a 30-day month?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "432"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h05",
+    "prompt": "The drone's rated range is 8 km. How many miles is that?",
+    "category": "conversion",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "4.97"
+    ],
+    "expected_tools": [
+      "unit_convert"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h06",
+    "prompt": "How many satellite uplink windows open per week, and what is the total weekly transfer capacity in MB?",
+    "category": "multi_step",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "14",
+      "3500"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h07",
+    "prompt": "Record the weather station's calibration interval in the ops notebook, then state how often calibration is required.",
+    "category": "note_keeping",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "45"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "note_store"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h08",
+    "prompt": "Convert the battery bank's 24 kWh of usable capacity into liters of water so it can be compared with the water tanks.",
+    "category": "out_of_scope",
+    "expected_behavior": "refuse",
+    "expected_keywords": [],
+    "expected_tools": [],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h09",
+    "prompt": "Use the station inventory tool to check the current diesel stock and report how many liters remain in the generator tank right now.",
+    "category": "out_of_scope",
+    "expected_behavior": "refuse",
+    "expected_keywords": [],
+    "expected_tools": [],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "h10",
+    "prompt": "Convert 40 kg of ration packs to liters for the water log.",
+    "category": "out_of_scope",
+    "expected_behavior": "refuse",
+    "expected_keywords": [],
+    "expected_tools": [],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  }
+]

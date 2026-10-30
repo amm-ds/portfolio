@@ -1,0 +1,228 @@
+[
+  {
+    "id": "t01",
+    "prompt": "What is the sample freezer setpoint and its alarm band?",
+    "category": "lookup",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "-20",
+      "3"
+    ],
+    "expected_tools": [
+      "search_handbook"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t02",
+    "prompt": "Which radio channel and frequency are used for the hourly check-ins?",
+    "category": "lookup",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "3",
+      "146.46"
+    ],
+    "expected_tools": [
+      "search_handbook"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t03",
+    "prompt": "How many liters of diesel does the generator burn in one week?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "75.6"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t04",
+    "prompt": "After a typical 8-hour night (base load plus the HVAC surge), how many kWh of usable battery capacity remain in the battery bank?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "8.5"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t05",
+    "prompt": "What is the total daily energy yield of the solar array's panels in kWh, before inverter losses?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "38.4"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t06",
+    "prompt": "For how many full days does the station's total water storage last the crew at the budgeted consumption rate?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "12"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t07",
+    "prompt": "Convert the 48 km one-way distance to the relay station to miles.",
+    "category": "conversion",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "29.8258"
+    ],
+    "expected_tools": [
+      "unit_convert"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t08",
+    "prompt": "Convert 25 kg of ration packs to pounds.",
+    "category": "conversion",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "55.1156"
+    ],
+    "expected_tools": [
+      "unit_convert"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t09",
+    "prompt": "What is -20 \u00b0C in Fahrenheit?",
+    "category": "conversion",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "-4"
+    ],
+    "expected_tools": [
+      "unit_convert"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t10",
+    "prompt": "How many MB can be transferred via satellite uplink per day in total?",
+    "category": "multi_step",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "500"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t11",
+    "prompt": "How many ration packs are stored across both supply caches, and what is their combined weight in kg?",
+    "category": "multi_step",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "65",
+      "39"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t12",
+    "prompt": "Compute the station's total water storage in liters and record the figure in the ops notebook for the weekly log.",
+    "category": "note_keeping",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "6200"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator",
+      "note_store"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t13",
+    "prompt": "How many liters of diesel must be on hand to satisfy the fuel reserve policy?",
+    "category": "calculation",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "129.6"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t14",
+    "prompt": "Can one satellite uplink window carry the compressed daily science data? Answer yes or no with the numbers.",
+    "category": "multi_step",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "450"
+    ],
+    "expected_tools": [
+      "search_handbook",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  },
+  {
+    "id": "t15",
+    "prompt": "According to the Wikipedia document corpus: in what year did the Wright brothers make the first controlled, sustained flight of a powered aircraft, and in what year did wind power supply over 2000 TWh of electricity? How many years separate the two events?",
+    "category": "lookup",
+    "expected_behavior": "answer",
+    "expected_keywords": [
+      "1903",
+      "2022",
+      "119"
+    ],
+    "expected_tools": [
+      "search_documents",
+      "calculator"
+    ],
+    "max_steps": 8,
+    "latency_budget_s": 60.0
+  }
+]
