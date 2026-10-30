@@ -5,148 +5,230 @@ sections:
   - id: background
     text_md: |
       **Sorting news into four topics, a compact model trained on all 120k
-      articles scores 95 of 100 on a fresh holdout; a keyword model scores 88
-      while classifying 40× faster, no token cost.** A confidence router
-      matches that quality, sending 3 of 4 items down the cheap path.
+      articles scores 95 of 100 on a fresh holdout; a keyword model scores
+      88 while classifying about 40× faster at zero token cost.** The
+      system diagram shows the confidence router that keeps the first's
+      quality at the second's price for three of four items.
 
-      **Data.** AG News—127,600 real headline+description items from
-      HuggingFace `fancyzhx/ag_news`; license unknown.
+      ```mermaid
+      flowchart LR
+        subgraph In["Input"]
+          A["AG News item<br/>headline + description"]
+        end
+        subgraph Cheap["Keyword path - free"]
+          K["TF-IDF + logistic regression<br/>~4,478 items/s, $0"]
+        end
+        subgraph Expert["Transformer path - ~$0.066 per 1k items"]
+          T["DistilBERT, trained on all 120k articles"]
+        end
+        A --> C{"Keyword confidence<br/>at or above threshold?"}
+        C -->|"yes: about 3 of 4 items"| K
+        C -->|"no: the uncertain quarter"| T
+        K --> O["Sorted item"]
+        T --> O
+      ```
 
-      **Limits.** The bounded test set helped pick the shipped model, biasing
-      that reading; the fresh holdout is unbiased. Tuning beat defaults within
-      seed noise; Business/Sci/Tech headlines remain hardest.
+      AG News: 127,600 real headline-plus-description items; the standard
+      training portion has 120k rows; license recorded as unknown.
 
-      **In plain terms:** triage, not magic—the fast keyword reader clears
-      obvious items; the slower expert sees the uncertain ones (0.9020
-      macro-F1, 75.4% at keyword cost).
+      **Business summary:** A keyword model sorts obvious news free and
+      fast; the transformer sorts the uncertain quarter; together they
+      match its 95-point fresh score while three of four items ride free.
+    figures: []
   - id: objectives
     text_md: |
-      Which rung of a model ladder — majority-class floor, random guessing,
-      keyword statistics, a compact neural model, or that same model trained
-      on all available data — sorts four-topic news best under a fixed compute
-      budget, measured with an honest account of what model selection did to
-      the test data?
+      **Which rung of a model ladder earns its cost under a fixed compute
+      budget?** The candidates: a majority-class floor, random guessing,
+      keyword statistics, a compact neural model. The top rung trains that
+      model on all available data. The decision-flow diagram fixes the
+      rungs and the judging rules.
 
-      - Beat two naive floors, so the gain is visible against trivial
-        policies.
-      - Anchor on a classical TF-IDF + logistic regression model before any
-        neural rung.
-      - Tune with a seeded search and disclose exactly what the test set was
-        used for.
-      - Keep every rung reproducible on a laptop, and extend the evidence to
-        the full 120k training split.
+      ```mermaid
+      flowchart LR
+        subgraph Ladder["The ladder, cheapest first"]
+          F1["Floor 1: always the majority class"]
+          F2["Floor 2: random guessing, seeded"]
+          R3["Rung 3: TF-IDF + logistic regression"]
+          R4["Rung 4: compact transformer, bounded sample"]
+          R5["Rung 5: same model, all 120k articles"]
+          F1 --> F2 --> R3 --> R4 --> R5
+        end
+        subgraph Judge["One judge for every rung"]
+          M["Accuracy and macro-F1 — the unweighted<br/>mean of per-topic F1, so a rare topic<br/>counts as much as a common one"]
+          H["Honest account of what model<br/>selection did to the test data"]
+        end
+        R5 --> M
+        M --> H
+      ```
+
+      - Beat two naive floors, so the gain shows against trivial policies.
+      - Anchor on the classical TF-IDF + logistic regression model before any neural rung.
+      - Tune with a seeded search. Disclose exactly what the test set was used for.
+      - Keep every rung laptop-reproducible. Then extend the evidence to the full 120k split.
+
+      **Business summary:** Five rungs, one judge: accuracy and mean
+      per-topic F1 against two trivial floors, with the test set's
+      selection role disclosed.
+    figures: []
   - id: data
     text_md: |
-      AG News contains 127,600 headline + description items across four
-      classes; the standard training portion has 120k rows. Its license is
-      recorded as `unknown`. See [the dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/).
+      AG News holds 127,600 headline-plus-description items across four
+      topics. The standard training portion has 120k rows. The license is
+      recorded as `unknown` — see [the dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/).
+      The data-lineage diagram shows each split and its role.
 
-      - **The sample split:** a seeded, stratified 4,000-article training
-        sample — 3,600 for training, 400 held back as a validation slice —
-        scored on a 1,000-article test set of exactly 250 per topic.
-      - **The full split:** 108k train / 12k validation from the full 120k
-        portion, scored on the same 1,000-article test set.
-      - **The fresh holdout:** a separate 1,000 articles drawn from the 6,600
-        the sample never used, disjoint by construction.
-      - **The scale ladder:** the same seeded protocol at 3.6k / 10.8k / 36k
-        training rows, isolating data size as the only varying factor.
+      ```mermaid
+      flowchart LR
+        subgraph AG["AG News - 127,600 items, four topics"]
+          FULL["Full 120k training portion"] --> FS["108k train / 12k validation"]
+          SMP["Seeded 4,000-article sample"] --> SS["3,600 train / 400 validation"]
+          FS --> T["Shared bounded test set<br/>1,000 articles, exactly 250 per topic"]
+          SS --> T
+          COMP["6,600-article complement"] --> FH["Fresh holdout: 1,000 articles<br/>the selection never touched"]
+        end
+        subgraph Ladder["Scale ladder - one varying factor"]
+          N1["3.6k train rows"] --> N2["10.8k train rows"] --> N3["36k train rows"]
+        end
+        T --> SEL["Model selection<br/>biased by design"]
+        FH --> UNB["Unbiased headline reading"]
+      ```
+
+      - **The sample split:** seeded and stratified — 3,600 train, 400 validation — on a 1,000-article test set of exactly 250 per topic.
+      - **The full split:** 108k train / 12k validation from the full 120k portion, on the same test set.
+      - **The fresh holdout:** 1,000 articles from the sample's unused 6,600, disjoint by construction.
+      - **The scale ladder:** the same seeded protocol at 3.6k / 10.8k / 36k rows; data size is the only varying factor.
+
+      **Business summary:** Four fixed views of AG News: a bounded sample
+      track that selected the shipped model, a full-data track, a fresh
+      holdout the selection never touched, and a same-protocol scale ladder.
+    figures: []
   - id: eda
     text_md: |
-      Every rung is judged the same way: accuracy and macro-F1 — the
+      Every rung is judged the same way: accuracy and macro-F1, the
       unweighted mean of per-topic F1, so a rare topic counts as much as a
-      common one — on one fixed 1,000-article test set, against two naive
-      floors (always predict the majority class; random guessing) as the
-      baseline everything must beat.
+      common one. The arena is one fixed 1,000-article test set. Two naive
+      floors set the bar: always the majority class, or random guesses.
 
-      Two design choices keep the comparison readable. The sample split is
-      exactly 25% per class and its texts cluster at 20–50 words, inside the
-      128-token budget, so class balance and truncation cannot explain the
-      score differences. And because the shipped bounded model was selected
-      using that same test set, the headline reading comes from a fresh
-      holdout — 1,000 articles the selection never touched — which turns a
-      selection-biased comparison into an unbiased one.
+      Two design choices keep the comparison readable; the class-balance
+      figure shows both. The bounded splits are exactly 25% per class.
+      Train texts cluster at 20–50 words, inside the 128-token budget, so
+      priors and truncation cannot explain the gaps.
+
+      One honesty measure matters more: the bounded test set helped pick
+      the shipped model, so its readings are biased. The headline comes
+      from the fresh holdout — 1,000 articles the selection never touched.
+
+      **Business summary:** Balanced classes, short texts, one shared test
+      set, two trivial floors. The headline reading comes from a fresh
+      holdout the selection never touched.
     figures: [eda_class_balance]
   - id: training
     text_md: |
-      **The ladder.** On the shared test set the floors are useless (0.1000
-      and 0.2533 macro-F1), the keyword model reaches 0.8714, and the bounded
-      transformer 0.9021; trained on all 120k articles the same model reaches
-      0.9460. On the fresh holdout the ordering holds and widens: keyword
-      0.8785, bounded 0.8962, full-data 0.9529 — so the full-data advantage is
-      not a selection artifact; it replicates on data the selection never
-      touched.
+      **The ladder.** On the shared test set the floors are useless
+      (0.1000 and 0.2533 macro-F1), the keyword model reaches 0.8714, the
+      bounded transformer 0.9021, and the same model trained on all 120k
+      articles 0.9460. On the fresh holdout the ordering holds and widens:
+      keyword 0.8785, bounded 0.8962, full-data 0.9529; the advantage is
+      not a selection artifact. The training-curve figure shows validation
+      plateauing within two epochs while training loss keeps falling. The
+      epochs-probe figure shows a four-epoch run peaking at validation
+      macro-F1 0.9477 in epoch 3, then sliding: extra epochs overfit.
 
-      **Why the gap exists — data, not device.** Rung for rung at identical
-      settings, each tripling of training rows buys +1.5, +1.6 and +1.3
-      macro-F1 points on the test split — a monotone, decelerating slope that
-      repeats on the fresh holdout (+1.5 / +2.1 / +1.0). A twin rung trained
-      on the same rows with the other compute device lands within 0.011
-      macro-F1, so device is not what moved the score.
+      **Why the gap exists — data, not device.** Rung for rung at
+      identical settings, each tripling of rows buys +1.5, +1.6, and +1.3
+      macro-F1 points on the test split — a slope that repeats on the
+      fresh holdout (+1.5 / +2.1 / +1.0). A twin rung on the other device,
+      same rows, lands within 0.011 macro-F1: device did not move the
+      score.
 
-      **Tuning changed little.** A seeded hyperparameter search lifted
-      validation macro-F1 from 0.8880 to 0.8953, but the retrained candidate
-      did not carry that gain to test, and three seeds of its best setting
-      average 0.8910 ± 0.0042 — inside seed noise. That is a finding, not a
-      failure: the default recipe is the strong one at this scale.
+      **Tuning changed little.** A seeded search lifted validation
+      macro-F1 from 0.8880 to 0.8953, but the retrained candidate did not
+      carry the gain to test; three seeds average 0.8910 ± 0.0042, inside
+      seed noise. The hpo-history figure shows all twelve trials. The
+      default recipe is the strong one here.
 
-      **Confidence can be fixed after the fact.** Fitting one temperature on
-      validation data cuts test calibration error from 0.0467 to 0.0133 — a
-      71% reduction — without changing a single prediction.
-
-      **Serving is the real trade-off.** Measured on one machine, the keyword
-      model classifies ~4,478 items per second at zero token cost; the
-      transformer manages ~110 per second at ~$0.066 per 1,000 items.
-      Eight-bit quantization halves the model's memory with no measured
-      quality loss on its evaluation sample, but is slower at batch size 1 —
-      it buys memory, not speed.
-
-      **A router captures both.** Sending the items the keyword model is
-      unsure about to the transformer (24.6% escalated at threshold 0.50)
-      yields 0.9020 macro-F1 — better than either constituent alone (0.8785 /
-      0.8962) — while 75.4% of items stay on keyword economics.
+      **Confidence can be fixed after the fact.** One temperature fitted
+      on validation cuts test calibration error — ECE, expected calibration
+      error — from 0.0467 to 0.0133 (−71%) without changing a single
+      prediction.
 
       **Errors concentrate where topics blur.** The dominant confusion is
-      Business predicted as Sci/Tech: 24 of 250 bounded test items, falling to
-      15 of 250 at 20k rows and 14 of 250 at full data. Hybrid headlines
-      remain the open problem.
+      Business predicted as Sci/Tech: 24 of 250 bounded test items,
+      falling to 15 of 250 at 20k rows and 14 of 250 at full data. Hybrid
+      headlines remain the open problem.
+
+      **Business summary:** More training data moved the score — each
+      tripling about +1.5 macro-F1 points to 0.9460 test, 0.9529 fresh;
+      tuning added nothing; one temperature cut calibration error 71%.
     figures: [training_curve, epochs_probe, hpo_history]
     metrics_keys: [baseline_tfidf_logreg, encoder_b, distilbert, distilbert_tuned, distilbert_scale_4000, distilbert_scale_12000, distilbert_scale_40000, distilbert_full_120k]
   - id: evaluation
     text_md: |
       For a feed operator these numbers are an operating policy, not a
-      leaderboard. Where volume is high and a mis-sorted item is cheap, the
-      keyword model — or better, the router — is the right spend; where an
-      item is expensive to misclassify, the full-data model's 7-point
-      fresh-holdout edge over the keyword floor justifies its per-item price.
-      The tuning null result also means the headline score hides no tuning
-      budget: the recipe that produced it is the one a colleague can re-run.
+      leaderboard. On one machine at batch size 1, the keyword model
+      classifies ~4,478 items per second at zero token cost. The bounded
+      transformer manages ~111 per second at about $0.066 per 1,000 items.
+      The full-data model is priced the same and scores higher. Eight-bit
+      quantization halves memory (255.5 → 132.3 MB) with no measured
+      quality loss on its train sample, but it is slower at batch size 1:
+      it buys memory, not speed. The decision-flow diagram turns these
+      into a policy.
 
-      **Business summary:** default to the confidence router — keyword model
-      first, transformer on the roughly one item in four the keyword model
-      doubts — for the best measured quality per dollar; reserve the
-      full-data model for high-value traffic; treat the two bounded
-      transformer candidates as interchangeable, since fresh data ties them
-      within noise.
+      ```mermaid
+      flowchart LR
+        A["Incoming news item"] --> K["Keyword model scores it<br/>and reports a confidence"]
+        K --> Q{"Confidence at or<br/>above 0.50?"}
+        Q -->|"yes: 75.4% of items"| CHEAP["Sorted at keyword speed<br/>zero token cost"]
+        Q -->|"no: 24.6% escalated"| TR["Sorted by the transformer"]
+        CHEAP --> OUT["Routed macro-F1 0.9020<br/>beats either model alone"]
+        TR --> OUT
+        HV["High-value traffic"] --> FD["Full-data model<br/>0.9529 fresh macro-F1"]
+      ```
+
+      On the fresh holdout, escalating items below τ=0.50 yields 0.9020
+      macro-F1. It beats either model alone (0.8785 / 0.8962). 75.4% of
+      items stay on keyword economics; raising τ escalates more without
+      improving quality. Where a mis-sort is expensive, the full-data
+      model's 7-point fresh edge over the keyword baseline justifies the
+      price.
+
+      **Business summary:** Route by keyword confidence: 75.4% of items
+      sort free at 0.9020 macro-F1, better than either model alone;
+      reserve the full-data model for items where a mistake is expensive.
+    figures: []
   - id: results
     text_md: |
-      - The bounded test scores are selection-biased: they helped choose the
-        shipped model. The fresh holdout repairs this for the headline, not
-        for every secondary number.
-      - The accuracy reading is per-item, English-only, on four clean topics;
-        production taxonomies with overlapping or multi-label items are a
-        different problem.
-      - Quantized-model quality is measured on a training sample, not test
-        data, and all serving speeds come from one machine at batch size 1.
-      - Tuning ties the default within noise at this scale; a larger tuning
-        budget might separate them, and this project does not show that it
-        would not.
+      **The bounded scores are selection-biased; the figures show where
+      that matters.** The confusion-matrix figure comes from the
+      test-selected bounded model: Business → Sci/Tech remains the
+      dominant off-diagonal pair. The per-class comparison figure shows
+      the residual gap concentrating in Business and Sci/Tech against the
+      TF-IDF baseline. The scale-ladder figure traces the monotone data
+      slope on the bounded test split. Its lone CPU marker sits 0.0002
+      macro-F1 from its same-rows MPS twin: device is not the confound.
+      The fresh holdout repairs the headline bias — 0.9529 versus 0.9460 —
+      but not every secondary number.
+
+      **What this does not show: production breadth.** The reading is
+      per-item, English-only, on four clean topics. Production taxonomies
+      with overlapping or multi-label items are a different problem.
+      Quantized quality is measured on a training sample, not test data.
+      All speeds come from one machine at batch size 1. Tuning ties the
+      default within noise; a larger budget might separate them, unproven
+      here.
+
+      **Business summary:** Errors cluster where Business and Sci/Tech
+      blur; the ladder confirms data, not device, drives the score;
+      bounded numbers hold only where fresh data backs them.
     figures: [confusion_matrix_selected, per_class_f1_comparison, scale_ladder]
   - id: conclusions
     text_md: |
       Full evidence: exact tables, run identities, revision notes, and
-      reproduction commands.
+      reproduction commands — final state only.
 
-      **Bounded ladder** (all rungs on the shared 1,000-row test set; run ids
+      ## Exact numbers
+
+      Bounded ladder (all rungs on the shared 1,000-row test set; run ids
       as recorded in `reports/metrics.json`):
 
       | # | run | accuracy | f1_macro |
@@ -159,9 +241,9 @@ sections:
       | 6 | `distilbert_tuned` (bounded; test-selected) | 0.9020 | 0.9021 |
       | 7 | `distilbert_full_120k` | 0.9460 | 0.9460 |
 
-      **Serving economics** (probe on an Apple M4 Max, CPU batch=1, n=200;
-      rate card $1/M input + $4/M output tokens; int8 quality measured on a
-      2,000-row train sample, not test):
+      Serving economics (probe on an Apple M4 Max, CPU batch=1, n=200;
+      rate card $1/M input + $4/M output tokens; int8 quality measured on
+      a 2,000-row train sample, not test):
 
       | variant | MB | p50 ms | pred/s | $/1k | acc | f1 |
       |---|---|---|---|---|---|---|
@@ -170,11 +252,12 @@ sections:
       | `distilbert_full_120k` fp32 | 255.5 | 8.7 | 112.5 | 0.0654 | 0.9460 | 0.9460 |
       | `distilbert_full_120k` int8 | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
 
-      **Controlled data-scale ladder** (figure `scale_ladder`; rungs trained
+      Controlled data-scale ladder (figure `scale_ladder`; rungs trained
       through `train-nn --full-data --subset N --device mps`, seed 42,
       identical hypers; per-rung wall clocks 84.2 s / 291.8 s / 994.6 s in
-      `reports/scale_meta_<N>.json`). Every rung is scored on both the bounded
-      test split and the same fresh holdout — one varied factor at a time:
+      `reports/scale_meta_<N>.json`). Every rung is scored on both the
+      bounded test split and the same fresh holdout — one varied factor at
+      a time:
 
       | train rows | run | device | val F1 | test macro-F1 | fresh macro-F1 |
       |---|---|---|---|---|---|
@@ -184,66 +267,39 @@ sections:
       | 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | 0.9428 |
       | 108k | `distilbert_full_120k` | MPS | 0.9464 | 0.9460 | 0.9529 |
 
-      - **Device component measured:** the same-rows twins differ by 0.0002
-        macro-F1 on the test split and 0.0105 on the fresh holdout (the MPS
-        twin's best epoch is 2 versus the CPU twin's epoch 1 — depth + fp
-        noise, still inside the ±1.9-point accuracy CI). Device is not what
-        moved the bounded-to-full gap.
-      - **Data component measured:** at fixed device and hypers each 3× step
-        buys +1.5 points (3.6k→10.8k), +1.6 points (10.8k→36k) and +1.3
-        points (36k→108k) on the test split — a monotone, decelerating curve
-        that reproduces on the fresh holdout (+1.5 / +2.1 / +1.0 points). The
-        legacy CPU 18k evidence run (0.9270) lands exactly between the 10.8k
-        and 36k rungs, as its size predicts.
-      - **HPO record:** seeded Optuna TPE, median pruning, 12 trials; seed
-        bests 0.8953 / 0.8852 / 0.8926 (mean 0.8910 ± 0.0042); best
-        validation 0.8953 did not transfer to test. Calibration: a
-        validation-fitted temperature T=0.843 cuts test ECE 0.0467 → 0.0133
-        (−71%) without changing predictions.
-      - **Full-run training:** the shipped two-epoch full-data run validates
-        0.9433 → 0.9464 at ~18–27 min/epoch on Apple-Silicon MPS. A separate
-        four-epoch probe with early stopping disabled peaks at validation
-        macro-F1 0.9477 in epoch 3 (+0.0003 over epoch 2, −0.0003 by epoch 4)
-        while validation loss rises — extra epochs overfit rather than
-        improve, and the probe is not a better headline: `reports/history_fulldata.json`
-        and `reports/history_probe4.json` differ in early epochs because total
-        step count changes the LR schedule.
-      - **Error floor detail:** dominant confusion Business → Sci/Tech falls
-        24/250 → 15/250 → 14/250 across the 3.6k / 20k / full runs;
-        representative bounded-test errors from the test-selected artifact
-        (full list in `reports/misclassification_examples.json`):
+      - **Device component measured:** the same-rows twins differ by
+        0.0002 macro-F1 on the test split and 0.0105 on the fresh holdout
+        (the MPS twin's best epoch is 2 versus the CPU twin's epoch 1 —
+        still inside the ±1.9-point accuracy CI). Device is not what moved
+        the bounded-to-full gap.
+      - **Data component measured:** at fixed device and hypers each 3×
+        step buys +1.5 points (3.6k→10.8k), +1.6 points (10.8k→36k), and
+        +1.3 points (36k→108k) on the test split — a monotone,
+        decelerating curve that reproduces on the fresh holdout (+1.5 /
+        +2.1 / +1.0 points).
 
-      | text snippet | true | predicted |
-      |---|---|---|
-      | "Amazon Snaps Up China's Largest Web Retailer…" | Business | Sci/Tech |
-      | "India's Tata makes powerful debut…" | World | Business |
-      | "Dell Exits Low-End China Consumer PC Market…" | Sci/Tech | Business |
-      | "Future Doctors, Crossing Borders…" | World | Sci/Tech |
-      | "U.S. Misses Cut in Olympic 100 Free…" | World | Sports |
-      | "103 arrests for Internet fraud…" | Sci/Tech | World |
-
-      **Fresh-holdout reading** (`reports/fresh_holdout.json`; 1,000 rows drawn
+      Fresh-holdout reading (`reports/fresh_holdout.json`; 1,000 rows drawn
       from the 6,600-row complement of the bounded split — disjoint by
       construction, no retraining):
 
       | run | fresh acc | fresh macro-F1 |
       |---|---|---|
       | `baseline_tfidf_logreg` | 0.8790 | 0.8785 |
-      | `distilbert` (wave-2 artifact) | 0.8960 | 0.8962 |
+      | `distilbert` (initial bounded artifact) | 0.8960 | 0.8962 |
       | `distilbert_tuned` candidate (HPO-retrained) | 0.9030 | 0.9031 |
       | `encoder_b` (roberta-base) | 0.9070 | 0.9074 |
       | `distilbert_full_120k` | 0.9530 | 0.9529 |
 
-      Fresh data **flips the tuned selection**: the HPO-retrained model beats
-      the wave-2 artifact by +0.0069 macro-F1 (0.9031 vs 0.8962), against the
-      test split's +0.0010 the other way. Both margins sit inside test noise —
-      the honest reading is that the two bounded candidates are tied at this
-      scale, and the fresh holdout confirms the headline: the full-data model
-      reads 0.9529 here versus 0.9460 on the bounded split.
+      Fresh data flips the tuned selection: the HPO-retrained model beats
+      the initial bounded artifact by +0.0069 macro-F1 (0.9031 vs 0.8962),
+      against the test split's +0.0010 the other way. Both margins sit
+      inside test noise — the honest reading is that the two bounded
+      candidates are tied at this scale, and the fresh holdout confirms
+      the headline: 0.9529 versus 0.9460 on the bounded split.
 
-      **Confidence-routed serving** (same fresh holdout; TF-IDF max-probability
-      router, escalate below τ to the served transformer; endpoints reproduce
-      the constituents by construction):
+      Confidence-routed serving (same fresh holdout; TF-IDF max-probability
+      router, escalate below τ to the served transformer; endpoints
+      reproduce the constituents by construction):
 
       | τ | escalated | macro-F1 |
       |---|---|---|
@@ -254,33 +310,117 @@ sections:
       | 0.90 | 94.8% | 0.8962 |
       | 1.00 | 100.0% | 0.8962 |
 
-      At τ=0.50, 75.4% of items are served at TF-IDF speed/cost and the routed
-      macro-F1 (0.9020) beats either constituent alone (0.8785 / 0.8962) — the
-      cheap model is right exactly where it is confident. The sweep uses raw
-      (uncalibrated) TF-IDF confidence; calibration is a tuning knob on top,
-      not a caveat against the result.
+      At τ=0.50, 75.4% of items are served at TF-IDF speed/cost and the
+      routed macro-F1 (0.9020) beats either constituent alone (0.8785 /
+      0.8962). The sweep uses raw (uncalibrated) TF-IDF confidence;
+      calibration is a tuning knob on top, not a caveat against the result.
 
-      **Selection record:** `reports/selection.json` persists the
-      test-split choice of the shipped bounded model — the wave-2 artifact won
-      by 0.0010 macro-F1, inside noise; the fresh holdout is the unbiased
-      check that bounded selection could not give.
+      Error floor: the dominant confusion Business → Sci/Tech falls
+      24/250 → 15/250 → 14/250 across the 3.6k / 20k / full runs;
+      representative bounded-test errors from the test-selected artifact
+      (full list in `reports/misclassification_examples.json`):
 
-      **Reproduction:** bounded and full rungs via `nlp_classification.cli
-      train-nn` (seeded; the scale ladder adds `--full-data --subset N
-      --device mps`); fresh-holdout scoring via `nlp_classification.cli
-      fresh-holdout`; serving probe via `nlp_classification.cli latency-probe`.
+      | text snippet | true | predicted |
+      |---|---|---|
+      | "Amazon Snaps Up China's Largest Web Retailer…" | Business | Sci/Tech |
+      | "India's Tata makes powerful debut…" | World | Business |
+      | "Dell Exits Low-End China Consumer PC Market…" | Sci/Tech | Business |
+      | "Future Doctors, Crossing Borders…" | World | Sci/Tech |
+      | "U.S. Misses Cut in Olympic 100 Free…" | World | Sports |
+      | "103 arrests for Internet fraud…" | Sci/Tech | World |
+
+      ## Protocol
+
+      - Bounded sample split: seeded, stratified 4,000 articles → 3,600
+        train / 400 validation; shared test set of 1,000 articles, exactly
+        250 per topic (bounded test draw seed 43).
+      - Full split: 108k train / 12k validation from the 120k training portion.
+      - Fresh holdout: 1,000 articles from the 6,600-row complement,
+        per-class stratified, seed 45, disjoint by construction; no retraining.
+      - Scale ladder: identical hypers (learning rate 2e-5, weight decay
+        0.01, warmup ratio 0.1, batch 32, early-stop patience 1), seed 42;
+        wall clocks 84.2 s / 291.8 s / 994.6 s at 3.6k / 10.8k / 36k rows.
+      - Metrics: accuracy, and macro-F1 — the unweighted mean of per-class
+        F1. Calibration: ECE (expected calibration error) with one
+        temperature, T=0.843, fitted on validation.
+      - HPO record: seeded Optuna TPE, median pruning, 12 trials; seed
+        bests 0.8953 / 0.8852 / 0.8926 (mean 0.8910 ± 0.0042); best
+        validation 0.8953 did not transfer to test.
+      - Serving probe: Apple M4 Max, CPU batch=1, n=200; rate card $1 per
+        1M input + $4 per 1M output tokens; int8 quality on a 2,000-row
+        stratified train sample (500 per class).
+      - Router: raw (uncalibrated) TF-IDF max class probability, escalate
+        below τ; the transformer leg is the served bounded model.
+
+      ## Limits
+
+      - The bounded test scores are selection-biased; the fresh holdout
+        repairs the headline, not every secondary number.
+      - The reading is per-item, English-only, on four clean topics;
+        multi-label Business/Sci-Tech routing needs a different label and
+        metric contract.
+      - Quantized-model quality is measured on a training sample, not test
+        data; all serving speeds come from one machine at batch size 1.
+      - Tuning ties the default within seed noise at this scale; a larger
+        budget might separate them, and this project does not show that it
+        would not.
+
+      ## Revision notes
+
+      `reports/selection.json` persists the test-split choice of the
+      shipped bounded model: the wave-2 artifact won by 0.0010 macro-F1
+      (0.9021 vs 0.9011), inside noise; the fresh holdout is the unbiased
+      check bounded selection could not give, and it flipped the reading —
+      the HPO-retrained candidate reads 0.9031 vs 0.8962 (+0.0069). Both
+      margins sit inside noise, so the two bounded candidates stand tied.
+      The legacy CPU 18k evidence run (0.9270) lands exactly between the
+      10.8k and 36k rungs, as its size predicts. Full-run training: the
+      shipped two-epoch full-data run validates 0.9433 → 0.9464 at ~18–27
+      min/epoch on Apple-Silicon MPS. A separate four-epoch probe with
+      early stopping disabled peaks at validation macro-F1 0.9477 in
+      epoch 3 (+0.0003 over epoch 2, −0.0003 by epoch 4) while validation
+      loss rises — extra epochs overfit rather than improve, and the probe
+      is not a better headline: `reports/history_fulldata.json` and
+      `reports/history_probe4.json` differ in early epochs because total
+      step count changes the LR schedule.
+
+      ## Reproduce
+
+      - Bounded and full rungs: `uv run python -m nlp_classification.cli
+        train-nn` (seeded; the scale ladder adds `--full-data --subset N
+        --device mps`).
+      - Fresh-holdout scoring: `uv run python -m nlp_classification.cli
+        fresh-holdout`.
+      - Serving probe: `uv run python -m nlp_classification.cli
+        latency-probe`.
+
+      ```mermaid
+      flowchart LR
+        subgraph Choose["Choose per feed value"]
+          A["Bulk feed"] --> R["Confidence router<br/>keyword first, transformer on doubts"]
+          B["High-value feed"] --> F["Full-data transformer<br/>0.9529 fresh macro-F1"]
+        end
+        subgraph Trust["What to trust"]
+          R --> H["Fresh-holdout headline<br/>0.9020 routed at 75.4% cheap"]
+          F --> H
+          H --> L["Bounded-test numbers: secondary only"]
+        end
+      ```
+
+      **Business summary:** Ship the keyword-first router: 0.9020 macro-F1
+      with 75.4% of items at zero token cost, and the full-data model on
+      high-value traffic at 0.9529 fresh macro-F1.
+    figures: []
     metrics_keys: [distilbert_full_120k]
 roadmap:
   - status: delivered
-    text: Full 120k run — 0.9460 test macro-F1; measured MPS timings and epoch probe.
+    text: Full 120k run — 0.9460 test macro-F1 with measured MPS timings and epoch probe.
   - status: delivered
-    text: HPO, seed-noise and calibration evidence — null tuning result retained; ECE −71%.
+    text: HPO, seed-noise, and calibration evidence — the null tuning result stands.
   - status: delivered
-    text: Fresh-holdout selection (fresh data flips the winner, +0.0069) and confidence-routed TF-IDF→DistilBERT serving (0.9020 at 24.6% escalation).
+    text: Fresh-holdout check and confidence-routed serving — 0.9020 at 24.6% escalation.
   - status: delivered
-    text: Controlled data-scale ladder — same-device (MPS) rungs at 3.6k/10.8k/36k/108k plus CPU/MPS same-rows twins at 3.6k; device effect ≤0.011 F1, data effect +1.3–1.6 points per 3× step.
-  - status: deferred
-    text: Multi-label Business/Sci-Tech routing — a different label and metric contract.
+    text: Controlled data-scale ladder — device effect ≤0.011 F1, data effect +1.3–1.6 points per 3× step.
 figure_captions:
   eda_class_balance: The bounded splits are uniformly 25% per class and train texts cluster at 20–50 words. Class priors and the 128-token cap do not explain the bounded differences.
   training_curve: Full-120k train/validation loss and validation macro-F1. Validation quality plateaus within two epochs while training loss keeps falling.
