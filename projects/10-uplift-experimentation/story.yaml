@@ -335,38 +335,13 @@ sections:
     text_md: |
       ## Results summary
 
-      On 64,000 randomized customers from one real 2008 campaign, ranking by
-      modeled uplift beat random targeting by +$2,812 (+69%) profit at a 25%
-      send budget, with 95% CI [+$718, +$4,767] lying entirely above zero.
-      That edge survived honest evaluation: scores were computed out of
-      fold, and paired bootstraps put the whole interval above random. The
-      Mens email's small effect (+0.68 percentage points on a 0.57% base)
-      held up too. What did not: the response-versus-T-learner ranking (Qini
-      gap CI [−8.18, 9.52] spans zero), both per-arm Qini reads, and the
-      X-learner. And at $0.01 per email, mailing everyone still earned the
-      most ($16,103); the targeting edge appears only under a budget or
-      above roughly $0.30 per send. The evidence supports ranking by
-      measured lift when sends are budgeted or costly, revalidated on a
-      fresh holdout for each new campaign.
-
-      ## Key concepts
-
-      - **Uplift vs response modeling** — a response model chases sure
-        things who would buy anyway; uplift scores the added purchase the
-        email causes.
-      - **T-learner and X-learner** — one model per arm scored
-        treated-minus-control (T), or imputed effects combined
-        propensity-weighted (X).
-      - **Paired bootstrap policy intervals** — the same resampled customers
-        score every policy, so profit gaps get honest, comparable confidence
-        intervals.
-      - **Qini coefficient** — the area between a ranking curve and random
-        targeting, measuring how well a list sorts buyers.
-      - **CUPED** — adjusting on pre-campaign spend to soak up noise; here
-        it left the estimate unchanged and cut almost no conversion
-        variance.
-      - **Cost-sweep break-even** — the send cost (≈$0.30) above which
-        targeted sending beats mailing everyone.
+      On 64,000 randomized customers (Hillstrom, March 2008), the T-learner
+      ranking beat random targeting by +$2,812 (+69%) profit at a 25% send
+      budget, 95% CI [+$718, +$4,767]; Qini 12.03 [0.77, 24.39];
+      mail-everyone earned $16,103 at $0.01 per send. Setup: five-fold
+      cross-fitting on pre-treatment features only; 1,000 paired bootstrap
+      policy intervals; profit = incremental conversions × $114 − mailed ×
+      send cost. [full evaluation report](https://amm-ds.github.io/portfolio/projects/10-uplift-experimentation/)
 
       ## Exact numbers
 
@@ -476,12 +451,13 @@ sections:
       ≈$0.31 break-even — carried with an explicit "model-estimated, not
       realized counterfactuals" label (bootstrap seed 2041).
 
+      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/10-uplift-experimentation).
+
       ## Reproduce
 
-      ```bash
-      uv run python -m uplift_experimentation.cli all   # minutes, end-to-end
-      uv run dvc repro                                  # the same, staged
-      ```
+      `uv run python -m uplift_experimentation.cli all`
+
+      [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/10-uplift-experimentation) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/10-uplift-experimentation/)
 
       ```mermaid
       flowchart LR
@@ -496,6 +472,13 @@ sections:
       budgeted or costly: +$2,812 (+69%) over random at a 25% budget, CI
       [+$718, +$4,767]. At $0.01 per email, mail everyone — $16,103.
     figures: []
+key_concepts:
+  - "**Uplift vs response modeling** — a response model chases sure things who would buy anyway; uplift scores the added purchase the email causes."
+  - "**T-learner and X-learner** — one model per arm scored treated-minus-control (T), or imputed effects combined propensity-weighted (X)."
+  - "**Paired bootstrap policy intervals** — the same resampled customers score every policy, so profit gaps get honest, comparable confidence intervals."
+  - "**Qini coefficient** — the area between a ranking curve and random targeting, measuring how well a list sorts buyers."
+  - "**CUPED** — adjusting on pre-campaign spend to soak up noise; here it left the estimate unchanged and cut almost no conversion variance."
+  - "**Cost-sweep break-even** — the send cost (≈$0.30) above which targeted sending beats mailing everyone."
 roadmap:
   - status: delivered
     text: "Built the Hillstrom stack: RCT validation, power/CUPED checks, T/X-learners, paired-bootstrap policy CIs, cost sweep."

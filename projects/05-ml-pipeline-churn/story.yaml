@@ -261,34 +261,13 @@ sections:
     text_md: |
       ## Results summary
 
-      On the frozen 1,409-row holdout, serving the calibrated model cuts the
-      retention bill to 601 cost units — 41.9% below contacting everyone at
-      1,035 — with a 95% bootstrap interval of −485 to −343 that excludes
-      zero. What held up: thresholding on the priced bill beat accuracy-
-      first selection; isotonic calibration improved reliability (ECE
-      0.028 → 0.016) and cost (619 → 601); the saving survived
-      re-pricing a missed churner — thresholds 0.200 / 0.175 / 0.100 at
-      FN costs 3 / 5 / 8, every interval still excluding zero. What did
-      not: the raw model misses 19 of 36 one-year and all 9 two-year
-      churners; and 601 was selected on the same holdout that scores it —
-      a budget line carrying built-in optimism. The evidence supports
-      serving the calibrated model at 0.175 under the 1-versus-5 cost
-      model, re-deriving the cutoff whenever a missed churner's price
-      changes.
-
-      ## Key concepts
-
-      - **Decision cost** — pricing the two mistake types so the model is
-        tuned on the bill it produces, not accuracy.
-      - **Cost-ratio sensitivity** — the served threshold moves when a
-        missed churner's price moves; the cutoff is policy, not constant.
-      - **Calibration before serving** — isotonic fitting on a train-side
-        split, so scores mean what they say at the cutoff.
-      - **The DQ gate checklist** — null, range and binary-target checks
-        every source passes before fitting or scoring.
-      - **Same-holdout optimism** — a threshold picked on the holdout that
-        also scores it inflates the saving; the bootstrap prices row noise
-        only.
+      Serving the calibrated model on the frozen 1,409-row holdout cuts
+      the retention bill to 601 cost units — −41.9% versus contacting
+      everyone at 1,035 — with a 95% bootstrap CI of [−485, −343].
+      Isotonic calibration improved ECE 0.028 → 0.016 and the same-holdout
+      cost optimum 619 → 601. The served threshold 0.175 was selected by a
+      seeded 25-trial search over a 41-point grid under the 1-versus-5 cost
+      model. [full evaluation report](https://amm-ds.github.io/portfolio/projects/05-ml-pipeline-churn/) · [try the live demo](https://amm-ds.github.io/portfolio/demos/churn-sandbox/)
 
       ## Exact numbers
 
@@ -408,17 +387,14 @@ sections:
         `data/model_selection.json`; it does not transfer to the real
         regime.
 
+      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/05-ml-pipeline-churn)
+
       ## Reproduce
 
-      ```bash
-      cd projects/05-ml-pipeline-churn
-      uv run python -m churn_pipeline.cli all   # prepare -> train (cost-aware HPO) -> evaluate, ~35 s
-      uv run python -m churn_pipeline.cli sensitivity   # FN=3/5/8 -> reports/sensitivity.json
-      dvc repro projects/05-ml-pipeline-churn   # or staged via DVC
-      ```
+      `uv run python -m churn_pipeline.cli all`
 
-      CI path (no network): `data_source: synthetic` in `params.yaml`,
-      then the same `cli all`; tests: `uv run pytest -q`.
+      - [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn)
+      - [full evaluation report](https://amm-ds.github.io/portfolio/projects/05-ml-pipeline-churn/)
 
       **Business summary:** The record: 601 versus 1,035 on one honest
       holdout, every caveat labelled — optimism, raw-model fairness, no time
@@ -431,6 +407,12 @@ roadmap:
     text: Evidence pack — fixed-threshold bootstrap CI, cost surface and raw-model fairness slices.
   - status: delivered
     text: FN-cost sensitivity re-run — t*=0.200/0.175/0.100 at FN=3/5/8, every CI excludes zero.
+key_concepts:
+  - "**Decision cost** — pricing the two mistake types so the model is tuned on the bill it produces, not accuracy."
+  - "**Cost-ratio sensitivity** — the served threshold moves when a missed churner's price moves; the cutoff is policy, not constant."
+  - "**Calibration before serving** — isotonic fitting on a train-side split, so scores mean what they say at the cutoff."
+  - "**The DQ gate checklist** — null, range and binary-target checks every source passes before fitting or scoring."
+  - "**Same-holdout optimism** — a threshold picked on the holdout that also scores it inflates the saving; the bootstrap prices row noise only."
 figure_captions:
   eda_churn_profile: Real telco churn by contract, charges and tenure. Month-to-month churn is 42.7% versus 2.8% for two-year contracts; synthetic outlier/NaN fixtures are separate CI evidence.
   calibration_curve: Raw versus isotonic reliability on the 1,409-row holdout. Isotonic improves ECE 0.028 → 0.016 and the same-holdout cost optimum 619 → 601.

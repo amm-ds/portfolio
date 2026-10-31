@@ -26,6 +26,12 @@ figure_captions:
 roadmap:
   - status: delivered
     text: "Full-grid raw record committed: 760 requests, percentiles re-aggregated offline from it."
+key_concepts:
+  - "**p50/p95/p99 latency ladder** — median and tail percentiles recorded at each concurrency rung, because a mean hides the delay users actually feel."
+  - "**Packaging confound** — engine and quantization ship as one artifact, so the 2.9× gap is a combination comparison, not an engine test."
+  - "**Bounded-task quality guardrail** — perfect schema and keyword scores show the timing comparisons are fair, not that quantization never hurts quality."
+  - "**Quiet-machine prerequisite** — a repeat under co-tenant load degraded llama.cpp cells 10–30×, so timings are trustworthy only on idle hardware."
+  - "**Electricity-only cost** — the $0.12-per-1M figure comes from measured tok/s and declared power assumptions; it excludes wall power and hardware."
 sections:
   - id: background
     text_md: |
@@ -320,37 +326,14 @@ sections:
     text_md: |
       ## Results summary
 
-      On one quiet 128 GB MacBook, in a single committed run — 760
-      requests, 19 cells, zero failures — the 4-bit mixture-of-experts
-      model answered in 0.81 s p95 at single-user load (0.63 s median),
-      produced 67.73 output tokens per second, and scored 1.00 on both
-      bounded-task quality checks. Latency rose near-linearly to 7.80 s
-      at eight concurrent requests; electricity cost came to about $0.12
-      per 1M output tokens. The packaged-engine panel measured a 2.9×
-      gap: MLX 4-bit at 18.8 tok/s against llama.cpp Q8_0 at 6.4.
-      Quality held up in every cell; the absolute numbers did not — a
-      repeat under background load slowed llama.cpp cells 10–30×. These
-      are one-machine, one-run measurements, not portable benchmarks.
-      The evidence supports serving this model on this hardware and
-      re-measuring any candidate stack with the same harness.
-
-      ## Key concepts
-
-      - **p50/p95/p99 latency ladder** — median and tail percentiles
-        recorded at each concurrency rung, because a mean hides the delay
-        users actually feel.
-      - **Packaging confound** — engine and quantization ship as one
-        artifact, so the 2.9× gap is a combination comparison, not an
-        engine test.
-      - **Bounded-task quality guardrail** — perfect schema and keyword
-        scores show the timing comparisons are fair, not that quantization
-        never hurts quality.
-      - **Quiet-machine prerequisite** — a repeat under co-tenant load
-        degraded llama.cpp cells 10–30×, so timings are trustworthy only
-        on idle hardware.
-      - **Electricity-only cost** — the $0.12-per-1M figure comes from
-        measured tok/s and declared power assumptions; it excludes wall
-        power and hardware.
+      In one committed run — one machine, one run — on a quiet 128 GB
+      Apple-silicon MacBook (macOS 26.5 arm64, Ollama 0.40.4),
+      `qwen3.6:35b-a3b-q4_K_M` — a 3B-active mixture-of-experts model in
+      Q4_K_M quantisation — answered in 0.81 s p95 (0.63 s median) at
+      concurrency 1, produced 67.73 output tok/s, and cost about $0.12 per
+      1M output tokens (electricity only); both bounded-task quality rates
+      scored 1.00 across 760 requests with zero failures.
+      [full evaluation report](https://amm-ds.github.io/portfolio/projects/08-inference-serving/)
 
       ## Exact numbers
 
@@ -469,17 +452,13 @@ sections:
         internally consistent for this bounded task, and the raw 760-request
         record is committed for independent re-aggregation; one quiet-machine
         run cannot establish portable latency, throughput, quality, or cost.
+      - Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/08-inference-serving).
 
       ## Reproduce
 
-      ```bash
-      uv sync
-      uv run dvc repro   # stages: prepare -> bench -> report
-      # or directly:
-      uv run python -m inference_serving.cli prepare
-      uv run python -m inference_serving.cli bench --full
-      uv run python -m inference_serving.cli report
-      ```
+      `uv run dvc repro` runs the full pipeline: prepare → bench → report.
+
+      [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/08-inference-serving) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/08-inference-serving/)
 
       **Business summary:** This section records the final grid, protocol,
       limits, and reproduction commands: 19 cells, 760 requests, zero failures,

@@ -265,29 +265,13 @@ sections:
     text_md: |
       ## Results summary
 
-      Across the 56 standard 100-customer days, the tuned adaptive large-
-      neighborhood search returns a feasible, machine-checked plan within
-      4.23% of the best published distance — 3.73 more trucks than
-      best-known — in about a second per problem. What held up:
-      tuned on a 6-instance subset, the search still won on distance for
-      52 of 56 instances and undercut 8 references outright.
-      What did not: no solver closed the fleet gap; the worst residual
-      stays large (C203 at 19.48%). The exact solver added nothing: given
-      the search's plan it tied at ten times the runtime; from scratch
-      at the same budget it found no feasible plan. The evidence supports
-      serving the seeded search plan; the exact solver certifies small
-      cases.
-
-      ## Key concepts
-
-      - **Optimality gap** — how far a plan's distance sits above the
-        best-known published plan.
-      - **Best-known solutions** — the shortest plans the literature has
-        published: reference points, not proven optima.
-      - **ALNS** — adaptive large-neighborhood search: destroy part of a
-        plan, repair it, adapt operator weights over segments.
-      - **Fleet-first ranking** — the field ranks a smaller fleet ahead of
-        a shorter distance; distance and truck count stay together.
+      The HPO-tuned adaptive large-neighborhood search returns feasible,
+      machine-checked plans on all 56 Solomon 100-customer instances at a
+      4.23% mean distance gap to best-known (95% CI 3.1–5.3 points) and a
+      +3.73 mean vehicle delta, winning distance on 52 of 56 instances at
+      ~1.1 s per problem. Seeded and deterministic at seed 42, the whole
+      eight-solver ladder with tuning runs in about 90 seconds.
+      [full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
 
       ## Exact numbers
 
@@ -394,19 +378,14 @@ sections:
       - The unhinted CP-SAT arm is recorded per instance (status + runtime)
         in both reports, as the honest equal-budget comparison.
 
+      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/06-routing-optimization)
+
       ## Reproduce
 
-      ```bash
-      cd projects/06-routing-optimization
-      uv run python -m routing_optimization.cli all   # download + solve + evaluate
-      # or staged:
-      uv run python -m routing_optimization.cli download  # fetch Solomon archive -> data/raw
-      uv run python -m routing_optimization.cli solve     # -> reports/solutions.json
-      uv run python -m routing_optimization.cli evaluate  # -> reports/{results.md,metrics.json,figures/}
-      ```
+      `uv run python -m routing_optimization.cli all`
 
-      Tests: `uv run pytest -q` (offline, hypothesis property tests
-      included).
+      - [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
+      - [full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
 
       **Business summary:** The ladder stands: 4.23% mean gap, +3.73
       trucks, a second a day, eight references beaten — with an honest
@@ -420,6 +399,11 @@ roadmap:
     text: Hinted CP-SAT probe — no 100-customer gains; two small cases certified optimal.
   - status: delivered
     text: Fleet-first ALNS — −0.07 vehicles for +0.07 points gap; unhinted CP-SAT produced no feasible plan.
+key_concepts:
+  - "**Optimality gap** — how far a plan's distance sits above the best-known published plan."
+  - "**Best-known solutions** — the shortest plans the literature has published: reference points, not proven optima."
+  - "**ALNS** — adaptive large-neighborhood search: destroy part of a plan, repair it, adapt operator weights over segments."
+  - "**Fleet-first ranking** — the field ranks a smaller fleet ahead of a shorter distance; distance and truck count stay together."
 figure_captions:
   eda_instance_map: >-
     C101 customer locations colored by time-window width, with the depot starred.
