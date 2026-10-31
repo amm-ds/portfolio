@@ -36,4 +36,48 @@ describe("GlossaryCard", () => {
     );
     expect(container.firstChild).toBeNull();
   });
+
+  it("groups used terms core-first with a divider label before the experiment group", () => {
+    const terms = [
+      glossaryEntries.find((e) => e.slug === "alns")!,
+      glossaryEntries.find((e) => e.slug === "baseline")!,
+      glossaryEntries.find((e) => e.slug === "cuped")!,
+    ];
+    render(
+      <MemoryRouter>
+        <GlossaryCard terms={terms} />
+      </MemoryRouter>,
+    );
+    // core terms first regardless of input order, experiment terms after
+    const rows = [...document.querySelectorAll(".glossary-card-row")];
+    expect(rows.map((r) => r.querySelector("dt")!.textContent)).toEqual([
+      "baseline",
+      "ALNS",
+      "CUPED",
+    ]);
+    // one dl per group, tiny divider label between them
+    const lists = document.querySelectorAll("dl.glossary-card-list");
+    expect(lists).toHaveLength(2);
+    expect(lists[0].querySelectorAll(".glossary-card-row")).toHaveLength(1);
+    expect(lists[1].querySelectorAll(".glossary-card-row")).toHaveLength(2);
+    const label = document.querySelector(".glossary-card-group-label")!;
+    expect(label.textContent).toBe("experiment-specific");
+    expect(
+      lists[0].compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      label.compareDocumentPosition(lists[1]) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("renders a single group with no divider label when the story uses only one group", () => {
+    const terms = glossaryEntries.filter((e) => e.slug === "alns" || e.slug === "cuped");
+    render(
+      <MemoryRouter>
+        <GlossaryCard terms={terms} />
+      </MemoryRouter>,
+    );
+    expect(document.querySelectorAll("dl.glossary-card-list")).toHaveLength(1);
+    expect(document.querySelector(".glossary-card-group-label")).toBeNull();
+  });
 });

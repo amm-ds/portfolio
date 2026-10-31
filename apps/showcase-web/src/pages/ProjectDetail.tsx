@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  getDemoManifest,
   getDemoRegistry,
   getFigures,
   getMetrics,
@@ -17,6 +18,11 @@ import { MetricsTable } from "../components/MetricsTable";
 import { REPO_URL } from "../config";
 import { summaryLine } from "../lib/impact";
 import { usePageMeta } from "../seo";
+
+/** Generic demo line, used only when neither the manifest nor the registry
+ * description is reachable. */
+const GENERIC_DEMO_LINE =
+  "an interactive session over this project's committed payloads — change the inputs and watch the measured outputs respond.";
 
 /** "01-rag-agent" → https://amm-ds.github.io/portfolio/projects/01-rag-agent/ */
 function docsUrl(projectId: string): string {
@@ -59,6 +65,7 @@ export function ProjectDetail() {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [figures, setFigures] = useState<string[]>([]);
   const [demoHref, setDemoHref] = useState<string | null>(null);
+  const [demoLine, setDemoLine] = useState<string | null>(null);
   const [reportOk, setReportOk] = useState(false);
 
   usePageMeta({
@@ -68,16 +75,30 @@ export function ProjectDetail() {
     noindex: notFound || undefined,
   });
 
-  // Live-demo CTA: match this project against the demo registry (fetched once
-  // per mount, shared across re-renders via component state).
+  // Live-demo CTA + banner: match this project against the demo registry
+  // (fetched once per mount). The banner description prefers the demo
+  // manifest, falls back to the registry hook, then to a generic line.
   useEffect(() => {
     let cancelled = false;
     setDemoHref(null);
+    setDemoLine(null);
     getDemoRegistry()
-      .then((entries) => {
-        if (!cancelled) setDemoHref(entries.find((e) => e.project === id)?.href ?? null);
+      .then(async (entries) => {
+        const entry = entries.find((e) => e.project === id);
+        if (!entry) return;
+        if (!cancelled) setDemoHref(entry.href);
+        try {
+          const manifest = await getDemoManifest(entry.id);
+          if (!cancelled) setDemoLine(manifest.hook || GENERIC_DEMO_LINE);
+        } catch {
+          if (!cancelled) setDemoLine(entry.hook || GENERIC_DEMO_LINE);
+        }
       })
-      .catch(() => !cancelled && setDemoHref(null));
+      .catch(() => {
+        if (cancelled) return;
+        setDemoHref(null);
+        setDemoLine(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -180,6 +201,7 @@ export function ProjectDetail() {
       ) : detail ? (
         <header className="detail-header">
           <h1>{detail.title}</h1>
+          {story?.short_version && <p className="detail-lead">{story.short_version}</p>}
           <p className="domain">{detail.domain}</p>
           <div className="chips">
             {detail.techniques.map((t) => (
@@ -221,6 +243,18 @@ export function ProjectDetail() {
           </div>
         </header>
       ) : null}
+
+      {demoHref && (
+        <aside className="demo-banner accent-card" aria-label="Live demo">
+          <div>
+            <p className="demo-banner-label">live demo</p>
+            <p className="demo-banner-line">{demoLine ?? GENERIC_DEMO_LINE}</p>
+          </div>
+          <Link className="demo-banner-cta" to={demoHref}>
+            ▶ try the live demo
+          </Link>
+        </aside>
+      )}
 
       {storyLoading ? (
         <p className="loading">loading case study…</p>

@@ -33,7 +33,6 @@ export function ProjectCard({ project }: { project: Project }) {
           <h3>{project.title}</h3>
           <p className="domain">{project.domain}</p>
         </div>
-        <span className={`chip chip-status status-${project.status}`}>{project.status}</span>
       </div>
       {summary && <p className="summary">{summary}</p>}
       <div className="chips">

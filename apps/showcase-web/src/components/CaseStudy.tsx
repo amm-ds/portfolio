@@ -4,6 +4,7 @@ import { glossaryEntryBySlug } from "../lib/glossary";
 import { glossaryTermsInMarkdown } from "../lib/markdown";
 import { useScrollSpy } from "../hooks/useScrollSpy";
 import { GlossaryCard } from "./GlossaryCard";
+import { KeyConceptsCard } from "./KeyConceptsCard";
 import { RoadmapBlock } from "./RoadmapBlock";
 import { StorySection } from "./StorySection";
 
@@ -40,13 +41,14 @@ export function CaseStudy({
   // The story's vocabulary, in first-use order, for the Background glossary
   // card. Capped: a reference, not a wall.
   const storyGlossary = [...seenGlossary]
-    .slice(0, 8)
+    .slice(0, 10)
     .map((slug) => glossaryEntryBySlug(slug))
     .filter((e) => e !== undefined);
 
   return (
     <div className="story-layout">
         <nav className="rail" aria-label="Case study sections">
+          <span className="rail-label">index</span>
           {story.sections.map((s, i) => (
             <a
               key={s.id}
@@ -70,7 +72,12 @@ export function CaseStudy({
                 figureCaptions={story.figure_captions}
                 linkedTerms={linkedTermsBySection[i]}
               />
-              {s.id === "background" && <GlossaryCard terms={storyGlossary} />}
+              {s.id === "background" && (
+                <>
+                  <KeyConceptsCard items={story.key_concepts ?? []} />
+                  <GlossaryCard terms={storyGlossary} />
+                </>
+              )}
             </Fragment>
           ))}
           <RoadmapBlock roadmap={story.roadmap} />

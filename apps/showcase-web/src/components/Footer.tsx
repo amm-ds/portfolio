@@ -27,9 +27,6 @@ export function Footer() {
           </a>
         </nav>
       </div>
-      <p className="footer-small">
-        No analytics, no cookies, no user data stored.
-      </p>
       <p className="footer-small">© 2026 amm-ds · MIT licensed</p>
     </footer>
   );

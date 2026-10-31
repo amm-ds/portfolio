@@ -95,18 +95,16 @@ export function groupByRow(projects: Project[]): TopicRow[] {
 function DemoCard({
   title,
   line,
-  status,
   href,
   hero,
 }: {
   title: string;
   line: string;
-  status: string;
   href?: string;
   hero?: DemoRegistryEntry["hero"];
 }) {
   return (
-    <div className="demo-card" aria-label={`${title} (${status})`}>
+    <div className="demo-card" aria-label={title}>
       <h3>{title}</h3>
       <p>{line}</p>
       {hero && (
@@ -115,7 +113,6 @@ function DemoCard({
           {hero.ci ? ` — ${hero.ci}` : ""}
         </p>
       )}
-      <span className="chip demo-status">{status}</span>
       {href ? (
         <a className="demo-link" href={href}>
           open demo →
@@ -148,7 +145,7 @@ function DemosSection() {
       {entries === null ? (
         <div className="demo-grid">
           {DEMOS.map((d) => (
-            <DemoCard key={d.id} title={d.title} line={d.line} status={d.status} href={d.href} />
+            <DemoCard key={d.id} title={d.title} line={d.line} href={d.href} />
           ))}
         </div>
       ) : (
@@ -161,7 +158,6 @@ function DemosSection() {
                   key={d.id}
                   title={d.title}
                   line={d.hook}
-                  status={d.status}
                   href={d.href}
                   hero={d.hero}
                 />
