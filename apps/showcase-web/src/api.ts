@@ -75,6 +75,8 @@ export interface ProjectStoryData {
   sections: StorySectionData[];
   /** Finalized roadmap (optional while stories are being authored). */
   roadmap?: RoadmapItemData[];
+  /** Ideas that arose, rendered as a card in the Background section. */
+  key_concepts?: string[];
   /** Commentary per figure id, rendered as the footer under each chart. */
   figure_captions?: Record<string, string>;
 }
