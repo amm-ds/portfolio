@@ -264,8 +264,38 @@ sections:
   metrics_keys: [random, isolation_forest, lof, ocsvm, isolation_forest_tuned, lof_tuned, ocsvm_tuned]
 - id: conclusions
   text_md: |
-    **Detection without a page budget is not a deployable result.** Exact
-    records behind every number above — final state only.
+    ## Results summary
+
+    At a fixed 2% alert budget on NAB's nine evaluable series,
+    IsolationForest touches 16 of 17 labelled incident windows — and fires
+    1,609 alerts doing it. Pointwise PR-AUC is 0.527; event-aware range-F1
+    is 0.157. Episode deduplication plus a one-page-per-series-per-day cap
+    cuts the stream to 80 pages and lifts range-F1 to 0.315, at a recall
+    cost of 0.729 to 0.562. What held up out-of-sample: train-side
+    operating-point tuning — IsolationForest's adopted (0.5%, 24 h) point
+    halved the budgeted pages again, to 46 at range-F1 0.382. What did not:
+    no detector family beat the headline recipe in the sweep, OCSVM's
+    marginal tuning gain failed on test, and adaptive thresholds fired on
+    31 of 120 real NAB chunks; sub-0.1 range-F1 differences on six
+    validation windows read as noise. The decision the evidence supports:
+    page the deduplicated, budgeted stream — not a different detector, and
+    not unattended auto-paging.
+
+    ## Key concepts
+
+    - **Alert-budget stream** — the deployed artifact: deduplicated episodes
+      capped at one page per series per 24 h, turning 1,609 raw alerts into
+      80 pages.
+    - **Event-aware range-F1** — scores a labelled window detected once one
+      alert lands inside it, measuring what an on-call engineer feels.
+    - **Past-only splits** — each series trains on its first 70% and scores
+      a later span once, so no incident leaks into fitting or tuning.
+    - **Windows touched** — the raw share of labelled windows hit, reported
+      apart from range recall's mean over all 12 series.
+    - **Synthetic ladder** — a seeded stream that checks pipeline mechanics;
+      its huge residual-feature gains never appeared on NAB.
+    - **Operating point** — the (threshold budget, cooldown) pair chosen on
+      training data alone; adoption needs +0.05 and one transferring test pass.
 
     ## Exact numbers
 

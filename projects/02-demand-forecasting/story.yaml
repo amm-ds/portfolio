@@ -231,8 +231,44 @@ sections:
   metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 - id: conclusions
   text_md: |
-    **Regime diagnosis is the reusable result.** Exact records behind the numbers
-    above:
+    ## Results summary
+
+    One protocol, two opposite winners. On dense Walmart M5 daily sales,
+    scored once on a frozen 28-day test, the convex ensemble posts test
+    WAPE 0.491 against 0.603 for the seasonal-naive floor — a −0.1125
+    [−0.1228, −0.1026] gap, with the committed LightGBM one step behind
+    at 0.498 and 88.8% of series improving. On sparse, 89%-zero UCI
+    retail demand, nothing reaches MASE 1.0 against the floor, so the
+    router forecasts zero for 945 of 1,069 lumpy series and reserves
+    peak-capable models for the rest. The ensemble's gap held up on
+    frozen origins; what did not hold: every UCI model degrades on later
+    folds, the 80% bands cover 77.7%, and weekly error grows
+    0.4136→0.5636 from week 1 to week 4. The evidence supports one
+    decision: plan dense, M5-like demand with the ensemble; plan sparse,
+    UCI-like demand with the router; reforecast weekly; run both as
+    pilots — neither supports an inventory-savings claim.
+
+    ## Key concepts
+
+    - **ADI/CV² regime diagnosis** — classifying each series by
+      inter-demand interval and squared variability, not the algorithm
+      choice, decides which track a series belongs to.
+    - **Frozen origins, scored once** — candidates are chosen on past
+      origins and scored exactly once on future ones, because random
+      splits leak the future into training.
+    - **Paired bootstrap intervals** — every quoted gap carries a 95%
+      range over series, so a win is reported as a range rather than a
+      point.
+    - **Mostly-zero routing** — on lumpy demand the best forecast is
+      often exactly zero, with peak-capable models reserved for the few
+      series whose peaks repay them.
+    - **Newsvendor cost check** — routing changes are priced at a stated
+      service level before any savings language; here the trade pays
+      only at q=0.90.
+    - **Coverage reported with width** — honest bands state both how
+      often they cover and how wide they are: the LightGBM bands cover
+      77.7% at a 13.535-unit mean width, under target rather than tuned
+      to look exact.
 
     ## Exact numbers
 
@@ -354,7 +390,8 @@ sections:
 
     **Business summary:** This section records the final numbers, protocol,
     limits, and reproduction steps. Dense M5 demand is served by the
-    0.491-error ensemble; sparse UCI demand by the mostly-zero router.
+    0.491-error ensemble; sparse UCI demand by the mostly-zero router —
+    regime diagnosis, not one champion, is the reusable result.
   figures: []
   metrics_keys: [naive_last, hgb, hgb_tuned]
 roadmap:
