@@ -44,6 +44,8 @@ describe("CaseStudy section rail", () => {
     const layout = document.querySelector(".story-layout")!;
     expect(layout).not.toBeNull();
     expect(screen.getByRole("navigation", { name: "Case study sections" })).not.toBeNull();
+    // the rail carries a small uppercase "index" label above the links
+    expect(document.querySelector(".rail-label")!.textContent).toBe("index");
     expect(screen.getByRole("heading", { name: /Background/ })).not.toBeNull();
 
     const background = screen.getByRole("link", { name: "01 background" });
@@ -109,5 +111,99 @@ describe("CaseStudy section rail", () => {
     expect(links).toHaveLength(1);
     expect(links[0].getAttribute("href")).toBe("/glossary#baseline");
     expect(links[0].textContent).toContain("baseline");
+  });
+});
+
+describe("CaseStudy key concepts card", () => {
+  const CONCEPTS = [
+    "**Retrieval** — finding the passages that answer the question.",
+    "**Reranking** — rescoring candidates with a cross-encoder before answering.",
+  ];
+
+  it("renders the story's key_concepts as `**Term** — sentence` markdown, before the glossary card", () => {
+    const story: ProjectStoryData = {
+      ...STORY,
+      key_concepts: CONCEPTS,
+      sections: [
+        { id: "background", title: "Background", text_md: "Context with a baseline model.", figures: [], metrics_keys: [] },
+        { id: "results", title: "Results", text_md: "Numbers.", figures: [], metrics_keys: [] },
+      ],
+    };
+    render(
+      <MemoryRouter>
+        <CaseStudy projectId={story.project_id} story={story} metrics={null} />
+      </MemoryRouter>,
+    );
+    const card = document.querySelector(".key-concepts-card")!;
+    expect(card).not.toBeNull();
+    expect(card.getAttribute("aria-label")).toBe("Key concepts");
+    expect(card.querySelector(".glossary-card-label")!.textContent).toBe("key concepts");
+    const items = [...card.querySelectorAll(".key-concepts-list li")];
+    expect(items).toHaveLength(2);
+    // `**Term**` renders as bold lead, the rest as the sentence
+    expect(items[0].querySelector("strong")!.textContent).toBe("Retrieval");
+    expect(items[0].textContent).toContain("finding the passages");
+    expect(items[1].querySelector("strong")!.textContent).toBe("Reranking");
+    // sits right after the Background section, BEFORE the glossary card
+    const background = document.getElementById("sec-background")!;
+    const glossary = document.querySelector(".glossary-card:not(.key-concepts-card)")!;
+    expect(
+      background.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      card.compareDocumentPosition(glossary) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // same accent-left card pattern as the glossary card
+    expect(card.classList.contains("accent-card") || card.classList.contains("glossary-card")).toBe(
+      true,
+    );
+  });
+
+  it("renders no key concepts card when key_concepts is absent or empty", () => {
+    const absent = render(
+      <MemoryRouter>
+        <CaseStudy projectId={STORY.project_id} story={STORY} metrics={null} />
+      </MemoryRouter>,
+    );
+    expect(document.querySelector(".key-concepts-card")).toBeNull();
+    absent.unmount();
+    render(
+      <MemoryRouter>
+        <CaseStudy
+          projectId={STORY.project_id}
+          story={{ ...STORY, key_concepts: [] }}
+          metrics={null}
+        />
+      </MemoryRouter>,
+    );
+    expect(document.querySelector(".key-concepts-card")).toBeNull();
+  });
+});
+
+describe("CaseStudy glossary card cap", () => {
+  it("caps the background glossary card at 10 terms even when the story uses more", () => {
+    const story: ProjectStoryData = {
+      project_id: "02-demand-forecasting",
+      sections: [
+        {
+          id: "background",
+          title: "Background",
+          text_md:
+            "The study names a baseline, holdout, backtest, confidence interval, WAPE, MASE, " +
+            "macro-F1, recall@5, uplift, Qini curve, optimality gap, p50/p95 latency, " +
+            "calibration, and a seasonal naive reference.",
+          figures: [],
+          metrics_keys: [],
+        },
+      ],
+    };
+    render(
+      <MemoryRouter>
+        <CaseStudy projectId={story.project_id} story={story} metrics={null} />
+      </MemoryRouter>,
+    );
+    const rows = document.querySelectorAll(".glossary-card .glossary-card-row");
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThanOrEqual(10);
   });
 });

@@ -209,12 +209,13 @@ describe("ProjectsIndex", () => {
     expect(screen.getByText("play with the live systems behind the experiments")).toBeInTheDocument();
     const demos = document.querySelector(".demos")!;
     expect(demos).not.toBeNull();
-    // one card from the registry, under its group heading
+    // one card from the registry, under its group heading; no "live" status badge
     const demoCards = demos.querySelectorAll(".demo-card");
     expect(demoCards).toHaveLength(1);
     expect(demos.textContent).toContain("retain customers");
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
-    expect(demoCards[0].textContent).toContain("live");
+    expect(demoCards[0].querySelector(".demo-status")).toBeNull();
+    expect(demoCards[0].getAttribute("aria-label")).toBe("churn threshold sandbox");
     // hero line rendered from the registry entry
     expect(demoCards[0].textContent).toContain("decision cost per 1,400 customers");
     expect(demoCards[0].textContent).toContain("$601 vs $1,035 naive");
@@ -248,13 +249,13 @@ describe("ProjectsIndex", () => {
     const demoCards = demos.querySelectorAll(".demo-card");
     expect(demoCards).toHaveLength(2);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
-    expect(demoCards[0].textContent).toContain("live");
+    expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
     expect(demoCards[1].textContent).toContain("demand forecast workbench");
     expect(demoCards[1].querySelector("a")!.getAttribute("href")).toBe("/demos/forecast-workbench");
   });
 
-  it("renders a what-it-achieves summary plus sub-topic, dataset, and status chips on each card", async () => {
+  it("renders a what-it-achieves summary plus sub-topic and dataset chips on each card (no status chip)", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
@@ -268,12 +269,13 @@ describe("ProjectsIndex", () => {
       )!;
     const rag = cardOf("RAG Agent");
     expect(rag.querySelector(".summary")!.textContent).toContain("question-answering assistant");
-    // sub-topic chip, dataset tag, status chip
+    // sub-topic chip and dataset tag remain; the flagship/working/planned chip is gone
     expect(rag.textContent).toContain("Agentic AI & LLM");
     expect(rag.textContent).toContain("data: docs");
-    expect(rag.querySelector(".chip-status")!.textContent).toBe("flagship");
+    expect(rag.querySelector(".chip-status")).toBeNull();
+    expect(rag.textContent).not.toContain("flagship");
     const mobility = cardOf("Mobility");
-    expect(mobility.querySelector(".chip-status")!.textContent).toBe("flagship");
+    expect(mobility.querySelector(".chip-status")).toBeNull();
     expect(mobility.textContent).toContain("Data Engineering");
   });
 

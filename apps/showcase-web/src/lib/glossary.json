@@ -2,79 +2,176 @@
   {
     "term": "baseline",
     "slug": "baseline",
+    "group": "core",
     "definition": "A simple reference model or policy a measured result must beat; without one, an impressive score may just restate how easy the problem is.",
     "example": "Predicting next week equals this week is the seasonal-naive baseline for the demand forecaster."
   },
   {
     "term": "holdout",
     "slug": "holdout",
+    "group": "core",
     "definition": "Data deliberately excluded from training and tuning, scored once at the end to estimate performance on cases nobody has seen yet.",
     "example": "The churn model's final cost curve comes from a 20% holdout untouched during feature selection."
   },
   {
     "term": "backtest",
     "slug": "backtest",
+    "group": "core",
     "definition": "Replaying history in time order to score a strategy using only information available at each simulated decision point.",
     "example": "The demand model trains through October, scores November, then re-trains through November before scoring December."
   },
   {
     "term": "confidence interval",
     "slug": "confidence-interval",
+    "group": "core",
     "definition": "A range around an estimate that quantifies sampling uncertainty; a 95% interval contains the true value about 19 times in 20.",
     "example": "The 4.23% mean gap carries a 95% CI of 3.1–5.3 percentage points across the 56 instances."
   },
   {
     "term": "WAPE",
     "slug": "wape",
+    "group": "core",
     "definition": "Weighted absolute percentage error: total absolute forecast error divided by total actual volume, so busy series outweigh sparse ones.",
     "example": "A WAPE of 0.157 means the forecast misses by 15.7% of total demand across every store combined."
   },
   {
     "term": "MASE",
     "slug": "mase",
+    "group": "core",
     "definition": "Mean absolute scaled error: model error divided by the error of a naive seasonal forecast, so 1.0 means no improvement over naive.",
     "example": "MASE 0.84 means the model's error is 84% of what the seasonal-naive forecast achieves."
   },
   {
     "term": "macro-F1",
     "slug": "macro-f1",
+    "group": "core",
     "definition": "The unweighted mean of per-class F1 scores, giving rare classes the same vote as frequent ones when averaging performance.",
     "example": "The news tagger reports 0.946 macro-F1 so a rare topic counts as much as a common one."
   },
   {
     "term": "recall@5",
     "slug": "recall-at-5",
+    "group": "core",
     "definition": "The share of relevant items that appear within the top five candidates a system retrieves or recommends.",
     "example": "Recall@5 of 0.83 means 83% of the evidence a human would cite appears in the agent's top five retrievals."
   },
   {
     "term": "uplift",
     "slug": "uplift",
+    "group": "core",
     "definition": "The causal effect of an action on one person: the difference between what they do with it and what they would have done without.",
     "example": "A customer who renews with the email might have renewed anyway; only the difference is uplift."
   },
   {
     "term": "Qini curve",
     "slug": "qini-curve",
+    "group": "core",
     "definition": "Cumulative true uplift captured when people are contacted in predicted-uplift order; its lift over the random line shows targeting value.",
     "example": "Mailing the top 30% by Qini ranking captures most of the campaign's measured profit advantage."
   },
   {
     "term": "optimality gap",
     "slug": "optimality-gap",
+    "group": "core",
     "definition": "The percentage a solution's cost sits above the best-known or proven-optimal cost for that same problem instance.",
     "example": "A routing plan 4.23% above best-known distance has a 4.23% optimality gap."
   },
   {
     "term": "p50/p95 latency",
     "slug": "p50-p95-latency",
+    "group": "core",
     "definition": "The 50th and 95th percentile response times: half of requests answer faster than p50, and 19 of 20 faster than p95.",
     "example": "p95 of 380 ms means one request in twenty is slower than 380 ms even on a healthy server."
   },
   {
     "term": "calibration",
     "slug": "calibration",
+    "group": "core",
     "definition": "How closely predicted probabilities match observed frequencies; among events scored 0.3, roughly 30% should actually happen.",
     "example": "If 100 customers scored near 0.3 churn risk and about 30 churn, the risk scores are calibrated."
+  },
+  {
+    "term": "seasonal naive",
+    "slug": "seasonal-naive",
+    "group": "experiment",
+    "definition": "A baseline forecast that repeats the last observed seasonal cycle, so tomorrow equals the same weekday last week; the minimum bar a model must beat.",
+    "example": "The demand study requires beating next-week-equals-this-week before any model ships."
+  },
+  {
+    "term": "split-conformal band",
+    "slug": "split-conformal-band",
+    "group": "experiment",
+    "definition": "A prediction interval built from held-out residuals, guaranteed to cover roughly the stated share of future points without assuming any error distribution.",
+    "example": "The workbench's 80% band around the LightGBM curve comes from held-out calibration residuals."
+  },
+  {
+    "term": "MinT reconciliation",
+    "slug": "mint-reconciliation",
+    "group": "experiment",
+    "definition": "A method that adjusts forecasts at every hierarchy level so they add up consistently, weighting corrections by the covariance of historical errors.",
+    "example": "Store, region, and total forecasts are MinT-adjusted so every level reports the same demand."
+  },
+  {
+    "term": "ALNS",
+    "slug": "alns",
+    "group": "experiment",
+    "definition": "Adaptive large neighborhood search: a metaheuristic that repeatedly destroys part of a solution and repairs it, adapting which neighborhoods pay off.",
+    "example": "The routing solver removes 20–40% of the stops per iteration and keeps the repair only if distance improves."
+  },
+  {
+    "term": "VRPTW",
+    "slug": "vrptw",
+    "group": "experiment",
+    "definition": "Vehicle routing problem with time windows: serve every customer within an allowed time slot while minimizing distance or fleet size.",
+    "example": "The Solomon benchmarks give each customer a time window; C101 is the tightest instance."
+  },
+  {
+    "term": "ECE",
+    "slug": "ece",
+    "group": "experiment",
+    "definition": "Expected calibration error: the average gap between predicted probabilities and observed frequencies across probability bins; lower means better-calibrated scores.",
+    "example": "After Platt scaling, customers scored 0.3 churn near 0.3 actually churn — the ECE drops."
+  },
+  {
+    "term": "T-learner",
+    "slug": "t-learner",
+    "group": "experiment",
+    "definition": "An uplift model that trains one model per arm, treated and control, and scores each person as the difference between the two predictions.",
+    "example": "The Hillstrom study trains one spend model on the emailed group and one on the control group, then subtracts."
+  },
+  {
+    "term": "CUPED",
+    "slug": "cuped",
+    "group": "experiment",
+    "definition": "Controlled-experiment using pre-experiment data: a variance-reduction technique that adjusts each subject's outcome by a coefficient times a pre-period covariate.",
+    "example": "Adjusting on pre-campaign spend shrinks the Hillstrom experiment's confidence interval by about half."
+  },
+  {
+    "term": "quantisation",
+    "slug": "quantisation",
+    "group": "experiment",
+    "definition": "Reducing model weights to lower-precision numbers, such as 4-bit, so inference uses less memory and bandwidth, trading a small quality loss for speed.",
+    "example": "Q4_K_M quantisation cuts the served model's memory footprint to roughly a quarter of fp16."
+  },
+  {
+    "term": "drift observatory",
+    "slug": "drift-observatory",
+    "group": "experiment",
+    "definition": "A monitoring view that tracks a model's inputs, predictions, and quality metrics over time, flagging when live data departs from the training distribution.",
+    "example": "The anomaly demo plots input drift so threshold decay is visible instead of assumed."
+  },
+  {
+    "term": "event-aware range-F1",
+    "slug": "event-aware-range-f1",
+    "group": "experiment",
+    "definition": "An F1 variant for range-based anomaly detection that credits detectors for finding whole event windows, not just isolated anomalous points.",
+    "example": "Flagging any point inside a labeled taxi-outage window earns the detector partial range-F1 credit."
+  },
+  {
+    "term": "plan-act-review loop",
+    "slug": "plan-act-review-loop",
+    "group": "experiment",
+    "definition": "An agent pattern that alternates planning the next step, acting with tools, and reviewing the result before deciding what to do next.",
+    "example": "The workflow agent plans a search, calls the tool, checks the citation, then continues or backtracks."
   }
 ]

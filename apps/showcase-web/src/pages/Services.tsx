@@ -18,35 +18,31 @@ interface Offering {
   deliverables: string[];
   /** Public experiments/demos that prove the offering, metric-first. */
   evidence: Evidence[];
-  /** One sentence: how success is evaluated (no revenue promises). */
-  success: string;
 }
 
 const OFFERINGS: Offering[] = [
   {
     title: "AI/LLM systems",
-    outcome: "Assistants and agents that cite their sources and stay inside their budgets.",
+    outcome: "Agents and assistants that answer from your documents, cite their sources, and stay inside a stated cost and latency budget.",
     elements: ["APIs (FastAPI/REST)", "Retrieval pipelines", "Structured output", "Eval harnesses"],
     deliverables: [
-      "agent service (FastAPI)",
-      "retrieval index pipeline",
-      "faithfulness/relevance eval harness",
-      "cost & latency budgets with fallback chains",
+      "agent service with typed endpoints (FastAPI)",
+      "retrieval index pipeline with pinned corpus versions",
+      "faithfulness/relevance eval harness with a documented baseline",
+      "per-task cost and latency budgets with fallback chains",
     ],
     evidence: [
       { label: "proof: verified-claim RAG agent", to: "/projects/01-rag-agent" },
       { label: "proof: graded agentic workflow suite", to: "/projects/09-agentic-workflows" },
     ],
-    success:
-      "Success is measured on the eval harness — faithfulness and answer relevance against a documented baseline, plus per-task cost and latency budgets — never on demo impressions.",
   },
   {
     title: "Machine learning",
     outcome:
-      "Models evaluated the way the business will judge them — against named naive baselines and costed errors, not vanity scores.",
+      "Models judged the way the business will use them: against named naive baselines, with errors priced in currency, not raw accuracy.",
     elements: ["Leakage-proof CV", "Calibrated models", "Cost curves", "Optuna HPO"],
     deliverables: [
-      "leakage-proof backtests",
+      "leakage-proof backtests scored in time order",
       "calibrated models with uncertainty bands",
       "business-cost threshold analysis",
       "pinned CI evaluation reports",
@@ -58,13 +54,11 @@ const OFFERINGS: Offering[] = [
       { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
       { label: "proof: uplift targeting study", to: "/projects/10-uplift-experimentation" },
     ],
-    success:
-      "Success is measured by leakage-proof backtest metrics against named naive baselines — relative MAE/WRMSSE for demand, cost-curve deltas for churn, paired-bootstrap uplift for targeting.",
   },
   {
     title: "Optimization",
     outcome:
-      "Routing, scheduling, and allocation solved against benchmark instances — with the optimality gap stated, not hidden.",
+      "Routing, scheduling, and allocation solved against named benchmark instances, with the optimality gap stated per instance.",
     elements: ["Exact & heuristics", "Benchmark instances", "Runtime budgets"],
     deliverables: [
       "solver/heuristic service with typed API",
@@ -74,8 +68,6 @@ const OFFERINGS: Offering[] = [
     evidence: [
       { label: "proof: vehicle routing benchmark", to: "/projects/06-routing-optimization" },
     ],
-    success:
-      "Success is measured as the gap to best-known solutions on standard benchmark instances — 4.23% above published best-known across 56 Solomon cases (95% CI 3.1–5.3 pp) — under stated runtime budgets.",
   },
   {
     title: "Data engineering",
@@ -92,12 +84,11 @@ const OFFERINGS: Offering[] = [
       { label: "proof: NYC mobility data pipeline", to: "/projects/07-open-data-mobility" },
       { label: "proof: demand forecast pipeline", to: "/projects/02-demand-forecasting" },
     ],
-    success:
-      "Success is measured on the holdout the pipeline feeds: the committed 07 pipeline turns 41.2M raw trips into a 265-zone × hour grid whose served model cuts next-hour MAE by 28.3% versus same-hour-yesterday (MASE 0.763).",
   },
   {
     title: "MLOps",
-    outcome: "A setup where bad models and broken pipelines cannot ship silently.",
+    outcome:
+      "CI gates that block unevaluated models and failing data-quality checks before they can ship.",
     elements: ["CI eval gates", "Docker + uv", "Clean-clone runs"],
     deliverables: [
       "CI gates for evaluation & data quality",
@@ -109,13 +100,11 @@ const OFFERINGS: Offering[] = [
       { label: "proof: inference serving benchmark", to: "/projects/08-inference-serving" },
       { label: "proof: CI-evaluated churn pipeline", to: "/projects/05-ml-pipeline-churn" },
     ],
-    success:
-      "Success is measured by the gates themselves: models ship only with a CI evaluation report against pinned baselines, and serving runs from a clean clone against measured SLOs (p95 0.81 s at c=1 rising to 7.80 s at c=8 on the committed bench).",
   },
   {
     title: "Interactive dashboards",
     outcome:
-      "Decision tools people actually use — live demos over committed payloads, not screenshots.",
+      "Working demos over committed payloads — every number the screen shows is checked in CI before it ships.",
     elements: ["React + Plotly", "Live endpoints", "Pinned payloads"],
     deliverables: [
       "demo frontend over the served API",
@@ -128,8 +117,6 @@ const OFFERINGS: Offering[] = [
       { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
       { label: "proof: demand forecast workbench", to: "/projects/02-demand-forecasting" },
     ],
-    success:
-      "Success is measured by the pinned payload contracts: every number the dashboard shows is verified in CI — pooled test WAPE 0.491 vs 0.603 seasonal-naive, decision cost $601 vs $1,035 per 1,400 customers.",
   },
   {
     title: "Full-stack product engineering",
@@ -147,8 +134,22 @@ const OFFERINGS: Offering[] = [
       { label: "live demo: forecast workbench", to: "/demos/forecast-workbench" },
       { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
     ],
-    success:
-      "Success is measured as working software from a clean clone: reproducible uv + Docker environments, API contract tests in CI, and deployed demos whose payloads pass parity checks on every change.",
+  },
+  {
+    title: "APIs & model serving",
+    outcome:
+      "Inference endpoints designed, hosted, and measured — contracts first, with rate limits and cost budgets stated up front.",
+    elements: ["FastAPI", "OpenAPI contracts", "Rate limits"],
+    deliverables: [
+      "versioned inference endpoints (REST)",
+      "OpenAPI contract with request/response schemas",
+      "rate limits and cost budgets per route",
+      "latency/throughput benchmark report",
+    ],
+    evidence: [
+      { label: "proof: inference serving benchmark", to: "/projects/08-inference-serving" },
+      { label: "proof: served demand API", to: "/projects/07-open-data-mobility" },
+    ],
   },
 ];
 
@@ -244,9 +245,6 @@ export function Services() {
                 <li key={d}>{d}</li>
               ))}
             </ul>
-            <p className="offering-blurb">
-              <strong>how success is measured ::</strong> {o.success}
-            </p>
           </Card>
         ))}
       </div>

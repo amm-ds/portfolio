@@ -15,13 +15,13 @@ function renderServices() {
 }
 
 describe("Services page (wave 8)", () => {
-  it("renders the hero and exactly 7 generic offering cards (one per service line)", () => {
+  it("renders the hero and exactly 8 generic offering cards (one per service line)", () => {
     renderServices();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "ML/AI engineering, end to end",
     );
     const offerings = document.querySelectorAll(".offering-card");
-    expect(offerings).toHaveLength(7);
+    expect(offerings).toHaveLength(8);
     const titles = [...document.querySelectorAll(".offering-card h3")].map(
       (el) => el.textContent,
     );
@@ -33,6 +33,7 @@ describe("Services page (wave 8)", () => {
       "MLOps",
       "Interactive dashboards",
       "Full-stack product engineering",
+      "APIs & model serving",
     ]);
     // no anomaly-specific or otherwise vertical-specific offering card
     expect(titles).not.toContain("Anomaly detection");
@@ -43,9 +44,9 @@ describe("Services page (wave 8)", () => {
     });
   });
 
-  it("each offering has an outcome line, technical chips, evidence and a success sentence", () => {
+  it("each offering has an outcome line, technical chips, evidence and concrete deliverables", () => {
     renderServices();
-    expect(screen.getByText(/Assistants and agents that cite their sources/)).toBeInTheDocument();
+    expect(screen.getByText(/answer from your documents, cite their sources/)).toBeInTheDocument();
     // technical elements rendered as short, generic chips (scoped — some names also appear in prose)
     const chipTexts = [...document.querySelectorAll(".chip")].map((el) => el.textContent);
     for (const chip of [
@@ -72,6 +73,9 @@ describe("Services page (wave 8)", () => {
       "FastAPI + React",
       "Docker Compose",
       "Caddy deploy",
+      "FastAPI",
+      "OpenAPI contracts",
+      "Rate limits",
     ]) {
       expect(chipTexts).toContain(chip);
     }
@@ -119,20 +123,37 @@ describe("Services page (wave 8)", () => {
       "/projects/08-inference-serving",
     ]);
     expect(proofLinks).toContainEqual(["proof: served demand API", "/projects/07-open-data-mobility"]);
+    // the new APIs & model serving card is a generic offering like the others
+    expect(proofLinks.filter(([, href]) => href === "/projects/08-inference-serving").length)
+      .toBeGreaterThanOrEqual(2);
     // the anomaly card is gone — no offering links to it as its proof anymore
     expect(proofLinks.every(([, href]) => href !== "/projects/03-anomaly-detection")).toBe(true);
-    // every offering carries exactly one metric-first success sentence
+    // no success-measured sentences remain anywhere on the page
+    expect(screen.queryByText(/how success is measured/i)).toBeNull();
     const cards = document.querySelectorAll(".offering-card");
-    expect(cards).toHaveLength(7);
+    expect(cards).toHaveLength(8);
     cards.forEach((card) => {
-      expect(card.textContent).toMatch(/how success is measured ::/);
-      expect(card.textContent).toMatch(/measured (on|by|as)/);
-      expect(card.textContent).not.toMatch(/revenue/i);
+      expect(card.textContent).not.toMatch(/how success is measured/i);
+      // no slogan register: every card keeps the plain evidence/deliverables structure
+      expect(card.querySelector("h4")?.textContent).toBe("evidence");
     });
-    // measured literals are quoted from the committed reports
-    expect(screen.getByText(/4\.23% above published best-known across 56 Solomon cases/)).toBeInTheDocument();
-    expect(screen.getByText(/\$601 vs \$1,035 per 1,400 customers/)).toBeInTheDocument();
-    expect(screen.getByText(/faithfulness\/relevance eval harness/)).toBeInTheDocument();
+    // deliverables are real, concrete items
+    expect(screen.getByText("versioned inference endpoints (REST)")).toBeInTheDocument();
+    expect(screen.getByText("OpenAPI contract with request/response schemas")).toBeInTheDocument();
+    expect(screen.getByText("latency/throughput benchmark report")).toBeInTheDocument();
+  });
+
+  it("lays the offerings out in a strict 4-column grid inside a capped container (2 then 1 columns below)", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    expect(css).toContain(".offerings-grid {");
+    expect(css).toContain("max-width: 1400px;");
+    expect(css).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+    expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
+    // 4-col breakpoint sits above the 2-col one so rows wrap 4+4 on desktop
+    expect(css.indexOf("repeat(4, minmax(0, 1fr))")).toBeGreaterThan(
+      css.indexOf("repeat(2, minmax(0, 1fr))"),
+    );
+    expect(css).not.toContain("repeat(auto-fill, minmax(300px, 1fr))");
   });
 
   it("has no proof band and no contact/availability block (Contact owns those)", () => {

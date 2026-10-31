@@ -602,11 +602,14 @@ describe("churn sandbox routing & links", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("link", { name: "▶ try the live demo" })).toHaveAttribute(
-        "href",
-        "/demos/churn-sandbox",
+      expect(screen.getAllByRole("link", { name: "▶ try the live demo" }).length).toBeGreaterThan(
+        0,
       ),
     );
+    // both the header chip-link and the prominent banner CTA point at the demo
+    for (const link of screen.getAllByRole("link", { name: "▶ try the live demo" })) {
+      expect(link).toHaveAttribute("href", "/demos/churn-sandbox");
+    }
   });
 
   it("omits the live-demo link when the registry has no demo for the project", async () => {

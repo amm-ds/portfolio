@@ -2,6 +2,7 @@ import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StorySectionData } from "../api";
 import { StorySection } from "../components/StorySection";
+import { SECTION_SUBTITLES } from "../lib/sectionMeta";
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -230,6 +231,37 @@ describe("StorySection **In plain terms:** marker", () => {
   });
 });
 
+describe("StorySection subtitles", () => {
+  it("renders the mapped one-line muted subtitle under each known section h2", () => {
+    for (const [id, text] of Object.entries(SECTION_SUBTITLES)) {
+      cleanup();
+      render(
+        <StorySection
+          projectId="01-rag-agent"
+          section={{ ...BASE, id, title: id }}
+          index={0}
+          metrics={null}
+        />,
+      );
+      const sub = document.querySelector("section > .section-subtitle");
+      expect(sub, `subtitle for ${id}`).not.toBeNull();
+      expect(sub!.textContent).toBe(text);
+    }
+  });
+
+  it("renders no subtitle for unknown (legacy) section ids", () => {
+    render(
+      <StorySection
+        projectId="01-rag-agent"
+        section={{ ...BASE, id: "appendix", title: "Appendix" }}
+        index={0}
+        metrics={null}
+      />,
+    );
+    expect(document.querySelector(".section-subtitle")).toBeNull();
+  });
+});
+
 describe("StorySection conclusions details block", () => {
   const CONCLUSIONS = {
     ...BASE,
@@ -259,10 +291,13 @@ describe("StorySection conclusions details block", () => {
     const card = document.querySelector(".bi-card");
     expect(card).not.toBeNull();
     expect(card?.textContent).toContain("the recipe is reusable");
-    // document order: h2, then the card, then the details block
+    // document order: h2, then the section subtitle, then the card, then the details block
     const h2 = document.querySelector("section > h2")!;
     expect(h2.textContent).toContain("Details");
-    expect(h2.nextElementSibling).toBe(card);
+    const subtitle = h2.nextElementSibling!;
+    expect(subtitle.classList.contains("section-subtitle")).toBe(true);
+    expect(subtitle.textContent).toBe("results summary, key concepts, and the exact record");
+    expect(subtitle.nextElementSibling).toBe(card);
     expect(card?.nextElementSibling).toBe(details);
   });
 

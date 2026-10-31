@@ -1,5 +1,6 @@
 import type { Metrics, StorySectionData } from "../api";
 import { renderMarkdown } from "../lib/markdown";
+import { SECTION_SUBTITLES } from "../lib/sectionMeta";
 import { BusinessImplication } from "./BusinessImplication";
 import { StoryMetricsTable } from "./StoryMetricsTable";
 import { FigureCard } from "./FigureCard";
@@ -85,6 +86,9 @@ export function StorySection({
         <span className="rail-num">{String(index + 1).padStart(2, "0")} </span>
         {section.title}
       </h2>
+      {SECTION_SUBTITLES[section.id] && (
+        <p className="section-subtitle">{SECTION_SUBTITLES[section.id]}</p>
+      )}
       {section.id === "conclusions" ? (
         <>
           {/* The takeaway stays visible; the evidence lives in the collapsed block. */}

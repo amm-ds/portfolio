@@ -36,15 +36,16 @@ describe("Footer", () => {
     expect(screen.getByText(/© 2026 amm-ds · MIT licensed/)).toBeInTheDocument();
   });
 
-  it("states the privacy posture: no analytics, cookies, or stored user data", () => {
+  it("drops the privacy/analytics small print", () => {
     render(
       <MemoryRouter>
         <Footer />
       </MemoryRouter>,
     );
-    expect(
-      screen.getByText("No analytics, no cookies, no user data stored."),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/No analytics, no cookies, no user data stored\./i)).toBeNull();
+    // the license line remains the only small print
+    expect(screen.getByText(/© 2026 amm-ds · MIT licensed/)).toBeInTheDocument();
+    expect(document.querySelectorAll(".footer-small")).toHaveLength(1);
   });
 
   it("drops the old gimmicky shell status line", () => {

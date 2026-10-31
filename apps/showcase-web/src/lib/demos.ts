@@ -8,7 +8,6 @@ export interface Demo {
   id: string;
   title: string;
   line: string;
-  status: "coming soon" | "live";
   /** Target route once live; undefined while the demo is a placeholder. */
   href?: string;
 }
@@ -19,7 +18,6 @@ export const DEMOS: Demo[] = [...STATIC_DEMO_REGISTRY]
     id: d.id,
     title: d.title,
     line: d.hook,
-    status: "live" as const,
     href: d.href,
   }));
 
