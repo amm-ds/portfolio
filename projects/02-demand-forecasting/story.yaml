@@ -233,42 +233,14 @@ sections:
   text_md: |
     ## Results summary
 
-    One protocol, two opposite winners. On dense Walmart M5 daily sales,
-    scored once on a frozen 28-day test, the convex ensemble posts test
-    WAPE 0.491 against 0.603 for the seasonal-naive floor — a −0.1125
-    [−0.1228, −0.1026] gap, with the committed LightGBM one step behind
-    at 0.498 and 88.8% of series improving. On sparse, 89%-zero UCI
-    retail demand, nothing reaches MASE 1.0 against the floor, so the
-    router forecasts zero for 945 of 1,069 lumpy series and reserves
-    peak-capable models for the rest. The ensemble's gap held up on
-    frozen origins; what did not hold: every UCI model degrades on later
-    folds, the 80% bands cover 77.7%, and weekly error grows
-    0.4136→0.5636 from week 1 to week 4. The evidence supports one
-    decision: plan dense, M5-like demand with the ensemble; plan sparse,
-    UCI-like demand with the router; reforecast weekly; run both as
-    pilots — neither supports an inventory-savings claim.
-
-    ## Key concepts
-
-    - **ADI/CV² regime diagnosis** — classifying each series by
-      inter-demand interval and squared variability, not the algorithm
-      choice, decides which track a series belongs to.
-    - **Frozen origins, scored once** — candidates are chosen on past
-      origins and scored exactly once on future ones, because random
-      splits leak the future into training.
-    - **Paired bootstrap intervals** — every quoted gap carries a 95%
-      range over series, so a win is reported as a range rather than a
-      point.
-    - **Mostly-zero routing** — on lumpy demand the best forecast is
-      often exactly zero, with peak-capable models reserved for the few
-      series whose peaks repay them.
-    - **Newsvendor cost check** — routing changes are priced at a stated
-      service level before any savings language; here the trade pays
-      only at q=0.90.
-    - **Coverage reported with width** — honest bands state both how
-      often they cover and how wide they are: the LightGBM bands cover
-      77.7% at a 13.535-unit mean width, under target rather than tuned
-      to look exact.
+    On dense Walmart M5 daily sales — 600 series, frozen 28-day scored-once
+    test — the convex ensemble posts test WAPE 0.491 against 0.603 for the
+    seasonal-naive floor, a −0.1125 [−0.1228, −0.1026] gap, with 88.8% of
+    series improving. On sparse UCI Online Retail II — 405,416 rows, 89%
+    zeros — no run reaches MASE 1.0; the router forecasts zero for 945 of
+    1,069 lumpy series. See the
+    [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/)
+    or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/).
 
     ## Exact numbers
 
@@ -366,16 +338,13 @@ sections:
     - Wave 28: L1/L2 comparison arms (lgbm_l2 bitwise-identical to lgbm;
       ensemble_l2 minimises selection WRMSSE).
 
+    Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/02-demand-forecasting)
+
     ## Reproduce
 
-    `uv run python -m demand_forecasting.cli all` (synthetic pipeline, ~2 min,
-    offline), `uv run python -m demand_forecasting.cli all --data-source uci`
-    (sparse track, ~30 min), `uv run python -m demand_forecasting.cli evaluate-m5`
-    (M5 headline, ~27 min, offline), `uv run python -m demand_forecasting.cli
-    tune-m5` (seeded 25-trial booster study, ~25 min), `uv run python -m
-    demand_forecasting.cli hpo` (Optuna, resumable). Selection versus test
-    origins are recorded in `reports*/evaluation_metadata.json`; full tables in
-    `reports*/report.html`.
+    `uv run python -m demand_forecasting.cli all` —
+    [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
+    · [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/).
 
     ```mermaid
     graph LR
@@ -394,6 +363,13 @@ sections:
     regime diagnosis, not one champion, is the reusable result.
   figures: []
   metrics_keys: [naive_last, hgb, hgb_tuned]
+key_concepts:
+  - "**ADI/CV² regime diagnosis** — classifying each series by inter-demand interval and squared variability, not the algorithm choice, decides which track a series belongs to."
+  - "**Frozen origins, scored once** — candidates are chosen on past origins and scored exactly once on future ones, because random splits leak the future into training."
+  - "**Paired bootstrap intervals** — every quoted gap carries a 95% range over series, so a win is reported as a range rather than a point."
+  - "**Mostly-zero routing** — on lumpy demand the best forecast is often exactly zero, with peak-capable models reserved for the few series whose peaks repay them."
+  - "**Newsvendor cost check** — routing changes are priced at a stated service level before any savings language; here the trade pays only at q=0.90."
+  - "**Coverage reported with width** — honest bands state both how often they cover and how wide they are: the LightGBM bands cover 77.7% at a 13.535-unit mean width, under target rather than tuned to look exact."
 roadmap:
 - status: delivered
   text: "Beat the seasonal-naive floor on M5: 11 candidates, frozen 28-day tests, next-week service."

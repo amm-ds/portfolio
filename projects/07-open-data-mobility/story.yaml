@@ -32,6 +32,12 @@ figure_captions:
   weather_elasticity: >-
     Raw rain-versus-dry pickup ratios on the test window. Outer-borough demand falls
     7–10%, Manhattan holds at 0.97× and EWR rises to 1.08×; directional, not causal.
+key_concepts:
+  - "**Embargoed holdout** — all tuning happened on a validation window sealed off from the test months, which were scored once."
+  - "**Serving rule over leaderboard** — the validation winner serves even though another candidate tested better, because picking best-on-test is leakage."
+  - "**Coverage-calibrated band** — the p90 twin is judged by empirical coverage, and the sparse zones where it under-covers are flagged."
+  - "**Retrain, don't transfer** — yellow-trained weights lose to the naive rule on green taxis until the recipe is refit on two months of that service's own history."
+  - "**Drift observatory** — the persisted model is re-scored monthly against new data at a ±15% tolerance; a breach opens the response runbook."
 sections:
   - id: background
     text_md: |
@@ -290,35 +296,14 @@ sections:
     text_md: |
       ## Results summary
 
-      On the strict October–December holdout, the served tuned
-      gradient-boosting model cut next-hour demand error to 4.676 pickups
-      per zone-hour — 28.3% below the same-hour-yesterday rule, a margin
-      far outside the noise between the top candidates (default and tuned
-      GBM sit 0.2% apart). Its 90% upper band covered 90.8% of outcomes
-      city-wide, within a point of target, though only 84.7% in sparse
-      zones — flagged, not hidden. Out of sample the case held: three
-      drift months, including January 2025 fetched after training, stayed
-      inside the ±15% tolerance. What did not transfer: yellow-trained
-      weights lost to the persistence rule on green taxis until retrained
-      on two months of that service's own history. The evidence supports
-      serving this model for yellow-taxi planning, staffing to the band
-      where zones are busy, and keeping sparse zones on manual watch.
-
-      ## Key concepts
-
-      - **Embargoed holdout** — all tuning happened on a validation window
-        sealed off from the test months, which were scored once.
-      - **Serving rule over leaderboard** — the validation winner serves
-        even though another candidate tested better, because picking
-        best-on-test is leakage.
-      - **Coverage-calibrated band** — the p90 twin is judged by empirical
-        coverage, and the sparse zones where it under-covers are flagged.
-      - **Retrain, don't transfer** — yellow-trained weights lose to the
-        naive rule on green taxis until the recipe is refit on two months
-        of that service's own history.
-      - **Drift observatory** — the persisted model is re-scored monthly
-        against new data at a ±15% tolerance; a breach opens the response
-        runbook.
+      On the strict October–December holdout (584,855 zone-hours), the
+      served `gbm_tuned` model — a tuned gradient-boosting regressor with a
+      quantile-0.9 p90 twin — reached 4.676 MAE, 28.3% below the
+      same-hour-yesterday baseline (default and tuned GBMs sit 0.2% apart,
+      flat within noise). Its 90% band covered 0.9079 of outcomes city-wide,
+      84.7% in flagged sparse zones. The pipeline runs laptop-class:
+      streaming Polars scans, peak ≈2 GB RAM against an 8 GB budget.
+      [full evaluation report](https://amm-ds.github.io/portfolio/projects/07-open-data-mobility/)
 
       ## Exact numbers
 
@@ -435,20 +420,17 @@ sections:
       tests pinning default-yellow parity, green routing on the committed
       bundle, and 422 on unknown service.
 
+      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/07-open-data-mobility).
+
       ## Reproduce
 
       The raw data is not shipped: the first run downloads about 1.5 GB of
       TLC and NOAA files — a long download — and later runs reuse the
       pinned local copies.
 
-      ```bash
-      uv run python -m mobility.cli all                          # full pipeline
-      uv run python -m mobility.cli drift-check --month YYYY-MM  # observatory
-      ```
+      `uv run python -m mobility.cli all`
 
-      [MODEL_CARD.md](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility/MODEL_CARD.md)
-      and `SERVING.md` document intended use and the artifact contract;
-      committed evidence is under `reports/`.
+      [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/07-open-data-mobility/)
 
       ```mermaid
       flowchart LR

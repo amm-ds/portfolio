@@ -266,36 +266,14 @@ sections:
   text_md: |
     ## Results summary
 
-    At a fixed 2% alert budget on NAB's nine evaluable series,
-    IsolationForest touches 16 of 17 labelled incident windows — and fires
-    1,609 alerts doing it. Pointwise PR-AUC is 0.527; event-aware range-F1
-    is 0.157. Episode deduplication plus a one-page-per-series-per-day cap
-    cuts the stream to 80 pages and lifts range-F1 to 0.315, at a recall
-    cost of 0.729 to 0.562. What held up out-of-sample: train-side
-    operating-point tuning — IsolationForest's adopted (0.5%, 24 h) point
-    halved the budgeted pages again, to 46 at range-F1 0.382. What did not:
-    no detector family beat the headline recipe in the sweep, OCSVM's
-    marginal tuning gain failed on test, and adaptive thresholds fired on
-    31 of 120 real NAB chunks; sub-0.1 range-F1 differences on six
-    validation windows read as noise. The decision the evidence supports:
-    page the deduplicated, budgeted stream — not a different detector, and
-    not unattended auto-paging.
-
-    ## Key concepts
-
-    - **Alert-budget stream** — the deployed artifact: deduplicated episodes
-      capped at one page per series per 24 h, turning 1,609 raw alerts into
-      80 pages.
-    - **Event-aware range-F1** — scores a labelled window detected once one
-      alert lands inside it, measuring what an on-call engineer feels.
-    - **Past-only splits** — each series trains on its first 70% and scores
-      a later span once, so no incident leaks into fitting or tuning.
-    - **Windows touched** — the raw share of labelled windows hit, reported
-      apart from range recall's mean over all 12 series.
-    - **Synthetic ladder** — a seeded stream that checks pipeline mechanics;
-      its huge residual-feature gains never appeared on NAB.
-    - **Operating point** — the (threshold budget, cooldown) pair chosen on
-      training data alone; adoption needs +0.05 and one transferring test pass.
+    At a fixed 2% alert budget on nine of NAB's 12 series,
+    IsolationForest with rolling+residual features touches 16 of 17
+    labelled windows and fires 1,609 alerts (pointwise PR-AUC 0.527;
+    range-F1 0.157). Episode dedup plus a one-page-per-series-per-day cap
+    cuts that to 80 pages at range-F1 0.315 (range recall 0.729 → 0.562);
+    train-side tuning halves it again to 46 pages at range-F1 0.382.
+    Sub-0.1 range-F1 differences across six validation windows read as
+    noise. [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
 
     ## Exact numbers
 
@@ -392,13 +370,13 @@ sections:
     load. Range recall is the mean over all 12 series (the three window-less series count
     as zero); the raw detected fraction is reported separately as windows touched.
 
+    Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/03-anomaly-detection)
+
     ## Reproduce
 
-    - `uv run python -m anomaly_detection.cli all` — synthetic pipeline.
-    - `uv run python -m anomaly_detection.cli nab` — NAB headline track, 12 series.
-    - `uv run python -m anomaly_detection.cli nab-sweep` — detector × feature sweep + alert budgets.
-    - `uv run python -m anomaly_detection.cli nab-tune` — operating-point selection + one test pass.
-    - Artifacts: `reports/nab_metrics.json`, `reports/nab_sweep.json`, `reports/nab_tune.json`, `reports/metrics.json`, `reports/residual_probe.json`, `reports/nsl_probe.json`.
+    `uv run python -m anomaly_detection.cli all`
+
+    [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
 
     ```mermaid
     flowchart LR
@@ -425,6 +403,13 @@ roadmap:
   text: "Cut pages 1,609→80 at range-F1 0.157→0.315."
 - status: delivered
   text: "Validated train-side operating-point tuning: IsolationForest's adoption transfers; OCSVM's does not."
+key_concepts:
+- "**Alert-budget stream** — the deployed artifact: deduplicated episodes capped at one page per series per 24 h, turning 1,609 raw alerts into 80 pages."
+- "**Event-aware range-F1** — scores a labelled window detected once one alert lands inside it, measuring what an on-call engineer feels."
+- "**Past-only splits** — each series trains on its first 70% and scores a later span once, so no incident leaks into fitting or tuning."
+- "**Windows touched** — the raw share of labelled windows hit, reported apart from range recall's mean over all 12 series."
+- "**Synthetic ladder** — a seeded stream that checks pipeline mechanics; its huge residual-feature gains never appeared on NAB."
+- "**Operating point** — the (threshold budget, cooldown) pair chosen on training data alone; adoption needs +0.05 and one transferring test pass."
 figure_captions:
   eda_signals_overview: "Two days (2,880 minutes) of the seeded synthetic stream. CPU, memory, and latency follow daily seasonality; injected anomalies appear as simultaneous CPU+latency spikes."
   telemetry_flags: "Synthetic test-window flags at the fixed 2% alert budget, compared with ground-truth anomalous minutes. The flags track simultaneous CPU+latency spikes; this is not a NAB result."

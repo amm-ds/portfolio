@@ -297,38 +297,13 @@ sections:
   text_md: |
     ## Results summary
 
-    Retrieval works; generation is not yet trustworthy. On the 65 tuning
-    questions the setup finds the right article in the top five 83.1% of
-    the time (recall@5 0.831, MRR@5 0.808), against a 0.677 word-match
-    floor. Yet when the hosted model drafted the answers, 18 of 65 kept
-    unsupported claims — more than all other failures combined — with
-    RAGAS faithfulness 0.685 [0.605, 0.760]. What held up out-of-sample:
-    refusal accuracy 0.900 and cite-when-expected 0.964, and the sealed
-    15-question pass ran for $0.25. What did not: tuning retrieval did not
-    repeat — sealed recall@5 falls to 0.600 and rubric faithfulness to
-    0.62 [0.45, 0.79] — and the local model scored lower on every axis.
-    The evidence supports one decision: keep showcase chat opt-in and
-    reviewed, defer grounding work pending a fresh external corpus, and
-    reuse the measurement setup — sealed gate, seeded floors, three
-    judges, cost cap — as the deliverable.
-
-    ## Key concepts
-
-    - **Seeded floors** — every headline is scored against random and
-      word-match rankings, so it can never restate how easy the task is.
-    - **Sealed held-out set** — a second question set written only after
-      tuning froze and scored once, so tuning numbers cannot be overfit.
-    - **Claim support floor** — each drafted claim must be backed by its
-      cited passage at 0.6 or better, or it is cut, repaired at most
-      twice, or the answer abstains.
-    - **Three separate judges** — rubric taxonomy, RAGAS, and per-claim
-      verification catch different failure modes, so no single score
-      speaks for answer quality.
-    - **Cloud-equivalent cost metering** — a public rate card turns token
-      use into dollars and puts a hard cap on every pass.
-    - **Auditable is not trustworthy** — every answer traces to a readable
-      passage, yet 18 of 65 still kept unsupported claims; verification
-      bounds the harm, it does not remove it.
+    On 65 tuning questions, the committed setup — 200-token chunks, MiniLM
+    embeddings, cross-encoder rerank — reaches recall@5 0.831 and MRR@5 0.808
+    against a 0.677 word-match floor; the sealed 15-question pass drops to
+    0.600. The hosted pass kept unsupported claims in 18 of 65 answers; RAGAS
+    faithfulness 0.685 [0.605, 0.760], refusal accuracy 0.900 [0.70, 1.0]. The
+    corpus is 593 Wikipedia articles capped at 12,000 characters. See the
+    [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/).
 
     ## Exact numbers
 
@@ -399,17 +374,12 @@ sections:
       cloud-equivalent, paid in compute and latency.
     - Wave 16: the sealed held-out gate (numbers above).
 
+    Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/01-rag-agent)
+
     ## Reproduce
 
-    `uv run python -m rag_agent.cli prepare-corpus` (bounded Wikipedia scan),
-    `uv run python -m rag_agent.cli build-index` (three FAISS indexes for the
-    chunk-size sweep), `uv run python -m rag_agent.cli evaluate --ragas --verify`
-    (hosted or local pass), `uv run python -m rag_agent.cli evaluate --heldout`
-    (sealed regression gate), `uv run python -m rag_agent.cli evaluate --offline`
-    (retrieval-only, no provider), `uv run python -m rag_agent.cli chat`
-    (interactive demo, opt-in). Full traces and metrics remain in
-    `reports/question_traces.json`, `reports/question_traces_heldout.json`,
-    `reports/metrics.json`, and `reports/cost_telemetry.json`.
+    `dvc repro` — [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
+    · [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/).
 
     ```mermaid
     graph LR
@@ -435,6 +405,13 @@ sections:
     — retrieval is solved, grounding is not, and the measurement setup is
     the reusable deliverable.
   figures: []
+key_concepts:
+  - "**Seeded floors** — every headline is scored against random and word-match rankings, so it can never restate how easy the task is."
+  - "**Sealed held-out set** — a second question set written only after tuning froze and scored once, so tuning numbers cannot be overfit."
+  - "**Claim support floor** — each drafted claim must be backed by its cited passage at 0.6 or better, or it is cut, repaired at most twice, or the answer abstains."
+  - "**Three separate judges** — rubric taxonomy, RAGAS, and per-claim verification catch different failure modes, so no single score speaks for answer quality."
+  - "**Cloud-equivalent cost metering** — a public rate card turns token use into dollars and puts a hard cap on every pass."
+  - "**Auditable is not trustworthy** — every answer traces to a readable passage, yet 18 of 65 still kept unsupported claims; verification bounds the harm, it does not remove it."
 roadmap:
 - status: delivered
   text: "Built reproducible retrieval with a provider seam for hosted or local models."
