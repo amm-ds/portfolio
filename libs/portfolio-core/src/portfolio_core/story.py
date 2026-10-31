@@ -108,6 +108,14 @@ class ProjectStory(PortfolioBaseModel):
         default_factory=list,
         description="Finalized roadmap: delivered/deferred/remaining, no history.",
     )
+    key_concepts: list[str] = Field(
+        default_factory=list,
+        description=(
+            "The ideas that arose in this project, shown as a card in the Background "
+            "section so readers meet the vocabulary before the sections that use it. "
+            "4-7 items, each '**Term** — one plain sentence on what it means here.'"
+        ),
+    )
     figure_captions: dict[str, str] = Field(
         default_factory=dict,
         description=(

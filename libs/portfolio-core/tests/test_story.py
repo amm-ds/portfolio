@@ -124,6 +124,27 @@ def test_roadmap_status_validated() -> None:
         RoadmapItem(status="planned", text="x")
 
 
+def test_key_concepts_default_and_roundtrip(tmp_path: Path) -> None:
+    import yaml
+
+    story = ProjectStory(
+        project_id="p",
+        short_version=_SHORT,
+        sections=[_section("background")],
+        key_concepts=["**Baseline** — the simple rule a result must beat."],
+    )
+    assert story.key_concepts == ["**Baseline** — the simple rule a result must beat."]
+    (tmp_path / "story.yaml").write_text(
+        yaml.safe_dump(story.model_dump(mode="json"), sort_keys=False)
+    )
+    loaded = load_story(tmp_path)
+    assert loaded is not None
+    assert loaded.key_concepts == ["**Baseline** — the simple rule a result must beat."]
+    # older stories without the field still load
+    legacy = ProjectStory(project_id="p", short_version=_SHORT, sections=[_section("background")])
+    assert legacy.key_concepts == []
+
+
 def test_header_fields_default_to_none() -> None:
     story = ProjectStory(project_id="p", short_version=_SHORT, sections=[_section("background")])
     assert story.headline is None
