@@ -333,7 +333,40 @@ sections:
     metrics_keys: [response, t_learner, x_learner, random, treat-everyone]
   - id: conclusions
     text_md: |
-      Exact records behind the numbers above.
+      ## Results summary
+
+      On 64,000 randomized customers from one real 2008 campaign, ranking by
+      modeled uplift beat random targeting by +$2,812 (+69%) profit at a 25%
+      send budget, with 95% CI [+$718, +$4,767] lying entirely above zero.
+      That edge survived honest evaluation: scores were computed out of
+      fold, and paired bootstraps put the whole interval above random. The
+      Mens email's small effect (+0.68 percentage points on a 0.57% base)
+      held up too. What did not: the response-versus-T-learner ranking (Qini
+      gap CI [−8.18, 9.52] spans zero), both per-arm Qini reads, and the
+      X-learner. And at $0.01 per email, mailing everyone still earned the
+      most ($16,103); the targeting edge appears only under a budget or
+      above roughly $0.30 per send. The evidence supports ranking by
+      measured lift when sends are budgeted or costly, revalidated on a
+      fresh holdout for each new campaign.
+
+      ## Key concepts
+
+      - **Uplift vs response modeling** — a response model chases sure
+        things who would buy anyway; uplift scores the added purchase the
+        email causes.
+      - **T-learner and X-learner** — one model per arm scored
+        treated-minus-control (T), or imputed effects combined
+        propensity-weighted (X).
+      - **Paired bootstrap policy intervals** — the same resampled customers
+        score every policy, so profit gaps get honest, comparable confidence
+        intervals.
+      - **Qini coefficient** — the area between a ranking curve and random
+        targeting, measuring how well a list sorts buyers.
+      - **CUPED** — adjusting on pre-campaign spend to soak up noise; here
+        it left the estimate unchanged and cut almost no conversion
+        variance.
+      - **Cost-sweep break-even** — the send cost (≈$0.30) above which
+        targeted sending beats mailing everyone.
 
       ## Exact numbers
 
@@ -461,7 +494,7 @@ sections:
 
       **Business summary:** Rank by measured lift only when sends are
       budgeted or costly: +$2,812 (+69%) over random at a 25% budget, CI
-      [+$718, +$4,767]. At $0.01 per email, mail everyone.
+      [+$718, +$4,767]. At $0.01 per email, mail everyone — $16,103.
     figures: []
 roadmap:
   - status: delivered

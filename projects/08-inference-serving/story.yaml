@@ -318,8 +318,39 @@ sections:
     metrics_keys: []
   - id: conclusions
     text_md: |
-      The deliverable is the harness; the published numbers are a worked
-      example from one machine.
+      ## Results summary
+
+      On one quiet 128 GB MacBook, in a single committed run — 760
+      requests, 19 cells, zero failures — the 4-bit mixture-of-experts
+      model answered in 0.81 s p95 at single-user load (0.63 s median),
+      produced 67.73 output tokens per second, and scored 1.00 on both
+      bounded-task quality checks. Latency rose near-linearly to 7.80 s
+      at eight concurrent requests; electricity cost came to about $0.12
+      per 1M output tokens. The packaged-engine panel measured a 2.9×
+      gap: MLX 4-bit at 18.8 tok/s against llama.cpp Q8_0 at 6.4.
+      Quality held up in every cell; the absolute numbers did not — a
+      repeat under background load slowed llama.cpp cells 10–30×. These
+      are one-machine, one-run measurements, not portable benchmarks.
+      The evidence supports serving this model on this hardware and
+      re-measuring any candidate stack with the same harness.
+
+      ## Key concepts
+
+      - **p50/p95/p99 latency ladder** — median and tail percentiles
+        recorded at each concurrency rung, because a mean hides the delay
+        users actually feel.
+      - **Packaging confound** — engine and quantization ship as one
+        artifact, so the 2.9× gap is a combination comparison, not an
+        engine test.
+      - **Bounded-task quality guardrail** — perfect schema and keyword
+        scores show the timing comparisons are fair, not that quantization
+        never hurts quality.
+      - **Quiet-machine prerequisite** — a repeat under co-tenant load
+        degraded llama.cpp cells 10–30×, so timings are trustworthy only
+        on idle hardware.
+      - **Electricity-only cost** — the $0.12-per-1M figure comes from
+        measured tok/s and declared power assumptions; it excludes wall
+        power and hardware.
 
       ## Exact numbers
 

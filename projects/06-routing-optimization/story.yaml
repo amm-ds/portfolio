@@ -263,26 +263,41 @@ sections:
     figures: [family_gap, pareto_gap_runtime, alns_convergence_C101]
   - id: conclusions
     text_md: |
-      Full evidence: exact tables, tuning records, and the ladder
-      definition. All means are over the 56 instances at seed 42, against
-      best-known references (not presumed optimal); runtimes are wall-clock
-      on a shared machine and are context, not stable benchmarks. Full
-      per-instance tables live in `reports/results.md`.
+      ## Results summary
+
+      Across the 56 standard 100-customer days, the tuned adaptive large-
+      neighborhood search returns a feasible, machine-checked plan within
+      4.23% of the best published distance — 3.73 more trucks than
+      best-known — in about a second per problem. What held up:
+      tuned on a 6-instance subset, the search still won on distance for
+      52 of 56 instances and undercut 8 references outright.
+      What did not: no solver closed the fleet gap; the worst residual
+      stays large (C203 at 19.48%). The exact solver added nothing: given
+      the search's plan it tied at ten times the runtime; from scratch
+      at the same budget it found no feasible plan. The evidence supports
+      serving the seeded search plan; the exact solver certifies small
+      cases.
+
+      ## Key concepts
+
+      - **Optimality gap** — how far a plan's distance sits above the
+        best-known published plan.
+      - **Best-known solutions** — the shortest plans the literature has
+        published: reference points, not proven optima.
+      - **ALNS** — adaptive large-neighborhood search: destroy part of a
+        plan, repair it, adapt operator weights over segments.
+      - **Fleet-first ranking** — the field ranks a smaller fleet ahead of
+        a shorter distance; distance and truck count stay together.
 
       ## Exact numbers
 
-      Headline detail: per-instance gaps show a mean of 4.23% with a 95%
-      CI of 3.1–5.3 points (one-sample t(55) = 7.63 against a zero gap,
-      p ≈ 2×10⁻¹⁰) — read narrowly, because gaps cluster by family and are
-      deterministic given the seed: the interval describes spread across
-      instances, not sampling uncertainty about a population mean. Terms: a
-      **time window** is the allowed arrival clock-time at a customer
-      (arrive outside it and the plan is infeasible); **best-known
-      solutions** are the shortest plans the literature has published for
-      each problem — reference points, not proven optima, except where an
-      exact solver certifies a case.
+      Headline: mean gap 4.23%, 95% CI 3.1–5.3 points — deterministic given
+      the seed, so the interval reads as spread, not sampling uncertainty.
+      Terms: **time window**, the allowed arrival clock-time at a customer;
+      **best-known solutions**, the shortest published plans — reference
+      points, not proven optima.
 
-      **Ladder definition** (seeded, deterministic, auditable):
+      **Ladder definition** (seeded, deterministic):
 
       ```mermaid
       flowchart LR
@@ -296,26 +311,19 @@ sections:
           F --> I["unhinted CP-SAT"]
       ```
 
-      - `randomized` / `nearest_neighbor`: feasible floor and greedy
-        insertion.
-      - `clarke_wright`: savings merges gated on capacity and time windows.
-      - `two_opt`: feasible intra-route 2-opt and inter-route 2-opt* moves.
+      - `randomized` / `nearest_neighbor`: feasible floor; greedy insertion.
+      - `clarke_wright`: savings merges gated on capacity and windows.
+      - `two_opt` (+ `two_opt_tuned` HPO arm): feasible intra-route 2-opt
+        and inter-route 2-opt* moves.
       - `alns`: random/worst/Shaw destroy, regret-2 repair, segment-adapted
-        weights and simulated-annealing acceptance from the tuned 2-opt
-        plan.
-      - `alns_fleet`: the same seeded search, but acceptance and incumbent
-        criteria optimize distance + 10,000 × vehicles — the hierarchical
-        fleet-first objective the benchmark ranks by (10,000 exceeds any
-        achievable distance gain).
-      - `ortools_cp`: ALNS-hinted CP-SAT incumbent-improvement probe under a
-        10 s/instance budget, not an independent baseline; timeout returns
-        the hint.
-      - `ortools_cp_unhinted`: the same CP-SAT model at the same 10 s
-        budget with no hint and no fallback — the honest equal-budget
-        comparison.
+        weights, annealing acceptance.
+      - `alns_fleet`: same search, incumbents on distance + 10,000 ×
+        vehicles (fleet-first).
+      - `ortools_cp` / `ortools_cp_unhinted`: CP-SAT at a 10 s/instance
+        budget, hinted / no hint, no fallback.
 
-      **Headline table** (means over 56 instances; Δ gap relative to
-      `nearest_neighbor`; run ids as recorded in `reports/metrics.json`):
+      **Headline table** (means over 56 instances; Δ gap vs
+      `nearest_neighbor`; run ids in `reports/metrics.json`):
 
       | solver | mean gap | mean veh Δ | Δ gap vs nn | mean runtime |
       |---|---|---|---|---|
@@ -328,37 +336,17 @@ sections:
       | ortools_cp (hinted, 10 s) | 4.23% | +3.73 | −67.41 points | 12.0 s |
       | ortools_cp_unhinted (10 s) | no feasible plan on any of 56 | — | — | 13.1 s |
 
-      - **Distance:** ALNS wins 52/56 intra-ladder on distance; `alns_fleet`
-        wins the other 4 — the fleet-first search path lands in different
-        optima and occasionally a better-distance one.
-      - **Vehicles first:** under the benchmark convention (fleet size,
-        then distance) ALNS wins 38/56, `alns_fleet` 5/56, naive solvers 13
-        by using fewer vehicles at far worse distance. No solver beats
-        best-known fleet size (+3.73 mean, +3.66 fleet-first).
-      - **Fleet-first costs almost no distance:** the hierarchical
-        objective (penalty 10,000/vehicle) trades +0.07 points mean gap for
-        −0.07 mean vehicles — measured, not assumed; both criteria stay
-        reported per instance.
-      - **Negative gaps:** ALNS undercuts 8 published references (best
-        RC202 −3.85%). Residual gaps include C2 6.50%, C203 19.48% and
-        C103 11.67%.
-      - **HPO negatives:** 24 seeded trials tune 2-opt on all 56 instances
-        and 12 tune ALNS on a 6-instance subset (winner: segment 100,
-        reaction 0.5, uniform init weights, persisted to `params.yaml` as
-        `alns_best`); restarts do not pay (k=1), 2-opt gains are small, and
-        budgets saturate at ≤~20 accepted moves.
-      - **Hinted CP-SAT:** status `UNKNOWN` on all 56 at 100 customers,
-        unchanged incumbents at ~10× the runtime. Only small cases carry
-        optimality claims: the 25-customer C101 prefix is certified optimal
-        at 191.8 in 2.9 s, improving the 2-opt hint 286.3 → 191.8 (−33%),
-        and a 5-customer case in 0.1 s.
-      - **Unhinted CP-SAT at the equal 10 s budget:** status UNKNOWN on all
-        56 instances — no feasible plan, no incumbent, nothing to fall back
-        to. The tie was a head-start artifact: given 10× the time **and the
-        plan**, the exact solver could not improve any incumbent; from
-        scratch it produces no plan at all. The meaningful comparison
-        stands: hand-written ALNS yields feasible, machine-checked plans in
-        ~1 s; an unhinted exact model yields none at 10 s.
+      **Record** (per-instance tables in `reports/results.md`; references:
+      best-known registry + SINTEF TOP supplement, 42 omitted cases):
+
+      | finding | record |
+      |---|---|
+      | distance | ALNS wins 52/56 intra-ladder on distance; `alns_fleet` wins the other 4 — the fleet-first path lands in different, occasionally better-distance optima |
+      | vehicles first | under the benchmark convention (fleet size, then distance) ALNS wins 38/56, `alns_fleet` 5/56, naive solvers 13 by using fewer vehicles at far worse distance; no solver beats best-known fleet size (+3.73 mean, +3.66 fleet-first) |
+      | fleet-first trade | the hierarchical objective (penalty 10,000/vehicle) buys −0.07 mean vehicles for +0.07 points of mean gap — measured, not assumed; both criteria stay reported per instance |
+      | negative gaps | ALNS undercuts 8 published references (best RC202 −3.85%); residual gaps include C2 6.50%, C203 19.48% and C103 11.67% |
+      | HPO negatives | 24 seeded trials tune 2-opt on all 56 instances and 12 tune ALNS on a 6-instance subset (winner: segment 100, reaction 0.5, uniform init weights, persisted to `params.yaml` as `alns_best`); restarts do not pay (k=1); budgets saturate at ≤~20 accepted moves |
+      | exact solver | hinted CP-SAT: status UNKNOWN on all 56 at 100 customers, incumbents unchanged at ~10× the runtime; unhinted at the equal 10 s budget: no feasible plan, no incumbent on any instance; the tie was a head-start artifact — certified optimal only in small cases: the 25-customer C101 prefix at 191.8 in 2.9 s (2-opt hint 286.3 → 191.8, −33%) and a 5-customer case in 0.1 s |
 
       **Success criteria record:**
 
@@ -370,34 +358,22 @@ sections:
       | speed | full benchmark and HPO in about 90 s | per-solver wall time |
       | legibility | feasible randomized floor in every chart | construction/search deltas |
 
-      **Reference provenance:** curated best-known registry plus a
-      project-local SINTEF TOP supplement for 42 omitted cases; data-quality
-      gates reject nulls and invalid ranges; all eight solvers run on all 56
-      instances against best-known distance and vehicle references
-      (`reports/metrics.json`, `reports/solutions.json`).
-
       ## Protocol
 
       - **Benchmark:** the 56 Solomon 100-customer instances (C1, C2, R1,
-        R2, RC1, RC2), seed 42, all eight solvers on all instances.
-      - **Metrics:** optimality gap is the percentage distance sits above
-        the best-known reference for the same instance; the vehicle delta
-        is the fleet-count difference vs the reference fleet; runtimes are
-        wall-clock on a shared machine.
-      - **Ranking convention:** a smaller fleet ranks ahead of a shorter
-        distance, matching the field's hierarchical convention.
-      - **Exact-solver arms:** hinted CP-SAT gets the ALNS plan as a
-        starting incumbent under a 10 s/instance budget; the unhinted arm
-        gets the same budget with no hint and no fallback.
-      - **Certified cases:** a 25-customer prefix of C101 and one
-        5-customer case, solved to provable optimality.
+        R2, RC1, RC2), seed 42; all eight solvers, all instances.
+      - **Metrics:** gap: percent above the best-known reference distance;
+        vehicle delta: fleet-count difference vs the reference fleet;
+        runtimes: wall-clock on a shared machine.
+      - **Exact-solver arms:** hinted CP-SAT starts from the ALNS plan under
+        10 s/instance; unhinted gets the same budget, no hint, no fallback.
       - **Tuning records:** 24 seeded 2-opt trials on all 56 instances; 12
-        ALNS trials on a 6-instance subset; winning knobs persisted to
-        `params.yaml` (`solver_best`, `alns_best`).
+        ALNS trials on a 6-instance subset; winners in `params.yaml`
+        (`solver_best`, `alns_best`).
 
       ## Limits
 
-      - Means over 56 instances hide per-instance spread (worst: C203 at
+      - Means over 56 instances hide per-instance spread (worst C203:
         19.48%) and vehicle trade-offs.
       - Best-known references are not proven optima; only the two certified
         small cases support an optimality statement.
@@ -405,21 +381,18 @@ sections:
         re-optimization.
       - Runtimes come from one shared, load-sensitive machine — context,
         not stable benchmarks.
-      - The evidence is 100-customer scale; larger Gehring–Homberger
-        instances and a solver-as-a-service deployment remain deferred
-        forward work.
+      - Evidence is 100-customer scale; larger Gehring–Homberger instances
+        and solver-as-a-service remain deferred.
 
       ## Revision notes
 
-      - Committed run at seed 42: best plans per instance in
-        `reports/solutions.json`, metrics in `reports/metrics.json`;
-        full per-instance tables in `reports/results.md`.
-      - Tuned knobs persisted in `params.yaml` (`solver_best` for 2-opt:
-        50 iterations, best acceptance, tail exchange, restarts 1;
-        `alns_best`: segment 100, reaction 0.5, uniform init weights).
+      - Committed run at seed 42: plans in `reports/solutions.json`, metrics
+        in `reports/metrics.json`; per-instance tables in `reports/results.md`.
+      - Tuned knobs in `params.yaml` (`solver_best`: 50 iterations, best
+        acceptance, tail exchange, restarts 1; `alns_best`: segment 100,
+        reaction 0.5, uniform init weights).
       - The unhinted CP-SAT arm is recorded per instance (status + runtime)
-        in both `reports/metrics.json` and `reports/solutions.json`, as the
-        honest equal-budget comparison.
+        in both reports, as the honest equal-budget comparison.
 
       ## Reproduce
 

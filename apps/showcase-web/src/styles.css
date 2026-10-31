@@ -902,10 +902,9 @@ select:focus-visible,
   color: var(--accent);
 }
 
-/* --- Glossary: auto-linked terms in prose + the /glossary page --- */
+/* --- Glossary: auto-linked terms in prose + per-project card + /glossary page --- */
 
 a.glossary-term {
-  position: relative;
   color: var(--accent);
   text-decoration: underline dotted;
   text-underline-offset: 0.18em;
@@ -916,28 +915,86 @@ a.glossary-term:focus-visible {
   text-decoration-style: solid;
 }
 
-a.glossary-term .glossary-tip {
-  display: none;
-}
-
-a.glossary-term:hover .glossary-tip,
-a.glossary-term:focus-visible .glossary-tip {
-  display: block;
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 0.45rem);
-  width: max-content;
-  max-width: 22rem;
+/* Per-project glossary card at the end of the Background section: the
+   definitions that used to appear as hover popups now live here. */
+.glossary-card {
+  margin: 1.4rem 0 0;
+  padding: 1rem 1.2rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-left: 2px solid var(--accent);
   border-radius: var(--radius);
-  padding: 0.55rem 0.8rem;
-  font-size: 0.8rem;
+}
+
+.glossary-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+
+.glossary-card-label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.glossary-card-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.glossary-card-hint a {
+  color: var(--accent);
+}
+
+.glossary-card-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.glossary-card-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr;
+  gap: 0.9rem;
+  align-items: baseline;
+}
+
+.glossary-card-row dt {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.glossary-card-row dt a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.glossary-card-row dt a:hover,
+.glossary-card-row dt a:focus-visible {
+  text-decoration: underline;
+}
+
+.glossary-card-row dd {
+  margin: 0;
+  font-size: 0.86rem;
   line-height: 1.5;
   color: var(--text);
-  box-shadow: 0 6px 24px rgba(2, 6, 23, 0.55);
-  z-index: 50;
+}
+
+@media (max-width: 640px) {
+  .glossary-card-row {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
 }
 
 .glossary-page {

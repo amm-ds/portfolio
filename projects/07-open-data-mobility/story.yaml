@@ -288,7 +288,37 @@ sections:
     metrics_keys: [naive_lag24, gbm_mean, gbm_tuned, temporal_net, temporal_net_tuned]
   - id: conclusions
     text_md: |
-      The full record behind the numbers above.
+      ## Results summary
+
+      On the strict October–December holdout, the served tuned
+      gradient-boosting model cut next-hour demand error to 4.676 pickups
+      per zone-hour — 28.3% below the same-hour-yesterday rule, a margin
+      far outside the noise between the top candidates (default and tuned
+      GBM sit 0.2% apart). Its 90% upper band covered 90.8% of outcomes
+      city-wide, within a point of target, though only 84.7% in sparse
+      zones — flagged, not hidden. Out of sample the case held: three
+      drift months, including January 2025 fetched after training, stayed
+      inside the ±15% tolerance. What did not transfer: yellow-trained
+      weights lost to the persistence rule on green taxis until retrained
+      on two months of that service's own history. The evidence supports
+      serving this model for yellow-taxi planning, staffing to the band
+      where zones are busy, and keeping sparse zones on manual watch.
+
+      ## Key concepts
+
+      - **Embargoed holdout** — all tuning happened on a validation window
+        sealed off from the test months, which were scored once.
+      - **Serving rule over leaderboard** — the validation winner serves
+        even though another candidate tested better, because picking
+        best-on-test is leakage.
+      - **Coverage-calibrated band** — the p90 twin is judged by empirical
+        coverage, and the sparse zones where it under-covers are flagged.
+      - **Retrain, don't transfer** — yellow-trained weights lose to the
+        naive rule on green taxis until the recipe is refit on two months
+        of that service's own history.
+      - **Drift observatory** — the persisted model is re-scored monthly
+        against new data at a ±15% tolerance; a breach opens the response
+        runbook.
 
       ## Exact numbers
 

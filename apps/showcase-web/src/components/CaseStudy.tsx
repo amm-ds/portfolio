@@ -1,6 +1,9 @@
+import { Fragment } from "react";
 import type { Metrics, ProjectStoryData } from "../api";
+import { glossaryEntryBySlug } from "../lib/glossary";
 import { glossaryTermsInMarkdown } from "../lib/markdown";
 import { useScrollSpy } from "../hooks/useScrollSpy";
+import { GlossaryCard } from "./GlossaryCard";
 import { RoadmapBlock } from "./RoadmapBlock";
 import { StorySection } from "./StorySection";
 
@@ -34,6 +37,12 @@ export function CaseStudy({
     }
     return owned;
   });
+  // The story's vocabulary, in first-use order, for the Background glossary
+  // card. Capped: a reference, not a wall.
+  const storyGlossary = [...seenGlossary]
+    .slice(0, 8)
+    .map((slug) => glossaryEntryBySlug(slug))
+    .filter((e) => e !== undefined);
 
   return (
     <div className="story-layout">
@@ -52,15 +61,17 @@ export function CaseStudy({
         </nav>
         <div>
           {story.sections.map((s, i) => (
-            <StorySection
-              key={s.id}
-              projectId={projectId}
-              section={s}
-              index={i}
-              metrics={metrics}
-              figureCaptions={story.figure_captions}
-              linkedTerms={linkedTermsBySection[i]}
-            />
+            <Fragment key={s.id}>
+              <StorySection
+                projectId={projectId}
+                section={s}
+                index={i}
+                metrics={metrics}
+                figureCaptions={story.figure_captions}
+                linkedTerms={linkedTermsBySection[i]}
+              />
+              {s.id === "background" && <GlossaryCard terms={storyGlossary} />}
+            </Fragment>
           ))}
           <RoadmapBlock roadmap={story.roadmap} />
         </div>

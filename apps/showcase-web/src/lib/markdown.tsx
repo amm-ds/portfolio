@@ -1,7 +1,7 @@
 import { createElement, Fragment, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { MermaidDiagram } from "../components/MermaidDiagram";
-import glossary from "./glossary.json";
+import { glossaryEntries } from "./glossary";
 
 // Minimal, safe markdown → React renderer. Supports what story.yaml prose
 // uses: paragraphs, **bold**, *emphasis*, `code`, [links](https://…) (https:,
@@ -11,11 +11,6 @@ import glossary from "./glossary.json";
 // never jumps above the section h2), thematic breaks (---/***/___), and fenced
 // code blocks (```lang; ```mermaid renders as a diagram). Everything is
 // rendered as React text nodes — no HTML injection surface.
-//
-// Glossary auto-linking: the first occurrence of each glossary term (per call,
-// or page-wide when the caller threads a shared Set) becomes a link to
-// /glossary#<slug>, case-insensitive with word boundaries, longest term first,
-// never inside code or link text/URLs. No raw HTML injection anywhere.
 
 const INLINE_RE =
   /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*|\[[^\]\n]+\]\((?:https?:\/\/|mailto:)[^)\s]+\))/gi;
@@ -28,14 +23,21 @@ const INLINE_RE =
 const LINK_TOKEN_RE = /^\[([^\]\n]+)\]\(([^)\n]+)\)$/i;
 const ALLOWED_LINK_SCHEMES = /^(?:https?:|mailto:)/i;
 
-// --- Glossary auto-linking -------------------------------------------------------
+//
+// Glossary auto-linking: the first occurrence of each glossary term (per call,
+// or page-wide when the caller threads a shared Set) becomes a link to
+// /glossary#<slug>, case-insensitive with word boundaries, longest term first,
+// never inside code or link text/URLs. No popups anywhere: definitions live in
+// the per-project glossary card (Background section) and on the /glossary page.
+//
+// --- auto-linking internals -------------------------------------------------
 // One shared matcher for all terms: longest first so multi-word terms win,
 // case-insensitive, word boundaries via lookarounds (letters/digits/hyphen
 // disallowed on both sides, so "macro-F1" links but "macro-F1-style" does not
 // match at its hyphen edge and "MASE" does not match inside "MASEs").
-const GLOSSARY_BY_LOWER = new Map(glossary.map((e) => [e.term.toLowerCase(), e]));
+const GLOSSARY_BY_LOWER = new Map(glossaryEntries.map((e) => [e.term.toLowerCase(), e]));
 const GLOSSARY_RE = new RegExp(
-  `(?<![A-Za-z0-9-])(${[...glossary]
+  `(?<![A-Za-z0-9-])(${[...glossaryEntries]
     .sort((a, b) => b.term.length - a.term.length)
     .map((e) => e.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
     .join("|")})(?![A-Za-z0-9-])`,
@@ -87,12 +89,11 @@ function linkGlossaryTerms(text: string, keyPrefix: string, state: GlossaryLinkS
       return;
     }
     if (state.record) state.linked.add(entry.slug);
+    // No tooltip: the term links to /glossary#slug; definitions also appear in
+    // the project's Background glossary card.
     out.push(
       <Link key={`${keyPrefix}-g${i}`} className="glossary-term" to={`/glossary#${entry.slug}`}>
         {seg}
-        <span className="glossary-tip" role="tooltip">
-          {entry.definition}
-        </span>
       </Link>,
     );
   });

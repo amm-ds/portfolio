@@ -259,8 +259,36 @@ sections:
     figures: [fairness_slices]
   - id: conclusions
     text_md: |
-      Full evidence: exact tables, parameter records, and reproduction
-      pointers.
+      ## Results summary
+
+      On the frozen 1,409-row holdout, serving the calibrated model cuts the
+      retention bill to 601 cost units — 41.9% below contacting everyone at
+      1,035 — with a 95% bootstrap interval of −485 to −343 that excludes
+      zero. What held up: thresholding on the priced bill beat accuracy-
+      first selection; isotonic calibration improved reliability (ECE
+      0.028 → 0.016) and cost (619 → 601); the saving survived
+      re-pricing a missed churner — thresholds 0.200 / 0.175 / 0.100 at
+      FN costs 3 / 5 / 8, every interval still excluding zero. What did
+      not: the raw model misses 19 of 36 one-year and all 9 two-year
+      churners; and 601 was selected on the same holdout that scores it —
+      a budget line carrying built-in optimism. The evidence supports
+      serving the calibrated model at 0.175 under the 1-versus-5 cost
+      model, re-deriving the cutoff whenever a missed churner's price
+      changes.
+
+      ## Key concepts
+
+      - **Decision cost** — pricing the two mistake types so the model is
+        tuned on the bill it produces, not accuracy.
+      - **Cost-ratio sensitivity** — the served threshold moves when a
+        missed churner's price moves; the cutoff is policy, not constant.
+      - **Calibration before serving** — isotonic fitting on a train-side
+        split, so scores mean what they say at the cutoff.
+      - **The DQ gate checklist** — null, range and binary-target checks
+        every source passes before fitting or scoring.
+      - **Same-holdout optimism** — a threshold picked on the holdout that
+        also scores it inflates the saving; the bootstrap prices row noise
+        only.
 
       ## Exact numbers
 
@@ -273,8 +301,7 @@ sections:
       | holdout churn rate | 26.5% | 374 of 1,409 customers |
       | threshold grid | 41 points (0.00–1.00) | cost-optimum search |
 
-      Holdout results (same-holdout optima; run ids as recorded in
-      `reports/metrics.json`):
+      Holdout results (same-holdout optima; run ids in `reports/metrics.json`):
 
       | run | threshold | ROC-AUC | F1 (macro) | ECE | business cost |
       |---|---|---|---|---|---|
@@ -284,20 +311,11 @@ sections:
       | selected raw XGB | 0.150 | 0.8387 | 0.6512 | 0.028 | 619 |
       | selected + isotonic ← served | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
 
-      - **Cost:** 1,035 → 601 (−41.9%) versus contact everyone; paired
-        bootstrap point −416, 95% confidence interval [−485, −343], 2,000
-        resamples at fixed thresholds, significant at 95% — the bootstrap
-        figure plots every resampled delta.
-      - **Model record:** seeded Optuna (25 trials, median pruning) searched
-        logistic, HistGradientBoosting, XGBoost and LightGBM on out-of-fold
-        business cost at each trial's own threshold. XGBoost wins telco
-        (n_estimators 211, learning_rate 0.0309, max_depth 3, subsample
-        0.5187; CV cost 2,416); logistic wins the synthetic track. The
-        isotonic twin uses only the train-side calibration split.
-      - **Regime dependence:** synthetic t*=0.700 versus telco t*=0.175;
-        the procedure transfers, not the cutoff.
-      - **Cost-model sensitivity** (`reports/sensitivity.json`, re-scored
-        via `cli sensitivity`):
+      - **Cost:** 1,035 → 601 (−41.9%) versus contact everyone; bootstrap
+        point −416, 95% CI [−485, −343] over 2,000 paired resamples at
+        fixed thresholds.
+      - **Cost-model sensitivity** (re-scored via `cli sensitivity` →
+        `reports/sensitivity.json`):
 
       | FN cost | served threshold | served cost | naive cost | delta 95% CI |
       |---|---|---|---|---|
@@ -305,27 +323,21 @@ sections:
       | 5 | 0.175 | 601 | 1,035 | [−485, −343] |
       | 8 | 0.100 | 699 | 1,035 | [−426, −258] |
 
-      Calibration's cost edge is itself cost-model dependent: isotonic helps
-      at FN=5 (619 → 601) but slightly hurts at FN=8 (691 → 699). The naive
-      comparator stays 1,035 throughout, so the absolute saving shrinks as
+      The naive comparator stays 1,035 throughout, so the saving shrinks as
       FN rises.
-      - **Fairness slices** (raw model at t=0.150, from
-        `reports/figures/fairness_slices.json` — not the served policy):
-        gender recall 0.902 female / 0.906 male; senior recall 0.969 versus
-        0.880 non-senior; contract recall 0.976 month-to-month, 0.472
-        one-year, 0.000 two-year — the raw policy misses **19 of 36** one-
-        year churners and **all 9** two-year churners. The served artifact
-        is isotonic-calibrated at t=0.175, so these counts must not be
-        attributed to serving.
-      - **Drivers:** permutation importance (5 repeats) ranks contract,
-        tenure and charges as the main signal. The naive row's accuracy is
-        0.265 at contact-all; contact-none would score 0.735 accuracy but is
-        a different policy.
-      - **Try it:** [the churn threshold sandbox](https://amm-ds.github.io/portfolio/demos/churn-sandbox)
-        replays the committed holdout payload.
 
-      **Pipeline** (one fitted sklearn Pipeline owns preprocessing, so
-      training and serving share it):
+      **Record:**
+
+      | record | detail |
+      |---|---|
+      | model search | seeded Optuna (25 trials, median pruning) on out-of-fold business cost at each trial's own threshold; XGBoost wins telco (n_estimators 211, learning_rate 0.0309, max_depth 3, subsample 0.5187; CV cost 2,416); logistic wins the synthetic track; the isotonic twin uses only the train-side calibration split |
+      | regime dependence | synthetic t*=0.700 versus telco t*=0.175 — the procedure transfers, not the cutoff |
+      | calibration edge | isotonic helps at FN=5 (619 → 601), slightly hurts at FN=8 (691 → 699) — cost-model dependent |
+      | fairness slices | raw model at t=0.150, from `reports/figures/fairness_slices.json` — not the served policy: gender recall 0.902 female / 0.906 male; senior recall 0.969 versus 0.880 non-senior; contract recall 0.976 month-to-month, 0.472 one-year, 0.000 two-year — the raw policy misses **19 of 36** one-year churners and **all 9** two-year churners; the served artifact is isotonic-calibrated at t=0.175, so these counts must not be attributed to serving |
+      | drivers | permutation importance (5 repeats) ranks contract, tenure and charges on top; the naive row's accuracy is 0.265 at contact-all; contact-none would score 0.735 accuracy but is a different policy |
+      | try it | [the churn threshold sandbox](https://amm-ds.github.io/portfolio/demos/churn-sandbox) replays the committed holdout payload |
+
+      **Pipeline** (one fitted sklearn Pipeline owns all preprocessing):
 
       ```mermaid
       flowchart LR
@@ -339,7 +351,7 @@ sections:
           H --> I["predict_proba"]
       ```
 
-      **Column mapping** (project name → telco source → role):
+      **Column mapping:**
 
       | project column | telco source | role |
       |---|---|---|
@@ -350,8 +362,8 @@ sections:
       | gender / senior_citizen | gender / SeniorCitizen | fairness slices |
       | churned | Churn | target |
 
-      **EDA segments** (real telco; the synthetic twin's planted nulls and
-      9,999 outlier charge are CI fixtures, not features of this data):
+      **EDA segments** (real telco; synthetic nulls and the 9,999 outlier
+      charge are CI fixtures):
 
       | segment | rows | churn rate |
       |---|---|---|
@@ -364,30 +376,23 @@ sections:
       ## Protocol
 
       - **Split:** stratified 80/20 at seed 42 → 5,634 training rows and the
-        1,409-row holdout; 20% of training is reserved for isotonic
-        calibration, so the holdout is untouched by fitting, tuning and
-        calibration.
-      - **Judging:** all candidates score the same holdout under one cost
-        model — ROC-AUC for ranking, macro F1, business cost over the
-        41-point grid, ECE for selected models; PR curves are read against
-        the 26.5% base-rate floor; permutation importance uses 5 repeats;
-        fairness slices cover contract, gender and senior status.
-      - **Uncertainty:** 2,000 paired bootstrap resamples of holdout rows at
-        fixed thresholds — the interval covers cost sampling variation, not
-        threshold-selection instability.
-      - **HPO:** seeded Optuna, 25 trials with median pruning, selecting on
-        out-of-fold business cost at each trial's own threshold.
-      - **Synthetic twin:** 8.8% churn with planted nulls and one 9,999
-        outlier charge, run through the same gates — CI evidence only.
+        1,409-row holdout, scored once; 20% of training is reserved for
+        isotonic calibration.
+      - **Judging:** one cost model, one holdout: ROC-AUC, macro F1,
+        business cost over a 41-point grid, ECE; fairness slices on
+        contract, gender, senior.
+      - **Uncertainty:** 2,000 paired bootstrap resamples at fixed thresholds
+        — cost sampling variation, not threshold-selection instability.
+      - **Synthetic twin:** 8.8% churn, planted nulls, one 9,999 outlier
+        charge — CI evidence only.
 
       ## Limits
 
-      - Thresholds are selected and scored on the same holdout — the 601
-        cost and every slice figure are optimistically biased.
-      - The snapshot has no time axis: no drift, seasonality or causal
-        claim is supported; frozen-threshold validation of cost and
-        served-policy fairness on fresh data waits on a time-stamped feed
-        from the data owner.
+      - Thresholds are selected and scored on the same holdout — 601 and
+        every slice figure are optimistically biased.
+      - No time axis: no drift, seasonality or causal claim; frozen-
+        threshold validation waits on a time-stamped feed from the data
+        owner.
       - Fairness numbers describe the raw model at its own threshold, not
         the served calibrated policy.
       - One operator, 21 columns: transfer to other customer bases is
@@ -396,11 +401,9 @@ sections:
       ## Revision notes
 
       - Served artifact record — family, parameters, threshold rule, holdout
-        minimum — is persisted in `reports/models/serving/meta.json` (built
-        2026-10-17).
-      - Cost-model sensitivity re-runs (`cli sensitivity`) persist at
-        `reports/sensitivity.json`; the FN=5 variant reproduces the baseline
-        metrics exactly.
+        minimum — in `reports/models/serving/meta.json` (built 2026-10-17).
+      - Sensitivity re-runs persist at `reports/sensitivity.json`; the FN=5
+        variant reproduces the baseline metrics exactly.
       - The synthetic track's record (logistic winner, t*=0.700) lives in
         `data/model_selection.json`; it does not transfer to the real
         regime.
@@ -414,8 +417,8 @@ sections:
       dvc repro projects/05-ml-pipeline-churn   # or staged via DVC
       ```
 
-      CI path (no network): set `data_source: synthetic` in `params.yaml`,
-      then the same `cli all`. Tests: `uv run pytest -q`.
+      CI path (no network): `data_source: synthetic` in `params.yaml`,
+      then the same `cli all`; tests: `uv run pytest -q`.
 
       **Business summary:** The record: 601 versus 1,035 on one honest
       holdout, every caveat labelled — optimism, raw-model fairness, no time

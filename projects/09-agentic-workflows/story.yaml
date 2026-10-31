@@ -367,9 +367,39 @@ sections:
       - agentic_suite
   - id: conclusions
     text_md: |
-      The evidence supports a supervised pilot with explicit boundaries;
-      retrieval fuzziness, new domains, broader refusal coverage, and pilot-time
-      failure rates remain unresolved.
+      ## Results summary
+
+      On the record run the workflow passed every automated check: 15 of 15
+      fixed tasks with exact tool sets, step budgets, and the 60-second
+      latency budget, at a median 18.2 seconds per task and roughly $0.13 of
+      the $2.00 suite cap. Held out, with tuning frozen, it answered 13 of 13
+      unseen questions with exact tool sets and refused 5 of 6 probes built
+      to fail; all 52 captured calls were planned, with zero unplanned
+      invocations. What did not hold up: one probe exited through a plain
+      failure message instead of a marked refusal, and the hosted-tuned
+      60-second budget was beaten by most local-model runs — provider speed,
+      not answer quality. Nineteen held-out tasks are a check on overfitting,
+      not a generalization guarantee. The evidence supports a supervised
+      pilot with a reviewer watching, not unattended use.
+
+      ## Key concepts
+
+      - **Plan-act-review loop** — the agent plans typed steps, executes
+        only whitelisted tools, and self-critiques against the plan before
+        answering.
+      - **Human checkpoint** — consequential runs pause for approve,
+        reject-with-feedback, or park, while the routine path stays
+        automatic.
+      - **Deterministic graders, not model judges** — code scores answers,
+        exact tool sets, budgets, and refusals, so every rerun returns the
+        same verdict.
+      - **Should-fail probes** — unanswerable tasks that pass only on an
+        honest "no", catching confabulation that answer-only suites reward.
+      - **Recorded run, offline grading** — a run is captured once as JSON
+        and re-scored for free, so anyone can re-check verdicts without a
+        provider.
+      - **Behavioral tool contracts** — tool descriptions that pin what each
+        tool may do, tightened until unplanned calls disappeared.
 
       ## Exact numbers
 
@@ -479,9 +509,10 @@ sections:
       uv run python -m agentic_workflows.cli evaluate --heldout
       ```
 
-      **Business summary:** This section records the final numbers, protocol,
-      limits, and reproduction commands. Final state: every automated check
-      passed at about $0.10–0.15 per suite, with zero unplanned tool calls.
+      **Business summary:** Every automated check passed — 15/15 tuning
+      tasks, 13/13 held-out answers, 5/6 refusals — at about $0.10–0.15 per
+      suite, with zero unplanned tool calls. The evidence supports a
+      supervised pilot, not unattended use.
     figures: []
     metrics_keys: []
 roadmap:

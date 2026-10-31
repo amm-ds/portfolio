@@ -279,8 +279,36 @@ sections:
     figures: [confusion_matrix_selected, per_class_f1_comparison, scale_ladder]
   - id: conclusions
     text_md: |
-      Full evidence: exact tables, run identities, revision notes, and
-      reproduction commands — final state only.
+      ## Results summary
+
+      On a fresh 1,000-article holdout that model selection never touched,
+      the DistilBERT trained on all 120k AG News articles scores 0.9529
+      macro-F1 (0.9530 accuracy); the keyword model scores 0.8785. A
+      controlled scale ladder attributes the gap to data — each 3× step
+      adds +1.3 to +1.6 macro-F1 points, while a same-rows device twin sits
+      0.0002 away. What held up out-of-sample: the ladder's ordering and
+      the keyword-first router — escalating the 24.6% of items below
+      confidence 0.50 reaches 0.9020 macro-F1, beating either model alone
+      while 75.4% of items ride at zero token cost. What did not: seeded
+      tuning separated from the default only inside seed noise (0.8910 ±
+      0.0042 across three seeds), so the default recipe ships. The decision
+      the evidence supports: route bulk traffic by keyword confidence, and
+      reserve the full-data model for items where a mis-sort is expensive.
+
+      ## Key concepts
+
+      - **Macro-F1** — the unweighted mean of per-topic F1, so a rare topic
+        counts as much as a common one.
+      - **Model ladder** — cheapest-first rungs judged by one metric pair;
+        a rung that fails to beat the rung below it donates its extra cost.
+      - **Scale ladder** — the identical seeded protocol repeated at
+        3.6k / 10.8k / 36k rows, leaving data size as the only varying factor.
+      - **Fresh holdout** — 1,000 articles from the selection's unused
+        complement, giving the one unbiased headline reading.
+      - **Keyword-first router** — the cheap model scores every item first
+        and only the uncertain quarter escalates to the transformer.
+      - **Calibration (ECE)** — one temperature fitted on validation cut
+        calibration error 71% without changing a single prediction.
 
       ## Exact numbers
 

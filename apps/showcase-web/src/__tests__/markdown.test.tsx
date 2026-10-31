@@ -440,12 +440,12 @@ describe("renderMarkdown glossary auto-linking", () => {
     expect(linked.size).toBe(1); // renderers never mutate caller-owned state
   });
 
-  it("renders an accessible CSS tooltip carrying the definition", () => {
+  it("links glossary terms without any tooltip popup (definitions live in the Background card)", () => {
     const { container } = renderWithRouter("Calibration matters more than raw accuracy.");
     const link = container.querySelector("a.glossary-term")!;
     expect(link.getAttribute("href")).toBe("/glossary#calibration");
-    const tip = link.querySelector('.glossary-tip[role="tooltip"]');
-    expect(tip).not.toBeNull();
-    expect(tip?.textContent).toContain("predicted probabilities");
+    expect(link.textContent).toBe("Calibration");
+    expect(link.querySelector(".glossary-tip")).toBeNull();
+    expect(container.querySelectorAll('[role="tooltip"]')).toHaveLength(0);
   });
 });
