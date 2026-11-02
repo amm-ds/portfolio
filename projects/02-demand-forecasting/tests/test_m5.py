@@ -28,6 +28,7 @@ from demand_forecasting.m5_track import (  # noqa: E402
     NAIVE,
     _lgbm_forecast,
     _statistical_forecasts,
+    bias_metric,
     ensemble_weight,
     ensemble_weights,
     naive28_scale,
@@ -37,6 +38,7 @@ from demand_forecasting.m5_track import (  # noqa: E402
     run_m5_track,
     wape,
     wrmsse_units,
+    zero_day_accuracy,
 )
 
 N_DAYS = 150
@@ -174,6 +176,20 @@ def test_wape_and_pinball():
     assert np.isnan(wape(np.zeros(3), np.zeros(3)))
     # pinball at tau=0.5 is MAE/2 for any forecast
     assert pinball_loss(y, np.zeros(4), 0.5) == pytest.approx(np.abs(y).mean() / 2)
+
+
+def test_bias_and_zero_day_accuracy_hand_values():
+    """Wave-29 diagnostics: pooled relative bias and the quiet-day hit rate."""
+    y = np.array([0.0, 0.0, 2.0, 6.0])
+    pred = np.array([0.0, 1.0, 1.0, 9.0])
+    # mean(pred) = 2.75, mean(y) = 2.0 -> (2.75 - 2.0) / 2.0
+    assert bias_metric(y, pred) == pytest.approx(0.375)
+    assert bias_metric(y, y) == pytest.approx(0.0)
+    assert np.isnan(bias_metric(np.zeros(3), np.zeros(3)))
+    # zero-actual points are the first two; forecast < 0.5 on the first only
+    assert zero_day_accuracy(y, pred) == pytest.approx(0.5)
+    assert zero_day_accuracy(y, np.zeros(4)) == pytest.approx(1.0)
+    assert np.isnan(zero_day_accuracy(np.ones(3), np.zeros(3)))
 
 
 def test_ensemble_weight_toy():
@@ -418,10 +434,20 @@ def test_tiny_track_run_twice_byte_identical(tiny_m5_dir: Path):
     assert r1.metrics["origins"]["test"] == r1.metrics["origins"]["dates"][-2:]
     pooled = r1.metrics["test"]["pooled"]
     for cand in ("seasonal_naive", "lgbm", "convex_ensemble"):
-        for key in ("mae", "wape", "rmae", "wrmsse", "peak_mae"):
+        for key in ("mae", "wape", "rmae", "wrmsse", "peak_mae", "bias", "zero_day_accuracy"):
             assert key in pooled[cand]
     assert pooled["lgbm"]["rmae"] >= 0.0
     assert set(r1.probabilistic["candidates"]) == {"lgbm", "convex_ensemble"}
+    # wave 29 — stability rides the selection block for every candidate,
+    # and the intermittent class carries the quiet-day metric
+    sel_pooled = r1.metrics["selection"]["pooled"]
+    for cand in r1.metrics["candidates"]:
+        assert sel_pooled[cand]["stability"] >= 0.0
+        assert "bias" in sel_pooled[cand]
+    for cand in r1.metrics["candidates"]:
+        by_class = r1.metrics["test"]["by_class"][cand]
+        if by_class["intermittent"] is not None:
+            assert "zero_day_accuracy" in by_class["intermittent"]
     # wave 28 — the L2 ensemble sub-block + the computed WRMSSE champion note
     ens = r1.metrics["ensemble"]
     l2_block = ens["ensemble_l2"]

@@ -40,6 +40,9 @@ DISPLAY = {  # candidate -> display name
     "lgbm": "lgbm",
     "lgbm_l2": "lgbm_l2",
     "xgb": "xgb",
+    "lgbm_tweedie": "lgbm_tweedie",
+    "lgbm_pool_store": "lgbm_pool_store",
+    "lgbm_pool_storecat": "lgbm_pool_storecat",
     "convex_ensemble": "convex_ensemble",
     "ensemble_l2": "ensemble_l2",
 }
@@ -397,8 +400,16 @@ CANDIDATE_DEFINITIONS = {
     "xgb": "global XGBoost over all 600 series (same mlforecast recursive feature space as "
     "lgbm; modest a-priori config — a second booster family for ensemble diversity, "
     "wave 27)",
+    "lgbm_tweedie": "global LightGBM, tweedie arm (wave 29): same mlforecast feature space "
+    "and committed m5_lgbm config, objective=tweedie at variance power 1.1 "
+    "(compound-Poisson; no re-tuning)",
+    "lgbm_pool_store": "pooled-global LightGBM (wave 29): one fit per store_id group (3), "
+    "same feature pipeline and committed config, concatenated in panel order",
+    "lgbm_pool_storecat": "pooled-global LightGBM (wave 29): one fit per (store_id, cat_id) "
+    "cell (<=9), same feature pipeline and committed config",
     "convex_ensemble": "convex blend of the best three of {lgbm, lgbm_l2, xgb, auto_ets, "
-    "auto_ces} by SELECTION WAPE (simplex grid step 0.05, selection origins only)",
+    "auto_ces, lgbm_tweedie, lgbm_pool_store, lgbm_pool_storecat} by SELECTION "
+    "WAPE (simplex grid step 0.05, selection origins only)",
     "ensemble_l2": "convex blend of the best three of the same pool by SELECTION WRMSSE, "
     "weights minimising pooled selection WRMSSE (simplex grid step 0.05, selection "
     "origins only) — the L2-selected comparison blend (wave 28)",
@@ -406,13 +417,20 @@ CANDIDATE_DEFINITIONS = {
 
 
 def _metrics_table(metrics: dict[str, Any]) -> str:
-    """Headline table: WAPE / rmae / WRMSSE / peak-MAE; floor marked, best bolded."""
+    """Headline table: WAPE / rmae / WRMSSE / peak-MAE / Bias / Stability.
+
+    Bias is the pooled test relative over/under-forecast (wave 29);
+    Stability is the population std of the per-origin pooled WAPE across the
+    8 selection origins (selection data only — the classic WAPE/WRMSSE
+    columns stay on the scored-once test origins).
+    """
     pooled = metrics["test"]["pooled"]
+    sel_pooled = metrics["selection"]["pooled"]
     best = min(
         (c for c in CANDIDATES if c in pooled),
         key=lambda c: pooled[c]["wape"] if pooled[c]["wape"] == pooled[c]["wape"] else float("inf"),
     )
-    cols = ["candidate", "WAPE", "rmae", "WRMSSE", "peak-MAE"]
+    cols = ["candidate", "WAPE", "rmae", "WRMSSE", "peak-MAE", "Bias", "Stability"]
     lines = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
     for c in CANDIDATES:
         if c not in pooled:
@@ -421,7 +439,8 @@ def _metrics_table(metrics: dict[str, Any]) -> str:
         name = DISPLAY[c] + (" (floor)" if c == NAIVE else "")
         cells = (
             f"{_fmt(r['wape'])} | {_fmt(r['rmae'])} | {_fmt(r['wrmsse'], 3)} "
-            f"| {_fmt(r['peak_mae'])}"
+            f"| {_fmt(r['peak_mae'])} | {_fmt(r['bias'])} "
+            f"| {_fmt(sel_pooled[c]['stability'])}"
         )
         if c == best:
             name, cells = f"<b>{name}</b>", f"<b>{cells}</b>"

@@ -11,9 +11,14 @@ headline track without retraining:
   the 28-day actuals, and curves for ``seasonal_naive`` / ``auto_ets`` /
   ``auto_ces`` / ``lgbm`` / ``lgbm_l2`` / ``xgb`` / ``convex_ensemble`` /
   ``ensemble_l2``, plus the lgbm p10/p90 conformal band and per-series test
-  WAPE per candidate;
+  WAPE per candidate (wave 29: a wave-29 pool member admitted to the
+  committed ensemble — lgbm_tweedie / lgbm_pool_store / lgbm_pool_storecat —
+  joins the shipped curves from the same sidecar);
 - the committed headline block (``reports_m5/metrics.json`` +
-  ``probabilistic.json``) verbatim under ``groups``.
+  ``probabilistic.json``) verbatim under ``groups`` — wave 29: the
+  per-candidate ``bias`` and ``zero_day_accuracy`` ride inside the copied
+  test blocks, and ``groups["stability"]`` carries the per-candidate
+  selection-origin WAPE stability.
 
 Curve provenance (honest, documented in the payload): EVERY curve — including
 lgbm and the ensemble — is copied from ``reports_m5/catalog_forecasts.parquet``,
@@ -82,7 +87,11 @@ DRIFT_TOL = 1e-9
 #: shipped for backward compatibility even though the wave-27/28 blend does
 #: not use it; xgb joined in wave 27 (new ensemble member); wave 28 adds the
 #: L1/L2 pair lgbm_l2 + ensemble_l2 (new keys inside the open-keyed curves
-#: map — schema_version stays 4, the manifest contract is unchanged).
+#: map — schema_version stays 4, the manifest contract is unchanged); wave 29
+#: adds the tweedie/pooled arms lgbm_tweedie + lgbm_pool_store +
+#: lgbm_pool_storecat (retained in the sidecar so any wave-29 ensemble
+#: member ships; they enter the shipped curves only when admitted to the
+#: committed blend).
 CURVE_CANDIDATES = (
     "seasonal_naive",
     "auto_ets",
@@ -95,16 +104,18 @@ CURVE_CANDIDATES = (
 )
 
 CURVE_PROVENANCE = (
-    "every curve (seasonal_naive, auto_ets, auto_ces, lgbm, lgbm_l2, xgb, "
-    "convex_ensemble, ensemble_l2) "
-    "is copied from reports_m5/catalog_forecasts.parquet, the sidecar the "
-    "committed evaluate run retains for this exact catalog — the lgbm and "
-    "lgbm_l2 curves are the committed global 600-series models (no "
-    "catalog-subset refit); the "
+    "every shipped curve is copied from reports_m5/catalog_forecasts.parquet, "
+    "the sidecar the committed evaluate run retains for this exact catalog "
+    "(sidecar columns: seasonal_naive, auto_ets, auto_ces, lgbm, lgbm_l2, "
+    "xgb, lgbm_tweedie, lgbm_pool_store, lgbm_pool_storecat, "
+    "convex_ensemble, ensemble_l2) — the lgbm and lgbm_l2 curves are the "
+    "committed global 600-series models (no catalog-subset refit); the "
     "ensemble curves are the committed selection rules applied in-run "
     "(convex_ensemble under selection WAPE, ensemble_l2 under selection "
     "WRMSSE); per-series test WAPEs in each window are computed from these "
-    "curves"
+    "curves; a wave-29 pool member (lgbm_tweedie / lgbm_pool_store / "
+    "lgbm_pool_storecat) ships only when the committed ensemble admits it, "
+    "and its curve is the committed in-run fit from the same sidecar"
 )
 
 
@@ -439,6 +450,15 @@ def build_demo_payload(
                 for cand in ("seasonal_naive", "auto_ets", "lgbm", "convex_ensemble")
             },
             "win_rate_vs_naive": metrics["test"]["win_rate_vs_naive"],
+            # wave 29 — the per-candidate diagnostics: bias and
+            # zero_day_accuracy travel inside test_pooled / test_by_class
+            # verbatim; stability (std of the per-origin pooled WAPE across
+            # the 8 selection origins) rides the selection block, copied here
+            # per candidate
+            "stability": {
+                cand: metrics["selection"]["pooled"][cand]["stability"]
+                for cand in metrics["candidates"]
+            },
             "classes": {
                 "counts": metrics["classes"]["counts"],
                 "thresholds": metrics["classes"]["thresholds"],
