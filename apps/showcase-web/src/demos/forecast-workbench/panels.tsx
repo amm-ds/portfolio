@@ -320,6 +320,12 @@ export function VerdictPanel({
   const bestKey = rows[0]?.key ?? null;
   const naiveWins = bestKey === NAIVE;
   const pooled = payload.groups.test_pooled;
+  // committed pooled test bias per candidate (wave-30 payload) — "—" when a
+  // curve has no committed pooled row (never for the shipped candidates)
+  const fmtBias = (key: string) => {
+    const b = pooled[key]?.bias;
+    return b === undefined ? "—" : `${b < 0 ? "−" : "+"}${Math.abs(b).toFixed(3)}`;
+  };
   const committedChip =
     h === 28 && bestKey && bestKey !== NAIVE && pooled[bestKey] && pooled[NAIVE]
       ? pooled[bestKey].wape - pooled[NAIVE].wape
@@ -387,6 +393,12 @@ export function VerdictPanel({
                 <span className="fwb-verdict-peak" title="peak-day MAE (worst single day)">
                   {r.peak.toFixed(1)}
                 </span>
+                <span
+                  className="fwb-verdict-bias"
+                  title="committed pooled test bias (wave-30 metric; the blend sits at −0.000)"
+                >
+                  {fmtBias(r.key)}
+                </span>
               </div>
             </div>
           );
@@ -403,7 +415,7 @@ export function VerdictPanel({
             title="maximum window WAPE@h across every candidate curve in the payload — the scale does not depend on the selected subset"
           >
             wape@{h}d scale max {scaleMax.toFixed(3)} · {Object.keys(window.curves).length}{" "}
-            candidates
+            candidates · right columns: peak-day MAE, committed pooled bias
           </p>
         </div>
       </div>

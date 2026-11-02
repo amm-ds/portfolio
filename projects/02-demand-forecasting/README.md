@@ -108,7 +108,8 @@ Summary:
 
 ## M5 headline — Walmart M5 accuracy subset (protocol `m5_direct_v1`, PRIMARY)
 
-The headline experiment (wave 24; performance passes wave 25 + wave 27) is
+The headline experiment (wave 24; performance passes wave 25 + wave 27 +
+wave 30) is
 the committed
 Walmart M5 subset — 600
 daily store-item series (top-3 stores CA_3/CA_1/TX_2 × top-200 volume items),
@@ -131,15 +132,27 @@ study on the selection origins, `cli tune-m5`, block `m5_lgbm:` in
 params.yaml; xgb carries a modest a-priori config for booster diversity),
 a pure-L2 LightGBM arm **lgbm_l2** (wave 28: same pipeline and features,
 `objective=regression` with the tree count re-derived under an L2
-early-stopping pass on the selection-only nested split), and two ensemble candidates — a **convex_ensemble** of the best THREE of
-{lgbm, lgbm_l2, xgb, auto_ets, auto_ces} by SELECTION WAPE, weights
-grid-fit on a 0.05 simplex over the selection origins only (the committed
-rule picked xgb × 0.35 + lgbm × 0.20 + auto_ets × 0.45; wave 28 widened the
-pool with the pure-L2 arm and added a bitwise-identity dedup — a candidate
-whose selection forecasts are identical to an admitted member is skipped,
-it would only displace a diverse member), and **ensemble_l2** — the same
-rule with SELECTION WRMSSE as the ranking and weight-fitting metric (the
-L2-selected comparison blend; wave 28, comparison/demo material).
+early-stopping pass on the selection-only nested split), the wave-30 arms
+adopted from the M5-winning practice — a **Tweedie-loss LightGBM**
+(`lgbm_tweedie`; the M5 accuracy winner trained LightGBM with a Tweedie
+likelihood) and two pooled LightGBM variants, one fit per store
+(`lgbm_pool_store`) and one per store×category (`lgbm_pool_storecat`), the
+winner's pooling recipe at the two groupings this 3-store subset can
+support — and two ensemble candidates — a **convex_ensemble** of the best
+THREE of the pool by a **stability screen** (mean + 1.0×population std of
+the per-origin pooled WAPE over the 8 selection origins; the M5
+literature's fold-stability recommendation), weights grid-fit on a 0.05
+simplex over the selection origins only, and **ensemble_l2** — the same
+screen applied to SELECTION WRMSSE (the L2-selected comparison blend;
+comparison/demo material). The wave-30 screen replaced the wave-25..29
+pooled-metric rule after that rule's wave-29 blend overfit the selection
+origins (+0.0048 test WAPE vs wave 28, picked by the naive mean-only
+criterion): the screen recovered the wave-28-quality composition without
+reading the test origins — the same three members (the committed rule
+picked xgb × 0.45 + auto_ets × 0.50 + lgbm × 0.05). A bitwise-identity
+dedup is applied throughout (wave 28): a candidate whose selection
+forecasts are identical to an admitted member is skipped, it would only
+displace a diverse member.
 Volume classes per series:
 Syntetos-Boylan ADI/CV² on each series' real history up to the last
 selection origin — **463 dense + 137 intermittent** series. Nothing reads the
@@ -153,30 +166,36 @@ Headline table — pooled over the 2 scored-once test origins (600 series ×
 seasonal-naive-28 denominator — see the metric definitions in
 evaluation_metadata.json):
 
-| candidate | test WAPE | test WRMSSE | MAE (units) | win rate vs naive |
-|---|---|---|---|---|
-| seasonal_naive (floor) | 0.603 | 0.7617 | 5.774 | — |
-| window_avg_28 | 0.515 | 0.6192 | 4.925 | 82.8% |
-| adida | 0.512 | 0.6230 | 4.902 | 86.5% |
-| tsb | 0.510 | 0.6156 | 4.879 | 85.8% |
-| auto_ets | 0.503 | 0.6105 | 4.819 | 88.2% |
-| auto_ces | 0.515 | 0.6119 | 4.931 | 83.0% |
-| lgbm | 0.4975 | 0.5964 | 4.762 | 87.8% |
-| lgbm_l2 | 0.4975 | 0.5964 | 4.762 | 87.8% |
-| xgb | 0.4955 | 0.6001 | 4.7425 | 86.5% |
-| **convex_ensemble (champion)** | **0.491** | **0.5958** | **4.697** | **88.8%** |
-| ensemble_l2 | 0.4905 | 0.5952 | 4.695 | 88.7% |
+| candidate | test WAPE | test WRMSSE | MAE (units) | Bias | win rate vs naive |
+|---|---|---|---|---|---|
+| seasonal_naive (floor) | 0.603 | 0.7617 | 5.774 | −0.0060 | — |
+| window_avg_28 | 0.515 | 0.6192 | 4.925 | −0.0310 | 82.8% |
+| adida | 0.512 | 0.6230 | 4.902 | −0.0058 | 86.5% |
+| tsb | 0.510 | 0.6156 | 4.879 | −0.0085 | 85.8% |
+| auto_ets | 0.503 | 0.6105 | 4.819 | −0.0074 | 88.2% |
+| auto_ces | 0.515 | 0.6119 | 4.931 | +0.0404 | 83.0% |
+| lgbm | 0.4975 | 0.5964 | 4.762 | +0.0196 | 87.8% |
+| lgbm_l2 | 0.4975 | 0.5964 | 4.762 | +0.0196 | 87.8% |
+| xgb | 0.4955 | 0.6001 | 4.7425 | +0.0051 | 86.5% |
+| lgbm_tweedie | 0.4975 | 0.5980 | 4.762 | +0.0069 | 87.7% |
+| lgbm_pool_store | 0.5070 | 0.6014 | 4.853 | +0.0383 | 86.8% |
+| lgbm_pool_storecat | 0.5082 | 0.6030 | 4.864 | +0.0516 | 86.2% |
+| **convex_ensemble (champion)** | **0.491** | **0.5969** | **4.702** | **−0.0004** | **89.0%** |
+| ensemble_l2 | 0.4952 | 0.5978 | 4.740 | +0.0088 | 87.8% |
 
 - **The gap vs the naive floor is real and significant** — 95% paired cluster
   bootstrap over series (2,000 reps, fixed seeds): convex_ensemble
-  **−0.1125 WAPE** (CI **[−0.1228, −0.1026]**) and **−0.1659 WRMSSE** (CI
-  **[−0.1772, −0.1552]**); lgbm −0.1057 WAPE (CI [−0.1184, −0.0935], a 17.5%
+  **−0.1119 WAPE** (CI **[−0.1223, −0.1019]**) and **−0.1647 WRMSSE** (CI
+  **[−0.1760, −0.1541]**); lgbm −0.1057 WAPE (CI [−0.1184, −0.0935], a 17.5%
   relative cut) and −0.1652 WRMSSE (CI [−0.1770, −0.1535]). Both CIs exclude
   zero. Wave 27, stated plainly: the feature expansion + tuning round moved
   lgbm's pooled test WAPE only within noise (0.495 → 0.498; the gap CI is
   ~0.012 wide) — the honest gain of the pass is the wider booster pool: xgb
   enters the ensemble (test 0.496 on its own) and the champion blend improves
   to 0.491, with the next-week service number (below) the clearest mover.
+  Wave 30 holds that line: the stability-screened blend lands 0.4913 test
+  WAPE with a better-behaved error profile (bias −0.0004 vs the single
+  boosters' +0.005 to +0.020).
 - **L1 vs L2 forecast shape (wave 28)** — the flat look of the shipped curves
   is not a loss-function bug. Verification: LightGBM's default objective is
   already squared error, so the track's L1 character lived in the tuner's l1
@@ -187,12 +206,14 @@ evaluation_metadata.json):
   and is committed as a candidate but deduped from the ensemble ranking (a
   duplicate carries no new information; measured: ranking it separately
   regressed the headline blend 0.4907 → 0.4953 by pushing auto_ets out). The
-  WRMSSE-selected `ensemble_l2` (same best-three, weights xgb × 0.45 + lgbm ×
-  0.20 + auto_ets × 0.35 minimising selection WRMSSE) lands test WAPE
-  **0.4905** / WRMSSE **0.5952** vs the WAPE blend's 0.4907 / 0.5958 — it
-  edges BOTH metrics by 0.0002 / 0.0006, far inside the ±0.01 bootstrap noise,
-  and is the committed pooled-test-WRMSSE champion (0.5952). Stated as
-  measured: on this panel L1-vs-L2 selection is a wash; the curves are smooth
+  WRMSSE-screened `ensemble_l2` (the same stability screen on selection
+  WRMSSE, weights xgb × 0.70 + lgbm × 0.25 + lgbm_tweedie × 0.05 minimising
+  selection WRMSSE — the wave-30 screen admits the Tweedie arm into the L2
+  blend) lands test WAPE **0.4952** / WRMSSE **0.5978** vs the WAPE blend's
+  0.4913 / 0.5969 — behind on both — so the committed pooled-test-WRMSSE
+  champion (0.5964) is the single `lgbm`, with the blend 0.0005 behind it.
+  Stated as measured: on
+  this panel L1-vs-L2 selection is a wash; the curves are smooth
   because the conditional mean of noisy daily demand IS smooth (curve
   day-to-day variation ≈ 5.4 units vs ≈ 12.2 for realized demand; spike-day
   MAE sits at ~13 for every candidate) — spike-tracking point forecasts are
@@ -206,16 +227,26 @@ evaluation_metadata.json):
   mis-served the panel's volume heterogeneity (top-quintile series covered
   ~61% at the nominal 80% level). Result: lgbm covers **77.7%** of test
   actuals (target 80%) at mean width **13.535** units; the ensemble covers
-  77.7% at 13.342 — by class the band is balanced (lgbm dense 76.9%,
+  77.5% at 13.315 — by class the band is balanced (lgbm dense 76.9%,
   intermittent 80.6%). Slightly under-covering, stated as measured.
 - **Win rates** — share of series whose pooled test |error| beats the
-  seasonal_naive floor: the ensemble wins on **88.8%** of all series (dense
-  88.6%, intermittent 89.8%); the per-series spread across candidates is
-  narrow (82.8–88.8%) because on dense weekly-seasonal demand every serious
+  seasonal_naive floor: the ensemble wins on **89.0%** of all series (dense
+  88.6%, intermittent 90.5%); the per-series spread across candidates is
+  narrow (82.8–89.0%) because on dense weekly-seasonal demand every serious
   candidate clears the floor — the pooled margin, not per-series coverage, is
   what separates them.
+- **Wave-30 arms, stated as measured** — the M5-winner techniques deliver
+  exactly where the literature puts them. The Tweedie-loss `lgbm_tweedie`
+  matches the global lgbm's accuracy (0.4975 test WAPE) at roughly **3× lower
+  pooled bias** (+0.0069 vs +0.0196 — the table's Bias column is the
+  one-number summary). The pooled variants are uniformly worse than the
+  global model (0.5070 / 0.5082 test WAPE; pooling starves each fit on a
+  3-store subset) and sit in neither blend. And on quiet days the LightGBM
+  globals are near-useless — 0.02–0.06 zero-day accuracy vs 0.19–0.39 for the
+  statistical arms — the statistical candidates carry that regime, which is
+  why the blend keeps auto_ets at a 0.50 weight.
 - **By class** (test WAPE): dense 0.568 (naive) → **0.464** (ensemble);
-  intermittent 0.749 → **0.603**. On this subset the models win in BOTH
+  intermittent 0.749 → **0.605**. On this subset the models win in BOTH
   classes — the honest contrast to the UCI sparse panel below, where the
   zero forecast stays the ceiling.
 
@@ -240,18 +271,22 @@ held-out estimate — the held-out estimate stays the 28-day test block above):
 | lgbm | 0.4327 | 0.7951 | 0.7915 | 0.8063 |
 | lgbm_l2 | 0.4327 | 0.7951 | 0.7915 | 0.8063 |
 | xgb | 0.4297 | 0.7896 | 0.7876 | 0.7957 |
-| **convex_ensemble (champion)** | **0.4233** | **0.7780** | **0.7736** | **0.7915** |
-| ensemble_l2 | 0.4234 | 0.7781 | 0.7740 | 0.7909 |
+| lgbm_tweedie | 0.4338 | 0.7972 | 0.7905 | 0.8177 |
+| lgbm_pool_store | 0.4403 | 0.8091 | 0.8045 | 0.8232 |
+| lgbm_pool_storecat | 0.4401 | 0.8087 | 0.8027 | 0.8272 |
+| **convex_ensemble (champion)** | **0.4236** | **0.7783** | **0.7741** | **0.7914** |
+| ensemble_l2 | 0.4299 | 0.7900 | 0.7873 | 0.7982 |
 
 - The next-week gap vs the floor is real and significant — paired cluster
   bootstrap over series on the h≤7 metric: lgbm **−0.1115 WAPE** (CI
-  **[−0.1197, −0.1039]**); convex_ensemble **−0.1208 WAPE** (CI
-  **[−0.1288, −0.1130]**) — a 22.2% relative cut. Measured, not asserted: at
+  **[−0.1197, −0.1039]**); convex_ensemble **−0.1206 WAPE** (CI
+  **[−0.1286, −0.1127]**) — a 22.2% relative cut. Measured, not asserted: at
   h≤7 every candidate beats the seasonal_naive floor in BOTH volume classes —
   lgbm: **yes** (dense 0.7915, intermittent 0.8063); xgb: **yes** (dense
-  0.7876, intermittent 0.7957); convex_ensemble: **yes** (dense 0.7736,
-  intermittent 0.7915). The wave-27 pass moved this number the most:
-  0.4250 → 0.4233 (rmae 0.7810 → 0.7780).
+  0.7876, intermittent 0.7957); convex_ensemble: **yes** (dense 0.7741,
+  intermittent 0.7914). The wave-30 screen moved this number least: 0.4233 →
+  0.4236 (rmae 0.7780 → 0.7783) — the blend composition changed, the service
+  number held.
 - The error-growth shape on the 2 scored-once test origins (WAPE per 7-day
   block of the 28-day horizon):
 
@@ -266,12 +301,15 @@ held-out estimate — the held-out estimate stays the 28-day test block above):
 | lgbm | 0.4205 | 0.4553 | 0.5367 | 0.5715 |
 | lgbm_l2 | 0.4205 | 0.4553 | 0.5367 | 0.5715 |
 | xgb | 0.4146 | 0.4515 | 0.5356 | 0.5738 |
-| **convex_ensemble (champion)** | **0.4136** | **0.4498** | **0.5298** | **0.5636** |
-| ensemble_l2 | 0.4128 | 0.4488 | 0.5298 | 0.5646 |
+| lgbm_tweedie | 0.4234 | 0.4593 | 0.5364 | 0.5653 |
+| lgbm_pool_store | 0.4288 | 0.4688 | 0.5465 | 0.5780 |
+| lgbm_pool_storecat | 0.4286 | 0.4712 | 0.5471 | 0.5800 |
+| **convex_ensemble (champion)** | **0.4140** | **0.4506** | **0.5305** | **0.5640** |
+| ensemble_l2 | 0.4159 | 0.4521 | 0.5349 | 0.5715 |
 
   Week 1 carries **28.0%** of the value (the share of convex_ensemble's
   absolute-error reduction vs the floor delivered in wk1) and week 4 error
-  is **1.36×** week 1 (0.4136 → 0.5636; the floor degrades 1.22× the same
+  is **1.36×** week 1 (0.4140 → 0.5640; the floor degrades 1.22× the same
   way) — the further out the week, the more every candidate converges to the
   floor. That is why the next-week number is the service headline and the
   28-day pooled table stays the month view.

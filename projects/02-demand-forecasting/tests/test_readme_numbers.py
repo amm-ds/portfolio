@@ -452,7 +452,7 @@ def _m5_section() -> str:
 
 
 def _m5_table(section: str) -> dict[str, list[str]]:
-    """Parse the candidate comparison table (candidate | WAPE | WRMSSE | MAE | win%)."""
+    """Parse the candidate comparison table (candidate | WAPE | WRMSSE | MAE | Bias | win%)."""
     rows: dict[str, list[str]] = {}
     for line in section.splitlines():
         stripped = line.strip()
@@ -461,7 +461,7 @@ def _m5_table(section: str) -> dict[str, list[str]]:
                 break  # table ended
             continue
         cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if len(cells) != 5 or cells[0] == "candidate" or set(cells[0]) <= {"-", ":"}:
+        if len(cells) != 6 or cells[0] == "candidate" or set(cells[0]) <= {"-", ":"}:
             continue
         name = cells[0].replace("**", "")
         for suffix in (" (floor)", " (champion)"):
@@ -471,16 +471,17 @@ def _m5_table(section: str) -> dict[str, list[str]]:
 
 
 def test_m5_model_comparison_table_matches_committed_metrics() -> None:
-    """The M5 headline table (WAPE / WRMSSE / MAE / win rate per candidate)
-    is live against the committed test block."""
+    """The M5 headline table (WAPE / WRMSSE / MAE / Bias / win rate per
+    candidate) is live against the committed test block."""
     metrics = _m5_metrics()
     table = _m5_table(_m5_section())
     pooled = metrics["test"]["pooled"]
     assert set(table) == set(pooled), "M5 table candidates mismatch the committed run"
-    for cand, (wape, wrmsse, mae, win) in table.items():
+    for cand, (wape, wrmsse, mae, bias, win) in table.items():
         assert _num(wape) == pytest.approx(pooled[cand]["wape"], abs=5e-4), cand
         assert _num(wrmsse) == pytest.approx(pooled[cand]["wrmsse"], abs=5e-4), cand
         assert _num(mae) == pytest.approx(pooled[cand]["mae"], abs=5e-4), cand
+        assert _num(bias) == pytest.approx(pooled[cand]["bias"], abs=5e-4), cand
         if cand == metrics["headline"]["baseline"]:
             assert win == "—"
         else:
@@ -637,11 +638,13 @@ def test_m5_l1_l2_identity_and_tradeoff_quotes_match_committed_metrics() -> None
     assert float(m.group(2)) == pytest.approx(l2e["wrmsse"], abs=5e-4)
     assert float(m.group(3)) == pytest.approx(ce["wape"], abs=5e-4)
     assert float(m.group(4)) == pytest.approx(ce["wrmsse"], abs=5e-4)
-    # the champion note: "pooled-test-WRMSSE champion (0.5952)"
+    # the champion note: "WRMSSE champion (0.5964) is the single `lgbm`" —
+    # the committed champion is read from metrics.json (wave 30: single lgbm,
+    # not a blend)
     champ = metrics["headline"]["wrmsse_champion"]
-    m = re.search(r"WRMSSE\s+champion\s*\(([\d.]+)\)", section)
+    m = re.search(r"WRMSSE\s+champion\s*\(([\d.]+)\)\s+is\s+the\s+single\s+`(\w+)`", section)
     assert m, "wrmsse champion quote missing from README"
-    assert champ["candidate"] == "ensemble_l2"
+    assert m.group(2) == champ["candidate"]
     assert float(m.group(1)) == pytest.approx(champ["wrmsse"], abs=5e-4)
 
 
@@ -806,15 +809,15 @@ def test_story_corrected_numbers_match_committed_artifacts() -> None:
     probabilistic = _m5_probabilistic()
 
     win = metrics["test"]["win_rate_vs_naive"]["convex_ensemble"]
-    assert 100.0 * win["pooled"] == pytest.approx(88.8, abs=5e-2)
+    assert 100.0 * win["pooled"] == pytest.approx(89.0, abs=5e-2)
     assert 100.0 * win["dense"] == pytest.approx(88.6, abs=5e-2)
-    assert 100.0 * win["intermittent"] == pytest.approx(89.8, abs=5e-2)
-    assert "88.8% pooled / 88.6% dense / 89.8% intermittent" in story
+    assert 100.0 * win["intermittent"] == pytest.approx(90.5, abs=5e-2)
+    assert "**89.0% pooled / 88.6% dense / 90.5% intermittent**" in story
 
     weekly = metrics["weekly_rolling"]["weekly_blocks"]["convex_ensemble"]
-    assert weekly["wk1"] == pytest.approx(0.4136, abs=5e-5)
-    assert weekly["wk4"] == pytest.approx(0.5636, abs=5e-5)
-    assert "**0.4136→0.5636**" in story
+    assert weekly["wk1"] == pytest.approx(0.4140, abs=5e-5)
+    assert weekly["wk4"] == pytest.approx(0.5640, abs=5e-5)
+    assert "**0.4140→0.5640**" in story
 
     lgbm_band = probabilistic["candidates"]["lgbm"]
     assert 100.0 * lgbm_band["coverage_80"] == pytest.approx(77.7, abs=5e-2)
@@ -824,8 +827,17 @@ def test_story_corrected_numbers_match_committed_artifacts() -> None:
     )
     assert "77.7% at 13.535 units mean width (**76.9% dense / 80.6%" in story
 
-    assert len(metrics["candidates"]) == 11
-    assert "M5 evaluates **11 candidates**" in story
+    ens_band = probabilistic["candidates"]["convex_ensemble"]
+    assert 100.0 * ens_band["coverage_80"] == pytest.approx(77.5, abs=5e-2)
+    assert ens_band["mean_band_width"] == pytest.approx(13.315, abs=5e-3)
+    assert "77.5% at 13.315" in story
+
+    blend = metrics["test"]["pooled"]["convex_ensemble"]
+    assert blend["bias"] == pytest.approx(-0.0004, abs=5e-4)
+    assert "bias \u22120.0004" in story
+
+    assert len(metrics["candidates"]) == 14
+    assert "M5 evaluates **14 candidates**" in story
     assert "The committed global LightGBM is 0.498" in story
     assert metrics["test"]["pooled"]["lgbm"]["wape"] == pytest.approx(0.498, abs=5e-4)
 

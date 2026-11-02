@@ -161,6 +161,10 @@ export interface ForecastPooledMetrics {
   wrmsse: number;
   wrmsse_weighted: number;
   peak_mae: number;
+  /** Wave-30: committed pooled bias (mean error share) per candidate. */
+  bias?: number;
+  /** Wave-30: committed pooled zero-day accuracy per candidate. */
+  zero_day_accuracy?: number;
 }
 
 export interface ForecastWorkbenchPayload {

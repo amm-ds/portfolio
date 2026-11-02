@@ -66,17 +66,20 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
   it("ships the committed headline block with the quoted numbers", () => {
     const { headline, test_pooled, win_rate_vs_naive, band } = payload.groups;
     expect(test_pooled.seasonal_naive.wape).toBeCloseTo(0.6032, 3);
-    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.4907, 3);
-    expect(headline.convex_ensemble_vs_naive.wape.diff).toBeCloseTo(-0.1125, 3);
-    expect(headline.convex_ensemble_vs_naive.wape.ci95[0]).toBeCloseTo(-0.1228, 3);
-    expect(headline.convex_ensemble_vs_naive.wape.ci95[1]).toBeCloseTo(-0.1026, 3);
-    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.5958, 3);
+    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.4913, 3);
+    expect(headline.convex_ensemble_vs_naive.wape.diff).toBeCloseTo(-0.1119, 3);
+    expect(headline.convex_ensemble_vs_naive.wape.ci95[0]).toBeCloseTo(-0.1223, 3);
+    expect(headline.convex_ensemble_vs_naive.wape.ci95[1]).toBeCloseTo(-0.1019, 3);
+    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.5969, 3);
     expect(test_pooled.seasonal_naive.wrmsse).toBeCloseTo(0.7617, 3);
-    expect(win_rate_vs_naive.convex_ensemble.pooled).toBeCloseTo(0.8883, 3);
+    expect(win_rate_vs_naive.convex_ensemble.pooled).toBeCloseTo(0.8900, 3);
     expect(band.candidates.lgbm.coverage_80).toBeCloseTo(0.7773, 3);
-    expect(band.candidates.lgbm.mean_band_width).toBeCloseTo(13.532, 2);
+    expect(band.candidates.lgbm.mean_band_width).toBeCloseTo(13.535, 2);
     expect(band.level).toBe(0.8);
     expect(band.per_horizon_width).toHaveLength(28);
+    // wave-30: per-candidate committed bias ships for the workbench column
+    expect(test_pooled.convex_ensemble.bias).toBeCloseTo(-0.0004, 3);
+    expect(test_pooled.lgbm.bias).toBeCloseTo(0.0196, 3);
   });
 
   it("ships the wave-28 L1/L2 comparison candidates with their committed numbers", () => {
@@ -92,22 +95,24 @@ describe("forecast-workbench payload contract (real committed JSON)", () => {
     expect(test_pooled.lgbm_l2.mae).toBe(test_pooled.lgbm.mae);
     expect(test_pooled.lgbm_l2.wape).toBe(test_pooled.lgbm.wape);
     expect(test_pooled.lgbm_l2.wrmsse).toBe(test_pooled.lgbm.wrmsse);
-    // ensemble_l2 trades both metrics by 0.0002 / 0.0006 — inside noise
-    expect(test_pooled.ensemble_l2.wape).toBeCloseTo(0.4905, 3);
-    expect(test_pooled.ensemble_l2.wrmsse).toBeCloseTo(0.5952, 3);
-    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.4907, 3);
-    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.5958, 3);
-    expect(win_rate_vs_naive.ensemble_l2.pooled).toBeCloseTo(0.8867, 3);
-    // the headline wrmsse_champion note carries ensemble_l2 @ 0.5952
-    expect(headline.wrmsse_champion?.candidate).toBe("ensemble_l2");
-    expect(headline.wrmsse_champion?.wrmsse).toBeCloseTo(0.5952, 3);
-    // ensemble_l2 composition: xgb .45 + lgbm .20 + auto_ets .35 on selection WRMSSE
+    // ensemble_l2 lands behind the WAPE blend on both metrics — 0.4952 /
+    // 0.5978 vs 0.4913 / 0.5969 — so the committed WRMSSE champion is the
+    // single lgbm at 0.5964 (wave 30)
+    expect(test_pooled.ensemble_l2.wape).toBeCloseTo(0.4952, 3);
+    expect(test_pooled.ensemble_l2.wrmsse).toBeCloseTo(0.5978, 3);
+    expect(test_pooled.convex_ensemble.wape).toBeCloseTo(0.4913, 3);
+    expect(test_pooled.convex_ensemble.wrmsse).toBeCloseTo(0.5969, 3);
+    expect(win_rate_vs_naive.ensemble_l2.pooled).toBeCloseTo(0.8783, 3);
+    // the headline wrmsse_champion note carries lgbm @ 0.5964
+    expect(headline.wrmsse_champion?.candidate).toBe("lgbm");
+    expect(headline.wrmsse_champion?.wrmsse).toBeCloseTo(0.5964, 3);
+    // ensemble_l2 composition: xgb .70 + lgbm .25 + lgbm_tweedie .05 on selection WRMSSE
     const l2 = ensemble.ensemble_l2;
     expect(l2?.selection_metric).toBe("wrmsse");
-    expect(l2?.members).toEqual(["xgb", "lgbm", "auto_ets"]);
-    expect(l2?.weights[0]).toBeCloseTo(0.45, 2);
-    expect(l2?.weights[1]).toBeCloseTo(0.2, 2);
-    expect(l2?.weights[2]).toBeCloseTo(0.35, 2);
+    expect(l2?.members).toEqual(["xgb", "lgbm", "lgbm_tweedie"]);
+    expect(l2?.weights[0]).toBeCloseTo(0.7, 2);
+    expect(l2?.weights[1]).toBeCloseTo(0.25, 2);
+    expect(l2?.weights[2]).toBeCloseTo(0.05, 2);
   });
 
   it("per-series WAPEs are consistent with the shipped curves", () => {

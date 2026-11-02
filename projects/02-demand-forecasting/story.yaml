@@ -138,12 +138,13 @@ sections:
   figures: [eda_series_overview, eda_units_distribution, m5:class_comparison]
 - id: training
   text_md: |
-    M5 evaluates **11 candidates** — seasonal naive, three statistical baselines,
-    automatic ETS and CES, gradient boosting with a pure-L2 arm, and two
+    M5 evaluates **14 candidates** — seasonal naive, three statistical baselines,
+    automatic ETS and CES, gradient boosting with a pure-L2 arm, the Tweedie
+    and pooled variants adopted from the M5-winning solution, and two
     three-member ensembles — and the ensemble wins on dense data. Pooled test
     WAPE (error as a share of demand) is 0.491 versus 0.603 for the seasonal
     naive, and MASE (error relative to that baseline, 1.0 means no improvement)
-    improves in step; per-series, 88.8% pooled / 88.6% dense / 89.8% intermittent
+    improves in step; per-series, **89.0% pooled / 88.6% dense / 90.5% intermittent**
     series improve. Exact tables live in the conclusions.
 
     Tuning was seeded and cheap: the HPO history and importance figures show
@@ -183,9 +184,9 @@ sections:
     Error is not flat, and the evaluation figures say so. Start with the
     fold stability figure: every UCI model degrades on later folds — drift
     exposed before deployment, not after. Then the horizon growth figure:
-    M5 error climbs **0.4136→0.5636** from week 1 to week 4, which is why
+    M5 error climbs **0.4140→0.5640** from week 1 to week 4, which is why
     the service number is reforecast weekly instead of trusted for a month.
-    The win rate figure bounds the ensemble's edge: 88.8% of series improve
+    The win rate figure bounds the ensemble's edge: 89.0% of series improve
     against the seasonal naive and the rest are flat or worse — coverage,
     not perfection.
 
@@ -196,7 +197,7 @@ sections:
     Where does all of this land in one ranking?
 
     **Business summary:** This section grades the candidates on both tracks:
-    88.8% of M5 series improve under the ensemble, weekly error grows across the
+    89.0% of M5 series improve under the ensemble, weekly error grows across the
     28-day horizon, and all UCI models degrade on later folds.
   figures: [uci:fold_stability, m5:horizon_growth, m5:win_rate]
   metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
@@ -206,9 +207,16 @@ sections:
     committed global LightGBM 0.498, seasonal naive 0.603** on the pooled,
     scored-once 28-day test. Read the bars as a tight race, not a blowout:
     the ensemble and the single booster sit within 0.007 of each other, and
-    both sit far below the seasonal rule. The band calibration figure shows
-    the cost of honesty: 80% bands that cover 77.7% — slightly under
-    target rather than tuned to look exact. The multi-step error figure
+    both sit far below the seasonal rule. The new arms are measured plainly:
+    the Tweedie-loss LightGBM matches the global model's accuracy at roughly
+    a third of its bias, while the pooled store and store×category variants
+    are uniformly worse — pooling starves each fit on a three-store subset —
+    and sit in neither blend. And on quiet days the LightGBM globals score
+    0.02–0.06 zero-day accuracy against 0.19–0.39 for the statistical arms,
+    so the statistical candidates carry that regime. The band calibration
+    figure shows the cost of honesty: 80% bands that cover 77.7% (LightGBM)
+    and 77.5% (ensemble) — slightly under target rather than tuned to look
+    exact. The multi-step error figure
     carries the sparse track, with MAE and MASE on separate axes so
     incompatible units never share one; the sawtooth in
     that figure is weekday composition across weekly origins, not
@@ -226,19 +234,21 @@ sections:
 
     **Business summary:** This section states the final ranking: ensemble
     0.491, LightGBM 0.498, seasonal rule 0.603. The 80% prediction bands
-    cover 77.7% of outcomes, and no savings claim is made.
+    cover 77.7% (LightGBM) and 77.5% (ensemble) of outcomes, and no savings
+    claim is made.
   figures: [m5:wape_bars, m5:band_calibration, uci:multistep_error_vs_horizon]
   metrics_keys: [naive_mean, naive_last, seasonal_naive, ets, ridge, hgb, hgb_tuned, xgb_tuned, lgbm_tuned, temporal_net]
 - id: conclusions
   text_md: |
     ## Results summary
 
-    On dense Walmart M5 daily sales — 600 series, frozen 28-day scored-once
-    test — the convex ensemble posts test WAPE 0.491 against 0.603 for the
-    seasonal-naive floor, a −0.1125 [−0.1228, −0.1026] gap, with 88.8% of
-    series improving. On sparse UCI Online Retail II — 405,416 rows, 89%
-    zeros — no run reaches MASE 1.0; the router forecasts zero for 945 of
-    1,069 lumpy series. See the
+    On dense Walmart M5 sales — 600 series, 14 candidates, frozen
+    28-day scored-once test — the stability-screened ensemble (xgb +
+    auto_ets + lgbm) posts test WAPE 0.491 against 0.603 for the
+    seasonal-naive floor, a −0.1119 [−0.1223, −0.1019] gap, winning on 89.0%
+    of series at bias −0.0004. On sparse UCI Online Retail II — 405,416
+    rows, 89% zeros — no run reaches MASE 1.0; the router forecasts zero for
+    945 of 1,069 lumpy series. See the
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/)
     or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/).
 
@@ -247,26 +257,35 @@ sections:
     M5 candidates on the frozen 28-day scored-once test (pooled; WRMSSE is the
     competition-scale weighted error):
 
-    | M5 candidate | test WAPE | test WRMSSE | win rate vs naive |
-    |---|---|---|---|
-    | seasonal_naive | 0.603 | 0.762 | — |
-    | auto_ets | 0.503 | 0.611 | 88.2% |
-    | lgbm | 0.498 | 0.596 | 87.8% |
-    | **convex_ensemble** | **0.491** | **0.596** | **88.8%** |
+    | M5 candidate | test WAPE | test WRMSSE | Bias | Stability | win rate vs naive |
+    |---|---|---|---|---|---|
+    | seasonal_naive | 0.603 | 0.762 | −0.0060 | 0.0151 | — |
+    | auto_ets | 0.503 | 0.611 | −0.0074 | 0.0067 | 88.2% |
+    | lgbm | 0.498 | 0.596 | +0.0196 | 0.0135 | 87.8% |
+    | lgbm_tweedie | 0.498 | 0.598 | +0.0069 | 0.0158 | 87.7% |
+    | lgbm_pool_store | 0.507 | 0.601 | +0.0383 | 0.0129 | 86.8% |
+    | lgbm_pool_storecat | 0.508 | 0.603 | +0.0516 | 0.0138 | 86.2% |
+    | **convex_ensemble** | **0.491** | **0.597** | **−0.0004** | **0.0076** | **89.0%** |
+    | ensemble_l2 | 0.495 | 0.598 | +0.0088 | 0.0104 | 87.8% |
 
     M5 headline:
 
-    - Headline gaps: WAPE −0.1125 [−0.1228, −0.1026], WRMSSE −0.1659 [−0.1772,
-      −0.1552] (ensemble); WAPE −0.1057 [−0.1184, −0.0935] (LightGBM).
+    - Headline gaps: WAPE −0.1119 [−0.1223, −0.1019], WRMSSE −0.1647 [−0.1760,
+      −0.1541] (ensemble); WAPE −0.1057 [−0.1184, −0.0935] (LightGBM).
     - By class (test WAPE), naive → ensemble: dense 0.568 → 0.464, intermittent
-      0.749 → 0.603.
-    - Next-week service WAPE: ensemble 0.4233 vs naive 0.5442 (gap −0.1208
-      [−0.1288, −0.1130]); weekly blocks grow 0.4136 (week 1) → 0.5636 (week 4).
+      0.749 → 0.605.
+    - Next-week service WAPE: ensemble 0.4236 vs naive 0.5442 (gap −0.1206
+      [−0.1286, −0.1127]); weekly blocks grow 0.4140 (week 1) → 0.5640 (week 4).
     - Bands: LightGBM covers 77.7% at 13.535 units mean width (**76.9% dense /
-      80.6% intermittent**); ensemble 77.7% at 13.342.
-    - Pure-L2 arm: 0.4905 WAPE / 0.5952 WRMSSE vs the WAPE blend's 0.4907 /
-      0.5958 — inside bootstrap noise; ensemble_l2 is the pooled-test-WRMSSE
-      champion; lgbm_l2 bitwise-identical to lgbm.
+      80.6% intermittent**); ensemble 77.5% at 13.315.
+    - Pure-L2 arm: 0.4952 WAPE / 0.5978 WRMSSE vs the WAPE blend's 0.4913 /
+      0.5969 — behind on both; the pooled-test-WRMSSE champion is the single
+      LightGBM at 0.5964; lgbm_l2 bitwise-identical to lgbm.
+    - New-arm findings: the Tweedie loss cuts pooled bias ~3× at equal accuracy
+      (+0.0069 vs +0.0196); the pooled variants are uniformly worse (0.507 /
+      0.508 test WAPE) and sit in neither blend; the LightGBM globals score
+      0.02–0.06 zero-day accuracy vs 0.19–0.39 for the statistical arms — on
+      quiet days the statistical candidates carry the panel.
 
     Sparse UCI track:
 
@@ -308,7 +327,10 @@ sections:
 
     ## Limits
 
-    - The 80% M5 bands cover 77.7%.
+    - The 80% M5 bands cover 77.7% (LightGBM) and 77.5% (ensemble), just under
+      target.
+    - Neural global models (N-HiTS, TFT, Chronos-class foundation models) are
+      not benchmarked here — a documented next step, not a hidden one.
     - Stockouts, promotions, returns, and safety stock are unmodeled — no
       savings or safety-stock claim until validated on the target panel.
     - Later-horizon error grows on both tracks; reforecast weekly.
@@ -337,6 +359,18 @@ sections:
     - Wave 27: expanded the M5 booster feature space.
     - Wave 28: L1/L2 comparison arms (lgbm_l2 bitwise-identical to lgbm;
       ensemble_l2 minimises selection WRMSSE).
+    - Wave 29: the mean-only selection rule picked an over-fit blend (+0.0048
+      test WAPE vs wave 28) — the failure that motivated the screen.
+    - Wave 30: adopted the M5-winner techniques (Tweedie-loss LightGBM; store
+      and store×category pooled variants) and added bias, stability, and
+      zero-day metrics. Ensemble selection moved to a stability screen — mean
+      + 1.0×std of the per-origin pooled WAPE over the 8 selection origins —
+      which recovered the wave-28 composition (same three members, xgb +
+      auto_ets + lgbm, weights 0.45 / 0.50 / 0.05) without reading the test
+      origins: 0.4913 vs 0.4907 test WAPE, a better-behaved blend (bias
+      −0.0004, zero-day accuracy 0.167, stability 0.0076), and an 89.0% win
+      rate. The pooled variants landed uniformly below the global model and in
+      neither blend.
 
     Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/02-demand-forecasting)
 
@@ -359,8 +393,9 @@ sections:
 
     **Business summary:** This section records the final numbers, protocol,
     limits, and reproduction steps. Dense M5 demand is served by the
-    0.491-error ensemble; sparse UCI demand by the mostly-zero router —
-    regime diagnosis, not one champion, is the reusable result.
+    0.491-error stability-screened ensemble; sparse UCI demand by the
+    mostly-zero router — regime diagnosis, not one champion, is the reusable
+    result.
   figures: []
   metrics_keys: [naive_last, hgb, hgb_tuned]
 key_concepts:
@@ -370,9 +405,10 @@ key_concepts:
   - "**Mostly-zero routing** — on lumpy demand the best forecast is often exactly zero, with peak-capable models reserved for the few series whose peaks repay them."
   - "**Newsvendor cost check** — routing changes are priced at a stated service level before any savings language; here the trade pays only at q=0.90."
   - "**Coverage reported with width** — honest bands state both how often they cover and how wide they are: the LightGBM bands cover 77.7% at a 13.535-unit mean width, under target rather than tuned to look exact."
+  - "**Stability-screened selection** — picking the ensemble by mean + 1.0×std of the per-origin error over the selection origins, so an over-fit blend loses to a slightly worse but stable one."
 roadmap:
 - status: delivered
-  text: "Beat the seasonal-naive floor on M5: 11 candidates, frozen 28-day tests, next-week service."
+  text: "Beat the seasonal-naive floor on M5: 14 candidates, frozen 28-day tests, next-week service."
 - status: delivered
   text: "Reported class results, bootstrap gaps, and measured 77.7% band coverage."
 - status: delivered
@@ -381,11 +417,13 @@ roadmap:
   text: "Shipped non-degenerate sparse nowcast intervals: 92.5% coverage at 6.01 units mean width."
 - status: delivered
   text: "Priced cost-aware routing: newsvendor 2.168 vs 2.213 per unit-demand at q=0.90."
+- status: delivered
+  text: "Adopted M5-winner techniques: Tweedie LGBM, pooled variants, stability-screened ensemble, bias/stability metrics."
 figure_captions:
-  m5:wape_bars: "Test-origin pooled WAPE for all 11 M5 candidates: convex_ensemble leads the headline blend at 0.491 versus seasonal naive 0.603. The committed global LightGBM is 0.498; `ensemble_l2` is a separate comparison at 0.4905."
-  m5:class_comparison: "M5 test WAPE by ADI/CV² volume class (463 dense, 137 intermittent): dense 0.568→0.464 and intermittent 0.749→0.603 from seasonal naive to the ensemble. These are M5 results, not the UCI sparse panel."
-  m5:win_rate: "M5 per-series wins against seasonal naive on the scored test origins: ensemble 88.8% pooled, 88.6% dense, and 89.8% intermittent. Candidates span 82.8–88.8%, so the pooled margin and per-series coverage tell different parts of the result."
-  m5:band_calibration: "M5 per-series scaled split-conformal 80% bands on scored test origins. LightGBM covers 77.7% at 13.535 units mean width (76.9% dense / 80.6% intermittent); the ensemble covers 77.7% at 13.342, slightly below target."
+  m5:wape_bars: "Test-origin pooled WAPE for all 14 M5 candidates: convex_ensemble leads the headline blend at 0.491 versus seasonal naive 0.603. The committed global LightGBM is 0.498; `ensemble_l2` is a separate comparison at 0.4952."
+  m5:class_comparison: "M5 test WAPE by ADI/CV² volume class (463 dense, 137 intermittent): dense 0.568→0.464 and intermittent 0.749→0.605 from seasonal naive to the ensemble. These are M5 results, not the UCI sparse panel."
+  m5:win_rate: "M5 per-series wins against seasonal naive on the scored test origins: ensemble 89.0% pooled, 88.6% dense, and 90.5% intermittent. Candidates span 82.8–89.0%, so the pooled margin and per-series coverage tell different parts of the result."
+  m5:band_calibration: "M5 per-series scaled split-conformal 80% bands on scored test origins. LightGBM covers 77.7% at 13.535 units mean width (76.9% dense / 80.6% intermittent); the ensemble covers 77.5% at 13.315, slightly below target."
   m5:horizon_growth: "Horizon-wise MAE on the scored test origins: error grows sub-linearly with horizon, and at h=28 the committed LightGBM sits 0.85 units per day below the seasonal naive (5.61 vs 6.46)."
   uci:multistep_routing: "Routing effect per class on scored origins — all-HGB MAE minus routed MAE, 95% paired bootstrap CI over series and origins: erratic +22.88 [11.83, 35.21] and lumpy +3.98 [3.34, 4.76]. Positive values mean routing helps."
   eda_series_overview: "Four representative daily series from the seeded synthetic CI hierarchy—not M5 or UCI. Each combines a slow trend with a weekly cycle, the structures the fast-path models must capture."

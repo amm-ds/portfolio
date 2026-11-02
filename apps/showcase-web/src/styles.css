@@ -3165,10 +3165,10 @@ button.chip.demo-preset.fwb-active {
   padding: 0.3rem 0.7rem 0.4rem;
 }
 
-/* every row shares one column grid so the bars and the peak column line up */
+/* every row shares one column grid so the bars and the peak/bias columns line up */
 .fwb-verdict-row {
   display: grid;
-  grid-template-columns: minmax(0, 92px) minmax(0, 1fr) 30px;
+  grid-template-columns: minmax(0, 92px) minmax(0, 1fr) 30px 44px;
   gap: 0.4rem;
   align-items: center;
   font-family: var(--mono);
@@ -3230,6 +3230,12 @@ button.chip.demo-preset.fwb-active {
 }
 
 .fwb-verdict-peak {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.fwb-verdict-bias {
   text-align: right;
   font-variant-numeric: tabular-nums;
   color: var(--muted);

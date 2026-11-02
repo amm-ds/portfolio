@@ -29,7 +29,7 @@ const FALLBACK_MANIFEST: DemoManifest = {
   hero: {
     label: "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
     value: "0.491 vs 0.603",
-    ci: "paired bootstrap CI [−0.123, −0.103] on the −0.112 gap; 88.8% per-series win rate; 80% band covers 77.7% (m5_direct_v1, horizon 28)",
+    ci: "paired bootstrap CI [−0.122, −0.102] on the −0.112 gap; 89.0% per-series win rate; 80% band covers 77.5% (m5_direct_v1, horizon 28)",
   },
   scenarios: [
     { name: "base", controls: { models: "seasonal_naive,lgbm", origin: "2016-05-10", horizon: 28 } },
