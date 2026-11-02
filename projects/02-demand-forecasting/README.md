@@ -196,6 +196,19 @@ evaluation_metadata.json):
   Wave 30 holds that line: the stability-screened blend lands 0.4913 test
   WAPE with a better-behaved error profile (bias −0.0004 vs the single
   boosters' +0.005 to +0.020).
+- **How this compares to the M5 competition** — not directly, and the
+  numbers should not be read as competition WRMSSE: this track scores 600 of
+  the 30,490 bottom series (top-200 items by units; 16% zeros vs ~50%+ on
+  full M5) under our own scaled metrics, not the official revenue-weighted
+  WRMSSE across 42,840 hierarchical series. The axis the competition itself
+  reports is improvement over benchmark (winner −22.4% over the best
+  benchmark, [Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013));
+  on that axis our blend's cut over the seasonal-naive floor (−18.6% WAPE,
+  −21.6% WRMSSE) sits in the winning band — with 14 candidates and a
+  46-minute run. On the full hierarchy this blend would be public-kernel-tier
+  (~0.62 private-WRMSSE territory), not the podium: it is half AutoETS, and
+  the zero-day numbers above show the boosting arms score 0.02–0.06 on quiet
+  days — exactly where full-scale M5 is won or lost.
 - **L1 vs L2 forecast shape (wave 28)** — the flat look of the shipped curves
   is not a loss-function bug. Verification: LightGBM's default objective is
   already squared error, so the track's L1 character lived in the tuner's l1
