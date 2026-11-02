@@ -273,5 +273,48 @@ def demo_payload_m5(
     return write_demo_payload(data_dir, reports_dir)
 
 
+@app.command("evaluate-m5-full")
+def evaluate_m5_full(
+    data_dir: Annotated[Path | None, typer.Option(help="M5 full-panel raw dir.")] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 full reports dir.")] = None,
+    n_origins: Annotated[int, typer.Option(help="Weekly origins (all but the last select).")] = 10,
+    series_cap: Annotated[
+        int | None, typer.Option(help="Ladder fallback: top items x all 10 stores.")
+    ] = None,
+    pooled_strategy: Annotated[
+        Literal["direct", "recursive"],
+        typer.Option(
+            help="direct = one fit per (group, horizon); recursive = mlforecast per group."
+        ),
+    ] = "direct",
+    n_estimators: Annotated[
+        int | None, typer.Option(help="Smoke override for every lgbm arm.")
+    ] = None,
+    n_jobs_ets: Annotated[int, typer.Option(help="auto_ets worker processes.")] = 1,
+) -> None:
+    """Run the M5 full-panel experiment (protocol m5_full_v1), official hierarchical WRMSSE.
+
+    Offline: reads the checksum-pinned full panel in data_m5/raw/ (Phase 0);
+    writes metrics.json + evaluation_metadata.json under reports_m5_full/.
+    Hours at full scale — run overnight (see the m5_full wave plan); --series-cap
+    10000 selects the deterministic ladder, --pooled-strategy recursive the
+    affordable pooled fits (the Phase-0 feasibility gate decides).
+    """
+    root = Path.cwd()
+    data_dir = data_dir or root / "data_m5" / "raw"
+    reports_dir = reports_dir or root / "reports_m5_full"
+    from demand_forecasting.m5_full import run_m5_full, write_m5_full_artifacts
+
+    result = run_m5_full(
+        data_dir,
+        n_origins=n_origins,
+        series_cap=series_cap,
+        pooled_strategy=pooled_strategy,
+        n_estimators=n_estimators,
+        n_jobs_ets=n_jobs_ets,
+    )
+    write_m5_full_artifacts(result, reports_dir)
+
+
 if __name__ == "__main__":
     app()

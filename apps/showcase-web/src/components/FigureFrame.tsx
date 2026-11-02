@@ -39,7 +39,7 @@ export function FigureFrame({
             <span>loading…</span>
           </div>
         )}
-        <span className="frame-label">$ {name}</span>
+        <span className="frame-label">&gt; {name}</span>
         <iframe
           src={figureUrl(projectId, name)}
           title={`Figure: ${name}`}

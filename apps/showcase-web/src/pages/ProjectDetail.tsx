@@ -24,10 +24,10 @@ import { usePageMeta } from "../seo";
 const GENERIC_DEMO_LINE =
   "an interactive session over this project's committed payloads — change the inputs and watch the measured outputs respond.";
 
-/** "01-rag-agent" → https://amm-ds.github.io/portfolio/projects/01-rag-agent/ */
+/** "01-rag-agent" → https://alejandromerida.dev/projects/01-rag-agent/ */
 function docsUrl(projectId: string): string {
   const [num, ...slug] = projectId.split("-");
-  return `https://amm-ds.github.io/portfolio/projects/${num}-${slug.join("-")}/`;
+  return `https://alejandromerida.dev/projects/${num}-${slug.join("-")}/`;
 }
 
 interface Detail {
@@ -71,7 +71,7 @@ export function ProjectDetail() {
   usePageMeta({
     title: detail?.title ?? "Unknown project",
     description:
-      summaryLine(id) ?? "An experiment from the amm-ds ML/AI engineering portfolio.",
+      summaryLine(id) ?? "An experiment from the alejandromerida.dev ML/AI engineering portfolio.",
     noindex: notFound || undefined,
   });
 

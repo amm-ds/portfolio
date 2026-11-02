@@ -17,6 +17,7 @@ function renderServices() {
 describe("Services page (wave 8)", () => {
   it("renders the hero and exactly 8 generic offering cards (one per service line)", () => {
     renderServices();
+    expect(screen.getByText("> services --freelance")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "ML/AI engineering, end to end",
     );
@@ -26,13 +27,13 @@ describe("Services page (wave 8)", () => {
       (el) => el.textContent,
     );
     expect(titles).toEqual([
-      "AI/LLM systems",
+      "Agentic AI & LLM systems",
       "Machine learning",
       "Optimization",
       "Data engineering",
       "MLOps",
       "Interactive dashboards",
-      "Full-stack product engineering",
+      "Full-stack engineering",
       "APIs & model serving",
     ]);
     // no anomaly-specific or otherwise vertical-specific offering card
@@ -44,16 +45,38 @@ describe("Services page (wave 8)", () => {
     });
   });
 
-  it("each offering has an outcome line, technical chips, evidence and concrete deliverables", () => {
+  it("each offering has an outcome line, exactly 4 tags and exactly 4 deliverables — no evidence links", () => {
     renderServices();
-    expect(screen.getByText(/answer from your documents, cite their sources/)).toBeInTheDocument();
-    // technical elements rendered as short, generic chips (scoped — some names also appear in prose)
-    const chipTexts = [...document.querySelectorAll(".chip")].map((el) => el.textContent);
+    expect(screen.getByText(/answer from your documents, cite every claim/)).toBeInTheDocument();
+    const cards = [...document.querySelectorAll(".offering-card")];
+    expect(cards).toHaveLength(8);
+    for (const card of cards) {
+      const chips = [...card.querySelectorAll(".chip")].map((el) => el.textContent);
+      expect(chips, card.querySelector("h3")!.textContent).toHaveLength(4);
+      chips.forEach((c) => {
+        expect(c!.trim().split(/\s+/).length).toBeLessThanOrEqual(3);
+      });
+      // deliverables: exactly four on every card, led by the canonical set
+      const items = [...card.querySelectorAll("li")].map((el) => el.textContent);
+      expect(items, card.querySelector("h3")!.textContent).toHaveLength(4);
+      expect(items[0]).toBe("production-grade repository with tests and CI");
+      expect(items[1]).toMatch(/^reproducible pipeline and pinned/);
+      expect(items[3]).toMatch(/^evaluation report with honest limits/);
+      // leaner cards: no evidence/proof/demo links anywhere
+      expect(card.querySelector("h4")?.textContent).toBe("deliverables");
+      expect(card.querySelectorAll("a")).toHaveLength(0);
+      expect(card.textContent).not.toMatch(/proof:|live demo:/i);
+      expect(card.textContent).not.toMatch(/how success is measured/i);
+    }
+    // the full tag vocabulary covers every offering
+    const chipTexts = [...document.querySelectorAll(".offering-card .chip")].map(
+      (el) => el.textContent,
+    );
     for (const chip of [
-      "APIs (FastAPI/REST)",
       "Retrieval pipelines",
       "Structured output",
       "Eval harnesses",
+      "Cost budgets",
       "Leakage-proof CV",
       "Calibrated models",
       "Cost curves",
@@ -61,99 +84,42 @@ describe("Services page (wave 8)", () => {
       "Exact & heuristics",
       "Benchmark instances",
       "Runtime budgets",
+      "Gap reports",
       "Polars/DVC pipelines",
       "DQ gates",
       "Checksum pinning",
+      "Data registry",
       "CI eval gates",
       "Docker + uv",
       "Clean-clone runs",
+      "Drift checks",
       "React + Plotly",
       "Live endpoints",
       "Pinned payloads",
+      "Parity tests",
       "FastAPI + React",
       "Docker Compose",
       "Caddy deploy",
+      "Contract tests",
       "FastAPI",
       "OpenAPI contracts",
       "Rate limits",
+      "Latency budgets",
     ]) {
       expect(chipTexts).toContain(chip);
     }
-    // every chip stays short (≤ 3 words)
-    chipTexts.forEach((c) => {
-      expect(c!.trim().split(/\s+/).length).toBeLessThanOrEqual(3);
-    });
-    // evidence chips link each offering to its proving experiment/demo
-    const proofLinks = [...document.querySelectorAll(".offering-card .chip-link")].map(
-      (el) => [el.textContent, el.getAttribute("href")] as const,
-    );
-    expect(proofLinks).toContainEqual(["proof: verified-claim RAG agent", "/projects/01-rag-agent"]);
-    expect(proofLinks).toContainEqual([
-      "proof: graded agentic workflow suite",
-      "/projects/09-agentic-workflows",
-    ]);
-    expect(proofLinks).toContainEqual([
-      "proof: demand forecast workbench",
-      "/projects/02-demand-forecasting",
-    ]);
-    expect(proofLinks).toContainEqual(["live demo: forecast workbench", "/demos/forecast-workbench"]);
-    expect(proofLinks).toContainEqual([
-      "proof: CI-evaluated churn pipeline",
-      "/projects/05-ml-pipeline-churn",
-    ]);
-    expect(proofLinks).toContainEqual(["live demo: churn sandbox", "/demos/churn-sandbox"]);
-    expect(proofLinks).toContainEqual([
-      "proof: uplift targeting study",
-      "/projects/10-uplift-experimentation",
-    ]);
-    expect(proofLinks).toContainEqual([
-      "proof: vehicle routing benchmark",
-      "/projects/06-routing-optimization",
-    ]);
-    expect(proofLinks).toContainEqual([
-      "proof: NYC mobility data pipeline",
-      "/projects/07-open-data-mobility",
-    ]);
-    expect(proofLinks).toContainEqual([
-      "proof: demand forecast pipeline",
-      "/projects/02-demand-forecasting",
-    ]);
-    expect(proofLinks).toContainEqual([
-      "proof: inference serving benchmark",
-      "/projects/08-inference-serving",
-    ]);
-    expect(proofLinks).toContainEqual(["proof: served demand API", "/projects/07-open-data-mobility"]);
-    // the new APIs & model serving card is a generic offering like the others
-    expect(proofLinks.filter(([, href]) => href === "/projects/08-inference-serving").length)
-      .toBeGreaterThanOrEqual(2);
-    // the anomaly card is gone — no offering links to it as its proof anymore
-    expect(proofLinks.every(([, href]) => href !== "/projects/03-anomaly-detection")).toBe(true);
-    // no success-measured sentences remain anywhere on the page
-    expect(screen.queryByText(/how success is measured/i)).toBeNull();
-    const cards = document.querySelectorAll(".offering-card");
-    expect(cards).toHaveLength(8);
-    cards.forEach((card) => {
-      expect(card.textContent).not.toMatch(/how success is measured/i);
-      // no slogan register: every card keeps the plain evidence/deliverables structure
-      expect(card.querySelector("h4")?.textContent).toBe("evidence");
-    });
-    // deliverables are real, concrete items
-    expect(screen.getByText("versioned inference endpoints (REST)")).toBeInTheDocument();
-    expect(screen.getByText("OpenAPI contract with request/response schemas")).toBeInTheDocument();
-    expect(screen.getByText("latency/throughput benchmark report")).toBeInTheDocument();
   });
 
-  it("lays the offerings out in a strict 4-column grid inside a capped container (2 then 1 columns below)", () => {
+  it("lays the offerings out as full-width horizontal cards, one per row", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    expect(css).toContain(".offerings-grid {");
-    expect(css).toContain("max-width: 1400px;");
-    expect(css).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
-    expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
-    // 4-col breakpoint sits above the 2-col one so rows wrap 4+4 on desktop
-    expect(css.indexOf("repeat(4, minmax(0, 1fr))")).toBeGreaterThan(
-      css.indexOf("repeat(2, minmax(0, 1fr))"),
-    );
-    expect(css).not.toContain("repeat(auto-fill, minmax(300px, 1fr))");
+    const gridRule = css.match(/\.offerings-grid \{[\s\S]*?\n\}/)![0];
+    expect(gridRule).toContain("display: flex;");
+    expect(gridRule).toContain("flex-direction: column;");
+    expect(gridRule).toContain("max-width: none;");
+    // the old capped multi-column grid is gone
+    expect(css).not.toContain("repeat(4, minmax(0, 1fr));");
+    expect(css).not.toContain("max-width: 1400px;");
+    expect(css).not.toContain("repeat(auto-fill, minmax(300px, 1fr));");
   });
 
   it("has no proof band and no contact/availability block (Contact owns those)", () => {
@@ -248,9 +214,9 @@ describe("Services page (wave 8)", () => {
     expect(providerTiles[0].querySelector("img")).toBeNull();
   });
 
-  it("ships a horizontal process timeline (4-up, 2-up, 1-up) with breathing room", () => {
+  it("ships a horizontal process timeline (5-up, 2-up, 1-up) ending in structured revisions", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    expect(css).toContain(".process-timeline {\n  list-style: none;\n  margin: 1.75rem 0 0;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));");
+    expect(css).toContain(".process-timeline {\n  list-style: none;\n  margin: 1.75rem 0 0;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(5, minmax(0, 1fr));");
     expect(css).toContain("row-gap: 2.25rem;");
     expect(css).toContain("padding-top: 1.15rem;");
     expect(css).toContain("@media (max-width: 1099px)");
@@ -259,6 +225,16 @@ describe("Services page (wave 8)", () => {
     expect(css).toContain("grid-template-columns: 1fr;");
     // step nodes straddle the connecting line
     expect(css).toContain("top: -0.75rem;");
+    // five steps, ending with structured revision rounds after delivery
+    renderServices();
+    const steps = [...document.querySelectorAll(".process-timeline .step-num")].map(
+      (el) => el.textContent,
+    );
+    expect(steps).toEqual(["01", "02", "03", "04", "05"]);
+    expect(screen.getByText("Revisions")).toBeInTheDocument();
+    expect(screen.getByText(/re-run, and the report updated/i)).toBeInTheDocument();
+    // engagement models mention the revision rounds
+    expect(screen.getAllByText(/includes structured revision rounds/i).length).toBeGreaterThanOrEqual(2);
   });
 
   it("degrades a framework logo to a letter tile on image error", () => {

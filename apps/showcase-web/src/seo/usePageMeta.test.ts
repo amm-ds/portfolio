@@ -19,9 +19,9 @@ describe("usePageMeta", () => {
       }),
     );
 
-    expect(document.title).toBe("Services · amm-ds");
+    expect(document.title).toBe("Services · alejandromerida.dev");
     expect(metaContent("name", "description")).toBe("Consulting services");
-    expect(metaContent("property", "og:title")).toBe("Services · amm-ds");
+    expect(metaContent("property", "og:title")).toBe("Services · alejandromerida.dev");
     expect(metaContent("property", "og:description")).toBe("Consulting services");
     expect(metaContent("property", "og:url")).toBe(`${SITE_URL}/services`);
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(
@@ -34,9 +34,9 @@ describe("usePageMeta", () => {
 
   it("does not double-append the brand suffix", () => {
     const { unmount } = renderHook(() =>
-      usePageMeta({ title: "amm-ds", description: "brand" }),
+      usePageMeta({ title: "alejandromerida.dev", description: "brand" }),
     );
-    expect(document.title).toBe("amm-ds");
+    expect(document.title).toBe("alejandromerida.dev");
     unmount();
   });
 
@@ -54,11 +54,11 @@ describe("usePageMeta", () => {
       ({ title }: { title: string }) => usePageMeta({ title, description: `${title} desc` }),
       { initialProps: { title: "First" } },
     );
-    expect(document.title).toBe("First · amm-ds");
+    expect(document.title).toBe("First · alejandromerida.dev");
     expect(metaContent("name", "description")).toBe("First desc");
 
     rerender({ title: "Second" });
-    expect(document.title).toBe("Second · amm-ds");
+    expect(document.title).toBe("Second · alejandromerida.dev");
     expect(metaContent("name", "description")).toBe("Second desc");
 
     unmount();

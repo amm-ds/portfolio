@@ -1,154 +1,119 @@
-import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
 import { DataTable } from "../components/DataTable";
 import { FRAMEWORKS, PROVIDERS, FrameworkTile } from "../components/Frameworks";
 import { usePageMeta } from "../seo";
-
-interface Evidence {
-  /** "proof: …" wording, rendered inside a mono chip. */
-  label: string;
-  /** SPA route — project report or live demo. */
-  to: string;
-}
 
 interface Offering {
   title: string;
   outcome: string;
   elements: string[];
   deliverables: string[];
-  /** Public experiments/demos that prove the offering, metric-first. */
-  evidence: Evidence[];
 }
+
+/** The four architect-level deliverables every offering ships, adapted per
+ * offering; the count is identical on every card. */
+const BASE_DELIVERABLES = [
+  "production-grade repository with tests and CI",
+  "reproducible pipeline and pinned environment",
+  "documented API or service contract",
+  "evaluation report with honest limits",
+];
 
 const OFFERINGS: Offering[] = [
   {
-    title: "AI/LLM systems",
-    outcome: "Agents and assistants that answer from your documents, cite their sources, and stay inside a stated cost and latency budget.",
-    elements: ["APIs (FastAPI/REST)", "Retrieval pipelines", "Structured output", "Eval harnesses"],
+    title: "Agentic AI & LLM systems",
+    outcome:
+      "Agents and assistants that answer from your documents, cite every claim, and stay inside fixed tool, cost and latency budgets.",
+    elements: ["Retrieval pipelines", "Structured output", "Eval harnesses", "Cost budgets"],
     deliverables: [
-      "agent service with typed endpoints (FastAPI)",
-      "retrieval index pipeline with pinned corpus versions",
-      "faithfulness/relevance eval harness with a documented baseline",
-      "per-task cost and latency budgets with fallback chains",
-    ],
-    evidence: [
-      { label: "proof: verified-claim RAG agent", to: "/projects/01-rag-agent" },
-      { label: "proof: graded agentic workflow suite", to: "/projects/09-agentic-workflows" },
+      BASE_DELIVERABLES[0],
+      "reproducible pipeline and pinned corpus versions",
+      BASE_DELIVERABLES[2],
+      "evaluation report with honest limits (faithfulness, relevance, cost)",
     ],
   },
   {
     title: "Machine learning",
     outcome:
-      "Models judged the way the business will use them: against named naive baselines, with errors priced in currency, not raw accuracy.",
+      "Forecasting, classification and churn models judged against named naive baselines, with errors priced in currency rather than raw accuracy.",
     elements: ["Leakage-proof CV", "Calibrated models", "Cost curves", "Optuna HPO"],
     deliverables: [
-      "leakage-proof backtests scored in time order",
-      "calibrated models with uncertainty bands",
-      "business-cost threshold analysis",
-      "pinned CI evaluation reports",
-    ],
-    evidence: [
-      { label: "proof: demand forecast workbench", to: "/projects/02-demand-forecasting" },
-      { label: "live demo: forecast workbench", to: "/demos/forecast-workbench" },
-      { label: "proof: CI-evaluated churn pipeline", to: "/projects/05-ml-pipeline-churn" },
-      { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
-      { label: "proof: uplift targeting study", to: "/projects/10-uplift-experimentation" },
+      BASE_DELIVERABLES[0],
+      BASE_DELIVERABLES[1],
+      BASE_DELIVERABLES[2],
+      "evaluation report with honest limits (baselines, calibration, cost)",
     ],
   },
   {
     title: "Optimization",
     outcome:
-      "Routing, scheduling, and allocation solved against named benchmark instances, with the optimality gap stated per instance.",
-    elements: ["Exact & heuristics", "Benchmark instances", "Runtime budgets"],
+      "Routing, scheduling and allocation solved against named benchmark instances, with the optimality gap stated per instance.",
+    elements: ["Exact & heuristics", "Benchmark instances", "Runtime budgets", "Gap reports"],
     deliverables: [
-      "solver/heuristic service with typed API",
-      "benchmark runner against best-known solutions",
-      "gap & runtime report per instance",
-    ],
-    evidence: [
-      { label: "proof: vehicle routing benchmark", to: "/projects/06-routing-optimization" },
+      BASE_DELIVERABLES[0],
+      "reproducible pipeline and pinned benchmark instances",
+      BASE_DELIVERABLES[2],
+      "evaluation report with honest limits (optimality gap, runtime)",
     ],
   },
   {
     title: "Data engineering",
     outcome:
-      "Pipelines that turn raw operational dumps into versioned, tested, analysis-ready datasets.",
-    elements: ["Polars/DVC pipelines", "DQ gates", "Checksum pinning"],
+      "Pipelines that turn raw operational dumps into versioned, tested, analysis-ready datasets with quality gates in CI.",
+    elements: ["Polars/DVC pipelines", "DQ gates", "Checksum pinning", "Data registry"],
     deliverables: [
-      "versioned raw→feature pipelines",
-      "data-quality gates in CI",
-      "checksum-pinned, rebuildable datasets",
+      BASE_DELIVERABLES[0],
+      "reproducible pipeline and pinned, checksummed datasets",
       "documented data registry entries",
-    ],
-    evidence: [
-      { label: "proof: NYC mobility data pipeline", to: "/projects/07-open-data-mobility" },
-      { label: "proof: demand forecast pipeline", to: "/projects/02-demand-forecasting" },
+      "evaluation report with honest limits (quality gates, coverage)",
     ],
   },
   {
     title: "MLOps",
     outcome:
       "CI gates that block unevaluated models and failing data-quality checks before they can ship.",
-    elements: ["CI eval gates", "Docker + uv", "Clean-clone runs"],
+    elements: ["CI eval gates", "Docker + uv", "Clean-clone runs", "Drift checks"],
     deliverables: [
-      "CI gates for evaluation & data quality",
-      "dockerized, uv-managed environments",
-      "pinned-baseline comparison on every run",
-      "runbooks & handover docs",
-    ],
-    evidence: [
-      { label: "proof: inference serving benchmark", to: "/projects/08-inference-serving" },
-      { label: "proof: CI-evaluated churn pipeline", to: "/projects/05-ml-pipeline-churn" },
+      BASE_DELIVERABLES[0],
+      BASE_DELIVERABLES[1],
+      BASE_DELIVERABLES[2],
+      "evaluation report with honest limits (eval gates, drift checks)",
     ],
   },
   {
     title: "Interactive dashboards",
     outcome:
       "Working demos over committed payloads — every number the screen shows is checked in CI before it ships.",
-    elements: ["React + Plotly", "Live endpoints", "Pinned payloads"],
+    elements: ["React + Plotly", "Live endpoints", "Pinned payloads", "Parity tests"],
     deliverables: [
-      "demo frontend over the served API",
-      "precomputed payload contracts",
-      "parity tests pinning every shown number",
-      "keyboard-navigable, axe-checked components",
-    ],
-    evidence: [
-      { label: "live demo: forecast workbench", to: "/demos/forecast-workbench" },
-      { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
-      { label: "proof: demand forecast workbench", to: "/projects/02-demand-forecasting" },
+      BASE_DELIVERABLES[0],
+      "reproducible pipeline and pinned payloads",
+      BASE_DELIVERABLES[2],
+      "evaluation report with honest limits (parity tests, accessibility)",
     ],
   },
   {
-    title: "Full-stack product engineering",
+    title: "Full-stack engineering",
     outcome:
-      "Working product slices — typed API, web UI, deployment — that run from a clean clone.",
-    elements: ["FastAPI + React", "Docker Compose", "Caddy deploy"],
+      "Typed API, web UI and deployment wired together so the product slice runs from a clean clone.",
+    elements: ["FastAPI + React", "Docker Compose", "Caddy deploy", "Contract tests"],
     deliverables: [
-      "typed API service with contract tests",
-      "React frontend on shared component patterns",
-      "one-command environment (uv + Docker)",
-      "deployment manifests with rollback notes",
-    ],
-    evidence: [
-      { label: "proof: served demand API", to: "/projects/07-open-data-mobility" },
-      { label: "live demo: forecast workbench", to: "/demos/forecast-workbench" },
-      { label: "live demo: churn sandbox", to: "/demos/churn-sandbox" },
+      BASE_DELIVERABLES[0],
+      BASE_DELIVERABLES[1],
+      BASE_DELIVERABLES[2],
+      "evaluation report with honest limits (contract tests, SLOs)",
     ],
   },
   {
     title: "APIs & model serving",
     outcome:
-      "Inference endpoints designed, hosted, and measured — contracts first, with rate limits and cost budgets stated up front.",
-    elements: ["FastAPI", "OpenAPI contracts", "Rate limits"],
+      "Versioned inference endpoints with OpenAPI contracts, rate limits and measured latency/throughput on target hardware.",
+    elements: ["FastAPI", "OpenAPI contracts", "Rate limits", "Latency budgets"],
     deliverables: [
-      "versioned inference endpoints (REST)",
-      "OpenAPI contract with request/response schemas",
-      "rate limits and cost budgets per route",
-      "latency/throughput benchmark report",
-    ],
-    evidence: [
-      { label: "proof: inference serving benchmark", to: "/projects/08-inference-serving" },
-      { label: "proof: served demand API", to: "/projects/07-open-data-mobility" },
+      BASE_DELIVERABLES[0],
+      BASE_DELIVERABLES[1],
+      BASE_DELIVERABLES[2],
+      "evaluation report with honest limits (latency, throughput, cost)",
     ],
   },
 ];
@@ -174,17 +139,22 @@ const PROCESS = [
     title: "Handover",
     text: "Documentation, runbooks, and a walkthrough session. No lock-in: everything runs from a clean clone.",
   },
+  {
+    step: "05",
+    title: "Revisions",
+    text: "Structured revision rounds after delivery: feedback is addressed, the evaluation re-run, and the report updated until the numbers hold up.",
+  },
 ];
 
 const ENGAGEMENTS = [
   {
     model: "Fixed-scope project",
-    fits: "Well-defined deliverable with clear acceptance criteria",
+    fits: "Well-defined deliverable with clear acceptance criteria — includes structured revision rounds",
     pricing: "fixed price — on request",
   },
   {
     model: "Retainer",
-    fits: "Ongoing model/data stewardship, drift response, incremental improvements",
+    fits: "Ongoing model/data stewardship, drift response, incremental improvements — revisions roll month to month",
     pricing: "monthly — on request",
   },
   {
@@ -198,14 +168,14 @@ export function Services() {
   usePageMeta({
     title: "Services",
     description:
-      "Freelance ML/AI engineering offerings — AI/LLM systems, machine learning, optimization, data engineering, MLOps, interactive dashboards, and full-stack product engineering — each backed by a public, reproducible case study with measured baselines.",
+      "Freelance ML/AI engineering offerings — agentic AI & LLM systems, machine learning, optimization, data engineering, MLOps, interactive dashboards, full-stack engineering, and APIs & model serving — each backed by a public, reproducible case study with measured baselines.",
     canonical: "/services",
   });
 
   return (
     <>
       <section className="services-hero">
-        <p className="kicker">$ services --freelance</p>
+        <p className="kicker">&gt; services --freelance</p>
         <h1>ML/AI engineering, end to end</h1>
         <p>
           Freelance ML/AI engineering for teams that need end-to-end delivery — from
@@ -213,8 +183,8 @@ export function Services() {
           records, evaluation harnesses, runbooks) that keep them operable.
         </p>
         <p>
-          Every offering is backed by public, reproducible case studies — measured baselines
-          and documented decisions. If it is worth saying, it is worth showing working code.
+          Every offering maps to public case studies on this site — the same pipelines,
+          metrics and stated limits you would receive.
         </p>
       </section>
 
@@ -229,14 +199,6 @@ export function Services() {
                 <span key={e} className="chip">
                   {e}
                 </span>
-              ))}
-            </div>
-            <h4>evidence</h4>
-            <div className="meta-links">
-              {o.evidence.map((ev) => (
-                <Link key={ev.label} className="chip-link" to={ev.to}>
-                  {ev.label}
-                </Link>
               ))}
             </div>
             <h4>deliverables</h4>
@@ -288,6 +250,10 @@ export function Services() {
       </ol>
 
       <h2 className="section-title">engagement models</h2>
+      <p className="section-intro">
+        Every engagement includes structured revision rounds after delivery — feedback,
+        re-evaluation and updated reports are part of the scope, not an extra.
+      </p>
       <DataTable className="engagement-table">
         <thead>
           <tr>

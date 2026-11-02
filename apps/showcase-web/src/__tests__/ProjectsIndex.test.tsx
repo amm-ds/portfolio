@@ -3,7 +3,13 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Project } from "../api";
-import { ProjectsIndex, groupByTopic, groupByRow, TOPIC_ROWS } from "../pages/ProjectsIndex";
+import {
+  ProjectsIndex,
+  groupByTopic,
+  groupByRow,
+  rowAnchor,
+  TOPIC_ROWS,
+} from "../pages/ProjectsIndex";
 
 const stylesCss = readFileSync("src/styles.css", "utf8");
 
@@ -66,13 +72,13 @@ afterEach(() => {
 });
 
 describe("groupByRow", () => {
-  it("nests topics under impact-ordered rows (Agentic AI & LLM … Data Engineering)", () => {
+  it("nests topics under offering-named rows (Agentic AI & LLM systems … Data engineering)", () => {
     const rows = groupByRow(ALL_PROJECTS);
     expect(rows.map((r) => r.name)).toEqual([
-      "Agentic AI & LLM",
-      "Machine Learning",
+      "Agentic AI & LLM systems",
+      "Machine learning",
       "Optimization",
-      "Data Engineering",
+      "Data engineering",
     ]);
     expect(rows[0].topics.map((t) => t.topic)).toEqual(["Agentic AI & LLM"]);
     expect(rows[1].topics.map((t) => t.topic)).toEqual([
@@ -85,11 +91,17 @@ describe("groupByRow", () => {
     expect(rows.flatMap((r) => r.topics.flatMap((t) => t.projects))).toHaveLength(7);
   });
 
-  it("places 07 under the Data Engineering row", () => {
+  it("places 07 under the Data engineering row and 08's topic under APIs & model serving", () => {
     const rows = groupByRow(ALL_PROJECTS);
-    const de = rows.find((r) => r.name === "Data Engineering")!;
+    const de = rows.find((r) => r.name === "Data engineering")!;
     expect(de.topics.flatMap((t) => t.projects).map((p) => p.id)).toEqual([
       "07-open-data-mobility",
+    ]);
+    // Inference & Serving maps to the APIs & model serving row
+    const serving = project({ id: "08-inference-serving", topic: "Inference & Serving", order: 8 });
+    const rows2 = groupByRow([...ALL_PROJECTS, serving]);
+    expect(rows2.find((r) => r.name === "APIs & model serving")!.topics.map((t) => t.topic)).toEqual([
+      "Inference & Serving",
     ]);
   });
 
@@ -98,7 +110,7 @@ describe("groupByRow", () => {
       ["06-routing-optimization", "01-rag-agent"].includes(p.id),
     );
     const rows = groupByRow(partial);
-    expect(rows.map((r) => r.name)).toEqual(["Agentic AI & LLM", "Optimization"]);
+    expect(rows.map((r) => r.name)).toEqual(["Agentic AI & LLM systems", "Optimization"]);
 
     const withUnknown = [...partial, project({ id: "99-x", topic: "Something New", order: 9 })];
     const rows2 = groupByRow(withUnknown);
@@ -119,15 +131,55 @@ describe("groupByRow", () => {
       "NLP & Transformers",
       "ML Systems & Decisioning",
       "Optimization",
+      "Inference & Serving",
       "Decision Science",
       "Data Engineering",
     ]) {
       expect(mapped.has(topic)).toBe(true);
     }
   });
+
+  it("rowAnchor slugifies row names for the on-page index", () => {
+    expect(rowAnchor("Agentic AI & LLM systems")).toBe("agentic-ai-llm-systems");
+    expect(rowAnchor("APIs & model serving")).toBe("apis-model-serving");
+    expect(rowAnchor("Machine learning")).toBe("machine-learning");
+  });
 });
 
 describe("ProjectsIndex", () => {
+  it("opens with a title paragraph and a small index of anchors", async () => {
+    vi.stubGlobal("fetch", projectsOnlyFetch());
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+    );
+    expect(
+      screen.getByText(/Ten public experiments with live demos — real datasets/i),
+    ).toBeInTheDocument();
+    // every anchor target exists once rows render
+    await waitFor(() => expect(document.getElementById("machine-learning")).not.toBeNull());
+    expect(document.getElementById("demos")).not.toBeNull();
+    expect(document.getElementById("agentic-ai-llm-systems")).not.toBeNull();
+    expect(document.getElementById("optimization")).not.toBeNull();
+    expect(document.getElementById("data-engineering")).not.toBeNull();
+    const index = screen.getByRole("navigation", { name: "On this page" });
+    const anchors = [...index.querySelectorAll("a")].map((a) => [
+      a.textContent,
+      a.getAttribute("href"),
+    ]);
+    expect(anchors).toEqual([
+      ["live demos", "#demos"],
+      ["Agentic AI & LLM systems", "#agentic-ai-llm-systems"],
+      ["Machine learning", "#machine-learning"],
+      ["Optimization", "#optimization"],
+      ["Data engineering", "#data-engineering"],
+    ]);
+  });
+
   it("renders the projects heading and places cards under the right topic rows", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
@@ -144,9 +196,9 @@ describe("ProjectsIndex", () => {
     expect(
       experimentsBlock.querySelector(":scope > .section-title")!.textContent,
     ).toBe("experiments");
-    expect(screen.getByText("Machine Learning")).toBeInTheDocument();
-    // row heading plus 07's sub-topic chip both carry the name
-    expect(screen.getAllByText("Data Engineering").length).toBeGreaterThan(0);
+    // row heading plus the on-page index anchor both carry the names
+    expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText("Data engineering").length).toBeGreaterThanOrEqual(2);
 
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
@@ -157,12 +209,14 @@ describe("ProjectsIndex", () => {
       while (cur && !cur.classList.contains("topic-row")) cur = cur.parentElement;
       return cur!;
     };
-    // 07 must sit under Data Engineering, 06 under Optimization, 01+04 under their rows
-    expect(rowOf(cardOf("Mobility")).querySelector("h3")!.textContent).toBe("Data Engineering");
+    // 07 must sit under Data engineering, 06 under Optimization, 01+04 under their rows
+    expect(rowOf(cardOf("Mobility")).querySelector("h3")!.textContent).toBe("Data engineering");
     expect(rowOf(cardOf("Routing")).querySelector("h3")!.textContent).toBe("Optimization");
-    expect(rowOf(cardOf("RAG Agent")).querySelector("h3")!.textContent).toBe("Agentic AI & LLM");
+    expect(rowOf(cardOf("RAG Agent")).querySelector("h3")!.textContent).toBe(
+      "Agentic AI & LLM systems",
+    );
     expect(rowOf(cardOf("NLP Classification")).querySelector("h3")!.textContent).toBe(
-      "Machine Learning",
+      "Machine learning",
     );
   });
 
@@ -175,7 +229,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(7));
     const grids = document.querySelectorAll(".topic-row .project-grid");
-    expect(grids).toHaveLength(4); // one grid per non-empty row (Decision Science has no fixture project)
+    expect(grids).toHaveLength(4); // one grid per non-empty row (APIs & model serving has no fixture project)
     grids.forEach((g) => expect(g.querySelectorAll(".project-card").length).toBeGreaterThan(0));
   });
 
@@ -191,7 +245,7 @@ describe("ProjectsIndex", () => {
     expect(stylesCss).toContain(".topic-row {");
   });
 
-  it("renders the demos block from the registry with group heading, hero line, and href", async () => {
+  it("renders the live-demos section from the registry as a single row with hero line and href", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
@@ -204,19 +258,25 @@ describe("ProjectsIndex", () => {
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByText("Machine Learning")).toBeInTheDocument());
-    expect(screen.getByText("Demos — interactive experiments")).toBeInTheDocument();
-    expect(screen.getByText("play with the live systems behind the experiments")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2),
+    );
+    // prominent section with title + subtitle
+    expect(
+      screen.getByRole("heading", { level: 2, name: "live demos" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/play with the live systems behind the experiments/i)).toBeInTheDocument();
     const demos = document.querySelector(".demos")!;
     expect(demos).not.toBeNull();
-    // one card from the registry, under its group heading; no "live" status badge
+    // all demo cards in ONE row container — no per-group sub-headings
     const demoCards = demos.querySelectorAll(".demo-card");
     expect(demoCards).toHaveLength(1);
-    expect(demos.textContent).toContain("retain customers");
+    expect(demos.querySelector(".demo-group")).toBeNull();
+    expect(demos.querySelectorAll(".demo-grid")).toHaveLength(1);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     expect(demoCards[0].getAttribute("aria-label")).toBe("churn threshold sandbox");
-    // hero line rendered from the registry entry
+    // hero line rendered from the registry entry (currency values untouched)
     expect(demoCards[0].textContent).toContain("decision cost per 1,400 customers");
     expect(demoCards[0].textContent).toContain("$601 vs $1,035 naive");
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
@@ -232,6 +292,14 @@ describe("ProjectsIndex", () => {
     expect(experimentsBlock.querySelectorAll(".topic-row")).toHaveLength(4);
   });
 
+  it("keeps the demos in a single horizontally-scrolling row on desktop", () => {
+    const gridRule = stylesCss.match(/\.demo-grid \{[\s\S]*?\n\}/)![0];
+    expect(gridRule).toContain("display: flex;");
+    expect(gridRule).toContain("overflow-x: auto;");
+    // no multi-column demo grid remains
+    expect(stylesCss).not.toContain(".demo-grid {\n  display: grid;");
+  });
+
   it("falls back to the static demo cards when the registry fetch fails", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
@@ -244,10 +312,13 @@ describe("ProjectsIndex", () => {
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(screen.getByText("Machine Learning")).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2),
+    );
     const demos = document.querySelector(".demos")!;
     const demoCards = demos.querySelectorAll(".demo-card");
     expect(demoCards).toHaveLength(2);
+    expect(demos.querySelectorAll(".demo-grid")).toHaveLength(1);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
@@ -255,7 +326,7 @@ describe("ProjectsIndex", () => {
     expect(demoCards[1].querySelector("a")!.getAttribute("href")).toBe("/demos/forecast-workbench");
   });
 
-  it("renders a what-it-achieves summary plus sub-topic and dataset chips on each card (no status chip)", async () => {
+  it("renders a rewritten objective/data/result summary and exactly 4 technique tags per card", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
@@ -268,15 +339,20 @@ describe("ProjectsIndex", () => {
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
     const rag = cardOf("RAG Agent");
-    expect(rag.querySelector(".summary")!.textContent).toContain("question-answering assistant");
-    // sub-topic chip and dataset tag remain; the flagship/working/planned chip is gone
-    expect(rag.textContent).toContain("Agentic AI & LLM");
-    expect(rag.textContent).toContain("data: docs");
+    expect(rag.querySelector(".summary")!.textContent).toContain(
+      "Built a question-answering agent",
+    );
+    // exactly four short technique tags (labels), no status or dataset chips
+    const chips = [...rag.querySelectorAll(".chip")].map((el) => el.textContent);
+    expect(chips).toHaveLength(4);
+    expect(chips).toContain("RAG");
+    expect(chips).toContain("FAISS");
+    expect(rag.textContent).not.toContain("data: docs");
     expect(rag.querySelector(".chip-status")).toBeNull();
     expect(rag.textContent).not.toContain("flagship");
     const mobility = cardOf("Mobility");
     expect(mobility.querySelector(".chip-status")).toBeNull();
-    expect(mobility.textContent).toContain("Data Engineering");
+    expect([...mobility.querySelectorAll(".chip")].map((el) => el.textContent)).toHaveLength(4);
   });
 
   it("renders a live key number from metrics (first non-baseline run)", async () => {
@@ -315,7 +391,7 @@ describe("ProjectsIndex", () => {
     expect(document.querySelector(".key-number")).toBeNull();
   });
 
-  it("renders the story short_version on each card and no hand-maintained impact line", async () => {
+  it("keeps the rewritten card copy on every card and no hand-maintained impact line", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
@@ -323,18 +399,19 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(document.querySelectorAll(".project-card .summary")).toHaveLength(7));
-    // exact generated short_version for project 01 (story.yaml → lib/storyShort.ts)
+    // exact rewritten description for project 01 (objective + data + result)
     expect(
-      screen.getByText(
-        "A question-answering assistant that answers only from a pinned 593-article Wikipedia corpus and cites every claim. Retrieval finds the right passage 83% of the time, but 18 of 65 hosted answers kept unsupported claims—answers are auditable, yet not trustworthy unattended.",
-      ),
+      screen.getByText(/Built a question-answering agent that answers only from a pinned 593-article/),
     ).toBeInTheDocument();
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
     expect(cardOf("Routing").querySelector(".summary")?.textContent).toContain(
-      "within 4.2% of best-known routes",
+      "within 4.2% of best-known",
+    );
+    expect(cardOf("Churn").querySelector(".summary")?.textContent).toContain(
+      "cutting decision cost 42%",
     );
     // single-source copy: no separate impact line remains on cards
     expect(document.querySelectorAll(".project-card .impact")).toHaveLength(0);
@@ -370,11 +447,11 @@ describe("ProjectsIndex", () => {
         screen.getByText(/the live registry is unreachable — showing the last published snapshot/i),
       ).toBeInTheDocument(),
     );
-    // heading outline: one h2 "experiments"; topic rows are h3 under it
+    // heading outline: one h2 "live demos" + one h2 "experiments"; topic rows are h3
     expect(
       screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
-    ).toEqual(["Demos — interactive experiments", "experiments"]);
-    expect(screen.getByRole("heading", { level: 3, name: "Machine Learning" })).toBeInTheDocument();
+    ).toEqual(["live demos", "experiments"]);
+    expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
     // all ten snapshot projects render as cards
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(10));
     // Retry re-fetches (the failing mock is called again)
@@ -392,7 +469,7 @@ describe("ProjectsIndex", () => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.reject(new Error("down"));
       if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([]));
-      return Promise.resolve(jsonResponse({ detail: "no" }, 404));
+      return Promise.resolve(jsonResponse({}, 404));
     });
     vi.stubGlobal("fetch", fetchMock);
     render(

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://amm-ds.github.io/portfolio/sitemap.xml
+Sitemap: https://alejandromerida.dev/sitemap.xml

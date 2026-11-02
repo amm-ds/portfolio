@@ -17,12 +17,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 WEB_DIR = ROOT / "apps" / "showcase-web"
 
-DEFAULT_SITE_URL = "https://amm-ds.github.io/portfolio"
+DEFAULT_SITE_URL = "https://alejandromerida.dev"
 
 STATIC_ROUTES = [
     "/",
     "/experiments",
     "/services",
+    "/about",
     "/contact",
     "/glossary",
     "/demos/churn-sandbox",

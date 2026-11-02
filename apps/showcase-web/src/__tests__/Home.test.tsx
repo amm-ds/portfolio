@@ -49,15 +49,18 @@ describe("Home (terminal-centered)", () => {
     expect(screen.queryByTestId("proof-tiles")).toBeNull();
     expect(screen.queryByText("0.498 vs 0.603")).toBeNull();
     expect(screen.queryByText(/\$ demand forecast workbench/i)).toBeNull();
+    expect(screen.queryByText(/> demand forecast workbench/i)).toBeNull();
     expect(document.querySelectorAll(".go-card")).toHaveLength(3);
   });
 
   it("types the script and carries the full message as the terminal's accessible name", () => {
     renderHome();
-    expect(screen.getByText("alejandro@amm-ds: ~")).toBeInTheDocument();
+    expect(screen.getByText("alejandro@alejandromerida.dev: ~")).toBeInTheDocument();
     expect(screen.getByText("data scientist · ml & ai consultant")).toBeInTheDocument();
     expect(
-      screen.getByText("agentic ai · forecasting · machine learning · optimization · data engineering"),
+      screen.getByText(
+        "agentic ai & llm systems · machine learning · optimization · data engineering · mlops · full-stack engineering",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByText("pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc"),
@@ -68,7 +71,7 @@ describe("Home (terminal-centered)", () => {
     // full typed content exists in the DOM from first render via aria-label
     const term = document.querySelector(".hero-terminal")!;
     expect(term.getAttribute("role")).toBe("img");
-    expect(term.getAttribute("aria-label")).toContain("$ whoami");
+    expect(term.getAttribute("aria-label")).toContain("> whoami");
     expect(term.getAttribute("aria-label")).toContain("data scientist · ml & ai consultant");
     // animated copy is aria-hidden
     expect(term.firstElementChild!.getAttribute("aria-hidden")).toBe("true");
@@ -89,9 +92,30 @@ describe("Home (terminal-centered)", () => {
       { to: "/services", label: "services" },
       { to: "/contact", label: "contact" },
     ]) {
-      const link = screen.getByRole("link", { name: new RegExp(`\\$ ${label}`, "i") });
+      const link = screen.getByRole("link", { name: new RegExp(`> ${label}`, "i") });
       expect(link).toHaveAttribute("href", to);
     }
+  });
+
+  it("hero intro is the exact public-and-auditable sentence, centered", () => {
+    renderHome();
+    const sub = document.querySelector(".hero-sub")!;
+    expect(sub.textContent).toBe(
+      "I design, build and evaluate ML systems end to end, and I keep the code, metrics and case studies public and auditable.",
+    );
+    const css = readFileSync("src/styles.css", "utf8");
+    const rule = css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0];
+    // the hero centers text and the sentence block centers within it
+    expect(css.match(/\.hero \{[\s\S]*?\n\}/)![0]).toContain("text-align: center;");
+    expect(rule).toContain("margin: 1.5rem auto 0.75rem;");
+  });
+
+  it("where-to-go sits tight under the hero stage", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
+    expect(heroRule).toContain("padding: 3rem 0 0.75rem;");
+    expect(css).toContain(".section-title--tight");
+    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.9rem;");
   });
 
   it("availability line reads from config", () => {

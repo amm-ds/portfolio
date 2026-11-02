@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
+import { REPO_URL, SITE_NAME } from "../config";
 
 export function Nav() {
   return (
     <div className="nav">
       <div className="nav-inner">
         <NavLink to="/" className="nav-brand">
-          amm-ds · portfolio
+          {SITE_NAME}
         </NavLink>
         <nav className="nav-links" aria-label="Primary">
           <NavLink to="/" end>
@@ -13,13 +14,9 @@ export function Nav() {
           </NavLink>
           <NavLink to="/projects">Projects</NavLink>
           <NavLink to="/services">Services</NavLink>
+          <NavLink to="/about">About</NavLink>
           <NavLink to="/contact">Contact</NavLink>
-          <a
-            className="github"
-            href="https://github.com/amm-ds/portfolio"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className="github" href={REPO_URL} target="_blank" rel="noreferrer">
             GitHub
           </a>
         </nav>

@@ -157,7 +157,7 @@ code {
 }
 
 .roadmap-title::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
   text-shadow: none;
 }
@@ -309,7 +309,7 @@ select:focus-visible,
 }
 
 .nav-brand::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
 }
 
@@ -346,7 +346,7 @@ select:focus-visible,
 
 .hero {
   position: relative;
-  padding: 3rem 0 2rem;
+  padding: 3rem 0 0.75rem;
   max-width: 1160px;
   /* tall stage for the terminal, capped so short viewports never force scroll */
   min-height: min(88vh, 880px);
@@ -443,7 +443,7 @@ select:focus-visible,
 }
 
 .terminal-body .cmd::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
 }
 
@@ -459,7 +459,7 @@ select:focus-visible,
 }
 
 .terminal-body .cmd-partial::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
 }
 
@@ -498,7 +498,7 @@ select:focus-visible,
 .hero-sub {
   color: var(--muted);
   max-width: 760px;
-  margin: 1.5rem 0 0.75rem;
+  margin: 1.5rem auto 0.75rem;
 }
 
 .home-status {
@@ -542,25 +542,30 @@ select:focus-visible,
 
 .section-title {
   font-size: 1.3rem;
-  margin: 2.25rem 0 1rem;
+  margin: 2.25rem 0 0.9rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.5rem;
   text-shadow: 0 0 14px var(--accent-glow);
 }
 
-/* --- Demos placeholder (projects page, above the experiments rows) --- */
-
-.demo-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+/* pages that open straight after a hero/stage keep a tighter top gap */
+.section-title--tight {
+  margin-top: 0.9rem;
 }
 
-@media (min-width: 720px) {
-  .demo-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+/* --- Demos placeholder (projects page, above the experiments rows) --- */
+
+/* one row of demo cards; the row scrolls horizontally on overflow */
+.demo-grid {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.demo-grid .demo-card {
+  flex: 0 0 300px;
 }
 
 .demo-card {
@@ -582,6 +587,13 @@ select:focus-visible,
   font-size: 0.9rem;
 }
 
+/* the registry's headline metric is data, not a label */
+.demo-card .demo-hero {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
 .topic-rows {
   display: flex;
   flex-direction: column;
@@ -593,7 +605,7 @@ select:focus-visible,
 }
 
 .section-title::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
   text-shadow: none;
 }
@@ -645,7 +657,10 @@ select:focus-visible,
 
 .project-card .domain {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   margin: 0;
 }
 
@@ -667,7 +682,7 @@ select:focus-visible,
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.15rem 0.55rem;
-  color: var(--secondary);
+  color: var(--muted);
 }
 
 .project-card .summary {
@@ -798,7 +813,7 @@ select:focus-visible,
 }
 
 .story-section h2::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
   text-shadow: none;
 }
@@ -1265,7 +1280,7 @@ a.glossary-term:focus-visible {
 /* PlotlyFigure's pre-render placeholder: the reserved box can sit empty for
    seconds while the JSON fetches and the plotly chunk lazy-loads, so the
    skeleton must read as an intentional pending state — a dashed inner
-   border, the mono "$ name" corner label, and a pulsing status line. */
+   border, the mono "> name" corner label, and a pulsing status line. */
 .plotly-wrap .frame-skeleton {
   margin: 0.5rem;
   flex-direction: column;
@@ -1298,7 +1313,7 @@ a.glossary-term:focus-visible {
 }
 
 .figure-caption::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
 }
 
@@ -1447,7 +1462,7 @@ a.figure-caption:hover {
 }
 
 .loading::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
 }
 
@@ -1498,29 +1513,17 @@ button:disabled {
   font-size: 1.05rem;
 }
 
-/* strict 2×4 grid on desktop (rows wrap 4+4), collapsing to 2 then 1 */
+/* full-width horizontal cards, one offering per row */
 .offerings-grid {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1.25rem;
-  max-width: 1400px;
-  margin-inline: auto;
-}
-
-@media (min-width: 640px) {
-  .offerings-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1200px) {
-  .offerings-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
+  max-width: none;
+  margin-inline: 0;
 }
 
 .offering-card {
-  padding: 1.25rem;
+  padding: 1.4rem 1.5rem;
 }
 
 .offering-card h3 {
@@ -1566,7 +1569,7 @@ button:disabled {
   margin: 1.75rem 0 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   column-gap: 1.5rem;
   row-gap: 2.25rem;
 }
@@ -1630,13 +1633,11 @@ button:disabled {
 
 .contact-block {
   padding: 1.25rem;
-  max-width: 640px;
 }
 
 /* --- Contact form: fields validate inline; submit composes a mailto. --- */
 
 .contact-form {
-  max-width: 640px;
   margin: 0 0 1.5rem;
   padding: 1.25rem;
   background: var(--surface);
@@ -1674,6 +1675,13 @@ button:disabled {
 .form-field textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* the message box grows vertically only, within the card bounds */
+.form-field textarea {
+  resize: vertical;
+  max-width: 100%;
+  max-height: 10rem;
 }
 
 .form-field [aria-invalid="true"] {
@@ -1734,7 +1742,8 @@ button:disabled {
   max-width: none;
 }
 
-/* --- Footer --- */
+/* --- Footer: a single line — nav links + GitHub + contact email. The
+   copyright/license line lives at the bottom of the About page. --- */
 
 .footer {
   border-top: 1px solid var(--border);
@@ -1744,37 +1753,20 @@ button:disabled {
   padding: 1rem 1.25rem;
 }
 
-.footer-inner {
+.footer-nav {
   margin: 0 auto;
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-}
-
-.footer-name {
-  margin: 0;
-  font-family: var(--mono);
-  font-weight: 700;
-  color: var(--text);
-  display: inline;
-}
-
-.footer-tagline {
-  margin: 0;
-  display: inline;
-  padding-left: 0.6rem;
-  font-size: 0.82rem;
-}
-
-.footer-nav {
-  display: flex;
-  align-items: baseline;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.35rem 1.1rem;
   font-family: var(--mono);
   font-size: 0.82rem;
+}
+
+.footer-name {
+  color: var(--text);
+  font-weight: 700;
 }
 
 .footer-nav a {
@@ -1788,14 +1780,6 @@ button:disabled {
 
 .footer-email {
   color: var(--secondary) !important;
-}
-
-.footer-small {
-  margin: 0.6rem auto 0;
-  font-size: 0.75rem;
-  color: var(--muted);
-  /* full-strength --muted: at opacity 0.8 the footer text computed to 4.2:1
-     on --surface (fails WCAG AA 4.5:1); without the fade it is 5.7:1. */
 }
 
 @media (max-width: 800px) {
@@ -1909,7 +1893,7 @@ button:disabled {
 }
 
 .figure-id::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
 }
 
@@ -1970,12 +1954,39 @@ button:disabled {
 
 .page-title {
   font-size: 2rem;
-  margin: 0 0 1rem;
+  margin: 0 0 0.5rem;
   text-shadow: 0 0 14px var(--accent-glow);
 }
 
+/* small anchor index under the page opening: "index: live demos · …" */
+.page-index {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1rem;
+  margin: 0 0 1.4rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.page-index .page-index-label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+}
+
+.page-index a {
+  color: var(--secondary);
+}
+
+.page-index a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .page-title::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
   text-shadow: none;
 }
@@ -2028,7 +2039,7 @@ button:disabled {
 
 .section-intro {
   color: var(--muted);
-  margin: -0.5rem 0 1rem;
+  margin: -0.4rem 0 1.4rem;
   font-size: 0.95rem;
 }
 
@@ -3541,7 +3552,7 @@ button.chip.demo-preset.fwb-active {
 }
 
 .wb-evidence summary::before {
-  content: "$ ";
+  content: "> ";
   color: var(--accent);
 }
 
@@ -3822,4 +3833,52 @@ button.chip.demo-preset.fwb-active {
 
 .wb-more summary {
   font-size: 0.85rem;
+}
+
+
+/* --- About page: practices grid, stack chips, license line --- */
+
+.practices-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 720px) {
+  .practices-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.practice-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  text-transform: lowercase;
+}
+
+.practice-card .practice-num {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+
+.practice-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.about-stack {
+  margin: 0 0 1.4rem;
+}
+
+/* the copyright/license line moved here from the footer */
+.license-line {
+  margin: 2.25rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
 }

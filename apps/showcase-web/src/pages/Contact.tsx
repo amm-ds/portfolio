@@ -51,7 +51,7 @@ export interface InquiryFields {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_MESSAGE = 20;
+const MIN_MESSAGE = 10;
 
 export function validateInquiry(fields: InquiryFields): Partial<Record<keyof InquiryFields, string>> {
   const errors: Partial<Record<keyof InquiryFields, string>> = {};
@@ -120,7 +120,7 @@ export function Contact() {
   return (
     <>
       <section className="services-hero">
-        <p className="kicker">$ contact</p>
+        <p className="kicker">&gt; contact</p>
         <h1>Get in touch</h1>
         <p className="contact-status">{AVAILABILITY.status}</p>
       </section>

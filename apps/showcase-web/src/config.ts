@@ -4,21 +4,21 @@
 const env = import.meta.env as Record<string, string | undefined>;
 
 /** Short brand suffix appended to document titles by the SEO hook. */
-export const SITE_TITLE_SUFFIX = "amm-ds";
+export const SITE_TITLE_SUFFIX = "alejandromerida.dev";
 
-/** Full public site URL, no trailing slash. GitHub Pages until a domain exists. */
+/** Full public site URL, no trailing slash. */
 export const SITE_URL: string = (
-  env.VITE_SITE_URL ?? "https://amm-ds.github.io/portfolio"
+  env.VITE_SITE_URL ?? "https://alejandromerida.dev"
 ).replace(/\/+$/, "");
 
-/** Origin of the deployed site, e.g. "https://amm-ds.github.io". */
+/** Origin of the deployed site, e.g. "https://alejandromerida.dev". */
 export const SITE_ORIGIN: string = new URL(SITE_URL).origin;
 
 /** Base path the SPA is served under, e.g. "/portfolio" ("" when served at root). */
 export const SITE_BASE_PATH: string = new URL(SITE_URL).pathname.replace(/\/+$/, "");
 
 /** Single site identity — used by title, og tags and nav brand. */
-export const SITE_NAME = "amm-ds — ML/AI Engineering Portfolio";
+export const SITE_NAME = "alejandromerida.dev";
 
 export const REPO_URL = env.VITE_REPO_URL ?? "https://github.com/amm-ds/portfolio";
 export const DOCS_URL = env.VITE_DOCS_URL ?? SITE_URL;

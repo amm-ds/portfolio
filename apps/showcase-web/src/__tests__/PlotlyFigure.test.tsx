@@ -99,8 +99,8 @@ describe("PlotlyFigure", () => {
     vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
     render(<PlotlyFigure pid="p" name="pending_fig" />);
     const skeleton = screen.getByTestId("figure-skeleton");
-    // intentional pending state: mono "$ name" corner label + status line
-    expect(skeleton).toHaveTextContent("$ pending_fig");
+    // intentional pending state: mono "> name" corner label + status line
+    expect(skeleton).toHaveTextContent("> pending_fig");
     expect(skeleton).toHaveTextContent("rendering figure…");
   });
 
@@ -121,7 +121,7 @@ describe("PlotlyFigure", () => {
     await waitFor(() => expect(fetch).toHaveBeenCalled());
     await act(() => new Promise((r) => setTimeout(r, 20)));
     expect(mocks.react).not.toHaveBeenCalled();
-    expect(screen.getByTestId("figure-skeleton")).toHaveTextContent("$ gated");
+    expect(screen.getByTestId("figure-skeleton")).toHaveTextContent("> gated");
     expect(screen.getByText("rendering figure…")).toBeInTheDocument();
     // host enters the viewport → render proceeds, skeleton retires
     act(() => {

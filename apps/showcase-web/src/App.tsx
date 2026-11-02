@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
@@ -19,6 +19,9 @@ const Services = lazy(() =>
 );
 const Contact = lazy(() =>
   import("./pages/Contact").then((m) => ({ default: m.Contact })),
+);
+const About = lazy(() =>
+  import("./pages/About").then((m) => ({ default: m.About })),
 );
 const Glossary = lazy(() =>
   import("./pages/Glossary").then((m) => ({ default: m.Glossary })),
@@ -149,9 +152,9 @@ export function App() {
               }
             />
             <Route path="/services" element={<Services />} />
+            <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/glossary" element={<Glossary />} />
-            <Route path="/about" element={<Navigate to="/services" replace />} />
             <Route path="*" element={<NotFoundRoute />} />
           </Routes>
         </Suspense>

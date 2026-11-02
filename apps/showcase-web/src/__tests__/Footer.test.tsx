@@ -2,23 +2,25 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { Footer } from "../components/Footer";
-import { LINKEDIN_URL, SITE_EMAIL } from "../config";
+import { REPO_URL, SITE_EMAIL, SITE_NAME } from "../config";
 
 afterEach(cleanup);
 
-describe("Footer", () => {
-  it("renders brand, positioning line, compact nav and small print", () => {
-    render(
-      <MemoryRouter>
-        <Footer />
-      </MemoryRouter>,
-    );
-    expect(screen.getByText("amm-ds")).toBeInTheDocument();
-    expect(
-      screen.getByText(/Data Scientist & ML Engineer — end-to-end ML\/AI systems/),
-    ).toBeInTheDocument();
+function renderFooter() {
+  return render(
+    <MemoryRouter>
+      <Footer />
+    </MemoryRouter>,
+  );
+}
 
+describe("Footer", () => {
+  it("is a single line: brand, nav links, GitHub and the contact email", () => {
+    renderFooter();
     const nav = screen.getByRole("navigation", { name: "Footer" });
+    // one flex line — no inner brand column, no second small-print row
+    expect(document.querySelector(".footer-inner")).toBeNull();
+    expect(document.querySelector(".footer-small")).toBeNull();
     const links = [...nav.querySelectorAll("a")].map((a) => ({
       text: a.textContent,
       href: a.getAttribute("href"),
@@ -26,34 +28,30 @@ describe("Footer", () => {
     expect(links).toEqual([
       { text: "Projects", href: "/projects" },
       { text: "Services", href: "/services" },
+      { text: "About", href: "/about" },
       { text: "Contact", href: "/contact" },
       { text: "Glossary", href: "/glossary" },
-      { text: "GitHub", href: "https://github.com/amm-ds/portfolio" },
-      { text: "LinkedIn", href: LINKEDIN_URL },
+      { text: "GitHub", href: REPO_URL },
       { text: SITE_EMAIL, href: `mailto:${SITE_EMAIL}` },
     ]);
-
-    expect(screen.getByText(/© 2026 amm-ds · MIT licensed/)).toBeInTheDocument();
+    // the brand sits inside the same line
+    expect(nav.querySelector(".footer-name")!.textContent).toBe(SITE_NAME);
   });
 
-  it("drops the privacy/analytics small print", () => {
-    render(
-      <MemoryRouter>
-        <Footer />
-      </MemoryRouter>,
-    );
-    expect(screen.queryByText(/No analytics, no cookies, no user data stored\./i)).toBeNull();
-    // the license line remains the only small print
-    expect(screen.getByText(/© 2026 amm-ds · MIT licensed/)).toBeInTheDocument();
-    expect(document.querySelectorAll(".footer-small")).toHaveLength(1);
+  it("carries no copyright or license small print (that lives on /about)", () => {
+    renderFooter();
+    expect(screen.queryByText(/© 2026/)).toBeNull();
+    expect(screen.queryByText(/MIT licensed/i)).toBeNull();
+  });
+
+  it("drops the positioning tagline and the LinkedIn link", () => {
+    renderFooter();
+    expect(screen.queryByText(/Data Scientist & ML Engineer/)).toBeNull();
+    expect(screen.queryByRole("link", { name: /linkedin/i })).toBeNull();
   });
 
   it("drops the old gimmicky shell status line", () => {
-    render(
-      <MemoryRouter>
-        <Footer />
-      </MemoryRouter>,
-    );
+    renderFooter();
     expect(screen.queryByText(/reproducible/i)).toBeNull();
     expect(document.querySelector(".footer .status-line")).toBeNull();
   });

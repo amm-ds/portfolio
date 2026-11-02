@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMetrics, type Project } from "../api";
-import { summaryLine } from "../lib/impact";
+import { cardSummary, cardTags } from "../lib/cardCopy";
 import { formatMetricValue, pickHeadlineMetric } from "../lib/delta";
 
 /** Live headline metric for a card: first non-baseline run's first metric; hidden until loaded. */
@@ -24,8 +24,11 @@ function CardKeyNumber({ projectId }: { projectId: string }) {
   return <span className="key-number">{text}</span>;
 }
 
+/** Experiment card on the projects index: rewritten objective/data/result
+ * description and exactly four short technique tags (labels), plus the live
+ * headline metric when the registry serves one (data). */
 export function ProjectCard({ project }: { project: Project }) {
-  const summary = summaryLine(project.id);
+  const summary = cardSummary(project.id);
   return (
     <Link to={`/projects/${project.id}`} className="project-card">
       <div className="project-card-top">
@@ -36,8 +39,11 @@ export function ProjectCard({ project }: { project: Project }) {
       </div>
       {summary && <p className="summary">{summary}</p>}
       <div className="chips">
-        <span className="chip">{project.topic}</span>
-        <span className="chip">data: {project.data}</span>
+        {cardTags(project.id, project.techniques).map((t) => (
+          <span key={t} className="chip">
+            {t}
+          </span>
+        ))}
         <CardKeyNumber projectId={project.id} />
       </div>
     </Link>

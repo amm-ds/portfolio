@@ -69,9 +69,9 @@ describe("FigureCard", () => {
       />,
     );
     const card = document.querySelector<HTMLElement>(".figure-card")!;
-    // intentional loading state: "$ name" label + status line, not a blank box
+    // intentional loading state: "> name" label + status line, not a blank box
     const skeleton = within(card).getByTestId("figure-skeleton");
-    expect(skeleton).toHaveTextContent("$ wape_horizon");
+    expect(skeleton).toHaveTextContent("> wape_horizon");
     expect(skeleton).toHaveTextContent("rendering figure…");
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(within(card).queryByTestId("figure-skeleton")).toBeNull());

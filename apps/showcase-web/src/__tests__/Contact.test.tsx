@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildInquiryMailto, Contact } from "../pages/Contact";
@@ -119,7 +120,18 @@ describe("Contact inquiry form", () => {
     fireEvent.change(screen.getByLabelText(/message/), { target: { value: "too short" } });
     fireEvent.click(screen.getByRole("button", { name: /send inquiry/i }));
     expect(screen.getByText("enter a valid email address")).toBeInTheDocument();
-    expect(screen.getByText("message must be at least 20 characters")).toBeInTheDocument();
+    expect(screen.getByText("message must be at least 10 characters")).toBeInTheDocument();
+  });
+
+  it("constrains the message box resize and keeps the cards full width", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const textareaRule = css.match(/\.form-field textarea \{\n  resize: vertical;[\s\S]*?\n\}/)![0];
+    expect(textareaRule).toContain("resize: vertical;");
+    expect(textareaRule).toContain("max-width: 100%;");
+    expect(textareaRule).toContain("max-height: 10rem;");
+    // no narrow centered column on the contact page
+    expect(css.match(/\.contact-form \{[\s\S]*?\n\}/)![0]).not.toContain("max-width");
+    expect(css.match(/\.contact-block \{[\s\S]*?\n\}/)![0]).not.toContain("max-width");
   });
 
   it("clears a field's error once the field is edited", () => {

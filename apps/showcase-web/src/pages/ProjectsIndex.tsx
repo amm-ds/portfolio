@@ -27,23 +27,26 @@ export function groupByTopic(projects: Project[]): TopicGroup[] {
 }
 
 /** Row (section) definitions for the experiments block of the Projects page,
- * in display order by impact. Each row aggregates one or more `topic` values from portfolio.yaml;
- * the card keeps its own topic as a sub-topic chip. Unmapped topics fall back
- * to a row named after themselves, so no card is ever dropped. */
+ * named after the services offerings and ordered by impact. Each row
+ * aggregates one or more `topic` values from portfolio.yaml; the card keeps
+ * its own domain and technique tags. Unmapped topics fall back to a row named
+ * after themselves, so no card is ever dropped. */
 export const TOPIC_ROWS: { name: string; description: string; topics: string[] }[] = [
   {
-    name: "Agentic AI & LLM",
+    name: "Agentic AI & LLM systems",
     description: "LLM agents with retrieval, tool use, and verification loops.",
     topics: ["Agentic AI & LLM"],
   },
   {
-    name: "Machine Learning",
-    description: "Forecasting, anomaly detection, and classification with honest baselines.",
+    name: "Machine learning",
+    description:
+      "Forecasting, anomaly detection, classification and decisioning with honest baselines.",
     topics: [
       "Forecasting & Time Series",
       "Anomaly Detection",
       "NLP & Transformers",
       "ML Systems & Decisioning",
+      "Decision Science",
     ],
   },
   {
@@ -52,17 +55,12 @@ export const TOPIC_ROWS: { name: string; description: string; topics: string[] }
     topics: ["Optimization"],
   },
   {
-    name: "Inference & Serving",
-    description: "Measured latency/throughput trade-offs across serving stacks.",
+    name: "APIs & model serving",
+    description: "Measured latency and throughput trade-offs across serving stacks.",
     topics: ["Inference & Serving"],
   },
   {
-    name: "Decision Science",
-    description: "Causal inference and uplift modeling for decision policies.",
-    topics: ["Decision Science"],
-  },
-  {
-    name: "Data Engineering",
+    name: "Data engineering",
     description: "Reproducible pipelines over large open datasets with quality gates.",
     topics: ["Data Engineering", "Large-Scale Data Engineering"],
   },
@@ -89,6 +87,15 @@ export function groupByRow(projects: Project[]): TopicRow[] {
     .filter((t) => !mapped.has(t.topic))
     .map((t) => ({ name: t.topic, description: "", topics: [t] }));
   return [...rows, ...extras];
+}
+
+/** Anchor id for a topic row: "Agentic AI & LLM systems" → "agentic-ai-llm-systems". */
+export function rowAnchor(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 /** Demo card content, from the live registry or the static fallback list. */
@@ -123,8 +130,9 @@ function DemoCard({
 }
 
 /** Demos block rendered above the topic rows. Cards come from the demo registry
- * (`GET /demos`), grouped by the manifest's `group` key; on any fetch failure the
- * static `DEMOS` list is rendered instead (it doubles as the loading state). */
+ * (`GET /demos`) and render as a single row that scrolls horizontally on
+ * overflow; on any fetch failure the static `DEMOS` list is rendered instead
+ * (it doubles as the loading state). */
 function DemosSection() {
   const [entries, setEntries] = useState<DemoRegistryEntry[] | null>(null);
 
@@ -139,8 +147,8 @@ function DemosSection() {
   }, []);
 
   return (
-    <section className="demos" id="demos" aria-label="Demos">
-      <h2 className="section-title">Demos — interactive experiments</h2>
+    <section className="demos" id="demos" aria-label="Live demos">
+      <h2 className="section-title">live demos</h2>
       <p className="section-intro">{DEMOS_INTRO}</p>
       {entries === null ? (
         <div className="demo-grid">
@@ -149,42 +157,20 @@ function DemosSection() {
           ))}
         </div>
       ) : (
-        groupByDemoGroup(entries).map(({ group, demos }) => (
-          <div key={group} className="demo-group">
-            <h3 className="section-title demo-group-title">{group}</h3>
-            <div className="demo-grid">
-              {demos.map((d) => (
-                <DemoCard
-                  key={d.id}
-                  title={d.title}
-                  line={d.hook}
-                  href={d.href}
-                  hero={d.hero}
-                />
-              ))}
-            </div>
-          </div>
-        ))
+        <div className="demo-grid">
+          {entries.map((d) => (
+            <DemoCard key={d.id} title={d.title} line={d.hook} href={d.href} hero={d.hero} />
+          ))}
+        </div>
       )}
     </section>
   );
 }
 
-/** Group registry entries by `group`, preserving first-seen order (the API
- * already sorts by (group, id), so this is a stable partition). */
-export function groupByDemoGroup(entries: DemoRegistryEntry[]): { group: string; demos: DemoRegistryEntry[] }[] {
-  const groups = new Map<string, DemoRegistryEntry[]>();
-  for (const e of entries) {
-    const list = groups.get(e.group) ?? [];
-    list.push(e);
-    groups.set(e.group, list);
-  }
-  return [...groups.entries()].map(([group, demos]) => ({ group, demos }));
-}
-
-/** Projects index: a "demos" block on top, then an "experiments" block with
- * topic rows as full-width sections and their cards in a responsive 2-column
- * grid. Both blocks live inside /projects (`/experiments` is an alias).
+/** Projects index: a "live demos" block on top, then an "experiments" block
+ * with offering-named topic rows as full-width sections and their cards in a
+ * responsive 2-column grid. Both blocks live inside /projects (`/experiments`
+ * is an alias).
  *
  * Resilience: if GET /projects fails we probe GET /demos — only when both are
  * unreachable do we conclude the registry is down and render the last
@@ -194,7 +180,8 @@ export function groupByDemoGroup(entries: DemoRegistryEntry[]): { group: string;
 export function ProjectsIndex() {
   usePageMeta({
     title: "Demos & Experiments",
-    description: "Interactive ML demos and reproducible experiment case studies — forecasting, churn, RAG, optimization and serving.",
+    description:
+      "Interactive ML demos and reproducible experiment case studies — forecasting, churn, RAG, optimization and serving.",
   });
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -227,9 +214,24 @@ export function ProjectsIndex() {
     };
   }, [attempt]);
 
+  const rows = projects !== null ? groupByRow(projects) : [];
+
   return (
     <>
       <h1 className="page-title">projects</h1>
+      <p className="section-intro">
+        Ten public experiments with live demos — real datasets, measured baselines and
+        published pipelines. Every number on this page can be re-run from the repository.
+      </p>
+      <nav className="page-index" aria-label="On this page">
+        <span className="page-index-label">index</span>
+        <a href="#demos">live demos</a>
+        {rows.map((row) => (
+          <a key={row.name} href={`#${rowAnchor(row.name)}`}>
+            {row.name}
+          </a>
+        ))}
+      </nav>
       {snapshot && (
         <div className="state-box error" role="alert">
           The live registry is unreachable — showing the last published snapshot.{" "}
@@ -245,20 +247,29 @@ export function ProjectsIndex() {
       )}
       <DemosSection />
       {projects !== null && projects.length > 0 && (
-        <div className="experiments-block">
+        <div className="experiments-block" id="experiments">
           <h2 className="section-title">experiments</h2>
+          <p className="section-intro">
+            Ten reproducible case studies grouped by discipline — each card states the
+            objective, the data and the result.
+          </p>
           <div className="topic-rows">
-          {groupByRow(projects).map((row) => (
-            <section key={row.name} className="topic-row" aria-label={row.name}>
-              <h3 className="section-title">{row.name}</h3>
-              {row.description && <p className="section-intro">{row.description}</p>}
-              <div className="project-grid">
-                {row.topics.flatMap((t) =>
-                  t.projects.map((p) => <ProjectCard key={p.id} project={p} />),
-                )}
-              </div>
-            </section>
-          ))}
+            {rows.map((row) => (
+              <section
+                key={row.name}
+                id={rowAnchor(row.name)}
+                className="topic-row"
+                aria-label={row.name}
+              >
+                <h3 className="section-title">{row.name}</h3>
+                {row.description && <p className="section-intro">{row.description}</p>}
+                <div className="project-grid">
+                  {row.topics.flatMap((t) =>
+                    t.projects.map((p) => <ProjectCard key={p.id} project={p} />),
+                  )}
+                </div>
+              </section>
+            ))}
           </div>
         </div>
       )}

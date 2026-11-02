@@ -15,7 +15,7 @@ describe("App routing", () => {
         <App />
       </MemoryRouter>,
     );
-    expect(screen.getByText("$ 404 — page not found")).toBeInTheDocument();
+    expect(screen.getByText("> 404 — page not found")).toBeInTheDocument();
     const home = screen.getByRole("link", { name: "→ home" });
     expect(home.getAttribute("href")).toBe("/");
     const projects = screen.getByRole("link", { name: "→ projects" });
@@ -44,8 +44,36 @@ describe("App routing", () => {
       await waitFor(() =>
         expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
       );
-      expect(screen.getByText("Demos — interactive experiments")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 2, name: "live demos" })).toBeInTheDocument();
     }
+  });
+
+  it("renders the About page at /about with the license line and no footer copyright", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    const { container } = render(
+      <MemoryRouter initialEntries={["/about"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+        "Independent ML/AI consultant",
+      ),
+    );
+    expect(document.title).toContain("About");
+    // the copyright/license line lives at the bottom of About, not the footer
+    expect(screen.getByText(/© 2026 alejandromerida\.dev · MIT licensed/)).toBeInTheDocument();
+    const footer = container.querySelector(".footer")!;
+    expect(footer).not.toBeNull();
+    expect(footer.textContent).not.toMatch(/© 2026/);
   });
 
   it("renders the Glossary at /glossary with its description list", async () => {

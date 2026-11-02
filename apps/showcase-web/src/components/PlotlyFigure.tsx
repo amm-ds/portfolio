@@ -230,7 +230,7 @@ export function PlotlyFigure({
       <div className="plotly-wrap">
         {!rendered && (
           <div className="frame-skeleton" aria-hidden="true" data-testid="figure-skeleton">
-            <span className="frame-label">$ {name}</span>
+            <span className="frame-label">&gt; {name}</span>
             <span className="frame-skeleton-status">rendering figure…</span>
           </div>
         )}
