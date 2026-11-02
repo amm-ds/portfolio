@@ -79,7 +79,9 @@ describe("Contact page", () => {
     }
     const github = screen.getByRole("link", { name: /github\.com/i });
     expect(github.classList.contains("channel-card")).toBe(true);
-    expect(github.getAttribute("href")).toBe(`${REPO_URL}/issues`);
+    // the card points at the profile/code page, not at any single repo or /issues
+    expect(github.getAttribute("href")).toBe("https://github.com/amm-ds");
+    expect(github.getAttribute("href")).not.toBe(`${REPO_URL}/issues`);
     expect(github.getAttribute("rel")).toContain("noopener");
     expect(github.textContent).toContain("github.com/amm-ds");
     const linkedin = screen.getByRole("link", { name: /linkedin/i });
@@ -90,6 +92,16 @@ describe("Contact page", () => {
     expect(email.classList.contains("channel-card")).toBe(true);
     expect(email.getAttribute("href")).toContain(`mailto:${CONTACT_EMAIL}`);
     expect(screen.getByText(/English, Spanish/i)).toBeInTheDocument();
+  });
+
+  it("states the first-call-is-free promise with the Services discovery terms", () => {
+    renderContact();
+    const card = document.querySelector(".free-call-card")!;
+    expect(card).not.toBeNull();
+    expect(card.textContent).toMatch(/first call is free/i);
+    // same promise as the Services process step "Discovery (free, 30–45 min)"
+    expect(card.textContent).toMatch(/free, 30–45 min/);
+    expect(card.textContent).toMatch(/written summary with options and rough scope/i);
   });
 
   it("renders how-engagements-start as a numbered roadmap timeline with no revision-count claim", () => {
@@ -111,6 +123,21 @@ describe("Contact page", () => {
     expect(document.body.textContent).not.toMatch(/\b5 revisions\b/i);
     const services = screen.getByRole("link", { name: /services & process/i });
     expect(services.getAttribute("href")).toBe("/services");
+    // the steps lay out horizontally (like the services process timeline) and
+    // wrap on smaller screens
+    const css = readFileSync("src/styles.css", "utf8");
+    expect(css).toContain(
+      ".start-timeline {\n  list-style: none;\n  margin: 1.75rem 0 1.5rem;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));",
+    );
+    expect(css.match(/\.start-timeline li \{[\s\S]*?\n\}/)![0]).toContain(
+      "border-top: 1px solid var(--border);",
+    );
+    expect(css.match(/\.start-timeline \.step-num \{[\s\S]*?\n\}/)![0]).toContain(
+      "top: -0.75rem;",
+    );
+    expect(css).toContain("row-gap: 2.25rem;");
+    // no vertical connecting line remains
+    expect(css).not.toContain(".start-timeline::before");
   });
 
   it("renders the bottom row as plain centered text links — no card, border or background", () => {

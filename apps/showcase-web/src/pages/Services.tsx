@@ -10,26 +10,17 @@ interface Offering {
   deliverables: string[];
 }
 
-/** The four architect-level deliverables every offering ships, adapted per
- * offering; the count is identical on every card. */
-const BASE_DELIVERABLES = [
-  "production-grade repository with tests and CI",
-  "reproducible pipeline and pinned environment",
-  "documented API or service contract",
-  "evaluation report with honest limits",
-];
-
 const OFFERINGS: Offering[] = [
   {
     title: "Agentic AI & LLM systems",
     outcome:
-      "Architect-level design of agents and assistants that answer from your documents, cite every claim, and stay inside fixed tool, cost and latency budgets.",
+      "Agents and assistants designed to answer from your documents, cite every claim, and stay inside fixed tool, cost and latency budgets.",
     elements: ["Retrieval pipelines", "Structured output", "Eval harnesses", "Cost budgets"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      "reproducible pipeline and pinned corpus versions",
-      BASE_DELIVERABLES[2],
-      "evaluation report with honest limits (faithfulness, relevance, cost)",
+      "retrieval pipeline over your documents with pinned corpus versions",
+      "agents with fixed tool, cost and latency budgets",
+      "eval harness scoring faithfulness, relevance and cost per release",
+      "runbook for adding documents, re-indexing and re-running evals",
     ],
   },
   {
@@ -38,10 +29,10 @@ const OFFERINGS: Offering[] = [
       "Models designed, trained and evaluated end to end against named naive baselines, with errors priced in business terms rather than raw accuracy.",
     elements: ["Leakage-proof CV", "Calibrated models", "Cost curves", "Hyperparameter search"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      BASE_DELIVERABLES[1],
-      BASE_DELIVERABLES[2],
-      "evaluation report with honest limits (baselines, calibration, cost)",
+      "training pipeline with leakage-proof cross-validation",
+      "calibrated model shipped with named naive baselines",
+      "error-cost analysis translating metrics into business terms",
+      "evaluation report stating where the model fails",
     ],
   },
   {
@@ -50,10 +41,10 @@ const OFFERINGS: Offering[] = [
       "Routing, scheduling and allocation problems solved against named benchmark instances, with the optimality gap and runtime stated per instance.",
     elements: ["Exact & heuristics", "Benchmark instances", "Runtime budgets", "Gap reports"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      "reproducible pipeline and pinned benchmark instances",
-      BASE_DELIVERABLES[2],
-      "evaluation report with honest limits (optimality gap, runtime)",
+      "solver tuned against named benchmark instances",
+      "runtime and optimality-gap report per instance",
+      "deployment that stays inside agreed runtime budgets",
+      "reproducible benchmark suite for future comparisons",
     ],
   },
   {
@@ -62,10 +53,10 @@ const OFFERINGS: Offering[] = [
       "Pipelines that turn raw operational dumps into versioned, tested, analysis-ready datasets with quality gates in CI — built to be handed over, not babysat.",
     elements: ["Pipeline orchestration", "DQ gates", "Checksum pinning", "Data registry"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      "reproducible pipeline and pinned, checksummed datasets",
-      "documented data registry entries",
-      "evaluation report with honest limits (quality gates, coverage)",
+      "versioned, checksummed datasets in a documented registry",
+      "data-quality gates running in CI on every change",
+      "orchestrated pipeline rerunnable from the README",
+      "handover walkthrough with a data dictionary",
     ],
   },
   {
@@ -74,10 +65,10 @@ const OFFERINGS: Offering[] = [
       "CI gates that block unevaluated models and failing data-quality checks before they can ship — operable by the client's own team from day one.",
     elements: ["CI eval gates", "Reproducible environments", "Clean-clone runs", "Drift checks"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      BASE_DELIVERABLES[1],
-      BASE_DELIVERABLES[2],
-      "evaluation report with honest limits (eval gates, drift checks)",
+      "CI eval gates that block unevaluated model changes",
+      "environments that rebuild from a clean clone",
+      "drift checks with alerts wired into your channels",
+      "runbooks your own team can operate",
     ],
   },
   {
@@ -86,10 +77,10 @@ const OFFERINGS: Offering[] = [
       "Working demos over committed payloads — every number the screen shows is checked in CI before it ships, and the whole slice runs from a clean clone.",
     elements: ["Interactive charting", "Live endpoints", "Pinned payloads", "Parity tests"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      "reproducible pipeline and pinned payloads",
-      BASE_DELIVERABLES[2],
-      "evaluation report with honest limits (parity tests, accessibility)",
+      "deployed dashboard reading only committed, versioned payloads",
+      "CI parity tests checking every number on screen",
+      "one-command run from a clean clone",
+      "documented, accessibility-checked chart set",
     ],
   },
   {
@@ -98,10 +89,10 @@ const OFFERINGS: Offering[] = [
       "Typed API, web UI and deployment wired together as one product slice that runs from a clean clone — full-stack delivery, not a throwaway prototype.",
     elements: ["API/UI integration", "Composable deployments", "Reverse-proxy deploys", "Contract tests"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      BASE_DELIVERABLES[1],
-      BASE_DELIVERABLES[2],
-      "evaluation report with honest limits (contract tests, SLOs)",
+      "typed API and web UI wired into one deployable slice",
+      "contract tests between frontend and API",
+      "composable deployment runnable from a clean clone",
+      "documentation covering setup, operation and extension",
     ],
   },
   {
@@ -110,10 +101,10 @@ const OFFERINGS: Offering[] = [
       "Versioned inference endpoints with explicit contracts, rate limits and measured latency/throughput on target hardware — sized, not guessed.",
     elements: ["OpenAPI contracts", "Rate limits", "Latency budgets", "Throughput reports"],
     deliverables: [
-      BASE_DELIVERABLES[0],
-      BASE_DELIVERABLES[1],
-      BASE_DELIVERABLES[2],
-      "evaluation report with honest limits (latency, throughput, cost)",
+      "versioned endpoint with an explicit contract",
+      "rate limits and authentication set to your requirements",
+      "latency and throughput measured on your target hardware",
+      "capacity report per dollar at agreed load",
     ],
   },
 ];
@@ -143,9 +134,7 @@ const PROCESS = [
     text: "Documentation, runbooks, and a walkthrough session. No lock-in: everything runs from a clean clone.",
   },
   {
-    // De-numbered on purpose: the step stays in the timeline, but its text
-    // must not read as a revision-count claim ("05 revisions" → "revisions").
-    step: null,
+    step: "05",
     title: "Revisions",
     text: "Structured revision rounds after delivery: feedback is addressed, the evaluation re-run, and the report updated until the numbers hold up.",
   },
@@ -164,7 +153,7 @@ const ENGAGEMENTS = [
   },
   {
     model: "Advisory / audit",
-    fits: "Architecture reviews, second opinions, reproducibility or MLOps audits",
+    fits: "System design reviews, second opinions, reproducibility or MLOps audits",
     pricing: "scoped per engagement — on request",
   },
 ];

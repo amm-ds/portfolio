@@ -106,7 +106,7 @@ describe("About page", () => {
   it("opens 'how I work' at the top as importance cards with the services card geometry", () => {
     renderAbout();
     const cards = document.querySelectorAll(".practice-card");
-    expect(cards).toHaveLength(6);
+    expect(cards).toHaveLength(7);
     const text = document.querySelector(".practices-grid")!.textContent!;
     for (const practice of [
       "reproducible pipelines",
@@ -115,6 +115,7 @@ describe("About page", () => {
       "honest baselines",
       "tested code",
       "stated limits",
+      "plain-language reporting",
     ]) {
       expect(text).toContain(practice);
     }

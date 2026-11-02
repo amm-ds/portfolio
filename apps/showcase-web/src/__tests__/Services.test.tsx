@@ -56,18 +56,27 @@ describe("Services page (wave 8)", () => {
       chips.forEach((c) => {
         expect(c!.trim().split(/\s+/).length).toBeLessThanOrEqual(3);
       });
-      // deliverables: exactly four on every card, led by the canonical set
+      // deliverables: exactly four on every card, adapted to the offering
       const items = [...card.querySelectorAll("li")].map((el) => el.textContent);
       expect(items, card.querySelector("h3")!.textContent).toHaveLength(4);
-      expect(items[0]).toBe("production-grade repository with tests and CI");
-      expect(items[1]).toMatch(/^reproducible pipeline and pinned/);
-      expect(items[3]).toMatch(/^evaluation report with honest limits/);
       // leaner cards: no evidence/proof/demo links anywhere
       expect(card.querySelector("h4")?.textContent).toBe("deliverables");
       expect(card.querySelectorAll("a")).toHaveLength(0);
       expect(card.textContent).not.toMatch(/proof:|live demo:/i);
       expect(card.textContent).not.toMatch(/how success is measured/i);
     }
+    // every card leads with a deliverable of its own vertical
+    const firstDeliverables = cards.map((card) => card.querySelectorAll("li")[0]?.textContent);
+    expect(firstDeliverables).toEqual([
+      "retrieval pipeline over your documents with pinned corpus versions",
+      "training pipeline with leakage-proof cross-validation",
+      "solver tuned against named benchmark instances",
+      "versioned, checksummed datasets in a documented registry",
+      "CI eval gates that block unevaluated model changes",
+      "deployed dashboard reading only committed, versioned payloads",
+      "typed API and web UI wired into one deployable slice",
+      "versioned endpoint with an explicit contract",
+    ]);
     // the full tag vocabulary covers every offering — capability wording only
     const chipTexts = [...document.querySelectorAll(".offering-card .chip")].map(
       (el) => el.textContent,
@@ -265,7 +274,7 @@ describe("Services page (wave 8)", () => {
     expect(providerTiles[0].querySelector("img")).toBeNull();
   });
 
-  it("ships a horizontal process timeline (5-up, 2-up, 1-up) with a de-numbered revisions step", () => {
+  it("ships a horizontal process timeline (5-up, 2-up, 1-up) with a numbered revisions step", () => {
     const css = readFileSync("src/styles.css", "utf8");
     expect(css).toContain(".process-timeline {\n  list-style: none;\n  margin: 1.75rem 0 0;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(5, minmax(0, 1fr));");
     expect(css).toContain("row-gap: 2.25rem;");
@@ -279,19 +288,16 @@ describe("Services page (wave 8)", () => {
     renderServices();
     const items = [...document.querySelectorAll(".process-timeline li")];
     expect(items).toHaveLength(5);
-    // four numbered steps; the revisions step stays but carries no number,
-    // so no "05 revisions" claim can be read off the timeline
+    // all five steps numbered — the revisions step carries its "05" badge
     const steps = [...document.querySelectorAll(".process-timeline .step-num")].map(
       (el) => el.textContent,
     );
-    expect(steps).toEqual(["01", "02", "03", "04"]);
+    expect(steps).toEqual(["01", "02", "03", "04", "05"]);
     const revisions = items[items.length - 1];
-    expect(revisions.querySelector(".step-num")).toBeNull();
+    expect(revisions.querySelector(".step-num")!.textContent).toBe("05");
     expect(revisions.querySelector("h3")!.textContent).toBe("Revisions");
     expect(screen.getByText(/re-run, and the report updated/i)).toBeInTheDocument();
-    // no revision-count claim anywhere on the page
-    expect(document.body.textContent).not.toMatch(/0?5\s+revision/i);
-    expect(screen.getByText("Revisions").closest("li")!.textContent).not.toMatch(/^05/);
+    expect(screen.getByText("Revisions").closest("li")!.textContent).toMatch(/^05/);
     // engagement models mention the revision rounds
     expect(screen.getAllByText(/includes structured revision rounds/i).length).toBeGreaterThanOrEqual(2);
   });

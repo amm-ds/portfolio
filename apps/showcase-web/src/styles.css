@@ -353,8 +353,9 @@ select:focus-visible,
   position: relative;
   padding: 3rem 0 0.15rem;
   max-width: 1160px;
-  /* tall stage for the terminal, capped so short viewports never force scroll */
-  min-height: min(88vh, 880px);
+  /* moderate stage for the terminal — tall enough to breathe, capped so the
+     "where to go" block sits close under the terminal panel */
+  min-height: min(68vh, 720px);
   margin-inline: auto;
   text-align: center;
   isolation: isolate;
@@ -507,10 +508,12 @@ select:focus-visible,
   margin: 1.5rem auto 0.75rem;
 }
 
-/* tagline under the h1: sky accent, slightly larger than body copy */
+/* tagline under the h1: the site's sky-blue token, sized to the section
+   rhythm (section-intro scale) with a bit of weight to read clearly */
 .hero-kicker {
-  color: var(--secondary);
-  font-size: 1.05rem;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -565,22 +568,25 @@ select:focus-visible,
 
 /* pages that open straight after a hero/stage keep a tighter top gap */
 .section-title--tight {
-  margin-top: 0.4rem;
+  margin-top: 0.25rem;
 }
 
 /* --- Demos (projects page, above the experiments rows) --- */
 
-/* one row of demo cards; the row scrolls horizontally on overflow */
+/* full-width grid, same shape as the experiment card grid below */
 .demo-grid {
-  display: flex;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
   margin-bottom: 1rem;
-  overflow-x: auto;
-  padding-bottom: 0.5rem;
+  align-items: stretch;
 }
 
-.demo-grid .demo-card {
-  flex: 0 0 320px;
+/* 2 columns on medium screens and up, matching .project-grid */
+@media (min-width: 720px) {
+  .demo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* --- Shared study card (demo + experiment cards render one design) --- */
@@ -607,23 +613,65 @@ select:focus-visible,
   color: var(--text);
 }
 
-/* one-line domain/dataset descriptor: blue, sized between body copy and the
-   demos/experiments section titles; the "·" separator runs accent */
+/* metadata fields on a study card: stacked label-over-value pairs (topics /
+   data on experiment cards, use case / domain on demo cards) */
+.study-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0 0 0.7rem;
+}
+
+.study-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+/* small muted field label — mono, uppercase, like the offering-card labels */
+.study-meta-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+/* field value: blue, one step below the old 1rem subtitle scale */
 .study-sub {
   color: var(--secondary);
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin: 0 0 0.6rem;
 }
 
-.study-sub .study-sep {
+/* labeled card blocks (demo cards: "description" / "results") — small muted
+   section labels with consistent spacing, matching the offering-card h4
+   label language */
+.study-block {
+  margin: 0.7rem 0 0;
+}
+
+.study-block-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 0.3rem;
+}
+
+/* headline metric inside a demo card's results block */
+.study-metric {
+  font-family: var(--mono);
   color: var(--accent);
 }
 
-/* the card body: two muted text blocks side by side — left "what it does",
-   right "what it achieves" (demo cards carry the left block only) */
+/* unlabeled card body (experiment cards): two muted text blocks side by side —
+   left "what it does", right "what it achieves"; demo cards use the labeled
+   .study-block rows above instead */
 .study-cols {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
@@ -1689,39 +1737,31 @@ button:disabled {
   font-family: var(--mono);
 }
 
-/* "how engagements start" on /contact: a numbered roadmap timeline — the
-   services process-timeline language turned vertical (numbered step chips,
-   connecting line down the row of nodes) */
+/* "how engagements start" on /contact: the same horizontal roadmap language
+   as the services process-timeline — numbered step chips straddling a
+   connecting line across the row; wraps on smaller screens */
 .start-timeline {
   list-style: none;
-  margin: 0 0 1.5rem;
+  margin: 1.75rem 0 1.5rem;
   padding: 0;
   display: grid;
-  grid-template-columns: 1fr;
-  row-gap: 1.4rem;
-  position: relative;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 1.5rem;
+  row-gap: 2.25rem;
 }
 
-/* the connecting line */
-.start-timeline::before {
-  content: "";
-  position: absolute;
-  left: 1.15rem;
-  top: 0.5rem;
-  bottom: 0.7rem;
-  width: 1px;
-  background: var(--border);
-}
-
+/* connecting line across the row; step nodes sit on it */
 .start-timeline li {
   position: relative;
-  padding-left: 3rem;
+  padding-top: 1.15rem;
+  padding-left: 0;
+  border-top: 1px solid var(--border);
 }
 
 .start-timeline .step-num {
   position: absolute;
+  top: -0.75rem;
   left: 0;
-  top: 0;
   background: var(--bg);
   border: 1px solid var(--accent);
   color: var(--accent);
@@ -1731,8 +1771,20 @@ button:disabled {
   padding: 0.05rem 0.4rem;
 }
 
+@media (max-width: 1099px) {
+  .start-timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 719px) {
+  .start-timeline {
+    grid-template-columns: 1fr;
+  }
+}
+
 .start-timeline h3 {
-  margin: 0 0 0.2rem;
+  margin: 0 0 0.25rem;
   font-size: 0.95rem;
 }
 
@@ -1740,6 +1792,24 @@ button:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 0.92rem;
+}
+
+/* free-first-call promise — the same discovery terms as the Services page */
+.free-call-card {
+  margin: 0 0 1.25rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.free-call-card h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+.free-call-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 /* contact channels: one card per channel, the whole card is the link */
@@ -1935,9 +2005,20 @@ button:disabled {
   font-family: var(--mono);
 }
 
+/* the brand mirrors the header's nav-brand treatment: "> " prefix in the
+   accent, name in the default text color, ".dev" suffix accent */
 .footer-name {
-  color: var(--accent);
+  color: var(--text);
   font-weight: 700;
+}
+
+.footer-name::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.footer-accent {
+  color: var(--accent);
 }
 
 .footer-copy {
@@ -2144,7 +2225,9 @@ button:disabled {
 }
 
 /* small anchor index under the page opening: "index: > live demos · …" —
-   mono, muted, >-prefixed items, accent on hover */
+   mono; only the "index" label carries the green accent — the anchor items
+   and their "> " markers render in the default muted link color and light
+   up on hover */
 .page-index {
   display: flex;
   flex-wrap: wrap;
@@ -2156,19 +2239,19 @@ button:disabled {
 }
 
 .page-index .page-index-label {
-  color: var(--muted);
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
 }
 
 .page-index a {
-  color: var(--accent);
+  color: var(--muted);
 }
 
 .page-index a::before {
   content: "> ";
-  color: var(--accent);
+  color: var(--muted);
 }
 
 .page-index a:hover {
@@ -2186,9 +2269,12 @@ button:disabled {
   font-size: 2.4rem;
   line-height: 1.2;
   margin: 0 0 1rem;
-  /* solid accent headline — the teal → sky gradient was dropped */
+  /* white headline; only the Data/ML/AI words carry the accent (hero-accent) */
+  color: var(--text);
+}
+
+.hero-accent {
   color: var(--accent);
-  text-shadow: 0 0 14px var(--accent-glow);
 }
 
 .project-card .key-number {

@@ -23,9 +23,13 @@ describe("Footer", () => {
     expect(document.querySelector(".footer-small")).toBeNull();
     const bar = document.querySelector(".footer-bar")!;
     expect(bar).not.toBeNull();
-    // left zone: brand (mono, accent) + © 2026 (muted, small) on one line
+    // left zone: brand (mono, header treatment — "> " prefix, ".dev" accent
+    // suffix) + © 2026 (muted, small) on one line
     const brand = bar.querySelector(".footer-brand")!;
     expect(brand.querySelector(".footer-name")!.textContent).toBe(SITE_NAME);
+    expect(
+      brand.querySelector(".footer-name .footer-accent")!.textContent,
+    ).toBe(".dev");
     expect(brand.querySelector(".footer-copy")!.textContent).toBe("© 2026");
     // right zone: nav links + GitHub + contact email
     const nav = screen.getByRole("navigation", { name: "Footer" });
@@ -53,8 +57,17 @@ describe("Footer", () => {
     expect(barRule).toContain("flex-wrap: wrap;");
     const brandRule = css.match(/\.footer-brand \{[\s\S]*?\n\}/)![0];
     expect(brandRule).toContain("align-items: baseline;");
-    // brand is accent-colored mono
-    expect(css.match(/\.footer-name \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
+    // brand mirrors the header nav-brand treatment: name in the default text
+    // color with a "> " accent prefix and an accent ".dev" suffix
+    const nameRule = css.match(/\.footer-name \{[\s\S]*?\n\}/)![0];
+    expect(nameRule).toContain("color: var(--text);");
+    expect(css.match(/\.footer-name::before \{[\s\S]*?\n\}/)![0]).toContain(
+      'content: "> ";',
+    );
+    expect(css.match(/\.footer-name::before \{[\s\S]*?\n\}/)![0]).toContain(
+      "color: var(--accent);",
+    );
+    expect(css.match(/\.footer-accent \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
     expect(css.match(/\.footer-copy \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
   });
 

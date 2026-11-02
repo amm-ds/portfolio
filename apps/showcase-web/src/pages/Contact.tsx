@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { Card } from "../components/Card";
 import { usePageMeta } from "../seo";
 import {
   AVAILABILITY,
@@ -55,12 +56,13 @@ function EmailIcon() {
   );
 }
 
-/** Contact channels: one card per channel, the whole card is the link. */
+/** Contact channels: one card per channel, the whole card is the link. The
+ * GitHub card points at the profile, not at any single repository. */
 const CHANNELS: { name: string; address: string; href: string; icon: ReactNode }[] = [
   {
     name: "GitHub",
     address: "github.com/amm-ds",
-    href: `${REPO_URL}/issues`,
+    href: "https://github.com/amm-ds",
     icon: <GitHubIcon />,
   },
   {
@@ -274,6 +276,14 @@ export function Contact() {
           </a>
         ))}
       </div>
+      <Card className="free-call-card">
+        <h3>first call is free</h3>
+        <p>
+          The discovery call (free, 30–45 min) covers the problem, the data reality, the
+          constraints and what &quot;done&quot; must look like. You get a written summary with
+          options and rough scope — no commitment.
+        </p>
+      </Card>
       <p className="contact-meta">
         Languages: English, Spanish. · Timezone: {TIMEZONE_LABEL} — replies within{" "}
         {AVAILABILITY.replyHours} hours on business days.

@@ -35,11 +35,11 @@ export const DEMOS: Demo[] = [...STATIC_DEMO_REGISTRY]
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";
 
-/** Demo cards never show numbers — the experiments own the metrics — but the
- * registry hooks name datasets ("M5") and bands ("80%"). Each published demo
- * therefore carries a digit-free display line for the card's "what it does"
- * block; unknown demo ids fall back to the registry hook with digits and
- * digit-words stripped. */
+/** The registry hooks name datasets ("M5") and bands ("80%"), so each
+ * published demo carries a digit-free display line for the card's
+ * "description" block; the labeled "results" block is where the registry's
+ * headline metric renders. Unknown demo ids fall back to the registry hook
+ * with digits and digit-words stripped. */
 export const DEMO_DOES: Record<string, string> = {
   "churn-sandbox":
     "Move the alarm threshold and the missed-churner cost — watch the optimal cutoff and the saved budget change on a real churn model.",

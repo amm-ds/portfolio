@@ -54,20 +54,20 @@ export const CARD_ACHIEVES: Record<string, string> = {
     "Beats random targeting by +$2,812 (+69%; CI +$718 to +$4,767), though at $0.01 per email mailing everyone still wins.",
 };
 
-/** Exactly four short tags per card, picked from portfolio.yaml `techniques`
- * in their shortest forms (mirrors the manifests; a static snapshot of them
- * ships in lib/staticRegistry.ts). Unknown ids fall back to the first four
- * techniques the registry serves. */
+/** Exactly four short tags per card — technique/capability wording with no
+ *  framework or library names (the stack lives in the services frameworks
+ *  grid). Unknown ids fall back to the first four techniques the registry
+ *  serves. */
 const CARD_TAGS: Record<string, string[]> = {
-  "01-rag-agent": ["RAG", "FAISS", "reranking", "RAGAS"],
-  "02-demand-forecasting": ["GBM", "MinT", "Optuna", "PyTorch"],
-  "03-anomaly-detection": ["LOF", "Polars", "Optuna", "IsolationForest"],
-  "04-nlp-classification": ["TF-IDF", "DistilBERT", "PyTorch", "calibration"],
-  "05-ml-pipeline-churn": ["calibration", "bootstrap CIs", "threshold tuning", "sklearn Pipelines"],
-  "06-routing-optimization": ["2-opt", "VRPTW", "ALNS", "Optuna"],
-  "07-open-data-mobility": ["DVC", "Polars", "DQ gates", "FastAPI"],
-  "08-inference-serving": ["Ollama", "MLX", "quantization", "cost/token"],
-  "09-agentic-workflows": ["HITL", "toolsets", "pydantic-ai", "pydantic-evals"],
+  "01-rag-agent": ["RAG", "vector search", "reranking", "RAG evals"],
+  "02-demand-forecasting": ["GBM", "MinT", "hyperparameter search", "deep learning"],
+  "03-anomaly-detection": ["IsolationForest", "LOF", "alert budgeting", "deduplication"],
+  "04-nlp-classification": ["TF-IDF", "language model", "deep learning", "calibration"],
+  "05-ml-pipeline-churn": ["calibration", "bootstrap CIs", "threshold tuning", "tested pipelines"],
+  "06-routing-optimization": ["2-opt", "VRPTW", "ALNS", "solver tuning"],
+  "07-open-data-mobility": ["data versioning", "streaming ETL", "DQ gates", "API serving"],
+  "08-inference-serving": ["local inference", "quantization", "cost/token", "latency/throughput"],
+  "09-agentic-workflows": ["HITL", "toolsets", "structured agents", "agent evals"],
   "10-uplift-experimentation": ["CUPED", "Qini", "power analysis", "uplift (T/X)"],
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { usePageMeta } from "../seo";
 import {
@@ -112,6 +112,8 @@ interface DemoCardData {
   group?: string;
   /** Linked experiment id — its four card tags tag the demo card. */
   project?: string;
+  /** Headline metric (label/value) for the card's "results" block. */
+  hero?: DemoRegistryEntry["hero"] | null;
 }
 
 /** Demo cards reuse the linked experiment's four card tags, so both card
@@ -120,18 +122,38 @@ function demoTags(projectId: string | undefined): string[] {
   return cardTags(projectId ?? "", []).slice(0, 4);
 }
 
+/** One-line "results" block for a demo card, from the registry's headline
+ * metric ("decision cost per 1,400 customers: $601 vs $1,035 naive") — the
+ * value renders in the accent metric style. Demos without a published
+ * metric render no results block. */
+function demoResults(data: DemoCardData): ReactNode {
+  const hero = data.hero;
+  if (!hero) return undefined;
+  return (
+    <>
+      {hero.label}: <span className="study-metric">{hero.value}</span>
+    </>
+  );
+}
+
 /** Demo card on the projects index: the SAME study-card layout as the
  * experiment cards, fed from the demo registry (or the static fallback):
- * title; group/domain descriptor; the "what it does" block; exactly four
- * tags. Demo cards never show a results line or any numbers — the linked
- * experiment card owns the metrics. */
+ * title; use-case/domain metadata; the labeled "description" block and, when
+ * the registry publishes one, the labeled "results" block with the headline
+ * metric; exactly four tags. */
 function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
-  const subtitle = [data.group, domain].filter(Boolean).join(" · ");
+  const meta = [
+    ...(data.group ? [{ label: "use case", value: data.group }] : []),
+    ...(domain ? [{ label: "domain", value: domain }] : []),
+  ];
   const body = (
     <StudyCard
       title={data.title}
-      subtitle={subtitle}
+      meta={meta}
+      doesLabel="description"
       does={demoDoes(data)}
+      achievesLabel="results"
+      achieves={demoResults(data)}
       tags={demoTags(data.project)}
     />
   );
@@ -147,10 +169,10 @@ function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
 }
 
 /** Demos block rendered above the experiments rows — one of the two big page
- * sections. Cards come from the demo registry (`GET /demos`) and render as a
- * single row that scrolls horizontally on overflow; on any fetch failure the
+ * sections. Cards come from the demo registry (`GET /demos`) and render in a
+ * full-width grid like the experiment cards below; on any fetch failure the
  * static `DEMOS` list is rendered instead (it doubles as the loading state).
- * The linked experiment's domain joins the group in the subtitle. */
+ * The linked experiment's domain joins the use case in the metadata. */
 function DemosSection({ projects }: { projects: Project[] | null }) {
   const [entries, setEntries] = useState<DemoRegistryEntry[] | null>(null);
 
@@ -183,6 +205,7 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
                 href: d.href,
                 group: d.group,
                 project: d.project,
+                hero: d.hero,
               }}
               domain={domainOf(d.project)}
             />

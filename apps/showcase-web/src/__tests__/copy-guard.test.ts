@@ -29,6 +29,13 @@ describe("copy guard: no senior/architect-level wording in src/ (About CV except
     expect(offenders).toEqual([]);
   });
 
+  it("no source file outside the About page mentions 'architect' (case-insensitive)", () => {
+    const offenders = sourceFiles("src").filter(
+      (f) => f !== ABOUT_PAGE && /architect/i.test(readFileSync(f, "utf8")),
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it("the About CV states its seniority titles with date ranges", () => {
     const about = readFileSync(ABOUT_PAGE, "utf8");
     expect(about).toMatch(/Senior data scientist/);

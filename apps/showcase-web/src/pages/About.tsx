@@ -95,6 +95,10 @@ const PRACTICES = [
     title: "stated limits",
     text: "every report says what the work does not establish, including where the conclusions break.",
   },
+  {
+    title: "plain-language reporting",
+    text: "findings are written for decision-makers, not practitioners — what was measured, what it shows, and where it stops holding.",
+  },
 ];
 
 export function About() {
@@ -134,7 +138,7 @@ export function About() {
 
       <h2 className="section-title">how I work</h2>
       <p className="section-intro">
-        Six practices run through every engagement and every case study on this site.
+        Seven practices run through every engagement and every case study on this site.
       </p>
       <div className="practices-grid">
         {PRACTICES.map((p) => (

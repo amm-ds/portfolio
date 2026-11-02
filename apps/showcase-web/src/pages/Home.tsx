@@ -11,8 +11,11 @@ export const HERO_SCRIPT = [
     output:
       "artificial intelligence · machine learning · optimization · data engineering · mlops · full-stack engineering",
   },
-  { cmd: "stack", output: "pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc" },
-  { cmd: "principles", output: "reproducible pipelines · honest baselines · production-grade code" },
+  { cmd: "stack", output: "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama/mlx · docker · dvc · uv" },
+  {
+    cmd: "principles",
+    output: "reproducible pipelines · honest baselines · production-grade code · models propose, risk disposes",
+  },
 ];
 
 /** The terminal's fully-typed content, kept in the DOM from first render as
@@ -33,7 +36,7 @@ const GO_LINKS = [
   {
     to: "/contact",
     label: "contact",
-    line: "Availability, languages, timezone overlap — typical reply within 48 hours.",
+    line: `Availability, languages, timezone overlap — replies within ${AVAILABILITY.replyHours} hours on business days.`,
   },
 ];
 
@@ -78,7 +81,10 @@ export function Home() {
     <>
       <PersonJsonLd />
       <section className="hero">
-        <h1>Data Scientist, ML &amp; AI Consultant</h1>
+        <h1>
+          <span className="hero-accent">Data</span> Scientist, <span className="hero-accent">ML</span> &amp;{" "}
+          <span className="hero-accent">AI</span> Consultant
+        </h1>
         <p className="hero-kicker">
           Applied AI, predictive analytics and ML engineering — from experiment to production
         </p>

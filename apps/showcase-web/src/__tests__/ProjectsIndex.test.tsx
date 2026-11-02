@@ -245,7 +245,7 @@ describe("ProjectsIndex", () => {
     expect(stylesCss).toContain(".topic-row {");
   });
 
-  it("renders the live-demos section from the registry with a digit-free card and href", async () => {
+  it("renders the live-demos section from the registry with labeled blocks, a results metric and href", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
@@ -276,15 +276,20 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     expect(demoCards[0].getAttribute("aria-label")).toBe("churn threshold sandbox");
-    // demo cards carry NO results line and NO numbers anywhere — not even the
-    // registry hero metric ("$601 vs $1,035 naive", "1,400")
-    expect(demoCards[0].querySelector(".study-result")).toBeNull();
-    expect(demoCards[0].textContent).not.toContain("decision cost");
-    expect(demoCards[0].textContent).not.toMatch(/[0-9]/);
-    expect(demoCards[0].textContent).not.toContain("$");
-    // the "what it does" block comes from the digit-free display line
+    // the labeled "description" block comes from the digit-free display line
+    const labels = [...demoCards[0].querySelectorAll(".study-block-label")].map(
+      (el) => el.textContent,
+    );
+    expect(labels).toEqual(["description", "results"]);
     expect(demoCards[0].querySelector(".study-does")!.textContent).toContain(
       "Move the alarm threshold",
+    );
+    // the labeled "results" block carries the registry's headline metric
+    expect(demoCards[0].querySelector(".study-achieves")!.textContent).toContain(
+      "decision cost per 1,400 customers",
+    );
+    expect(demoCards[0].querySelector(".study-metric")!.textContent).toBe(
+      "$601 vs $1,035 naive",
     );
     // the whole card is the link to the demo route
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
@@ -300,15 +305,23 @@ describe("ProjectsIndex", () => {
     expect(experimentsBlock.querySelectorAll(".topic-row")).toHaveLength(4);
   });
 
-  it("keeps the demos in a single horizontally-scrolling row on desktop", () => {
+  it("lays the demos out full width: one shared row on desktop, stacked on mobile", () => {
     const gridRule = stylesCss.match(/\.demo-grid \{[\s\S]*?\n\}/)![0];
-    expect(gridRule).toContain("display: flex;");
-    expect(gridRule).toContain("overflow-x: auto;");
-    // no multi-column demo grid remains
-    expect(stylesCss).not.toContain(".demo-grid {\n  display: grid;");
+    expect(gridRule).toContain("display: grid;");
+    expect(gridRule).toContain("grid-template-columns: 1fr;");
+    expect(gridRule).toContain("align-items: stretch;");
+    // the two cards share the row edge-to-edge from 720px up…
+    expect(stylesCss).toContain("@media (min-width: 720px)");
+    const twoCol = stylesCss.match(
+      /@media \(min-width: 720px\) \{\s*\.demo-grid \{[\s\S]*?\n  \}/,
+    )![0];
+    expect(twoCol).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
+    // …and the horizontally-scrolling flex row is gone
+    expect(gridRule).not.toContain("overflow-x: auto;");
+    expect(gridRule).not.toContain("display: flex;");
   });
 
-  it("falls back to the static demo cards when the registry fetch fails — still no results line or numbers", async () => {
+  it("falls back to the static demo cards when the registry fetch fails — same labeled blocks", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
@@ -332,13 +345,18 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
     expect(demoCards[1].textContent).toContain("demand forecast workbench");
     expect(demoCards[1].getAttribute("href")).toBe("/demos/forecast-workbench");
-    // neither static fallback card shows a result line, digits or currency
-    for (const card of demoCards) {
-      expect(card.querySelector(".study-result")).toBeNull();
-      expect(card.querySelector(".study-achieves")).toBeNull();
-      expect(card.textContent).not.toMatch(/[0-9]/);
-      expect(card.textContent).not.toContain("$");
-    }
+    // both static fallback cards carry the same labeled structure, results
+    // metric included (churn hero "$601 vs $1,035 naive", forecast hero
+    // "0.491 vs 0.603")
+    const metrics = ["$601 vs $1,035 naive", "0.491 vs 0.603"];
+    demoCards.forEach((card, i) => {
+      const blockLabels = [...card.querySelectorAll(".study-block-label")].map(
+        (el) => el.textContent,
+      );
+      expect(blockLabels).toEqual(["description", "results"]);
+      expect(card.querySelector(".study-achieves")).not.toBeNull();
+      expect(card.querySelector(".study-metric")!.textContent).toBe(metrics[i]);
+    });
   });
 
   it("renders two muted blocks per experiment card — what it does / what it achieves — and exactly 4 technique tags", async () => {
@@ -361,16 +379,25 @@ describe("ProjectsIndex", () => {
     expect(rag.querySelector(".study-achieves")!.textContent).toContain(
       "right passage 83% of the time",
     );
-    // one-line domain/dataset descriptor
-    expect(rag.querySelector(".study-sub")!.textContent).toBe("NLP · docs");
+    // two stacked metadata lines: topics/domain over data/source
+    const metaItems = rag.querySelectorAll(".study-meta-item");
+    expect(metaItems).toHaveLength(2);
+    expect(metaItems[0].querySelector(".study-meta-label")!.textContent).toBe("topics");
+    expect(metaItems[0].querySelector(".study-sub")!.textContent).toBe("NLP");
+    expect(metaItems[1].querySelector(".study-meta-label")!.textContent).toBe("data");
+    expect(metaItems[1].querySelector(".study-sub")!.textContent).toBe("docs");
     // exactly four short technique tags (labels), no status or dataset chips
     const chips = [...rag.querySelectorAll(".chip")].map((el) => el.textContent);
-    expect(chips).toHaveLength(4);
-    expect(chips).toContain("RAG");
-    expect(chips).toContain("FAISS");
+    expect(chips).toEqual(["RAG", "vector search", "reranking", "RAG evals"]);
     expect(rag.textContent).not.toContain("data: docs");
     expect(rag.querySelector(".chip-status")).toBeNull();
     expect(rag.textContent).not.toContain("flagship");
+    // no card tag — experiment or demo — names a framework or library
+    for (const chip of document.querySelectorAll(".project-card .chip, .demo-card .chip")) {
+      expect(chip.textContent!).not.toMatch(
+        /faiss|ragas|optuna|pytorch|polars|distilbert|scikit|sklearn|\bdvc\b|fastapi|ollama|\bmlx\b|pydantic|react|plotly|docker/i,
+      );
+    }
     const mobility = cardOf("Mobility");
     expect(mobility.querySelector(".chip-status")).toBeNull();
     expect([...mobility.querySelectorAll(".chip")].map((el) => el.textContent)).toHaveLength(4);
@@ -522,9 +549,13 @@ describe("ProjectsIndex", () => {
     const structureOf = (card: Element) => ({
       shared: card.classList.contains("study-card"),
       title: card.querySelector("h3")?.textContent ?? null,
-      sub: card.querySelector(".study-sub")?.textContent ?? null,
+      meta: [...card.querySelectorAll(".study-meta-item")].map((m) => [
+        m.querySelector(".study-meta-label")?.textContent,
+        m.querySelector(".study-sub")?.textContent,
+      ]),
       does: card.querySelector(".study-does")?.textContent ?? null,
       achieves: card.querySelector(".study-achieves")?.textContent ?? null,
+      metric: card.querySelector(".study-metric")?.textContent ?? null,
       result: card.querySelector(".study-result"),
       chips: card.querySelectorAll(".chip").length,
     });
@@ -534,21 +565,31 @@ describe("ProjectsIndex", () => {
         (c) => c.querySelector("h3")?.textContent === "Churn",
       )!,
     );
-    // identical layout: shared class, title, subtitle, does block, four tags
+    // identical layout: shared class, title, stacked metadata, does block, four tags
     for (const s of [demo, experiment]) {
       expect(s.shared).toBe(true);
       expect(s.title).not.toBeNull();
-      expect(s.sub).not.toBeNull();
+      expect(s.meta.length).toBeGreaterThan(0);
       expect(s.does).not.toBeNull();
       expect(s.chips).toBe(4);
     }
-    // demo copy comes from the registry: group descriptor + hook; the demo
-    // card carries NO achieves block and NO results line
-    expect(demo.sub).toContain("retain customers");
+    // demo copy comes from the registry: use case/domain metadata plus the
+    // labeled description + results blocks with the headline metric; the
+    // brief result line stays experiment-only
+    expect(demo.meta).toEqual([
+      ["use case", "retain customers"],
+      ["domain", "NLP"],
+    ]);
     expect(demo.does).toContain("Move the alarm threshold");
-    expect(demo.achieves).toBeNull();
+    expect(demo.achieves).toContain("decision cost per 1,400 customers");
+    expect(demo.metric).toBe("$601 vs $1,035 naive");
     expect(demo.result).toBeNull();
-    // experiment keeps the does/achieves copy and the live-result slot
+    // experiment keeps the does/achieves copy, the stacked topics/data
+    // metadata and the live-result slot
+    expect(experiment.meta).toEqual([
+      ["topics", "NLP"],
+      ["data", "docs"],
+    ]);
     expect(experiment.does).toContain("Scores churn on IBM telco data");
     expect(experiment.achieves).toContain("Cutting decision cost 42%");
     expect(experiment.result).not.toBeNull();
@@ -600,15 +641,19 @@ describe("ProjectsIndex", () => {
     ).toBe("experiments");
   });
 
-  it("restyles the page index to terminal labels: mono, accent-green items, >-prefixed", () => {
+  it("restyles the page index to terminal labels: mono, accent label, muted >-prefixed items lighting up on hover", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const linkRule = css.match(/\.page-index a \{[\s\S]*?\n\}/)![0];
-    expect(linkRule).toContain("color: var(--accent);");
+    expect(linkRule).toContain("color: var(--muted);");
     const beforeRule = css.match(/\.page-index a::before \{[\s\S]*?\n\}/)![0];
     expect(beforeRule).toContain('content: "> ";');
-    expect(beforeRule).toContain("color: var(--accent);");
+    expect(beforeRule).toContain("color: var(--muted);");
     const hoverRule = css.match(/\.page-index a:hover \{[\s\S]*?\n\}/)![0];
     expect(hoverRule).toContain("color: var(--accent);");
+    // only the "index" label carries the accent
+    expect(css.match(/\.page-index \.page-index-label \{[\s\S]*?\n\}/)![0]).toContain(
+      "color: var(--accent);",
+    );
     expect(css.match(/\.page-index \{[\s\S]*?\n\}/)![0]).toContain("font-family: var(--mono);");
   });
 
@@ -626,20 +671,17 @@ describe("ProjectsIndex", () => {
     expect(css).not.toContain(".study-built");
   });
 
-  it("paints card subtitles blue with accent separators, sized between body and section titles", async () => {
+  it("paints card subtitles blue, stacked and one step below the old 1rem scale", async () => {
     const css = readFileSync("src/styles.css", "utf8");
     const subRule = css.match(/\.study-sub \{[\s\S]*?\n\}/)![0];
     expect(subRule).toContain("color: var(--secondary);");
-    expect(subRule).toContain("font-size: 1rem;");
-    // clearly smaller than the 1.6rem section titles, bigger than 0.92rem body copy
+    // below the old 1rem subtitle scale, clearly smaller than the 1.6rem
+    // section titles
+    expect(subRule).toContain("font-size: 0.85rem;");
     expect(css.match(/\.section-title--major \{[\s\S]*?\n\}/)![0]).toContain("font-size: 1.6rem;");
-    expect(css.match(/\.study-does,\n\.study-achieves \{[\s\S]*?\n\}/)![0]).toContain(
-      "font-size: 0.92rem;",
-    );
-    expect(css.match(/\.study-sub \.study-sep \{[\s\S]*?\n\}/)![0]).toContain(
-      "color: var(--accent);",
-    );
-    // separators render as accent spans inside the subtitle
+    // the inline "·"-separated subtitle is gone — two stacked label-over-value
+    // lines carry topics/data instead
+    expect(css).not.toContain(".study-sep");
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
@@ -647,9 +689,12 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(7));
-    const sub = document.querySelector(".project-card .study-sub")!;
-    expect(sub.querySelector(".study-sep")).not.toBeNull();
-    expect(sub.querySelector(".study-sep")!.textContent).toBe("·");
+    const metaItems = document.querySelectorAll(".project-card .study-meta-item");
+    expect(metaItems.length).toBeGreaterThan(0);
+    for (const item of metaItems) {
+      expect(item.querySelector(".study-meta-label")).not.toBeNull();
+      expect(item.querySelector(".study-sub")).not.toBeNull();
+    }
   });
 
   it("paints all card tags blue — no per-tag hue rotation remains", () => {

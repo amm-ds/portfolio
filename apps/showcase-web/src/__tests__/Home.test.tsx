@@ -63,10 +63,14 @@ describe("Home (terminal-centered)", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc"),
+      screen.getByText(
+        "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama/mlx · docker · dvc · uv",
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("reproducible pipelines · honest baselines · production-grade code"),
+      screen.getByText(
+        "reproducible pipelines · honest baselines · production-grade code · models propose, risk disposes",
+      ),
     ).toBeInTheDocument();
     // full typed content exists in the DOM from first render via aria-label
     const term = document.querySelector(".hero-terminal")!;
@@ -114,11 +118,14 @@ describe("Home (terminal-centered)", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
     expect(heroRule).toContain("padding: 3rem 0 0.15rem;");
+    // the hero no longer stretches to 88vh — the dead space above the
+    // where-to-go block is gone
+    expect(heroRule).toContain("min-height: min(68vh, 720px);");
     expect(css).toContain(".section-title--tight");
-    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.4rem;");
+    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.25rem;");
   });
 
-  it("capitalizes the subtitle in sky blue and keeps the intro sentence white", () => {
+  it("renders the subtitle in grey (palette muted) and keeps the intro sentence white", () => {
     renderHome();
     const kicker = document.querySelector(".hero-kicker")!;
     expect(kicker.textContent).toBe(
@@ -126,17 +133,24 @@ describe("Home (terminal-centered)", () => {
     );
     const css = readFileSync("src/styles.css", "utf8");
     const rule = css.match(/\.hero-kicker \{[\s\S]*?\n\}/)![0];
-    expect(rule).toContain("color: var(--secondary);");
+    expect(rule).toContain("color: var(--muted);");
     expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color: var(--text);");
   });
 
-  it("paints the h1 in the solid green accent — no gradient", () => {
+  it("paints only the Data/ML/AI words green — h1 base white, accent spans, no gradient", () => {
+    renderHome();
+    const accents = [...document.querySelectorAll(".hero-accent")].map((e) => e.textContent);
+    expect(accents).toEqual(["Data", "ML", "AI"]);
+    const h1 = document.querySelector(".hero h1")!;
+    expect(h1.textContent).toContain("Data Scientist, ML & AI Consultant");
     const css = readFileSync("src/styles.css", "utf8");
     const rule = css.match(/\.hero h1 \{[\s\S]*?\n\}/)![0];
-    expect(rule).toContain("color: var(--accent);");
+    expect(rule).toContain("color: var(--text);");
+    expect(css.match(/\.hero-accent \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
     expect(rule).not.toContain("linear-gradient");
     expect(rule).not.toContain("background-clip");
     expect(rule).not.toContain("transparent");
+    expect(rule).not.toContain("text-shadow");
   });
 
   it("centers the availability band with a 3rem bottom margin before the footer", () => {
@@ -192,11 +206,11 @@ describe("Home hero layout", () => {
     expect(css).toContain("max-width: 1120px;");
     expect(css).not.toContain("max-width: 780px;");
     expect(css).not.toContain("max-width: 1020px;");
-    // min-height can never exceed 88vh, so the hero never forces scroll
-    expect(css).toContain("min-height: min(88vh, 880px);");
+    // the stage is capped low so "where to go" sits close under the terminal
+    expect(css).toContain("min-height: min(68vh, 720px);");
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
     expect(heroRule).toContain("max-width: 1160px;");
-    expect(heroRule).toContain("min-height: min(88vh, 880px);");
+    expect(heroRule).toContain("min-height: min(68vh, 720px);");
     // the grid layer has an explicit inset and no grow-in of any kind
     const gridRule = css.match(/\.hero::before \{[\s\S]*?\n\}/)![0];
     expect(gridRule).toContain("inset: 0;");

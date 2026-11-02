@@ -30,12 +30,15 @@ function CardKeyNumber({ projectId }: { projectId: string }) {
  * exactly four short technique tags (CARD_TAGS), plus the live headline
  * metric as the brief result when the registry serves one (data). */
 export function ProjectCard({ project }: { project: Project }) {
-  const subtitle = project.data ? `${project.domain} · ${project.data}` : project.domain;
+  const meta = [
+    { label: "topics", value: project.domain },
+    ...(project.data ? [{ label: "data", value: project.data }] : []),
+  ];
   return (
     <Link to={`/projects/${project.id}`} className="project-card study-card">
       <StudyCard
         title={project.title}
-        subtitle={subtitle}
+        meta={meta}
         does={cardDoes(project.id)}
         achieves={cardAchieves(project.id)}
         result={<CardKeyNumber projectId={project.id} />}
