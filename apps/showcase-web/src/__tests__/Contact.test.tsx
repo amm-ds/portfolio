@@ -71,9 +71,15 @@ describe("Contact page", () => {
     expect(screen.getByText(/English, Spanish/i)).toBeInTheDocument();
   });
 
-  it("links the engagement-starter copy to /services", () => {
+  it("describes how engagements start as four crisp bullets and links /services", () => {
     renderContact();
-    expect(screen.getByText(/free 30–45 minute discovery call/i)).toBeInTheDocument();
+    const items = [...document.querySelectorAll(".start-steps li")].map((el) => el.textContent);
+    expect(items).toHaveLength(4);
+    expect(items[0]).toMatch(/You describe the problem, the data and the goal/i);
+    expect(items[1]).toMatch(/scoped proposal: objectives, data needs, deliverables, timeline/i);
+    expect(items[2]).toMatch(/shared repository from day one/i);
+    expect(items[3]).toMatch(/05 revision rounds/i);
+    expect(items[3]).toMatch(/full repository, documentation and a walkthrough/i);
     const services = screen.getByRole("link", { name: /services & process/i });
     expect(services.getAttribute("href")).toBe("/services");
   });

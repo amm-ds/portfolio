@@ -59,7 +59,7 @@ describe("Home (terminal-centered)", () => {
     expect(screen.getByText("data scientist · ml & ai consultant")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "agentic ai & llm systems · machine learning · optimization · data engineering · mlops · full-stack engineering",
+        "artificial intelligence · machine learning · optimization · data engineering · mlops · full-stack engineering",
       ),
     ).toBeInTheDocument();
     expect(
@@ -113,9 +113,31 @@ describe("Home (terminal-centered)", () => {
   it("where-to-go sits tight under the hero stage", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
-    expect(heroRule).toContain("padding: 3rem 0 0.75rem;");
+    expect(heroRule).toContain("padding: 3rem 0 0.25rem;");
     expect(css).toContain(".section-title--tight");
-    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.9rem;");
+    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.6rem;");
+  });
+
+  it("capitalizes the subtitle and tints it accent-muted instead of flat muted", () => {
+    renderHome();
+    const kicker = document.querySelector(".hero-kicker")!;
+    expect(kicker.textContent).toBe(
+      "Applied AI, predictive analytics and ML engineering — from experiment to production",
+    );
+    const css = readFileSync("src/styles.css", "utf8");
+    const rule = css.match(/\.hero-kicker \{[\s\S]*?\n\}/)![0];
+    expect(rule).toContain("color-mix(in srgb, var(--accent)");
+    expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color-mix(in srgb, var(--accent)");
+  });
+
+  it("paints the h1 with a subtle teal → sky gradient at a brighter foreground", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const rule = css.match(/\.hero h1 \{[\s\S]*?\n\}/)![0];
+    expect(rule).toContain("background: linear-gradient(");
+    expect(rule).toContain("var(--accent)");
+    expect(rule).toContain("var(--secondary)");
+    expect(rule).toContain("background-clip: text;");
+    expect(rule).toContain("color: transparent;");
   });
 
   it("availability line reads from config", () => {
@@ -154,11 +176,12 @@ describe("Home (terminal-centered)", () => {
 describe("Home hero layout", () => {
   it("widens the hero and terminal, caps the hero height, and covers it with a static full-size grid", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    // 940 → 1160px hero, 780 → 1020px terminal
+    // 940 → 1160px hero, 780 → 1120px terminal (wide enough for the one-line focus output)
     expect(css).toContain("max-width: 1160px;");
     expect(css).not.toContain("max-width: 940px;");
-    expect(css).toContain("max-width: 1020px;");
+    expect(css).toContain("max-width: 1120px;");
     expect(css).not.toContain("max-width: 780px;");
+    expect(css).not.toContain("max-width: 1020px;");
     // min-height can never exceed 88vh, so the hero never forces scroll
     expect(css).toContain("min-height: min(88vh, 880px);");
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];

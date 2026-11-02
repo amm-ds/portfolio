@@ -48,7 +48,7 @@ describe("App routing", () => {
     }
   });
 
-  it("renders the About page at /about with the license line and no footer copyright", async () => {
+  it("renders the About page at /about with no license line and the copyright in the footer", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
@@ -65,15 +65,17 @@ describe("App routing", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "Independent ML/AI consultant",
+        "Alejandro Mérida Maroto",
       ),
     );
     expect(document.title).toContain("About");
-    // the copyright/license line lives at the bottom of About, not the footer
-    expect(screen.getByText(/© 2026 alejandromerida\.dev · MIT licensed/)).toBeInTheDocument();
+    // the copyright moved into the footer; the About page itself carries none
+    const main = container.querySelector("main")!;
+    expect(main.textContent).not.toMatch(/© 2026/);
+    expect(screen.queryByText(/MIT licensed/i)).toBeNull();
     const footer = container.querySelector(".footer")!;
     expect(footer).not.toBeNull();
-    expect(footer.textContent).not.toMatch(/© 2026/);
+    expect(footer.textContent).toMatch(/© 2026/);
   });
 
   it("renders the Glossary at /glossary with its description list", async () => {

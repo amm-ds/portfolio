@@ -346,7 +346,7 @@ select:focus-visible,
 
 .hero {
   position: relative;
-  padding: 3rem 0 0.75rem;
+  padding: 3rem 0 0.25rem;
   max-width: 1160px;
   /* tall stage for the terminal, capped so short viewports never force scroll */
   min-height: min(88vh, 880px);
@@ -373,9 +373,10 @@ select:focus-visible,
   background-size: 28px 28px;
 }
 
-/* centerpiece terminal: bigger than body text, centered under the hero copy */
+/* centerpiece terminal: bigger than body text, centered under the hero copy;
+   wide enough that the `focus` line renders on one line at desktop width */
 .hero-terminal {
-  max-width: 1020px;
+  max-width: 1120px;
   margin: 2.75rem auto 0;
   text-align: left;
 }
@@ -496,9 +497,16 @@ select:focus-visible,
 }
 
 .hero-sub {
-  color: var(--muted);
+  color: color-mix(in srgb, var(--accent) 30%, var(--muted));
   max-width: 760px;
   margin: 1.5rem auto 0.75rem;
+}
+
+/* tagline under the h1: accent-tinted muted, slightly larger than body copy */
+.hero-kicker {
+  color: color-mix(in srgb, var(--accent) 35%, var(--muted));
+  font-size: 1.05rem;
+  margin: 0;
 }
 
 .home-status {
@@ -550,10 +558,10 @@ select:focus-visible,
 
 /* pages that open straight after a hero/stage keep a tighter top gap */
 .section-title--tight {
-  margin-top: 0.9rem;
+  margin-top: 0.6rem;
 }
 
-/* --- Demos placeholder (projects page, above the experiments rows) --- */
+/* --- Demos (projects page, above the experiments rows) --- */
 
 /* one row of demo cards; the row scrolls horizontally on overflow */
 .demo-grid {
@@ -565,33 +573,62 @@ select:focus-visible,
 }
 
 .demo-grid .demo-card {
-  flex: 0 0 300px;
+  flex: 0 0 320px;
 }
 
-.demo-card {
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px dashed var(--border);
+/* --- Shared study card (demo + experiment cards render one design) --- */
+
+.study-card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.1rem 1.25rem;
+  padding: 1.25rem;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
-.demo-card h3 {
-  margin: 0 0 0.4rem;
-  font-size: 0.95rem;
-  color: var(--secondary);
+.study-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
 }
 
-.demo-card p {
-  margin: 0 0 0.85rem;
+.study-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+/* one-line domain/dataset descriptor */
+.study-sub {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.6rem;
 }
 
-/* the registry's headline metric is data, not a label */
-.demo-card .demo-hero {
-  color: var(--accent);
+/* "what has been built" line */
+.study-built {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text);
+  opacity: 0.92;
+  margin: 0;
+}
+
+/* "brief results" line (mono, accent); hidden while a live metric loads */
+.study-result {
   font-family: var(--mono);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  color: var(--accent);
+  margin: 0.75rem 0 0;
+}
+
+.study-result:empty {
+  display: none;
 }
 
 .topic-rows {
@@ -610,6 +647,32 @@ select:focus-visible,
   text-shadow: none;
 }
 
+/* the two big page sections (live demos, experiments) carry extra weight */
+.section-title--major {
+  font-size: 1.6rem;
+  margin: 2.75rem 0 0.6rem;
+}
+
+/* offering-domain groups inside experiments: subordinate mono labels */
+.row-label {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text);
+  margin: 1.5rem 0 0.15rem;
+  letter-spacing: 0.02em;
+}
+
+.row-label::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.row-desc {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 /* --- Project grid / cards --- */
 
 .project-grid {
@@ -626,42 +689,9 @@ select:focus-visible,
   }
 }
 
-.project-card {
-  display: block;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  color: inherit;
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-
-.project-card:hover {
-  border-color: var(--accent);
-  text-decoration: none;
-  transform: translateY(-2px);
-}
-
-.project-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.project-card h3 {
-  margin: 0 0 0.25rem;
-  font-size: 1.05rem;
-  color: var(--text);
-}
-
-.project-card .domain {
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-family: var(--mono);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin: 0;
+/* chips are the trailing element of a study card */
+.study-card .chips {
+  margin: 0.9rem 0 0;
 }
 
 .chips {
@@ -669,11 +699,6 @@ select:focus-visible,
   flex-wrap: wrap;
   gap: 0.4rem;
   margin: 0.9rem 0;
-}
-
-/* chips are the trailing element of a project card */
-.project-card .chips {
-  margin-bottom: 0;
 }
 
 .chip {
@@ -685,12 +710,30 @@ select:focus-visible,
   color: var(--muted);
 }
 
-.project-card .summary {
-  font-size: 0.92rem;
-  line-height: 1.55;
-  color: var(--text);
-  opacity: 0.92;
-  margin: 0.85rem 0 0;
+/* per-tag accent hues (teal / sky / violet / amber) with faint tinted
+   backgrounds — muted mono labels otherwise; hue rotates by tag index */
+.chip--teal {
+  color: #5eead4;
+  background: rgba(45, 212, 191, 0.08);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+.chip--sky {
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.chip--violet {
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.1);
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.chip--amber {
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.35);
 }
 
 /* --- Project detail / case study --- */
@@ -1513,17 +1556,29 @@ button:disabled {
   font-size: 1.05rem;
 }
 
-/* full-width horizontal cards, one offering per row */
+/* offerings grid: 4 columns on desktop, 2 between 640–1200px, 1 below 640px */
 .offerings-grid {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 1.25rem;
   max-width: none;
   margin-inline: 0;
 }
 
+@media (min-width: 640px) {
+  .offerings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .offerings-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
 .offering-card {
-  padding: 1.4rem 1.5rem;
+  padding: 1.6rem 1.75rem;
 }
 
 .offering-card h3 {
@@ -1629,6 +1684,33 @@ button:disabled {
   color: var(--muted);
   font-size: 0.88rem;
   font-family: var(--mono);
+}
+
+/* "how engagements start" on /contact: crisp mono bullets */
+.start-steps {
+  list-style: none;
+  margin: 0 0 1.4rem;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.start-steps li {
+  margin-bottom: 0.55rem;
+  padding-left: 1.1rem;
+  position: relative;
+}
+
+.start-steps li::before {
+  content: ">";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.start-steps li:last-child {
+  margin-bottom: 0;
 }
 
 .contact-block {
@@ -1742,8 +1824,7 @@ button:disabled {
   max-width: none;
 }
 
-/* --- Footer: a single line — nav links + GitHub + contact email. The
-   copyright/license line lives at the bottom of the About page. --- */
+/* --- Footer: two-zone single bar — brand + copyright left, links right --- */
 
 .footer {
   border-top: 1px solid var(--border);
@@ -1753,20 +1834,39 @@ button:disabled {
   padding: 1rem 1.25rem;
 }
 
-.footer-nav {
+.footer-bar {
   margin: 0 auto;
   display: flex;
   align-items: baseline;
-  justify-content: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--mono);
+}
+
+.footer-name {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.footer-copy {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.footer-nav {
+  display: flex;
+  align-items: baseline;
   flex-wrap: wrap;
   gap: 0.35rem 1.1rem;
   font-family: var(--mono);
   font-size: 0.82rem;
-}
-
-.footer-name {
-  color: var(--text);
-  font-weight: 700;
 }
 
 .footer-nav a {
@@ -1958,7 +2058,8 @@ button:disabled {
   text-shadow: 0 0 14px var(--accent-glow);
 }
 
-/* small anchor index under the page opening: "index: live demos · …" */
+/* small anchor index under the page opening: "index: > live demos · …" —
+   mono, muted, >-prefixed items, accent on hover */
 .page-index {
   display: flex;
   flex-wrap: wrap;
@@ -1977,7 +2078,12 @@ button:disabled {
 }
 
 .page-index a {
-  color: var(--secondary);
+  color: var(--muted);
+}
+
+.page-index a::before {
+  content: "> ";
+  color: var(--accent);
 }
 
 .page-index a:hover {
@@ -1995,7 +2101,11 @@ button:disabled {
   font-size: 2.4rem;
   line-height: 1.2;
   margin: 0 0 1rem;
-  text-shadow: 0 0 14px var(--accent-glow);
+  /* brighter foreground: very subtle teal → sky gradient clipped to the text */
+  background: linear-gradient(100deg, #5eead4 0%, var(--accent) 40%, var(--secondary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .project-card .key-number {
@@ -2177,18 +2287,6 @@ button:disabled {
 .demo-banner-cta:hover {
   filter: brightness(1.08);
   text-decoration: none;
-}
-
-.demo-card .demo-link {
-  display: inline-block;
-  margin-top: 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  color: var(--accent);
-  text-decoration: none;
-}
-.demo-card .demo-link:hover {
-  text-decoration: underline;
 }
 
 .chip-link.demo-cta {
@@ -3836,49 +3934,94 @@ button.chip.demo-preset.fwb-active {
 }
 
 
-/* --- About page: practices grid, stack chips, license line --- */
+/* --- About page: contact block, experience roles, education, practices --- */
 
-.practices-grid {
+.about-contact {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.4rem;
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.roles-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 
 @media (min-width: 720px) {
-  .practices-grid {
+  .roles-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.practice-card h3 {
-  margin: 0 0 0.4rem;
-  font-size: 0.95rem;
-  color: var(--text);
-  text-transform: lowercase;
+/* role cards share the services card geometry and border conventions */
+.role-card {
+  padding: 1.6rem 1.75rem;
 }
 
-.practice-card .practice-num {
+.role-dates {
   font-family: var(--mono);
   font-size: 0.78rem;
   color: var(--accent);
+  margin: 0 0 0.35rem;
 }
 
-.practice-card p {
+.role-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.role-card p:last-child {
   margin: 0;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
 }
 
-.about-stack {
-  margin: 0 0 1.4rem;
+.education-card {
+  padding: 1.6rem 1.75rem;
 }
 
-/* the copyright/license line moved here from the footer */
-.license-line {
-  margin: 2.25rem 0 0;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--border);
-  font-family: var(--mono);
-  font-size: 0.78rem;
+.education-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
   color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.education-card li {
+  margin-bottom: 0.35rem;
+}
+
+/* "how I work": one narrative strip, not a grid of service cards */
+.practices-strip {
+  padding: 1.6rem 1.75rem;
+}
+
+.practices-strip ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.practices-strip li {
+  margin-bottom: 0.5rem;
+}
+
+.practices-strip li:last-child {
+  margin-bottom: 0;
+}
+
+.practices-strip strong {
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 600;
 }

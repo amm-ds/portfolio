@@ -118,6 +118,10 @@ const OFFERINGS: Offering[] = [
   },
 ];
 
+/** Tag hue rotation for offering cards: teal / sky / violet / amber from the
+ * existing palette; the muted mono chip style is untouched otherwise. */
+const TAG_HUES = ["teal", "sky", "violet", "amber"] as const;
+
 const PROCESS = [
   {
     step: "01",
@@ -195,8 +199,8 @@ export function Services() {
             <h3>{o.title}</h3>
             <p className="offering-blurb">{o.outcome}</p>
             <div className="chips">
-              {o.elements.map((e) => (
-                <span key={e} className="chip">
+              {o.elements.map((e, i) => (
+                <span key={e} className={`chip chip--${TAG_HUES[i % TAG_HUES.length]}`}>
                   {e}
                 </span>
               ))}

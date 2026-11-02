@@ -544,10 +544,12 @@ def _auto_ets_forecast(
     train: pd.DataFrame, series_ids: list[str], horizon: int, n_jobs: int
 ) -> np.ndarray:
     """auto_ets via statsforecast (AutoETS season 7), re-indexed to the caller's
-    series order. Parallel workers are allowed (ETS selection is closed-form
-    and seed-free — determinism note in the module docstring); a batch failure
-    degrades per series to that series' seasonal_naive, exactly the subset
-    track's documented fallback (fixed loop order, no RNG)."""
+    series order. Parallel workers are allowed in principle (ETS selection is
+    closed-form and seed-free — determinism note in the module docstring);
+    Phase-0 finding on this host: loky spawn under ``uv run`` HANGS the batch
+    (verified twice), so the committed/overnight runs use ``n_jobs=1`` — the
+    per-series fallback after a batch failure stays the documented degradation
+    (fixed loop order, no RNG)."""
     from statsforecast import StatsForecast
     from statsforecast.models import AutoETS
 

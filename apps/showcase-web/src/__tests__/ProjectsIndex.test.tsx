@@ -158,7 +158,7 @@ describe("ProjectsIndex", () => {
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
     );
     expect(
-      screen.getByText(/Ten public experiments with live demos — real datasets/i),
+      screen.getByText(/A growing set of public, reproducible case studies with live demos/i),
     ).toBeInTheDocument();
     // every anchor target exists once rows render
     await waitFor(() => expect(document.getElementById("machine-learning")).not.toBeNull());
@@ -276,10 +276,15 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     expect(demoCards[0].getAttribute("aria-label")).toBe("churn threshold sandbox");
-    // hero line rendered from the registry entry (currency values untouched)
+    // hero line rendered from the registry entry as the card's brief result
+    // (currency values untouched)
     expect(demoCards[0].textContent).toContain("decision cost per 1,400 customers");
     expect(demoCards[0].textContent).toContain("$601 vs $1,035 naive");
-    expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
+    expect(demoCards[0].querySelector(".study-result")!.textContent).toContain(
+      "decision cost per 1,400 customers: $601 vs $1,035 naive",
+    );
+    // the whole card is the link to the demo route
+    expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
     // demos block renders before the experiments block with the topic rows
     const experimentsBlock = document.querySelector(".experiments-block")!;
     expect(
@@ -321,27 +326,29 @@ describe("ProjectsIndex", () => {
     expect(demos.querySelectorAll(".demo-grid")).toHaveLength(1);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
-    expect(demoCards[0].querySelector("a")!.getAttribute("href")).toBe("/demos/churn-sandbox");
+    expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
     expect(demoCards[1].textContent).toContain("demand forecast workbench");
-    expect(demoCards[1].querySelector("a")!.getAttribute("href")).toBe("/demos/forecast-workbench");
+    expect(demoCards[1].getAttribute("href")).toBe("/demos/forecast-workbench");
   });
 
-  it("renders a rewritten objective/data/result summary and exactly 4 technique tags per card", async () => {
+  it("renders a rewritten objective/data/result 'built' line and exactly 4 technique tags per card", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(document.querySelectorAll(".project-card .summary")).toHaveLength(7));
+    await waitFor(() => expect(document.querySelectorAll(".project-card .study-built")).toHaveLength(7));
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
     const rag = cardOf("RAG Agent");
-    expect(rag.querySelector(".summary")!.textContent).toContain(
+    expect(rag.querySelector(".study-built")!.textContent).toContain(
       "Built a question-answering agent",
     );
+    // one-line domain/dataset descriptor
+    expect(rag.querySelector(".study-sub")!.textContent).toBe("NLP · docs");
     // exactly four short technique tags (labels), no status or dataset chips
     const chips = [...rag.querySelectorAll(".chip")].map((el) => el.textContent);
     expect(chips).toHaveLength(4);
@@ -398,7 +405,7 @@ describe("ProjectsIndex", () => {
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(document.querySelectorAll(".project-card .summary")).toHaveLength(7));
+    await waitFor(() => expect(document.querySelectorAll(".project-card .study-built")).toHaveLength(7));
     // exact rewritten description for project 01 (objective + data + result)
     expect(
       screen.getByText(/Built a question-answering agent that answers only from a pinned 593-article/),
@@ -407,10 +414,10 @@ describe("ProjectsIndex", () => {
       [...document.querySelectorAll(".project-card")].find(
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
-    expect(cardOf("Routing").querySelector(".summary")?.textContent).toContain(
+    expect(cardOf("Routing").querySelector(".study-built")?.textContent).toContain(
       "within 4.2% of best-known",
     );
-    expect(cardOf("Churn").querySelector(".summary")?.textContent).toContain(
+    expect(cardOf("Churn").querySelector(".study-built")?.textContent).toContain(
       "cutting decision cost 42%",
     );
     // single-source copy: no separate impact line remains on cards
@@ -480,5 +487,109 @@ describe("ProjectsIndex", () => {
     await waitFor(() => expect(screen.getByText(/could not load/i)).toBeInTheDocument());
     expect(document.querySelector(".experiments-block")).toBeNull();
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("renders demo and experiment cards with the SAME shared study-card structure", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(document.querySelectorAll(".project-card")).toHaveLength(7),
+    );
+    const structureOf = (card: Element) => ({
+      shared: card.classList.contains("study-card"),
+      title: card.querySelector("h3")?.textContent ?? null,
+      sub: card.querySelector(".study-sub")?.textContent ?? null,
+      built: card.querySelector(".study-built")?.textContent ?? null,
+      result: card.querySelector(".study-result")?.textContent ?? null,
+      chips: card.querySelectorAll(".chip").length,
+    });
+    const demo = structureOf(document.querySelector(".demo-card")!);
+    const experiment = structureOf(
+      [...document.querySelectorAll(".project-card")].find(
+        (c) => c.querySelector("h3")?.textContent === "Churn",
+      )!,
+    );
+    // identical layout: shared class, all four copy slots, exactly four tags
+    for (const s of [demo, experiment]) {
+      expect(s.shared).toBe(true);
+      expect(s.title).not.toBeNull();
+      expect(s.sub).not.toBeNull();
+      expect(s.built).not.toBeNull();
+      expect(s.chips).toBe(4);
+    }
+    // demo copy comes from the registry: group descriptor, hook, hero metric
+    expect(demo.sub).toContain("retain customers");
+    expect(demo.built).toContain("Move the alarm threshold");
+    expect(demo.result).toContain("$601 vs $1,035 naive");
+    // experiment keeps the CARD_SUMMARY copy as its "built" line
+    expect(experiment.built).toContain("cutting decision cost 42%");
+  });
+
+  it("links the glossary from the experiments section description", async () => {
+    vi.stubGlobal("fetch", projectsOnlyFetch());
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 2, name: "experiments" })).toBeInTheDocument(),
+    );
+    const intro = document.querySelector(".experiments-block > .section-intro")!;
+    expect(intro.textContent).toMatch(/grouped by discipline/i);
+    expect(intro.textContent).toMatch(/terms are defined in the glossary/i);
+    const glossary = intro.querySelector("a")!;
+    expect(glossary.getAttribute("href")).toBe("/glossary");
+  });
+
+  it("makes demos and experiments the two big sections and demotes topic rows to group labels", async () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    // big section titles with extra weight
+    expect(css.match(/\.section-title--major \{[\s\S]*?\n\}/)![0]).toContain("font-size: 1.6rem;");
+    // topic rows are small mono labels, not section titles
+    const labelRule = css.match(/\.row-label \{[\s\S]*?\n\}/)![0];
+    expect(labelRule).toContain("font-family: var(--mono);");
+    expect(labelRule).not.toContain("border-bottom");
+    expect(css.match(/\.row-label::before \{[\s\S]*?\n\}/)![0]).toContain('content: "> ";');
+    // no fixed experiment count anywhere in the page copy
+    const { container } = render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+    );
+    expect(container.textContent).not.toMatch(/\bten\b (public )?(reproducible )?(experiments|case studies)/i);
+    expect(container.textContent).not.toMatch(/\b10 reproducible experiments\b/);
+    // live demos and experiments both carry the major-title modifier
+    expect(document.querySelector(".demos > .section-title--major")!.textContent).toBe(
+      "live demos",
+    );
+    expect(
+      document.querySelector(".experiments-block > .section-title--major")!.textContent,
+    ).toBe("experiments");
+  });
+
+  it("restyles the page index to terminal labels: mono, muted, >-prefixed, accent on hover", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const linkRule = css.match(/\.page-index a \{[\s\S]*?\n\}/)![0];
+    expect(linkRule).toContain("color: var(--muted);");
+    const beforeRule = css.match(/\.page-index a::before \{[\s\S]*?\n\}/)![0];
+    expect(beforeRule).toContain('content: "> ";');
+    expect(beforeRule).toContain("color: var(--accent);");
+    const hoverRule = css.match(/\.page-index a:hover \{[\s\S]*?\n\}/)![0];
+    expect(hoverRule).toContain("color: var(--accent);");
+    expect(css.match(/\.page-index \{[\s\S]*?\n\}/)![0]).toContain("font-family: var(--mono);");
   });
 });

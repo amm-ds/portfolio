@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { usePageMeta } from "../seo";
 import {
   getDemoRegistry,
@@ -8,6 +9,8 @@ import {
   type Project,
 } from "../api";
 import { ProjectCard } from "../components/ProjectCard";
+import { StudyCard } from "../components/StudyCard";
+import { cardTags } from "../lib/cardCopy";
 import { DEMOS, DEMOS_INTRO } from "../lib/demos";
 
 export interface TopicGroup {
@@ -98,42 +101,62 @@ export function rowAnchor(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-/** Demo card content, from the live registry or the static fallback list. */
-function DemoCard({
-  title,
-  line,
-  href,
-  hero,
-}: {
+/** Display fields a demo card needs — served live by the registry, mirrored
+ * by the static fallback (lib/demos.ts). */
+interface DemoCardData {
+  id: string;
   title: string;
-  line: string;
+  hook: string;
   href?: string;
-  hero?: DemoRegistryEntry["hero"];
-}) {
-  return (
-    <div className="demo-card" aria-label={title}>
-      <h3>{title}</h3>
-      <p>{line}</p>
-      {hero && (
-        <p className="demo-hero">
-          {hero.label}: {hero.value}
-          {hero.ci ? ` — ${hero.ci}` : ""}
-        </p>
-      )}
-      {href ? (
-        <a className="demo-link" href={href}>
-          open demo →
-        </a>
-      ) : null}
+  /** One-line domain descriptor, e.g. "plan operations". */
+  group?: string;
+  /** Linked experiment id — its four card tags tag the demo card. */
+  project?: string;
+  /** Headline metric (label/value/ci) shown as the card's brief result. */
+  hero?: DemoRegistryEntry["hero"] | null;
+}
+
+/** Demo cards reuse the linked experiment's four card tags, so both card
+ * kinds share one tag vocabulary. */
+function demoTags(projectId: string | undefined): string[] {
+  return cardTags(projectId ?? "", []).slice(0, 4);
+}
+
+/** Demo card on the projects index: the SAME study-card layout as the
+ * experiment cards, fed entirely from the demo registry (or the static
+ * fallback): title; group/domain descriptor; the hook as the "built" line;
+ * the registry's hero metric as the brief result; exactly four tags. */
+function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
+  const subtitle = [data.group, domain].filter(Boolean).join(" · ");
+  const result = data.hero
+    ? `${data.hero.label}: ${data.hero.value}${data.hero.ci ? ` — ${data.hero.ci}` : ""}`
+    : undefined;
+  const body = (
+    <StudyCard
+      title={data.title}
+      subtitle={subtitle}
+      built={data.hook}
+      result={result}
+      tags={demoTags(data.project)}
+    />
+  );
+  return data.href ? (
+    <Link to={data.href} className="demo-card study-card" aria-label={data.title}>
+      {body}
+    </Link>
+  ) : (
+    <div className="demo-card study-card" aria-label={data.title}>
+      {body}
     </div>
   );
 }
 
-/** Demos block rendered above the topic rows. Cards come from the demo registry
- * (`GET /demos`) and render as a single row that scrolls horizontally on
- * overflow; on any fetch failure the static `DEMOS` list is rendered instead
- * (it doubles as the loading state). */
-function DemosSection() {
+/** Demos block rendered above the experiments rows — one of the two big page
+ * sections. Cards come from the demo registry (`GET /demos`) and render as a
+ * single row that scrolls horizontally on overflow; on any fetch failure the
+ * static `DEMOS` list is rendered instead (it doubles as the loading state).
+ * The linked experiment's domain joins the group in the subtitle. */
+function DemosSection({ projects }: { projects: Project[] | null }) {
   const [entries, setEntries] = useState<DemoRegistryEntry[] | null>(null);
 
   useEffect(() => {
@@ -146,20 +169,35 @@ function DemosSection() {
     };
   }, []);
 
+  const domainOf = (projectId: string | undefined) =>
+    projects?.find((p) => p.id === projectId)?.domain;
+
   return (
     <section className="demos" id="demos" aria-label="Live demos">
-      <h2 className="section-title">live demos</h2>
+      <h2 className="section-title section-title--major">live demos</h2>
       <p className="section-intro">{DEMOS_INTRO}</p>
       {entries === null ? (
         <div className="demo-grid">
           {DEMOS.map((d) => (
-            <DemoCard key={d.id} title={d.title} line={d.line} href={d.href} />
+            <DemoCard
+              key={d.id}
+              data={{
+                id: d.id,
+                title: d.title,
+                hook: d.line,
+                href: d.href,
+                group: d.group,
+                project: d.project,
+                hero: d.hero,
+              }}
+              domain={domainOf(d.project)}
+            />
           ))}
         </div>
       ) : (
         <div className="demo-grid">
           {entries.map((d) => (
-            <DemoCard key={d.id} title={d.title} line={d.hook} href={d.href} hero={d.hero} />
+            <DemoCard key={d.id} data={d} domain={domainOf(d.project)} />
           ))}
         </div>
       )}
@@ -167,10 +205,10 @@ function DemosSection() {
   );
 }
 
-/** Projects index: a "live demos" block on top, then an "experiments" block
- * with offering-named topic rows as full-width sections and their cards in a
- * responsive 2-column grid. Both blocks live inside /projects (`/experiments`
- * is an alias).
+/** Projects index: "live demos" and "experiments" are the two big page
+ * sections; inside experiments, offering-domain rows are subordinate group
+ * labels with their cards in a responsive 2-column grid. Both blocks live
+ * inside /projects (`/experiments` is an alias).
  *
  * Resilience: if GET /projects fails we probe GET /demos — only when both are
  * unreachable do we conclude the registry is down and render the last
@@ -220,8 +258,9 @@ export function ProjectsIndex() {
     <>
       <h1 className="page-title">projects</h1>
       <p className="section-intro">
-        Ten public experiments with live demos — real datasets, measured baselines and
-        published pipelines. Every number on this page can be re-run from the repository.
+        A growing set of public, reproducible case studies with live demos — real datasets,
+        measured baselines and published pipelines. Every number on this page can be re-run
+        from the repository.
       </p>
       <nav className="page-index" aria-label="On this page">
         <span className="page-index-label">index</span>
@@ -245,13 +284,14 @@ export function ProjectsIndex() {
       {projects !== null && projects.length === 0 && (
         <div className="state-box">No projects published yet — check back soon.</div>
       )}
-      <DemosSection />
+      <DemosSection projects={projects} />
       {projects !== null && projects.length > 0 && (
         <div className="experiments-block" id="experiments">
-          <h2 className="section-title">experiments</h2>
+          <h2 className="section-title section-title--major">experiments</h2>
           <p className="section-intro">
-            Ten reproducible case studies grouped by discipline — each card states the
-            objective, the data and the result.
+            A growing set of reproducible case studies grouped by discipline — each card
+            states the objective, the data and the result. Terms are defined in the{" "}
+            <Link to="/glossary">glossary</Link>.
           </p>
           <div className="topic-rows">
             {rows.map((row) => (
@@ -261,8 +301,8 @@ export function ProjectsIndex() {
                 className="topic-row"
                 aria-label={row.name}
               >
-                <h3 className="section-title">{row.name}</h3>
-                {row.description && <p className="section-intro">{row.description}</p>}
+                <h3 className="row-label">{row.name}</h3>
+                {row.description && <p className="row-desc">{row.description}</p>}
                 <div className="project-grid">
                   {row.topics.flatMap((t) =>
                     t.projects.map((p) => <ProjectCard key={p.id} project={p} />),

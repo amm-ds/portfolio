@@ -9,7 +9,7 @@ export const HERO_SCRIPT = [
   {
     cmd: "focus",
     output:
-      "agentic ai & llm systems · machine learning · optimization · data engineering · mlops · full-stack engineering",
+      "artificial intelligence · machine learning · optimization · data engineering · mlops · full-stack engineering",
   },
   { cmd: "stack", output: "pydantic-ai · pytorch · polars · scikit-learn · plotly · dvc" },
   { cmd: "principles", output: "reproducible pipelines · honest baselines · production-grade code" },
@@ -23,7 +23,7 @@ const GO_LINKS = [
   {
     to: "/projects",
     label: "projects",
-    line: "10 reproducible experiments — metrics, interactive figures, published pipelines.",
+    line: "a growing set of reproducible experiments — metrics, interactive figures, published pipelines.",
   },
   {
     to: "/services",
@@ -80,7 +80,7 @@ export function Home() {
       <section className="hero">
         <h1>Data Scientist, ML &amp; AI Consultant</h1>
         <p className="hero-kicker">
-          applied AI, predictive analytics and ML engineering — from experiment to production
+          Applied AI, predictive analytics and ML engineering — from experiment to production
         </p>
         <p className="hero-sub">
           I design, build and evaluate ML systems end to end, and I keep the code, metrics and

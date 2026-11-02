@@ -110,16 +110,44 @@ describe("Services page (wave 8)", () => {
     }
   });
 
-  it("lays the offerings out as full-width horizontal cards, one per row", () => {
+  it("lays the offerings out as a full-width grid: 4 columns ≥1200px, 2 between 640–1200px, 1 below", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const gridRule = css.match(/\.offerings-grid \{[\s\S]*?\n\}/)![0];
-    expect(gridRule).toContain("display: flex;");
-    expect(gridRule).toContain("flex-direction: column;");
+    expect(gridRule).toContain("display: grid;");
+    expect(gridRule).toContain("grid-template-columns: 1fr;");
     expect(gridRule).toContain("max-width: none;");
-    // the old capped multi-column grid is gone
-    expect(css).not.toContain("repeat(4, minmax(0, 1fr));");
-    expect(css).not.toContain("max-width: 1400px;");
-    expect(css).not.toContain("repeat(auto-fill, minmax(300px, 1fr));");
+    // 2 columns from 640px up…
+    expect(css).toContain("@media (min-width: 640px)");
+    // …and 4 columns at ≥1200px
+    const fourCol = css.match(/@media \(min-width: 1200px\) \{\s*\.offerings-grid \{[\s\S]*?\n  \}/)![0];
+    expect(fourCol).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+    // the old single-column flex list is gone
+    expect(gridRule).not.toContain("flex-direction: column;");
+  });
+
+  it("rotates per-tag accent hues (teal / sky / violet / amber) with tinted backgrounds", () => {
+    renderServices();
+    const cards = [...document.querySelectorAll(".offering-card")];
+    expect(cards).toHaveLength(8);
+    for (const card of cards) {
+      const chips = [...card.querySelectorAll(".chip")];
+      expect(chips).toHaveLength(4);
+      // hues rotate by tag index
+      expect(chips.map((c) => c.className)).toEqual([
+        "chip chip--teal",
+        "chip chip--sky",
+        "chip chip--violet",
+        "chip chip--amber",
+      ]);
+    }
+    const css = readFileSync("src/styles.css", "utf8");
+    for (const hue of ["teal", "sky", "violet", "amber"]) {
+      const rule = css.match(new RegExp(`\\.chip--${hue} \\{[\\s\\S]*?\\n\\}`))![0];
+      expect(rule).toMatch(/background: rgba\(/);
+      expect(rule).toMatch(/border-color: rgba\(/);
+    }
+    // the muted mono label style is otherwise untouched
+    expect(css.match(/\.chip \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
   });
 
   it("has no proof band and no contact/availability block (Contact owns those)", () => {

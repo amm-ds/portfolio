@@ -240,10 +240,19 @@ export function Contact() {
       </Card>
 
       <h2 className="section-title">how engagements start</h2>
+      <ul className="start-steps">
+        <li>You describe the problem, the data and the goal — a short call or an email is enough.</li>
+        <li>
+          You get a scoped proposal: objectives, data needs, deliverables, timeline, fixed
+          price or retainer.
+        </li>
+        <li>A pilot or engagement starts; you see work in a shared repository from day one.</li>
+        <li>
+          Delivery includes 05 revision rounds; handover is the full repository,
+          documentation and a walkthrough.
+        </li>
+      </ul>
       <p className="section-intro">
-        A free 30–45 minute discovery call: problem, data reality, constraints, and what
-        "done" must look like — followed by a written summary with options and rough scope.
-        Fixed-scope pilots come after that.{" "}
         <Link to="/services">see services &amp; process →</Link>
       </p>
 

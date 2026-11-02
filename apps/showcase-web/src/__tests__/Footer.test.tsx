@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -15,12 +16,19 @@ function renderFooter() {
 }
 
 describe("Footer", () => {
-  it("is a single line: brand, nav links, GitHub and the contact email", () => {
+  it("is a two-zone single bar: brand + copyright left, links right", () => {
     renderFooter();
-    const nav = screen.getByRole("navigation", { name: "Footer" });
-    // one flex line — no inner brand column, no second small-print row
+    // one flex bar — no inner brand column, no second small-print row
     expect(document.querySelector(".footer-inner")).toBeNull();
     expect(document.querySelector(".footer-small")).toBeNull();
+    const bar = document.querySelector(".footer-bar")!;
+    expect(bar).not.toBeNull();
+    // left zone: brand (mono, accent) + © 2026 (muted, small) on one line
+    const brand = bar.querySelector(".footer-brand")!;
+    expect(brand.querySelector(".footer-name")!.textContent).toBe(SITE_NAME);
+    expect(brand.querySelector(".footer-copy")!.textContent).toBe("© 2026");
+    // right zone: nav links + GitHub + contact email
+    const nav = screen.getByRole("navigation", { name: "Footer" });
     const links = [...nav.querySelectorAll("a")].map((a) => ({
       text: a.textContent,
       href: a.getAttribute("href"),
@@ -34,13 +42,25 @@ describe("Footer", () => {
       { text: "GitHub", href: REPO_URL },
       { text: SITE_EMAIL, href: `mailto:${SITE_EMAIL}` },
     ]);
-    // the brand sits inside the same line
-    expect(nav.querySelector(".footer-name")!.textContent).toBe(SITE_NAME);
   });
 
-  it("carries no copyright or license small print (that lives on /about)", () => {
+  it("lays the bar out with space-between and baseline alignment, wrapping on mobile", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const barRule = css.match(/\.footer-bar \{[\s\S]*?\n\}/)![0];
+    expect(barRule).toContain("display: flex;");
+    expect(barRule).toContain("justify-content: space-between;");
+    expect(barRule).toContain("align-items: baseline;");
+    expect(barRule).toContain("flex-wrap: wrap;");
+    const brandRule = css.match(/\.footer-brand \{[\s\S]*?\n\}/)![0];
+    expect(brandRule).toContain("align-items: baseline;");
+    // brand is accent-colored mono
+    expect(css.match(/\.footer-name \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
+    expect(css.match(/\.footer-copy \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
+  });
+
+  it("carries the copyright in the footer (it no longer lives on /about)", () => {
     renderFooter();
-    expect(screen.queryByText(/© 2026/)).toBeNull();
+    expect(screen.getByText(/© 2026/)).toBeInTheDocument();
     expect(screen.queryByText(/MIT licensed/i)).toBeNull();
   });
 

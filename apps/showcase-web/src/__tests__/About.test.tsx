@@ -1,8 +1,9 @@
+import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { About } from "../pages/About";
-import { CONTACT_EMAIL, SITE_NAME } from "../config";
+import { CONTACT_EMAIL, REPO_URL, SITE_NAME } from "../config";
 
 afterEach(cleanup);
 
@@ -15,54 +16,110 @@ function renderAbout() {
 }
 
 describe("About page", () => {
-  it("renders the independent-consultant positioning from the home hero", () => {
+  it("opens with the consultant's name, positioning and contact block", () => {
     renderAbout();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "Independent ML/AI consultant",
+      "Alejandro Mérida Maroto",
     );
+    expect(screen.getByText("> about")).toBeInTheDocument();
+    expect(screen.getByText("Independent ML/AI consultant — Barcelona.")).toBeInTheDocument();
+    // the home-hero positioning sentence
     expect(
       screen.getByText(/I design, build and evaluate ML systems end to end, and I keep the code, metrics/),
     ).toBeInTheDocument();
-    expect(screen.getByText("> about")).toBeInTheDocument();
+    // contact block
+    const tel = screen.getByRole("link", { name: "+34 670 881 697" });
+    expect(tel.getAttribute("href")).toBe("tel:+34670881697");
+    expect(screen.getByRole("link", { name: CONTACT_EMAIL })).toBeInTheDocument();
+    const github = screen.getByRole("link", { name: "github.com/amm-ds" });
+    expect(github.getAttribute("href")).toBe(REPO_URL);
+    expect(screen.getByText("Spanish · Catalan · English")).toBeInTheDocument();
+    expect(screen.getByText("Barcelona")).toBeInTheDocument();
   });
 
-  it("distills 8 concrete engineering practices from the playbook", () => {
+  it("renders six experience roles with date ranges and generic industry descriptors", () => {
     renderAbout();
-    const practices = document.querySelectorAll(".practice-card");
-    expect(practices).toHaveLength(8);
-    const titles = [...document.querySelectorAll(".practice-card h3")].map((el) => el.textContent);
-    for (const title of [
+    const roles = document.querySelectorAll(".role-card");
+    expect(roles).toHaveLength(6);
+    const titles = [...document.querySelectorAll(".role-card h3")].map((el) => el.textContent);
+    expect(titles).toEqual([
+      "Lead ML/AI engineer — pharmaceutical AI (remote)",
+      "Senior data scientist — network telemetry (ISP data)",
+      "Senior data scientist — manufacturing analytics",
+      "Senior data scientist — e-commerce retail",
+      "Data scientist & engineer",
+      "Data scientist — venture studio",
+    ]);
+    // date ranges, newest first
+    const dates = [...document.querySelectorAll(".role-dates")].map((el) => el.textContent);
+    expect(dates).toEqual([
+      "2025 — now",
+      "2024 — 2025",
+      "2023 — 2024",
+      "2022 — 2023",
+      "2021 — 2022",
+      "2019 — 2021",
+    ]);
+    // scope notes from the profile
+    expect(screen.getByText(/100k\+ products with hierarchical models/i)).toBeInTheDocument();
+    expect(screen.getByText(/30\+ interviews/i)).toBeInTheDocument();
+    // generic industry descriptors only — no company names anywhere on the page
+    expect(screen.queryByText(/vanti|kognic|dera|pecan|letgo|olx|king/i)).toBeNull();
+  });
+
+  it("renders education & certifications as one condensed list", () => {
+    renderAbout();
+    const items = [...document.querySelectorAll(".education-card li")].map(
+      (el) => el.textContent,
+    );
+    expect(items).toEqual([
+      "Master in Big Data & Business Intelligence (UOC)",
+      "Business & IT (UAB)",
+      "Postgraduate in financial markets (UA)",
+      "MITx — Machine Learning with Python",
+      "GCP Big Data & ML fundamentals",
+    ]);
+  });
+
+  it("trims 'how I work' to six narrative practices in one strip", () => {
+    renderAbout();
+    const items = document.querySelectorAll(".practices-strip li");
+    expect(items).toHaveLength(6);
+    const text = document.querySelector(".practices-strip")!.textContent!;
+    for (const practice of [
       "reproducible pipelines",
       "pinned data with checksums",
-      "honest baselines",
       "scored-once evaluation",
-      "drift & data-quality gates",
+      "honest baselines",
       "tested code",
-      "typed contracts",
-      "honest limits",
+      "stated limits",
     ]) {
-      // each h3 carries the numbered mono prefix, e.g. "01 reproducible pipelines"
-      expect(titles.some((t) => t!.includes(title))).toBe(true);
+      expect(text).toContain(practice);
     }
-    // concrete practices, not slogans
-    expect(screen.getByText(/dvc repro/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/checksum/i).length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText(/regression test/i)).toBeInTheDocument();
+    // narrative style: one card, not a grid of service cards
+    expect(document.querySelectorAll(".practices-strip")).toHaveLength(1);
+    expect(document.querySelector(".practices-grid")).toBeNull();
+    expect(document.querySelectorAll(".role-card")).toHaveLength(6);
   });
 
-  it("lists the stack as chips and carries the contact address", () => {
+  it("has no stack/frameworks section (Projects owns that) and no license line", () => {
     renderAbout();
-    const chips = [...document.querySelectorAll(".about-stack .chip")].map((el) => el.textContent);
-    expect(chips.length).toBeGreaterThanOrEqual(16);
-    expect(chips).toContain("pydantic-ai");
-    expect(chips).toContain("DVC");
-    expect(screen.getByRole("link", { name: CONTACT_EMAIL })).toBeInTheDocument();
+    expect(document.querySelector(".about-stack")).toBeNull();
+    expect(document.querySelector(".license-line")).toBeNull();
+    expect(screen.queryByText(/© 2026/)).toBeNull();
+    expect(screen.queryByText(/MIT licensed/i)).toBeNull();
+    expect(screen.queryByRole("heading", { name: /^stack$/i })).toBeNull();
+    // no framework chip vocabulary on the page
+    expect(screen.queryByText("pydantic-ai")).toBeNull();
+    expect(screen.queryByText("FastAPI")).toBeNull();
   });
 
-  it("holds the copyright and MIT license line at the bottom of the page", () => {
-    renderAbout();
-    const license = document.querySelector(".license-line")!;
-    expect(license.textContent).toBe(`© 2026 ${SITE_NAME} · MIT licensed`);
+  it("gives role cards the services card geometry (bigger padding)", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const roleRule = css.match(/\.role-card \{[\s\S]*?\n\}/)![0];
+    expect(roleRule).toContain("padding: 1.6rem 1.75rem;");
+    const offeringRule = css.match(/\.offering-card \{[\s\S]*?\n\}/)![0];
+    expect(offeringRule).toContain("padding: 1.6rem 1.75rem;");
   });
 
   it("sets document title and meta description", () => {
@@ -72,6 +129,6 @@ describe("About page", () => {
       document.head
         .querySelector<HTMLElement>('meta[name="description"]')
         ?.getAttribute("content"),
-    ).toMatch(/Independent ML\/AI consultant/);
+    ).toMatch(/Alejandro Mérida Maroto/);
   });
 });

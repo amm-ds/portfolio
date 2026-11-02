@@ -17,11 +17,21 @@ function sourceFiles(dir: string): string[] {
   return out;
 }
 
-describe("copy guard: no senior/architect-level wording in src/", () => {
-  it("no source file mentions 'senior' (case-insensitive)", () => {
-    const offenders = sourceFiles("src").filter((f) =>
-      /senior/i.test(readFileSync(f, "utf8")),
+/** The About page carries the dated CV, where seniority titles are factual
+ * career history — not marketing copy. Everywhere else the ban holds. */
+const ABOUT_PAGE = join("src", "pages", "About.tsx");
+
+describe("copy guard: no senior/architect-level wording in src/ (About CV excepted)", () => {
+  it("no source file outside the About page mentions 'senior' (case-insensitive)", () => {
+    const offenders = sourceFiles("src").filter(
+      (f) => f !== ABOUT_PAGE && /senior/i.test(readFileSync(f, "utf8")),
     );
     expect(offenders).toEqual([]);
+  });
+
+  it("the About CV states its seniority titles with date ranges", () => {
+    const about = readFileSync(ABOUT_PAGE, "utf8");
+    expect(about).toMatch(/Senior data scientist/);
+    expect(about).toMatch(/\d{4} — \d{4}/);
   });
 });

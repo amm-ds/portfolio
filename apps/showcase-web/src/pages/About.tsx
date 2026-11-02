@@ -1,43 +1,75 @@
 import { Card } from "../components/Card";
-import { FRAMEWORKS } from "../components/Frameworks";
-import { CONTACT_EMAIL, SITE_NAME } from "../config";
+import { CONTACT_EMAIL, REPO_URL } from "../config";
 import { usePageMeta } from "../seo";
 
-/** Concrete working practices, distilled from the repository's engineering
- * playbook (docs/engineering-playbook.md) — each one enforced by tooling, not
- * by goodwill. */
+/** Career history, generic industry descriptors only — no company names. */
+const ROLES = [
+  {
+    dates: "2025 — now",
+    title: "Lead ML/AI engineer — pharmaceutical AI (remote)",
+    text: "RAG chatbots and document-analysis pipelines over regulated content, agentic systems with fixed tool and budget contracts, and vector search at corpus scale. Stakeholder-facing lead on ML initiatives, with interview-loop support across 30+ interviews, from senior to architect.",
+  },
+  {
+    dates: "2024 — 2025",
+    title: "Senior data scientist — network telemetry (ISP data)",
+    text: "BigQuery ETL with data-quality controls, anomaly detection with network-wide context, distributed ticket classification (NLP + LLM), and telemetry processing pipelines.",
+  },
+  {
+    dates: "2023 — 2024",
+    title: "Senior data scientist — manufacturing analytics",
+    text: "Transformer topic modeling for deviation root-cause analysis, multi-class neural classification, Bayesian hyperparameter optimization, and end-to-end ML productization inside a SaaS product.",
+  },
+  {
+    dates: "2022 — 2023",
+    title: "Senior data scientist — e-commerce retail",
+    text: "Demand forecasting for 100k+ products with hierarchical models, inventory optimization, dynamic-pricing experiments, and MLOps (Airflow, MLflow, AWS).",
+  },
+  {
+    dates: "2021 — 2022",
+    title: "Data scientist & engineer",
+    text: "Spark, Airflow and Redshift pipelines at scale, dynamic-pricing proofs of concept, and churn modeling across data sources.",
+  },
+  {
+    dates: "2019 — 2021",
+    title: "Data scientist — venture studio",
+    text: "Routing optimization, real-estate and customer scoring, and computer vision for content analysis across studio ventures.",
+  },
+];
+
+const EDUCATION = [
+  "Master in Big Data & Business Intelligence (UOC)",
+  "Business & IT (UAB)",
+  "Postgraduate in financial markets (UA)",
+  "MITx — Machine Learning with Python",
+  "GCP Big Data & ML fundamentals",
+];
+
+/** How the work runs, in narrative form — the practices behind every case
+ * study and every engagement. */
 const PRACTICES = [
   {
     title: "reproducible pipelines",
-    text: "Every result rebuilds from a clean state with dvc repro — no notebook ghosts, no \"works on my machine\".",
+    text: "every result rebuilds from a clean state — no notebook ghosts, no \"works on my machine\".",
   },
   {
     title: "pinned data with checksums",
-    text: "Dataset cards pin source, license, checksum and snapshot date. Raw data never enters git; DVC tracks the rest.",
-  },
-  {
-    title: "honest baselines",
-    text: "Every model is scored against a named naive baseline — seasonal-naive, majority, random — and the delta is stated, not implied.",
+    text: "dataset cards pin source, license, checksum and snapshot date before any modeling starts.",
   },
   {
     title: "scored-once evaluation",
-    text: "Evaluation runs in CI against a pinned holdout. A model that was never evaluated cannot ship; a metric that changed is flagged.",
+    text: "models are scored in CI against a pinned holdout — a metric that changed is flagged, not shipped.",
   },
   {
-    title: "drift & data-quality gates",
-    text: "Data-quality checks halt pipelines loudly — non-zero exit plus a persisted report — instead of quietly degrading downstream numbers.",
+    title: "honest baselines",
+    text: "every model is judged against a named naive baseline, and the delta is stated, not implied.",
   },
   {
     title: "tested code",
-    text: "pytest plus hypothesis property tests on every validator, with coverage gates. A bug fix without a regression test is not a fix.",
+    text: "unit and property tests on the validators, coverage gates in CI — a fix without a regression test is not a fix.",
   },
   {
-    title: "typed contracts",
-    text: "Pydantic models at every cross-module boundary and mypy strict in the shared libraries — config is a schema, not a guess.",
-  },
-  {
-    title: "honest limits",
-    text: "Every evaluation report states what the case study does not establish, including the conditions under which the conclusions break.",
+    title: "stated limits",
+    text: "every report says what the work does not establish, including where the conclusions break.",
   },
 ];
 
@@ -45,7 +77,7 @@ export function About() {
   usePageMeta({
     title: "About",
     description:
-      "Independent ML/AI consultant — who does the work, the engineering practices behind every case study (reproducible pipelines, pinned data, scored-once evaluation, honest limits), and the stack.",
+      "Alejandro Mérida Maroto — independent ML/AI consultant in Barcelona. Experience across pharmaceutical AI, network telemetry, manufacturing analytics, e-commerce retail and venture studios; the working practices behind every case study.",
     canonical: "/about",
   });
 
@@ -53,49 +85,62 @@ export function About() {
     <>
       <section className="services-hero">
         <p className="kicker">&gt; about</p>
-        <h1>Independent ML/AI consultant</h1>
+        <h1>Alejandro Mérida Maroto</h1>
+        <p>Independent ML/AI consultant — Barcelona.</p>
         <p>
           I design, build and evaluate ML systems end to end, and I keep the code, metrics
-          and case studies public and auditable — the same working standards run through
-          every engagement.
+          and case studies public and auditable.
         </p>
-        <p>
-          The public experiments on this site are the sample: real datasets, measured
-          baselines, published pipelines, and limits stated in every report. Reach me at{" "}
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
-        </p>
+        <ul className="about-contact">
+          <li>Barcelona</li>
+          <li>
+            <a href="tel:+34670881697">+34 670 881 697</a>
+          </li>
+          <li>
+            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+          </li>
+          <li>
+            <a href={REPO_URL} target="_blank" rel="noreferrer">
+              github.com/amm-ds
+            </a>
+          </li>
+          <li>Spanish · Catalan · English</li>
+        </ul>
       </section>
 
-      <h2 className="section-title">how the work is done</h2>
-      <p className="section-intro">
-        Eight practices from the repository's engineering playbook — enforced by tooling,
-        not by goodwill.
-      </p>
-      <div className="practices-grid">
-        {PRACTICES.map((p, i) => (
-          <Card key={p.title} className="practice-card">
-            <h3>
-              <span className="practice-num">{String(i + 1).padStart(2, "0")}</span>{" "}
-              {p.title}
-            </h3>
-            <p>{p.text}</p>
+      <h2 className="section-title">experience</h2>
+      <div className="roles-grid">
+        {ROLES.map((r) => (
+          <Card key={r.dates} className="role-card">
+            <p className="role-dates">{r.dates}</p>
+            <h3>{r.title}</h3>
+            <p>{r.text}</p>
           </Card>
         ))}
       </div>
 
-      <h2 className="section-title">stack</h2>
-      <p className="section-intro">
-        Chosen for reproducibility and longevity — the same stack the case studies run on.
-      </p>
-      <div className="chips about-stack">
-        {FRAMEWORKS.map((f) => (
-          <span key={f.name} className="chip">
-            {f.name}
-          </span>
-        ))}
-      </div>
+      <h2 className="section-title">education &amp; certifications</h2>
+      <Card className="education-card">
+        <ul>
+          {EDUCATION.map((e) => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+      </Card>
 
-      <p className="license-line">© 2026 {SITE_NAME} · MIT licensed</p>
+      <h2 className="section-title">how I work</h2>
+      <p className="section-intro">
+        Six practices run through every engagement and every case study on this site.
+      </p>
+      <Card className="practices-strip">
+        <ul>
+          {PRACTICES.map((p) => (
+            <li key={p.title}>
+              <strong>{p.title}</strong> — {p.text}
+            </li>
+          ))}
+        </ul>
+      </Card>
     </>
   );
 }
