@@ -122,7 +122,7 @@ describe("groupByRow", () => {
     expect(topics.map((t) => t.topic)).toEqual(["Agentic AI & LLM", "Data Engineering"]);
   });
 
-  it("TOPIC_ROWS lists every topic used by the ten portfolio.yaml manifests", () => {
+  it("TOPIC_ROWS lists every topic used by the portfolio.yaml manifests", () => {
     const mapped = new Set(TOPIC_ROWS.flatMap((r) => r.topics));
     for (const topic of [
       "Agentic AI & LLM",
