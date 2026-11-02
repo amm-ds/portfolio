@@ -1,7 +1,9 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
+import { SITE_NAME, SITE_NAME_ROOT, SITE_NAME_SUFFIX } from "../config";
 
 beforeEach(() => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
@@ -11,6 +13,31 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
+});
+
+describe("Nav brand split", () => {
+  it("renders the brand as the identical text with '.dev' in an accent span", () => {
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+    const brand = document.querySelector(".nav-brand")!;
+    expect(brand).not.toBeNull();
+    // the accessible/read text is unchanged
+    expect(brand.textContent).toBe(SITE_NAME);
+    // split: root in the default brand color, ".dev" in the accent span
+    const accent = brand.querySelector(".nav-brand-accent")!;
+    expect(accent).not.toBeNull();
+    expect(accent.textContent).toBe(".dev");
+    expect(brand.textContent!.replace(accent.textContent!, "")).toBe(SITE_NAME_ROOT);
+    // the config split concatenates back to the full site name
+    expect(`${SITE_NAME_ROOT}${SITE_NAME_SUFFIX}`).toBe(SITE_NAME);
+    const css = readFileSync("src/styles.css", "utf8");
+    expect(css.match(/\.nav-brand-accent \{[\s\S]*?\n\}/)![0]).toContain(
+      "color: var(--accent);",
+    );
+  });
 });
 
 describe("App shell (temporary smoke)", () => {

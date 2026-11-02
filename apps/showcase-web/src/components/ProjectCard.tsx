@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getMetrics, type Project } from "../api";
-import { cardSummary, cardTags } from "../lib/cardCopy";
+import { cardAchieves, cardDoes, cardTags } from "../lib/cardCopy";
 import { formatMetricValue, pickHeadlineMetric } from "../lib/delta";
 import { StudyCard } from "./StudyCard";
 
@@ -26,18 +26,18 @@ function CardKeyNumber({ projectId }: { projectId: string }) {
 }
 
 /** Experiment card on the projects index: the shared study-card layout fed
- * from the rewritten objective/data/result copy (CARD_SUMMARY) and exactly
- * four short technique tags (CARD_TAGS), plus the live headline metric as
- * the brief result when the registry serves one (data). */
+ * from the rewritten does/achieves copy (CARD_DOES + CARD_ACHIEVES) and
+ * exactly four short technique tags (CARD_TAGS), plus the live headline
+ * metric as the brief result when the registry serves one (data). */
 export function ProjectCard({ project }: { project: Project }) {
-  const summary = cardSummary(project.id);
   const subtitle = project.data ? `${project.domain} · ${project.data}` : project.domain;
   return (
     <Link to={`/projects/${project.id}`} className="project-card study-card">
       <StudyCard
         title={project.title}
         subtitle={subtitle}
-        built={summary}
+        does={cardDoes(project.id)}
+        achieves={cardAchieves(project.id)}
         result={<CardKeyNumber projectId={project.id} />}
         tags={cardTags(project.id, project.techniques)}
       />

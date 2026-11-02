@@ -2,37 +2,61 @@ import { Card } from "../components/Card";
 import { CONTACT_EMAIL, REPO_URL } from "../config";
 import { usePageMeta } from "../seo";
 
-/** Career history, generic industry descriptors only — no company names. */
+/** Career history as a roadmap-style vertical timeline — generic industry
+ * descriptors only, no company names. Each stop: period, role, 2–3
+ * achievement bullets. */
 const ROLES = [
   {
     dates: "2025 — now",
     title: "Lead ML/AI engineer — pharmaceutical AI (remote)",
-    text: "RAG chatbots and document-analysis pipelines over regulated content, agentic systems with fixed tool and budget contracts, and vector search at corpus scale. Stakeholder-facing lead on ML initiatives, with interview-loop support across 30+ interviews, from senior to architect.",
+    points: [
+      "RAG chatbots and document-analysis pipelines over regulated content, cited per claim.",
+      "Agentic systems with fixed tool and budget contracts; vector search at corpus scale.",
+      "Stakeholder-facing lead on ML initiatives, with interview-loop support across 30+ interviews, from senior to architect.",
+    ],
   },
   {
     dates: "2024 — 2025",
     title: "Senior data scientist — network telemetry (ISP data)",
-    text: "BigQuery ETL with data-quality controls, anomaly detection with network-wide context, distributed ticket classification (NLP + LLM), and telemetry processing pipelines.",
+    points: [
+      "BigQuery ETL with data-quality controls and telemetry processing pipelines.",
+      "Anomaly detection with network-wide context.",
+      "Distributed ticket classification (NLP + LLM).",
+    ],
   },
   {
     dates: "2023 — 2024",
     title: "Senior data scientist — manufacturing analytics",
-    text: "Transformer topic modeling for deviation root-cause analysis, multi-class neural classification, Bayesian hyperparameter optimization, and end-to-end ML productization inside a SaaS product.",
+    points: [
+      "Transformer topic modeling for deviation root-cause analysis; multi-class neural classification.",
+      "Bayesian hyperparameter optimization.",
+      "End-to-end ML productization inside a SaaS product.",
+    ],
   },
   {
     dates: "2022 — 2023",
     title: "Senior data scientist — e-commerce retail",
-    text: "Demand forecasting for 100k+ products with hierarchical models, inventory optimization, dynamic-pricing experiments, and MLOps (Airflow, MLflow, AWS).",
+    points: [
+      "Demand forecasting for 100k+ products with hierarchical models.",
+      "Inventory optimization and dynamic-pricing experiments.",
+      "MLOps: pipeline orchestration, experiment management and cloud deployments.",
+    ],
   },
   {
     dates: "2021 — 2022",
     title: "Data scientist & engineer",
-    text: "Spark, Airflow and Redshift pipelines at scale, dynamic-pricing proofs of concept, and churn modeling across data sources.",
+    points: [
+      "Spark, Airflow and Redshift pipelines at scale.",
+      "Dynamic-pricing proofs of concept and churn modeling across data sources.",
+    ],
   },
   {
     dates: "2019 — 2021",
     title: "Data scientist — venture studio",
-    text: "Routing optimization, real-estate and customer scoring, and computer vision for content analysis across studio ventures.",
+    points: [
+      "Routing optimization and real-estate scoring across studio ventures.",
+      "Customer scoring models and computer vision for content analysis.",
+    ],
   },
 ];
 
@@ -44,8 +68,8 @@ const EDUCATION = [
   "GCP Big Data & ML fundamentals",
 ];
 
-/** How the work runs, in narrative form — the practices behind every case
- * study and every engagement. */
+/** How the work runs — the practices behind every case study and every
+ * engagement, rendered as importance cards at the top of the page. */
 const PRACTICES = [
   {
     title: "reproducible pipelines",
@@ -108,36 +132,39 @@ export function About() {
         </ul>
       </section>
 
-      <h2 className="section-title">experience</h2>
-      <div className="roles-grid">
-        {ROLES.map((r) => (
-          <Card key={r.dates} className="role-card">
-            <p className="role-dates">{r.dates}</p>
-            <h3>{r.title}</h3>
-            <p>{r.text}</p>
+      <h2 className="section-title">how I work</h2>
+      <p className="section-intro">
+        Six practices run through every engagement and every case study on this site.
+      </p>
+      <div className="practices-grid">
+        {PRACTICES.map((p) => (
+          <Card key={p.title} className="practice-card">
+            <h3>{p.title}</h3>
+            <p>{p.text}</p>
           </Card>
         ))}
       </div>
+
+      <h2 className="section-title">experience</h2>
+      <ol className="timeline">
+        {ROLES.map((r) => (
+          <li key={r.dates} className="timeline-item">
+            <p className="timeline-period">{r.dates}</p>
+            <h3>{r.title}</h3>
+            <ul>
+              {r.points.map((point) => (
+                <li key={point}>{point}</li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
 
       <h2 className="section-title">education &amp; certifications</h2>
       <Card className="education-card">
         <ul>
           {EDUCATION.map((e) => (
             <li key={e}>{e}</li>
-          ))}
-        </ul>
-      </Card>
-
-      <h2 className="section-title">how I work</h2>
-      <p className="section-intro">
-        Six practices run through every engagement and every case study on this site.
-      </p>
-      <Card className="practices-strip">
-        <ul>
-          {PRACTICES.map((p) => (
-            <li key={p.title}>
-              <strong>{p.title}</strong> — {p.text}
-            </li>
           ))}
         </ul>
       </Card>

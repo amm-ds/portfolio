@@ -11,7 +11,7 @@ import {
 import { ProjectCard } from "../components/ProjectCard";
 import { StudyCard } from "../components/StudyCard";
 import { cardTags } from "../lib/cardCopy";
-import { DEMOS, DEMOS_INTRO } from "../lib/demos";
+import { DEMOS, DEMOS_INTRO, demoDoes } from "../lib/demos";
 
 export interface TopicGroup {
   topic: string;
@@ -112,8 +112,6 @@ interface DemoCardData {
   group?: string;
   /** Linked experiment id — its four card tags tag the demo card. */
   project?: string;
-  /** Headline metric (label/value/ci) shown as the card's brief result. */
-  hero?: DemoRegistryEntry["hero"] | null;
 }
 
 /** Demo cards reuse the linked experiment's four card tags, so both card
@@ -123,20 +121,17 @@ function demoTags(projectId: string | undefined): string[] {
 }
 
 /** Demo card on the projects index: the SAME study-card layout as the
- * experiment cards, fed entirely from the demo registry (or the static
- * fallback): title; group/domain descriptor; the hook as the "built" line;
- * the registry's hero metric as the brief result; exactly four tags. */
+ * experiment cards, fed from the demo registry (or the static fallback):
+ * title; group/domain descriptor; the "what it does" block; exactly four
+ * tags. Demo cards never show a results line or any numbers — the linked
+ * experiment card owns the metrics. */
 function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
   const subtitle = [data.group, domain].filter(Boolean).join(" · ");
-  const result = data.hero
-    ? `${data.hero.label}: ${data.hero.value}${data.hero.ci ? ` — ${data.hero.ci}` : ""}`
-    : undefined;
   const body = (
     <StudyCard
       title={data.title}
       subtitle={subtitle}
-      built={data.hook}
-      result={result}
+      does={demoDoes(data)}
       tags={demoTags(data.project)}
     />
   );
@@ -188,7 +183,6 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
                 href: d.href,
                 group: d.group,
                 project: d.project,
-                hero: d.hero,
               }}
               domain={domainOf(d.project)}
             />

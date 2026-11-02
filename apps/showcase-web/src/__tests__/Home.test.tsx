@@ -113,12 +113,12 @@ describe("Home (terminal-centered)", () => {
   it("where-to-go sits tight under the hero stage", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
-    expect(heroRule).toContain("padding: 3rem 0 0.25rem;");
+    expect(heroRule).toContain("padding: 3rem 0 0.15rem;");
     expect(css).toContain(".section-title--tight");
-    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.6rem;");
+    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.4rem;");
   });
 
-  it("capitalizes the subtitle and tints it accent-muted instead of flat muted", () => {
+  it("capitalizes the subtitle in sky blue and keeps the intro sentence white", () => {
     renderHome();
     const kicker = document.querySelector(".hero-kicker")!;
     expect(kicker.textContent).toBe(
@@ -126,18 +126,28 @@ describe("Home (terminal-centered)", () => {
     );
     const css = readFileSync("src/styles.css", "utf8");
     const rule = css.match(/\.hero-kicker \{[\s\S]*?\n\}/)![0];
-    expect(rule).toContain("color-mix(in srgb, var(--accent)");
-    expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color-mix(in srgb, var(--accent)");
+    expect(rule).toContain("color: var(--secondary);");
+    expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color: var(--text);");
   });
 
-  it("paints the h1 with a subtle teal → sky gradient at a brighter foreground", () => {
+  it("paints the h1 in the solid green accent — no gradient", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const rule = css.match(/\.hero h1 \{[\s\S]*?\n\}/)![0];
-    expect(rule).toContain("background: linear-gradient(");
-    expect(rule).toContain("var(--accent)");
-    expect(rule).toContain("var(--secondary)");
-    expect(rule).toContain("background-clip: text;");
-    expect(rule).toContain("color: transparent;");
+    expect(rule).toContain("color: var(--accent);");
+    expect(rule).not.toContain("linear-gradient");
+    expect(rule).not.toContain("background-clip");
+    expect(rule).not.toContain("transparent");
+  });
+
+  it("centers the availability band with a 3rem bottom margin before the footer", () => {
+    renderHome();
+    const status = document.querySelector(".home-status")!;
+    expect(status).not.toBeNull();
+    const css = readFileSync("src/styles.css", "utf8");
+    const rule = css.match(/\.home-status \{[\s\S]*?\n\}/)![0];
+    expect(rule).toContain("justify-content: center;");
+    expect(rule).toContain("margin: 1.75rem 0 3rem;");
+    expect(rule).toContain("text-align: center;");
   });
 
   it("availability line reads from config", () => {

@@ -28,7 +28,7 @@ describe("Services page (wave 8)", () => {
     );
     expect(titles).toEqual([
       "Agentic AI & LLM systems",
-      "Machine learning",
+      "Machine learning & deep learning",
       "Optimization",
       "Data engineering",
       "MLOps",
@@ -68,7 +68,7 @@ describe("Services page (wave 8)", () => {
       expect(card.textContent).not.toMatch(/proof:|live demo:/i);
       expect(card.textContent).not.toMatch(/how success is measured/i);
     }
-    // the full tag vocabulary covers every offering
+    // the full tag vocabulary covers every offering — capability wording only
     const chipTexts = [...document.querySelectorAll(".offering-card .chip")].map(
       (el) => el.textContent,
     );
@@ -80,33 +80,40 @@ describe("Services page (wave 8)", () => {
       "Leakage-proof CV",
       "Calibrated models",
       "Cost curves",
-      "Optuna HPO",
+      "Hyperparameter search",
       "Exact & heuristics",
       "Benchmark instances",
       "Runtime budgets",
       "Gap reports",
-      "Polars/DVC pipelines",
+      "Pipeline orchestration",
       "DQ gates",
       "Checksum pinning",
       "Data registry",
       "CI eval gates",
-      "Docker + uv",
+      "Reproducible environments",
       "Clean-clone runs",
       "Drift checks",
-      "React + Plotly",
+      "Interactive charting",
       "Live endpoints",
       "Pinned payloads",
       "Parity tests",
-      "FastAPI + React",
-      "Docker Compose",
-      "Caddy deploy",
+      "API/UI integration",
+      "Composable deployments",
+      "Reverse-proxy deploys",
       "Contract tests",
-      "FastAPI",
       "OpenAPI contracts",
       "Rate limits",
       "Latency budgets",
+      "Throughput reports",
     ]) {
       expect(chipTexts).toContain(chip);
+    }
+    // no framework or library names in the tags — the frameworks section
+    // carries the stack, which adapts to the task at hand
+    for (const chip of chipTexts) {
+      expect(chip!).not.toMatch(
+        /react|plotly|fastapi|docker|polars|\bdvc\b|optuna|caddy|compose|pytorch|scikit/i,
+      );
     }
   });
 
@@ -125,29 +132,45 @@ describe("Services page (wave 8)", () => {
     expect(gridRule).not.toContain("flex-direction: column;");
   });
 
-  it("rotates per-tag accent hues (teal / sky / violet / amber) with tinted backgrounds", () => {
+  it("paints all offering tags blue — the hue rotation is gone entirely", () => {
     renderServices();
     const cards = [...document.querySelectorAll(".offering-card")];
     expect(cards).toHaveLength(8);
     for (const card of cards) {
       const chips = [...card.querySelectorAll(".chip")];
       expect(chips).toHaveLength(4);
-      // hues rotate by tag index
-      expect(chips.map((c) => c.className)).toEqual([
-        "chip chip--teal",
-        "chip chip--sky",
-        "chip chip--violet",
-        "chip chip--amber",
-      ]);
+      // every chip is the plain blue chip — no per-tag hue classes anywhere
+      for (const c of chips) {
+        expect(c.className).toBe("chip");
+      }
     }
     const css = readFileSync("src/styles.css", "utf8");
+    const rule = css.match(/\.study-card \.chip,\n\.offering-card \.chip \{[\s\S]*?\n\}/)![0];
+    expect(rule).toContain("color: #7dd3fc;");
+    expect(rule).toContain("background: rgba(56, 189, 248, 0.08);");
+    expect(rule).toContain("border-color: rgba(56, 189, 248, 0.35);");
+    // no hue modifier classes remain in the stylesheet
     for (const hue of ["teal", "sky", "violet", "amber"]) {
-      const rule = css.match(new RegExp(`\\.chip--${hue} \\{[\\s\\S]*?\\n\\}`))![0];
-      expect(rule).toMatch(/background: rgba\(/);
-      expect(rule).toMatch(/border-color: rgba\(/);
+      expect(css).not.toContain(`.chip--${hue}`);
     }
     // the muted mono label style is otherwise untouched
     expect(css.match(/\.chip \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
+  });
+
+  it("keeps every offering description generic — architect/full-stack expertise, no model-type specifics", () => {
+    renderServices();
+    // the ML card no longer names forecasting/churn models and is renamed
+    expect(
+      screen.getByRole("heading", { name: "Machine learning & deep learning" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/forecasting, classification and churn/i)).toBeNull();
+    expect(screen.queryByText(/^Machine learning$/)).toBeNull();
+    // every card reads as delivery expertise in its own vertical
+    const blurbs = [...document.querySelectorAll(".offering-blurb")].map((el) => el.textContent!);
+    expect(blurbs).toHaveLength(8);
+    for (const blurb of blurbs) {
+      expect(blurb.length).toBeGreaterThan(60);
+    }
   });
 
   it("has no proof band and no contact/availability block (Contact owns those)", () => {
@@ -242,7 +265,7 @@ describe("Services page (wave 8)", () => {
     expect(providerTiles[0].querySelector("img")).toBeNull();
   });
 
-  it("ships a horizontal process timeline (5-up, 2-up, 1-up) ending in structured revisions", () => {
+  it("ships a horizontal process timeline (5-up, 2-up, 1-up) with a de-numbered revisions step", () => {
     const css = readFileSync("src/styles.css", "utf8");
     expect(css).toContain(".process-timeline {\n  list-style: none;\n  margin: 1.75rem 0 0;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(5, minmax(0, 1fr));");
     expect(css).toContain("row-gap: 2.25rem;");
@@ -253,14 +276,22 @@ describe("Services page (wave 8)", () => {
     expect(css).toContain("grid-template-columns: 1fr;");
     // step nodes straddle the connecting line
     expect(css).toContain("top: -0.75rem;");
-    // five steps, ending with structured revision rounds after delivery
     renderServices();
+    const items = [...document.querySelectorAll(".process-timeline li")];
+    expect(items).toHaveLength(5);
+    // four numbered steps; the revisions step stays but carries no number,
+    // so no "05 revisions" claim can be read off the timeline
     const steps = [...document.querySelectorAll(".process-timeline .step-num")].map(
       (el) => el.textContent,
     );
-    expect(steps).toEqual(["01", "02", "03", "04", "05"]);
-    expect(screen.getByText("Revisions")).toBeInTheDocument();
+    expect(steps).toEqual(["01", "02", "03", "04"]);
+    const revisions = items[items.length - 1];
+    expect(revisions.querySelector(".step-num")).toBeNull();
+    expect(revisions.querySelector("h3")!.textContent).toBe("Revisions");
     expect(screen.getByText(/re-run, and the report updated/i)).toBeInTheDocument();
+    // no revision-count claim anywhere on the page
+    expect(document.body.textContent).not.toMatch(/0?5\s+revision/i);
+    expect(screen.getByText("Revisions").closest("li")!.textContent).not.toMatch(/^05/);
     // engagement models mention the revision rounds
     expect(screen.getAllByText(/includes structured revision rounds/i).length).toBeGreaterThanOrEqual(2);
   });

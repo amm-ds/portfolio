@@ -23,7 +23,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "Agentic AI & LLM systems",
     outcome:
-      "Agents and assistants that answer from your documents, cite every claim, and stay inside fixed tool, cost and latency budgets.",
+      "Architect-level design of agents and assistants that answer from your documents, cite every claim, and stay inside fixed tool, cost and latency budgets.",
     elements: ["Retrieval pipelines", "Structured output", "Eval harnesses", "Cost budgets"],
     deliverables: [
       BASE_DELIVERABLES[0],
@@ -33,10 +33,10 @@ const OFFERINGS: Offering[] = [
     ],
   },
   {
-    title: "Machine learning",
+    title: "Machine learning & deep learning",
     outcome:
-      "Forecasting, classification and churn models judged against named naive baselines, with errors priced in currency rather than raw accuracy.",
-    elements: ["Leakage-proof CV", "Calibrated models", "Cost curves", "Optuna HPO"],
+      "Models designed, trained and evaluated end to end against named naive baselines, with errors priced in business terms rather than raw accuracy.",
+    elements: ["Leakage-proof CV", "Calibrated models", "Cost curves", "Hyperparameter search"],
     deliverables: [
       BASE_DELIVERABLES[0],
       BASE_DELIVERABLES[1],
@@ -47,7 +47,7 @@ const OFFERINGS: Offering[] = [
   {
     title: "Optimization",
     outcome:
-      "Routing, scheduling and allocation solved against named benchmark instances, with the optimality gap stated per instance.",
+      "Routing, scheduling and allocation problems solved against named benchmark instances, with the optimality gap and runtime stated per instance.",
     elements: ["Exact & heuristics", "Benchmark instances", "Runtime budgets", "Gap reports"],
     deliverables: [
       BASE_DELIVERABLES[0],
@@ -59,8 +59,8 @@ const OFFERINGS: Offering[] = [
   {
     title: "Data engineering",
     outcome:
-      "Pipelines that turn raw operational dumps into versioned, tested, analysis-ready datasets with quality gates in CI.",
-    elements: ["Polars/DVC pipelines", "DQ gates", "Checksum pinning", "Data registry"],
+      "Pipelines that turn raw operational dumps into versioned, tested, analysis-ready datasets with quality gates in CI — built to be handed over, not babysat.",
+    elements: ["Pipeline orchestration", "DQ gates", "Checksum pinning", "Data registry"],
     deliverables: [
       BASE_DELIVERABLES[0],
       "reproducible pipeline and pinned, checksummed datasets",
@@ -71,8 +71,8 @@ const OFFERINGS: Offering[] = [
   {
     title: "MLOps",
     outcome:
-      "CI gates that block unevaluated models and failing data-quality checks before they can ship.",
-    elements: ["CI eval gates", "Docker + uv", "Clean-clone runs", "Drift checks"],
+      "CI gates that block unevaluated models and failing data-quality checks before they can ship — operable by the client's own team from day one.",
+    elements: ["CI eval gates", "Reproducible environments", "Clean-clone runs", "Drift checks"],
     deliverables: [
       BASE_DELIVERABLES[0],
       BASE_DELIVERABLES[1],
@@ -83,8 +83,8 @@ const OFFERINGS: Offering[] = [
   {
     title: "Interactive dashboards",
     outcome:
-      "Working demos over committed payloads — every number the screen shows is checked in CI before it ships.",
-    elements: ["React + Plotly", "Live endpoints", "Pinned payloads", "Parity tests"],
+      "Working demos over committed payloads — every number the screen shows is checked in CI before it ships, and the whole slice runs from a clean clone.",
+    elements: ["Interactive charting", "Live endpoints", "Pinned payloads", "Parity tests"],
     deliverables: [
       BASE_DELIVERABLES[0],
       "reproducible pipeline and pinned payloads",
@@ -95,8 +95,8 @@ const OFFERINGS: Offering[] = [
   {
     title: "Full-stack engineering",
     outcome:
-      "Typed API, web UI and deployment wired together so the product slice runs from a clean clone.",
-    elements: ["FastAPI + React", "Docker Compose", "Caddy deploy", "Contract tests"],
+      "Typed API, web UI and deployment wired together as one product slice that runs from a clean clone — full-stack delivery, not a throwaway prototype.",
+    elements: ["API/UI integration", "Composable deployments", "Reverse-proxy deploys", "Contract tests"],
     deliverables: [
       BASE_DELIVERABLES[0],
       BASE_DELIVERABLES[1],
@@ -107,8 +107,8 @@ const OFFERINGS: Offering[] = [
   {
     title: "APIs & model serving",
     outcome:
-      "Versioned inference endpoints with OpenAPI contracts, rate limits and measured latency/throughput on target hardware.",
-    elements: ["FastAPI", "OpenAPI contracts", "Rate limits", "Latency budgets"],
+      "Versioned inference endpoints with explicit contracts, rate limits and measured latency/throughput on target hardware — sized, not guessed.",
+    elements: ["OpenAPI contracts", "Rate limits", "Latency budgets", "Throughput reports"],
     deliverables: [
       BASE_DELIVERABLES[0],
       BASE_DELIVERABLES[1],
@@ -118,10 +118,9 @@ const OFFERINGS: Offering[] = [
   },
 ];
 
-/** Tag hue rotation for offering cards: teal / sky / violet / amber from the
- * existing palette; the muted mono chip style is untouched otherwise. */
-const TAG_HUES = ["teal", "sky", "violet", "amber"] as const;
-
+/** Offering tags are plain capability wording — blue chips, no framework or
+ * library names (the frameworks section carries the stack, which adapts to
+ * the task at hand). */
 const PROCESS = [
   {
     step: "01",
@@ -144,7 +143,9 @@ const PROCESS = [
     text: "Documentation, runbooks, and a walkthrough session. No lock-in: everything runs from a clean clone.",
   },
   {
-    step: "05",
+    // De-numbered on purpose: the step stays in the timeline, but its text
+    // must not read as a revision-count claim ("05 revisions" → "revisions").
+    step: null,
     title: "Revisions",
     text: "Structured revision rounds after delivery: feedback is addressed, the evaluation re-run, and the report updated until the numbers hold up.",
   },
@@ -199,8 +200,8 @@ export function Services() {
             <h3>{o.title}</h3>
             <p className="offering-blurb">{o.outcome}</p>
             <div className="chips">
-              {o.elements.map((e, i) => (
-                <span key={e} className={`chip chip--${TAG_HUES[i % TAG_HUES.length]}`}>
+              {o.elements.map((e) => (
+                <span key={e} className="chip">
                   {e}
                 </span>
               ))}
@@ -245,8 +246,8 @@ export function Services() {
       <h2 className="section-title">process</h2>
       <ol className="process-timeline">
         {PROCESS.map((p) => (
-          <li key={p.step}>
-            <span className="step-num">{p.step}</span>
+          <li key={p.title}>
+            {p.step && <span className="step-num">{p.step}</span>}
             <h3>{p.title}</h3>
             <p>{p.text}</p>
           </li>

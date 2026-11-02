@@ -37,11 +37,13 @@ describe("About page", () => {
     expect(screen.getByText("Barcelona")).toBeInTheDocument();
   });
 
-  it("renders six experience roles with date ranges and generic industry descriptors", () => {
+  it("renders six experience stops as a vertical timeline with periods and 2–3 bullets each", () => {
     renderAbout();
-    const roles = document.querySelectorAll(".role-card");
-    expect(roles).toHaveLength(6);
-    const titles = [...document.querySelectorAll(".role-card h3")].map((el) => el.textContent);
+    const items = document.querySelectorAll(".timeline-item");
+    expect(items).toHaveLength(6);
+    const titles = [...document.querySelectorAll(".timeline-item h3")].map(
+      (el) => el.textContent,
+    );
     expect(titles).toEqual([
       "Lead ML/AI engineer — pharmaceutical AI (remote)",
       "Senior data scientist — network telemetry (ISP data)",
@@ -50,8 +52,8 @@ describe("About page", () => {
       "Data scientist & engineer",
       "Data scientist — venture studio",
     ]);
-    // date ranges, newest first
-    const dates = [...document.querySelectorAll(".role-dates")].map((el) => el.textContent);
+    // periods, newest first, in accent mono
+    const dates = [...document.querySelectorAll(".timeline-period")].map((el) => el.textContent);
     expect(dates).toEqual([
       "2025 — now",
       "2024 — 2025",
@@ -60,11 +62,31 @@ describe("About page", () => {
       "2021 — 2022",
       "2019 — 2021",
     ]);
-    // scope notes from the profile
+    // each stop carries 2–3 achievement bullets
+    for (const item of items) {
+      const bullets = item.querySelectorAll("ul li").length;
+      expect(bullets).toBeGreaterThanOrEqual(2);
+      expect(bullets).toBeLessThanOrEqual(3);
+    }
+    // scope notes from the profile survive
     expect(screen.getByText(/100k\+ products with hierarchical models/i)).toBeInTheDocument();
     expect(screen.getByText(/30\+ interviews/i)).toBeInTheDocument();
     // generic industry descriptors only — no company names anywhere on the page
     expect(screen.queryByText(/vanti|kognic|dera|pecan|letgo|olx|king/i)).toBeNull();
+  });
+
+  it("connects the timeline with the site's dot/line language", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    // a connecting line down the list…
+    const lineRule = css.match(/\.timeline::before \{[\s\S]*?\n\}/)![0];
+    expect(lineRule).toContain("width: 1px;");
+    expect(lineRule).toContain("background: var(--border);");
+    // …and an accent dot per stop
+    const dotRule = css.match(/\.timeline-item::before \{[\s\S]*?\n\}/)![0];
+    expect(dotRule).toContain("border-radius: 50%;");
+    expect(dotRule).toContain("background: var(--accent);");
+    // vertical layout, single column
+    expect(css.match(/\.timeline \{[\s\S]*?\n\}/)![0]).toContain("padding: 0 0 0 1.5rem;");
   });
 
   it("renders education & certifications as one condensed list", () => {
@@ -81,11 +103,11 @@ describe("About page", () => {
     ]);
   });
 
-  it("trims 'how I work' to six narrative practices in one strip", () => {
+  it("opens 'how I work' at the top as importance cards with the services card geometry", () => {
     renderAbout();
-    const items = document.querySelectorAll(".practices-strip li");
-    expect(items).toHaveLength(6);
-    const text = document.querySelector(".practices-strip")!.textContent!;
+    const cards = document.querySelectorAll(".practice-card");
+    expect(cards).toHaveLength(6);
+    const text = document.querySelector(".practices-grid")!.textContent!;
     for (const practice of [
       "reproducible pipelines",
       "pinned data with checksums",
@@ -96,10 +118,22 @@ describe("About page", () => {
     ]) {
       expect(text).toContain(practice);
     }
-    // narrative style: one card, not a grid of service cards
-    expect(document.querySelectorAll(".practices-strip")).toHaveLength(1);
-    expect(document.querySelector(".practices-grid")).toBeNull();
-    expect(document.querySelectorAll(".role-card")).toHaveLength(6);
+    // importance cards, not a narrative strip
+    expect(document.querySelectorAll(".practices-grid")).toHaveLength(1);
+    expect(document.querySelector(".practices-strip")).toBeNull();
+    // "how I work" is the FIRST section right after the profile intro
+    const firstTitle = document.querySelector(".section-title")!;
+    expect(firstTitle.textContent).toBe("how I work");
+    // and it precedes the experience timeline
+    const hero = document.querySelector(".services-hero")!;
+    const practices = document.querySelector(".practices-grid")!;
+    const timeline = document.querySelector(".timeline")!;
+    expect(
+      hero.compareDocumentPosition(practices) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      practices.compareDocumentPosition(timeline) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("has no stack/frameworks section (Projects owns that) and no license line", () => {
@@ -114,10 +148,10 @@ describe("About page", () => {
     expect(screen.queryByText("FastAPI")).toBeNull();
   });
 
-  it("gives role cards the services card geometry (bigger padding)", () => {
+  it("gives the practice cards the services card geometry (bigger padding)", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    const roleRule = css.match(/\.role-card \{[\s\S]*?\n\}/)![0];
-    expect(roleRule).toContain("padding: 1.6rem 1.75rem;");
+    const practiceRule = css.match(/\.practice-card \{[\s\S]*?\n\}/)![0];
+    expect(practiceRule).toContain("padding: 1.6rem 1.75rem;");
     const offeringRule = css.match(/\.offering-card \{[\s\S]*?\n\}/)![0];
     expect(offeringRule).toContain("padding: 1.6rem 1.75rem;");
   });

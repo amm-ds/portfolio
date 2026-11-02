@@ -45,10 +45,17 @@ describe("Contact page", () => {
     expect(screen.queryByText(/available now/i)).not.toBeInTheDocument();
   });
 
-  it("offers a primary mailto CTA with prefilled subject and body scaffold", () => {
+  it("has no 'Start a conversation' CTA button anywhere", () => {
     renderContact();
-    const cta = screen.getByRole("link", { name: "Start a conversation" });
-    const href = cta.getAttribute("href") ?? "";
+    expect(screen.queryByRole("link", { name: "Start a conversation" })).toBeNull();
+    expect(screen.queryByText("Start a conversation")).toBeNull();
+    expect(document.querySelector(".cta-band")).toBeNull();
+  });
+
+  it("prefills the Email channel card mailto with the subject and body scaffold", () => {
+    renderContact();
+    const email = screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") });
+    const href = email.getAttribute("href") ?? "";
     expect(href.startsWith(`mailto:${CONTACT_EMAIL}?`)).toBe(true);
     const params = new URLSearchParams(href.slice(`mailto:${CONTACT_EMAIL}?`.length));
     expect(params.get("subject")).toBe(`Project inquiry — ${SITE_TITLE_SUFFIX}`);
@@ -58,30 +65,70 @@ describe("Contact page", () => {
     expect(body).toContain("Timeline:");
   });
 
-  it("keeps the GitHub issue link secondary and adds a LinkedIn chip", () => {
+  it("renders GitHub, LinkedIn and Email as individual cards — the whole card is the link", () => {
     renderContact();
-    const issues = screen.getByRole("link", { name: /open an issue/i });
-    expect(issues.getAttribute("href")).toBe(`${REPO_URL}/issues`);
-    expect(issues.getAttribute("rel")).toContain("noopener");
+    const cards = [...document.querySelectorAll(".channel-card")];
+    expect(cards).toHaveLength(3);
+    // every card is an <a> carrying an inline SVG logo, a name and an address
+    for (const card of cards) {
+      expect(card.tagName).toBe("A");
+      expect(card.querySelector("svg")).not.toBeNull();
+      expect(card.querySelector("svg path")).not.toBeNull();
+      expect(card.querySelector(".channel-name")!.textContent!.length).toBeGreaterThan(0);
+      expect(card.querySelector(".channel-address")!.textContent!.length).toBeGreaterThan(0);
+    }
+    const github = screen.getByRole("link", { name: /github\.com/i });
+    expect(github.classList.contains("channel-card")).toBe(true);
+    expect(github.getAttribute("href")).toBe(`${REPO_URL}/issues`);
+    expect(github.getAttribute("rel")).toContain("noopener");
+    expect(github.textContent).toContain("github.com/amm-ds");
     const linkedin = screen.getByRole("link", { name: /linkedin/i });
     expect(linkedin.getAttribute("href")).toBe(LINKEDIN_URL);
     expect(linkedin.getAttribute("rel")).toBe("noopener noreferrer");
-    const email = screen.getByRole("link", { name: CONTACT_EMAIL });
-    expect(email.getAttribute("href")).toBe(`mailto:${CONTACT_EMAIL}`);
+    expect(linkedin.textContent).toContain("linkedin/in/alejandro-mérida-maroto");
+    const email = screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") });
+    expect(email.classList.contains("channel-card")).toBe(true);
+    expect(email.getAttribute("href")).toContain(`mailto:${CONTACT_EMAIL}`);
     expect(screen.getByText(/English, Spanish/i)).toBeInTheDocument();
   });
 
-  it("describes how engagements start as four crisp bullets and links /services", () => {
+  it("renders how-engagements-start as a numbered roadmap timeline with no revision-count claim", () => {
     renderContact();
-    const items = [...document.querySelectorAll(".start-steps li")].map((el) => el.textContent);
+    const items = [...document.querySelectorAll(".start-timeline li")];
     expect(items).toHaveLength(4);
-    expect(items[0]).toMatch(/You describe the problem, the data and the goal/i);
-    expect(items[1]).toMatch(/scoped proposal: objectives, data needs, deliverables, timeline/i);
-    expect(items[2]).toMatch(/shared repository from day one/i);
-    expect(items[3]).toMatch(/05 revision rounds/i);
-    expect(items[3]).toMatch(/full repository, documentation and a walkthrough/i);
+    // numbered steps with the site's step-chip language
+    const nums = [...document.querySelectorAll(".start-timeline .step-num")].map(
+      (el) => el.textContent,
+    );
+    expect(nums).toEqual(["01", "02", "03", "04"]);
+    expect(items[0].textContent).toMatch(/describe the problem, the data and the goal/i);
+    expect(items[1].textContent).toMatch(/scoped proposal: objectives, data needs, deliverables, timeline/i);
+    expect(items[2].textContent).toMatch(/shared repository from day one/i);
+    expect(items[3].textContent).toMatch(/structured revision rounds/i);
+    expect(items[3].textContent).toMatch(/full repository, documentation and a walkthrough/i);
+    // no "05 revision rounds" / "5 revisions" claim anywhere on the page
+    expect(document.body.textContent).not.toMatch(/0?5\s+revision/i);
+    expect(document.body.textContent).not.toMatch(/\b5 revisions\b/i);
     const services = screen.getByRole("link", { name: /services & process/i });
     expect(services.getAttribute("href")).toBe("/services");
+  });
+
+  it("renders the bottom row as plain centered text links — no card, border or background", () => {
+    renderContact();
+    const row = document.querySelector(".footer-links")!;
+    expect(row).not.toBeNull();
+    expect(row.tagName).toBe("P");
+    expect(row.classList.contains("accent-card")).toBe(false);
+    const css = readFileSync("src/styles.css", "utf8");
+    const rule = css.match(/\.footer-links \{[\s\S]*?\n\}/)![0];
+    expect(rule).toContain("text-align: center;");
+    expect(rule).not.toContain("background");
+    expect(rule).not.toContain("border");
+    expect(css).not.toContain(".cta-band");
+    // the three plain links
+    expect(screen.getByRole("link", { name: "/projects" })).toHaveAttribute("href", "/projects");
+    expect(screen.getByRole("link", { name: "github" })).toHaveAttribute("href", REPO_URL);
+    expect(screen.getByRole("link", { name: "email" })).toHaveAttribute("href", expect.stringContaining("mailto:"));
   });
 
   it("sets the document title via usePageMeta", () => {
@@ -100,11 +147,11 @@ describe("Contact inquiry form", () => {
     expect(screen.getByRole("button", { name: /send inquiry/i })).toBeInTheDocument();
     // the note that the mail client opens with the message pre-filled
     expect(screen.getByText(/opens your mail client with the message pre-filled/i)).toBeInTheDocument();
-    // form sits above the existing links card
+    // form sits above the channel cards
     const form = document.querySelector(".contact-form")!;
-    const links = document.querySelector(".contact-block")!;
+    const channels = document.querySelector(".channel-grid")!;
     expect(
-      form.compareDocumentPosition(links) & Node.DOCUMENT_POSITION_FOLLOWING,
+      form.compareDocumentPosition(channels) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
@@ -129,7 +176,7 @@ describe("Contact inquiry form", () => {
     expect(screen.getByText("message must be at least 10 characters")).toBeInTheDocument();
   });
 
-  it("constrains the message box resize and keeps the cards full width", () => {
+  it("constrains the message box resize and keeps the form and channel cards full width", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const textareaRule = css.match(/\.form-field textarea \{\n  resize: vertical;[\s\S]*?\n\}/)![0];
     expect(textareaRule).toContain("resize: vertical;");
@@ -137,7 +184,7 @@ describe("Contact inquiry form", () => {
     expect(textareaRule).toContain("max-height: 10rem;");
     // no narrow centered column on the contact page
     expect(css.match(/\.contact-form \{[\s\S]*?\n\}/)![0]).not.toContain("max-width");
-    expect(css.match(/\.contact-block \{[\s\S]*?\n\}/)![0]).not.toContain("max-width");
+    expect(css.match(/\.channel-grid \{[\s\S]*?\n\}/)![0]).not.toContain("max-width");
   });
 
   it("clears a field's error once the field is edited", () => {

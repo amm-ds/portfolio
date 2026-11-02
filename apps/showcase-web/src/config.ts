@@ -20,6 +20,12 @@ export const SITE_BASE_PATH: string = new URL(SITE_URL).pathname.replace(/\/+$/,
 /** Single site identity — used by title, og tags and nav brand. */
 export const SITE_NAME = "alejandromerida.dev";
 
+/** Nav brand split: the root keeps the default brand color, the ".dev" suffix
+ * renders in the accent color. Concatenating the two yields SITE_NAME exactly,
+ * so tests and assistive tech read the identical brand text. */
+export const SITE_NAME_ROOT = SITE_NAME.replace(/\.dev$/, "");
+export const SITE_NAME_SUFFIX = SITE_NAME.endsWith(".dev") ? ".dev" : "";
+
 export const REPO_URL = env.VITE_REPO_URL ?? "https://github.com/amm-ds/portfolio";
 export const DOCS_URL = env.VITE_DOCS_URL ?? SITE_URL;
 export const LINKEDIN_URL =

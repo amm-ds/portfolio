@@ -245,7 +245,7 @@ describe("ProjectsIndex", () => {
     expect(stylesCss).toContain(".topic-row {");
   });
 
-  it("renders the live-demos section from the registry as a single row with hero line and href", async () => {
+  it("renders the live-demos section from the registry with a digit-free card and href", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
@@ -276,12 +276,15 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     expect(demoCards[0].getAttribute("aria-label")).toBe("churn threshold sandbox");
-    // hero line rendered from the registry entry as the card's brief result
-    // (currency values untouched)
-    expect(demoCards[0].textContent).toContain("decision cost per 1,400 customers");
-    expect(demoCards[0].textContent).toContain("$601 vs $1,035 naive");
-    expect(demoCards[0].querySelector(".study-result")!.textContent).toContain(
-      "decision cost per 1,400 customers: $601 vs $1,035 naive",
+    // demo cards carry NO results line and NO numbers anywhere — not even the
+    // registry hero metric ("$601 vs $1,035 naive", "1,400")
+    expect(demoCards[0].querySelector(".study-result")).toBeNull();
+    expect(demoCards[0].textContent).not.toContain("decision cost");
+    expect(demoCards[0].textContent).not.toMatch(/[0-9]/);
+    expect(demoCards[0].textContent).not.toContain("$");
+    // the "what it does" block comes from the digit-free display line
+    expect(demoCards[0].querySelector(".study-does")!.textContent).toContain(
+      "Move the alarm threshold",
     );
     // the whole card is the link to the demo route
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
@@ -305,7 +308,7 @@ describe("ProjectsIndex", () => {
     expect(stylesCss).not.toContain(".demo-grid {\n  display: grid;");
   });
 
-  it("falls back to the static demo cards when the registry fetch fails", async () => {
+  it("falls back to the static demo cards when the registry fetch fails — still no results line or numbers", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
@@ -329,23 +332,34 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
     expect(demoCards[1].textContent).toContain("demand forecast workbench");
     expect(demoCards[1].getAttribute("href")).toBe("/demos/forecast-workbench");
+    // neither static fallback card shows a result line, digits or currency
+    for (const card of demoCards) {
+      expect(card.querySelector(".study-result")).toBeNull();
+      expect(card.querySelector(".study-achieves")).toBeNull();
+      expect(card.textContent).not.toMatch(/[0-9]/);
+      expect(card.textContent).not.toContain("$");
+    }
   });
 
-  it("renders a rewritten objective/data/result 'built' line and exactly 4 technique tags per card", async () => {
+  it("renders two muted blocks per experiment card — what it does / what it achieves — and exactly 4 technique tags", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(document.querySelectorAll(".project-card .study-built")).toHaveLength(7));
+    await waitFor(() => expect(document.querySelectorAll(".project-card .study-does")).toHaveLength(7));
+    expect(document.querySelectorAll(".project-card .study-achieves")).toHaveLength(7);
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
     const rag = cardOf("RAG Agent");
-    expect(rag.querySelector(".study-built")!.textContent).toContain(
+    expect(rag.querySelector(".study-does")!.textContent).toContain(
       "Built a question-answering agent",
+    );
+    expect(rag.querySelector(".study-achieves")!.textContent).toContain(
+      "right passage 83% of the time",
     );
     // one-line domain/dataset descriptor
     expect(rag.querySelector(".study-sub")!.textContent).toBe("NLP · docs");
@@ -398,15 +412,15 @@ describe("ProjectsIndex", () => {
     expect(document.querySelector(".key-number")).toBeNull();
   });
 
-  it("keeps the rewritten card copy on every card and no hand-maintained impact line", async () => {
+  it("keeps the does/achieves card copy on every card and no hand-maintained impact line", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() => expect(document.querySelectorAll(".project-card .study-built")).toHaveLength(7));
-    // exact rewritten description for project 01 (objective + data + result)
+    await waitFor(() => expect(document.querySelectorAll(".project-card .study-does")).toHaveLength(7));
+    // exact rewritten "what it does" for project 01 (objective + data)
     expect(
       screen.getByText(/Built a question-answering agent that answers only from a pinned 593-article/),
     ).toBeInTheDocument();
@@ -414,11 +428,11 @@ describe("ProjectsIndex", () => {
       [...document.querySelectorAll(".project-card")].find(
         (c) => c.querySelector("h3")?.textContent === title,
       )!;
-    expect(cardOf("Routing").querySelector(".study-built")?.textContent).toContain(
+    expect(cardOf("Routing").querySelector(".study-achieves")?.textContent).toContain(
       "within 4.2% of best-known",
     );
-    expect(cardOf("Churn").querySelector(".study-built")?.textContent).toContain(
-      "cutting decision cost 42%",
+    expect(cardOf("Churn").querySelector(".study-achieves")?.textContent).toContain(
+      "Cutting decision cost 42%",
     );
     // single-source copy: no separate impact line remains on cards
     expect(document.querySelectorAll(".project-card .impact")).toHaveLength(0);
@@ -509,8 +523,9 @@ describe("ProjectsIndex", () => {
       shared: card.classList.contains("study-card"),
       title: card.querySelector("h3")?.textContent ?? null,
       sub: card.querySelector(".study-sub")?.textContent ?? null,
-      built: card.querySelector(".study-built")?.textContent ?? null,
-      result: card.querySelector(".study-result")?.textContent ?? null,
+      does: card.querySelector(".study-does")?.textContent ?? null,
+      achieves: card.querySelector(".study-achieves")?.textContent ?? null,
+      result: card.querySelector(".study-result"),
       chips: card.querySelectorAll(".chip").length,
     });
     const demo = structureOf(document.querySelector(".demo-card")!);
@@ -519,20 +534,24 @@ describe("ProjectsIndex", () => {
         (c) => c.querySelector("h3")?.textContent === "Churn",
       )!,
     );
-    // identical layout: shared class, all four copy slots, exactly four tags
+    // identical layout: shared class, title, subtitle, does block, four tags
     for (const s of [demo, experiment]) {
       expect(s.shared).toBe(true);
       expect(s.title).not.toBeNull();
       expect(s.sub).not.toBeNull();
-      expect(s.built).not.toBeNull();
+      expect(s.does).not.toBeNull();
       expect(s.chips).toBe(4);
     }
-    // demo copy comes from the registry: group descriptor, hook, hero metric
+    // demo copy comes from the registry: group descriptor + hook; the demo
+    // card carries NO achieves block and NO results line
     expect(demo.sub).toContain("retain customers");
-    expect(demo.built).toContain("Move the alarm threshold");
-    expect(demo.result).toContain("$601 vs $1,035 naive");
-    // experiment keeps the CARD_SUMMARY copy as its "built" line
-    expect(experiment.built).toContain("cutting decision cost 42%");
+    expect(demo.does).toContain("Move the alarm threshold");
+    expect(demo.achieves).toBeNull();
+    expect(demo.result).toBeNull();
+    // experiment keeps the does/achieves copy and the live-result slot
+    expect(experiment.does).toContain("Scores churn on IBM telco data");
+    expect(experiment.achieves).toContain("Cutting decision cost 42%");
+    expect(experiment.result).not.toBeNull();
   });
 
   it("links the glossary from the experiments section description", async () => {
@@ -581,15 +600,65 @@ describe("ProjectsIndex", () => {
     ).toBe("experiments");
   });
 
-  it("restyles the page index to terminal labels: mono, muted, >-prefixed, accent on hover", () => {
+  it("restyles the page index to terminal labels: mono, accent-green items, >-prefixed", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const linkRule = css.match(/\.page-index a \{[\s\S]*?\n\}/)![0];
-    expect(linkRule).toContain("color: var(--muted);");
+    expect(linkRule).toContain("color: var(--accent);");
     const beforeRule = css.match(/\.page-index a::before \{[\s\S]*?\n\}/)![0];
     expect(beforeRule).toContain('content: "> ";');
     expect(beforeRule).toContain("color: var(--accent);");
     const hoverRule = css.match(/\.page-index a:hover \{[\s\S]*?\n\}/)![0];
     expect(hoverRule).toContain("color: var(--accent);");
     expect(css.match(/\.page-index \{[\s\S]*?\n\}/)![0]).toContain("font-family: var(--mono);");
+  });
+
+  it("splits the card body into two equal muted columns with a small gap and no labels", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const colsRule = css.match(/\.study-cols \{[\s\S]*?\n\}/)![0];
+    expect(colsRule).toContain("display: grid;");
+    expect(colsRule).toContain("repeat(auto-fit, minmax(0, 1fr));");
+    expect(colsRule).toContain("gap: 0.9rem;");
+    // both blocks are muted text with no label styling
+    const doesRule = css.match(/\.study-does,\n\.study-achieves \{[\s\S]*?\n\}/)![0];
+    expect(doesRule).toContain("color: var(--muted);");
+    expect(doesRule).not.toContain("text-transform");
+    // the old single description line is gone
+    expect(css).not.toContain(".study-built");
+  });
+
+  it("paints card subtitles blue with accent separators, sized between body and section titles", async () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const subRule = css.match(/\.study-sub \{[\s\S]*?\n\}/)![0];
+    expect(subRule).toContain("color: var(--secondary);");
+    expect(subRule).toContain("font-size: 1rem;");
+    // clearly smaller than the 1.6rem section titles, bigger than 0.92rem body copy
+    expect(css.match(/\.section-title--major \{[\s\S]*?\n\}/)![0]).toContain("font-size: 1.6rem;");
+    expect(css.match(/\.study-does,\n\.study-achieves \{[\s\S]*?\n\}/)![0]).toContain(
+      "font-size: 0.92rem;",
+    );
+    expect(css.match(/\.study-sub \.study-sep \{[\s\S]*?\n\}/)![0]).toContain(
+      "color: var(--accent);",
+    );
+    // separators render as accent spans inside the subtitle
+    vi.stubGlobal("fetch", projectsOnlyFetch());
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(7));
+    const sub = document.querySelector(".project-card .study-sub")!;
+    expect(sub.querySelector(".study-sep")).not.toBeNull();
+    expect(sub.querySelector(".study-sep")!.textContent).toBe("·");
+  });
+
+  it("paints all card tags blue — no per-tag hue rotation remains", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const chipRule = css.match(/\.study-card \.chip,\n\.offering-card \.chip \{[\s\S]*?\n\}/)![0];
+    expect(chipRule).toContain("color: #7dd3fc;");
+    expect(chipRule).toContain("background: rgba(56, 189, 248, 0.08);");
+    for (const hue of ["teal", "sky", "violet", "amber"]) {
+      expect(css).not.toContain(`.chip--${hue}`);
+    }
   });
 });

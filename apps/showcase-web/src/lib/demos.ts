@@ -34,3 +34,26 @@ export const DEMOS: Demo[] = [...STATIC_DEMO_REGISTRY]
   }));
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";
+
+/** Demo cards never show numbers — the experiments own the metrics — but the
+ * registry hooks name datasets ("M5") and bands ("80%"). Each published demo
+ * therefore carries a digit-free display line for the card's "what it does"
+ * block; unknown demo ids fall back to the registry hook with digits and
+ * digit-words stripped. */
+export const DEMO_DOES: Record<string, string> = {
+  "churn-sandbox":
+    "Move the alarm threshold and the missed-churner cost — watch the optimal cutoff and the saved budget change on a real churn model.",
+  "forecast-workbench":
+    "Pick a committed store-product series from the public demand track, compare the seasonal naive, AutoETS, gradient-boosted and pooled ensemble candidates on the scored-once test origins, and slide the horizon — curves, prediction band and per-series error respond.",
+};
+
+/** Digit-free "what it does" line for a demo card. */
+export function demoDoes(data: { id: string; hook: string }): string {
+  return (
+    DEMO_DOES[data.id] ??
+    data.hook
+      .replace(/[0-9０-９]+(?:\.[0-9]+)?%?/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  );
+}

@@ -1,12 +1,13 @@
 import { NavLink } from "react-router-dom";
-import { REPO_URL, SITE_NAME } from "../config";
+import { REPO_URL, SITE_NAME_ROOT, SITE_NAME_SUFFIX } from "../config";
 
 export function Nav() {
   return (
     <div className="nav">
       <div className="nav-inner">
         <NavLink to="/" className="nav-brand">
-          {SITE_NAME}
+          {SITE_NAME_ROOT}
+          <span className="nav-brand-accent">{SITE_NAME_SUFFIX}</span>
         </NavLink>
         <nav className="nav-links" aria-label="Primary">
           <NavLink to="/" end>

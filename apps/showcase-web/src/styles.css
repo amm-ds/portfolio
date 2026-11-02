@@ -313,6 +313,11 @@ select:focus-visible,
   color: var(--accent);
 }
 
+/* the ".dev" brand suffix renders in the accent color */
+.nav-brand-accent {
+  color: var(--accent);
+}
+
 .nav-links {
   display: flex;
   gap: 1.25rem;
@@ -346,7 +351,7 @@ select:focus-visible,
 
 .hero {
   position: relative;
-  padding: 3rem 0 0.25rem;
+  padding: 3rem 0 0.15rem;
   max-width: 1160px;
   /* tall stage for the terminal, capped so short viewports never force scroll */
   min-height: min(88vh, 880px);
@@ -497,14 +502,14 @@ select:focus-visible,
 }
 
 .hero-sub {
-  color: color-mix(in srgb, var(--accent) 30%, var(--muted));
+  color: var(--text);
   max-width: 760px;
   margin: 1.5rem auto 0.75rem;
 }
 
-/* tagline under the h1: accent-tinted muted, slightly larger than body copy */
+/* tagline under the h1: sky accent, slightly larger than body copy */
 .hero-kicker {
-  color: color-mix(in srgb, var(--accent) 35%, var(--muted));
+  color: var(--secondary);
   font-size: 1.05rem;
   margin: 0;
 }
@@ -513,11 +518,13 @@ select:focus-visible,
   font-family: var(--mono);
   font-size: 0.9rem;
   color: var(--text);
-  margin: 1.75rem 0 0;
+  margin: 1.75rem 0 3rem;
   display: flex;
   align-items: baseline;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0.25rem 0.4rem;
+  text-align: center;
 }
 
 .status-dot {
@@ -558,7 +565,7 @@ select:focus-visible,
 
 /* pages that open straight after a hero/stage keep a tighter top gap */
 .section-title--tight {
-  margin-top: 0.6rem;
+  margin-top: 0.4rem;
 }
 
 /* --- Demos (projects page, above the experiments rows) --- */
@@ -600,22 +607,35 @@ select:focus-visible,
   color: var(--text);
 }
 
-/* one-line domain/dataset descriptor */
+/* one-line domain/dataset descriptor: blue, sized between body copy and the
+   demos/experiments section titles; the "·" separator runs accent */
 .study-sub {
-  color: var(--muted);
-  font-size: 0.72rem;
+  color: var(--secondary);
+  font-size: 1rem;
   font-family: var(--mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin: 0 0 0.6rem;
 }
 
-/* "what has been built" line */
-.study-built {
+.study-sub .study-sep {
+  color: var(--accent);
+}
+
+/* the card body: two muted text blocks side by side — left "what it does",
+   right "what it achieves" (demo cards carry the left block only) */
+.study-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin: 0.6rem 0 0;
+}
+
+.study-does,
+.study-achieves {
   font-size: 0.92rem;
   line-height: 1.55;
-  color: var(--text);
-  opacity: 0.92;
+  color: var(--muted);
   margin: 0;
 }
 
@@ -710,30 +730,13 @@ select:focus-visible,
   color: var(--muted);
 }
 
-/* per-tag accent hues (teal / sky / violet / amber) with faint tinted
-   backgrounds — muted mono labels otherwise; hue rotates by tag index */
-.chip--teal {
-  color: #5eead4;
-  background: rgba(45, 212, 191, 0.08);
-  border-color: rgba(45, 212, 191, 0.35);
-}
-
-.chip--sky {
+/* card tags are blue only (sky hue, faint tinted background) — study cards
+   and offering cards share one tag style; no per-tag hue rotation */
+.study-card .chip,
+.offering-card .chip {
   color: #7dd3fc;
   background: rgba(56, 189, 248, 0.08);
   border-color: rgba(56, 189, 248, 0.35);
-}
-
-.chip--violet {
-  color: #c4b5fd;
-  background: rgba(167, 139, 250, 0.1);
-  border-color: rgba(167, 139, 250, 0.35);
-}
-
-.chip--amber {
-  color: #fcd34d;
-  background: rgba(251, 191, 36, 0.08);
-  border-color: rgba(251, 191, 36, 0.35);
 }
 
 /* --- Project detail / case study --- */
@@ -1686,35 +1689,127 @@ button:disabled {
   font-family: var(--mono);
 }
 
-/* "how engagements start" on /contact: crisp mono bullets */
-.start-steps {
+/* "how engagements start" on /contact: a numbered roadmap timeline — the
+   services process-timeline language turned vertical (numbered step chips,
+   connecting line down the row of nodes) */
+.start-timeline {
   list-style: none;
-  margin: 0 0 1.4rem;
+  margin: 0 0 1.5rem;
   padding: 0;
-  font-family: var(--mono);
-  font-size: 0.9rem;
-  color: var(--text);
-}
-
-.start-steps li {
-  margin-bottom: 0.55rem;
-  padding-left: 1.1rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 1.4rem;
   position: relative;
 }
 
-.start-steps li::before {
-  content: ">";
+/* the connecting line */
+.start-timeline::before {
+  content: "";
+  position: absolute;
+  left: 1.15rem;
+  top: 0.5rem;
+  bottom: 0.7rem;
+  width: 1px;
+  background: var(--border);
+}
+
+.start-timeline li {
+  position: relative;
+  padding-left: 3rem;
+}
+
+.start-timeline .step-num {
   position: absolute;
   left: 0;
+  top: 0;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 0.05rem 0.4rem;
+}
+
+.start-timeline h3 {
+  margin: 0 0 0.2rem;
+  font-size: 0.95rem;
+}
+
+.start-timeline p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* contact channels: one card per channel, the whole card is the link */
+.channel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .channel-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.channel-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.channel-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.channel-icon {
+  display: inline-flex;
+  flex-shrink: 0;
   color: var(--accent);
 }
 
-.start-steps li:last-child {
-  margin-bottom: 0;
+.channel-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
 }
 
-.contact-block {
-  padding: 1.25rem;
+.channel-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.channel-name {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.channel-address {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-meta {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 0 1.5rem;
 }
 
 /* --- Contact form: fields validate inline; submit composes a mailto. --- */
@@ -1795,16 +1890,6 @@ button:disabled {
 .form-sent {
   margin-top: 0.75rem;
   color: var(--ok);
-}
-
-.contact-block ul {
-  margin: 0;
-  padding-left: 1.1rem;
-  color: var(--muted);
-}
-
-.contact-block li {
-  margin-bottom: 0.35rem;
 }
 
 .cloud-plain {
@@ -2078,7 +2163,7 @@ button:disabled {
 }
 
 .page-index a {
-  color: var(--muted);
+  color: var(--accent);
 }
 
 .page-index a::before {
@@ -2101,11 +2186,9 @@ button:disabled {
   font-size: 2.4rem;
   line-height: 1.2;
   margin: 0 0 1rem;
-  /* brighter foreground: very subtle teal → sky gradient clipped to the text */
-  background: linear-gradient(100deg, #5eead4 0%, var(--accent) 40%, var(--secondary) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  /* solid accent headline — the teal → sky gradient was dropped */
+  color: var(--accent);
+  text-shadow: 0 0 14px var(--accent-glow);
 }
 
 .project-card .key-number {
@@ -2118,30 +2201,16 @@ button:disabled {
   padding: 0.15rem 0.55rem;
 }
 
-.cta-band {
-  margin-top: 2.5rem;
-  padding: 1.25rem 1.5rem;
-}
-
-.cta-band p {
-  margin: 0 0 0.5rem;
-  color: var(--muted);
-}
-
-.cta-band p:last-child {
-  margin-bottom: 0;
-}
-
-.cta-band strong {
-  color: var(--text);
-}
-
-.cta-links {
+/* bottom row on /contact: plain centered text links — no card, no border,
+   no background */
+.footer-links {
   font-family: var(--mono);
   font-size: 0.92rem;
+  text-align: center;
+  margin: 2.5rem 0 0;
 }
 
-.cta-links a {
+.footer-links a {
   color: var(--accent);
 }
 
@@ -3934,7 +4003,7 @@ button.chip.demo-preset.fwb-active {
 }
 
 
-/* --- About page: contact block, experience roles, education, practices --- */
+/* --- About page: contact block, practices cards, experience timeline --- */
 
 .about-contact {
   list-style: none;
@@ -3948,40 +4017,112 @@ button.chip.demo-preset.fwb-active {
   color: var(--muted);
 }
 
-.roles-grid {
+/* "how I work" opens the page as importance cards — the same geometry as the
+   services offering cards */
+.practices-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.25rem;
 }
 
-@media (min-width: 720px) {
-  .roles-grid {
+@media (min-width: 640px) {
+  .practices-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* role cards share the services card geometry and border conventions */
-.role-card {
+@media (min-width: 1200px) {
+  .practices-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.practice-card {
   padding: 1.6rem 1.75rem;
 }
 
-.role-dates {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--accent);
-  margin: 0 0 0.35rem;
-}
-
-.role-card h3 {
-  margin: 0 0 0.5rem;
+.practice-card h3 {
+  margin: 0 0 0.4rem;
   font-size: 1rem;
   color: var(--text);
 }
 
-.role-card p:last-child {
+.practice-card h3::before {
+  content: "[+] ";
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.practice-card p {
   margin: 0;
   color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* experience: roadmap-style vertical timeline — period (mono, accent) → role
+   → achievement bullets, connected by the site's dot/line language */
+.timeline {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0 0 0 1.5rem;
+  position: relative;
+}
+
+/* the connecting line */
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 0.3rem;
+  top: 0.55rem;
+  bottom: 0.7rem;
+  width: 1px;
+  background: var(--border);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.75rem;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+/* the dot on the line */
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -1.32rem;
+  top: 0.4rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.timeline-period {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  margin: 0 0 0.2rem;
+}
+
+.timeline-item h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.timeline-item ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
   font-size: 0.92rem;
+}
+
+.timeline-item li {
+  margin-bottom: 0.25rem;
 }
 
 .education-card {
@@ -3997,31 +4138,4 @@ button.chip.demo-preset.fwb-active {
 
 .education-card li {
   margin-bottom: 0.35rem;
-}
-
-/* "how I work": one narrative strip, not a grid of service cards */
-.practices-strip {
-  padding: 1.6rem 1.75rem;
-}
-
-.practices-strip ul {
-  margin: 0;
-  padding-left: 1.1rem;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.practices-strip li {
-  margin-bottom: 0.5rem;
-}
-
-.practices-strip li:last-child {
-  margin-bottom: 0;
-}
-
-.practices-strip strong {
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  font-weight: 600;
 }
