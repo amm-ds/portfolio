@@ -54,8 +54,8 @@ sections:
       convention needed stating because the tempting alternative,
       distance-only reporting, hides the truck count: a fleet can almost
       always shorten its distance by adding vehicles, so the two numbers
-      are never reported apart. The next section pins the 56 test days and
-      the reference plans they are scored against.
+      are never reported apart. The 56 test days and
+      the reference plans they are scored against are pinned next.
 
       ```mermaid
       flowchart LR
@@ -108,8 +108,8 @@ sections:
 
       The supplement matters because without it 42 instances would have no
       reference and would silently drop out of the ladder. Best-known is a
-      moving literature reference, not an optimality certificate. The next
-      section profiles what the 56 days actually look like.
+      moving literature reference, not an optimality certificate. Next
+      up: what the 56 days actually look like.
 
       **Business summary:** 56 standard test days from a pinned public
       benchmark, six families, plus published reference plans and quality
@@ -181,8 +181,8 @@ sections:
       The figures read at three zooms: the solver-profile figure shows
       distance per instance — the spread is the ladder; the gap figure
       re-plots it as percent above best-known, where ALNS hugs zero; the
-      route-map figure draws the C101 plan itself. The next section frames
-      what ships to a dispatch team.
+      route-map figure draws the C101 plan itself. From here, what
+      ships to a dispatch team.
 
       **Business summary:** From a random legal day to 4.23% of best-known
       in about a second per problem; the fleet-first variant trades a tenth
@@ -207,7 +207,7 @@ sections:
       a feature here, not overhead. Runtime is printed next to every
       number: a gap without its runtime is half a claim. The hinted
       exact-solver probe ties on gap at about ten times the runtime, which
-      is exactly the trade the pairing exposes. The next section reads the
+      is exactly the trade the pairing exposes. What follows is the
       measured record — means, spread, and the limits that travel with
       them.
 

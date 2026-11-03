@@ -52,7 +52,7 @@ sections:
       portable.
 
       The harness is the real asset; the benchmark pipeline diagram shows
-      how prompts turn into records. Read it left to right: task suite,
+      how prompts turn into records — task suite,
       load driver, local endpoint, per-request record, committed reports.
       Every request leaves a record row, so numbers can be re-derived.
       Next: which setups enter, under what rules.
@@ -101,7 +101,7 @@ sections:
         rate card kept as a hypothetical, never a quote.
 
       The measurement contract diagram below fixes what a cell is and
-      what gets recorded. Read it left to right: the first node defines
+      what gets recorded. The first node defines
       one cell (model, quantization, and concurrency rung, 40 requests
       each), the second lists the per-cell record (latency percentiles
       and time-to-first-token, tokens per second, quality and failure
@@ -130,8 +130,8 @@ sections:
       Temperature is 0. The token budget is bounded. Reasoning is off.
       Nothing is downloaded, so no license applies.
 
-      The request-schema diagram walks one benchmark call, end to end.
-      Read it left to right: the prompt record (question, checklist,
+      The request-schema diagram walks one benchmark call, end to end:
+      the prompt record (question, checklist,
       schema), the request envelope (temperature 0, a bounded token
       budget, reasoning off, plus the model tag and concurrency rung),
       and the scoring step, where a single Answer pydantic model parses
@@ -219,7 +219,7 @@ sections:
       the 4-bit 3B-active mixture-of-experts model, a dense 20B in MXFP4, a
       dense 31B in 4-bit MLX packaging, a dense 32B at full precision, and a
       quantized pair (Q8_0 and QAT-int4) on one runner. The serving-grid
-      diagram shows how they were combined. Read it left to right: the five
+      diagram shows how they were combined: the five
       setups enter one runner-selection step (Ollama routes each artifact
       to llama.cpp or MLX), then one measurement grid (concurrency rungs 1
       through 8, five suite repeats per cell), then the per-cell outputs.
@@ -255,8 +255,8 @@ sections:
       - **Cost:** the winner lands near $0.12 per 1M output tokens, from
         measured tok/s and declared 100 W / $0.30-per-kWh assumptions.
         *Limit:* electricity only — no metered wall power, no hardware
-        amortization. The next section weighs this evidence and names the
-        winner.
+        amortization. Weighing this evidence and naming the winner comes
+        next.
 
       **Business summary:** The 4-bit MoE model answers in 0.81 s, makes 7×
       the dense 32B's tokens per second, and matches every arm at 1.00
@@ -283,8 +283,8 @@ sections:
       prerequisite for trusting repeats (the attempt sits under revision
       notes in Details). Reading one chart per dimension, rather than a
       single summary score, was a deliberate choice: a summary score would
-      hide exactly the trade-offs this study exists to surface. The next
-      section collects the committed numbers in one place.
+      hide exactly the trade-offs this study exists to surface. The
+      committed numbers are collected in one place next.
 
       **Business summary:** The winner is the 4-bit MoE model; latency rises
       from 0.81 s at one request to 7.80 s at eight — only the procedure

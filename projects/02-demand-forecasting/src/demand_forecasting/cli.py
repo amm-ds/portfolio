@@ -406,8 +406,8 @@ def build_figures_m5_full(
 ) -> Path:
     """Write reports_m5_full/figures/{html,json} from the committed artifacts only.
 
-    The three story figures (per-level WRMSSE, sample catalog series, ranked
-    candidates) — offline, same contract as build-report-m5-full.
+    The story figures (per-level WRMSSE, sample catalog series, ranked
+    candidates, pooling panel) — offline, same contract as build-report-m5-full.
     """
     root = Path.cwd()
     reports_dir = reports_dir or root / "reports_m5_full"

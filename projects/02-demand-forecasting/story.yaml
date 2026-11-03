@@ -63,17 +63,20 @@ sections:
   figures: []
 - id: data
   text_md: |
-    **One dataset, the whole panel, one contract.** The headline track is the
-    Walmart M5 accuracy competition panel: 30,490 daily store-item series
-    (10 stores, 3 categories, 7 departments), 2011-01-29 to 2016-06-19,
-    47,649,940 rows, 59.5% of them zero-demand days, sha256-pinned from the
-    Nixtla `datasetsforecast` mirror of the competition archive; cite
-    Makridakis et al., IJF 2022. The hierarchy aggregates the bottom series
-    bottom-up through 12 levels — 42,840 nodes in total — and the evaluation
-    weights every level equally, revenue-weighted within.
+    **One dataset, the whole panel, one contract.** The headline track is
+    the Walmart M5 accuracy competition panel:
 
-    The evaluation contract diagram fixes the split discipline: choose on the
-    past, score once on the future.
+    - 30,490 daily store-item series (10 stores, 3 categories, 7
+      departments), 2011-01-29 to 2016-06-19, 47,649,940 rows, 59.5% of
+      them zero-demand days.
+    - Sha256-pinned from the Nixtla `datasetsforecast` mirror of the
+      competition archive; cite Makridakis et al., IJF 2022.
+    - The hierarchy aggregates the bottom series bottom-up through 12
+      levels — 42,840 nodes in total — and the evaluation weights every
+      level equally, revenue-weighted within.
+
+    The evaluation contract diagram fixes the split discipline: choose on
+    the past, score once on the future.
 
     ```mermaid
     graph LR
@@ -94,21 +97,24 @@ sections:
 - id: eda
   text_md: |
     **Why one global model is not enough.** The panel is dominated by
-    intermittent demand: classified by Syntetos-Boylan ADI/CV² (thresholds
-    1.32 / 0.49) on the real history up to the last selection origin, 27,736
-    of 30,490 series — 91% — are intermittent; only 2,754 are dense. Nearly
-    six in ten panel days sell nothing at all. The sample-series figure shows
-    what that means for a forecaster: the top-units series has a strong
-    weekly shape the models can learn, the hardest intermittent series is
-    zero for weeks at a time, and even the mid-volume series wobbles around
-    quiet days.
+    intermittent demand, and the judging rules were set to match:
 
-    The judging rules were set here too: choose on the past, score once on
-    the future, keep the seasonal naive as the floor, and report the
-    quiet-day share explicitly — on zero-actual days the floor's forecast is
-    right 66.6% of the time against the ensemble's 57.3%. Full-scale
-    forecasting is decided on those quiet days, so every result below carries
-    them in view.
+    - Classified by Syntetos-Boylan ADI/CV² (thresholds 1.32 / 0.49) on
+      the real history up to the last selection origin, 27,736 of 30,490
+      series — 91% — are intermittent; only 2,754 are dense.
+    - Nearly six in ten panel days sell nothing at all.
+    - Choose on the past, score once on the future, and keep the seasonal
+      naive as the floor.
+    - Report the quiet-day share explicitly — on zero-actual days the
+      floor's forecast is right 66.6% of the time against the ensemble's
+      57.3%.
+
+    The sample-series figure shows what that means for a forecaster: the
+    top-units series has a strong weekly shape the models can learn, the
+    hardest intermittent series is zero for weeks at a time, and even the
+    mid-volume series wobbles around quiet days. Full-scale forecasting is
+    decided on those quiet days, so every result below carries them in
+    view.
 
     **Business summary:** The panel is 91% intermittent — 27,736 of 30,490
     series, 59.5% zero days — so quiet days decide accuracy and the floor
@@ -117,15 +123,18 @@ sections:
 - id: training
   text_md: |
     **Eight candidates, one screen, one blend.** The panel runs eight
-    candidates. The floor is the seasonal-naive rule. A global LightGBM model
-    fits all 30,490 series at once (`mlforecast` recursive: lags plus
-    7/14/21/28-day rolling means, calendar, price, SNAP, and event features;
-    the tuned config in `params.yaml`; seed 42). A `Tweedie` twin swaps in a
-    count-friendly loss for sparse demand. Three pooled arms fit one booster
-    each per store (10 groups), per store×category cell (30), and per
-    department (7) — the winning solution's recipe at three groupings.
-    Per-series `AutoETS` closes the list. The convex ensemble is built from
-    the pool.
+    candidates:
+
+    - The floor is the seasonal-naive rule.
+    - A global LightGBM model fits all 30,490 series at once (`mlforecast`
+      recursive: lags plus 7/14/21/28-day rolling means, calendar, price,
+      SNAP, and event features; the tuned config in `params.yaml`; seed 42).
+    - A `Tweedie` twin swaps in a count-friendly loss for sparse demand.
+    - Three pooled arms fit one booster each per store (10 groups), per
+      store×category cell (30), and per department (7) — the winning
+      solution's recipe at three groupings.
+    - Per-series `AutoETS` closes the list; the convex ensemble is built
+      from the pool.
 
     ```mermaid
     graph LR
@@ -137,28 +146,40 @@ sections:
     ```
 
     Every fit is seeded or closed-form, and the pooled arms visit their
-    groups in a fixed order, so a re-run rebuilds the same bytes. Selection
-    never reads the test origin: the screen and the weight grid see the two
-    selection origins only. The full run takes about 12.9 hours on one
-    machine — the price of scoring the real panel.
+    groups in a fixed order, so a re-run rebuilds the same bytes.
+    Selection never reads the test origin: the screen and the weight grid
+    see the two selection origins only.
+
+    The pooling panel puts the top-units series under the rival fits: on one
+    erratic series the curves sit within noise of each other — the pooling
+    edge is a panel-level property, and the official WRMSSE across all
+    42,840 nodes is where it shows.
+
+    The full run takes about 12.9 hours on one machine — the price of
+    scoring the real panel. How is the winner graded? The next section
+    defines the ruler.
 
     **Business summary:** Eight candidates — floor, global and Tweedie
     LightGBM, three pooled fits, AutoETS, screened ensemble — chosen by mean
     + 1.0×std on two selection origins, never the test window.
-  figures: []
+  figures: [m5_full_pooling_panel]
 - id: evaluation
   text_md: |
-    **Metrics match decisions.** The headline is the official WRMSSE. Each
+    **Metrics match decisions.** The headline is the official WRMSSE: each
     node's error is scaled by its own train-window volatility, weighted by
-    revenue, and averaged with equal total weight per level across all 42,840
-    nodes. That is the competition's own ruler, so the fair comparison is the
-    one the contest reports: improvement over its benchmark. The winner
+    revenue, and averaged with equal total weight per level across all
+    42,840 nodes. Side metrics keep the headline honest:
+
+    - Bottom WAPE for volume-scaled error.
+    - Bias for direction.
+    - The spread of the per-origin score for stability.
+    - The per-level split — where the hierarchical win is made.
+    - Zero-day accuracy for the quiet days that dominate the panel.
+
+    That is the competition's own ruler, so the fair comparison is the one
+    the contest reports: improvement over its benchmark. The winner
     improved −22.4% over the best benchmark
     ([Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013)).
-    Side metrics keep the headline honest: bottom WAPE for volume-scaled
-    error, bias for direction, the spread of the per-origin score, the
-    per-level split, and zero-day accuracy for the quiet days that dominate
-    the panel.
 
     ```mermaid
     graph LR
@@ -168,40 +189,46 @@ sections:
       W --> O["Official WRMSSE + per-level + zero-day report, scored once"]
     ```
 
-    Read it left to right: the tree does the adding up, the metric does the
-    judging, and the scoring pass runs once. What these numbers do not show:
-    savings. Stockouts, promotions, and returns sit outside the model, so no
-    safety-stock or cost claim follows. Where does the ranking land?
+    Follow the aggregation: the tree does the adding up, the metric does
+    the judging, and the scoring pass runs once.
+
+    The per-level figure shows where the win is made. The blend's margin
+    is broadest at the aggregate levels — 0.350 on total sales against the
+    floor's 0.560 — while at item level the learned candidates cluster
+    between 1.04 and 1.15 and the floor sits at 1.38–1.39, because
+    series-level noise dominates there. Read the bars level by level: the
+    gap between the blend and the floor widens toward the top of the tree.
+
+    What these numbers do not show: savings. Stockouts, promotions, and
+    returns sit outside the model, so no safety-stock or cost claim
+    follows. Where does the ranking land?
 
     **Business summary:** Evaluation grades every candidate once under the
     official revenue-weighted WRMSSE — the competition's own ruler — with
     bottom WAPE, bias, stability, per-level, and zero-day metrics around it.
-  figures: []
+  figures: [m5_full_per_level_wrmsse]
 - id: results
   text_md: |
     **The headline ranking is in the ranked-bars figure: convex ensemble
     0.6161, best single 0.6217, floor 0.8929** on the scored-once competition
-    window. Read the bars as a full-scale reversal, not a blowout: the three
-    pooled arms (0.6217 / 0.6313 / 0.6575) all land ahead of the global model
-    (0.6601) — at 30,490 series, one fit per store, cell, or department beats
-    a single global fit, the inverse of the subset-era finding, where pooling
-    starved each fit. The Tweedie arm posts 0.6473 and AutoETS 0.7093. The
-    blend keeps the pooled edge — 0.60 store×category + 0.10 store + 0.30
-    department — for a −31.0% cut against the floor.
+    window. Read the bars as a full-scale reversal, not a blowout:
 
-    The per-level figure shows where the win is made: the blend's margin is
-    broadest at the aggregate levels — 0.350 on total sales against the
-    floor's 0.560 — while at item level the learned candidates cluster
-    between 1.04 and 1.15 and the floor sits at 1.38–1.39, because series-level
-    noise dominates there. And the honest
-    gap: on zero-actual days the floor stays right 66.6% of the time against
-    the ensemble's 57.3%. Full scale does not fix quiet days; it prices them
-    into the hierarchy.
+    - The three pooled arms (0.6217 / 0.6313 / 0.6575) all land ahead of
+      the global model (0.6601) — at 30,490 series, one fit per store,
+      cell, or department beats a single global fit, the inverse of the
+      subset-era finding, where pooling starved each fit.
+    - The Tweedie arm posts 0.6473 and AutoETS 0.7093.
+    - The blend keeps the pooled edge — 0.60 store×category + 0.10 store +
+      0.30 department — for a −31.0% cut against the floor.
+
+    And the honest gap: on zero-actual days the floor stays right 66.6% of
+    the time against the ensemble's 57.3%. Full scale does not fix quiet
+    days; it prices them into the hierarchy.
 
     **Business summary:** Final ranking: ensemble 0.6161 vs the 0.8929 floor
     (−31.0%); pooled fits beat the global model at full scale, with the win
     made at aggregate levels, not item level.
-  figures: [m5_full_candidate_ranking, m5_full_per_level_wrmsse]
+  figures: [m5_full_candidate_ranking]
 - id: conclusions
   text_md: |
     ## Results summary
@@ -312,3 +339,4 @@ figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin (2016-05-22): one top-units, one hardest-intermittent, one mid-volume — 56-day history, 28-day actuals, and the ensemble curve with its member envelope (an envelope, not a calibrated interval). The weekly shape, the weeks-long zero runs, and the quiet days are all visible."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the competition window (42,840 revenue-weighted nodes, scored once): the stability-screened convex ensemble leads at 0.6161, the best single pooled fit posts 0.6217, and the seasonal-naive floor sits at 0.8929."
   m5_full_per_level_wrmsse: "Per-level official WRMSSE on the test window — convex ensemble vs seasonal-naive floor vs best single (lgbm_pool_store), with equal total weight per level. The blend's edge is broadest at the aggregate levels the competition weights most; at item level the learned candidates cluster near 1.04–1.15 while the floor sits near 1.39."
+  m5_full_pooling_panel: "The top-units catalog series (FOODS_3_090_CA_3, 3,454 units in the last 28 days) at the scored-once test origin: 56-day history, 28-day actuals, and three forecast curves — the global LightGBM fit, the pooled per-store fit, and the convex blend. Compare the forecast window against the actuals: on one erratic series the fits sit within noise of each other — the pooling edge is a panel-level property, visible in the official WRMSSE over all 42,840 nodes: 0.6601 global vs 0.6217 pooled vs 0.6161 blend."

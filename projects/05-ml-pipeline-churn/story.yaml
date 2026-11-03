@@ -6,8 +6,8 @@ sections:
     text_md: |
       **A churn scorer turns scores into a contact list with a price on it.**
       For a retention team the deliverable is the priced list, not the
-      score. The decision diagram shows the served path: read it
-      left to right — one fitted pipeline scores each row, the 0.175
+      score. The decision diagram shows the served path: one fitted
+      pipeline scores each row, the 0.175
       threshold splits "call" from "skip", and the bill box prices the
       outcome at 601 versus 1,035 for contacting everyone, a 41.9% cut;
       95% bootstrap interval −485 to −343.
@@ -44,8 +44,8 @@ sections:
       73.5% accurate and saves nothing. Three questions drive the work.
       Which contact threshold gives the lowest expected bill? How sure is
       the saving? And how far does the best threshold move when the price
-      of a missed churner changes? The cost-model diagram shows the search.
-      Read it left to right: the stated cost model — a false alarm costs
+      of a missed churner changes? The cost-model diagram shows the search:
+      the stated cost model — a false alarm costs
       1 voucher, a missed churner 5 — feeds the three candidates, all
       answering on the same 1,409-row holdout under a 41-point threshold
       grid, where the cheapest expected bill wins. The chain ends with
@@ -68,7 +68,7 @@ sections:
       - A threshold with an interval on its saving.
       - A clear answer when the missed-churner price runs from 3 to 8.
 
-      The next section sets up the data those candidates answer on.
+      The data those candidates answer on comes next.
 
       **Business summary:** The goal is the cheapest contact list under a
       1-versus-5 cost split, with the saving's range and the threshold's
@@ -83,8 +83,8 @@ sections:
       The HF id cited in planning does not exist; the raw IBM mirror is the
       implemented source — a public mirror with a hash beat a re-hosted
       copy, because the pin must travel with the citation. The lineage
-      diagram shows how the panel flows to the scored-once holdout. Read it
-      left to right: both sources pass the same data-quality gates — null
+      diagram shows how the panel flows to the scored-once holdout. In it,
+      both sources pass the same data-quality gates — null
       rates within bounds, values inside allowed ranges, churn strictly
       binary — and only then split.
 
@@ -102,8 +102,8 @@ sections:
       The synthetic twin — 8.8% churn, planted nulls, one 9,999 outlier
       charge — exists for CI: it exercises the same gates offline when the
       network is unavailable, and never substitutes for the real-data
-      results. The next section profiles what churn looks like in this
-      panel.
+      results. What does churn look like in this
+      panel?
 
       **Business summary:** One real panel — 7,043 customers, sha256-pinned
       — splits into train, calibration and a scored-once holdout; a
@@ -178,8 +178,8 @@ sections:
       raw and isotonic reliability curves — the straighter line wins; the
       cost-curve figure is read by its minimum, 601 versus the naive flat
       line at 1,035; the permutation-importance figure is read top-down,
-      where contract, tenure and charges sit. The next section checks the
-      served artifact against the measurement contract.
+      where contract, tenure and charges sit. From here, the served
+      artifact meets the measurement contract.
 
       **Business summary:** Cost, not accuracy, picks the winner: a
       calibrated boosted model serves at 0.175 for 601 versus 1,035; the
@@ -195,8 +195,8 @@ sections:
       threshold grid prices each cutoff under the 1-versus-5 cost model,
       the argmin picks the threshold, and 2,000 paired bootstrap resamples
       at fixed thresholds turn the raw-versus-isotonic cost gap into a 95%
-      interval. The evaluation-contract diagram shows the chain; read it
-      left to right — scoring, grid, argmin, interval — then the two watch
+      interval. The evaluation-contract diagram shows the chain —
+      scoring, grid, argmin, interval — then the two watch
       items hanging off the end.
 
       ```mermaid
@@ -220,8 +220,8 @@ sections:
       re-scored. The fix, a time-stamped feed from the data owner, is the
       first requirement before rollout. The second watch item is the raw
       model's blind spot for two-year churners, which makes served-policy
-      fairness on fresh data the gate before rollout. The next section
-      lists what the measured numbers do and do not support.
+      fairness on fresh data the gate before rollout. The results
+      list what the measured numbers do and do not support.
 
       **Business summary:** Deploy on raw CRM rows behind the data-quality
       gates; expect a ~42% cost cut at a 5× missed-churner price, stable

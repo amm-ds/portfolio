@@ -30,10 +30,10 @@ sections:
       R -->|"top 3 passages"| G
       G --> V
       V -->|"all claims supported"| O
-      V -->|"any claim fails"| O
+      V -->|"claim fails"| O
     ```
 
-    Read the diagram left to right: the corpus is pinned before anything
+    Trace the path from the left: the corpus is pinned before anything
     runs, CPU retrieval narrows 593 articles to three passages, a model
     drafts with citations, and the verifier cuts or refuses anything under
     the 0.6 support floor.
@@ -66,7 +66,8 @@ sections:
       Z --> M
     ```
 
-    Read the flow left to right: a question first meets the corpus boundary —
+    Follow the chain from question to meter: a question first meets the
+    corpus boundary —
     anything outside it gets a calibrated refusal, not a guess. In-corpus
     questions move to a cited draft, then each claim is checked against its
     passage at the 0.6 support floor. Failing claims go through bounded
@@ -115,23 +116,27 @@ sections:
       WP --> B --> CJ --> EV["Scored evaluation<br/>65 tuning + 15 sealed"]
     ```
 
-    Read the lineage left to right: a bounded scan feeds a bounded build.
-    The build makes one pinned artifact, and every score comes off that
-    file — never from an unpinned step. The build stays small on purpose.
-    Five topics are covered: Climate,
-    Renewable energy, Aviation, Machine learning, and Photosynthesis. Each
-    caps at 120 matched articles plus exact-title anchors. Every article is
-    cut at 12,000 characters. The obvious alternatives were rejected early:
-    indexing all of Wikipedia would leave every claim check open-ended, and
-    uncapped articles would not fit one model context. A contract file pins
-    the corpus by sha256;
-    source, snapshot date, license, and credit sit in the
-    [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/).
-    Null and length gates stop bad input before indexing. Both question
-    sets — 65 tuning, 15 sealed — are graded by hand. The sealed set was
-    written only after tuning froze. The question mix is deliberate: 44
-    single-hop, 11 multi-hop, and 10 unanswerable, so retrieval,
-    composition, and refusal all get exercised.
+    The lineage runs from sources to scores: a bounded scan feeds a
+    bounded build. The build makes one pinned artifact, and every score
+    comes off that file — never from an unpinned step. The build stays
+    small on purpose:
+
+    - Five topics are covered — Climate, Renewable energy, Aviation,
+      Machine learning, and Photosynthesis — each capped at 120 matched
+      articles plus exact-title anchors.
+    - Every article is cut at 12,000 characters; the obvious alternatives
+      were rejected early — indexing all of Wikipedia would leave every
+      claim check open-ended, and uncapped articles would not fit one
+      model context.
+    - A contract file pins the corpus by sha256; source, snapshot date,
+      license, and credit sit in the
+      [data registry](https://amm-ds.github.io/portfolio/data-registry/wikipedia/).
+    - Null and length gates stop bad input before indexing.
+    - Both question sets — 65 tuning, 15 sealed — are graded by hand, and
+      the sealed set was written only after tuning froze.
+    - The question mix is deliberate — 44 single-hop, 11 multi-hop, and 10
+      unanswerable — so retrieval, composition, and refusal all get
+      exercised.
 
     With the corpus pinned, what does it look like inside?
 
@@ -146,15 +151,21 @@ sections:
     lengths, cut off by the 12,000-character cap. That cap keeps embedding
     cost low and every article short enough for one model context.
 
-    Read the figure in two passes. First the topic bars: five near-equal
-    columns, so no topic dominates retrieval training and a headline score
-    cannot hide a weak subject. Second the length distribution: a long tail
-    of short articles with a hard right edge at 12,000 characters — the cap
-    doing its job. Two checks shaped this section. Dump order is not
-    topical, so a naive quota fill would pad topics with side pages; and
-    several hoped-for flagship titles were missing from the scan. Each
-    anchor title and each test question was therefore checked against the
-    corpus itself, not assumed — a small corpus makes that cheap, and
+    Read the figure in two passes:
+
+    - First the topic bars: five near-equal columns, so no topic dominates
+      retrieval training and a headline score cannot hide a weak subject.
+    - Second the length distribution: a long tail of short articles with a
+      hard right edge at 12,000 characters — the cap doing its job.
+
+    Two checks shaped this section:
+
+    - Dump order is not topical, so a naive quota fill would pad topics
+      with side pages.
+    - Several hoped-for flagship titles were missing from the scan.
+
+    Each anchor title and each test question was therefore checked against
+    the corpus itself, not assumed — a small corpus makes that cheap, and
     nothing about coverage is taken on faith. The near-equal bar heights
     also settle a design worry: no topic can carry the retrieval metrics on
     its own, so a single average score is a fair summary of the whole
@@ -225,8 +236,8 @@ sections:
       J --> F --> G --> R["Reported numbers"]
     ```
 
-    Read the contract left to right as the checklist every number survives.
-    The three judges are kept separate because they see different failure
+    Treat this contract as the checklist every number survives. The three
+    judges are kept separate because they see different failure
     modes: the rubric judge applies the failure taxonomy, RAGAS scores
     faithfulness and relevancy, and the claim verifier checks each claim at
     the 0.6 floor. The seeded floors exist so a headline can never restate

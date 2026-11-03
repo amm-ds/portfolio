@@ -104,7 +104,7 @@ sections:
       validation window where all tuning happens); the middle box is the
       test side (October through December, 584,855 zone-hours) scored
       once; the right box is the judge — four error readings plus the
-      band-coverage check. Read it as a one-way gate: only the frozen
+      band-coverage check. Treat it as a one-way gate: only the frozen
       winner crosses to the test side, and nothing learned there flows
       back. With the bars fixed, the next question is where the data
       comes from.
@@ -142,7 +142,7 @@ sections:
       domain; failed checks become missing
       ([dataset card](https://amm-ds.github.io/portfolio/data-registry/noaa-ghcn/)).
 
-      The lineage diagram reads left to right as the build order. Both
+      The lineage diagram follows the build order. Both
       feeds first pass row checks — keys, zones, and timestamps on the
       taxi side, station quality flags on the weather side — because a
       bad row caught here is cheaper than a bad forecast later. The

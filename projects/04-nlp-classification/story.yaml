@@ -31,7 +31,7 @@ sections:
       AG News: 127,600 real headline-plus-description items; the training
       portion has 120k rows; license unknown. The transformer alone pays
       full price on obvious items; keywords are cheap but wrong on blurry
-      ones — hence the router. Read it left to right: about three of four
+      ones — hence the router. Follow the arrows: about three of four
       items exit on the free keyword path; the uncertain quarter rides
       the transformer. Which rung of that ladder earns its cost?
 
@@ -73,7 +73,7 @@ sections:
       biggest model, was rejected — it would spend the whole budget
       before any baseline existed to compare against.
 
-      Read the decision-flow diagram left to right: five rungs, cheapest
+      Five rungs, cheapest
       first, each judged by the same accuracy and macro-F1 pair, with
       one honesty rule running alongside — the test set's selection role
       must be disclosed, since it helped pick the shipped model.
@@ -114,7 +114,7 @@ sections:
       repeats the identical seeded protocol at three smaller sizes,
       leaving data as the only varying factor.
 
-      Read the data-lineage diagram left to right: the full portion and the
+      The lineage splits two ways: the full portion and the
       seeded sample feed one shared test set, which drives model selection;
       the sample's 6,600-row complement branches off as a fresh holdout
       that bypasses selection entirely.

@@ -245,6 +245,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
     "figure_names": [
       "m5_full_candidate_ranking",
       "m5_full_per_level_wrmsse",
+      "m5_full_pooling_panel",
       "m5_full_sample_series"
     ],
     "has_roadmap": true,

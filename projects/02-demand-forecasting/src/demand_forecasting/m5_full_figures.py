@@ -3,7 +3,7 @@
 ``build-figures-m5-full`` reads ONLY the committed artifacts
 (``reports_m5_full/metrics.json``, ``catalog_forecasts.parquet``,
 ``catalog_meta.json`` and the demo payload for the 56-day history tails) and
-writes the three Plotly figures the story.yaml references into
+writes the Plotly figures the story.yaml references into
 ``reports_m5_full/figures/`` — no re-running anything, same contract as
 :mod:`demand_forecasting.m5_full_report`.
 
@@ -16,6 +16,8 @@ them through ``reports_m5_full/figures/`` first):
   intermittent, mid-volume): 56-day history + 28-day actual + ensemble curve
   with the member-envelope band.
 - ``m5_full_candidate_ranking`` — all 8 candidates ranked by official WRMSSE.
+- ``m5_full_pooling_panel`` — the pooling story on one top-units series:
+  56-day history + 28-day actual with the global, pooled, and blend curves.
 """
 
 import json
@@ -165,6 +167,61 @@ def fig_candidate_ranking(metrics: dict[str, Any]) -> go.Figure:
     )
 
 
+def fig_pooling_panel(
+    catalog: pd.DataFrame,
+    cat_meta: dict[str, Any],
+    payload: dict[str, Any],
+    metrics: dict[str, Any],
+) -> go.Figure:
+    """The pooling story on one top-units series: global vs pooled vs blend.
+
+    The series is the sample figure's top-units pick (history tails ship in
+    the demo payload; the scored window comes from the committed
+    ``catalog_forecasts.parquet``). On one erratic series the fits sit
+    within noise of each other — the pooling edge is a panel-level
+    property, and the official WRMSSE over all 42,840 nodes is where it
+    shows.
+    """
+    sid, _label = SAMPLE_SERIES[0]
+    history_of = {e["series_id"]: e["windows"]["history"] for e in payload["catalog"]}
+    rank = {d["unique_id"]: d for d in cat_meta["series"]}[sid]
+    row = catalog[catalog["unique_id"] == sid].sort_values("ds")
+    origin = cat_meta["forecast_window"][0]
+    x_hist = [f"d{i - 55}" for i in range(56)]
+    x_fcst = [str(d.date()) for d in row["ds"]]
+    fig = go.Figure()
+    for name, y, color, dash, width in (
+        ("history", history_of[sid], "#94a3b8", "solid", 1.5),
+        ("actual", list(row["actual"]), "#f472b6", "solid", 2.0),
+        ("lgbm (global)", list(row["lgbm"]), "#38bdf8", "dash", 2.0),
+        ("lgbm_pool_store (pooled)", list(row["lgbm_pool_store"]), "#2dd4bf", "solid", 2.0),
+        ("convex_ensemble (blend)", list(row["convex_ensemble"]), "#fbbf24", "solid", 2.5),
+    ):
+        fig.add_scatter(
+            x=x_hist if name == "history" else x_fcst,
+            y=y,
+            name=name,
+            mode="lines",
+            line={"color": color, "width": width, "dash": dash},
+        )
+    fig.update_layout(
+        title=(
+            f"Top-units series {sid} ({rank['units_last_28d']:.0f} units/28d) at the "
+            f"scored-once test origin {origin}: global vs pooled vs blend"
+        )
+    )
+    test = metrics["test"]
+    return add_takeaway(
+        apply_theme(fig),
+        f"on one erratic series the fits sit within noise of each other — "
+        f"the pooling edge is a panel-level property; official WRMSSE over "
+        f"all 42,840 nodes: "
+        f"{test['lgbm']['official_wrmsse']:.4f} global vs "
+        f"{test['lgbm_pool_store']['official_wrmsse']:.4f} pooled vs "
+        f"{test['convex_ensemble']['official_wrmsse']:.4f} blend",
+    )
+
+
 def build_figures_full(reports_dir: Path) -> Path:
     """Write figures/*.html + *.json for the story from committed artifacts."""
     reports_dir = Path(reports_dir)
@@ -180,6 +237,7 @@ def build_figures_full(reports_dir: Path) -> Path:
         "m5_full_per_level_wrmsse": fig_per_level_bars(metrics),
         "m5_full_sample_series": fig_sample_series(frame, cat_meta, payload),
         "m5_full_candidate_ranking": fig_candidate_ranking(metrics),
+        "m5_full_pooling_panel": fig_pooling_panel(frame, cat_meta, payload, metrics),
     }
     figures_dir = reports_dir / "figures"
     for name, fig in figures.items():

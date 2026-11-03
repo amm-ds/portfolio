@@ -6,12 +6,12 @@ short_version: >-
   unattended use. Data: synthetic handbook, real Wikipedia chunks.
 figure_captions:
   suite_summary: >-
-    Deterministic grades by split: 15/15 tuning tasks on each of four graders;
-    held-out answers 13/13 on answers and exact tool sets; should-fail probes
-    5/6 graceful refusals. Held-out records mix the hosted run (h01-h10) with
-    the local-Ollama expansion wave (h11-h19, metered $0) — the step/latency
-    misses sit on local tasks, whose generations exceed the hosted-tuned 60 s
-    budget. The held-out split is a check, not a generalization guarantee.
+    Bars count passes per graded check, grouped by split — the 15-task
+    tuning suite, the 13 held-out answers, the 6 should-fail probes — so
+    each bar's width is passes out of the tasks that faced that check.
+    Read each check row across its splits: the pattern that matters is one
+    bar stopping short of its group, which marks exactly where a graded
+    check failed and on which arm.
   node_waterfall: >-
     Node visits per task, stacked by latency, against the 60 s budget. Median
     latency is 18.2 s and p95 is 31.1 s; retries appear as separate labelled
@@ -62,8 +62,9 @@ sections:
           EX --> TR
       ```
 
-      Read the workflow graph left to right: Plan types the steps and tool
-      calls; consequential runs pause at the human checkpoint — approve,
+      Follow the workflow graph from Plan to ledger: Plan types the
+      steps and tool calls; consequential runs pause at the human
+      checkpoint — approve,
       reject, or park — then Critique audits the tools used. Every
       transition lands in the StepTrace ledger.
 
@@ -113,15 +114,15 @@ sections:
           CHECKS --> SCORE["per-task grades in metrics.json"]
       ```
 
-      Read the schema left to right: the first box is the task record
+      The schema has two boxes: the first is the task record
       itself — id and category, a corpus-grounded question with its
       pinned expected answer, the expected tool set, and the budgets.
       The second box is the grading bench: four named checks, no judge
       in the loop. The arrow means every task, tuning or held out, faces
       exactly the same four checks, and the grades land in metrics.json.
 
-      Which corpora and tasks make answers this checkable? The next
-      section fixes the data.
+      Which corpora and tasks make answers this checkable? The data
+      holds the answer.
 
       **Business summary:** Targets: plan-act-review with bounded retries,
       code-graded answers and tool sets, $0.25 per task, and a human
@@ -160,15 +161,15 @@ sections:
           RUN --> GRADE["offline grading -<br/>no new model calls"]
       ```
 
-      Read the layout left to right: the two corpora feed the task files,
-      and a recorded run — plans, tool calls, answers, and tokens written
-      to disk — feeds offline grading, so re-checking a run costs nothing
-      and needs no provider. Versioned JSON means a task change is a diff
-      a reviewer can read.
+      The layout runs from corpora to grades: the two corpora feed the
+      task files, and a recorded run — plans, tool calls, answers, and
+      tokens written to disk — feeds offline grading, so re-checking a
+      run costs nothing and needs no provider. Versioned JSON means a
+      task change is a diff a reviewer can read.
 
       The probes deserve attention: six of the nineteen held-out tasks
-      are built to fail. How do you grade a refusal? The next section
-      answers that.
+      are built to fail. How do you grade a refusal? That answer
+      comes next.
 
       **Business summary:** The data: a synthetic 12-document handbook,
       read-only retrieval over 3,589 Wikipedia chunks, and 15 tuning plus
@@ -178,31 +179,64 @@ sections:
   - id: eda
     text_md: |
       **How we judged it: code does the grading, and some tasks are built to
-      fail.** Five task types — lookup, calculation, conversion, multi-step
-      chains, note-taking — were chosen to cover the tool surface, one to
-      three tools each, so no tool sat untested. A check is code that
-      scores the answer, the exact tool set, the step count, and the
-      time budget — the same code on every run, no AI judge, because a
-      judge's verdict could drift between runs. A should-fail probe asks
-      for the impossible — a conversion no table supports, a fact no
-      corpus holds — where the only right move is a plain "no", with no
-      crash and no invented number. Probes exist because answer-only
-      suites reward confabulation: a model that always answers looks
-      fine until you ask it something unanswerable.
+      fail.** The suite was shaped by what it had to catch:
+
+      - Five task types — lookup, calculation, conversion, multi-step
+        chains, note-taking — cover the tool surface, one to three tools
+        each, so no tool sat untested.
+      - Every check is code scoring the answer, the exact tool set, the
+        step count, and the time budget — the same code on every run. A
+        model judge was ruled out: its verdicts can drift between runs,
+        and a grader must not.
+      - Six should-fail probes ask for the impossible — a conversion no
+        table supports, a fact no corpus holds. The only right move is a
+        plain "no", with no crash and no invented number.
+      - Probes exist because answer-only suites reward confabulation: a
+        model that always answers looks fine until you ask it something
+        unanswerable.
+
+      The grading diagram shows what every task faces before a verdict
+      exists.
+
+      ```mermaid
+      flowchart LR
+          subgraph SUITE["suite shape - 34 tasks"]
+              direction LR
+              T15["15 tuning t01-t15"] --- H13["13 held-out answers"] --- P6["6 should-fail probes"]
+          end
+          subgraph PROBE["one probe under the grader"]
+              Q["impossible ask"] --> D{"the agent's move"}
+              D -->|ok status + refusal marker| OK["RefusalSuccess pass"]
+              D -->|fabricated number or crash| BAD["RefusalSuccess fail"]
+          end
+          subgraph BENCH["same four graders on every task - no AI judge"]
+              direction LR
+              A["answers"] --- TO["exact tool sets"] --- S["step count"] --- L["time budget"]
+          end
+          SUITE --> BENCH
+          PROBE --> BENCH
+          BENCH --> M["metrics.json - identical verdict on every rerun"]
+      ```
+
+      The suite shape puts the probes inside the held-out split, so
+      honesty is graded, not just accuracy. The probe box shows the only
+      passing move — an ok status carrying a refusal marker — while a
+      fabricated number or a crash fails. The bench runs the same four
+      checks on tuning and held-out tasks alike, which is why re-grading
+      a captured run changes nothing.
 
       Per-call traces caught what answer scores missed: an early run made
       8 unplanned calls, every one traced to planner wording that left
       the tool choice loose. Tightened tool descriptions produced zero
-      unplanned calls in the record run.
-
-      The captured tool-calls chart shows the final tally. Read it as a
-      matrix: one row per tool, one column per task, each cell counting
-      calls. Look first for any cell outside a task's planned set — there
-      is none — then at the totals: 30 planned calls against 30 expected,
-      100% call precision, 100% tool recall.
+      unplanned calls in the record run. The captured tool-calls chart
+      shows the final tally — read it as a matrix: one row per tool, one
+      column per task, each cell counting calls. Look first for any cell
+      outside a task's planned set — there is none — then at the totals:
+      30 planned calls against 30 expected, 100% call precision, 100%
+      tool recall.
 
       The grading is defined; what does the executable graph look like
-      under pressure? The next section walks it.
+      under pressure? The walkthrough is next.
 
       **Business summary:** The grading: code scores answers, exact tool
       sets, step count, and time; should-fail probes pass only on an honest
@@ -284,11 +318,30 @@ sections:
     text_md: |
       **Run and grading are separate: a live run is captured once and
       re-scored offline for free, so the pilot decision stays cheap to
-      re-verify.** The split is deliberate. A run makes provider calls
-      and spends money; grading is deterministic code over a JSON record.
-      Anyone can re-check the verdicts without a key, a network, or a
-      cent, and a reviewer can audit the exact record the grades came
-      from.
+      re-verify.** The split buys three things:
+
+      - A run makes provider calls and spends money; grading is
+        deterministic code over a JSON record — re-check the verdicts
+        without a key, a network, or a cent.
+      - A reviewer can audit the exact record the grades came from, not a
+        summary of it.
+      - Re-verifying the pilot verdict costs nothing, so the decision can
+        be challenged as often as a reviewer wants.
+
+      The capture-and-grade diagram shows the pipeline.
+
+      ```mermaid
+      flowchart LR
+          RUN["one live run - plans, calls, answers, tokens"] --> CAP["run_records.json - captured once"]
+          CAP --> GR["offline graders - deterministic code, no provider"]
+          GR --> V["verdicts anyone can re-check for free"]
+          CAP -.-> AUD["reviewer audits the exact record behind the grades"]
+      ```
+
+      Follow the pipeline: the run is captured once as JSON, the graders
+      re-score that file as often as needed, and the dotted line is the
+      audit path — the record on disk is the same record the grades came
+      from, so re-checking needs no provider and no spend.
 
       The held-out suite is nineteen tasks — 13 answer tasks plus 6
       should-fail probes — written after tuning froze. They exist to
@@ -311,7 +364,7 @@ sections:
 
       The evidence backs a supervised pilot with a reviewer watching; it
       says nothing about open-ended or new-domain work. What did the
-      graders record, split by split? The next section reports the
+      graders record, split by split? The results report the
       grades.
 
       **Business summary:** Runs are captured once and re-scored offline for
@@ -339,8 +392,8 @@ sections:
       - **Latency:** median 18.2 s and p95 31.1 s against the 60 s budget.
         The node-waterfall chart shows why the budget held: each task is
         one horizontal stack of its node visits — plan, execute,
-        critique — with each segment's width equal to its latency. Read
-        it left to right, as time. The pattern to check is a single
+        critique — with each segment's width equal to its latency. The
+        horizontal axis is time. The pattern to check is a single
         segment ballooning, which would mean one slow node; instead,
         retries appear as separate labelled visits, so a retrying task
         shows as several small segments rather than one stretched bar —
