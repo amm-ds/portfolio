@@ -69,8 +69,8 @@ sections:
 
       What must it prove? The next section sets the targets.
 
-      **Business summary:** This section introduces the workflow: 15/15 fixed
-      tasks passed, 13/13 held-out answers, 5/6 refusals, about $0.13 of the
+      **Business summary:** The auditable workflow passed 15/15 fixed tasks,
+      13/13 held-out answers, and 5/6 refusals — at about $0.13 of the
       $2.00 suite cap.
     figures: []
     metrics_keys: []
@@ -123,9 +123,9 @@ sections:
       Which corpora and tasks make answers this checkable? The next
       section fixes the data.
 
-      **Business summary:** This section sets the targets: plan-act-review with
-      bounded retries, code-graded answers and tool sets, $0.25 per task, and a
-      human checkpoint.
+      **Business summary:** Targets: plan-act-review with bounded retries,
+      code-graded answers and tool sets, $0.25 per task, and a human
+      checkpoint.
     figures: []
     metrics_keys: []
   - id: data
@@ -170,9 +170,9 @@ sections:
       are built to fail. How do you grade a refusal? The next section
       answers that.
 
-      **Business summary:** This section fixes the data: a synthetic 12-document
-      handbook, read-only retrieval over 3,589 Wikipedia chunks, and 15 tuning
-      plus 19 held-out tasks.
+      **Business summary:** The data: a synthetic 12-document handbook,
+      read-only retrieval over 3,589 Wikipedia chunks, and 15 tuning plus
+      19 held-out tasks.
     figures: []
     metrics_keys: []
   - id: eda
@@ -204,9 +204,9 @@ sections:
       The grading is defined; what does the executable graph look like
       under pressure? The next section walks it.
 
-      **Business summary:** This section defines the grading: code scores
-      answers, exact tool sets, step count, and time; should-fail probes only
-      pass on an honest no.
+      **Business summary:** The grading: code scores answers, exact tool
+      sets, step count, and time; should-fail probes pass only on an honest
+      no.
     figures:
       - tool_usage_matrix
     metrics_keys: []
@@ -275,9 +275,9 @@ sections:
       How is a run graded without re-spending? The next section separates
       the two.
 
-      **Business summary:** This section describes the plan-execute-critique
-      graph and the record run: 15/15 tasks passed, 30/30 calls planned, median
-      latency 18.2 s, about $0.13 of the $2.00 cap.
+      **Business summary:** The plan-execute-critique graph passed everything
+      on the record run: 15/15 tasks, 30/30 calls planned, median latency
+      18.2 s, about $0.13 of the $2.00 cap.
     figures: []
     metrics_keys: []
   - id: evaluation
@@ -314,9 +314,9 @@ sections:
       graders record, split by split? The next section reports the
       grades.
 
-      **Business summary:** This section separates running from grading: the
-      record run is captured once and re-scored offline. Held out: 13/13 answers
-      with exact tool sets, 5/6 refusals, 18/19 step budget.
+      **Business summary:** Runs are captured once and re-scored offline for
+      free. Held out: 13/13 answers with exact tool sets, 5/6 refusals, 18/19
+      step budget.
     figures:
       - cost_latency_bars
     metrics_keys:
@@ -357,9 +357,9 @@ sections:
       Where does that leave the pilot question? The conclusions record
       the exact numbers, the protocol, and the limits.
 
-      **Business summary:** This section reports the final grades: 15/15 answers
-      and exact tool sets on the tuning suite, 13/13 answers and 5/6 refusals
-      held out, zero unplanned calls, median latency 18.2 s.
+      **Business summary:** Final grades: 15/15 answers and exact tool sets on
+      the tuning suite; 13/13 answers and 5/6 refusals held out; zero
+      unplanned calls; median latency 18.2 s.
     figures:
       - suite_summary
       - node_waterfall
@@ -377,6 +377,20 @@ sections:
       plan-act-critique graph; deterministic graders for answers, exact tool
       sets, step and latency budgets, and refusals; 8-step and $0.25 per-task
       budgets. [full evaluation report](https://amm-ds.github.io/portfolio/projects/09-agentic-workflows/)
+
+      ## What the experiment taught
+
+      - Deterministic grading paid off: a model judge was rejected, and per-call
+        traces caught what answer scores missed — 8 unplanned calls traced to
+        loose tool descriptions.
+      - Tightened tool descriptions eliminated unplanned calls: 30/30 planned
+        calls, 100% call precision and 100% tool recall on the record run.
+      - Should-fail probes earned their place: the one refusal miss exposed a
+        wording gap in the failure End, not confabulation.
+      - Budgets are provider-tuned: the local model exceeded the hosted 60 s cap
+        on 7/9 tasks — local runs are $0 but not budget-comparable.
+      - The evidence supports a supervised pilot: held-out checks guard against
+        overfitting, but n=19 is a check, not a generalization guarantee.
 
       ## Exact numbers
 
@@ -440,45 +454,10 @@ sections:
       - A supervised pilot needs an external review team and production tasks;
         open-ended autonomy stays out of scope.
 
-      ## Revision notes
-
-      - **Held-out expansion (2026-10-30):** 10 → 19 tasks — 6 answer tasks
-        (h11–h16) over previously unexercised corpus facts, plus 3 refusal
-        probes (h17 currency conversion, h18 fact absent from the handbook, h19
-        arithmetic outside the calculator's AST). Ran on local Ollama under the
-        $0.25/$2.00 guards (metered **$0.00**: 27 calls, 111,492 in / 31,659 out
-        tokens, ~35 min for 9 tasks). Records are mixed-provider: h01–h10 hosted
-        `kimi-for-coding`, h11–h19 local.
-        - New answers 6/6, exact tool sets 6/6; all 13 held-out answers hold
-          100% call precision, 100% tool recall, zero unplanned.
-        - New probes 2/3: h17 and h18 refused with grounds; h19 exhausted both
-          bounded retries on the capped calculator (`2**500` raises "exponent
-          too large") and exited through the failure End with no refusal marker
-          — a wording gap, not confabulation.
-      - The first hosted held-out run caught h10 inventing a "1 kg/L basis"
-        conversion; tightened conversion docstrings produced the refusal now on
-        record. n=19 stays too small for a generalization claim.
-      - **Tuning disclosures:** t15's expected tool set gained `calculator` (the
-        119-year gap is arithmetic); t05's prompt now pins "before inverter
-        losses".
-      - **Repeat stability (2026-10-29):** two hosted passes kept 15/15 answers
-        and exact tool sets, zero unplanned calls; suite estimates $0.148 /
-        $0.144 vs $0.131 record (ledger $0.10 / $0.09); median latency 24.1 s /
-        20.8 s, p95 41.0 s / 41.5 s — all inside 60 s. One step-budget miss each
-        (t03, t10) on a critique revision; captured calls 30 → 33–35; one repeat
-        exercised the calculator repair path and recovered.
-      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/09-agentic-workflows).
-
-      ## Reproduce
-
-      `uv run dvc repro`
-
-      [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/09-agentic-workflows) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/09-agentic-workflows/)
-
       **Business summary:** Every automated check passed — 15/15 tuning
-      tasks, 13/13 held-out answers, 5/6 refusals — at about $0.10–0.15 per
-      suite, with zero unplanned tool calls. The evidence supports a
-      supervised pilot, not unattended use.
+      tasks, 13/13 held-out answers, 5/6 refusals at about $0.10–0.15 per
+      suite, zero unplanned calls. The evidence supports a supervised pilot,
+      not unattended use.
     figures: []
     metrics_keys: []
 key_concepts:
@@ -490,6 +469,14 @@ key_concepts:
   - "**Behavioral tool contracts** — tool descriptions that pin what each tool may do, tightened until unplanned calls disappeared."
 roadmap:
   - status: delivered
-    text: "Two hosted repeat passes kept 15/15 answers and exact tool sets, zero unplanned calls."
+    text: "Built the typed plan-act-critique graph with bounded retries and a human checkpoint."
   - status: delivered
-    text: "Held-out suite grew 10 → 19: six answer tasks, three refusal probes, local metered $0.00."
+    text: "Defined the five whitelisted tools as behavioral contracts with per-call traces."
+  - status: delivered
+    text: "Built the deterministic graders and the should-fail probes; rejected AI judges."
+  - status: delivered
+    text: "Passed the hosted record run: 15/15 tasks, 30/30 planned calls, ~$0.13 of cap."
+  - status: delivered
+    text: "Expanded the held-out suite to 19 tasks and added the $0 local-model arm."
+  - status: delivered
+    text: "Verified repeat stability: two hosted passes kept 15/15 answers and exact tool sets."

@@ -30,21 +30,35 @@ export const DEMOS: Demo[] = [...STATIC_DEMO_REGISTRY]
     href: d.href,
     group: d.group,
     project: d.project,
-    hero: d.hero,
+    // the registry's headline labels are full sentences ("official WRMSSE,
+    // ensemble vs seasonal-naive floor (42,840-node hierarchy, scored once)")
+    // — far too long for a results chip; the source string is capped here
+    hero: d.hero ? { ...d.hero, label: chipLabel(d.hero.label) } : d.hero,
   }));
 
 export const DEMOS_INTRO = "play with the live systems behind the experiments";
 
+/** Cap a results-chip label at six words — the chip is a label, not a
+ *  sentence. Longer registry labels (the demand-forecasting hero is eleven
+ *  words) are trimmed with a trailing ellipsis; anything at or under the cap
+ *  is returned untouched. */
+export function chipLabel(label: string): string {
+  const words = label.split(/\s+/).filter(Boolean);
+  if (words.length <= 6) return label;
+  return `${words.slice(0, 6).join(" ")}…`;
+}
+
 /** The registry hooks name datasets ("M5") and bands ("80%"), so each
  * published demo carries a digit-free display line for the card's
  * "description" block; the labeled "results" block is where the registry's
- * headline metric renders. Unknown demo ids fall back to the registry hook
- * with digits and digit-words stripped. */
+ * headline metric renders. Key phrases carry `**bold**` inline markdown so
+ * they stand out in the muted card body. Unknown demo ids fall back to the
+ * registry hook with digits and digit-words stripped. */
 export const DEMO_DOES: Record<string, string> = {
   "churn-sandbox":
-    "Move the alarm threshold and the missed-churner cost — watch the optimal cutoff and the saved budget change on a real churn model.",
+    "Move the alarm threshold and the missed-churner cost — watch the **optimal cutoff** and the **saved budget** change on a real churn model.",
   "forecast-workbench":
-    "Pick a committed store-product series from the public demand track, compare the seasonal naive, AutoETS, gradient-boosted and pooled ensemble candidates on the scored-once test origins, and slide the horizon — curves, prediction band and per-series error respond.",
+    "Pick a committed store-product series from the public demand track, compare the seasonal naive, AutoETS, gradient-boosted and pooled ensemble candidates on the **scored-once test origins**, and slide the horizon — curves, prediction band and per-series error respond.",
 };
 
 /** Digit-free "what it does" line for a demo card. */

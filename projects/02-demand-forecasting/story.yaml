@@ -24,10 +24,9 @@ sections:
     One pipeline carries the full panel from raw sales to a single blended
     forecast. Only the final arrow touches the scored-once window.
 
-    **Business summary:** The full Walmart M5 panel, scored once under the
-    official 42,840-node hierarchical WRMSSE: a stability-screened
-    pooled-LightGBM ensemble cuts error to 0.6161 vs the 0.8929
-    seasonal-naive floor — −31.0% on the competition's own ruler.
+    **Business summary:** Walmart's full M5 panel, scored once under the
+    official 42,840-node WRMSSE: a screened pooled-LightGBM ensemble cuts
+    error to 0.6161 vs the 0.8929 seasonal-naive floor (−31.0%).
   figures: []
 - id: objectives
   text_md: |
@@ -88,9 +87,9 @@ sections:
     future into training, and any gap quoted without that discipline would be
     unverifiable. With the panel pinned, what does it look like inside?
 
-    **Business summary:** The data section fixes the panel and the contract:
-    all 30,490 M5 series through a 42,840-node hierarchy, two origins to
-    choose on, one competition window scored once.
+    **Business summary:** One contract: all 30,490 M5 series through a
+    42,840-node hierarchy, two origins to choose on, one competition window
+    scored once.
   figures: []
 - id: eda
   text_md: |
@@ -111,10 +110,9 @@ sections:
     forecasting is decided on those quiet days, so every result below carries
     them in view.
 
-    **Business summary:** The data is 91% intermittent: 27,736 of 30,490
-    series and 59.5% zero days — the sample-series figure shows the weekly
-    shape, the weeks-long zero runs, and the quiet days where the floor still
-    wins.
+    **Business summary:** The panel is 91% intermittent — 27,736 of 30,490
+    series, 59.5% zero days — so quiet days decide accuracy and the floor
+    still wins them.
   figures: [m5_full_sample_series]
 - id: training
   text_md: |
@@ -144,10 +142,9 @@ sections:
     selection origins only. The full run takes about 12.9 hours on one
     machine — the price of scoring the real panel.
 
-    **Business summary:** Training runs eight candidates — floor, global and
-    Tweedie LightGBM, three pooled fits, AutoETS, and a screened ensemble —
-    chosen by mean + 1.0×std of the per-origin WRMSSE on two selection
-    origins, never touching the test window.
+    **Business summary:** Eight candidates — floor, global and Tweedie
+    LightGBM, three pooled fits, AutoETS, screened ensemble — chosen by mean
+    + 1.0×std on two selection origins, never the test window.
   figures: []
 - id: evaluation
   text_md: |
@@ -201,10 +198,9 @@ sections:
     the ensemble's 57.3%. Full scale does not fix quiet days; it prices them
     into the hierarchy.
 
-    **Business summary:** The final ranking: ensemble 0.6161 vs the 0.8929
-    floor (−31.0%) on the official scheme; pooled fits beat the global model
-    at full scale, and the win is made at the aggregate levels, not the item
-    level.
+    **Business summary:** Final ranking: ensemble 0.6161 vs the 0.8929 floor
+    (−31.0%); pooled fits beat the global model at full scale, with the win
+    made at aggregate levels, not item level.
   figures: [m5_full_candidate_ranking, m5_full_per_level_wrmsse]
 - id: conclusions
   text_md: |
@@ -219,40 +215,33 @@ sections:
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/)
     or [try the live demo](https://amm-ds.github.io/portfolio/demos/forecast-workbench/).
 
+    ## What the experiment taught
+
+    - Pooling won at full scale: one fit per store, store-by-category cell, or
+      department beat a single global fit — the inverse of the subset-era
+      finding, where pooling starved each fit.
+    - The stability screen did its job: mean + 1.0×std over the two selection
+      origins picked a stable three-member blend, not a lucky one.
+    - Scored-once discipline was the price of a believable headline: choose on
+      two origins, grade exactly once on the competition window.
+    - Full scale does not fix quiet days: on zero-actual days the floor stays
+      right 66.6% of the time against the ensemble's 57.3%.
+    - The remaining debt is priced, not hidden: a thin screen, no bootstrap CIs,
+      and unmodeled stockouts bound what the −31.0% claim means.
+
     ## Exact numbers
 
-    All eight candidates on the scored-once test origin (official
-    hierarchical WRMSSE; vs floor = relative cut; stability = population std
-    over the 2 selection origins):
+    Headline candidates on the scored-once test origin (official hierarchical
+    WRMSSE; vs floor = relative cut; stability = population std over the 2
+    selection origins; `lgbm` is the global single-fit model):
 
     | candidate | official WRMSSE | vs floor | bottom WAPE | bias | stability |
     |---|---|---|---|---|---|
     | **convex_ensemble (champion)** | **0.6161** | **−31.0%** | **0.7633** | **+0.0328** | **0.0001** |
     | lgbm_pool_store (best single) | 0.6217 | −30.4% | 0.7641 | +0.0265 | 0.0126 |
-    | lgbm_pool_dept | 0.6313 | −29.3% | 0.7608 | +0.0041 | 0.0214 |
-    | lgbm_tweedie | 0.6473 | −27.5% | 0.7642 | +0.0122 | 0.0219 |
-    | lgbm_pool_storecat | 0.6575 | −26.4% | 0.7674 | +0.0482 | 0.0179 |
     | lgbm | 0.6601 | −26.1% | 0.7626 | +0.0041 | 0.0210 |
     | auto_ets | 0.7093 | −20.6% | 0.7710 | −0.0063 | 0.0161 |
     | seasonal_naive (floor) | 0.8929 | — | 0.9159 | −0.0120 | 0.0108 |
-
-    Per-level official WRMSSE — ensemble vs floor vs best single
-    (lgbm_pool_store), with the node counts:
-
-    | level | ensemble | floor | best single | nodes |
-    |---|---|---|---|---|
-    | total | 0.3501 | 0.5600 | 0.3359 | 1 |
-    | state | 0.4016 | 0.6731 | 0.3919 | 3 |
-    | store | 0.4586 | 0.7176 | 0.4441 | 10 |
-    | cat | 0.3779 | 0.6230 | 0.3885 | 3 |
-    | dept | 0.4468 | 0.7082 | 0.4808 | 7 |
-    | state_cat | 0.4629 | 0.7600 | 0.4736 | 9 |
-    | state_dept | 0.5371 | 0.8292 | 0.5619 | 21 |
-    | store_cat | 0.5278 | 0.8008 | 0.5281 | 30 |
-    | store_dept | 0.6194 | 0.8881 | 0.6292 | 70 |
-    | item | 1.1060 | 1.3918 | 1.1141 | 3,049 |
-    | state_item | 1.0661 | 1.3799 | 1.0708 | 9,147 |
-    | item_store | 1.0386 | 1.3830 | 1.0412 | 30,490 |
 
     Ensemble composition: lgbm_pool_storecat × 0.60 + lgbm_pool_store × 0.10 +
     lgbm_pool_dept × 0.30 — the best three of the six-candidate pool by the
@@ -262,55 +251,33 @@ sections:
 
     ## Protocol
 
-    - Full M5 panel (protocol `m5_full_v1`): 30,490 bottom series × 1,969
-      days; hierarchy of 12 levels, 42,840 revenue-weighted nodes.
+    - Full M5 panel (protocol `m5_full_v1`): 30,490 bottom series × 1,969 days;
+      hierarchy of 12 levels, 42,840 revenue-weighted nodes.
     - Origins: 3 weekly (7-day spacing) — 2016-05-08 and 2016-05-15 select;
-      2016-05-22 (the competition window) scores once; horizon 28 days, at
-      least 1,096 training days.
-    - Candidates: 8 — seasonal_naive floor; global LightGBM (mlforecast
-      recursive, tuned committed config, seed 42); Tweedie-loss twin; pooled
-      fits per store (10 groups), per store×category (30), per department (7);
-      per-series AutoETS; stability-screened convex ensemble.
-    - Classes: Syntetos-Boylan ADI/CV² (1.32 / 0.49) — 2,754 dense, 27,736
-      intermittent.
-    - Metrics: official hierarchical WRMSSE (per-node RMSSE vs train
-      volatility; revenue weights, equal total per level; zero-scale nodes
-      excluded and counted); bottom WAPE; bias; stability; per-level WRMSSE;
-      zero-day accuracy, pooled and on the intermittent class.
-    - Runtime: 46,509 s — about 12.9 hours on one machine, deterministic on
-      re-run.
+      2016-05-22 (the competition window) scores once; horizon 28 days, at least
+      1,096 training days.
+    - Candidates: 8 — seasonal_naive floor; global LightGBM (mlforecast recursive,
+      tuned committed config, seed 42); Tweedie-loss twin; pooled fits per store
+      (10 groups), per store×category (30), per department (7); per-series
+      AutoETS; stability-screened convex ensemble.
+    - Classes and metrics: Syntetos-Boylan ADI/CV² (1.32 / 0.49) — 2,754 dense,
+      27,736 intermittent; official hierarchical WRMSSE, bottom WAPE, bias,
+      stability, per-level WRMSSE, zero-day accuracy. Runtime: 46,509 s — about
+      12.9 hours on one machine, deterministic on re-run.
 
     ## Limits
 
-    - Thin selection screen: ensemble members and weights were chosen on only
-      2 selection origins; the screen is a stability rule, not a tight
-      selection bound.
-    - No bootstrap CIs: the full track commits point estimates only, so the
-      −31.0% cut is not interval-bounded.
+    - Thin selection screen: ensemble members and weights were chosen on only 2
+      selection origins, and no bootstrap CIs exist — the −31.0% cut is not
+      interval-bounded.
+    - On zero-actual days the floor still wins — 66.6% vs 57.3% accuracy — full
+      scale prices intermittency into the hierarchy; it does not remove it.
     - The demo band is the per-day min/max envelope of the blend members — an
       envelope, not a calibrated prediction interval.
     - Neural global models (N-HiTS, TFT, Chronos-class foundation models) are
       not benchmarked — a documented next step, not a hidden one.
-    - The AutoETS arm ran through its documented per-series fallback after a
-      batch-path error (fixed after the committed run; the fallback produces
-      the same AutoETS values).
-    - On zero-actual days the floor still wins — 66.6% vs 57.3% accuracy —
-      full scale prices intermittency into the hierarchy; it does not remove
-      it.
     - Stockouts, promotions, and returns are unmodeled — no savings or
       safety-stock claim.
-
-    ## Revision notes
-
-    Developed in iterations across the project's waves; the earlier
-    subset-era reports stay committed on disk, and the iteration history is
-    in [git history](https://github.com/amm-ds/portfolio/commits/main/projects/02-demand-forecasting).
-
-    ## Reproduce
-
-    `uv run python -m demand_forecasting.cli evaluate-m5-full` —
-    [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
-    · [full evaluation report](https://amm-ds.github.io/portfolio/projects/02-demand-forecasting/).
 
     ```mermaid
     graph LR
@@ -319,10 +286,9 @@ sections:
       E --> X["Weekly reforecast; floors and scored-once windows;<br/>no savings claim without a cost check"]
     ```
 
-    **Business summary:** This section records the final numbers, protocol,
-    and limits: the full-panel ensemble at 0.6161 against the 0.8929 floor —
-    −31.0% on the official scheme — with a thin selection screen, no
-    bootstrap CIs, and quiet days still owned by the floor.
+    **Business summary:** The full-panel ensemble lands at 0.6161 against
+    the 0.8929 floor (−31.0% on the official scheme), with a thin selection
+    screen, no bootstrap CIs, quiet days still owned by the floor.
   figures: []
 key_concepts:
   - "**Official hierarchical WRMSSE** — the competition's own metric: every node's error is scaled by its train-window volatility, revenue-weighted, and averaged with equal total weight per level across all 42,840 nodes."
@@ -333,7 +299,15 @@ key_concepts:
   - "**Scored-once evaluation** — candidates are chosen on past origins and graded exactly once on the competition window, because random splits leak the future into training."
 roadmap:
 - status: delivered
-  text: "Full-panel M5 under the official hierarchical WRMSSE: 8 candidates, 3 rolling origins, stability-screened ensemble at 0.6161 vs the 0.8929 floor (−31.0%)."
+  text: "Built the leakage-safe full-panel feature pipeline for all 30,490 series."
+- status: delivered
+  text: "Ran the 8-candidate ladder — floor, global and Tweedie LightGBM, pooled fits, AutoETS."
+- status: delivered
+  text: "Screened ensemble members on 2 selection origins; blended weights on a 0.05 simplex grid."
+- status: delivered
+  text: "Scored every candidate once on the competition window under official WRMSSE."
+- status: delivered
+  text: "Reported bias, per-level, and zero-day metrics beside the headline."
 figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin (2016-05-22): one top-units, one hardest-intermittent, one mid-volume — 56-day history, 28-day actuals, and the ensemble curve with its member envelope (an envelope, not a calibrated interval). The weekly shape, the weeks-long zero runs, and the quiet days are all visible."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the competition window (42,840 revenue-weighted nodes, scored once): the stability-screened convex ensemble leads at 0.6161, the best single pooled fit posts 0.6217, and the seasonal-naive floor sits at 0.8929."

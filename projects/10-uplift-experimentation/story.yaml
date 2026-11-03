@@ -343,6 +343,19 @@ sections:
       policy intervals; profit = incremental conversions × $114 − mailed ×
       send cost. [full evaluation report](https://amm-ds.github.io/portfolio/projects/10-uplift-experimentation/)
 
+      ## What the experiment taught
+
+      - Randomization did the heavy lifting: with assignment sound, the policy
+        race needed no modeling heroics — only honest intervals.
+      - Profit at the stated budget beats ranking metrics: the T-learner loses
+        the Qini race to the response model yet wins the money at a 25% budget.
+      - The verdict flips on send cost: mail-everyone wins at $0.01; the T-list
+        overtakes near ≈$0.30 and wins outright above it.
+      - Cheap variance tricks stayed cheap: CUPED left the ATE unchanged and cut
+        only 0.08% of conversion variance — reported as a null result.
+      - Predicted uplift runs about 2× hot: the ranking is coarse enough to sort
+        a mailing list, not to promise per-customer effects.
+
       ## Exact numbers
 
       Seed 42 (global split + cross-fitting); policy intervals come from
@@ -401,11 +414,6 @@ sections:
       not margin), $0.01 send cost, 25% policy budget, ~0.9% base
       conversion.
 
-      Column roles: treatment ← segment (Mens = 1, control = 0); conversion
-      ← conversion (primary outcome); visit and spend ← same; `log_history`
-      ← history (feature + CUPED covariate); recency, mens, womens, newbie ←
-      same; channel and zip_code ← same.
-
       ## Protocol
 
       - Anchor: randomized assignment on the pinned March 2008 snapshot;
@@ -438,27 +446,6 @@ sections:
         per-order margin, contact-fatigue data, randomized arm assignment,
         and richer pre-treatment covariates the 2008 file does not carry.
 
-      ## Revision notes
-
-      **Committed run (seed 42):** the two-arm ladder — response, T-learner,
-      X-learner, random, treat-everyone — was scored once out-of-fold on the
-      pinned snapshot; policy intervals come from 1,000 paired bootstraps
-      (seed 1041) and the cost sweep from the committed grid.
-
-      **Multi-arm layer (added later):** per-arm Qini reads on the
-      randomized arm-vs-control pairs (empirical), plus a model-estimated
-      channel-planning read — best-arm profit, recommended shares, and the
-      ≈$0.31 break-even — carried with an explicit "model-estimated, not
-      realized counterfactuals" label (bootstrap seed 2041).
-
-      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/10-uplift-experimentation).
-
-      ## Reproduce
-
-      `uv run python -m uplift_experimentation.cli all`
-
-      [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/10-uplift-experimentation) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/10-uplift-experimentation/)
-
       ```mermaid
       flowchart LR
           S{"next send decision"} -->|"costly or budgeted"| T["rank by T-learner<br/>+69% vs random"]
@@ -481,4 +468,12 @@ key_concepts:
   - "**Cost-sweep break-even** — the send cost (≈$0.30) above which targeted sending beats mailing everyone."
 roadmap:
   - status: delivered
-    text: "Built the Hillstrom stack: RCT validation, power/CUPED checks, T/X-learners, paired-bootstrap policy CIs, cost sweep."
+    text: "Validated the randomized design and sized the read: ATE +0.68 points, power ample."
+  - status: delivered
+    text: "Built the three rankers with five-fold cross-fitting on pre-treatment features."
+  - status: delivered
+    text: "Judged every policy by profit with 1,000 paired bootstraps on shared resamples."
+  - status: delivered
+    text: "Ran the send-cost sweep and found the ≈$0.30 targeting break-even."
+  - status: delivered
+    text: "Added the multi-arm channel-planning layer, labelled model-estimated throughout."

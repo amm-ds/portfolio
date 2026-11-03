@@ -44,7 +44,9 @@ describe("App routing", () => {
       await waitFor(() =>
         expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
       );
-      expect(screen.getByRole("heading", { level: 2, name: "live demos" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { level: 2, name: "01 live demos" }),
+      ).toBeInTheDocument();
     }
   });
 

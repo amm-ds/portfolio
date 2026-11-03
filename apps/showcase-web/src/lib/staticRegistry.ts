@@ -507,7 +507,7 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
     "group": "plan operations",
     "hero": {
       "ci": "−31.0% on the competition window (m5_full_v1, horizon 28)",
-      "label": "official WRMSSE, ensemble vs seasonal-naive floor (42,840-node hierarchy, scored once)",
+      "label": "official WRMSSE",
       "value": "0.6161 vs 0.8929"
     },
     "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, member envelope and per-series WAPE respond.",

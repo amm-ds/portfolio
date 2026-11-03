@@ -275,10 +275,23 @@ sections:
     Sub-0.1 range-F1 differences across six validation windows read as
     noise. [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
 
+    ## What the experiment taught
+
+    - No detector family beat the headline recipe: switching detectors was not
+      worth it — capping the page stream was.
+    - Episode dedup plus the 24 h page cap cut pages twenty- to thirty-fold in
+      every sweep cell and raised range-F1 each time.
+    - Train-side tuning transferred for IsolationForest (80 → 46 pages) but not
+      for OCSVM: six validation windows cannot certify a peak.
+    - The synthetic ladder disagreed with NAB: residual-feature gains never
+      transferred, so synthetic evidence stays mechanics-only.
+    - Range precision stays low (0.107 fixed budget; 0.306 budgeted): the
+      artifact is an alert-budget dial, not a detector ranking.
+
     ## Exact numbers
 
-    NAB headline (fixed 2% budget, IsolationForest with rolling+residual
-    features, scored once per series):
+    NAB headline (fixed 2% budget, IsolationForest with rolling+residual features,
+    scored once per series):
 
     | NAB group | pointwise PR-AUC | range-F1 | windows touched (alerts emitted) |
     |---|---|---|---|
@@ -293,31 +306,17 @@ sections:
     |---|---|---|---|
     | isolation_forest + rolling | 1,864 → 66 | 0.729 → 0.604 | 0.154 → 0.388 |
     | isolation_forest + rolling_residual | 1,609 → 80 | 0.729 → 0.562 | 0.157 → 0.315 |
-    | lof + rolling | 3,263 → 109 | 0.750 → 0.542 | 0.086 → 0.213 |
     | lof + rolling_residual | 3,586 → 122 | 0.750 → 0.542 | 0.088 → 0.200 |
-    | ocsvm + rolling | 2,412 → 87 | 0.688 → 0.521 | 0.086 → 0.281 |
-    | ocsvm + rolling_residual | 2,253 → 91 | 0.688 → 0.438 | 0.102 → 0.214 |
 
-    Budgeted stream, default → tuned operating point:
+    Budgeted stream, default → tuned: isolation_forest + rolling 66 → 33 pages,
+    range-F1 0.388 → 0.433; isolation_forest + rolling_residual 80 → 46, range-F1
+    0.315 → 0.382; lof and ocsvm cells keep their defaults.
 
-    | cell | alerts (default → tuned) | range-F1 (default → tuned) |
-    |---|---|---|
-    | isolation_forest + rolling | 66 → 33 | 0.388 → 0.433 |
-    | isolation_forest + rolling_residual | 80 → 46 | 0.315 → 0.382 |
-    | lof + rolling | 109 → 109 | 0.213 → 0.213 |
-    | lof + rolling_residual | 122 → 122 | 0.200 → 0.200 |
-    | ocsvm + rolling | 87 → 35 | 0.281 → 0.237 |
-    | ocsvm + rolling_residual | 91 → 35 | 0.214 → 0.247 |
-
-    Synthetic window (5,983 test rows, 1.89% prevalence): untuned
-    IsolationForest 0.9158 ROC-AUC / 0.1239 PR-AUC; tuned IsolationForest
-    0.9171 ROC-AUC; tuned OCSVM 0.1355 PR-AUC; LOF near chance (0.5054 /
-    0.0254); random 0.5091 / 0.0194; rolling-median residual features lift
-    IsolationForest to 0.9999 / 0.9960 without NAB transfer. NSL-KDD probe:
-    0.8817 / 0.8916 at 56.9% test prevalence. Operating-point selection:
-    IsolationForest validation 0.2374 → 0.3181 at (0.5%, 24 h); LOF +0.042
-    at best, default kept; OCSVM +0.0560 at (0.5%, 72 h), grid neighbours
-    0.1683 against its 0.2060.
+    Synthetic window (5,983 test rows, 1.89% prevalence): untuned IsolationForest
+    0.9158 ROC-AUC / 0.1239 PR-AUC; tuned IsolationForest 0.9171 ROC-AUC; tuned
+    OCSVM 0.1355 PR-AUC; random 0.5091 / 0.0194; rolling-median residual features
+    lift IsolationForest to 0.9999 / 0.9960 without NAB transfer. NSL-KDD probe:
+    0.8817 / 0.8916 at 56.9% test prevalence.
 
     ## Protocol
 
@@ -339,8 +338,6 @@ sections:
       range-F1 over all 12 series × both feature sets (24 runs per point);
       adoption needs +0.05 over the documented (2%, 24 h) default; six
       validation windows across five series; exactly one test pass per family.
-    - nyc_taxi detail: 3/4 windows, range recall 0.750, PR-AUC 0.462, 179
-      alerts; the six timeline panels contain 897 alerts.
 
     ## Limits
 
@@ -354,29 +351,6 @@ sections:
     - NSL-KDD is a probe, not transfer evidence: 56.9% prevalence,
       labelled split, unseen attack categories, flow semantics.
     - No claim for multivariate detectors or drifted telemetry.
-
-    ## Revision notes
-
-    Wave 15 (nab-tune) added train-side operating-point
-    selection per detector family on inner-split validation alone: IsolationForest's
-    adopted (0.5%, 24 h) point transfers to test; LOF keeps the default; OCSVM's marginal
-    adoption fails to transfer. Three NAB series are excluded because all labelled
-    windows fall inside their training spans—not counted as misses. The nyc_taxi series
-    touches 3 of 4 windows (range recall 0.750, pointwise PR-AUC 0.462, 179 alerts); the
-    six representative timeline panels in `nab_timelines` contain 897 alerts. Pointwise
-    metrics on the synthetic window: ROC-AUC measures overall ranking while PR-AUC
-    exposes the 1.89% prevalence floor; the threshold sweep shows recall and precision
-    both ≈15% at 120 synthetic flags—the operating point, not AUC alone, sets on-call
-    load. Range recall is the mean over all 12 series (the three window-less series count
-    as zero); the raw detected fraction is reported separately as windows touched.
-
-    Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/03-anomaly-detection)
-
-    ## Reproduce
-
-    `uv run python -m anomaly_detection.cli all`
-
-    [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/03-anomaly-detection) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
 
     ```mermaid
     flowchart LR
@@ -396,13 +370,15 @@ sections:
   figures: []
 roadmap:
 - status: delivered
-  text: "Delivered NAB event-aware evaluation with separate pointwise and range reporting."
+  text: "Built the NAB event-aware evaluation contract: past-only splits, frozen threshold, seeded floor."
 - status: delivered
-  text: "Built the detector × feature sweep and the deduped 24 h alert-budget stream."
+  text: "Ran the detector × feature sweep across three families on NAB and synthetic streams."
 - status: delivered
-  text: "Cut pages 1,609→80 at range-F1 0.157→0.315."
+  text: "Delivered the alert-budget stream: deduped episodes, one page per series per 24 h."
 - status: delivered
-  text: "Validated train-side operating-point tuning: IsolationForest's adoption transfers; OCSVM's does not."
+  text: "Cut pages 1,609 → 80 at range-F1 0.157 → 0.315 across all sweep cells."
+- status: delivered
+  text: "Validated train-side operating-point tuning: IsolationForest's adoption transfers, OCSVM's does not."
 key_concepts:
 - "**Alert-budget stream** — the deployed artifact: deduplicated episodes capped at one page per series per 24 h, turning 1,609 raw alerts into 80 pages."
 - "**Event-aware range-F1** — scores a labelled window detected once one alert lands inside it, measuring what an on-call engineer feels."

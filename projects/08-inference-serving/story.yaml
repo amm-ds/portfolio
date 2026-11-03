@@ -25,7 +25,15 @@ figure_captions:
     together, so this compares combinations, not engines in isolation.
 roadmap:
   - status: delivered
-    text: "Full-grid raw record committed: 760 requests, percentiles re-aggregated offline from it."
+    text: "Built the deterministic task suite: 8 schema-checked prompts with keyword checklists."
+  - status: delivered
+    text: "Built the async load harness recording every request at concurrency 1 through 8."
+  - status: delivered
+    text: "Committed the full grid: 19 cells, 760 requests, zero failures, one quiet machine."
+  - status: delivered
+    text: "Caught the silent-reasoning config bug in a smoke pass before the runs."
+  - status: delivered
+    text: "Shipped offline re-aggregation: percentiles re-derived from the committed raw record."
 key_concepts:
   - "**p50/p95/p99 latency ladder** — median and tail percentiles recorded at each concurrency rung, because a mean hides the delay users actually feel."
   - "**Packaging confound** — engine and quantization ship as one artifact, so the 2.9× gap is a combination comparison, not an engine test."
@@ -67,9 +75,8 @@ sections:
           C --> REP["metrics.json + report.html + figures"]
       ```
 
-      **Business summary:** This section introduces the benchmark: five setups,
-      760 requests, zero failures, and a 4-bit model answering in 0.81 s per
-      request.
+      **Business summary:** Five serving setups, 760 requests, zero failures
+      — and a 4-bit model answering in 0.81 s per request.
     figures: []
     metrics_keys: []
   - id: objectives
@@ -110,9 +117,9 @@ sections:
           RR --> VERDICT["verdict from recorded trade-offs"]
       ```
 
-      **Business summary:** This section lists the study targets. It records
-      latency, throughput, quality, and failures at concurrency 1 through 8,
-      plus cost from measured tokens and stated power draw.
+      **Business summary:** Targets: latency, throughput, quality, and
+      failures at concurrency 1 through 8, plus cost from measured tokens
+      and stated power draw.
     figures: []
     metrics_keys: []
   - id: data
@@ -168,9 +175,9 @@ sections:
       `reports/report.html`, and the figures. The published percentiles
       re-aggregate offline from the raw record. No re-run needed.
 
-      **Business summary:** This section defines the task: 8 general-knowledge
-      prompts, each with a keyword checklist and a fixed answer schema, so every
-      setup answers the same questions under the same rules.
+      **Business summary:** The task: 8 general-knowledge prompts, each with
+      a keyword checklist and a fixed answer schema, so every setup answers
+      the same questions under identical rules.
     figures: []
     metrics_keys: []
   - id: eda
@@ -199,10 +206,9 @@ sections:
 
       With the answers verified, the contest itself can start.
 
-      **Business summary:** This section checks answers before timings: all 760
-      responses match the schema and keyword checklists, scoring 1.00 in every
-      cell. A smoke pass caught one model's silent reasoning mode before the
-      runs.
+      **Business summary:** Answers checked before timings: all 760 responses
+      match the schema and keyword checklists, scoring 1.00 in every cell;
+      a smoke pass caught one model's silent reasoning mode.
     figures:
       - quality_quant
     metrics_keys: []
@@ -252,9 +258,9 @@ sections:
         amortization. The next section weighs this evidence and names the
         winner.
 
-      **Business summary:** This section compares the five serving setups. The
-      4-bit MoE model answers in 0.81 s, makes 7× the dense 32B's tokens per
-      second, and matches every arm at 1.00 quality.
+      **Business summary:** The 4-bit MoE model answers in 0.81 s, makes 7×
+      the dense 32B's tokens per second, and matches every arm at 1.00
+      quality.
     figures:
       - toks_per_s
     metrics_keys: []
@@ -280,9 +286,9 @@ sections:
       hide exactly the trade-offs this study exists to surface. The next
       section collects the committed numbers in one place.
 
-      **Business summary:** This section names the winner — the 4-bit MoE model —
-      and shows latency rising from 0.81 s at one request to 7.80 s at eight;
-      only the procedure transfers, not the values.
+      **Business summary:** The winner is the 4-bit MoE model; latency rises
+      from 0.81 s at one request to 7.80 s at eight — only the procedure
+      transfers, not the values.
     figures:
       - latency_concurrency
     metrics_keys: []
@@ -315,10 +321,9 @@ sections:
       assumptions. The full grid, protocol, and limits are recorded in the
       conclusions.
 
-      **Business summary:** This section lists the committed results: the
-      winner's 0.63/0.81 s median/p95 latency and 67.7 tok/s, a 2.9×
-      MLX-over-llama.cpp packaging gap, and cost near $0.12 per 1M output
-      tokens.
+      **Business summary:** Committed results: the winner's 0.63/0.81 s
+      median/p95 latency and 67.7 tok/s, a 2.9× MLX-over-llama.cpp
+      packaging gap, and cost near $0.12 per 1M output tokens.
     figures:
       - engine_panel
     metrics_keys: []
@@ -335,15 +340,28 @@ sections:
       scored 1.00 across 760 requests with zero failures.
       [full evaluation report](https://amm-ds.github.io/portfolio/projects/08-inference-serving/)
 
+      ## What the experiment taught
+
+      - Packaging beats engine branding: the MLX 4-bit build runs about 2.9× the
+        tok/s of llama.cpp Q8_0 — a combination effect, labelled as one.
+      - The active MoE changed the economics: the 4-bit MoE makes 7× the dense
+        32B's tokens per second at 0.81 s p95.
+      - Bounded-task quality held everywhere (1.00 in all 19 cells) — that makes
+        the timing comparisons fair, not a quality claim.
+      - One quiet machine is a hard prerequisite: a co-tenant repeat degraded
+        llama.cpp cells 10–30× while MLX held — hardware discipline, not a build
+        regression.
+      - What transfers is the harness: record every request, re-aggregate offline,
+        re-measure on the machine that will ship.
+
       ## Exact numbers
 
-      Hardware: one quiet Apple-silicon MacBook, 128 GB unified memory,
-      macOS 26.5 (arm64); serving stack Ollama 0.40.4; committed run
-      2026-10-15 (`--full` grid). The evidence-lineage diagram below shows
-      how the raw record flows to the published aggregates without
-      re-running anything.
+      Hardware: one quiet Apple-silicon MacBook, 128 GB unified memory, macOS 26.5
+      (arm64); serving stack Ollama 0.40.4; committed run 2026-10-15 (`--full`
+      grid). The evidence-lineage diagram below shows how the raw record flows to
+      the published aggregates without re-running anything.
 
-      ```mermaid
+            ```mermaid
       flowchart LR
           subgraph RAW["committed raw inputs"]
               BR["data/bench_run.json - 760 requests, 19 cells"]
@@ -373,21 +391,17 @@ sections:
       | qwen3:32b (`--full`) | dense | — | llama.cpp |
       | gemma4 q8_0 / -qat (`--full`) | dense | Q8_0 / QAT-int4 | llama.cpp |
 
-      All 19 cells: schema-valid rate 1.00, keyword quality rate 1.00,
-      zero failures. Per-cell values, rounded to 4 decimals (p50/p95/p99
-      latency s, mean TTFT s, aggregate tok/s):
+      All 19 cells: schema-valid rate 1.00, keyword quality rate 1.00, zero
+      failures. Per-cell values, rounded to 4 decimals (p50/p95/p99 latency s, mean
+      TTFT s, aggregate tok/s):
 
       | cell | c=1 | c=2 | c=4 | c=8 |
       |---|---|---|---|---|
       | qwen3.6:35b-a3b-q4_K_M p50 / p95 / p99 | 0.6315 / 0.8114 / 1.0078 | 1.3988 / 1.8211 / 2.0091 | 3.4733 / 3.8625 / 3.9619 | 7.1800 / 7.7998 / 7.9760 |
       | qwen3.6 mean TTFT | 0.0712 | 0.7331 | 2.5054 | 5.7291 |
       | qwen3.6 aggregate tok/s | 67.73 | 63.58 | 52.26 | 50.24 |
-      | gpt-oss:20b p50 / p95 / p99 | 1.0473 / 1.6364 / 1.7818 | 2.0879 / 2.5926 / 2.7205 | 4.2215 / 4.7989 / 4.9566 | 8.3082 / 9.0396 / 9.1073 |
-      | gpt-oss aggregate tok/s | 36.78 | 38.96 | 39.52 | 39.96 |
       | qwen3:32b p50 / p95 / p99 | 3.4228 / 5.0589 / 5.8823 | 6.7456 / 8.5239 / 9.2255 | 14.2829 / 16.3139 / 16.8144 | 28.6865 / 31.2659 / 32.3851 |
       | qwen3:32b aggregate tok/s | 9.56 | 10.01 | 9.59 | 9.37 |
-      | gemma4:31b (MLX) p50 / p95 / p99 | 1.9084 / 2.5182 / 2.6776 | 3.8429 / 4.4537 / 4.7797 | 7.3723 / 8.2812 / 8.5824 | 14.4563 / 16.0621 / 16.5970 |
-      | gemma4:31b (MLX) aggregate tok/s | 17.58 | 17.91 | 18.42 | 18.54 |
       | gemma4:31b-mlx c=1 p50 / p95 / p99 | 1.8084 / 2.4748 / 3.2160 | — | — | — |
       | gemma4:31b-mlx c=1 tok/s | 18.79 | — | — | — |
       | gemma4:31b-it-q8_0 c=1 p50 / p95 / p99 | 5.1557 / 7.1172 / 8.5988 | — | — | — |
@@ -395,73 +409,44 @@ sections:
       | gemma4:31b-it-qat c=1 p50 / p95 / p99 | 3.4758 / 4.6887 / 4.9065 | — | — | — |
       | gemma4:31b-it-qat c=1 tok/s | 9.83 | — | — | — |
 
-      Engine comparisons are engine-plus-packaging comparisons. No MLX build
-      exists for qwen3.6:35b-a3b — conversion fails on switch-expert weights;
-      that missing cell is recorded rather than silently omitted.
+      Engine comparisons are engine-plus-packaging comparisons. No MLX build exists
+      for qwen3.6:35b-a3b — conversion fails on switch-expert weights; that missing
+      cell is recorded rather than silently omitted.
 
       ## Protocol
 
-      | dimension | setup |
-      |---|---|
-      | cell | concurrency 1/2/4/8; 5 suite repeats = 40 requests |
-      | driver | async httpx streaming against `/v1/chat/completions` with `json_schema` |
-      | pacing | async semaphore per rung, cooldown between cells |
-      | latency | nearest-rank p50/p95/p99 and mean TTFT |
-      | throughput | aggregate tok/s over cell wall time plus per-request tok/s |
-      | quality | schema-valid rate, keyword quality rate, failures |
-      | cost | measured tok/s × declared 100 W draw × $0.30/kWh; cloud card hypothetical |
-
-      The bounded default (3 models × 3 rungs) targets under 45 minutes;
-      `--full` adds qwen3:32b, concurrency 2, and the quant/engine cells.
+      - One cell: model × quant × concurrency rung (1/2/4/8), 5 suite repeats = 40
+        requests; async httpx streaming against `/v1/chat/completions` with
+        `json_schema`, semaphore pacing and cooldown between cells.
+      - Recorded per cell: nearest-rank p50/p95/p99 latency and mean TTFT,
+        aggregate tok/s over cell wall time, schema-valid and keyword quality
+        rates, failures.
+      - Cost: measured tok/s × declared 100 W draw × $0.30/kWh; the cloud rate
+        card stays a labelled hypothetical. The bounded default (3 models × 3
+        rungs) targets under 45 minutes; `--full` adds qwen3:32b, concurrency 2,
+        and the quant/engine cells.
 
       ## Limits
 
       - **Portability:** one machine, one Ollama build, one author run; the
-        absolute numbers describe this hardware and are not portable, and a
-        quiet machine is a prerequisite (the 2026-10-30 repeat under
-        co-tenant load degraded llama.cpp cells 10–30× — see revision
-        notes).
-      - **Cost completeness:** the $0.12-per-1M figure is electricity only
-        at declared assumptions; measured wall power needs a wall-power
-        meter (not available), and hardware amortization is excluded, so
-        this is not a total cost of ownership.
-      - **Engine causality:** engine differences are confounded with
-        packaging and quantization — no same-quant cross-runner pair exists
-        for these models, and the missing MLX build for the MoE was
-        recorded, not forced.
+        absolute numbers describe this hardware and are not portable, and a quiet
+        machine is a prerequisite (a 2026-10-30 repeat under co-tenant load
+        degraded llama.cpp cells 10–30× — co-tenant memory-bandwidth contention,
+        not the build).
+      - **Cost completeness:** the $0.12-per-1M figure is electricity only at
+        declared assumptions; measured wall power needs a wall-power meter (not
+        available), and hardware amortization is excluded — not a total cost of
+        ownership.
+      - **Engine causality:** engine differences are confounded with packaging and
+        quantization — no same-quant cross-runner pair exists for these models,
+        and the missing MLX build for the MoE was recorded, not forced.
       - **Quality generality:** perfect bounded-task scores do not show that
         quantization never affects model quality.
       - **Repeat grid:** re-measurement on quiet, dedicated hardware is deferred
         until access exists; quantization-matched engine isolation waits on
         suitable builds.
 
-      ## Revision notes
-
-      - **Committed run (2026-10-15):** full-grid raw record
-        `data/bench_run.json` — 19 cells, 760 requests, Ollama 0.40.4, zero
-        failures; the published percentiles re-aggregate offline via `report`.
-      - **Repeat attempt (2026-10-30):** the same 11-cell bounded shape (440
-        requests) ran under Ollama 0.40.12 while a virtual machine and background
-        jobs co-ran. Quality held — every cell kept schema-valid and keyword
-        rates at 1.00 — but llama.cpp latency cells were 10–30× slower (mean
-        TTFT reached 44 s on the qwen3.6 c=8 cell), the gpt-oss c=8 cell hit ten
-        180 s read timeouts, and the MLX cells matched their committed cells.
-        The gap is co-tenant memory-bandwidth contention on the llama.cpp path,
-        not the 0.40.12 build. Raw record: `data/bench_run_repeat.json`.
-      - **Results quality: acceptable with caveats.** The aggregate cells are
-        internally consistent for this bounded task, and the raw 760-request
-        record is committed for independent re-aggregation; one quiet-machine
-        run cannot establish portable latency, throughput, quality, or cost.
-      - Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/08-inference-serving).
-
-      ## Reproduce
-
-      `uv run dvc repro` runs the full pipeline: prepare → bench → report.
-
-      [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/08-inference-serving) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/08-inference-serving/)
-
-      **Business summary:** This section records the final grid, protocol,
-      limits, and reproduction commands: 19 cells, 760 requests, zero failures,
-      and the 4-bit MoE model leading every measured dimension on this machine.
+      **Business summary:** Final grid: 19 cells, 760 requests, zero failures —
+      the 4-bit MoE model leads every measured dimension on this machine.
     figures: []
     metrics_keys: []

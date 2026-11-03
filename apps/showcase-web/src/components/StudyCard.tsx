@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { renderInlineMarkdown } from "../lib/markdown";
 
 /** One metadata field on a study card: small muted label over its blue value. */
 export interface StudyMetaItem {
@@ -16,7 +17,8 @@ export interface StudyMetaItem {
  * "description" and "results"; demo cards keep only the "description"
  * block); the measured result as a tag/chip — the demo registry's headline
  * metric or the experiment's live key number, one shared chip design; and
- * exactly four tags. Callers wrap it in their link. */
+ * exactly four tags. The description/results copy renders inline markdown so
+ * an authored **bold** key fact stands out. Callers wrap it in their link. */
 export function StudyCard({
   title,
   meta,
@@ -64,13 +66,15 @@ export function StudyCard({
           {does && (
             <div className="study-block">
               {doesLabel && <span className="study-block-label">{doesLabel}</span>}
-              <p className="study-does">{does}</p>
+              <p className="study-does">{renderInlineMarkdown(does)}</p>
             </div>
           )}
           {achieves && (
             <div className="study-block">
               {achievesLabel && <span className="study-block-label">{achievesLabel}</span>}
-              <p className="study-achieves">{achieves}</p>
+              <p className="study-achieves">
+                {typeof achieves === "string" ? renderInlineMarkdown(achieves) : achieves}
+              </p>
             </div>
           )}
         </div>

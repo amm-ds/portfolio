@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { ProjectDetail } from "../pages/ProjectDetail";
 
 const PROJECT = {
@@ -163,6 +164,45 @@ describe("ProjectDetail story handling", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText(/unknown project/i)).toBeInTheDocument());
+  });
+
+  it("links the full evaluation report to the in-app report route when the report exists", async () => {
+    const project2 = { ...PROJECT, id: "02-demand-forecasting", title: "Demand Forecasting" };
+    mockFetch((path) => {
+      if (path.endsWith("/projects")) return Promise.resolve(jsonResponse([PROJECT, project2]));
+      if (path.endsWith("/report")) {
+        return Promise.resolve(
+          new Response("<html><body>report</body></html>", {
+            status: 200,
+            headers: { "Content-Type": "text/html" },
+          }),
+        );
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/projects/02-demand-forecasting"]}>
+        <Routes>
+          <Route path="/projects/:id" element={<ProjectDetail />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    const link = await screen.findByRole("link", { name: "[full evaluation report]" });
+    // in-app route, not a new-tab external anchor
+    expect(link.getAttribute("href")).toBe("/projects/02-demand-forecasting/report");
+    expect(link.getAttribute("target")).toBeNull();
+    expect(link.classList.contains("chip-link")).toBe(true);
+  });
+
+  it("leads the detail header at full width — no reading column, more margin on the action row", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    expect(css.match(/\.detail-header \.detail-lead \{[\s\S]*?\n\}/)![0]).toContain(
+      "max-width: none;",
+    );
+    expect(css.match(/\.detail-header \.meta-links \{[\s\S]*?\n\}/)![0]).toContain(
+      "margin: 0.5rem 0 1.25rem;",
+    );
   });
 
   it("renders a prominent demo banner between the header and the case study when a demo is registered", async () => {

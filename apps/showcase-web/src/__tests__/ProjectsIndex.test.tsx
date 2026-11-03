@@ -195,7 +195,7 @@ describe("ProjectsIndex", () => {
     expect(experimentsBlock).not.toBeNull();
     expect(
       experimentsBlock.querySelector(":scope > .section-title")!.textContent,
-    ).toBe("experiments");
+    ).toBe("02 experiments");
     // row heading plus the on-page index anchor both carry the names
     expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("Data engineering").length).toBeGreaterThanOrEqual(2);
@@ -210,13 +210,15 @@ describe("ProjectsIndex", () => {
       return cur!;
     };
     // 07 must sit under Data engineering, 06 under Optimization, 01+04 under their rows
-    expect(rowOf(cardOf("Mobility")).querySelector("h3")!.textContent).toBe("Data engineering");
-    expect(rowOf(cardOf("Routing")).querySelector("h3")!.textContent).toBe("Optimization");
+    expect(rowOf(cardOf("Mobility")).querySelector("h3")!.textContent).toBe(
+      "04 Data engineering",
+    );
+    expect(rowOf(cardOf("Routing")).querySelector("h3")!.textContent).toBe("03 Optimization");
     expect(rowOf(cardOf("RAG Agent")).querySelector("h3")!.textContent).toBe(
-      "Agentic AI & LLM systems",
+      "01 Agentic AI & LLM systems",
     );
     expect(rowOf(cardOf("NLP Classification")).querySelector("h3")!.textContent).toBe(
-      "Machine learning",
+      "02 Machine learning",
     );
   });
 
@@ -261,9 +263,9 @@ describe("ProjectsIndex", () => {
     await waitFor(() =>
       expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2),
     );
-    // prominent section with title + subtitle
+    // prominent section with numbered title + subtitle
     expect(
-      screen.getByRole("heading", { level: 2, name: "live demos" }),
+      screen.getByRole("heading", { level: 2, name: "01 live demos" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/play with the live systems behind the experiments/i)).toBeInTheDocument();
     const demos = document.querySelector(".demos")!;
@@ -366,6 +368,14 @@ describe("ProjectsIndex", () => {
       expect(card.querySelector(".study-result-chip")!.textContent).toContain(metrics[i]);
       expect(card.querySelector(".study-metric")!.textContent).toBe(metrics[i]);
     });
+    // the chip LABEL is short — the source registry label reads "official WRMSSE"
+    // (the previous long sentence was shortened at the source; the metric value
+    // stays intact)
+    const forecastChip = demoCards[1].querySelector(".study-result-chip")!;
+    const labelText = forecastChip.childNodes[0].textContent!.replace(/:\s*$/, "");
+    expect(labelText.split(/\s+/).filter(Boolean).length).toBeLessThanOrEqual(6);
+    expect(labelText).toBe("official WRMSSE");
+    expect(forecastChip.textContent).toContain("0.6161 vs 0.8929");
   });
 
   it("renders two muted blocks per experiment card — what it does / what it achieves — and exactly 4 technique tags", async () => {
@@ -458,10 +468,16 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(document.querySelectorAll(".project-card .study-does")).toHaveLength(7));
-    // exact rewritten "what it does" for project 01 (objective + data)
+    // exact rewritten "what it does" for project 01 (objective + data); the
+    // **bold** 593-article fact splits the paragraph into text + <strong>,
+    // so match on the flattened textContent
     expect(
-      screen.getByText(/Built a question-answering agent that answers only from a pinned 593-article/),
-    ).toBeInTheDocument();
+      [...document.querySelectorAll(".project-card .study-does")].some((el) =>
+        el.textContent!.includes(
+          "Built a question-answering agent that answers only from a pinned 593-article",
+        ),
+      ),
+    ).toBe(true);
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
         (c) => c.querySelector("h3")?.textContent === title,
@@ -506,11 +522,13 @@ describe("ProjectsIndex", () => {
         screen.getByText(/the live registry is unreachable — showing the last published snapshot/i),
       ).toBeInTheDocument(),
     );
-    // heading outline: one h2 "live demos" + one h2 "experiments"; topic rows are h3
+    // heading outline: one numbered h2 "01 live demos" + one "02 experiments"; topic rows are numbered h3s
     expect(
       screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
-    ).toEqual(["live demos", "experiments"]);
-    expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
+    ).toEqual(["01 live demos", "02 experiments"]);
+    expect(
+      screen.getByRole("heading", { level: 3, name: "02 Machine learning" }),
+    ).toBeInTheDocument();
     // all ten snapshot projects render as cards
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(10));
     // Retry re-fetches (the failing mock is called again)
@@ -622,7 +640,9 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("heading", { level: 2, name: "experiments" })).toBeInTheDocument(),
+      expect(
+        screen.getByRole("heading", { level: 2, name: "02 experiments" }),
+      ).toBeInTheDocument(),
     );
     const intro = document.querySelector(".experiments-block > .section-intro")!;
     expect(intro.textContent).toMatch(/grouped by discipline/i);
@@ -631,15 +651,24 @@ describe("ProjectsIndex", () => {
     expect(glossary.getAttribute("href")).toBe("/glossary");
   });
 
-  it("makes demos and experiments the two big sections and demotes topic rows to group labels", async () => {
+  it("makes demos and experiments the two big numbered sections and demotes topic rows to numbered group labels", async () => {
     const css = readFileSync("src/styles.css", "utf8");
+    // registry unreachable → the static snapshot renders the rows
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
     // big section titles with extra weight
     expect(css.match(/\.section-title--major \{[\s\S]*?\n\}/)![0]).toContain("font-size: 1.6rem;");
     // topic rows are small mono labels, not section titles
     const labelRule = css.match(/\.row-label \{[\s\S]*?\n\}/)![0];
     expect(labelRule).toContain("font-family: var(--mono);");
     expect(labelRule).not.toContain("border-bottom");
-    expect(css.match(/\.row-label::before \{[\s\S]*?\n\}/)![0]).toContain('content: "> ";');
+    // the numbered prefix is blue and the title text green — the page-index
+    // color family; the old "> " marker is gone from the group labels
+    expect(css.match(/\.title-num \{[\s\S]*?\n\}/)![0]).toContain("color: var(--secondary);");
+    expect(css.match(/\.row-label \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
+    expect(css).not.toContain(".row-label::before");
+    expect(
+      css.match(/\.demos > \.section-title,\n\.experiments-block > \.section-title \{[\s\S]*?\n\}/)![0],
+    ).toContain("color: var(--accent);");
     // no fixed experiment count anywhere in the page copy
     const { container } = render(
       <MemoryRouter>
@@ -647,17 +676,22 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+      expect(document.querySelectorAll(".row-label .title-num")).toHaveLength(5),
     );
     expect(container.textContent).not.toMatch(/\bten\b (public )?(reproducible )?(experiments|case studies)/i);
     expect(container.textContent).not.toMatch(/\b10 reproducible experiments\b/);
-    // live demos and experiments both carry the major-title modifier
+    // live demos and experiments both carry the major-title modifier with a
+    // numbered prefix, and every group label is numbered in the same family
     expect(document.querySelector(".demos > .section-title--major")!.textContent).toBe(
-      "live demos",
+      "01 live demos",
     );
     expect(
       document.querySelector(".experiments-block > .section-title--major")!.textContent,
-    ).toBe("experiments");
+    ).toBe("02 experiments");
+    const rowNums = [...document.querySelectorAll(".row-label .title-num")].map(
+      (el) => el.textContent,
+    );
+    expect(rowNums).toEqual(["01", "02", "03", "04", "05"]);
   });
 
   it("restyles the page index to terminal labels: mono, accent label, muted >-prefixed items lighting up on hover", () => {
@@ -729,10 +763,14 @@ describe("ProjectsIndex", () => {
     });
   });
 
-  it("renders the results as one shared accent chip design on demo and experiment cards", async () => {
+  it("renders the results as one shared GREEN chip design on demo and experiment cards", async () => {
     const css = readFileSync("src/styles.css", "utf8");
-    const chipRule = css.match(/\.study-result-chip \{[\s\S]*?\n\}/)![0];
+    // ONE rule paints the results chip green on both card kinds — with enough
+    // specificity to beat the blue tag treatment below it
+    const chipRule = css.match(/\.study-card \.chip\.study-result-chip \{[\s\S]*?\n\}/)![0];
     expect(chipRule).toContain("color: var(--accent);");
+    expect(chipRule).toContain("background: rgba(45, 212, 191, 0.08);");
+    expect(chipRule).toContain("border-color: rgba(45, 212, 191, 0.35);");
     expect(chipRule).toContain("font-family: var(--mono);");
     // the slot hides entirely while a live metric has not loaded
     expect(css.match(/\.study-result:empty \{[\s\S]*?\n\}/)![0]).toContain("display: none;");
@@ -803,5 +841,53 @@ describe("ProjectsIndex", () => {
     for (const hue of ["teal", "sky", "violet", "amber"]) {
       expect(css).not.toContain(`.chip--${hue}`);
     }
+    // …while the results chip keeps its own green rule, positioned so its
+    // specificity (0,3,0) beats the blue tag rule (0,2,0)
+    const greenIdx = css.indexOf(".study-card .chip.study-result-chip {");
+    const blueIdx = css.indexOf(".study-card .chip,\n.offering-card .chip {");
+    expect(greenIdx).toBeGreaterThan(-1);
+    expect(blueIdx).toBeGreaterThan(-1);
+  });
+
+  it("renders **bold** inline markdown in the card description and results copy", async () => {
+    vi.stubGlobal("fetch", projectsOnlyFetch());
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(7));
+    const cardOf = (title: string) =>
+      [...document.querySelectorAll(".project-card")].find(
+        (c) => c.querySelector("h3")?.textContent === title,
+      )!;
+    const rag = cardOf("RAG Agent");
+    // the authored **bold** key facts render as <strong> inside the muted
+    // paragraphs, and the flattened text keeps the plain copy intact
+    const doesStrong = rag.querySelector(".study-does strong")!;
+    expect(doesStrong.textContent).toBe("593-article");
+    const achievesStrong = rag.querySelector(".study-achieves strong")!;
+    expect(achievesStrong.textContent).toBe("83% of the time");
+    expect(rag.querySelector(".study-does")!.textContent).toContain(
+      "a pinned 593-article Wikipedia corpus",
+    );
+    expect(rag.querySelector(".study-achieves")!.textContent).toContain(
+      "right passage 83% of the time",
+    );
+    // every card's copy renders — no raw ** markers leak into the DOM
+    for (const el of document.querySelectorAll(".study-does, .study-achieves")) {
+      expect(el.textContent).not.toContain("**");
+    }
+  });
+
+  it("left-aligns the tags row exactly with the card's outer padding — no indent", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const chipsRule = css.match(/\.study-card \.chips \{[\s\S]*?\n\}/)![0];
+    expect(chipsRule).toContain("margin: 0.9rem 0 0;");
+    expect(chipsRule).toContain("padding-left: 0;");
+    expect(chipsRule).not.toContain("margin-left");
+    // …and the chip grids share one card gap (the spacing scale token)
+    expect(css).toContain("gap: var(--gap-card);");
+    expect(css.match(/\.demo-grid \{[\s\S]*?\n\}/)![0]).toContain("gap: var(--gap-card);");
   });
 });

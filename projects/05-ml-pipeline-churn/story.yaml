@@ -225,7 +225,7 @@ sections:
 
       **Business summary:** Deploy on raw CRM rows behind the data-quality
       gates; expect a ~42% cost cut at a 5× missed-churner price, stable
-      from 3× to 8×; re-derive the cutoff when the price changes.
+      from 3× to 8×.
     figures: []
   - id: results
     text_md: |
@@ -253,9 +253,9 @@ sections:
 
       That is the honest ledger; the conclusions hold the full record.
 
-      **Business summary:** The saving is real but read on the same holdout
-      that chose the threshold; treat 601 as a budget line with optimism
-      built in, and fairness as a pre-rollout gate.
+      **Business summary:** The saving is real but read on the holdout that
+      chose the threshold; treat 601 as a budget line with optimism built
+      in, and fairness as a pre-rollout gate.
     figures: [fairness_slices]
   - id: conclusions
     text_md: |
@@ -268,6 +268,19 @@ sections:
       cost optimum 619 → 601. The served threshold 0.175 was selected by a
       seeded 25-trial search over a 41-point grid under the 1-versus-5 cost
       model. [full evaluation report](https://amm-ds.github.io/portfolio/projects/05-ml-pipeline-churn/) · [try the live demo](https://amm-ds.github.io/portfolio/demos/churn-sandbox/)
+
+      ## What the experiment taught
+
+      - The objective picked the winner: an F1-driven search chose a different
+        family — cost-based selection changed both the model and the threshold.
+      - Calibration earned its keep at the served price: isotonic fitting cut ECE
+        0.028 → 0.016 and the cost optimum 619 → 601 at threshold 0.175.
+      - The cutoff is policy, not constant: it moves 0.200 → 0.175 → 0.100 as a
+        missed churner's price runs 3 → 5 → 8.
+      - The saving is real but optimistic: thresholds were selected and scored on
+        the same holdout, so 601 is a budget line, not a promise.
+      - The raw model's blind spot is contract-shaped: it misses 19 of 36 one-year
+        and all 9 two-year churners.
 
       ## Exact numbers
 
@@ -290,11 +303,10 @@ sections:
       | selected raw XGB | 0.150 | 0.8387 | 0.6512 | 0.028 | 619 |
       | selected + isotonic ← served | 0.175 | 0.8317 | 0.6745 | **0.016** | **601** |
 
-      - **Cost:** 1,035 → 601 (−41.9%) versus contact everyone; bootstrap
-        point −416, 95% CI [−485, −343] over 2,000 paired resamples at
-        fixed thresholds.
-      - **Cost-model sensitivity** (re-scored via `cli sensitivity` →
-        `reports/sensitivity.json`):
+      Cost: 1,035 → 601 (−41.9%) versus contact everyone; bootstrap point −416,
+      95% CI [−485, −343] over 2,000 paired resamples at fixed thresholds.
+
+      Cost-model sensitivity (re-scored via `cli sensitivity` → `reports/sensitivity.json`):
 
       | FN cost | served threshold | served cost | naive cost | delta 95% CI |
       |---|---|---|---|---|
@@ -302,23 +314,17 @@ sections:
       | 5 | 0.175 | 601 | 1,035 | [−485, −343] |
       | 8 | 0.100 | 699 | 1,035 | [−426, −258] |
 
-      The naive comparator stays 1,035 throughout, so the saving shrinks as
-      FN rises.
-
-      **Record:**
+      Record:
 
       | record | detail |
       |---|---|
       | model search | seeded Optuna (25 trials, median pruning) on out-of-fold business cost at each trial's own threshold; XGBoost wins telco (n_estimators 211, learning_rate 0.0309, max_depth 3, subsample 0.5187; CV cost 2,416); logistic wins the synthetic track; the isotonic twin uses only the train-side calibration split |
       | regime dependence | synthetic t*=0.700 versus telco t*=0.175 — the procedure transfers, not the cutoff |
-      | calibration edge | isotonic helps at FN=5 (619 → 601), slightly hurts at FN=8 (691 → 699) — cost-model dependent |
-      | fairness slices | raw model at t=0.150, from `reports/figures/fairness_slices.json` — not the served policy: gender recall 0.902 female / 0.906 male; senior recall 0.969 versus 0.880 non-senior; contract recall 0.976 month-to-month, 0.472 one-year, 0.000 two-year — the raw policy misses **19 of 36** one-year churners and **all 9** two-year churners; the served artifact is isotonic-calibrated at t=0.175, so these counts must not be attributed to serving |
-      | drivers | permutation importance (5 repeats) ranks contract, tenure and charges on top; the naive row's accuracy is 0.265 at contact-all; contact-none would score 0.735 accuracy but is a different policy |
-      | try it | [the churn threshold sandbox](https://amm-ds.github.io/portfolio/demos/churn-sandbox) replays the committed holdout payload |
+      | fairness slices | raw model at t=0.150, from `reports/figures/fairness_slices.json` — not the served policy: gender recall 0.902 female / 0.906 male; senior recall 0.969 versus 0.880 non-senior; contract recall 0.976 month-to-month, 0.472 one-year, 0.000 two-year — the raw policy misses 19 of 36 one-year churners and all 9 two-year churners; the served artifact is isotonic-calibrated at t=0.175, so these counts must not be attributed to serving |
 
       **Pipeline** (one fitted sklearn Pipeline owns all preprocessing):
 
-      ```mermaid
+            ```mermaid
       flowchart LR
           A["raw CRM row"] --> B["OutlierCapper"]
           B --> C["MissingValueIndicator"]
@@ -329,28 +335,6 @@ sections:
           G --> H["classifier"]
           H --> I["predict_proba"]
       ```
-
-      **Column mapping:**
-
-      | project column | telco source | role |
-      |---|---|---|
-      | tenure_months | tenure | numeric feature |
-      | monthly_charges | MonthlyCharges | numeric feature |
-      | contract | Contract | categorical feature + fairness slice |
-      | internet_service | InternetService | categorical feature |
-      | gender / senior_citizen | gender / SeniorCitizen | fairness slices |
-      | churned | Churn | target |
-
-      **EDA segments** (real telco; synthetic nulls and the 9,999 outlier
-      charge are CI fixtures):
-
-      | segment | rows | churn rate |
-      |---|---|---|
-      | month-to-month | 3,875 | 42.7% |
-      | one-year | 1,473 | 11.3% |
-      | two-year | 1,695 | 2.8% |
-      | senior citizens | 1,142 | 41.7% |
-      | fiber-optic internet | 3,096 | 41.9% |
 
       ## Protocol
 
@@ -377,36 +361,21 @@ sections:
       - One operator, 21 columns: transfer to other customer bases is
         plausible, not measured.
 
-      ## Revision notes
-
-      - Served artifact record — family, parameters, threshold rule, holdout
-        minimum — in `reports/models/serving/meta.json` (built 2026-10-17).
-      - Sensitivity re-runs persist at `reports/sensitivity.json`; the FN=5
-        variant reproduces the baseline metrics exactly.
-      - The synthetic track's record (logistic winner, t*=0.700) lives in
-        `data/model_selection.json`; it does not transfer to the real
-        regime.
-
-      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/05-ml-pipeline-churn)
-
-      ## Reproduce
-
-      `uv run python -m churn_pipeline.cli all`
-
-      - [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/05-ml-pipeline-churn)
-      - [full evaluation report](https://amm-ds.github.io/portfolio/projects/05-ml-pipeline-churn/)
-
       **Business summary:** The record: 601 versus 1,035 on one honest
       holdout, every caveat labelled — optimism, raw-model fairness, no time
       axis — and every artifact one command away.
     figures: [bootstrap_ci]
 roadmap:
   - status: delivered
-    text: Real telco pipeline — DQ gates, cost-aware HPO, calibration and serving at t=0.175.
+    text: "Built the reproducible telco pipeline: DQ gates, one fitted preprocessing chain, CI twin."
   - status: delivered
-    text: Evidence pack — fixed-threshold bootstrap CI, cost surface and raw-model fairness slices.
+    text: "Selected the model by out-of-fold business cost; calibrated isotonic on a train-side split."
   - status: delivered
-    text: FN-cost sensitivity re-run — t*=0.200/0.175/0.100 at FN=3/5/8, every CI excludes zero.
+    text: "Served the 0.175 threshold policy: 601 versus 1,035 contact-everyone, −41.9%."
+  - status: delivered
+    text: "Priced the saving with 2,000 paired bootstraps at fixed thresholds."
+  - status: delivered
+    text: "Re-derived the cutoff across missed-churner prices 3×, 5×, and 8×."
 key_concepts:
   - "**Decision cost** — pricing the two mistake types so the model is tuned on the bill it produces, not accuracy."
   - "**Cost-ratio sensitivity** — the served threshold moves when a missed churner's price moves; the cutoff is policy, not constant."

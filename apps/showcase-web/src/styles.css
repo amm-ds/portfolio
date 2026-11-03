@@ -11,6 +11,10 @@
   --ok: #34d399;
   --accent-glow: rgba(45, 212, 191, 0.25);
   --radius: 10px;
+  /* one spacing scale: card grids and cards-inside-a-section stack at the
+     card gap; page/flow sections separate at the section gap */
+  --gap-card: 1.25rem;
+  --gap-section: 2.5rem;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, Inter, sans-serif;
   font-family: var(--sans);
@@ -577,7 +581,7 @@ select:focus-visible,
 .demo-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.25rem;
+  gap: var(--gap-card);
   margin-bottom: 1rem;
   align-items: stretch;
 }
@@ -677,8 +681,10 @@ select:focus-visible,
 }
 
 /* the measured result as a tag/chip — the demo registry's headline metric and
-   the experiment's live key number share this one accent-chip design */
-.study-result-chip {
+   the experiment's live key number share this ONE green chip design on both
+   card kinds; the extra specificity beats the blue tag rule above so only the
+   results chip goes green, never the plain tags */
+.study-card .chip.study-result-chip {
   font-family: var(--mono);
   font-size: 0.82rem;
   color: var(--accent);
@@ -717,11 +723,13 @@ select:focus-visible,
 .topic-rows {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--gap-section);
 }
 
+/* topic rows are jumped to from the page index — keep the target clear of
+   the sticky nav */
 .topic-row {
-  margin-bottom: 1rem;
+  scroll-margin-top: 4rem;
 }
 
 .section-title::before {
@@ -736,18 +744,34 @@ select:focus-visible,
   margin: 2.75rem 0 0.6rem;
 }
 
-/* offering-domain groups inside experiments: subordinate mono labels */
+/* projects-page section titles use the page-index color family: a blue
+   numbered prefix over green title text; the global "> " prompt marker is
+   suppressed on these two sections */
+.demos > .section-title,
+.experiments-block > .section-title {
+  color: var(--accent);
+}
+
+.demos > .section-title::before,
+.experiments-block > .section-title::before {
+  content: none;
+}
+
+/* numbered prefix shared by the major section titles and the topic-row group
+   labels: blue, separated from the green title text */
+.title-num {
+  color: var(--secondary);
+  margin-right: 0.6rem;
+}
+
+/* offering-domain groups inside experiments: subordinate mono labels in the
+   same numbered blue-over-green family as the major sections */
 .row-label {
   font-family: var(--mono);
   font-size: 0.8rem;
-  color: var(--text);
+  color: var(--accent);
   margin: 1.5rem 0 0.15rem;
   letter-spacing: 0.02em;
-}
-
-.row-label::before {
-  content: "> ";
-  color: var(--accent);
 }
 
 .row-desc {
@@ -761,7 +785,7 @@ select:focus-visible,
 .project-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.25rem;
+  gap: var(--gap-card);
   align-items: stretch;
 }
 
@@ -772,9 +796,12 @@ select:focus-visible,
   }
 }
 
-/* chips are the trailing element of a study card */
+/* chips are the trailing element of a study card — the tags row starts flush
+   at the card's outer padding edge: no left margin or padding on the row, so
+   the first tag left-aligns exactly with the title and metadata above it */
 .study-card .chips {
   margin: 0.9rem 0 0;
+  padding-left: 0;
 }
 
 .chips {
@@ -810,11 +837,12 @@ select:focus-visible,
   text-shadow: 0 0 14px var(--accent-glow);
 }
 
-/* the story's short_version, leaded under the title once the story loads */
+/* the story's short_version, leaded under the title once the story loads —
+   full width like the rest of the detail header, no reading column */
 .detail-header .detail-lead {
   color: var(--muted);
   margin: 0 0 0.5rem;
-  max-width: 60rem;
+  max-width: none;
 }
 
 .detail-header .domain {
@@ -828,7 +856,7 @@ select:focus-visible,
 }
 
 .detail-header .meta-links {
-  margin: 0 0 0.6rem;
+  margin: 0.5rem 0 1.25rem;
 }
 
 .meta-links {
@@ -912,7 +940,15 @@ select:focus-visible,
 
 .story-section {
   scroll-margin-top: 4rem;
-  margin-bottom: 2.5rem;
+  margin-bottom: var(--gap-section);
+}
+
+/* the key-concepts and glossary cards belong to the Background section that
+   precedes them: business summary ↔ key concepts ↔ glossary then stack at
+   the card gap (the section's own bottom margin steps aside), while the
+   section gap stays reserved for space between sections */
+.story-section:has(+ .glossary-card) {
+  margin-bottom: 0;
 }
 
 .story-section h2 {
@@ -982,7 +1018,7 @@ select:focus-visible,
   border-left: 2px solid var(--accent);
   border-radius: var(--radius);
   padding: 1rem 1.25rem;
-  margin: 0 0 1.05em;
+  margin: 0 0 var(--gap-card);
 }
 
 .bi-card .bi-label {
@@ -1061,9 +1097,10 @@ a.glossary-term:focus-visible {
 }
 
 /* Per-project glossary card at the end of the Background section: the
-   definitions that used to appear as hover popups now live here. */
+   definitions that used to appear as hover popups now live here. Stacks at
+   the card gap like every other card. */
 .glossary-card {
-  margin: 1.4rem 0;
+  margin: var(--gap-card) 0;
   padding: 1rem 1.2rem;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2255,7 +2292,7 @@ button:disabled {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.35rem 1rem;
-  margin: 0 0 1.4rem;
+  margin: 1rem 0 2.25rem;
   font-family: var(--mono);
   font-size: 0.82rem;
 }
@@ -4067,6 +4104,25 @@ button.chip.demo-preset.fwb-active {
   width: 100%;
 }
 
+/* --- Evaluation report view (/projects/:id/report): the routed report page
+   spans the FULL page width like every other page. The API-served HTML ships
+   its own reading column (body max-width: 1400px); the view strips that cap
+   for this view only by injecting one override style into the frame's markup
+   (see ReportView) — the standalone report and its template stay untouched */
+
+.report-view {
+  width: 100%;
+}
+
+.report-view .report-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  /* fallback height until the frame's own content height is applied on load */
+  min-height: calc(100dvh - 58px - 4rem);
+  background: var(--bg);
+}
+
 /* figure column: drop the 1200px cap and the centering so charts span wide */
 .app-main--fluid .story-figs {
   max-width: none;
@@ -4166,22 +4222,25 @@ button.chip.demo-preset.fwb-active {
 
 /* experience: roadmap-style vertical timeline — period (mono, accent) → role
    → achievement bullets, connected by the site's dot/line language; the list
-   is constrained and centered on the page, items keep their dot/line
-   alignment inside it */
+   is width-constrained but left-aligned with the page text, items keep their
+   dot/line alignment inside it */
 .timeline {
   list-style: none;
   max-width: 720px;
-  margin: 1.75rem auto 0;
+  margin: 1.75rem 0 0;
   padding: 0 0 0 1.5rem;
   position: relative;
 }
 
-/* the connecting line */
+/* the connecting line — its left offset equals the dots' center x (dot left
+   edge at 1.5rem − 1.32rem = 0.18rem + half the 0.6rem dot width = 0.48rem),
+   and it runs from the first dot's center to the last dot's center (0.7rem =
+   0.4rem dot top + half the dot height) */
 .timeline::before {
   content: "";
   position: absolute;
-  left: 0.3rem;
-  top: 0.55rem;
+  left: 0.48rem;
+  top: 0.7rem;
   bottom: 0.7rem;
   width: 1px;
   background: var(--border);

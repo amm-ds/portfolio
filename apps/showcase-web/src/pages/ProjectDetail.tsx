@@ -228,14 +228,9 @@ export function ProjectDetail() {
               [docs]
             </a>
             {reportOk && (
-              <a
-                className="chip-link"
-                href={`/projects/${id}/report`}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <Link className="chip-link" to={`/projects/${id}/report`}>
                 [full evaluation report]
-              </a>
+              </Link>
             )}
             <a className="chip-link" href={REPO_URL} target="_blank" rel="noreferrer">
               [repo]

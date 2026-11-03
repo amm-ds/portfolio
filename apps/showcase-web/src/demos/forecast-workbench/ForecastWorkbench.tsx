@@ -27,7 +27,7 @@ const FALLBACK_MANIFEST: DemoManifest = {
   skills: ["time series forecasting", "prediction intervals", "demand classification"],
   modes: ["browser"],
   hero: {
-    label: "official WRMSSE, ensemble vs seasonal-naive floor (42,840-node hierarchy, scored once)",
+    label: "official WRMSSE",
     value: "0.6161 vs 0.8929",
     ci: "−31.0% on the competition window (m5_full_v1, horizon 28)",
   },

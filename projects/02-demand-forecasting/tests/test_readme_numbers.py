@@ -69,12 +69,22 @@ def _headline_table(section: str) -> dict[str, list[str]]:
     return rows
 
 
-def _check_headline_table(table: dict[str, list[str]], where: str) -> None:
+def _check_headline_table(
+    table: dict[str, list[str]], where: str, required: set[str] | None = None
+) -> None:
     metrics = _metrics()
     test = metrics["test"]
     sel = metrics["selection"]
     naive = test[NAIVE]["official_wrmsse"]
-    assert set(table) == set(metrics["candidates"]), f"{where} candidates mismatch the run"
+    if required is None:
+        assert set(table) == set(metrics["candidates"]), f"{where} candidates mismatch the run"
+    else:
+        # the story table was trimmed to the decisive rows; every quoted
+        # row must still match the committed metrics exactly
+        assert required <= set(table), f"{where} headline table lost a decisive row"
+        assert set(table) <= set(metrics["candidates"]), (
+            f"{where} headline table quotes an unknown candidate"
+        )
     for cand, (wrmsse, vs_floor, wape, bias, stability) in table.items():
         row = test[cand]
         assert _num(wrmsse) == pytest.approx(row["official_wrmsse"], abs=5e-5), (
@@ -120,39 +130,27 @@ def test_readme_headline_table_matches_committed_metrics() -> None:
 
 def test_story_headline_table_matches_committed_metrics() -> None:
     conclusions = _story_conclusions()
-    table = _headline_table(conclusions.split("Per-level official WRMSSE", 1)[0])
+    table = _headline_table(conclusions)
     assert table, "headline table not found in story conclusions"
-    _check_headline_table(table, "story")
+    _check_headline_table(
+        table,
+        "story",
+        required={"convex_ensemble", "lgbm_pool_store", "seasonal_naive"},
+    )
 
 
-def test_story_per_level_table_matches_committed_metrics() -> None:
-    """The 12-level table (ensemble vs floor vs best single, with node counts)."""
+def test_story_per_level_quotes_match_committed_metrics() -> None:
+    """The 12-level table was trimmed as a verbose secondary table; the per-level
+    prose quotes that remain in the story stay pinned to the committed metrics."""
     metrics = _metrics()
     test = metrics["test"]
-    levels = metrics["hierarchy"]["levels"]
-    scores = {c: test[c]["official_wrmsse"] for c in metrics["candidates"]}
-    best_single = min((c for c in scores if c != "convex_ensemble"), key=lambda c: scores[c])
-    section = _story_conclusions().split("Per-level official WRMSSE", 1)[1]
-    rows: dict[str, list[str]] = {}
-    for line in section.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("|"):
-            if rows:
-                break
-            continue
-        cells = [c.strip() for c in stripped.strip("|").split("|")]
-        if len(cells) != 5 or cells[0] == "level" or set(cells[0]) <= {"-", ":"}:
-            continue
-        rows[cells[0]] = cells[1:]
-    assert list(rows) == list(levels), "per-level table rows mismatch the hierarchy order"
-    counts = metrics["hierarchy"]["level_node_counts"]
-    for lvl, (ens, floor, best, nodes) in rows.items():
-        assert _num(ens) == pytest.approx(
-            test["convex_ensemble"]["per_level_wrmsse"][lvl], abs=5e-5
-        )
-        assert _num(floor) == pytest.approx(test[NAIVE]["per_level_wrmsse"][lvl], abs=5e-5)
-        assert _num(best) == pytest.approx(test[best_single]["per_level_wrmsse"][lvl], abs=5e-5)
-        assert int(nodes.replace(",", "")) == counts[lvl]
+    story = " ".join(_story().split())
+    total_ens = test["convex_ensemble"]["per_level_wrmsse"]["total"]
+    total_floor = test[NAIVE]["per_level_wrmsse"]["total"]
+    assert total_ens == pytest.approx(0.3501, abs=5e-5)
+    assert total_floor == pytest.approx(0.5600, abs=5e-5)
+    assert f"{total_ens:.3f}" in story, "story lost the per-level ensemble quote"
+    assert f"{total_floor:.3f}" in story, "story lost the per-level floor quote"
 
 
 def test_honest_comparison_quotes_match_committed_metrics() -> None:

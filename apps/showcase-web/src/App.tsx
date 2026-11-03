@@ -14,6 +14,9 @@ import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 const ProjectDetail = lazy(() =>
   import("./pages/ProjectDetail").then((m) => ({ default: m.ProjectDetail })),
 );
+const ReportView = lazy(() =>
+  import("./pages/ReportView").then((m) => ({ default: m.ReportView })),
+);
 const Services = lazy(() =>
   import("./pages/Services").then((m) => ({ default: m.Services })),
 );
@@ -135,6 +138,7 @@ export function App() {
             <Route path="/projects" element={<ProjectsIndex />} />
             <Route path="/experiments" element={<ProjectsIndex />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/projects/:id/report" element={<ReportView />} />
             <Route
               path="/demos/churn-sandbox"
               element={

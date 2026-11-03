@@ -115,8 +115,17 @@ describe("About page", () => {
     expect(screen.queryByText(/vanti|kognic|dera|pecan|letgo|olx|king/i)).toBeNull();
   });
 
-  it("connects the timeline with the site's dot/line language and centers it on the page", () => {
+  it("connects the timeline with the site's dot/line language, left-aligned with the line through the dot centers", () => {
     const css = readFileSync("src/styles.css", "utf8");
+    // last rem value of a shorthand (the list writes `padding: 0 0 0 1.5rem;`)
+    const rem = (rule: string, prop: string) =>
+      Number(
+        rule.match(
+          prop === "padding"
+            ? /padding:[^;]*?(-?[0-9.]+)rem;/
+            : new RegExp(`${prop}: (-?[0-9.]+)rem;`),
+        )![1],
+      );
     // a connecting line down the list…
     const lineRule = css.match(/\.timeline::before \{[\s\S]*?\n\}/)![0];
     expect(lineRule).toContain("width: 1px;");
@@ -125,12 +134,24 @@ describe("About page", () => {
     const dotRule = css.match(/\.timeline-item::before \{[\s\S]*?\n\}/)![0];
     expect(dotRule).toContain("border-radius: 50%;");
     expect(dotRule).toContain("background: var(--accent);");
-    // vertical layout, single column, constrained and centered — items keep
-    // their dot/line alignment inside the box
+    // vertical layout, single column, width-constrained but LEFT-aligned with
+    // the page text (no auto margins)
     const timelineRule = css.match(/\.timeline \{[\s\S]*?\n\}/)![0];
     expect(timelineRule).toContain("max-width: 720px;");
-    expect(timelineRule).toContain("margin: 1.75rem auto 0;");
+    expect(timelineRule).toContain("margin: 1.75rem 0 0;");
+    expect(timelineRule).not.toContain("margin: 1.75rem auto 0;");
     expect(timelineRule).toContain("padding: 0 0 0 1.5rem;");
+    // the line passes through the dots' centers: its left offset equals the
+    // list padding + dot left edge + half the dot width, and its top/bottom
+    // offsets equal the dot top + half the dot height (first/last dot center)
+    const padLeft = rem(timelineRule, "padding");
+    const dotLeft = rem(dotRule, "left");
+    const dotWidth = rem(dotRule, "width");
+    const dotTop = rem(dotRule, "top");
+    const dotHeight = rem(dotRule, "height");
+    expect(rem(lineRule, "left")).toBeCloseTo(padLeft + dotLeft + dotWidth / 2, 5);
+    expect(rem(lineRule, "top")).toBeCloseTo(dotTop + dotHeight / 2, 5);
+    expect(rem(lineRule, "bottom")).toBeCloseTo(dotTop + dotHeight / 2, 5);
   });
 
   it("has no education section — no block, no heading, no styles", () => {

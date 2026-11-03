@@ -273,17 +273,32 @@ sections:
       eight-solver ladder with tuning runs in about 90 seconds.
       [full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
 
+      ## What the experiment taught
+
+      - Seeded construction plus search is enough at 100 customers: the ladder
+        falls 316.95% → 4.23% mean gap, every rung feasible and machine-checked.
+      - Fleet size and distance trade at a tenth of a point: the fleet-first
+        variant buys −0.07 vehicles for +0.07 points of gap — measured, so a
+        client can choose.
+      - The exact solver certifies but does not compete: hinted CP-SAT ties at
+        about ten times the runtime; unhinted finds no feasible plan at the equal
+        budget.
+      - Tuning's honest negatives stayed in the report: restarts never pay, and
+        2-opt HPO moves the mean gap only 13.75% → 13.63%.
+      - Published references are beatable: the search undercuts 8 best-known plans
+        (best RC202 −3.85%) — a moving literature target, not a certificate.
+
       ## Exact numbers
 
-      Headline: mean gap 4.23%, 95% CI 3.1–5.3 points — deterministic given
-      the seed, so the interval reads as spread, not sampling uncertainty.
+      Headline: mean gap 4.23%, 95% CI 3.1–5.3 points — deterministic given the
+      seed, so the interval reads as spread, not sampling uncertainty.
       Terms: **time window**, the allowed arrival clock-time at a customer;
-      **best-known solutions**, the shortest published plans — reference
-      points, not proven optima.
+      **best-known solutions**, the shortest published plans — reference points,
+      not proven optima.
 
       **Ladder definition** (seeded, deterministic):
 
-      ```mermaid
+            ```mermaid
       flowchart LR
           A["randomized"] --> B["nearest_neighbor"]
           B --> C["clarke_wright"]
@@ -297,23 +312,18 @@ sections:
 
       - `randomized` / `nearest_neighbor`: feasible floor; greedy insertion.
       - `clarke_wright`: savings merges gated on capacity and windows.
-      - `two_opt` (+ `two_opt_tuned` HPO arm): feasible intra-route 2-opt
-        and inter-route 2-opt* moves.
-      - `alns`: random/worst/Shaw destroy, regret-2 repair, segment-adapted
-        weights, annealing acceptance.
-      - `alns_fleet`: same search, incumbents on distance + 10,000 ×
-        vehicles (fleet-first).
-      - `ortools_cp` / `ortools_cp_unhinted`: CP-SAT at a 10 s/instance
-        budget, hinted / no hint, no fallback.
+      - `two_opt` (+ `two_opt_tuned` HPO arm): feasible intra-route 2-opt and inter-route 2-opt* moves.
+      - `alns`: random/worst/Shaw destroy, regret-2 repair, segment-adapted weights, annealing acceptance.
+      - `alns_fleet`: same search, incumbents on distance + 10,000 × vehicles (fleet-first).
+      - `ortools_cp` / `ortools_cp_unhinted`: CP-SAT at a 10 s/instance budget, hinted / no hint, no fallback.
 
-      **Headline table** (means over 56 instances; Δ gap vs
-      `nearest_neighbor`; run ids in `reports/metrics.json`):
+      **Headline table** (means over 56 instances; Δ gap vs `nearest_neighbor`;
+      run ids in `reports/metrics.json`):
 
       | solver | mean gap | mean veh Δ | Δ gap vs nn | mean runtime |
       |---|---|---|---|---|
       | randomized (floor) | 316.95% | +11.09 | +245.31 points | <10 ms |
       | nearest_neighbor | 71.64% | +6.75 | — | <10 ms |
-      | clarke_wright | 18.31% | +5.79 | −53.33 points | <10 ms |
       | two_opt_tuned (HPO) | 13.63% | +5.79 | −58.01 points | <10 ms |
       | **alns (HPO-tuned)** | **4.23%** | **+3.73** | **−67.41 points** | **~1.1 s** |
       | **alns_fleet (vehicles-first)** | **4.30%** | **+3.66** | −67.34 points | ~1.1 s |
@@ -327,20 +337,8 @@ sections:
       |---|---|
       | distance | ALNS wins 52/56 intra-ladder on distance; `alns_fleet` wins the other 4 — the fleet-first path lands in different, occasionally better-distance optima |
       | vehicles first | under the benchmark convention (fleet size, then distance) ALNS wins 38/56, `alns_fleet` 5/56, naive solvers 13 by using fewer vehicles at far worse distance; no solver beats best-known fleet size (+3.73 mean, +3.66 fleet-first) |
-      | fleet-first trade | the hierarchical objective (penalty 10,000/vehicle) buys −0.07 mean vehicles for +0.07 points of mean gap — measured, not assumed; both criteria stay reported per instance |
       | negative gaps | ALNS undercuts 8 published references (best RC202 −3.85%); residual gaps include C2 6.50%, C203 19.48% and C103 11.67% |
-      | HPO negatives | 24 seeded trials tune 2-opt on all 56 instances and 12 tune ALNS on a 6-instance subset (winner: segment 100, reaction 0.5, uniform init weights, persisted to `params.yaml` as `alns_best`); restarts do not pay (k=1); budgets saturate at ≤~20 accepted moves |
-      | exact solver | hinted CP-SAT: status UNKNOWN on all 56 at 100 customers, incumbents unchanged at ~10× the runtime; unhinted at the equal 10 s budget: no feasible plan, no incumbent on any instance; the tie was a head-start artifact — certified optimal only in small cases: the 25-customer C101 prefix at 191.8 in 2.9 s (2-opt hint 286.3 → 191.8, −33%) and a 5-customer case in 0.1 s |
-
-      **Success criteria record:**
-
-      | criterion | target | verification |
-      |---|---|---|
-      | feasibility | exactly-once service, capacity + time windows | `RoutePlan` validator + route simulation |
-      | quality | distance % and vehicle Δ vs best-known | registry + SINTEF TOP supplement |
-      | transparency | seeded, deterministic, auditable search | fixed seed, no hidden state |
-      | speed | full benchmark and HPO in about 90 s | per-solver wall time |
-      | legibility | feasible randomized floor in every chart | construction/search deltas |
+      | exact solver | hinted CP-SAT: status UNKNOWN on all 56 at 100 customers, incumbents unchanged at ~10× the runtime; unhinted at the equal 10 s budget: no feasible plan, no incumbent on any instance; certified optimal only in small cases: the 25-customer C101 prefix at 191.8 in 2.9 s (2-opt hint 286.3 → 191.8, −33%) and a 5-customer case in 0.1 s |
 
       ## Protocol
 
@@ -368,25 +366,6 @@ sections:
       - Evidence is 100-customer scale; larger Gehring–Homberger instances
         and solver-as-a-service remain deferred.
 
-      ## Revision notes
-
-      - Committed run at seed 42: plans in `reports/solutions.json`, metrics
-        in `reports/metrics.json`; per-instance tables in `reports/results.md`.
-      - Tuned knobs in `params.yaml` (`solver_best`: 50 iterations, best
-        acceptance, tail exchange, restarts 1; `alns_best`: segment 100,
-        reaction 0.5, uniform init weights).
-      - The unhinted CP-SAT arm is recorded per instance (status + runtime)
-        in both reports, as the honest equal-budget comparison.
-
-      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/06-routing-optimization)
-
-      ## Reproduce
-
-      `uv run python -m routing_optimization.cli all`
-
-      - [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/06-routing-optimization)
-      - [full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
-
       **Business summary:** The ladder stands: 4.23% mean gap, +3.73
       trucks, a second a day, eight references beaten — with an honest
       label on what best-known means.
@@ -394,11 +373,15 @@ sections:
     metrics_keys: [randomized, clarke_wright, two_opt, two_opt_tuned, alns, alns_fleet, ortools_cp]
 roadmap:
   - status: delivered
-    text: Full 56-instance ALNS ladder — 4.23% mean best-known gap, +3.73 mean vehicle delta.
+    text: "Pinned the 56 Solomon instances with the merged best-known reference table."
   - status: delivered
-    text: Hinted CP-SAT probe — no 100-customer gains; two small cases certified optimal.
+    text: "Built the eight-rung solver ladder, seeded and machine-checked for feasibility."
   - status: delivered
-    text: Fleet-first ALNS — −0.07 vehicles for +0.07 points gap; unhinted CP-SAT produced no feasible plan.
+    text: "Tuned ALNS by seeded HPO; delivered 4.23% mean gap at ~1.1 s per instance."
+  - status: delivered
+    text: "Added the fleet-first variant and the hinted/unhinted CP-SAT certification arms."
+  - status: delivered
+    text: "Documented honest negatives: restarts never pay; 2-opt HPO gains 0.12 points."
 key_concepts:
   - "**Optimality gap** — how far a plan's distance sits above the best-known published plan."
   - "**Best-known solutions** — the shortest plans the literature has published: reference points, not proven optima."

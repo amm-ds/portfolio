@@ -76,7 +76,7 @@ sections:
 
       **Business summary:** Last quarter of 2024: the model beat the
       yesterday rule by 1.8 missed pickups per zone-hour, and its 90% band
-      was right 9 times in 10 — except in quiet zones.
+      was right 9 times in 10, except in quiet zones.
     figures: []
     metrics_keys: []
   - id: objectives
@@ -305,12 +305,25 @@ sections:
       streaming Polars scans, peak ≈2 GB RAM against an 8 GB budget.
       [full evaluation report](https://amm-ds.github.io/portfolio/projects/07-open-data-mobility/)
 
+      ## What the experiment taught
+
+      - The serving rule beat the leaderboard: the validation winner serves even
+        though xGB tested better — picking best-on-test is leakage wearing a
+        costume.
+      - Last week's hour matters most: lag_168 (0.80) tops lag_24 (0.64), and
+        weather adds about zero to point accuracy.
+      - The band is decision-grade where data is dense — 90.8% coverage city-wide —
+        but sparse zones under-cover at 84.7% and are flagged, not hidden.
+      - Weights do not transfer across services: the yellow-trained model loses to
+        persistence on green taxis until retrained on two months of green history.
+      - The drift observatory kept the artifact honest: 2024-11, 2024-12, and the
+        first unseen 2025-01 month all scored in-window at ±15% tolerance.
+
       ## Exact numbers
 
-      Q4-2024 temporal holdout (train < 2024-10-01 ≤ test; 584,855
-      zone-hours); ΔMAE is versus same-hour-yesterday lag-24. **Served is
-      `gbm_tuned`, selected on embargoed validation — not the
-      better-on-test challenger.**
+      Q4-2024 temporal holdout (train < 2024-10-01 ≤ test; 584,855 zone-hours);
+      ΔMAE is versus same-hour-yesterday lag-24. **Served is `gbm_tuned`, selected
+      on embargoed validation — not the better-on-test challenger.**
 
       | run | MAE | RMSE | MAPE | MASE | ΔMAE |
       |---|---|---|---|---|---|
@@ -318,70 +331,57 @@ sections:
       | gbm_mean | 4.667 | 15.096 | 62.0% | 0.761 | −28.4% |
       | gbm_tuned ← served | 4.676 | 15.189 | 61.6% | 0.763 | −28.3% |
       | **gbm_xgb_tuned ← best test MAE** | **4.487** | **14.785** | **58.2%** | **0.732** | **−31.2%** |
-      | gbm_lgbm_tuned | 4.582 | 14.794 | 59.9% | 0.747 | −29.7% |
-      | temporal_net | 5.510 | 19.686 | 54.5% | 0.899 | −15.5% |
       | temporal_net_tuned | 5.178 | 21.580 | 57.5% | 0.845 | −20.5% |
 
       Validation window (MAE, lower is better): incumbent 3.165, LightGBM
-      challenger 3.173, xGB challenger 3.182 — the serving rule keeps
-      `gbm_tuned` even though both challengers beat it on test (xGB −4.1%
-      relative MAE). Default vs tuned GBM: −0.2% relative MAE, flat within
-      noise. NN tuning buys −6.0% MAE at a −5.6% MAPE cost.
+      challenger 3.173, xGB challenger 3.182 — the serving rule keeps `gbm_tuned`
+      even though both challengers beat it on test (xGB −4.1% relative MAE).
+      Default vs tuned GBM: −0.2% relative MAE, flat within noise.
 
-      p90 coverage: overall 90.8% (target 90%); Manhattan 91.4%, Queens
-      89.6%, Brooklyn 88.6%, Bronx 91.4%, EWR 94.5%, Staten Island 98.5%,
-      Unknown 93.8%, sparse N/A zones 84.7% (under-cover, flagged).
+      p90 coverage: overall 90.8% (target 90%); Manhattan 91.4%, Queens 89.6%,
+      Brooklyn 88.6%, Bronx 91.4%, EWR 94.5%, Staten Island 98.5%, Unknown 93.8%,
+      sparse N/A zones 84.7% (under-cover, flagged).
 
-      Permutation importance (tuned GBM): lag_168 0.80 > lag_24 0.64 >
-      lag_1 0.55 > hour 0.32; weather ≈ 0 for point MAE — its value is the
-      elasticity read, not point accuracy.
+      Permutation importance (tuned GBM): lag_168 0.80 > lag_24 0.64 > lag_1 0.55
+      > hour 0.32; weather ≈ 0 for point MAE — its value is the elasticity read,
+      not point accuracy.
 
-      Weather ratios (rain vs dry, test window): sparse N/A 0.89×, Queens
-      0.92×, Staten Island 0.93× (outer-borough drops of 7–10%), Manhattan
-      0.97×, Bronx 1.03×, EWR 1.08×.
+      Weather ratios (rain vs dry, test window): sparse N/A 0.89×, Queens 0.92×,
+      Staten Island 0.93× (outer-borough drops of 7–10%), Manhattan 0.97×, Bronx
+      1.03×, EWR 1.08×.
 
       Drift observatory (persisted model, ±15% tolerance):
 
-      - **2024-11:** MAE 5.0592 vs pinned 4.6763 (+8.19%), MAPE 65.45%,
-        p90 coverage 90.6%, 152,110 zone-hours — in-window.
-      - **2024-12:** MAE 5.0458 (+7.90%), MAPE 65.59%, coverage 91.2%,
-        152,375 zone-hours — in-window.
-      - **2025-01** (fetched live, first genuinely unseen month): MAE
-        4.4420 (−5.01%), MAPE 59.60%, ΔMAE vs naive +34.6%, coverage
-        87.4% — in-window.
+      - **2024-11:** MAE 5.0592 vs pinned 4.6763 (+8.19%), MAPE 65.45%, p90
+        coverage 90.6%, 152,110 zone-hours — in-window.
+      - **2024-12:** MAE 5.0458 (+7.90%), MAPE 65.59%, coverage 91.2%, 152,375
+        zone-hours — in-window.
+      - **2025-01** (fetched live, first genuinely unseen month): MAE 4.4420
+        (−5.01%), MAPE 59.60%, ΔMAE vs naive +34.6%, coverage 87.4% — in-window.
 
-      Green transfer (2024-03 green window, 197,160 zone-hours): the
-      yellow-trained GBM loses average error to persistence (0.296 vs
-      0.212) but wins RMSE (−17%) and MAPE (−19%). Retrained on green
-      Jan–Feb (337,080 zone-hours): average error 0.1805 vs 0.212, RMSE
-      0.688 vs 1.100, MAPE 66.4% vs 81.8% — all three metrics. The
-      production bundle `gbm_green_served` is fit on all 534,240 curated
-      green zone-hours in the identical three-file contract, indexed by
-      `services.json`, served by `mobility.serving.predict_service`.
-      Serving probe: the showcase API returned JFK zone 132 point 223.827
-      and p90 251.811 (default yellow); `POST
-      /projects/07-open-data-mobility/forecast` takes an optional
-      `service=yellow|green` field, routes via `services.json`, echoes the
-      choice, and returns 422 on an unknown service.
+      Green transfer (2024-03 green window, 197,160 zone-hours): the yellow-trained
+      GBM loses average error to persistence (0.296 vs 0.212) but wins RMSE (−17%)
+      and MAPE (−19%). Retrained on green Jan–Feb (337,080 zone-hours): average
+      error 0.1805 vs 0.212, RMSE 0.688 vs 1.100, MAPE 66.4% vs 81.8% — all three
+      metrics. The production bundle `gbm_green_served` is fit on all 534,240
+      curated green zone-hours in the identical three-file contract.
 
       ## Protocol
 
       - Split: temporal holdout — train < 2024-10-01 ≤ test; 584,855 scored
-        zone-hours; no reselection after commit.
-      - Tuning: Optuna on an embargoed, expanding, train-side validation
-        window — 30 boosting trials, 10 neural-net trials, plus challenger
-        arms; the test window was never visible to tuning.
-      - MASE normalizes by the in-sample same-hour-yesterday error (≈6.13
-        pickups/hour), so 1.0 = parity with the baseline.
+        zone-hours, MASE normalizes by the in-sample same-hour-yesterday error
+        (≈6.13 pickups/hour), so 1.0 = parity with the baseline.
+      - Tuning: Optuna on an embargoed, expanding, train-side validation window —
+        30 boosting trials, 10 neural-net trials, plus challenger arms; the test
+        window was never visible to tuning.
       - Band: a quantile-0.9 GBM twin fit with the served recipe; judged by
         empirical coverage against the 90% target.
-      - Grid: every panel reindexed to 265 zones × 8,784 hours with
-        explicit zeros, so lag features are true one-hour steps.
-      - Memory: lazy, streaming Polars scans; peak RAM ≈2 GB against the
-        8 GB budget.
-      - Drift: a scheduled observatory scores each published month against
-        the persisted model at a ±15% tolerance; a regression opens the
-        response runbook.
+      - Grid: every panel reindexed to 265 zones × 8,784 hours with explicit zeros,
+        so lag features are true one-hour steps. Memory: lazy, streaming Polars
+        scans; peak RAM ≈2 GB against the 8 GB budget.
+      - Drift: a scheduled observatory scores each published month against the
+        persisted model at a ±15% tolerance; a regression opens the response
+        runbook.
 
       ## Limits
 
@@ -396,41 +396,6 @@ sections:
       - Causal weather claims and longer-horizon forecasts stay deferred by
         design — they need a different study contract (randomized weather
         shocks; a multi-hour forecasting setup).
-
-      ## Revision notes
-
-      **Committed holdout (Q4-2024):** the seven-run ladder above was
-      scored once on the frozen October–December window; the served
-      artifact was frozen after selection on the embargoed validation
-      window and never re-tuned against test.
-
-      **Wave 15** productionized per-service retraining: the green-control
-      recipe (default GBM family on the service's own history, quantile-0.9
-      p90 twin) was fit on all 534,240 curated green zone-hours and
-      persisted as `gbm_green_served` under `reports/models/serving/green/`,
-      indexed by the typed `services.json` registry and served by
-      `mobility.serving.predict_service`.
-
-      **Drift record:** the scheduled observatory scored 2024-11 and
-      2024-12 from local snapshots (+8.19% / +7.90% vs pinned MAE, both
-      in-window), then 2025-01 — the first genuinely unseen month, fetched
-      live through the checksum machinery — at −5.01%, also in-window.
-
-      **Serving record:** the showcase API `service` field went live, with
-      tests pinning default-yellow parity, green routing on the committed
-      bundle, and 422 on unknown service.
-
-      Full development history: [git history](https://github.com/amm-ds/portfolio/commits/main/projects/07-open-data-mobility).
-
-      ## Reproduce
-
-      The raw data is not shipped: the first run downloads about 1.5 GB of
-      TLC and NOAA files — a long download — and later runs reuse the
-      pinned local copies.
-
-      `uv run python -m mobility.cli all`
-
-      [reproduce in the repository](https://github.com/amm-ds/portfolio/tree/main/projects/07-open-data-mobility) · [full evaluation report](https://amm-ds.github.io/portfolio/projects/07-open-data-mobility/)
 
       ```mermaid
       flowchart LR
@@ -451,12 +416,12 @@ sections:
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
 roadmap:
   - status: delivered
-    text: "Streaming 41.2M-trip pipeline with a temporal ladder, p90 calibration, and the served `gbm_tuned` bundle."
+    text: "Built the streaming 41.2M-trip pipeline into one zero-filled zone-hour panel."
   - status: delivered
-    text: "Ran the green-transfer study: the retrained green GBM beats persistence on all three metrics."
+    text: "Selected and served `gbm_tuned` on embargoed validation: 4.676 MAE, −28.3% vs yesterday."
   - status: delivered
-    text: "Productionized per-service retraining: green serving bundle, services.json registry, predict_service."
+    text: "Calibrated the p90 twin to 90.8% coverage and flagged sparse zones."
   - status: delivered
-    text: "Scored drift months 2024-11, 2024-12, and the first live-fetched 2025-01 — all in-window."
+    text: "Ran the green-transfer study and productionized per-service retraining."
   - status: delivered
-    text: "Shipped the showcase API service field: yellow/green routing, echo, and 422 on unknown service."
+    text: "Scored drift months in-window through 2025-01 and shipped the two-service API."

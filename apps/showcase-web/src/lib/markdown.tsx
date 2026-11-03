@@ -100,36 +100,50 @@ function linkGlossaryTerms(text: string, keyPrefix: string, state: GlossaryLinkS
   return out.length === 1 ? out[0] : <Fragment key={keyPrefix}>{out}</Fragment>;
 }
 
-function renderInline(text: string, keyPrefix: string, state: GlossaryLinkState): ReactNode[] {
-  const parts = text.split(INLINE_RE);
-  return parts.map((part, i) => {
-    const key = `${keyPrefix}-${i}`;
-    if (part.startsWith("`") && part.endsWith("`") && part.length > 1) {
-      return <code key={key}>{part.slice(1, -1)}</code>;
-    }
-    const link = LINK_TOKEN_RE.exec(part);
-    if (link) {
-      // Allowed schemes become external anchors; anything else keeps the text
-      // and drops the URL. Link text stays plain — never nested glossary tips.
-      if (ALLOWED_LINK_SCHEMES.test(link[2].trim())) {
-        return (
-          <a key={key} href={link[2].trim()} target="_blank" rel="noopener noreferrer">
-            {link[1]}
-          </a>
-        );
-      }
-      return <span key={key}>{link[1]}</span>;
-    }
-    if (part.startsWith("**") && part.endsWith("**") && part.length > 3) {
+/** Map one inline token (code/link/bold/emphasis) to an element. Plain text
+    is glossary-linked when a link state is threaded; without one it returns
+    as-is (card copy renders inline markdown without glossary auto-linking). */
+function inlineToken(part: string, key: string, state: GlossaryLinkState | null): ReactNode {
+  if (part.startsWith("`") && part.endsWith("`") && part.length > 1) {
+    return <code key={key}>{part.slice(1, -1)}</code>;
+  }
+  const link = LINK_TOKEN_RE.exec(part);
+  if (link) {
+    // Allowed schemes become external anchors; anything else keeps the text
+    // and drops the URL. Link text stays plain — never nested glossary tips.
+    if (ALLOWED_LINK_SCHEMES.test(link[2].trim())) {
       return (
-        <strong key={key}>{linkGlossaryTerms(part.slice(2, -2), key, state)}</strong>
+        <a key={key} href={link[2].trim()} target="_blank" rel="noopener noreferrer">
+          {link[1]}
+        </a>
       );
     }
-    if (part.startsWith("*") && part.endsWith("*") && part.length > 1) {
-      return <em key={key}>{linkGlossaryTerms(part.slice(1, -1), key, state)}</em>;
-    }
-    return linkGlossaryTerms(part, key, state);
-  });
+    return <span key={key}>{link[1]}</span>;
+  }
+  if (part.startsWith("**") && part.endsWith("**") && part.length > 3) {
+    const inner = state ? linkGlossaryTerms(part.slice(2, -2), key, state) : part.slice(2, -2);
+    return <strong key={key}>{inner}</strong>;
+  }
+  if (part.startsWith("*") && part.endsWith("*") && part.length > 1) {
+    const inner = state ? linkGlossaryTerms(part.slice(1, -1), key, state) : part.slice(1, -1);
+    return <em key={key}>{inner}</em>;
+  }
+  return state ? linkGlossaryTerms(part, key, state) : part;
+}
+
+function renderInline(text: string, keyPrefix: string, state: GlossaryLinkState): ReactNode[] {
+  const parts = text.split(INLINE_RE);
+  return parts.map((part, i) => inlineToken(part, `${keyPrefix}-${i}`, state));
+}
+
+/** Render inline markdown (`code`, **bold**, *emphasis*, [links](https://…))
+ *  without block wrappers and without glossary auto-linking — for short card
+ *  copy where a **bold** key fact should stand out inside a muted paragraph.
+ *  Everything still renders as React text nodes — no HTML injection surface. */
+export function renderInlineMarkdown(text: string): ReactNode {
+  const parts = text.split(INLINE_RE);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) => inlineToken(part, `i${i}`, null));
 }
 
 const UL_ITEM_RE = /^\s*[-*]\s+/;
