@@ -55,7 +55,7 @@ sections:
       how prompts turn into records — task suite,
       load driver, local endpoint, per-request record, committed reports.
       Every request leaves a record row, so numbers can be re-derived.
-      Next: which setups enter, under what rules.
+      Which setups enter, under what rules? Objectives sets the field.
 
       ```mermaid
       flowchart LR
@@ -163,7 +163,7 @@ sections:
         the same settings should read the same way twice.
       - The bounded budget and the reasoning-off switch pin the envelope
         so retries stay comparable; a smoke pass justified both (told
-        in the next section).
+        where the answers get checked).
       - Free-form answers were rejected: without a fixed schema there is
         nothing to score at 760 requests. One shared parser means the
         checker itself cannot create fake gaps between setups.
@@ -173,7 +173,9 @@ sections:
       committed evidence: `data/prompts.json` (prompts),
       `data/bench_run.json` (raw full grid), `reports/metrics.json`,
       `reports/report.html`, and the figures. The published percentiles
-      re-aggregate offline from the raw record. No re-run needed.
+      re-aggregate offline from the raw record. No re-run needed. Whether
+      the answers themselves hold up is the prior question — that check
+      comes before any timing.
 
       **Business summary:** The task: 8 general-knowledge prompts, each with
       a keyword checklist and a fixed answer schema, so every setup answers
@@ -187,7 +189,7 @@ sections:
       carry their prompt's keywords. The schema-valid rate is 1.00 in every
       cell, and so is the keyword quality rate. The quality-by-quantization
       chart shows the three quantization arms tied at 1.00 on both checks.
-      Read it as a guardrail, not a verdict: parity on a bounded task says
+      Take it as a guardrail, not a verdict: parity on a bounded task says
       the comparisons that follow are fair, not that quantization never
       hurts quality.
 
@@ -219,14 +221,14 @@ sections:
       the 4-bit 3B-active mixture-of-experts model, a dense 20B in MXFP4, a
       dense 31B in 4-bit MLX packaging, a dense 32B at full precision, and a
       quantized pair (Q8_0 and QAT-int4) on one runner. The serving-grid
-      diagram shows how they were combined: the five
+      diagram lays out how they were combined: the five
       setups enter one runner-selection step (Ollama routes each artifact
       to llama.cpp or MLX), then one measurement grid (concurrency rungs 1
       through 8, five suite repeats per cell), then the per-cell outputs.
       The dotted box is a measured fact, not an omission — no MLX build
       exists for the MoE, so that cell was recorded rather than forced.
-      The tokens-per-second chart shows what the grid measured: aggregate
-      tok/s by model and concurrency. Read its lines flat-to-declining as
+      The tokens-per-second chart records what the grid measured: aggregate
+      tok/s by model and concurrency. Its lines run flat-to-declining as
       load rises, with the MoE about 7× above the dense 32B.
 
       ```mermaid
@@ -270,7 +272,7 @@ sections:
       sub-second answers at single-user load, the best throughput measured,
       perfect bounded-task quality, and the lowest electricity cost per
       million tokens. The latency-versus-concurrency chart carries the
-      verdict. Read its x-axis as load (one, two, four, eight requests in
+      verdict. Treat its x-axis as load (one, two, four, eight requests in
       flight), the point at each rung as the p95 latency, and the whisker
       as the committed p50–p99 span. The MoE's line rises near-linearly
       from 0.81 s to 7.80 s — each added request costs about the same

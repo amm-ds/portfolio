@@ -6,9 +6,12 @@ sections:
     text_md: |
       **Sorting news into four topics, a compact model trained on all 120k
       articles scores 95 of 100 on a fresh holdout; a keyword model scores
-      88 while classifying about 40× faster at zero token cost.** The
-      system diagram shows the confidence router that keeps the first's
-      quality at the second's price.
+      88 while classifying about 40× faster at zero token cost.** AG News
+      supplies 127,600 real headline-plus-description items; the training
+      portion has 120k rows; license unknown. The transformer alone pays
+      full price on obvious items; keywords are cheap but wrong on blurry
+      ones — hence the router. The system diagram shows the confidence
+      router that keeps the first's quality at the second's price.
 
       ```mermaid
       flowchart LR
@@ -28,12 +31,9 @@ sections:
         T --> O
       ```
 
-      AG News: 127,600 real headline-plus-description items; the training
-      portion has 120k rows; license unknown. The transformer alone pays
-      full price on obvious items; keywords are cheap but wrong on blurry
-      ones — hence the router. Follow the arrows: about three of four
-      items exit on the free keyword path; the uncertain quarter rides
-      the transformer. Which rung of that ladder earns its cost?
+      Follow the arrows: about three of four items exit on the free
+      keyword path; the uncertain quarter rides the transformer. Which
+      rung of that ladder earns its cost?
 
       **Business summary:** A keyword model sorts obvious news free and
       fast; the transformer sorts the uncertain quarter; together they
@@ -44,8 +44,27 @@ sections:
       **Which rung of a model ladder earns its cost under a fixed compute
       budget?** The candidates: a majority-class floor, random guessing,
       keyword statistics, a compact neural model. The top rung trains that
-      model on all available data. The decision-flow diagram fixes the
-      rungs and the judging rules.
+      model on all available data.
+
+      The ladder exists to make the cost question answerable. Each rung
+      must beat the one below it, or its extra cost is a donation. Two
+      floors come first — always the majority class, then seeded random
+      guessing — because a gain that cannot clear trivial policies is not
+      a gain. Macro-F1 leads accuracy as the headline judge: the
+      unweighted mean of per-topic F1, so a rare topic counts as much as
+      a common one. The tempting shortcut, jumping straight to the
+      biggest model, was rejected — it would spend the whole budget
+      before any baseline existed to compare against.
+
+      The protocol, rung by rung:
+
+      - Beat two naive floors, so the gain shows against trivial policies.
+      - Anchor on the classical TF-IDF + logistic regression model before any neural rung.
+      - Tune with a seeded search. Disclose exactly what the test set was used for.
+      - Keep every rung laptop-reproducible. Then extend the evidence to the full 120k split.
+
+      The ladder diagram fixes the rungs and the one judge every rung
+      faces.
 
       ```mermaid
       flowchart LR
@@ -63,25 +82,10 @@ sections:
         M --> H
       ```
 
-      The ladder exists to make the cost question answerable. Each rung
-      must beat the one below it, or its extra cost is a donation. Two
-      floors come first — always the majority class, then seeded random
-      guessing — because a gain that cannot clear trivial policies is not
-      a gain. Macro-F1 leads accuracy as the headline judge: the
-      unweighted mean of per-topic F1, so a rare topic counts as much as
-      a common one. The tempting shortcut, jumping straight to the
-      biggest model, was rejected — it would spend the whole budget
-      before any baseline existed to compare against.
-
-      Five rungs, cheapest
-      first, each judged by the same accuracy and macro-F1 pair, with
-      one honesty rule running alongside — the test set's selection role
-      must be disclosed, since it helped pick the shipped model.
-
-      - Beat two naive floors, so the gain shows against trivial policies.
-      - Anchor on the classical TF-IDF + logistic regression model before any neural rung.
-      - Tune with a seeded search. Disclose exactly what the test set was used for.
-      - Keep every rung laptop-reproducible. Then extend the evidence to the full 120k split.
+      Five rungs, cheapest first, each judged by the same accuracy and
+      macro-F1 pair, with one honesty rule running alongside — the test
+      set's selection role must be disclosed, since it helped pick the
+      shipped model.
 
       What data views make that comparison fair?
 
@@ -92,8 +96,20 @@ sections:
   - id: data
     text_md: |
       AG News holds 127,600 headline-plus-description items across four
-      topics. The standard training portion has 120k rows. The license is
+      topics; the standard training portion has 120k rows. The license is
       recorded as `unknown` — see [the dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/).
+      Four views were fixed so the ladder compares like with like: the
+      bounded sample track keeps every rung laptop-reproducible, the
+      full-data track asks whether the same recipe scales, and one shared
+      test set anchors both, so class priors can never explain a gap.
+
+      The four views:
+
+      - **The sample split:** seeded and stratified — 3,600 train, 400 validation — on a 1,000-article test set of exactly 250 per topic.
+      - **The full split:** 108k train / 12k validation from the full 120k portion, on the same test set.
+      - **The fresh holdout:** 1,000 articles from the sample's unused 6,600, disjoint by construction.
+      - **The scale ladder:** the same seeded protocol at 3.6k / 10.8k / 36k rows; data size is the only varying factor.
+
       The data-lineage diagram shows each split and its role.
 
       ```mermaid
@@ -105,24 +121,10 @@ sections:
         F --> U["Unbiased headline"]
       ```
 
-      Four views were fixed so the ladder compares like with like. The
-      bounded sample track keeps every rung laptop-reproducible; the
-      full-data track asks whether the same recipe scales; one shared
-      test set anchors both, so class priors can never explain a gap.
-      The sample's unused complement became a fresh holdout the selection
-      never touched — the one unbiased headline reading. A scale ladder
-      repeats the identical seeded protocol at three smaller sizes,
-      leaving data as the only varying factor.
-
-      The lineage splits two ways: the full portion and the
-      seeded sample feed one shared test set, which drives model selection;
-      the sample's 6,600-row complement branches off as a fresh holdout
-      that bypasses selection entirely.
-
-      - **The sample split:** seeded and stratified — 3,600 train, 400 validation — on a 1,000-article test set of exactly 250 per topic.
-      - **The full split:** 108k train / 12k validation from the full 120k portion, on the same test set.
-      - **The fresh holdout:** 1,000 articles from the sample's unused 6,600, disjoint by construction.
-      - **The scale ladder:** the same seeded protocol at 3.6k / 10.8k / 36k rows; data size is the only varying factor.
+      The lineage splits two ways: the full portion and the seeded sample
+      feed one shared test set, which drives model selection; the sample's
+      6,600-row complement branches off as a fresh holdout that bypasses
+      selection entirely — the one unbiased headline reading.
 
       What does each rung face on that arena?
 
@@ -134,17 +136,16 @@ sections:
     text_md: |
       Every rung is judged the same way: accuracy and macro-F1, the
       unweighted mean of per-topic F1, so a rare topic counts as much as a
-      common one. The arena is one fixed 1,000-article test set. Two naive
-      floors set the bar: always the majority class, or random guesses.
+      common one. The arena is one fixed 1,000-article test set; two naive
+      floors set the bar — always the majority class, or random guesses.
 
-      Two design choices keep the comparison readable; the class-balance
-      figure shows both. The bounded splits are exactly 25% per class —
-      four even bars, so a model cannot win a topic by volume alone.
-      Train texts cluster at 20–50 words, well inside the 128-token
-      budget, so neither priors nor truncation can explain the gaps the
-      ladder will show. Accuracy alone was rejected as the headline
-      judge: on a balanced set it mostly tracks the majority topic, and
-      macro-F1 is the stricter read.
+      Three design choices keep the comparison readable:
+
+      - **Balanced classes:** the bounded splits are exactly 25% per class — four even bars, so a model cannot win a topic by volume alone.
+      - **Short texts:** train texts cluster at 20–50 words, well inside the 128-token budget, so truncation cannot explain the gaps the ladder will show.
+      - **The stricter judge:** accuracy alone was rejected — on a balanced set it mostly tracks the majority topic, and macro-F1 is the stricter read.
+
+      The class-balance figure shows the first two at a glance.
 
       One honesty measure matters more: the bounded test set helped pick
       the shipped model, so its readings are biased by design. The
@@ -161,44 +162,30 @@ sections:
     figures: [eda_class_balance]
   - id: training
     text_md: |
-      **The ladder.** On the shared test set the floors are useless
-      (0.1000 and 0.2533 macro-F1), the keyword model reaches 0.8714, the
-      bounded transformer 0.9021, and the same model trained on all 120k
-      articles 0.9460. On the fresh holdout the ordering holds and widens:
-      keyword 0.8785, bounded 0.8962, full-data 0.9529; the advantage is
-      not a selection artifact. The training-curve figure shows validation
-      plateauing within two epochs while training loss keeps falling —
-      read the widening gap as memorization, not progress. The
-      epochs-probe figure shows a four-epoch run peaking at validation
+      **The ladder, on both arenas.** On the shared test set the floors are
+      useless (0.1000 and 0.2533 macro-F1), the keyword model reaches
+      0.8714, the bounded transformer 0.9021, and the same model trained
+      on all 120k articles 0.9460. On the fresh holdout the ordering holds
+      and widens: keyword 0.8785, bounded 0.8962, full-data 0.9529 — the
+      advantage is not a selection artifact.
+
+      - **Data, not device, moved the score.** Rung for rung at identical settings, each tripling of rows buys +1.5, +1.6, and +1.3 macro-F1 points on the test split — a slope that repeats on the fresh holdout (+1.5 / +2.1 / +1.0). A twin rung on the other device, same rows, lands within 0.011 macro-F1: device did not move the score.
+      - **Tuning changed little.** A seeded search lifted validation macro-F1 from 0.8880 to 0.8953, but the retrained candidate did not carry the gain to test; three seeds average 0.8910 ± 0.0042, inside seed noise. The default recipe is the strong one here.
+      - **Calibration was nearly free.** One temperature fitted on validation cuts test calibration error — ECE, expected calibration error — from 0.0467 to 0.0133 (−71%) without changing a single prediction.
+      - **Errors concentrate where topics blur.** The dominant confusion is Business predicted as Sci/Tech: 24 of 250 bounded test items, falling to 15 of 250 at 20k rows and 14 of 250 at full data. Hybrid headlines remain the open problem.
+
+      Three figures back the reading. The training-curve figure tracks
+      validation plateauing within two epochs while training loss keeps
+      falling — read the widening gap as memorization, not progress. The
+      epochs-probe figure plots a four-epoch run peaking at validation
       macro-F1 0.9477 in epoch 3, then sliding: extra epochs overfit, and
-      the probe confirms the default rather than replacing it.
-
-      **Why the gap exists — data, not device.** Rung for rung at
-      identical settings, each tripling of rows buys +1.5, +1.6, and +1.3
-      macro-F1 points on the test split — a slope that repeats on the
-      fresh holdout (+1.5 / +2.1 / +1.0). A twin rung on the other device,
-      same rows, lands within 0.011 macro-F1: device did not move the
-      score.
-
-      **Tuning changed little.** A seeded search lifted validation
-      macro-F1 from 0.8880 to 0.8953, but the retrained candidate did not
-      carry the gain to test; three seeds average 0.8910 ± 0.0042, inside
-      seed noise. The hpo-history figure shows all twelve trials; the
-      running best flattens early, and nothing escapes seed noise. The
-      default recipe is the strong one here.
-
-      **Confidence can be fixed after the fact.** One temperature fitted
-      on validation cuts test calibration error — ECE, expected calibration
-      error — from 0.0467 to 0.0133 (−71%) without changing a single
-      prediction.
-
-      **Errors concentrate where topics blur.** The dominant confusion is
-      Business predicted as Sci/Tech: 24 of 250 bounded test items,
-      falling to 15 of 250 at 20k rows and 14 of 250 at full data. Hybrid
-      headlines remain the open problem.
+      the probe confirms the default rather than replacing it. The
+      hpo-history figure holds all twelve trials; the running best
+      flattens early, and nothing escapes seed noise.
 
       Data, not device or tuning, moved the score — so what do these
-      numbers mean as an operating policy? The next section prices them.
+      numbers mean as an operating policy? The evaluation section prices
+      them.
 
       **Business summary:** More training data moved the score — each
       tripling about +1.5 macro-F1 points to 0.9460 test, 0.9529 fresh;
@@ -208,14 +195,9 @@ sections:
   - id: evaluation
     text_md: |
       For a feed operator these numbers are an operating policy, not a
-      leaderboard. On one machine at batch size 1, the keyword model
-      classifies ~4,478 items per second at zero token cost. The bounded
-      transformer manages ~111 per second at about $0.066 per 1,000 items.
-      The full-data model is priced the same and scores higher. Eight-bit
-      quantization halves memory (255.5 → 132.3 MB) with no measured
-      quality loss on its train sample, but it is slower at batch size 1:
-      it buys memory, not speed. The decision-flow diagram turns these
-      into a policy.
+      leaderboard. The decision-flow diagram turns them into a policy:
+      every item hits the keyword model first, and the only question is
+      confidence.
 
       ```mermaid
       flowchart LR
@@ -228,11 +210,14 @@ sections:
         HV["High-value traffic"] --> FD["Full-data model<br/>0.9529 fresh macro-F1"]
       ```
 
-      Read the diagram through its gate. Every item hits the keyword
-      model first; the only question is confidence. Below τ=0.50, items
-      escalate — 24.6% of them — and the transformer sorts those.
-      High-value traffic skips the gate entirely and pays for the
-      full-data model.
+      Read the diagram through its gate. Below τ=0.50, items escalate —
+      24.6% of them — and the transformer sorts those. High-value traffic
+      skips the gate entirely and pays for the full-data model. The price
+      of each path, measured on one machine at batch size 1:
+
+      - **Keyword path:** ~4,478 items per second at zero token cost.
+      - **Transformer path:** ~111 per second at about $0.066 per 1,000 items; the full-data model is priced the same and scores higher.
+      - **Eight-bit quantization:** halves memory (255.5 → 132.3 MB) with no measured quality loss on its train sample, but it is slower at batch size 1 — it buys memory, not speed.
 
       On the fresh holdout, escalating items below τ=0.50 yields 0.9020
       macro-F1. It beats either model alone (0.8785 / 0.8962). 75.4% of
@@ -262,16 +247,14 @@ sections:
       holdout repairs the headline bias — 0.9529 versus 0.9460 — but not
       every secondary number.
 
-      **What this does not show: production breadth.** The reading is
-      per-item, English-only, on four clean topics. Production taxonomies
-      with overlapping or multi-label items are a different problem.
-      Quantized quality is measured on a training sample, not test data.
-      All speeds come from one machine at batch size 1. Tuning ties the
-      default within noise; a larger budget might separate them, unproven
-      here. None of these caveats sits in a footnote; they bound the
-      claim.
+      What this does not show, stated plain:
 
-      The exact tables and run identities sit in the conclusions.
+      - **Production breadth:** the reading is per-item, English-only, on four clean topics; production taxonomies with overlapping or multi-label items are a different problem.
+      - **Measurement limits:** quantized quality is measured on a training sample, not test data; all speeds come from one machine at batch size 1.
+      - **Tuning headroom:** tuning ties the default within noise; a larger budget might separate them, unproven here.
+
+      None of these caveats sits in a footnote; they bound the claim. The
+      exact tables and run identities sit in the conclusions.
 
       **Business summary:** Errors cluster where Business and Sci/Tech
       blur; the ladder confirms data, not device, drives the score;

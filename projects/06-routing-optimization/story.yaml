@@ -7,14 +7,10 @@ sections:
       **One delivery day, 100 customers: each customer has a time slot, each
       truck a capacity limit.** The planner's job is a legal day — every
       stop served once, every window met — made as short as possible.
-      Solomon's problems are the field's standard test days, which makes
-      them the honest yardstick. Across the 56 instances, a tuned adaptive
-      large-neighborhood search lands within 4.23% of the best published
-      distance, in about a second per problem, using 3.73 more trucks than
-      best-known on average. The day-plan diagram shows the shape of one
-      problem — inputs, route list, and the machine-checked validator every
-      plan must pass before its distance counts. The next section fixes
-      the acceptance contract before any solver runs.
+      Solomon's problems are the field's standard test days — the honest
+      yardstick. Across the 56 instances, a tuned adaptive large-neighborhood
+      search lands within 4.23% of the best published distance, in about a
+      second per problem, using 3.73 more trucks than best-known on average.
 
       ```mermaid
       flowchart LR
@@ -26,6 +22,11 @@ sections:
         end
         I --> R
       ```
+
+      The day-plan diagram shows the shape of one problem — inputs, route
+      list, and the machine-checked validator every plan must pass before
+      its distance counts. The acceptance contract is fixed before any
+      solver runs; the objectives section states it.
 
       **Business summary:** Across 56 real benchmark days, the search lands
       within about 4% of the best published plans in a second per day, at
@@ -50,12 +51,7 @@ sections:
 
       The contract diagram shows how the clauses chain: the rules feed one
       code check — the RoutePlan validator plus a route simulation — and
-      the two scored criteria then land on the benchmark convention. The
-      convention needed stating because the tempting alternative,
-      distance-only reporting, hides the truck count: a fleet can almost
-      always shorten its distance by adding vehicles, so the two numbers
-      are never reported apart. The 56 test days and
-      the reference plans they are scored against are pinned next.
+      the two scored criteria then land on the benchmark convention.
 
       ```mermaid
       flowchart LR
@@ -74,6 +70,14 @@ sections:
         V --> VEH --> C
       ```
 
+      The convention needed stating because the tempting alternative,
+      distance-only reporting, hides the truck count: a fleet can almost
+      always shorten its distance by adding vehicles, so the two numbers
+      are never reported apart.
+
+      What do the 56 test days and their reference plans look like? The
+      data section pins them.
+
       **Business summary:** The bar: legal plans only, checked by code;
       distance and truck count side by side; the whole ladder with tuning
       inside about 90 seconds.
@@ -81,22 +85,24 @@ sections:
   - id: data
     text_md: |
       **56 standard test days, six families, pinned and free with
-      citation.** The complete Solomon 100-customer set holds 56 instances:
-      C1 (9), C2 (8), R1 (12), R2 (11), RC1 (8), RC2 (8) — clustered,
-      random, or mixed geography crossed with tight or wide time windows.
-      The family counts are not decorative: family shapes the gap, so the
-      per-family view returns in the results. Each instance pins
-      coordinates, demand, time windows and service time, nothing left to
-      interpretation. The
+      citation.** The complete Solomon 100-customer set holds 56 instances
+      — clustered, random, or mixed geography crossed with tight or wide
+      time windows. Each instance pins coordinates, demand, time windows
+      and service time, nothing left to interpretation. The
       [CVRPLIB snapshot](https://amm-ds.github.io/portfolio/data-registry/cvrplib-solomon/)
       comes sha256-pinned from the SINTEF TOP mirror — a primary mirror
       plus a hash beat a bundled copy, because the citation must resolve
-      for a stranger in five years. The lineage diagram shows how sources
-      become the reference table: read it left to right, the snapshot
-      passes data-quality gates that reject nulls and out-of-range values
-      and fans out into the six families, while on the reference side the
-      curated best-known registry and a project-local SINTEF TOP supplement
-      merge into one comparison table of distance and truck count.
+      for a stranger in five years.
+
+      The six families:
+
+      - C1 (9) and C2 (8): clustered customers, tight or wide windows.
+      - R1 (12) and R2 (11): scattered customers, tight or wide windows.
+      - RC1 (8) and RC2 (8): mixed clustered-random geography.
+
+      The family counts are not decorative: family shapes the gap, so the
+      per-family view returns in the results. The lineage diagram traces
+      how sources become the reference table.
 
       ```mermaid
       flowchart LR
@@ -106,10 +112,16 @@ sections:
         FAM --> TAB
       ```
 
-      The supplement matters because without it 42 instances would have no
-      reference and would silently drop out of the ladder. Best-known is a
-      moving literature reference, not an optimality certificate. Next
-      up: what the 56 days actually look like.
+      On the snapshot side, the data-quality gates reject nulls and
+      out-of-range values before the set fans out into the six families;
+      on the reference side, the curated best-known registry and a
+      project-local SINTEF TOP supplement merge into one comparison table
+      of distance and truck count. The supplement matters because without
+      it 42 instances would have no reference and would silently drop out
+      of the ladder. Best-known is a moving literature reference, not an
+      optimality certificate.
+
+      What do the 56 days actually look like?
 
       **Business summary:** 56 standard test days from a pinned public
       benchmark, six families, plus published reference plans and quality
@@ -127,16 +139,13 @@ sections:
       order. C2 flips the picture: wide horizons favor few, full trucks.
       R1 and RC1 mix map spread with tighter windows.
 
-      Two reading rules follow. First, every plan is checked — served
-      once, capacity, time windows — before any metric or figure is
-      written; a pretty route that breaks a window is not a result.
-      Second, each solver is read as an optimality gap: the percent its
-      distance sits above the best-known plan for that same problem, with
-      the truck-count gap printed next to it — a gap printed alone invites
-      distance-only conclusions. Family results sit next to the 56-instance
-      mean because one average would hide the shape: C2 instances and R1
-      instances fail differently. The next section climbs the solver
-      ladder rung by rung.
+      Three reading rules follow:
+
+      - Every plan is checked — served once, in capacity, in every time window — before any metric or figure is written; a pretty route that breaks a window is not a result.
+      - Each solver is read as an optimality gap: the percent its distance sits above the best-known plan for that same problem, with the truck-count gap printed next to it — a gap printed alone invites distance-only conclusions.
+      - Family results sit next to the 56-instance mean because one average would hide the shape: C2 instances and R1 instances fail differently.
+
+      The solver ladder follows, rung by rung.
 
       **Business summary:** The 56 days are not alike — tight or wide
       windows, bunched or spread maps — so each solver is read per family,
@@ -148,41 +157,21 @@ sections:
       (random legal plans) → 71.64% (greedy nearest neighbor) → 18.31%
       (capacity-aware savings merges) → 13.63% (tuned 2-opt) → **4.23%**
       for the adaptive large-neighborhood search, at roughly one second per
-      instance. The solver-profile figure shows every rung; the gap figure
-      shows each instance. Every rung's plan is feasible and checked — the
-      rungs differ in distance, not legality.
+      instance. Every rung's plan is feasible and checked — the rungs
+      differ in distance, not legality.
 
-      **Where the wins are.** The search tops the ladder on distance for
-      52 of 56 instances; its fleet-first twin wins the other 4. Under the
-      benchmark's fleet-ranks-first convention it wins 38 of 56 (twin 5,
-      naive solvers 13 by using more trucks at far worse distance). No
-      solver beats the best-known fleet size: +3.73 vehicles on average.
-
-      **Trucks and distance trade at a tenth of a point.** Re-weighting the
-      search to favor fleet size costs +0.07 points of mean gap and buys
-      −0.07 mean vehicles — measured, so a fleet-first client can take that
-      deal.
-
-      **Sometimes the reference loses.** The search undercuts 8 published
-      references (best: RC202 at −3.85%). The honest residuals are C2
-      6.50%, C203 19.48% and C103 11.67%.
-
-      **The exact solver plays a different role.** Given the search's plan
-      as a head start, a state-of-the-art exact solver ties on all 56 at
-      about ten times the runtime — and from scratch, at the same ten-
-      second budget, it finds no feasible plan on any of them. Only small
-      cases carry proofs: a 25-customer C101 is certified optimal in 2.9 s,
-      a 5-customer case in 0.1 s.
-
-      **Tuning's honest negatives.** Randomized restarts never pay (the
-      search keeps k=1); tuning 2-opt moves the mean gap only 13.75% →
-      13.63%; move budgets saturate at about twenty accepted moves.
+      - **Where the wins are.** The search tops the ladder on distance for 52 of 56 instances; its fleet-first twin wins the other 4. Under the benchmark's fleet-ranks-first convention it wins 38 of 56 (twin 5, naive solvers 13 by using more trucks at far worse distance). No solver beats the best-known fleet size: +3.73 vehicles on average.
+      - **Trucks and distance trade at a tenth of a point.** Re-weighting the search to favor fleet size costs +0.07 points of mean gap and buys −0.07 mean vehicles — measured, so a fleet-first client can take that deal.
+      - **Sometimes the reference loses.** The search undercuts 8 published references (best: RC202 at −3.85%). The honest residuals are C2 6.50%, C203 19.48% and C103 11.67%.
+      - **The exact solver plays a different role.** Given the search's plan as a head start, a state-of-the-art exact solver ties on all 56 at about ten times the runtime — and from scratch, at the same ten-second budget, it finds no feasible plan on any of them. Only small cases carry proofs: a 25-customer C101 is certified optimal in 2.9 s, a 5-customer case in 0.1 s.
+      - **Tuning's honest negatives.** Randomized restarts never pay (the search keeps k=1); tuning 2-opt moves the mean gap only 13.75% → 13.63%; move budgets saturate at about twenty accepted moves.
 
       The figures read at three zooms: the solver-profile figure shows
       distance per instance — the spread is the ladder; the gap figure
       re-plots it as percent above best-known, where ALNS hugs zero; the
-      route-map figure draws the C101 plan itself. From here, what
-      ships to a dispatch team.
+      route-map figure draws the C101 plan itself.
+
+      What ships to a dispatch team? The evaluation section answers.
 
       **Business summary:** From a random legal day to 4.23% of best-known
       in about a second per problem; the fleet-first variant trades a tenth
@@ -196,20 +185,12 @@ sections:
       cost.** The deliverable at 100-customer scale is the search's plan:
       feasible by construction, about a second per problem, both criteria
       on the label. The distance gap and the fleet gap travel together.
-      The exact solver earns its place in a different role, as the
-      certifier of small subproblems rather than a competitor at scale;
-      the 25-customer proof is its credential. The evaluation-contract
-      diagram shows how runs become numbers. All eight solvers run all 56
-      instances at seed 42. The validator drops any infeasible plan before
-      scoring, two criteria feed the search plan, and a separate branch
-      has the exact solver certifying small cases. Seeded means a
-      dispatcher can replay a run and get the same plan — auditability is
-      a feature here, not overhead. Runtime is printed next to every
-      number: a gap without its runtime is half a claim. The hinted
-      exact-solver probe ties on gap at about ten times the runtime, which
-      is exactly the trade the pairing exposes. What follows is the
-      measured record — means, spread, and the limits that travel with
-      them.
+
+      The evaluation-contract diagram maps how runs become numbers: all
+      eight solvers run all 56 instances at seed 42; the validator drops
+      any infeasible plan before scoring; two criteria feed the search
+      plan, and a separate branch has the exact solver certifying small
+      cases.
 
       ```mermaid
       flowchart LR
@@ -226,19 +207,27 @@ sections:
         V --> CERT
       ```
 
+      The contract buys three guarantees:
+
+      - Seeded means a dispatcher can replay a run and get the same plan — auditability is a feature here, not overhead.
+      - Runtime is printed next to every number: a gap without its runtime is half a claim.
+      - The exact solver earns its place as the certifier of small subproblems rather than a competitor at scale; the hinted exact-solver probe ties on gap at about ten times the runtime, and the 25-customer proof is its credential.
+
+      What follows is the measured record — means, spread, and the limits
+      that travel with them.
+
       **Business summary:** For dispatch: take the search plan — feasible,
       seeded, a second per problem, both criteria on the label; take the
       exact solver to certify small cases.
     figures: []
   - id: results
     text_md: |
-      What the measured numbers support — and what they do not. The three
-      figures in this section each answer a different doubt: the
-      family-gap figure — does
-      the mean hide spread?; the runtime-gap figure — what do the gaps cost
-      in time?; the convergence figure — does the search visibly improve?
-      Read them in that order before trusting any average; each doubt maps
-      to a bullet below.
+      **What the measured numbers support — and what they do not.** The
+      three figures in this section each answer a different doubt: the
+      family-gap figure — does the mean hide spread?; the runtime-gap
+      figure — what do the gaps cost in time?; the convergence figure —
+      does the search visibly improve? Read them in that order before
+      trusting any average; each doubt maps to a bullet below.
 
       - These are means over 56 instances, not a claim that every problem
         carries a 4.23% gap or +3.73 trucks; the per-instance spread

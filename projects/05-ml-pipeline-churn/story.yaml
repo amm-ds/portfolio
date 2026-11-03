@@ -30,8 +30,9 @@ sections:
 
       The cost asymmetry is the point: a false alarm spends one retention
       voucher, a missed churner costs five — accuracy-first scoring was
-      rejected because it prices both mistakes the same.
-      The next section asks what "best" means under that price split.
+      rejected because it prices both mistakes the same. What does "best"
+      mean under that price split? The objectives section frames the
+      question.
 
       **Business summary:** On 7,043 real telco customers, the served model
       cuts the retention-contact bill 42% versus contacting everyone; the
@@ -41,19 +42,21 @@ sections:
     text_md: |
       **The goal is the cheapest contact list, not the best score.**
       Accuracy is the wrong target here: a policy that contacts nobody is
-      73.5% accurate and saves nothing. Three questions drive the work.
-      Which contact threshold gives the lowest expected bill? How sure is
+      73.5% accurate and saves nothing. Three questions drive the work:
+      which contact threshold gives the lowest expected bill? How sure is
       the saving? And how far does the best threshold move when the price
-      of a missed churner changes? The cost-model diagram shows the search:
-      the stated cost model — a false alarm costs
-      1 voucher, a missed churner 5 — feeds the three candidates, all
-      answering on the same 1,409-row holdout under a 41-point threshold
-      grid, where the cheapest expected bill wins. The chain ends with
-      the two outputs: the served policy's saving with its interval, and
-      a stability check that re-runs the search as the missed-churner
-      price moves. An F1-first selection was tried and rejected: it picked
-      a different model family, proof that the objective changes the
-      winner.
+      of a missed churner changes?
+
+      Success has three parts:
+
+      - One cost model and one holdout, so every candidate is comparable.
+      - A threshold with an interval on its saving.
+      - A clear answer when the missed-churner price runs from 3 to 8.
+
+      The cost-model diagram shows the search: the stated cost model — a
+      false alarm costs 1 voucher, a missed churner 5 — feeds the three
+      candidates, all answering on the same 1,409-row holdout under a
+      41-point threshold grid, where the cheapest expected bill wins.
 
       ```mermaid
       flowchart LR
@@ -62,11 +65,11 @@ sections:
         A --> S["served policy:<br/>saving + interval"] --> Q["stability vs<br/>FN price"]
       ```
 
-      Success means:
-
-      - One cost model and one holdout, so every candidate is comparable.
-      - A threshold with an interval on its saving.
-      - A clear answer when the missed-churner price runs from 3 to 8.
+      The chain ends with two outputs: the served policy's saving with
+      its interval, and a stability check that re-runs the search as the
+      missed-churner price moves. An F1-first selection was tried and
+      rejected: it picked a different model family — proof that the
+      objective changes the winner.
 
       The data those candidates answer on comes next.
 
@@ -82,11 +85,12 @@ sections:
       and a [dataset contract](https://amm-ds.github.io/portfolio/data-registry/telco-churn/).
       The HF id cited in planning does not exist; the raw IBM mirror is the
       implemented source — a public mirror with a hash beat a re-hosted
-      copy, because the pin must travel with the citation. The lineage
-      diagram shows how the panel flows to the scored-once holdout. In it,
-      both sources pass the same data-quality gates — null
-      rates within bounds, values inside allowed ranges, churn strictly
-      binary — and only then split.
+      copy, because the pin must travel with the citation.
+
+      The lineage diagram traces the panel into the scored-once holdout:
+      both sources pass the same data-quality gates — null rates within
+      bounds, values inside allowed ranges, churn strictly binary — and
+      only then split.
 
       ```mermaid
       flowchart LR
@@ -102,8 +106,9 @@ sections:
       The synthetic twin — 8.8% churn, planted nulls, one 9,999 outlier
       charge — exists for CI: it exercises the same gates offline when the
       network is unavailable, and never substitutes for the real-data
-      results. What does churn look like in this
-      panel?
+      results.
+
+      What does churn look like in this panel?
 
       **Business summary:** One real panel — 7,043 customers, sha256-pinned
       — splits into train, calibration and a scored-once holdout; a
@@ -112,26 +117,28 @@ sections:
   - id: eda
     text_md: |
       **Churn is highest where commitment is low.** The churn-profile figure
-      shows it — read the contract panel first: month-to-month customers
-      churn at 42.7%, two-year contracts at 2.8%. Senior citizens churn at
-      41.7%; fiber-optic users at 41.9%. Churners also pay more (about $74
-      vs $61 a month, on average) and leave sooner (about 18 vs 38 months
-      of tenure).
+      shows it: month-to-month customers churn at 42.7%, two-year contracts
+      at 2.8%. Senior citizens churn at 41.7%; fiber-optic users at 41.9%.
+      Churners also pay more (about $74 vs $61 a month, on average) and
+      leave sooner (about 18 vs 38 months of tenure).
 
-      These facts set the rules for judging models. Every model is scored
-      on the same holdout under one cost model: ROC-AUC (how often a random
-      churner outranks a random stayer), macro F1 (the precision-recall
-      balance, averaged over both classes), business cost over a 41-point
-      threshold grid, and, for the top models, calibration error. Three
-      figures carry the reading. The precision-recall figure is read
+      These facts set the rules for judging every model that follows:
+
+      - One shared holdout under one cost model.
+      - ROC-AUC: how often a random churner outranks a random stayer.
+      - Macro F1: the precision-recall balance, averaged over both classes.
+      - Business cost over a 41-point threshold grid, and calibration error for the top models.
+
+      Three figures carry the reading. The precision-recall curve is read
       against the 26.5% base-rate floor — a curve hugging that floor adds
       nothing. The cost-surface figure maps cost over thresholds and
       missed-churner prices before any cutoff is picked: find the dark
       valley, watch its floor drift left as the missed-churner price rises,
       and check the starred point — the served cutoff, t=0.175. The paired
       bootstrap resamples holdout rows at fixed thresholds; it prices the
-      noise in the cost, not the choice of threshold. The next section runs
-      the candidates under these rules.
+      noise in the cost, not the choice of threshold.
+
+      The candidates run under these rules in the training section.
 
       **Business summary:** Churn is highest where commitment is low —
       month-to-month, senior, fiber — and churners pay more and leave
@@ -145,41 +152,19 @@ sections:
       missingness flags, imputation, scaling and one-hot encoding, so
       training and serving share preprocessing exactly.
 
-      **The naive policy is the expensive one.** Contacting everyone costs
-      1,035; doing nothing is cheaper only if missed churners are free —
-      and at five vouchers each, they are not.
-
-      **Cost beats accuracy as an objective.** A default-threshold logistic
-      model costs 691; re-tuning its threshold cuts that to 611. An earlier
-      F1-driven selection picked a different family — the objective changes
-      the winner.
-
-      **The served model.** A seeded search (25 Optuna trials, median
-      pruning) chose a gradient-boosted model on out-of-fold business cost;
-      isotonic calibration on the training side only improves ECE (expected
-      calibration error) 0.028 → 0.016 and the cost optimum 619 → 601 at
-      threshold 0.175 — the 41.9% cut, its interval excluding zero.
-
-      **The cutoff is not a constant.** Re-scoring under different
-      missed-churner prices moves the served threshold — 0.200 when a
-      churner costs 3, 0.175 when 5, 0.100 when 8 — and every variant's
-      interval still excludes zero. Calibration's edge is itself
-      price-dependent: it helps at five (619 → 601) and slightly hurts at
-      eight (691 → 699).
-
-      **The strongest signal hides the weakest slice.** The raw model
-      recalls month-to-month churners at 0.976 but misses 19 of 36 one-year
-      and all 9 two-year churners; gender recall is near-uniform (0.902
-      versus 0.906). The permutation-importance figure ranks contract,
-      tenure and charges on top — and long-contract churners are exactly
-      who the raw policy loses.
+      - **The naive policy is the expensive one.** Contacting everyone costs 1,035; doing nothing is cheaper only if missed churners are free — and at five vouchers each, they are not.
+      - **Cost beats accuracy as an objective.** A default-threshold logistic model costs 691; re-tuning its threshold cuts that to 611. An earlier F1-driven selection picked a different family — the objective changes the winner.
+      - **The served model.** A seeded search (25 Optuna trials, median pruning) chose a gradient-boosted model on out-of-fold business cost; isotonic calibration on the training side only improves ECE (expected calibration error) 0.028 → 0.016 and the cost optimum 619 → 601 at threshold 0.175 — the 41.9% cut, its interval excluding zero.
+      - **The cutoff is not a constant.** Re-scoring under different missed-churner prices moves the served threshold — 0.200 when a churner costs 3, 0.175 when 5, 0.100 when 8 — and every variant's interval still excludes zero. Calibration's edge is itself price-dependent: it helps at five (619 → 601) and slightly hurts at eight (691 → 699).
+      - **The strongest signal hides the weakest slice.** The raw model recalls month-to-month churners at 0.976 but misses 19 of 36 one-year and all 9 two-year churners; gender recall is near-uniform (0.902 versus 0.906). The permutation-importance figure ranks contract, tenure and charges on top — and long-contract churners are exactly who the raw policy loses.
 
       Read the figures at face value: the calibration figure overlays the
       raw and isotonic reliability curves — the straighter line wins; the
       cost-curve figure is read by its minimum, 601 versus the naive flat
       line at 1,035; the permutation-importance figure is read top-down,
-      where contract, tenure and charges sit. From here, the served
-      artifact meets the measurement contract.
+      where contract, tenure and charges sit.
+
+      From here, the served artifact meets the measurement contract.
 
       **Business summary:** Cost, not accuracy, picks the winner: a
       calibrated boosted model serves at 0.175 for 601 versus 1,035; the
@@ -195,9 +180,10 @@ sections:
       threshold grid prices each cutoff under the 1-versus-5 cost model,
       the argmin picks the threshold, and 2,000 paired bootstrap resamples
       at fixed thresholds turn the raw-versus-isotonic cost gap into a 95%
-      interval. The evaluation-contract diagram shows the chain —
-      scoring, grid, argmin, interval — then the two watch
-      items hanging off the end.
+      interval.
+
+      The evaluation-contract diagram lays out the chain — scoring, grid,
+      argmin, interval — then the two watch items hanging off the end.
 
       ```mermaid
       flowchart LR
@@ -229,11 +215,11 @@ sections:
     figures: []
   - id: results
     text_md: |
-      What the measured numbers support — and what they do not. Every claim
-      below is traceable to a committed artifact, and the caveats are part
-      of the results, not fine print. The fairness-slices figure is read
-      slice by slice: each bar is a group's recall under the raw model at
-      its own threshold. Look at the contract panel first — 0.976
+      **What the measured numbers support — and what they do not.** Every
+      claim below is traceable to a committed artifact, and the caveats are
+      part of the results, not fine print. The fairness-slices figure is
+      read slice by slice: each bar is a group's recall under the raw model
+      at its own threshold. Look at the contract panel first — 0.976
       month-to-month against 0.000 two-year; the gender bars sit nearly
       level, so the blind spot is contract-shaped, not demographic.
 

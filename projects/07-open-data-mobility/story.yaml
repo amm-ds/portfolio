@@ -51,8 +51,8 @@ sections:
 
       The pipeline diagram traces one straight path, left to right: two
       public feeds, one prepared zone-hour panel, one forecasting model.
-      Read it as a promise that every box is replayable — then ask how
-      good the forecast is.
+      Read it as a promise that every box is replayable — and the bars
+      for "good enough" come first.
 
       ```mermaid
       flowchart LR
@@ -244,11 +244,11 @@ sections:
       into a staffing decision. In the actual-versus-predicted figure,
       follow one zone's line across the 14 test days: the served model's
       line sits on the actual curve through the weekday swings, and the
-      gaps that remain are the honest error. In the borough error figure,
-      compare each borough's bar against the grey persistence bar —
+      gaps that remain are the honest error. The borough error figure
+      compares each borough's bar against the grey persistence bar —
       Manhattan's absolute error looks largest only because its volume is
       largest, while the Bronx shows the one place persistence still edges
-      the default GBM. In the zone fan figure, read the shaded band as the
+      the default GBM. In the zone fan figure, use the shaded band as the
       staffing buffer: plan to the upper line and demand stays under it 9
       times in 10, except in the flagged sparse zones.
 
@@ -266,8 +266,8 @@ sections:
     metrics_keys: [naive_lag24, gbm_mean, temporal_net]
   - id: results
     text_md: |
-      The hour-borough heatmap figure holds the demand context. Read it
-      cell by cell: rows are hours, columns are boroughs, and the color
+      The hour-borough heatmap figure holds the demand context. Go through
+      it cell by cell: rows are hours, columns are boroughs, and the color
       scale spans two orders of magnitude — Manhattan peaks at 103.7
       pickups per zone-hour at 18:00 while the Bronx tops out at 0.73.
       That contrast, not any single number, is what the model must

@@ -67,7 +67,7 @@ sections:
       sends go to everyone; capped or costly sends rank by uplift; every
       new campaign revalidates on a fresh holdout first.
 
-      Is the +69% edge real? The next section sets the judging rules.
+      Is the +69% edge real? Objectives sets the judging rules.
 
       **Business summary:** On one real 2008 campaign, targeting the top
       quarter by measured lift beat random mailing by 69% at that budget;
@@ -118,14 +118,14 @@ sections:
           JUDGE --> V["verdict at $0.01-$0.50 per email"]
       ```
 
-      Read the measurement contract diagram as a pipeline. The randomized
+      Treat the measurement contract diagram as a pipeline. The randomized
       anchor feeds three scorers, all fit out of fold so no model grades
       its own homework. The judging box turns scores into profit and
       attaches 1,000 paired bootstraps. The verdict node states the
       send-cost range the conclusion covers.
 
-      What data carries this contract? The next section walks the
-      snapshot.
+      What data carries this contract? The snapshot holds
+      the answer.
 
       **Business summary:** The goal was a fair policy race: check the
       assignment, rank customers three ways, and judge each list on profit,
@@ -170,7 +170,7 @@ sections:
       ```
 
       The lineage diagram shows how the snapshot becomes analysis frames.
-      Read it left to right: the pinned snapshot feeds both frames, and
+      Follow the arrows: the pinned snapshot feeds both frames, and
       each frame declares its columns. When a later section quotes a
       number, the frame it came from matters — two-arm for the headline
       policy race, three-arm for per-arm reads.
@@ -189,7 +189,7 @@ sections:
       campaign: about 21,300 customers and about $242 mean prior spend in
       each. Prior spend is the strongest baseline available, so a broken
       randomization would show there first — it does not; the design did
-      its job. The segment-profile figure carries the check: read the
+      its job. The segment-profile figure states the check: read the
       pre-period panel first, where the bars should be near-identical,
       then the outcome panels, which are anything but.
 
@@ -250,13 +250,16 @@ sections:
         drops below "everyone" near $0.20; above ≈$0.30 the T-list wins
         outright ($1,618 vs −$4,777 at $0.50).
       - Per-arm reads are humbler. The multi-arm profit-frontier figure and
-        the recommended-arm distribution figure carry them: Mens Qini 12.03
+        the recommended-arm distribution figure map them: Mens Qini 12.03
         [−0.47, 24.21] and Womens 3.37 [−6.78, 13.75] both span zero;
         best-channel planning favors Mens for 76.0% of customers (Womens
         20.2%, none 3.8%), estimating $35.5k at the 25% budget vs $16.6k
         random — model-estimated money, deciles about 2× hot.
         Mail-everyone-Mens still leads unconstrained profit at $49.8k until
         sends cost ≈$0.31.
+
+      The rankings are built and judged; what survives a harder send
+      cost? The stress test follows.
 
       **Business summary:** The T-learner list wins at a 25% budget —
       +$2,812 (+69%) over random — mail-everyone wins at penny sends, and
@@ -272,14 +275,14 @@ sections:
       where both get stress-tested.
 
       Treat the ranking as coarse. The decile figure compares predicted
-      and real uplift across ten equal groups: read the leftmost decile
-      first — that is who a targeted send reaches at a small budget —
+      and real uplift across ten equal groups: start with the leftmost
+      decile — that is who a targeted send reaches at a small budget —
       then scan right for monotone decline. The order is broadly useful
       but non-monotone, and predicted sizes run about 2× hot: good
       enough to sort a mailing list, not to promise any one customer an
       effect.
 
-      The cost-sensitivity figure carries the stress test, sweeping the
+      The cost-sensitivity figure runs the stress test, sweeping the
       send cost from $0.01 to $0.50. Mail-everyone wins raw profit at
       $0.01; the best targeting share drops below everyone near $0.20;
       above ≈$0.30 the top-25% list wins outright — $1,618 versus
@@ -298,7 +301,7 @@ sections:
     text_md: |
       **Established: the small Mens effect and the budgeted T-learner win
       over random. Not established: the response-versus-T Qini ranking and
-      either per-arm Qini.** The Qini curves figure carries the ranking.
+      either per-arm Qini.** The Qini curves figure frames the ranking.
       Read it as a race down the mailing list: the horizontal axis is the
       targeted fraction, the vertical axis is incremental conversions
       captured so far, each curve is one ranking, and the random diagonal
@@ -308,11 +311,11 @@ sections:
       curves. They do not: response-minus-T is [−8.18, 9.52], spanning
       zero.
 
-      The profit-frontier figure carries the money: at $114 per
+      The profit-frontier figure lays out the money: at $114 per
       conversion and $0.01 per email, mail-everyone tops raw profit at
       $16,103, since sends are nearly free; at the 25% budget the
       T-learner curve beats random by +$2,812 (+69%), CI [+$718,
-      +$4,767]. The per-arm Qini figure shows both arm curves — Mens
+      +$4,767]. The per-arm Qini figure draws both arm curves — Mens
       12.03 [−0.47, 24.21], Womens 3.37 [−6.78, 13.75] — and both span
       zero.
 
