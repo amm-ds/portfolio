@@ -562,14 +562,27 @@ def _auto_ets_forecast(
         fc: Any = sf.fit_predict(
             h=horizon, df=train, id_col="unique_id", time_col="ds", target_col="y"
         )
-        order = fc["unique_id"].map(idx).to_numpy()
+        # fc is LONG: one row per (series, horizon step) — statsforecast's
+        # _make_future_df repeats each uid h times, series-major. The model
+        # column reshapes to (n_series, h) in that same order.
         mat_any = fc["auto_ets"].to_numpy(dtype=float).reshape(-1, horizon)
+        # Wave-32 fix: the pre-fix code argsorted the per-ROW positions (one
+        # per fc row, values 0..n_series*h-1) into the (n_series, h) matrix —
+        # the first out-of-bounds index is exactly n_series ("index 30490 is
+        # out of bounds for axis 0 with size 30490" at the full panel), the
+        # batch failed at EVERY origin and the per-series fallback silently
+        # did the work (177 min/origin overnight). Collapse the row positions
+        # to one per series (each series block is exactly h rows) BEFORE the
+        # argsort.
+        order = fc["unique_id"].map(idx).to_numpy().reshape(-1, horizon)[:, 0]
         mat: np.ndarray = mat_any[np.argsort(order, kind="stable")]
+        if mat.shape != (n_series, horizon):
+            raise ValueError(f"auto_ets batch shape drifted: {mat.shape} != {(n_series, horizon)}")
         if np.isnan(mat).any():
             raise ValueError("auto_ets produced NaNs at this origin")
         return mat
     except Exception as exc:
-        logger.warning("batch auto_ets failed (%s); per-series naive fallback", exc)
+        logger.warning("batch auto_ets failed (%s); per-series fallback", exc)
     out = np.zeros((n_series, horizon))
     for i, sid in enumerate(series_ids):
         s_train = train[train["unique_id"] == sid]
@@ -818,6 +831,196 @@ def _package_versions() -> dict[str, str]:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Shared panel context + per-origin candidate fits (full track AND catalog run)
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _FullPanel:
+    """The static context of one m5_full evaluation: the loaded (and
+    optionally ladder-capped) frames plus the hierarchy operators, wide grids,
+    encoded exog, pooled-group maps and booster params every origin fit
+    needs. Built once by :func:`_prepare_panel` and shared by the full track
+    and the wave-32 catalog run so both fit candidates on the IDENTICAL panel
+    context."""
+
+    y_all: pd.DataFrame
+    x_all: pd.DataFrame
+    s_all: pd.DataFrame
+    series_ids: list[str]
+    n_series: int
+    dates: np.ndarray
+    n_dates: int
+    agg: dict[str, dict[str, Any]]
+    a_all: Any
+    node_ids: list[str]
+    level_names: list[str]
+    level_slices: dict[str, slice]
+    y_wide: np.ndarray
+    x_wide: np.ndarray
+    x_enc: pd.DataFrame
+    s_meta: pd.DataFrame
+    group_maps: dict[str, dict[str, list[str]]]
+    lgbm_params: dict[str, Any]
+
+
+def _prepare_panel(
+    raw_dir: Path,
+    *,
+    series_cap: int | None,
+    seed: int,
+    params_path: Path | str,
+    n_estimators: int | None,
+) -> _FullPanel:
+    """Load the pinned panel (checksum-gated, ladder cap applied) and build
+    every static frame the origin fits share. Same inputs -> same context for
+    the committed full track and the catalog run."""
+    y_all, x_all, s_all = load_m5_full(Path(raw_dir))
+    if series_cap is not None:
+        y_all, x_all, s_all = apply_series_cap(y_all, x_all, s_all, series_cap)
+    series_ids = sorted(y_all["unique_id"].unique().tolist())
+    n_series = len(series_ids)
+    dates = np.sort(y_all["ds"].unique())
+    n_dates = len(dates)
+
+    s_sorted = s_all.drop_duplicates("unique_id").sort_values("unique_id", ignore_index=True)
+    if s_sorted["unique_id"].tolist() != series_ids:
+        raise ValueError("S frame series set does not match Y")
+    agg = build_aggregation(s_sorted)
+    a_all, node_ids, level_names, level_slices = aggregation_stack(agg)
+    y_wide = wide_panel(y_all, series_ids, dates)
+    x_wide = wide_panel(
+        x_all[["unique_id", "ds", "sell_price"]], series_ids, dates, value_col="sell_price"
+    ).astype(np.float32)
+    state_of = s_all.drop_duplicates("unique_id").set_index("unique_id")["state_id"]
+    x_enc = encode_events(x_all, x_all["unique_id"].map(state_of))
+    s_meta = s_all.drop_duplicates("unique_id").set_index("unique_id")
+    lgbm_params = load_m5_lgbm_params(params_path)
+    if n_estimators is not None:  # smoke-test override wins over params.yaml
+        lgbm_params["n_estimators"] = n_estimators
+    group_maps = {
+        "lgbm_pool_store": _group_map(series_ids, s_meta, ("store_id",)),
+        "lgbm_pool_storecat": _group_map(series_ids, s_meta, ("store_id", "cat_id")),
+        "lgbm_pool_dept": _group_map(series_ids, s_meta, ("dept_id",)),
+    }
+    return _FullPanel(
+        y_all=y_all,
+        x_all=x_all,
+        s_all=s_all,
+        series_ids=series_ids,
+        n_series=n_series,
+        dates=dates,
+        n_dates=n_dates,
+        agg=agg,
+        a_all=a_all,
+        node_ids=node_ids,
+        level_names=level_names,
+        level_slices=level_slices,
+        y_wide=y_wide,
+        x_wide=x_wide,
+        x_enc=x_enc,
+        s_meta=s_meta,
+        group_maps=group_maps,
+        lgbm_params=lgbm_params,
+    )
+
+
+def _assert_min_history(y_all: pd.DataFrame, first_origin: pd.Timestamp) -> None:
+    """The official-WRMSSE floor needs >= MIN_SERIES_HISTORY_DAYS of bottom
+    history at the first origin — asserted loudly on drift."""
+    first_origin_min_hist = first_origin - y_all.groupby("unique_id")["ds"].min().max()
+    if int(first_origin_min_hist.days) < MIN_SERIES_HISTORY_DAYS:
+        raise ValueError(
+            f"shortest series history at the first origin is "
+            f"{first_origin_min_hist.days}d < {MIN_SERIES_HISTORY_DAYS}d"
+        )
+
+
+def _origin_forecasts(
+    panel: _FullPanel,
+    o: int,
+    *,
+    seed: int,
+    pooled_strategy: Literal["direct", "recursive"],
+    n_estimators: int | None,
+    n_jobs_ets: int,
+) -> tuple[dict[str, np.ndarray], dict[str, float]]:
+    """Fit EVERY candidate at origin ``o`` and return the ((n_series, h)
+    matrices keyed by candidate — seasonal_naive included) plus the
+    per-candidate wall-clock seconds. The pooled arms are panel-wide fits:
+    they see the full series universe at this origin regardless of any later
+    subsetting (the catalog run relies on this). Shared by the full track and
+    the wave-32 catalog run so both produce the identical candidate set; the
+    ensemble itself is blended by the callers (selection screen vs committed
+    weights). Progress is logged per candidate."""
+    odate = pd.Timestamp(panel.dates[o])
+    train = panel.y_all[panel.y_all["ds"] <= odate]
+    train_wide_o = panel.y_wide[:, : o + 1]
+    hist_exog, future_exog = split_exogenous(panel.x_enc, panel.series_ids, odate, HORIZON)
+    _attach_panel_features(train, hist_exog, future_exog, panel.s_all)
+
+    preds: dict[str, np.ndarray] = {NAIVE: _seasonal_naive_forecast(train_wide_o, HORIZON)}
+    times: dict[str, float] = {}
+    t = time.time()
+    preds["auto_ets"] = _auto_ets_forecast(train, panel.series_ids, HORIZON, n_jobs_ets)
+    times["auto_ets"] = time.time() - t
+    t = time.time()
+    preds["lgbm"] = _lgbm_forecast(
+        train,
+        hist_exog,
+        future_exog,
+        seed,
+        series_ids=panel.series_ids,
+        lgbm_params=panel.lgbm_params,
+    )
+    times["lgbm"] = time.time() - t
+    t = time.time()
+    preds["lgbm_tweedie"] = _lgbm_tweedie_forecast(
+        train,
+        hist_exog,
+        future_exog,
+        seed,
+        series_ids=panel.series_ids,
+        lgbm_params=panel.lgbm_params,
+        n_estimators=n_estimators,
+    )
+    times["lgbm_tweedie"] = time.time() - t
+    if pooled_strategy == "direct":
+        t = time.time()
+        prep = _direct_prep(train, hist_exog, seed)
+        t_prep = time.time() - t
+        for name in ("lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept"):
+            t = time.time()
+            preds[name] = _lgbm_pool_direct_forecast(
+                prep,
+                seed,
+                series_ids=panel.series_ids,
+                groups=panel.group_maps[name],
+                lgbm_params=panel.lgbm_params,
+                name=name,
+                n_estimators=n_estimators,
+            )
+            times[name] = time.time() - t + t_prep
+    else:
+        for name in ("lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept"):
+            t = time.time()
+            preds[name] = _lgbm_pool_forecast(
+                train,
+                hist_exog,
+                future_exog,
+                seed,
+                series_ids=panel.series_ids,
+                groups=panel.group_maps[name],
+                lgbm_params=panel.lgbm_params,
+                name=name,
+            )
+            times[name] = time.time() - t
+    for name, dt in times.items():
+        logger.info("m5_full candidate %s @ %s: %.1fs", name, odate.date(), dt)
+    return preds, times
+
+
 def run_m5_full(
     raw_dir: Path,
     *,
@@ -838,40 +1041,24 @@ def run_m5_full(
     (wins over params.yaml for every lgbm arm, like the subset track).
     """
     t0 = time.time()
-    y_all, x_all, s_all = load_m5_full(Path(raw_dir))
-    if series_cap is not None:
-        y_all, x_all, s_all = apply_series_cap(y_all, x_all, s_all, series_cap)
-    series_ids = sorted(y_all["unique_id"].unique().tolist())
-    n_series = len(series_ids)
-    dates = np.sort(y_all["ds"].unique())
-    n_dates = len(dates)
+    panel = _prepare_panel(
+        raw_dir,
+        series_cap=series_cap,
+        seed=seed,
+        params_path=params_path,
+        n_estimators=n_estimators,
+    )
+    y_all, s_all = panel.y_all, panel.s_all
+    series_ids, dates, n_dates = panel.series_ids, panel.dates, panel.n_dates
+    n_series = panel.n_series
+    a_all, y_wide, x_wide = panel.a_all, panel.y_wide, panel.x_wide
+    agg, node_ids = panel.agg, panel.node_ids
+    level_names, level_slices = panel.level_names, panel.level_slices
 
     origins = m5_full_origins(n_dates, n_origins, HORIZON, min_train, ORIGIN_SPACING_DAYS)
     selection, test = origins[:-1], origins[-1:]
     origin_dates = [pd.Timestamp(dates[o]) for o in origins]
-    first_origin_min_hist = origin_dates[0] - y_all.groupby("unique_id")["ds"].min().max()
-    if int(first_origin_min_hist.days) < MIN_SERIES_HISTORY_DAYS:
-        raise ValueError(
-            f"shortest series history at the first origin is "
-            f"{first_origin_min_hist.days}d < {MIN_SERIES_HISTORY_DAYS}d"
-        )
-
-    # ---- static frames: hierarchy, wide grids, encoded exog ----
-    s_sorted = s_all.drop_duplicates("unique_id").sort_values("unique_id", ignore_index=True)
-    if s_sorted["unique_id"].tolist() != series_ids:
-        raise ValueError("S frame series set does not match Y")
-    agg = build_aggregation(s_sorted)
-    a_all, node_ids, level_names, level_slices = aggregation_stack(agg)
-    y_wide = wide_panel(y_all, series_ids, dates)
-    x_wide = wide_panel(
-        x_all[["unique_id", "ds", "sell_price"]], series_ids, dates, value_col="sell_price"
-    ).astype(np.float32)
-    state_of = s_all.drop_duplicates("unique_id").set_index("unique_id")["state_id"]
-    x_enc = encode_events(x_all, x_all["unique_id"].map(state_of))
-    meta = s_all.drop_duplicates("unique_id").set_index("unique_id")
-    lgbm_params = load_m5_lgbm_params(params_path)
-    if n_estimators is not None:  # smoke-test override wins over params.yaml
-        lgbm_params["n_estimators"] = n_estimators
+    _assert_min_history(y_all, origin_dates[0])
     logger.info(
         "m5_full track: %d series, %d origins (%d selection + 1 test), horizon %d, "
         "pooled=%s, min_train %d",
@@ -909,75 +1096,22 @@ def run_m5_full(
     forecasts: dict[str, dict[int, np.ndarray]] = {c: {} for c in CANDIDATES}
     actuals: dict[int, np.ndarray] = {}
     runtime: dict[str, dict[int, float]] = {c: {} for c in CANDIDATES}
-    naive_grid: dict[int, np.ndarray] = {}
-    group_maps = {
-        "lgbm_pool_store": _group_map(series_ids, meta, ("store_id",)),
-        "lgbm_pool_storecat": _group_map(series_ids, meta, ("store_id", "cat_id")),
-        "lgbm_pool_dept": _group_map(series_ids, meta, ("dept_id",)),
-    }
     for k, o in enumerate(origins):
         odate = pd.Timestamp(dates[o])
         t_o = time.time()
-        train = y_all[y_all["ds"] <= odate]
         actuals[o] = _actual_window(y_all, series_ids, odate, HORIZON)
-        train_wide_o = y_wide[:, : o + 1]
-        naive_grid[o] = _seasonal_naive_forecast(train_wide_o, HORIZON)
-        forecasts[NAIVE][o] = naive_grid[o]
-        hist_exog, future_exog = split_exogenous(x_enc, series_ids, odate, HORIZON)
-        _attach_panel_features(train, hist_exog, future_exog, s_all)
-
-        preds: dict[str, np.ndarray] = {}
-        t = time.time()
-        preds["auto_ets"] = _auto_ets_forecast(train, series_ids, HORIZON, n_jobs_ets)
-        runtime["auto_ets"][o] = time.time() - t
-        t = time.time()
-        preds["lgbm"] = _lgbm_forecast(
-            train, hist_exog, future_exog, seed, series_ids=series_ids, lgbm_params=lgbm_params
-        )
-        runtime["lgbm"][o] = time.time() - t
-        t = time.time()
-        preds["lgbm_tweedie"] = _lgbm_tweedie_forecast(
-            train,
-            hist_exog,
-            future_exog,
-            seed,
-            series_ids=series_ids,
-            lgbm_params=lgbm_params,
+        preds, times = _origin_forecasts(
+            panel,
+            o,
+            seed=seed,
+            pooled_strategy=pooled_strategy,
             n_estimators=n_estimators,
+            n_jobs_ets=n_jobs_ets,
         )
-        runtime["lgbm_tweedie"][o] = time.time() - t
-        if pooled_strategy == "direct":
-            t = time.time()
-            prep = _direct_prep(train, hist_exog, seed)
-            t_prep = time.time() - t
-            for name in ("lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept"):
-                t = time.time()
-                preds[name] = _lgbm_pool_direct_forecast(
-                    prep,
-                    seed,
-                    series_ids=series_ids,
-                    groups=group_maps[name],
-                    lgbm_params=lgbm_params,
-                    name=name,
-                    n_estimators=n_estimators,
-                )
-                runtime[name][o] = time.time() - t + t_prep
-        else:
-            for name in ("lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept"):
-                t = time.time()
-                preds[name] = _lgbm_pool_forecast(
-                    train,
-                    hist_exog,
-                    future_exog,
-                    seed,
-                    series_ids=series_ids,
-                    groups=group_maps[name],
-                    lgbm_params=lgbm_params,
-                    name=name,
-                )
-                runtime[name][o] = time.time() - t
         for name, mat in preds.items():
             forecasts[name][o] = mat
+        for name, dt in times.items():
+            runtime[name][o] = dt
         logger.info(
             "m5_full origin %d/%d (%s): %d series in %.1fs",
             k + 1,
@@ -1169,7 +1303,7 @@ def run_m5_full(
         "n_jobs>1 (ETS selection is closed-form/seed-free — parallelism changes "
         "wall time only); seasonal_naive is numpy-vectorized; ensemble grid is "
         "lexicographic deterministic",
-        "lgbm_params": {k: lgbm_params[k] for k in lgbm_params},
+        "lgbm_params": {k: panel.lgbm_params[k] for k in panel.lgbm_params},
         "pooled_strategy": pooled_strategy,
         "n_jobs_ets": n_jobs_ets,
     }

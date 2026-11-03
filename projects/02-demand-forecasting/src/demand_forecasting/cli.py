@@ -25,6 +25,7 @@ from typing import Annotated, Literal
 
 import polars as pl
 import typer
+from portfolio_core.logging import get_logger
 
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.data import prepare
@@ -34,6 +35,8 @@ from demand_forecasting.model import fit_all, save_models
 from demand_forecasting.probabilistic import run_probabilistic
 from demand_forecasting.reconcile import reconcile_and_plot
 from demand_forecasting.serving import build_serving_artifact
+
+logger = get_logger(__name__)
 
 app = typer.Typer(
     help="Hierarchical demand forecasting on a synthetic retail hierarchy.", no_args_is_help=True
@@ -291,6 +294,18 @@ def evaluate_m5_full(
         int | None, typer.Option(help="Smoke override for every lgbm arm.")
     ] = None,
     n_jobs_ets: Annotated[int, typer.Option(help="auto_ets worker processes.")] = 1,
+    catalog_dump: Annotated[
+        Path | None,
+        typer.Option(
+            help="Wave-32 catalog mode: fit every candidate at the test origin only, "
+            "blend with the committed ensemble weights and write the catalog "
+            "parquet + catalog_meta.json at this path."
+        ),
+    ] = None,
+    catalog_size: Annotated[
+        int,
+        typer.Option(help="Catalog series count (top-units half + hardest-intermittency half)."),
+    ] = 48,
 ) -> None:
     """Run the M5 full-panel experiment (protocol m5_full_v1), official hierarchical WRMSSE.
 
@@ -299,10 +314,41 @@ def evaluate_m5_full(
     Hours at full scale — run overnight (see the m5_full wave plan); --series-cap
     10000 selects the deterministic ladder, --pooled-strategy recursive the
     affordable pooled fits (the Phase-0 feasibility gate decides).
+
+    --catalog-dump switches to the wave-32 catalog mode: ONLY the final (test)
+    origin, at the committed configuration (--pooled-strategy is ignored there:
+    the committed run was recursive; --series-cap defaults to the committed
+    30490 when unset), the SAME candidate set, and the ensemble blended with
+    the COMMITTED weights from reports_m5_full/metrics.json (never
+    re-selected). The pooled group models still fit panel-wide at the origin.
+    Expected runtime at full scale: ~2.5-3.5 h (the five lgbm arms measured
+    ~80 min/origin at full scale in the committed run; batch auto_ets —
+    wave-32-fixed — extrapolates to ~90 min from the 359 s / 2,000-series dry
+    run; the committed 4.3 h/origin stays the conservative upper bound).
     """
     root = Path.cwd()
     data_dir = data_dir or root / "data_m5" / "raw"
     reports_dir = reports_dir or root / "reports_m5_full"
+    if catalog_dump is not None:
+        from demand_forecasting.m5_full_catalog import run_m5_full_catalog
+
+        catalog_result = run_m5_full_catalog(
+            data_dir,
+            catalog_dump,
+            metrics_path=reports_dir / "metrics.json",
+            catalog_size=catalog_size,
+            series_cap=series_cap if series_cap is not None else 30_490,
+            pooled_strategy="recursive",  # the committed run's strategy
+            n_estimators=n_estimators,
+            n_jobs_ets=n_jobs_ets,
+        )
+        logger = get_logger(__name__)
+        logger.info(
+            "catalog mode done: %d series -> %s",
+            catalog_result.meta["catalog_size"],
+            catalog_dump,
+        )
+        return
     from demand_forecasting.m5_full import run_m5_full, write_m5_full_artifacts
 
     result = run_m5_full(
@@ -314,6 +360,44 @@ def evaluate_m5_full(
         n_jobs_ets=n_jobs_ets,
     )
     write_m5_full_artifacts(result, reports_dir)
+
+
+@app.command("demo-payload-m5-full")
+def demo_payload_m5_full(
+    data_dir: Annotated[Path | None, typer.Option(help="M5 full-panel raw dir.")] = None,
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 full reports dir.")] = None,
+) -> Path:
+    """Build the forecast-workbench demo payload for the FULL track (wave 32).
+
+    Reads reports_m5_full/{metrics.json, catalog_forecasts.parquet,
+    catalog_meta.json} (run evaluate-m5-full --catalog-dump first) and writes
+    reports_m5_full/demo_payload.json — schema v4, the same keys the workbench
+    reads for the subset track; fields the full metrics lack are filled from
+    the catalog and marked in groups._scope.
+    """
+    root = Path.cwd()
+    data_dir = data_dir or root / "data_m5" / "raw"
+    reports_dir = reports_dir or root / "reports_m5_full"
+    from demand_forecasting.m5_full_payload import write_demo_payload_full
+
+    return write_demo_payload_full(data_dir, reports_dir)
+
+
+@app.command("build-report-m5-full")
+def build_report_m5_full(
+    reports_dir: Annotated[Path | None, typer.Option(help="M5 full reports dir.")] = None,
+) -> Path:
+    """Rebuild reports_m5_full/report.html from the committed artifacts only.
+
+    Same offline contract as build-report-m5: committed JSONs (+ the wave-32
+    catalog parquet when present) in, self-contained interactive report.html
+    out — no re-running anything.
+    """
+    root = Path.cwd()
+    reports_dir = reports_dir or root / "reports_m5_full"
+    from demand_forecasting.m5_full_report import build_report_full
+
+    return build_report_full(reports_dir)
 
 
 if __name__ == "__main__":

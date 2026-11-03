@@ -252,6 +252,116 @@ def test_seasonal_naive_vectorized():
         np.testing.assert_array_equal(fc[:, k], wide[:, 33 + (k % 7)])
 
 
+# ---------------------------------------------------------------------------
+# Wave-32: batch AutoETS index regression (the full-panel "index 30490 is out
+# of bounds" failure — pre-fix the per-series fallback masked it at every scale)
+# ---------------------------------------------------------------------------
+
+
+def _tripwire_on_batch_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make the documented per-series fallback FAIL the test if it triggers —
+    the regression is the fallback firing at all (pre-fix it fired at every
+    origin, boundary-sized panels included)."""
+    real_warning = m5_full.logger.warning
+
+    def _guarded(msg: object, *args: object, **kwargs: object) -> None:
+        text = str(msg)
+        if "batch auto_ets failed" in text or "per-series fallback" in text:
+            detail = text % args if args else text
+            raise AssertionError(f"batch auto_ets must not fall back: {detail}")
+        real_warning(msg, *args, **kwargs)
+
+    monkeypatch.setattr(m5_full.logger, "warning", _guarded)
+
+
+class _FakeStatsForecast:
+    """Mimics statsforecast 2.x ``fit_predict``: a LONG frame with one row per
+    (series, horizon step), series-major blocks of ``h`` rows. Deliberately
+    emits uids in REVERSED order (the real library sorts them; the reorder to
+    the caller's ``series_ids`` order must not assume it) so a broken reorder
+    fails loudly instead of passing by luck."""
+
+    def __init__(self, models: object, freq: str, n_jobs: int = 1) -> None:
+        self.freq = freq
+
+    def fit_predict(
+        self, h: int, df: pd.DataFrame, id_col: str, time_col: str, target_col: str
+    ) -> pd.DataFrame:
+        uids = sorted(df[id_col].unique(), reverse=True)  # NOT the caller's order
+        days = pd.date_range("2016-05-23", periods=h, freq="D")
+        fc_pos = {u: i for i, u in enumerate(uids)}
+        # deterministic value encoding its (fc block, step) so ordering bugs show
+        vals = np.array([fc_pos[u] * 1000.0 + k for u in uids for k in range(h)], dtype=float)
+        return pd.DataFrame(
+            {
+                "unique_id": np.repeat(uids, h),
+                "ds": np.tile(days, len(uids)),
+                "auto_ets": vals,
+            }
+        )
+
+
+def test_auto_ets_batch_boundary_fixture(monkeypatch: pytest.MonkeyPatch):
+    """The exact full-panel size, mocked library: pre-fix this raised
+    IndexError('index 30490 is out of bounds for axis 0 with size 30490') at
+    every origin and silently degraded to the per-series fallback."""
+    import statsforecast
+
+    n_series = 30_490  # the boundary size from the overnight log
+    uids = [f"FULL_{i:05d}" for i in range(n_series)]
+    days = pd.date_range("2016-04-01", periods=3, freq="D")
+    train = pd.DataFrame(
+        {
+            "unique_id": np.repeat(uids, len(days)),
+            "ds": np.tile(days, n_series),
+            "y": 1.0,
+        }
+    )
+    monkeypatch.setattr(statsforecast, "StatsForecast", _FakeStatsForecast)
+    _tripwire_on_batch_fallback(monkeypatch)
+
+    mat = m5_full._auto_ets_forecast(train, uids, H, n_jobs=1)
+
+    assert mat.shape == (n_series, H)
+    # uids arrive reversed from the fake; the caller's order must be restored:
+    # series i sits in fc block (n_series - 1 - i) of the reversed emission.
+    for i in (0, 1, 123, n_series // 2, n_series - 2, n_series - 1):
+        expected = (n_series - 1 - i) * 1000.0 + np.arange(H, dtype=float)
+        np.testing.assert_array_equal(mat[i], expected)
+    assert not np.isnan(mat).any()
+
+
+def test_auto_ets_batch_real_statsforecast_matches_per_series():
+    """Contract test against the REAL statsforecast (output format is a library
+    property): the batch matrix must equal per-series fits one uid at a time,
+    in the caller's (here reverse-sorted) series order."""
+    rng = np.random.default_rng(7)
+    n_series, t = 6, 90
+    days = pd.date_range("2021-01-04", periods=t, freq="D")
+    recs = []
+    for i in range(n_series):
+        level = float(rng.integers(1, 6))
+        y = rng.poisson(level, t).astype(float) + (np.arange(t) % 7 == i % 7) * i
+        recs.extend((f"r{i}", d, v) for d, v in zip(days, y, strict=True))
+    train = pd.DataFrame(recs, columns=["unique_id", "ds", "y"])
+    series_ids = sorted(train["unique_id"].unique(), reverse=True)  # unordered on purpose
+
+    from statsforecast import StatsForecast
+    from statsforecast.models import AutoETS
+
+    mat = m5_full._auto_ets_forecast(train, series_ids, H, n_jobs=1)
+    assert mat.shape == (len(series_ids), H)
+
+    for pos, sid in ((0, series_ids[0]), (3, series_ids[3]), (5, series_ids[-1])):
+        one = train[train["unique_id"] == sid]
+        ref = StatsForecast(models=[AutoETS(season_length=7)], freq="D", n_jobs=1).fit_predict(
+            h=H, df=one, id_col="unique_id", time_col="ds", target_col="y"
+        )
+        np.testing.assert_allclose(
+            mat[pos], ref["AutoETS"].to_numpy(dtype=float), rtol=1e-9, atol=1e-9
+        )
+
+
 def test_m5_full_origins_end_anchored():
     origins = m5_full_origins(1969, 10, H, 1096, 7)
     assert origins[-1] == 1969 - H - 1  # the scored window is the LAST 28 days
@@ -452,15 +562,238 @@ def test_ladder_cap_deterministic():
 
 
 # ---------------------------------------------------------------------------
+# Wave-32: catalog dump mode (test origin only, committed-weights blend)
+# ---------------------------------------------------------------------------
+
+
+def test_catalog_selection_rule(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """Deterministic two-half rule: counts, disjointness, cell balance, and
+    the bottom half picking the hardest intermittent series first."""
+    from demand_forecasting.m5_full_catalog import select_catalog_ids
+
+    y, x, s = _track_frames(seed=1)
+    raw, checksums = _write_tiny_full(tmp_path, y, x, s)
+    monkeypatch.setattr(m5_full, "FULL_CHECKSUMS", checksums)
+    panel = m5_full._prepare_panel(
+        raw, series_cap=None, seed=0, params_path=tmp_path / "no_params.yaml", n_estimators=5
+    )
+    o = m5_full_origins(panel.n_dates, 1, H, 140, 7)[-1]
+    chosen, descr = select_catalog_ids(panel, o, catalog_size=12)
+    assert len(chosen) == len(set(chosen)) == 12  # disjoint halves
+    chosen2, _ = select_catalog_ids(panel, o, catalog_size=12)
+    assert chosen == chosen2  # deterministic
+    halves = {}
+    for i in chosen:
+        halves[descr[i]["half"]] = halves.get(descr[i]["half"], 0) + 1
+    assert halves == {"top_units": 6, "bottom_intermittency": 6}
+    # 2 stores x 2 cats = 4 cells; each half round-robins 6 picks over 4
+    # cells: 2 cells twice, 2 cells once — per half
+    cells = sorted({f"{descr[i]['store']}_{descr[i]['cat_id']}" for i in chosen})
+    assert len(cells) == 4
+    for half in ("top_units", "bottom_intermittency"):
+        counts = sorted(
+            sum(
+                1
+                for i in chosen
+                if descr[i]["half"] == half and f"{descr[i]['store']}_{descr[i]['cat_id']}" == c
+            )
+            for c in cells
+        )
+        assert counts == [1, 1, 2, 2], f"{half}: {counts}"
+    # the halves are cell-prefixes of their rankings: within each cell, no
+    # un-picked series may rank AHEAD of a picked one (recomputed here
+    # independently from the raw panel)
+    from demand_forecasting.intermittent import classify_demand
+    from demand_forecasting.m5_track import _series_train_history
+
+    hist = _series_train_history(panel.y_all, panel.series_ids, pd.Timestamp(panel.dates[o]))
+    units = panel.y_wide[:, -H:].sum(axis=1)
+
+    def harder(q: int, p: int) -> bool:
+        cq = classify_demand(hist[panel.series_ids[q]])
+        cp = classify_demand(hist[panel.series_ids[p]])
+        return (cq["adi"], min(cq["cv2"], float("inf"))) > (
+            cp["adi"],
+            min(cp["cv2"], float("inf")),
+        )
+
+    for i in chosen:
+        cell = f"{descr[i]['store']}_{descr[i]['cat_id']}"
+        for j in range(panel.n_series):
+            same_cell = (
+                f"{panel.s_meta['store_id'].loc[panel.series_ids[j]]}_"
+                f"{panel.s_meta['cat_id'].loc[panel.series_ids[j]]}"
+            ) == cell
+            if j in chosen or not same_cell:
+                continue
+            if descr[i]["half"] == "top_units":
+                assert units[j] <= units[i] + 1e-9, f"{panel.series_ids[j]} is bigger but unpicked"
+            else:
+                assert not harder(j, i), f"{panel.series_ids[j]} is harder but unpicked"
+    # descriptors carry the ranking provenance
+    for i in chosen:
+        assert descr[i]["units_rank"] >= 0 and descr[i]["intermittency_rank"] >= 0
+        assert isinstance(descr[i]["adi"], float) and isinstance(descr[i]["cv2"], (float, str))
+
+
+def test_load_committed_ensemble_guards(tmp_path: Path):
+    from demand_forecasting.m5_full_catalog import load_committed_ensemble
+
+    missing = tmp_path / "metrics.json"
+    with pytest.raises(FileNotFoundError):
+        load_committed_ensemble(missing)
+    bad = tmp_path / "bad.json"
+    bad.write_text(json.dumps({"protocol": "m5_direct_v1", "ensemble": {}}))
+    with pytest.raises(ValueError, match="protocol"):
+        load_committed_ensemble(bad)
+    good = tmp_path / "good.json"
+    good.write_text(
+        json.dumps(
+            {
+                "protocol": "m5_full_v1",
+                "ensemble": {"members": ["lgbm", "auto_ets"], "weights": [0.7, 0.3]},
+            }
+        )
+    )
+    assert load_committed_ensemble(good) == (["lgbm", "auto_ets"], [0.7, 0.3])
+
+
+def test_catalog_mode_tiny(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """End-to-end catalog run on the tiny panel: schema, committed-weights
+    blend, parquet round-trip, meta block, determinism."""
+    from demand_forecasting.m5_full_catalog import (
+        CATALOG_META_NAME,
+        run_m5_full_catalog,
+    )
+
+    y, x, s = _track_frames()
+    raw, checksums = _write_tiny_full(tmp_path, y, x, s)
+    monkeypatch.setattr(m5_full, "FULL_CHECKSUMS", checksums)
+    track_kwargs = dict(min_train=140, n_estimators=5, params_path=tmp_path / "no_params.yaml")
+    committed = run_m5_full(raw, n_origins=2, pooled_strategy="recursive", **track_kwargs)
+    reports = tmp_path / "reports"
+    reports.mkdir()
+    metrics_path = reports / "metrics.json"
+    metrics_path.write_text(json.dumps(_json_safe(committed.metrics)))
+
+    out = reports / "catalog_forecasts.parquet"
+    res1 = run_m5_full_catalog(
+        raw,
+        out,
+        metrics_path=metrics_path,
+        catalog_size=12,
+        series_cap=None,
+        pooled_strategy="recursive",
+        **track_kwargs,
+    )
+    frame = res1.frame
+    expected_cols = [
+        "unique_id",
+        "ds",
+        "actual",
+        *m5_full.CANDIDATES,
+        "band_lo",
+        "band_hi",
+    ]
+    assert list(frame.columns) == expected_cols
+    assert len(frame) == 12 * H
+    assert frame["unique_id"].nunique() == 12
+    assert frame.groupby("unique_id").size().eq(H).all()
+
+    meta = res1.meta
+    assert meta["protocol"] == "m5_full_v1"
+    assert meta["catalog_size"] == 12
+    assert len(meta["series"]) == 12
+    assert meta["weights_source"] == str(metrics_path)
+    assert meta["runtime_seconds"] > 0
+    assert set(meta["runtime_seconds_per_candidate"]) == set(m5_full.CANDIDATES) - {
+        "seasonal_naive",
+        "convex_ensemble",
+    }
+
+    # weights reuse, NOT re-selection: the persisted blend is exactly the
+    # committed members x committed weights
+    members = meta["ensemble"]["members"]
+    weights = meta["ensemble"]["weights"]
+    assert members == committed.metrics["ensemble"]["members"]
+    np.testing.assert_allclose(sum(weights), 1.0, atol=1e-9)
+    blend = np.zeros(len(frame))
+    for w, m in zip(weights, members, strict=True):
+        blend += w * frame[m].to_numpy(dtype=float)
+    np.testing.assert_allclose(frame["convex_ensemble"].to_numpy(dtype=float), blend, atol=1e-9)
+    # the band is the member envelope
+    lo = np.minimum.reduce([frame[m].to_numpy(dtype=float) for m in members])
+    hi = np.maximum.reduce([frame[m].to_numpy(dtype=float) for m in members])
+    np.testing.assert_allclose(frame["band_lo"].to_numpy(dtype=float), lo, atol=1e-9)
+    np.testing.assert_allclose(frame["band_hi"].to_numpy(dtype=float), hi, atol=1e-9)
+
+    # self-check results are recorded and tight
+    check = meta["self_check"]
+    assert check["ensemble_blend_max_abs_drift"] <= 1e-9
+    assert check["actuals_max_abs_drift"] <= 1e-9
+    assert check["ensemble_catalog_wape"] > 0
+
+    # artifacts on disk: parquet round-trips + catalog_meta.json
+    import pyarrow.parquet as pq
+
+    reread = pq.read_table(out).to_pandas()
+    pd.testing.assert_frame_equal(frame, reread)
+    meta_on_disk = json.loads((reports / CATALOG_META_NAME).read_text())
+    assert meta_on_disk["catalog_size"] == 12
+    assert meta_on_disk["ensemble"]["members"] == members
+
+    # determinism: a second run produces the identical frame
+    res2 = run_m5_full_catalog(
+        raw,
+        out,
+        metrics_path=metrics_path,
+        catalog_size=12,
+        series_cap=None,
+        pooled_strategy="recursive",
+        **track_kwargs,
+    )
+    pd.testing.assert_frame_equal(frame, res2.frame)
+    assert [d["unique_id"] for d in res2.meta["series"]] == [d["unique_id"] for d in meta["series"]]
+
+
+def test_catalog_mode_rejects_wrong_protocol(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    from demand_forecasting.m5_full_catalog import run_m5_full_catalog
+
+    y, x, s = _track_frames()
+    raw, checksums = _write_tiny_full(tmp_path, y, x, s)
+    monkeypatch.setattr(m5_full, "FULL_CHECKSUMS", checksums)
+    metrics_path = tmp_path / "metrics.json"
+    metrics_path.write_text(json.dumps({"protocol": "m5_direct_v1"}))
+    with pytest.raises(ValueError, match="protocol"):
+        run_m5_full_catalog(
+            raw,
+            tmp_path / "catalog.parquet",
+            metrics_path=metrics_path,
+            catalog_size=4,
+            series_cap=None,
+            min_train=140,
+            n_estimators=5,
+            params_path=tmp_path / "no_params.yaml",
+        )
+
+
+# ---------------------------------------------------------------------------
 # Real pinned panel: structural pins (offline; skipif the cache is absent)
 # ---------------------------------------------------------------------------
 
 REAL_RAW = Path(__file__).resolve().parent.parent / "data_m5" / "raw"
 
+REAL_RAW_FILES = (
+    REAL_RAW / "m5" / "datasets" / "m5.zip",
+    REAL_RAW / ".cache" / "m5" / "m5" / "Y_df.parquet",
+    REAL_RAW / ".cache" / "m5" / "m5" / "X_df.parquet",
+    REAL_RAW / ".cache" / "m5" / "m5" / "S_df.parquet",
+)
+
 
 @pytest.mark.skipif(
-    not (REAL_RAW / ".cache" / "m5" / "m5" / "Y_df.parquet").exists(),
-    reason="pinned M5 full-panel cache not present",
+    not all(path.exists() for path in REAL_RAW_FILES),
+    reason="pinned M5 full-panel cache not present (fresh clone without DVC pull)",
 )
 def test_real_full_panel_structure():
     y, _x, s = load_m5_full(REAL_RAW)
