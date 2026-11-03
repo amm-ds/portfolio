@@ -36,7 +36,9 @@
 | IsolationForest | **Chosen**: partition-based; "far away ⇒ anomalous" regardless of local density. |
 | LOF (`novelty=False`, `fit_predict` on train) | **Chosen** (per spec). Test-window scoring replicates `score_samples` math on the fitted neighborhood, because sklearn ≥ 1.9 blocks `score_samples`/`decision_function` when `novelty=False`. |
 | One-Class SVM (`nu=contamination`, RBF) | **Chosen**: classic boundary-based baseline. |
+| Rank-average ensemble (IF + LOF + OCSVM, mean of normalized member ranks) | **Chosen** (NAB sweep only): the roadmap's subspace-ensemble remedy; combines families whose failure modes differ, no member recalibration; wins the sweep at the frozen default operating point. |
 | Autoencoder / deep model | Rejected: overkill for a 2%-contamination tabular problem and for a <1-min runtime budget. |
+| Per-column median/MAD robust-z statistical detector | Measured (wave 16) and rejected: never beats the ensemble cell-for-cell (0.378–0.438 budgeted range-F1 at 70–50 pages). |
 
 ### Threshold
 
@@ -81,7 +83,9 @@ Verified on the train window (k=20 nearest-neighbor distance, euclidean):
   pointwise ranking metrics, and the later tuned OCSVM leads PR-AUC.
 
 Production remedies (roadmap): residual features against a rolling median to
-de-cluster anomalies, subspace ensembles, and cost-aware thresholds.
+de-cluster anomalies (delivered wave 7 — synthetic only), subspace ensembles
+(delivered wave 16 as the rank-average ensemble, the NAB sweep winner), and
+cost-aware thresholds (delivered wave 15).
 
 Note: scaling was evaluated and rejected — it did not fix the local-density
 blindness (LOF 0.63 at best with k=100 + standardization vs. 0.53 raw) and
@@ -90,6 +94,36 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.8.0 (2026-11-03): wave-16 model/architecture pass. New sweep family
+  `ensemble` (`nab_sweep.fit_detector`): fit IsolationForest, LOF, and OCSVM
+  on the same train slice, score each row by the mean of its normalized
+  member ranks (stable rank ties; no member recalibration). `DETECTORS`
+  becomes `BASE_DETECTORS + ("ensemble",)`; both the sweep
+  (`evaluate_sweep_series`) and the tune stage (`build_validation_run`) fit
+  through the single `fit_detector` entry point, so the evaluation contract
+  (70/30 past-only split, train-anchored thresholds, event-window range-F1,
+  scored-once semantics) is unchanged and every pre-existing sweep/tune cell
+  reproduces bit-identically. Measured verdict: at the frozen default
+  (2%, 24 h) the ensemble posts 35 pages at range-F1 0.533 / recall 0.604 on
+  the rolling cell (IsolationForest: 66 pages at 0.388) and 45 at 0.365 on
+  rolling+residual — beating the best tuned single family (IsolationForest
+  at its adopted (0.5%, 24 h): 33 pages, 0.433, recall 0.500). Its
+  train-side selection surface is flat (best gain +0.010 at (1%, 12 h)), so
+  the conservative adoption rule keeps the default — the champion needs no
+  operating-point search; a finer Optuna refinement of the operating point
+  was considered and rejected on the same evidence (an order of magnitude
+  under the 0.05 bar on 6 validation windows). Budgeted range precision on
+  the rolling cell improves 0.347 → 0.553. A per-column median/MAD robust-z
+  statistical family was measured as an additional candidate and rejected
+  (never beats the ensemble cell-for-cell). The headline `nab` stage stays
+  IsolationForest for convention continuity. Also: NSL-KDD categorical
+  factorization became deterministic (lexicographic dense rank replaces
+  appearance-order `Categorical` codes that wandered between runs through
+  the polars string cache); the probe re-pins at ROC-AUC 0.8877 / PR-AUC
+  0.8979 and every artifact is now byte-reproducible end-to-end. New tests
+  pin the rank math, ensemble=mean-of-member-ranks equivalence, refit
+  determinism, the stream ladder for the new cell, and factorization
+  determinism.
 - 0.7.0 (2026-10-30): wave-15 operating-point tuning (`nab-tune`, artifact
   `reports/nab_tune.json`, figure `nab_tune_surface`): the (threshold budget,
   per-series cooldown) operating point is selected per detector family on

@@ -585,6 +585,183 @@
           "range_recall": 0.16666666666666666,
           "alerts_fired": 42
         }
+      ],
+      "ensemble": [
+        {
+          "budget": 0.005,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.27777777777777773,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 36
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.27777777777777773,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 32
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.27777777777777773,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 29
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.2222222222222222,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 24
+        },
+        {
+          "budget": 0.005,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.2222222222222222,
+          "range_recall": 0.20833333333333334,
+          "alerts_fired": 24
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.2833333333333333,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 51
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.2972222222222222,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 42
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.2972222222222222,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 36
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.24166666666666667,
+          "range_recall": 0.25,
+          "alerts_fired": 29
+        },
+        {
+          "budget": 0.01,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.24166666666666667,
+          "range_recall": 0.25,
+          "alerts_fired": 29
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.26686507936507936,
+          "range_recall": 0.375,
+          "alerts_fired": 81
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.2807539682539682,
+          "range_recall": 0.375,
+          "alerts_fired": 66
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.2876984126984127,
+          "range_recall": 0.375,
+          "alerts_fired": 53
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.24603174603174605,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 37
+        },
+        {
+          "budget": 0.02,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.25992063492063494,
+          "range_recall": 0.2916666666666667,
+          "alerts_fired": 36
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.2085275835275835,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 132
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.18333333333333332,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 97
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.18459595959595956,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 77
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.17824074074074073,
+          "range_recall": 0.25,
+          "alerts_fired": 49
+        },
+        {
+          "budget": 0.04,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.20833333333333334,
+          "range_recall": 0.25,
+          "alerts_fired": 46
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 6.0,
+          "range_f1": 0.17219785575048732,
+          "range_recall": 0.4166666666666667,
+          "alerts_fired": 174
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 12.0,
+          "range_f1": 0.15625,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 128
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 24.0,
+          "range_f1": 0.1757936507936508,
+          "range_recall": 0.3333333333333333,
+          "alerts_fired": 99
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 48.0,
+          "range_f1": 0.1722222222222222,
+          "range_recall": 0.25,
+          "alerts_fired": 64
+        },
+        {
+          "budget": 0.08,
+          "cooldown_hours": 72.0,
+          "range_f1": 0.20370370370370372,
+          "range_recall": 0.25,
+          "alerts_fired": 53
+        }
       ]
     },
     "families": {
@@ -622,6 +799,18 @@
         "val_gain_over_default": 0.056042884990253394,
         "plateau_count": 10,
         "neighbor_mean_range_f1": 0.168287037037037,
+        "grid_size": 25
+      },
+      "ensemble": {
+        "budget": 0.02,
+        "cooldown_hours": 24.0,
+        "adopted": false,
+        "val_range_f1": 0.2876984126984127,
+        "val_range_f1_best": 0.2972222222222222,
+        "val_range_f1_default": 0.2876984126984127,
+        "val_gain_over_default": 0.009523809523809545,
+        "plateau_count": 10,
+        "neighbor_mean_range_f1": 0.27609126984126986,
         "grid_size": 25
       }
     }
@@ -1689,6 +1878,360 @@
             }
           }
         }
+      },
+      "ensemble+rolling": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "overall": {
+          "range_f1": 0.4852451292668684,
+          "range_precision": 0.46291957794353694,
+          "range_recall": 0.7291666666666666,
+          "pr_auc": 0.5765649857953974,
+          "roc_auc": 0.7343437798166629,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 16,
+          "events_missed": 1,
+          "alerts_fired": 1157,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 1157,
+              "episodes": 1157,
+              "events_detected": 16,
+              "events_missed": 1,
+              "range_precision": 0.46291957794353694,
+              "range_recall": 0.7291666666666666,
+              "range_f1": 0.4852451292668684
+            },
+            "deduped": {
+              "alerts_fired": 151,
+              "episodes": 151,
+              "events_detected": 16,
+              "events_missed": 1,
+              "range_precision": 0.5046657046657047,
+              "range_recall": 0.7291666666666666,
+              "range_f1": 0.5372474747474748
+            },
+            "budgeted": {
+              "alerts_fired": 35,
+              "episodes": 35,
+              "events_detected": 13,
+              "events_missed": 4,
+              "range_precision": 0.5527777777777777,
+              "range_recall": 0.6041666666666666,
+              "range_f1": 0.5333333333333333
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.3125,
+            "range_precision": 0.2857142857142857,
+            "range_recall": 0.5,
+            "pr_auc": 0.465999562337195,
+            "roc_auc": 0.5819355837082518,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 3,
+            "events_missed": 0,
+            "alerts_fired": 286,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 286,
+                "episodes": 286,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.2857142857142857,
+                "range_recall": 0.5,
+                "range_f1": 0.3125
+              },
+              "deduped": {
+                "alerts_fired": 73,
+                "episodes": 73,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.2857142857142857,
+                "range_recall": 0.5,
+                "range_f1": 0.3125
+              },
+              "budgeted": {
+                "alerts_fired": 12,
+                "episodes": 12,
+                "events_detected": 2,
+                "events_missed": 1,
+                "range_precision": 0.3333333333333333,
+                "range_recall": 0.375,
+                "range_f1": 0.35
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.3932353878006052,
+            "range_precision": 0.3530444481163252,
+            "range_recall": 0.9375,
+            "pr_auc": 0.5005311822799191,
+            "roc_auc": 0.7363312871581889,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 8,
+            "events_missed": 1,
+            "alerts_fired": 799,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 799,
+                "episodes": 799,
+                "events_detected": 8,
+                "events_missed": 1,
+                "range_precision": 0.3530444481163252,
+                "range_recall": 0.9375,
+                "range_f1": 0.3932353878006052
+              },
+              "deduped": {
+                "alerts_fired": 57,
+                "episodes": 57,
+                "events_detected": 8,
+                "events_missed": 1,
+                "range_precision": 0.4782828282828283,
+                "range_recall": 0.9375,
+                "range_f1": 0.5492424242424242
+              },
+              "budgeted": {
+                "alerts_fired": 19,
+                "episodes": 19,
+                "events_detected": 8,
+                "events_missed": 1,
+                "range_precision": 0.575,
+                "range_recall": 0.9375,
+                "range_f1": 0.6666666666666666
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.75,
+            "range_precision": 0.75,
+            "range_recall": 0.75,
+            "pr_auc": 0.7516536727881702,
+            "roc_auc": 0.8332992341002358,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 72,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 72,
+                "episodes": 72,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.75,
+                "range_recall": 0.75,
+                "range_f1": 0.75
+              },
+              "deduped": {
+                "alerts_fired": 21,
+                "episodes": 21,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.75,
+                "range_recall": 0.75,
+                "range_f1": 0.75
+              },
+              "budgeted": {
+                "alerts_fired": 4,
+                "episodes": 4,
+                "events_detected": 3,
+                "events_missed": 2,
+                "range_precision": 0.75,
+                "range_recall": 0.5,
+                "range_f1": 0.5833333333333333
+              }
+            }
+          }
+        }
+      },
+      "ensemble+rolling_residual": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "overall": {
+          "range_f1": 0.3158080808080808,
+          "range_precision": 0.2578441720422314,
+          "range_recall": 0.7291666666666666,
+          "pr_auc": 0.5663076257619712,
+          "roc_auc": 0.7305689228769636,
+          "series_evaluated": 9,
+          "series_total": 12,
+          "events_detected": 16,
+          "events_missed": 1,
+          "alerts_fired": 1003,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 1003,
+              "episodes": 1003,
+              "events_detected": 16,
+              "events_missed": 1,
+              "range_precision": 0.2578441720422314,
+              "range_recall": 0.7291666666666666,
+              "range_f1": 0.3158080808080808
+            },
+            "deduped": {
+              "alerts_fired": 144,
+              "episodes": 144,
+              "events_detected": 16,
+              "events_missed": 1,
+              "range_precision": 0.2894408831908832,
+              "range_recall": 0.7291666666666666,
+              "range_f1": 0.36365740740740743
+            },
+            "budgeted": {
+              "alerts_fired": 45,
+              "episodes": 45,
+              "events_detected": 12,
+              "events_missed": 5,
+              "range_precision": 0.3471320346320346,
+              "range_recall": 0.5625,
+              "range_f1": 0.36527777777777776
+            }
+          }
+        },
+        "by_family": {
+          "realAWSCloudwatch": {
+            "range_f1": 0.15555555555555556,
+            "range_precision": 0.09375,
+            "range_recall": 0.5,
+            "pr_auc": 0.4599782117688921,
+            "roc_auc": 0.578781676628799,
+            "series_evaluated": 2,
+            "series_total": 4,
+            "events_detected": 3,
+            "events_missed": 0,
+            "alerts_fired": 148,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 148,
+                "episodes": 148,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.09375,
+                "range_recall": 0.5,
+                "range_f1": 0.15555555555555556
+              },
+              "deduped": {
+                "alerts_fired": 58,
+                "episodes": 58,
+                "events_detected": 3,
+                "events_missed": 0,
+                "range_precision": 0.09375,
+                "range_recall": 0.5,
+                "range_f1": 0.15555555555555556
+              },
+              "budgeted": {
+                "alerts_fired": 10,
+                "episodes": 10,
+                "events_detected": 2,
+                "events_missed": 1,
+                "range_precision": 0.16666666666666666,
+                "range_recall": 0.375,
+                "range_f1": 0.225
+              }
+            }
+          },
+          "realKnownCause": {
+            "range_f1": 0.20853535353535352,
+            "range_precision": 0.1297825161266942,
+            "range_recall": 0.9375,
+            "pr_auc": 0.4896853836503124,
+            "roc_auc": 0.7309356908188327,
+            "series_evaluated": 4,
+            "series_total": 4,
+            "events_detected": 8,
+            "events_missed": 1,
+            "alerts_fired": 795,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 795,
+                "episodes": 795,
+                "events_detected": 8,
+                "events_missed": 1,
+                "range_precision": 0.1297825161266942,
+                "range_recall": 0.9375,
+                "range_f1": 0.20853535353535352
+              },
+              "deduped": {
+                "alerts_fired": 67,
+                "episodes": 67,
+                "events_detected": 8,
+                "events_missed": 1,
+                "range_precision": 0.21207264957264954,
+                "range_recall": 0.9375,
+                "range_f1": 0.3354166666666667
+              },
+              "budgeted": {
+                "alerts_fired": 30,
+                "episodes": 30,
+                "events_detected": 7,
+                "events_missed": 2,
+                "range_precision": 0.24972943722943722,
+                "range_recall": 0.8125,
+                "range_f1": 0.3708333333333333
+              }
+            }
+          },
+          "realTraffic": {
+            "range_f1": 0.5833333333333334,
+            "range_precision": 0.55,
+            "range_recall": 0.75,
+            "pr_auc": 0.7393568912395693,
+            "roc_auc": 0.8312713964532481,
+            "series_evaluated": 3,
+            "series_total": 4,
+            "events_detected": 5,
+            "events_missed": 0,
+            "alerts_fired": 60,
+            "adaptive_drift_events": 0,
+            "streams": {
+              "raw": {
+                "alerts_fired": 60,
+                "episodes": 60,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.55,
+                "range_recall": 0.75,
+                "range_f1": 0.5833333333333334
+              },
+              "deduped": {
+                "alerts_fired": 19,
+                "episodes": 19,
+                "events_detected": 5,
+                "events_missed": 0,
+                "range_precision": 0.5625,
+                "range_recall": 0.75,
+                "range_f1": 0.6
+              },
+              "budgeted": {
+                "alerts_fired": 5,
+                "episodes": 5,
+                "events_detected": 3,
+                "events_missed": 2,
+                "range_precision": 0.625,
+                "range_recall": 0.5,
+                "range_f1": 0.5
+              }
+            }
+          }
+        }
       }
     },
     "families": {
@@ -1835,6 +2378,55 @@
               "range_precision": 0.28171296296296294,
               "range_recall": 0.3020833333333333,
               "range_f1": 0.24209956709956706
+            }
+          }
+        }
+      },
+      "ensemble": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "overall": {
+          "range_f1": 0.40052660503747467,
+          "range_precision": 0.3603818749928842,
+          "range_recall": 0.7291666666666666,
+          "pr_auc": 0.5714363057786842,
+          "roc_auc": 0.7324563513468134,
+          "series_evaluated": 18,
+          "series_total": 24,
+          "events_detected": 32,
+          "events_missed": 2,
+          "alerts_fired": 2160,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 2160,
+              "episodes": 2160,
+              "events_detected": 32,
+              "events_missed": 2,
+              "range_precision": 0.3603818749928842,
+              "range_recall": 0.7291666666666666,
+              "range_f1": 0.40052660503747467
+            },
+            "deduped": {
+              "alerts_fired": 295,
+              "episodes": 295,
+              "events_detected": 32,
+              "events_missed": 2,
+              "range_precision": 0.39705329392829397,
+              "range_recall": 0.7291666666666666,
+              "range_f1": 0.4504524410774411
+            },
+            "budgeted": {
+              "alerts_fired": 80,
+              "episodes": 80,
+              "events_detected": 25,
+              "events_missed": 9,
+              "range_precision": 0.4499549062049062,
+              "range_recall": 0.5833333333333334,
+              "range_f1": 0.44930555555555557
             }
           }
         }
@@ -2012,6 +2604,62 @@
         "delta_alerts_fired": -56,
         "delta_range_f1": 0.03261944149040924,
         "delta_range_recall": -0.125
+      },
+      "ensemble+rolling": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "default_budgeted": {
+          "alerts_fired": 35,
+          "episodes": 35,
+          "events_detected": 13,
+          "events_missed": 4,
+          "range_precision": 0.5527777777777777,
+          "range_recall": 0.6041666666666666,
+          "range_f1": 0.5333333333333333
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 35,
+          "episodes": 35,
+          "events_detected": 13,
+          "events_missed": 4,
+          "range_precision": 0.5527777777777777,
+          "range_recall": 0.6041666666666666,
+          "range_f1": 0.5333333333333333
+        },
+        "delta_alerts_fired": 0,
+        "delta_range_f1": 0.0,
+        "delta_range_recall": 0.0
+      },
+      "ensemble+rolling_residual": {
+        "operating_point": {
+          "budget": 0.02,
+          "cooldown_hours": 24.0,
+          "adopted": false
+        },
+        "default_budgeted": {
+          "alerts_fired": 45,
+          "episodes": 45,
+          "events_detected": 12,
+          "events_missed": 5,
+          "range_precision": 0.3471320346320346,
+          "range_recall": 0.5625,
+          "range_f1": 0.36527777777777776
+        },
+        "tuned_budgeted": {
+          "alerts_fired": 45,
+          "episodes": 45,
+          "events_detected": 12,
+          "events_missed": 5,
+          "range_precision": 0.3471320346320346,
+          "range_recall": 0.5625,
+          "range_f1": 0.36527777777777776
+        },
+        "delta_alerts_fired": 0,
+        "delta_range_f1": 0.0,
+        "delta_range_recall": 0.0
       }
     }
   }

@@ -52,6 +52,29 @@ def test_feature_frame_maps_to_numeric(tmp_path: Path) -> None:
     assert "protocol_type" in mapped.columns  # factorized categorical kept
 
 
+def test_feature_frame_factorization_is_deterministic(tmp_path: Path) -> None:
+    """Categorical codes must not depend on polars' string-cache state: the
+    probe re-runs byte-identically only if the mapping is a pure function of
+    each row's value (dense lexicographic rank), not of appearance order."""
+    udp = list(_row("normal"))
+    udp[1] = "udp"  # second protocol_type value, first in appearance order
+    rows = [tuple(udp), _row("neptune", duration=5), _row("normal", duration=2)]
+    df = parse_nsl_txt(_fixture_txt(tmp_path / "kdd_fixture.txt", rows))
+
+    def expected_proto_codes(frame: pl.DataFrame) -> list[float]:
+        lookup = {v: float(i + 1) for i, v in enumerate(sorted(set(frame["protocol_type"])))}
+        return [lookup[v] for v in frame["protocol_type"]]
+
+    a = feature_frame(df).to_numpy()
+    b = feature_frame(df).to_numpy()
+    assert (a == b).all()  # repeated mapping is identical
+    mapped = feature_frame(df)
+    assert mapped["protocol_type"].to_list() == expected_proto_codes(df)  # value-pure
+    shuffled = df.sort("duration", descending=True)
+    remapped = feature_frame(shuffled)
+    assert remapped["protocol_type"].to_list() == expected_proto_codes(shuffled)
+
+
 def test_transfer_probe_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import anomaly_detection.nsl as nsl_module
 

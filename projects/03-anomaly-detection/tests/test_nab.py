@@ -19,11 +19,15 @@ from anomaly_detection.nab import (
     windows_to_mask,
 )
 from anomaly_detection.nab_sweep import (
+    BASE_DETECTORS,
     DETECTORS,
     FEATURE_SETS,
     STREAMS,
+    _ranks,
     cooldown_budget,
     episode_firing_times,
+    evaluate_sweep_series,
+    fit_detector,
     run_nab_sweep,
 )
 
@@ -227,3 +231,61 @@ def test_run_nab_sweep_offline(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     series = report["series"]["famA/seriesA|isolation_forest+rolling"]
     assert set(series["streams"]) == set(STREAMS)
     assert (config.reports_path / "nab_sweep.json").exists()
+
+
+def test_ranks_are_normalized_and_stable() -> None:
+    scores = np.array([0.3, 0.1, 0.3, 0.2])
+    r = _ranks(scores)
+    # stable argsort: [0.1(idx1), 0.2(idx3), 0.3(idx0), 0.3(idx2)] -> [2/3, 0, 1, 1/3]
+    assert r.tolist() == [2.0 / 3, 0.0, 1.0, 1.0 / 3]
+    assert len(_ranks(np.array([7.0]))) == 1  # single row: no division by zero
+
+
+def test_ensemble_scorer_is_mean_of_member_ranks(tmp_path: Path) -> None:
+    """The ensemble family must score exactly the mean of the base families'
+    normalized ranks on any matrix — no member recalibration."""
+    config = AnomalyConfig(
+        windows=[5, 10],
+        n_estimators=50,
+        data_dir=str(tmp_path / "d"),
+        reports_dir=str(tmp_path / "r"),
+    )
+    path, _ = _fixture_series(tmp_path / "series.csv")
+    feat = build_series_features(parse_series_csv(path), config.windows)
+    n_train = int(feat.height * config.train_frac)
+    cols = [c for c in feat.columns if c != "timestamp"]
+    x = feat.select(cols).to_numpy()
+
+    ensemble = fit_detector("ensemble", x[:n_train], config)
+    member_scores = [fit_detector(d, x[:n_train], config)(x) for d in BASE_DETECTORS]
+    expected = np.mean([_ranks(s) for s in member_scores], axis=0)
+    np.testing.assert_allclose(ensemble(x), expected)
+    # the injected plateau must rank at the top of the combined score
+    top = np.argsort(ensemble(x))[-20:]
+    assert (top >= 150).mean() >= 0.8  # same plateau the base detectors catch
+    with pytest.raises(ValueError, match="unknown model"):
+        fit_detector("kmeans", x[:n_train], config)
+
+
+def test_ensemble_cell_holds_stream_ladder_and_determinism(tmp_path: Path) -> None:
+    """The ensemble sweep cell obeys the alert-load ladder and refits
+    byte-identically (seeded IF inside the rank average)."""
+    config = AnomalyConfig(
+        windows=[5, 10],
+        n_estimators=50,
+        data_dir=str(tmp_path / "d"),
+        reports_dir=str(tmp_path / "r"),
+    )
+    path, windows = _fixture_series(tmp_path / "series.csv")
+    df = parse_series_csv(path)
+    a = evaluate_sweep_series(df, windows, config, "ensemble", "rolling")
+    b = evaluate_sweep_series(df, windows, config, "ensemble", "rolling")
+    assert "ensemble" in DETECTORS and "ensemble" not in BASE_DETECTORS
+    assert np.array_equal(a["scores"], b["scores"])
+    assert a["threshold"] == b["threshold"]
+    streams = a["streams"]
+    assert (
+        streams["raw"]["alerts_fired"]
+        >= streams["deduped"]["alerts_fired"]
+        >= streams["budgeted"]["alerts_fired"]
+    )

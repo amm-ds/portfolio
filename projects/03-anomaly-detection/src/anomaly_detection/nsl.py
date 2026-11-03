@@ -112,12 +112,15 @@ def feature_frame(df: pl.DataFrame) -> pl.DataFrame:
     """Map the 43-column KDD frame to a numeric feature matrix.
 
     The 38 numeric features pass through; the three categorical columns are
-    factorized to integer codes (documented caveat above).
+    factorized to integer codes (documented caveat above) by dense rank in
+    lexicographic order — deterministic across runs and processes, unlike
+    ``cast(Categorical).to_physical()`` whose physical codes follow
+    appearance order through the polars string cache.
     """
     numeric = [c for c in KDD_FEATURE_COLUMNS if c not in CATEGORICAL_COLUMNS]
     out = df.select(
         *numeric,
-        *[pl.col(c).cast(pl.Categorical).to_physical().alias(c) for c in CATEGORICAL_COLUMNS],
+        *[pl.col(c).rank(method="dense").alias(c) for c in CATEGORICAL_COLUMNS],
     )
     return out
 

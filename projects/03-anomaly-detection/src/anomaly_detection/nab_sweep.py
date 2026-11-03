@@ -10,7 +10,10 @@ the mean over all 12 series including the 3 non-evaluable ones (mirrors
 
 - **detectors** — ``isolation_forest`` / ``lof`` / ``ocsvm``, untuned
   (config defaults), the same honest-search-free comparison the synthetic
-  ladder reports;
+  ladder reports; plus ``ensemble``, the rank-average of those three
+  families (see :func:`fit_detector`) — a candidate that combines detectors
+  whose failure modes differ (partition vs. local density vs. boundary)
+  without any member recalibration;
 - **feature sets** — ``rolling`` (value + rolling mean/std) vs
   ``rolling_residual`` (adds rolling-median residual columns — the current
   headline recipe includes them by default).
@@ -32,12 +35,14 @@ comparable.
 """
 
 import json
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
 import polars as pl
 from portfolio_core.logging import get_logger
 from sklearn.metrics import average_precision_score, roc_auc_score
+from sklearn.neighbors import LocalOutlierFactor
 
 from anomaly_detection.config import AnomalyConfig
 from anomaly_detection.model import anomaly_scores, make_model
@@ -56,7 +61,8 @@ from anomaly_detection.nab import (
 
 logger = get_logger(__name__)
 
-DETECTORS: tuple[str, ...] = ("isolation_forest", "lof", "ocsvm")
+BASE_DETECTORS: tuple[str, ...] = ("isolation_forest", "lof", "ocsvm")
+DETECTORS: tuple[str, ...] = (*BASE_DETECTORS, "ensemble")
 FEATURE_SETS: tuple[str, ...] = ("rolling", "rolling_residual")
 STREAMS: tuple[str, ...] = ("raw", "deduped", "budgeted")
 
@@ -97,6 +103,43 @@ def cooldown_budget(
             kept.append(int(idx))
             last = idx
     return np.asarray(kept, dtype=int)
+
+
+def _ranks(scores: np.ndarray) -> np.ndarray:
+    """Normalized ranks in [0, 1] over one score vector (stable tie-break)."""
+    order = np.argsort(scores, kind="stable")
+    out = np.empty(len(scores), dtype=float)
+    out[order] = np.arange(len(scores), dtype=float)
+    return out / max(len(scores) - 1, 1)
+
+
+def fit_detector(
+    detector: str, x_fit: np.ndarray, config: AnomalyConfig
+) -> Callable[[np.ndarray], np.ndarray]:
+    """Fit one sweep family on a train slice and return its scorer.
+
+    The three sklearn families delegate to :func:`make_model` +
+    :func:`anomaly_scores` (LOF fits with ``fit_predict`` per spec). The
+    ``ensemble`` family fits all three base families on the same slice and
+    scores every row as the mean of its per-member normalized ranks — a
+    rank-average ensemble: it needs no member recalibration, and it only
+    helps when members disagree, which is exactly where single detectors
+    are fragile. Every returned scorer follows the headline convention:
+    higher = more anomalous.
+    """
+    if detector == "ensemble":
+        members = [fit_detector(d, x_fit, config) for d in BASE_DETECTORS]
+
+        def score_ensemble(x: np.ndarray) -> np.ndarray:
+            return np.mean([_ranks(member(x)) for member in members], axis=0)
+
+        return score_ensemble
+    model = make_model(detector, config)
+    if isinstance(model, LocalOutlierFactor):
+        model.fit_predict(x_fit)
+    else:
+        model.fit(x_fit)
+    return lambda x: np.asarray(anomaly_scores(model, detector, x), dtype=float)
 
 
 def _stream_metrics(
@@ -151,13 +194,9 @@ def evaluate_sweep_series(
     values = feat["value"].to_numpy()
     y = windows_to_mask(times, windows)
 
-    model = make_model(detector, config)
-    if detector == "lof":
-        model.fit_predict(x[:n_train])
-    else:
-        model.fit(x[:n_train])
-    ref_scores = anomaly_scores(model, detector, x[:n_train])
-    scores = anomaly_scores(model, detector, x[n_train:])
+    scorer = fit_detector(detector, x[:n_train], config)
+    ref_scores = scorer(x[:n_train])
+    scores = scorer(x[n_train:])
     y_test, ts_test, vals_test = y[n_train:], times[n_train:], values[n_train:]
 
     # only windows overlapping the scored (test) portion are evaluable
@@ -247,7 +286,7 @@ def _aggregate_runs(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def run_nab_sweep(config: AnomalyConfig) -> dict[str, Any]:
-    """The sweep stage: 12 series x 3 detectors x 2 feature sets, plus the
+    """The sweep stage: 12 series x 4 detectors x 2 feature sets, plus the
     dedup/cooldown alert-load layer on every run. Writes reports/nab_sweep.json."""
     labels = fetch_labels(config)
     results: dict[str, dict[str, Any]] = {}

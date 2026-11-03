@@ -4,7 +4,8 @@ Unsupervised anomaly detection evaluated honestly on **real data first**: 12
 series from the Numenta Anomaly Benchmark (AWS CloudWatch, traffic sensors,
 known-cause system failures) with labelled event windows, plus a seeded
 synthetic telemetry stream (CPU, memory, latency) that remains the
-clearly-labelled CI / fast path. Three classical detectors compete behind
+clearly-labelled CI / fast path. Three classical detectors — and, on the
+real-data sweep, a rank-average ensemble of the three — compete behind
 explicit data-quality gates, with pointwise PR-AUC kept distinct from
 event-aware range-F1 and time-ordered train/test splits throughout.
 
@@ -206,10 +207,13 @@ of KDDTrain+.TXT / KDDTest+.TXT are fetched via `portfolio_core.io.fetch`
 (43 columns → 41 mapped features, categoricals factorized) behind the same
 `DatasetContract`. The champion family (IsolationForest) fits the labeled
 125 973-row train split and scores the 22 544-row test split:
-**ROC-AUC 0.8817, PR-AUC 0.8916** at 56.9% test prevalence. Honest caveats:
+**ROC-AUC 0.8877, PR-AUC 0.8979** at 56.9% test prevalence. Honest caveats:
 labeled transfer probe (not a leaderboard), unseen attack categories in test,
 flow statistics rather than telemetry semantics, ~57% prevalence vs. the 2%
-operating point, factorized (not one-hot) categoricals.
+operating point, factorized (not one-hot) categoricals — now by a
+deterministic lexicographic dense rank (the old appearance-order
+`Categorical` codes wandered between runs through the polars string cache, so
+the probe only became byte-reproducible after that fix).
 
 ## Wave 14: NAB detector-family × feature sweep + alert budgets
 
@@ -222,14 +226,15 @@ scores three alert streams: **raw** (every above-threshold minute pages),
 **deduped** (contiguous runs fire one page at the run's max-score minute),
 **budgeted** (deduped pages plus a per-series cap of one page per 24 h).
 
-**No detector family wins NAB.** Pointwise PR-AUC spans 0.515–0.574 across
+**No single detector family wins NAB.** Pointwise PR-AUC spans 0.515–0.574 across
 the grid — best is LOF on rolling+residual features (0.574), IsolationForest
 on rolling features alone reaches 0.565, and the headline
 IsolationForest+residual recipe sits at 0.527 (bit-identical to the headline
 pass: 1,609 raw alerts). Raw range recall is 0.688–0.750 with 1,609–3,586
 alerts emitted. Rolling-median residuals — decisive on synthetic (0.9158 →
 0.9999 ROC-AUC) — do **not** transfer: the anomaly-blob diagnosis is a
-property of the injected data, not of NAB incidents.
+property of the injected data, not of NAB incidents. (The wave-16
+rank-average ensemble of these families wins the grid — see below.)
 
 **Budgeting the page stream works without retraining.** Dedup + the 24 h
 per-series cap cut pages 20–30× and raise range-F1 in *every* cell, because
@@ -286,6 +291,46 @@ validated for LOF/OCSVM rather than assumed, and the default remains the
 published operating point for both. Selection saw only rows and windows left
 of the 70% train split; the test window was scored exactly once per family.
 
+## Wave 16: rank-average ensemble + a reproducibility fix
+
+The model/architecture round the roadmap reserved for "subspace ensembles":
+the NAB sweep gains a fourth family, **`ensemble`** (`nab_sweep.fit_detector`),
+which fits the three base families on the same train slice and scores every
+minute by the mean of its normalized ranks under IsolationForest, LOF, and
+OCSVM (stable rank ties, no member recalibration). The evaluation contract is
+untouched — same 70/30 past-only split, same train-anchored thresholds, same
+event-aware metrics, one test pass per family through the unmodified sweep
+machinery (`nab_tune` selects its operating point on train-side validation
+like any other family).
+
+**The ensemble wins the grid at the frozen default operating point (2%, 24 h):**
+
+| sweep cell (raw → budgeted) | alerts | range recall | range-F1 |
+|---|---|---|---|
+| ensemble + rolling | 1,157 → 35 | 0.729 → 0.604 | 0.485 → 0.533 |
+| ensemble + rolling_residual | 1,003 → 45 | 0.729 → 0.562 | 0.316 → 0.365 |
+| (reference) isolation_forest + rolling | 1,864 → 66 | 0.729 → 0.604 | 0.154 → 0.388 |
+| (reference) isolation_forest + rolling_residual | 1,609 → 80 | 0.729 → 0.562 | 0.157 → 0.315 |
+
+Against the best tuned single family (IsolationForest at its adopted
+(0.5%, 24 h): 33 pages at range-F1 0.433, recall 0.500), the untuned ensemble
+at the documented default posts 35 pages at range-F1 0.533 with recall 0.604 —
+fewer pages than the tuned single family, better F1, higher recall, and no
+tuning step at all. Budgeted range precision on the rolling cell more than
+halves the miss rate (0.553 vs IsolationForest's 0.347). Its selection
+surface is dead flat (best gain +0.010 at (1%, 12 h), far under the 0.05
+adoption bar), so the conservative protocol keeps the default — the winning
+candidate needs no operating-point search. Pre-existing sweep/tune cells
+reproduce bit-identically; the headline `nab` pass stays IsolationForest for
+convention continuity. A per-column median/MAD robust-z statistical family
+was measured as an additional candidate and rejected: it never beats the
+ensemble cell-for-cell (0.378–0.438 budgeted range-F1 at 70–50 pages).
+
+Also in this round: the NSL-KDD categorical factorization became
+deterministic (lexicographic dense rank — appearance-order categorical codes
+wandered between runs), making every artifact byte-reproducible end-to-end;
+the probe's pinned numbers move 0.8817 / 0.8916 → 0.8877 / 0.8979.
+
 ## Reproduce
 
 ```bash
@@ -321,8 +366,10 @@ uv run pytest projects/03-anomaly-detection -q
   assumed contamination — metrics a client can trust, not tuned ones.
 - **Honest model comparison**: we report the losers too, with a verified
   mechanism (local-density blindness to clustered anomalies), rather than
-  cherry-picking the winner. That diagnosis — and the remedy (residual /
-  contextual features, subspace ensembles) — is where the real work lies.
+  cherry-picking the winner. That diagnosis produced the remedy it promised:
+  the rank-average ensemble of the three families wins the real-data sweep at
+  the frozen default — while the residual-feature fix, huge on synthetic,
+  honestly failed to transfer and is published as such.
 - **Full reproducibility**: one seed regenerates data, features, models,
   metrics, and figures end-to-end in seconds.
 
@@ -332,16 +379,22 @@ Delivered so far: Optuna HPO, seeded random baseline, adaptive-threshold
 streaming, rolling-median residual features, NSL-KDD transfer probe, the NAB
 real-data primary track with event-based metrics — the wave-14 sweep: all
 three detector families × both feature sets on NAB (PR-AUC 0.515–0.574, no
-winner; residuals do not transfer their synthetic dominance), plus episode
-deduplication and a 24 h per-series page budget that cut alerts 20–30× while
-*improving* range-F1 in every cell (headline config 1,609 → 80 pages,
-range-F1 0.157 → 0.315, recall 0.729 → 0.562) — and the wave-15 tuning: the
-alert operating point is now selected per family on train-side validation
+single-family winner; residuals do not transfer their synthetic dominance),
+plus episode deduplication and a 24 h per-series page budget that cut alerts
+20–30× while *improving* range-F1 in every cell (headline config 1,609 → 80
+pages, range-F1 0.157 → 0.315, recall 0.729 → 0.562) — the wave-15 tuning:
+the alert operating point selected per family on train-side validation
 (inner 80/20 split of each train window, 6 windows / 5 series), evaluated
-once on NAB test. IsolationForest adopts (0.5%, 24 h) and transfers (budgeted
-80 → 46 pages, range-F1 0.315 → 0.382); LOF keeps the default; OCSVM's
-marginal adoption fails to transfer (−0.043/+0.033 test F1) — the measured
-limit of 6-window validation evidence, published as such. What remains:
+once on NAB test. IsolationForest adopts (0.5%, 24 h) and transfers
+(budgeted 80 → 46 pages, range-F1 0.315 → 0.382); LOF keeps the default;
+OCSVM's marginal adoption fails to transfer (−0.043/+0.033 test F1) — the
+measured limit of 6-window validation evidence, published as such — and the
+wave-16 rank-average ensemble: it wins the sweep at the frozen default
+(35 pages at range-F1 0.533 and recall 0.604 on the rolling cell, versus
+66 pages at 0.388 for IsolationForest), needs no operating-point tuning
+(flat validation surface, +0.010 at best), and lifts budgeted range precision
+to 0.553; the NSL-KDD probe is now byte-reproducible (deterministic
+categorical factorization, 0.8877 / 0.8979). What remains:
 
 - **Recalibrate the adaptive drift trigger on real data** — the median/IQR
   trigger tuned on synthetic fires on 26% of NAB chunks; it needs a

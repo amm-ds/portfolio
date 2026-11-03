@@ -1,5 +1,5 @@
 project_id: 03-anomaly-detection
-short_version: "On NAB at a fixed 2% alert budget, IsolationForest catches 16 of 17 labelled incident windows but fires 1,609 alerts. Deduplication plus a one-page-per-day cap cuts that to 80 pages at modest recall cost—page the alert stream, not the detector score."
+short_version: "On NAB at a fixed 2% alert budget, IsolationForest catches 16 of 17 incident windows but fires 1,609 alerts. A one-page-per-day cap cuts that to 80 pages; a rank-average ensemble halves the load again at higher recall — page the alert stream, not the detector score."
 sections:
 - id: background
   text_md: |
@@ -27,7 +27,7 @@ sections:
       B --> RR["Event-aware scoring<br/>16 of 17 windows"]
     ```
 
-    Read it left to right: the detector scores every minute against a
+    Trace the path: the detector scores every minute against a
     train-anchored top-2% threshold, then the budget stage — dedup, a
     24 h cap — shrinks the stream before a person sees it. That cap is
     the story: 1,609 alerts become 80 pages. What keeps both numbers
@@ -115,7 +115,7 @@ sections:
     ```
 
     The data-lineage diagram shows the three sources and what each is
-    allowed to claim, read left to right. The NAB series lead: the twelve
+    allowed to claim. The NAB series lead: the twelve
     series hit one decision — do labelled windows fall in the scored span?
     Nine say yes and carry the headline; three say no and leave the study.
     The synthetic and probe sources stay humble behind it: synthetic rows
@@ -159,30 +159,37 @@ sections:
   figures: [eda_signals_overview, nab_score_distribution]
 - id: training
   text_md: |
-    **Finding 1 — no family wins the sweep.** The family × feature sweep
-    (3 families × 2 feature sets, untuned, one threshold) finds no winner
-    over the headline recipe. Pointwise PR-AUC spans 0.515–0.574, best
-    with LOF on rolling+residual features. Raw range recall spans
-    0.688–0.750, raw alerts 1,609–3,586. The telemetry-flags figure shows
-    the budget's synthetic flags tracking the simultaneous CPU+latency
-    spikes ground truth marks.
+    **Finding 1 — the ensemble wins the sweep; no single family does.** The
+    family × feature sweep (4 families × 2 feature sets, untuned, one
+    threshold) finds one winner: the **rank-average ensemble**, which scores
+    every minute by the mean of its normalized ranks under IsolationForest,
+    LOF, and OCSVM. Pointwise PR-AUC spans 0.515–0.577 across the grid; no
+    single family escapes its old band (0.515–0.574). Diverse failure modes —
+    partition, local density, boundary — combine only where members
+    disagree, which is exactly where single detectors are fragile. Raw
+    range recall spans 0.688–0.750 with 1,003–3,586 alerts emitted. The
+    telemetry-flags figure shows the budget's synthetic flags tracking the
+    simultaneous CPU+latency spikes ground truth marks.
 
     **Finding 2 — budgeting the page stream fixes load without
     retraining.** Episode dedup plus the 24 h cap cuts pages twenty- to
-    thirty-fold across all six cells. Range-F1 rises in each. The headline
+    thirty-fold across all eight cells. Range-F1 rises in each. The headline
     cell drops 1,609 → 80 pages. Range recall falls 0.729 → 0.562.
-    Range-F1 rises 0.157 → 0.315.
+    Range-F1 rises 0.157 → 0.315. On the like-for-like rolling cells the
+    ensemble posts 35 pages at range-F1 0.533 against IsolationForest's
+    66 pages at 0.388, holding recall at 0.604 in both.
 
-    **Finding 3 — train-side operating-point tuning transfers for one
-    family.** Each training window splits 80/20. Candidate (budget,
-    cooldown) points score the budgeted stream on six validation windows,
-    five series. IsolationForest adopts (0.5%, 24 h; validation range-F1
-    0.318 vs 0.237). One committed test pass transfers it: pages fall
-    66 → 33 and 80 → 46, range-F1 to 0.433 and 0.382. The
-    operating-point-surface figure carries the decision: one line per
-    threshold budget, the ring on the documented (2%, 24 h) default. The
-    tuning-importance figure shows gamma at 99% of OCSVM's search. LOF's
-    flat surface (+0.042 at best) keeps
+    **Finding 3 — the winning candidate needs no tuning.** Each training
+    window splits 80/20. Candidate (budget, cooldown) points score the
+    budgeted stream on six validation windows, five series. IsolationForest
+    adopts (0.5%, 24 h; validation range-F1 0.318 vs 0.237) and transfers:
+    pages fall 66 → 33 and 80 → 46, range-F1 to 0.433 and 0.382. The
+    ensemble's surface is the mirror image: dead flat (best gain +0.010 at
+    (1%, 12 h)), so the default stands — the one committed test pass
+    confirms 35 pages at range-F1 0.533. The operating-point-surface figure
+    carries both: one line per threshold budget, the ring on the documented
+    (2%, 24 h) default. The tuning-importance figure shows gamma at 99% of
+    OCSVM's search. LOF's flat surface (+0.042 at best) keeps
     the default. OCSVM's
     marginal adoption (0.5%, 72 h; +0.056) fails on test (−0.043/+0.033
     range-F1). Six windows cannot certify a peak whose neighbours average
@@ -194,18 +201,19 @@ sections:
     IsolationForest leads ROC-AUC (0.9171), tuned OCSVM PR-AUC (0.1355),
     random scores 0.5091 / 0.0194. Rolling-median residuals shatter the
     blob: IsolationForest jumps to 0.9999 / 0.9960, but the gain never
-    appears on NAB. The NSL-KDD probe (0.8817 / 0.8916) stays a probe at
+    appears on NAB. The NSL-KDD probe (0.8877 / 0.8979) stays a probe at
     56.9% prevalence.
 
-    Which stream pages a person? The next section grades that.
+    Which stream pages a person? The evaluation grades that.
 
-    **Business summary:** Switching detectors is not worth it; capping
-    pages is. Dedup plus a daily page per series turns 1,609 alerts into
-    80; tuning halves that again for IsolationForest.
+    **Business summary:** Switching single detectors is not worth it;
+    combining them is. The rank-average ensemble halves the like-for-like
+    paged load at the frozen default — 35 pages at range-F1 0.533 — and the
+    budget layer stays the deployed artifact.
   figures: [telemetry_flags, hpo_importance, nab_tune_surface]
 - id: evaluation
   text_md: |
-    **Deploy the alert-budget layer, not a different detector.** The
+    **Budget the alert stream — and combine the detectors.** The
     evaluation asks three questions, and the three figures keep them
     apart. Question one: which detector ranks anomalous minutes best?
     The precision-recall curves figure answers it on the synthetic
@@ -222,14 +230,17 @@ sections:
 
     On NAB the measured trade: one page per incident per day costs
     0.13–0.25 of range recall and buys twenty- to thirty-fold fewer
-    pages. Range-F1 rises in every sweep cell; tuning halves the pages
-    again where it transfers. What remains is on-call capacity versus
+    pages. Range-F1 rises in every sweep cell. The rank-average ensemble
+    then halves the like-for-like load again — 66 → 35 pages, range-F1
+    0.388 → 0.533, recall unchanged at 0.604 — and needs no tuning: its
+    validation surface is flat. Tuning still halves IsolationForest's
+    pages where it transfers. What remains is on-call capacity versus
     recall cost — a staffing call.
 
-    The next section reads the evidence panel by panel.
+    From here, the evidence is read panel by panel.
 
-    **Business summary:** Budgeting pages works where better detectors do
-    not: 80 pages instead of 1,609, each incident paged about once a day,
+    **Business summary:** Budget the pages, then combine the detectors:
+    35 pages instead of 1,609, each incident paged about once a day,
     at 0.13–0.25 recall cost.
   figures: [pr_curves, threshold_sweep, adaptive_stream]
 - id: results
@@ -245,6 +256,15 @@ sections:
     The alert-budget figure then prices the trade: range-F1 against the
     alert budget per NAB group. Only IsolationForest sits on that curve —
     it is a budget dial, not a detector ranking.
+
+    **The candidate that changes the recommendation is a number, not a
+    panel.** The sweep's rank-average ensemble posts budgeted range
+    precision 0.553 on the rolling cell — pages still miss half the
+    time, but the miss rate roughly halves against IsolationForest's
+    0.347 — while cutting pages 66 → 35 at equal recall. The panels above
+    stay IsolationForest because the headline pass keeps the frozen
+    single-family convention; the family answer lives in the sweep
+    tables.
 
     **What this does not show: production readiness.** Range precision
     stays low: 0.107 fixed budget, 0.306 budgeted; pages still mostly
@@ -271,22 +291,32 @@ sections:
     labelled windows and fires 1,609 alerts (pointwise PR-AUC 0.527;
     range-F1 0.157). Episode dedup plus a one-page-per-series-per-day cap
     cuts that to 80 pages at range-F1 0.315 (range recall 0.729 → 0.562);
-    train-side tuning halves it again to 46 pages at range-F1 0.382.
-    Sub-0.1 range-F1 differences across six validation windows read as
-    noise. [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
+    train-side tuning halves it again to 46 pages at range-F1 0.382. The
+    rank-average ensemble of the three detector families beats every
+    single-family point at the frozen default — 35 pages at range-F1
+    0.533, recall 0.604 — and its flat validation surface means no
+    tuning is warranted. Sub-0.1 range-F1 differences across six
+    validation windows read as noise. [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
 
     ## What the experiment taught
 
-    - No detector family beat the headline recipe: switching detectors was not
-      worth it — capping the page stream was.
+    - No single detector family beat the headline recipe — the
+      rank-average ensemble did: at the frozen default it pages 35 times
+      at range-F1 0.533, versus 80 pages at 0.315 for the headline
+      IsolationForest cell, at higher recall (0.604 versus 0.562).
+      Switching families was not worth it; combining them was.
     - Episode dedup plus the 24 h page cap cut pages twenty- to thirty-fold in
       every sweep cell and raised range-F1 each time.
     - Train-side tuning transferred for IsolationForest (80 → 46 pages) but not
-      for OCSVM: six validation windows cannot certify a peak.
+      for OCSVM: six validation windows cannot certify a peak. The
+      ensemble's flat surface (+0.010 at best) certified the default
+      instead.
     - The synthetic ladder disagreed with NAB: residual-feature gains never
       transferred, so synthetic evidence stays mechanics-only.
-    - Range precision stays low (0.107 fixed budget; 0.306 budgeted): the
-      artifact is an alert-budget dial, not a detector ranking.
+    - Range precision stays the limiting factor (0.107 fixed budget;
+      0.306 for the IsolationForest headline cell, 0.553 for the champion
+      ensemble on the rolling cell): the artifact is an alert-budget dial,
+      not a detector ranking.
 
     ## Exact numbers
 
@@ -306,17 +336,20 @@ sections:
     |---|---|---|---|
     | isolation_forest + rolling | 1,864 → 66 | 0.729 → 0.604 | 0.154 → 0.388 |
     | isolation_forest + rolling_residual | 1,609 → 80 | 0.729 → 0.562 | 0.157 → 0.315 |
+    | ensemble + rolling | 1,157 → 35 | 0.729 → 0.604 | 0.485 → 0.533 |
+    | ensemble + rolling_residual | 1,003 → 45 | 0.729 → 0.562 | 0.316 → 0.365 |
     | lof + rolling_residual | 3,586 → 122 | 0.750 → 0.542 | 0.088 → 0.200 |
 
     Budgeted stream, default → tuned: isolation_forest + rolling 66 → 33 pages,
     range-F1 0.388 → 0.433; isolation_forest + rolling_residual 80 → 46, range-F1
-    0.315 → 0.382; lof and ocsvm cells keep their defaults.
+    0.315 → 0.382; the ensemble, lof, and ocsvm cells keep their defaults
+    (ensemble: 35 and 45 pages at range-F1 0.533 and 0.365).
 
     Synthetic window (5,983 test rows, 1.89% prevalence): untuned IsolationForest
     0.9158 ROC-AUC / 0.1239 PR-AUC; tuned IsolationForest 0.9171 ROC-AUC; tuned
     OCSVM 0.1355 PR-AUC; random 0.5091 / 0.0194; rolling-median residual features
     lift IsolationForest to 0.9999 / 0.9960 without NAB transfer. NSL-KDD probe:
-    0.8817 / 0.8916 at 56.9% test prevalence.
+    0.8877 / 0.8979 at 56.9% test prevalence.
 
     ## Protocol
 
@@ -337,14 +370,17 @@ sections:
       budget grid 0.5–8%, cooldown grid 6–72 h; objective is mean budgeted
       range-F1 over all 12 series × both feature sets (24 runs per point);
       adoption needs +0.05 over the documented (2%, 24 h) default; six
-      validation windows across five series; exactly one test pass per family.
+      validation windows across five series; exactly one test pass per family
+      (four families).
 
     ## Limits
 
-    - Range precision stays low (0.107 fixed budget; 0.306 budgeted), so
-      pages still mostly fire outside incidents; this supports alert-budget
-      design — not unattended paging or adaptive-threshold rollout — until
-      real-data precision and drift calibration improve.
+    - Range precision stays the limiting factor (0.107 fixed budget; 0.306
+      budgeted for the IsolationForest headline, 0.553 for the champion
+      ensemble on the rolling cell): even the champion fires roughly half
+      its pages outside incidents. This supports alert-budget design — not
+      unattended paging or adaptive-threshold rollout — until real-data
+      precision and drift calibration improve.
     - Synthetic anomalies are trivially separable: the residual fix's huge
       synthetic gain does not transfer to NAB, and the synthetic stream
       cannot show real precision.
@@ -364,9 +400,10 @@ sections:
       F --> G["Budgeted page stream<br/>the deployed artifact"]
     ```
 
-    **Business summary:** The committed recipe: fixed 2% budget, deduped
-    episodes, one page per series per day, IsolationForest at (0.5%, 24 h)
-    — 46 pages at range-F1 0.382, all of it reproducible.
+    **Business summary:** The committed recipe: rank-average ensemble of
+    the three families at the documented default (2%, 24 h) — 35 pages at
+    range-F1 0.533, recall 0.604 — with no tuning required; all of it
+    reproducible.
   figures: []
 roadmap:
 - status: delivered
@@ -379,8 +416,11 @@ roadmap:
   text: "Cut pages 1,609 → 80 at range-F1 0.157 → 0.315 across all sweep cells."
 - status: delivered
   text: "Validated train-side operating-point tuning: IsolationForest's adoption transfers, OCSVM's does not."
+- status: delivered
+  text: "Added the rank-average ensemble to the sweep: at the frozen default it halves the like-for-like paged load (66 → 35 pages, range-F1 0.388 → 0.533) at equal recall, and its flat validation surface keeps the default operating point."
 key_concepts:
 - "**Alert-budget stream** — the deployed artifact: deduplicated episodes capped at one page per series per 24 h, turning 1,609 raw alerts into 80 pages."
+- "**Rank-average ensemble** — scores each minute by the mean of its normalized ranks under IsolationForest, LOF, and OCSVM; it wins the sweep at the frozen default without recalibration or tuning."
 - "**Event-aware range-F1** — scores a labelled window detected once one alert lands inside it, measuring what an on-call engineer feels."
 - "**Past-only splits** — each series trains on its first 70% and scores a later span once, so no incident leaks into fitting or tuning."
 - "**Windows touched** — the raw share of labelled windows hit, reported apart from range recall's mean over all 12 series."
@@ -397,4 +437,4 @@ figure_captions:
   nab_timeline_nyc_taxi: "The NAB nyc_taxi test window downsampled to every second minute: 3 of 4 labelled windows touched, range recall 0.750, pointwise PR-AUC 0.462, and 179 alerts emitted. The miss remains visible rather than averaged away."
   nab_score_distribution: "IsolationForest scores across evaluable NAB series, split by in-window versus outside-window minutes. Their overlap explains why no tested threshold cleanly separates incidents from normal traffic."
   nab_alert_budget: "Event-aware range-F1 by NAB benchmark group across alert budgets. Only IsolationForest is evaluated here; the curve exposes the trade-off between event detection and false-alert load, not a cross-detector ranking."
-  nab_tune_surface: "Train-side operating-point selection surfaces: validation range-F1 of the budgeted alert stream vs per-series cooldown, one line per threshold budget, per detector family. The ring is the documented (2%, 24 h) default; only IsolationForest's (0.5%, 24 h) adoption clears the 0.05 margin and transfers to test."
+  nab_tune_surface: "Train-side operating-point selection surfaces: validation range-F1 of the budgeted alert stream vs per-series cooldown, one line per threshold budget, per detector family (four panels). The ring is the documented (2%, 24 h) default. Only IsolationForest's (0.5%, 24 h) adoption clears the 0.05 margin and transfers to test; the ensemble's flat surface (+0.010 at best) keeps the default — the winning candidate needs no tuning."

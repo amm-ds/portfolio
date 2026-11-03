@@ -42,7 +42,6 @@ from portfolio_core.logging import get_logger
 from portfolio_core.plotting import add_takeaway, apply_theme, save_json
 
 from anomaly_detection.config import AnomalyConfig
-from anomaly_detection.model import anomaly_scores, make_model
 from anomaly_detection.nab import (
     LEAD_STEPS,
     NAB_SERIES,
@@ -61,6 +60,7 @@ from anomaly_detection.nab_sweep import (
     cooldown_budget,
     episode_firing_times,
     evaluate_sweep_series,
+    fit_detector,
 )
 
 logger = get_logger(__name__)
@@ -112,13 +112,9 @@ def build_validation_run(
     x = feat.select(cols).to_numpy()
     times = feat["timestamp"].to_numpy()
 
-    model = make_model(detector, config)
-    if detector == "lof":
-        model.fit_predict(x[:n_inner])
-    else:
-        model.fit(x[:n_inner])
-    ref_scores = anomaly_scores(model, detector, x[:n_inner])
-    val_scores = anomaly_scores(model, detector, x[n_inner:n_train])
+    scorer = fit_detector(detector, x[:n_inner], config)
+    ref_scores = scorer(x[:n_inner])
+    val_scores = scorer(x[n_inner:n_train])
 
     ts_val = times[n_inner:n_train]
     y_val = windows_to_mask(ts_val, windows)

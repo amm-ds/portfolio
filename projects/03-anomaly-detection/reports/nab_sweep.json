@@ -4,7 +4,8 @@
     "detectors": [
       "isolation_forest",
       "lof",
-      "ocsvm"
+      "ocsvm",
+      "ensemble"
     ],
     "feature_sets": [
       "rolling",
@@ -1051,6 +1052,350 @@
           }
         }
       }
+    },
+    "ensemble+rolling": {
+      "overall": {
+        "range_f1": 0.4852451292668684,
+        "range_precision": 0.46291957794353694,
+        "range_recall": 0.7291666666666666,
+        "pr_auc": 0.5765649857953974,
+        "roc_auc": 0.7343437798166629,
+        "series_evaluated": 9,
+        "series_total": 12,
+        "events_detected": 16,
+        "events_missed": 1,
+        "alerts_fired": 1157,
+        "adaptive_drift_events": 0,
+        "streams": {
+          "raw": {
+            "alerts_fired": 1157,
+            "episodes": 1157,
+            "events_detected": 16,
+            "events_missed": 1,
+            "range_precision": 0.46291957794353694,
+            "range_recall": 0.7291666666666666,
+            "range_f1": 0.4852451292668684
+          },
+          "deduped": {
+            "alerts_fired": 151,
+            "episodes": 151,
+            "events_detected": 16,
+            "events_missed": 1,
+            "range_precision": 0.5046657046657047,
+            "range_recall": 0.7291666666666666,
+            "range_f1": 0.5372474747474748
+          },
+          "budgeted": {
+            "alerts_fired": 35,
+            "episodes": 35,
+            "events_detected": 13,
+            "events_missed": 4,
+            "range_precision": 0.5527777777777777,
+            "range_recall": 0.6041666666666666,
+            "range_f1": 0.5333333333333333
+          }
+        }
+      },
+      "by_family": {
+        "realAWSCloudwatch": {
+          "range_f1": 0.3125,
+          "range_precision": 0.2857142857142857,
+          "range_recall": 0.5,
+          "pr_auc": 0.465999562337195,
+          "roc_auc": 0.5819355837082518,
+          "series_evaluated": 2,
+          "series_total": 4,
+          "events_detected": 3,
+          "events_missed": 0,
+          "alerts_fired": 286,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 286,
+              "episodes": 286,
+              "events_detected": 3,
+              "events_missed": 0,
+              "range_precision": 0.2857142857142857,
+              "range_recall": 0.5,
+              "range_f1": 0.3125
+            },
+            "deduped": {
+              "alerts_fired": 73,
+              "episodes": 73,
+              "events_detected": 3,
+              "events_missed": 0,
+              "range_precision": 0.2857142857142857,
+              "range_recall": 0.5,
+              "range_f1": 0.3125
+            },
+            "budgeted": {
+              "alerts_fired": 12,
+              "episodes": 12,
+              "events_detected": 2,
+              "events_missed": 1,
+              "range_precision": 0.3333333333333333,
+              "range_recall": 0.375,
+              "range_f1": 0.35
+            }
+          }
+        },
+        "realKnownCause": {
+          "range_f1": 0.3932353878006052,
+          "range_precision": 0.3530444481163252,
+          "range_recall": 0.9375,
+          "pr_auc": 0.5005311822799191,
+          "roc_auc": 0.7363312871581889,
+          "series_evaluated": 4,
+          "series_total": 4,
+          "events_detected": 8,
+          "events_missed": 1,
+          "alerts_fired": 799,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 799,
+              "episodes": 799,
+              "events_detected": 8,
+              "events_missed": 1,
+              "range_precision": 0.3530444481163252,
+              "range_recall": 0.9375,
+              "range_f1": 0.3932353878006052
+            },
+            "deduped": {
+              "alerts_fired": 57,
+              "episodes": 57,
+              "events_detected": 8,
+              "events_missed": 1,
+              "range_precision": 0.4782828282828283,
+              "range_recall": 0.9375,
+              "range_f1": 0.5492424242424242
+            },
+            "budgeted": {
+              "alerts_fired": 19,
+              "episodes": 19,
+              "events_detected": 8,
+              "events_missed": 1,
+              "range_precision": 0.575,
+              "range_recall": 0.9375,
+              "range_f1": 0.6666666666666666
+            }
+          }
+        },
+        "realTraffic": {
+          "range_f1": 0.75,
+          "range_precision": 0.75,
+          "range_recall": 0.75,
+          "pr_auc": 0.7516536727881702,
+          "roc_auc": 0.8332992341002358,
+          "series_evaluated": 3,
+          "series_total": 4,
+          "events_detected": 5,
+          "events_missed": 0,
+          "alerts_fired": 72,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 72,
+              "episodes": 72,
+              "events_detected": 5,
+              "events_missed": 0,
+              "range_precision": 0.75,
+              "range_recall": 0.75,
+              "range_f1": 0.75
+            },
+            "deduped": {
+              "alerts_fired": 21,
+              "episodes": 21,
+              "events_detected": 5,
+              "events_missed": 0,
+              "range_precision": 0.75,
+              "range_recall": 0.75,
+              "range_f1": 0.75
+            },
+            "budgeted": {
+              "alerts_fired": 4,
+              "episodes": 4,
+              "events_detected": 3,
+              "events_missed": 2,
+              "range_precision": 0.75,
+              "range_recall": 0.5,
+              "range_f1": 0.5833333333333333
+            }
+          }
+        }
+      }
+    },
+    "ensemble+rolling_residual": {
+      "overall": {
+        "range_f1": 0.3158080808080808,
+        "range_precision": 0.2578441720422314,
+        "range_recall": 0.7291666666666666,
+        "pr_auc": 0.5663076257619712,
+        "roc_auc": 0.7305689228769636,
+        "series_evaluated": 9,
+        "series_total": 12,
+        "events_detected": 16,
+        "events_missed": 1,
+        "alerts_fired": 1003,
+        "adaptive_drift_events": 0,
+        "streams": {
+          "raw": {
+            "alerts_fired": 1003,
+            "episodes": 1003,
+            "events_detected": 16,
+            "events_missed": 1,
+            "range_precision": 0.2578441720422314,
+            "range_recall": 0.7291666666666666,
+            "range_f1": 0.3158080808080808
+          },
+          "deduped": {
+            "alerts_fired": 144,
+            "episodes": 144,
+            "events_detected": 16,
+            "events_missed": 1,
+            "range_precision": 0.2894408831908832,
+            "range_recall": 0.7291666666666666,
+            "range_f1": 0.36365740740740743
+          },
+          "budgeted": {
+            "alerts_fired": 45,
+            "episodes": 45,
+            "events_detected": 12,
+            "events_missed": 5,
+            "range_precision": 0.3471320346320346,
+            "range_recall": 0.5625,
+            "range_f1": 0.36527777777777776
+          }
+        }
+      },
+      "by_family": {
+        "realAWSCloudwatch": {
+          "range_f1": 0.15555555555555556,
+          "range_precision": 0.09375,
+          "range_recall": 0.5,
+          "pr_auc": 0.4599782117688921,
+          "roc_auc": 0.578781676628799,
+          "series_evaluated": 2,
+          "series_total": 4,
+          "events_detected": 3,
+          "events_missed": 0,
+          "alerts_fired": 148,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 148,
+              "episodes": 148,
+              "events_detected": 3,
+              "events_missed": 0,
+              "range_precision": 0.09375,
+              "range_recall": 0.5,
+              "range_f1": 0.15555555555555556
+            },
+            "deduped": {
+              "alerts_fired": 58,
+              "episodes": 58,
+              "events_detected": 3,
+              "events_missed": 0,
+              "range_precision": 0.09375,
+              "range_recall": 0.5,
+              "range_f1": 0.15555555555555556
+            },
+            "budgeted": {
+              "alerts_fired": 10,
+              "episodes": 10,
+              "events_detected": 2,
+              "events_missed": 1,
+              "range_precision": 0.16666666666666666,
+              "range_recall": 0.375,
+              "range_f1": 0.225
+            }
+          }
+        },
+        "realKnownCause": {
+          "range_f1": 0.20853535353535352,
+          "range_precision": 0.1297825161266942,
+          "range_recall": 0.9375,
+          "pr_auc": 0.4896853836503124,
+          "roc_auc": 0.7309356908188327,
+          "series_evaluated": 4,
+          "series_total": 4,
+          "events_detected": 8,
+          "events_missed": 1,
+          "alerts_fired": 795,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 795,
+              "episodes": 795,
+              "events_detected": 8,
+              "events_missed": 1,
+              "range_precision": 0.1297825161266942,
+              "range_recall": 0.9375,
+              "range_f1": 0.20853535353535352
+            },
+            "deduped": {
+              "alerts_fired": 67,
+              "episodes": 67,
+              "events_detected": 8,
+              "events_missed": 1,
+              "range_precision": 0.21207264957264954,
+              "range_recall": 0.9375,
+              "range_f1": 0.3354166666666667
+            },
+            "budgeted": {
+              "alerts_fired": 30,
+              "episodes": 30,
+              "events_detected": 7,
+              "events_missed": 2,
+              "range_precision": 0.24972943722943722,
+              "range_recall": 0.8125,
+              "range_f1": 0.3708333333333333
+            }
+          }
+        },
+        "realTraffic": {
+          "range_f1": 0.5833333333333334,
+          "range_precision": 0.55,
+          "range_recall": 0.75,
+          "pr_auc": 0.7393568912395693,
+          "roc_auc": 0.8312713964532481,
+          "series_evaluated": 3,
+          "series_total": 4,
+          "events_detected": 5,
+          "events_missed": 0,
+          "alerts_fired": 60,
+          "adaptive_drift_events": 0,
+          "streams": {
+            "raw": {
+              "alerts_fired": 60,
+              "episodes": 60,
+              "events_detected": 5,
+              "events_missed": 0,
+              "range_precision": 0.55,
+              "range_recall": 0.75,
+              "range_f1": 0.5833333333333334
+            },
+            "deduped": {
+              "alerts_fired": 19,
+              "episodes": 19,
+              "events_detected": 5,
+              "events_missed": 0,
+              "range_precision": 0.5625,
+              "range_recall": 0.75,
+              "range_f1": 0.6
+            },
+            "budgeted": {
+              "alerts_fired": 5,
+              "episodes": 5,
+              "events_detected": 3,
+              "events_missed": 2,
+              "range_precision": 0.625,
+              "range_recall": 0.5,
+              "range_f1": 0.5
+            }
+          }
+        }
+      }
     }
   },
   "series": {
@@ -1372,6 +1717,112 @@
         ]
       ]
     },
+    "realAWSCloudwatch/ec2_cpu_utilization_24ae8d|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.337248322147651,
+      "pr_auc": 0.49246236839035756,
+      "roc_auc": 0.5829413061275899,
+      "threshold": 0.9046043165467628,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 88,
+          "episodes": 88,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.14285714285714285,
+          "range_recall": 1.0,
+          "range_f1": 0.25
+        },
+        "deduped": {
+          "alerts_fired": 19,
+          "episodes": 19,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.14285714285714285,
+          "range_recall": 1.0,
+          "range_f1": 0.25
+        },
+        "budgeted": {
+          "alerts_fired": 3,
+          "episodes": 3,
+          "events_detected": 1,
+          "events_missed": 1,
+          "range_precision": 0.3333333333333333,
+          "range_recall": 0.5,
+          "range_f1": 0.4
+        }
+      },
+      "windows": [
+        [
+          "2014-02-26 13:45:00.000000",
+          "2014-02-27 06:25:00.000000"
+        ],
+        [
+          "2014-02-27 08:55:00.000000",
+          "2014-02-28 01:35:00.000000"
+        ]
+      ]
+    },
+    "realAWSCloudwatch/ec2_cpu_utilization_24ae8d|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.337248322147651,
+      "pr_auc": 0.48299597338779837,
+      "roc_auc": 0.583975691164431,
+      "threshold": 0.8935731414868106,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 77,
+          "episodes": 77,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.125,
+          "range_recall": 1.0,
+          "range_f1": 0.2222222222222222
+        },
+        "deduped": {
+          "alerts_fired": 30,
+          "episodes": 30,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.125,
+          "range_recall": 1.0,
+          "range_f1": 0.2222222222222222
+        },
+        "budgeted": {
+          "alerts_fired": 3,
+          "episodes": 3,
+          "events_detected": 1,
+          "events_missed": 1,
+          "range_precision": 0.3333333333333333,
+          "range_recall": 0.5,
+          "range_f1": 0.4
+        }
+      },
+      "windows": [
+        [
+          "2014-02-26 13:45:00.000000",
+          "2014-02-27 06:25:00.000000"
+        ],
+        [
+          "2014-02-27 08:55:00.000000",
+          "2014-02-28 01:35:00.000000"
+        ]
+      ]
+    },
     "realAWSCloudwatch/ec2_cpu_utilization_53ea38|isolation_forest+rolling": {
       "detector": "isolation_forest",
       "feature_set": "rolling",
@@ -1618,6 +2069,94 @@
         "deduped": {
           "alerts_fired": 16,
           "episodes": 16,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "budgeted": {
+          "alerts_fired": 4,
+          "episodes": 4,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        }
+      },
+      "windows": []
+    },
+    "realAWSCloudwatch/ec2_cpu_utilization_53ea38|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 0,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "threshold": 0.934508393285372,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 21,
+          "episodes": 21,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "deduped": {
+          "alerts_fired": 18,
+          "episodes": 18,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "budgeted": {
+          "alerts_fired": 4,
+          "episodes": 4,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        }
+      },
+      "windows": []
+    },
+    "realAWSCloudwatch/ec2_cpu_utilization_53ea38|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 0,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "threshold": 0.9464988009592327,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 18,
+          "episodes": 18,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "deduped": {
+          "alerts_fired": 17,
+          "episodes": 17,
           "events_detected": 0,
           "events_missed": 0,
           "range_precision": 0.0,
@@ -1891,6 +2430,94 @@
         "budgeted": {
           "alerts_fired": 4,
           "episodes": 4,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        }
+      },
+      "windows": []
+    },
+    "realAWSCloudwatch/ec2_disk_write_bytes_1ef3de|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 4671,
+      "n_test": 1402,
+      "n_windows": 0,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "threshold": 0.7851856385148914,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 136,
+          "episodes": 136,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "deduped": {
+          "alerts_fired": 28,
+          "episodes": 28,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "budgeted": {
+          "alerts_fired": 4,
+          "episodes": 4,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        }
+      },
+      "windows": []
+    },
+    "realAWSCloudwatch/ec2_disk_write_bytes_1ef3de|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 4671,
+      "n_test": 1402,
+      "n_windows": 0,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "threshold": 0.8895267237862096,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 0,
+          "episodes": 0,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "deduped": {
+          "alerts_fired": 0,
+          "episodes": 0,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "budgeted": {
+          "alerts_fired": 0,
+          "episodes": 0,
           "events_detected": 0,
           "events_missed": 0,
           "range_precision": 0.0,
@@ -2194,6 +2821,104 @@
         ]
       ]
     },
+    "realAWSCloudwatch/elb_request_count_8c0756|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 1,
+      "evaluable": true,
+      "point_prevalence": 0.1686241610738255,
+      "pr_auc": 0.43953675628403244,
+      "roc_auc": 0.5809298612889137,
+      "threshold": 0.9617026378896882,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 41,
+          "episodes": 41,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "deduped": {
+          "alerts_fired": 8,
+          "episodes": 8,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        }
+      },
+      "windows": [
+        [
+          "2014-04-22 11:14:00.000000",
+          "2014-04-23 03:54:00.000000"
+        ]
+      ]
+    },
+    "realAWSCloudwatch/elb_request_count_8c0756|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 1,
+      "evaluable": true,
+      "point_prevalence": 0.1686241610738255,
+      "pr_auc": 0.43696045014998575,
+      "roc_auc": 0.5735876620931668,
+      "threshold": 0.9557314148681056,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 53,
+          "episodes": 53,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.25,
+          "range_recall": 1.0,
+          "range_f1": 0.4
+        },
+        "deduped": {
+          "alerts_fired": 11,
+          "episodes": 11,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.25,
+          "range_recall": 1.0,
+          "range_f1": 0.4
+        },
+        "budgeted": {
+          "alerts_fired": 3,
+          "episodes": 3,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.3333333333333333,
+          "range_recall": 1.0,
+          "range_f1": 0.5
+        }
+      },
+      "windows": [
+        [
+          "2014-04-22 11:14:00.000000",
+          "2014-04-23 03:54:00.000000"
+        ]
+      ]
+    },
     "realKnownCause/ambient_temperature_system_failure|isolation_forest+rolling": {
       "detector": "isolation_forest",
       "feature_set": "rolling",
@@ -2479,6 +3204,104 @@
           "range_precision": 0.04,
           "range_recall": 1.0,
           "range_f1": 0.07692307692307693
+        }
+      },
+      "windows": [
+        [
+          "2014-03-29 15:00:00.000000",
+          "2014-04-20 22:00:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/ambient_temperature_system_failure|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 7208,
+      "n_test": 2163,
+      "n_windows": 1,
+      "evaluable": true,
+      "point_prevalence": 0.1678224687933426,
+      "pr_auc": 0.2764488277470633,
+      "roc_auc": 0.6274732170186716,
+      "threshold": 0.9262569389373513,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 115,
+          "episodes": 115,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.014705882352941176,
+          "range_recall": 1.0,
+          "range_f1": 0.028985507246376812
+        },
+        "deduped": {
+          "alerts_fired": 14,
+          "episodes": 14,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.09090909090909091,
+          "range_recall": 1.0,
+          "range_f1": 0.16666666666666669
+        },
+        "budgeted": {
+          "alerts_fired": 7,
+          "episodes": 7,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.2,
+          "range_recall": 1.0,
+          "range_f1": 0.33333333333333337
+        }
+      },
+      "windows": [
+        [
+          "2014-03-29 15:00:00.000000",
+          "2014-04-20 22:00:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/ambient_temperature_system_failure|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 7208,
+      "n_test": 2163,
+      "n_windows": 1,
+      "evaluable": true,
+      "point_prevalence": 0.1678224687933426,
+      "pr_auc": 0.2623314023448699,
+      "roc_auc": 0.6301752372206918,
+      "threshold": 0.9341289981496166,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 98,
+          "episodes": 98,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.018518518518518517,
+          "range_recall": 1.0,
+          "range_f1": 0.03636363636363636
+        },
+        "deduped": {
+          "alerts_fired": 12,
+          "episodes": 12,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.1111111111111111,
+          "range_recall": 1.0,
+          "range_f1": 0.19999999999999998
+        },
+        "budgeted": {
+          "alerts_fired": 8,
+          "episodes": 8,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.14285714285714285,
+          "range_recall": 1.0,
+          "range_f1": 0.25
         }
       },
       "windows": [
@@ -2793,6 +3616,112 @@
           "range_precision": 0.3333333333333333,
           "range_recall": 0.5,
           "range_f1": 0.4
+        }
+      },
+      "windows": [
+        [
+          "2014-01-27 14:20:00.000000",
+          "2014-01-29 13:30:00.000000"
+        ],
+        [
+          "2014-02-07 14:55:00.000000",
+          "2014-02-09 14:05:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/machine_temperature_system_failure|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 22636,
+      "n_test": 6791,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.16698571638933882,
+      "pr_auc": 0.6135914016943653,
+      "roc_auc": 0.8331962335998634,
+      "threshold": 0.8776950265084573,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 469,
+          "episodes": 469,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.02247191011235955,
+          "range_recall": 1.0,
+          "range_f1": 0.04395604395604395
+        },
+        "deduped": {
+          "alerts_fired": 31,
+          "episodes": 31,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.2222222222222222,
+          "range_recall": 1.0,
+          "range_f1": 0.3636363636363636
+        },
+        "budgeted": {
+          "alerts_fired": 5,
+          "episodes": 5,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.5,
+          "range_recall": 1.0,
+          "range_f1": 0.6666666666666666
+        }
+      },
+      "windows": [
+        [
+          "2014-01-27 14:20:00.000000",
+          "2014-01-29 13:30:00.000000"
+        ],
+        [
+          "2014-02-07 14:55:00.000000",
+          "2014-02-09 14:05:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/machine_temperature_system_failure|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 22636,
+      "n_test": 6791,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.16698571638933882,
+      "pr_auc": 0.6380965254599759,
+      "roc_auc": 0.8305854930243592,
+      "threshold": 0.884751325422873,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 519,
+          "episodes": 519,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.0273972602739726,
+          "range_recall": 1.0,
+          "range_f1": 0.05333333333333332
+        },
+        "deduped": {
+          "alerts_fired": 23,
+          "episodes": 23,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.15384615384615385,
+          "range_recall": 1.0,
+          "range_f1": 0.2666666666666667
+        },
+        "budgeted": {
+          "alerts_fired": 7,
+          "episodes": 7,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.3333333333333333,
+          "range_recall": 1.0,
+          "range_f1": 0.5
         }
       },
       "windows": [
@@ -3172,6 +4101,128 @@
         ]
       ]
     },
+    "realKnownCause/nyc_taxi|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 10261,
+      "n_test": 3079,
+      "n_windows": 4,
+      "evaluable": true,
+      "point_prevalence": 0.21662877557648588,
+      "pr_auc": 0.5584048794345517,
+      "roc_auc": 0.739908341848976,
+      "threshold": 0.938927725943462,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 146,
+          "episodes": 146,
+          "events_detected": 3,
+          "events_missed": 1,
+          "range_precision": 0.375,
+          "range_recall": 0.75,
+          "range_f1": 0.5
+        },
+        "deduped": {
+          "alerts_fired": 7,
+          "episodes": 7,
+          "events_detected": 3,
+          "events_missed": 1,
+          "range_precision": 0.6,
+          "range_recall": 0.75,
+          "range_f1": 0.6666666666666665
+        },
+        "budgeted": {
+          "alerts_fired": 5,
+          "episodes": 5,
+          "events_detected": 3,
+          "events_missed": 1,
+          "range_precision": 0.6,
+          "range_recall": 0.75,
+          "range_f1": 0.6666666666666665
+        }
+      },
+      "windows": [
+        [
+          "2014-11-25 12:00:00.000000",
+          "2014-11-29 19:00:00.000000"
+        ],
+        [
+          "2014-12-23 11:30:00.000000",
+          "2014-12-27 18:30:00.000000"
+        ],
+        [
+          "2014-12-29 21:30:00.000000",
+          "2015-01-03 04:30:00.000000"
+        ],
+        [
+          "2015-01-24 20:30:00.000000",
+          "2015-01-29 03:30:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/nyc_taxi|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 10261,
+      "n_test": 3079,
+      "n_windows": 4,
+      "evaluable": true,
+      "point_prevalence": 0.21662877557648588,
+      "pr_auc": 0.5341839266973949,
+      "roc_auc": 0.728140904672042,
+      "threshold": 0.9330808151139582,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 129,
+          "episodes": 129,
+          "events_detected": 3,
+          "events_missed": 1,
+          "range_precision": 0.1875,
+          "range_recall": 0.75,
+          "range_f1": 0.3
+        },
+        "deduped": {
+          "alerts_fired": 16,
+          "episodes": 16,
+          "events_detected": 3,
+          "events_missed": 1,
+          "range_precision": 0.25,
+          "range_recall": 0.75,
+          "range_f1": 0.375
+        },
+        "budgeted": {
+          "alerts_fired": 11,
+          "episodes": 11,
+          "events_detected": 3,
+          "events_missed": 1,
+          "range_precision": 0.2727272727272727,
+          "range_recall": 0.75,
+          "range_f1": 0.39999999999999997
+        }
+      },
+      "windows": [
+        [
+          "2014-11-25 12:00:00.000000",
+          "2014-11-29 19:00:00.000000"
+        ],
+        [
+          "2014-12-23 11:30:00.000000",
+          "2014-12-27 18:30:00.000000"
+        ],
+        [
+          "2014-12-29 21:30:00.000000",
+          "2015-01-03 04:30:00.000000"
+        ],
+        [
+          "2015-01-24 20:30:00.000000",
+          "2015-01-29 03:30:00.000000"
+        ]
+      ]
+    },
     "realKnownCause/ec2_request_latency_system_failure|isolation_forest+rolling": {
       "detector": "isolation_forest",
       "feature_set": "rolling",
@@ -3477,6 +4528,112 @@
           "range_precision": 0.0,
           "range_recall": 0.0,
           "range_f1": 0.0
+        }
+      },
+      "windows": [
+        [
+          "2014-03-18 17:06:00.000000",
+          "2014-03-19 04:16:00.000000"
+        ],
+        [
+          "2014-03-20 21:26:00.000000",
+          "2014-03-21 03:41:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/ec2_request_latency_system_failure|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.17701342281879195,
+      "pr_auc": 0.553679620243696,
+      "roc_auc": 0.744747356165244,
+      "threshold": 0.946474820143885,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 69,
+          "episodes": 69,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "deduped": {
+          "alerts_fired": 5,
+          "episodes": 5,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "budgeted": {
+          "alerts_fired": 2,
+          "episodes": 2,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        }
+      },
+      "windows": [
+        [
+          "2014-03-18 17:06:00.000000",
+          "2014-03-19 04:16:00.000000"
+        ],
+        [
+          "2014-03-20 21:26:00.000000",
+          "2014-03-21 03:41:00.000000"
+        ]
+      ]
+    },
+    "realKnownCause/ec2_request_latency_system_failure|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 3973,
+      "n_test": 1192,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.17701342281879195,
+      "pr_auc": 0.524129680099009,
+      "roc_auc": 0.7348411283582377,
+      "threshold": 0.9448441247002399,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 49,
+          "episodes": 49,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.2857142857142857,
+          "range_recall": 1.0,
+          "range_f1": 0.4444444444444445
+        },
+        "deduped": {
+          "alerts_fired": 16,
+          "episodes": 16,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 0.3333333333333333,
+          "range_recall": 1.0,
+          "range_f1": 0.5
+        },
+        "budgeted": {
+          "alerts_fired": 4,
+          "episodes": 4,
+          "events_detected": 1,
+          "events_missed": 1,
+          "range_precision": 0.25,
+          "range_recall": 0.5,
+          "range_f1": 0.3333333333333333
         }
       },
       "windows": [
@@ -3808,6 +4965,112 @@
         ]
       ]
     },
+    "realTraffic/speed_7578|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 1068,
+      "n_test": 321,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.1806853582554517,
+      "pr_auc": 0.7787356645472385,
+      "roc_auc": 0.8574472269568638,
+      "threshold": 0.9484182305630032,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 6,
+          "episodes": 6,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "deduped": {
+          "alerts_fired": 4,
+          "episodes": 4,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
+          "events_detected": 1,
+          "events_missed": 1,
+          "range_precision": 1.0,
+          "range_recall": 0.5,
+          "range_f1": 0.6666666666666666
+        }
+      },
+      "windows": [
+        [
+          "2015-09-16 13:04:00.000000",
+          "2015-09-16 15:20:00.000000"
+        ],
+        [
+          "2015-09-16 16:00:00.000000",
+          "2015-09-16 18:20:00.000000"
+        ]
+      ]
+    },
+    "realTraffic/speed_7578|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 1068,
+      "n_test": 321,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.1806853582554517,
+      "pr_auc": 0.8007475633092938,
+      "roc_auc": 0.8667234823652813,
+      "threshold": 0.9731367292225204,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 2,
+          "episodes": 2,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "deduped": {
+          "alerts_fired": 2,
+          "episodes": 2,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
+          "events_detected": 1,
+          "events_missed": 1,
+          "range_precision": 1.0,
+          "range_recall": 0.5,
+          "range_f1": 0.6666666666666666
+        }
+      },
+      "windows": [
+        [
+          "2015-09-16 13:04:00.000000",
+          "2015-09-16 15:20:00.000000"
+        ],
+        [
+          "2015-09-16 16:00:00.000000",
+          "2015-09-16 18:20:00.000000"
+        ]
+      ]
+    },
     "realTraffic/speed_6005|isolation_forest+rolling": {
       "detector": "isolation_forest",
       "feature_set": "rolling",
@@ -4102,6 +5365,104 @@
         ]
       ]
     },
+    "realTraffic/speed_6005|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 1,
+      "evaluable": true,
+      "point_prevalence": 0.32605729877216916,
+      "pr_auc": 0.5900590778348107,
+      "roc_auc": 0.7125167279318348,
+      "threshold": 0.9607303261081819,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 17,
+          "episodes": 17,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "deduped": {
+          "alerts_fired": 4,
+          "episodes": 4,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        }
+      },
+      "windows": [
+        [
+          "2015-09-16 18:40:00.000000",
+          "2015-09-17 16:24:00.000000"
+        ]
+      ]
+    },
+    "realTraffic/speed_6005|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 1,
+      "evaluable": true,
+      "point_prevalence": 0.32605729877216916,
+      "pr_auc": 0.5421209676678188,
+      "roc_auc": 0.6975420527501567,
+      "threshold": 0.9486467486818979,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 24,
+          "episodes": 24,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.2,
+          "range_recall": 1.0,
+          "range_f1": 0.33333333333333337
+        },
+        "deduped": {
+          "alerts_fired": 10,
+          "episodes": 10,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.25,
+          "range_recall": 1.0,
+          "range_f1": 0.4
+        },
+        "budgeted": {
+          "alerts_fired": 2,
+          "episodes": 2,
+          "events_detected": 1,
+          "events_missed": 0,
+          "range_precision": 0.5,
+          "range_recall": 1.0,
+          "range_f1": 0.6666666666666666
+        }
+      },
+      "windows": [
+        [
+          "2015-09-16 18:40:00.000000",
+          "2015-09-17 16:24:00.000000"
+        ]
+      ]
+    },
     "realTraffic/TravelTime_387|isolation_forest+rolling": {
       "detector": "isolation_forest",
       "feature_set": "rolling",
@@ -4357,6 +5718,94 @@
         "budgeted": {
           "alerts_fired": 3,
           "episodes": 3,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        }
+      },
+      "windows": []
+    },
+    "realTraffic/TravelTime_387|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 0,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "threshold": 0.9370123022847099,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 19,
+          "episodes": 19,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "deduped": {
+          "alerts_fired": 6,
+          "episodes": 6,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        }
+      },
+      "windows": []
+    },
+    "realTraffic/TravelTime_387|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 0,
+      "evaluable": false,
+      "point_prevalence": 0.0,
+      "pr_auc": null,
+      "roc_auc": null,
+      "threshold": 0.9464518648701421,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 10,
+          "episodes": 10,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "deduped": {
+          "alerts_fired": 3,
+          "episodes": 3,
+          "events_detected": 0,
+          "events_missed": 0,
+          "range_precision": 0.0,
+          "range_recall": 0.0,
+          "range_f1": 0.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
           "events_detected": 0,
           "events_missed": 0,
           "range_precision": 0.0,
@@ -4671,6 +6120,112 @@
           "range_precision": 0.0,
           "range_recall": 0.0,
           "range_f1": 0.0
+        }
+      },
+      "windows": [
+        [
+          "2015-09-16 00:59:00.000000",
+          "2015-09-16 13:19:00.000000"
+        ],
+        [
+          "2015-09-17 00:20:00.000000",
+          "2015-09-17 13:10:00.000000"
+        ]
+      ]
+    },
+    "realTraffic/occupancy_t4013|ensemble+rolling": {
+      "detector": "ensemble",
+      "feature_set": "rolling",
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.34106412005457026,
+      "pr_auc": 0.8861662759824614,
+      "roc_auc": 0.9299337474120082,
+      "threshold": 0.948857644991212,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 30,
+          "episodes": 30,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "deduped": {
+          "alerts_fired": 7,
+          "episodes": 7,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
+          "events_detected": 1,
+          "events_missed": 1,
+          "range_precision": 1.0,
+          "range_recall": 0.5,
+          "range_f1": 0.6666666666666666
+        }
+      },
+      "windows": [
+        [
+          "2015-09-16 00:59:00.000000",
+          "2015-09-16 13:19:00.000000"
+        ],
+        [
+          "2015-09-17 00:20:00.000000",
+          "2015-09-17 13:10:00.000000"
+        ]
+      ]
+    },
+    "realTraffic/occupancy_t4013|ensemble+rolling_residual": {
+      "detector": "ensemble",
+      "feature_set": "rolling_residual",
+      "n_points": 2441,
+      "n_test": 733,
+      "n_windows": 2,
+      "evaluable": true,
+      "point_prevalence": 0.34106412005457026,
+      "pr_auc": 0.8752021427415951,
+      "roc_auc": 0.9295486542443064,
+      "threshold": 0.9617301308338213,
+      "threshold_budget": 0.02,
+      "cooldown_hours": 24.0,
+      "streams": {
+        "raw": {
+          "alerts_fired": 24,
+          "episodes": 24,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "deduped": {
+          "alerts_fired": 4,
+          "episodes": 4,
+          "events_detected": 2,
+          "events_missed": 0,
+          "range_precision": 1.0,
+          "range_recall": 1.0,
+          "range_f1": 1.0
+        },
+        "budgeted": {
+          "alerts_fired": 1,
+          "episodes": 1,
+          "events_detected": 1,
+          "events_missed": 1,
+          "range_precision": 1.0,
+          "range_recall": 0.5,
+          "range_f1": 0.6666666666666666
         }
       },
       "windows": [
