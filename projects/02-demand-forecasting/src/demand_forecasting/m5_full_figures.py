@@ -60,9 +60,7 @@ def fig_sample_series(
     ``catalog_forecasts.parquet`` — the payload's curves are verbatim copies
     of it (self-check drift 0.0), so the two join exactly.
     """
-    history_of = {
-        e["series_id"]: e["windows"]["history"] for e in payload["catalog"]
-    }
+    history_of = {e["series_id"]: e["windows"]["history"] for e in payload["catalog"]}
     ranks = {d["unique_id"]: d for d in cat_meta["series"]}
     n = len(SAMPLE_SERIES)
     fig = make_subplots(

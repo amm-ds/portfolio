@@ -1020,6 +1020,18 @@ select:focus-visible,
   color: var(--accent);
 }
 
+/* Inline links inside prose/intro text need a non-color cue (axe
+   link-in-text-block): underline every bare anchor; glossary terms keep
+   their dotted style. */
+.story-section .prose a:not(.glossary-term),
+.section-intro a:not(.glossary-term),
+.bi-card a:not(.glossary-term),
+.glossary-card-hint a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 /* --- Glossary: auto-linked terms in prose + per-project card + /glossary page --- */
 
 a.glossary-term {

@@ -275,7 +275,9 @@ describe("ProjectsIndex", () => {
     expect(demos.querySelectorAll(".demo-grid")).toHaveLength(1);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
-    expect(demoCards[0].getAttribute("aria-label")).toBe("churn threshold sandbox");
+    // the card link's accessible name is its visible text (no aria-label
+    // override — axe label-content-name-mismatch)
+    expect(demoCards[0].getAttribute("aria-label")).toBeNull();
     // the labeled "description" block comes from the digit-free display line
     const labels = [...demoCards[0].querySelectorAll(".study-block-label")].map(
       (el) => el.textContent,

@@ -158,7 +158,7 @@ function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
     />
   );
   return data.href ? (
-    <Link to={data.href} className="demo-card study-card" aria-label={data.title}>
+    <Link to={data.href} className="demo-card study-card">
       {body}
     </Link>
   ) : (
