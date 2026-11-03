@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
 import { Card } from "../components/Card";
-import { CONTACT_EMAIL, REPO_URL } from "../config";
+import { EmailIcon, GitHubIcon, LinkedInIcon, PhoneIcon } from "../components/channelIcons";
+import { CONTACT_EMAIL, LINKEDIN_URL, REPO_URL } from "../config";
 import { usePageMeta } from "../seo";
 
 /** Career history as a roadmap-style vertical timeline — generic industry
@@ -60,12 +62,31 @@ const ROLES = [
   },
 ];
 
-const EDUCATION = [
-  "Master in Big Data & Business Intelligence (UOC)",
-  "Business & IT (UAB)",
-  "Postgraduate in financial markets (UA)",
-  "MITx — Machine Learning with Python",
-  "GCP Big Data & ML fundamentals",
+const CONTACT_CHANNELS: { name: string; address: string; href: string; icon: ReactNode }[] = [
+  {
+    name: "Phone",
+    address: "+34 670 881 697",
+    href: "tel:+34670881697",
+    icon: <PhoneIcon />,
+  },
+  {
+    name: "Email",
+    address: CONTACT_EMAIL,
+    href: `mailto:${CONTACT_EMAIL}`,
+    icon: <EmailIcon />,
+  },
+  {
+    name: "GitHub",
+    address: "github.com/amm-ds",
+    href: REPO_URL,
+    icon: <GitHubIcon />,
+  },
+  {
+    name: "LinkedIn",
+    address: "linkedin/in/alejandro-mérida-maroto",
+    href: LINKEDIN_URL,
+    icon: <LinkedInIcon />,
+  },
 ];
 
 /** How the work runs — the practices behind every case study and every
@@ -99,6 +120,14 @@ const PRACTICES = [
     title: "plain-language reporting",
     text: "findings are written for decision-makers, not practitioners — what was measured, what it shows, and where it stops holding.",
   },
+  {
+    title: "small, reversible changes",
+    text: "work lands in small, reversible steps — every change stays reviewable, and any step can be reverted without archaeology.",
+  },
+  {
+    title: "public by default",
+    text: "code, metrics and case studies are public — the work is checked, not trusted, and every number can be re-run from the repository.",
+  },
 ];
 
 export function About() {
@@ -119,26 +148,29 @@ export function About() {
           I design, build and evaluate ML systems end to end, and I keep the code, metrics
           and case studies public and auditable.
         </p>
-        <ul className="about-contact">
-          <li>Barcelona</li>
-          <li>
-            <a href="tel:+34670881697">+34 670 881 697</a>
-          </li>
-          <li>
-            <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </li>
-          <li>
-            <a href={REPO_URL} target="_blank" rel="noreferrer">
-              github.com/amm-ds
+        <div className="channel-grid channel-grid--4">
+          {CONTACT_CHANNELS.map((c) => (
+            <a
+              key={c.name}
+              className="channel-card"
+              href={c.href}
+              target={c.href.startsWith("http") ? "_blank" : undefined}
+              rel={c.href.startsWith("http") ? "noopener noreferrer" : undefined}
+            >
+              <span className="channel-icon">{c.icon}</span>
+              <span className="channel-text">
+                <span className="channel-name">{c.name}</span>
+                <span className="channel-address">{c.address}</span>
+              </span>
             </a>
-          </li>
-          <li>Spanish · Catalan · English</li>
-        </ul>
+          ))}
+        </div>
+        <p className="about-facts">Barcelona · Spanish · Catalan · English</p>
       </section>
 
       <h2 className="section-title">how I work</h2>
       <p className="section-intro">
-        Seven practices run through every engagement and every case study on this site.
+        Nine practices run through every engagement and every case study on this site.
       </p>
       <div className="practices-grid">
         {PRACTICES.map((p) => (
@@ -163,15 +195,6 @@ export function About() {
           </li>
         ))}
       </ol>
-
-      <h2 className="section-title">education &amp; certifications</h2>
-      <Card className="education-card">
-        <ul>
-          {EDUCATION.map((e) => (
-            <li key={e}>{e}</li>
-          ))}
-        </ul>
-      </Card>
     </>
   );
 }

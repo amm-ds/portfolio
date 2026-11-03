@@ -11,10 +11,10 @@ export const HERO_SCRIPT = [
     output:
       "artificial intelligence · machine learning · optimization · data engineering · mlops · full-stack engineering",
   },
-  { cmd: "stack", output: "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama/mlx · docker · dvc · uv" },
+  { cmd: "stack", output: "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama · docker · dvc · uv" },
   {
     cmd: "principles",
-    output: "reproducible pipelines · honest baselines · production-grade code · models propose, risk disposes",
+    output: "reproducible pipelines · honest baselines · production-grade code · small, reversible changes — every step stays reviewable",
   },
 ];
 
@@ -36,7 +36,7 @@ const GO_LINKS = [
   {
     to: "/contact",
     label: "contact",
-    line: `Availability, languages, timezone overlap — replies within ${AVAILABILITY.replyHours} hours on business days.`,
+    line: `Availability, languages, timezone overlap — replies within ${AVAILABILITY.replyHours}h on business days.`,
   },
 ];
 
@@ -108,7 +108,7 @@ export function Home() {
       <p className="home-status">
         <span className="status-dot" aria-hidden="true" />
         {AVAILABILITY.status} · <Link to="/contact">→ /contact</Link>
-        <span className="status-note"> — typical reply within {AVAILABILITY.replyHours}h</span>
+        <span className="status-note"> — replies within {AVAILABILITY.replyHours}h</span>
       </p>
     </>
   );

@@ -64,14 +64,21 @@ describe("Home (terminal-centered)", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama/mlx · docker · dvc · uv",
+        "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama · docker · dvc · uv",
       ),
     ).toBeInTheDocument();
+    // mlx is off the stack list; ollama stays
+    expect(screen.queryByText(/mlx/i)).toBeNull();
+    const stackLine = screen.getByText(/typescript\/react/);
+    expect(stackLine.textContent).toContain("ollama");
+    expect(stackLine.textContent).not.toContain("mlx");
     expect(
       screen.getByText(
-        "reproducible pipelines · honest baselines · production-grade code · models propose, risk disposes",
+        "reproducible pipelines · honest baselines · production-grade code · small, reversible changes — every step stays reviewable",
       ),
     ).toBeInTheDocument();
+    // the retired principle is gone from the page
+    expect(screen.queryByText(/models propose/i)).toBeNull();
     // full typed content exists in the DOM from first render via aria-label
     const term = document.querySelector(".hero-terminal")!;
     expect(term.getAttribute("role")).toBe("img");
@@ -125,7 +132,7 @@ describe("Home (terminal-centered)", () => {
     expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.25rem;");
   });
 
-  it("renders the subtitle in grey (palette muted) and keeps the intro sentence white", () => {
+  it("renders the subtitle in white (--text) and the intro sentence in grey (--muted)", () => {
     renderHome();
     const kicker = document.querySelector(".hero-kicker")!;
     expect(kicker.textContent).toBe(
@@ -133,8 +140,8 @@ describe("Home (terminal-centered)", () => {
     );
     const css = readFileSync("src/styles.css", "utf8");
     const rule = css.match(/\.hero-kicker \{[\s\S]*?\n\}/)![0];
-    expect(rule).toContain("color: var(--muted);");
-    expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color: var(--text);");
+    expect(rule).toContain("color: var(--text);");
+    expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
   });
 
   it("paints only the Data/ML/AI words green — h1 base white, accent spans, no gradient", () => {
@@ -164,14 +171,21 @@ describe("Home (terminal-centered)", () => {
     expect(rule).toContain("text-align: center;");
   });
 
-  it("availability line reads from config", () => {
+  it("availability line reads 'replies within 24h' from config", () => {
     renderHome();
+    // AVAILABILITY is the source of truth — the site commits to a 24h reply
+    expect(AVAILABILITY.replyHours).toBe(24);
     const status = document.querySelector(".home-status")!;
     expect(status).not.toBeNull();
     expect(status.textContent).toContain(AVAILABILITY.status);
-    expect(status.textContent).toMatch(new RegExp(`${AVAILABILITY.replyHours}h`));
+    expect(status.textContent).toContain("replies within 24h");
     expect(status.querySelector(".status-dot")).not.toBeNull();
     expect(status.classList.contains("accent-card")).toBe(false);
+    // the contact go-card carries the same reply window wording
+    const contactCard = [...document.querySelectorAll(".go-card")].find((c) =>
+      c.textContent!.includes("timezone overlap"),
+    )!;
+    expect(contactCard.textContent).toContain("replies within 24h on business days");
   });
 
   it("sets page meta and renders Person JSON-LD", () => {

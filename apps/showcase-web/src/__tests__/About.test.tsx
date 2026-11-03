@@ -3,7 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { About } from "../pages/About";
-import { CONTACT_EMAIL, REPO_URL, SITE_NAME } from "../config";
+import { CONTACT_EMAIL, LINKEDIN_URL, REPO_URL, SITE_NAME } from "../config";
 
 afterEach(cleanup);
 
@@ -16,7 +16,7 @@ function renderAbout() {
 }
 
 describe("About page", () => {
-  it("opens with the consultant's name, positioning and contact block", () => {
+  it("opens with the consultant's name, positioning and contact channel cards", () => {
     renderAbout();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "Alejandro Mérida Maroto",
@@ -27,14 +27,54 @@ describe("About page", () => {
     expect(
       screen.getByText(/I design, build and evaluate ML systems end to end, and I keep the code, metrics/),
     ).toBeInTheDocument();
-    // contact block
-    const tel = screen.getByRole("link", { name: "+34 670 881 697" });
+    // contact facts render as channel cards (the contact page's pattern)
+    const cards = [...document.querySelectorAll(".channel-card")];
+    expect(cards).toHaveLength(4);
+    const tel = screen.getByRole("link", { name: /\+34 670 881 697/ });
     expect(tel.getAttribute("href")).toBe("tel:+34670881697");
-    expect(screen.getByRole("link", { name: CONTACT_EMAIL })).toBeInTheDocument();
-    const github = screen.getByRole("link", { name: "github.com/amm-ds" });
+    expect(tel.classList.contains("channel-card")).toBe(true);
+    expect(screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") })).toHaveAttribute(
+      "href",
+      `mailto:${CONTACT_EMAIL}`,
+    );
+    const github = screen.getByRole("link", { name: /github\.com/i });
     expect(github.getAttribute("href")).toBe(REPO_URL);
-    expect(screen.getByText("Spanish · Catalan · English")).toBeInTheDocument();
-    expect(screen.getByText("Barcelona")).toBeInTheDocument();
+    expect(github.getAttribute("rel")).toContain("noopener");
+    const linkedin = screen.getByRole("link", { name: /linkedin/i });
+    expect(linkedin.getAttribute("href")).toBe(LINKEDIN_URL);
+    // the old inline contact list is gone; location/languages stay as a facts line
+    expect(document.querySelector(".about-contact")).toBeNull();
+    expect(screen.getByText("Barcelona · Spanish · Catalan · English")).toBeInTheDocument();
+  });
+
+  it("renders the four channel cards with inline SVG logos, one row", () => {
+    renderAbout();
+    const grid = document.querySelector(".channel-grid--4")!;
+    expect(grid).not.toBeNull();
+    expect(grid.classList.contains("channel-grid")).toBe(true);
+    const cards = [...grid.querySelectorAll(".channel-card")];
+    expect(cards).toHaveLength(4);
+    const names = cards.map((c) => c.querySelector(".channel-name")!.textContent);
+    expect(names).toEqual(["Phone", "Email", "GitHub", "LinkedIn"]);
+    for (const card of cards) {
+      expect(card.tagName).toBe("A");
+      expect(card.querySelector("svg")).not.toBeNull();
+      expect(card.querySelector("svg path")).not.toBeNull();
+      expect(card.querySelector(".channel-address")!.textContent!.length).toBeGreaterThan(0);
+    }
+    // external cards open in a new tab safely; phone/email stay in-page
+    expect(cards[0].getAttribute("target")).toBeNull();
+    expect(cards[1].getAttribute("target")).toBeNull();
+    expect(cards[2].getAttribute("target")).toBe("_blank");
+    expect(cards[3].getAttribute("target")).toBe("_blank");
+    // the CSS carries the 4-column row from 640px up, single column below
+    const css = readFileSync("src/styles.css", "utf8");
+    const fourCol = css.match(
+      /@media \(min-width: 640px\) \{\s*\.channel-grid--4 \{[\s\S]*?\n  \}/,
+    )![0];
+    expect(fourCol).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+    // channel cards reuse the contact page's card styles untouched
+    expect(css.match(/\.channel-card \{[\s\S]*?\n\}/)![0]).toContain("display: flex;");
   });
 
   it("renders six experience stops as a vertical timeline with periods and 2–3 bullets each", () => {
@@ -75,7 +115,7 @@ describe("About page", () => {
     expect(screen.queryByText(/vanti|kognic|dera|pecan|letgo|olx|king/i)).toBeNull();
   });
 
-  it("connects the timeline with the site's dot/line language", () => {
+  it("connects the timeline with the site's dot/line language and centers it on the page", () => {
     const css = readFileSync("src/styles.css", "utf8");
     // a connecting line down the list…
     const lineRule = css.match(/\.timeline::before \{[\s\S]*?\n\}/)![0];
@@ -85,28 +125,27 @@ describe("About page", () => {
     const dotRule = css.match(/\.timeline-item::before \{[\s\S]*?\n\}/)![0];
     expect(dotRule).toContain("border-radius: 50%;");
     expect(dotRule).toContain("background: var(--accent);");
-    // vertical layout, single column
-    expect(css.match(/\.timeline \{[\s\S]*?\n\}/)![0]).toContain("padding: 0 0 0 1.5rem;");
+    // vertical layout, single column, constrained and centered — items keep
+    // their dot/line alignment inside the box
+    const timelineRule = css.match(/\.timeline \{[\s\S]*?\n\}/)![0];
+    expect(timelineRule).toContain("max-width: 720px;");
+    expect(timelineRule).toContain("margin: 1.75rem auto 0;");
+    expect(timelineRule).toContain("padding: 0 0 0 1.5rem;");
   });
 
-  it("renders education & certifications as one condensed list", () => {
+  it("has no education section — no block, no heading, no styles", () => {
     renderAbout();
-    const items = [...document.querySelectorAll(".education-card li")].map(
-      (el) => el.textContent,
-    );
-    expect(items).toEqual([
-      "Master in Big Data & Business Intelligence (UOC)",
-      "Business & IT (UAB)",
-      "Postgraduate in financial markets (UA)",
-      "MITx — Machine Learning with Python",
-      "GCP Big Data & ML fundamentals",
-    ]);
+    expect(document.querySelector(".education-card")).toBeNull();
+    expect(screen.queryByRole("heading", { name: /education/i })).toBeNull();
+    expect(screen.queryByText(/Master in Big Data|Business & IT|financial markets|MITx/i)).toBeNull();
+    const css = readFileSync("src/styles.css", "utf8");
+    expect(css).not.toContain(".education-card");
   });
 
-  it("opens 'how I work' at the top as importance cards with the services card geometry", () => {
+  it("opens 'how I work' at the top as nine importance cards with the services card geometry", () => {
     renderAbout();
     const cards = document.querySelectorAll(".practice-card");
-    expect(cards).toHaveLength(7);
+    expect(cards).toHaveLength(9);
     const text = document.querySelector(".practices-grid")!.textContent!;
     for (const practice of [
       "reproducible pipelines",
@@ -116,9 +155,12 @@ describe("About page", () => {
       "tested code",
       "stated limits",
       "plain-language reporting",
+      "small, reversible changes",
+      "public by default",
     ]) {
       expect(text).toContain(practice);
     }
+    expect(screen.getByText(/Nine practices run through every engagement/i)).toBeInTheDocument();
     // importance cards, not a narrative strip
     expect(document.querySelectorAll(".practices-grid")).toHaveLength(1);
     expect(document.querySelector(".practices-strip")).toBeNull();

@@ -126,7 +126,7 @@ describe("Services page (wave 8)", () => {
     }
   });
 
-  it("lays the offerings out as a full-width grid: 4 columns ≥1200px, 2 between 640–1200px, 1 below", () => {
+  it("lays the offerings out full width as 2 columns × 4 rows — 2 columns from 640px up, 1 below", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const gridRule = css.match(/\.offerings-grid \{[\s\S]*?\n\}/)![0];
     expect(gridRule).toContain("display: grid;");
@@ -134,9 +134,14 @@ describe("Services page (wave 8)", () => {
     expect(gridRule).toContain("max-width: none;");
     // 2 columns from 640px up…
     expect(css).toContain("@media (min-width: 640px)");
-    // …and 4 columns at ≥1200px
-    const fourCol = css.match(/@media \(min-width: 1200px\) \{\s*\.offerings-grid \{[\s\S]*?\n  \}/)![0];
-    expect(fourCol).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+    const twoCol = css.match(
+      /@media \(min-width: 640px\) \{\s*\.offerings-grid \{[\s\S]*?\n  \}/,
+    )![0];
+    expect(twoCol).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
+    // …and no 4-column desktop tier remains for the offerings grid
+    expect(css).not.toMatch(/@media \(min-width: 1200px\) \{\s*\.offerings-grid/);
+    const offeringsRules = [...css.matchAll(/\.offerings-grid\s*\{[^}]*\}/g)].map((m) => m[0]);
+    expect(offeringsRules.join("\n")).not.toContain("repeat(4");
     // the old single-column flex list is gone
     expect(gridRule).not.toContain("flex-direction: column;");
   });

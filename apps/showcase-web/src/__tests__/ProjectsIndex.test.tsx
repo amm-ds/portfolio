@@ -245,7 +245,7 @@ describe("ProjectsIndex", () => {
     expect(stylesCss).toContain(".topic-row {");
   });
 
-  it("renders the live-demos section from the registry with labeled blocks, a results metric and href", async () => {
+  it("renders the live-demos section from the registry with a labeled description block, a results chip and href", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
@@ -278,21 +278,26 @@ describe("ProjectsIndex", () => {
     // the card link's accessible name is its visible text (no aria-label
     // override — axe label-content-name-mismatch)
     expect(demoCards[0].getAttribute("aria-label")).toBeNull();
-    // the labeled "description" block comes from the digit-free display line
+    // demos keep only the labeled "description" block — no "results" text block
     const labels = [...demoCards[0].querySelectorAll(".study-block-label")].map(
       (el) => el.textContent,
     );
-    expect(labels).toEqual(["description", "results"]);
+    expect(labels).toEqual(["description"]);
     expect(demoCards[0].querySelector(".study-does")!.textContent).toContain(
       "Move the alarm threshold",
     );
-    // the labeled "results" block carries the registry's headline metric
-    expect(demoCards[0].querySelector(".study-achieves")!.textContent).toContain(
-      "decision cost per 1,400 customers",
-    );
-    expect(demoCards[0].querySelector(".study-metric")!.textContent).toBe(
-      "$601 vs $1,035 naive",
-    );
+    expect(demoCards[0].querySelector(".study-achieves")).toBeNull();
+    // the measured result renders as a tag/chip — label plus accent metric value
+    const chip = demoCards[0].querySelector(".study-result-chip")!;
+    expect(chip).not.toBeNull();
+    expect(chip.classList.contains("chip")).toBe(true);
+    expect(chip.textContent).toContain("decision cost per 1,400 customers");
+    expect(chip.querySelector(".study-metric")!.textContent).toBe("$601 vs $1,035 naive");
+    // chip result: the numbers live only inside the results chip — nothing
+    // else on a demo card carries a digit
+    const clone = demoCards[0].cloneNode(true) as Element;
+    clone.querySelectorAll(".study-result-chip").forEach((c) => c.remove());
+    expect(clone.textContent).not.toMatch(/[0-9]/);
     // the whole card is the link to the demo route
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
     // demos block renders before the experiments block with the topic rows
@@ -323,7 +328,7 @@ describe("ProjectsIndex", () => {
     expect(gridRule).not.toContain("display: flex;");
   });
 
-  it("falls back to the static demo cards when the registry fetch fails — same labeled blocks", async () => {
+  it("falls back to the static demo cards when the registry fetch fails — same description block and results chip", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse(ALL_PROJECTS));
@@ -347,16 +352,18 @@ describe("ProjectsIndex", () => {
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
     expect(demoCards[1].textContent).toContain("demand forecast workbench");
     expect(demoCards[1].getAttribute("href")).toBe("/demos/forecast-workbench");
-    // both static fallback cards carry the same labeled structure, results
-    // metric included (churn hero "$601 vs $1,035 naive", forecast hero
+    // both static fallback cards carry the same structure: the labeled
+    // "description" block only, plus the results chip with the headline
+    // metric (churn hero "$601 vs $1,035 naive", forecast hero
     // "0.6161 vs 0.8929")
     const metrics = ["$601 vs $1,035 naive", "0.6161 vs 0.8929"];
     demoCards.forEach((card, i) => {
       const blockLabels = [...card.querySelectorAll(".study-block-label")].map(
         (el) => el.textContent,
       );
-      expect(blockLabels).toEqual(["description", "results"]);
-      expect(card.querySelector(".study-achieves")).not.toBeNull();
+      expect(blockLabels).toEqual(["description"]);
+      expect(card.querySelector(".study-achieves")).toBeNull();
+      expect(card.querySelector(".study-result-chip")!.textContent).toContain(metrics[i]);
       expect(card.querySelector(".study-metric")!.textContent).toBe(metrics[i]);
     });
   });
@@ -425,7 +432,7 @@ describe("ProjectsIndex", () => {
     await waitFor(() => expect(screen.getByText("mae: 72.3457")).toBeInTheDocument());
   });
 
-  it("renders no key number when metrics are missing", async () => {
+  it("renders no results chip when metrics are missing", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([ALL_PROJECTS[0]]));
@@ -438,7 +445,9 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText("RAG Agent")).toBeInTheDocument());
-    expect(document.querySelector(".key-number")).toBeNull();
+    // the slot stays empty (and hidden) until a live metric loads
+    expect(document.querySelector(".project-card .study-result-chip")).toBeNull();
+    expect(document.querySelector(".project-card .study-result:empty")).not.toBeNull();
   });
 
   it("keeps the does/achieves card copy on every card and no hand-maintained impact line", async () => {
@@ -555,11 +564,13 @@ describe("ProjectsIndex", () => {
         m.querySelector(".study-meta-label")?.textContent,
         m.querySelector(".study-sub")?.textContent,
       ]),
+      labels: [...card.querySelectorAll(".study-block-label")].map((el) => el.textContent),
       does: card.querySelector(".study-does")?.textContent ?? null,
       achieves: card.querySelector(".study-achieves")?.textContent ?? null,
+      resultChip: card.querySelector(".study-result-chip")?.textContent ?? null,
       metric: card.querySelector(".study-metric")?.textContent ?? null,
-      result: card.querySelector(".study-result"),
-      chips: card.querySelectorAll(".chip").length,
+      resultSlot: card.querySelector(".study-result"),
+      chips: card.querySelectorAll(":scope > .chips .chip").length,
     });
     const demo = structureOf(document.querySelector(".demo-card")!);
     const experiment = structureOf(
@@ -575,26 +586,32 @@ describe("ProjectsIndex", () => {
       expect(s.does).not.toBeNull();
       expect(s.chips).toBe(4);
     }
-    // demo copy comes from the registry: use case/domain metadata plus the
-    // labeled description + results blocks with the headline metric; the
-    // brief result line stays experiment-only
+    // demo copy comes from the registry: use case/domain metadata, the
+    // labeled "description" block only, and the headline metric as the
+    // results chip — the SAME chip slot the experiment's live key number
+    // renders through
     expect(demo.meta).toEqual([
       ["use case", "retain customers"],
       ["domain", "NLP"],
     ]);
+    expect(demo.labels).toEqual(["description"]);
     expect(demo.does).toContain("Move the alarm threshold");
-    expect(demo.achieves).toContain("decision cost per 1,400 customers");
+    expect(demo.achieves).toBeNull();
+    expect(demo.resultChip).toContain("decision cost per 1,400 customers");
     expect(demo.metric).toBe("$601 vs $1,035 naive");
-    expect(demo.result).toBeNull();
-    // experiment keeps the does/achieves copy, the stacked topics/data
-    // metadata and the live-result slot
+    // experiment keeps the labeled "description" + "results" blocks, the
+    // stacked topics/data metadata, the results-chip slot for the live key
+    // number (this fixture serves no metrics, so the chip stays empty) and
+    // no "results" text on demos
     expect(experiment.meta).toEqual([
       ["topics", "NLP"],
       ["data", "docs"],
     ]);
+    expect(experiment.labels).toEqual(["description", "results"]);
     expect(experiment.does).toContain("Scores churn on IBM telco data");
     expect(experiment.achieves).toContain("Cutting decision cost 42%");
-    expect(experiment.result).not.toBeNull();
+    expect(experiment.resultChip).toBeNull();
+    expect(experiment.resultSlot).not.toBeNull();
   });
 
   it("links the glossary from the experiments section description", async () => {
@@ -659,18 +676,97 @@ describe("ProjectsIndex", () => {
     expect(css.match(/\.page-index \{[\s\S]*?\n\}/)![0]).toContain("font-family: var(--mono);");
   });
 
-  it("splits the card body into two equal muted columns with a small gap and no labels", () => {
+  it("splits the card body into two equal muted columns under one uniform small-label style", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const colsRule = css.match(/\.study-cols \{[\s\S]*?\n\}/)![0];
     expect(colsRule).toContain("display: grid;");
     expect(colsRule).toContain("repeat(auto-fit, minmax(0, 1fr));");
     expect(colsRule).toContain("gap: 0.9rem;");
-    // both blocks are muted text with no label styling
+    // both blocks are muted text
     const doesRule = css.match(/\.study-does,\n\.study-achieves \{[\s\S]*?\n\}/)![0];
     expect(doesRule).toContain("color: var(--muted);");
     expect(doesRule).not.toContain("text-transform");
+    // all four card labels (topics / data / description / results) share ONE
+    // uniform small-label rule — mono, uppercase, muted
+    const labelRule = css.match(/\.study-meta-label,\n\.study-block-label \{[\s\S]*?\n\}/)![0];
+    expect(labelRule).toContain("font-family: var(--mono);");
+    expect(labelRule).toContain("font-size: 0.72rem;");
+    expect(labelRule).toContain("text-transform: uppercase;");
+    expect(labelRule).toContain("letter-spacing: 0.08em;");
+    expect(labelRule).toContain("color: var(--muted);");
+    // the metadata label has no standalone rule anymore; the block-label rule
+    // only adds block spacing on top of the shared label style
+    expect(css).not.toMatch(/\.study-meta-label \{[^,]*\}/);
+    // the standalone block-label rule only adds block spacing on top of the
+    // shared label style (the combined selector above ends with a comma)
+    const blockLabelRule = css.match(/\.study-block-label \{\n  display: block;[\s\S]*?\n\}/)![0];
+    expect(blockLabelRule).toContain("margin: 0 0 0.3rem;");
+    expect(blockLabelRule).not.toContain("font-family");
     // the old single description line is gone
     expect(css).not.toContain(".study-built");
+    // and the labels are all present in the DOM: topics/data on the metadata
+    // lines, description/results on the experiment-card blocks
+    vi.stubGlobal("fetch", projectsOnlyFetch());
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    return waitFor(() =>
+      expect(document.querySelectorAll(".project-card")).toHaveLength(7),
+    ).then(() => {
+      const rag = [...document.querySelectorAll(".project-card")].find(
+        (c) => c.querySelector("h3")?.textContent === "RAG Agent",
+      )!;
+      const metaLabels = [...rag.querySelectorAll(".study-meta-label")].map(
+        (el) => el.textContent,
+      );
+      expect(metaLabels).toEqual(["topics", "data"]);
+      const blockLabels = [...rag.querySelectorAll(".study-block-label")].map(
+        (el) => el.textContent,
+      );
+      expect(blockLabels).toEqual(["description", "results"]);
+    });
+  });
+
+  it("renders the results as one shared accent chip design on demo and experiment cards", async () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    const chipRule = css.match(/\.study-result-chip \{[\s\S]*?\n\}/)![0];
+    expect(chipRule).toContain("color: var(--accent);");
+    expect(chipRule).toContain("font-family: var(--mono);");
+    // the slot hides entirely while a live metric has not loaded
+    expect(css.match(/\.study-result:empty \{[\s\S]*?\n\}/)![0]).toContain("display: none;");
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
+      if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([ALL_PROJECTS[4]]));
+      if (url.endsWith("/metrics")) {
+        return Promise.resolve(
+          jsonResponse({ naive_last: { mae: 100 }, tuned: { mae: 72.34567 } }),
+        );
+      }
+      return Promise.resolve(jsonResponse({}, 404));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    // both card kinds render their result through the same chip class…
+    await waitFor(() =>
+      expect(document.querySelector(".project-card .study-result-chip")!.textContent).toBe(
+        "mae: 72.3457",
+      ),
+    );
+    const demoChip = document.querySelector(".demo-card .study-result-chip")!;
+    expect(demoChip.textContent).toContain("decision cost per 1,400 customers");
+    // …and the chip is the ONLY numbered element on a demo card
+    for (const card of document.querySelectorAll(".demo-card")) {
+      const clone = card.cloneNode(true) as Element;
+      clone.querySelectorAll(".study-result-chip").forEach((c) => c.remove());
+      expect(clone.textContent).not.toMatch(/[0-9]/);
+    }
   });
 
   it("paints card subtitles blue, stacked and one step below the old 1rem scale", async () => {

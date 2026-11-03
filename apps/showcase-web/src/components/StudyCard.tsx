@@ -10,11 +10,13 @@ export interface StudyMetaItem {
 
 /** Shared card layout for the projects index — demo cards and experiment
  * cards render the same structure: title; metadata fields stacked label over
- * value (topics/data on experiment cards, use case/domain on demo cards); the
- * "what it does" block and, where present, the "what it achieves" block (both
- * optionally carrying a small section label — demo cards title them
- * "description" and "results"); the brief result line (experiment cards
- * only); and exactly four tags. Callers wrap it in their link. */
+ * value (topics/data on experiment cards, use case/domain on demo cards);
+ * the two content blocks side by side, each carrying a small section label
+ * in the same style as the metadata labels (experiment cards label them
+ * "description" and "results"; demo cards keep only the "description"
+ * block); the measured result as a tag/chip — the demo registry's headline
+ * metric or the experiment's live key number, one shared chip design; and
+ * exactly four tags. Callers wrap it in their link. */
 export function StudyCard({
   title,
   meta,
@@ -33,17 +35,17 @@ export function StudyCard({
   does?: string;
   /** "What it achieves" block (the measured result). */
   achieves?: ReactNode;
-  /** Small section label above the does block (demo cards: "description"). */
+  /** Small section label above the does block (both card kinds: "description"). */
   doesLabel?: string;
-  /** Small section label above the achieves block (demo cards: "results"). */
+  /** Small section label above the achieves block (experiment cards: "results"). */
   achievesLabel?: string;
-  /** "Brief results" line (mono, accent); experiment cards only — hidden
-   * while a live metric has not loaded yet. */
+  /** Measured result rendered as a tag/chip — the demo registry's headline
+   * metric or the experiment's live key number; hidden while a live metric
+   * has not loaded yet. */
   result?: ReactNode;
   /** Exactly four short tags (blue). */
   tags: string[];
 }) {
-  const labeled = Boolean(doesLabel || achievesLabel);
   return (
     <>
       <h3>{title}</h3>
@@ -57,8 +59,8 @@ export function StudyCard({
           ))}
         </div>
       )}
-      {labeled ? (
-        <>
+      {(does || achieves) && (
+        <div className="study-cols">
           {does && (
             <div className="study-block">
               {doesLabel && <span className="study-block-label">{doesLabel}</span>}
@@ -71,15 +73,11 @@ export function StudyCard({
               <p className="study-achieves">{achieves}</p>
             </div>
           )}
-        </>
-      ) : (
-        (does || achieves) && (
-          <div className="study-cols">
-            {does && <p className="study-does">{does}</p>}
-            {achieves && <p className="study-achieves">{achieves}</p>}
-          </div>
-        )
+        </div>
       )}
+      {/* the result chip lives in the caller's slot content (CardKeyNumber
+          renders nothing until a live metric loads, so an empty slot must
+          stay hidden via .study-result:empty) */}
       {result && <p className="study-result">{result}</p>}
       <div className="chips">
         {tags.map((t) => (

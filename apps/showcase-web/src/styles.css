@@ -503,15 +503,15 @@ select:focus-visible,
 }
 
 .hero-sub {
-  color: var(--text);
+  color: var(--muted);
   max-width: 760px;
   margin: 1.5rem auto 0.75rem;
 }
 
-/* tagline under the h1: the site's sky-blue token, sized to the section
-   rhythm (section-intro scale) with a bit of weight to read clearly */
+/* the subtitle line under the h1 carries the white (--text) register; the
+   longer intro sentence below it renders in the grey muted token */
 .hero-kicker {
-  color: var(--muted);
+  color: var(--text);
   font-size: 1rem;
   font-weight: 500;
   margin: 0;
@@ -628,13 +628,21 @@ select:focus-visible,
   gap: 0.05rem;
 }
 
-/* small muted field label — mono, uppercase, like the offering-card labels */
-.study-meta-label {
+/* one uniform small-label style for every card field label — the stacked
+   metadata labels (topics / data) and the content-block labels
+   (description / results) are the same mono uppercase muted tag */
+.study-meta-label,
+.study-block-label {
   font-family: var(--mono);
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
+}
+
+.study-block-label {
+  display: block;
+  margin: 0 0 0.3rem;
 }
 
 /* field value: blue, one step below the old 1rem subtitle scale */
@@ -646,9 +654,8 @@ select:focus-visible,
   letter-spacing: 0.08em;
 }
 
-/* labeled card blocks (demo cards: "description" / "results") — small muted
-   section labels with consistent spacing, matching the offering-card h4
-   label language */
+/* labeled card blocks — experiment cards render "description" and "results"
+   side by side, demo cards keep only the "description" block */
 .study-block {
   margin: 0.7rem 0 0;
 }
@@ -663,15 +670,25 @@ select:focus-visible,
   margin: 0 0 0.3rem;
 }
 
-/* headline metric inside a demo card's results block */
+/* headline metric value inside a demo card's results chip */
 .study-metric {
   font-family: var(--mono);
   color: var(--accent);
 }
 
-/* unlabeled card body (experiment cards): two muted text blocks side by side —
-   left "what it does", right "what it achieves"; demo cards use the labeled
-   .study-block rows above instead */
+/* the measured result as a tag/chip — the demo registry's headline metric and
+   the experiment's live key number share this one accent-chip design */
+.study-result-chip {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  background: rgba(45, 212, 191, 0.08);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+/* card body: the content blocks side by side — left "description", right
+   "results" on experiment cards; demo cards carry only the description
+   block, so their single block spans the full width */
 .study-cols {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
@@ -687,11 +704,9 @@ select:focus-visible,
   margin: 0;
 }
 
-/* "brief results" line (mono, accent); hidden while a live metric loads */
+/* results chip slot; hidden while a live metric has not loaded yet (the slot
+   renders empty until CardKeyNumber serves a number) */
 .study-result {
-  font-family: var(--mono);
-  font-size: 0.82rem;
-  color: var(--accent);
   margin: 0.75rem 0 0;
 }
 
@@ -1619,7 +1634,8 @@ button:disabled {
   font-size: 1.05rem;
 }
 
-/* offerings grid: 4 columns on desktop, 2 between 640–1200px, 1 below 640px */
+/* offerings grid: 2 columns × 4 rows of wider full-width cards on desktop,
+   a single column below 640px */
 .offerings-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1631,12 +1647,6 @@ button:disabled {
 @media (min-width: 640px) {
   .offerings-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1200px) {
-  .offerings-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -2287,16 +2297,6 @@ button:disabled {
 
 .hero-accent {
   color: var(--accent);
-}
-
-.project-card .key-number {
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  color: var(--accent);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.15rem 0.55rem;
 }
 
 /* bottom row on /contact: plain centered text links — no card, no border,
@@ -4101,15 +4101,22 @@ button.chip.demo-preset.fwb-active {
 }
 
 
-/* --- About page: contact block, practices cards, experience timeline --- */
+/* --- About page: contact channel cards, practices cards, experience timeline --- */
 
-.about-contact {
-  list-style: none;
-  margin: 1.25rem 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem 1.4rem;
+/* contact facts reuse the contact page's channel-card pattern — four cards
+   (phone, email, GitHub, LinkedIn) in one row */
+.services-hero .channel-grid {
+  margin: 1.25rem 0 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .channel-grid--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.about-facts {
+  margin: 0;
   font-family: var(--mono);
   font-size: 0.88rem;
   color: var(--muted);
@@ -4158,10 +4165,13 @@ button.chip.demo-preset.fwb-active {
 }
 
 /* experience: roadmap-style vertical timeline — period (mono, accent) → role
-   → achievement bullets, connected by the site's dot/line language */
+   → achievement bullets, connected by the site's dot/line language; the list
+   is constrained and centered on the page, items keep their dot/line
+   alignment inside it */
 .timeline {
   list-style: none;
-  margin: 1.75rem 0 0;
+  max-width: 720px;
+  margin: 1.75rem auto 0;
   padding: 0 0 0 1.5rem;
   position: relative;
 }
@@ -4223,17 +4233,3 @@ button.chip.demo-preset.fwb-active {
   margin-bottom: 0.25rem;
 }
 
-.education-card {
-  padding: 1.6rem 1.75rem;
-}
-
-.education-card ul {
-  margin: 0;
-  padding-left: 1.1rem;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.education-card li {
-  margin-bottom: 0.35rem;
-}

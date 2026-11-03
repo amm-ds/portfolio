@@ -41,7 +41,7 @@ export const SITE_EMAIL = CONTACT_EMAIL;
 /** Availability copy — one place for engagement status. */
 export const AVAILABILITY = {
   status: env.VITE_AVAILABILITY_STATUS ?? "Available for engagements",
-  replyHours: Number(env.VITE_AVAILABILITY_REPLY_HOURS ?? 48),
+  replyHours: Number(env.VITE_AVAILABILITY_REPLY_HOURS ?? 24),
 } as const;
 
 /** Absolute URL for a site path, honoring SITE_BASE_PATH. */

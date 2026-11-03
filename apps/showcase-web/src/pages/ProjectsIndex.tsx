@@ -112,7 +112,7 @@ interface DemoCardData {
   group?: string;
   /** Linked experiment id — its four card tags tag the demo card. */
   project?: string;
-  /** Headline metric (label/value) for the card's "results" block. */
+  /** Headline metric (label/value) for the card's results chip. */
   hero?: DemoRegistryEntry["hero"] | null;
 }
 
@@ -122,25 +122,27 @@ function demoTags(projectId: string | undefined): string[] {
   return cardTags(projectId ?? "", []).slice(0, 4);
 }
 
-/** One-line "results" block for a demo card, from the registry's headline
- * metric ("decision cost per 1,400 customers: $601 vs $1,035 naive") — the
- * value renders in the accent metric style. Demos without a published
- * metric render no results block. */
+/** Results chip for a demo card, from the registry's headline metric
+ * ("decision cost per 1,400 customers: $601 vs $1,035 naive") — rendered
+ * through the SAME chip slot as an experiment card's live key number, so
+ * both card kinds share one results-chip design; the metric value keeps the
+ * accent metric style inside the chip. Demos without a published metric
+ * render no results chip. */
 function demoResults(data: DemoCardData): ReactNode {
   const hero = data.hero;
   if (!hero) return undefined;
   return (
-    <>
+    <span className="chip study-result-chip">
       {hero.label}: <span className="study-metric">{hero.value}</span>
-    </>
+    </span>
   );
 }
 
 /** Demo card on the projects index: the SAME study-card layout as the
  * experiment cards, fed from the demo registry (or the static fallback):
- * title; use-case/domain metadata; the labeled "description" block and, when
- * the registry publishes one, the labeled "results" block with the headline
- * metric; exactly four tags. */
+ * title; use-case/domain metadata; the labeled "description" block (the
+ * only content block — demos keep no "results" text block); the measured
+ * result as a tag/chip; exactly four tags. */
 function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
   const meta = [
     ...(data.group ? [{ label: "use case", value: data.group }] : []),
@@ -152,8 +154,7 @@ function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
       meta={meta}
       doesLabel="description"
       does={demoDoes(data)}
-      achievesLabel="results"
-      achieves={demoResults(data)}
+      result={demoResults(data)}
       tags={demoTags(data.project)}
     />
   );
