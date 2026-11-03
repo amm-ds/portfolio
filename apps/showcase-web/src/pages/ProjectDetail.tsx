@@ -15,7 +15,7 @@ import { CaseStudy } from "../components/CaseStudy";
 import { ExperimentCrumbs, ExperimentNav } from "../components/ExperimentNav";
 import { FigureFrame } from "../components/FigureFrame";
 import { MetricsTable } from "../components/MetricsTable";
-import { REPO_URL } from "../config";
+import { DOCS_URL, REPO_URL } from "../config";
 import { summaryLine } from "../lib/impact";
 import { usePageMeta } from "../seo";
 
@@ -24,10 +24,11 @@ import { usePageMeta } from "../seo";
 const GENERIC_DEMO_LINE =
   "an interactive session over this project's committed payloads — change the inputs and watch the measured outputs respond.";
 
-/** "01-rag-agent" → https://alejandromerida.dev/projects/01-rag-agent/ */
+/** "01-rag-agent" → <DOCS_URL>/projects/01-rag-agent/ — the docs base comes from
+ * the DOCS_URL/VITE_DOCS_URL override (see config.ts), never a hardcoded domain. */
 function docsUrl(projectId: string): string {
   const [num, ...slug] = projectId.split("-");
-  return `https://alejandromerida.dev/projects/${num}-${slug.join("-")}/`;
+  return `${DOCS_URL}/projects/${num}-${slug.join("-")}/`;
 }
 
 interface Detail {

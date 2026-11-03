@@ -7,7 +7,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Optional live LLM provider (mock provider is the default):
+      # Optional live LLM provider (unconfigured, Project 01 uses local
+      # Ollama and the RAG chat endpoints stay disabled — no mock provider,
+      # see .env.example / DEPLOY.md):
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}

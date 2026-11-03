@@ -299,35 +299,63 @@ describe("StorySection conclusions details block", () => {
     text_md: "Reproduction notes and revision log.\n\n**In plain terms:** the recipe is reusable.\n",
   };
 
-  it("wraps the conclusions body in a native collapsed details block after the h2", () => {
+  it("legacy conclusions (no skeleton heading) keep the collapsed-body fallback", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
       <StorySection projectId="01-rag-agent" section={CONCLUSIONS} index={7} metrics={null} />,
     );
     const details = document.querySelector("details.story-details");
     expect(details).not.toBeNull();
-    // collapsed by default
     expect(details?.hasAttribute("open")).toBe(false);
     expect(details?.querySelector("summary")?.textContent).toBe(
-      "Technical details, revision notes, and reproduction",
+      "Technical details — exact numbers and protocol",
     );
-    // existing prose renders inside the block
     expect(details?.querySelector(".story-main .prose")?.textContent).toContain(
       "Reproduction notes and revision log.",
     );
-    // the takeaway card stays visible above the collapsed block
     expect(details?.querySelector(".bi-card")).toBeNull();
     const card = document.querySelector(".bi-card");
     expect(card).not.toBeNull();
     expect(card?.textContent).toContain("the recipe is reusable");
-    // document order: h2, then the section subtitle, then the card, then the details block
+  });
+
+  it("skeleton conclusions render the narrative visibly and only exact numbers + protocol in the dropdown", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
+    const skeleton = {
+      ...CONCLUSIONS,
+      text_md:
+        "## Results summary\n\nThe final numbers with a link onward.\n\n" +
+        "## What the experiment taught\n\n- The honest negative mattered.\n\n" +
+        "## Limits\n\n- One machine, one run.\n\n" +
+        "## Exact numbers\n\n| candidate | score |\n|---|---|\n| champion | 0.6161 |\n\n" +
+        "## Protocol\n\n- 3 origins, scored once.\n\n" +
+        "**Business summary:** the wrap-up in plain words.\n",
+    };
+    render(
+      <StorySection projectId="01-rag-agent" section={skeleton} index={7} metrics={null} />,
+    );
+    // narrative visible outside the dropdown
+    const visible = document.querySelector("section > .story-cols .prose")!;
+    expect(visible.textContent).toContain("The final numbers with a link onward.");
+    expect(visible.textContent).toContain("The honest negative mattered.");
+    expect(visible.textContent).toContain("One machine, one run.");
+    expect(visible.textContent).not.toContain("0.6161");
+    // the takeaway card sits with the visible narrative, like other sections
+    const card = document.querySelector("section > .story-cols .bi-card")!;
+    expect(card.textContent).toContain("the wrap-up in plain words");
+    // the dropdown carries ONLY the technical record
+    const details = document.querySelector("details.story-details")!;
+    expect(details.hasAttribute("open")).toBe(false);
+    expect(details.querySelector("summary")?.textContent).toBe(
+      "Technical details — exact numbers and protocol",
+    );
+    expect(details.textContent).toContain("champion");
+    expect(details.textContent).not.toContain("The honest negative");
+    // document order: h2, subtitle, visible body, then the dropdown
     const h2 = document.querySelector("section > h2")!;
-    expect(h2.textContent).toContain("Details");
-    const subtitle = h2.nextElementSibling!;
-    expect(subtitle.classList.contains("section-subtitle")).toBe(true);
-    expect(subtitle.textContent).toBe("results summary, key concepts, and the exact record");
-    expect(subtitle.nextElementSibling).toBe(card);
-    expect(card?.nextElementSibling).toBe(details);
+    expect(h2.nextElementSibling?.classList.contains("section-subtitle")).toBe(true);
+    expect(h2.nextElementSibling?.nextElementSibling?.classList.contains("story-cols")).toBe(true);
+    expect(h2.nextElementSibling?.nextElementSibling?.nextElementSibling).toBe(details);
   });
 
   it("keeps non-conclusions sections as the plain two-column layout", () => {

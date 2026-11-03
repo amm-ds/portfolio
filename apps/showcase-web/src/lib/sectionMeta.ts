@@ -9,5 +9,5 @@ export const SECTION_SUBTITLES: Record<string, string> = {
   training: "how the models and systems were built",
   evaluation: "how results were judged fairly",
   results: "the measured outcomes",
-  conclusions: "results summary, key concepts, and the exact record",
+  conclusions: "the wrap-up: results, learnings, and limits — exact numbers inside",
 };
