@@ -1,0 +1,110 @@
+{
+  "protocol": "m5_full_v1",
+  "dataset": {
+    "dataset": "M5 Forecasting Competition (Walmart) \u2014 accuracy track FULL panel",
+    "provenance_ref": "/Users/alejandro/work/portfolio/projects/02-demand-forecasting/data_m5/raw/PROVENANCE.md",
+    "checksums_sha256": {
+      "m5/datasets/m5.zip": "cc704ba15d6802f8262e6ec7d4c6041e4ad6366a94365e8c84f721e450eed774",
+      ".cache/m5/m5/Y_df.parquet": "bdd4c6fd4c6544188212e805fb5708b1431049a6dae72d11e51842de8310d875",
+      ".cache/m5/m5/X_df.parquet": "b2a4400de3dc8e267edaa3936224a0a51b544cef654bd2e535f199b2913ab0af",
+      ".cache/m5/m5/S_df.parquet": "856d9780b1ec0f1bab129d7aa8390a86f9c14ad177665074deb3368427c7df97"
+    },
+    "observed_panel": {
+      "date_start": "2011-01-29",
+      "date_end": "2016-06-19",
+      "n_days": 1969,
+      "n_rows": 47649940,
+      "n_series": 30490,
+      "zero_share": 0.5945183351752384,
+      "stores": [
+        "CA_1",
+        "CA_2",
+        "CA_3",
+        "CA_4",
+        "TX_1",
+        "TX_2",
+        "TX_3",
+        "WI_1",
+        "WI_2",
+        "WI_3"
+      ]
+    },
+    "citation": "Makridakis et al., M5 competition companion, International Journal of Forecasting (2022); research use with attribution per competition terms"
+  },
+  "split": {
+    "n_origins": 3,
+    "n_selection": 2,
+    "n_test": 1,
+    "origin_dates": [
+      "2016-05-08",
+      "2016-05-15",
+      "2016-05-22"
+    ],
+    "selection_dates": [
+      "2016-05-08",
+      "2016-05-15"
+    ],
+    "test_dates": [
+      "2016-05-22"
+    ],
+    "horizon_days": 28,
+    "min_train_days": 1096,
+    "spacing_days": 7,
+    "holdout_designation": "the final origin (last 28 days of the panel) is test, scored once; all earlier origins select (ensemble weights)"
+  },
+  "seeds": {
+    "lgbm_random_state": 42
+  },
+  "package_versions": {
+    "statsforecast": "2.1.1",
+    "mlforecast": "1.1.0",
+    "lightgbm": "4.7.0",
+    "datasetsforecast": "1.0.2",
+    "numpy": "2.5.4"
+  },
+  "runtime_seconds": 46508.693,
+  "runtime_seconds_per_candidate_origin": {
+    "seasonal_naive": {},
+    "lgbm": {
+      "1926": 873.622,
+      "1933": 852.909,
+      "1940": 851.817
+    },
+    "lgbm_tweedie": {
+      "1926": 1125.279,
+      "1933": 1092.147,
+      "1940": 1088.541
+    },
+    "lgbm_pool_store": {
+      "1926": 961.964,
+      "1933": 936.819,
+      "1940": 928.812
+    },
+    "lgbm_pool_storecat": {
+      "1926": 1052.7,
+      "1933": 1004.903,
+      "1940": 1014.543
+    },
+    "lgbm_pool_dept": {
+      "1926": 903.148,
+      "1933": 865.916,
+      "1940": 870.583
+    },
+    "auto_ets": {
+      "1926": 13086.648,
+      "1933": 9497.68,
+      "1940": 9289.889
+    },
+    "convex_ensemble": {}
+  },
+  "determinism": "VECLIB_MAXIMUM_THREADS=1 pinned in cli.py before numpy; every LightGBM fit n_jobs=1 + fixed seed + force_row_wise (direct pooled arms iterate sorted group keys and h=1..28 in fixed order); auto_ets may run n_jobs>1 (ETS selection is closed-form/seed-free \u2014 parallelism changes wall time only); seasonal_naive is numpy-vectorized; ensemble grid is lexicographic deterministic",
+  "lgbm_params": {
+    "n_estimators": 279,
+    "learning_rate": 0.027961422706101635,
+    "num_leaves": 472,
+    "min_child_samples": 226,
+    "colsample_bytree": 0.43564738242134776
+  },
+  "pooled_strategy": "recursive",
+  "n_jobs_ets": 1
+}
