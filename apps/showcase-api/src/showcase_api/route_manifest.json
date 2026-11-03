@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-30T11:52:49+00:00",
+  "generated_at": "2026-11-03T19:32:33+00:00",
   "sources": [
     "apps/showcase-web/src/App.tsx",
     "projects/*/portfolio.yaml",
@@ -16,6 +16,7 @@
     "/glossary",
     "/projects",
     "/projects/*",
+    "/projects/*/report",
     "/projects/01-rag-agent",
     "/projects/02-demand-forecasting",
     "/projects/03-anomaly-detection",
