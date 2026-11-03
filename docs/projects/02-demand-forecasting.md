@@ -1,300 +1,97 @@
 # 02 · Demand Forecasting
 
-**Domain:** time-series forecasting · **Data:** Walmart M5 accuracy-track
-subset (600 daily store-item series, primary headline); UCI Online Retail II
-(sparse secondary track); seeded synthetic hierarchy (CI fast path) ·
-**Status:** working showcase on the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
+**Domain:** time-series forecasting · **Data:** Walmart M5 accuracy track at
+full scale (30,490 daily store-item series) · **Status:** working showcase on
+the standard platform (flagships: [01](01-rag-agent.md), [07](07-open-data-mobility.md))
 
-> One honest protocol, two demand regimes: on dense Walmart M5 daily sales a
-> tuned ensemble cuts forecast error to 49% vs 60% for the seasonal-naive
-> baseline; on sparse 89%-zero retail demand the winner is the opposite—mostly-zero
-> routing for 945 of 1,069 lumpy series.
->
-> The headline experiment now runs on the committed Walmart M5 subset — the
-> dense-demand regime where ML demonstrably wins. Under protocol
-> `m5_direct_v1` (10 weekly rolling origins, the last 2 scored once on a
-> 28-day horizon), the selection-fitted convex ensemble beats the
-> seasonal-naive floor by **−0.1125 WAPE** (0.491 vs 0.603; 95% paired
-> cluster bootstrap CI **[−0.1228, −0.1026]**) and −0.166 WRMSSE (0.596 vs
-> 0.762) on 600 series (463 dense + 137 intermittent), winning in **both**
-> volume classes — and on the rolling next-week service (h ≤ 7 over all 10
-> origins, the deployment shape) the ensemble posts next-week WAPE **0.4233**
-> vs the floor's **0.5442** (95% paired bootstrap CI **[−0.1288, −0.1130]** on
-> the −0.1208 gap), measurably beating the naive floor in both volume classes
-> (always-beats-naive: **yes**). The wave-28 L1/L2 pass tested the
-> "flat-curves" feedback: the pure-L2 arm `lgbm_l2` reproduced `lgbm`
-> bitwise (LightGBM's default loss is already squared error — the L1
-> character lived in the early-stopping/selection layers), and the
-> WRMSSE-selected `ensemble_l2` edged both test metrics by 0.0002/0.0006 —
-> a wash, stated as measured; the flatness is the conditional mean of noisy
-> daily demand, not a loss-function bug. The mirror image is the UCI sparse
-> track kept below as the secondary study, where conservative selective routing
-> assigns zero to 945 of 1,069 lumpy series and peak-capable models to the rest.
+> Walmart M5 at full scale: 30,490 series scored once on the competition window under the official 42,840-node hierarchical WRMSSE. A stability-screened ensemble of pooled LightGBM fits reaches 0.6161 vs the naive floor's 0.8929 (−31.0%) — in the competition winner's ballpark.
 
 [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting)
 
 ## What it shows
 
-Leakage-safe, production-depth forecasting across both demand regimes. The
-M5 headline track (`m5_track.py`): per-series statistical candidates
-(statsforecast), per-series AutoETS/AutoCES, a global LightGBM and a global
-XGBoost over lags / multi-horizon rolling means/stds / calendar /
-price-SNAP-event exog + panel statics (no series-identity feature), and a
-convex ensemble fitted on the selection origins only — all
-through 10 weekly rolling origins with a frozen, scored-once test pair, ADI/CV²
-volume classes, WRMSSE with a documented denominator, paired-bootstrap CIs
-and split-conformal 80% bands — plus a rolling next-week evaluation (h≤7
-over all origins: the weekly service a retailer actually consumes, with a
-measured always-beats-naive verdict per volume class) and weekly error
-blocks showing how the 28-day error grows. The UCI/synthetic tracks below
-carry the same discipline into the sparse regime and the CI fast path.
+Production-depth demand forecasting measured the way the M5 competition
+measures it. Global and multi-level pooled LightGBM fits (per store, per
+store×category, per department — the winning solution's pooling ladder), a
+Tweedie-loss variant for skewed intermittent demand, per-series AutoETS, and a
+seasonal-naive floor, combined by a stability-screened convex ensemble and
+scored through the full 12-level, 42,840-node hierarchy with revenue weights.
+Everything is reproducible from sha-pinned data: one command, deterministic,
+~13 h on one machine.
 
-## Key results — M5 headline (protocol `m5_direct_v1`, committed `reports_m5/`)
+## Protocol (`m5_full_v1`, committed `reports_m5_full/`)
 
-Walmart M5 accuracy-track subset: top-3 stores (CA_3, CA_1, TX_2) × top-200
-items by volume → 600 daily series, 2011-01-29..2016-06-19, 1,105,594 rows,
-16% zero-day share; sha256-pinned subset built offline from the Nixtla
-`datasetsforecast` mirror (`data_m5/`, PROVENANCE.md). Protocol: 10 weekly
-rolling origins 7 days apart (8 SELECTION + the last 2 scored once as TEST —
-2016-05-10 and 2016-05-17), each training on ≥ 1,096 days and scoring the
-next 28 days; volume classes per series via Syntetos-Boylan ADI/CV² on the
-real history up to the last selection origin. The full machine-readable
-protocol is `reports_m5/evaluation_metadata.json`.
+The full bottom-level panel (30,490 series × 1,969 days, 2011-01-29..2016-06-19,
+zero share 59.5%) is evaluated over 3 weekly rolling origins (7-day spacing,
+min 1,096 days of history), forecasting 28 days. The first two origins select
+the ensemble (stability screen: mean + 1.0 × population std of per-origin
+official WRMSSE); the last origin — the literal M5 competition window
+(2016-05-23..2016-06-19) — is scored once. The machine-readable record is
+`reports_m5_full/evaluation_metadata.json`; hierarchy nodes derive from the
+panel's own item/department/category/store/state structure (42,840 nodes), and
+level weights are the preceding 28 days' revenue — the official scheme.
 
-Pooled over the 2 scored-once test origins (WAPE = Σ|err| / Σ actual;
-WRMSSE with the documented seasonal-naive-28 denominator — a deliberate,
-stated deviation from the official M5 lag-1 scale):
+## Key results — official hierarchical WRMSSE on the competition window
 
-| candidate | test WAPE | test WRMSSE | win rate vs naive |
-|---|---|---|---|
-| seasonal_naive (floor) | 0.603 | 0.762 | — |
-| window_avg_28 | 0.515 | 0.619 | 82.8% |
-| adida | 0.512 | 0.623 | 86.5% |
-| tsb | 0.510 | 0.616 | 85.8% |
-| auto_ets | 0.503 | 0.611 | 88.2% |
-| auto_ces | 0.515 | 0.612 | 83.0% |
-| lgbm | 0.498 | 0.596 | 87.8% |
-| lgbm_l2 | 0.498 | 0.596 | 87.8% |
-| xgb | 0.496 | 0.600 | 86.5% |
-| **convex_ensemble (champion)** | **0.491** | **0.596** | **88.8%** |
-| ensemble_l2 | 0.491 | 0.595 | 88.7% |
+Lower is better; weights are revenue-based across all 42,840 nodes.
 
-- **The gap vs the floor is significant** — 95% paired cluster bootstrap
-  over series (2,000 reps): ensemble **−0.1125 WAPE** (CI **[−0.1228,
-  −0.1026]**) / **−0.1659 WRMSSE** (CI **[−0.1772, −0.1552]**); lgbm −0.1057
-  WAPE (CI [−0.1184, −0.0935] — a 17.5% relative cut) / −0.1652 WRMSSE (CI
-  [−0.1770, −0.1535]). Both CIs exclude zero.
-- **The champion is a selection-fitted convex ensemble** — best three of
-  {lgbm, lgbm_l2, xgb, auto_ets, auto_ces} by SELECTION WAPE (bitwise-identical
-  selection curves deduped — wave 28), weights grid-fit on a
-  0.05 simplex over the selection origins: xgb × 0.35 + lgbm × 0.20 +
-  auto_ets × 0.45. The wave-27 refinement widened the feature space per the
-  M5-winning-solution practice (56/84-day means, snap_weekend,
-  price-relative-to-mean, panel statics item age/history level/dept/category
-  pooled means — all leakage-safe), re-tuned the lgbm (seeded 25-trial study,
-  `cli tune-m5`, selection origins only) and added the xgb booster to the
-  pool (selection WAPE 0.4694 vs lgbm 0.4706); stated plainly, the feature +
-  tuning lever moved lgbm's pooled test WAPE only within noise (0.495 →
-  0.498), and the honest gain of the pass is the wider pool and the
-  next-week service number.
-- **L1 vs L2 forecast shape (wave 28)** — the "flat curves" feedback, tested
-  rather than assumed: LightGBM's default objective is already squared error
-  (verified bitwise), so the pure-L2 arm `lgbm_l2` (explicit
-  `objective=regression`, L2-stopped tree count on the selection-only nested
-  split) reproduced `lgbm` bitwise — the L2 early stop re-derived the same
-  279 trees — and is deduped from the ensemble ranking (ranking the duplicate
-  separately regressed the blend 0.4907 → 0.4953 by displacing auto_ets). The
-  WRMSSE-selected `ensemble_l2` (xgb × 0.45 + lgbm × 0.20 + auto_ets × 0.35)
-  lands test WAPE **0.4905** / WRMSSE **0.5952** vs the WAPE blend's 0.4907 /
-  0.5958 — both metrics, by margins far inside the bootstrap noise. Stated as
-  measured: L1-vs-L2 selection is a wash on this panel; the flatness is the
-  conditional mean of noisy daily demand (curve day-to-day variation ≈ 5.4
-  units vs ≈ 12.2 realized), and the conformal band — not a pointier curve —
-  is the honest answer to spike uncertainty.
-- **Win rates** — the ensemble clears the seasonal-naive floor on **88.8%**
-  of series (dense 88.6%, intermittent 89.8%); every serious candidate lands
-  in the 82.8–88.8% band, so on dense weekly-seasonal demand the pooled
-  margin, not per-series coverage, separates the candidates.
-- **Bands** — per-series scaled split-conformal 80% band (per-horizon-day
-  width = 0.8-quantile of |lgbm residual| / series scale over the 8 selection
-  origins, scaled back by each series' in-sample naive-28 RMSE, zero-clipped):
-  lgbm covers **77.7%** of test actuals at mean width 13.54 units; the
-  ensemble 77.7% at 13.34 — balanced across volume classes (lgbm dense 76.9%,
-  intermittent 80.6%), slightly under the 80% target, stated as measured.
-- **Both volume classes** — test WAPE dense 0.568 → 0.464, intermittent
-  0.749 → 0.603: the models win in both classes here, the honest contrast to
-  the sparse panel below.
-- **Rolling next-week service** (h ≤ 7 pooled over ALL 10 origins — the
-  deployment shape: each week the model is re-run, only the first week of
-  the fresh forecast is consumed, later weeks roll forward; the selection
-  origins are included, so this is the operational service number, not a
-  held-out estimate): convex_ensemble next-week WAPE **0.4233** vs the
-  floor's **0.5442** (lgbm **0.4327**, xgb **0.4297**) — paired-bootstrap
-  gaps lgbm **−0.1115** (CI [−0.1197, −0.1039]) / ensemble **−0.1208** (CI
-  [−0.1288, −0.1130]), and every candidate beats the floor in both volume
-  classes at h≤7, measured not asserted (ensemble rmae dense 0.774 /
-  intermittent 0.791). The weekly error blocks on the scored test origins
-  grow wk1 **0.4136** → wk4 **0.5636** — **1.36×** week 1 (the floor
-  degrades 1.22× the same way) — and week 1 carries 28.0% of the champion's
-  absolute-error reduction, which is why the next-week number is the
-  service headline while the 28-day pooled table stays the month view.
-- **Related work** — Makridakis et al., M5 competition companion (IJF 2022);
-  the nixtla stack (statsforecast / mlforecast / datasetsforecast) powering
-  every candidate; a Kaggle-competitions analysis of the M5 accuracy round
-  ([arXiv:2009.07701](https://arxiv.org/abs/2009.07701)) for external
-  context — global gradient-boosted models over per-series statistical fits,
-  the same ordering this subset measures from the inside.
+| candidate | official WRMSSE | vs floor |
+|---|---|---|
+| seasonal_naive (floor) | 0.8929 | — |
+| auto_ets | 0.7093 | −20.6% |
+| lgbm (global) | 0.6601 | −26.1% |
+| lgbm_tweedie | 0.6473 | −27.5% |
+| lgbm_pool_storecat | 0.6575 | −26.4% |
+| lgbm_pool_store | 0.6217 | −30.4% |
+| lgbm_pool_dept | 0.6313 | −29.3% |
+| **convex_ensemble (champion)** | **0.6161** | **−31.0%** |
 
-## Key results — UCI sparse track (SECONDARY; frozen holdout: test window scored once)
+Ensemble composition (selection screen, test never consulted): lgbm_pool_storecat
+× 0.60 + lgbm_pool_store × 0.10 + lgbm_pool_dept × 0.30.
 
-Real-data track — UCI Online Retail II (top 8 countries × top 200 products,
-374 days, 405,416 panel rows, 89% zero share; MAE/MASE lead, MAPE reported but
-not decision-grade at this zero share). The table is scored on the final
-rolling-origin window (2010-10-01..2010-12-09, the holiday quarter); the
-champion was selected on origins 1..3 only and every run is scored exactly
-once on the test window. *How to read: lower is better everywhere; MASE
-divides by the seasonal-naive's in-sample error (fit on a quieter period —
-the naive itself scores 1.310 on this window, so 1.0 is not parity here);
-read Δ MASE vs sn for parity with "same day last week"; bold = selected
-champion.*
-
-| run | MAE | RMSE | MAPE | MASE | Δ MAE vs sn | Δ MASE vs sn |
-|---|---|---|---|---|---|---|
-| naive_mean (floor) | 12.475 | 74.699 | 90.3% | 1.382 | +1.152 | +0.072 |
-| naive_last (persistence) | 11.505 | 99.548 | 327.6% | 1.331 | +0.182 | +0.021 |
-| seasonal_naive (lag-7) | 11.323 | 114.921 | 305.4% | 1.310 | 0.000 | 0.000 |
-| ETS (Holt-Winters, damped+weekly) | 11.471 | 80.827 | 302.7% | 1.338 | +0.148 | +0.028 |
-| ridge | 12.384 | 72.680 | 221.7% | 1.395 | +1.061 | +0.085 |
-| hgb (default sklearn) | 9.565 | 71.700 | 260.3% | 1.085 | −1.758 | −0.225 |
-| **hgb_tuned (Optuna, 56 trials) ← best** | **9.545** | **71.847** | **230.0%** | **1.078** | **−1.778** | **−0.232** |
-| xgb_tuned (Optuna, 25 trials) | 9.804 | 73.287 | 277.2% | 1.118 | −1.519 | −0.192 |
-| lgbm_tuned (Optuna, 25 trials) | 9.409 | 71.360 | 272.3% | 1.076 | −1.914 | −0.234 |
-| temporal_net (PyTorch emb+MLP) | 11.770 | 71.849 | 183.6% | 1.305 | +0.447 | −0.005 |
-
-*Δ vs seasonal_naive (sn) per row — negative means the run beats "same day
-last week" on that metric; the best row is marked ← best.*
-
-![The tuned HGB run tracks two representative UCI series day by day and clears the seasonal-naive floor on the test window](../assets/projects/02-demand-forecasting/forecast_vs_actual.png){ width="100%" }
-
-Synthetic track — seeded CI fast path (24 series × 4 origins, seed 42; note
-what clean data does to the statistical baselines). Same frozen protocol: bars
-are test-window numbers, champion selected on origins 1..3. *How to read: same
-metrics on clean seeded data; bold = track champion (ETS overall; temporal_net
-edges the ML pack on this window by 0.1 units — fold-noise level).*
-
-| run | MAE | RMSE | MAPE | MASE |
-|---|---|---|---|---|
-| naive_mean (floor) | 35.946 | 48.639 | 48.26% | 3.755 |
-| naive_last (persistence) | 16.223 | 22.238 | 19.47% | 1.695 |
-| seasonal_naive (lag-7) | 11.780 | 16.689 | 13.98% | 1.231 |
-| **ETS (Holt-Winters, damped+weekly)** | **8.924** | **12.691** | 10.37% | **0.932** |
-| ridge | 9.705 | 13.706 | 11.92% | 1.014 |
-| hgb | 9.549 | 13.380 | 11.58% | 0.998 |
-| hgb_tuned (Optuna, 56 trials) | 9.472 | 13.269 | 11.51% | 0.990 |
-| xgb_tuned (Optuna, 25 trials) | 9.525 | 13.372 | 11.59% | 0.995 |
-| lgbm_tuned (Optuna, 25 trials) | 9.341 | 13.101 | 11.31% | 0.976 |
-| temporal_net (PyTorch emb+MLP) | 9.244 | 12.908 | 11.38% | 0.966 |
-
-- **Cross-track rankings reversed under the frozen protocol — in both
-  directions**: the old pooled ladder claimed the best synthetic ML run
-  ranked fourth on real data; on the one-shot test window
-  `lgbm_tuned` posts the best MAE of all runs (9.409, ahead of the selection
-  champion 9.545 — a 1.4% gap inside fold noise), while the synthetic overall
-  champion `ets` ranks 6th on UCI (11.471). Configs tuned on clean synthetic
-  demand behave differently on intermittent real demand; neither pooled nor
-  single-window rankings should be read as more than what they are.
-- ETS wins the synthetic test window outright (MASE 0.932) and loses to its
-  own seasonal naive on UCI (11.471 vs 11.323, MASE 1.338) — 89% zeros break
-  the smooth-seasonality assumption. Both verdicts reported.
-- HPO improved on hgb in **every** fold on synthetic (8.619 → 8.529, −1.0%
-  pooled legacy); on the synthetic test window the NN edges every ML run
-  (9.244) without threatening ETS — reported, not hidden.
-- Probabilistic 80% band, coverage AND width on the test window: quantile
-  band 0.727 synthetic / 0.919 UCI (pooled); zero-aware split-conformal
-  horizon set **0.741 synthetic (avg width 26.5 units, under-covers) / 0.861
-  UCI (avg width 0.00 — degenerate)** against the 0.80 target. On UCI the
-  champion's median forecast is 0 on ~100% of rows, so the band collapses to
-  the point forecast — the honest limit, stated on the figure, whose buttons
-  drop the band interactively.
-- **Multi-step headline (wave 19 rebuild + wave 20 peak candidates + wave 21
-  LightGBM arms/ensemble/win rates + wave 22 baselines/metrics, UCI
-  secondary — `direct_multihorizon_v1`)**: direct per-horizon models on the
-  full h ∈ {1..14} lattice (one real direct-h fit per window day) on 20 weekly
-  rolling origins (16 selection + 4 scored once, no embargo gap; features
-  aged ≥ h days at target−h — calendar + a peak block (7/14/28d rolling
-  mean/max, days-since-last-nonzero, 28d non-zero count, 28d peak ratio) +
-  wave-21 price/trading-cycle features + a wave-22 rolling block (rmean7/14/28,
-  rstd14/28) + aged lags, taint-tested). ADI/CV² routing: 1,069 of 1,084
-  series are lumpy and choose among the statistical methods (zero,
-  seasonal_naive, Croston, SBA, TSB, ma_28, adida_sba, adida_tsb) plus six
-  peak-capable ML candidates — `hgb_tweedie`, `hurdle_hgb`, `lgbm_tweedie`,
-  `hurdle_lgbm`, `peak_weighted_hgb` and the honestly-losing `lgbm_poisson`
-  (exp-link overflow, finite-prediction guard; 107.17 pooled MAE) — while
-  the 15 erratic series choose among the direct HGB and the same ML pool
-  (all 15 route to ML: 10 hurdle, 3 peak-weighted, 2 tweedie). Lumpy
-  champion vs floor: **6.09 vs 11.07 MAE at h=7** (95% paired-bootstrap CI
-  [−7.74, −2.88]), 5.80 vs 10.64 at h=14; routing beats the unrouted all-HGB
-  ladder by 3.98 MAE (CI [3.34, 4.76]) with zero the most-picked method (945
-  of 1,069 lumpy series). The wave-22 baselines lose honestly: pooled MAE
-  ma_28 9.94, adida_tsb 9.98, adida_sba 10.73, routed_reconciled 9.97 — all
-  behind zero (9.28), consistent with the independent
-  [collapseindex/online-retail-forecast](https://github.com/collapseindex/online-retail-forecast)
-  benchmark where seasonal-naive wins on the same dataset. On erratic the
-  peak-capable models cut peak-day MAE to 278.7–295.1 vs zero 367.3 (routed
-  285.6); on lumpy tweedie cuts peak-day MAE to 28.1 (vs zero 33.7) while
-  trading top-5 day-ranking recall (0.44 vs 0.88) — the peak_capture block
-  carries every delta with a paired bootstrap CI. Error grows with the true
-  horizon (pooled 0.08 → 6.40, h=1 → h=14). Per-horizon bands report
-  coverage AND width per h (pooled 0.918, conservative — sparse
-  P(sale)+ladder bands never collapse; the ML candidates carry their own
-  conformal bands, pooled 0.909). The wave-22 metric layer adds rmae
-  (champion 0.649 vs the floor's 1.000), per-candidate M5-convention rmsse
-  (routed 0.520 pooled) and a newsvendor order-quantile cost simulation
-  (holding 1.0 / stockout 3.0 per unit-day, documented assumption): at
-  q=0.90 erratic 1.820 vs 1.727 cost/unit against, lumpy 2.370 vs 2.243
-  against; at q=0.95 erratic flips in routing's favour (−0.137, CI excludes
-  zero) — MAE-optimal routing over-orders at high service levels on
-  spike-driven demand; simulation, no savings claims. The earlier
-  order-up-to layer (τ=0.90, holding 0.25 / stockout 4.0) tells the same
-  story: erratic 1.422 vs 1.510 for the champion, lumpy 2.874 vs 2.777
-  against. The nowcast ladder above stays committed as
-  the labelled one-day-ahead track.
-- UCI reconciliation: w=0.50 this run, incoherence 447.2 → 223.6 (coherence
-  property exact); store MAE 746.0 → 731.0. Synthetic: w=0.00 this run (store
-  MAE 24.133 → 24.133, incoherence 26.688 → 26.688), accuracy effect null and
-  reported as such.
-- 6/6 DQ gates on both tracks; synthetic evaluate ≈ 2 min, UCI ≈ 30 min
-  (multi-step the bulk of it — 14 model fits × 14 horizons × 20 origins,
-  joblib-parallel); M5 ≈ 31 min; offline tests cover both tracks.
-
-![Bars are final-holdout-window numbers — left: MAE and RMSE per run in units; right: MASE per run against the 1.0 in-sample-scale reference line (the MASE scale is the naive's in-sample error from a quieter period, NOT the naive's own holdout error — the seasonal-naive itself lands at 1.310 on this window). MAPE is omitted as unit-incompatible and zero-inflated (it stays in the table above)](../assets/projects/02-demand-forecasting/metrics_bars.png){ width="100%" }
+- **In the competition's own terms** — the M5 leaderboard reports improvement
+  over benchmark (winner −22.4% over the best benchmark, [Makridakis et al.,
+  IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013)). On the same
+  official metric scheme and the same test window, this system improves
+  −31.0% over the seasonal-naive floor, and its absolute WRMSSE (0.6161) sits
+  in the winning ballpark (strong public full-hierarchy solutions land ~0.62).
+- **Pooling wins at full scale** — all three pooled fits beat the single global
+  model (0.6217–0.6575 vs 0.6601), reproducing the competition's central
+  finding; the 600-series subset measured the opposite, which is why the
+  conclusion is stated at full scale only.
+- **The hierarchy is the hard part** — the ensemble's biggest edge sits at the
+  aggregate levels (total 0.350 vs floor 0.560; store level 0.459 vs 0.718);
+  at the item×store leaves every learned candidate lands at 1.04–1.15 while the
+  floor scores 1.38–1.39: intermittent leaves stay noisy for everyone.
+- **91% of the panel is intermittent** (27,736 of 30,490 series by ADI/CV²) —
+  on zero-actual days the naive floor still wins (66.6% vs 57.3% accuracy);
+  full scale prices that in instead of solving it.
+- **Stated limits** — the selection screen runs on two origins (a thin read,
+  documented); the AutoETS batch path hit a boundary bug on this panel and ran
+  through its per-series fallback (identical forecasts; fixed in the following
+  wave); neural global models (N-HiTS/TFT/foundation) are not benchmarked here.
 
 ## Artifacts
 
-- Figures: interactive versions live in the [case study on GitHub](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting);
-  static artifacts (`.html` + `.json`, per track) in `reports_m5/figures/`,
-  `reports/figures/` and `reports_uci/figures/`
-- Metrics: `reports_m5/metrics.json` (+ `probabilistic.json`, `evaluation_metadata.json`) ·
-  UCI/synthetic: `reports/metrics.json` (+ `_uci`, with `_meta` protocol block and
-  `legacy_pooled_*`) · Protocol: `evaluation_metadata.json` · Report:
-  `report.html` (M5: `reports_m5/report.html`) · Reconciliation: `reconciliation.json` · Probabilistic:
-  `probabilistic.json` (per-horizon coverage/width + verdict) ·
-  Data-generating process: `dataset_metadata.json` (UCI) · Demo payload:
-  `reports_m5/demo_payload.json` (schema v4, forecast-workbench)
-- Dataset cards: `data/dataset.json`, `data_uci/dataset.json` · HPO:
-  `data/hpo_best.json` (+ `hpo_study.db`) · Story: `story.yaml`
+- Metrics + protocol: `reports_m5_full/metrics.json` · `evaluation_metadata.json`
+- Full evaluation report (embedded interactive figures):
+  `reports_m5_full/report.html` — also served by the showcase API at
+  `/projects/02-demand-forecasting/report`
+- Interactive figure payloads: `reports_m5_full/figures/`
+- Live-demo payload: `reports_m5_full/demo_payload.json` (schema v4,
+  forecast-workbench)
+- Demo catalog: `reports_m5_full/catalog_forecasts.parquet` (48 series — 24
+  top-volume + 24 hardest-intermittent, balanced across store/category cells)
+  with `catalog_meta.json`
+- Data: full panel sha-pinned in `data_m5/` (PROVENANCE.md, Nixtla
+  `datasetsforecast` mirror); story: `story.yaml`
 
 ## Links
 
-- [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting/README.md) — problem,
-  design summary, real numbers, reproduce commands, client takeaways, roadmap
-- [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting/DESIGN.md) — requirements,
-  options considered (global vs per-series, validation protocol, HPO, NN,
-  reconciliation), the M5 protocol decisions (section N — the M5 headline
-  pivot), pipeline diagram, changelog
-- Dataset card: [UCI Online Retail II](../data-registry/uci-online-retail-ii.md)
+- [Project README](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting/README.md) —
+  design summary, final numbers, reproduce commands
+- [DESIGN.md](https://github.com/amm-ds/portfolio/tree/main/projects/02-demand-forecasting/DESIGN.md) —
+  requirements, options considered, protocol decisions, changelog
+- Dataset card: [Walmart M5 (Nixtla mirror)](../data-registry/m5-nixtla-mirror.md) — if absent, see PROVENANCE.md
 - Drift response runbook: [drift-response.md](../runbooks/drift-response.md)
-- [Evaluation report](https://github.com/amm-ds/portfolio/blob/main/projects/02-demand-forecasting/reports_m5/report.html) — standalone
-  themed HTML report of the M5 headline track (also served by the showcase API
-  at `/projects/02-demand-forecasting/report`)
 - Source: `projects/02-demand-forecasting/src/demand_forecasting/`

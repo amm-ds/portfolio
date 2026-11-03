@@ -206,12 +206,13 @@ def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[n
     assert r.status_code == 200 and "report" in r.text
 
 
-def test_report_endpoint_prefers_m5_then_uci_then_reports(
+def test_report_endpoint_prefers_m5_full_then_m5_then_uci_then_reports(
     tmp_path: Path,
     monkeypatch,  # type: ignore[no-untyped-def]
 ) -> None:
-    """02's canonical report is reports_m5/report.html; the UCI and synthetic
-    tracks stay reachable through the fallback chain."""
+    """02's canonical report is reports_m5_full/report.html (the full panel);
+    the subset-era M5, UCI and synthetic tracks stay reachable through the
+    fallback chain."""
     from showcase_api import main
 
     d = tmp_path / "01-demo"
@@ -228,6 +229,43 @@ def test_report_endpoint_prefers_m5_then_uci_then_reports(
     (d / "reports_m5" / "report.html").write_text("<html>m5 report</html>")
     r = client.get("/projects/01-demo/report")
     assert r.status_code == 200 and "m5 report" in r.text
+    (d / "reports_m5_full").mkdir()
+    (d / "reports_m5_full" / "report.html").write_text("<html>m5 full report</html>")
+    r = client.get("/projects/01-demo/report")
+    assert r.status_code == 200 and "m5 full report" in r.text
+
+
+def test_figures_m5_full_shadows_subset_track(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """For 02-demand-forecasting, reports_m5_full/figures wins over both the
+    m5: prefixed location and the canonical reports/figures one, so the
+    full-panel story's prefix-free figure ids serve the final results."""
+    from showcase_api import main
+
+    d = tmp_path / "02-demand-forecasting"
+    figs = d / "reports" / "figures"
+    m5_figs = d / "reports_m5" / "figures"
+    full_figs = d / "reports_m5_full" / "figures"
+    figs.mkdir(parents=True)
+    m5_figs.mkdir(parents=True)
+    full_figs.mkdir(parents=True)
+    (figs / "bars.html").write_text("<html>fig</html>")
+    (m5_figs / "bars.html").write_text("<html>m5 fig</html>")
+    (full_figs / "bars.html").write_text("<html>m5 full fig</html>")
+    (m5_figs / "wape_bars.html").write_text("<html>subset fig</html>")
+    (full_figs / "wape_bars.html").write_text("<html>full fig</html>")
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    # prefix-free name: full-panel figures beat reports/figures
+    r = client.get("/projects/02-demand-forecasting/figures/bars")
+    assert r.text == "<html>m5 full fig</html>"
+    # m5: prefixed name: full-panel figures beat reports_m5/figures
+    r = client.get("/projects/02-demand-forecasting/figures/m5:wape_bars")
+    assert r.status_code == 200 and "full fig" in r.text
+    # other projects keep the canonical resolution (no m5_full candidate)
+    other = tmp_path / "01-demo" / "reports" / "figures"
+    other.mkdir(parents=True)
+    (other / "bars.html").write_text("<html>fig</html>")
+    assert client.get("/projects/01-demo/figures/bars").text == "<html>fig</html>"
 
 
 # --- Demo platform: registry / manifest / payload ----------------------------

@@ -243,32 +243,12 @@ export const STATIC_STORIES: StaticStorySummary[] = [
   },
   {
     "figure_names": [
-      "eda_series_overview",
-      "eda_units_distribution",
-      "hpo_history",
-      "hpo_importance",
-      "m5:band_calibration",
-      "m5:class_comparison",
-      "m5:horizon_growth",
-      "m5:wape_bars",
-      "m5:win_rate",
-      "uci:fold_stability",
-      "uci:multistep_error_vs_horizon",
-      "uci:multistep_routing"
+      "m5_full_candidate_ranking",
+      "m5_full_per_level_wrmsse",
+      "m5_full_sample_series"
     ],
     "has_roadmap": true,
-    "metrics_keys": [
-      "ets",
-      "hgb",
-      "hgb_tuned",
-      "lgbm_tuned",
-      "naive_last",
-      "naive_mean",
-      "ridge",
-      "seasonal_naive",
-      "temporal_net",
-      "xgb_tuned"
-    ],
+    "metrics_keys": [],
     "project_id": "02-demand-forecasting",
     "section_ids": [
       "background",
@@ -526,11 +506,11 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
   {
     "group": "plan operations",
     "hero": {
-      "ci": "paired bootstrap CI [−0.122, −0.102] on the −0.112 gap; 89.0% per-series win rate; 80% band covers 77.5% (m5_direct_v1, horizon 28)",
-      "label": "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
-      "value": "0.491 vs 0.603"
+      "ci": "−31.0% on the competition window (m5_full_v1, horizon 28)",
+      "label": "official WRMSSE, ensemble vs seasonal-naive floor (42,840-node hierarchy, scored once)",
+      "value": "0.6161 vs 0.8929"
     },
-    "hook": "Pick a committed M5 store-product series, compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two scored-once test origins, and slide the horizon — curves, 80% band and per-series WAPE respond.",
+    "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, member envelope and per-series WAPE respond.",
     "href": "/demos/forecast-workbench",
     "id": "forecast-workbench",
     "project": "02-demand-forecasting",

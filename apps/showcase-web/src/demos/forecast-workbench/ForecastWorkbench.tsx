@@ -2,9 +2,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { LineChart } from "../charts/LineChart";
 import type { CatalogEntry, DemoManifest, ForecastWorkbenchPayload } from "../types";
 import { DemoFigure, DemoWorkbench, KpiTile, Notice } from "../workbench";
-import { C_HIST, C_PINK, C_TEAL, MODELS, assembleChartData } from "./chartData";
-import { bestModelAt, peakDayMae, verdictText, wapeAt } from "./kpis";
-import { BandCalibrationPanel, BandPlaceholder, ErrorCompositionPanel, VerdictPanel } from "./panels";
+import { C_AMBER, C_HIST, C_PINK, MODELS, assembleChartData } from "./chartData";
+import { bestModelAt, verdictText, wapeAt } from "./kpis";
+import { EnvelopePanel, EnvelopePlaceholder, ErrorCompositionPanel, VerdictPanel } from "./panels";
 import { fetchForecastPayload, fetchManifest } from "./payload";
 import { usePageMeta } from "../../seo";
 import { useWorkbenchState } from "./useWorkbenchState";
@@ -21,27 +21,37 @@ const MODEL_LABELS = Object.fromEntries(MODELS.map((m) => [m.key, m.label]));
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "forecast-workbench",
   title: "demand forecast workbench",
-  hook: "Pick a committed M5 store-product series, compare the seasonal naive, AutoETS, LightGBM and the pooled ensemble on the two scored-once test origins, and slide the horizon — curves, 80% band and per-series WAPE respond.",
+  hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, member envelope and per-series WAPE respond.",
   project: "02-demand-forecasting",
   group: "plan operations",
   skills: ["time series forecasting", "prediction intervals", "demand classification"],
   modes: ["browser"],
   hero: {
-    label: "pooled test WAPE, ensemble vs seasonal-naive floor (600 series, 2 scored origins)",
-    value: "0.491 vs 0.603",
-    ci: "paired bootstrap CI [−0.122, −0.102] on the −0.112 gap; 89.0% per-series win rate; 80% band covers 77.5% (m5_direct_v1, horizon 28)",
+    label: "official WRMSSE, ensemble vs seasonal-naive floor (42,840-node hierarchy, scored once)",
+    value: "0.6161 vs 0.8929",
+    ci: "−31.0% on the competition window (m5_full_v1, horizon 28)",
   },
   scenarios: [
-    { name: "base", controls: { models: "seasonal_naive,lgbm", origin: "2016-05-10", horizon: 28 } },
+    { name: "base", controls: { models: "seasonal_naive,lgbm", horizon: 28 } },
     {
       name: "full-horizon-ensemble",
-      controls: { models: "seasonal_naive,auto_ets,lgbm,convex_ensemble", origin: "2016-05-17", horizon: 28 },
+      controls: {
+        models: "seasonal_naive,auto_ets,lgbm,lgbm_tweedie,lgbm_pool_store,lgbm_pool_storecat,lgbm_pool_dept,convex_ensemble",
+        horizon: 28,
+      },
     },
-    { name: "short-window", controls: { models: "seasonal_naive,convex_ensemble", origin: "2016-05-10", horizon: 7 } },
+    {
+      name: "pooled-compare",
+      controls: {
+        models: "seasonal_naive,lgbm,lgbm_pool_store,lgbm_pool_storecat,lgbm_pool_dept,convex_ensemble",
+        horizon: 28,
+      },
+    },
+    { name: "short-window", controls: { models: "seasonal_naive,convex_ensemble", horizon: 7 } },
   ],
   live_endpoints: [],
   payload: {
-    path: "reports_m5/demo_payload.json",
+    path: "reports_m5_full/demo_payload.json",
     schema_version: 4,
     required_keys: ["demo", "project", "protocol", "catalog", "groups", "origins", "evaluation_metadata"],
   },
@@ -53,7 +63,12 @@ function shortId(sid: string): string {
   return parts.slice(0, -1).join("_") || sid;
 }
 
-/** A row of selectable chips (models / origin / horizon share the shape). */
+/** Category token of a series id (`FOODS_3_090_CA_1` → `FOODS`). */
+function catOf(sid: string): string {
+  return sid.split("_")[0] ?? sid;
+}
+
+/** A row of selectable chips (models / horizon share the shape). */
 function ChipRow({
   options,
   active,
@@ -85,7 +100,7 @@ export default function ForecastWorkbench() {
   usePageMeta({
     title: "Demand forecast workbench",
     description:
-      "Interactive M5 demand-forecasting demo: compare seasonal naive, AutoETS, LightGBM and the pooled ensemble on scored origins with an 80% band.",
+      "Interactive full-panel M5 demand-forecasting demo: compare the seasonal naive, AutoETS, global and pooled LightGBM arms and the screened ensemble on the scored-once competition window.",
   });
 
   const [manifest, setManifest] = useState<DemoManifest | null>(null);
@@ -124,9 +139,9 @@ function Workbench({
   payload: ForecastWorkbenchPayload;
 }) {
   const firstSeries = payload.catalog[0]?.series_id ?? "";
-  const firstOrigin = payload.origins[0]?.origin ?? "";
+  // single scored-once origin by design: no origin control
   const state = useWorkbenchState(
-    { series: firstSeries, models: ALL_MODEL_KEYS, origin: firstOrigin, horizon: 28 },
+    { series: firstSeries, models: ALL_MODEL_KEYS, horizon: 28 },
     manifest.scenarios,
   );
   const { values, setValue } = state;
@@ -134,17 +149,14 @@ function Workbench({
   const seriesId = payload.catalog.some((e) => e.series_id === values.series)
     ? String(values.series)
     : firstSeries;
-  const origin = payload.origins.some((o) => o.origin === values.origin)
-    ? String(values.origin)
-    : firstOrigin;
   const h = HORIZONS.includes(Number(values.horizon)) ? Number(values.horizon) : 7;
   const modelsOn = String(values.models)
     .split(",")
     .filter((m) => MODELS.some((mm) => mm.key === m));
 
   const entry = payload.catalog.find((e) => e.series_id === seriesId) ?? payload.catalog[0];
-  const window = entry.origins[origin];
-  const originBlock = payload.origins.find((o) => o.origin === origin)!;
+  const window = entry.windows;
+  const originBlock = payload.origins[0];
 
   const cycle = (delta: number) => {
     const idx = payload.catalog.findIndex((e) => e.series_id === entry.series_id);
@@ -167,23 +179,19 @@ function Workbench({
   const best = bestModelAt(window, modelsOn, h);
   const modelWape = best ? wapeAt(window.actual, window.curves[best], h) : 0;
   const naiveWape = wapeAt(window.actual, window.curves[NAIVE], h);
-  const modelPeak = best ? peakDayMae(window.actual, window.curves[best], h) : 0;
-  const naivePeak = peakDayMae(window.actual, window.curves[NAIVE], h);
-  // committed pooled gap, quoted only at the full scored horizon
   const pooled = payload.groups.test_pooled;
+  // committed pooled gap, quoted only at the full scored horizon
   const committedGap =
-    h === 28 && best && pooled[best] && pooled[NAIVE] ? pooled[best].wape - pooled[NAIVE].wape : null;
-  const band = payload.groups.band.candidates.lgbm;
+    h === 28 && best && pooled[best] && pooled[NAIVE] ? pooled[best].wrmsse - pooled[NAIVE].wrmsse : null;
+  const band = payload.groups.band.candidates.convex_ensemble;
   const ensemblePooled = pooled.convex_ensemble;
   const naivePooled = pooled[NAIVE];
-  const ensembleGap = payload.groups.headline.convex_ensemble_vs_naive.wape;
-  const intermittentWinRate =
-    payload.groups.win_rate_vs_naive.convex_ensemble.intermittent;
+  const relGap = payload.groups.headline.convex_ensemble_vs_naive.wrmsse.rel;
+  const signed = (value: number) =>
+    `${value < 0 ? "−" : value > 0 ? "+" : ""}${Math.abs(value).toFixed(1)}`;
+  const winRate = payload.groups.win_rate_vs_naive.convex_ensemble;
   const classCounts = payload.groups.classes.counts;
   const candidateCount = Object.keys(pooled).length;
-  const signed = (value: number) =>
-    `${value < 0 ? "−" : value > 0 ? "+" : ""}${Math.abs(value).toFixed(3)}`;
-
   const stores = [...new Set(payload.catalog.map((e) => e.store))].sort();
 
   return (
@@ -223,22 +231,34 @@ function Workbench({
                 {stores.map((store) => (
                   <div key={store} className="fwb-store">
                     <span className="fwb-store-tag">{store}</span>
-                    <div className="demo-presets">
-                      {payload.catalog
-                        .filter((e) => e.store === store)
-                        .map((e) => (
-                          <button
-                            key={e.series_id}
-                            type="button"
-                            className={`chip demo-preset ${e.series_id === entry.series_id ? "fwb-active" : ""}`}
-                            aria-pressed={e.series_id === entry.series_id}
-                            onClick={() => setValue("series", e.series_id)}
-                          >
-                            {shortId(e.series_id)}
-                            <span className={`fwb-badge fwb-badge-${e.class}`}>{e.class}</span>
-                          </button>
-                        ))}
-                    </div>
+                    {(["top_units", "bottom_intermittency"] as const).map((half) => {
+                      const rows = payload.catalog.filter(
+                        (e) => e.store === store && e.half === half,
+                      );
+                      if (rows.length === 0) return null;
+                      return (
+                        <div key={half} className="fwb-store">
+                          <span className="fwb-store-tag">
+                            {half === "top_units" ? "top units" : "hardest intermittent"}
+                          </span>
+                          <div className="demo-presets">
+                            {rows.map((e) => (
+                              <button
+                                key={e.series_id}
+                                type="button"
+                                className={`chip demo-preset ${e.series_id === entry.series_id ? "fwb-active" : ""}`}
+                                aria-pressed={e.series_id === entry.series_id}
+                                title={`${catOf(e.series_id)} · ${e.units_last_28d.toFixed(0)} units in the scored window · ADI ${e.adi.toFixed(2)}, CV² ${e.cv2.toFixed(2)}`}
+                                onClick={() => setValue("series", e.series_id)}
+                              >
+                                {shortId(e.series_id)}
+                                <span className={`fwb-badge fwb-badge-${e.class}`}>{e.class}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -263,16 +283,6 @@ function Workbench({
               />
             </div>
           </div>
-          <div className="wb-control-group wb-group-origin">
-            <span className="wb-rail-title">Origin</span>
-            <div className="demo-control">
-              <ChipRow
-                options={payload.origins.map((o) => ({ key: o.origin, label: o.origin }))}
-                active={(k) => k === origin}
-                onPick={(k) => setValue("origin", k)}
-              />
-            </div>
-          </div>
           <div className="wb-control-group wb-group-horizon">
             <span className="wb-rail-title">Horizon</span>
             <div className="demo-control">
@@ -289,7 +299,7 @@ function Workbench({
         <ForecastChart
           entry={entry}
           window={window}
-          origin={origin}
+          origin={originBlock.origin}
           modelsOn={modelsOn}
           h={h}
         />
@@ -301,21 +311,22 @@ function Workbench({
             value={`${(modelWape * 100).toFixed(1)}%`}
             sub={`${best ? MODEL_LABELS[best] : "—"} vs naive ${(naiveWape * 100).toFixed(1)}%${
               committedGap !== null
-                ? ` · pooled ${committedGap > 0 ? "+" : "−"}${(Math.abs(committedGap) * 100).toFixed(1)} pts committed`
+                ? ` · pooled WRMSSE ${committedGap > 0 ? "+" : "−"}${Math.abs(committedGap).toFixed(4)} committed`
                 : ""
             }`}
             tone={modelWape < naiveWape ? "good" : modelWape > naiveWape ? "bad" : "neutral"}
           />
           <KpiTile
-            label="band coverage"
-            value={`${(band.coverage_80 * 100).toFixed(1)}%`}
-            sub={`committed, all 600 series · target 80% · mean width ${band.mean_band_width.toFixed(1)} units`}
+            label="official WRMSSE"
+            value={`${ensemblePooled.wrmsse.toFixed(4)}`}
+            sub={`champion ensemble vs floor ${naivePooled.wrmsse.toFixed(4)} (${(relGap * 100).toFixed(1)}%) · 42,840 nodes, scored once`}
+            tone="good"
           />
           <KpiTile
-            label={`peak-day MAE @ ${h}d`}
-            value={best ? modelPeak.toFixed(1) : "—"}
-            sub={`naive ${naivePeak.toFixed(1)} units · top-decile days`}
-            tone={modelPeak < naivePeak ? "good" : modelPeak > naivePeak ? "bad" : "neutral"}
+            label="zero-day accuracy"
+            value={`${(ensemblePooled.zero_day_accuracy * 100).toFixed(1)}%`}
+            sub={`ensemble vs floor ${(naivePooled.zero_day_accuracy * 100).toFixed(1)}% · committed, all 30,490 series`}
+            tone={ensemblePooled.zero_day_accuracy < naivePooled.zero_day_accuracy ? "bad" : "good"}
           />
         </>
       }
@@ -327,16 +338,16 @@ function Workbench({
             <ErrorCompositionPanel window={window} primary={best} h={h} />
           </div>
           <div className="wb-secondary-panel">
-            <h3 className="wb-rail-title">band calibration</h3>
-            {modelsOn.includes("lgbm") ? (
-              <BandCalibrationPanel
+            <h3 className="wb-rail-title">member envelope</h3>
+            {modelsOn.includes("convex_ensemble") ? (
+              <EnvelopePanel
                 window={window}
                 h={h}
-                committedCoverage={band.coverage_80}
+                committedMeanWidth={band.mean_width}
                 forecastDates={originBlock.forecast_dates}
               />
             ) : (
-              <BandPlaceholder />
+              <EnvelopePlaceholder />
             )}
           </div>
           <div className="wb-secondary-panel">
@@ -356,52 +367,54 @@ function Workbench({
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">what this shows</h4>
             <p className="wb-evidence-line">
-              Per-series forecast curves recomputed by the committed M5 track
-              (protocol <code className="wb-tag">{payload.protocol}</code>) for a
-              balanced {payload.catalog.length}-series catalog, scored on the test origins{" "}
-              {payload.origins.map((o) => o.origin).join(" and ")}. The headline
-              is the pooled gap: ensemble WAPE {ensemblePooled.wape.toFixed(3)} vs the
-              seasonal-naive floor {naivePooled.wape.toFixed(3)} (gap {signed(ensembleGap.diff)};
-              95% CI [{signed(ensembleGap.ci95[0])}, {signed(ensembleGap.ci95[1])}]).
+              Per-series forecast curves from the committed full-panel M5 track
+              (protocol <code className="wb-tag">{payload.protocol}</code>) for
+              a deterministic {payload.catalog.length}-series catalog, all
+              scored once on the competition window ({originBlock.origin} →{" "}
+              {originBlock.forecast_dates[originBlock.forecast_dates.length - 1]}). The headline is
+              the pooled official WRMSSE: ensemble {ensemblePooled.wrmsse.toFixed(4)} vs the
+              seasonal-naive floor {naivePooled.wrmsse.toFixed(4)} (gap{" "}
+              {signed(relGap * 100)}%).
             </p>
             {entry.class === "intermittent" ? (
               <p className="wb-evidence-line" data-testid="honest-gap">
-                The honest gap: this is an intermittent series — the band runs
-                wide and the seasonal naive can still win individual windows
-                {intermittentWinRate !== null &&
-                  ` (the ensemble wins ${(intermittentWinRate * 100).toFixed(1)}% of intermittent series; `}
-                the {(payload.groups.band.level * 100).toFixed(0)}% band covers{" "}
-                {(band.coverage_80 * 100).toFixed(1)}% of actuals
-                {band.coverage_80 < payload.groups.band.level ? ", just under target" : ""}
-                {intermittentWinRate !== null ? ")" : ""}. Per-series WAPEs here are computed
-                from the committed payload curves.
+                The honest gap: this is an intermittent series (ADI {entry.adi.toFixed(2)}) — the
+                floor can still win it
+                {winRate.intermittent !== null &&
+                  ` (across the catalog the ensemble wins ${(winRate.intermittent * 100).toFixed(1)}% of intermittent series; `}
+                the member envelope is a min/max band, not a calibrated interval
+                {winRate.intermittent !== null ? ")" : ""}. Per-series WAPEs here are computed
+                from the committed payload curves — a catalog statistic, never a panel claim.
               </p>
             ) : (
               <p className="wb-evidence-line">
-                On dense series the candidates trade the weekly shape against
-                event days. Per-series WAPEs here are computed from the committed payload curves.
+                On dense series the candidates trade the weekly shape against event days.
+                Per-series WAPEs here are computed from the committed payload curves — a catalog
+                statistic, never a panel claim.
               </p>
             )}
             <p className="wb-evidence-line">
               <a href="/projects/02-demand-forecasting">Read the project report</a>{" "}
-              for the full track — {classCounts.dense} dense + {classCounts.intermittent}{" "}
-              intermittent series, {candidateCount} candidates, WRMSSE with the documented
-              naive-28 denominator.
+              for the full track — {classCounts.dense.toLocaleString("en-US")} dense +{" "}
+              {classCounts.intermittent.toLocaleString("en-US")} intermittent series,{" "}
+              {candidateCount} candidates, the official 42,840-node hierarchical WRMSSE.
             </p>
           </div>
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">committed numbers</h4>
             <p className="wb-evidence-line wb-metric-tags">
               <span className="wb-tag">
-                ensemble win rate {(payload.groups.win_rate_vs_naive.convex_ensemble.pooled * 100).toFixed(1)}%
+                catalog win rate {(winRate.pooled * 100).toFixed(1)}%
               </span>
               <span className="wb-tag">
-                WRMSSE {ensemblePooled.wrmsse.toFixed(3)} vs {naivePooled.wrmsse.toFixed(3)}
+                bottom WAPE {ensemblePooled.wape.toFixed(3)} vs {naivePooled.wape.toFixed(3)}
               </span>
               <span className="wb-tag">
-                band {(band.coverage_80 * 100).toFixed(1)}% @ {(band.mean_band_width).toFixed(1)}u
+                envelope {band.mean_width.toFixed(1)}u mean width (catalog)
               </span>
-              <span className="wb-tag">shape {window.shape}</span>
+              <span className="wb-tag">
+                half {entry.half === "top_units" ? "top-units" : "hardest intermittent"}
+              </span>
             </p>
           </div>
         </>
@@ -411,20 +424,23 @@ function Workbench({
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">what this shows</h4>
             <p className="wb-evidence-line">
-              The demo isolates one store-product series at one scored origin:
-              the 56-day history tail, the 28-day actuals, and each candidate's
-              curve. The <strong>horizon</strong> toggle shortens the scored
-              window client-side; the <strong>models</strong> chips overlay
-              candidates; the LightGBM selection adds its conformal band.
+              The demo isolates one store-product series at the single
+              scored-once origin: the 56-day history tail, the 28-day actuals,
+              and each candidate's curve. The <strong>horizon</strong> toggle
+              shortens the scored window client-side; the <strong>models</strong>{" "}
+              chips overlay the 8 committed candidates; the ensemble adds its
+              member envelope (per-day min/max of the blend members — an
+              envelope, not a calibrated interval).
             </p>
           </div>
           <div className="wb-result-block">
             <h4 className="wb-evidence-tag">the experiment</h4>
             <p className="wb-evidence-line">
-              Walmart M5 accuracy subset (600 series), 10 weekly rolling
-              origins — the last 2 scored once. Nothing read the test origins
-              at fit time; the ensemble weight and the band widths were
-              calibrated on the 8 selection origins only.
+              Walmart M5 accuracy competition, full panel (30,490 series), 3
+              weekly rolling origins — the last scored once. Nothing read the
+              test origin at fit time; the ensemble members and weights were
+              chosen on the 2 selection origins only. Curves are copied from
+              the committed catalog run — no re-fitting in the browser.
             </p>
           </div>
         </>
@@ -434,7 +450,8 @@ function Workbench({
 }
 
 /** The single chart: history tail + 28-day actuals + selected model curves +
- * the lgbm band, on a clipped domain so short horizons never render flat. */
+ * the ensemble member envelope, on a clipped domain so short horizons never
+ * render flat. */
 function ForecastChart({
   entry,
   window,
@@ -443,7 +460,7 @@ function ForecastChart({
   h,
 }: {
   entry: CatalogEntry;
-  window: CatalogEntry["origins"][string];
+  window: CatalogEntry["windows"];
   origin: string;
   modelsOn: string[];
   h: number;
@@ -454,15 +471,16 @@ function ForecastChart({
     { label: "history", color: C_HIST },
     { label: "actual", color: C_PINK },
     ...MODELS.filter((m) => modelsOn.includes(m.key)).map((m) => ({ label: m.label, color: m.color })),
-    ...(band ? [{ label: "lgbm 80% band", color: C_TEAL }] : []),
+    ...(band ? [{ label: "ensemble envelope", color: C_AMBER }] : []),
   ];
 
   return (
     <DemoFigure
       comment={
         <>
-          {entry.series_id} ({entry.class}, {window.shape}) from origin {origin} — history
-          tail, 28-day actuals and the selected candidates; the domain clips to the visible window.
+          {entry.series_id} ({entry.class}, {entry.units_last_28d.toFixed(0)} units/28d) from origin{" "}
+          {origin} — history tail, 28-day actuals and the selected candidates; the domain clips to
+          the visible window.
         </>
       }
     >
@@ -479,7 +497,7 @@ function ForecastChart({
           x={x}
           series={series}
           yMax={yMax}
-          band={band ? { between: band, color: C_TEAL, opacity: 0.12 } : undefined}
+          band={band ? { between: band, color: C_AMBER, opacity: 0.12 } : undefined}
           yTicks={3}
           xTicks={4}
           formatX={(v) => (v <= 0 ? `d${v}` : `+${v}`)}

@@ -11,7 +11,7 @@ export const CARD_DOES: Record<string, string> = {
   "01-rag-agent":
     "Built a question-answering agent that answers only from a pinned 593-article Wikipedia corpus and cites every claim.",
   "02-demand-forecasting":
-    "Compares tuned forecasters against the seasonal-naive baseline on two demand regimes: dense Walmart M5 daily sales and sparse, 89%-zero retail series.",
+    "Forecasts all 30,490 Walmart M5 store-item series through a 42,840-node hierarchy and grades every candidate under the competition's official weighted error.",
   "03-anomaly-detection":
     "Screens NAB telemetry at a fixed 2% alert budget with an isolation-forest scorer that flags anomalous windows.",
   "04-nlp-classification":
@@ -35,7 +35,7 @@ export const CARD_ACHIEVES: Record<string, string> = {
   "01-rag-agent":
     "Retrieval finds the right passage 83% of the time, but 18 of 65 audited answers kept unsupported claims — auditable, not yet trustworthy unattended.",
   "02-demand-forecasting":
-    "A tuned ensemble cuts error to 49% vs 60% on M5; on the lumpy regime, mostly-zero routing wins for 945 of 1,069 series.",
+    "A stability-screened ensemble of pooled LightGBM fits reaches 0.6161 vs the naive floor's 0.8929 official WRMSSE (−31.0%) on the scored-once competition window.",
   "03-anomaly-detection":
     "IsolationForest catches 16 of 17 labelled incident windows but fires 1,609 raw alerts; deduplication plus a one-page-per-day cap cuts the stream to 80 pages at modest recall cost.",
   "04-nlp-classification":

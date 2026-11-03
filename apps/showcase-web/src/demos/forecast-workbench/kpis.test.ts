@@ -12,9 +12,8 @@ function windowOf(curves: Record<string, number[]>): ForecastWindow {
     history: [1, 2, 3],
     actual: ACTUAL,
     curves,
-    band: { p10: [8, 8, 8, 8], p90: [16, 20, 20, 36] },
+    band: { lo: [8, 8, 8, 8], hi: [16, 20, 20, 36] },
     wape: {},
-    shape: "steady",
   };
 }
 

@@ -58,19 +58,19 @@ export function weeklyAbsError(actual: number[], pred: number[], h: number): num
   return buckets;
 }
 
-/** Band calibration over the first `h` scored days, straight from the payload
- * arrays: per-day hit indicator (p10 ≤ actual ≤ p90), the coverage fraction
- * and the mean p10→p90 width. NaN-safe when the band is missing. */
+/** Envelope stats over the first `h` scored days, straight from the payload
+ * arrays: per-day hit indicator (lo ≤ actual ≤ hi), the coverage fraction
+ * and the mean lo→hi width. NaN-safe when the envelope is missing. */
 export function bandCalibration(
   window: ForecastWindow,
   h: number,
 ): { hits: number; n: number; coverage: number; meanWidth: number } {
-  const n = Math.max(0, Math.min(h, window.actual.length, window.band.p10.length, window.band.p90.length));
+  const n = Math.max(0, Math.min(h, window.actual.length, window.band.lo.length, window.band.hi.length));
   let hits = 0;
   let width = 0;
   for (let i = 0; i < n; i++) {
-    const lo = window.band.p10[i];
-    const hi = window.band.p90[i];
+    const lo = window.band.lo[i];
+    const hi = window.band.hi[i];
     if (window.actual[i] >= lo && window.actual[i] <= hi) hits += 1;
     width += hi - lo;
   }

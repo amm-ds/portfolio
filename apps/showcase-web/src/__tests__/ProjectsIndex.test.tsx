@@ -347,8 +347,8 @@ describe("ProjectsIndex", () => {
     expect(demoCards[1].getAttribute("href")).toBe("/demos/forecast-workbench");
     // both static fallback cards carry the same labeled structure, results
     // metric included (churn hero "$601 vs $1,035 naive", forecast hero
-    // "0.491 vs 0.603")
-    const metrics = ["$601 vs $1,035 naive", "0.491 vs 0.603"];
+    // "0.6161 vs 0.8929")
+    const metrics = ["$601 vs $1,035 naive", "0.6161 vs 0.8929"];
     demoCards.forEach((card, i) => {
       const blockLabels = [...card.querySelectorAll(".study-block-label")].map(
         (el) => el.textContent,

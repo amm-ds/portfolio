@@ -114,35 +114,37 @@ export interface ChurnPayload {
   roc_auc: number;
 }
 
-// --- forecast workbench payload (`projects/02-demand-forecasting/reports_m5/demo_payload.json`, schema v4) ---
+// --- forecast workbench payload (`projects/02-demand-forecasting/reports_m5_full/demo_payload.json`, schema v4, protocol m5_full_v1) ---
 
-/** Candidate model names the demo can draw (per-series curves in each window;
- * `convex_ensemble` applies the committed selection rule to its members; the
- * `_l2` pair are the wave-28 L1/L2 comparison candidates — `lgbm_l2`
- * reproduces `lgbm`, `ensemble_l2` is the WRMSSE-selected blend). */
+/** Candidate model names the demo can draw (per-series curves in each window).
+ * The full panel runs 8 candidates: the seasonal-naive floor, global LightGBM
+ * and its Tweedie twin, three pooled fits (per store / store×category /
+ * department), per-series AutoETS, and the stability-screened convex ensemble
+ * (the committed members at the committed weights). */
 export type ForecastModel =
   | "seasonal_naive"
   | "auto_ets"
   | "lgbm"
-  | "lgbm_l2"
-  | "convex_ensemble"
-  | "ensemble_l2";
+  | "lgbm_tweedie"
+  | "lgbm_pool_store"
+  | "lgbm_pool_storecat"
+  | "lgbm_pool_dept"
+  | "convex_ensemble";
 
-/** The scored window of one catalog series at one test origin. */
+/** The single scored-once window of one catalog series (origin 2016-05-22,
+ * the competition window — the catalog carries one origin by design). */
 export interface ForecastWindow {
   /** 56-day history tail ending at the origin day. */
   history: number[];
   /** 28-day actuals, origin + 1 .. origin + 28. */
   actual: number[];
-  /** Per-candidate 28-day forecast curves (may include committed ensemble
-   * members beyond the four demo candidates). */
+  /** Per-candidate 28-day forecast curves (all 8 candidates). */
   curves: Record<string, number[]>;
-  /** lgbm split-conformal band (p10/p90) around the lgbm curve. */
-  band: { p10: number[]; p90: number[] };
-  /** Per-series test WAPE per candidate, computed from the curves. */
+  /** Ensemble member envelope (per-day min/max of the blend members) — an
+   * envelope, NOT a calibrated prediction interval. */
+  band: { lo: number[]; hi: number[] };
+  /** Per-series window WAPE per candidate, computed from the curves. */
   wape: Record<string, number>;
-  /** Deterministic shape tag: steady | weekly-peaked | event-driven | slow-mover. */
-  shape: string;
 }
 
 export interface CatalogEntry {
@@ -151,20 +153,17 @@ export interface CatalogEntry {
   class: "dense" | "intermittent";
   adi: number;
   cv2: number;
-  origins: Record<string, ForecastWindow>;
+  units_last_28d: number;
+  half: "top_units" | "bottom_intermittency";
+  windows: ForecastWindow;
 }
 
 export interface ForecastPooledMetrics {
-  mae: number;
   wape: number;
-  rmae: number;
   wrmsse: number;
-  wrmsse_weighted: number;
-  peak_mae: number;
-  /** Wave-30: committed pooled bias (mean error share) per candidate. */
-  bias?: number;
-  /** Wave-30: committed pooled zero-day accuracy per candidate. */
-  zero_day_accuracy?: number;
+  bias: number;
+  zero_day_accuracy: number;
+  zero_day_accuracy_intermittent: number;
 }
 
 export interface ForecastWorkbenchPayload {
@@ -172,55 +171,57 @@ export interface ForecastWorkbenchPayload {
   demo: string;
   project: string;
   protocol: string;
-  /** Committed headline block (reports_m5 metrics/probabilistic) verbatim. */
+  /** Committed headline block (reports_m5_full metrics) verbatim. Panel-wide
+   * where the committed run persisted panel stats; catalog-scoped rows are
+   * labelled in `_scope`. */
   groups: {
     headline: {
-      lgbm_vs_naive: {
-        wape: { diff: number; ci95: [number, number]; spans_zero: boolean };
-        wrmsse: { diff: number; ci95: [number, number]; spans_zero: boolean };
-      };
+      metric: string;
+      champion: string;
+      champion_wrmsse: number;
+      wrmsse_champion: { candidate: string; wrmsse: number };
+      absolute_ensemble_wrmsse: number;
       convex_ensemble_vs_naive: {
-        wape: { diff: number; ci95: [number, number]; spans_zero: boolean };
-        wrmsse: { diff: number; ci95: [number, number]; spans_zero: boolean };
+        wrmsse: {
+          diff: number;
+          rel: number;
+          ci95: [number, number] | null;
+          spans_zero: boolean | null;
+          note: string;
+        };
       };
-      baseline: string;
-      /** Wave-28 note: best pooled test WRMSSE among the committed candidates. */
-      wrmsse_champion?: { candidate: string; wrmsse: number; note: string };
     };
     test_pooled: Record<string, ForecastPooledMetrics>;
-    test_by_class: Record<string, Record<string, ForecastPooledMetrics | null>>;
+    test_by_class: Record<
+      string,
+      { dense: { wape: number } | null; intermittent: { wape: number } | null }
+    >;
     win_rate_vs_naive: Record<
       string,
       { pooled: number; dense: number | null; intermittent: number | null }
     >;
+    stability: Record<string, number>;
     classes: {
       counts: { dense: number; intermittent: number };
       thresholds: { adi: number; cv2: number };
     };
     ensemble: {
       pool: string[];
-      selection_wape: Record<string, number>;
+      selection_screen: Record<string, { mean: number; std: number; score: number }>;
       members: string[];
-      weight_on_a: number;
+      weights: number[];
       rule: string;
-      /** Wave-28: the WRMSSE-selected twin blend (xgb + lgbm + auto_ets). */
-      ensemble_l2?: {
-        selection_metric: string;
-        selection_wrmsse: Record<string, number>;
-        members: string[];
-        weights: number[];
-        rule: string;
-      };
     };
     band: {
       method: string;
-      level: number;
+      level: number | null;
       per_horizon_width: number[];
-      candidates: Record<
-        string,
-        { pinball_p50: number; pinball_p90: number; coverage_80: number; mean_band_width: number }
-      >;
+      per_horizon_coverage: number[];
+      candidates: Record<string, { mean_width: number }>;
     };
+    /** Scope notes per block (panel vs catalog statistic) — displayed so a
+     * catalog-scoped number is never read as a panel claim. */
+    _scope: Record<string, string>;
   };
   catalog_rule: string;
   curve_provenance: string;
@@ -230,13 +231,14 @@ export interface ForecastWorkbenchPayload {
   evaluation_metadata: {
     protocol: string;
     dataset: {
-      subset_rule: string;
+      dataset?: string;
+      provenance_ref?: string;
       observed_panel: Record<string, unknown>;
       citation: string;
     };
     split: Record<string, unknown>;
     seeds: Record<string, number>;
-    determinism: string;
+    determinism?: string;
   };
 }
 

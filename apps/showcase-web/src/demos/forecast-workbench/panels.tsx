@@ -159,46 +159,44 @@ export function ErrorCompositionPanel({
 }
 
 /**
- * Band calibration, compact: a horizontal coverage gauge (the per-series
- * coverage for this series × origin × visible horizon as a filled bar, a
- * marker at the 80% target and the pooled committed coverage as a second
- * marker, with the day-count and mean-width folded as small labels), the
- * per-day hit grid (rows of 7 by week, w1..wk labeled on the left; teal =
- * actual inside p10/p90, pink = outside, hover shows the day, band and
- * actual; rows fill the card so short horizons grow instead of leaving dead
- * space) and one footer sentence on where the band
- * hugs or floats off the actuals. Recomputes client-side from the payload
- * arrays for the selected series and horizon. Collapses to a placeholder
- * when LightGBM is deselected (the churn demo's disabled-state pattern).
+ * Member envelope, compact: the per-series coverage for this series × visible
+ * horizon as a filled bar (no target marker — the envelope is NOT a
+ * calibrated interval, so there is nothing to calibrate against), the
+ * committed catalog mean width as a second marker, the per-day hit grid
+ * (rows of 7 by week; amber = actual inside the member min/max, pink =
+ * outside) and one footer sentence on where the envelope hugs or floats off
+ * the actuals. Recomputes client-side from the payload arrays for the
+ * selected series and horizon. Collapses to a placeholder when the ensemble
+ * is deselected.
  */
-export function BandCalibrationPanel({
+export function EnvelopePanel({
   window,
   h,
-  committedCoverage,
+  committedMeanWidth,
   forecastDates,
 }: {
   window: ForecastWindow;
   h: number;
-  /** Pooled committed 80% coverage across all 600 series (payload, fixed). */
-  committedCoverage: number;
-  /** Forecast dates for the current origin (labels hit-strip days). */
+  /** Committed catalog mean envelope width (payload, fixed). */
+  committedMeanWidth: number;
+  /** Forecast dates for the scored window (labels hit-strip days). */
   forecastDates: string[];
 }) {
   const cal = bandCalibration(window, h);
 
-  // where the band is tight/loose vs the actuals: per-day clearance to the
-  // nearest p10/p90 edge, signed — positive = that much slack inside the
-  // band, negative = a miss by that much past the edge
-  let tightest: { day: number; clearance: number; side: "p10" | "p90" } | null = null;
-  let loosest: { day: number; clearance: number; side: "p10" | "p90" } | null = null;
+  // where the envelope is tight/loose vs the actuals: per-day clearance to
+  // the nearest lo/hi edge, signed — positive = that much slack inside the
+  // envelope, negative = a miss by that much past the edge
+  let tightest: { day: number; clearance: number; side: "lo" | "hi" } | null = null;
+  let loosest: { day: number; clearance: number; side: "lo" | "hi" } | null = null;
   for (let i = 0; i < cal.n; i++) {
-    const lo = window.band.p10[i];
-    const hi = window.band.p90[i];
+    const lo = window.band.lo[i];
+    const hi = window.band.hi[i];
     if (!(hi - lo > 0)) continue;
     const below = window.actual[i] - lo;
     const above = hi - window.actual[i];
     const clearance = Math.min(below, above);
-    const side = below <= above ? "p10" : "p90";
+    const side = below <= above ? "lo" : "hi";
     if (tightest === null || clearance < tightest.clearance) {
       tightest = { day: i, clearance, side };
     }
@@ -207,82 +205,84 @@ export function BandCalibrationPanel({
     }
   }
 
-  const edgePhrase = (clearance: number, side: "p10" | "p90"): string =>
+  const edgePhrase = (clearance: number, side: "lo" | "hi"): string =>
     clearance >= 0
       ? `clears the ${side} edge by ${clearance.toFixed(1)}u`
       : `overshoots the ${side} edge by ${Math.abs(clearance).toFixed(1)}u`;
 
-  const target = 0.8;
   return (
     <DemoFigure
       comment={
         tightest && loosest ? (
           <>
-            The band runs tightest on {shortDate(forecastDates, tightest.day)} — the actual{" "}
+            The envelope runs tightest on {shortDate(forecastDates, tightest.day)} — the actual{" "}
             {edgePhrase(tightest.clearance, tightest.side)} — and loosest on{" "}
             {shortDate(forecastDates, loosest.day)}, where it{" "}
             {loosest.clearance >= 0
               ? `floats ${loosest.clearance.toFixed(1)}u clear of either edge`
               : edgePhrase(loosest.clearance, loosest.side)}
-            .
+            . It is the per-day min/max of the blend members — an envelope,
+            not a calibrated prediction interval.
           </>
         ) : (
-          <>The band is degenerate (zero width) on every scored day — nothing to calibrate here.</>
+          <>The envelope is degenerate (zero width) on every scored day — nothing to audit here.</>
         )
       }
     >
-      <div className="fwb-cov-gauge" role="img" aria-label="per-series 80% band coverage gauge">
+      <div className="fwb-cov-gauge" role="img" aria-label="per-series member-envelope coverage gauge">
         <div className="fwb-cov-track">
           <span
-            className={`fwb-cov-fill ${cal.coverage >= 0.75 ? "good" : "bad"}`}
+            className={`fwb-cov-fill ${cal.coverage >= 0.5 ? "good" : "bad"}`}
             style={{ width: `${(cal.coverage * 100).toFixed(1)}%` }}
           />
-          <span className="fwb-cov-marker target" style={{ left: `${target * 100}%` }} />
           <span
             className="fwb-cov-marker committed"
-            style={{ left: `${(committedCoverage * 100).toFixed(1)}%` }}
+            style={{ left: `${Math.min(100, cal.coverage * 100).toFixed(1)}%` }}
           />
         </div>
         <div className="fwb-cov-scale">
           <span>{cal.hits}/{cal.n} days inside</span>
           <span className="fwb-cov-legend">
-            <span className="fwb-cov-key target">80% target</span>
             <span className="fwb-cov-key committed">
-              {(committedCoverage * 100).toFixed(1)}% committed
+              {cal.coverage > 0 ? `${(cal.coverage * 100).toFixed(1)}% this series — no target (envelope)` : "no target — envelope, not an interval"}
             </span>
           </span>
           <span>mean width {cal.meanWidth.toFixed(1)}u</span>
         </div>
       </div>
-      <div className="fwb-band-weeks" role="img" aria-label="per-day band hit indicator, one row per week">
+      <div className="fwb-band-weeks" role="img" aria-label="per-day envelope hit indicator, one row per week">
         {Array.from({ length: Math.ceil(cal.n / 7) }, (_, w) => (
           <div className="fwb-band-week" key={w}>
             <span className="fwb-band-week-label">w{w + 1}</span>
             {Array.from({ length: Math.min(7, cal.n - w * 7) }, (_, j) => {
               const i = w * 7 + j;
-              const hit = window.actual[i] >= window.band.p10[i] && window.actual[i] <= window.band.p90[i];
+              const hit = window.actual[i] >= window.band.lo[i] && window.actual[i] <= window.band.hi[i];
               return (
                 <span
                   key={i}
                   className={`fwb-band-day ${hit ? "hit" : "miss"}`}
                   title={`${shortDate(forecastDates, i)} (day +${i + 1}): ${
                     hit ? "inside" : "outside"
-                  } [${window.band.p10[i].toFixed(1)}, ${window.band.p90[i].toFixed(1)}] vs actual ${window.actual[i].toFixed(1)}`}
+                  } [${window.band.lo[i].toFixed(1)}, ${window.band.hi[i].toFixed(1)}] vs actual ${window.actual[i].toFixed(1)}`}
                 />
               );
             })}
           </div>
         ))}
       </div>
+      <p className="fwb-verdict-scale">
+        committed catalog mean envelope width {committedMeanWidth.toFixed(1)}u — subset statistic,
+        never read as a panel number
+      </p>
     </DemoFigure>
   );
 }
 
-/** Compact disabled-state placeholder for the band card when lgbm is off. */
-export function BandPlaceholder() {
+/** Compact disabled-state placeholder for the envelope card when the ensemble is off. */
+export function EnvelopePlaceholder() {
   return (
-    <DemoFigure comment={<>The conformal band belongs to the LightGBM candidate — switch it on to audit its coverage here.</>}>
-      <p className="state-box fwb-band-off">enable LightGBM to see its band</p>
+    <DemoFigure comment={<>The envelope belongs to the screened ensemble — switch it on to audit the member min/max band here.</>}>
+      <p className="state-box fwb-band-off">enable the ensemble to see its member envelope</p>
     </DemoFigure>
   );
 }
@@ -320,15 +320,15 @@ export function VerdictPanel({
   const bestKey = rows[0]?.key ?? null;
   const naiveWins = bestKey === NAIVE;
   const pooled = payload.groups.test_pooled;
-  // committed pooled test bias per candidate (wave-30 payload) — "—" when a
-  // curve has no committed pooled row (never for the shipped candidates)
+  // committed pooled test bias per candidate — "—" when a curve has no
+  // committed pooled row (never for the shipped candidates)
   const fmtBias = (key: string) => {
     const b = pooled[key]?.bias;
     return b === undefined ? "—" : `${b < 0 ? "−" : "+"}${Math.abs(b).toFixed(3)}`;
   };
   const committedChip =
     h === 28 && bestKey && bestKey !== NAIVE && pooled[bestKey] && pooled[NAIVE]
-      ? pooled[bestKey].wape - pooled[NAIVE].wape
+      ? pooled[bestKey].wrmsse - pooled[NAIVE].wrmsse
       : null;
   const intermWinRate =
     payload.groups.win_rate_vs_naive.convex_ensemble?.intermittent ?? null;
@@ -395,7 +395,7 @@ export function VerdictPanel({
                 </span>
                 <span
                   className="fwb-verdict-bias"
-                  title="committed pooled test bias (wave-30 metric; the blend sits at −0.000)"
+                  title="committed pooled test bias (mean forecast − actual share)"
                 >
                   {fmtBias(r.key)}
                 </span>
@@ -406,8 +406,8 @@ export function VerdictPanel({
         <div className="fwb-verdict-foot">
           {committedChip !== null && (
             <p className="fwb-verdict-committed">
-              pooled {committedChip > 0 ? "+" : "−"}
-              {Math.abs(committedChip * 100).toFixed(1)} pts committed
+              pooled official WRMSSE {committedChip > 0 ? "+" : "−"}
+              {Math.abs(committedChip).toFixed(4)} committed
             </p>
           )}
           <p

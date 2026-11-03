@@ -397,9 +397,17 @@ def build_demo_payload(
     for member in ens_members:
         if member not in sidecar.columns:
             raise ValueError(f"committed ensemble member {member!r} missing from the sidecar")
+    # same guarantee for the WRMSSE-screened comparison blend: its curve ships,
+    # so its members' curves must ship too (the wave-30 screen admits arms
+    # outside CURVE_CANDIDATES, e.g. lgbm_tweedie)
+    l2_block = metrics["ensemble"].get("ensemble_l2") or {}
+    l2_members = tuple(l2_block.get("members") or ())
+    for member in l2_members:
+        if member not in sidecar.columns:
+            raise ValueError(f"committed ensemble_l2 member {member!r} missing from the sidecar")
     # ship the demo candidates plus any committed ensemble member not among
-    # them (the blend is verifiable from the shipped curves)
-    curve_names = tuple(dict.fromkeys((*CURVE_CANDIDATES, *ens_members)))
+    # them (both blends are verifiable from the shipped curves)
+    curve_names = tuple(dict.fromkeys((*CURVE_CANDIDATES, *ens_members, *l2_members)))
 
     origin_blocks: list[dict[str, Any]] = []
     for odate in test_origins:

@@ -16,97 +16,107 @@ const CURVES = {
   seasonal_naive: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12],
   auto_ets: [11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12, 11, 12, 13, 12],
   lgbm: [10, 11, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14],
-  // wave-28 L1/L2 pair: lgbm_l2 reproduces lgbm bitwise; ensemble_l2 tracks the blend
-  lgbm_l2: [10, 11, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14, 13, 11, 10, 12, 14],
-  convex_ensemble: [11, 12, 13, 12, 11, 11, 13, 13, 12, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13],
-  ensemble_l2: [11, 12, 13, 12, 11, 11, 13, 13, 12, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13, 13, 11, 11, 12, 13],
+  lgbm_tweedie: [10.5, 11, 13.5, 13, 11.5, 10, 12.5, 14, 12.5, 11.5, 10.5, 12, 13.5, 12.5, 11.5, 10.5, 12, 13.5, 12.5, 11.5, 10.5, 12, 13.5, 12.5, 11.5, 10.5, 12, 13.5],
+  lgbm_pool_store: [11, 11.5, 13.5, 13, 11, 10.5, 12.5, 13.5, 13, 11, 10.5, 12.5, 13.5, 13, 11, 10.5, 12.5, 13.5, 13, 11, 10.5, 12.5, 13.5, 13, 11, 10.5, 12.5, 13.5],
+  lgbm_pool_storecat: [11.5, 12, 14, 13.5, 11.5, 11, 13, 14, 13.5, 11.5, 11, 13, 14, 13.5, 11.5, 11, 13, 14, 13.5, 11.5, 11, 13, 14, 13.5, 11.5, 11, 13, 14],
+  lgbm_pool_dept: [11, 12, 14.5, 13, 11, 10.5, 12.5, 14, 13, 11, 10.5, 12.5, 14, 13, 11, 10.5, 12.5, 14, 13, 11, 10.5, 12.5, 14, 13, 11, 10.5, 12.5, 14],
+  convex_ensemble: [10.8, 11.4, 13.8, 13.1, 11.2, 10.4, 12.3, 13.9, 12.9, 11.2, 10.4, 12.3, 13.8, 12.9, 11.2, 10.4, 12.3, 13.8, 12.9, 11.2, 10.4, 12.3, 13.8, 12.9, 11.2, 10.4, 12.3, 13.8],
 };
 const ACTUAL = [10, 12, 15, 12, 11, 9, 13, 15, 14, 11, 10, 12, 16, 15, 12, 10, 11, 14, 16, 13, 11, 10, 13, 15, 14, 12, 11, 13];
 const HISTORY = [9, 10, 11, 10, 12, 13, 11, 10];
 
-function windowOf(shape: string) {
+function windowOf() {
+  const wape: Record<string, number> = {};
+  for (const [cand, curve] of Object.entries(CURVES)) {
+    const err = ACTUAL.reduce((s, a, i) => s + Math.abs(curve[i] - a), 0);
+    wape[cand] = err / ACTUAL.reduce((s, a) => s + a, 0);
+  }
   return {
     history: HISTORY,
     actual: ACTUAL,
     curves: CURVES,
     band: {
-      p10: CURVES.lgbm.map((v) => Math.max(0, v - 4)),
-      p90: CURVES.lgbm.map((v) => v + 4),
+      lo: CURVES.convex_ensemble.map((v) => Math.max(0, v - 1)),
+      hi: CURVES.convex_ensemble.map((v) => v + 1),
     },
-    wape: {
-      seasonal_naive: 0.2,
-      auto_ets: 0.18,
-      lgbm: 0.15,
-      lgbm_l2: 0.15,
-      convex_ensemble: 0.16,
-      ensemble_l2: 0.16,
-    },
-    shape,
+    wape,
   };
 }
 
 /** Intermittent-series window where the flat naive curve nails the actuals —
  * the honest per-series verdict there is "the seasonal naive wins this one". */
-function naiveFavorableWindow(shape: string) {
-  return { ...windowOf(shape), actual: CURVES.seasonal_naive.slice() };
+function naiveFavorableWindow() {
+  return { ...windowOf(), actual: CURVES.seasonal_naive.slice() };
 }
 
-/** 4-series fixture: 2 stores × (dense + intermittent), 2 scored origins. */
+const POOLED = {
+  seasonal_naive: { wape: 0.9159, wrmsse: 0.8929, bias: -0.012, zero_day_accuracy: 0.6663, zero_day_accuracy_intermittent: 0.6782 },
+  auto_ets: { wape: 0.771, wrmsse: 0.7093, bias: -0.0063, zero_day_accuracy: 0.6095, zero_day_accuracy_intermittent: 0.6242 },
+  lgbm: { wape: 0.7626, wrmsse: 0.6601, bias: 0.0041, zero_day_accuracy: 0.5808, zero_day_accuracy_intermittent: 0.5966 },
+  lgbm_tweedie: { wape: 0.7642, wrmsse: 0.6473, bias: 0.0122, zero_day_accuracy: 0.5659, zero_day_accuracy_intermittent: 0.5812 },
+  lgbm_pool_store: { wape: 0.7641, wrmsse: 0.6217, bias: 0.0265, zero_day_accuracy: 0.5812, zero_day_accuracy_intermittent: 0.5969 },
+  lgbm_pool_storecat: { wape: 0.7674, wrmsse: 0.6575, bias: 0.0482, zero_day_accuracy: 0.5708, zero_day_accuracy_intermittent: 0.5862 },
+  lgbm_pool_dept: { wape: 0.7608, wrmsse: 0.6313, bias: 0.0041, zero_day_accuracy: 0.5802, zero_day_accuracy_intermittent: 0.596 },
+  convex_ensemble: { wape: 0.7633, wrmsse: 0.6161, bias: 0.0328, zero_day_accuracy: 0.5734, zero_day_accuracy_intermittent: 0.589 },
+};
+
+/** 4-series fixture: 2 stores × (top-units + hardest-intermittent), one
+ * scored-once origin, the 8 full-panel candidates. */
 const PAYLOAD: ForecastWorkbenchPayload = {
   schema_version: 4,
   demo: "forecast-workbench",
   project: "02-demand-forecasting",
-  protocol: "m5_direct_v1",
+  protocol: "m5_full_v1",
   groups: {
     headline: {
-      lgbm_vs_naive: {
-        wape: { diff: -0.0911, ci95: [-0.1023, -0.0803], spans_zero: false },
-        wrmsse: { diff: -0.1509, ci95: [-0.1625, -0.1396], spans_zero: false },
-      },
+      metric: "official_wrmsse",
+      champion: "convex_ensemble",
+      champion_wrmsse: 0.6161,
+      wrmsse_champion: { candidate: "convex_ensemble", wrmsse: 0.6161 },
+      absolute_ensemble_wrmsse: 0.6161,
       convex_ensemble_vs_naive: {
-        wape: { diff: -0.1049, ci95: [-0.1154, -0.0946], spans_zero: false },
-        wrmsse: { diff: -0.1574, ci95: [-0.1679, -0.147], spans_zero: false },
+        wrmsse: { diff: -0.2768, rel: -0.31, ci95: null, spans_zero: null, note: "fixture" },
       },
-      baseline: "seasonal_naive",
     },
-    test_pooled: {
-      seasonal_naive: { mae: 5.77, wape: 0.6032, rmae: 1.0, wrmsse: 0.7617, wrmsse_weighted: 0.7197, peak_mae: 14.43 },
-      auto_ets: { mae: 4.82, wape: 0.5035, rmae: 0.8347, wrmsse: 0.6105, wrmsse_weighted: 0.5891, peak_mae: 12.95 },
-      lgbm: { mae: 4.9, wape: 0.5121, rmae: 0.849, wrmsse: 0.6108, wrmsse_weighted: 0.5851, peak_mae: 12.81 },
-      lgbm_l2: { mae: 4.9, wape: 0.5121, rmae: 0.849, wrmsse: 0.6108, wrmsse_weighted: 0.5851, peak_mae: 12.81 },
-      convex_ensemble: { mae: 4.77, wape: 0.4983, rmae: 0.826, wrmsse: 0.6043, wrmsse_weighted: 0.5828, peak_mae: 12.89 },
-      ensemble_l2: { mae: 4.76, wape: 0.4979, rmae: 0.825, wrmsse: 0.6039, wrmsse_weighted: 0.5824, peak_mae: 12.9 },
-    },
+    test_pooled: POOLED,
     test_by_class: {},
     win_rate_vs_naive: {
-      seasonal_naive: { pooled: 0.0, dense: 0.0, intermittent: 0.0 },
-      convex_ensemble: { pooled: 0.8933, dense: 0.8898, intermittent: 0.9051 },
-      ensemble_l2: { pooled: 0.8917, dense: 0.8883, intermittent: 0.9036 },
+      convex_ensemble: { pooled: 0.5625, dense: 1.0, intermittent: 0.4 },
     },
-    classes: { counts: { dense: 463, intermittent: 137 }, thresholds: { adi: 1.32, cv2: 0.49 } },
+    stability: { convex_ensemble: 0.0001 },
+    classes: { counts: { dense: 2754, intermittent: 27736 }, thresholds: { adi: 1.32, cv2: 0.49 } },
     ensemble: {
-      pool: ["lgbm", "auto_ets", "auto_ces"],
-      selection_wape: { lgbm: 0.4877, auto_ets: 0.4729, auto_ces: 0.4834 },
-      members: ["auto_ets", "auto_ces"],
-      weight_on_a: 0.67,
-      rule: "best two of the pool by selection WAPE",
+      pool: ["lgbm", "lgbm_tweedie", "lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept", "auto_ets"],
+      selection_screen: {
+        lgbm_pool_storecat: { mean: 0.6049, std: 0.0179, score: 0.6228 },
+        lgbm_pool_store: { mean: 0.6187, std: 0.0126, score: 0.6313 },
+        lgbm_pool_dept: { mean: 0.6436, std: 0.0214, score: 0.6651 },
+      },
+      members: ["lgbm_pool_storecat", "lgbm_pool_store", "lgbm_pool_dept"],
+      weights: [0.6, 0.1, 0.3],
+      rule: "fixture",
     },
     band: {
-      method: "split-conformal",
-      level: 0.8,
-      per_horizon_width: ACTUAL.map(() => 6),
-      candidates: {
-        lgbm: { pinball_p50: 2.45, pinball_p90: 1.46, coverage_80: 0.7869, mean_band_width: 12.46 },
-        convex_ensemble: { pinball_p50: 2.38, pinball_p90: 1.46, coverage_80: 0.7846, mean_band_width: 11.96 },
-      },
+      method: "member envelope (min/max), not a calibrated interval",
+      level: null,
+      per_horizon_width: ACTUAL.map(() => 1.6),
+      per_horizon_coverage: ACTUAL.map(() => 0.05),
+      candidates: { convex_ensemble: { mean_width: 1.6 } },
     },
+    _scope: { test_by_class: "catalog", win_rate_vs_naive: "catalog" },
   },
   catalog_rule: "test fixture",
   curve_provenance: "test fixture",
   history_days: 8,
   origins: [
-    { origin: "2016-05-10", history_start: "2016-03-15", forecast_dates: ACTUAL.map((_, i) => `2016-05-${11 + i}`) },
-    { origin: "2016-05-17", history_start: "2016-03-22", forecast_dates: ACTUAL.map((_, i) => `2016-05-${18 + i}`) },
+    {
+      origin: "2016-05-22",
+      history_start: "2016-03-28",
+      forecast_dates: ACTUAL.map((_, i) => {
+        const d = new Date(Date.UTC(2016, 4, 23 + i));
+        return d.toISOString().slice(0, 10);
+      }),
+    },
   ],
   catalog: [
     {
@@ -115,56 +125,61 @@ const PAYLOAD: ForecastWorkbenchPayload = {
       class: "dense",
       adi: 1.16,
       cv2: 0.7,
-      origins: { "2016-05-10": windowOf("weekly-peaked"), "2016-05-17": windowOf("weekly-peaked") },
+      units_last_28d: 350,
+      half: "top_units",
+      windows: windowOf(),
     },
     {
       series_id: "FOODS_1_032_CA_1",
       store: "CA_1",
       class: "intermittent",
-      adi: 1.35,
-      cv2: 1.29,
-      origins: { "2016-05-10": naiveFavorableWindow("slow-mover"), "2016-05-17": naiveFavorableWindow("slow-mover") },
+      adi: 3.2,
+      cv2: 4.1,
+      units_last_28d: 2,
+      half: "bottom_intermittency",
+      windows: naiveFavorableWindow(),
     },
     {
-      series_id: "FOODS_3_090_CA_3",
-      store: "CA_3",
+      series_id: "HOUSEHOLD_1_110_TX_2",
+      store: "TX_2",
       class: "dense",
-      adi: 1.23,
-      cv2: 0.68,
-      origins: { "2016-05-10": windowOf("event-driven"), "2016-05-17": windowOf("event-driven") },
+      adi: 1.1,
+      cv2: 0.4,
+      units_last_28d: 408,
+      half: "top_units",
+      windows: windowOf(),
     },
     {
-      series_id: "FOODS_3_586_TX_2",
+      series_id: "HOBBIES_1_052_TX_2",
       store: "TX_2",
       class: "intermittent",
-      adi: 1.5,
-      cv2: 1.15,
-      origins: { "2016-05-10": naiveFavorableWindow("steady"), "2016-05-17": naiveFavorableWindow("steady") },
+      adi: 2.9,
+      cv2: 3.3,
+      units_last_28d: 1,
+      half: "bottom_intermittency",
+      windows: naiveFavorableWindow(),
     },
   ],
   evaluation_metadata: {
-    protocol: "m5_direct_v1",
-    dataset: { subset_rule: "fixture", observed_panel: {}, citation: "fixture" },
+    protocol: "m5_full_v1",
+    dataset: { dataset: "fixture", observed_panel: {}, citation: "fixture" },
     split: {},
     seeds: { lgbm_random_state: 42 },
-    determinism: "fixture",
   },
 };
 
 const MANIFEST = {
   id: "forecast-workbench",
   title: "demand forecast workbench",
-  hook: "Pick a store-product series from the committed M5 track and compare the candidates on the scored-once test origins.",
+  hook: "Pick a committed M5 store-product series and compare the candidates on the scored-once competition window.",
   project: "02-demand-forecasting",
   group: "plan operations",
   skills: ["time series forecasting"],
   modes: ["browser"],
   hero: null,
-  scenarios: [
-    { name: "base", controls: { models: "seasonal_naive,lgbm", origin: "2016-05-10", horizon: 28 } },
-  ],
+  scenarios: [{ name: "base", controls: { models: "seasonal_naive,lgbm", horizon: 28 } }],
   live_endpoints: [],
-  payload: { path: "reports_m5/demo_payload.json", schema_version: 4, required_keys: [] },
+  payload: { path: "reports_m5_full/demo_payload.json", schema_version: 4, required_keys: [] },
 };
 
 function mockFetch() {
@@ -235,14 +250,16 @@ describe("ForecastWorkbench", () => {
       ).toBeInTheDocument(),
     );
     expect(
-      screen.getByText(/compare the candidates on the scored-once test origins/i),
+      screen.getByText(/compare the candidates on the scored-once competition window/i),
     ).toBeInTheDocument();
     // series picker: one chip per catalog series, grouped under store tags
     expect(screen.getByText("CA_1")).toBeInTheDocument();
-    expect(screen.getByText("CA_3")).toBeInTheDocument();
     expect(screen.getByText("TX_2")).toBeInTheDocument();
+    // halves sub-group the chips inside each store
+    expect(screen.getAllByText("top units").length).toBe(2);
+    expect(screen.getAllByText("hardest intermittent").length).toBe(2);
     expect(screen.getByRole("button", { name: /FOODS_1_004/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /FOODS_3_586/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /HOUSEHOLD_1_110/ })).toBeInTheDocument();
     // class badges on the chips
     const chip = screen.getByRole("button", { name: /FOODS_1_032/ });
     expect(chip.textContent).toContain("intermittent");
@@ -257,16 +274,24 @@ describe("ForecastWorkbench", () => {
     ).toBeInTheDocument();
     const tiles = document.querySelectorAll(".wb-kpi-band .wb-kpi");
     expect(tiles).toHaveLength(3);
-    expect(screen.getByText("band coverage")).toBeInTheDocument();
-    expect(screen.getByText("peak-day MAE @ 28d")).toBeInTheDocument();
+    expect(screen.getByText("official WRMSSE")).toBeInTheDocument();
+    expect(screen.getByText("zero-day accuracy")).toBeInTheDocument();
     // the demo opens on the full scored window (h=28) with every candidate
     // selected; LightGBM leads the fixture window
     const wapeTile = screen.getByText("WAPE @ 28d").closest(".wb-kpi")!;
     expect(wapeTile.textContent).toMatch(/LightGBM vs naive [\d.]+%/);
-    // the committed pooled chip is quoted at the full scored horizon
-    expect(wapeTile.textContent).toMatch(/pooled −9\.1 pts committed/);
+    // the committed pooled chip is quoted at the full scored horizon (the
+    // fixture's per-series winner is LightGBM → its committed pooled WRMSSE gap)
+    expect(wapeTile.textContent).toMatch(/pooled WRMSSE −0\.2328 committed/);
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
-    expect(screen.getByText("WAPE @ 7d").closest(".wb-kpi")!.textContent).not.toMatch(/pooled/);
+    expect(screen.getByText("WAPE @ 7d").closest(".wb-kpi")!.textContent).not.toMatch(/committed/);
+    // the headline tile carries the committed scored-once numbers
+    const wrmsseTile = screen.getByText("official WRMSSE").closest(".wb-kpi")!;
+    expect(wrmsseTile.textContent).toContain("0.6161");
+    expect(wrmsseTile.textContent).toContain("0.8929");
+    const zeroTile = screen.getByText("zero-day accuracy").closest(".wb-kpi")!;
+    expect(zeroTile.textContent).toMatch(/57\.3%/);
+    expect(zeroTile.textContent).toMatch(/66\.6%/);
   });
 
   it("opens with horizon 28d and every model chip selected", async () => {
@@ -276,17 +301,26 @@ describe("ForecastWorkbench", () => {
     expect(
       (screen.getByRole("button", { name: "28d" }) as HTMLButtonElement).getAttribute("aria-pressed"),
     ).toBe("true");
-    for (const name of ["seasonal naive", "AutoETS", "LightGBM", "lgbm l2", "ensemble", "ensemble l2"]) {
+    for (const name of [
+      "seasonal naive",
+      "AutoETS",
+      "LightGBM",
+      "LightGBM tweedie",
+      "pooled store",
+      "pooled store×cat",
+      "pooled dept",
+      "ensemble",
+    ]) {
       const chip = screen.getByRole("button", { name });
       expect(chip.getAttribute("aria-pressed"), name).toBe("true");
     }
-    // the wave-28 L2 chips carry the comparison tooltip
-    expect(screen.getByRole("button", { name: "lgbm l2" }).getAttribute("title")).toBe(
-      "same booster, L2-selected blend — the wave-28 L1/L2 comparison",
+    // the pooled chips carry their grouping tooltips
+    expect(screen.getByRole("button", { name: "pooled store" }).getAttribute("title")).toBe(
+      "one LightGBM fit per store (10 groups)",
     );
-    expect(screen.getByRole("button", { name: "ensemble l2" }).getAttribute("title")).toBe(
-      "same booster, L2-selected blend — the wave-28 L1/L2 comparison",
-    );
+    expect(
+      screen.getByRole("button", { name: "pooled store×cat" }).getAttribute("title"),
+    ).toBe("one LightGBM fit per store×category cell (30 groups)");
   });
 
   it("removes a curve when a model chip is toggled off and restores it on re-toggle", async () => {
@@ -296,7 +330,8 @@ describe("ForecastWorkbench", () => {
     const polylinesBefore = document.querySelectorAll(".demo-chart polyline").length;
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
     const after = document.querySelectorAll(".demo-chart polyline").length;
-    expect(after).toBe(polylinesBefore - 1);
+    // the ensemble curve plus its two envelope edges leave the chart
+    expect(after).toBe(polylinesBefore - 3);
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
     expect(document.querySelectorAll(".demo-chart polyline").length).toBe(polylinesBefore);
   });
@@ -322,7 +357,8 @@ describe("ForecastWorkbench", () => {
     fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
     const note = screen.getByTestId("honest-gap");
     expect(note.textContent).toContain("The honest gap");
-    expect(note.textContent).toContain("90.5% of intermittent series");
+    expect(note.textContent).toContain("40.0% of intermittent series");
+    expect(note.textContent).toContain("not a calibrated interval");
     // verdict notice reacts to the selection too
     expect(document.querySelector(".wb-notice")!.textContent).toContain("h = 28");
   });
@@ -345,19 +381,16 @@ describe("ForecastWorkbench", () => {
     );
   });
 
-  it("keeps every chart coordinate finite across series, origin, model and horizon changes", async () => {
+  it("keeps every chart coordinate finite across series, model and horizon changes", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
-    // default view: every candidate + band on the full scored window
+    // default view: every candidate + envelope on the full scored window
     expect(lgbmPolylines().length).toBeGreaterThan(0);
     expect(document.querySelector(".demo-chart path[d]")).not.toBeNull();
     expectFiniteChartGeometry();
-    // toggle the ensemble off (band indices shift by one)
+    // toggle the ensemble off (envelope indices shift by two)
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expectFiniteChartGeometry();
-    // switch origin
-    fireEvent.click(screen.getByRole("button", { name: "2016-05-17" }));
     expectFiniteChartGeometry();
     // switch to an intermittent series
     fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
@@ -374,14 +407,14 @@ describe("ForecastWorkbench", () => {
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     // the churn-style card row sits in the secondary band under the chart
     expect(screen.getByText("error composition")).toBeInTheDocument();
-    expect(screen.getByText("band calibration")).toBeInTheDocument();
+    expect(screen.getByText("member envelope")).toBeInTheDocument();
     expect(screen.getByText("model verdict")).toBeInTheDocument();
     expect(document.querySelectorAll(".wb-secondary .figure-card")).toHaveLength(3);
 
     const errCard = () =>
       screen.getByText("error composition").closest(".wb-secondary-panel")!;
     const bandCard = () =>
-      screen.getByText("band calibration").closest(".wb-secondary-panel")!;
+      screen.getByText("member envelope").closest(".wb-secondary-panel")!;
     // full-horizon headlines (the demo opens at h=28)
     expect(errCard().textContent).toMatch(/wape @28d 0\.\d{3}/);
     expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
@@ -396,18 +429,20 @@ describe("ForecastWorkbench", () => {
     ).toMatch(/h = 7/);
   });
 
-  it("collapses the band card when LightGBM is deselected", async () => {
+  it("collapses the envelope card when the ensemble is deselected", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
-    expect(screen.queryByText(/enable LightGBM/)).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /LightGBM/ }));
-    expect(screen.getByText("enable LightGBM to see its band")).toBeInTheDocument();
-    // re-enabling restores the live band grid
-    fireEvent.click(screen.getByRole("button", { name: /LightGBM/ }));
-    expect(screen.queryByText(/enable LightGBM/)).toBeNull();
+    expect(screen.queryByText(/enable the ensemble/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
     expect(
-      screen.getByText("band calibration").closest(".wb-secondary-panel")!.textContent,
+      screen.getByText("enable the ensemble to see its member envelope"),
+    ).toBeInTheDocument();
+    // re-enabling restores the live envelope grid
+    fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
+    expect(screen.queryByText(/enable the ensemble/)).toBeNull();
+    expect(
+      screen.getByText("member envelope").closest(".wb-secondary-panel")!.textContent,
     ).toMatch(/days inside/);
   });
 
@@ -418,7 +453,7 @@ describe("ForecastWorkbench", () => {
     fireEvent.click(screen.getByRole("button", { name: /FOODS_1_032/ }));
     const verdictCard = screen.getByText("model verdict").closest(".wb-secondary-panel")!;
     expect(verdictCard.textContent).toContain("seasonal naive wins this window");
-    expect(verdictCard.textContent).toContain("90.5% of intermittent series");
+    expect(verdictCard.textContent).toContain("40.0% of intermittent series");
     // the naive row carries the best highlight
     const bestRow = verdictCard.querySelector(".fwb-verdict-item.best")!;
     expect(bestRow.textContent).toContain("seasonal naive");
@@ -435,21 +470,22 @@ describe("ForecastWorkbench", () => {
     );
   });
 
-  it("renders the band card as weekly hit rows — gauge on top, w1..wk labels, one row per week at 28/14/7 — plus the tight/loose footer", async () => {
+  it("renders the envelope card as weekly hit rows — gauge on top, w1..wk labels, one row per week at 28/14/7 — with the no-target legend and the tight/loose footer", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
-    const bandCard = () => screen.getByText("band calibration").closest(".wb-secondary-panel")!;
-    // coverage gauge: per-series fill against the 80% target + pooled marker
+    const bandCard = () => screen.getByText("member envelope").closest(".wb-secondary-panel")!;
+    // coverage gauge: per-series fill, no 80% target marker (an envelope has
+    // no target), the committed-width footer instead
     const gauge = bandCard().querySelector(".fwb-cov-gauge")!;
     expect(gauge).not.toBeNull();
-    expect(gauge.querySelector(".fwb-cov-marker.target")).not.toBeNull();
+    expect(gauge.querySelector(".fwb-cov-marker.target")).toBeNull();
     expect(gauge.querySelector(".fwb-cov-marker.committed")).not.toBeNull();
-    // the folded labels: day count, target legend, pooled committed, mean width
+    // the folded labels: day count, no-target legend, mean width
     expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
     expect(bandCard().textContent).toMatch(/mean width [\d.]+u/);
-    expect(bandCard().textContent).toMatch(/80% target/);
-    expect(bandCard().textContent).toMatch(/78\.7% committed/);
+    expect(bandCard().textContent).toMatch(/no target \(envelope\)/);
+    expect(bandCard().textContent).toMatch(/committed catalog mean envelope width 1\.6u/);
 
     const rowsAt = () => Array.from(bandCard().querySelectorAll(".fwb-band-week"));
     const labelsAt = () => rowsAt().map((r) => r.querySelector(".fwb-band-week-label")!.textContent);
@@ -470,15 +506,11 @@ describe("ForecastWorkbench", () => {
     expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
     expect(labelsAt()).toEqual(["w1"]);
     expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(7);
-    // the removed extras stay gone
-    expect(bandCard().querySelector(".figure-card .demo-readouts")).toBeNull();
-    expect(bandCard().querySelector('svg[aria-label="mean band width by horizon day"]')).toBeNull();
-    expect(bandCard().querySelector(".fwb-cov-week")).toBeNull();
-    expect(bandCard().querySelector(".fwb-worst-miss")).toBeNull();
-    // one computed footer sentence: where the band hugs / floats off actuals
+    // one computed footer sentence: where the envelope hugs / floats off actuals
     const comment = bandCard().querySelector(".figure-comment")!.textContent!;
     expect(comment).toContain("tightest");
     expect(comment).toContain("loosest");
+    expect(comment).toContain("not a calibrated prediction interval");
     const before = bandCard().textContent;
     fireEvent.click(screen.getByRole("button", { name: "28d" }));
     expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
@@ -492,12 +524,12 @@ describe("ForecastWorkbench", () => {
     const verdictCard = () => screen.getByText("model verdict").closest(".wb-secondary-panel")!;
     // default selection: every candidate -> one bar per model
     const items = verdictCard().querySelectorAll(".fwb-verdict-item");
-    expect(items).toHaveLength(6);
+    expect(items).toHaveLength(8);
     for (const item of Array.from(items)) {
       // dot + name + tinted bar fill + value label at the bar end + peak-day MAE
       expect(item.querySelector(".fwb-dot")).not.toBeNull();
       expect(item.querySelector(".fwb-verdict-name")!.textContent).toMatch(
-        /seasonal naive|AutoETS|LightGBM|lgbm l2|ensemble|ensemble l2/,
+        /seasonal naive|AutoETS|LightGBM|tweedie|pooled|ensemble/,
       );
       expect(item.querySelector(".fwb-bar-fill")).not.toBeNull();
       expect(item.querySelector(".fwb-bar-value")!.textContent).toMatch(/^\d+\.\d{3}$/);
@@ -530,7 +562,7 @@ describe("ForecastWorkbench", () => {
     // the fixed common scale: printed axis label, derived from every payload
     // candidate, not the selected subset
     const scaleLabel = () => verdictCard().querySelector(".fwb-verdict-scale")!;
-    expect(scaleLabel().textContent).toMatch(/wape@28d scale max 0\.\d{3} · 6 candidates/);
+    expect(scaleLabel().textContent).toMatch(/wape@28d scale max 0\.\d{3} · 8 candidates/);
     const scaleBefore = scaleLabel().textContent;
 
     // toggle a subset OFF: another bar's width must be pixel-identical and
@@ -542,13 +574,13 @@ describe("ForecastWorkbench", () => {
     const widthBefore = (lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width;
     fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(4);
+    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(6);
     expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
     expect(scaleLabel().textContent).toBe(scaleBefore);
     // toggling back restores the full set at the same widths
     fireEvent.click(screen.getByRole("button", { name: "AutoETS" }));
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(6);
+    expect(verdictCard().querySelectorAll(".fwb-verdict-item")).toHaveLength(8);
     expect((lightgbmRow().querySelector(".fwb-bar-fill") as HTMLElement).style.width).toBe(widthBefore);
 
     // bars and peak-day MAEs change with the horizon toggle
@@ -557,14 +589,14 @@ describe("ForecastWorkbench", () => {
     expect(values()).not.toEqual(before.vals);
     expect(peaksAt(verdictCard())).not.toEqual(before.peaks);
     // below the full scored horizon the committed pooled chip is not quoted
-    expect(verdictCard().textContent).not.toMatch(/pts committed/);
+    expect(verdictCard().textContent).not.toMatch(/WRMSSE [−+][\d.]+ committed/);
     // …but the fixed-scale label follows the horizon
     expect(verdictCard().querySelector(".fwb-verdict-scale")!.textContent).toMatch(
       /wape@7d scale max 0\.\d{3}/,
     );
     // back at h=28 the pooled committed chip reappears
     fireEvent.click(screen.getByRole("button", { name: "28d" }));
-    expect(verdictCard().textContent).toMatch(/pooled −9\.1 pts committed/);
+    expect(verdictCard().textContent).toMatch(/pooled official WRMSSE −0\.2328 committed/);
     expect(verdictCard().textContent).toMatch(/h = 28/);
   });
 
@@ -574,21 +606,16 @@ describe("ForecastWorkbench", () => {
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
 
     const evidence = document.querySelector(".wb-evidence")!;
-    expect(evidence.textContent).toContain("ensemble WAPE 0.498 vs the seasonal-naive floor 0.603");
-    expect(evidence.textContent).toContain("gap −0.105; 95% CI [−0.115, −0.095]");
-    expect(evidence.textContent).toContain("463 dense + 137 intermittent series, 6 candidates");
-    expect(evidence.textContent).toContain("WRMSSE 0.604 vs 0.762");
+    expect(evidence.textContent).toContain(
+      "ensemble 0.6161 vs the seasonal-naive floor 0.8929 (gap −31.0%)",
+    );
+    expect(evidence.textContent).toContain("scored once on the competition window (2016-05-22 →");
+    expect(evidence.textContent).toContain("2,754 dense + 27,736 intermittent series, 8 candidates");
     expect(document.querySelector(".wb-canvas-slot .figure-comment")!.textContent).toContain(
-      "from origin 2016-05-10",
+      "from origin 2016-05-22",
     );
-    expect(document.querySelector(".wb-canvas-slot .figure-comment")!.textContent).not.toContain(
-      "from origin 2016-03-15",
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "2016-05-17" }));
-    expect(document.querySelector(".wb-canvas-slot .figure-comment")!.textContent).toContain(
-      "from origin 2016-05-17",
-    );
+    // single-origin catalog: no origin chips anywhere
+    expect(screen.queryByRole("button", { name: "2016-05-08" })).toBeNull();
   });
 
   it("pins the series picker controls above a scrollable store list", async () => {

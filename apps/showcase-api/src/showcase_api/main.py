@@ -256,12 +256,14 @@ def projects(request: Request) -> Response:
 
 @app.get("/projects/{pid}/metrics")
 def metrics(pid: str) -> dict[str, Any]:
-    # 02-demand-forecasting ships two tracks (CI/synthetic in reports/, the
-    # primary real-data UCI run in reports_uci/, see its story.yaml); when a
-    # project carries a reports_uci/ dir that track is the canonical source
-    # for the numbers the story quotes. Everywhere else reports/ is it.
+    # 02-demand-forecasting's canonical numbers are the full-panel M5 run
+    # (reports_m5_full/); the subset (reports_m5/) and sparse UCI
+    # (reports_uci/) tracks stay on disk as CI anchors behind it.
+    # Everywhere else reports/ is it.
     d = _project_dir(pid)
-    f = d / "reports_uci" / "metrics.json"
+    f = d / "reports_m5_full" / "metrics.json"
+    if not f.exists():
+        f = d / "reports_uci" / "metrics.json"
     if not f.exists():
         f = d / "reports" / "metrics.json"
     if not f.exists():
@@ -283,17 +285,25 @@ def _figure_file(pid: str, name: str, ext: str) -> Path | None:
     """Resolve a figure payload to an existing file, or None.
 
     A ``track:`` prefix selects a sibling track directory — 02-demand-
-    forecasting ships two tracks (CI/synthetic in ``reports/figures/``, the
-    primary UCI run in ``reports_uci/figures/``) and its story.yaml names
-    figures per track (e.g. ``uci:metrics_bars``). Unprefixed names keep the
-    canonical ``reports/figures/`` location every other project uses.
+    forecasting names figures per track (e.g. ``m5:wape_bars`` →
+    ``reports_m5/figures/wape_bars.ext``); its full-panel M5 figures live in
+    ``reports_m5_full/figures/`` and shadow the subset track for both prefixed
+    and prefix-free names (``m5_full_*`` ids resolve there directly). Every
+    other project keeps the canonical ``reports/figures/`` location.
     """
     track, sep, bare = name.partition(":")
+    stem = bare if sep else name
     d = _project_dir(pid)
-    candidates = (
-        [d / f"reports_{track}" / "figures" / f"{bare}.{ext}"]
+    candidates: list[Path] = []
+    if d.name == "02-demand-forecasting":
+        # The full-panel M5 track is 02's canonical headline: check its
+        # figures first so prefix-free names (and any m5: name shared across
+        # tracks) serve the final results.
+        candidates.append(d / "reports_m5_full" / "figures" / f"{stem}.{ext}")
+    candidates.append(
+        d / f"reports_{track}" / "figures" / f"{stem}.{ext}"
         if sep
-        else [d / "reports" / "figures" / f"{name}.{ext}"]
+        else d / "reports" / "figures" / f"{stem}.{ext}"
     )
     return next((f for f in candidates if f.exists()), None)
 
@@ -426,12 +436,14 @@ def report(pid: str) -> str:
     """The project's full evaluation report (HTML).
 
     Track-aware resolution, most-recent headline first: 02-demand-forecasting
-    now ships three tracks — the M5 headline in ``reports_m5/`` (canonical),
-    the UCI sparse track in ``reports_uci/``, and the synthetic CI track in
-    ``reports/``. Everywhere else ``reports/report.html`` is it.
+    ships the full-panel M5 headline in ``reports_m5_full/`` (canonical), the
+    subset-era M5 track in ``reports_m5/``, the UCI sparse track in
+    ``reports_uci/``, and the synthetic CI track in ``reports/``. Everywhere
+    else ``reports/report.html`` is it.
     """
     d = _project_dir(pid)
     for candidate in (
+        d / "reports_m5_full" / "report.html",
         d / "reports_m5" / "report.html",
         d / "reports_uci" / "report.html",
         d / "reports" / "report.html",
