@@ -67,7 +67,7 @@ describe("computeCallouts", () => {
     expect(best.improved).toBe(false);
   });
 
-  it("attaches the delta to the BEST run only when several candidates exist", () => {
+  it("attaches a delta to EVERY candidate run when several candidates exist", () => {
     const callouts = computeCallouts(
       {
         naive_last: { mae: 100 },
@@ -77,7 +77,24 @@ describe("computeCallouts", () => {
       ["naive_last", "model_a", "model_b"],
     );
     expect(callouts.find((c) => c.run === "model_b")!.deltaPct).toBeCloseTo(-40);
+    expect(callouts.find((c) => c.run === "model_a")!.deltaPct).toBeCloseTo(-20);
+    // the baseline itself carries no delta
+    expect(callouts.find((c) => c.run === "naive_last")!.deltaPct).toBeNull();
+  });
+
+  it("leaves a candidate's delta null when the baseline value for its metric is zero", () => {
+    const callouts = computeCallouts(
+      {
+        naive_last: { mae: 0, rmse: 100 },
+        model_a: { mae: 5 },
+        model_b: { rmse: 80 },
+      },
+      ["naive_last", "model_a", "model_b"],
+    );
+    // mae baseline is 0 → no comparable delta for model_a; rmse compares fine
     expect(callouts.find((c) => c.run === "model_a")!.deltaPct).toBeNull();
+    expect(callouts.find((c) => c.run === "model_b")!.deltaPct).toBeCloseTo(-20);
+    expect(callouts.find((c) => c.run === "model_b")!.improved).toBe(true);
   });
 
   it("returns no delta when no referenced run is a baseline", () => {

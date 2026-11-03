@@ -2,8 +2,9 @@ import type { Metrics } from "../api";
 
 // Baseline-delta logic for story metric results. A referenced run whose name
 // matches BASELINE_RE (naive/random/lag/majority/persistence) is a baseline;
-// the best non-baseline run gets a signed delta vs the first baseline
-// ("−28% vs naive_last"), shown in the story results table.
+// EVERY non-baseline run gets a signed delta vs the first baseline
+// ("−28% vs naive_last"), shown in the story results table — rows whose
+// metric cannot be compared against the baseline keep a null delta.
 
 export interface MetricCallout {
   run: string;
@@ -73,27 +74,25 @@ export function computeCallouts(metrics: Metrics, referencedRuns: string[]): Met
   const candidates = present.filter((r) => !isBaselineRun(r));
   if (baselines.length === 0 || candidates.length === 0) return callouts;
 
-  // Best candidate by its own headline metric direction.
-  const bestRun = candidates.reduce((best, r) => {
-    const a = headline(metrics[r])!;
-    const b = headline(metrics[best])!;
-    const lower = LOWER_IS_BETTER_RE.test(b.metric);
-    return lower ? (a.value < b.value ? r : best) : a.value > b.value ? r : best;
-  });
-
   const baselineRun = baselines[0];
-  const bestCallout = callouts.find((c) => c.run === bestRun)!;
-  // Prefer the baseline's value for the same metric; fall back to its headline.
   const baselineMetrics = metrics[baselineRun];
-  const baselineValue =
-    typeof baselineMetrics[bestCallout.metric] === "number"
-      ? (baselineMetrics[bestCallout.metric] as number)
-      : (headline(baselineMetrics)?.value ?? null);
-  if (baselineValue === null || baselineValue === 0) return callouts;
+  const baselineHeadline = headline(baselineMetrics);
 
-  const deltaPct = ((bestCallout.value - baselineValue) / Math.abs(baselineValue)) * 100;
-  bestCallout.deltaPct = deltaPct;
-  bestCallout.baselineRun = baselineRun;
-  bestCallout.improved = bestCallout.lowerIsBetter ? deltaPct < 0 : deltaPct > 0;
+  // Every candidate gets its own delta vs the baseline (the baseline row
+  // itself carries none). Prefer the baseline's value for the candidate's
+  // headline metric; fall back to the baseline's headline.
+  for (const c of callouts) {
+    if (c.run === baselineRun) continue;
+    const baselineValue =
+      typeof baselineMetrics[c.metric] === "number"
+        ? (baselineMetrics[c.metric] as number)
+        : (baselineHeadline?.value ?? null);
+    if (baselineValue === null || baselineValue === 0) continue;
+
+    const deltaPct = ((c.value - baselineValue) / Math.abs(baselineValue)) * 100;
+    c.deltaPct = deltaPct;
+    c.baselineRun = baselineRun;
+    c.improved = c.lowerIsBetter ? deltaPct < 0 : deltaPct > 0;
+  }
   return callouts;
 }

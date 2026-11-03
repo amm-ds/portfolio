@@ -666,9 +666,16 @@ describe("ProjectsIndex", () => {
     expect(css.match(/\.title-num \{[\s\S]*?\n\}/)![0]).toContain("color: var(--secondary);");
     expect(css.match(/\.row-label \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
     expect(css).not.toContain(".row-label::before");
-    expect(
-      css.match(/\.demos > \.section-title,\n\.experiments-block > \.section-title \{[\s\S]*?\n\}/)![0],
-    ).toContain("color: var(--accent);");
+    // the two big section titles keep the "> " prompt marker (no `content:
+    // none` suppression) and carry no glow — green title, blue number
+    expect(css).not.toContain(".demos > .section-title::before");
+    expect(css).not.toContain(".experiments-block > .section-title::before");
+    const majorTitleRule = css.match(
+      /\.demos > \.section-title,\n\.experiments-block > \.section-title \{[\s\S]*?\n\}/,
+    )![0];
+    expect(majorTitleRule).toContain("color: var(--accent);");
+    expect(majorTitleRule).toContain("text-shadow: none;");
+    expect(majorTitleRule).not.toContain("accent-glow");
     // no fixed experiment count anywhere in the page copy
     const { container } = render(
       <MemoryRouter>
@@ -694,16 +701,17 @@ describe("ProjectsIndex", () => {
     expect(rowNums).toEqual(["01", "02", "03", "04", "05"]);
   });
 
-  it("restyles the page index to terminal labels: mono, accent label, muted >-prefixed items lighting up on hover", () => {
+  it("restyles the page index to terminal labels: mono, accent label, muted items behind green >-markers", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const linkRule = css.match(/\.page-index a \{[\s\S]*?\n\}/)![0];
     expect(linkRule).toContain("color: var(--muted);");
     const beforeRule = css.match(/\.page-index a::before \{[\s\S]*?\n\}/)![0];
     expect(beforeRule).toContain('content: "> ";');
-    expect(beforeRule).toContain("color: var(--muted);");
+    // only the ">" marker is green; the item text stays muted
+    expect(beforeRule).toContain("color: var(--accent);");
     const hoverRule = css.match(/\.page-index a:hover \{[\s\S]*?\n\}/)![0];
     expect(hoverRule).toContain("color: var(--accent);");
-    // only the "index" label carries the accent
+    // the "index" label keeps the accent
     expect(css.match(/\.page-index \.page-index-label \{[\s\S]*?\n\}/)![0]).toContain(
       "color: var(--accent);",
     );

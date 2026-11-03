@@ -51,6 +51,42 @@ describe("StoryMetricsTable", () => {
     expect(delta.classList.contains("improved")).toBe(true);
   });
 
+  it("renders a delta for EVERY candidate row vs the baseline", () => {
+    render(
+      <StoryMetricsTable
+        metrics={{
+          naive_last: { mae: 100 },
+          model_a: { mae: 80 },
+          model_b: { mae: 60 },
+        }}
+        metricsKeys={["naive_last", "model_a", "model_b"]}
+      />,
+    );
+    expect(screen.getByText(/-40% vs naive_last/)).toBeInTheDocument();
+    expect(screen.getByText(/-20% vs naive_last/)).toBeInTheDocument();
+    // the baseline row itself still shows the em dash
+    const baselineRow = screen.getByText("naive_last").closest("tr")!;
+    expect(baselineRow).toHaveTextContent("—");
+  });
+
+  it("shows an em dash for a row whose metric cannot be compared against the baseline", () => {
+    render(
+      <StoryMetricsTable
+        metrics={{
+          naive_last: { mae: 0, rmse: 100 },
+          model_a: { mae: 5 },
+          model_b: { rmse: 80 },
+        }}
+        metricsKeys={["naive_last", "model_a", "model_b"]}
+      />,
+    );
+    // model_a's mae baseline is 0 → no comparable delta; model_b compares fine
+    const rowA = screen.getByText("model_a").closest("tr")!;
+    expect(rowA).toHaveTextContent("—");
+    const rowB = screen.getByText("model_b").closest("tr")!;
+    expect(rowB).toHaveTextContent(/-20% vs naive_last/);
+  });
+
   it("omits the delta column when no baseline applies", () => {
     render(
       <StoryMetricsTable

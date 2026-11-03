@@ -5,9 +5,11 @@ import { DataTable } from "./DataTable";
 /**
  * Compact results table for a story section's referenced runs (replaces the
  * old metric callout chips). One row per run in `metricsKeys`, showing the
- * run's headline metric and value; when a baseline is present the best run
- * gets a signed delta column entry (baseline-delta aware, same logic the
- * chips used). Renders nothing without metrics_keys or matching runs.
+ * run's headline metric and value; when a baseline is present every
+ * non-baseline run gets a signed delta column entry vs that baseline
+ * (baseline-delta aware, same logic the chips used) — rows whose metric
+ * cannot be compared against the baseline show an em dash. Renders nothing
+ * without metrics_keys or matching runs.
  */
 export function StoryMetricsTable({ metrics, metricsKeys }: { metrics: Metrics; metricsKeys: string[] }) {
   if (metricsKeys.length === 0) return null;

@@ -745,16 +745,12 @@ select:focus-visible,
 }
 
 /* projects-page section titles use the page-index color family: a blue
-   numbered prefix over green title text; the global "> " prompt marker is
-   suppressed on these two sections */
+   numbered prefix over green title text; the global "> " prompt marker stays
+   and the section-title glow is dropped */
 .demos > .section-title,
 .experiments-block > .section-title {
   color: var(--accent);
-}
-
-.demos > .section-title::before,
-.experiments-block > .section-title::before {
-  content: none;
+  text-shadow: none;
 }
 
 /* numbered prefix shared by the major section titles and the topic-row group
@@ -951,10 +947,16 @@ select:focus-visible,
   margin-bottom: 0;
 }
 
+/* green title over a blue numbered prefix, with no glow on either half —
+   the same number+title color family as the projects-page section titles */
 .story-section h2 {
   font-size: 1.25rem;
   margin: 0 0 0.75rem;
-  text-shadow: 0 0 14px var(--accent-glow);
+  color: var(--accent);
+}
+
+.story-section h2 .rail-num {
+  color: var(--secondary);
 }
 
 .story-section h2::before {
@@ -2284,9 +2286,9 @@ button:disabled {
 }
 
 /* small anchor index under the page opening: "index: > live demos · …" —
-   mono; only the "index" label carries the green accent — the anchor items
-   and their "> " markers render in the default muted link color and light
-   up on hover */
+   mono; the "index" label and each item's "> " marker carry the green accent
+   — the anchor text itself renders in the muted link color and lights up on
+   hover */
 .page-index {
   display: flex;
   flex-wrap: wrap;
@@ -2310,7 +2312,7 @@ button:disabled {
 
 .page-index a::before {
   content: "> ";
-  color: var(--muted);
+  color: var(--accent);
 }
 
 .page-index a:hover {
