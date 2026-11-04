@@ -1,0 +1,15 @@
+id: 13-model-serving
+title: Model API Serving & Docker Deployment
+domain: Model serving & deployment
+topic: Inference & Serving
+techniques:
+- FastAPI service design
+- ONNX export + parity gate
+- native vs ONNX Runtime paired benchmarking
+- async httpx load harness (concurrency + batch curves)
+- fresh-process RSS probes
+- multi-stage Docker build (uv lockfile, non-root, healthcheck)
+- electricity cost framing (declared assumptions)
+data: Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly)
+status: working
+order: 13

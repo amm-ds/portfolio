@@ -1,0 +1,4 @@
+# DVC writes metrics.json/evaluation_metadata.json and figures/*.json as stage
+# outputs; this project commits them (08 convention) — only the redundant
+# self-contained HTML renderings stay out of git.
+/figures/*.html

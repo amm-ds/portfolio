@@ -1,0 +1,29 @@
+{
+  "protocol": "Champion re-derivation: experiment 12's committed recipe (same sha256-pinned UCI hour.csv, same feature contract, same MLP architecture + hyperparameters, seed 42), scored once on the frozen 8-week test window; reproduction gate |\u0394MAE| \u2264 params reproduction_tolerance. Serving: native torch vs ONNX Runtime behind one FastAPI service, warmed at startup; parity gate on a seeded probe grid (max-abs, standardized-y space) before any serving stage may run. Benchmark: real subprocess service per backend, warm-up excluded, ~300 requests per concurrency cell (1/4/16/64), median of 3 repeats, batch sizes 1/8/32/128, fresh-process RSS probes, byte-identical seeded payload streams. Docker: multi-stage build from the repo-root context, model baked in, image size + layer breakdown measured with the daemon, compose smoke against /health /ready /predict.",
+  "seed": 42,
+  "versions": {
+    "python": "3.12.9",
+    "model_serving": "0.1.0",
+    "torch": "2.14.1",
+    "onnx": "1.23.2",
+    "onnxruntime": "1.31.1",
+    "fastapi": "0.143.0",
+    "uvicorn": "0.54.0",
+    "scikit-learn": "1.9.1",
+    "plotly": "7.1.0",
+    "pandas": "2.3.3",
+    "numpy": "2.5.4"
+  },
+  "hardware": {
+    "platform": "macOS-26.5-arm64-i386-64bit",
+    "machine": "arm64",
+    "processor": "i386",
+    "cpu_count": 16
+  },
+  "limits": [
+    "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers do not transfer; the paired native-vs-ONNX deltas and the shape of the curves are the transferable read.",
+    "The load driver runs on the same machine as the service \u2014 localhost latency has no network term, and the CPU is shared between driver and service under high concurrency.",
+    "Fresh-process RSS is the steady state after warm-up, not a peak under load; the image size is the uncompressed on-disk total.",
+    "Cost per 1k predictions uses measured throughput with a declared 65 W system draw (no wall meter) and $0.30 per kWh \u2014 an assumption, stated next to the number, not a measurement."
+  ]
+}

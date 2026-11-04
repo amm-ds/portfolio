@@ -1,0 +1,42 @@
+# Experiment 13 — api + one-shot smoke. Build context is the repository root
+# (the uv workspace); the compose project pins the port away from the host
+# benchmark port (8137) used by the bench stage.
+#
+#   docker compose -f projects/13-model-serving/docker-compose.yml up --build --wait api
+#   docker compose -f projects/13-model-serving/docker-compose.yml run --rm smoke
+#
+# Plain-docker alternative (no compose):
+#   docker run --rm -p 8137:8000 -e SERVING_BACKEND=onnx portfolio-model-serving:13
+
+name: model-serving-13
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: projects/13-model-serving/Dockerfile
+    image: portfolio-model-serving:13
+    ports:
+      - "8138:8000"
+    environment:
+      SERVING_BACKEND: onnx
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)"
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+
+  smoke:
+    image: portfolio-model-serving:13
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      SMOKE_URL: http://api:8000
+    command: python -m model_serving.service.smoke
+    restart: "no"

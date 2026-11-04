@@ -1,0 +1,196 @@
+schema: '2.0'
+stages:
+  train:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli train --params-file 
+      params.yaml
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: a6ad6b307d422f40469af5d14e219b7c
+      size: 1468
+    - path: src/model_serving/
+      hash: md5
+      md5: 95834efa02b64c06e0bd22b880c600d3.dir
+      size: 248500
+      nfiles: 32
+    params:
+      params.yaml:
+        champion_expected_test_mae: 25.43163249606178
+        corr_threshold: 0.9
+        data_source: uci
+        lag_hours:
+        - 1
+        - 24
+        - 168
+        mlp:
+          hidden_dims:
+          - 64
+          - 32
+          embed_dim: 8
+          dropout: 0.2
+          weight_decay: 0.0001
+          learning_rate: 0.001
+          batch_size: 256
+          max_epochs: 150
+          patience: 10
+          huber_delta: 1.0
+        onnx_opset: 17
+        parity_tolerance: 0.0001
+        probe_grid_n: 512
+        reproduction_tolerance: 0.05
+        ridge_alpha: 1.0
+        seed: 42
+        test_weeks: 8
+        uci_sha256: 
+          b70182d0d0508e9abbb79306ce5c0cec34869000f8220175ac83d11dbe845401
+        uci_source: 
+          https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip
+        val_weeks: 8
+    outs:
+    - path: data/models/
+      hash: md5
+      md5: 2c7f6d9e805ff83bcf25b188c0c286a8.dir
+      size: 39663
+      nfiles: 5
+    - path: reports/train_run.json
+      hash: md5
+      md5: cd7e68095c711f21e7cec074c54257ca
+      size: 4769
+  docker:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli docker --params-file
+      params.yaml
+    deps:
+    - path: Dockerfile
+      hash: md5
+      md5: f72dd6a1c3062c36db5a1d1ce08d89dc
+      size: 2155
+    - path: data/models/
+      hash: md5
+      md5: 2c7f6d9e805ff83bcf25b188c0c286a8.dir
+      size: 39663
+      nfiles: 5
+    - path: docker-compose.yml
+      hash: md5
+      md5: 20bed4996fb559044f9e5a31f161927c
+      size: 1226
+    - path: params.yaml
+      hash: md5
+      md5: a6ad6b307d422f40469af5d14e219b7c
+      size: 1468
+    - path: src/model_serving/
+      hash: md5
+      md5: 95834efa02b64c06e0bd22b880c600d3.dir
+      size: 248500
+      nfiles: 32
+    params:
+      params.yaml:
+        image_repo: portfolio-model-serving
+        image_tag: '13'
+    outs:
+    - path: image/serving/
+      hash: md5
+      md5: 2c7f6d9e805ff83bcf25b188c0c286a8.dir
+      size: 39663
+      nfiles: 5
+    - path: reports/docker_run.json
+      hash: md5
+      md5: bffa0ccb1fd37ebe0df8af77655e93ef
+      size: 712
+  benchmark:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli benchmark 
+      --params-file params.yaml
+    deps:
+    - path: data/models/
+      hash: md5
+      md5: 2c7f6d9e805ff83bcf25b188c0c286a8.dir
+      size: 39663
+      nfiles: 5
+    - path: params.yaml
+      hash: md5
+      md5: a6ad6b307d422f40469af5d14e219b7c
+      size: 1468
+    - path: src/model_serving/
+      hash: md5
+      md5: 95834efa02b64c06e0bd22b880c600d3.dir
+      size: 248500
+      nfiles: 32
+    params:
+      params.yaml:
+        bench:
+          concurrency_levels:
+          - 1
+          - 4
+          - 16
+          - 64
+          requests_per_concurrency: 300
+          warmup_requests: 20
+          repeats: 3
+          batch_sizes:
+          - 1
+          - 8
+          - 32
+          - 128
+          batch_requests_per_size: 60
+          request_timeout_s: 30
+          rss_probes: 3
+        seed: 42
+        serve:
+          host: 127.0.0.1
+          port: 8137
+          ready_timeout_s: 60
+    outs:
+    - path: data/bench_run.json
+      hash: md5
+      md5: 14b8706eca8014e53563a22315af7e8d
+      size: 49864
+  report:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli report --params-file
+      params.yaml
+    deps:
+    - path: data/bench_run.json
+      hash: md5
+      md5: 14b8706eca8014e53563a22315af7e8d
+      size: 49864
+    - path: params.yaml
+      hash: md5
+      md5: a6ad6b307d422f40469af5d14e219b7c
+      size: 1468
+    - path: reports/docker_run.json
+      hash: md5
+      md5: bffa0ccb1fd37ebe0df8af77655e93ef
+      size: 712
+    - path: reports/train_run.json
+      hash: md5
+      md5: cd7e68095c711f21e7cec074c54257ca
+      size: 4769
+    - path: src/model_serving/
+      hash: md5
+      md5: 95834efa02b64c06e0bd22b880c600d3.dir
+      size: 248500
+      nfiles: 32
+    - path: story.yaml
+      hash: md5
+      md5: e8f1f69455924bd54aff989461260459
+      size: 18690
+    outs:
+    - path: reports/evaluation_metadata.json
+      hash: md5
+      md5: a1717b06c1abb88008de7fa0ecd30d18
+      size: 2035
+    - path: reports/figures
+      hash: md5
+      md5: d5127860ad9687b4afab9bb96110abad.dir
+      size: 89446
+      nfiles: 8
+    - path: reports/metrics.json
+      hash: md5
+      md5: 61ea05c9bac94f62abca232d1a11372b
+      size: 40203
+    - path: reports/report.html
+      hash: md5
+      md5: d0b1be91263075551d3e1f8be561c600
+      size: 52343
+    - path: reports/results.md
+      hash: md5
+      md5: 7010f61732726b20ec23e13f79708511
+      size: 3417

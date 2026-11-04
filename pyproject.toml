@@ -78,6 +78,7 @@ module = [
     "routing_optimization.*",
     "data_engineering.*",
     "tabular_ml_lifecycle.*",
+    "model_serving.*",
 ]
 strict = true
 

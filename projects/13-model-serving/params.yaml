@@ -1,0 +1,63 @@
+# Model API serving & Docker deployment — experiment 13.
+# The champion is the tabular MLP re-derived from experiment 12's committed
+# recipe (same features, same architecture + hyperparameters, same seed 42).
+seed: 42
+data_source: uci
+uci_source: https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip
+uci_sha256: b70182d0d0508e9abbb79306ce5c0cec34869000f8220175ac83d11dbe845401
+val_weeks: 8
+test_weeks: 8
+lag_hours:
+- 1
+- 24
+- 168
+corr_threshold: 0.9
+ridge_alpha: 1.0
+# Experiment 12's committed test MAE for the champion MLP (reports/metrics.json,
+# scored once). The train stage re-derives the recipe and must land within
+# reproduction_tolerance — the reproduction check is part of the artifact.
+champion_expected_test_mae: 25.43163249606178
+reproduction_tolerance: 0.05
+mlp:
+  hidden_dims:
+  - 64
+  - 32
+  embed_dim: 8
+  dropout: 0.2
+  weight_decay: 0.0001
+  learning_rate: 0.001
+  batch_size: 256
+  max_epochs: 150
+  patience: 10
+  huber_delta: 1.0
+onnx_opset: 17
+parity_tolerance: 0.0001
+probe_grid_n: 512
+serve:
+  host: 127.0.0.1
+  port: 8137
+  ready_timeout_s: 60
+bench:
+  concurrency_levels:
+  - 1
+  - 4
+  - 16
+  - 64
+  requests_per_concurrency: 300
+  warmup_requests: 20
+  repeats: 3
+  batch_sizes:
+  - 1
+  - 8
+  - 32
+  - 128
+  batch_requests_per_size: 60
+  request_timeout_s: 30
+  rss_probes: 3
+cost:
+  usd_per_kwh: 0.30
+  system_load_watts: 65.0
+data_dir: data
+reports_dir: reports
+image_repo: portfolio-model-serving
+image_tag: "13"

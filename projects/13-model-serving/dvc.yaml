@@ -1,0 +1,70 @@
+stages:
+  train:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli train --params-file params.yaml
+    deps:
+      - src/model_serving/
+      - params.yaml
+    params:
+      - seed
+      - data_source
+      - uci_source
+      - uci_sha256
+      - val_weeks
+      - test_weeks
+      - lag_hours
+      - corr_threshold
+      - ridge_alpha
+      - champion_expected_test_mae
+      - reproduction_tolerance
+      - mlp
+      - onnx_opset
+      - parity_tolerance
+      - probe_grid_n
+    outs:
+      - data/models/
+      - reports/train_run.json
+
+  benchmark:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli benchmark --params-file params.yaml
+    deps:
+      - src/model_serving/
+      - params.yaml
+      - data/models/
+    params:
+      - seed
+      - serve
+      - bench
+    outs:
+      - data/bench_run.json
+
+  docker:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli docker --params-file params.yaml
+    deps:
+      - src/model_serving/
+      - params.yaml
+      - data/models/
+      - Dockerfile
+      - docker-compose.yml
+    params:
+      - image_repo
+      - image_tag
+    outs:
+      - reports/docker_run.json
+      - image/serving/
+
+  report:
+    cmd: uv run --python 3.12.9 python -m model_serving.cli report --params-file params.yaml
+    deps:
+      - src/model_serving/
+      - params.yaml
+      - story.yaml
+      - data/bench_run.json
+      - reports/train_run.json
+      - reports/docker_run.json
+    outs:
+      - reports/report.html
+      - reports/results.md
+      - reports/figures
+    metrics:
+      - reports/metrics.json
+      - reports/evaluation_metadata.json

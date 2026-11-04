@@ -1,0 +1,20 @@
+{
+  "dockerfile": "Dockerfile",
+  "compose": "docker-compose.yml",
+  "build_context": "repository root (uv workspace; root .dockerignore applies)",
+  "daemon_available": true,
+  "image_id": "sha256:a623329731ae7c35b3e8c9a285b98e5e4efb8444d5ea2b9d8803dd98251a3514",
+  "image_ref": "portfolio-model-serving:13",
+  "base_python_slim_mb": 144.607022,
+  "venv_mb": 6192.0,
+  "models_mb": 1.0,
+  "total_mb": 6466.488628,
+  "compose_smoke": {
+    "passed": true,
+    "prediction": 87.87157615727175,
+    "stdout": "SMOKE prediction: 87.87157615727175"
+  },
+  "docker_run_alternative": "docker run --rm -p 8137:8000 -e SERVING_BACKEND=onnx portfolio-model-serving:13",
+  "measured": true,
+  "docker_runtime_s": 119.72
+}
