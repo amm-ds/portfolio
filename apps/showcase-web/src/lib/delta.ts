@@ -40,12 +40,20 @@ export function formatMetricValue(value: number): string {
 }
 
 /**
- * Headline metric for a project card: the first numeric metric of the first
- * non-baseline run (baselines only as a last resort); null when nothing fits.
+ * Headline metric for a project card: a metrics file may declare its champion
+ * run (`_meta.champion`) — that run carries the headline ahead of ladder
+ * order; otherwise the first numeric metric of the first non-baseline run
+ * (baselines only as a last resort); null when nothing fits.
  */
 export function pickHeadlineMetric(
   metrics: Metrics,
 ): { run: string; metric: string; value: number } | null {
+  const meta = metrics["_meta"] as Record<string, unknown> | undefined;
+  const champion = meta?.champion;
+  if (typeof champion === "string") {
+    const h = headline(metrics[champion] ?? {});
+    if (h) return { run: champion, metric: h.metric, value: h.value };
+  }
   const runs = Object.keys(metrics).filter((r) => !r.startsWith("_"));
   const ordered = [...runs.filter((r) => !isBaselineRun(r)), ...runs.filter(isBaselineRun)];
   for (const run of ordered) {

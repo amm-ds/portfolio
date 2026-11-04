@@ -154,6 +154,25 @@ describe("pickHeadlineMetric", () => {
     expect(picked).toEqual({ run: "tuned", metric: "mae", value: 72 });
   });
 
+  it("prefers a declared champion run over ladder order", () => {
+    const picked = pickHeadlineMetric({
+      naive_last: { mae: 100 },
+      ridge: { mae: 51 },
+      mlp: { mae: 25.4 },
+      _meta: { champion: "mlp" },
+    })!;
+    expect(picked).toEqual({ run: "mlp", metric: "mae", value: 25.4 });
+  });
+
+  it("ignores a champion that names no measurable run", () => {
+    const picked = pickHeadlineMetric({
+      naive_last: { mae: 100 },
+      tuned: { mae: 72 },
+      _meta: { champion: "mlp" },
+    })!;
+    expect(picked.run).toBe("tuned");
+  });
+
   it("falls back to a baseline when no other run exists", () => {
     const picked = pickHeadlineMetric({ naive_last: { mae: 100 } })!;
     expect(picked.run).toBe("naive_last");
