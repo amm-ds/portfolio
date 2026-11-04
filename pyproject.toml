@@ -76,6 +76,7 @@ module = [
     "uplift_experimentation.*",
     "demand_forecasting.*",
     "routing_optimization.*",
+    "data_engineering.*",
 ]
 strict = true
 

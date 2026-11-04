@@ -55,6 +55,8 @@ export const CARD_ACHIEVES: Record<string, string> = {
     "Fixed tools and budgets pass **15/15 fixed tasks, 13/13 unseen answers and 5/6 should-fail probes** at about **$0.13 per suite** — ready for supervised pilots, not unattended use.",
   "10-uplift-experimentation":
     "Beats random targeting by **+$2,812 (+69%; CI +$718 to +$4,767)**, though at $0.01 per email mailing everyone still wins.",
+  "11-data-engineering":
+    "Polars runs **x17.3** and DuckDB **x14.7** over pandas on the geomean of 8 parity-checked tasks — from a **3-5x** tie on parquet IO to **110x-plus** on group-by and window work.",
 };
 
 /** Exactly four short tags per card — technique/capability wording with no
@@ -72,6 +74,7 @@ const CARD_TAGS: Record<string, string[]> = {
   "08-inference-serving": ["local inference", "quantization", "cost/token", "latency/throughput"],
   "09-agentic-workflows": ["HITL", "toolsets", "structured agents", "agent evals"],
   "10-uplift-experimentation": ["CUPED", "Qini", "power analysis", "uplift (T/X)"],
+  "11-data-engineering": ["engine benchmarks", "parquet/CSV IO", "group-by & window", "memory probes"],
 };
 
 /** "What it does" block for an experiment card. */

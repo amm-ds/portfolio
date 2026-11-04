@@ -1,0 +1,136 @@
+schema: '2.0'
+stages:
+  fetch:
+    cmd: uv run python -m data_engineering.cli fetch-data --params-file 
+      params.yaml
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: f66cabd63c4d4ce4b51641f3414e578d
+      size: 923
+    - path: src/data_engineering/
+      hash: md5
+      md5: 15365ace01de2fe228d16bfbddcfd03b.dir
+      size: 175685
+      nfiles: 27
+    params:
+      params.yaml:
+        seed: 42
+        trips_sha256: 
+          c4d59da7bbc8abaeeeb1727947ee93d9891a71acb42854bd80db1571b2030510
+        trips_url: 
+          https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet
+        zones_sha256: 
+          1a99e105092230f8620f301edcca7f80d3080642ff404d28ed957d3fa222c8ed
+        zones_url: 
+          https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv
+    outs:
+    - path: data/dataset_contract.json
+      hash: md5
+      md5: 3f0d8e0616d50f9af4428f53777fef0f
+      size: 372
+    - path: data/prepared/partitioned/
+      hash: md5
+      md5: 9a41653f2a83ca7ba1e64a78fde9b27a.dir
+      size: 41217480
+      nfiles: 31
+    - path: data/prepared/trips.csv
+      hash: md5
+      md5: 1969aa5fc4a931e646614079ae10a9fa
+      size: 145522067
+    - path: data/prepared/trips.parquet
+      hash: md5
+      md5: dcdcc6121ea6bcdb52d3210df06f496e
+      size: 41514243
+    - path: data/raw/taxi_zone_lookup.csv
+      hash: md5
+      md5: c6064b7c144c716450641f769659d178
+      size: 12331
+    - path: data/raw/yellow_tripdata_2024-01.parquet
+      hash: md5
+      md5: 10dff36f5a2fc325274438bf361c70f0
+      size: 49961641
+  evaluate:
+    cmd: uv run python -m data_engineering.cli evaluate --params-file 
+      params.yaml
+    deps:
+    - path: data/prepared/partitioned/
+      hash: md5
+      md5: 9a41653f2a83ca7ba1e64a78fde9b27a.dir
+      size: 41217480
+      nfiles: 31
+    - path: data/prepared/trips.csv
+      hash: md5
+      md5: 1969aa5fc4a931e646614079ae10a9fa
+      size: 145522067
+    - path: data/prepared/trips.parquet
+      hash: md5
+      md5: dcdcc6121ea6bcdb52d3210df06f496e
+      size: 41514243
+    - path: data/raw/taxi_zone_lookup.csv
+      hash: md5
+      md5: c6064b7c144c716450641f769659d178
+      size: 12331
+    - path: params.yaml
+      hash: md5
+      md5: f66cabd63c4d4ce4b51641f3414e578d
+      size: 923
+    - path: src/data_engineering/
+      hash: md5
+      md5: 15365ace01de2fe228d16bfbddcfd03b.dir
+      size: 175685
+      nfiles: 27
+    params:
+      params.yaml:
+        memory_probes: 1
+        repeats: 5
+        seed: 42
+    outs:
+    - path: reports/evaluation_metadata.json
+      hash: md5
+      md5: 09f92b8f7ba6ea7a282f664e13c2cbe7
+      size: 53341
+    - path: reports/figures/io_cold_warm.html
+      hash: md5
+      md5: 28165148c72ea23d853ebba11365a998
+      size: 10948
+    - path: reports/figures/io_cold_warm.json
+      hash: md5
+      md5: b95f08e9490d19636b2a3dbe6e772aad
+      size: 9951
+    - path: reports/figures/memory_by_task.html
+      hash: md5
+      md5: 5c2bb3bb4bc124d2a604c66c231c1d91
+      size: 10428
+    - path: reports/figures/memory_by_task.json
+      hash: md5
+      md5: bf0dc358a64b70dd2f1c53650b1c568d
+      size: 9431
+    - path: reports/figures/runtime_by_task.html
+      hash: md5
+      md5: 8e8b80e3e9dd9a39ef9cba0b9ddeeafe
+      size: 10501
+    - path: reports/figures/runtime_by_task.json
+      hash: md5
+      md5: 07b1ee297c1aed2f9e02695b91fd312e
+      size: 9504
+    - path: reports/figures/speedup_vs_pandas.html
+      hash: md5
+      md5: 89f88a103f2e11e890905b5054713b7c
+      size: 10425
+    - path: reports/figures/speedup_vs_pandas.json
+      hash: md5
+      md5: 98f3248bc905e1c185d1d5eb1b2a79b3
+      size: 9428
+    - path: reports/metrics.json
+      hash: md5
+      md5: 15b38a17bdd9f63ed809239a3226f345
+      size: 110320
+    - path: reports/report.html
+      hash: md5
+      md5: 59298da9adc0233b971fe8cdbac5dc70
+      size: 48205
+    - path: reports/results.md
+      hash: md5
+      md5: daeb0a7df10d642f70a20d7139bbca02
+      size: 1893

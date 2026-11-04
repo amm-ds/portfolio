@@ -96,6 +96,7 @@ jobs:
           - { name: 08-inference-serving, path: projects/08-inference-serving, cov: "--cov=src" }
           - { name: 09-agentic-workflows, path: projects/09-agentic-workflows, cov: "--cov=src" }
           - { name: 10-uplift-experimentation, path: projects/10-uplift-experimentation, cov: "--cov=src" }
+          - { name: 11-data-engineering, path: projects/11-data-engineering, cov: "--cov=src" }
           - { name: showcase-api, path: apps/showcase-api, cov: "--cov=src" }
     name: tests · ${{ matrix.suite.name }}
     steps:

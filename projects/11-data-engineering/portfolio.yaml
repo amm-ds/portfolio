@@ -1,0 +1,14 @@
+id: 11-data-engineering
+title: Data Engineering
+domain: Data engineering
+techniques:
+- pandas
+- Polars
+- DuckDB
+- PyArrow
+- Parquet
+- Benchmark harness
+data: NYC TLC yellow taxi 2024-01 (real parquet slice, sha-pinned) + seeded synthetic CI track
+status: working
+order: 11
+topic: Data Engineering

@@ -1,0 +1,46 @@
+stages:
+  fetch:
+    cmd: uv run python -m data_engineering.cli fetch-data --params-file params.yaml
+    deps:
+      - src/data_engineering/
+      - params.yaml
+    params:
+      - seed
+      - trips_url
+      - trips_sha256
+      - zones_url
+      - zones_sha256
+    outs:
+      - data/raw/yellow_tripdata_2024-01.parquet
+      - data/raw/taxi_zone_lookup.csv
+      - data/prepared/trips.parquet
+      - data/prepared/trips.csv
+      - data/prepared/partitioned/
+      - data/dataset_contract.json
+
+  evaluate:
+    cmd: uv run python -m data_engineering.cli evaluate --params-file params.yaml
+    deps:
+      - src/data_engineering/
+      - params.yaml
+      - data/prepared/trips.parquet
+      - data/prepared/trips.csv
+      - data/prepared/partitioned/
+      - data/raw/taxi_zone_lookup.csv
+    params:
+      - seed
+      - repeats
+      - memory_probes
+    outs:
+      - reports/metrics.json
+      - reports/evaluation_metadata.json
+      - reports/report.html
+      - reports/results.md
+      - reports/figures/runtime_by_task.html
+      - reports/figures/runtime_by_task.json
+      - reports/figures/memory_by_task.html
+      - reports/figures/memory_by_task.json
+      - reports/figures/speedup_vs_pandas.html
+      - reports/figures/speedup_vs_pandas.json
+      - reports/figures/io_cold_warm.html
+      - reports/figures/io_cold_warm.json

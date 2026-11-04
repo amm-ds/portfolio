@@ -54,6 +54,7 @@ DOCS_FIGURES: dict[str, tuple[str, ...]] = {
         "node_waterfall",
     ),
     "10-uplift-experimentation": ("qini_curves", "profit_frontier", "cost_sensitivity"),
+    "11-data-engineering": ("speedup_vs_pandas", "memory_by_task"),
 }
 
 WIDTH = 1200

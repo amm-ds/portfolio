@@ -17,6 +17,7 @@ export const FRAMEWORKS: Framework[] = [
   { name: "scikit-learn", url: "https://scikit-learn.org", slug: "scikitlearn", letters: "Sk" },
   { name: "PyTorch", url: "https://pytorch.org", slug: "pytorch", letters: "Pt" },
   { name: "Polars", url: "https://pola.rs", slug: "polars", letters: "Pl" },
+  { name: "DuckDB", url: "https://duckdb.org", logo: "/logos/duckdb.svg", letters: "Db" },
   { name: "Plotly", url: "https://plotly.com", slug: "plotly", letters: "Py" },
   { name: "DVC", url: "https://dvc.org", slug: "dvc", letters: "Dv" },
   { name: "uv", url: "https://docs.astral.sh/uv", slug: "uv", letters: "uv" },

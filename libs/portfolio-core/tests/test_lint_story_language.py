@@ -174,7 +174,7 @@ def test_duplicate_top_level_keys_ignores_indented_and_col0_list_items():
 
 def test_parse_story_matches_yaml_on_committed_stories():
     stories = sorted((REPO_ROOT / "projects").glob("*/story.yaml"))
-    assert len(stories) == 10
+    assert len(stories) == 11
     for f in stories:
         raw = f.read_text(encoding="utf-8")
         data = yaml.safe_load(raw)

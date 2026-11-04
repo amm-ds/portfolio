@@ -204,6 +204,23 @@ export const STATIC_PROJECTS: StaticProject[] = [
     ],
     "title": "Retention Uplift & Experimentation",
     "topic": "Decision Science"
+  },
+  {
+    "data": "NYC TLC yellow taxi 2024-01 (real parquet slice, sha-pinned) + seeded synthetic CI track",
+    "domain": "Data engineering",
+    "id": "11-data-engineering",
+    "order": 11,
+    "status": "working",
+    "techniques": [
+      "pandas",
+      "Polars",
+      "DuckDB",
+      "PyArrow",
+      "Parquet",
+      "Benchmark harness"
+    ],
+    "title": "Data Engineering",
+    "topic": "Data Engineering"
   }
 ];
 
@@ -490,6 +507,31 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "x_learner"
     ],
     "project_id": "10-uplift-experimentation",
+    "section_ids": [
+      "background",
+      "objectives",
+      "data",
+      "eda",
+      "training",
+      "evaluation",
+      "results",
+      "conclusions"
+    ]
+  },
+  {
+    "figure_names": [
+      "io_cold_warm",
+      "memory_by_task",
+      "runtime_by_task",
+      "speedup_vs_pandas"
+    ],
+    "has_roadmap": true,
+    "metrics_keys": [
+      "groupby",
+      "read_csv",
+      "window"
+    ],
+    "project_id": "11-data-engineering",
     "section_ids": [
       "background",
       "objectives",

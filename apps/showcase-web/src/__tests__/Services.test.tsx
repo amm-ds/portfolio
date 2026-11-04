@@ -198,7 +198,7 @@ describe("Services page (wave 8)", () => {
   it("keeps the frameworks grid, a plain cloud block with provider logos, process and engagement table", () => {
     renderServices();
     expect(document.getElementById("frameworks")).not.toBeNull();
-    expect(document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-tile")).toHaveLength(16);
+    expect(document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-tile")).toHaveLength(17);
     // deterministic order: new entries placed per spec
     const names = [...document.querySelectorAll(".frameworks-grid:not(.providers-grid) .framework-name")].map(
       (el) => el.textContent,
@@ -210,6 +210,7 @@ describe("Services page (wave 8)", () => {
       "scikit-learn",
       "PyTorch",
       "Polars",
+      "DuckDB",
       "Plotly",
       "DVC",
       "uv",

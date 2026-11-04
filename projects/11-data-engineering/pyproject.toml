@@ -1,0 +1,29 @@
+[project]
+name = "11-data-engineering"
+version = "0.1.0"
+description = "Portfolio project 11-data-engineering: a pandas / Polars / DuckDB benchmark on one task contract (NYC TLC yellow taxi 2024-01, sha-pinned; seeded synthetic CI track)."
+requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.1",
+    "pandas>=2.2",
+    "plotly>=5.24",
+    "polars>=1.9",
+    "pyarrow>=17",
+    "typer>=0.12",
+    "portfolio-core",
+    "portfolio-eval",
+]
+
+[project.scripts]
+data_engineering = "data_engineering.cli:app"
+
+[tool.uv.sources]
+portfolio-core = { workspace = true }
+portfolio-eval = { workspace = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/data_engineering"]

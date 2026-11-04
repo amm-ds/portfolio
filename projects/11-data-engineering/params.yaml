@@ -1,0 +1,16 @@
+# Mirrors data_engineering.config.DEConfig defaults (the CLI and DVC stages read
+# this file; DVC re-runs a stage when a matching entry changes).
+seed: 42
+# Real track: NYC TLC yellow taxi, January 2024 (same snapshot family the data
+# registry pins for project 07 — registry/nyc-tlc-yellow-2024-01.dvc).
+trips_url: https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet
+trips_sha256: c4d59da7bbc8abaeeeb1727947ee93d9891a71acb42854bd80db1571b2030510
+zones_url: https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv
+zones_sha256: 1a99e105092230f8620f301edcca7f80d3080642ff404d28ed957d3fa222c8ed
+# Synthetic CI track: seeded generator scale (rows).
+n_synthetic_rows: 30000
+# Harness protocol: in-process warm repeats (median), plus one isolated probe
+# run per task×engine cell in a fresh subprocess for true peak RSS (and the
+# cold read time for IO tasks).
+repeats: 5
+memory_probes: 1

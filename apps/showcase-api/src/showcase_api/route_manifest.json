@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-03T19:32:33+00:00",
+  "generated_at": "2026-11-04T11:21:57+00:00",
   "sources": [
     "apps/showcase-web/src/App.tsx",
     "projects/*/portfolio.yaml",
@@ -27,6 +27,7 @@
     "/projects/08-inference-serving",
     "/projects/09-agentic-workflows",
     "/projects/10-uplift-experimentation",
+    "/projects/11-data-engineering",
     "/services"
   ]
 }
