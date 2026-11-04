@@ -1,0 +1,7 @@
+frozen: true
+deps:
+- hash: md5
+  path: https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip
+outs:
+- hash: md5
+  path: bike-sharing-dataset.zip

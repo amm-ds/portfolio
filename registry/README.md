@@ -20,6 +20,7 @@ themselves versioned and refreshable.
 | `wikipedia-20231101-en-0000.dvc` | Wikipedia 20231101.en (HF, shard 0) | [wikipedia](../docs/data-registry/wikipedia.md) |
 | `hillstrom.csv.dvc` | Hillstrom email marketing (MineThatData, author's site) | [hillstrom](../docs/data-registry/hillstrom.md) |
 | `telco-churn.dvc` | Telco churn, IBM sample (IBM mirror) | [telco-churn](../docs/data-registry/telco-churn.md) |
+| `bike-sharing-hour.dvc` | UCI Bike Sharing, Capital Bikeshare hourly (zip distribution; Project 12 consumes hour.csv) | [bike-sharing](../docs/data-registry/bike-sharing.md) |
 
 ## Usage
 
