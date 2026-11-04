@@ -209,7 +209,7 @@ describe("ProjectsIndex", () => {
     const h1 = screen.getByRole("heading", { level: 1 });
     const hero = h1.closest(".services-hero")!;
     expect(hero).not.toBeNull();
-    expect(hero.querySelector(".kicker")!.textContent).toContain("> Projects");
+    expect(hero.querySelector(".kicker")!.textContent).toContain("> projects");
     expect(h1.nextElementSibling!.tagName).toBe("P");
     expect(h1.nextElementSibling!.classList.contains("section-intro")).toBe(false);
   });
@@ -693,18 +693,19 @@ describe("ProjectsIndex", () => {
     expect(labelRule).toContain("font-family: var(--mono);");
     expect(labelRule).toContain("font-size: 1.05rem;");
     expect(labelRule).not.toContain("border-bottom");
-    // no numbered prefixes anywhere — the old title-num utility is gone
+    // no numbered prefixes anywhere — the old title-num utility is gone;
+    // group labels are white with a colored "/" path marker
     expect(css).not.toContain(".title-num");
-    expect(css.match(/\.row-label \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
-    expect(css).not.toContain(".row-label::before");
-    // the two big section titles keep the "> " prompt marker (no `content:
-    // none` suppression) and carry no glow
+    expect(css.match(/\.row-label \{[\s\S]*?\n\}/)![0]).toContain("color: var(--text);");
+    expect(css.match(/\.row-label::before \{[\s\S]*?\n\}/)![0]).toContain('content: "/";');
+    // the two big section titles are white like the rest of the site, keep
+    // the "> " prompt marker (no `content: none` suppression) and no glow
     expect(css).not.toContain(".demos > .section-title::before");
     expect(css).not.toContain(".experiments-block > .section-title::before");
     const majorTitleRule = css.match(
       /\.demos > \.section-title,\n\.experiments-block > \.section-title \{[\s\S]*?\n\}/,
     )![0];
-    expect(majorTitleRule).toContain("color: var(--accent);");
+    expect(majorTitleRule).toContain("color: var(--text);");
     expect(majorTitleRule).toContain("text-shadow: none;");
     expect(majorTitleRule).not.toContain("accent-glow");
     // no fixed experiment count anywhere in the page copy
@@ -734,21 +735,23 @@ describe("ProjectsIndex", () => {
     ]);
   });
 
-  it("restyles the page index to terminal labels: mono, accent label, muted items behind green >-markers", () => {
+  it("restyles the page index to terminal path labels: mono, accent label, muted items behind / markers, larger type", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const linkRule = css.match(/\.page-index a \{[\s\S]*?\n\}/)![0];
     expect(linkRule).toContain("color: var(--muted);");
     const beforeRule = css.match(/\.page-index a::before \{[\s\S]*?\n\}/)![0];
-    expect(beforeRule).toContain('content: "> ";');
-    // only the ">" marker is green; the item text stays muted
+    expect(beforeRule).toContain('content: "/";');
+    // only the "/" marker is green; the item text stays muted
     expect(beforeRule).toContain("color: var(--accent);");
     const hoverRule = css.match(/\.page-index a:hover \{[\s\S]*?\n\}/)![0];
     expect(hoverRule).toContain("color: var(--accent);");
-    // the "index" label keeps the accent
+    // the "index" label keeps the accent; the row is sized up
     expect(css.match(/\.page-index \.page-index-label \{[\s\S]*?\n\}/)![0]).toContain(
       "color: var(--accent);",
     );
-    expect(css.match(/\.page-index \{[\s\S]*?\n\}/)![0]).toContain("font-family: var(--mono);");
+    const indexRule = css.match(/\.page-index \{[\s\S]*?\n\}/)![0];
+    expect(indexRule).toContain("font-family: var(--mono);");
+    expect(indexRule).toContain("font-size: 0.95rem;");
   });
 
   it("splits the card body into two equal white text columns under one uniform small-label style", () => {

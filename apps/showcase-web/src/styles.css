@@ -745,24 +745,30 @@ select:focus-visible,
   margin: 2.75rem 0 0.6rem;
 }
 
-/* projects-page section titles use the page-index color family: a blue
-   numbered prefix over green title text; the global "> " prompt marker stays
-   and the section-title glow is dropped */
+/* projects-page section titles: white like every other page's section
+   heading, with the global "> " prompt marker staying colored */
 .demos > .section-title,
 .experiments-block > .section-title {
-  color: var(--accent);
+  color: var(--text);
   text-shadow: none;
 }
 
-/* offering-domain groups inside experiments: stepped-up mono labels in the
-   green accent family — clearly larger than the card metadata, still below
-   the 1.6rem section titles */
+/* offering-domain groups inside experiments: stepped-up mono labels in
+   white like the major sections — clearly larger than the card metadata,
+   still below the 1.6rem section titles — with a colored "/" path marker */
 .row-label {
   font-family: var(--mono);
   font-size: 1.05rem;
-  color: var(--accent);
+  color: var(--text);
   margin: 1.5rem 0 0.15rem;
   letter-spacing: 0.02em;
+}
+
+/* the "/" marker reads as a path segment, in the accent color like the
+   "> " prompt marker on the major sections */
+.row-label::before {
+  content: "/";
+  color: var(--accent);
 }
 
 .row-desc {
@@ -2390,17 +2396,17 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.35rem 1rem;
+  gap: 0.35rem 1.1rem;
   margin: 1rem 0 2.25rem;
   font-family: var(--mono);
-  font-size: 0.82rem;
+  font-size: 0.95rem;
 }
 
 .page-index .page-index-label {
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 
 .page-index a {
@@ -2408,7 +2414,7 @@ button:disabled {
 }
 
 .page-index a::before {
-  content: "> ";
+  content: "/";
   color: var(--accent);
 }
 
