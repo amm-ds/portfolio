@@ -1877,6 +1877,10 @@ button:disabled {
   grid-template-columns: 1fr;
   gap: 0.9rem;
   margin: 0 0 1rem;
+  /* every card keeps its own content-height geometry: the locked phone card
+     (with the in-card gate form) is taller, but must never stretch its
+     sibling cards to match */
+  align-items: start;
 }
 
 @media (min-width: 640px) {
@@ -1936,10 +1940,13 @@ button:disabled {
 }
 
 /* the phone card renders locked: a small in-card gate instead of the tel
-   link — no hover lift, content top-aligned so the form reads naturally */
+   link — no hover lift, content top-aligned so the form reads naturally;
+   min-width 0 keeps the gate inside the card's own grid track at every
+   breakpoint (the input row shrinks rather than pushing the card wider) */
 .channel-card--locked {
   align-items: flex-start;
   cursor: default;
+  min-width: 0;
 }
 
 .channel-card--locked:hover {
@@ -1948,13 +1955,13 @@ button:disabled {
 }
 
 .channel-lock-note {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.4rem;
   font-size: 0.82rem;
   color: var(--muted);
 }
 
 .channel-unlock {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.3rem;
 }
 
 .channel-unlock-label {
@@ -2342,14 +2349,27 @@ button:disabled {
 
 /* --- Home presentation sections --- */
 
-/* page titles match the services/about kicker format: a small green mono
-   "> " prompt line (the marker comes from ::before), no glow */
+/* page titles render at the SAME scale as the other pages' main titles
+   (the /services h1: 2rem, dropping to 1.6rem at 800px in the media query
+   below, where .page-title joins the .services-hero h1 selector) — the
+   green mono terminal style and the "> " prompt marker (via ::before) stay */
 .page-title {
   font-family: var(--mono);
-  font-size: 0.85rem;
+  font-size: 2rem;
   color: var(--accent);
   margin: 0 0 0.35rem;
   text-shadow: none;
+}
+
+/* the shared h1-scale breakpoint: same 800px drop as .services-hero h1 and
+   .detail-header h1. This block must stay BELOW the base rules in source
+   order (equal specificity — the media query only wins if it comes later) */
+@media (max-width: 800px) {
+  .services-hero h1,
+  .detail-header h1,
+  .page-title {
+    font-size: 1.6rem;
+  }
 }
 
 /* small anchor index under the page opening: "index: > live demos · …" —
@@ -4250,14 +4270,28 @@ button.chip.demo-preset.fwb-active {
   }
 }
 
-/* languages & availability — one shared card (Contact + About): bold lines,
-   flags for English/Spanish, Catalan as an explicit text chip */
-.languages-card {
+/* languages & timezone — two shared cards (Contact + About) in one row on
+   desktop, stacked on mobile; bold labels throughout */
+.facts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
   margin: 0 0 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .facts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.languages-card,
+.timezone-card {
+  margin: 0;
   padding: 0.9rem 1.1rem;
 }
 
-.services-hero .languages-card {
+.services-hero .facts-grid {
   margin: 0 0 1.25rem;
 }
 
@@ -4269,11 +4303,17 @@ button.chip.demo-preset.fwb-active {
 
 .languages-line + .languages-line {
   margin-top: 0.4rem;
-  color: var(--muted);
 }
 
-.languages-chip {
-  font-family: var(--mono);
+/* the Senyera sits on the text baseline, flag-sized beside the language
+   names — rounded like the other chips */
+.flag-senyera {
+  display: inline-block;
+  width: 18px;
+  height: 12px;
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+  border-radius: 2px;
 }
 
 /* "how I work" opens the page as importance cards — the same geometry as the

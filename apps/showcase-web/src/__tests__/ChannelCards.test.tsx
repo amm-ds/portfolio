@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -90,8 +91,12 @@ describe("ChannelCards", () => {
     expect(screen.queryByRole("link", { name: /\+34 670 881 697/ })).toBeNull();
     const locked = document.querySelector(".channel-card--locked")!;
     expect(locked).not.toBeNull();
-    // the one-line privacy note under the form
-    expect(screen.getByText(/nothing leaves your device/i)).toBeInTheDocument();
+    // the plain privacy note under the form: the entered value is validated
+    // and discarded — never stored or transmitted
+    expect(
+      screen.getByText(/your email or phone is not stored or sent anywhere/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/it only unlocks the number on this device/i)).toBeInTheDocument();
   });
 
   it("shows an inline validation error on invalid input and stays locked", () => {
@@ -112,12 +117,52 @@ describe("ChannelCards", () => {
     fireEvent.change(unlockInput(), { target: { value: "ada@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
     expect(setItem).toHaveBeenCalledWith(PHONE_UNLOCK_KEY, "1");
+    // privacy: no setItem call ever receives the entered value — storage
+    // sees the boolean flag and nothing else
+    expect(setItem.mock.calls).toEqual([[PHONE_UNLOCK_KEY, "1"]]);
     const tel = screen.getByRole("link", { name: /\+34 670 881 697/ });
     expect(tel.getAttribute("href")).toBe(PHONE_HREF);
     expect(tel.classList.contains("channel-card")).toBe(true);
     // the gate form is gone
     expect(screen.queryByLabelText(/email or phone/i)).toBeNull();
     expect(document.querySelector(".channel-card--locked")).toBeNull();
+  });
+
+  it("privacy: the entered phone value is validated and discarded — never persisted", () => {
+    const { setItem, store } = stubLocalStorage();
+    renderCards();
+    const entered = "+34 670 881 697";
+    fireEvent.change(unlockInput(), { target: { value: entered } });
+    fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
+    expect(setItem).toHaveBeenCalledTimes(1);
+    // neither the key nor the value of any setItem call carries the entered
+    // number (or any fragment of it)
+    for (const call of setItem.mock.calls) {
+      for (const arg of call) {
+        expect(String(arg)).not.toContain("670 881 697");
+        expect(String(arg)).not.toBe(entered);
+      }
+    }
+    // the backing store holds nothing but the boolean flag
+    expect(Object.keys(store)).toEqual([PHONE_UNLOCK_KEY]);
+    expect(store[PHONE_UNLOCK_KEY]).toBe("1");
+  });
+
+  it("keeps the unlock gate inside the phone card's own bounds — fixed card geometry at every breakpoint", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    // siblings keep their own content height: the taller locked phone card
+    // never stretches them (grid default `stretch` is overridden)
+    const gridRule = css.match(/\.channel-grid \{[\s\S]*?\n\}/)![0];
+    expect(gridRule).toContain("align-items: start;");
+    // the locked card cannot outgrow its grid track…
+    const lockedRule = css.match(/\.channel-card--locked \{[\s\S]*?\n\}/)![0];
+    expect(lockedRule).toContain("min-width: 0;");
+    // …and the form row shrinks inside the card instead of overflowing it
+    const inputRule = css.match(/\.channel-unlock-row input \{[\s\S]*?\n\}/)![0];
+    expect(inputRule).toContain("flex: 1;");
+    expect(inputRule).toContain("min-width: 0;");
+    const textRule = css.match(/\.channel-text \{[\s\S]*?\n\}/)![0];
+    expect(textRule).toContain("min-width: 0;");
   });
 
   it("unlocks on a valid phone number too", () => {

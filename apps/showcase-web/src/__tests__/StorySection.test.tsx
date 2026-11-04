@@ -272,11 +272,26 @@ describe("StorySection h2 title styling", () => {
     // the numbered prefix is gone from the section headings (the left rail
     // keeps its own numbering)
     expect(css).not.toContain(".story-section h2 .rail-num");
+    // no CSS-generated numbering residue either: no counter or ::marker/::before
+    // digit rule may target the story h2 — the only ::before is the "> " prompt
+    expect(css).not.toMatch(/counter-(reset|increment)/);
+    expect(css).not.toContain('content: counter(');
+    const h2BeforeRules = [...css.matchAll(/\.story-section h2::before \{[\s\S]*?\n\}/g)].map(
+      (m) => m[0],
+    );
+    expect(h2BeforeRules).toHaveLength(1);
     // the "> " prompt marker stays green with no glow of its own
-    const beforeRule = css.match(/\.story-section h2::before \{[\s\S]*?\n\}/)![0];
+    const beforeRule = h2BeforeRules[0];
     expect(beforeRule).toContain('content: "> ";');
     expect(beforeRule).toContain("color: var(--accent);");
     expect(beforeRule).not.toContain("accent-glow");
+    // no other rule re-paints the story h2 title color (the ::before prompt
+    // rule is excluded — only the plain h2 rule may carry a color)
+    const otherColorRules = [...css.matchAll(/\.story-section h2\s*\{[^}]*color:[^;}]+;/g)].map(
+      (m) => m[0],
+    );
+    expect(otherColorRules).toHaveLength(1);
+    expect(otherColorRules[0]).toContain("var(--text)");
   });
 
   it("renders the h2 as the bare section title — no number span", () => {

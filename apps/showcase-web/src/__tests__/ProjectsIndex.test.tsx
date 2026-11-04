@@ -180,18 +180,32 @@ describe("ProjectsIndex", () => {
     ]);
   });
 
-  it("opens with the kicker-format page title and a descriptive subtitle line", async () => {
+  it("renders the page title at the SAME scale as the services h1 — green mono, > marker, smaller subtitle", async () => {
     const css = readFileSync("src/styles.css", "utf8");
-    // the page title renders like the /services and /about kickers: small
-    // green mono "> " prompt (marker via ::before), no glow
-    const titleRule = css.match(/\.page-title \{[\s\S]*?\n\}/)![0];
+    // the "> projects" title matches the /services h1 scale while keeping the
+    // green mono terminal style, the "> " prompt marker and no glow
+    // (the base rule — the 800px media-query block below also carries a
+    // .page-title selector, so anchor on the font-family line)
+    const titleRule = css.match(/\.page-title \{\n  font-family:[\s\S]*?\n\}/)![0];
     expect(titleRule).toContain("font-family: var(--mono);");
-    expect(titleRule).toContain("font-size: 0.85rem;");
+    expect(titleRule).toContain("font-size: 2rem;");
     expect(titleRule).toContain("color: var(--accent);");
     expect(titleRule).not.toContain("accent-glow");
+    // the /services h1 carries the same 2rem base…
+    expect(css.match(/\.services-hero h1 \{[\s\S]*?\n\}/)![0]).toContain("font-size: 2rem;");
+    // …and the 800px breakpoint drops BOTH to 1.6rem in one shared rule
+    const mediaRule = css.match(
+      /@media \(max-width: 800px\) \{[\s\S]*?\.services-hero h1,\s*\.detail-header h1,\s*\.page-title \{[\s\S]*?\n  \}/,
+    )![0];
+    expect(mediaRule).toContain("font-size: 1.6rem;");
+    // the "> " prompt marker stays
+    expect(css.match(/\.page-title::before \{[\s\S]*?\n\}/)![0]).toContain('content: "> ";');
+    // "projects and demos repository" stays the smaller subtitle line
     const subRule = css.match(/\.page-subtitle \{[\s\S]*?\n\}/)![0];
     expect(subRule).toContain("font-family: var(--mono);");
     expect(subRule).toContain("color: var(--text);");
+    expect(subRule).toContain("font-size: 1.05rem;");
+    expect(subRule).not.toContain("font-size: 2rem");
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>

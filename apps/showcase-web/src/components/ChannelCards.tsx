@@ -154,7 +154,10 @@ function PhoneChannelCard() {
             {error}
           </p>
         )}
-        <p className="channel-unlock-note">stored only in this browser — nothing leaves your device.</p>
+        <p className="channel-unlock-note">
+          your email or phone is not stored or sent anywhere — it only unlocks the number on this
+          device.
+        </p>
       </div>
     </div>
   );

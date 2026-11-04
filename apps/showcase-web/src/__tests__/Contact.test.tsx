@@ -58,17 +58,21 @@ describe("Contact page", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Get in touch");
   });
 
-  it("states the reply window exactly once, from config, on the shared languages card", () => {
+  it("states the reply window exactly once, from config, on the shared timezone card", () => {
     renderContact();
     const matches = screen.getAllByText(
       new RegExp(`replies within ${AVAILABILITY.replyHours}h on business days`),
     );
     expect(matches).toHaveLength(1);
+    // the two shared fact cards: languages (with the drawn Senyera) and
+    // timezone & replies
+    expect(document.querySelector(".facts-grid")).not.toBeNull();
+    expect(document.querySelector(".timezone-card")).not.toBeNull();
     expect(screen.getByText(/Europe\/Madrid \(CET, UTC\+1\)/i)).toBeInTheDocument();
-    // the shared card carries the languages with flags and the Catalan chip
     expect(screen.getByText("🇬🇧 English")).toBeInTheDocument();
     expect(screen.getByText("🇪🇸 Spanish")).toBeInTheDocument();
     expect(screen.getByText("Catalan")).toBeInTheDocument();
+    expect(document.querySelector(".languages-card .flag-senyera")).not.toBeNull();
     expect(document.querySelector(".languages-card")).not.toBeNull();
     // the old plain contact-meta line is gone
     expect(document.querySelector(".contact-meta")).toBeNull();

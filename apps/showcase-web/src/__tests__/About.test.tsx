@@ -67,13 +67,17 @@ describe("About page", () => {
     expect(github.getAttribute("rel")).toContain("noopener");
     const linkedin = screen.getByRole("link", { name: /linkedin/i });
     expect(linkedin.getAttribute("href")).toBe(LINKEDIN_URL);
-    // the old inline contact list is gone; languages & availability render as
-    // the shared card (with the phone unlocked via the localStorage flag)
+    // the old inline contact list is gone; languages & timezone render as the
+    // two shared fact cards (with the phone unlocked via the localStorage flag)
     expect(document.querySelector(".about-contact")).toBeNull();
+    expect(document.querySelector(".facts-grid")).not.toBeNull();
     expect(document.querySelector(".languages-card")).not.toBeNull();
+    expect(document.querySelector(".timezone-card")).not.toBeNull();
     expect(screen.getByText("🇬🇧 English")).toBeInTheDocument();
     expect(screen.getByText("🇪🇸 Spanish")).toBeInTheDocument();
     expect(screen.getByText("Catalan")).toBeInTheDocument();
+    // Catalan carries the drawn Senyera, not a country emoji
+    expect(document.querySelector(".languages-card .flag-senyera")).not.toBeNull();
     expect(screen.getByText(/Europe\/Madrid \(CET, UTC\+1\)/)).toBeInTheDocument();
     expect(
       screen.getByText(new RegExp(`replies within ${AVAILABILITY.replyHours}h on business days`)),
