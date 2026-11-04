@@ -74,11 +74,12 @@ describe("Home (terminal-centered)", () => {
     expect(stackLine.textContent).not.toContain("mlx");
     expect(
       screen.getByText(
-        "reproducible pipelines · honest baselines · production-grade code · small, reversible changes — every step stays reviewable",
+        "reproducible pipelines · honest baselines · production-grade code · results quality & performance first",
       ),
     ).toBeInTheDocument();
-    // the retired principle is gone from the page
+    // the retired principles are gone from the page
     expect(screen.queryByText(/models propose/i)).toBeNull();
+    expect(screen.queryByText(/small, reversible changes/i)).toBeNull();
     // full typed content exists in the DOM from first render via aria-label
     const term = document.querySelector(".hero-terminal")!;
     expect(term.getAttribute("role")).toBe("img");

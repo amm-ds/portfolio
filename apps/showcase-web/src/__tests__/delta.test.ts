@@ -114,7 +114,7 @@ describe("computeCallouts", () => {
     expect(callouts.find((c) => c.run === "good")!.deltaPct).toBeCloseTo(-50);
   });
 
-  it("falls back to the baseline headline metric when the best metric is absent there", () => {
+  it("returns no delta when the candidate's metric is absent on the baseline (no cross-metric compare)", () => {
     const callouts = computeCallouts(
       {
         naive_last: { rmse: 12 }, // no "mae" key
@@ -123,9 +123,13 @@ describe("computeCallouts", () => {
       ["naive_last", "model_x"],
     );
     const best = callouts.find((c) => c.run === "model_x")!;
-    // baseline rmse 12 vs best mae 9 → -25%
-    expect(best.deltaPct).toBeCloseTo(-25);
-    expect(best.baselineRun).toBe("naive_last");
+    // mae cannot be compared against a baseline that has no mae — showing a
+    // delta here would compare unlike metrics (the public-table "+1689%" bug)
+    expect(best.deltaPct).toBeNull();
+    expect(best.baselineRun).toBeNull();
+    // rmse shares the name across runs, so that comparison is valid
+    const rmse = callouts.find((c) => c.run === "model_x" && c.metric === "rmse");
+    expect(rmse).toBeUndefined(); // headline is mae; rmse is not a row
   });
 
   it("returns no delta when the baseline value is zero", () => {

@@ -67,13 +67,14 @@ function splitConclusionsTechnical(md: string): [string, string | null] {
 export function StorySection({
   projectId,
   section,
-  index,
   metrics,
   figureCaptions = {},
   linkedTerms,
 }: {
   projectId: string;
   section: StorySectionData;
+  /** Section position from the parent map; numbering renders in the left
+   * rail only, so the section h2 carries the bare title. */
   index: number;
   metrics: Metrics | null;
   /** Story `figure_captions`, keyed by figure name. */
@@ -117,10 +118,7 @@ export function StorySection({
 
   return (
     <section id={`sec-${section.id}`} className="story-section">
-      <h2>
-        <span className="rail-num">{String(index + 1).padStart(2, "0")} </span>
-        {section.title}
-      </h2>
+      <h2>{section.title}</h2>
       {SECTION_SUBTITLES[section.id] && (
         <p className="section-subtitle">{SECTION_SUBTITLES[section.id]}</p>
       )}

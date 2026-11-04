@@ -1,59 +1,12 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
+import { ChannelCards, channelMailtoHref } from "../components/ChannelCards";
+import { LanguagesAvailability } from "../components/LanguagesAvailability";
 import { usePageMeta } from "../seo";
-import { EmailIcon, GitHubIcon, LinkedInIcon } from "../components/channelIcons";
-import {
-  AVAILABILITY,
-  CONTACT_EMAIL,
-  LINKEDIN_URL,
-  REPO_URL,
-  SITE_TITLE_SUFFIX,
-  SITE_URL,
-} from "../config";
+import { AVAILABILITY, CONTACT_EMAIL, REPO_URL, SITE_URL } from "../config";
 
-/** Stated concretely as text; Europe/Madrid per project convention. */
-const TIMEZONE_LABEL = "Europe/Madrid (CET, UTC+1)";
-
-const mailSubject = `Project inquiry — ${SITE_TITLE_SUFFIX}`;
-const mailBody = [
-  "Hi,",
-  "",
-  "I'd like to discuss a project.",
-  "",
-  "Problem:",
-  "Data available:",
-  "Timeline:",
-  "",
-  `— sent from ${SITE_URL}`,
-].join("\n");
-
-const mailtoHref = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-  mailSubject,
-)}&body=${encodeURIComponent(mailBody)}`;
-
-/** Contact channels: one card per channel, the whole card is the link. The
- * GitHub card points at the profile, not at any single repository. */
-const CHANNELS: { name: string; address: string; href: string; icon: ReactNode }[] = [
-  {
-    name: "GitHub",
-    address: "github.com/amm-ds",
-    href: "https://github.com/amm-ds",
-    icon: <GitHubIcon />,
-  },
-  {
-    name: "LinkedIn",
-    address: "linkedin/in/alejandro-mérida-maroto",
-    href: LINKEDIN_URL,
-    icon: <LinkedInIcon />,
-  },
-  {
-    name: "Email",
-    address: CONTACT_EMAIL,
-    href: mailtoHref,
-    icon: <EmailIcon />,
-  },
-];
+const mailtoHref = channelMailtoHref;
 
 /** How engagements start — rendered as a numbered roadmap timeline. The
  * revision-round wording deliberately carries no count. */
@@ -235,23 +188,7 @@ export function Contact() {
         )}
       </form>
 
-      <div className="channel-grid">
-        {CHANNELS.map((c) => (
-          <a
-            key={c.name}
-            className="channel-card"
-            href={c.href}
-            target={c.href.startsWith("http") ? "_blank" : undefined}
-            rel={c.href.startsWith("http") ? "noopener noreferrer" : undefined}
-          >
-            <span className="channel-icon">{c.icon}</span>
-            <span className="channel-text">
-              <span className="channel-name">{c.name}</span>
-              <span className="channel-address">{c.address}</span>
-            </span>
-          </a>
-        ))}
-      </div>
+      <ChannelCards />
       <Card className="free-call-card">
         <h3>first call is free</h3>
         <p>
@@ -260,10 +197,7 @@ export function Contact() {
           options and rough scope — no commitment.
         </p>
       </Card>
-      <p className="contact-meta">
-        Languages: English, Spanish. · Timezone: {TIMEZONE_LABEL} — replies within{" "}
-        {AVAILABILITY.replyHours} hours on business days.
-      </p>
+      <LanguagesAvailability />
 
       <h2 className="section-title">how engagements start</h2>
       <ol className="start-timeline">

@@ -89,4 +89,12 @@ describe("App shell (temporary smoke)", () => {
       expect(document.querySelector(".route-skeleton")).toBeNull(),
     );
   });
+
+  it("pads the page content one token above the footer", () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    // every route renders .app-main--fluid (App.tsx), so its bottom padding is
+    // the space before the footer bar: 0.5rem base + one ~3rem token = 3.5rem
+    const fluidRule = css.match(/\.app-main--fluid \{[\s\S]*?\n\}/)![0];
+    expect(fluidRule).toContain("padding: 0.5rem 1.25rem 3.5rem;");
+  });
 });

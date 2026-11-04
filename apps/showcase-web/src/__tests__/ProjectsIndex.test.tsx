@@ -180,6 +180,35 @@ describe("ProjectsIndex", () => {
     ]);
   });
 
+  it("opens with the kicker-format page title and a descriptive subtitle line", async () => {
+    const css = readFileSync("src/styles.css", "utf8");
+    // the page title renders like the /services and /about kickers: small
+    // green mono "> " prompt (marker via ::before), no glow
+    const titleRule = css.match(/\.page-title \{[\s\S]*?\n\}/)![0];
+    expect(titleRule).toContain("font-family: var(--mono);");
+    expect(titleRule).toContain("font-size: 0.85rem;");
+    expect(titleRule).toContain("color: var(--accent);");
+    expect(titleRule).not.toContain("accent-glow");
+    const subRule = css.match(/\.page-subtitle \{[\s\S]*?\n\}/)![0];
+    expect(subRule).toContain("font-family: var(--mono);");
+    expect(subRule).toContain("color: var(--text);");
+    vi.stubGlobal("fetch", projectsOnlyFetch());
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+    );
+    // subtitle sits between the title and the intro paragraph
+    const h1 = screen.getByRole("heading", { level: 1 });
+    const subtitle = h1.nextElementSibling!;
+    expect(subtitle.classList.contains("page-subtitle")).toBe(true);
+    expect(subtitle.textContent).toBe("projects and demos repository");
+    expect(subtitle.nextElementSibling!.classList.contains("section-intro")).toBe(true);
+  });
+
   it("renders the projects heading and places cards under the right topic rows", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
@@ -657,9 +686,11 @@ describe("ProjectsIndex", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
     // big section titles with extra weight
     expect(css.match(/\.section-title--major \{[\s\S]*?\n\}/)![0]).toContain("font-size: 1.6rem;");
-    // topic rows are small mono labels, not section titles
+    // topic rows are stepped-up mono labels — bigger than the card metadata,
+    // still below the 1.6rem section titles
     const labelRule = css.match(/\.row-label \{[\s\S]*?\n\}/)![0];
     expect(labelRule).toContain("font-family: var(--mono);");
+    expect(labelRule).toContain("font-size: 1.05rem;");
     expect(labelRule).not.toContain("border-bottom");
     // the numbered prefix is blue and the title text green — the page-index
     // color family; the old "> " marker is gone from the group labels
@@ -718,15 +749,16 @@ describe("ProjectsIndex", () => {
     expect(css.match(/\.page-index \{[\s\S]*?\n\}/)![0]).toContain("font-family: var(--mono);");
   });
 
-  it("splits the card body into two equal muted columns under one uniform small-label style", () => {
+  it("splits the card body into two equal white text columns under one uniform small-label style", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const colsRule = css.match(/\.study-cols \{[\s\S]*?\n\}/)![0];
     expect(colsRule).toContain("display: grid;");
     expect(colsRule).toContain("repeat(auto-fit, minmax(0, 1fr));");
     expect(colsRule).toContain("gap: 0.9rem;");
-    // both blocks are muted text
+    // both blocks render in the default text color (--text); the small
+    // section labels above them stay muted
     const doesRule = css.match(/\.study-does,\n\.study-achieves \{[\s\S]*?\n\}/)![0];
-    expect(doesRule).toContain("color: var(--muted);");
+    expect(doesRule).toContain("color: var(--text);");
     expect(doesRule).not.toContain("text-transform");
     // all four card labels (topics / data / description / results) share ONE
     // uniform small-label rule — mono, uppercase, muted

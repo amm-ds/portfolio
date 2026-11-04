@@ -14,7 +14,7 @@ export const HERO_SCRIPT = [
   { cmd: "stack", output: "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama · docker · dvc · uv" },
   {
     cmd: "principles",
-    output: "reproducible pipelines · honest baselines · production-grade code · small, reversible changes — every step stays reviewable",
+    output: "reproducible pipelines · honest baselines · production-grade code · results quality & performance first",
   },
 ];
 

@@ -278,6 +278,7 @@ export function ProjectsIndex() {
   return (
     <>
       <h1 className="page-title">projects</h1>
+      <p className="page-subtitle">projects and demos repository</p>
       <p className="section-intro">
         A growing set of public, reproducible case studies with live demos — real datasets,
         measured baselines and published pipelines. Every number on this page can be re-run

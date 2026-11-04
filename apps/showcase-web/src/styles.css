@@ -94,14 +94,15 @@ code {
   padding: 2rem 1.25rem 3rem;
 }
 
-/* demo workbenches are dashboards: fluid width, no page-level cap */
+/* fluid shell used by every route: no page-level cap; one ~3rem token of
+   extra bottom padding so pages breathe before the footer bar */
 .app-main--fluid {
   max-width: none;
   /* Dashboard demos flow below the 58px sticky nav (footer is not rendered on
      /demos/* routes); content taller than the viewport scrolls the page, which
      the workbench uses for bigger chart/panel sizes. */
   min-height: calc(100dvh - 58px);
-  padding: 0.5rem 1.25rem;
+  padding: 0.5rem 1.25rem 3.5rem;
 }
 
 
@@ -706,7 +707,7 @@ select:focus-visible,
 .study-achieves {
   font-size: 0.92rem;
   line-height: 1.55;
-  color: var(--muted);
+  color: var(--text);
   margin: 0;
 }
 
@@ -760,11 +761,12 @@ select:focus-visible,
   margin-right: 0.6rem;
 }
 
-/* offering-domain groups inside experiments: subordinate mono labels in the
-   same numbered blue-over-green family as the major sections */
+/* offering-domain groups inside experiments: stepped-up mono labels in the
+   same numbered blue-over-green family as the major sections — clearly
+   larger than the card metadata, still below the 1.6rem section titles */
 .row-label {
   font-family: var(--mono);
-  font-size: 0.8rem;
+  font-size: 1.05rem;
   color: var(--accent);
   margin: 1.5rem 0 0.15rem;
   letter-spacing: 0.02em;
@@ -947,16 +949,12 @@ select:focus-visible,
   margin-bottom: 0;
 }
 
-/* green title over a blue numbered prefix, with no glow on either half —
-   the same number+title color family as the projects-page section titles */
+/* white title behind the "> " prompt marker, with no glow — the numbered
+   prefix renders in the left rail only; the heading carries the bare title */
 .story-section h2 {
   font-size: 1.25rem;
   margin: 0 0 0.75rem;
-  color: var(--accent);
-}
-
-.story-section h2 .rail-num {
-  color: var(--secondary);
+  color: var(--text);
 }
 
 .story-section h2::before {
@@ -1937,10 +1935,75 @@ button:disabled {
   white-space: nowrap;
 }
 
-.contact-meta {
+/* the phone card renders locked: a small in-card gate instead of the tel
+   link — no hover lift, content top-aligned so the form reads naturally */
+.channel-card--locked {
+  align-items: flex-start;
+  cursor: default;
+}
+
+.channel-card--locked:hover {
+  border-color: var(--border);
+  transform: none;
+}
+
+.channel-lock-note {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
   color: var(--muted);
+}
+
+.channel-unlock {
+  margin: 0 0 0.4rem;
+}
+
+.channel-unlock-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.channel-unlock-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.channel-unlock-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--sans);
   font-size: 0.88rem;
-  margin: 0 0 1.5rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+}
+
+.channel-unlock-row input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.channel-unlock-row input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.channel-unlock-row button {
+  flex-shrink: 0;
+  /* the site's accent button, sized down for the inline gate */
+  min-height: 0;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.channel-unlock-note {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
 }
 
 /* --- Contact form: fields validate inline; submit composes a mailto. --- */
@@ -2279,10 +2342,14 @@ button:disabled {
 
 /* --- Home presentation sections --- */
 
+/* page titles match the services/about kicker format: a small green mono
+   "> " prompt line (the marker comes from ::before), no glow */
 .page-title {
-  font-size: 2rem;
-  margin: 0 0 0.5rem;
-  text-shadow: 0 0 14px var(--accent-glow);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--accent);
+  margin: 0 0 0.35rem;
+  text-shadow: none;
 }
 
 /* small anchor index under the page opening: "index: > live demos · …" —
@@ -2324,6 +2391,16 @@ button:disabled {
   content: "> ";
   color: var(--accent);
   text-shadow: none;
+}
+
+/* descriptive second title line under the page-title prompt (the muted
+   section-intro that follows it carries a -0.4rem top margin, so this
+   bottom margin lands a 0.5rem gap) */
+.page-subtitle {
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  color: var(--text);
+  margin: 0 0 0.9rem;
 }
 
 .hero h1 {
@@ -4173,11 +4250,30 @@ button.chip.demo-preset.fwb-active {
   }
 }
 
-.about-facts {
+/* languages & availability — one shared card (Contact + About): bold lines,
+   flags for English/Spanish, Catalan as an explicit text chip */
+.languages-card {
+  margin: 0 0 1.5rem;
+  padding: 0.9rem 1.1rem;
+}
+
+.services-hero .languages-card {
+  margin: 0 0 1.25rem;
+}
+
+.languages-line {
   margin: 0;
-  font-family: var(--mono);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.languages-line + .languages-line {
+  margin-top: 0.4rem;
   color: var(--muted);
+}
+
+.languages-chip {
+  font-family: var(--mono);
 }
 
 /* "how I work" opens the page as importance cards — the same geometry as the

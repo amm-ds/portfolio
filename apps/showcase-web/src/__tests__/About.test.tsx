@@ -1,11 +1,34 @@
 import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { About } from "../pages/About";
-import { CONTACT_EMAIL, LINKEDIN_URL, REPO_URL, SITE_NAME } from "../config";
+import { PHONE_UNLOCK_KEY } from "../components/ChannelCards";
+import { AVAILABILITY, CONTACT_EMAIL, LINKEDIN_URL, REPO_URL, SITE_NAME } from "../config";
 
-afterEach(cleanup);
+beforeEach(() => {
+  // the vitest jsdom environment ships no localStorage — stub one with the
+  // phone flag preset; page-level tests exercise the channel row unlocked,
+  // the locked-state flow itself is covered by ChannelCards.test.tsx
+  const store: Record<string, string> = { [PHONE_UNLOCK_KEY]: "1" };
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => (key in store ? store[key] : null),
+    setItem: (key: string, value: string) => {
+      store[key] = String(value);
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      for (const key of Object.keys(store)) delete store[key];
+    },
+  });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 function renderAbout() {
   return render(
@@ -35,16 +58,26 @@ describe("About page", () => {
     expect(tel.classList.contains("channel-card")).toBe(true);
     expect(screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") })).toHaveAttribute(
       "href",
-      `mailto:${CONTACT_EMAIL}`,
+      expect.stringContaining(`mailto:${CONTACT_EMAIL}?`),
     );
     const github = screen.getByRole("link", { name: /github\.com/i });
-    expect(github.getAttribute("href")).toBe(REPO_URL);
+    // unified with the Contact page: the card points at the profile
+    expect(github.getAttribute("href")).toBe("https://github.com/amm-ds");
+    expect(github.getAttribute("href")).not.toBe(REPO_URL);
     expect(github.getAttribute("rel")).toContain("noopener");
     const linkedin = screen.getByRole("link", { name: /linkedin/i });
     expect(linkedin.getAttribute("href")).toBe(LINKEDIN_URL);
-    // the old inline contact list is gone; location/languages stay as a facts line
+    // the old inline contact list is gone; languages & availability render as
+    // the shared card (with the phone unlocked via the localStorage flag)
     expect(document.querySelector(".about-contact")).toBeNull();
-    expect(screen.getByText("Barcelona · Spanish · Catalan · English")).toBeInTheDocument();
+    expect(document.querySelector(".languages-card")).not.toBeNull();
+    expect(screen.getByText("🇬🇧 English")).toBeInTheDocument();
+    expect(screen.getByText("🇪🇸 Spanish")).toBeInTheDocument();
+    expect(screen.getByText("Catalan")).toBeInTheDocument();
+    expect(screen.getByText(/Europe\/Madrid \(CET, UTC\+1\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(new RegExp(`replies within ${AVAILABILITY.replyHours}h on business days`)),
+    ).toBeInTheDocument();
   });
 
   it("renders the four channel cards with inline SVG logos, one row", () => {
@@ -163,25 +196,31 @@ describe("About page", () => {
     expect(css).not.toContain(".education-card");
   });
 
-  it("opens 'how I work' at the top as nine importance cards with the services card geometry", () => {
+  it("opens 'how I work' as nine client-facing practice cards with the services card geometry", () => {
     renderAbout();
     const cards = document.querySelectorAll(".practice-card");
     expect(cards).toHaveLength(9);
     const text = document.querySelector(".practices-grid")!.textContent!;
     for (const practice of [
-      "reproducible pipelines",
-      "pinned data with checksums",
-      "scored-once evaluation",
-      "honest baselines",
-      "tested code",
-      "stated limits",
-      "plain-language reporting",
-      "small, reversible changes",
-      "public by default",
+      "full repository handover",
+      "measured against your baseline",
+      "decisions from holdout evidence",
+      "performance budgets stated & met",
+      "documentation & handover walkthrough",
+      "honest limits in every report",
+      "monitoring & drift response",
+      "structured revision rounds",
+      "results quality & performance first",
     ]) {
       expect(text).toContain(practice);
     }
-    expect(screen.getByText(/Nine practices run through every engagement/i)).toBeInTheDocument();
+    // the retired portfolio-experiment cards are gone
+    expect(text).not.toContain("small, reversible changes");
+    expect(text).not.toContain("pinned data with checksums");
+    expect(text).not.toContain("public by default");
+    expect(text).not.toContain("plain-language reporting");
+    // client-facing framing: what the client receives, not internal plumbing
+    expect(screen.getByText(/Nine practices shape every engagement/i)).toBeInTheDocument();
     // importance cards, not a narrative strip
     expect(document.querySelectorAll(".practices-grid")).toHaveLength(1);
     expect(document.querySelector(".practices-strip")).toBeNull();

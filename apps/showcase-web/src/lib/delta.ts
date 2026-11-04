@@ -76,18 +76,16 @@ export function computeCallouts(metrics: Metrics, referencedRuns: string[]): Met
 
   const baselineRun = baselines[0];
   const baselineMetrics = metrics[baselineRun];
-  const baselineHeadline = headline(baselineMetrics);
 
   // Every candidate gets its own delta vs the baseline (the baseline row
-  // itself carries none). Prefer the baseline's value for the candidate's
-  // headline metric; fall back to the baseline's headline.
+  // itself carries none) — but ONLY on the same metric. Comparing a run's
+  // headline against the baseline's headline when the names differ produces
+  // nonsense (e.g. agent faithfulness "vs" random-chunk recall@5); such rows
+  // show no delta.
   for (const c of callouts) {
     if (c.run === baselineRun) continue;
-    const baselineValue =
-      typeof baselineMetrics[c.metric] === "number"
-        ? (baselineMetrics[c.metric] as number)
-        : (baselineHeadline?.value ?? null);
-    if (baselineValue === null || baselineValue === 0) continue;
+    const baselineValue = baselineMetrics[c.metric];
+    if (typeof baselineValue !== "number" || baselineValue === 0) continue;
 
     const deltaPct = ((c.value - baselineValue) / Math.abs(baselineValue)) * 100;
     c.deltaPct = deltaPct;

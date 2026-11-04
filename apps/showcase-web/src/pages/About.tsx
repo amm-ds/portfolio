@@ -1,7 +1,6 @@
-import type { ReactNode } from "react";
 import { Card } from "../components/Card";
-import { EmailIcon, GitHubIcon, LinkedInIcon, PhoneIcon } from "../components/channelIcons";
-import { CONTACT_EMAIL, LINKEDIN_URL, REPO_URL } from "../config";
+import { ChannelCards } from "../components/ChannelCards";
+import { LanguagesAvailability } from "../components/LanguagesAvailability";
 import { usePageMeta } from "../seo";
 
 /** Career history as a roadmap-style vertical timeline — generic industry
@@ -62,71 +61,45 @@ const ROLES = [
   },
 ];
 
-const CONTACT_CHANNELS: { name: string; address: string; href: string; icon: ReactNode }[] = [
-  {
-    name: "Phone",
-    address: "+34 670 881 697",
-    href: "tel:+34670881697",
-    icon: <PhoneIcon />,
-  },
-  {
-    name: "Email",
-    address: CONTACT_EMAIL,
-    href: `mailto:${CONTACT_EMAIL}`,
-    icon: <EmailIcon />,
-  },
-  {
-    name: "GitHub",
-    address: "github.com/amm-ds",
-    href: REPO_URL,
-    icon: <GitHubIcon />,
-  },
-  {
-    name: "LinkedIn",
-    address: "linkedin/in/alejandro-mérida-maroto",
-    href: LINKEDIN_URL,
-    icon: <LinkedInIcon />,
-  },
-];
-
-/** How the work runs — the practices behind every case study and every
- * engagement, rendered as importance cards at the top of the page. */
+/** What you receive — the practices behind every engagement, rendered as
+ * importance cards at the top of the page. Client-facing: each card states a
+ * deliverable or guarantee, not an internal experiment detail. */
 const PRACTICES = [
   {
-    title: "reproducible pipelines",
-    text: "every result rebuilds from a clean state — no notebook ghosts, no \"works on my machine\".",
+    title: "full repository handover",
+    text: "you receive the complete repository — reproducible pipeline, pinned environment, tests and CI — so your team can rerun and extend every result without me.",
   },
   {
-    title: "pinned data with checksums",
-    text: "dataset cards pin source, license, checksum and snapshot date before any modeling starts.",
+    title: "measured against your baseline",
+    text: "nothing is trusted until it beats your naive baseline on a named metric — and the delta is stated, not implied.",
   },
   {
-    title: "scored-once evaluation",
-    text: "models are scored in CI against a pinned holdout — a metric that changed is flagged, not shipped.",
+    title: "decisions from holdout evidence",
+    text: "go/no-go calls rest on a pinned, scored-once holdout — evidence your side can verify, not impressions.",
   },
   {
-    title: "honest baselines",
-    text: "every model is judged against a named naive baseline, and the delta is stated, not implied.",
+    title: "performance budgets stated & met",
+    text: "latency, throughput and cost budgets are agreed up front and reported against at delivery — no surprises after launch.",
   },
   {
-    title: "tested code",
-    text: "unit and property tests on the validators, coverage gates in CI — a fix without a regression test is not a fix.",
+    title: "documentation & handover walkthrough",
+    text: "delivery includes documentation written for your team plus a walkthrough session — knowledge transfer is part of the work, not an extra.",
   },
   {
-    title: "stated limits",
-    text: "every report says what the work does not establish, including where the conclusions break.",
+    title: "honest limits in every report",
+    text: "every report states what the work does not establish and where the conclusions break — before you bet on them.",
   },
   {
-    title: "plain-language reporting",
-    text: "findings are written for decision-makers, not practitioners — what was measured, what it shows, and where it stops holding.",
+    title: "monitoring & drift response",
+    text: "after launch, monitoring watches for drift and degradation, with a response plan agreed before go-live.",
   },
   {
-    title: "small, reversible changes",
-    text: "work lands in small, reversible steps — every change stays reviewable, and any step can be reverted without archaeology.",
+    title: "structured revision rounds",
+    text: "feedback lands in structured revision rounds with clear scope — changes stay predictable, in time and in budget.",
   },
   {
-    title: "public by default",
-    text: "code, metrics and case studies are public — the work is checked, not trusted, and every number can be re-run from the repository.",
+    title: "results quality & performance first",
+    text: "measured baselines, honest numbers, fast enough to be used — quality and speed are requirements, not afterthoughts.",
   },
 ];
 
@@ -148,29 +121,14 @@ export function About() {
           I design, build and evaluate ML systems end to end, and I keep the code, metrics
           and case studies public and auditable.
         </p>
-        <div className="channel-grid channel-grid--4">
-          {CONTACT_CHANNELS.map((c) => (
-            <a
-              key={c.name}
-              className="channel-card"
-              href={c.href}
-              target={c.href.startsWith("http") ? "_blank" : undefined}
-              rel={c.href.startsWith("http") ? "noopener noreferrer" : undefined}
-            >
-              <span className="channel-icon">{c.icon}</span>
-              <span className="channel-text">
-                <span className="channel-name">{c.name}</span>
-                <span className="channel-address">{c.address}</span>
-              </span>
-            </a>
-          ))}
-        </div>
-        <p className="about-facts">Barcelona · Spanish · Catalan · English</p>
+        <ChannelCards />
+        <LanguagesAvailability />
       </section>
 
       <h2 className="section-title">how I work</h2>
       <p className="section-intro">
-        Nine practices run through every engagement and every case study on this site.
+        Nine practices shape every engagement — each one is something you receive, stated up
+        front.
       </p>
       <div className="practices-grid">
         {PRACTICES.map((p) => (

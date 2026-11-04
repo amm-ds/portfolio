@@ -1,8 +1,9 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildInquiryMailto, Contact } from "../pages/Contact";
+import { PHONE_UNLOCK_KEY } from "../components/ChannelCards";
 import {
   AVAILABILITY,
   CONTACT_EMAIL,
@@ -11,7 +12,29 @@ import {
   SITE_TITLE_SUFFIX,
 } from "../config";
 
-afterEach(cleanup);
+beforeEach(() => {
+  // the vitest jsdom environment ships no localStorage — stub one with the
+  // phone flag preset; page-level tests exercise the channel row unlocked,
+  // the locked-state flow itself is covered by ChannelCards.test.tsx
+  const store: Record<string, string> = { [PHONE_UNLOCK_KEY]: "1" };
+  vi.stubGlobal("localStorage", {
+    getItem: (key: string) => (key in store ? store[key] : null),
+    setItem: (key: string, value: string) => {
+      store[key] = String(value);
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      for (const key of Object.keys(store)) delete store[key];
+    },
+  });
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 function renderContact() {
   return render(
@@ -35,13 +58,20 @@ describe("Contact page", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Get in touch");
   });
 
-  it("states the reply window exactly once, from config", () => {
+  it("states the reply window exactly once, from config, on the shared languages card", () => {
     renderContact();
     const matches = screen.getAllByText(
-      new RegExp(`replies within ${AVAILABILITY.replyHours} hours on business days`),
+      new RegExp(`replies within ${AVAILABILITY.replyHours}h on business days`),
     );
     expect(matches).toHaveLength(1);
     expect(screen.getByText(/Europe\/Madrid \(CET, UTC\+1\)/i)).toBeInTheDocument();
+    // the shared card carries the languages with flags and the Catalan chip
+    expect(screen.getByText("🇬🇧 English")).toBeInTheDocument();
+    expect(screen.getByText("🇪🇸 Spanish")).toBeInTheDocument();
+    expect(screen.getByText("Catalan")).toBeInTheDocument();
+    expect(document.querySelector(".languages-card")).not.toBeNull();
+    // the old plain contact-meta line is gone
+    expect(document.querySelector(".contact-meta")).toBeNull();
     expect(screen.queryByText(/available now/i)).not.toBeInTheDocument();
   });
 
@@ -65,11 +95,12 @@ describe("Contact page", () => {
     expect(body).toContain("Timeline:");
   });
 
-  it("renders GitHub, LinkedIn and Email as individual cards — the whole card is the link", () => {
+  it("renders the four channel cards — GitHub, LinkedIn, Email, Phone — the whole card is the link", () => {
     renderContact();
     const cards = [...document.querySelectorAll(".channel-card")];
-    expect(cards).toHaveLength(3);
+    expect(cards).toHaveLength(4);
     // every card is an <a> carrying an inline SVG logo, a name and an address
+    // (the phone card renders unlocked here via the localStorage flag)
     for (const card of cards) {
       expect(card.tagName).toBe("A");
       expect(card.querySelector("svg")).not.toBeNull();
@@ -77,6 +108,10 @@ describe("Contact page", () => {
       expect(card.querySelector(".channel-name")!.textContent!.length).toBeGreaterThan(0);
       expect(card.querySelector(".channel-address")!.textContent!.length).toBeGreaterThan(0);
     }
+    const phone = screen.getByRole("link", { name: /\+34 670 881 697/ });
+    expect(phone.getAttribute("href")).toBe("tel:+34670881697");
+    expect(phone.classList.contains("channel-card")).toBe(true);
+    expect(phone.getAttribute("target")).toBeNull();
     const github = screen.getByRole("link", { name: /github\.com/i });
     expect(github.classList.contains("channel-card")).toBe(true);
     // the card points at the profile/code page, not at any single repo or /issues
@@ -91,7 +126,7 @@ describe("Contact page", () => {
     const email = screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") });
     expect(email.classList.contains("channel-card")).toBe(true);
     expect(email.getAttribute("href")).toContain(`mailto:${CONTACT_EMAIL}`);
-    expect(screen.getByText(/English, Spanish/i)).toBeInTheDocument();
+    expect(email.getAttribute("target")).toBeNull();
   });
 
   it("states the first-call-is-free promise with the Services discovery terms", () => {

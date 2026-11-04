@@ -263,15 +263,15 @@ describe("StorySection subtitles", () => {
   });
 });
 
-describe("StorySection h2 number+title styling", () => {
-  it("paints a blue numbered prefix over a green title, with no glow on either half", () => {
+describe("StorySection h2 title styling", () => {
+  it("paints a white title with no numbered prefix, and no glow", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const h2Rule = css.match(/\.story-section h2 \{[\s\S]*?\n\}/)![0];
-    expect(h2Rule).toContain("color: var(--accent);");
+    expect(h2Rule).toContain("color: var(--text);");
     expect(h2Rule).not.toContain("text-shadow");
-    const numRule = css.match(/\.story-section h2 \.rail-num \{[\s\S]*?\n\}/)![0];
-    expect(numRule).toContain("color: var(--secondary);");
-    expect(numRule).not.toContain("text-shadow");
+    // the numbered prefix is gone from the section headings (the left rail
+    // keeps its own numbering)
+    expect(css).not.toContain(".story-section h2 .rail-num");
     // the "> " prompt marker stays green with no glow of its own
     const beforeRule = css.match(/\.story-section h2::before \{[\s\S]*?\n\}/)![0];
     expect(beforeRule).toContain('content: "> ";');
@@ -279,15 +279,14 @@ describe("StorySection h2 number+title styling", () => {
     expect(beforeRule).not.toContain("accent-glow");
   });
 
-  it("renders the numbered h2 as a number span plus the section title", () => {
+  it("renders the h2 as the bare section title — no number span", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
       <StorySection projectId="01-rag-agent" section={{ ...BASE, title: "Background" }} index={0} metrics={null} />,
     );
     const h2 = document.querySelector(".story-section h2")!;
-    expect(h2.querySelector(".rail-num")!.textContent).toBe("01 ");
-    expect(h2.textContent).toContain("01 ");
-    expect(h2.textContent).toContain("Background");
+    expect(h2.querySelector(".rail-num")).toBeNull();
+    expect(h2.textContent).toBe("Background");
   });
 });
 
