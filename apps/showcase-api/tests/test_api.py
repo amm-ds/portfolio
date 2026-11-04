@@ -53,6 +53,31 @@ def test_ready_controls_status_without_changing_liveness(monkeypatch) -> None:  
     assert ready.json() == {"status": "ok", "ready": True}
 
 
+def test_contact_unlock_returns_the_configured_phone(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("CONTACT_PHONE", "+34 670 881 697")
+    r = client.post("/contact/unlock", json={"value": "ada@example.com"})
+    assert r.status_code == 200
+    assert r.json() == {"phone": "+34 670 881 697"}
+    phone = client.post("/contact/unlock", json={"value": "+1 (555) 123-4567"})
+    assert phone.status_code == 200
+    assert phone.json() == {"phone": "+34 670 881 697"}
+
+
+def test_contact_unlock_rejects_invalid_values(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("CONTACT_PHONE", "+34 670 881 697")
+    for bad in ["not-an-email", "12345", "", "a@b", "call me maybe"]:
+        assert client.post("/contact/unlock", json={"value": bad}).status_code == 422
+    # over the schema's length cap as well
+    assert client.post("/contact/unlock", json={"value": "x" * 200}).status_code == 422
+
+
+def test_contact_unlock_fails_closed_when_unconfigured(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("CONTACT_PHONE", raising=False)
+    r = client.post("/contact/unlock", json={"value": "ada@example.com"})
+    assert r.status_code == 503
+    assert "phone" not in r.json()
+
+
 def test_console_script_invokes_uvicorn(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     import uvicorn
     from showcase_api.__main__ import main as launch

@@ -1,9 +1,8 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildInquiryMailto, Contact } from "../pages/Contact";
-import { PHONE_UNLOCK_KEY } from "../components/ChannelCards";
 import {
   AVAILABILITY,
   CONTACT_EMAIL,
@@ -11,25 +10,6 @@ import {
   REPO_URL,
   SITE_TITLE_SUFFIX,
 } from "../config";
-
-beforeEach(() => {
-  // the vitest jsdom environment ships no localStorage — stub one with the
-  // phone flag preset; page-level tests exercise the channel row unlocked,
-  // the locked-state flow itself is covered by ChannelCards.test.tsx
-  const store: Record<string, string> = { [PHONE_UNLOCK_KEY]: "1" };
-  vi.stubGlobal("localStorage", {
-    getItem: (key: string) => (key in store ? store[key] : null),
-    setItem: (key: string, value: string) => {
-      store[key] = String(value);
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      for (const key of Object.keys(store)) delete store[key];
-    },
-  });
-});
 
 afterEach(() => {
   cleanup();
@@ -99,23 +79,27 @@ describe("Contact page", () => {
     expect(body).toContain("Timeline:");
   });
 
-  it("renders the four channel cards — GitHub, LinkedIn, Email, Phone — the whole card is the link", () => {
+  it("renders the four channel cards — the phone gate plus GitHub, LinkedIn and Email links", () => {
     renderContact();
     const cards = [...document.querySelectorAll(".channel-card")];
     expect(cards).toHaveLength(4);
-    // every card is an <a> carrying an inline SVG logo, a name and an address
-    // (the phone card renders unlocked here via the localStorage flag)
-    for (const card of cards) {
+    // the phone card renders locked: a gate form, not a tel link, and the
+    // number itself is never in the document (it comes from the API on unlock)
+    const phone = cards[0];
+    expect(phone.tagName).toBe("DIV");
+    expect(phone.classList.contains("channel-card--locked")).toBe(true);
+    expect(phone.querySelector("form")).not.toBeNull();
+    expect(phone.querySelector("svg")).not.toBeNull();
+    expect(phone.querySelector(".channel-name")!.textContent).toBe("Phone");
+    expect(screen.queryByRole("link", { name: /\+34/ })).toBeNull();
+    // the three link cards carry an inline SVG logo, a name and an address
+    for (const card of cards.slice(1)) {
       expect(card.tagName).toBe("A");
       expect(card.querySelector("svg")).not.toBeNull();
       expect(card.querySelector("svg path")).not.toBeNull();
       expect(card.querySelector(".channel-name")!.textContent!.length).toBeGreaterThan(0);
       expect(card.querySelector(".channel-address")!.textContent!.length).toBeGreaterThan(0);
     }
-    const phone = screen.getByRole("link", { name: /\+34 670 881 697/ });
-    expect(phone.getAttribute("href")).toBe("tel:+34670881697");
-    expect(phone.classList.contains("channel-card")).toBe(true);
-    expect(phone.getAttribute("target")).toBeNull();
     const github = screen.getByRole("link", { name: /github\.com/i });
     expect(github.classList.contains("channel-card")).toBe(true);
     // the card points at the profile/code page, not at any single repo or /issues
@@ -206,18 +190,21 @@ describe("Contact page", () => {
 describe("Contact inquiry form", () => {
   it("renders name, email, organization and message fields above the links block", () => {
     renderContact();
-    expect(screen.getByLabelText(/name/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/email/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/organization/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/message/)).toBeInTheDocument();
+    // scope to the inquiry form — the phone gate's input is also labelled
+    // "email or phone", which a bare screen query would match too
+    const form = within(document.querySelector(".contact-form")!);
+    expect(form.getByLabelText(/name/)).toBeInTheDocument();
+    expect(form.getByLabelText(/email/)).toBeInTheDocument();
+    expect(form.getByLabelText(/organization/i)).toBeInTheDocument();
+    expect(form.getByLabelText(/message/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /send inquiry/i })).toBeInTheDocument();
     // the note that the mail client opens with the message pre-filled
     expect(screen.getByText(/opens your mail client with the message pre-filled/i)).toBeInTheDocument();
     // form sits above the channel cards
-    const form = document.querySelector(".contact-form")!;
     const channels = document.querySelector(".channel-grid")!;
     expect(
-      form.compareDocumentPosition(channels) & Node.DOCUMENT_POSITION_FOLLOWING,
+      document.querySelector(".contact-form")!.compareDocumentPosition(channels) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
   });
 
@@ -235,8 +222,9 @@ describe("Contact inquiry form", () => {
 
   it("rejects an invalid email address and a too-short message", () => {
     renderContact();
-    fireEvent.change(screen.getByLabelText(/email/), { target: { value: "not-an-email" } });
-    fireEvent.change(screen.getByLabelText(/message/), { target: { value: "too short" } });
+    const form = within(document.querySelector(".contact-form")!);
+    fireEvent.change(form.getByLabelText(/email/), { target: { value: "not-an-email" } });
+    fireEvent.change(form.getByLabelText(/message/), { target: { value: "too short" } });
     fireEvent.click(screen.getByRole("button", { name: /send inquiry/i }));
     expect(screen.getByText("enter a valid email address")).toBeInTheDocument();
     expect(screen.getByText("message must be at least 10 characters")).toBeInTheDocument();
@@ -266,12 +254,13 @@ describe("Contact inquiry form", () => {
     const locationStub = { href: "" };
     vi.stubGlobal("location", locationStub);
     renderContact();
-    fireEvent.change(screen.getByLabelText(/name/), { target: { value: FIELDS.name } });
-    fireEvent.change(screen.getByLabelText(/email/), { target: { value: FIELDS.email } });
-    fireEvent.change(screen.getByLabelText(/organization/i), {
+    const form = within(document.querySelector(".contact-form")!);
+    fireEvent.change(form.getByLabelText(/name/), { target: { value: FIELDS.name } });
+    fireEvent.change(form.getByLabelText(/email/), { target: { value: FIELDS.email } });
+    fireEvent.change(form.getByLabelText(/organization/i), {
       target: { value: FIELDS.organization },
     });
-    fireEvent.change(screen.getByLabelText(/message/), { target: { value: FIELDS.message } });
+    fireEvent.change(form.getByLabelText(/message/), { target: { value: FIELDS.message } });
     fireEvent.click(screen.getByRole("button", { name: /send inquiry/i }));
 
     expect(locationStub.href.startsWith(`mailto:${CONTACT_EMAIL}?`)).toBe(true);

@@ -173,6 +173,44 @@ def readiness() -> JSONResponse:
     )
 
 
+# --- Contact phone gate -------------------------------------------------------
+# The direct phone line never ships in the frontend bundle; the page reveals
+# it only after this one deliberate step. CONTACT_PHONE is set per deployment.
+
+_CONTACT_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+_CONTACT_PHONE_RE = re.compile(r"^\+?[0-9][0-9\s().-]{5,18}[0-9]$")
+
+
+class ContactUnlockRequest(BaseModel):
+    """What the visitor shares to reveal the phone line: an email address or a
+    phone number. Validated for shape only — the value is never stored."""
+
+    value: str = Field(min_length=3, max_length=120)
+
+
+def _contact_phone() -> str:
+    """The direct line from the deployment's environment; empty when unset so
+    the endpoint fails closed."""
+    return os.environ.get("CONTACT_PHONE", "").strip()
+
+
+@app.post("/contact/unlock")
+def unlock_contact_phone(body: ContactUnlockRequest) -> dict[str, str]:
+    """Return the phone number once the visitor shares a valid email or phone
+    number. Keeps the number out of page source and bundles without pretending
+    to be a security boundary — any deliberate caller receives it."""
+    value = body.value.strip()
+    if not (_CONTACT_EMAIL_RE.match(value) or _CONTACT_PHONE_RE.match(value)):
+        raise HTTPException(status_code=422, detail="enter a valid email address or phone number")
+    phone = _contact_phone()
+    if not phone:
+        raise HTTPException(
+            status_code=503,
+            detail="the phone line is not configured on this deployment",
+        )
+    return {"phone": phone}
+
+
 def _serving_ready(serving_dir: Path) -> bool:
     """A serving bundle is loadable when its model.joblib + meta.json exist."""
     return (serving_dir / "model.joblib").is_file() and (serving_dir / "meta.json").is_file()

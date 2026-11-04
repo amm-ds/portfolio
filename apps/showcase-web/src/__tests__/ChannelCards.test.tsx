@@ -1,38 +1,24 @@
 import { readFileSync } from "node:fs";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  ChannelCards,
-  isEmailOrPhone,
-  PHONE_HREF,
-  PHONE_UNLOCK_KEY,
-} from "../components/ChannelCards";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ChannelCards, isEmailOrPhone } from "../components/ChannelCards";
 import { CONTACT_EMAIL, LINKEDIN_URL } from "../config";
 
-/** The vitest jsdom environment ships no localStorage — stub a minimal one
- * per test so the phone gate can be exercised both ways. */
-function stubLocalStorage(initial: Record<string, string> = {}) {
-  const store: Record<string, string> = { ...initial };
-  const getItem = vi.fn((key: string) => (key in store ? store[key] : null));
-  const setItem = vi.fn((key: string, value: string) => {
-    store[key] = String(value);
+/** Stub the one API call the phone gate makes — records the request so tests
+ * can assert the endpoint and the body. */
+function stubUnlockApi(opts: { phone?: string; status?: number } = {}) {
+  const calls: { url: string; body: unknown }[] = [];
+  const fetchStub = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    calls.push({ url: String(input), body: init?.body ? JSON.parse(String(init.body)) : null });
+    const status = opts.status ?? 200;
+    return new Response(
+      JSON.stringify(status === 200 ? { phone: opts.phone ?? "+34 670 881 697" } : { error: "boom" }),
+      { status, headers: { "Content-Type": "application/json" } },
+    );
   });
-  vi.stubGlobal("localStorage", {
-    getItem,
-    setItem,
-    removeItem: vi.fn((key: string) => {
-      delete store[key];
-    }),
-    clear: vi.fn(() => {
-      for (const key of Object.keys(store)) delete store[key];
-    }),
-  });
-  return { store, getItem, setItem };
+  vi.stubGlobal("fetch", fetchStub);
+  return { fetchStub, calls };
 }
-
-beforeEach(() => {
-  stubLocalStorage();
-});
 
 afterEach(() => {
   cleanup();
@@ -87,7 +73,7 @@ describe("ChannelCards", () => {
     renderCards();
     expect(screen.getByText(/share your email or phone to unlock/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /unlock/i })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /\+34 670 881 697/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /\+34/ })).toBeNull();
     const locked = document.querySelector(".channel-card--locked")!;
     expect(locked).not.toBeNull();
     // slim full-width layout: spans the whole grid line, no label/note text
@@ -96,53 +82,82 @@ describe("ChannelCards", () => {
     expect(locked.querySelector(".channel-unlock-note")).toBeNull();
   });
 
-  it("shows an inline validation error on invalid input and stays locked", () => {
-    const { setItem } = stubLocalStorage();
+  it("keeps the phone number out of page code — the component source carries no digits", () => {
+    const src = readFileSync("src/components/ChannelCards.tsx", "utf8");
+    for (const fragment of ["670 881 697", "670881697", "34670881697"]) {
+      expect(src).not.toContain(fragment);
+    }
+  });
+
+  it("shows an inline validation error on invalid input and never calls the API", () => {
+    const { fetchStub } = stubUnlockApi();
     renderCards();
     fireEvent.change(unlockInput(), { target: { value: "not-an-email" } });
     fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
     expect(screen.getByText("enter a valid email address or phone number")).toBeInTheDocument();
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(unlockInput()).toHaveAttribute("aria-invalid", "true");
-    expect(screen.queryByRole("link", { name: /\+34 670 881 697/ })).toBeNull();
-    expect(setItem).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /\+34/ })).toBeNull();
+    expect(fetchStub).not.toHaveBeenCalled();
   });
 
-  it("unlocks on a valid email: stores the flag and reveals the tel link", () => {
-    const { setItem } = stubLocalStorage();
+  it("unlocks on a valid email: posts to the API and reveals the tel link from the response", async () => {
+    const { calls } = stubUnlockApi({ phone: "+34 670 881 697" });
     renderCards();
     fireEvent.change(unlockInput(), { target: { value: "ada@example.com" } });
     fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
-    expect(setItem).toHaveBeenCalledWith(PHONE_UNLOCK_KEY, "1");
-    // privacy: no setItem call ever receives the entered value — storage
-    // sees the boolean flag and nothing else
-    expect(setItem.mock.calls).toEqual([[PHONE_UNLOCK_KEY, "1"]]);
-    const tel = screen.getByRole("link", { name: /\+34 670 881 697/ });
-    expect(tel.getAttribute("href")).toBe(PHONE_HREF);
+    const tel = await screen.findByRole("link", { name: /\+34 670 881 697/ });
+    expect(calls).toEqual([{ url: "/contact/unlock", body: { value: "ada@example.com" } }]);
+    expect(tel.getAttribute("href")).toBe("tel:+34670881697");
     expect(tel.classList.contains("channel-card")).toBe(true);
     // the gate form is gone
     expect(screen.queryByLabelText(/email or phone/i)).toBeNull();
     expect(document.querySelector(".channel-card--locked")).toBeNull();
   });
 
-  it("privacy: the entered phone value is validated and discarded — never persisted", () => {
-    const { setItem, store } = stubLocalStorage();
+  it("unlocks on a valid phone number too", async () => {
+    stubUnlockApi({ phone: "+34 670 881 697" });
     renderCards();
-    const entered = "+34 670 881 697";
-    fireEvent.change(unlockInput(), { target: { value: entered } });
+    fireEvent.change(unlockInput(), { target: { value: "+34 670 881 697" } });
     fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
-    expect(setItem).toHaveBeenCalledTimes(1);
-    // neither the key nor the value of any setItem call carries the entered
-    // number (or any fragment of it)
-    for (const call of setItem.mock.calls) {
-      for (const arg of call) {
-        expect(String(arg)).not.toContain("670 881 697");
-        expect(String(arg)).not.toBe(entered);
-      }
-    }
-    // the backing store holds nothing but the boolean flag
-    expect(Object.keys(store)).toEqual([PHONE_UNLOCK_KEY]);
-    expect(store[PHONE_UNLOCK_KEY]).toBe("1");
+    expect(await screen.findByRole("link", { name: /\+34 670 881 697/ })).toHaveAttribute(
+      "href",
+      "tel:+34670881697",
+    );
+  });
+
+  it("stays locked with an explanatory error when the API cannot be reached", async () => {
+    stubUnlockApi({ status: 503 });
+    renderCards();
+    fireEvent.change(unlockInput(), { target: { value: "ada@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/email channel below/i);
+    expect(screen.queryByRole("link", { name: /\+34/ })).toBeNull();
+    expect(screen.getByLabelText(/email or phone/i)).toBeInTheDocument();
+  });
+
+  it("the gate is back on every reload — the unlock is view state only, nothing persisted", async () => {
+    stubUnlockApi({ phone: "+34 670 881 697" });
+    // the environment may or may not ship a localStorage — watch it either way;
+    // the unlock flow must never write to it
+    const setItem = vi.fn();
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+      setItem,
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+    });
+    const first = renderCards();
+    fireEvent.change(unlockInput(), { target: { value: "ada@example.com" } });
+    fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
+    expect(await screen.findByRole("link", { name: /\+34 670 881 697/ })).toBeInTheDocument();
+    // nothing was persisted — no flag, no entered value
+    expect(setItem).not.toHaveBeenCalled();
+    // a fresh mount (the reload) shows the gate again
+    first.unmount();
+    renderCards();
+    expect(screen.getByLabelText(/email or phone/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /\+34/ })).toBeNull();
   });
 
   it("keeps the unlock gate inside the phone card's own bounds — all cards share one geometry", () => {
@@ -162,27 +177,8 @@ describe("ChannelCards", () => {
     expect(textRule).toContain("min-width: 0;");
   });
 
-  it("unlocks on a valid phone number too", () => {
-    renderCards();
-    fireEvent.change(unlockInput(), { target: { value: "+34 670 881 697" } });
-    fireEvent.click(screen.getByRole("button", { name: /unlock/i }));
-    expect(screen.getByRole("link", { name: /\+34 670 881 697/ })).toHaveAttribute(
-      "href",
-      PHONE_HREF,
-    );
-  });
-
-  it("renders unlocked on load when the localStorage flag is already set", () => {
-    stubLocalStorage({ [PHONE_UNLOCK_KEY]: "1" });
-    renderCards();
-    expect(screen.getByRole("link", { name: /\+34 670 881 697/ })).toHaveAttribute(
-      "href",
-      PHONE_HREF,
-    );
-    expect(screen.queryByLabelText(/email or phone/i)).toBeNull();
-  });
-
   it("clears the error once the input is edited", () => {
+    stubUnlockApi();
     renderCards();
     fireEvent.change(unlockInput(), { target: { value: "nope" } });
     fireEvent.click(screen.getByRole("button", { name: /unlock/i }));

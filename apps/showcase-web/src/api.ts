@@ -165,3 +165,25 @@ export async function scoreChurn(
   }
   return (await res.json()) as ChurnScoreResult;
 }
+
+// --- Contact phone gate -------------------------------------------------------
+// The direct phone line never ships in the client bundle; it is returned only
+// by this endpoint, once, after one deliberate step.
+
+export interface ContactUnlockResult {
+  phone: string;
+}
+
+/** 503 means the deployment has no CONTACT_PHONE configured. */
+export async function unlockContactPhone(value: string): Promise<ContactUnlockResult> {
+  const path = "/contact/unlock";
+  const res = await fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ value }),
+  });
+  if (!res.ok) {
+    throw new ApiError(path, res.status);
+  }
+  return (await res.json()) as ContactUnlockResult;
+}

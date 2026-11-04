@@ -23,6 +23,10 @@ services:
       LLM_COST_LIMIT_USD: ${LLM_COST_LIMIT_USD:-3.00}
       LLM_MAX_REQUESTS: ${LLM_MAX_REQUESTS:-400}
       LLM_TOTAL_TOKENS_LIMIT: ${LLM_TOTAL_TOKENS_LIMIT:-4000000}
+      # Direct phone line behind the contact page's unlock gate — returned by
+      # POST /contact/unlock only, never shipped in the frontend bundle.
+      # Empty disables the endpoint (it fails closed with a 503).
+      CONTACT_PHONE: ${CONTACT_PHONE:-}
       # The API has no published port: only containers on this private compose
       # network can supply forwarding headers. Restrict this to Caddy's IP if
       # the network topology changes; never publish the API with "*" here.

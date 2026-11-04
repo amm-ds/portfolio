@@ -1,33 +1,12 @@
 import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { About } from "../pages/About";
-import { PHONE_UNLOCK_KEY } from "../components/ChannelCards";
 import { AVAILABILITY, CONTACT_EMAIL, LINKEDIN_URL, REPO_URL, SITE_NAME } from "../config";
-
-beforeEach(() => {
-  // the vitest jsdom environment ships no localStorage — stub one with the
-  // phone flag preset; page-level tests exercise the channel row unlocked,
-  // the locked-state flow itself is covered by ChannelCards.test.tsx
-  const store: Record<string, string> = { [PHONE_UNLOCK_KEY]: "1" };
-  vi.stubGlobal("localStorage", {
-    getItem: (key: string) => (key in store ? store[key] : null),
-    setItem: (key: string, value: string) => {
-      store[key] = String(value);
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      for (const key of Object.keys(store)) delete store[key];
-    },
-  });
-});
 
 afterEach(() => {
   cleanup();
-  vi.unstubAllGlobals();
 });
 
 function renderAbout() {
@@ -53,9 +32,13 @@ describe("About page", () => {
     // contact facts render as channel cards (the contact page's pattern)
     const cards = [...document.querySelectorAll(".channel-card")];
     expect(cards).toHaveLength(4);
-    const tel = screen.getByRole("link", { name: /\+34 670 881 697/ });
-    expect(tel.getAttribute("href")).toBe("tel:+34670881697");
-    expect(tel.classList.contains("channel-card")).toBe(true);
+    // the phone card renders locked — a gate form, no tel link, and the
+    // number itself never appears in the document (the API returns it on
+    // unlock; the gate is back on every reload)
+    const phoneCard = cards[0];
+    expect(phoneCard.classList.contains("channel-card--locked")).toBe(true);
+    expect(phoneCard.querySelector("form")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /\+34/ })).toBeNull();
     expect(screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") })).toHaveAttribute(
       "href",
       expect.stringContaining(`mailto:${CONTACT_EMAIL}?`),
@@ -68,7 +51,7 @@ describe("About page", () => {
     const linkedin = screen.getByRole("link", { name: /linkedin/i });
     expect(linkedin.getAttribute("href")).toBe(LINKEDIN_URL);
     // the old inline contact list is gone; languages & timezone render as the
-    // two shared fact cards (with the phone unlocked via the localStorage flag)
+    // shared fact cards below the channel row
     expect(document.querySelector(".about-contact")).toBeNull();
     expect(document.querySelector(".facts-grid")).not.toBeNull();
     expect(document.querySelector(".languages-card")).not.toBeNull();
@@ -92,14 +75,19 @@ describe("About page", () => {
     expect(cards).toHaveLength(4);
     const names = cards.map((c) => c.querySelector(".channel-name")!.textContent);
     expect(names).toEqual(["Phone", "Email", "GitHub", "LinkedIn"]);
-    for (const card of cards) {
+    // the phone card renders locked (a div with the gate form); the three
+    // link cards are anchors with inline SVG logos
+    expect(cards[0].tagName).toBe("DIV");
+    expect(cards[0].classList.contains("channel-card--locked")).toBe(true);
+    expect(cards[0].querySelector("form")).not.toBeNull();
+    expect(cards[0].querySelector(".channel-address")).toBeNull();
+    for (const card of cards.slice(1)) {
       expect(card.tagName).toBe("A");
       expect(card.querySelector("svg")).not.toBeNull();
       expect(card.querySelector("svg path")).not.toBeNull();
       expect(card.querySelector(".channel-address")!.textContent!.length).toBeGreaterThan(0);
     }
     // external cards open in a new tab safely; phone/email stay in-page
-    expect(cards[0].getAttribute("target")).toBeNull();
     expect(cards[1].getAttribute("target")).toBeNull();
     expect(cards[2].getAttribute("target")).toBe("_blank");
     expect(cards[3].getAttribute("target")).toBe("_blank");

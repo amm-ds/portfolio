@@ -1,13 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { unlockContactPhone } from "../api";
 import { CONTACT_EMAIL, LINKEDIN_URL, SITE_TITLE_SUFFIX, SITE_URL } from "../config";
 import { EmailIcon, GitHubIcon, LinkedInIcon, PhoneIcon } from "./channelIcons";
-
-/** Direct line — revealed only after the visitor unlocks it in-page. */
-export const PHONE_DISPLAY = "+34 670 881 697";
-export const PHONE_HREF = "tel:+34670881697";
-
-/** localStorage flag that marks the phone card as unlocked. */
-export const PHONE_UNLOCK_KEY = "channel-phone-unlocked";
 
 const mailSubject = `Project inquiry — ${SITE_TITLE_SUFFIX}`;
 const mailBody = [
@@ -38,12 +32,10 @@ export function isEmailOrPhone(value: string): boolean {
   return EMAIL_RE.test(v) || PHONE_RE.test(v);
 }
 
-function readUnlockedFlag(): boolean {
-  try {
-    return localStorage.getItem(PHONE_UNLOCK_KEY) === "1";
-  } catch {
-    return false;
-  }
+/** The unlocked card is a plain tel link built from the number the API
+ * returned — the digits never appear in this bundle. */
+function telHref(phone: string): string {
+  return `tel:${phone.replace(/[^+\d]/g, "")}`;
 }
 
 /** The always-open channels — the whole card is the link. The GitHub card
@@ -88,35 +80,42 @@ function channelCard(ch: (typeof OPEN_CHANNELS)[number]) {
   );
 }
 
-/** The phone card renders locked until the visitor shares an email or phone
- * number; the flag lives only in this browser's localStorage — nothing is
- * sent anywhere. */
+/** The phone card renders locked; the number is fetched from the API once the
+ * visitor shares an email or phone number. The unlock is view state only —
+ * the gate is back on every reload — and the entered value is never stored,
+ * locally or anywhere else. */
 function PhoneChannelCard() {
-  const [unlocked, setUnlocked] = useState(readUnlockedFlag);
+  const [phone, setPhone] = useState<string | null>(null);
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  if (unlocked) {
+  if (phone) {
     return channelCard({
       name: "Phone",
-      address: PHONE_DISPLAY,
-      href: PHONE_HREF,
+      address: phone,
+      href: telHref(phone),
       icon: <PhoneIcon />,
     });
   }
 
-  const onSubmit = (ev: FormEvent) => {
+  const onSubmit = async (ev: FormEvent) => {
     ev.preventDefault();
     if (!isEmailOrPhone(value)) {
       setError("enter a valid email address or phone number");
       return;
     }
+    setBusy(true);
+    setError(null);
     try {
-      localStorage.setItem(PHONE_UNLOCK_KEY, "1");
+      const res = await unlockContactPhone(value);
+      setValue("");
+      setPhone(res.phone);
     } catch {
-      // storage unavailable (private mode) — unlocked for this session only
+      setError("couldn't reach the server right now — the email channel below works anytime");
+    } finally {
+      setBusy(false);
     }
-    setUnlocked(true);
   };
 
   return (
@@ -136,6 +135,7 @@ function PhoneChannelCard() {
               autoComplete="off"
               placeholder="you@company.com or +34 600 000 000"
               value={value}
+              disabled={busy}
               onChange={(e) => {
                 setValue(e.target.value);
                 if (error) setError(null);
@@ -144,7 +144,9 @@ function PhoneChannelCard() {
               aria-invalid={error ? true : undefined}
               aria-describedby={error ? "channel-phone-unlock-error" : undefined}
             />
-            <button type="submit">unlock</button>
+            <button type="submit" disabled={busy}>
+              {busy ? "unlocking…" : "unlock"}
+            </button>
           </div>
         </form>
         {error && (
