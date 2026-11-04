@@ -91,6 +91,20 @@
     "example": "If 100 customers scored near 0.3 churn risk and about 30 churn, the risk scores are calibrated."
   },
   {
+    "term": "MAE",
+    "slug": "mae",
+    "group": "core",
+    "definition": "Mean absolute error: the average miss size in the original unit, so MAE 25 rentals means typical forecasts are off by about 25.",
+    "example": "The bikeshare champion posts a test MAE of 25.4 rentals per hour against the floor's 83.2."
+  },
+  {
+    "term": "overfitting",
+    "slug": "overfitting",
+    "group": "core",
+    "definition": "When a model keeps improving on training data while getting worse on unseen data, memorizing noise instead of learning the pattern.",
+    "example": "The MLP's train loss keeps falling while validation stalls, the gap the regularization controls exist to close."
+  },
+  {
     "term": "seasonal naive",
     "slug": "seasonal-naive",
     "group": "experiment",
@@ -173,5 +187,33 @@
     "group": "experiment",
     "definition": "An agent pattern that alternates planning the next step, acting with tools, and reviewing the result before deciding what to do next.",
     "example": "The workflow agent plans a search, calls the tool, checks the citation, then continues or backtracks."
+  },
+  {
+    "term": "paired bootstrap CI",
+    "slug": "paired-bootstrap-ci",
+    "group": "experiment",
+    "definition": "A confidence interval built by resampling rows together across two models, so the interval prices row-to-row noise in their difference, not data volume.",
+    "example": "2,000 paired resamples price the champion's 57.8 rentals/hour gain at 95% CI [52.5, 63.1]."
+  },
+  {
+    "term": "early stopping",
+    "slug": "early-stopping",
+    "group": "experiment",
+    "definition": "Halting training when validation error stops improving and restoring the best-seen weights, so the model keeps the version that generalizes.",
+    "example": "Every early-stopping-off row in the ablation worsens validation MAE, the load-bearing control."
+  },
+  {
+    "term": "ONNX",
+    "slug": "onnx",
+    "group": "experiment",
+    "definition": "A portable format for exchanging trained models between frameworks: one exported graph runs on a dedicated inference runtime, often lighter than the training stack.",
+    "example": "Experiment 13's export matches native torch to 7.15e-07 max-abs before serving begins."
+  },
+  {
+    "term": "parity gate",
+    "slug": "parity-gate",
+    "group": "experiment",
+    "definition": "A hard check that an exported model computes the same function as the original: probe-grid predictions must fit a declared tolerance.",
+    "example": "Experiment 13 refuses to continue unless ONNX matches native within 1e-4 max-abs on 512 seeded rows."
   }
 ]

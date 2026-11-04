@@ -132,7 +132,8 @@ describe("renderMarkdown tables", () => {
   const TABLE_MD = "| model | mae |\n|---|---|\n| naive_last | 100 |\n| tuned | 72 |";
 
   it("renders a pipe table with thead/th and tbody/td", () => {
-    const { container } = render(<>{renderMarkdown(TABLE_MD)}</>);
+    // MemoryRouter: the "mae" header now auto-links to the glossary.
+    const { container } = render(<MemoryRouter>{renderMarkdown(TABLE_MD)}</MemoryRouter>);
     const table = container.querySelector("table")!;
     expect(table).not.toBeNull();
     const ths = [...table.querySelectorAll("thead th")].map((el) => el.textContent);
@@ -159,7 +160,7 @@ describe("renderMarkdown tables", () => {
   });
 
   it("renders a table followed by a blank-line-separated paragraph", () => {
-    const { container } = render(<>{renderMarkdown(`${TABLE_MD}\n\nAnd the verdict.`)}</>);
+    const { container } = render(<MemoryRouter>{renderMarkdown(`${TABLE_MD}\n\nAnd the verdict.`)}</MemoryRouter>);
     expect(container.querySelector("table")).not.toBeNull();
     const ps = [...container.querySelectorAll("p")].map((el) => el.textContent);
     expect(ps).toContain("And the verdict.");

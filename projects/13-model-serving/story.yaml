@@ -199,7 +199,7 @@ sections:
 
       - Gates: reproduction exact (25.4316 vs 25.4316); parity max-abs 7.2e-07 on 512 probe rows, tolerance 1e-4.
       - Latency: p50 1.6 ms single-request on both backends; p95 under 6 ms through concurrency 4; p50 about 65 ms at 64 clients where the shared CPU saturates.
-      - Throughput: knee near 950 req/s at concurrency 4 on both backends; ONNX up to 15% ahead at the saturated cells; zero errors across ~7k requests per backend.
+      - Throughput: knee near 950 req/s at concurrency 4 on both backends; ONNX up to 15% ahead at the saturated cells; zero errors across the 4,320 requests per backend in the committed benchmark.
       - Batch: ~56k rows/s at size 128 on both backends, flat per-request latency under saturation.
       - Footprint: fresh-process RSS 298 vs 318 MB; image 6.5 GB measured (145 MB base, 6.2 GB venv, 1 MB model), dominated by torch and the 3.3 GB CUDA stack a CPU service never loads.
       - Cost: about $0.000012 per 1k predictions at the measured knee, 65 W and $0.30 per kWh declared.

@@ -32,6 +32,10 @@ export const CARD_DOES: Record<string, string> = {
     "Evaluates uplift targeting on **64,000-customer** randomized email data (Hillstrom MineThatData, March 2008) at a **25% send budget**.",
   "11-data-engineering":
     "Times **ten data tasks** — parquet/CSV IO, group-by, join, window, strings — over **2.96M NYC taxi trips** on **pandas, Polars, DuckDB and stdlib sqlite**, with a row-parity gate on every measured cell.",
+  "12-tabular-ml-lifecycle":
+    "Runs the full tabular-model lifecycle on **17,379 hourly Capital Bikeshare rows** (sha256-pinned UCI zip + synthetic CI twin): DQ gates, a time-based split, leakage-safe features, and a seeded ladder from seasonal-naive through LightGBM to a hand-written **PyTorch MLP**.",
+  "13-model-serving":
+    "Serves experiment 12's champion MLP for real: ONNX export behind a hard parity gate, one **FastAPI** schema with **native and ONNX Runtime** backends, seeded paired load-tests, and a measured multi-stage **Docker** image.",
 };
 
 /** "What it achieves" per project id — the measured result. Key numbers are
@@ -59,6 +63,10 @@ export const CARD_ACHIEVES: Record<string, string> = {
     "Beats random targeting by **+$2,812 (+69%; CI +$718 to +$4,767)**, though at $0.01 per email mailing everyone still wins.",
   "11-data-engineering":
     "Polars runs **x19.2** and DuckDB **x14.9** over pandas on the geomean of 10 parity-checked tasks; sqlite answers every SQL task but file conversion leaves it **~29x slower**; seeded **1M-10M** tracks show the fast two scaling sub-linearly.",
+  "12-tabular-ml-lifecycle":
+    "The validation-picked MLP posts **25.4 test MAE** against the seasonal-naive floor's **83.2** — a **57.8 rentals/hour** gain with 95% paired bootstrap CI **[52.5, 63.1]** on the scored-once 8-week window; early stopping is the ablation's load-bearing control.",
+  "13-model-serving":
+    "ONNX matches native to **7.15e-07 max-abs**; single-request **p50 1.6 ms** with a **~950 req/s** knee and **~56k rows/s** batched; the measured **6.47 GB** image is mostly torch and unused CUDA — **~$1.15e-05** electricity per 1k predictions.",
 };
 
 /** Exactly four short tags per card — technique/capability wording with no
@@ -77,6 +85,8 @@ const CARD_TAGS: Record<string, string[]> = {
   "09-agentic-workflows": ["HITL", "toolsets", "structured agents", "agent evals"],
   "10-uplift-experimentation": ["CUPED", "Qini", "power analysis", "uplift (T/X)"],
   "11-data-engineering": ["engine benchmarks", "parquet/CSV IO", "group-by & window", "memory probes"],
+  "12-tabular-ml-lifecycle": ["seeded model ladder", "leakage-safe features", "regularization ablation", "paired bootstrap CIs"],
+  "13-model-serving": ["parity gate", "paired benchmarking", "latency/throughput curves", "container footprint"],
 };
 
 /** "What it does" block for an experiment card. */

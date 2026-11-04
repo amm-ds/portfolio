@@ -239,6 +239,24 @@ export const STATIC_PROJECTS: StaticProject[] = [
     ],
     "title": "Tabular ML & Deep Learning Lifecycle",
     "topic": "ML Systems & Decisioning"
+  },
+  {
+    "data": "Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly)",
+    "domain": "Model serving & deployment",
+    "id": "13-model-serving",
+    "order": 13,
+    "status": "working",
+    "techniques": [
+      "FastAPI service design",
+      "ONNX export + parity gate",
+      "native vs ONNX Runtime paired benchmarking",
+      "async httpx load harness (concurrency + batch curves)",
+      "fresh-process RSS probes",
+      "multi-stage Docker build (uv lockfile, non-root, healthcheck)",
+      "electricity cost framing (declared assumptions)"
+    ],
+    "title": "Model API Serving & Docker Deployment",
+    "topic": "Inference & Serving"
   }
 ];
 
@@ -585,6 +603,27 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "seasonal_naive"
     ],
     "project_id": "12-tabular-ml-lifecycle",
+    "section_ids": [
+      "background",
+      "objectives",
+      "data",
+      "eda",
+      "training",
+      "evaluation",
+      "results",
+      "conclusions"
+    ]
+  },
+  {
+    "figure_names": [
+      "backend_comparison_slope",
+      "batch_throughput_curve",
+      "footprint_cost_bars",
+      "latency_concurrency_lines"
+    ],
+    "has_roadmap": true,
+    "metrics_keys": [],
+    "project_id": "13-model-serving",
     "section_ids": [
       "background",
       "objectives",

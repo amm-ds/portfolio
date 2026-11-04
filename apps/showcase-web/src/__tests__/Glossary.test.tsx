@@ -22,6 +22,8 @@ const EXPECTED_SLUGS = [
   "optimality-gap",
   "p50-p95-latency",
   "calibration",
+  "mae",
+  "overfitting",
   // experiment-specific methods
   "seasonal-naive",
   "split-conformal-band",
@@ -35,6 +37,10 @@ const EXPECTED_SLUGS = [
   "drift-observatory",
   "event-aware-range-f1",
   "plan-act-review-loop",
+  "paired-bootstrap-ci",
+  "early-stopping",
+  "onnx",
+  "parity-gate",
 ];
 
 describe("Glossary page", () => {
@@ -43,10 +49,10 @@ describe("Glossary page", () => {
     expect(new Set(glossary.map((e) => e.term)).size).toBe(glossary.length);
   });
 
-  it("marks the 13 shared terms as core and the 12 method terms as experiment", () => {
+  it("marks the 15 shared terms as core and the 16 method terms as experiment", () => {
     const { core, experiment } = glossaryByGroup(glossaryEntries);
-    expect(core.map((e) => e.slug)).toEqual(EXPECTED_SLUGS.slice(0, 13));
-    expect(experiment.map((e) => e.slug)).toEqual(EXPECTED_SLUGS.slice(13));
+    expect(core.map((e) => e.slug)).toEqual(EXPECTED_SLUGS.slice(0, 15));
+    expect(experiment.map((e) => e.slug)).toEqual(EXPECTED_SLUGS.slice(15));
     for (const entry of glossary) {
       expect(["core", "experiment"]).toContain(entry.group);
     }
