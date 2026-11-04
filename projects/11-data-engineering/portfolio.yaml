@@ -5,10 +5,11 @@ techniques:
 - pandas
 - Polars
 - DuckDB
+- SQLite
 - PyArrow
 - Parquet
 - Benchmark harness
-data: NYC TLC yellow taxi 2024-01 (real parquet slice, sha-pinned) + seeded synthetic CI track
+data: NYC TLC yellow taxi 2024-01 (real parquet slice, sha-pinned) + seeded synthetic CI/scalability tracks
 status: working
 order: 11
 topic: Data Engineering

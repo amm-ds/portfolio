@@ -1,4 +1,4 @@
-"""Typer CLI: fetch-data, evaluate (--synthetic CI track), build-report."""
+"""Typer CLI: fetch-data, evaluate (--synthetic CI track, --scalability), build-report."""
 
 import json
 import shutil
@@ -23,6 +23,11 @@ from data_engineering.metrics import (
     write_record,
 )
 from data_engineering.report import build_report, build_report_offline
+from data_engineering.scalability import (
+    build_scalability_metrics,
+    run_scalability,
+    scalability_protocol_statement,
+)
 from data_engineering.synthetic import (
     synthetic_checksum,
     write_dataset_contract,
@@ -32,7 +37,7 @@ from data_engineering.synthetic import (
 logger = get_logger(__name__)
 
 app = typer.Typer(
-    help="Data-engineering benchmark: pandas vs Polars vs DuckDB on one task contract."
+    help="Data-engineering benchmark: pandas vs Polars vs DuckDB vs sqlite3 on one task contract."
 )
 
 OptParams = Annotated[Path, typer.Option(help="YAML file with config keys.")]
@@ -92,6 +97,13 @@ def evaluate(
     synthetic: Annotated[
         bool, typer.Option("--synthetic", help="Seeded synthetic track (CI fast path).")
     ] = False,
+    scalability: Annotated[
+        bool,
+        typer.Option(
+            "--scalability",
+            help="Also run the 1M/3M/10M seeded scalability study and merge it into metrics.json.",
+        ),
+    ] = False,
     params_file: OptParams = Path("params.yaml"),
     reports_dir: Annotated[
         Path | None, typer.Option("--reports-dir", help="Override the reports directory.")
@@ -130,8 +142,32 @@ def evaluate(
     )
     runtime_s = time.perf_counter() - t0
 
-    metrics = build_metrics(cells, cfg, bundle)
-    metadata = build_metadata(cfg, bundle, track=track, runtime_s=runtime_s, cells=cells)
+    # Scalability study: measured on demand; a run without the flag preserves a
+    # previously committed scalability block instead of wiping it.
+    scale_block: dict[str, Any] | None = None
+    scale_meta: dict[str, Any] | None = None
+    scale_runtime_s = 0.0
+    if scalability and not synthetic:
+        scale_runs, scale_runtime_s = run_scalability(cfg, engines=engines)
+        scale_block = build_scalability_metrics(scale_runs)
+        scale_meta = {
+            "protocol_statement": scalability_protocol_statement(cfg),
+            "seed": cfg.seed,
+            "sizes": scale_block["sizes"],
+            "tasks": list(scale_block["tasks"]),
+            "runtime_s": round(scale_runtime_s, 3),
+        }
+    else:
+        existing = _load_existing(out_dir)
+        if existing is not None and "scalability" in existing[0]:
+            scale_block = existing[0]["scalability"]
+        if existing is not None and "scalability" in existing[1]:
+            scale_meta = existing[1]["scalability"]
+
+    metrics = build_metrics(cells, cfg, bundle, scalability=scale_block)
+    metadata = build_metadata(
+        cfg, bundle, track=track, runtime_s=runtime_s, cells=cells, scalability=scale_meta
+    )
     record = BenchmarkRecord(metrics=metrics, metadata=metadata)
     write_record(record, out_dir)
     figures = build_figures(metrics)
@@ -147,10 +183,28 @@ def evaluate(
         "geomean speedup vs pandas: "
         + ", ".join(f"{e}=x{summary[e]['geomean_speedup_vs_pandas']}" for e in summary)
     )
-    typer.echo(
+    msg = (
         f"benchmark phase {runtime_s:.1f}s — artifacts in {out_dir} "
         f"(metrics.json, evaluation_metadata.json, report.html, figures/)"
     )
+    if scalability:
+        msg += f"; scalability phase {scale_runtime_s:.1f}s"
+    typer.echo(msg)
+
+
+def _load_existing(out_dir: Path) -> tuple[dict[str, Any], dict[str, Any]] | None:
+    """Previously committed metrics/metadata, for preserving the scalability block."""
+    metrics_path = out_dir / "metrics.json"
+    metadata_path = out_dir / "evaluation_metadata.json"
+    if not metrics_path.exists() or not metadata_path.exists():
+        return None
+    try:
+        return (
+            json.loads(metrics_path.read_text()),
+            json.loads(metadata_path.read_text()),
+        )
+    except json.JSONDecodeError:
+        return None
 
 
 @app.command(name="build-report")

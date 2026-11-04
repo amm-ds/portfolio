@@ -4,9 +4,11 @@ Downloads (checksum-pinned, idempotent — portfolio_core.io.fetch semantics):
 the January 2024 yellow-taxi parquet (the exact snapshot family the data
 registry pins for project 07 in ``registry/nyc-tlc-yellow-2024-01.dvc``: same
 URL, byte size and source etag) plus the taxi-zone lookup CSV. ``fetch-data``
-then projects the six working columns out of the raw 20-column file and
+then projects the eight working columns out of the raw 20-column file and
 materializes what the tasks read: ``trips.parquet``, ``trips.csv`` and the
-31-way hive-partitioned per-day parquet directory.
+31-way hive-partitioned per-day parquet directory. VendorID and payment_type
+are cast to strings here, once, so the string-categorical aggregation task is
+string-shaped on the real track exactly as on the synthetic one.
 """
 
 import polars as pl
@@ -36,7 +38,10 @@ def fetch_data(cfg: DEConfig) -> DataBundle:
     logger.info("raw trips sha256 ok: %s", checksum[:12])
     del zones_raw  # presence + checksum verified by fetch; the bundle re-checks
 
-    trips = pl.read_parquet(trips_raw, columns=list(TRIP_COLUMNS))
+    trips = pl.read_parquet(trips_raw, columns=list(TRIP_COLUMNS)).with_columns(
+        pl.col("VendorID").cast(pl.String),
+        pl.col("payment_type").cast(pl.String),
+    )
     n_rows = pq.read_metadata(trips_raw).num_rows
 
     prepared = cfg.prepared_path
@@ -76,8 +81,9 @@ def load_real_bundle(cfg: DEConfig) -> DataBundle:
         source=cfg.trips_url,
         license=TLC_LICENSE,
         notes=(
-            "Real track: NYC TLC yellow taxi January 2024, 6-column working projection "
-            "of the registry-pinned snapshot (registry/nyc-tlc-yellow-2024-01.dvc)."
+            "Real track: NYC TLC yellow taxi January 2024, 8-column working projection "
+            "(VendorID/payment_type as strings) of the registry-pinned snapshot "
+            "(registry/nyc-tlc-yellow-2024-01.dvc)."
         ),
     )
     # The pin gate runs on every load: a republished upstream file fails here.

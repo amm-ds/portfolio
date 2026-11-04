@@ -9,6 +9,10 @@ zones_url: https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv
 zones_sha256: 1a99e105092230f8620f301edcca7f80d3080642ff404d28ed957d3fa222c8ed
 # Synthetic CI track: seeded generator scale (rows).
 n_synthetic_rows: 30000
+# Scalability study: seeded synthetic tracks at these row counts; 2 repeats,
+# no probes — the committed time-vs-size curve (metrics.json "scalability").
+scalability_rows: [1000000, 3000000, 10000000]
+scalability_repeats: 2
 # Harness protocol: in-process warm repeats (median), plus one isolated probe
 # run per task×engine cell in a fresh subprocess for true peak RSS (and the
 # cold read time for IO tasks).

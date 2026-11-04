@@ -36,11 +36,13 @@ stages:
       - reports/evaluation_metadata.json
       - reports/report.html
       - reports/results.md
-      - reports/figures/runtime_by_task.html
-      - reports/figures/runtime_by_task.json
-      - reports/figures/memory_by_task.html
-      - reports/figures/memory_by_task.json
-      - reports/figures/speedup_vs_pandas.html
-      - reports/figures/speedup_vs_pandas.json
-      - reports/figures/io_cold_warm.html
-      - reports/figures/io_cold_warm.json
+      - reports/figures/task_times_dotplot.html
+      - reports/figures/task_times_dotplot.json
+      - reports/figures/speedup_overview.html
+      - reports/figures/speedup_overview.json
+      - reports/figures/scalability_lines.html
+      - reports/figures/scalability_lines.json
+      - reports/figures/memory_lollipop.html
+      - reports/figures/memory_lollipop.json
+      - reports/figures/normalized_heatmap.html
+      - reports/figures/normalized_heatmap.json

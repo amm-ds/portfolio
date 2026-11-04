@@ -206,7 +206,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
     "topic": "Decision Science"
   },
   {
-    "data": "NYC TLC yellow taxi 2024-01 (real parquet slice, sha-pinned) + seeded synthetic CI track",
+    "data": "NYC TLC yellow taxi 2024-01 (real parquet slice, sha-pinned) + seeded synthetic CI/scalability tracks",
     "domain": "Data engineering",
     "id": "11-data-engineering",
     "order": 11,
@@ -215,6 +215,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
       "pandas",
       "Polars",
       "DuckDB",
+      "SQLite",
       "PyArrow",
       "Parquet",
       "Benchmark harness"
@@ -520,10 +521,11 @@ export const STATIC_STORIES: StaticStorySummary[] = [
   },
   {
     "figure_names": [
-      "io_cold_warm",
-      "memory_by_task",
-      "runtime_by_task",
-      "speedup_vs_pandas"
+      "memory_lollipop",
+      "normalized_heatmap",
+      "scalability_lines",
+      "speedup_overview",
+      "task_times_dotplot"
     ],
     "has_roadmap": true,
     "metrics_keys": [

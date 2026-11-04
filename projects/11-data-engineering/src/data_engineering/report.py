@@ -16,8 +16,9 @@ from portfolio_eval.report import EvalReport, figures_from_json, mermaid_blocks_
 from data_engineering.metrics import ENGINE_ORDER
 from data_engineering.tasks import TASKS
 
-REPORT_TITLE = "11 — Data Engineering: pandas vs Polars vs DuckDB"
-_LABELS = {"pandas": "pandas", "polars": "Polars", "duckdb": "DuckDB"}
+REPORT_TITLE = "11 — Data Engineering: pandas vs Polars vs DuckDB vs sqlite"
+_LABELS = {"pandas": "pandas", "polars": "Polars", "duckdb": "DuckDB", "sqlite": "sqlite"}
+_NA = "n/a"
 
 
 def _fmt_s(value: float | None) -> str:
@@ -31,10 +32,10 @@ def _fmt_x(value: float | None) -> str:
 
 
 def headline_table(metrics: dict[str, Any]) -> str:
-    """Task x engine median-time table with speedup columns."""
+    """Task x engine median-time table with speedup columns (sqlite n/a honest)."""
     lines = [
-        "| task | pandas | Polars | DuckDB | Polars vs pandas | DuckDB vs pandas | fastest |",
-        "|---|---|---|---|---|---|---|",
+        "| task | pandas | Polars | DuckDB | sqlite | Polars x | DuckDB x | sqlite x | fastest |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for task in TASKS:
         block = metrics["tasks"].get(task.name)
@@ -42,14 +43,14 @@ def headline_table(metrics: dict[str, Any]) -> str:
             continue
         engines = block["engines"]
         fastest = min(engines, key=lambda e: engines[e]["time_median_s"])
-        cells = [_fmt_s(engines[e]["time_median_s"]) if e in engines else "—" for e in ENGINE_ORDER]
+        cells = [_fmt_s(engines[e]["time_median_s"]) if e in engines else _NA for e in ENGINE_ORDER]
         speed = [
-            _fmt_x(engines[e]["speedup_vs_pandas"]) if e in engines else "—"
+            _fmt_x(engines[e].get("speedup_vs_pandas")) if e in engines else _NA
             for e in ENGINE_ORDER[1:]
         ]
         lines.append(
-            f"| {task.name} | {cells[0]} | {cells[1]} | {cells[2]} "
-            f"| {speed[0]} | {speed[1]} | {_LABELS[fastest]} |"
+            f"| {task.name} | {cells[0]} | {cells[1]} | {cells[2]} | {cells[3]} "
+            f"| {speed[0]} | {speed[1]} | {speed[2]} | {_LABELS[fastest]} |"
         )
     return "\n".join(lines)
 
@@ -57,8 +58,8 @@ def headline_table(metrics: dict[str, Any]) -> str:
 def memory_table(metrics: dict[str, Any]) -> str:
     """Task x engine peak-RSS table (fresh-process probes)."""
     lines = [
-        "| task | pandas | Polars | DuckDB |",
-        "|---|---|---|---|",
+        "| task | pandas | Polars | DuckDB | sqlite |",
+        "|---|---|---|---|---|",
     ]
     for task in TASKS:
         block = metrics["tasks"].get(task.name)
@@ -66,18 +67,23 @@ def memory_table(metrics: dict[str, Any]) -> str:
             continue
         engines = block["engines"]
         cells = [
-            f"{engines[e]['peak_rss_mb']:.0f} MB" if engines.get(e, {}).get("peak_rss_mb") else "—"
+            (
+                f"{engines[e]['peak_rss_mb']:.0f} MB"
+                if engines.get(e, {}).get("peak_rss_mb")
+                else _NA
+            )
             for e in ENGINE_ORDER
         ]
-        lines.append(f"| {task.name} | {cells[0]} | {cells[1]} | {cells[2]} |")
+        lines.append(f"| {task.name} | {cells[0]} | {cells[1]} | {cells[2]} | {cells[3]} |")
     return "\n".join(lines)
 
 
 def cold_table(metrics: dict[str, Any]) -> str:
     """Cold fresh-process read vs warm median for the IO tasks."""
+    header = "| IO task | " + " | ".join(f"{_LABELS[e]} cold → warm" for e in ENGINE_ORDER) + " |"
     lines = [
-        "| IO task | pandas cold → warm | Polars cold → warm | DuckDB cold → warm |",
-        "|---|---|---|---|",
+        header,
+        "|---|---|---|---|---|",
     ]
     for task in TASKS:
         block = metrics["tasks"].get(task.name)
@@ -88,14 +94,43 @@ def cold_table(metrics: dict[str, Any]) -> str:
         for e in ENGINE_ORDER:
             eng = engines.get(e, {})
             cold, warm = eng.get("cold_s"), eng.get("time_median_s")
-            cells.append(f"{_fmt_s(cold)} → {_fmt_s(warm)}" if cold is not None else "—")
-        lines.append(f"| {task.name} | {cells[0]} | {cells[1]} | {cells[2]} |")
+            cells.append(f"{_fmt_s(cold)} → {_fmt_s(warm)}" if cold is not None else _NA)
+        lines.append(f"| {task.name} | {cells[0]} | {cells[1]} | {cells[2]} | {cells[3]} |")
+    return "\n".join(lines)
+
+
+def scalability_table(metrics: dict[str, Any]) -> str:
+    """Scalability study — median seconds per size and log-log slope, per engine."""
+    scale = metrics.get("scalability")
+    if not scale:
+        return ""
+    sizes = [int(n) for n in scale["sizes"]]
+    header_sizes = " | ".join(
+        f"{n // 1_000_000}M" if n % 1_000_000 == 0 else f"{n:,}" for n in sizes
+    )
+    lines = [
+        f"| task | engine | {header_sizes} | log-log slope |",
+        "|---|---|---|---|",
+    ]
+    for task_name, block in scale["tasks"].items():
+        for engine in ENGINE_ORDER:
+            eng = block["engines"].get(engine)
+            if eng is None:
+                continue
+            times = " | ".join(_fmt_s(eng["by_size"][str(n)]["time_median_s"]) for n in sizes)
+            lines.append(
+                f"| {task_name} | {_LABELS[engine]} | {times} | {eng['loglog_slope']:.2f} |"
+            )
     return "\n".join(lines)
 
 
 def write_figures(figures: dict[str, Any], figures_dir: Path) -> None:
-    """Persist every figure as showcase JSON + docs HTML."""
+    """Persist every figure as showcase JSON + docs HTML, dropping stale ones."""
     figures_dir.mkdir(parents=True, exist_ok=True)
+    for stale in figures_dir.glob("*.json"):
+        if stale.stem not in figures:
+            stale.unlink()
+            (figures_dir / f"{stale.stem}.html").unlink(missing_ok=True)
     for name, fig in figures.items():
         save_json(fig, figures_dir / f"{name}.json")
         save_html(fig, figures_dir / f"{name}.html")
@@ -116,6 +151,11 @@ def build_report(
         "Protocol",
         "<p>{}</p>".format(metadata["protocol_statement"] if metadata else ""),
     )
+    if metadata and "scalability" in metadata:
+        report.add_html(
+            "Scalability protocol",
+            "<p>{}</p>".format(metadata["scalability"]["protocol_statement"]),
+        )
     report.add_markdown_table(
         "Headline — median wall time per task (s) + speedup vs pandas", headline_table(metrics)
     )
@@ -125,6 +165,11 @@ def build_report(
     report.add_markdown_table(
         "IO tasks — cold fresh-process read → warm median (s)", cold_table(metrics)
     )
+    scale_table = scalability_table(metrics)
+    if scale_table:
+        report.add_markdown_table(
+            "Scalability — median time by seeded size (s) + log-log slope", scale_table
+        )
     first_plotly = True
     for name, fig in figures.items():
         report.add_figure(
@@ -149,15 +194,20 @@ def build_report(
         f"## Headline — median wall time per task (s)\n\n{headline_table(metrics)}\n\n"
         f"## Memory — peak RSS per task (MB)\n\n{memory_table(metrics)}\n\n"
         f"## IO tasks — cold → warm (s)\n\n{cold_table(metrics)}\n\n"
-        f"## By engine\n\n{geo_lines}\n\n"
-        f"Figures: `reports/figures/` (JSON + HTML). "
-        f"Full record: `reports/metrics.json`, `reports/evaluation_metadata.json`.\n"
+        + (
+            f"## Scalability — median time by seeded size (s)\n\n{scale_table}\n\n"
+            if scale_table
+            else ""
+        )
+        + f"## By engine\n\n{geo_lines}\n\n"
+        "Figures: `reports/figures/` (JSON + HTML). "
+        "Full record: `reports/metrics.json`, `reports/evaluation_metadata.json`.\n"
     )
     return reports_dir / "report.html"
 
 
 def build_report_offline(reports_dir: Path, project_dir: Path) -> Path:
-    """Regenerate report.html + results.md from committed artifacts (no re-run)."""
+    """Regenerate report.html + results.md from committed artifacts (offline)."""
     import json
 
     metrics = json.loads((reports_dir / "metrics.json").read_text())

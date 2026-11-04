@@ -1,9 +1,11 @@
 """Correctness parity: same canonical result across engines on one task set.
 
 Every task implementation runs over the tiny synthetic bundle; the canonical
-rows must be identical for pandas, Polars and DuckDB. This is the contract
-that makes the timing comparison meaningful — the engines are timed on the
-same work, not on three different interpretations of it.
+rows must be identical for every engine that implements the task. This is the
+contract that makes the timing comparison meaningful — the engines are timed
+on the same work, not on three different interpretations of it. sqlite3
+(stdlib) sits behind the same gate on every SQL-shaped task; its single n/a
+(write_parquet — no stdlib parquet writer) is asserted separately.
 """
 
 import pytest
@@ -14,14 +16,16 @@ from data_engineering.tasks import TASKS
 
 @pytest.mark.parametrize("task", TASKS, ids=lambda t: t.name)
 def test_parity_across_engines(task: object, tiny_bundle: DataBundle, tmp_path) -> None:
-    """pandas / Polars / DuckDB return the same canonical rows for the task."""
+    """Every registered engine returns the same canonical rows for the task."""
     results: dict[str, list[dict]] = {}
-    for engine in adapter_names():
+    for engine, impl in task.impls.items():
         adapter = build_adapter(engine)
-        result = task.impls[engine](adapter, tiny_bundle, tmp_path / task.name)
+        result = impl(adapter, tiny_bundle, tmp_path / task.name / engine)
         results[engine] = result.rows
     reference = results["pandas"]
-    for engine in ("polars", "duckdb"):
+    for engine in results:
+        if engine == "pandas":
+            continue
         assert rows_equal(reference, results[engine]), f"{task.name}/{engine}: parity drift"
 
 
@@ -58,12 +62,12 @@ def test_canonical_rows_normalizes_values() -> None:
 
 
 def test_adapter_registry() -> None:
-    """Three engines registered; unknown names fail loudly; versions present."""
-    assert adapter_names() == ["pandas", "polars", "duckdb"]
+    """Four engines registered; unknown names fail loudly; versions present."""
+    assert adapter_names() == ["pandas", "polars", "duckdb", "sqlite"]
     with pytest.raises(KeyError):
         build_adapter("spark")
     versions = engine_versions()
-    for key in ("python", "pandas", "pandas_pyarrow", "polars", "duckdb", "pyarrow"):
+    for key in ("python", "pandas", "pandas_pyarrow", "polars", "duckdb", "sqlite", "pyarrow"):
         assert versions[key], f"missing version for {key}"
 
 
@@ -111,10 +115,13 @@ def test_pandas_join_keeps_na_borough(tmp_path) -> None:
 
     task = TASKS_BY_NAME["join"]
     results = {}
-    for engine in adapter_names():
-        results[engine] = task.impls[engine](build_adapter(engine), bundle, tmp_path / engine)
+    for engine, impl in task.impls.items():
+        results[engine] = impl(build_adapter(engine), bundle, tmp_path / engine)
 
     boroughs = {r["Borough"] for r in results["pandas"].rows}
     assert "N/A" in boroughs, f"pandas join dropped the N/A borough: {sorted(boroughs)}"
-    assert rows_equal(results["pandas"].rows, results["polars"].rows)
-    assert rows_equal(results["pandas"].rows, results["duckdb"].rows)
+    for engine in results:
+        if engine != "pandas":
+            assert rows_equal(results["pandas"].rows, results[engine].rows), (
+                f"join/{engine}: N/A-borough regression"
+            )

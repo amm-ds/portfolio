@@ -32,6 +32,12 @@ class DEConfig(Settings):
     # Synthetic CI track: seeded generator scale.
     n_synthetic_rows: int = Field(default=30_000, gt=0)
 
+    # Scalability study: seeded synthetic tracks at these row counts (the 5
+    # most discriminating tasks, every engine, fewer repeats, no probes — the
+    # time-vs-size curve committed in metrics.json under "scalability").
+    scalability_rows: list[int] = Field(default=[1_000_000, 3_000_000, 10_000_000])
+    scalability_repeats: int = Field(default=2, ge=2)
+
     # Harness protocol: in-process warm repeats (median wall time) + isolated
     # fresh-subprocess probes per task-by-engine cell for true peak RSS and cold
     # IO reads.

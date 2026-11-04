@@ -23,7 +23,7 @@ from data_engineering.harness import CellResult
 from data_engineering.tasks import TASKS
 
 PROTOCOL_NAME = "engine_benchmark_v1"
-ENGINE_ORDER = ("pandas", "polars", "duckdb")
+ENGINE_ORDER = ("pandas", "polars", "duckdb", "sqlite")
 
 
 @dataclass(frozen=True)
@@ -34,7 +34,13 @@ class BenchmarkRecord:
     metadata: dict[str, Any]
 
 
-def build_metrics(cells: list[CellResult], cfg: DEConfig, bundle: DataBundle) -> dict[str, Any]:
+def build_metrics(
+    cells: list[CellResult],
+    cfg: DEConfig,
+    bundle: DataBundle,
+    *,
+    scalability: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Assemble metrics.json content from measured cells."""
     by_task: dict[str, dict[str, CellResult]] = {}
     for cell in cells:
@@ -48,13 +54,15 @@ def build_metrics(cells: list[CellResult], cfg: DEConfig, bundle: DataBundle) ->
         for engine in ENGINE_ORDER:
             res = by_task.get(task.name, {}).get(engine)
             if res is None:
-                continue
+                continue  # honest n/a cell (tasks.NA_IMPLS), reported as absent
             engines_block[engine] = {
                 "time_median_s": res.time_median_s,
                 "time_all_s": res.times,
                 "cold_s": res.cold_s,
                 "peak_rss_mb": res.peak_rss_mb,
-                "tracemalloc_peak_mb": median(res.tracemalloc_peaks_mb),
+                "tracemalloc_peak_mb": median(res.tracemalloc_peaks_mb)
+                if res.tracemalloc_peaks_mb
+                else None,
                 "result": res.result_rows,
                 "detail": res.detail,
             }
@@ -63,6 +71,14 @@ def build_metrics(cells: list[CellResult], cfg: DEConfig, bundle: DataBundle) ->
             block["speedup_vs_pandas"] = (
                 round(base / block["time_median_s"], 3) if engine != "pandas" else 1.0
             )
+        sqlite_cell = by_task[task.name].get("sqlite")
+        if sqlite_cell is not None:
+            for engine, block in engines_block.items():
+                block["speedup_vs_sqlite"] = (
+                    round(sqlite_cell.time_median_s / block["time_median_s"], 3)
+                    if engine != "sqlite"
+                    else 1.0
+                )
         tasks_block[task.name] = {
             "category": task.category,
             "description": task.description,
@@ -104,6 +120,7 @@ def build_metrics(cells: list[CellResult], cfg: DEConfig, bundle: DataBundle) ->
         "engines": {name: _engine_version(name) for name in ENGINE_ORDER},
         "tasks": tasks_block,
         "summary": summary,
+        **({"scalability": scalability} if scalability else {}),
     }
 
 
@@ -121,19 +138,26 @@ def build_metadata(
     track: str,
     runtime_s: float,
     cells: list[CellResult],
+    scalability: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble evaluation_metadata.json (protocol, versions, hardware)."""
     versions = engine_versions()
-    return {
+    meta: dict[str, Any] = {
         "protocol": PROTOCOL_NAME,
         "protocol_statement": (
-            "Warm wall time: median of in-process repeats (see params.yaml repeats); "
+            "Warm wall time: median of in-process repeats (see params.yaml repeats), "
+            "timed WITHOUT tracemalloc so the tracer never inflates the measured region; "
             "cold reads: one fresh subprocess per IO cell (OS page cache not dropped); "
             "peak RSS: fresh-subprocess ru_maxrss high-water; "
-            "tracemalloc peak: median Python-allocation peak of the in-process repeats; "
-            "determinism gate: every repeat and probe returns identical canonical rows "
-            "(ints/strings/dates exact; floats within 1e-5 relative of the "
-            "6-significant-digit canonical form — parallel summation order)."
+            "tracemalloc peak: one dedicated untimed repeat per cell under tracemalloc "
+            "(full-protocol runs only; the diagnostic pass is never part of the wall median); "
+            "determinism gate: every repeat, traced pass and probe returns identical canonical "
+            "rows (ints/strings/dates exact; floats within 1e-5 relative of the "
+            "6-significant-digit canonical form — parallel summation order). "
+            "sqlite3 (stdlib) answers each task by loading the prepared file into an "
+            "in-memory database via pandas inside the timed cell — the load is the "
+            "documented conversion tax — and has no write_parquet (no stdlib parquet "
+            "writer), so that cell is n/a."
         ),
         "track": track,
         "seed": cfg.seed,
@@ -166,6 +190,9 @@ def build_metadata(
             for c in cells
         },
     }
+    if scalability is not None:
+        meta["scalability"] = scalability
+    return meta
 
 
 def _prepared_bytes(bundle: DataBundle) -> dict[str, int]:

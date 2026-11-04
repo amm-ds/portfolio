@@ -1,12 +1,12 @@
 """Task contract: registry shape, category rules and impl coverage."""
 
 from data_engineering.engines import adapter_names
-from data_engineering.tasks import TASKS, TASKS_BY_NAME
+from data_engineering.tasks import NA_IMPLS, TASKS, TASKS_BY_NAME
 
 
 def test_registry_shape() -> None:
-    """8 tasks adapted from the canonical engine-benchmark dimensions."""
-    assert len(TASKS) == 8
+    """10 tasks adapted from the canonical engine-benchmark dimensions."""
+    assert len(TASKS) == 10
     names = [t.name for t in TASKS]
     assert len(names) == len(set(names)), "task names must be unique"
     assert names == [
@@ -16,6 +16,8 @@ def test_registry_shape() -> None:
         "join",
         "window",
         "filter",
+        "strings_groupby",
+        "distinct_sort",
         "write_parquet",
         "partitioned_read",
     ]
@@ -23,11 +25,20 @@ def test_registry_shape() -> None:
 
 
 def test_every_task_declares_all_engines() -> None:
-    """One implementation per registered engine, per task."""
+    """One implementation per registered engine, minus the honest n/a pairs."""
     for task in TASKS:
-        assert set(task.impls) == set(adapter_names()), task.name
+        expected = set(adapter_names()) - set(NA_IMPLS.get(task.name, ()))
+        assert set(task.impls) == expected, task.name
         for engine, impl in task.impls.items():
             assert callable(impl), f"{task.name}/{engine} impl not callable"
+
+
+def test_na_impls_are_documented_gaps() -> None:
+    """Only write_parquet/sqlite is n/a, and the reason is the missing writer."""
+    assert NA_IMPLS == {"write_parquet": ("sqlite",)}
+    task = TASKS_BY_NAME["write_parquet"]
+    assert "sqlite" not in task.impls
+    assert "sqlite" in adapter_names(), "n/a must reference a registered engine"
 
 
 def test_category_rules() -> None:
@@ -35,7 +46,14 @@ def test_category_rules() -> None:
     io_tasks = {t.name for t in TASKS if t.category == "io"}
     compute_tasks = {t.name for t in TASKS if t.category == "compute"}
     assert io_tasks == {"read_parquet", "read_csv", "write_parquet", "partitioned_read"}
-    assert compute_tasks == {"groupby", "join", "window", "filter"}
+    assert compute_tasks == {
+        "groupby",
+        "join",
+        "window",
+        "filter",
+        "strings_groupby",
+        "distinct_sort",
+    }
     assert io_tasks | compute_tasks == {t.name for t in TASKS}
     for task in TASKS:
         assert task.cold_measurable == (task.category == "io")

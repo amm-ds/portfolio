@@ -30,6 +30,8 @@ class DataBundle:
     source: str
     license: str
     notes: str = ""
+    #: False for lean bundles (scalability track) that carry no partitioned dir.
+    with_partitioned: bool = True
 
     # -- prepared layout -----------------------------------------------------
     @property
@@ -66,7 +68,7 @@ class DataBundle:
                 f"trips.parquet has {actual_rows} rows, contract expects {self.n_rows}"
                 " — re-run fetch-data or regenerate the synthetic track."
             )
-        if not any(self.partitioned_dir.glob("day=*/part-0.parquet")):
+        if self.with_partitioned and not any(self.partitioned_dir.glob("day=*/part-0.parquet")):
             raise FileNotFoundError(f"no partitioned parts under {self.partitioned_dir}")
 
     # -- serialization for the cold/probe subprocess -------------------------
@@ -78,6 +80,7 @@ class DataBundle:
             "source": self.source,
             "license": self.license,
             "notes": self.notes,
+            "with_partitioned": self.with_partitioned,
         }
 
     @classmethod
@@ -89,6 +92,7 @@ class DataBundle:
             source=str(d["source"]),
             license=str(d["license"]),
             notes=str(d.get("notes", "")),
+            with_partitioned=bool(d.get("with_partitioned", True)),
         )
 
 

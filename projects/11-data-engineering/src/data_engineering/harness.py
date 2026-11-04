@@ -3,8 +3,13 @@
 Protocol (recorded in ``evaluation_metadata.json``):
 
 - **Warm wall time** — ``repeats`` in-process runs per task-by-engine cell; the
-  headline number is the median. Each repeat runs under ``tracemalloc`` so
-  Python-side allocation peaks are captured per repeat.
+  headline number is the median. Timed repeats run *without* tracemalloc: the
+  tracer inflates allocation-heavy cells (a bulk row-bind ingest allocates
+  millions of Python objects), so tracing inside the timed region would
+  distort exactly the wall times being measured.
+- **Python-side allocation peak** — one dedicated untimed repeat per cell runs
+  under ``tracemalloc`` (full-protocol runs only; skipped with ``--no-probes``
+  and on the scalability track, where it would add minutes for a diagnostic).
 - **Isolated probes** — each cell also runs once (or ``memory_probes`` times)
   in a fresh subprocess (``python -m data_engineering.cold``). A new process
   owns its own memory, so its ``ru_maxrss`` high-water mark is the cell's true
@@ -12,8 +17,9 @@ Protocol (recorded in ``evaluation_metadata.json``):
   under-report every cell after the first high. For IO tasks the probe run is
   also the **cold read** number (fresh interpreter, cold library state; the
   OS page cache is not dropped — not portable — which the limits note).
-- **Determinism gate** — every repeat's canonical result fingerprint must be
-  identical, in-process and in the probe; a mismatch fails the cell loudly.
+- **Determinism gate** — every repeat's (and the traced pass's and the
+  probe's) canonical result fingerprint must be identical; a mismatch fails
+  the cell loudly.
 """
 
 import gc
@@ -46,7 +52,7 @@ class CellResult:
     engine: str
     category: str
     times: list[float]
-    tracemalloc_peaks_mb: list[float]
+    tracemalloc_peaks_mb: list[float]  # dedicated untimed pass (empty = not run)
     cold_s: float | None = None
     peak_rss_mb: float | None = None
     result_rows: list[dict[str, Any]] = field(default_factory=list)
@@ -65,27 +71,43 @@ def run_cell(
     *,
     repeats: int,
     probes: int,
+    traced: bool | None = None,
 ) -> CellResult:
-    """Measure one task-by-engine cell (warm repeats + optional fresh-process probes)."""
+    """Measure one task-by-engine cell (warm repeats + optional fresh-process probes).
+
+    ``traced=None`` ties the dedicated tracemalloc pass to full-protocol runs
+    (``probes > 0``): it is a diagnostic, never part of the wall-time median.
+    """
     adapter = build_adapter(engine)
     impl = task.impls[engine]
     cell_dir = workdir / task.name
     cell_dir.mkdir(parents=True, exist_ok=True)
+    traced = (probes > 0) if traced is None else traced
 
     times: list[float] = []
     traces: list[float] = []
     rows: list[dict[str, Any]] = []
     detail: dict[str, Any] = {}
-    for repeat in range(repeats):
+
+    def _run_once() -> tuple[Any, float, float | None]:
+        """One repeat: wall time (+ tracemalloc peak when tracing this run)."""
         gc.collect()
-        tracemalloc.start()
+        if traced_now[0]:
+            tracemalloc.start()
         t0 = time.perf_counter()
         result = impl(adapter, bundle, cell_dir)
         dt = time.perf_counter() - t0
-        _, trace_peak = tracemalloc.get_traced_memory()
-        tracemalloc.stop()
+        peak: float | None = None
+        if traced_now[0]:
+            _, peak = tracemalloc.get_traced_memory()
+            tracemalloc.stop()
+        return result, dt, peak
+
+    # Timed repeats run untraced; the traced pass below owns tracemalloc.
+    traced_now = [False]
+    for repeat in range(repeats):
+        result, dt, _ = _run_once()
         times.append(dt)
-        traces.append(round(trace_peak / 1e6, 3))
         # Determinism gate: identical canonical rows across repeats. Ints,
         # strings and dates must match exactly; floats compare with
         # rows_equal's 1e-5 band — a parallel engine (DuckDB, Polars)
@@ -99,6 +121,17 @@ def run_cell(
                 f"non-deterministic result: {task.name}/{engine} repeat {repeat} "
                 f"differs from repeat 0 beyond float tolerance"
             )
+
+    # Dedicated tracemalloc pass: the Python-side allocation peak, untimed.
+    if traced:
+        traced_now[0] = True
+        result, _, peak = _run_once()
+        traced_now[0] = False
+        if peak is None:  # pragma: no cover - defensive; tracing was just on
+            raise RuntimeError(f"tracemalloc pass did not trace: {task.name}/{engine}")
+        traces.append(round(peak / 1e6, 3))
+        if not rows_equal(rows, result.rows):
+            raise RuntimeError(f"traced pass result mismatch: {task.name}/{engine}")
 
     cold_s: float | None = None
     peak_rss_mb: float | None = None
@@ -171,6 +204,9 @@ def run_benchmark(
     cells: list[CellResult] = []
     for task in task_list:
         for engine in engines:
+            if engine not in task.impls:
+                logger.info("cell skipped (n/a): %s x %s", task.name, engine)
+                continue  # honest n/a pair (see tasks.NA_IMPLS), not a failure
             logger.info(
                 "cell start: %s x %s (%d repeats, %d probes)",
                 task.name,
@@ -207,7 +243,9 @@ def cells_to_frame(cells: list[CellResult]) -> list[dict[str, Any]]:
             "time_median_s": c.time_median_s,
             "cold_s": c.cold_s,
             "peak_rss_mb": c.peak_rss_mb,
-            "tracemalloc_peak_mb": statistics.median(c.tracemalloc_peaks_mb),
+            "tracemalloc_peak_mb": (
+                statistics.median(c.tracemalloc_peaks_mb) if c.tracemalloc_peaks_mb else None
+            ),
         }
         for c in cells
     ]

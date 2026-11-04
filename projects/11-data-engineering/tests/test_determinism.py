@@ -108,6 +108,7 @@ def strip(node: object) -> None:
             "peak_rss_mb",
             "tracemalloc_peak_mb",
             "speedup_vs_pandas",
+            "speedup_vs_sqlite",
         ):
             node.pop(key, None)  # type: ignore[union-attr]
         for value in node.values():  # type: ignore[union-attr]

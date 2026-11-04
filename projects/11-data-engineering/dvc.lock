@@ -6,13 +6,13 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: f66cabd63c4d4ce4b51641f3414e578d
-      size: 923
+      md5: db60c001a3c1dcfec9eef56b7b43c985
+      size: 1149
     - path: src/data_engineering/
       hash: md5
-      md5: 15365ace01de2fe228d16bfbddcfd03b.dir
-      size: 175685
-      nfiles: 27
+      md5: 07a7652b7692038c368152aa24d0090c.dir
+      size: 262535
+      nfiles: 29
     params:
       params.yaml:
         seed: 42
@@ -31,17 +31,17 @@ stages:
       size: 372
     - path: data/prepared/partitioned/
       hash: md5
-      md5: 9a41653f2a83ca7ba1e64a78fde9b27a.dir
-      size: 41217480
+      md5: 0c1264f44c5dc6d84efa0d287903790a.dir
+      size: 42335696
       nfiles: 31
     - path: data/prepared/trips.csv
       hash: md5
-      md5: 1969aa5fc4a931e646614079ae10a9fa
-      size: 145522067
+      md5: 18ec4f08024398ee12b06104db468600
+      size: 157380585
     - path: data/prepared/trips.parquet
       hash: md5
-      md5: dcdcc6121ea6bcdb52d3210df06f496e
-      size: 41514243
+      md5: 901a9d792a894b144fc88ddea11c84fa
+      size: 42552670
     - path: data/raw/taxi_zone_lookup.csv
       hash: md5
       md5: c6064b7c144c716450641f769659d178
@@ -56,30 +56,30 @@ stages:
     deps:
     - path: data/prepared/partitioned/
       hash: md5
-      md5: 9a41653f2a83ca7ba1e64a78fde9b27a.dir
-      size: 41217480
+      md5: 0c1264f44c5dc6d84efa0d287903790a.dir
+      size: 42335696
       nfiles: 31
     - path: data/prepared/trips.csv
       hash: md5
-      md5: 1969aa5fc4a931e646614079ae10a9fa
-      size: 145522067
+      md5: 18ec4f08024398ee12b06104db468600
+      size: 157380585
     - path: data/prepared/trips.parquet
       hash: md5
-      md5: dcdcc6121ea6bcdb52d3210df06f496e
-      size: 41514243
+      md5: 901a9d792a894b144fc88ddea11c84fa
+      size: 42552670
     - path: data/raw/taxi_zone_lookup.csv
       hash: md5
       md5: c6064b7c144c716450641f769659d178
       size: 12331
     - path: params.yaml
       hash: md5
-      md5: f66cabd63c4d4ce4b51641f3414e578d
-      size: 923
+      md5: db60c001a3c1dcfec9eef56b7b43c985
+      size: 1149
     - path: src/data_engineering/
       hash: md5
-      md5: 15365ace01de2fe228d16bfbddcfd03b.dir
-      size: 175685
-      nfiles: 27
+      md5: 07a7652b7692038c368152aa24d0090c.dir
+      size: 262535
+      nfiles: 29
     params:
       params.yaml:
         memory_probes: 1
@@ -88,49 +88,57 @@ stages:
     outs:
     - path: reports/evaluation_metadata.json
       hash: md5
-      md5: 09f92b8f7ba6ea7a282f664e13c2cbe7
-      size: 53341
-    - path: reports/figures/io_cold_warm.html
+      md5: ed2fe664bf22766b8feb8643309cd37f
+      size: 78310
+    - path: reports/figures/memory_lollipop.html
       hash: md5
-      md5: 28165148c72ea23d853ebba11365a998
-      size: 10948
-    - path: reports/figures/io_cold_warm.json
+      md5: 99c0383783ba465b4b0227e9bc0fed87
+      size: 12765
+    - path: reports/figures/memory_lollipop.json
       hash: md5
-      md5: b95f08e9490d19636b2a3dbe6e772aad
-      size: 9951
-    - path: reports/figures/memory_by_task.html
+      md5: cfcaaee164776bd9003df7bb332ab3e4
+      size: 11768
+    - path: reports/figures/normalized_heatmap.html
       hash: md5
-      md5: 5c2bb3bb4bc124d2a604c66c231c1d91
-      size: 10428
-    - path: reports/figures/memory_by_task.json
+      md5: fdf60499ff5306353b405a3b1d1f8772
+      size: 11335
+    - path: reports/figures/normalized_heatmap.json
       hash: md5
-      md5: bf0dc358a64b70dd2f1c53650b1c568d
-      size: 9431
-    - path: reports/figures/runtime_by_task.html
+      md5: 094fc38051c53e2e0792ee2d48d57cf3
+      size: 10338
+    - path: reports/figures/scalability_lines.html
       hash: md5
-      md5: 8e8b80e3e9dd9a39ef9cba0b9ddeeafe
-      size: 10501
-    - path: reports/figures/runtime_by_task.json
+      md5: cfe9dd72c779edd8b814abe2d9e9bb38
+      size: 17826
+    - path: reports/figures/scalability_lines.json
       hash: md5
-      md5: 07b1ee297c1aed2f9e02695b91fd312e
-      size: 9504
-    - path: reports/figures/speedup_vs_pandas.html
+      md5: efb6b8cd8afe8e30f16e79dc3fc43896
+      size: 16829
+    - path: reports/figures/speedup_overview.html
       hash: md5
-      md5: 89f88a103f2e11e890905b5054713b7c
-      size: 10425
-    - path: reports/figures/speedup_vs_pandas.json
+      md5: 4fb6753b3d1064ee1095c2bb76a2ddf8
+      size: 12846
+    - path: reports/figures/speedup_overview.json
       hash: md5
-      md5: 98f3248bc905e1c185d1d5eb1b2a79b3
-      size: 9428
+      md5: e78a428654d80dc95efbf40199e2db54
+      size: 11849
+    - path: reports/figures/task_times_dotplot.html
+      hash: md5
+      md5: 2f37fec839f630e1c71536b02fd77068
+      size: 12985
+    - path: reports/figures/task_times_dotplot.json
+      hash: md5
+      md5: 5dccb71032e841a0453646e2a1baa360
+      size: 11988
     - path: reports/metrics.json
       hash: md5
-      md5: 15b38a17bdd9f63ed809239a3226f345
-      size: 110320
+      md5: ce5305a549b8840c759e8d77cf5a336a
+      size: 178015
     - path: reports/report.html
       hash: md5
-      md5: 59298da9adc0233b971fe8cdbac5dc70
-      size: 48205
+      md5: a0cd2a749f06783e5e57f6f69f1e7510
+      size: 76163
     - path: reports/results.md
       hash: md5
-      md5: daeb0a7df10d642f70a20d7139bbca02
-      size: 1893
+      md5: 9458068b7ed2198e1ae2440b266072a1
+      size: 3689
