@@ -122,6 +122,18 @@ POOL_CANDIDATES = (
 CANDIDATES = (*STATISTICAL_CANDIDATES, *POOL_CANDIDATES, "convex_ensemble")
 ENSEMBLE_POOL = POOL_CANDIDATES
 ENSEMBLE_TOP_K = 3
+#: Wave-33 erratic-quadrant refinement (ported from the synthetic multistep
+#: track's proven spike machinery, ``multistep_models.peak_sample_weights``):
+#: the peak-weighted store-x-category pooled arm — every series' top-decile
+#: demand days up-weighted by ``w`` at fit time — plus per-series routing that
+#: lets erratic-class series swap the screened blend for the peak arm. Both
+#: choices are made on the SELECTION origins only; the test origin is scored.
+PEAK_WEIGHTS = (2.0, 3.0)
+PEAK_CANDIDATE = "lgbm_pool_storecat_peak"
+PEAK_WEIGHT_COL = "_peak_w"
+ROUTED_CANDIDATE = "erratic_routed"
+#: paired-bootstrap replications for the gate's WRMSSE noise band (seeded).
+ERRATIC_BOOT_REPS = 2000
 #: official WRMSSE needs >= 29 days of history per bottom series at the first
 #: origin (lag-28 features + the first-difference denominator); the panel's
 #: latest first-sale date leaves ~31 days at origin 1877, so this is a real
@@ -629,6 +641,7 @@ def _lgbm_pool_direct_forecast(
     name: str,
     horizon: int = HORIZON,
     n_estimators: int | None = None,
+    peak_weight: float | None = None,
 ) -> np.ndarray:
     """Direct per-horizon pooled LightGBM: ONE fit per (sorted group, h).
 
@@ -640,6 +653,9 @@ def _lgbm_pool_direct_forecast(
     seed + force_row_wise. A series whose last-row features are NaN (shorter
     than the deepest lag window — only possible for < ~85 days of history)
     degrades to that series' seasonal_naive row, documented and counted.
+    ``peak_weight`` (the wave-33 peak arm) up-weights each series' top-decile
+    training targets by that factor via ``sample_weight``; ``None`` is the
+    classic unweighted fit.
     """
     from lightgbm import LGBMRegressor
 
@@ -660,6 +676,15 @@ def _lgbm_pool_direct_forecast(
     out = np.empty((len(series_ids), horizon), dtype=float)
     pos = {sid: i for i, sid in enumerate(series_ids)}
     n_fallback = 0
+    # wave-33: per-row peak weights over the WHOLE prep frame once (the rule
+    # is per series, so group slices of this array stay aligned with sub)
+    w_all = (
+        _peak_train_weights(
+            prep["y"].to_numpy(dtype=float), prep["unique_id"].to_numpy(), peak_weight
+        )
+        if peak_weight is not None
+        else None
+    )
     for gkey in sorted(groups):
         members = sorted(groups[gkey])
         row_idx = np.concatenate(
@@ -682,6 +707,7 @@ def _lgbm_pool_direct_forecast(
         pred_x = x_all[last_rows]
         pred_ok = np.isfinite(pred_x).all(axis=1)
         g_pred = np.empty((len(members), horizon), dtype=float)
+        w_sub = w_all[row_idx] if w_all is not None else None
         for h in range(1, horizon + 1):
             # target: y shifted -h within each series block (row t -> y[t+h])
             y_h = np.full(len(y_all), np.nan)
@@ -691,7 +717,10 @@ def _lgbm_pool_direct_forecast(
             model = LGBMRegressor(
                 random_state=seed, verbosity=-1, n_jobs=1, force_row_wise=True, **params
             )
-            model.fit(x_all[fit_mask], y_h[fit_mask])
+            if w_sub is None:
+                model.fit(x_all[fit_mask], y_h[fit_mask])
+            else:
+                model.fit(x_all[fit_mask], y_h[fit_mask], sample_weight=w_sub[fit_mask])
             g_pred[:, h - 1] = model.predict(pred_x)
         # NaN-feature prediction rows -> seasonal_naive degradation (counted)
         if not pred_ok.all():
@@ -709,6 +738,198 @@ def _lgbm_pool_direct_forecast(
         )
     clipped: np.ndarray = np.clip(out, 0.0, None)
     return clipped
+
+
+# ---------------------------------------------------------------------------
+# Wave-33 erratic-quadrant refinement (ported peak machinery + routing)
+# ---------------------------------------------------------------------------
+
+
+def _peak_train_weights(y: np.ndarray, uids: np.ndarray, weight: float) -> np.ndarray:
+    """Per-row training weights: each series' top-decile demand days up-weighted.
+
+    Ports :func:`demand_forecasting.multistep_models.peak_sample_weights` onto
+    the full track's long training frame — every row whose target is positive
+    AND >= its own series' 90th percentile of positive targets gets ``weight``,
+    everything else 1.0 (series without positive targets stay unweighted). The
+    vectorized groupby keeps the rule affordable on the 34M-row origin frames;
+    identical rule, identical determinism.
+    """
+    y_s = pd.Series(y, copy=False)
+    uids_s = pd.Series(uids, copy=False)
+    pos = y > 0
+    # both sides carry the same base index, so the boolean mask keeps them
+    # aligned (a fresh RangeIndex on the keys would silently drop rows)
+    thr = y_s[pos].groupby(uids_s[pos]).quantile(0.9)
+    row_thr = thr.reindex(uids).to_numpy()
+    w = np.ones(len(y), dtype=float)
+    w[pos & (y >= row_thr)] = weight
+    return w
+
+
+def _choose_peak_weight(
+    variants: dict[float, dict[int, np.ndarray]],
+    selection: list[int],
+    origin_ctx: dict[int, dict[str, Any]],
+) -> dict[str, Any]:
+    """Pick the peak-weight multiplier on the SELECTION origins only.
+
+    Both variants are fit at every origin (the multistep track's contract);
+    each is scored here by the unchanged wave-30 screen — mean + 1.0 x
+    population std of the per-origin official WRMSSE over the selection
+    origins — and the lower screen wins (ties -> the lighter weight). Reads
+    no test-origin actual: the choice is a pure function of selection-origin
+    scores.
+    """
+    scores: dict[str, float] = {}
+    per_origin: dict[str, list[float]] = {}
+    for w in PEAK_WEIGHTS:
+        vals = np.array([origin_ctx[o]["wrmsse_fn"](variants[w][o]) for o in selection])
+        per_origin[str(w)] = [float(v) for v in vals]
+        scores[str(w)] = _screen(vals)
+    chosen = float(min(scores, key=lambda k: (scores[k], float(k))))
+    return {
+        "weights": list(PEAK_WEIGHTS),
+        "chosen": chosen,
+        "selection_screen": scores,
+        "selection_per_origin_wrmsse": per_origin,
+        "definition": "wave-30 screen (mean + 1.0 x population std of the per-origin "
+        "official WRMSSE over the selection origins) of each weight variant; ties -> "
+        "lighter weight; the winner is applied to every origin including test",
+    }
+
+
+def _route_erratic(
+    blend: dict[int, np.ndarray],
+    peak: dict[int, np.ndarray],
+    selection: list[int],
+    actuals: dict[int, np.ndarray],
+    erratic_mask: np.ndarray,
+) -> np.ndarray:
+    """Per-series erratic routing on the SELECTION origins only.
+
+    An erratic-class series swaps the screened blend for the peak arm when the
+    peak arm's summed |error| over the selection origins' scored cells is
+    strictly lower; every other series keeps the blend. Pure post-processing
+    of stored forecasts — no refits, no test-origin reads (property-tested).
+    """
+    blend_err = np.zeros(len(erratic_mask))
+    peak_err = np.zeros(len(erratic_mask))
+    for o in selection:
+        act = actuals[o]
+        blend_err += np.abs(blend[o] - act).sum(axis=1)
+        peak_err += np.abs(peak[o] - act).sum(axis=1)
+    return erratic_mask & (peak_err < blend_err)
+
+
+def _class_win_rate(
+    pred: np.ndarray, floor: np.ndarray, actual: np.ndarray, mask: np.ndarray
+) -> dict[str, Any]:
+    """Share of ``mask`` series whose pooled scored-window |error| beats the floor's."""
+    cand_err = np.abs(pred - actual).sum(axis=1)
+    floor_err = np.abs(floor - actual).sum(axis=1)
+    sel = np.flatnonzero(mask)
+    n = int(sel.size)
+    wins = int((cand_err[sel] < floor_err[sel]).sum()) if n else 0
+    return {
+        "win_rate": float(wins / n) if n else None,
+        "beats_floor": wins,
+        "n_series": n,
+    }
+
+
+def _wrmsse_delta_bootstrap(
+    pred_a: np.ndarray,
+    pred_b: np.ndarray,
+    ctx: dict[str, Any],
+    a_all: Any,
+    n_boot: int,
+    seed: int,
+) -> dict[str, Any]:
+    """Paired node-level bootstrap of the official-WRMSSE difference a - b.
+
+    The official WRMSSE is a revenue-weighted mean of per-node RMSSEs, so its
+    sampling noise is estimated by resampling the (weight, rmsse) node pairs
+    of BOTH candidates together (paired draws) and recomputing the weighted
+    mean difference per replication. Cheap — one 42,840-vector per candidate —
+    and deterministic under ``seed``.
+    """
+    actual_nodes = ctx["actual_nodes"]
+    scale = ctx["scale"]
+    weights = ctx["weights"]
+
+    def _node_parts(pred: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+        nodes = np.asarray(a_all @ pred)
+        rmsse, w = wrmsse_nodes(nodes - actual_nodes, scale, weights)
+        valid = np.isfinite(rmsse) & (w > 0)
+        return rmsse[valid], w[valid]
+
+    ra, wa = _node_parts(pred_a)
+    rb, _wb = _node_parts(pred_b)
+    if ra.shape != rb.shape:  # pragma: no cover - one ctx guarantees pairing
+        raise ValueError("valid-node sets differ between candidates")
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, ra.size, size=(n_boot, ra.size))
+    delta = (wa[idx] * (ra[idx] - rb[idx])).sum(axis=1) / wa[idx].sum(axis=1)
+    lo, hi = np.percentile(delta, [2.5, 97.5])
+    return {
+        "method": "paired node-level bootstrap of the official WRMSSE difference "
+        "(valid nodes resampled with replacement, weights renormalized per draw)",
+        "n_valid_nodes": int(ra.size),
+        "n_boot": n_boot,
+        "seed": seed,
+        "delta_point": float((wa * (ra - rb)).sum() / wa.sum()),
+        "ci95": [float(lo), float(hi)],
+        "noise_tol": float((hi - lo) / 2.0),
+    }
+
+
+def _erratic_gate(
+    *,
+    win_rate_champion: float | None,
+    win_rate_routed: float | None,
+    wrmsse_delta: float,
+    noise_tol: float,
+) -> dict[str, Any]:
+    """The wave-33 adoption gate — a hard rule, evaluated in code and committed.
+
+    Adopt the routed arm only if the erratic-class win-rate vs the
+    seasonal-naive floor improves over the champion AND the pooled official
+    WRMSSE regression vs the champion stays within the metric's own bootstrap
+    noise band. A rejected verdict keeps the committed champion — reported as
+    measured-and-rejected, never hidden.
+    """
+    if win_rate_champion is None or win_rate_routed is None:
+        win_ok = False
+        win_reason = "erratic class absent from the window — cannot improve on nothing"
+    else:
+        win_ok = win_rate_routed > win_rate_champion
+        win_reason = f"routed {win_rate_routed:.4f} vs champion {win_rate_champion:.4f} -> " + (
+            "improves" if win_ok else "does not improve"
+        )
+    wrmsse_ok = wrmsse_delta <= noise_tol
+    return {
+        "adopted": bool(win_ok and wrmsse_ok),
+        "rule": "adopt iff the erratic-class win-rate vs the seasonal-naive floor "
+        "improves over the champion AND routed WRMSSE - champion WRMSSE <= the "
+        "paired bootstrap noise band (no regression beyond noise); a rejected "
+        "verdict keeps the committed champion (measured-and-rejected)",
+        "checks": {
+            "erratic_win_rate_vs_floor": {
+                "champion": win_rate_champion,
+                "routed": win_rate_routed,
+                "ok": win_ok,
+                "reason": win_reason,
+            },
+            "official_wrmsse_delta_routed_minus_champion": {
+                "delta": wrmsse_delta,
+                "noise_tol": noise_tol,
+                "ok": wrmsse_ok,
+                "reason": f"delta {wrmsse_delta:+.6f} vs noise band {noise_tol:.6f} -> "
+                + ("within noise" if wrmsse_ok else "regresses beyond noise"),
+            },
+        },
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -943,6 +1164,7 @@ def _origin_forecasts(
     pooled_strategy: Literal["direct", "recursive"],
     n_estimators: int | None,
     n_jobs_ets: int,
+    refinement: bool = False,
 ) -> tuple[dict[str, np.ndarray], dict[str, float]]:
     """Fit EVERY candidate at origin ``o`` and return the ((n_series, h)
     matrices keyed by candidate — seasonal_naive included) plus the
@@ -951,7 +1173,10 @@ def _origin_forecasts(
     subsetting (the catalog run relies on this). Shared by the full track and
     the wave-32 catalog run so both produce the identical candidate set; the
     ensemble itself is blended by the callers (selection screen vs committed
-    weights). Progress is logged per candidate."""
+    weights). Progress is logged per candidate. ``refinement`` additionally
+    fits both peak-weighted store-x-category variants (wave 33), returned under
+    ``f"{PEAK_CANDIDATE}@{w}"`` keys — the full track consumes them; the
+    catalog run passes the default and stays on the committed candidate set."""
     odate = pd.Timestamp(panel.dates[o])
     train = panel.y_all[panel.y_all["ds"] <= odate]
     train_wide_o = panel.y_wide[:, : o + 1]
@@ -1000,6 +1225,20 @@ def _origin_forecasts(
                 n_estimators=n_estimators,
             )
             times[name] = time.time() - t + t_prep
+        if refinement:
+            for w in PEAK_WEIGHTS:
+                t = time.time()
+                preds[f"{PEAK_CANDIDATE}@{w}"] = _lgbm_pool_direct_forecast(
+                    prep,
+                    seed,
+                    series_ids=panel.series_ids,
+                    groups=panel.group_maps["lgbm_pool_storecat"],
+                    lgbm_params=panel.lgbm_params,
+                    name=f"{PEAK_CANDIDATE}@{w}",
+                    n_estimators=n_estimators,
+                    peak_weight=w,
+                )
+                times[f"{PEAK_CANDIDATE}@{w}"] = time.time() - t + t_prep
     else:
         for name in ("lgbm_pool_store", "lgbm_pool_storecat", "lgbm_pool_dept"):
             t = time.time()
@@ -1014,6 +1253,28 @@ def _origin_forecasts(
                 name=name,
             )
             times[name] = time.time() - t
+        if refinement:
+            # escape the origin-local slice so the weight-column assignment is
+            # warning-free (one copy per origin; the fits dominate anyway)
+            train = train.copy()
+            for w in PEAK_WEIGHTS:
+                train[PEAK_WEIGHT_COL] = _peak_train_weights(
+                    train["y"].to_numpy(dtype=float), train["unique_id"].to_numpy(), w
+                )
+                t = time.time()
+                preds[f"{PEAK_CANDIDATE}@{w}"] = _lgbm_pool_forecast(
+                    train,
+                    hist_exog,
+                    future_exog,
+                    seed,
+                    series_ids=panel.series_ids,
+                    groups=panel.group_maps["lgbm_pool_storecat"],
+                    lgbm_params=panel.lgbm_params,
+                    name=f"{PEAK_CANDIDATE}@{w}",
+                    weight_col=PEAK_WEIGHT_COL,
+                )
+                times[f"{PEAK_CANDIDATE}@{w}"] = time.time() - t
+            train = train.drop(columns=[PEAK_WEIGHT_COL])
     for name, dt in times.items():
         logger.info("m5_full candidate %s @ %s: %.1fs", name, odate.date(), dt)
     return preds, times
@@ -1094,6 +1355,8 @@ def run_m5_full(
     forecasts: dict[str, dict[int, np.ndarray]] = {c: {} for c in CANDIDATES}
     actuals: dict[int, np.ndarray] = {}
     runtime: dict[str, dict[int, float]] = {c: {} for c in CANDIDATES}
+    peak_variants: dict[float, dict[int, np.ndarray]] = {w: {} for w in PEAK_WEIGHTS}
+    peak_runtime: dict[float, dict[int, float]] = {w: {} for w in PEAK_WEIGHTS}
     for k, o in enumerate(origins):
         odate = pd.Timestamp(dates[o])
         t_o = time.time()
@@ -1105,7 +1368,11 @@ def run_m5_full(
             pooled_strategy=pooled_strategy,
             n_estimators=n_estimators,
             n_jobs_ets=n_jobs_ets,
+            refinement=True,
         )
+        for pw in PEAK_WEIGHTS:
+            peak_variants[pw][o] = preds.pop(f"{PEAK_CANDIDATE}@{pw}")
+            peak_runtime[pw][o] = times.pop(f"{PEAK_CANDIDATE}@{pw}")
         for name, mat in preds.items():
             forecasts[name][o] = mat
         for name, dt in times.items():
@@ -1133,6 +1400,69 @@ def run_m5_full(
 
     # ---- ensemble on the selection origins (wave-30 screen, official metric)
     ens_members, ens_weights, ens_screen = screened_ensemble(forecasts, selection, origin_ctx)
+
+    # ---- wave-33 erratic-quadrant refinement: both choices read the
+    # SELECTION origins only; the test origin is scored exactly once ----
+    classes_arr = np.array([classes[sid]["class"] for sid in series_ids], dtype=object)
+    erratic_mask = classes_arr == "erratic"
+    peak_choice = _choose_peak_weight(peak_variants, selection, origin_ctx)
+    peak_preds = peak_variants[float(peak_choice["chosen"])]
+    use_peak = _route_erratic(
+        forecasts["convex_ensemble"], peak_preds, selection, actuals, erratic_mask
+    )
+    routed_preds: dict[int, np.ndarray] = {}
+    for o in forecasts["convex_ensemble"]:
+        routed = forecasts["convex_ensemble"][o].copy()
+        routed[use_peak] = peak_preds[o][use_peak]
+        routed_preds[o] = routed
+
+    o_test = test[-1]
+    ctx_t = origin_ctx[o_test]
+    act_t = actuals[o_test]
+    floor_t = forecasts[NAIVE][o_test]
+    refinement_test = {
+        "official_wrmsse": {
+            "convex_ensemble": ctx_t["wrmsse_fn"](forecasts["convex_ensemble"][o_test]),
+            PEAK_CANDIDATE: ctx_t["wrmsse_fn"](peak_preds[o_test]),
+            ROUTED_CANDIDATE: ctx_t["wrmsse_fn"](routed_preds[o_test]),
+        },
+        "erratic_win_rate_vs_floor": {
+            "convex_ensemble": _class_win_rate(
+                forecasts["convex_ensemble"][o_test], floor_t, act_t, erratic_mask
+            ),
+            PEAK_CANDIDATE: _class_win_rate(peak_preds[o_test], floor_t, act_t, erratic_mask),
+            ROUTED_CANDIDATE: _class_win_rate(routed_preds[o_test], floor_t, act_t, erratic_mask),
+        },
+    }
+    delta_boot = _wrmsse_delta_bootstrap(
+        routed_preds[o_test],
+        forecasts["convex_ensemble"][o_test],
+        ctx_t,
+        a_all,
+        n_boot=ERRATIC_BOOT_REPS,
+        seed=seed + 3301,
+    )
+    adoption_gate = _erratic_gate(
+        win_rate_champion=refinement_test["erratic_win_rate_vs_floor"]["convex_ensemble"][
+            "win_rate"
+        ],
+        win_rate_routed=refinement_test["erratic_win_rate_vs_floor"][ROUTED_CANDIDATE]["win_rate"],
+        wrmsse_delta=refinement_test["official_wrmsse"][ROUTED_CANDIDATE]
+        - refinement_test["official_wrmsse"]["convex_ensemble"],
+        noise_tol=delta_boot["noise_tol"],
+    )
+    logger.info(
+        "m5_full erratic refinement: weight %s | routed %d/%d erratic to peak | "
+        "test WRMSSE routed %.4f vs champion %.4f | win-rate %.4f vs %.4f | adopted %s",
+        peak_choice["chosen"],
+        int(use_peak.sum()),
+        int(erratic_mask.sum()),
+        refinement_test["official_wrmsse"][ROUTED_CANDIDATE],
+        refinement_test["official_wrmsse"]["convex_ensemble"],
+        refinement_test["erratic_win_rate_vs_floor"][ROUTED_CANDIDATE]["win_rate"] or -1.0,
+        refinement_test["erratic_win_rate_vs_floor"]["convex_ensemble"]["win_rate"] or -1.0,
+        adoption_gate["adopted"],
+    )
 
     # ---- metric blocks ----
     def _candidate_block(cand: str, o: int) -> dict[str, Any]:
@@ -1252,6 +1582,38 @@ def run_m5_full(
             "computed exactly from the forecast-level convex combination "
             "re-aggregated through the hierarchy",
         },
+        "erratic_refinement": {
+            "goal": "improve forecast quality on highly erratic dense series "
+            "(ADI < 1.32, CV2 >= 0.49) — better spike amplitude capture — without "
+            "regressing the pooled official test WRMSSE; a rejected verdict keeps "
+            "the committed champion (measured-and-rejected)",
+            "peak_candidate": PEAK_CANDIDATE,
+            "routed_candidate": ROUTED_CANDIDATE,
+            "n_erratic_series": int(erratic_mask.sum()),
+            "peak_weight_choice": peak_choice,
+            "routing": {
+                "rule": "erratic-class series swap the screened blend for the peak "
+                "arm when the peak arm's summed |error| over the selection origins' "
+                "scored cells is strictly lower; chosen on selection origins only",
+                "n_routed_to_peak": int(use_peak.sum()),
+                "selection_only": True,
+            },
+            "selection_per_origin_official_wrmsse": {
+                "convex_ensemble": [
+                    float(origin_ctx[o]["wrmsse_fn"](forecasts["convex_ensemble"][o]))
+                    for o in selection
+                ],
+                PEAK_CANDIDATE: [
+                    float(origin_ctx[o]["wrmsse_fn"](peak_preds[o])) for o in selection
+                ],
+                ROUTED_CANDIDATE: [
+                    float(origin_ctx[o]["wrmsse_fn"](routed_preds[o])) for o in selection
+                ],
+            },
+            "test": refinement_test,
+            "wrmsse_delta_bootstrap_routed_vs_champion": delta_boot,
+            "adoption_gate": adoption_gate,
+        },
         "selection": _subset_block(selection),
         "test": _test_block(),
         "metric_definitions": METRIC_DEFINITIONS,
@@ -1295,12 +1657,16 @@ def run_m5_full(
         "runtime_seconds_per_candidate_origin": {
             c: {str(k): round(v, 3) for k, v in runtime[c].items()} for c in CANDIDATES
         },
+        "runtime_seconds_peak_variant_origin": {
+            str(w): {str(k): round(v, 3) for k, v in peak_runtime[w].items()} for w in PEAK_WEIGHTS
+        },
         "determinism": "VECLIB_MAXIMUM_THREADS=1 pinned in cli.py before numpy; every "
         "LightGBM fit n_jobs=1 + fixed seed + force_row_wise (direct pooled arms "
         "iterate sorted group keys and h=1..28 in fixed order); auto_ets may run "
         "n_jobs>1 (ETS selection is closed-form/seed-free — parallelism changes "
         "wall time only); seasonal_naive is numpy-vectorized; ensemble grid is "
-        "lexicographic deterministic",
+        "lexicographic deterministic; the peak-weight variants add a deterministic "
+        "per-row sample_weight (fixed grid {2, 3}, chosen on selection origins)",
         "lgbm_params": {k: panel.lgbm_params[k] for k in panel.lgbm_params},
         "pooled_strategy": pooled_strategy,
         "n_jobs_ets": n_jobs_ets,

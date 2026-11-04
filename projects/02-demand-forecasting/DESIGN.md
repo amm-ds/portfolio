@@ -744,6 +744,41 @@ pipeline build). The queue commands above are the exact ones to re-run once
 
 ## Changelog
 
+- **0.18.0 (2026-11-05)** — wave 33 (erratic-quadrant refinement,
+  measured-and-rejected on the capped development window): ported the
+  synthetic multistep track's proven spike machinery onto the M5 full panel.
+  New candidate `lgbm_pool_storecat_peak` — the store-x-category pooled arm
+  re-fit with each series' top-decile demand days up-weighted (w in {2, 3};
+  mlforecast `weight_col` on the recursive strategy, `sample_weight` on the
+  direct one; both variants fit at every origin, the weight chosen by the
+  UNCHANGED wave-30 screen on the selection origins). New `erratic_routed`
+  arm: erratic-class series (ADI < 1.32, CV2 >= 0.49) may swap the screened
+  blend for the peak arm where the peak arm's summed |error| over the
+  selection origins is strictly lower (selection-origin choice only,
+  property-tested: rolling the test-only days leaves every choice
+  unchanged). A hard adoption gate rides metrics.json
+  (`erratic_refinement` block): adopt iff the erratic-class win-rate vs the
+  seasonal-naive floor improves AND the routed pooled official WRMSSE
+  regression vs the champion stays inside a paired node-level bootstrap
+  noise band. Capped-window decision (top-200 items x 10 stores = 2,000
+  series, committed selection origins 2016-05-08/15, test 2016-05-22,
+  recursive): weight 2.0 chosen (selection screen 1.0498 vs 1.5048), 244/922
+  erratic series rerouted, erratic win-rate 0.8449 vs the champion's 0.8395
+  (+0.5 pp — leg passed) BUT routed WRMSSE 0.6213 vs 0.6009, a +0.0204
+  regression ≈ 2x the noise band (+/-0.0106) — gate REJECTED; the peak arm
+  alone posts 1.1119 (it over-forecasts: amplitude buys spike capture at
+  pooled accuracy, the same trade the multistep newsvendor layer measured).
+  The planned q0.9 pinball amplitude member is skipped as overkill — the
+  blocker is a pooled OVER-forecast, and a higher-quantile member attacks
+  the wrong side of it. The committed champion (0.6161) stands; the
+  full-panel re-run of the refinement block is deferred to a scheduled
+  overnight slot (expected ~14.5 h: the two peak variants add ~2x the
+  storecat arm's ~1,000 s/origin). The catalog/demo path runs
+  `refinement=False` and stays byte-identical; headline artifacts,
+  README table, report, figures, and demo payload untouched. Tests +5
+  (weight-rule hand case + multistep parity, gate branches, paired-bootstrap
+  determinism, refinement structure + run-twice byte identity, and the
+  selection-reads-no-test-actuals property). Capped-run runtime 2,956 s.
 - **0.17.0 (2026-10-30)** — wave 23 (roadmap experiments round): (1) the
   nowcast sparse interval is non-degenerate — `probabilistic.sparse_history_band`
   gives predicted-zero rows [0, q80 of the series' calibration-fold actuals]

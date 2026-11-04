@@ -225,6 +225,17 @@ sections:
     the time against the ensemble's 57.3%. Full scale does not fix quiet
     days; it prices them into the hierarchy.
 
+    The spike-capture refinement round, stated as measured. The erratic
+    quadrant — dense yet violent series — received its own candidate: the
+    pooled fit re-trained with each series' best sales days up-weighted,
+    swappable in wherever the past windows preferred it. On a capped
+    development window the swap won its quadrant (erratic win-rate 0.845
+    against the floor, vs the blend's 0.839) but cost too much everywhere
+    else: pooled WRMSSE 0.621 against the blend's 0.601, twice the noise
+    band. The adoption gate rejected it, the committed champion stands, and
+    the full-panel re-run is scheduled — a designed negative result, not a
+    hidden one.
+
     **Business summary:** Final ranking: ensemble 0.6161 vs the 0.8929 floor
     (−31.0%); pooled fits beat the global model at full scale, with the win
     made at aggregate levels, not item level.
@@ -253,6 +264,10 @@ sections:
       two origins, grade exactly once on the competition window.
     - Full scale does not fix quiet days: on zero-actual days the floor stays
       right 66.6% of the time against the ensemble's 57.3%.
+    - Spike amplitude is not free at full scale: a spike-capture arm won the
+      erratic quadrant on a capped window yet over-forecasted the panel
+      (pooled WRMSSE 0.621 vs 0.601, twice the noise band), so the adoption
+      gate kept the committed blend — measured, rejected, reported.
     - The remaining debt is priced, not hidden: a thin screen, no bootstrap CIs,
       and unmodeled stockouts bound what the −31.0% claim means.
 
@@ -335,6 +350,10 @@ roadmap:
   text: "Scored every candidate once on the competition window under official WRMSSE."
 - status: delivered
   text: "Reported bias, per-level, and zero-day metrics beside the headline."
+- status: delivered
+  text: "Challenged the erratic quadrant with a spike-capture arm behind an adoption gate — rejected at the pooled-WRMSSE check on the capped window (0.621 vs 0.601, twice the noise band), published as a designed negative result."
+- status: deferred
+  text: "Re-run the erratic-quadrant refinement on the full panel in a scheduled overnight slot, grading the gate at the real headline."
 figure_captions:
   m5_full_sample_series: "Three catalog series at the scored-once test origin (2016-05-22): one top-units, one hardest-intermittent, one mid-volume — 56-day history, 28-day actuals, and the ensemble curve with its member envelope (an envelope, not a calibrated interval). The weekly shape, the weeks-long zero runs, and the quiet days are all visible."
   m5_full_candidate_ranking: "All 8 candidates ranked by official hierarchical WRMSSE on the competition window (42,840 revenue-weighted nodes, scored once): the stability-screened convex ensemble leads at 0.6161, the best single pooled fit posts 0.6217, and the seasonal-naive floor sits at 0.8929."

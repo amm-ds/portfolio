@@ -548,6 +548,7 @@ def _lgbm_forecast(
     n_estimators: int | None = None,
     series_ids: list[str] | None = None,
     lgbm_params: dict[str, Any] | None = None,
+    weight_col: str | None = None,
 ) -> np.ndarray:
     """Global LightGBM point forecast at one origin: (n_series, h).
 
@@ -569,6 +570,9 @@ def _lgbm_forecast(
     mlforecast returns rows sorted by ``unique_id`` (alphabetical) — NOT in
     the caller's series order; pass ``series_ids`` to get the result
     re-indexed to it (the demo-payload refit bug was exactly this mismatch).
+    ``weight_col`` (an existing column of ``train``) is passed to mlforecast
+    as fit-time ``sample_weight`` — the peak-weighted arms use it; ``None``
+    is the classic unweighted fit.
     """
     from lightgbm import LGBMRegressor
 
@@ -582,7 +586,9 @@ def _lgbm_forecast(
         force_row_wise=True,
         **kwargs,
     )
-    return _boost_forecast(model, train, hist_exog, future_exog, series_ids, name="lgbm")
+    return _boost_forecast(
+        model, train, hist_exog, future_exog, series_ids, name="lgbm", weight_col=weight_col
+    )
 
 
 #: XGB candidate (wave 27) — a second global booster with a different bias
@@ -818,6 +824,7 @@ def _lgbm_pool_forecast(
     groups: dict[str, list[str]],
     lgbm_params: dict[str, Any] | None = None,
     name: str,
+    weight_col: str | None = None,
 ) -> np.ndarray:
     """Pooled-global LightGBM forecast: one fit per sorted group — wave 29.
 
@@ -830,6 +837,9 @@ def _lgbm_pool_forecast(
     the caller's ``series_ids`` row order. Determinism: groups iterate in
     sorted-key order, every fit is n_jobs=1 + fixed seed + force_row_wise, and
     the group members follow the sorted panel order — no set-order dependence.
+    ``weight_col`` names a column of ``train`` every group fit receives as
+    fit-time ``sample_weight`` (the wave-33 peak-weighted arm); ``None`` is
+    the classic unweighted fit.
     """
     out = np.empty((len(series_ids), HORIZON), dtype=float)
     pos = {sid: i for i, sid in enumerate(series_ids)}
@@ -839,7 +849,13 @@ def _lgbm_pool_forecast(
         hist_g = hist_exog[hist_exog["unique_id"].isin(members)]
         fut_g = future_exog[future_exog["unique_id"].isin(members)]
         mat = _lgbm_forecast(
-            train_g, hist_g, fut_g, seed, series_ids=members, lgbm_params=lgbm_params
+            train_g,
+            hist_g,
+            fut_g,
+            seed,
+            series_ids=members,
+            lgbm_params=lgbm_params,
+            weight_col=weight_col,
         )
         for j, sid in enumerate(members):
             out[pos[sid]] = mat[j]
@@ -856,12 +872,16 @@ def _boost_forecast(
     series_ids: list[str] | None,
     *,
     name: str,
+    weight_col: str | None = None,
 ) -> np.ndarray:
     """Shared mlforecast recursive fit/predict for the global boosters.
 
     ``name`` is only for error messages. See :func:`_lgbm_forecast` for the
     series-order contract (mlforecast returns alphabetical unique_id order;
-    ``series_ids`` re-indexes to the caller's order).
+    ``series_ids`` re-indexes to the caller's order). ``weight_col`` names an
+    existing column of ``train`` that mlforecast passes as ``sample_weight``
+    at fit time only (excluded from features — the wave-33 peak-weighted
+    arm); ``None`` reproduces the unweighted path exactly.
     """
     train_m = train.merge(hist_exog, on=["unique_id", "ds"], how="left", validate="1:1")
     if train_m.drop(columns=["unique_id", "ds", "y"]).isna().any().any():
@@ -873,6 +893,7 @@ def _boost_forecast(
         time_col="ds",
         target_col="y",
         static_features=[],
+        weight_col=weight_col,
     )
     pred: Any = fc.predict(HORIZON, X_df=future_exog)
     col_name = pred.columns[-1]

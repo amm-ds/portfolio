@@ -28,7 +28,13 @@ from demand_forecasting import m5_full  # noqa: E402
 from demand_forecasting.evaluate import _json_safe  # noqa: E402
 from demand_forecasting.m5_full import (  # noqa: E402
     FULL_PANEL_LEVEL_COUNTS,
+    PEAK_CANDIDATE,
+    PEAK_WEIGHTS,
+    ROUTED_CANDIDATE,
+    _erratic_gate,
+    _peak_train_weights,
     _seasonal_naive_forecast,
+    _wrmsse_delta_bootstrap,
     aggregation_stack,
     apply_series_cap,
     build_aggregation,
@@ -40,6 +46,7 @@ from demand_forecasting.m5_full import (  # noqa: E402
     run_m5_full,
     wrmsse_nodes,
 )
+from demand_forecasting.multistep_models import peak_sample_weights  # noqa: E402
 
 N_DAYS = 200
 H = 28
@@ -547,6 +554,195 @@ def test_tiny_track_recursive_pooled(tmp_path: Path, monkeypatch: pytest.MonkeyP
     assert _dump(r1) == _dump(r2)
     assert r1.metrics["pooled_strategy"] == "recursive"
     assert r1.metrics["test"]["lgbm_pool_store"]["official_wrmsse"] > 0
+
+
+# ---------------------------------------------------------------------------
+# Wave-33 erratic-quadrant refinement: weight rule, gate math, byte identity,
+# and the no-test-read property
+# ---------------------------------------------------------------------------
+
+
+def test_peak_train_weights_hand_computed():
+    """The ported top-decile rule on a long frame, incl. parity with the
+    multistep track's peak_sample_weights on a layout both express."""
+    # series A: positives 1..10 (np.quantile(0.9) of positives = 9.1 -> only
+    # y=10 is up-weighted); zeros stay at 1. series B: all zeros -> all 1.
+    y_a = np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+    y_b = np.zeros(11)
+    y = np.concatenate([y_a, y_b])
+    uids = np.array(["A"] * 11 + ["B"] * 11)
+    w = _peak_train_weights(y, uids, 3.0)
+    assert w.shape == y.shape
+    assert w[y == 10.0][0] == 3.0
+    assert w[(y > 0) & (y < 10.0)].sum() == 9.0  # nine positives at weight 1
+    assert w[y == 0.0].sum() == len(y_a[y_a == 0.0]) + 11.0  # zeros + series B at 1
+    # weight 2 changes nothing about WHICH rows fire
+    w2 = _peak_train_weights(y, uids, 2.0)
+    assert np.array_equal(w2 == 2.0, w == 3.0)
+
+    # parity with the multistep helper: series-minor layout, two series
+    # (flat index r*2 + i is series i at window-row r — np.tile, not repeat)
+    rng = np.random.default_rng(7)
+    block = rng.poisson(2.0, size=(13, 2)).astype(float)
+    block[3, 1] = 30.0  # force an unambiguous top-decile spike in series 1
+    uids2 = np.tile(["S0", "S1"], 13)
+    y_long = block.reshape(-1)  # row r of series i sits at r*2 + i
+    w_long = _peak_train_weights(y_long, uids2, 2.5)
+    w_ref = peak_sample_weights(y_long.copy(), 2, 2.5)
+    np.testing.assert_allclose(w_long, w_ref)
+
+
+def test_erratic_gate_branches():
+    adopted = _erratic_gate(
+        win_rate_champion=0.40, win_rate_routed=0.44, wrmsse_delta=0.0005, noise_tol=0.002
+    )
+    assert adopted["adopted"] is True
+    assert adopted["checks"]["erratic_win_rate_vs_floor"]["ok"] is True
+    # win rate does not improve -> reject even when WRMSSE is fine
+    no_win = _erratic_gate(
+        win_rate_champion=0.44, win_rate_routed=0.40, wrmsse_delta=-0.001, noise_tol=0.002
+    )
+    assert no_win["adopted"] is False
+    assert no_win["checks"]["erratic_win_rate_vs_floor"]["ok"] is False
+    # WRMSSE regresses beyond the noise band -> reject even when win improves
+    regress = _erratic_gate(
+        win_rate_champion=0.40, win_rate_routed=0.50, wrmsse_delta=0.01, noise_tol=0.002
+    )
+    assert regress["adopted"] is False
+    assert regress["checks"]["official_wrmsse_delta_routed_minus_champion"]["ok"] is False
+    # no erratic series in the window -> cannot adopt
+    absent = _erratic_gate(
+        win_rate_champion=None, win_rate_routed=None, wrmsse_delta=0.0, noise_tol=0.002
+    )
+    assert absent["adopted"] is False
+
+
+def test_wrmsse_delta_bootstrap_toy():
+    """Identical forecasts give an all-zero delta; the paired draw is
+    deterministic under the seed; the point estimate matches the direct score."""
+    wide, meta, _days, ids = _toy_panel(60)
+    agg = build_aggregation(meta)
+    a_all, _node_ids, _levels, _slices = aggregation_stack(agg)
+    o = 40
+    train_nodes = np.asarray(a_all @ wide[:, :o])
+    actual_nodes = np.asarray(a_all @ wide[:, o : o + 4])
+    scale = first_diff_scale(train_nodes)
+    price = np.array([TOY_PRICES[sid] for sid in ids])
+    price_wide = np.tile(price[:, None], (1, 60))
+    w = revenue_weights(wide, price_wide, slice(o - 3, o + 1), a_all)
+    ctx = {"actual_nodes": actual_nodes, "scale": scale, "weights": w}
+    pred = wide[:, o : o + 4] * 1.01
+    same = _wrmsse_delta_bootstrap(pred, pred.copy(), ctx, a_all, n_boot=50, seed=1)
+    assert same["delta_point"] == 0.0
+    assert same["ci95"] == [0.0, 0.0]
+    shifted = wide[:, o : o + 4] * 1.03
+    b1 = _wrmsse_delta_bootstrap(shifted, pred, ctx, a_all, n_boot=50, seed=1)
+    b2 = _wrmsse_delta_bootstrap(shifted, pred, ctx, a_all, n_boot=50, seed=1)
+    assert b1 == b2  # deterministic under the seed
+    assert b1["delta_point"] != 0.0
+    assert b1["noise_tol"] >= 0.0
+
+
+def _refinement_selection_fields(metrics: dict) -> dict:
+    """The fields the no-test-read property pins (all selection-derived)."""
+    ref = metrics["erratic_refinement"]
+    return {
+        "chosen": ref["peak_weight_choice"]["chosen"],
+        "n_routed": ref["routing"]["n_routed_to_peak"],
+        "selection_wrmsse": ref["selection_per_origin_official_wrmsse"],
+        "members": metrics["ensemble"]["members"],
+        "weights": metrics["ensemble"]["weights"],
+    }
+
+
+def test_tiny_track_refinement_structure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """The erratic_refinement block rides every run: weight chosen on the
+    screen, routing confined to the erratic class, gate verdict consistent
+    with its own inputs, and run-twice byte identity."""
+    y, x, s = _track_frames()
+    raw, checksums = _write_tiny_full(tmp_path, y, x, s)
+    monkeypatch.setattr(m5_full, "FULL_CHECKSUMS", checksums)
+    r1 = run_m5_full(raw, **_track_kwargs(tmp_path))
+    r2 = run_m5_full(raw, **_track_kwargs(tmp_path))
+    assert _dump(r1) == _dump(r2)
+    ref = r1.metrics["erratic_refinement"]
+    assert ref["peak_candidate"] == PEAK_CANDIDATE
+    assert ref["routed_candidate"] == ROUTED_CANDIDATE
+    assert ref["peak_weight_choice"]["chosen"] in list(PEAK_WEIGHTS)
+    assert set(ref["peak_weight_choice"]["selection_screen"]) == {"2.0", "3.0"}
+    n_erratic = ref["n_erratic_series"]
+    assert 0 <= ref["routing"]["n_routed_to_peak"] <= n_erratic
+    wr = ref["test"]["official_wrmsse"]
+    assert wr["convex_ensemble"] > 0 and wr[PEAK_CANDIDATE] > 0 and wr[ROUTED_CANDIDATE] > 0
+    rates = {k: v["win_rate"] for k, v in ref["test"]["erratic_win_rate_vs_floor"].items()}
+    if n_erratic:
+        assert all(r is not None for r in rates.values())
+    # the committed verdict recomputes from the block's own numbers
+    gate = ref["adoption_gate"]
+    expected = _erratic_gate(
+        win_rate_champion=rates["convex_ensemble"],
+        win_rate_routed=rates[ROUTED_CANDIDATE],
+        wrmsse_delta=wr[ROUTED_CANDIDATE] - wr["convex_ensemble"],
+        noise_tol=ref["wrmsse_delta_bootstrap_routed_vs_champion"]["noise_tol"],
+    )
+    assert gate["adopted"] == expected["adopted"]
+    # the headline candidate set is untouched by the refinement block
+    assert r1.metrics["candidates"] == [
+        "seasonal_naive",
+        "lgbm",
+        "lgbm_tweedie",
+        "lgbm_pool_store",
+        "lgbm_pool_storecat",
+        "lgbm_pool_dept",
+        "auto_ets",
+        "convex_ensemble",
+    ]
+
+
+def test_refinement_selection_reads_no_test_actuals(tmp_path: Path, monkeypatch):
+    """Property: rolling the scored window's actuals (the last 28 days — past
+    every origin's training cut) leaves every selection-derived field
+    unchanged while the headline test scores move."""
+    y, x, s = _track_frames()
+    raw, checksums = _write_tiny_full(tmp_path, y, x, s)
+    monkeypatch.setattr(m5_full, "FULL_CHECKSUMS", checksums)
+    r1 = run_m5_full(raw, **_track_kwargs(tmp_path))
+
+    origins = m5_full_origins(N_DAYS, 2, H, 140, 7)
+    o_test = origins[-1]
+    dates_arr = pd.date_range("2020-06-01", periods=N_DAYS, freq="D")
+    # the selection origin scores up to (o_test - 7) + H; only the LAST 7 days
+    # are scored by the test origin alone — rolling them cannot touch any fit
+    # (every origin trains earlier) or any selection-origin score
+    first_test_only = (o_test - 7) + H + 1
+    test_only = dates_arr[first_test_only:]
+    y2 = y.copy()
+    test_rows = y2["ds"].isin(test_only)
+    rolled = (
+        y2.loc[test_rows]
+        .groupby("unique_id")["y"]
+        .transform(lambda v: np.roll(v.to_numpy(dtype=float), 3))
+    )
+    y2.loc[test_rows, "y"] = rolled.to_numpy(dtype=float)
+    raw2 = tmp_path / "raw2"
+    (raw2 / "m5" / "datasets").mkdir(parents=True)
+    (raw2 / ".cache" / "m5" / "m5").mkdir(parents=True)
+    (raw2 / "m5" / "datasets" / "m5.zip").write_bytes(b"toy zip")
+    checksums2 = {"m5/datasets/m5.zip": hashlib.sha256(b"toy zip").hexdigest()}
+    for name, frame in (("Y_df", y2), ("X_df", x), ("S_df", s)):
+        path = raw2 / ".cache" / "m5" / "m5" / f"{name}.parquet"
+        frame.to_parquet(path, index=False)
+        checksums2[f".cache/m5/m5/{name}.parquet"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    monkeypatch.setattr(m5_full, "FULL_CHECKSUMS", checksums2)
+    r2 = run_m5_full(raw2, **_track_kwargs(tmp_path))
+
+    assert _refinement_selection_fields(r1.metrics) == _refinement_selection_fields(r2.metrics)
+    # the perturbation actually reached the scored window: every stored
+    # forecast is identical, so any headline test movement proves actuals drive
+    # the test scores, not the fits
+    t1 = {c: r1.metrics["test"][c]["official_wrmsse"] for c in r1.metrics["candidates"]}
+    t2 = {c: r2.metrics["test"][c]["official_wrmsse"] for c in r2.metrics["candidates"]}
+    assert t1 != t2
 
 
 def test_ladder_cap_deterministic():
