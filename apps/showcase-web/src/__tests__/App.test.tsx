@@ -43,7 +43,7 @@ describe("App routing", () => {
       );
       await waitFor(() =>
         expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-          "Proof of work — case studies and live demos",
+          "Proof of work — experiments and demos",
         ),
       );
       expect(
@@ -132,7 +132,7 @@ describe("App routing", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-          "Proof of work — case studies and live demos",
+          "Proof of work — experiments and demos",
         ),
     );
     expect(projectsContainer.querySelector("main")!.className).toContain("app-main--fluid");

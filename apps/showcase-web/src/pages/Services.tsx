@@ -172,13 +172,13 @@ export function Services() {
         <p className="kicker">&gt; services</p>
         <h1>ML/AI engineering, end to end</h1>
         <p>
-          Independent ML/AI engineering for teams and enterprises that need end-to-end
-          delivery — from problem framing to production systems, with the decision records,
-          evaluation harnesses and runbooks that keep them operable after handover.
+          Independent ML/AI engineering — end-to-end delivery from problem framing to production
+          systems, with the decision records, evaluation harnesses and runbooks that keep them
+          operable after handover.
         </p>
         <p>
-          Every offering below is backed by a public case study on this site — the same
-          pipelines, metrics and stated limits you would receive.
+          Every offering maps to a public case study on this site — same pipelines, metrics and
+          stated limits.
         </p>
       </section>
 

@@ -277,11 +277,11 @@ export function ProjectsIndex() {
     <>
       <section className="services-hero">
         <p className="kicker">&gt; projects</p>
-        <h1>Proof of work — case studies and live demos</h1>
+        <h1>Proof of work — experiments and demos</h1>
         <p>
-          This is how your engagement would run: real data, named baselines, measured results —
-          every study below is a project delivered the way I deliver client work, and every
-          number on this page re-runs from the repository.
+          ML and AI systems built end to end and shown working: real datasets, named baselines,
+          measured results. Everything on this page re-runs from the repository — and each study
+          doubles as a template for taking a project from data to production.
         </p>
       </section>
       <nav className="page-index" aria-label="On this page">
@@ -311,9 +311,8 @@ export function ProjectsIndex() {
         <div className="experiments-block" id="experiments">
           <h2 className="section-title section-title--major">experiments</h2>
           <p className="section-intro">
-            Each study states the business question, the data and the measured result — the
-            same discipline your engagement would get. Terms are defined in the{" "}
-            <Link to="/glossary">glossary</Link>.
+            Each study states the question, the data and the measured result — grouped by
+            discipline, terms defined in the <Link to="/glossary">glossary</Link>.
           </p>
           <div className="topic-rows">
             {rows.map((row) => (

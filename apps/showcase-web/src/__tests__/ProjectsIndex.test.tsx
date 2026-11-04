@@ -156,11 +156,11 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "Proof of work — case studies and live demos",
+        "Proof of work — experiments and demos",
       ),
     );
     expect(
-      screen.getByText(/This is how your engagement would run/i),
+      screen.getByText(/built end to end and shown working/i),
     ).toBeInTheDocument();
     // every anchor target exists once rows render
     await waitFor(() => expect(document.getElementById("machine-learning")).not.toBeNull());
@@ -202,7 +202,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "Proof of work — case studies and live demos",
+        "Proof of work — experiments and demos",
       ),
     );
     // same structure as /services: hero section → kicker → h1 → intro <p>
@@ -223,7 +223,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "Proof of work — case studies and live demos",
+        "Proof of work — experiments and demos",
       ),
     );
     // the experiments block label sits above the topic rows
@@ -675,8 +675,8 @@ describe("ProjectsIndex", () => {
       expect(screen.getByRole("heading", { level: 2, name: "experiments" })).toBeInTheDocument(),
     );
     const intro = document.querySelector(".experiments-block > .section-intro")!;
-    expect(intro.textContent).toMatch(/the same discipline your engagement would get/i);
-    expect(intro.textContent).toMatch(/terms are defined in the glossary/i);
+    expect(intro.textContent).toMatch(/Each study states the question, the data and the measured result/i);
+    expect(intro.textContent).toMatch(/terms defined in the glossary/i);
     const glossary = intro.querySelector("a")!;
     expect(glossary.getAttribute("href")).toBe("/glossary");
   });
