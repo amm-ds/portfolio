@@ -25,14 +25,29 @@ relative static path before the API (small, reversible front-end change).
 Result: every page, chart, and replay demo works at zero cost. Live scoring
 is off.
 
-### Tier 2 — Pages + Hetzner CX11/CX22 (~€4–5/month) **← recommended**
+### Tier 2 — Pages + the smallest VM (~€0–5/month) **← recommended**
 Tier 1 plus the FastAPI image on `api.alejandromerida.dev` (CORS-restricted
 to the site origin) serving **only** the live POST endpoints. This matches
 how the portfolio is presented (live demos are part of the pitch), keeps the
 expensive part (the always-on site) free, and the VM is the smallest size —
-the API is stateless and light. Hetzner is the right host for a Python
-service: Cloudflare Pages Functions cannot run FastAPI, and a VM-only
-deploy would pay for static hosting Pages does better (CDN, TLS, rollback).
+the API is stateless and light. Cloudflare Pages Functions cannot run
+FastAPI, and a VM-only deploy would pay for static hosting Pages does better
+(CDN, TLS, rollback).
+
+**VM choice:**
+- **Oracle Cloud Always Free (Ampere A1 ARM) — $0.** Since August 2026 the
+  free allowance is **2 OCPU / 12 GB** (halved from 4/24) + 10 TB egress —
+  still generous for this API. Caveats: ARM A1 shows "out of host capacity"
+  constantly (provisioning can take days of retries; PAYG unlocks instantly),
+  signup rejections are routine, idle free-tier VMs risk reclamation, and the
+  image must build for linux/arm64 (verify wheels: sklearn / xgboost /
+  polars / duckdb all ship aarch64 — the repo already builds on Apple
+  Silicon, so this is a cutover check, not a rewrite).
+- **Hetzner CX11/CX22 — ~€4–5/mo.** Always provisionable, x86 or ARM, no
+  idle policy, no account roulette. The reliable fallback if Oracle's
+  provisioning stalls.
+
+Try Oracle free first; fall back to Hetzner at the cost of a coffee.
 
 ### Tier 3 — single VM serves everything (current Dockerfile shape)
 Simplest mental model, worst cost/uptime: one origin does static + API.
@@ -64,5 +79,6 @@ Alternative if even that is unwanted: no analytics (status quo).
 | Tier | Monthly cost | Live demos | Ops surface |
 |---|---|---|---|
 | 1 | €0 | no | Pages only |
-| **2** | **~€4–5** | **yes** | Pages + one tiny VM |
+| **2 (Oracle free)** | **€0** | **yes** | Pages + one tiny ARM VM (provisioning patience) |
+| 2 (Hetzner) | ~€4–5 | yes | Pages + one tiny VM |
 | 3 | ~€4–5 | yes | one VM (you own TLS/CDN/static) |
