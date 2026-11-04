@@ -28,6 +28,7 @@ members = [
     "09-agentic-workflows",
     "10-uplift-experimentation",
     "11-data-engineering",
+    "12-tabular-ml-lifecycle",
     "amm-ds-portfolio",
     "portfolio-core",
     "portfolio-eval",
@@ -376,6 +377,39 @@ requires-dist = [
     { name = "portfolio-core", editable = "libs/portfolio-core" },
     { name = "portfolio-eval", editable = "libs/portfolio-eval" },
     { name = "pyarrow", specifier = ">=17" },
+    { name = "typer", specifier = ">=0.12" },
+]
+
+[[package]]
+name = "12-tabular-ml-lifecycle"
+version = "0.1.0"
+source = { editable = "projects/12-tabular-ml-lifecycle" }
+dependencies = [
+    { name = "lightgbm" },
+    { name = "numpy" },
+    { name = "optuna" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "portfolio-core" },
+    { name = "portfolio-eval" },
+    { name = "pyyaml" },
+    { name = "scikit-learn" },
+    { name = "torch" },
+    { name = "typer" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "lightgbm", specifier = ">=4.0" },
+    { name = "numpy", specifier = ">=2.1" },
+    { name = "optuna", specifier = ">=4.0" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "plotly", specifier = ">=5.24" },
+    { name = "portfolio-core", editable = "libs/portfolio-core" },
+    { name = "portfolio-eval", editable = "libs/portfolio-eval" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "scikit-learn", specifier = ">=1.5" },
+    { name = "torch", specifier = ">=2.4" },
     { name = "typer", specifier = ">=0.12" },
 ]
 

@@ -1,0 +1,110 @@
+stages:
+  prepare:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli prepare --params-file params.yaml
+    deps:
+      - src/tabular_ml_lifecycle/
+      - params.yaml
+    params:
+      - seed
+      - data_source
+      - uci_source
+      - uci_sha256
+      - n_days_synthetic
+    outs:
+      - data/hour.parquet
+      - data/dataset_contract.json
+      - reports/dq_report.md
+
+  eda:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli eda --params-file params.yaml
+    deps:
+      - src/tabular_ml_lifecycle/
+      - params.yaml
+      - data/hour.parquet
+    outs:
+      - reports/figures/rentals_by_hour_season.json
+      - reports/figures/temp_vs_rentals.json
+      - reports/figures/correlation_heatmap.json
+
+  features:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli features --params-file params.yaml
+    deps:
+      - src/tabular_ml_lifecycle/
+      - params.yaml
+      - data/hour.parquet
+    params:
+      - seed
+      - val_weeks
+      - test_weeks
+      - lag_hours
+      - corr_threshold
+    outs:
+      - data/series.parquet
+      - data/features_train.parquet
+      - data/features_val.parquet
+      - data/features_test.parquet
+      - data/feature_selection.json
+      - reports/figures/mi_lollipop.json
+
+  train:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli train --params-file params.yaml
+    deps:
+      - src/tabular_ml_lifecycle/
+      - params.yaml
+      - data/feature_selection.json
+      - data/features_train.parquet
+      - data/features_val.parquet
+      - data/features_test.parquet
+      - data/series.parquet
+    params:
+      - seed
+      - ridge_alpha
+      - rf_n_estimators
+      - rf_max_depth
+      - rf_min_samples_leaf
+      - hpo_trials
+      - hpo_time_budget_s
+      - lgbm_n_estimators
+      - lgbm_early_stopping
+      - mlp
+      - learning_curve_fractions
+    outs:
+      - data/models/
+      - reports/train_runs.json
+      - reports/figures/mlp_loss_curves.json
+      - reports/figures/learning_curves.json
+      - reports/figures/ablation_dotplot.json
+
+  evaluate:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli evaluate --params-file params.yaml
+    deps:
+      - src/tabular_ml_lifecycle/
+      - params.yaml
+      - data/models/
+      - data/features_test.parquet
+      - data/series.parquet
+      - reports/train_runs.json
+    params:
+      - seed
+      - bootstrap_resamples
+      - mlp
+    outs:
+      - reports/evaluation_metadata.json
+      - reports/figures/model_comparison.json
+      - reports/figures/residual_heatmap.json
+      - reports/figures/residual_vs_fitted.json
+      - reports/figures/bootstrap_ci.json
+    metrics:
+      - reports/metrics.json
+
+  report:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli report --params-file params.yaml
+    deps:
+      - src/tabular_ml_lifecycle/
+      - story.yaml
+      - reports/metrics.json
+      - reports/evaluation_metadata.json
+      - reports/train_runs.json
+    outs:
+      - reports/report.html
+      - reports/results.md

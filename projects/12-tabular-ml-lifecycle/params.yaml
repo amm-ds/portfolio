@@ -1,0 +1,39 @@
+seed: 42
+data_source: uci
+uci_source: https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip
+uci_sha256: b70182d0d0508e9abbb79306ce5c0cec34869000f8220175ac83d11dbe845401
+n_days_synthetic: 728
+val_weeks: 8
+test_weeks: 8
+lag_hours:
+- 1
+- 24
+- 168
+corr_threshold: 0.9
+ridge_alpha: 1.0
+rf_n_estimators: 300
+rf_max_depth: 32
+rf_min_samples_leaf: 1
+hpo_trials: 50
+hpo_time_budget_s: 240
+lgbm_n_estimators: 1500
+lgbm_early_stopping: 50
+mlp:
+  hidden_dims:
+  - 64
+  - 32
+  embed_dim: 8
+  dropout: 0.2
+  weight_decay: 0.0001
+  learning_rate: 0.001
+  batch_size: 256
+  max_epochs: 150
+  patience: 10
+  huber_delta: 1.0
+bootstrap_resamples: 2000
+learning_curve_fractions:
+- 0.2
+- 0.4
+- 0.6
+- 0.8
+- 1.0

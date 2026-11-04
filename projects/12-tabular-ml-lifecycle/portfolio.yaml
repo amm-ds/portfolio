@@ -1,0 +1,14 @@
+id: 12-tabular-ml-lifecycle
+title: Tabular ML & Deep Learning Lifecycle
+domain: Classical ML + Deep Learning
+techniques:
+- sklearn Pipelines
+- LightGBM
+- Optuna HPO
+- PyTorch MLP
+- feature selection
+- bootstrap CIs
+data: UCI Bike Sharing, Capital Bikeshare hourly (real, sha256-pinned) + seeded synthetic CI twin
+status: working
+order: 12
+topic: ML Systems & Decisioning

@@ -1,0 +1,308 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli prepare 
+      --params-file params.yaml
+    deps:
+    - path: params.yaml
+      hash: md5
+      md5: f37acc4c76910adefb4550f8754f816b
+      size: 707
+    - path: src/tabular_ml_lifecycle/
+      hash: md5
+      md5: 28cad1ba495164a8bc346d6b47cee371.dir
+      size: 205108
+      nfiles: 23
+    params:
+      params.yaml:
+        data_source: uci
+        n_days_synthetic: 728
+        seed: 42
+        uci_sha256: 
+          b70182d0d0508e9abbb79306ce5c0cec34869000f8220175ac83d11dbe845401
+        uci_source: 
+          https://archive.ics.uci.edu/static/public/275/bike+sharing+dataset.zip
+    outs:
+    - path: data/dataset_contract.json
+      hash: md5
+      md5: 26f715948a3a8143cf22f51db8c140f0
+      size: 362
+    - path: data/hour.parquet
+      hash: md5
+      md5: f00f6fc38772fb94b17648770ddeb1ec
+      size: 251011
+    - path: reports/dq_report.md
+      hash: md5
+      md5: 06ff2b3cd09f1e2a1e4b9aae6dfe63b6
+      size: 2179
+  features:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli features 
+      --params-file params.yaml
+    deps:
+    - path: data/hour.parquet
+      hash: md5
+      md5: f00f6fc38772fb94b17648770ddeb1ec
+      size: 251011
+    - path: params.yaml
+      hash: md5
+      md5: f37acc4c76910adefb4550f8754f816b
+      size: 707
+    - path: src/tabular_ml_lifecycle/
+      hash: md5
+      md5: 28cad1ba495164a8bc346d6b47cee371.dir
+      size: 205108
+      nfiles: 23
+    params:
+      params.yaml:
+        corr_threshold: 0.9
+        lag_hours:
+        - 1
+        - 24
+        - 168
+        seed: 42
+        test_weeks: 8
+        val_weeks: 8
+    outs:
+    - path: data/feature_selection.json
+      hash: md5
+      md5: 03d433b29615658e88c5951534fcc688
+      size: 3391
+    - path: data/features_test.parquet
+      hash: md5
+      md5: c426c86d1e24fe5f645d7febbf16fc4f
+      size: 45674
+    - path: data/features_train.parquet
+      hash: md5
+      md5: 5d065fa49e7d6ba98af786b5d0b225dc
+      size: 282155
+    - path: data/features_val.parquet
+      hash: md5
+      md5: 1a285724118a7c389e1c31f65d1db1dc
+      size: 48207
+    - path: data/series.parquet
+      hash: md5
+      md5: c1c52ecb37553f8beb1aaed969491f29
+      size: 186018
+    - path: reports/figures/mi_lollipop.json
+      hash: md5
+      md5: 48a458eb0b936564d744a1502d3e5a15
+      size: 12252
+  train:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli train 
+      --params-file params.yaml
+    deps:
+    - path: data/feature_selection.json
+      hash: md5
+      md5: 03d433b29615658e88c5951534fcc688
+      size: 3391
+    - path: data/features_test.parquet
+      hash: md5
+      md5: c426c86d1e24fe5f645d7febbf16fc4f
+      size: 45674
+    - path: data/features_train.parquet
+      hash: md5
+      md5: 5d065fa49e7d6ba98af786b5d0b225dc
+      size: 282155
+    - path: data/features_val.parquet
+      hash: md5
+      md5: 1a285724118a7c389e1c31f65d1db1dc
+      size: 48207
+    - path: data/series.parquet
+      hash: md5
+      md5: c1c52ecb37553f8beb1aaed969491f29
+      size: 186018
+    - path: params.yaml
+      hash: md5
+      md5: f37acc4c76910adefb4550f8754f816b
+      size: 707
+    - path: src/tabular_ml_lifecycle/
+      hash: md5
+      md5: 28cad1ba495164a8bc346d6b47cee371.dir
+      size: 205108
+      nfiles: 23
+    params:
+      params.yaml:
+        hpo_time_budget_s: 240
+        hpo_trials: 50
+        learning_curve_fractions:
+        - 0.2
+        - 0.4
+        - 0.6
+        - 0.8
+        - 1.0
+        lgbm_early_stopping: 50
+        lgbm_n_estimators: 1500
+        mlp:
+          hidden_dims:
+          - 64
+          - 32
+          embed_dim: 8
+          dropout: 0.2
+          weight_decay: 0.0001
+          learning_rate: 0.001
+          batch_size: 256
+          max_epochs: 150
+          patience: 10
+          huber_delta: 1.0
+        rf_max_depth: 32
+        rf_min_samples_leaf: 1
+        rf_n_estimators: 300
+        ridge_alpha: 1.0
+        seed: 42
+    outs:
+    - path: data/models/
+      hash: md5
+      md5: d0ac83fbfdb055bcd13b0dcde9b95cc0.dir
+      size: 367765023
+      nfiles: 5
+    - path: reports/figures/ablation_dotplot.json
+      hash: md5
+      md5: e0d6a604d5ae05cdfdab9b3cda5f24ce
+      size: 9529
+    - path: reports/figures/learning_curves.json
+      hash: md5
+      md5: 5dae51290e38b4cf399c17f76fc02947
+      size: 9345
+    - path: reports/figures/mlp_loss_curves.json
+      hash: md5
+      md5: 11bde59759280cc66035953b18d5f0b8
+      size: 11695
+    - path: reports/train_runs.json
+      hash: md5
+      md5: 1e5a3fc09d6bcbdc688066a183356316
+      size: 6929
+  evaluate:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli evaluate 
+      --params-file params.yaml
+    deps:
+    - path: data/features_test.parquet
+      hash: md5
+      md5: c426c86d1e24fe5f645d7febbf16fc4f
+      size: 45674
+    - path: data/models/
+      hash: md5
+      md5: d0ac83fbfdb055bcd13b0dcde9b95cc0.dir
+      size: 367765023
+      nfiles: 5
+    - path: data/series.parquet
+      hash: md5
+      md5: c1c52ecb37553f8beb1aaed969491f29
+      size: 186018
+    - path: params.yaml
+      hash: md5
+      md5: f37acc4c76910adefb4550f8754f816b
+      size: 707
+    - path: reports/train_runs.json
+      hash: md5
+      md5: 1e5a3fc09d6bcbdc688066a183356316
+      size: 6929
+    - path: src/tabular_ml_lifecycle/
+      hash: md5
+      md5: 28cad1ba495164a8bc346d6b47cee371.dir
+      size: 205108
+      nfiles: 23
+    params:
+      params.yaml:
+        bootstrap_resamples: 2000
+        mlp:
+          hidden_dims:
+          - 64
+          - 32
+          embed_dim: 8
+          dropout: 0.2
+          weight_decay: 0.0001
+          learning_rate: 0.001
+          batch_size: 256
+          max_epochs: 150
+          patience: 10
+          huber_delta: 1.0
+        seed: 42
+    outs:
+    - path: reports/evaluation_metadata.json
+      hash: md5
+      md5: 6f2055ecea8846aeb250737f9c4c644d
+      size: 1277
+    - path: reports/figures/bootstrap_ci.json
+      hash: md5
+      md5: 0bf5a2fe2aa3c8f317c48cd12b5b0fbd
+      size: 32065
+    - path: reports/figures/model_comparison.json
+      hash: md5
+      md5: 3f2440c5dc6fa3448c37f1f7c672eb64
+      size: 9914
+    - path: reports/figures/residual_heatmap.json
+      hash: md5
+      md5: 0a7feaa2b2c998ad6fa171906246d780
+      size: 12754
+    - path: reports/figures/residual_vs_fitted.json
+      hash: md5
+      md5: e7293298c24e36c77df69d1c209992b9
+      size: 38641
+    - path: reports/metrics.json
+      hash: md5
+      md5: 5d55c925f369da8572ca74e7520e6f31
+      size: 4369
+  report:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli report 
+      --params-file params.yaml
+    deps:
+    - path: reports/evaluation_metadata.json
+      hash: md5
+      md5: 6f2055ecea8846aeb250737f9c4c644d
+      size: 1277
+    - path: reports/metrics.json
+      hash: md5
+      md5: 5d55c925f369da8572ca74e7520e6f31
+      size: 4369
+    - path: reports/train_runs.json
+      hash: md5
+      md5: 1e5a3fc09d6bcbdc688066a183356316
+      size: 6929
+    - path: src/tabular_ml_lifecycle/
+      hash: md5
+      md5: 28cad1ba495164a8bc346d6b47cee371.dir
+      size: 205108
+      nfiles: 23
+    - path: story.yaml
+      hash: md5
+      md5: af38821a8721bb3a97d1f626a2346df3
+      size: 21950
+    outs:
+    - path: reports/report.html
+      hash: md5
+      md5: 859fb825111347920ecd3476dd198385
+      size: 453358
+    - path: reports/results.md
+      hash: md5
+      md5: 9a29ac62ba1e4f83bfa6f1f47b84f051
+      size: 1774
+  eda:
+    cmd: uv run --python 3.12.9 python -m tabular_ml_lifecycle.cli eda 
+      --params-file params.yaml
+    deps:
+    - path: data/hour.parquet
+      hash: md5
+      md5: f00f6fc38772fb94b17648770ddeb1ec
+      size: 251011
+    - path: params.yaml
+      hash: md5
+      md5: f37acc4c76910adefb4550f8754f816b
+      size: 707
+    - path: src/tabular_ml_lifecycle/
+      hash: md5
+      md5: 28cad1ba495164a8bc346d6b47cee371.dir
+      size: 205108
+      nfiles: 23
+    outs:
+    - path: reports/figures/correlation_heatmap.json
+      hash: md5
+      md5: 48f21ce0bcbbac1d211a9426d4705143
+      size: 10724
+    - path: reports/figures/rentals_by_hour_season.json
+      hash: md5
+      md5: bbda723fa094d184697e5de52ce68951
+      size: 12376
+    - path: reports/figures/temp_vs_rentals.json
+      hash: md5
+      md5: 3e692413a88652aa30aa080496bf8ce9
+      size: 283312
