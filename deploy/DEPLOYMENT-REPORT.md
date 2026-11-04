@@ -1,0 +1,68 @@
+# Deployment Report — alejandromerida.dev
+
+**Date:** 2026-11-04 · **Status:** decision document (nothing deployed yet)
+**Blocker for every tier:** `alejandromerida.dev` is registered (Cloudflare
+NS) but publishes **zero DNS records**. Step one is the registrar/Cloudflare
+step: apex + `www` → the chosen origin, plus `api` if Tier 2.
+
+## What the site actually needs (verified against the code)
+
+| Capability | Needs a server? | Evidence |
+|---|---|---|
+| Home / Projects / experiment pages / glossary / about / services | **No** | the SPA renders from the static registry when the API is down |
+| Case-study stories, roadmaps, conclusions | **No** | `staticRegistry` + `storyShort` are generated snapshots |
+| Replay demos (workbench, churn sandbox) | **No** | demo payloads are committed JSON; the workbench has a static fallback manifest |
+| Interactive figures (Plotly) | **Only as static files** | figure payloads are committed `*.json` under `reports*/figures/` but are *served by the API today* — bake them into the static bundle and charts work without any server |
+| Live scoring (churn `/score`, forecast `/forecast`, mobility) | **Yes** | FastAPI POST endpoints with in-process models |
+| RAG chat | **Yes, and it stays off** | behind `RAG_CHAT_ENABLED`, disabled by default |
+
+## Recommendation — Tier 2 (Cloudflare Pages + the smallest Hetzner VM)
+
+### Tier 1 — Cloudflare Pages only (free)
+The static SPA. Requires one build change first: copy `reports*/figures/*.json`
+and demo payloads into `dist/` and make the figure/payload fetchers try the
+relative static path before the API (small, reversible front-end change).
+Result: every page, chart, and replay demo works at zero cost. Live scoring
+is off.
+
+### Tier 2 — Pages + Hetzner CX11/CX22 (~€4–5/month) **← recommended**
+Tier 1 plus the FastAPI image on `api.alejandromerida.dev` (CORS-restricted
+to the site origin) serving **only** the live POST endpoints. This matches
+how the portfolio is presented (live demos are part of the pitch), keeps the
+expensive part (the always-on site) free, and the VM is the smallest size —
+the API is stateless and light. Hetzner is the right host for a Python
+service: Cloudflare Pages Functions cannot run FastAPI, and a VM-only
+deploy would pay for static hosting Pages does better (CDN, TLS, rollback).
+
+### Tier 3 — single VM serves everything (current Dockerfile shape)
+Simplest mental model, worst cost/uptime: one origin does static + API.
+Only choose this if live endpoints must share the origin (they don't — CORS
+is fine).
+
+## Minimal analytics
+
+**Cloudflare Web Analytics**: cookieless, no personal data, free, one
+snippet in `index.html`. Consistent with the privacy posture (no visitor
+tracking; aggregate page-view insight only). Add at cutover; revisit monthly.
+Alternative if even that is unwanted: no analytics (status quo).
+
+## Cutover checklist (Tier 2)
+
+1. DNS: apex + `www` → Cloudflare Pages; `api` → the VM's IP.
+2. Build change: bake figures/payloads into `dist` (Tier 1 prerequisite).
+3. `VITE_SITE_URL`/`SITE_URL` already default to the domain; set `DOCS_URL`
+   if the docs stay on GitHub Pages.
+4. Deploy workflow: build SPA → publish to Pages; VM runs compose with
+   `DOMAIN` + `IP_HASH_SALT` set (compose already requires them).
+5. Cloudflare Web Analytics snippet; verify no cookies are set.
+6. Smoke: `/`, `/projects/02-demand-forecasting`, a figure JSON, one replay
+   demo (API stopped), then one live POST (API up).
+7. Uptime: Cloudflare's free health checks against `/` and `/health`.
+
+## Cost summary
+
+| Tier | Monthly cost | Live demos | Ops surface |
+|---|---|---|---|
+| 1 | €0 | no | Pages only |
+| **2** | **~€4–5** | **yes** | Pages + one tiny VM |
+| 3 | ~€4–5 | yes | one VM (you own TLS/CDN/static) |
