@@ -72,7 +72,7 @@ class MultistepTweedieConfig(PortfolioBaseModel):
     lr/depth/leaves on the multi-step SELECTION origins only;
     min_samples_leaf / l2 / max_features / max_iter stay on the champion HGB
     values. params.yaml mirrors them. The loss is the compound-Poisson tweedie
-    deviance with variance power 1.5 (fixed in multihorizon.TWEEDIE_POWER).
+    deviance with variance power 1.5 (fixed in multistep_models.TWEEDIE_POWER).
     """
 
     learning_rate: float = Field(default=0.03145859378075644, gt=0)
@@ -95,7 +95,7 @@ class MultistepLGBMConfig(PortfolioBaseModel):
     (``hpo.tune_multistep_lgbm``, one study per objective — tweedie and
     poisson share the tuning contract; lr/num_leaves/min_child_samples tuned,
     n_estimators/reg_lambda fixed). params.yaml mirrors them. The objective
-    (tweedie variance power 1.5 / poisson) is fixed in multihorizon._fit_lgbm.
+    (tweedie variance power 1.5 / poisson) is fixed in multistep_models._fit_lgbm.
     Defaults are the tweedie study's best (selection MAE 7.1265); the poisson
     study landed lr 0.0887 / leaves 52 / min_child 190 (selection MAE 8.1220)
     and shares these values per the tuning contract.

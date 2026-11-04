@@ -157,10 +157,10 @@ def test_cost_aware_routing_block(mixed_panel: pl.DataFrame) -> None:
 
 def test_cost_aware_routing_uses_selection_origins_only(mixed_panel: pl.DataFrame) -> None:
     """Tainting the last test window leaves the cost-aware picks unchanged."""
-    from demand_forecasting.multihorizon import (
+    from demand_forecasting.multihorizon import run_multistep
+    from demand_forecasting.multistep_features import (
         multistep_origin_indices,
         panel_matrix,
-        run_multistep,
         split_origins,
     )
 

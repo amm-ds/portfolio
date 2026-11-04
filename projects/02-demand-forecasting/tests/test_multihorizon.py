@@ -11,20 +11,22 @@ import numpy as np
 import polars as pl
 import pytest
 from demand_forecasting.config import DemandSettings, ForecastConfig
-from demand_forecasting.multihorizon import (
+from demand_forecasting.multihorizon import run_multistep
+from demand_forecasting.multistep_features import (
     MIN_LAG_ORIGIN,
     _calendar_features,
-    _design_pred,
-    _design_train,
-    _score_origin,
-    _seasonal_naive_pred,
     multistep_origin_indices,
     neutral_price_tensor,
     panel_matrix,
     peak_feature_tensor,
     rolling_feature_tensor,
-    run_multistep,
     split_origins,
+)
+from demand_forecasting.multistep_models import (
+    _design_pred,
+    _design_train,
+    _score_origin,
+    _seasonal_naive_pred,
 )
 
 # Fast multi-step config: 3 horizons, 8 origins (2 test), tiny bootstrap.

@@ -751,7 +751,7 @@ pipeline build). The queue commands above are the exact ones to re-run once
   fold: 0.925 coverage at 6.01 units mean width vs the zero-aware band's
   0.861 at 0.00 (all 75,880 test rows predict zero), still conservative
   against the 80% target; the band figure draws the new band. (2) Cost-aware
-  routing arm (`multihorizon._route_cost` + `routing.cost_aware` block): the
+  routing arm (`multistep_routing._route_cost` + `routing.cost_aware` block): the
   per-series pick minimises summed newsvendor cost on the selection origins
   at q=0.90 (order = method forecast + q0.90 of its per-series selection
   residuals, holding 1.0 / stockout 3.0 — the wave-22 assumptions); same
@@ -984,7 +984,7 @@ pipeline build). The queue commands above are the exact ones to re-run once
   broken repo-wide — stages executed via their `cmd`s.
 - **0.8.0 (2026-10-24)** — wave 19 (fifth-pass audit): the experiment is
   genuinely multi-step. New primary track, protocol
-  `direct_multihorizon_v1` (`multihorizon.py`): direct per-horizon models
+  `direct_multihorizon_v1` (the `multistep_*` modules, entry `multihorizon.py`): direct per-horizon models
   for h ∈ {1..14} — the full window lattice (champion-config HGB; calendar of the
   target + lags `lag_h`, `lag_{h+7}`, `lag_{h+14}` — no actual within h days
   of the target, property-tested by tainting), issued from 20 weekly rolling

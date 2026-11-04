@@ -32,13 +32,8 @@ from threadpoolctl import threadpool_limits  # type: ignore[import-untyped]  # r
 from demand_forecasting.config import DemandSettings, ForecastConfig
 from demand_forecasting.evaluate import cv_row_folds
 from demand_forecasting.model import NUMERIC_FEATURES, model_specs, to_xy
-from demand_forecasting.multihorizon import (
-    TWEEDIE_POWER,
+from demand_forecasting.multistep_features import (
     _calendar_features,
-    _design_pred,
-    _design_train,
-    _lgbm_cat_cols,
-    _n_numeric_features,
     multistep_origin_indices,
     neutral_price_tensor,
     panel_matrix,
@@ -47,6 +42,14 @@ from demand_forecasting.multihorizon import (
     price_feature_tensor,
     rolling_feature_tensor,
     split_origins,
+)
+from demand_forecasting.multistep_models import (
+    TWEEDIE_POWER,
+    _design_pred,
+    _design_train,
+    _lgbm_cat_cols,
+    _lgbm_fit_safe,
+    _n_numeric_features,
 )
 
 logger = get_logger(__name__)
@@ -353,8 +356,6 @@ def _eval_one_lgbm(
         model = LGBMRegressor(objective="poisson", **kwargs)
     else:  # pragma: no cover - defensive
         raise ValueError(f"unknown objective {objective_name!r}")
-    from demand_forecasting.multihorizon import _lgbm_fit_safe
-
     _lgbm_fit_safe(model, x_train, y_train, _lgbm_cat_cols())
     err = np.abs(units[origin + h] - model.predict(x_pred))
     return float(err.sum()), int(err.size)

@@ -8,27 +8,31 @@ import numpy as np
 import polars as pl
 import pytest
 from demand_forecasting.config import ForecastConfig
-from demand_forecasting.multihorizon import (
-    ML_SPARSE,
+from demand_forecasting.multistep_constants import ML_SPARSE
+from demand_forecasting.multistep_features import (
     N_PRICE_FEATURES,
     PRICE_FEATURE_NAMES,
-    OriginScore,
     _calendar_features,
-    _design_pred,
-    _design_train,
-    _ensemble_pred,
-    _fit_hurdle_lgbm_pair,
-    _fit_lgbm,
-    _score_origin,
-    _win_rates,
-    choose_peak_weight,
-    ensemble_weights,
     panel_matrix,
     panel_price_matrix,
     peak_feature_tensor,
-    peak_sample_weights,
     price_feature_tensor,
     rolling_feature_tensor,
+)
+from demand_forecasting.multistep_metrics import _win_rates
+from demand_forecasting.multistep_models import (
+    OriginScore,
+    _design_pred,
+    _design_train,
+    _fit_hurdle_lgbm_pair,
+    _fit_lgbm,
+    _score_origin,
+    peak_sample_weights,
+)
+from demand_forecasting.multistep_routing import (
+    _ensemble_pred,
+    choose_peak_weight,
+    ensemble_weights,
 )
 
 # Fast multi-step config for the _score_origin taint test (3 horizons).
@@ -432,7 +436,7 @@ def test_finite_demand_pred_guard() -> None:
     pass through byte-identical (observed on UCI: lgbm_poisson overflows the
     exponential link on ~11% of a scored origin's cells, with finite garbage
     up to ~1e283 elsewhere — hence the poisson-only hard_clip cap)."""
-    from demand_forecasting.multihorizon import _finite_demand_pred
+    from demand_forecasting.multistep_models import _finite_demand_pred
 
     train = np.array(
         [
@@ -474,7 +478,7 @@ def test_lgbm_fit_safe_fallback_ladder(monkeypatch: pytest.MonkeyPatch) -> None:
     LightGBMError mentioning right_count retries with min_sum_hessian_in_leaf
     set; a second failure also drops num_leaves; unrelated errors propagate."""
     import lightgbm.basic
-    from demand_forecasting.multihorizon import _lgbm_fit_safe
+    from demand_forecasting.multistep_models import _lgbm_fit_safe
 
     calls: list[dict] = []
 

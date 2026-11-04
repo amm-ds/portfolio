@@ -6,7 +6,7 @@ import math
 
 import numpy as np
 import pytest
-from demand_forecasting.multihorizon import (
+from demand_forecasting.multistep_metrics import (
     _paired_bootstrap_mae,
     order_up_to_cost,
     pinball_loss,

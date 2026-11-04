@@ -6,19 +6,21 @@ window peak-capture metrics and the selection-origin zero-correction choice.
 import numpy as np
 import pytest
 from demand_forecasting.config import ForecastConfig
-from demand_forecasting.multihorizon import (
+from demand_forecasting.multistep_features import (
     N_PEAK_FEATURES,
     N_PRICE_FEATURES,
     N_ROLLING_FEATURES,
     PEAK_FEATURE_NAMES,
+    peak_feature_tensor,
+)
+from demand_forecasting.multistep_metrics import _window_peak_arrays
+from demand_forecasting.multistep_models import (
     TWEEDIE_POWER,
     OriginScore,
     _fit_tweedie,
-    _window_peak_arrays,
-    apply_hurdle_correction,
     hurdle_point,
-    peak_feature_tensor,
 )
+from demand_forecasting.multistep_routing import apply_hurdle_correction
 from sklearn._loss.loss import HalfTweedieLoss
 
 
