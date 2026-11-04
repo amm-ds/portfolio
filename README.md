@@ -2,9 +2,11 @@
 
 [![ci](https://github.com/amm-ds/portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/amm-ds/portfolio/actions/workflows/ci.yml)
 
-**Data Scientist & ML Engineer.** I build end-to-end systems — from data
-engineering and classical ML to agentic AI — where every project ships with
-its design record, reproducible pipeline, and evaluation harness.
+**Data Scientist & ML Engineer.** A growing set of end-to-end case studies —
+from data engineering and classical ML to agentic AI — where every project
+ships with its design record, a reproducible DVC pipeline, and an evaluation
+harness with honest baselines. Every number in the showcase re-runs from a
+clean clone.
 
 📚 **Docs (GitHub Pages):** https://amm-ds.github.io/portfolio/ ·
 🖥️ **Showcase app:** `make docker-up` → http://localhost:8000 (public deploy: `deploy/DEPLOY.md`)

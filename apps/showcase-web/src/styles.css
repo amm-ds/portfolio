@@ -758,7 +758,7 @@ select:focus-visible,
    still below the 1.6rem section titles — with a colored "/" path marker */
 .row-label {
   font-family: var(--mono);
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   color: var(--text);
   margin: 1.5rem 0 0.15rem;
   letter-spacing: 0.02em;
@@ -2399,14 +2399,14 @@ button:disabled {
   gap: 0.35rem 1.1rem;
   margin: 1rem 0 2.25rem;
   font-family: var(--mono);
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 }
 
 .page-index .page-index-label {
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
 .page-index a {

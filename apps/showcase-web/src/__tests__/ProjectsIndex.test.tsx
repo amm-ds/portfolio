@@ -691,7 +691,7 @@ describe("ProjectsIndex", () => {
     // still below the 1.6rem section titles
     const labelRule = css.match(/\.row-label \{[\s\S]*?\n\}/)![0];
     expect(labelRule).toContain("font-family: var(--mono);");
-    expect(labelRule).toContain("font-size: 1.05rem;");
+    expect(labelRule).toContain("font-size: 1.2rem;");
     expect(labelRule).not.toContain("border-bottom");
     // no numbered prefixes anywhere — the old title-num utility is gone;
     // group labels are white with a colored "/" path marker
@@ -751,7 +751,7 @@ describe("ProjectsIndex", () => {
     );
     const indexRule = css.match(/\.page-index \{[\s\S]*?\n\}/)![0];
     expect(indexRule).toContain("font-family: var(--mono);");
-    expect(indexRule).toContain("font-size: 0.95rem;");
+    expect(indexRule).toContain("font-size: 1.05rem;");
   });
 
   it("splits the card body into two equal white text columns under one uniform small-label style", () => {
