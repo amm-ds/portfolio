@@ -4265,14 +4265,8 @@ button.chip.demo-preset.fwb-active {
   margin: 1.25rem 0 0.75rem;
 }
 
-@media (min-width: 640px) {
-  .channel-grid--4 {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 /* languages & timezone — two shared cards (Contact + About) in one row on
-   desktop, stacked on mobile; bold labels throughout */
+   desktop, stacked on mobile; values only, in the same grey as body text */
 .facts-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -4300,7 +4294,7 @@ button.chip.demo-preset.fwb-active {
 .timezone-card .languages-line,
 .replies-card .languages-line {
   margin: 0;
-  color: var(--text);
+  color: var(--muted);
 }
 
 .services-hero .facts-grid {
@@ -4310,7 +4304,7 @@ button.chip.demo-preset.fwb-active {
 .languages-line {
   margin: 0;
   font-size: 0.95rem;
-  color: var(--text);
+  color: var(--muted);
 }
 
 .languages-line + .languages-line {

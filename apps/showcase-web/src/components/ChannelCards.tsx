@@ -134,7 +134,7 @@ function PhoneChannelCard() {
               name="phone-unlock"
               type="text"
               autoComplete="off"
-              placeholder="you@company.com or +34 …"
+              placeholder="you@company.com or +34 600 000 000"
               value={value}
               onChange={(e) => {
                 setValue(e.target.value);
@@ -157,11 +157,12 @@ function PhoneChannelCard() {
   );
 }
 
-/** The shared contact-channel grid — one card per channel, identical on the
- * Contact and About pages. Phone, Email, GitHub, LinkedIn. */
+/** The shared contact-channel grid — the slim phone gate spans the full row,
+ * the three link cards fill the remaining three columns at the same full
+ * width as the facts cards below. Identical on Contact and About. */
 export function ChannelCards() {
   return (
-    <div className="channel-grid channel-grid--4">
+    <div className="channel-grid">
       <PhoneChannelCard />
       {OPEN_CHANNELS.map(channelCard)}
     </div>

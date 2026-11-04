@@ -18,15 +18,15 @@ describe("LanguagesAvailability — the three shared fact cards", () => {
     expect(grid.querySelectorAll(".accent-card")).toHaveLength(3);
   });
 
-  it("lists the three languages with bold labels, flags only where one exists", () => {
+  it("lists the three languages as plain grey text, flags only where one exists", () => {
     render(<LanguagesAvailability />);
     // English and Spanish keep their country flags…
-    expect(screen.getByText("🇬🇧 English").tagName).toBe("STRONG");
-    expect(screen.getByText("🇪🇸 Spanish").tagName).toBe("STRONG");
+    expect(screen.getByText("🇬🇧 English").tagName).toBe("SPAN");
+    expect(screen.getByText("🇪🇸 Spanish").tagName).toBe("SPAN");
     // …Catalan never gets a misused country emoji: its item is exactly the
     // word, with the flag DRAWN as an inline SVG instead
     const ca = screen.getByText("Catalan");
-    expect(ca.tagName).toBe("STRONG");
+    expect(ca.tagName).toBe("SPAN");
     expect(ca.textContent!.trim()).toBe("Catalan");
     expect(ca.closest(".language-item")!.textContent!.trim()).toBe("Catalan");
     expect(ca.closest(".language-item")!.textContent).not.toMatch(/\p{Extended_Pictographic}/u);
@@ -57,7 +57,7 @@ describe("LanguagesAvailability — the three shared fact cards", () => {
     expect(ys).toEqual([2, 6, 10, 14]);
   });
 
-  it("states the timezone and the reply window in bold on their own cards, from config", () => {
+  it("states the timezone and the reply window as plain values on their own cards, from config", () => {
     render(<LanguagesAvailability />);
     const tz = [...document.querySelectorAll(".timezone-card .languages-line")];
     expect(tz).toHaveLength(1);
@@ -71,13 +71,14 @@ describe("LanguagesAvailability — the three shared fact cards", () => {
     expect(document.querySelector(".facts-grid")!.textContent).not.toMatch(
       /Languages:|Timezone:|Replies:/,
     );
-    // centered terminal type
+    // centered terminal type in the same grey as body text — no bold
     const css = readFileSync("src/styles.css", "utf8");
     const cardRule = css.match(/\.languages-card,\n\.timezone-card,\n\.replies-card \{[\s\S]*?\n\}/)![0];
     expect(cardRule).toContain("text-align: center;");
     expect(cardRule).toContain("font-family: var(--mono);");
+    expect(css.match(/\.languages-line \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
     for (const line of [...tz, ...replies]) {
-      expect(line.querySelector("strong")!.textContent).toBe(line.textContent);
+      expect(line.querySelector("strong")).toBeNull();
     }
   });
 

@@ -65,7 +65,6 @@ describe("ChannelCards", () => {
   it("renders the four channel cards with inline SVG logos in one grid", () => {
     renderCards();
     const grid = document.querySelector(".channel-grid")!;
-    expect(grid.classList.contains("channel-grid--4")).toBe(true);
     const names = [...grid.querySelectorAll(".channel-name")].map((el) => el.textContent);
     expect(names).toEqual(["Phone", "Email", "GitHub", "LinkedIn"]);
     for (const card of grid.querySelectorAll("svg")) {

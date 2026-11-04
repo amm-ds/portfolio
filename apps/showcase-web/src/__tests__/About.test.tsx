@@ -86,9 +86,8 @@ describe("About page", () => {
 
   it("renders the four channel cards with inline SVG logos, one row", () => {
     renderAbout();
-    const grid = document.querySelector(".channel-grid--4")!;
+    const grid = document.querySelector(".channel-grid")!;
     expect(grid).not.toBeNull();
-    expect(grid.classList.contains("channel-grid")).toBe(true);
     const cards = [...grid.querySelectorAll(".channel-card")];
     expect(cards).toHaveLength(4);
     const names = cards.map((c) => c.querySelector(".channel-name")!.textContent);
@@ -104,12 +103,13 @@ describe("About page", () => {
     expect(cards[1].getAttribute("target")).toBeNull();
     expect(cards[2].getAttribute("target")).toBe("_blank");
     expect(cards[3].getAttribute("target")).toBe("_blank");
-    // the CSS carries the 4-column row from 640px up, single column below
+    // the CSS carries the 3-column row from 640px up (matching the facts
+    // cards below), single column below
     const css = readFileSync("src/styles.css", "utf8");
-    const fourCol = css.match(
-      /@media \(min-width: 640px\) \{\s*\.channel-grid--4 \{[\s\S]*?\n  \}/,
+    const threeCol = css.match(
+      /@media \(min-width: 640px\) \{\s*\.channel-grid \{[\s\S]*?\n  \}/,
     )![0];
-    expect(fourCol).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+    expect(threeCol).toContain("grid-template-columns: repeat(3, minmax(0, 1fr));");
     // channel cards reuse the contact page's card styles untouched
     expect(css.match(/\.channel-card \{[\s\S]*?\n\}/)![0]).toContain("display: flex;");
   });

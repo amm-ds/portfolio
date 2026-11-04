@@ -23,29 +23,26 @@ function SenyeraFlag() {
 }
 
 /** Languages, timezone, and reply window — three shared fact cards for the
- * Contact and About pages: the values only, centered, terminal mono type. */
+ * Contact and About pages: the values only, centered, terminal mono type in
+ * the same grey as body text. */
 export function LanguagesAvailability() {
   return (
     <div className="facts-grid">
       <Card className="languages-card">
         <p className="languages-line">
-          <strong className="language-item">🇬🇧 English</strong> ·{" "}
-          <strong className="language-item">🇪🇸 Spanish</strong> ·{" "}
-          <strong className="language-item">
+          <span className="language-item">🇬🇧 English</span> ·{" "}
+          <span className="language-item">🇪🇸 Spanish</span> ·{" "}
+          <span className="language-item">
             <SenyeraFlag />
             Catalan
-          </strong>
+          </span>
         </p>
       </Card>
       <Card className="timezone-card">
-        <p className="languages-line">
-          <strong>Europe/Madrid (CET, UTC+1)</strong>
-        </p>
+        <p className="languages-line">Europe/Madrid (CET, UTC+1)</p>
       </Card>
       <Card className="replies-card">
-        <p className="languages-line">
-          <strong>within {AVAILABILITY.replyHours}h on business days</strong>
-        </p>
+        <p className="languages-line">within {AVAILABILITY.replyHours}h on business days</p>
       </Card>
     </div>
   );
