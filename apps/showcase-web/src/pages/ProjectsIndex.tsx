@@ -193,9 +193,7 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
 
   return (
     <section className="demos" id="demos" aria-label="Live demos">
-      <h2 className="section-title section-title--major">
-        <span className="title-num">01</span> live demos
-      </h2>
+      <h2 className="section-title section-title--major">live demos</h2>
       <p className="section-intro">{DEMOS_INTRO}</p>
       {entries === null ? (
         <div className="demo-grid">
@@ -279,7 +277,7 @@ export function ProjectsIndex() {
     <>
       <section className="services-hero">
         <p className="kicker">&gt; Projects</p>
-        <h1>projects and demos repository</h1>
+        <h1>Projects and demos repository</h1>
         <p>
           A growing set of public, reproducible case studies with live demos — real datasets,
           measured baselines and published pipelines. Every number on this page can be re-run
@@ -311,25 +309,21 @@ export function ProjectsIndex() {
       <DemosSection projects={projects} />
       {projects !== null && projects.length > 0 && (
         <div className="experiments-block" id="experiments">
-          <h2 className="section-title section-title--major">
-            <span className="title-num">02</span> experiments
-          </h2>
+          <h2 className="section-title section-title--major">experiments</h2>
           <p className="section-intro">
             A growing set of reproducible case studies grouped by discipline — each card
             states the objective, the data and the result. Terms are defined in the{" "}
             <Link to="/glossary">glossary</Link>.
           </p>
           <div className="topic-rows">
-            {rows.map((row, i) => (
+            {rows.map((row) => (
               <section
                 key={row.name}
                 id={rowAnchor(row.name)}
                 className="topic-row"
                 aria-label={row.name}
               >
-                <h3 className="row-label">
-                  <span className="title-num">{String(i + 1).padStart(2, "0")}</span> {row.name}
-                </h3>
+                <h3 className="row-label">{row.name}</h3>
                 {row.description && <p className="row-desc">{row.description}</p>}
                 <div className="project-grid">
                   {row.topics.flatMap((t) =>

@@ -80,6 +80,22 @@ function channelCard(ch: (typeof OPEN_CHANNELS)[number]) {
   );
 }
 
+/** The unlocked phone line keeps the gate's slim full-width structure — it
+ * replaces the gate in place instead of becoming a fourth grid card. */
+function PhoneLinkCard({ phone }: { phone: string }) {
+  return (
+    <a className="channel-card channel-card--slim" href={telHref(phone)}>
+      <span className="channel-icon">
+        <PhoneIcon />
+      </span>
+      <span className="channel-text">
+        <span className="channel-name">Phone</span>
+        <span className="channel-address">{phone}</span>
+      </span>
+    </a>
+  );
+}
+
 /** The phone card renders locked; the number is fetched from the API once the
  * visitor shares an email or phone number. The unlock is view state only —
  * the gate is back on every reload — and the entered value is never stored,
@@ -91,12 +107,7 @@ function PhoneChannelCard() {
   const [busy, setBusy] = useState(false);
 
   if (phone) {
-    return channelCard({
-      name: "Phone",
-      address: phone,
-      href: telHref(phone),
-      icon: <PhoneIcon />,
-    });
+    return <PhoneLinkCard phone={phone} />;
   }
 
   const onSubmit = async (ev: FormEvent) => {

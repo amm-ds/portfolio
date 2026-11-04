@@ -39,10 +39,20 @@ export function LanguagesAvailability() {
         </p>
       </Card>
       <Card className="timezone-card">
-        <p className="languages-line">Europe/Madrid (CET, UTC+1)</p>
+        <p className="languages-line">
+          <span className="fact-symbol" aria-hidden="true">
+            🌍
+          </span>{" "}
+          Europe/Madrid (CET, UTC+1)
+        </p>
       </Card>
       <Card className="replies-card">
-        <p className="languages-line">within {AVAILABILITY.replyHours}h on business days</p>
+        <p className="languages-line">
+          <span className="fact-symbol" aria-hidden="true">
+            💬
+          </span>{" "}
+          replies within {AVAILABILITY.replyHours}h on business days
+        </p>
       </Card>
     </div>
   );

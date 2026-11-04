@@ -109,7 +109,10 @@ describe("ChannelCards", () => {
     const tel = await screen.findByRole("link", { name: /\+34 670 881 697/ });
     expect(calls).toEqual([{ url: "/contact/unlock", body: { value: "ada@example.com" } }]);
     expect(tel.getAttribute("href")).toBe("tel:+34670881697");
+    // the unlocked line keeps the gate's slim full-width structure — it
+    // replaces the gate in place instead of becoming a fourth grid card
     expect(tel.classList.contains("channel-card")).toBe(true);
+    expect(tel.classList.contains("channel-card--slim")).toBe(true);
     // the gate form is gone
     expect(screen.queryByLabelText(/email or phone/i)).toBeNull();
     expect(document.querySelector(".channel-card--locked")).toBeNull();

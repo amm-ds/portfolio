@@ -156,7 +156,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "projects and demos repository",
+        "Projects and demos repository",
       ),
     );
     expect(
@@ -202,7 +202,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "projects and demos repository",
+        "Projects and demos repository",
       ),
     );
     // same structure as /services: hero section → kicker → h1 → intro <p>
@@ -223,7 +223,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "projects and demos repository",
+        "Projects and demos repository",
       ),
     );
     // the experiments block label sits above the topic rows
@@ -231,7 +231,7 @@ describe("ProjectsIndex", () => {
     expect(experimentsBlock).not.toBeNull();
     expect(
       experimentsBlock.querySelector(":scope > .section-title")!.textContent,
-    ).toBe("02 experiments");
+    ).toBe("experiments");
     // row heading plus the on-page index anchor both carry the names
     expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2);
     expect(screen.getAllByText("Data engineering").length).toBeGreaterThanOrEqual(2);
@@ -246,15 +246,13 @@ describe("ProjectsIndex", () => {
       return cur!;
     };
     // 07 must sit under Data engineering, 06 under Optimization, 01+04 under their rows
-    expect(rowOf(cardOf("Mobility")).querySelector("h3")!.textContent).toBe(
-      "04 Data engineering",
-    );
-    expect(rowOf(cardOf("Routing")).querySelector("h3")!.textContent).toBe("03 Optimization");
+    expect(rowOf(cardOf("Mobility")).querySelector("h3")!.textContent).toBe("Data engineering");
+    expect(rowOf(cardOf("Routing")).querySelector("h3")!.textContent).toBe("Optimization");
     expect(rowOf(cardOf("RAG Agent")).querySelector("h3")!.textContent).toBe(
-      "01 Agentic AI & LLM systems",
+      "Agentic AI & LLM systems",
     );
     expect(rowOf(cardOf("NLP Classification")).querySelector("h3")!.textContent).toBe(
-      "02 Machine learning",
+      "Machine learning",
     );
   });
 
@@ -301,7 +299,7 @@ describe("ProjectsIndex", () => {
     );
     // prominent section with numbered title + subtitle
     expect(
-      screen.getByRole("heading", { level: 2, name: "01 live demos" }),
+      screen.getByRole("heading", { level: 2, name: "live demos" }),
     ).toBeInTheDocument();
     expect(screen.getByText(/play with the live systems behind the experiments/i)).toBeInTheDocument();
     const demos = document.querySelector(".demos")!;
@@ -558,13 +556,11 @@ describe("ProjectsIndex", () => {
         screen.getByText(/the live registry is unreachable — showing the last published snapshot/i),
       ).toBeInTheDocument(),
     );
-    // heading outline: one numbered h2 "01 live demos" + one "02 experiments"; topic rows are numbered h3s
+    // heading outline: the two major h2s plus one h3 per topic row, no numbers
     expect(
       screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
-    ).toEqual(["01 live demos", "02 experiments"]);
-    expect(
-      screen.getByRole("heading", { level: 3, name: "02 Machine learning" }),
-    ).toBeInTheDocument();
+    ).toEqual(["live demos", "experiments"]);
+    expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
     // all eleven snapshot projects render as cards
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(11));
     // Retry re-fetches (the failing mock is called again)
@@ -676,9 +672,7 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(
-        screen.getByRole("heading", { level: 2, name: "02 experiments" }),
-      ).toBeInTheDocument(),
+      expect(screen.getByRole("heading", { level: 2, name: "experiments" })).toBeInTheDocument(),
     );
     const intro = document.querySelector(".experiments-block > .section-intro")!;
     expect(intro.textContent).toMatch(/grouped by discipline/i);
@@ -687,7 +681,7 @@ describe("ProjectsIndex", () => {
     expect(glossary.getAttribute("href")).toBe("/glossary");
   });
 
-  it("makes demos and experiments the two big numbered sections and demotes topic rows to numbered group labels", async () => {
+  it("makes demos and experiments the two big sections and demotes topic rows to plain group labels", async () => {
     const css = readFileSync("src/styles.css", "utf8");
     // registry unreachable → the static snapshot renders the rows
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
@@ -699,13 +693,12 @@ describe("ProjectsIndex", () => {
     expect(labelRule).toContain("font-family: var(--mono);");
     expect(labelRule).toContain("font-size: 1.05rem;");
     expect(labelRule).not.toContain("border-bottom");
-    // the numbered prefix is blue and the title text green — the page-index
-    // color family; the old "> " marker is gone from the group labels
-    expect(css.match(/\.title-num \{[\s\S]*?\n\}/)![0]).toContain("color: var(--secondary);");
+    // no numbered prefixes anywhere — the old title-num utility is gone
+    expect(css).not.toContain(".title-num");
     expect(css.match(/\.row-label \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
     expect(css).not.toContain(".row-label::before");
     // the two big section titles keep the "> " prompt marker (no `content:
-    // none` suppression) and carry no glow — green title, blue number
+    // none` suppression) and carry no glow
     expect(css).not.toContain(".demos > .section-title::before");
     expect(css).not.toContain(".experiments-block > .section-title::before");
     const majorTitleRule = css.match(
@@ -720,23 +713,25 @@ describe("ProjectsIndex", () => {
         <ProjectsIndex />
       </MemoryRouter>,
     );
-    await waitFor(() =>
-      expect(document.querySelectorAll(".row-label .title-num")).toHaveLength(5),
-    );
+    await waitFor(() => expect(document.querySelectorAll(".row-label")).toHaveLength(5));
     expect(container.textContent).not.toMatch(/\bten\b (public )?(reproducible )?(experiments|case studies)/i);
     expect(container.textContent).not.toMatch(/\b10 reproducible experiments\b/);
-    // live demos and experiments both carry the major-title modifier with a
-    // numbered prefix, and every group label is numbered in the same family
+    // live demos and experiments both carry the major-title modifier with no
+    // numeric prefix, and the group labels are plain names
     expect(document.querySelector(".demos > .section-title--major")!.textContent).toBe(
-      "01 live demos",
+      "live demos",
     );
     expect(
       document.querySelector(".experiments-block > .section-title--major")!.textContent,
-    ).toBe("02 experiments");
-    const rowNums = [...document.querySelectorAll(".row-label .title-num")].map(
-      (el) => el.textContent,
-    );
-    expect(rowNums).toEqual(["01", "02", "03", "04", "05"]);
+    ).toBe("experiments");
+    const rowNames = [...document.querySelectorAll(".row-label")].map((el) => el.textContent);
+    expect(rowNames).toEqual([
+      "Agentic AI & LLM systems",
+      "Machine learning",
+      "Optimization",
+      "APIs & model serving",
+      "Data engineering",
+    ]);
   });
 
   it("restyles the page index to terminal labels: mono, accent label, muted items behind green >-markers", () => {

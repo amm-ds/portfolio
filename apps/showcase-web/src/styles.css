@@ -754,16 +754,9 @@ select:focus-visible,
   text-shadow: none;
 }
 
-/* numbered prefix shared by the major section titles and the topic-row group
-   labels: blue, separated from the green title text */
-.title-num {
-  color: var(--secondary);
-  margin-right: 0.6rem;
-}
-
 /* offering-domain groups inside experiments: stepped-up mono labels in the
-   same numbered blue-over-green family as the major sections — clearly
-   larger than the card metadata, still below the 1.6rem section titles */
+   green accent family — clearly larger than the card metadata, still below
+   the 1.6rem section titles */
 .row-label {
   font-family: var(--mono);
   font-size: 1.05rem;
@@ -4305,6 +4298,12 @@ button.chip.demo-preset.fwb-active {
   margin: 0;
   font-size: 0.95rem;
   color: var(--muted);
+}
+
+/* the timezone globe and the replies bubble sit on the text baseline,
+   flag-sized like the language emojis */
+.fact-symbol {
+  margin-right: 0.45rem;
 }
 
 .languages-line + .languages-line {

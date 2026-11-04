@@ -43,11 +43,11 @@ describe("App routing", () => {
       );
       await waitFor(() =>
         expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-          "projects and demos repository",
+          "Projects and demos repository",
         ),
       );
       expect(
-        screen.getByRole("heading", { level: 2, name: "01 live demos" }),
+        screen.getByRole("heading", { level: 2, name: "live demos" }),
       ).toBeInTheDocument();
     }
   });
@@ -132,7 +132,7 @@ describe("App routing", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-          "projects and demos repository",
+          "Projects and demos repository",
         ),
     );
     expect(projectsContainer.querySelector("main")!.className).toContain("app-main--fluid");

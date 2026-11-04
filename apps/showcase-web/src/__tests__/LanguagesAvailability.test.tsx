@@ -57,16 +57,18 @@ describe("LanguagesAvailability — the three shared fact cards", () => {
     expect(ys).toEqual([2, 6, 10, 14]);
   });
 
-  it("states the timezone and the reply window as plain values on their own cards, from config", () => {
+  it("states the timezone and the reply window with symbols on their own cards, from config", () => {
     render(<LanguagesAvailability />);
     const tz = [...document.querySelectorAll(".timezone-card .languages-line")];
     expect(tz).toHaveLength(1);
-    expect(tz[0].textContent).toBe("Europe/Madrid (CET, UTC+1)");
+    expect(tz[0].textContent).toBe("🌍 Europe/Madrid (CET, UTC+1)");
+    expect(tz[0].querySelector(".fact-symbol")!.textContent).toBe("🌍");
     const replies = [...document.querySelectorAll(".replies-card .languages-line")];
     expect(replies).toHaveLength(1);
     expect(replies[0].textContent).toBe(
-      `within ${AVAILABILITY.replyHours}h on business days`,
+      `💬 replies within ${AVAILABILITY.replyHours}h on business days`,
     );
+    expect(replies[0].querySelector(".fact-symbol")!.textContent).toBe("💬");
     // values only — no "Languages:"/"Timezone:"/"Replies:" labels
     expect(document.querySelector(".facts-grid")!.textContent).not.toMatch(
       /Languages:|Timezone:|Replies:/,
