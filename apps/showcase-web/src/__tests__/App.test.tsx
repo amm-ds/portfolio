@@ -42,7 +42,9 @@ describe("App routing", () => {
         </MemoryRouter>,
       );
       await waitFor(() =>
-        expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+        expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+          "projects and demos repository",
+        ),
       );
       expect(
         screen.getByRole("heading", { level: 2, name: "01 live demos" }),
@@ -129,7 +131,9 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+          "projects and demos repository",
+        ),
     );
     expect(projectsContainer.querySelector("main")!.className).toContain("app-main--fluid");
     // the index keeps its footer

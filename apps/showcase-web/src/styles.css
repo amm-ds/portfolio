@@ -2349,16 +2349,12 @@ button:disabled {
 
 /* --- Home presentation sections --- */
 
-/* page titles render at the SAME scale as the other pages' main titles
-   (the /services h1: 2rem, dropping to 1.6rem at 800px in the media query
-   below, where .page-title joins the .services-hero h1 selector) — the
-   green mono terminal style and the "> " prompt marker (via ::before) stay */
-.page-title {
-  font-family: var(--mono);
+/* page opening follows the /services format: a small green kicker prompt
+   (".kicker") above the big white page title (".page-heading", same 2rem
+   scale as .services-hero h1 with the shared 800px drop below) */
+.page-heading {
   font-size: 2rem;
-  color: var(--accent);
-  margin: 0 0 0.35rem;
-  text-shadow: none;
+  margin: 0 0 1rem;
 }
 
 /* the shared h1-scale breakpoint: same 800px drop as .services-hero h1 and
@@ -2367,7 +2363,7 @@ button:disabled {
 @media (max-width: 800px) {
   .services-hero h1,
   .detail-header h1,
-  .page-title {
+  .page-heading {
     font-size: 1.6rem;
   }
 }
@@ -2405,21 +2401,6 @@ button:disabled {
 .page-index a:hover {
   color: var(--accent);
   text-decoration: none;
-}
-
-.page-title::before {
-  content: "> ";
-  color: var(--accent);
-  text-shadow: none;
-}
-
-/* descriptive second line under the page-title prompt — same format as the
-   section-intro used on every other page (muted, 0.95rem); keeps its own
-   rule only for the spacing under the title */
-.page-subtitle {
-  color: var(--muted);
-  font-size: 0.95rem;
-  margin: 0 0 0.9rem;
 }
 
 .hero h1 {

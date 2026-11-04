@@ -155,7 +155,9 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+        "projects and demos repository",
+      ),
     );
     expect(
       screen.getByText(/A growing set of public, reproducible case studies with live demos/i),
@@ -180,33 +182,18 @@ describe("ProjectsIndex", () => {
     ]);
   });
 
-  it("renders the page title at the SAME scale as the services h1 — green mono, > marker, smaller subtitle", async () => {
+  it("renders the page opening like /services: small green kicker above the big white title", async () => {
     const css = readFileSync("src/styles.css", "utf8");
-    // the "> projects" title matches the /services h1 scale while keeping the
-    // green mono terminal style, the "> " prompt marker and no glow
-    // (the base rule — the 800px media-query block below also carries a
-    // .page-title selector, so anchor on the font-family line)
-    const titleRule = css.match(/\.page-title \{\n  font-family:[\s\S]*?\n\}/)![0];
-    expect(titleRule).toContain("font-family: var(--mono);");
-    expect(titleRule).toContain("font-size: 2rem;");
-    expect(titleRule).toContain("color: var(--accent);");
-    expect(titleRule).not.toContain("accent-glow");
-    // the /services h1 carries the same 2rem base…
-    expect(css.match(/\.services-hero h1 \{[\s\S]*?\n\}/)![0]).toContain("font-size: 2rem;");
-    // …and the 800px breakpoint drops BOTH to 1.6rem in one shared rule
+    // the kicker is the shared small prompt style; the title carries the
+    // services-h1 scale in the shared 800px breakpoint
+    expect(css.match(/\.page-heading \{[\s\S]*?\n\}/)![0]).toContain("font-size: 2rem;");
     const mediaRule = css.match(
-      /@media \(max-width: 800px\) \{[\s\S]*?\.services-hero h1,\s*\.detail-header h1,\s*\.page-title \{[\s\S]*?\n  \}/,
+      /@media \(max-width: 800px\) \{[\s\S]*?\.services-hero h1,\s*\.detail-header h1,\s*\.page-heading \{[\s\S]*?\n  \}/,
     )![0];
     expect(mediaRule).toContain("font-size: 1.6rem;");
-    // the "> " prompt marker stays
-    expect(css.match(/\.page-title::before \{[\s\S]*?\n\}/)![0]).toContain('content: "> ";');
-    // "projects and demos repository" carries the same muted intro format as
-    // every other page's descriptive line (no mono subtitle treatment)
-    const subRule = css.match(/\.page-subtitle \{[\s\S]*?\n\}/)![0];
-    expect(subRule).toContain("color: var(--muted);");
-    expect(subRule).toContain("font-size: 0.95rem;");
-    expect(subRule).not.toContain("font-family: var(--mono);");
-    expect(subRule).not.toContain("font-size: 2rem");
+    // the old mono page-title/subtitle treatment is gone
+    expect(css).not.toContain(".page-title");
+    expect(css).not.toContain(".page-subtitle");
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
@@ -214,14 +201,17 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+        "projects and demos repository",
+      ),
     );
-    // subtitle sits between the title and the intro paragraph
+    // kicker sits above the title; the intro paragraph follows it
     const h1 = screen.getByRole("heading", { level: 1 });
-    const subtitle = h1.nextElementSibling!;
-    expect(subtitle.classList.contains("page-subtitle")).toBe(true);
-    expect(subtitle.textContent).toBe("projects and demos repository");
-    expect(subtitle.nextElementSibling!.classList.contains("section-intro")).toBe(true);
+    expect(h1.classList.contains("page-heading")).toBe(true);
+    const kicker = h1.previousElementSibling!;
+    expect(kicker.classList.contains("kicker")).toBe(true);
+    expect(kicker.textContent).toContain("> projects");
+    expect(h1.nextElementSibling!.classList.contains("section-intro")).toBe(true);
   });
 
   it("renders the projects heading and places cards under the right topic rows", async () => {
@@ -232,7 +222,9 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("projects"),
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+        "projects and demos repository",
+      ),
     );
     // the experiments block label sits above the topic rows
     const experimentsBlock = document.querySelector(".experiments-block")!;
