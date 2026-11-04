@@ -545,12 +545,16 @@ select:focus-visible,
 
 /* --- Section headings: prompt-prefixed --- */
 
+/* every page's section title shares the projects-page look: 1.6rem white
+   behind the green "> " marker, no glow (offerings, process, how I work,
+   how engagements start, live demos…) */
 .section-title {
-  font-size: 1.3rem;
+  font-size: 1.6rem;
   margin: 2.25rem 0 0.9rem;
   border-bottom: 1px solid var(--border);
   padding-bottom: 0.5rem;
-  text-shadow: 0 0 14px var(--accent-glow);
+  color: var(--text);
+  text-shadow: none;
 }
 
 /* pages that open straight after a hero/stage keep a tighter top gap */
@@ -725,14 +729,6 @@ select:focus-visible,
 .section-title--major {
   font-size: 1.6rem;
   margin: 2.75rem 0 0.6rem;
-}
-
-/* projects-page section titles: white like every other page's section
-   heading, with the global "> " prompt marker staying colored */
-.demos > .section-title,
-.experiments-block > .section-title {
-  color: var(--text);
-  text-shadow: none;
 }
 
 /* offering-domain groups inside experiments: stepped-up mono labels in

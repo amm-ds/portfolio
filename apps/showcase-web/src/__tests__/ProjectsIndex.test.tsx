@@ -698,16 +698,16 @@ describe("ProjectsIndex", () => {
     expect(css).not.toContain(".title-num");
     expect(css.match(/\.row-label \{[\s\S]*?\n\}/)![0]).toContain("color: var(--text);");
     expect(css.match(/\.row-label::before \{[\s\S]*?\n\}/)![0]).toContain('content: "/";');
-    // the two big section titles are white like the rest of the site, keep
-    // the "> " prompt marker (no `content: none` suppression) and no glow
+    // the two big section titles share the site-wide .section-title look —
+    // 1.6rem white with no glow, the "> " marker unpolluted by any override
     expect(css).not.toContain(".demos > .section-title::before");
     expect(css).not.toContain(".experiments-block > .section-title::before");
-    const majorTitleRule = css.match(
-      /\.demos > \.section-title,\n\.experiments-block > \.section-title \{[\s\S]*?\n\}/,
-    )![0];
-    expect(majorTitleRule).toContain("color: var(--text);");
-    expect(majorTitleRule).toContain("text-shadow: none;");
-    expect(majorTitleRule).not.toContain("accent-glow");
+    expect(css).not.toContain(".demos > .section-title,");
+    const baseTitleRule = css.match(/\.section-title \{[\s\S]*?\n\}/)![0];
+    expect(baseTitleRule).toContain("font-size: 1.6rem;");
+    expect(baseTitleRule).toContain("color: var(--text);");
+    expect(baseTitleRule).toContain("text-shadow: none;");
+    expect(baseTitleRule).not.toContain("accent-glow");
     // no fixed experiment count anywhere in the page copy
     const { container } = render(
       <MemoryRouter>
