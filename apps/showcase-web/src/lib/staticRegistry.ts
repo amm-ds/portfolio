@@ -220,7 +220,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
       "Parquet",
       "Benchmark harness"
     ],
-    "title": "Data Engineering",
+    "title": "DataFrame Engines Benchmark",
     "topic": "Data Engineering"
   }
 ];

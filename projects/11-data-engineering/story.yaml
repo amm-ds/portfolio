@@ -1,6 +1,6 @@
 project_id: 11-data-engineering
 short_version: |
-  Ten data tasks over 2.96M NYC taxi trips, parity-checked on pandas, Polars, DuckDB and stdlib sqlite: Polars 19x, DuckDB 15x pandas overall; sqlite answers every SQL task but pays a 13.6x conversion tax; 1M-10M tracks show the fast two scaling sub-linearly. NYC TLC 2024-01.
+  Ten data tasks over 2.96M NYC taxi trips, parity-checked on pandas, Polars, DuckDB and stdlib sqlite: Polars 19x, DuckDB 15x pandas; sqlite answers every SQL task but file conversion leaves it ~29x slower; 1M-10M tracks show the fast two scaling sub-linearly. NYC TLC 2024-01.
 sections:
   - id: background
     text_md: |

@@ -1,4 +1,4 @@
-# 11 — Data Engineering: pandas vs Polars vs DuckDB vs sqlite
+# 11 — DataFrame Engines Benchmark: pandas vs Polars vs DuckDB vs sqlite
 
 A dataframe-engine benchmark built the way the portfolio builds everything:
 pinned public data, one task contract every engine must satisfy, a seeded

@@ -30,6 +30,8 @@ export const CARD_DOES: Record<string, string> = {
     "Runs an auditable plan-act-review agent workflow over a synthetic **12-document handbook** plus a read-only Wikipedia slice.",
   "10-uplift-experimentation":
     "Evaluates uplift targeting on **64,000-customer** randomized email data (Hillstrom MineThatData, March 2008) at a **25% send budget**.",
+  "11-data-engineering":
+    "Times **ten data tasks** — parquet/CSV IO, group-by, join, window, strings — over **2.96M NYC taxi trips** on **pandas, Polars, DuckDB and stdlib sqlite**, with a row-parity gate on every measured cell.",
 };
 
 /** "What it achieves" per project id — the measured result. Key numbers are
@@ -56,7 +58,7 @@ export const CARD_ACHIEVES: Record<string, string> = {
   "10-uplift-experimentation":
     "Beats random targeting by **+$2,812 (+69%; CI +$718 to +$4,767)**, though at $0.01 per email mailing everyone still wins.",
   "11-data-engineering":
-    "Polars runs **x17.3** and DuckDB **x14.7** over pandas on the geomean of 8 parity-checked tasks — from a **3-5x** tie on parquet IO to **110x-plus** on group-by and window work.",
+    "Polars runs **x19.2** and DuckDB **x14.9** over pandas on the geomean of 10 parity-checked tasks; sqlite answers every SQL task but file conversion leaves it **~29x slower**; seeded **1M-10M** tracks show the fast two scaling sub-linearly.",
 };
 
 /** Exactly four short tags per card — technique/capability wording with no
