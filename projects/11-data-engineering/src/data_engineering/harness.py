@@ -231,21 +231,3 @@ def run_benchmark(
                 f", cold {cell.cold_s:.3f}s" if cell.cold_s is not None else "",
             )
     return cells
-
-
-def cells_to_frame(cells: list[CellResult]) -> list[dict[str, Any]]:
-    """Flat view of the cells (used by figures and report tables)."""
-    return [
-        {
-            "task": c.task,
-            "engine": c.engine,
-            "category": c.category,
-            "time_median_s": c.time_median_s,
-            "cold_s": c.cold_s,
-            "peak_rss_mb": c.peak_rss_mb,
-            "tracemalloc_peak_mb": (
-                statistics.median(c.tracemalloc_peaks_mb) if c.tracemalloc_peaks_mb else None
-            ),
-        }
-        for c in cells
-    ]

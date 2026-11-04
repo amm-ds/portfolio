@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from portfolio_core.logging import get_logger
 
@@ -82,14 +82,3 @@ def search_documents(query: str, top_k: int = TOP_K) -> list[str]:
     retriever = get_retriever()
     citations = retriever.search(query, top_k=k)
     return [f"{c.chunk_id} | {c.title} — {c.excerpt}" for c in citations]
-
-
-def corpus_stats() -> dict[str, Any]:
-    """Metadata about the loaded corpus (index size), for docs and tests."""
-    retriever = get_retriever()
-    return {
-        "index_dir": str(DEFAULT_INDEX_DIR),
-        "n_chunks": len(retriever.chunks),
-        "top_k": TOP_K,
-        "embedding_model": EMBEDDING_MODEL,
-    }

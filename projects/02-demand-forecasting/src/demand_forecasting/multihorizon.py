@@ -3675,11 +3675,6 @@ def merge_evaluation_metadata(settings: DemandSettings, result: MultiStepResult)
     logger.info("multistep evaluation metadata merged -> %s", path)
 
 
-def probabilistic_multistep_block(result: MultiStepResult) -> dict[str, Any]:
-    """The ``multistep`` key for probabilistic.json (merged by run_probabilistic)."""
-    return result.probabilistic_block
-
-
 def save_multistep_figures(settings: DemandSettings, result: MultiStepResult) -> None:
     """Persist the multi-step figure JSONs next to the other figures."""
     out_dir = Path(settings.reports_dir) / "figures"

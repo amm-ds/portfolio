@@ -13,6 +13,8 @@ that forgot to re-bake the registry fails here instead of drifting.
 
 Catches drift between the demo contract (manifest) and the artifacts the
 showcase API serves before push. Exits non-zero with a message per violation.
+
+Run: uv run python scripts/check_demo_contract.py
 """
 
 import argparse

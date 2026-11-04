@@ -1,7 +1,9 @@
-"""Typer CLI: prepare → train → evaluate → all.
+"""Typer CLI: prepare → train → evaluate (``all`` chains those in-process).
 
-Each command is a thin wrapper around a core function so ``all`` can chain
-them in-process (fast, single interpreter for the full pipeline).
+``sensitivity`` is a side analysis; ``build-serving`` / ``demo-payload`` emit
+the showcase artifacts (also dvc stages). Each command is a thin wrapper
+around a core function so ``all`` can chain them in-process (fast, single
+interpreter for the full pipeline).
 """
 
 import json

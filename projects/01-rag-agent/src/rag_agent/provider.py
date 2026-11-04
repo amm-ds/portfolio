@@ -6,14 +6,6 @@ if TYPE_CHECKING:
     from pydantic_ai.settings import ModelSettings
 
 
-def using_ollama() -> bool:
-    """True when the platform factory will resolve to local Ollama."""
-    from portfolio_core.config import get_settings
-
-    s = get_settings()
-    return not (s.llm_api_key and s.llm_base_url)
-
-
 def model_settings_for_provider(base: "ModelSettings | None" = None) -> "ModelSettings | None":
     """Model-settings preset for the active provider, merged over ``base``.
 

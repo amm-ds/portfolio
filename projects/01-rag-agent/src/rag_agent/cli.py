@@ -224,8 +224,8 @@ def chat(
 ) -> None:
     """Interactive REPL: ask questions, get grounded AnalysisResult answers.
 
-    Requires a model provider: local Ollama (default qwen3:32b) or
-    LLM_BASE_URL/LLM_API_KEY. There is no runtime mock.
+    Requires a model provider: local Ollama (platform default
+    qwen3.6:35b-a3b-q4_K_M) or LLM_BASE_URL/LLM_API_KEY. There is no runtime mock.
     """
     config = load_config()
     if verify is not None:

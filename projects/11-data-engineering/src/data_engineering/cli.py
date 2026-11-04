@@ -1,4 +1,8 @@
-"""Typer CLI: fetch-data, evaluate (--synthetic CI track, --scalability), build-report."""
+"""Typer CLI: fetch-data, evaluate, build-report, show-engines.
+
+``evaluate`` runs the synthetic CI track by default and the scalability study
+on demand.
+"""
 
 import json
 import shutil

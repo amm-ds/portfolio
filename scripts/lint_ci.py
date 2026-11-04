@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Validate CI workflow files and Makefile consistency (catches the class of bug
-that broke ci.yml in wave 13 — unquoted colons in step names — before push)."""
+that broke ci.yml in wave 13 — unquoted colons in step names — before push).
+
+Run: uv run python scripts/lint_ci.py
+"""
 
 import re
 import sys

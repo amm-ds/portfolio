@@ -30,8 +30,6 @@ from mobility.gbm import _make_gbm, hpo_result  # re-export (torch-free home: mo
 
 logger = get_logger(__name__)
 
-PREDICTIONS_PATH = "reports/models/predictions.parquet"
-
 
 def _xy(df: pl.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     return (

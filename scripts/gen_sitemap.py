@@ -5,6 +5,8 @@ Static routes plus one /projects/<id> entry per projects/*/portfolio.yaml.
 Also rewrites the static canonical/Open Graph/Twitter and robots URLs. Set
 SITE_URL (or VITE_SITE_URL) for a non-default deployment. Exits non-zero if any
 portfolio.yaml is unreadable or lacks an id, so CI can gate on it.
+
+Run: uv run python scripts/gen_sitemap.py
 """
 
 import datetime

@@ -109,8 +109,6 @@ logger = get_logger(__name__)
 PROTOCOL = "m5_full_v1"
 N_ORIGINS = 10
 ORIGIN_SPACING_DAYS = 7
-#: ladder fallback size: top-1,000 items by total panel units x all 10 stores.
-LADDER_PER_STORE_ITEMS = 1000
 DENSE_CLASSES = ("smooth", "erratic")
 STATISTICAL_CANDIDATES = (NAIVE,)
 POOL_CANDIDATES = (

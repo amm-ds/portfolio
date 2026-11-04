@@ -7,7 +7,7 @@ a grounded summary with per-claim citations and a calibrated confidence.
 
 Provider behaviour follows ADR-0004 (amended wave 10): a live model comes from
 the platform factory — env-configured OpenAI-compatible endpoint first, local
-Ollama (default ``qwen3:32b``) second. There is deliberately no runtime mock;
+Ollama (platform default ``qwen3.6:35b-a3b-q4_K_M``) second. There is deliberately no runtime mock;
 when neither provider is available, :class:`portfolio_core.llm.LLMProviderUnavailableError`
 raises with setup guidance, and ``chat``/``evaluate`` surface that message.
 """

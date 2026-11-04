@@ -1,4 +1,4 @@
-"""Typer CLI: prepare → train → evaluate → all.
+"""Typer CLI: prepare → train → evaluate → demo-payload → all.
 
 Each command is a thin wrapper around a core function so ``all`` chains them
 in-process (single interpreter for the full pipeline, minutes end-to-end).

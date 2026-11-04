@@ -39,7 +39,6 @@ ZIP_XLSX = "online retail ii.xlsx"
 _COL_RE = re.compile(r"([A-Z]+)")
 _EPOCH = date(1899, 12, 30)  # Excel serial day zero
 _MAIN_NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
-_REL_NS = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}relationshi"
 _REL_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 
 # expected columns of the sheet, mapped by header name

@@ -8,7 +8,7 @@ techniques:
 - Optuna
 - conformal bands
 - MinT
-data: Synthetic hierarchy (UCI Retail II optional)
+data: Walmart M5 full panel (real, sha256-pinned)
 status: working
 order: 2
 topic: Forecasting & Time Series

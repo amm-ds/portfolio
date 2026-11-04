@@ -14,7 +14,7 @@ the timed cell, exactly the conversion tax a sqlite workflow pays.
 """
 
 import sqlite3
-from typing import Any, Protocol
+from typing import Any
 
 import duckdb
 import numpy as np
@@ -26,19 +26,6 @@ import polars as pl
 sqlite3.register_adapter(np.int32, int)
 sqlite3.register_adapter(np.int64, int)
 sqlite3.register_adapter(np.float32, float)
-
-
-class EngineAdapter(Protocol):
-    """The engine handle a task implementation receives."""
-
-    name: str
-
-    @property
-    def version(self) -> str: ...
-
-    def to_polars(self, frame: Any) -> pl.DataFrame:
-        """Normalize a native frame (pandas/polars/duckdb relation result)."""
-        ...
 
 
 class PandasAdapter:

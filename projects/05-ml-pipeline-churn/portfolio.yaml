@@ -7,7 +7,7 @@ techniques:
 - calibration
 - bootstrap CIs
 - threshold tuning
-data: Synthetic churn (messy)
+data: IBM telco churn (real, sha256-pinned) + synthetic CI twin
 status: working
 order: 5
 topic: ML Systems & Decisioning

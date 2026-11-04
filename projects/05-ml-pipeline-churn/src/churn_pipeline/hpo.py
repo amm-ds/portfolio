@@ -18,7 +18,7 @@ from optuna.trial import Trial
 from portfolio_core.logging import get_logger
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import f1_score
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.model_selection import StratifiedKFold
 
 from churn_pipeline.config import ChurnConfig, pd, threadpool_limits
 from churn_pipeline.evaluate import cost_curve
@@ -225,17 +225,3 @@ def run_study(
         n_trials=len(study.trials),
         family_scores=family_scores,
     )
-
-
-def cv_f1_of_selected(
-    cfg: ChurnConfig, selection: ModelSelection, X: pd.DataFrame, y: pd.Series
-) -> float:
-    """Out-of-fold F1 of the selected pipeline (used by tests, not the CLI)."""
-    pipe = build_estimator(cfg, selection.family, selection.params)
-    pred = cross_val_predict(
-        pipe,
-        X,
-        y,
-        cv=StratifiedKFold(n_splits=cfg.cv_folds, shuffle=True, random_state=cfg.seed),
-    )
-    return float(f1_score(y, pred))

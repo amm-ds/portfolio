@@ -26,8 +26,6 @@ from typing import Any
 
 import numpy as np
 
-EPS = 1e-12
-
 
 def qini_points(
     treatment: np.ndarray, outcome: np.ndarray, score: np.ndarray

@@ -261,11 +261,6 @@ def model_specs() -> list[ModelSpec]:
     ]
 
 
-def naive_specs() -> list[ModelSpec]:
-    """The two naive baselines (the reference floor for improvement claims)."""
-    return [s for s in model_specs() if s.name.startswith("naive_")]
-
-
 def to_xy(
     frame: pl.DataFrame, config: ForecastConfig, spec: ModelSpec
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

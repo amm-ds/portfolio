@@ -40,10 +40,6 @@ def _task_names(metrics: dict[str, Any]) -> list[str]:
     return [t.name for t in TASKS if t.name in metrics["tasks"]]
 
 
-def _engines_of(metrics: dict[str, Any], task: str) -> list[str]:
-    return [e for e in ENGINE_ORDER if e in metrics["tasks"][task]["engines"]]
-
-
 def _block(metrics: dict[str, Any], task: str, engine: str) -> dict[str, Any]:
     block: dict[str, Any] = metrics["tasks"][task]["engines"][engine]
     return block

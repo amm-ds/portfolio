@@ -3,9 +3,10 @@ performance pass; wave 26 rolling next-week service block; wave 28 L1/L2
 forecast-shape pass; wave 29 tweedie/pooled-global arms + bias/stability/
 zero-day diagnostics; wave 30 stability-screened ensemble selection).
 
-The UCI Online Retail II panel track (multihorizon.py) stays untouched as the
-secondary study; this module is the NEW headline experiment on the committed
-Walmart M5 subset, in the regime where ML demonstrably wins: dense daily
+The original pipeline's multi-step track (multihorizon.py — synthetic default
+panel, UCI optional) stays untouched as the secondary study; this module is
+the NEW headline experiment on the committed Walmart M5 subset, in the regime
+where ML demonstrably wins: dense daily
 store-item demand (16% zero-day share, top-volume assortment) with real
 exogenous signal (price, SNAP, events).
 

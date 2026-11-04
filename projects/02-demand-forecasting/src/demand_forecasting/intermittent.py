@@ -1,8 +1,9 @@
 """Intermittent-demand statistical methods and ADI/CV² classification.
 
-The UCI panel is ~89% zero-demand days, so the classical intermittent-demand
-toolkit (Croston family) is a first-class citizen of the multi-step track, not
-an afterthought:
+Demand at this grain is heavily zero-inflated on the real tracks (the UCI
+panel is ~89% zero-demand days; M5 is 59.5%), so the classical
+intermittent-demand toolkit (Croston family) is a first-class citizen of the
+multi-step track, not an afterthought:
 
 - **Croston** (1972): separate simple exponential smoothing of the non-zero
   demand *sizes* and the inter-demand *intervals*; forecast = size/interval.

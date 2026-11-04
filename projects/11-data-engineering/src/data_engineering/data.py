@@ -8,7 +8,6 @@ each engine returns its task result as a small polars frame, normalized here
 to sorted, JSON-safe rows so correctness parity is an exact comparison.
 """
 
-import hashlib
 import json
 import math
 from dataclasses import dataclass, field
@@ -149,12 +148,6 @@ def rows_equal(a: list[dict[str, Any]], b: list[dict[str, Any]], rel_tol: float 
             elif va != vb:
                 return False
     return True
-
-
-def rows_fingerprint(rows: list[dict[str, Any]]) -> str:
-    """Stable checksum of canonical rows (determinism gates, no timings)."""
-    payload = json.dumps(rows, sort_keys=True, default=str)
-    return hashlib.sha256(payload.encode()).hexdigest()
 
 
 @dataclass

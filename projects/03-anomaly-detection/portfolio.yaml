@@ -8,7 +8,7 @@ techniques:
 - Optuna
 - adaptive thresholds
 - Polars
-data: Synthetic (NSL-KDD optional)
+data: NAB telemetry (real) + seeded synthetic stream
 status: working
 order: 3
 topic: Anomaly Detection

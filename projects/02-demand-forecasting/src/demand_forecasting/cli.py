@@ -7,6 +7,9 @@ seconds) and feeds the production ``hgb_tuned`` config.
 ``--data-source uci`` activates the real-data track; every artefact lands in
 ``data_uci/`` / ``reports_uci/`` so both tracks stay side by side. The
 synthetic track remains the default (fully offline, CI-safe).
+
+The ``*-m5`` / ``*-m5-full`` commands run the Walmart M5 headline track,
+invoked manually or from CI (see README) — dvc.yaml does not cover them.
 """
 
 import os
@@ -39,7 +42,8 @@ from demand_forecasting.serving import build_serving_artifact
 logger = get_logger(__name__)
 
 app = typer.Typer(
-    help="Hierarchical demand forecasting on a synthetic retail hierarchy.", no_args_is_help=True
+    help="Hierarchical demand forecasting (synthetic/UCI pipeline + Walmart M5 track).",
+    no_args_is_help=True,
 )
 
 
