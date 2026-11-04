@@ -126,7 +126,7 @@ function PhoneChannelCard() {
       </span>
       <div className="channel-text">
         <span className="channel-name">Phone</span>
-        <p className="channel-lock-note">Share your email or phone to unlock the direct line.</p>
+        <p className="channel-lock-note">Share your email or phone to unlock.</p>
         <form className="channel-unlock" onSubmit={onSubmit} noValidate>
           <label className="channel-unlock-label" htmlFor="channel-phone-unlock">
             email or phone
@@ -154,10 +154,7 @@ function PhoneChannelCard() {
             {error}
           </p>
         )}
-        <p className="channel-unlock-note">
-          your email or phone is not stored or sent anywhere — it only unlocks the number on this
-          device.
-        </p>
+        <p className="channel-unlock-note">never stored — unlocks on this device.</p>
       </div>
     </div>
   );

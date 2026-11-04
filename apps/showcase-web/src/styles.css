@@ -1877,10 +1877,9 @@ button:disabled {
   grid-template-columns: 1fr;
   gap: 0.9rem;
   margin: 0 0 1rem;
-  /* every card keeps its own content-height geometry: the locked phone card
-     (with the in-card gate form) is taller, but must never stretch its
-     sibling cards to match */
-  align-items: start;
+  /* the slimmed phone gate keeps every card on one geometry — all four
+     cards share the same height */
+  align-items: stretch;
 }
 
 @media (min-width: 640px) {
@@ -1955,13 +1954,13 @@ button:disabled {
 }
 
 .channel-lock-note {
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.3rem;
   font-size: 0.82rem;
   color: var(--muted);
 }
 
 .channel-unlock {
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.25rem;
 }
 
 .channel-unlock-label {
@@ -4261,7 +4260,7 @@ button.chip.demo-preset.fwb-active {
 
 @media (min-width: 640px) {
   .facts-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

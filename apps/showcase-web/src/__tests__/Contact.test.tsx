@@ -61,11 +61,11 @@ describe("Contact page", () => {
   it("states the reply window exactly once, from config, on the shared timezone card", () => {
     renderContact();
     const matches = screen.getAllByText(
-      new RegExp(`replies within ${AVAILABILITY.replyHours}h on business days`),
+      new RegExp(`within ${AVAILABILITY.replyHours}h on business days`),
     );
     expect(matches).toHaveLength(1);
-    // the two shared fact cards: languages (with the drawn Senyera) and
-    // timezone & replies
+    // the three shared fact cards: languages (with the drawn Senyera),
+    // timezone, and replies
     expect(document.querySelector(".facts-grid")).not.toBeNull();
     expect(document.querySelector(".timezone-card")).not.toBeNull();
     expect(screen.getByText(/Europe\/Madrid \(CET, UTC\+1\)/i)).toBeInTheDocument();

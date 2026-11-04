@@ -80,7 +80,7 @@ describe("About page", () => {
     expect(document.querySelector(".languages-card .flag-senyera")).not.toBeNull();
     expect(screen.getByText(/Europe\/Madrid \(CET, UTC\+1\)/)).toBeInTheDocument();
     expect(
-      screen.getByText(new RegExp(`replies within ${AVAILABILITY.replyHours}h on business days`)),
+      screen.getByText(new RegExp(`within ${AVAILABILITY.replyHours}h on business days`)),
     ).toBeInTheDocument();
   });
 

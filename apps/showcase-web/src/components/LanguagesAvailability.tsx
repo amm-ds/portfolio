@@ -25,9 +25,8 @@ function SenyeraFlag() {
   );
 }
 
-/** Languages & timezone — the two shared fact cards for the Contact and
- * About pages: a languages card (English, Spanish, Catalan — the Catalan
- * flag drawn inline) and a timezone & replies card, both with bold labels. */
+/** Languages, timezone, and reply window — three shared fact cards for the
+ * Contact and About pages: one line each, equal height. */
 export function LanguagesAvailability() {
   return (
     <div className="facts-grid">
@@ -44,10 +43,13 @@ export function LanguagesAvailability() {
       </Card>
       <Card className="timezone-card">
         <p className="languages-line">
-          <strong>{TIMEZONE_LABEL}</strong>
+          <strong>Timezone:</strong> <strong>{TIMEZONE_LABEL}</strong>
         </p>
+      </Card>
+      <Card className="replies-card">
         <p className="languages-line">
-          <strong>replies within {AVAILABILITY.replyHours}h on business days</strong>
+          <strong>Replies:</strong>{" "}
+          <strong>within {AVAILABILITY.replyHours}h on business days</strong>
         </p>
       </Card>
     </div>

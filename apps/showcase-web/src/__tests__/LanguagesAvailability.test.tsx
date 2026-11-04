@@ -6,15 +6,16 @@ import { AVAILABILITY } from "../config";
 
 afterEach(cleanup);
 
-describe("LanguagesAvailability — the two shared fact cards", () => {
-  it("renders a Languages card and a Timezone & replies card in one grid", () => {
+describe("LanguagesAvailability — the three shared fact cards", () => {
+  it("renders Languages, Timezone, and Replies cards in one grid", () => {
     render(<LanguagesAvailability />);
     const grid = document.querySelector(".facts-grid")!;
     expect(grid).not.toBeNull();
     expect(grid.querySelector(".languages-card")).not.toBeNull();
     expect(grid.querySelector(".timezone-card")).not.toBeNull();
-    // exactly the two cards — the single-card layout is gone
-    expect(grid.querySelectorAll(".accent-card")).toHaveLength(2);
+    expect(grid.querySelector(".replies-card")).not.toBeNull();
+    // exactly the three cards — one line each, equal height
+    expect(grid.querySelectorAll(".accent-card")).toHaveLength(3);
   });
 
   it("lists the three languages with bold labels, flags only where one exists", () => {
@@ -56,27 +57,32 @@ describe("LanguagesAvailability — the two shared fact cards", () => {
     expect(ys).toEqual([2, 6, 10, 14]);
   });
 
-  it("states the timezone and the reply window in bold, from config", () => {
+  it("states the timezone and the reply window in bold on their own cards, from config", () => {
     render(<LanguagesAvailability />);
-    const lines = [...document.querySelectorAll(".timezone-card .languages-line")];
-    expect(lines).toHaveLength(2);
-    expect(lines[0].textContent).toBe("Europe/Madrid (CET, UTC+1)");
-    expect(lines[1].textContent).toBe(
-      `replies within ${AVAILABILITY.replyHours}h on business days`,
+    const tz = [...document.querySelectorAll(".timezone-card .languages-line")];
+    expect(tz).toHaveLength(1);
+    expect(tz[0].textContent).toBe("Timezone: Europe/Madrid (CET, UTC+1)");
+    const replies = [...document.querySelectorAll(".replies-card .languages-line")];
+    expect(replies).toHaveLength(1);
+    expect(replies[0].textContent).toBe(
+      `Replies: within ${AVAILABILITY.replyHours}h on business days`,
     );
-    for (const line of lines) {
-      expect(line.querySelector("strong")!.textContent).toBe(line.textContent);
+    for (const line of [...tz, ...replies]) {
+      // every part of the line is bold (label + value as strong spans)
+      const strongs = [...line.querySelectorAll("strong")];
+      expect(strongs.length).toBeGreaterThanOrEqual(2);
+      expect(strongs.map((s) => s.textContent).join(" ")).toBe(line.textContent);
     }
   });
 
-  it("lays the two cards out one per row on mobile and two columns from 640px up", () => {
+  it("lays the three cards out one per row on mobile and three columns from 640px up", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const gridRule = css.match(/\.facts-grid \{[\s\S]*?\n\}/)![0];
     expect(gridRule).toContain("grid-template-columns: 1fr;");
-    const twoCol = css.match(
+    const threeCol = css.match(
       /@media \(min-width: 640px\) \{\s*\.facts-grid \{[\s\S]*?\n  \}/,
     )![0];
-    expect(twoCol).toContain("grid-template-columns: repeat(2, minmax(0, 1fr));");
+    expect(threeCol).toContain("grid-template-columns: repeat(3, minmax(0, 1fr));");
     // the old Catalan text chip is gone — the flag is drawn, not chipped
     expect(css).not.toContain(".languages-chip");
   });

@@ -86,17 +86,14 @@ describe("ChannelCards", () => {
 
   it("renders the phone card locked by default — no tel link, a gate form instead", () => {
     renderCards();
-    expect(screen.getByText(/share your email or phone to unlock the direct line/i)).toBeInTheDocument();
+    expect(screen.getByText(/share your email or phone to unlock/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /unlock/i })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /\+34 670 881 697/ })).toBeNull();
     const locked = document.querySelector(".channel-card--locked")!;
     expect(locked).not.toBeNull();
-    // the plain privacy note under the form: the entered value is validated
-    // and discarded — never stored or transmitted
-    expect(
-      screen.getByText(/your email or phone is not stored or sent anywhere/i),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/it only unlocks the number on this device/i)).toBeInTheDocument();
+    // the compact privacy note under the form: the entered value is
+    // validated and discarded — never stored or transmitted
+    expect(screen.getByText(/never stored — unlocks on this device/i)).toBeInTheDocument();
   });
 
   it("shows an inline validation error on invalid input and stays locked", () => {
@@ -148,12 +145,12 @@ describe("ChannelCards", () => {
     expect(store[PHONE_UNLOCK_KEY]).toBe("1");
   });
 
-  it("keeps the unlock gate inside the phone card's own bounds — fixed card geometry at every breakpoint", () => {
+  it("keeps the unlock gate inside the phone card's own bounds — all cards share one geometry", () => {
     const css = readFileSync("src/styles.css", "utf8");
-    // siblings keep their own content height: the taller locked phone card
-    // never stretches them (grid default `stretch` is overridden)
+    // the slimmed gate lets every card share the same height again (grid
+    // default stretch) — the form stays inside the phone card's own track
     const gridRule = css.match(/\.channel-grid \{[\s\S]*?\n\}/)![0];
-    expect(gridRule).toContain("align-items: start;");
+    expect(gridRule).toContain("align-items: stretch;");
     // the locked card cannot outgrow its grid track…
     const lockedRule = css.match(/\.channel-card--locked \{[\s\S]*?\n\}/)![0];
     expect(lockedRule).toContain("min-width: 0;");
