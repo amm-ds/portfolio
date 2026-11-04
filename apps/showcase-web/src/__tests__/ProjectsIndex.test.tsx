@@ -200,11 +200,12 @@ describe("ProjectsIndex", () => {
     expect(mediaRule).toContain("font-size: 1.6rem;");
     // the "> " prompt marker stays
     expect(css.match(/\.page-title::before \{[\s\S]*?\n\}/)![0]).toContain('content: "> ";');
-    // "projects and demos repository" stays the smaller subtitle line
+    // "projects and demos repository" carries the same muted intro format as
+    // every other page's descriptive line (no mono subtitle treatment)
     const subRule = css.match(/\.page-subtitle \{[\s\S]*?\n\}/)![0];
-    expect(subRule).toContain("font-family: var(--mono);");
-    expect(subRule).toContain("color: var(--text);");
-    expect(subRule).toContain("font-size: 1.05rem;");
+    expect(subRule).toContain("color: var(--muted);");
+    expect(subRule).toContain("font-size: 0.95rem;");
+    expect(subRule).not.toContain("font-family: var(--mono);");
     expect(subRule).not.toContain("font-size: 2rem");
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(

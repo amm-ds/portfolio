@@ -2413,13 +2413,12 @@ button:disabled {
   text-shadow: none;
 }
 
-/* descriptive second title line under the page-title prompt (the muted
-   section-intro that follows it carries a -0.4rem top margin, so this
-   bottom margin lands a 0.5rem gap) */
+/* descriptive second line under the page-title prompt — same format as the
+   section-intro used on every other page (muted, 0.95rem); keeps its own
+   rule only for the spacing under the title */
 .page-subtitle {
-  font-family: var(--mono);
-  font-size: 1.05rem;
-  color: var(--text);
+  color: var(--muted);
+  font-size: 0.95rem;
   margin: 0 0 0.9rem;
 }
 
