@@ -331,6 +331,57 @@ deterministic (lexicographic dense rank — appearance-order categorical codes
 wandered between runs), making every artifact byte-reproducible end-to-end;
 the probe's pinned numbers move 0.8817 / 0.8916 → 0.8877 / 0.8979.
 
+## Wave 17: detector-layer refinement ablation at the fixed budget (`nab-refine`)
+
+The roadmap round for "range precision is still the wall": three refinements
+of the detector layer, each ablated against the committed headline recipe on
+the identical protocol and windows (12 series, `rolling_residual` features,
+70/30 past-only split, train-anchored 2% budget, lead 0, raw/deduped/budgeted
+streams — `cli nab-refine`, artifact
+[`reports/nab_refinement.json`](reports/nab_refinement.json)):
+
+1. **Calibrated thresholding** — conformal p-values of each score against the
+   non-anomalous train scores of its own hour-of-week context (train minutes
+   inside labelled windows excluded; thin/absent contexts fall back to the
+   series-global set, then to the committed raw cut), with the threshold at
+   the budget quantile of the pooled calibration p-values instead of the raw
+   score quantile.
+2. **Rank fusion** — mean of per-window normalized ranks under IsolationForest
+   and LOF, same budget rule applied to the fused reference scores.
+3. **Context normalization** — z-normalize each fusion member within its
+   hour-of-week context (train statistics) before ranking.
+
+Adoption gate: a candidate is adopted only if precision at the 2% budget and
+event range-F1 both improve over the in-artifact baseline while windows
+touched holds at 16/17. Measured verdict — **no candidate clears the gate;
+the committed detector stands**:
+
+| candidate | alerts (raw → budgeted) | precision@budget | range-F1 | windows touched | PR-AUC |
+|---|---|---|---|---|---|
+| isolation_forest (committed baseline) | 1,609 → 80 | 0.512 | 0.157 | 16/17 | 0.527 |
+| if_calibrated | 2,546 → 103 | 0.490 | 0.148 | 16/17 | 0.522 |
+| fusion_if_lof | 786 → 41 | 0.650 | 0.403 | 14/17 | 0.587 |
+| fusion_if_lof_norm | 887 → 52 | 0.637 | 0.391 | 15/17 | 0.573 |
+
+- **Calibration spends the budget before scoring.** On the 5-minute series an
+  hour-of-week context holds ~40 non-anomalous train minutes, so the conformal
+  grid bottoms out at p = 2/(n+1) ≈ 0.049 and the pooled budget quantile lands
+  on that grid point (nyc_taxi τ = 0.0488); per-context cuts then hand every
+  context its own slice — 2,546 alerts at the 2% face budget, precision and
+  range-F1 both down. Post-drift regimes overshoot further
+  (machine_temperature_system_failure: 538 → 1,236 alerts).
+- **Fusion wins the metrics but loses incidents.** Rank fusion lifts
+  precision@budget to 0.650 and range-F1 to 0.403 while cutting raw alerts
+  51% — but coverage drops to 14/17, losing one window each on
+  machine_temperature_system_failure and speed_7578. Under a gate that prices
+  incident coverage first, that trade is not adoptable for a monitoring
+  artifact; the normalization variant recovers one window and is otherwise
+  dominated, so it fails the same way.
+- **The negative result is the deliverable.** The refinement layer is
+  measured, gated, and published as such; the page-layer ensemble (wave 16)
+  remains the cheapest load cut, and the drift-trigger recalibration stays the
+  open item.
+
 ## Reproduce
 
 ```bash
@@ -346,6 +397,7 @@ uv run python -m anomaly_detection.cli evaluate
 uv run python -m anomaly_detection.cli nab            # NAB headline track (12 series, event metrics)
 uv run python -m anomaly_detection.cli nab-sweep      # detector x feature sweep + alert budgets
 uv run python -m anomaly_detection.cli nab-tune       # train-side operating-point selection + one test pass
+uv run python -m anomaly_detection.cli nab-refine     # detector-layer refinement ablation + adoption gate
 # or via DVC:
 dvc repro projects/03-anomaly-detection
 ```
@@ -394,10 +446,20 @@ wave-16 rank-average ensemble: it wins the sweep at the frozen default
 66 pages at 0.388 for IsolationForest), needs no operating-point tuning
 (flat validation surface, +0.010 at best), and lifts budgeted range precision
 to 0.553; the NSL-KDD probe is now byte-reproducible (deterministic
-categorical factorization, 0.8877 / 0.8979). What remains:
+categorical factorization, 0.8877 / 0.8979) — the wave-17 refinement
+ablation then challenged the detector layer itself at the fixed 2% budget
+(`nab-refine`, artifact `reports/nab_refinement.json`): conformal
+hour-of-week calibration, IF+LOF rank fusion, and normalized fusion all
+failed the adoption gate (precision@budget and range-F1 must improve while
+coverage holds at 16/17 — calibration spends ≈2.4× the face budget before
+scoring, fusion reaches range-F1 0.403 at 14/17 coverage), so the committed
+detector stands, published as a designed negative result. What remains:
 
 - **Recalibrate the adaptive drift trigger on real data** — the median/IQR
   trigger tuned on synthetic fires on 26% of NAB chunks; it needs a
   higher z threshold or a variance-normalised statistic before production use.
 - **Range precision is still the wall** (0.05–0.12 raw across the sweep) —
-  unattended paging stays deferred until real-data precision improves.
+  unattended paging stays deferred until real-data precision improves. The
+  wave-17 ablation closed the cheapest detector-layer exits (context
+  calibration, rank fusion): precision gains exist, but only by surrendering
+  incident coverage or the alert budget.

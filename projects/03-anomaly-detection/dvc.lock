@@ -5,13 +5,13 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: data/dataset_contract.json
       hash: md5
@@ -30,18 +30,18 @@ stages:
       size: 216907
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: reports/dq_report.html
       hash: md5
-      md5: a23ff494e7e1b33e6f7fa9a95290b076
-      size: 1807
+      md5: c1cdce55bf788b675155ad066e60a7ab
+      size: 2447
   features:
     cmd: uv run python -m anomaly_detection.cli features
     deps:
@@ -51,13 +51,13 @@ stages:
       size: 216907
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: data/features.parquet
       hash: md5
@@ -72,13 +72,13 @@ stages:
       size: 1530440
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: data/models
       hash: md5
@@ -138,13 +138,13 @@ stages:
       size: 1530440
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: data/models_tuned
       hash: md5
@@ -170,13 +170,13 @@ stages:
       nfiles: 6
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: reports/detect.json
       hash: md5
@@ -191,13 +191,13 @@ stages:
       size: 216907
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: reports/residual_probe.json
       hash: md5
@@ -208,13 +208,13 @@ stages:
     deps:
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: data/nsl
       hash: md5
@@ -223,20 +223,20 @@ stages:
       nfiles: 5
     - path: reports/nsl_probe.json
       hash: md5
-      md5: 380cc7b80eb99798f356f5c74b6ed214
+      md5: 55cbb247dcd1a945b8a757f8a82176c7
       size: 524
   nab:
     cmd: uv run python -m anomaly_detection.cli nab
     deps:
     - path: params.yaml
       hash: md5
-      md5: 99bc86963383085b459c5d083e9ded28
-      size: 293
+      md5: 2f040306ae14b793f0a04d9e8975bfe4
+      size: 321
     - path: src/anomaly_detection
       hash: md5
-      md5: f5009edafd5e3e9e654541def7f1d0dc.dir
-      size: 223843
-      nfiles: 27
+      md5: 4fc9dac7dfb307af6a85eb6d38a41e50.dir
+      size: 356284
+      nfiles: 33
     outs:
     - path: data/nab
       hash: md5

@@ -57,6 +57,15 @@ class AnomalyConfig(RunConfig):
         lt=0.5,
         description="OneClassSVM nu; defaults to ``contamination`` when unset.",
     )
+    calibration_min_context: int = Field(
+        default=30,
+        gt=0,
+        description=(
+            "Minimum non-anomalous train scores per hour-of-week context bucket "
+            "for conformal calibration (nab-refine); thinner buckets fall back "
+            "to the series-global calibration."
+        ),
+    )
     snapshot_date: date = Field(
         default=date(2024, 1, 1), description="Snapshot date recorded on the dataset contract."
     )

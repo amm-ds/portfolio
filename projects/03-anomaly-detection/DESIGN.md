@@ -38,13 +38,15 @@
 | One-Class SVM (`nu=contamination`, RBF) | **Chosen**: classic boundary-based baseline. |
 | Rank-average ensemble (IF + LOF + OCSVM, mean of normalized member ranks) | **Chosen** (NAB sweep only): the roadmap's subspace-ensemble remedy; combines families whose failure modes differ, no member recalibration; wins the sweep at the frozen default operating point. |
 | Autoencoder / deep model | Rejected: overkill for a 2%-contamination tabular problem and for a <1-min runtime budget. |
+| Rank fusion of IF + LOF (mean of normalized ranks; per-context z-norm variant) | Measured (wave 17) and rejected at the fixed budget: precision@budget 0.650 and range-F1 0.403 vs 0.512/0.157, but coverage 14/17 — the adoption gate prices incident coverage first. |
 | Per-column median/MAD robust-z statistical detector | Measured (wave 16) and rejected: never beats the ensemble cell-for-cell (0.378–0.438 budgeted range-F1 at 70–50 pages). |
 
 ### Threshold
 
-Fixed `1 − contamination` quantile of the test scores, per model. Chosen over
-tuning a threshold on ground truth to keep the evaluation honest (no label
-leakage into the operating point).
+| option | decision |
+|---|---|
+| Fixed `1 − contamination` quantile of the test scores, per model. Chosen over tuning a threshold on ground truth to keep the evaluation honest (no label leakage into the operating point). | **Chosen** — kept as the committed cut after the wave-17 ablation (below). |
+| Calibrated cut: conformal p-values per hour-of-week context (non-anomalous train scores), threshold at the budget quantile of pooled p-values | Measured (wave 17) and rejected: ~40-minute contexts make the conformal grid too coarse (min expressible p ≈ 2/(n+1) ≈ 0.049), so the pooled 2% quantile spends ≈2.4× the face budget (nyc_taxi τ = 0.0488 → 2,546 alerts); precision and range-F1 both fell. |
 
 ## Pipeline
 
@@ -94,6 +96,28 @@ cleanest, most auditable story.
 
 ## Changelog
 
+- 0.9.0 (2026-11-04): wave-17 detector-layer refinement ablation (`nab-refine`,
+  artifact `reports/nab_refinement.json`): three candidates measured against
+  the committed headline recipe inside one artifact on identical windows
+  (same 70/30 split, train-anchored 2% budget, lead 0, raw/deduped/budgeted
+  streams): (1) conformal calibration — per-hour-of-week-context p-values
+  against non-anomalous train scores (train minutes inside labelled windows
+  excluded), threshold at the budget quantile of pooled calibration p-values,
+  fallback chain thin/absent context → series-global calibration → committed
+  raw cut; (2) IsolationForest+LOF rank fusion (mean of normalized ranks,
+  same budget rule on the fused reference); (3) the same fusion after
+  per-context z-normalization of the members. Adoption gate evaluated in
+  code: precision at the budget AND range-F1 must improve while windows
+  touched holds at 16/17. Not cleared by any candidate — calibration spends
+  ≈2.4× the face budget before scoring (the conformal grid on ~40-minute
+  contexts bottoms out at p ≈ 2/(n+1) ≈ 0.049; nyc_taxi's pooled budget
+  quantile lands at τ = 0.0488 → 2,546 alerts, precision and F1 both down)
+  and fusion lifts range-F1 to 0.403 only by dropping coverage to 14/17
+  (machine_temperature_system_failure, speed_7578). The committed detector
+  stands; the negative result is the published verdict. New config
+  `calibration_min_context` (default 30, mirrored in params.yaml); new tests
+  pin p-value monotonicity, exact budget respect under exchangeability, the
+  malformed-context fallback chain, run determinism, and the gate conditions.
 - 0.8.0 (2026-11-03): wave-16 model/architecture pass. New sweep family
   `ensemble` (`nab_sweep.fit_detector`): fit IsolationForest, LOF, and OCSVM
   on the same train slice, score each row by the mean of its normalized

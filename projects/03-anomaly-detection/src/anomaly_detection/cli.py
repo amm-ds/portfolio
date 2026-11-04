@@ -203,6 +203,25 @@ def nab_tune() -> None:
             )
 
 
+@app.command("nab-refine")
+def nab_refine() -> None:
+    """Ablate detector-layer refinements (context calibration, rank fusion) at
+    the fixed 2% budget; adopt only what clears the precision/F1/coverage gate."""
+    config = get_config()
+    from anomaly_detection.nab_refinement import BASELINE, CANDIDATES, run_nab_refinement
+
+    result = run_nab_refinement(config)
+    for candidate in CANDIDATES:
+        overall = result["candidates"][candidate]["overall"]
+        detected, missed = overall["events_detected"], overall["events_missed"]
+        typer.echo(
+            f"{candidate}: raw {overall['streams']['raw']['alerts_fired']} alerts, "
+            f"precision@budget {overall['precision_at_budget']:.3f}, "
+            f"range-F1 {overall['range_f1']:.3f} ({detected}/{detected + missed} events)"
+        )
+    typer.echo(f"adoption: {result['adoption']['verdict']} (baseline: {BASELINE})")
+
+
 @app.command()
 def nsl() -> None:
     """NSL-KDD production track: fetch, map, and run the transfer probe."""

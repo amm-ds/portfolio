@@ -15,3 +15,4 @@ max_null_rate: 0.01
 n_estimators: 300
 lof_neighbors: 20
 hpo_trials: 30
+calibration_min_context: 30

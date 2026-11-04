@@ -237,6 +237,21 @@ sections:
     pages where it transfers. What remains is on-call capacity versus
     recall cost — a staffing call.
 
+    **The detector layer itself was challenged and held.** Three
+    refinements ran against the committed recipe on identical windows —
+    conformal p-values against each hour-of-week context's non-anomalous
+    train scores, rank fusion of IsolationForest and LOF, and the same
+    fusion after per-context normalization — behind one adoption gate:
+    precision at the budget and range-F1 must both improve while coverage
+    holds at 16 of 17. None clears it. Calibration spends the budget
+    before scoring: a forty-minute context makes the conformal grid
+    bottom out near p = 0.049, and the pooled 2% quantile lands there,
+    firing 2,546 alerts at the 2% face budget with precision and
+    range-F1 both down. Fusion lifts precision at the budget to 0.650
+    and range-F1 to 0.403 while halving raw alerts — and loses two of
+    seventeen windows doing it, one on a known-cause failure series. The
+    committed detector stands, published as a designed negative result.
+
     From here, the evidence is read panel by panel.
 
     **Business summary:** Budget the pages, then combine the detectors:
@@ -272,7 +287,11 @@ sections:
     NAB chunks — too twitchy for the headline. The NSL-KDD probe does not
     establish transfer; the synthetic stream shows no real precision. No
     claim covers multivariate detectors, drifted telemetry, or
-    unattended paging.
+    unattended paging. And a detector-layer refinement round failed its
+    adoption gate in both directions: context calibration fired 2,546
+    alerts at a 2% face value, and the rank fusion that halved raw
+    alerts while lifting range-F1 to 0.403 dropped incident coverage to
+    14 of 17. The metrics moved; the incidents did not forgive it.
 
     The full records behind every number — exact tables, protocol,
     limits, and reproduction — sit in the conclusions.
@@ -296,7 +315,10 @@ sections:
     single-family point at the frozen default — 35 pages at range-F1
     0.533, recall 0.604 — and its flat validation surface means no
     tuning is warranted. Sub-0.1 range-F1 differences across six
-    validation windows read as noise. [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
+    validation windows read as noise. A refinement ablation at the same
+    budget — context-calibrated thresholds, IF+LOF rank fusion, and
+    normalized fusion — then cleared none of its adoption conditions, so
+    the committed detector stands (ablation table below). [full evaluation report](https://amm-ds.github.io/portfolio/projects/03-anomaly-detection/)
 
     ## What the experiment taught
 
@@ -313,6 +335,12 @@ sections:
       instead.
     - The synthetic ladder disagreed with NAB: residual-feature gains never
       transferred, so synthetic evidence stays mechanics-only.
+    - Detector-layer refinement is not free: conformal context calibration
+      spent about 2.4 times the face alert budget before any scoring (the
+      p-value grid on forty-minute contexts bottoms out near 0.049), and
+      IF+LOF rank fusion reached range-F1 0.403 only by dropping to 14 of
+      17 windows. Measured against the gate, the committed detector stands;
+      the cheapest load cut remains the page layer, not the detector score.
     - Range precision stays the limiting factor (0.107 fixed budget;
       0.306 for the IsolationForest headline cell, 0.553 for the champion
       ensemble on the rolling cell): the artifact is an alert-budget dial,
@@ -345,6 +373,16 @@ sections:
     0.315 → 0.382; the ensemble, lof, and ocsvm cells keep their defaults
     (ensemble: 35 and 45 pages at range-F1 0.533 and 0.365).
 
+    Detector-layer ablation, identical windows (raw stream at the 2% budget;
+    pages = deduped + 24 h cap; artifact `reports/nab_refinement.json`):
+
+    | candidate | alerts (raw → pages) | precision@budget | range-F1 | windows touched | PR-AUC |
+    |---|---|---|---|---|---|
+    | isolation_forest (committed) | 1,609 → 80 | 0.512 | 0.157 | 16/17 | 0.527 |
+    | if_calibrated | 2,546 → 103 | 0.490 | 0.148 | 16/17 | 0.522 |
+    | fusion_if_lof | 786 → 41 | 0.650 | 0.403 | 14/17 | 0.587 |
+    | fusion_if_lof_norm | 887 → 52 | 0.637 | 0.391 | 15/17 | 0.573 |
+
     Synthetic window (5,983 test rows, 1.89% prevalence): untuned IsolationForest
     0.9158 ROC-AUC / 0.1239 PR-AUC; tuned IsolationForest 0.9171 ROC-AUC; tuned
     OCSVM 0.1355 PR-AUC; random 0.5091 / 0.0194; rolling-median residual features
@@ -372,6 +410,12 @@ sections:
       adoption needs +0.05 over the documented (2%, 24 h) default; six
       validation windows across five series; exactly one test pass per family
       (four families).
+    - Refinement stage (`nab-refine`): candidates scored on identical windows
+      against an in-artifact baseline; adoption requires precision at the
+      budget and range-F1 to improve while windows touched holds at 16/17;
+      calibration references are the non-anomalous train scores of each
+      hour-of-week context (thin contexts fall back to the series-global
+      set, then to the committed raw cut).
 
     ## Limits
 
@@ -387,6 +431,10 @@ sections:
     - NSL-KDD is a probe, not transfer evidence: 56.9% prevalence,
       labelled split, unseen attack categories, flow semantics.
     - No claim for multivariate detectors or drifted telemetry.
+    - The refinement ablation is deliberately single-config: one fusion
+      pair, one context granularity, one budget. A production pass could
+      revisit coarser contexts or train-side selection — under the same
+      adoption gate.
 
     ```mermaid
     flowchart LR
@@ -418,6 +466,8 @@ roadmap:
   text: "Validated train-side operating-point tuning: IsolationForest's adoption transfers, OCSVM's does not."
 - status: delivered
   text: "Added the rank-average ensemble to the sweep: at the frozen default it halves the like-for-like paged load (66 → 35 pages, range-F1 0.388 → 0.533) at equal recall, and its flat validation surface keeps the default operating point."
+- status: delivered
+  text: "Challenged the detector layer at the fixed budget — context calibration, rank fusion, and normalized fusion behind a precision/F1/coverage gate: none clears it (fusion reaches range-F1 0.403 at 14/17 coverage), so the committed detector stands, published as a designed negative result."
 key_concepts:
 - "**Alert-budget stream** — the deployed artifact: deduplicated episodes capped at one page per series per 24 h, turning 1,609 raw alerts into 80 pages."
 - "**Rank-average ensemble** — scores each minute by the mean of its normalized ranks under IsolationForest, LOF, and OCSVM; it wins the sweep at the frozen default without recalibration or tuning."
