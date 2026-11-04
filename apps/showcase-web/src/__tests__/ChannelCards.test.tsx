@@ -91,9 +91,10 @@ describe("ChannelCards", () => {
     expect(screen.queryByRole("link", { name: /\+34 670 881 697/ })).toBeNull();
     const locked = document.querySelector(".channel-card--locked")!;
     expect(locked).not.toBeNull();
-    // the compact privacy note under the form: the entered value is
-    // validated and discarded — never stored or transmitted
-    expect(screen.getByText(/never stored — unlocks on this device/i)).toBeInTheDocument();
+    // slim full-width layout: spans the whole grid line, no label/note text
+    expect(locked.classList.contains("channel-card--slim")).toBe(true);
+    expect(locked.querySelector(".channel-unlock-label")).toBeNull();
+    expect(locked.querySelector(".channel-unlock-note")).toBeNull();
   });
 
   it("shows an inline validation error on invalid input and stays locked", () => {

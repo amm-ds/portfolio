@@ -278,7 +278,7 @@ export function ProjectsIndex() {
   return (
     <>
       <section className="services-hero">
-        <p className="kicker">&gt; projects</p>
+        <p className="kicker">&gt; Projects</p>
         <h1>projects and demos repository</h1>
         <p>
           A growing set of public, reproducible case studies with live demos — real datasets,

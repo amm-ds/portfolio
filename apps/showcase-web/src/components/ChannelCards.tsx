@@ -120,7 +120,7 @@ function PhoneChannelCard() {
   };
 
   return (
-    <div className="channel-card channel-card--locked">
+    <div className="channel-card channel-card--locked channel-card--slim">
       <span className="channel-icon">
         <PhoneIcon />
       </span>
@@ -128,9 +128,6 @@ function PhoneChannelCard() {
         <span className="channel-name">Phone</span>
         <p className="channel-lock-note">Share your email or phone to unlock.</p>
         <form className="channel-unlock" onSubmit={onSubmit} noValidate>
-          <label className="channel-unlock-label" htmlFor="channel-phone-unlock">
-            email or phone
-          </label>
           <div className="channel-unlock-row">
             <input
               id="channel-phone-unlock"
@@ -143,6 +140,7 @@ function PhoneChannelCard() {
                 setValue(e.target.value);
                 if (error) setError(null);
               }}
+              aria-label="email or phone"
               aria-invalid={error ? true : undefined}
               aria-describedby={error ? "channel-phone-unlock-error" : undefined}
             />
@@ -154,7 +152,6 @@ function PhoneChannelCard() {
             {error}
           </p>
         )}
-        <p className="channel-unlock-note">never stored — unlocks on this device.</p>
       </div>
     </div>
   );

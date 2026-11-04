@@ -1963,6 +1963,37 @@ button:disabled {
   margin: 0 0 0.25rem;
 }
 
+/* slim full-width gate row: phone spans the whole grid line below the
+   linked channels, with an inline form */
+.channel-card--slim {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 1.1rem;
+}
+
+.channel-card--slim .channel-text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.9rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.channel-card--slim .channel-lock-note {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.channel-card--slim .channel-unlock {
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+}
+
 .channel-unlock-label {
   display: block;
   font-family: var(--mono);
@@ -4256,9 +4287,20 @@ button.chip.demo-preset.fwb-active {
 }
 
 .languages-card,
-.timezone-card {
+.timezone-card,
+.replies-card {
   margin: 0;
   padding: 0.9rem 1.1rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.languages-card .languages-line,
+.timezone-card .languages-line,
+.replies-card .languages-line {
+  margin: 0;
+  color: var(--text);
 }
 
 .services-hero .facts-grid {

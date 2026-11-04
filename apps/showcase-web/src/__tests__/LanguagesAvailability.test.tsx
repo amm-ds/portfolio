@@ -61,17 +61,23 @@ describe("LanguagesAvailability — the three shared fact cards", () => {
     render(<LanguagesAvailability />);
     const tz = [...document.querySelectorAll(".timezone-card .languages-line")];
     expect(tz).toHaveLength(1);
-    expect(tz[0].textContent).toBe("Timezone: Europe/Madrid (CET, UTC+1)");
+    expect(tz[0].textContent).toBe("Europe/Madrid (CET, UTC+1)");
     const replies = [...document.querySelectorAll(".replies-card .languages-line")];
     expect(replies).toHaveLength(1);
     expect(replies[0].textContent).toBe(
-      `Replies: within ${AVAILABILITY.replyHours}h on business days`,
+      `within ${AVAILABILITY.replyHours}h on business days`,
     );
+    // values only — no "Languages:"/"Timezone:"/"Replies:" labels
+    expect(document.querySelector(".facts-grid")!.textContent).not.toMatch(
+      /Languages:|Timezone:|Replies:/,
+    );
+    // centered terminal type
+    const css = readFileSync("src/styles.css", "utf8");
+    const cardRule = css.match(/\.languages-card,\n\.timezone-card,\n\.replies-card \{[\s\S]*?\n\}/)![0];
+    expect(cardRule).toContain("text-align: center;");
+    expect(cardRule).toContain("font-family: var(--mono);");
     for (const line of [...tz, ...replies]) {
-      // every part of the line is bold (label + value as strong spans)
-      const strongs = [...line.querySelectorAll("strong")];
-      expect(strongs.length).toBeGreaterThanOrEqual(2);
-      expect(strongs.map((s) => s.textContent).join(" ")).toBe(line.textContent);
+      expect(line.querySelector("strong")!.textContent).toBe(line.textContent);
     }
   });
 

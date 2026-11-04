@@ -209,7 +209,7 @@ describe("ProjectsIndex", () => {
     const h1 = screen.getByRole("heading", { level: 1 });
     const hero = h1.closest(".services-hero")!;
     expect(hero).not.toBeNull();
-    expect(hero.querySelector(".kicker")!.textContent).toContain("> projects");
+    expect(hero.querySelector(".kicker")!.textContent).toContain("> Projects");
     expect(h1.nextElementSibling!.tagName).toBe("P");
     expect(h1.nextElementSibling!.classList.contains("section-intro")).toBe(false);
   });
