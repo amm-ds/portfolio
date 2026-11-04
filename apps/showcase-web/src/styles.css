@@ -2348,21 +2348,12 @@ button:disabled {
 
 /* --- Home presentation sections --- */
 
-/* page opening follows the /services format: a small green kicker prompt
-   (".kicker") above the big white page title (".page-heading", same 2rem
-   scale as .services-hero h1 with the shared 800px drop below) */
-.page-heading {
-  font-size: 2rem;
-  margin: 0 0 1rem;
-}
-
 /* the shared h1-scale breakpoint: same 800px drop as .services-hero h1 and
    .detail-header h1. This block must stay BELOW the base rules in source
    order (equal specificity — the media query only wins if it comes later) */
 @media (max-width: 800px) {
   .services-hero h1,
-  .detail-header h1,
-  .page-heading {
+  .detail-header h1 {
     font-size: 1.6rem;
   }
 }

@@ -182,16 +182,16 @@ describe("ProjectsIndex", () => {
     ]);
   });
 
-  it("renders the page opening like /services: small green kicker above the big white title", async () => {
+  it("renders the page opening exactly like /services and /about — services-hero, kicker, big title, intro", async () => {
     const css = readFileSync("src/styles.css", "utf8");
-    // the kicker is the shared small prompt style; the title carries the
-    // services-h1 scale in the shared 800px breakpoint
-    expect(css.match(/\.page-heading \{[\s\S]*?\n\}/)![0]).toContain("font-size: 2rem;");
+    // the hero block carries the shared 2rem h1 + the 800px drop (no
+    // page-specific title rules remain)
+    expect(css.match(/\.services-hero h1 \{[\s\S]*?\n\}/)![0]).toContain("font-size: 2rem;");
     const mediaRule = css.match(
-      /@media \(max-width: 800px\) \{[\s\S]*?\.services-hero h1,\s*\.detail-header h1,\s*\.page-heading \{[\s\S]*?\n  \}/,
+      /@media \(max-width: 800px\) \{[\s\S]*?\.services-hero h1,\s*\.detail-header h1 \{[\s\S]*?\n  \}/,
     )![0];
     expect(mediaRule).toContain("font-size: 1.6rem;");
-    // the old mono page-title/subtitle treatment is gone
+    expect(css).not.toContain(".page-heading");
     expect(css).not.toContain(".page-title");
     expect(css).not.toContain(".page-subtitle");
     vi.stubGlobal("fetch", projectsOnlyFetch());
@@ -205,13 +205,13 @@ describe("ProjectsIndex", () => {
         "projects and demos repository",
       ),
     );
-    // kicker sits above the title; the intro paragraph follows it
+    // same structure as /services: hero section → kicker → h1 → intro <p>
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(h1.classList.contains("page-heading")).toBe(true);
-    const kicker = h1.previousElementSibling!;
-    expect(kicker.classList.contains("kicker")).toBe(true);
-    expect(kicker.textContent).toContain("> projects");
-    expect(h1.nextElementSibling!.classList.contains("section-intro")).toBe(true);
+    const hero = h1.closest(".services-hero")!;
+    expect(hero).not.toBeNull();
+    expect(hero.querySelector(".kicker")!.textContent).toContain("> projects");
+    expect(h1.nextElementSibling!.tagName).toBe("P");
+    expect(h1.nextElementSibling!.classList.contains("section-intro")).toBe(false);
   });
 
   it("renders the projects heading and places cards under the right topic rows", async () => {

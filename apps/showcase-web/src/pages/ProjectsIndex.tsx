@@ -277,13 +277,15 @@ export function ProjectsIndex() {
 
   return (
     <>
-      <p className="kicker">&gt; projects</p>
-      <h1 className="page-heading">projects and demos repository</h1>
-      <p className="section-intro">
-        A growing set of public, reproducible case studies with live demos — real datasets,
-        measured baselines and published pipelines. Every number on this page can be re-run
-        from the repository.
-      </p>
+      <section className="services-hero">
+        <p className="kicker">&gt; projects</p>
+        <h1>projects and demos repository</h1>
+        <p>
+          A growing set of public, reproducible case studies with live demos — real datasets,
+          measured baselines and published pipelines. Every number on this page can be re-run
+          from the repository.
+        </p>
+      </section>
       <nav className="page-index" aria-label="On this page">
         <span className="page-index-label">index</span>
         <a href="#demos">live demos</a>
