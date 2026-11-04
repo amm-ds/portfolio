@@ -1,11 +1,6 @@
 import { useState } from "react";
+import { asRecord } from "../lib/records";
 import { PlotlyFigure, type PlotlyPayload } from "./PlotlyFigure";
-
-type AnyRecord = Record<string, unknown>;
-
-function asRecord(v: unknown): AnyRecord {
-  return typeof v === "object" && v !== null ? (v as AnyRecord) : {};
-}
 
 /** Axis title text: plotly allows `{title: {text}}` or the shorthand `{title: "..."}`. */
 function axisTitle(axis: unknown): string | null {

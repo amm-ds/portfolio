@@ -73,9 +73,6 @@ export function StorySection({
 }: {
   projectId: string;
   section: StorySectionData;
-  /** Section position from the parent map; numbering renders in the left
-   * rail only, so the section h2 carries the bare title. */
-  index: number;
   metrics: Metrics | null;
   /** Story `figure_captions`, keyed by figure name. */
   figureCaptions?: Record<string, string>;

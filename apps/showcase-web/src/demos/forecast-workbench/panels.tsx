@@ -2,12 +2,10 @@ import type { ReactNode } from "react";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { CatalogEntry, ForecastWorkbenchPayload, ForecastWindow } from "../types";
 import { DemoFigure } from "../workbench";
-import { C_GRAY, MODELS } from "./chartData";
+import { C_GRAY, MODEL_COLORS, MODEL_LABELS } from "./chartData";
 import { bandCalibration, peakAbsError, wapeAt, weeklyAbsError } from "./kpis";
 
 const NAIVE = "seasonal_naive";
-const MODEL_COLORS = Object.fromEntries(MODELS.map((m) => [m.key, m.color]));
-const MODEL_LABELS = Object.fromEntries(MODELS.map((m) => [m.key, m.label]));
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 /** Compact "May 24" rendering of a forecast date; falls back to the day slot. */

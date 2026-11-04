@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type PlotlyStatic from "plotly.js-dist-min";
+import { asRecord } from "../lib/records";
 import { FigureFrame } from "./FigureFrame";
 
 export interface PlotlyPayload {
@@ -26,14 +27,8 @@ export function scaledHeight(layoutHeight: unknown, containerWidth: number): num
   return Math.min(MAX_SCALED_HEIGHT, Math.max(MIN_SCALED_HEIGHT, scaled));
 }
 
-type AnyRecord = Record<string, unknown>;
-
-function asRecord(v: unknown): AnyRecord {
-  return typeof v === "object" && v !== null ? (v as AnyRecord) : {};
-}
-
 /** Axis defaults for the dark theme; every payload value wins over its default. */
-function axisLayout(rawAxis: unknown): AnyRecord {
+function axisLayout(rawAxis: unknown): Record<string, unknown> {
   const ax = asRecord(rawAxis);
   const { tickfont, title, linecolor, zerolinecolor, gridcolor, ...rest } = ax;
   const t = asRecord(title);
@@ -53,7 +48,7 @@ function axisLayout(rawAxis: unknown): AnyRecord {
  * text/axis defaults, height scaled to the container. The raw layout is never
  * mutated and any payload value overrides its default.
  */
-export function buildLayout(raw: AnyRecord, containerWidth: number): AnyRecord {
+export function buildLayout(raw: Record<string, unknown>, containerWidth: number): Record<string, unknown> {
   const { font, legend, xaxis, yaxis, width: _width, height, ...rest } = raw;
   const rawFont = asRecord(font);
   const rawLegend = asRecord(legend);

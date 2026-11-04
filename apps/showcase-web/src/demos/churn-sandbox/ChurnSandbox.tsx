@@ -4,9 +4,10 @@ import { SegmentLegend, type HBarSegment } from "../charts/StackedHBar";
 import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { ChurnPayload, ConfusionRow, DemoManifest } from "../types";
 import { DemoFigure, DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
-import { contactCount, costAt, nearestIndex, recallAt, rowCost, savings } from "./kpis";
+import { contactCount, nearestIndex, recallAt, rowCost, savings } from "./kpis";
 import { CostCompositionPanel } from "./CostCompositionPanel";
-import { fetchChurnPayload, fetchManifest } from "./payload";
+import { fetchChurnPayload } from "./payload";
+import { getDemoManifest } from "../../api";
 import { usePageMeta } from "../../seo";
 import { ScorerCard } from "./ScorerCard";
 
@@ -168,7 +169,7 @@ function CostCurvePanel({
   onCursor: (idx: number) => void;
 }) {
   const { thresholds, overall, model } = payload;
-  const costs = overall.map((r) => costAt(r, fnRatio));
+  const costs = overall.map((r) => rowCost(r, fnRatio));
   const defaultIdx = nearestIndex(thresholds, model.threshold_default);
   const selectedIdx = nearestIndex(thresholds, model.threshold_selected);
 
@@ -382,7 +383,7 @@ export default function ChurnSandbox() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchManifest("churn-sandbox")
+    getDemoManifest("churn-sandbox")
       .then((m) => !cancelled && setManifest(m))
       .catch(() => {
         /* payload fetch below reports the real error */
@@ -565,7 +566,7 @@ function ChurnSandboxWorkbench({
         <>
           <KpiTile
             label="cost at t"
-            value={String(Math.round(costAt(cursorRow, fnRatio)))}
+            value={String(Math.round(rowCost(cursorRow, fnRatio)))}
             sub={`at threshold ${cursorT.toFixed(2)} · FP·1 + FN·${fnRatio}`}
           />
           <KpiTile

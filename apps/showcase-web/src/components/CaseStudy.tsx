@@ -67,7 +67,6 @@ export function CaseStudy({
               <StorySection
                 projectId={projectId}
                 section={s}
-                index={i}
                 metrics={metrics}
                 figureCaptions={story.figure_captions}
                 linkedTerms={linkedTermsBySection[i]}

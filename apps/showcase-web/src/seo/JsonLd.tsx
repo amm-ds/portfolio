@@ -16,27 +16,3 @@ export function PersonJsonLd() {
     />
   );
 }
-
-export interface SoftwareSourceCodeJsonLdProps {
-  name: string;
-  description: string;
-  /** Project route, e.g. "/projects/01-rag-agent". */
-  path: string;
-}
-
-export function SoftwareSourceCodeJsonLd({ name, description, path }: SoftwareSourceCodeJsonLdProps) {
-  const data = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareSourceCode",
-    name,
-    description,
-    codeRepository: REPO_URL,
-    url: absoluteUrl(path),
-  };
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
-    />
-  );
-}

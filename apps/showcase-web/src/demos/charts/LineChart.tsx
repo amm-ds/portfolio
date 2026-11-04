@@ -18,7 +18,6 @@ export interface LineMarker {
   /** "solid" | "dashed" | "star" — star renders a ★ at the series point. */
   style: "solid" | "dashed" | "star";
   color?: string;
-  top?: boolean;
 }
 
 export interface BandFill {
@@ -290,7 +289,7 @@ export function LineChart({
             {m.label && (
               <text
                 x={px(mx) + 4}
-                y={m.top === false ? height - pad.b - 6 : pad.t + 10}
+                y={pad.t + 10}
                 className="demo-axis-label"
               >
                 {m.label}

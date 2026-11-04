@@ -10,6 +10,9 @@ interface Offering {
   deliverables: string[];
 }
 
+/** Offering tags are plain capability wording — blue chips, no framework or
+ * library names (the frameworks section carries the stack, which adapts to
+ * the task at hand). */
 const OFFERINGS: Offering[] = [
   {
     title: "Agentic AI & LLM systems",
@@ -109,9 +112,6 @@ const OFFERINGS: Offering[] = [
   },
 ];
 
-/** Offering tags are plain capability wording — blue chips, no framework or
- * library names (the frameworks section carries the stack, which adapts to
- * the task at hand). */
 const PROCESS = [
   {
     step: "01",

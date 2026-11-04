@@ -60,9 +60,3 @@ export function usePageMeta({ title, description, canonical, noindex }: PageMeta
     };
   }, [title, description, canonical, noindex]);
 }
-
-/** Component wrapper around usePageMeta for declarative route usage. */
-export function PageMeta(props: PageMetaProps) {
-  usePageMeta(props);
-  return null;
-}

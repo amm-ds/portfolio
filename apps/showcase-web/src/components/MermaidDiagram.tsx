@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MERMAID_THEME } from "./mermaid-theme";
 
-export { MERMAID_THEME };
-
 let initialized = false;
 let diagramCounter = 0;
 // mermaid.render mutates shared temp DOM internally and is not safely

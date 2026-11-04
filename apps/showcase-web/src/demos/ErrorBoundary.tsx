@@ -13,8 +13,8 @@ function describe(error: unknown): string {
 /**
  * Last-resort guard for demo pages: a render crash inside a demo shows the
  * fallback card instead of unmounting the whole app (white/blue screen). The
- * error is stored (console + localStorage) so an un reproduced browser crash
- * can be reported with its exact message.
+ * error is stored (console + localStorage) so a crash the reporter cannot
+ * reproduce can still be quoted with its exact message.
  */
 export class DemoErrorBoundary extends Component<{ children: ReactNode }, State> {
   state: State = { hasError: false, detail: "" };

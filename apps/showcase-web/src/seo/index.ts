@@ -1,4 +1,3 @@
-export { usePageMeta, PageMeta } from "./usePageMeta";
+export { usePageMeta } from "./usePageMeta";
 export type { PageMetaProps } from "./usePageMeta";
-export { PersonJsonLd, SoftwareSourceCodeJsonLd } from "./JsonLd";
-export type { SoftwareSourceCodeJsonLdProps } from "./JsonLd";
+export { PersonJsonLd } from "./JsonLd";

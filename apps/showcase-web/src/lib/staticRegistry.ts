@@ -54,7 +54,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
     "topic": "Agentic AI & LLM"
   },
   {
-    "data": "Synthetic hierarchy (UCI Retail II optional)",
+    "data": "Walmart M5 full panel (real, sha256-pinned)",
     "domain": "Time-series forecasting",
     "id": "02-demand-forecasting",
     "order": 2,
@@ -71,7 +71,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
     "topic": "Forecasting & Time Series"
   },
   {
-    "data": "Synthetic (NSL-KDD optional)",
+    "data": "NAB telemetry (real) + seeded synthetic stream",
     "domain": "Unsupervised ML / telemetry",
     "id": "03-anomaly-detection",
     "order": 3,
@@ -105,7 +105,7 @@ export const STATIC_PROJECTS: StaticProject[] = [
     "topic": "NLP & Transformers"
   },
   {
-    "data": "Synthetic churn (messy)",
+    "data": "IBM telco churn (real, sha256-pinned) + synthetic CI twin",
     "domain": "Classical ML",
     "id": "05-ml-pipeline-churn",
     "order": 5,

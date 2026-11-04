@@ -1,10 +1,5 @@
-import { getDemoManifest, getDemoPayload } from "../../api";
-import type { ChurnPayload, DemoManifest } from "../types";
-
-/** Fetch the demo manifest (`GET /demos/{id}/manifest`). */
-export function fetchManifest(demoId: string): Promise<DemoManifest> {
-  return getDemoManifest(demoId);
-}
+import { getDemoPayload } from "../../api";
+import type { ChurnPayload } from "../types";
 
 /** Fetch the committed demo payload (`GET /demos/{id}/payload`). */
 export function fetchChurnPayload(demoId: string): Promise<ChurnPayload> {

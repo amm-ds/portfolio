@@ -116,21 +116,6 @@ export interface ChurnPayload {
 
 // --- forecast workbench payload (`projects/02-demand-forecasting/reports_m5_full/demo_payload.json`, schema v4, protocol m5_full_v1) ---
 
-/** Candidate model names the demo can draw (per-series curves in each window).
- * The full panel runs 8 candidates: the seasonal-naive floor, global LightGBM
- * and its Tweedie twin, three pooled fits (per store / store×category /
- * department), per-series AutoETS, and the stability-screened convex ensemble
- * (the committed members at the committed weights). */
-export type ForecastModel =
-  | "seasonal_naive"
-  | "auto_ets"
-  | "lgbm"
-  | "lgbm_tweedie"
-  | "lgbm_pool_store"
-  | "lgbm_pool_storecat"
-  | "lgbm_pool_dept"
-  | "convex_ensemble";
-
 /** The single scored-once window of one catalog series (origin 2016-05-22,
  * the competition window — the catalog carries one origin by design). */
 export interface ForecastWindow {

@@ -258,14 +258,6 @@ code {
   border-radius: var(--radius);
 }
 
-.card-secondary {
-  border-left-color: var(--secondary);
-}
-
-.card-danger {
-  border-left-color: var(--danger);
-}
-
 .table-scroll {
   display: block;
   overflow-x: auto;
@@ -495,16 +487,6 @@ select:focus-visible,
   50% {
     opacity: 0;
   }
-}
-
-.hero-cta {
-  margin: 1.25rem 0 0;
-  color: var(--muted);
-}
-
-.hero-cta a {
-  font-family: var(--mono);
-  color: var(--accent);
 }
 
 .hero-sub {
@@ -2236,12 +2218,6 @@ button:disabled {
   }
 }
 
-@media (max-width: 640px) {
-  .chat-message {
-    max-width: 100%;
-  }
-}
-
 /* --- Native plotly figures --- */
 
 /* Restored verbatim from 01a7d77: without these the host div collapses and
@@ -2598,15 +2574,7 @@ button:disabled {
   box-shadow: 0 0 10px var(--accent-glow);
 }
 
-/* --- Interactive demos (DemoShell + churn sandbox) --- */
-
-.demo-shell {
-  max-width: 900px;
-}
-
-.demo-topbar {
-  margin-bottom: 1rem;
-}
+/* --- Interactive demos (workbench chrome + churn sandbox) --- */
 
 .demo-back {
   font-family: var(--mono);
@@ -2617,10 +2585,6 @@ button:disabled {
 .demo-back:hover {
   color: var(--accent);
   text-decoration: none;
-}
-
-.demo-header {
-  margin-bottom: 1.5rem;
 }
 
 .demo-title {
@@ -2652,39 +2616,7 @@ button:disabled {
   color: var(--accent);
 }
 
-.demo-footer {
-  margin-top: 2rem;
-}
-
-.demo-footer .figure-card-band {
-  border-top: none;
-}
-
-.demo-footer-line {
-  margin: 0.15rem 0 0;
-  font-family: var(--mono);
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.demo-footer-line:first-child {
-  margin-top: 0;
-  color: var(--text);
-}
-
 /* controls row */
-
-.demo-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 2rem;
-  align-items: flex-end;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-  margin-bottom: 1.5rem;
-}
 
 .demo-control {
   display: flex;
@@ -2692,8 +2624,7 @@ button:disabled {
   gap: 0.45rem;
 }
 
-.demo-control label,
-.demo-control-label {
+.demo-control label {
   font-family: var(--mono);
   font-size: 0.82rem;
   color: var(--secondary);
@@ -2777,20 +2708,6 @@ button.chip.demo-preset:hover {
 
 /* stacked outcome bar */
 
-.demo-stack-bar {
-  display: flex;
-  height: 26px;
-  margin: 0.75rem 1rem 0.5rem;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--border);
-}
-
-.demo-stack-bar span {
-  display: block;
-  height: 100%;
-}
-
 .demo-outcome-legend {
   list-style: none;
   margin: 0 1rem;
@@ -2814,64 +2731,6 @@ button.chip.demo-preset:hover {
   height: 10px;
   border-radius: 2px;
   display: inline-block;
-}
-
-/* contract slices */
-
-.demo-slice-list {
-  list-style: none;
-  margin: 0.75rem 1rem;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.demo-slice-list li {
-  display: grid;
-  grid-template-columns: 130px minmax(0, 1fr) 90px;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.85rem;
-}
-
-.demo-slice-label {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--secondary);
-}
-
-.demo-slice-bar {
-  height: 14px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.demo-slice-bar span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  opacity: 0.8;
-}
-
-.demo-slice-count {
-  font-family: var(--mono);
-  font-size: 0.78rem;
-  color: var(--muted);
-  text-align: right;
-}
-
-/* two-column demo panels */
-
-@media (min-width: 800px) {
-  .demo-two-col {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
-    align-items: start;
-  }
 }
 
 /* scorer form */
@@ -3298,11 +3157,10 @@ button.chip.wb-scenario.active {
   gap: 0.3rem;
 }
 
-/* forecast workbench: series picker + chip rows (models / origin / horizon).
+/* forecast workbench: series picker + chip rows (models / horizon).
    The churn presets stay columnar; these groups lay their chips out in
    wrapping rows, and an active chip takes the accent border. */
 .wb-group-models .demo-presets,
-.wb-group-origin .demo-presets,
 .wb-group-horizon .demo-presets,
 .wb-group-series .demo-presets {
   flex-direction: row;
@@ -3312,7 +3170,6 @@ button.chip.wb-scenario.active {
 }
 
 .wb-group-models .demo-control .chip,
-.wb-group-origin .demo-control .chip,
 .wb-group-horizon .demo-control .chip {
   display: inline-block;
 }
@@ -3926,12 +3783,6 @@ button.chip.demo-preset.fwb-active {
    box left over after the footer commentary band */
 .wb-secondary .wb-panel-viz {
   flex: 1 1 auto;
-  min-height: 0;
-}
-
-/* internal scroll regions: drawers scroll their own bodies, not the page */
-.wb-internal-scroll {
-  overflow: auto;
   min-height: 0;
 }
 

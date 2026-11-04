@@ -57,6 +57,15 @@ export const MODELS: {
   { key: "convex_ensemble", label: "ensemble", color: C_AMBER, width: 3 },
 ];
 
+/** Key → label / key → color lookups, shared by every panel that annotates
+ *  models (legend, verdict rows, error composition). */
+export const MODEL_LABELS: Record<string, string> = Object.fromEntries(
+  MODELS.map((m) => [m.key, m.label]),
+);
+export const MODEL_COLORS: Record<string, string> = Object.fromEntries(
+  MODELS.map((m) => [m.key, m.color]),
+);
+
 export interface ForecastChartSpec {
   /** Day-index axis: d-(historyDays-1) .. 0 (history) then +1 .. +28 (window). */
   x: number[];

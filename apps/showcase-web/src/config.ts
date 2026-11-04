@@ -11,12 +11,6 @@ export const SITE_URL: string = (
   env.VITE_SITE_URL ?? "https://alejandromerida.dev"
 ).replace(/\/+$/, "");
 
-/** Origin of the deployed site, e.g. "https://alejandromerida.dev". */
-export const SITE_ORIGIN: string = new URL(SITE_URL).origin;
-
-/** Base path the SPA is served under, e.g. "/portfolio" ("" when served at root). */
-export const SITE_BASE_PATH: string = new URL(SITE_URL).pathname.replace(/\/+$/, "");
-
 /** Single site identity — used by title, og tags and nav brand. */
 export const SITE_NAME = "alejandromerida.dev";
 
@@ -35,7 +29,7 @@ export const LINKEDIN_URL =
 /** Contact address placeholder — one place for contact copy. */
 export const CONTACT_EMAIL = env.VITE_CONTACT_EMAIL ?? "amm.datascience@gmail.com";
 
-// Legacy alias kept for existing consumers (Footer, Contact, their tests).
+// Legacy alias kept for existing consumers (Footer and its tests).
 export const SITE_EMAIL = CONTACT_EMAIL;
 
 /** Availability copy — one place for engagement status. */
@@ -44,7 +38,7 @@ export const AVAILABILITY = {
   replyHours: Number(env.VITE_AVAILABILITY_REPLY_HOURS ?? 24),
 } as const;
 
-/** Absolute URL for a site path, honoring SITE_BASE_PATH. */
+/** Absolute URL for a site path, honoring any base path baked into SITE_URL. */
 export function absoluteUrl(path = "/"): string {
   const suffix = path === "/" ? "" : path.startsWith("/") ? path : `/${path}`;
   return `${SITE_URL}${suffix}`;

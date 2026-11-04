@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ConfusionRow } from "../types";
-import { contactCount, costAt, fnCostSeries, fpCostSeries, nearestIndex, recallAt, savings } from "./kpis";
+import { contactCount, fnCostSeries, fpCostSeries, nearestIndex, recallAt, rowCost, savings } from "./kpis";
 
 // 5-threshold fixture, holdout n = 1,000 (per-1,000 counts are the raw counts).
 const OVERALL: ConfusionRow[] = [
@@ -12,11 +12,11 @@ const OVERALL: ConfusionRow[] = [
 ];
 const THRESHOLDS = OVERALL.map((r) => r.t);
 
-describe("costAt", () => {
+describe("rowCost", () => {
   it("is fp + fn_ratio * fn", () => {
-    expect(costAt(OVERALL[1], 5)).toBe(210 + 5 * 25); // 335
-    expect(costAt(OVERALL[1], 1)).toBe(210 + 25); // 235
-    expect(costAt(OVERALL[2], 5)).toBe(140 + 5 * 45); // 365
+    expect(rowCost(OVERALL[1], 5)).toBe(210 + 5 * 25); // 335
+    expect(rowCost(OVERALL[1], 1)).toBe(210 + 25); // 235
+    expect(rowCost(OVERALL[2], 5)).toBe(140 + 5 * 45); // 365
   });
 });
 
@@ -41,7 +41,7 @@ describe("cost component series", () => {
   it("fp + fn reconstructs the total cost curve", () => {
     const fp = fpCostSeries(OVERALL);
     const fn = fnCostSeries(OVERALL, 5);
-    expect(fp.map((v, i) => v + fn[i])).toEqual(OVERALL.map((r) => costAt(r, 5)));
+    expect(fp.map((v, i) => v + fn[i])).toEqual(OVERALL.map((r) => rowCost(r, 5)));
   });
 });
 

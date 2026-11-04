@@ -18,11 +18,6 @@ export function rowCost(row: ConfusionRow | undefined | null, fnRatio: number): 
   return r.fp + safeRatio(fnRatio) * r.fn;
 }
 
-/** Campaign cost at the cursor threshold, under the given miss multiplier. */
-export function costAt(row: ConfusionRow | undefined | null, fnRatio: number): number {
-  return rowCost(row, fnRatio);
-}
-
 /** FP-cost component across the threshold grid (fp_cost = 1 per the cost model). */
 export function fpCostSeries(overall: ConfusionRow[]): number[] {
   return (overall ?? []).map((r) => safeRow(r).fp);

@@ -32,7 +32,6 @@ describe("StorySection figure layout (wave 4)", () => {
       <StorySection
         projectId="01-rag-agent"
         section={{ ...BASE, figures: ["retrieval_funnel"] }}
-        index={4}
         metrics={null}
       />,
     );
@@ -56,7 +55,6 @@ describe("StorySection figure layout (wave 4)", () => {
           ...BASE,
           figures: ["retrieval_funnel", "latency_histogram", "model_comparison"],
         }}
-        index={4}
         metrics={null}
       />,
     );
@@ -80,7 +78,6 @@ describe("StorySection figure layout (wave 4)", () => {
       <StorySection
         projectId="01-rag-agent"
         section={{ ...BASE, figures: ["retrieval_funnel", "latency_histogram"] }}
-        index={4}
         metrics={null}
         figureCaptions={{
           retrieval_funnel: "Recall@5 doubles after reranking.",
@@ -103,7 +100,7 @@ describe("StorySection figure layout (wave 4)", () => {
 
   it("renders no figure markup when the section references none", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
-    render(<StorySection projectId="01-rag-agent" section={BASE} index={4} metrics={null} />);
+    render(<StorySection projectId="01-rag-agent" section={BASE} metrics={null} />);
     expect(document.querySelector(".figure-frame")).toBeNull();
   });
 
@@ -113,7 +110,6 @@ describe("StorySection figure layout (wave 4)", () => {
       <StorySection
         projectId="01-rag-agent"
         section={{ ...BASE, figures: ["f"] }}
-        index={0}
         metrics={null}
       />,
     );
@@ -136,7 +132,7 @@ describe("StorySection business-summary card", () => {
 
   it("renders the trailing **Business summary:** paragraph as a card", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
-    render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} index={0} metrics={null} />);
+    render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} metrics={null} />);
     const card = document.querySelector(".bi-card");
     expect(card).not.toBeNull();
     expect(card?.getAttribute("aria-label")).toBe("Business summary");
@@ -153,7 +149,6 @@ describe("StorySection business-summary card", () => {
           ...BASE,
           text_md: "Setup prose.\n\n**Business implication:** legacy tail text.\n",
         }}
-        index={0}
         metrics={null}
       />,
     );
@@ -165,7 +160,7 @@ describe("StorySection business-summary card", () => {
 
   it("keeps the rest of the section content unchanged outside the card", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
-    render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} index={0} metrics={null} />);
+    render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} metrics={null} />);
     const prose = document.querySelector(".story-main .prose");
     expect(prose?.textContent).toContain("Framing paragraph with some context.");
     expect(prose?.textContent).toContain("A second paragraph before the takeaway.");
@@ -178,7 +173,7 @@ describe("StorySection business-summary card", () => {
 
   it("renders no card when the section lacks the pattern", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
-    render(<StorySection projectId="01-rag-agent" section={BASE} index={0} metrics={null} />);
+    render(<StorySection projectId="01-rag-agent" section={BASE} metrics={null} />);
     expect(document.querySelector(".bi-card")).toBeNull();
     expect(document.querySelector(".story-main .prose")?.textContent).toBe("Numbers.");
   });
@@ -195,7 +190,7 @@ describe("StorySection **In plain terms:** marker", () => {
   it("renders the trailing **In plain terms:** paragraph as the card", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
-      <StorySection projectId="05-ml-pipeline-churn" section={WITH_PLAIN} index={0} metrics={null} />,
+      <StorySection projectId="05-ml-pipeline-churn" section={WITH_PLAIN} metrics={null} />,
     );
     const card = document.querySelector(".bi-card");
     expect(card).not.toBeNull();
@@ -220,7 +215,6 @@ describe("StorySection **In plain terms:** marker", () => {
             "**In plain terms:** preferred tail.\n\n" +
             "**Business summary:** later tail.\n",
         }}
-        index={0}
         metrics={null}
       />,
     );
@@ -240,7 +234,6 @@ describe("StorySection subtitles", () => {
         <StorySection
           projectId="01-rag-agent"
           section={{ ...BASE, id, title: id }}
-          index={0}
           metrics={null}
         />,
       );
@@ -255,7 +248,6 @@ describe("StorySection subtitles", () => {
       <StorySection
         projectId="01-rag-agent"
         section={{ ...BASE, id: "appendix", title: "Appendix" }}
-        index={0}
         metrics={null}
       />,
     );
@@ -297,7 +289,7 @@ describe("StorySection h2 title styling", () => {
   it("renders the h2 as the bare section title — no number span", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
-      <StorySection projectId="01-rag-agent" section={{ ...BASE, title: "Background" }} index={0} metrics={null} />,
+      <StorySection projectId="01-rag-agent" section={{ ...BASE, title: "Background" }} metrics={null} />,
     );
     const h2 = document.querySelector(".story-section h2")!;
     expect(h2.querySelector(".rail-num")).toBeNull();
@@ -316,7 +308,7 @@ describe("StorySection conclusions details block", () => {
   it("legacy conclusions (no skeleton heading) keep the collapsed-body fallback", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
-      <StorySection projectId="01-rag-agent" section={CONCLUSIONS} index={7} metrics={null} />,
+      <StorySection projectId="01-rag-agent" section={CONCLUSIONS} metrics={null} />,
     );
     const details = document.querySelector("details.story-details");
     expect(details).not.toBeNull();
@@ -346,7 +338,7 @@ describe("StorySection conclusions details block", () => {
         "**Business summary:** the wrap-up in plain words.\n",
     };
     render(
-      <StorySection projectId="01-rag-agent" section={skeleton} index={7} metrics={null} />,
+      <StorySection projectId="01-rag-agent" section={skeleton} metrics={null} />,
     );
     // narrative visible outside the dropdown
     const visible = document.querySelector("section > .story-cols .prose")!;
@@ -374,7 +366,7 @@ describe("StorySection conclusions details block", () => {
 
   it("keeps non-conclusions sections as the plain two-column layout", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
-    render(<StorySection projectId="01-rag-agent" section={BASE} index={0} metrics={null} />);
+    render(<StorySection projectId="01-rag-agent" section={BASE} metrics={null} />);
     expect(document.querySelector("details.story-details")).toBeNull();
     expect(document.querySelector(".story-cols")).not.toBeNull();
   });

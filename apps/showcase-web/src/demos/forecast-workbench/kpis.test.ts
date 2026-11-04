@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ForecastWindow } from "../types";
-import { bestModelAt, peakAbsError, peakDayMae, verdictText, wapeAt } from "./kpis";
+import { bestModelAt, peakAbsError, verdictText, wapeAt } from "./kpis";
 
 // 4-day fixture: actual [10, 20, 10, 40]; naive flat 10; lgbm [12, 18, 14, 30].
 const ACTUAL = [10, 20, 10, 40];
@@ -29,17 +29,6 @@ describe("wapeAt", () => {
   });
   it("is 0 when the scored volume is 0", () => {
     expect(wapeAt([0, 0], [1, 1], 2)).toBe(0);
-  });
-});
-
-describe("peakDayMae", () => {
-  it("scores MAE on the top-decile-by-actual days (k = ceil(0.1·h))", () => {
-    // h=4 -> k=1: only the biggest day (40): |30-40| = 10
-    expect(peakDayMae(ACTUAL, LGBM, 4)).toBeCloseTo(10);
-    // h=1 -> k=1: the top day of the first 1 is day 0
-    expect(peakDayMae(ACTUAL, LGBM, 1)).toBeCloseTo(2);
-    // naive on the top day: |10-40| = 30
-    expect(peakDayMae(ACTUAL, NAIVE, 4)).toBeCloseTo(30);
   });
 });
 

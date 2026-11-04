@@ -112,7 +112,9 @@ export function DemoWorkbench({
   about,
 }: {
   manifest: DemoManifest;
-  state: ControlState;
+  /** Chrome consumes only the scenario/reset surface; control values stay
+   *  with the demo's own slots. */
+  state: Pick<ControlState, "activeScenario" | "applyScenario" | "reset">;
   /** KPI band content: KpiTiles only (the Notice renders in its own strip). */
   kpis: ReactNode;
   /** Dominant chart; sized to match the controls rail's natural height. */

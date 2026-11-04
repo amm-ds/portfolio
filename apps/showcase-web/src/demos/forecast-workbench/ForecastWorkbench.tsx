@@ -1,21 +1,19 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { LineChart } from "../charts/LineChart";
 import type { CatalogEntry, DemoManifest, ForecastWorkbenchPayload } from "../types";
-import { DemoFigure, DemoWorkbench, KpiTile, Notice } from "../workbench";
-import { C_AMBER, C_HIST, C_PINK, MODELS, assembleChartData } from "./chartData";
+import { DemoFigure, DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
+import { C_AMBER, C_HIST, C_PINK, MODELS, MODEL_LABELS, assembleChartData } from "./chartData";
 import { bestModelAt, verdictText, wapeAt } from "./kpis";
 import { EnvelopePanel, EnvelopePlaceholder, ErrorCompositionPanel, VerdictPanel } from "./panels";
-import { fetchForecastPayload, fetchManifest } from "./payload";
+import { fetchForecastPayload } from "./payload";
+import { getDemoManifest } from "../../api";
 import { usePageMeta } from "../../seo";
-import { useWorkbenchState } from "./useWorkbenchState";
 
 const HORIZONS = [7, 14, 21, 28];
 const NAIVE = "seasonal_naive";
 
 /** Every demo chip, in display order — the workbench opens with all of them. */
 const ALL_MODEL_KEYS = MODELS.map((m) => m.key).join(",");
-
-const MODEL_LABELS = Object.fromEntries(MODELS.map((m) => [m.key, m.label]));
 
 /** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
 const FALLBACK_MANIFEST: DemoManifest = {
@@ -109,7 +107,7 @@ export default function ForecastWorkbench() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchManifest("forecast-workbench")
+    getDemoManifest("forecast-workbench")
       .then((m) => !cancelled && setManifest(m))
       .catch(() => {
         /* payload fetch below reports the real error */
@@ -140,11 +138,11 @@ function Workbench({
 }) {
   const firstSeries = payload.catalog[0]?.series_id ?? "";
   // single scored-once origin by design: no origin control
-  const state = useWorkbenchState(
+  const state = useControlState<string | number>(
     { series: firstSeries, models: ALL_MODEL_KEYS, horizon: 28 },
     manifest.scenarios,
   );
-  const { values, setValue } = state;
+  const { controls: values, setControl: setValue } = state;
 
   const seriesId = payload.catalog.some((e) => e.series_id === values.series)
     ? String(values.series)
@@ -198,18 +196,11 @@ function Workbench({
     <DemoWorkbench
       manifest={manifest}
       state={{
-        controls: Object.fromEntries(Object.entries(values).map(([k, v]) => [k, Number(v)])),
-        setControl: (key, value) => {
-          const raw = values[key];
-          setValue(key, typeof raw === "number" ? value : String(value));
-        },
-        activeScenario: state.activeScenario,
-        applyScenario: state.applyScenario,
+        ...state,
         reset: () => {
           state.reset();
           setValue("series", firstSeries);
         },
-        shareUrl: "",
       }}
       controls={
         <>

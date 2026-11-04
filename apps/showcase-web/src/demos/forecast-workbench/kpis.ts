@@ -13,19 +13,6 @@ export function wapeAt(actual: number[], pred: number[], h: number): number {
   return vol > 0 ? err / vol : 0;
 }
 
-/** MAE on the top-decile-by-actual days among the first `h` scored days
- * (the track's peak_mae rule, k = ceil(0.1·h) ≥ 1). */
-export function peakDayMae(actual: number[], pred: number[], h: number): number {
-  const n = Math.max(1, Math.min(h, actual.length));
-  const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => actual[b] - actual[a]);
-  const k = Math.max(1, Math.ceil(0.1 * n));
-  let sum = 0;
-  for (let i = 0; i < k; i++) {
-    sum += Math.abs(pred[idx[i]] - actual[idx[i]]);
-  }
-  return sum / k;
-}
-
 /** The best (lowest WAPE@h) candidate among the selected models — the KPI
  * headline. `seasonal_naive` is the floor, never the "best" unless it is the
  * only selection. */

@@ -1,12 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
-import { ChannelCards, channelMailtoHref } from "../components/ChannelCards";
+import { ChannelCards, channelMailtoHref, EMAIL_RE } from "../components/ChannelCards";
 import { LanguagesAvailability } from "../components/LanguagesAvailability";
 import { usePageMeta } from "../seo";
 import { AVAILABILITY, CONTACT_EMAIL, REPO_URL, SITE_URL } from "../config";
-
-const mailtoHref = channelMailtoHref;
 
 /** How engagements start — rendered as a numbered roadmap timeline. The
  * revision-round wording deliberately carries no count. */
@@ -36,7 +34,6 @@ export interface InquiryFields {
   message: string;
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_MESSAGE = 10;
 
 export function validateInquiry(fields: InquiryFields): Partial<Record<keyof InquiryFields, string>> {
@@ -218,7 +215,7 @@ export function Contact() {
         <a href={REPO_URL} target="_blank" rel="noopener noreferrer">
           github
         </a>{" "}
-        · <a href={mailtoHref}>email</a>
+        · <a href={channelMailtoHref}>email</a>
       </p>
     </>
   );

@@ -1,18 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Scenario } from "../types";
 
-export type ControlValues = Record<string, number>;
+export type ControlValues<V extends string | number = string | number> = Record<string, V>;
 
-export interface ControlState {
-  controls: ControlValues;
-  setControl: (key: string, value: number) => void;
+export interface ControlState<V extends string | number = string | number> {
+  controls: ControlValues<V>;
+  setControl: (key: string, value: V) => void;
   /** The scenario whose controls all match the current values, else null. */
   activeScenario: string | null;
   applyScenario: (name: string) => void;
   /** Restores defaults and clears the URL query string. */
   reset: () => void;
-  /** Absolute URL encoding the current control values (for a copy button). */
-  shareUrl: string;
 }
 
 function readQuery(): URLSearchParams {
@@ -20,24 +18,29 @@ function readQuery(): URLSearchParams {
 }
 
 /**
- * Owns a demo's numeric control state. Values serialize to URL query params
- * (`?fn_ratio=5&threshold=0.15`) via `history.replaceState`, so a workbench
- * state is shareable; on mount the query string overrides the defaults (values
- * are coerced to numbers, non-numeric entries ignored).
+ * Owns a demo workbench's control state — numbers for the churn sandbox's
+ * sliders, strings for the forecast workbench's series/model selections.
+ * Values serialize to URL query params (`?fn_ratio=5&threshold=0.15`) via
+ * `history.replaceState`, so a workbench state is shareable; on mount the
+ * query string overrides the defaults (values are coerced to the default's
+ * type — numbers must parse finite, non-numeric entries are ignored).
  */
-export function useControlState(
-  defaults: Record<string, number>,
+export function useControlState<V extends string | number>(
+  defaults: Record<string, V>,
   scenarios: Scenario[],
-): ControlState {
+): ControlState<V> {
   const defaultsKey = JSON.stringify(defaults);
   const scenariosKey = JSON.stringify(scenarios);
 
-  const [controls, setControls] = useState<ControlValues>(() => {
-    const fromQuery: ControlValues = {};
+  const [controls, setControls] = useState<ControlValues<V>>(() => {
+    const fromQuery: ControlValues<V> = {};
     for (const [key, raw] of readQuery()) {
-      const value = Number(raw);
-      if (key in defaults && raw.trim() !== "" && Number.isFinite(value)) {
-        fromQuery[key] = value;
+      if (!(key in defaults) || raw.trim() === "") continue;
+      if (typeof defaults[key] === "number") {
+        const value = Number(raw);
+        if (Number.isFinite(value)) fromQuery[key] = value as V;
+      } else {
+        fromQuery[key] = raw as V;
       }
     }
     return { ...defaults, ...fromQuery };
@@ -47,7 +50,7 @@ export function useControlState(
   // any keys that stop being part of the defaults.
   useEffect(() => {
     setControls((prev) => {
-      const next: ControlValues = {};
+      const next: ControlValues<V> = {};
       for (const [key, value] of Object.entries(prev)) {
         if (key in defaults) next[key] = value;
       }
@@ -57,7 +60,7 @@ export function useControlState(
   }, [defaultsKey, scenariosKey]);
 
   const writeQuery = useCallback(
-    (next: ControlValues) => {
+    (next: ControlValues<V>) => {
       try {
         const params = readQuery();
         for (const [key, value] of Object.entries(next)) {
@@ -79,10 +82,10 @@ export function useControlState(
   // Coalesce URL writes: drags fire setControl per pointermove, and Safari is
   // strict about replaceState churn. State updates immediately; the query
   // string follows at most every 300ms and once more on the trailing edge.
-  const pendingRef = useRef<ControlValues | null>(null);
+  const pendingRef = useRef<ControlValues<V> | null>(null);
   const timerRef = useRef(0);
   const writeQueryThrottled = useCallback(
-    (next: ControlValues) => {
+    (next: ControlValues<V>) => {
       pendingRef.current = next;
       if (timerRef.current) return;
       writeQuery(next);
@@ -109,7 +112,7 @@ export function useControlState(
   }, [defaultsKey]);
 
   const setControl = useCallback(
-    (key: string, value: number) => {
+    (key: string, value: V) => {
       setControls((prev) => {
         const next = { ...prev, [key]: value };
         writeQueryThrottled(next);
@@ -122,7 +125,7 @@ export function useControlState(
   const activeScenario = useMemo(() => {
     for (const scenario of scenarios) {
       const matches = Object.entries(scenario.controls).every(
-        ([key, value]) => typeof value === "number" && controls[key] === value,
+        ([key, value]) => controls[key] === value,
       );
       if (matches) return scenario.name;
     }
@@ -134,9 +137,12 @@ export function useControlState(
       const scenario = scenarios.find((s) => s.name === name);
       if (!scenario) return;
       setControls((prev) => {
-        const next: ControlValues = { ...prev };
+        const next: ControlValues<V> = { ...prev };
         for (const [key, value] of Object.entries(scenario.controls)) {
-          if (key in defaults && typeof value === "number") next[key] = value;
+          // Booleans never apply; a value must match its default's type.
+          if (typeof value === "boolean" || !(key in defaults)) continue;
+          if (typeof value !== typeof defaults[key]) continue;
+          next[key] = value as V;
         }
         writeQueryThrottled(next);
         return next;
@@ -148,19 +154,9 @@ export function useControlState(
 
   const reset = useCallback(() => {
     setControls({ ...defaults });
-    writeQueryThrottled(defaults);
+    writeQueryThrottled({ ...defaults });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultsKey, writeQueryThrottled]);
 
-  const shareUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(controls)) {
-      if (value !== defaults[key]) params.set(key, String(value));
-    }
-    const qs = params.toString();
-    return window.location.origin + window.location.pathname + (qs ? `?${qs}` : "");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [controls, defaultsKey]);
-
-  return { controls, setControl, activeScenario, applyScenario, reset, shareUrl };
+  return { controls, setControl, activeScenario, applyScenario, reset };
 }
