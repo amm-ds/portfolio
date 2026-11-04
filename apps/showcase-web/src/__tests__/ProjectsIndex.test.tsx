@@ -156,11 +156,11 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "Projects and demos repository",
+        "Proof of work — case studies and live demos",
       ),
     );
     expect(
-      screen.getByText(/A growing set of public, reproducible case studies with live demos/i),
+      screen.getByText(/This is how your engagement would run/i),
     ).toBeInTheDocument();
     // every anchor target exists once rows render
     await waitFor(() => expect(document.getElementById("machine-learning")).not.toBeNull());
@@ -202,7 +202,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "Projects and demos repository",
+        "Proof of work — case studies and live demos",
       ),
     );
     // same structure as /services: hero section → kicker → h1 → intro <p>
@@ -223,7 +223,7 @@ describe("ProjectsIndex", () => {
     );
     await waitFor(() =>
       expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-        "Projects and demos repository",
+        "Proof of work — case studies and live demos",
       ),
     );
     // the experiments block label sits above the topic rows
@@ -301,7 +301,7 @@ describe("ProjectsIndex", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: "live demos" }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/play with the live systems behind the experiments/i)).toBeInTheDocument();
+    expect(screen.getByText(/the systems behind the studies, live — change the inputs/i)).toBeInTheDocument();
     const demos = document.querySelector(".demos")!;
     expect(demos).not.toBeNull();
     // all demo cards in ONE row container — no per-group sub-headings
@@ -675,7 +675,7 @@ describe("ProjectsIndex", () => {
       expect(screen.getByRole("heading", { level: 2, name: "experiments" })).toBeInTheDocument(),
     );
     const intro = document.querySelector(".experiments-block > .section-intro")!;
-    expect(intro.textContent).toMatch(/grouped by discipline/i);
+    expect(intro.textContent).toMatch(/the same discipline your engagement would get/i);
     expect(intro.textContent).toMatch(/terms are defined in the glossary/i);
     const glossary = intro.querySelector("a")!;
     expect(glossary.getAttribute("href")).toBe("/glossary");

@@ -277,11 +277,11 @@ export function ProjectsIndex() {
     <>
       <section className="services-hero">
         <p className="kicker">&gt; projects</p>
-        <h1>Projects and demos repository</h1>
+        <h1>Proof of work — case studies and live demos</h1>
         <p>
-          A growing set of public, reproducible case studies with live demos — real datasets,
-          measured baselines and published pipelines. Every number on this page can be re-run
-          from the repository.
+          This is how your engagement would run: real data, named baselines, measured results —
+          every study below is a project delivered the way I deliver client work, and every
+          number on this page re-runs from the repository.
         </p>
       </section>
       <nav className="page-index" aria-label="On this page">
@@ -311,8 +311,8 @@ export function ProjectsIndex() {
         <div className="experiments-block" id="experiments">
           <h2 className="section-title section-title--major">experiments</h2>
           <p className="section-intro">
-            A growing set of reproducible case studies grouped by discipline — each card
-            states the objective, the data and the result. Terms are defined in the{" "}
+            Each study states the business question, the data and the measured result — the
+            same discipline your engagement would get. Terms are defined in the{" "}
             <Link to="/glossary">glossary</Link>.
           </p>
           <div className="topic-rows">

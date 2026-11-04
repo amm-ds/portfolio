@@ -17,7 +17,7 @@ function renderServices() {
 describe("Services page (wave 8)", () => {
   it("renders the hero and exactly 8 generic offering cards (one per service line)", () => {
     renderServices();
-    expect(screen.getByText("> services --freelance")).toBeInTheDocument();
+    expect(screen.getByText("> services")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "ML/AI engineering, end to end",
     );

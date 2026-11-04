@@ -169,16 +169,16 @@ export function Services() {
   return (
     <>
       <section className="services-hero">
-        <p className="kicker">&gt; services --freelance</p>
+        <p className="kicker">&gt; services</p>
         <h1>ML/AI engineering, end to end</h1>
         <p>
-          Freelance ML/AI engineering for teams that need end-to-end delivery — from
-          problem framing to production systems with the engineering artifacts (decision
-          records, evaluation harnesses, runbooks) that keep them operable.
+          Independent ML/AI engineering for teams and enterprises that need end-to-end
+          delivery — from problem framing to production systems, with the decision records,
+          evaluation harnesses and runbooks that keep them operable after handover.
         </p>
         <p>
-          Every offering maps to public case studies on this site — the same pipelines,
-          metrics and stated limits you would receive.
+          Every offering below is backed by a public case study on this site — the same
+          pipelines, metrics and stated limits you would receive.
         </p>
       </section>
 

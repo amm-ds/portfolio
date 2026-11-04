@@ -36,7 +36,7 @@ export const DEMOS: Demo[] = [...STATIC_DEMO_REGISTRY]
     hero: d.hero ? { ...d.hero, label: chipLabel(d.hero.label) } : d.hero,
   }));
 
-export const DEMOS_INTRO = "play with the live systems behind the experiments";
+export const DEMOS_INTRO = "the systems behind the studies, live — change the inputs and watch the results move";
 
 /** Cap a results-chip label at six words — the chip is a label, not a
  *  sentence. Longer registry labels (the demand-forecasting hero is eleven
