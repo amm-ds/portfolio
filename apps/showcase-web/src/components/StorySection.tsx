@@ -70,6 +70,7 @@ export function StorySection({
   metrics,
   figureCaptions = {},
   linkedTerms,
+  index,
 }: {
   projectId: string;
   section: StorySectionData;
@@ -78,6 +79,10 @@ export function StorySection({
   figureCaptions?: Record<string, string>;
   /** Shared glossary-linked slug set, threaded page-wide by the case study. */
   linkedTerms?: Set<string>;
+  /** One-based section position — rendered as the blue number in the h2,
+   *  matching the left-rail index (`rail-num`) so the heading and the rail
+   *  read identically. */
+  index?: number;
 }) {
   const [proseMd, implication, implicationLabel] = splitBusinessImplication(section.text_md);
   const [visibleMd, technicalMd] =
@@ -115,7 +120,12 @@ export function StorySection({
 
   return (
     <section id={`sec-${section.id}`} className="story-section">
-      <h2>{section.title}</h2>
+      <h2>
+        {index !== undefined && (
+          <span className="sec-num">{String(index).padStart(2, "0")}</span>
+        )}
+        {section.title}
+      </h2>
       {SECTION_SUBTITLES[section.id] && (
         <p className="section-subtitle">{SECTION_SUBTITLES[section.id]}</p>
       )}

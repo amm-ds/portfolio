@@ -70,6 +70,7 @@ export function CaseStudy({
                 metrics={metrics}
                 figureCaptions={story.figure_captions}
                 linkedTerms={linkedTermsBySection[i]}
+                index={i + 1}
               />
               {s.id === "background" && (
                 <>

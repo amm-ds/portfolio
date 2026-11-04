@@ -256,27 +256,28 @@ describe("StorySection subtitles", () => {
 });
 
 describe("StorySection h2 title styling", () => {
-  it("paints a green title behind a blue hash marker, with no glow", () => {
+  it("paints a green title behind a green > marker with a blue section number, no glow", () => {
     const css = readFileSync("src/styles.css", "utf8");
     const h2Rule = css.match(/\.story-section h2 \{[\s\S]*?\n\}/)![0];
     expect(h2Rule).toContain("color: var(--accent);");
     expect(h2Rule).not.toContain("text-shadow");
-    // the numbered prefix is gone from the section headings (the left rail
-    // keeps its own numbering)
+    // the heading and the left-rail index share one numbering: the number is
+    // real markup (.sec-num), not a generated-content trick
     expect(css).not.toContain(".story-section h2 .rail-num");
-    // no CSS-generated numbering residue either: no counter or ::marker/::before
-    // digit rule may target the story h2 — the only ::before is the "# " marker
     expect(css).not.toMatch(/counter-(reset|increment)/);
     expect(css).not.toContain('content: counter(');
     const h2BeforeRules = [...css.matchAll(/\.story-section h2::before \{[\s\S]*?\n\}/g)].map(
       (m) => m[0],
     );
     expect(h2BeforeRules).toHaveLength(1);
-    // the "# " marker renders in the secondary (blue) color, no glow of its own
+    // the "> " prompt marker stays green with no glow of its own
     const beforeRule = h2BeforeRules[0];
-    expect(beforeRule).toContain('content: "# ";');
-    expect(beforeRule).toContain("color: var(--secondary);");
+    expect(beforeRule).toContain('content: "> ";');
+    expect(beforeRule).toContain("color: var(--accent);");
     expect(beforeRule).not.toContain("accent-glow");
+    // the number renders in the rail's blue family
+    const numRule = css.match(/\.story-section h2 \.sec-num \{[\s\S]*?\n\}/)![0];
+    expect(numRule).toContain("color: var(--secondary);");
     // no other rule re-paints the story h2 title color (the ::before marker
     // rule is excluded — only the plain h2 rule may carry a color)
     const otherColorRules = [...css.matchAll(/\.story-section h2\s*\{[^}]*color:[^;}]+;/g)].map(
@@ -286,14 +287,20 @@ describe("StorySection h2 title styling", () => {
     expect(otherColorRules[0]).toContain("var(--accent)");
   });
 
-  it("renders the h2 as the bare section title — no number span", () => {
+  it("renders the h2 as the numbered section title — the same number the rail shows", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: "no json" }, 404)));
     render(
-      <StorySection projectId="01-rag-agent" section={{ ...BASE, title: "Background" }} metrics={null} />,
+      <StorySection
+        projectId="01-rag-agent"
+        section={{ ...BASE, title: "Background" }}
+        metrics={null}
+        index={1}
+      />,
     );
     const h2 = document.querySelector(".story-section h2")!;
     expect(h2.querySelector(".rail-num")).toBeNull();
-    expect(h2.textContent).toBe("Background");
+    expect(h2.querySelector(".sec-num")!.textContent).toBe("01");
+    expect(h2.textContent).toBe("01Background");
   });
 });
 
