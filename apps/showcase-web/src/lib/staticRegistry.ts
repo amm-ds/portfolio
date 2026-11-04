@@ -222,6 +222,23 @@ export const STATIC_PROJECTS: StaticProject[] = [
     ],
     "title": "DataFrame Engines Benchmark",
     "topic": "Data Engineering"
+  },
+  {
+    "data": "UCI Bike Sharing, Capital Bikeshare hourly (real, sha256-pinned) + seeded synthetic CI twin",
+    "domain": "Classical ML + Deep Learning",
+    "id": "12-tabular-ml-lifecycle",
+    "order": 12,
+    "status": "working",
+    "techniques": [
+      "sklearn Pipelines",
+      "LightGBM",
+      "Optuna HPO",
+      "PyTorch MLP",
+      "feature selection",
+      "bootstrap CIs"
+    ],
+    "title": "Tabular ML & Deep Learning Lifecycle",
+    "topic": "ML Systems & Decisioning"
   }
 ];
 
@@ -544,6 +561,40 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "results",
       "conclusions"
     ]
+  },
+  {
+    "figure_names": [
+      "ablation_dotplot",
+      "bootstrap_ci",
+      "correlation_heatmap",
+      "learning_curves",
+      "mi_lollipop",
+      "mlp_loss_curves",
+      "model_comparison",
+      "rentals_by_hour_season",
+      "residual_heatmap",
+      "residual_vs_fitted",
+      "temp_vs_rentals"
+    ],
+    "has_roadmap": true,
+    "metrics_keys": [
+      "lightgbm_hpo",
+      "mlp",
+      "random_forest",
+      "ridge",
+      "seasonal_naive"
+    ],
+    "project_id": "12-tabular-ml-lifecycle",
+    "section_ids": [
+      "background",
+      "objectives",
+      "data",
+      "eda",
+      "training",
+      "evaluation",
+      "results",
+      "conclusions"
+    ]
   }
 ];
 
@@ -555,7 +606,7 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
       "label": "official WRMSSE",
       "value": "0.6161 vs 0.8929"
     },
-    "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, member envelope and per-series WAPE respond.",
+    "hook": "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, model spread and per-series WAPE respond.",
     "href": "/demos/forecast-workbench",
     "id": "forecast-workbench",
     "project": "02-demand-forecasting",

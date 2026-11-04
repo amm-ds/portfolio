@@ -35,7 +35,9 @@ function MoreInformation({
           </div>
           <div className="wb-evidence-col">
             <h3 className="wb-evidence-tag">results</h3>
-            {children}
+            {/* same dark panel as the interpretation column — one visual for
+                both evidence bodies, wherever a demo's result blocks render */}
+            <div className="wb-evidence-about wb-evidence-results">{children}</div>
           </div>
         </div>
         {(manifest.skills.length > 0 || manifest.live_endpoints.length > 0) && (

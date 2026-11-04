@@ -45,25 +45,6 @@ export function weeklyAbsError(actual: number[], pred: number[], h: number): num
   return buckets;
 }
 
-/** Envelope stats over the first `h` scored days, straight from the payload
- * arrays: per-day hit indicator (lo ≤ actual ≤ hi), the coverage fraction
- * and the mean lo→hi width. NaN-safe when the envelope is missing. */
-export function bandCalibration(
-  window: ForecastWindow,
-  h: number,
-): { hits: number; n: number; coverage: number; meanWidth: number } {
-  const n = Math.max(0, Math.min(h, window.actual.length, window.band.lo.length, window.band.hi.length));
-  let hits = 0;
-  let width = 0;
-  for (let i = 0; i < n; i++) {
-    const lo = window.band.lo[i];
-    const hi = window.band.hi[i];
-    if (window.actual[i] >= lo && window.actual[i] <= hi) hits += 1;
-    width += hi - lo;
-  }
-  return { hits, n, coverage: n > 0 ? hits / n : 0, meanWidth: n > 0 ? width / n : 0 };
-}
-
 /** Worst single-day |pred − actual| over the first `h` scored days — the
  * per-model peak-day MAE quoted in the verdict rows. */
 export function peakAbsError(actual: number[], pred: number[], h: number): number {

@@ -4,7 +4,7 @@ import type { CatalogEntry, DemoManifest, ForecastWorkbenchPayload } from "../ty
 import { DemoFigure, DemoWorkbench, KpiTile, Notice, useControlState } from "../workbench";
 import { C_AMBER, C_HIST, C_PINK, MODELS, MODEL_LABELS, assembleChartData } from "./chartData";
 import { bestModelAt, verdictText, wapeAt } from "./kpis";
-import { EnvelopePanel, EnvelopePlaceholder, ErrorCompositionPanel, VerdictPanel } from "./panels";
+import { ErrorCompositionPanel, ModelSpreadPanel, VerdictPanel } from "./panels";
 import { fetchForecastPayload } from "./payload";
 import { getDemoManifest } from "../../api";
 import { usePageMeta } from "../../seo";
@@ -19,7 +19,7 @@ const ALL_MODEL_KEYS = MODELS.map((m) => m.key).join(",");
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "forecast-workbench",
   title: "demand forecast workbench",
-  hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, member envelope and per-series WAPE respond.",
+  hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, model spread and per-series WAPE respond.",
   project: "02-demand-forecasting",
   group: "plan operations",
   skills: ["time series forecasting", "prediction intervals", "demand classification"],
@@ -329,17 +329,13 @@ function Workbench({
             <ErrorCompositionPanel window={window} primary={best} h={h} />
           </div>
           <div className="wb-secondary-panel">
-            <h3 className="wb-rail-title">member envelope</h3>
-            {modelsOn.includes("convex_ensemble") ? (
-              <EnvelopePanel
-                window={window}
-                h={h}
-                committedMeanWidth={band.mean_width}
-                forecastDates={originBlock.forecast_dates}
-              />
-            ) : (
-              <EnvelopePlaceholder />
-            )}
+            <h3 className="wb-rail-title">model spread</h3>
+            <ModelSpreadPanel
+              window={window}
+              modelsOn={modelsOn}
+              h={h}
+              forecastDates={originBlock.forecast_dates}
+            />
           </div>
           <div className="wb-secondary-panel">
             <h3 className="wb-rail-title">model verdict</h3>

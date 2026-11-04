@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
 import ForecastWorkbench from "../demos/forecast-workbench/ForecastWorkbench";
+import { ModelSpreadPanel } from "../demos/forecast-workbench/panels";
 import type { ForecastWorkbenchPayload } from "../demos/types";
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -407,43 +408,43 @@ describe("ForecastWorkbench", () => {
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
     // the churn-style card row sits in the secondary band under the chart
     expect(screen.getByText("error composition")).toBeInTheDocument();
-    expect(screen.getByText("member envelope")).toBeInTheDocument();
+    expect(screen.getByText("model spread")).toBeInTheDocument();
     expect(screen.getByText("model verdict")).toBeInTheDocument();
     expect(document.querySelectorAll(".wb-secondary .figure-card")).toHaveLength(3);
 
     const errCard = () =>
       screen.getByText("error composition").closest(".wb-secondary-panel")!;
-    const bandCard = () =>
-      screen.getByText("member envelope").closest(".wb-secondary-panel")!;
-    // full-horizon headlines (the demo opens at h=28)
+    const spreadCard = () => screen.getByText("model spread").closest(".wb-secondary-panel")!;
+    // full-horizon headlines (the demo opens at h=28 with every candidate on)
     expect(errCard().textContent).toMatch(/wape @28d 0\.\d{3}/);
-    expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
+    expect(spreadCard().textContent).toMatch(/8 models/);
     const errBefore = errCard().textContent;
     // next-week window: every card recomputes client-side
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
     expect(errCard().textContent).toMatch(/wape @7d 0\.\d{3}/);
     expect(errCard().textContent).not.toBe(errBefore);
-    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
+    expect(spreadCard().textContent).toMatch(/mean spread [\d.]+/);
     expect(
       screen.getByText("model verdict").closest(".wb-secondary-panel")!.textContent,
     ).toMatch(/h = 7/);
   });
 
-  it("collapses the envelope card when the ensemble is deselected", async () => {
+  it("keeps the spread card live for any selection — a band across models, recomputed when the ensemble toggles off", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
-    expect(screen.queryByText(/enable the ensemble/)).toBeNull();
+    const spreadCard = () => screen.getByText("model spread").closest(".wb-secondary-panel")!;
+    // default: every candidate — a disagreement band with a closest-model chip
+    expect(spreadCard().textContent).toMatch(/8 models/);
+    expect(spreadCard().textContent).toMatch(/closest/);
+    expect(spreadCard().textContent).toMatch(/not a calibrated interval/);
+    // deselecting the ensemble does NOT collapse the card — it recomputes
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expect(
-      screen.getByText("enable the ensemble to see its member envelope"),
-    ).toBeInTheDocument();
-    // re-enabling restores the live envelope grid
+    expect(spreadCard().textContent).toMatch(/7 models/);
+    expect(spreadCard().querySelector(".state-box")).toBeNull();
+    const before = spreadCard().textContent;
     fireEvent.click(screen.getByRole("button", { name: "ensemble" }));
-    expect(screen.queryByText(/enable the ensemble/)).toBeNull();
-    expect(
-      screen.getByText("member envelope").closest(".wb-secondary-panel")!.textContent,
-    ).toMatch(/days inside/);
+    expect(spreadCard().textContent).not.toBe(before);
   });
 
   it("names the seasonal naive as the honest per-series winner on the intermittent series", async () => {
@@ -470,51 +471,51 @@ describe("ForecastWorkbench", () => {
     );
   });
 
-  it("renders the envelope card as weekly hit rows — gauge on top, w1..wk labels, one row per week at 28/14/7 — with the no-target legend and the tight/loose footer", async () => {
+  it("renders the model spread card as a per-day disagreement band over the visible horizon, recomputing at 28/14/7", async () => {
     mockFetch();
     renderDemo();
     await waitFor(() => expect(screen.getByText("WAPE @ 28d")).toBeInTheDocument());
-    const bandCard = () => screen.getByText("member envelope").closest(".wb-secondary-panel")!;
-    // coverage gauge: per-series fill, no 80% target marker (an envelope has
-    // no target), the committed-width footer instead
-    const gauge = bandCard().querySelector(".fwb-cov-gauge")!;
-    expect(gauge).not.toBeNull();
-    expect(gauge.querySelector(".fwb-cov-marker.target")).toBeNull();
-    expect(gauge.querySelector(".fwb-cov-marker.committed")).not.toBeNull();
-    // the folded labels: day count, no-target legend, mean width
-    expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
-    expect(bandCard().textContent).toMatch(/mean width [\d.]+u/);
-    expect(bandCard().textContent).toMatch(/no target \(envelope\)/);
-    expect(bandCard().textContent).toMatch(/committed catalog mean envelope width 1\.6u/);
-
-    const rowsAt = () => Array.from(bandCard().querySelectorAll(".fwb-band-week"));
-    const labelsAt = () => rowsAt().map((r) => r.querySelector(".fwb-band-week-label")!.textContent);
-    // h=28: 4 labeled weekly rows of 7 squares (28 total), hover titles kept
-    expect(labelsAt()).toEqual(["w1", "w2", "w3", "w4"]);
-    for (const row of rowsAt()) {
-      expect(row.querySelectorAll(".fwb-band-day")).toHaveLength(7);
-    }
-    expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(28);
-    expect(bandCard().querySelector(".fwb-band-day")!.getAttribute("title")).toMatch(
-      /\(day \+1\): inside|outside/,
-    );
-    // h=14: 2 rows; h=7: a single full-width row — the card never dead-ends
-    fireEvent.click(screen.getByRole("button", { name: "14d" }));
-    expect(labelsAt()).toEqual(["w1", "w2"]);
-    expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(14);
+    const spreadCard = () => screen.getByText("model spread").closest(".wb-secondary-panel")!;
+    // band polygon + actuals line + readout chips, honest footer
+    expect(spreadCard().querySelectorAll("svg path[d]")).not.toHaveLength(0);
+    expect(spreadCard().textContent).toMatch(/mean spread [\d.]+/);
+    expect(spreadCard().textContent).toMatch(/widest/);
+    expect(spreadCard().textContent).toMatch(/closest/);
+    const comment = spreadCard().querySelector(".figure-comment")!.textContent!;
+    expect(comment).toContain("disagree");
+    expect(comment).toContain("not a calibrated interval");
+    // horizon toggle recomputes the band and the footer
     fireEvent.click(screen.getByRole("button", { name: "7d" }));
-    expect(bandCard().textContent).toMatch(/\d+\/7 days inside/);
-    expect(labelsAt()).toEqual(["w1"]);
-    expect(bandCard().querySelectorAll(".fwb-band-day")).toHaveLength(7);
-    // one computed footer sentence: where the envelope hugs / floats off actuals
-    const comment = bandCard().querySelector(".figure-comment")!.textContent!;
-    expect(comment).toContain("tightest");
-    expect(comment).toContain("loosest");
-    expect(comment).toContain("not a calibrated prediction interval");
-    const before = bandCard().textContent;
-    fireEvent.click(screen.getByRole("button", { name: "28d" }));
-    expect(bandCard().textContent).toMatch(/\d+\/28 days inside/);
-    expect(bandCard().textContent).not.toBe(before);
+    expect(spreadCard().textContent).toMatch(/8 models/);
+    expect(spreadCard().textContent).toMatch(/mean spread [\d.]+/);
+    // the band never dead-ends: it is present at every shipped horizon
+    for (const horizon of ["14d", "28d"]) {
+      fireEvent.click(screen.getByRole("button", { name: horizon }));
+      expect(spreadCard().querySelectorAll("svg path[d]")).not.toHaveLength(0);
+      expect(spreadCard().textContent).toMatch(/mean spread [\d.]+/);
+    }
+  });
+
+  it("switches the spread card to per-day error bars when a single model is selected", () => {
+    const windowFixture = {
+      history: [1, 2],
+      actual: [10, 12, 11, 13],
+      curves: { seasonal_naive: [9, 12, 10, 14] },
+      band: { lo: [9, 12, 10, 14], hi: [9, 12, 10, 14] },
+      wape: {},
+    };
+    render(
+      <ModelSpreadPanel
+        window={windowFixture as never}
+        modelsOn={["seasonal_naive"]}
+        h={4}
+        forecastDates={["2016-05-23", "2016-05-24", "2016-05-25", "2016-05-26"]}
+      />,
+    );
+    // one model cannot disagree with itself: |error| view, band gone
+    expect(screen.getByText(/1 model — \|error\| view/)).toBeInTheDocument();
+    expect(screen.getByText(/mean \|err\| [\d.]+/)).toBeInTheDocument();
+    expect(screen.getByText(/seasonal naive is visible|Only seasonal naive/)).toBeInTheDocument();
   });
 
   it("renders the verdict card as ordered horizontal WAPE bars — naive grey reference, best crowned, fixed scale label — and keeps bar widths pinned when models toggle", async () => {

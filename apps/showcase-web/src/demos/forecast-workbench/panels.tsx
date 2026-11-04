@@ -3,7 +3,7 @@ import { useMeasuredSize } from "../charts/useMeasuredSize";
 import type { CatalogEntry, ForecastWorkbenchPayload, ForecastWindow } from "../types";
 import { DemoFigure } from "../workbench";
 import { C_GRAY, MODEL_COLORS, MODEL_LABELS } from "./chartData";
-import { bandCalibration, peakAbsError, wapeAt, weeklyAbsError } from "./kpis";
+import { peakAbsError, wapeAt, weeklyAbsError } from "./kpis";
 
 const NAIVE = "seasonal_naive";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -157,133 +157,187 @@ export function ErrorCompositionPanel({
 }
 
 /**
- * Member envelope, compact: the per-series coverage for this series × visible
- * horizon as a filled bar (no target marker — the envelope is NOT a
- * calibrated interval, so there is nothing to calibrate against), the
- * committed catalog mean width as a second marker, the per-day hit grid
- * (rows of 7 by week; amber = actual inside the member min/max, pink =
- * outside) and one footer sentence on where the envelope hugs or floats off
- * the actuals. Recomputes client-side from the payload arrays for the
- * selected series and horizon. Collapses to a placeholder when the ensemble
- * is deselected.
+ * Model spread — how much the currently visible models disagree, per day,
+ * across the visible horizon. A band (per-day min/max across the selected
+ * model curves) with the actuals drawn through it, plus the mean spread, the
+ * widest-disagreement day, and the on-average-closest model. Recomputes from
+ * the payload curves on every control change — model toggles and the horizon
+ * slider both move it. With a single model selected the band is zero width by
+ * definition, so the panel switches to that model's daily absolute error
+ * bars; with none selected it audits the seasonal naive instead.
  */
-export function EnvelopePanel({
+export function ModelSpreadPanel({
   window,
+  modelsOn,
   h,
-  committedMeanWidth,
   forecastDates,
 }: {
   window: ForecastWindow;
+  /** Currently visible model keys (any subset, any order). */
+  modelsOn: string[];
   h: number;
-  /** Committed catalog mean envelope width (payload, fixed). */
-  committedMeanWidth: number;
-  /** Forecast dates for the scored window (labels hit-strip days). */
+  /** Forecast dates for the scored window (day labels). */
   forecastDates: string[];
 }) {
-  const cal = bandCalibration(window, h);
+  const { ref, size } = useMeasuredSize<HTMLDivElement>();
+  const W = size?.w ?? 360;
+  const H = size?.h ?? 110;
+  const pad = { l: 34, r: 6, t: 6, b: 16 };
+  const plotW = W - pad.l - pad.r;
+  const plotH = H - pad.t - pad.b;
 
-  // where the envelope is tight/loose vs the actuals: per-day clearance to
-  // the nearest lo/hi edge, signed — positive = that much slack inside the
-  // envelope, negative = a miss by that much past the edge
-  let tightest: { day: number; clearance: number; side: "lo" | "hi" } | null = null;
-  let loosest: { day: number; clearance: number; side: "lo" | "hi" } | null = null;
-  for (let i = 0; i < cal.n; i++) {
-    const lo = window.band.lo[i];
-    const hi = window.band.hi[i];
-    if (!(hi - lo > 0)) continue;
-    const below = window.actual[i] - lo;
-    const above = hi - window.actual[i];
-    const clearance = Math.min(below, above);
-    const side = below <= above ? "lo" : "hi";
-    if (tightest === null || clearance < tightest.clearance) {
-      tightest = { day: i, clearance, side };
-    }
-    if (loosest === null || clearance > loosest.clearance) {
-      loosest = { day: i, clearance, side };
-    }
+  const days = Math.max(1, Math.min(h, window.actual.length));
+  const selected = modelsOn.filter((m) => (window.curves[m]?.length ?? 0) >= days);
+  const keys = selected.length > 0 ? selected : [NAIVE];
+  const single = keys.length <= 1;
+  const onlyKey = keys[0];
+
+  // per-day min/max across the selected curves and the disagreement width
+  const lo: number[] = [];
+  const hi: number[] = [];
+  for (let d = 0; d < days; d++) {
+    const vals = keys
+      .map((k) => window.curves[k][d])
+      .filter((v): v is number => typeof v === "number");
+    lo.push(vals.length ? Math.min(...vals) : 0);
+    hi.push(vals.length ? Math.max(...vals) : 0);
   }
+  const spread = hi.map((v, i) => v - lo[i]);
+  const meanSpread = spread.reduce((s, v) => s + v, 0) / days;
+  const widestDay = spread.reduce((best, v, i) => (v > spread[best] ? i : best), 0);
+  // on-average-closest model across the window (mean absolute error)
+  const leader = keys
+    .map((k) => ({
+      key: k,
+      mae:
+        window.curves[k].slice(0, days).reduce((s, v, i) => s + Math.abs(v - window.actual[i]), 0) /
+        days,
+    }))
+    .sort((a, b) => a.mae - b.mae)[0];
+  // single-model view: daily absolute error of that model
+  const err = keys[0]
+    ? window.curves[keys[0]].slice(0, days).map((v, i) => Math.abs(v - window.actual[i]))
+    : [];
 
-  const edgePhrase = (clearance: number, side: "lo" | "hi"): string =>
-    clearance >= 0
-      ? `clears the ${side} edge by ${clearance.toFixed(1)}u`
-      : `overshoots the ${side} edge by ${Math.abs(clearance).toFixed(1)}u`;
+  const yMax = single
+    ? Math.max(...err, 1) * 1.05
+    : Math.max(...hi, ...window.actual.slice(0, days), 1) * 1.05;
+  const slot = plotW / days;
+  const barW = Math.min(slot * 0.5, 14);
+  const px = (i: number) => pad.l + slot * i + slot / 2;
+  const py = (v: number) => pad.t + plotH - (v / yMax) * plotH;
+  const base = pad.t + plotH;
+  const yTicks = [0, yMax / 2, yMax];
+
+  const bandPath = single
+    ? undefined
+    : `M ${px(0)} ${py(lo[0])} ` +
+      lo.slice(1).map((v, i) => `L ${px(i + 1)} ${py(v)}`).join(" ") +
+      " " +
+      hi.map((_, i) => `L ${px(days - 1 - i)} ${py(hi[days - 1 - i])}`).join(" ") +
+      " Z";
+  const actualPath = window.actual
+    .slice(0, days)
+    .map((v, i) => `${i === 0 ? "M" : "L"} ${px(i)} ${py(v)}`)
+    .join(" ");
 
   return (
     <DemoFigure
       comment={
-        tightest && loosest ? (
+        single ? (
           <>
-            The envelope runs tightest on {shortDate(forecastDates, tightest.day)} — the actual{" "}
-            {edgePhrase(tightest.clearance, tightest.side)} — and loosest on{" "}
-            {shortDate(forecastDates, loosest.day)}, where it{" "}
-            {loosest.clearance >= 0
-              ? `floats ${loosest.clearance.toFixed(1)}u clear of either edge`
-              : edgePhrase(loosest.clearance, loosest.side)}
-            . It is the per-day min/max of the blend members — an envelope,
-            not a calibrated prediction interval.
+            Only {MODEL_LABELS[onlyKey]} is visible — a single model cannot disagree with itself, so
+            the bars show its daily absolute error against the actuals (mean {leader.mae.toFixed(1)}
+            ). Toggle another model on to see the spread band.
           </>
         ) : (
-          <>The envelope is degenerate (zero width) on every scored day — nothing to audit here.</>
+          <>
+            The {keys.length} visible models disagree by {meanSpread.toFixed(1)} rentals/day on
+            average — widest on {shortDate(forecastDates, widestDay)} at {spread[widestDay].toFixed(1)}
+            — and {MODEL_LABELS[leader.key]} lands closest to the actuals across the window. The band
+            is the selection's min/max, not a calibrated interval.
+          </>
         )
       }
     >
-      <div className="fwb-cov-gauge" role="img" aria-label="per-series member-envelope coverage gauge">
-        <div className="fwb-cov-track">
-          <span
-            className={`fwb-cov-fill ${cal.coverage >= 0.5 ? "good" : "bad"}`}
-            style={{ width: `${(cal.coverage * 100).toFixed(1)}%` }}
-          />
-          <span
-            className="fwb-cov-marker committed"
-            style={{ left: `${Math.min(100, cal.coverage * 100).toFixed(1)}%` }}
-          />
-        </div>
-        <div className="fwb-cov-scale">
-          <span>{cal.hits}/{cal.n} days inside</span>
-          <span className="fwb-cov-legend">
-            <span className="fwb-cov-key committed">
-              {cal.coverage > 0 ? `${(cal.coverage * 100).toFixed(1)}% this series — no target (envelope)` : "no target — envelope, not an interval"}
-            </span>
+      <div className="demo-readouts">
+        <span className="chip demo-readout">
+          {single ? `1 model — |error| view` : `${keys.length} models`}
+        </span>
+        <span className="chip demo-readout">
+          {single ? `mean |err| ${leader.mae.toFixed(1)}` : `mean spread ${meanSpread.toFixed(1)}`}
+        </span>
+        <span className="chip demo-readout">
+          {single
+            ? `worst day ${shortDate(forecastDates, err.reduce((b, v, i) => (v > err[b] ? i : b), 0))}`
+            : `widest ${shortDate(forecastDates, widestDay)}`}
+        </span>
+        {!single && (
+          <span className="chip demo-readout">
+            <span className="fwb-dot" style={{ background: MODEL_COLORS[leader.key] }} /> closest{" "}
+            {MODEL_LABELS[leader.key]}
           </span>
-          <span>mean width {cal.meanWidth.toFixed(1)}u</span>
-        </div>
+        )}
       </div>
-      <div className="fwb-band-weeks" role="img" aria-label="per-day envelope hit indicator, one row per week">
-        {Array.from({ length: Math.ceil(cal.n / 7) }, (_, w) => (
-          <div className="fwb-band-week" key={w}>
-            <span className="fwb-band-week-label">w{w + 1}</span>
-            {Array.from({ length: Math.min(7, cal.n - w * 7) }, (_, j) => {
-              const i = w * 7 + j;
-              const hit = window.actual[i] >= window.band.lo[i] && window.actual[i] <= window.band.hi[i];
-              return (
-                <span
-                  key={i}
-                  className={`fwb-band-day ${hit ? "hit" : "miss"}`}
-                  title={`${shortDate(forecastDates, i)} (day +${i + 1}): ${
-                    hit ? "inside" : "outside"
-                  } [${window.band.lo[i].toFixed(1)}, ${window.band.hi[i].toFixed(1)}] vs actual ${window.actual[i].toFixed(1)}`}
-                />
-              );
-            })}
-          </div>
-        ))}
+      <div ref={ref} className="wb-panel-viz">
+        <svg
+          width="100%"
+          height="100%"
+          viewBox={`0 0 ${W} ${H}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={
+            single
+              ? "daily absolute error of the visible model against actuals"
+              : "per-day min/max spread across the visible models with actuals"
+          }
+        >
+          {yTicks.map((v) => (
+            <g key={`y-${v}`}>
+              <line
+                x1={pad.l}
+                y1={py(v)}
+                x2={W - pad.r}
+                y2={py(v)}
+                stroke="var(--border)"
+                strokeOpacity={v === 0 ? 1 : 0.4}
+              />
+              <text x={pad.l - 5} y={py(v) + 3} textAnchor="end" className="demo-axis-label">
+                {Math.round(v)}
+              </text>
+            </g>
+          ))}
+          {single ? (
+            err.map((v, i) => (
+              <rect
+                key={`e-${i}`}
+                x={px(i) - barW / 2}
+                y={py(v)}
+                width={barW}
+                height={Math.max(base - py(v), 0)}
+                fill={MODEL_COLORS[onlyKey] ?? C_GRAY}
+                opacity={0.85}
+              >
+                <title>{`day +${i + 1}: |err| ${v.toFixed(1)}`}</title>
+              </rect>
+            ))
+          ) : (
+            <path d={bandPath} fill="var(--secondary)" opacity={0.22} />
+          )}
+          <path d={actualPath} fill="none" stroke="var(--text)" strokeWidth={1.5} />
+          {Array.from({ length: days }, (_, i) =>
+            (i + 1) % 7 === 0 || i === days - 1 ? (
+              <text key={`x-${i}`} x={px(i)} y={H - 4} textAnchor="middle" className="demo-axis-label">
+                +{i + 1}
+              </text>
+            ) : null,
+          )}
+        </svg>
       </div>
-      <p className="fwb-verdict-scale">
-        committed catalog mean envelope width {committedMeanWidth.toFixed(1)}u — subset statistic,
-        never read as a panel number
-      </p>
     </DemoFigure>
   );
 }
 
-/** Compact disabled-state placeholder for the envelope card when the ensemble is off. */
-export function EnvelopePlaceholder() {
-  return (
-    <DemoFigure comment={<>The envelope belongs to the screened ensemble — switch it on to audit the member min/max band here.</>}>
-      <p className="state-box fwb-band-off">enable the ensemble to see its member envelope</p>
-    </DemoFigure>
-  );
-}
 
 /**
  * Model verdict, comparative: one horizontal bar per active candidate —
@@ -334,9 +388,10 @@ export function VerdictPanel({
   // FIXED common scale: the maximum window WAPE@h across EVERY candidate
   // curve shipped in the payload for this series × origin — never recomputed
   // from the selected subset, so toggling a model never moves another bar's
-  // width. Headroom keeps the value label clear of the track end.
+  // width. Generous headroom (×1.22) keeps even the worst bar's value label
+  // clear of the track end, so all bars compare on one basis with margins.
   const scaleMax = Math.max(...Object.values(window.curves).map((c) => wapeAt(window.actual, c, h)), 1e-6);
-  const scale = scaleMax * 1.08;
+  const scale = scaleMax * 1.22;
 
   let comment: ReactNode;
   if (entry.class === "intermittent") {

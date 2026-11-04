@@ -624,7 +624,7 @@ select:focus-visible,
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted);
+  color: var(--secondary);
 }
 
 .study-block-label {
@@ -852,7 +852,7 @@ select:focus-visible,
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.2rem 0.65rem;
-  color: var(--muted);
+  color: var(--accent);
   line-height: 1.4;
 }
 
@@ -930,25 +930,27 @@ select:focus-visible,
   margin-bottom: 0;
 }
 
-/* white title behind the "> " prompt marker, with no glow — the numbered
-   prefix renders in the left rail only; the heading carries the bare title */
+/* green title behind the "# " marker: the hash renders in the secondary
+   (blue) prompt color, the title in accent green — the same color family
+   as the page index entries; no glow */
 .story-section h2 {
   font-size: 1.25rem;
   margin: 0 0 0.75rem;
-  color: var(--text);
+  color: var(--accent);
 }
 
 .story-section h2::before {
-  content: "> ";
-  color: var(--accent);
+  content: "# ";
+  color: var(--secondary);
   text-shadow: none;
 }
 
-/* one-line muted subtitle under each section h2 (src/lib/sectionMeta.ts) */
+/* one-line label under each section h2 (src/lib/sectionMeta.ts) — blue like
+   the other small labels */
 .story-section .section-subtitle {
   font-family: var(--mono);
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--secondary);
   margin: -0.2rem 0 0.9rem;
 }
 
@@ -2386,7 +2388,7 @@ button:disabled {
 }
 
 .page-index a {
-  color: var(--muted);
+  color: var(--text);
 }
 
 .page-index a::before {
@@ -3277,147 +3279,6 @@ button.chip.demo-preset.fwb-active {
   font-variant-numeric: tabular-nums;
 }
 
-/* band calibration card: the per-day hit grid fills the card body in rows of
-   7 by week (w1..wk labeled on the left); teal = actual inside p10/p90,
-   pink = outside. Rows flex to fill the slot, so at h=7 the single row's
-   squares grow instead of leaving dead space. */
-.wb-secondary .fwb-band-weeks {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0.25rem 0.7rem 0.45rem;
-}
-
-.fwb-band-week {
-  flex: 1 1 0;
-  min-height: 0;
-  display: flex;
-  align-items: stretch;
-  gap: 3px;
-}
-
-.fwb-band-week-label {
-  flex: 0 0 auto;
-  width: 1.4em;
-  display: flex;
-  align-items: center;
-  font-family: var(--mono);
-  font-size: 0.62rem;
-  color: var(--muted);
-}
-
-/* coverage gauge above the hit strip: the per-series coverage for this
-   series × origin × visible horizon fills the track; a marker pins the 80%
-   target and a second marker the pooled committed coverage */
-.fwb-cov-gauge {
-  flex: 0 0 auto;
-  padding: 0.45rem 0.7rem 0.1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.fwb-cov-track {
-  position: relative;
-  height: 10px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-}
-
-.fwb-cov-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: 2px;
-  opacity: 0.75;
-}
-
-.fwb-cov-fill.good {
-  background: var(--accent);
-}
-
-.fwb-cov-fill.bad {
-  background: var(--danger);
-}
-
-.fwb-cov-marker {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 2px;
-  transform: translateX(-1px);
-}
-
-.fwb-cov-marker.target {
-  background: var(--text);
-}
-
-.fwb-cov-marker.committed {
-  background: #fbbf24;
-}
-
-.fwb-cov-scale {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  font-family: var(--mono);
-  font-size: 0.66rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.fwb-cov-legend {
-  display: flex;
-  gap: 0.6rem;
-}
-
-.fwb-cov-key {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.fwb-cov-key::before {
-  content: "";
-  width: 2px;
-  height: 0.7em;
-}
-
-.fwb-cov-key.target::before {
-  background: var(--text);
-}
-
-.fwb-cov-key.committed::before {
-  background: #fbbf24;
-}
-
-.fwb-band-day {
-  flex: 1 1 0;
-  min-width: 0;
-  border-radius: 2px;
-  border: 1px solid var(--border);
-}
-
-.fwb-band-day.hit {
-  background: var(--accent);
-  border-color: var(--accent);
-  opacity: 0.75;
-}
-
-.fwb-band-day.miss {
-  background: var(--danger);
-  border-color: var(--danger);
-}
-
-.fwb-band-off {
-  margin: 0.6rem 0.7rem 0.75rem;
-  font-family: var(--mono);
-  font-size: 0.78rem;
-}
-
 /* model verdict: one horizontal bar per active candidate — window WAPE@h on
    a shared scale, model-tinted (the seasonal naive is the grey reference),
    value label at the bar end, best bar crowned, right-aligned peak-day MAE
@@ -3428,10 +3289,11 @@ button.chip.demo-preset.fwb-active {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  /* tight spacing: all six candidates + committed chip + scale label must
-     fit the 280px secondary band without clipping the best row */
-  gap: 0.3rem;
-  padding: 0.3rem 0.7rem 0.4rem;
+  /* breathing room for the full candidate list: all six rows + committed
+     chip + scale label fit the 280px secondary band with margins, and the
+     bars never touch the panel edges */
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem 0.55rem;
 }
 
 /* every row shares one column grid so the bars and the peak/bias columns line up */
@@ -3854,6 +3716,17 @@ button.chip.demo-preset.fwb-active {
 
 .wb-evidence-about .wb-evidence-tag {
   margin-bottom: 0.5rem;
+}
+
+/* result blocks nested inside the shared evidence panel keep their
+   separators; the last one closes flush with the panel */
+.wb-evidence-results .wb-result-block {
+  border-bottom-color: var(--border);
+}
+
+.wb-evidence-results .wb-result-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .wb-result-block .wb-evidence-tag {
