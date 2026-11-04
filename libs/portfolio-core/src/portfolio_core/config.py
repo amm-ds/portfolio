@@ -22,7 +22,8 @@ class Settings(BaseSettings):
     data_dir: Path = Field(default=Path("data"), description="Root for downloaded/prepared data.")
     reports_dir: Path = Field(default=Path("reports"), description="Root for evaluation artifacts.")
 
-    # LLM provider (ADR-0004): OpenAI-compatible endpoint, mock when unset.
+    # LLM provider (ADR-0004): OpenAI-compatible endpoint via env; local
+    # Ollama fallback when unset (see portfolio_core.llm).
     llm_base_url: str | None = Field(default=None, alias="LLM_BASE_URL")
     llm_api_key: str | None = Field(default=None, alias="LLM_API_KEY")
     llm_model: str | None = Field(default=None, alias="LLM_MODEL")

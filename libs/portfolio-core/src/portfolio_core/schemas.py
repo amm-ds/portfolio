@@ -37,12 +37,3 @@ class RunConfig(PortfolioBaseModel):
     seed: int = 42
     data_dir: str = "data"
     reports_dir: str = "reports"
-
-
-class MetricValue(PortfolioBaseModel):
-    """One named, comparable metric reading."""
-
-    name: str
-    value: float
-    split: str = "test"
-    higher_is_better: bool = True

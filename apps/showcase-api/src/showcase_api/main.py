@@ -2,13 +2,13 @@
 
 Nothing here contains training logic; it reads the artifacts projects produce
 (reports/metrics.json, reports/figures/*.html, reports/models/serving/*) and
-delegates chat to Project 01's agent when that package is installed (it is in
-the dev workspace; the standard production image deliberately omits both the
-package and the retrieval index — see the Dockerfile header — so /rag/chat
-fails closed with a 503 there until they are mounted). Served inference:
-02/05/07 read persisted serving artifacts (503 with build instructions when
-absent); 06 solves VRPTW instances purely from the request body with the
-tuned config from its params.yaml.
+delegates chat to Project 01's agent. The /rag/chat routes register only when
+RAG_CHAT_ENABLED=1 (they are an LLM cost proxy; locally RAG_CHAT_ENABLED=1)
+and fail closed with a 503 when the package or the retrieval index is absent
+— the standard production image deliberately omits both, see the Dockerfile
+header. Served inference: 02/05/07 read persisted serving artifacts (503 with
+build instructions when absent); 06 solves VRPTW instances purely from the
+request body with the tuned config from its params.yaml.
 """
 
 import hashlib
@@ -37,6 +37,7 @@ from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from showcase_api import __version__, serving
+from showcase_api.contact import router as contact_router
 from showcase_api.middleware import (
     BodyLimitMiddleware,
     RateLimitMiddleware,
@@ -173,42 +174,10 @@ def readiness() -> JSONResponse:
     )
 
 
-# --- Contact phone gate -------------------------------------------------------
+# --- Contact phone gate (router in showcase_api.contact) ----------------------
 # The direct phone line never ships in the frontend bundle; the page reveals
 # it only after this one deliberate step. CONTACT_PHONE is set per deployment.
-
-_CONTACT_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
-_CONTACT_PHONE_RE = re.compile(r"^\+?[0-9][0-9\s().-]{5,18}[0-9]$")
-
-
-class ContactUnlockRequest(BaseModel):
-    """What the visitor shares to reveal the phone line: an email address or a
-    phone number. Validated for shape only — the value is never stored."""
-
-    value: str = Field(min_length=3, max_length=120)
-
-
-def _contact_phone() -> str:
-    """The direct line from the deployment's environment; empty when unset so
-    the endpoint fails closed."""
-    return os.environ.get("CONTACT_PHONE", "").strip()
-
-
-@app.post("/contact/unlock")
-def unlock_contact_phone(body: ContactUnlockRequest) -> dict[str, str]:
-    """Return the phone number once the visitor shares a valid email or phone
-    number. Keeps the number out of page source and bundles without pretending
-    to be a security boundary — any deliberate caller receives it."""
-    value = body.value.strip()
-    if not (_CONTACT_EMAIL_RE.match(value) or _CONTACT_PHONE_RE.match(value)):
-        raise HTTPException(status_code=422, detail="enter a valid email address or phone number")
-    phone = _contact_phone()
-    if not phone:
-        raise HTTPException(
-            status_code=503,
-            detail="the phone line is not configured on this deployment",
-        )
-    return {"phone": phone}
+app.include_router(contact_router)
 
 
 def _serving_ready(serving_dir: Path) -> bool:
@@ -231,6 +200,11 @@ def _readiness() -> bool:
 # PROJECTS_ROOT to a tmp dir still see fresh data.
 
 
+def _content_etag(content: bytes) -> str:
+    """Short quoted ETag for a payload: first 16 hex chars of its sha256."""
+    return '"' + hashlib.sha256(content).hexdigest()[:16] + '"'
+
+
 def _cached_payload(root: Path, kind: str, compute: Callable[[], Any]) -> tuple[str, str]:
     """(etag, body) for a JSON payload, computed once per (root, kind).
 
@@ -245,7 +219,7 @@ def _cached_payload(root: Path, kind: str, compute: Callable[[], Any]) -> tuple[
         # form ('"id":"01-rag-agent"'); json.dumps' default would insert a
         # space after every ':' and break them.
         body = json.dumps(compute(), sort_keys=True, separators=(",", ":"))
-        etag = '"' + hashlib.sha256(body.encode()).hexdigest()[:16] + '"'
+        etag = _content_etag(body.encode())
         _PAYLOAD_CACHE[key] = (etag, body)
     return _PAYLOAD_CACHE[key]
 
@@ -295,8 +269,9 @@ def projects(request: Request) -> Response:
 @app.get("/projects/{pid}/metrics")
 def metrics(pid: str) -> dict[str, Any]:
     # 02-demand-forecasting's canonical numbers are the full-panel M5 run
-    # (reports_m5_full/); the subset (reports_m5/) and sparse UCI
-    # (reports_uci/) tracks stay on disk as CI anchors behind it.
+    # (reports_m5_full/); the sparse UCI track (reports_uci/) is the live
+    # fallback behind it, the subset (reports_m5/) stays on disk as a CI
+    # anchor reachable via track-prefixed figure names, not /metrics.
     # Everywhere else reports/ is it.
     d = _project_dir(pid)
     f = d / "reports_m5_full" / "metrics.json"
@@ -375,7 +350,7 @@ def figure(pid: str, name: str, request: Request) -> Response:
 def _cached_file_response(request: Request, path: Path, media_type: str) -> Response:
     """200 with CDN cache headers + content ETag, or 304 on If-None-Match."""
     content = path.read_bytes()
-    etag = '"' + hashlib.sha256(content).hexdigest()[:16] + '"'
+    etag = _content_etag(content)
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers={"ETag": etag})
     return Response(
@@ -388,7 +363,7 @@ def _cached_file_response(request: Request, path: Path, media_type: str) -> Resp
     )
 
 
-# --- Interactive demos (Wave 1: churn threshold sandbox, project 05) ---------
+# --- Interactive demos (manifest-driven platform) -----------------------------
 # Demos are declared by each project's demo.yaml (see portfolio_core.demo) and
 # served here generically: the registry index, the manifest, and the compact
 # precomputed payload (built by the project's pipeline, validated against the
@@ -397,7 +372,7 @@ def _cached_file_response(request: Request, path: Path, media_type: str) -> Resp
 
 
 def _demo_or_404(demo_id: str) -> DemoManifest:
-    for m in load_demo_index(PROJECTS_ROOT):
+    for m in _demo_manifests(PROJECTS_ROOT):
         if m.id == demo_id:
             return m
     raise HTTPException(status_code=404, detail=f"unknown demo: {demo_id}")
@@ -457,7 +432,7 @@ def demo_payload(demo_id: str, request: Request) -> Response:
             detail=f"payload schema_version {payload_sv} does not match manifest "
             f"schema_version {m.payload.schema_version}",
         )
-    etag = '"' + hashlib.sha256(f.read_bytes()).hexdigest()[:16] + '"'
+    etag = _content_etag(f.read_bytes())
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers={"ETag": etag})
     return JSONResponse(
@@ -505,7 +480,7 @@ def report(pid: str) -> str:
 # Spec'd operator kill-switch flag: touching this file disables the live POST
 # endpoints (503 + replay hint) until it is removed.
 _LIVE_DISABLE_FLAG = Path("/tmp/live_disabled")  # noqa: S108
-_LIVE_TIMEOUT_S = 10.0  # wall-clock cap for /solve and the /forecast POSTs
+_LIVE_TIMEOUT_S = 10.0  # wall-clock cap for the live POSTs (/forecast, /score, /solve)
 _LIVE_BUDGET_DEFAULT = 1000
 _LIVE_REPLAY_HINT = "precomputed demo replay remains available"
 

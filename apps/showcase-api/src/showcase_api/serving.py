@@ -52,8 +52,3 @@ def cached_artifacts(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> Art
     if key not in _cache:
         _cache[key] = load_artifacts(key, extra_json)
     return _cache[key]
-
-
-def clear_cache() -> None:
-    """Drop all cached bundles (tests reload after monkeypatching)."""
-    _cache.clear()
