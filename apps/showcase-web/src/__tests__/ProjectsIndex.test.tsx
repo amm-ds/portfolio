@@ -766,13 +766,13 @@ describe("ProjectsIndex", () => {
     expect(doesRule).toContain("color: var(--text);");
     expect(doesRule).not.toContain("text-transform");
     // all four card labels (topics / data / description / results) share ONE
-    // uniform small-label rule — mono, uppercase, blue
+    // uniform small-label rule — mono, uppercase, muted grey
     const labelRule = css.match(/\.study-meta-label,\n\.study-block-label \{[\s\S]*?\n\}/)![0];
     expect(labelRule).toContain("font-family: var(--mono);");
     expect(labelRule).toContain("font-size: 0.72rem;");
     expect(labelRule).toContain("text-transform: uppercase;");
     expect(labelRule).toContain("letter-spacing: 0.08em;");
-    expect(labelRule).toContain("color: var(--secondary);");
+    expect(labelRule).toContain("color: var(--muted);");
     // the metadata label has no standalone rule anymore; the block-label rule
     // only adds block spacing on top of the shared label style
     expect(css).not.toMatch(/\.study-meta-label \{[^,]*\}/);

@@ -624,7 +624,7 @@ select:focus-visible,
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--secondary);
+  color: var(--muted);
 }
 
 .study-block-label {
