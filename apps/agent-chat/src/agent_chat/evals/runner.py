@@ -29,6 +29,7 @@ from agent_chat.evals.graders import (
     ToolChoiceExact,
 )
 from agent_chat.evals.records import EvalRunRecord
+from agent_chat.memory.notebook import FileNotebook
 from agent_chat.models import build_model
 from agent_chat.testing import scripted_model
 
@@ -99,12 +100,27 @@ async def run_case(
     resolved = model if model is not None else scripted_model(case.script)
     agent = build_agent(model=resolved, settings=settings)
     try:
+        notebook = FileNotebook(settings.memory_data_dir)
+        deps = ChatDeps(
+            approvals=AutoApproval(),
+            memory=notebook,
+            user_id=f"eval-{case.name}",
+        )
         result = await agent.run(
             case.prompt,
-            deps=ChatDeps(approvals=AutoApproval()),
+            deps=deps,
             usage_limits=build_usage_limits(settings),
         )
         messages = result.all_messages()
+        if case.follow_up is not None:
+            # A fresh conversation proves the notebook, not message history,
+            # carries the fact into the later run.
+            result = await agent.run(
+                case.follow_up,
+                deps=deps,
+                usage_limits=build_usage_limits(settings),
+            )
+            messages = [*messages, *result.all_messages()]
         retries = _retry_prompts(messages)
         if retries:
             return EvalRunRecord(

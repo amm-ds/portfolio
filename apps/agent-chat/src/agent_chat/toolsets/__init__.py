@@ -3,7 +3,8 @@
 Adopters add a tool in ``tools/`` and register it in one of these groups —
 the agent never lists tools one by one. ``core`` is always on; ``web`` is
 only attached when the deployment enables network access; ``messaging``
-carries the consequential tool behind the approval gate.
+carries the consequential tool behind the approval gate; ``memory`` carries
+on-demand personal notes.
 """
 
 from collections.abc import Callable
@@ -11,6 +12,7 @@ from collections.abc import Callable
 from pydantic_ai.toolsets import FunctionToolset
 
 from agent_chat.deps import ChatDeps
+from agent_chat.memory.tools import recall, remember
 from agent_chat.tools import as_toolset, calculator, clock, fetch_url, send_message
 
 
@@ -29,9 +31,15 @@ def messaging_toolset() -> FunctionToolset[ChatDeps]:
     return as_toolset([send_message], toolset_id="messaging")
 
 
+def memory_toolset() -> FunctionToolset[ChatDeps]:
+    """On-demand personal notes; no automatic notebook prompt injection."""
+    return as_toolset([remember, recall], toolset_id="memory")
+
+
 #: The registry adopters extend: name -> builder. ``build_agent`` consumes this.
 TOOLSETS: dict[str, Callable[[], FunctionToolset[ChatDeps]]] = {
     "core": core_toolset,
     "web": web_toolset,
     "messaging": messaging_toolset,
+    "memory": memory_toolset,
 }

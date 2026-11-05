@@ -32,14 +32,15 @@ from pydantic_ai.usage import RequestUsage
 class FakeStep:
     """One scripted model turn.
 
-    Exactly one of ``text`` / ``tool_call`` should be set. ``expect`` is an
-    optional substring that must appear in the latest user-visible message
-    (user prompt or tool result) — a cheap way to pin tool-call sequencing.
+    Exactly one of ``text`` / ``tool_call`` should be set. ``expect`` / ``reject``
+    optionally require/forbid a substring in user-visible messages (user prompts
+    and tool results) — cheap guards for sequencing and bounded context.
     """
 
     text: str | None = None
     tool_call: tuple[str, dict[str, Any]] | None = None
     expect: str | None = None
+    reject: str | None = None
 
 
 def _visible_text(messages: Sequence[ModelMessage]) -> str:
@@ -69,8 +70,11 @@ def scripted_model_from_queue(
         if not queue:
             raise AssertionError("scripted model: step queue exhausted (script a longer script)")
         step = queue.popleft()
-        if step.expect is not None and step.expect.lower() not in _visible_text(messages).lower():
+        visible_text = _visible_text(messages)
+        if step.expect is not None and step.expect.lower() not in visible_text.lower():
             raise AssertionError(f"scripted model: expected {step.expect!r} in visible text")
+        if step.reject is not None and step.reject.lower() in visible_text.lower():
+            raise AssertionError(f"scripted model: rejected {step.reject!r} in visible text")
         usage = RequestUsage(input_tokens=12, output_tokens=6)
         if step.tool_call is not None:
             name, args = step.tool_call

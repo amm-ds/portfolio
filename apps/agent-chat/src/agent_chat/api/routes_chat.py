@@ -48,6 +48,7 @@ _RESULT_SNIPPET_LIMIT = 500
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
     conversation_id: str | None = None
+    user_id: str = Field(default="local", pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 
 class ApprovalDecisionRequest(BaseModel):
@@ -141,7 +142,7 @@ async def chat(
 
     queue: asyncio.Queue[ChatEvent | None] = asyncio.Queue()
     gate = state.approval_hub.gate(queue.put_nowait)
-    deps = ChatDeps(approvals=gate)
+    deps = ChatDeps(approvals=gate, memory=state.notebook, user_id=body.user_id)
     usage_limits = build_usage_limits(state.settings)
     title = body.message[:60]
 

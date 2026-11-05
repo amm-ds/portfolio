@@ -86,7 +86,32 @@ store's `VECTOR(dim)` column — so after any embedder change: clear
 `rag_chunks` and re-ingest. Hosted embedding services work the same way
 (batch the `embed` calls; keep the protocol).
 
-## 6. Restyle the web UI
+## 6. Add persistent user memory
+
+The default is already wired: `remember` writes an explicit user fact and
+`recall` retrieves only relevant notes in a later run or process. Set
+`AGENT_CHAT_MEMORY_DATA_DIR` to durable storage. Notes live one user per file;
+no notebook content is automatically injected. Keep `remember` limited to facts
+the user explicitly asks to store, and treat recalled text as untrusted context.
+
+For a real multi-user deployment, replace the request's default `user_id="local"`
+with the authenticated principal in `api/routes_chat.py`; do not accept tenant
+identity from model arguments. To change storage or ranking, implement
+`NotebookStore` (`remember` + bounded `recall`) in `memory/notebook.py` or a new
+adapter, then pass it as `create_app(notebook=...)`. Preserve user isolation and
+result limits. An indexed/semantic backend belongs behind this seam, not in the
+model tool. The file implementation is durable across restarts but is not a
+cross-process compare-and-swap store; use transactions for concurrent writers.
+
+Tune conversation context independently: `AGENT_CHAT_HISTORY_MAX_TURNS` sets the
+free sliding window (default ten). `AGENT_CHAT_HISTORY_SUMMARIZE_ENABLED=true`
+adds one summarizer request only when history overflows. Keep it off when cost
+and determinism matter more than retaining compressed context. The template
+persists the processed bounded Conversation; add an append-only transcript if
+your audit requirements include trimmed turns. Add a fake-model eval like
+`memory-recall-second-turn` for every new memory behavior.
+
+## 7. Restyle the web UI
 
 **File: `web/src/styles.css` — the `:root` variables.** Every color, radius,
 and font flows from them; restyling is overriding the block, not hunting
@@ -117,7 +142,7 @@ restyling does not touch it.
 
 ## Ship checklist
 
-- [ ] `uv run pytest -q` — 83 tests green (all offline)
+- [ ] `uv run pytest -q` — 95 tests green (all offline)
 - [ ] `uv run ruff check . && uv run ruff format --check .` and `uv run mypy src tests`
 - [ ] `uv run python -m agent_chat.evals.runner` (fake) and
       `uv run python -m agent_chat.evals.runner --model real`; read
@@ -126,7 +151,8 @@ restyling does not touch it.
 - [ ] New domain tools that act on the world go through the approval gate
 - [ ] `docker compose up --build`, ingest your own `docs/`, and click through
       a chat plus one approval in the web UI
-- [ ] `AGENT_CHAT_API_KEY` set for anything beyond localhost
+- [ ] `AGENT_CHAT_API_KEY` set for anything beyond localhost; notebook `user_id`
+      derived from the authenticated principal rather than the request body
 - [ ] `AGENT_CHAT_EMBEDDER=minilm` (with re-ingest) for semantic retrieval in
       real deployments; `hashing` is for CI and first boots only
 - [ ] Your identity in `BASE_INSTRUCTIONS` and your domain limits written

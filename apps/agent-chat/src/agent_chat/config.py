@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +46,11 @@ class Settings(BaseSettings):
 
     # --- storage -----------------------------------------------------------
     database_url: str = "sqlite:///./agent_chat.db"
+    memory_data_dir: Path = Path("./agent_chat_memory")
+
+    # --- model-visible conversation history -------------------------------
+    history_max_turns: int = Field(default=10, ge=1)
+    history_summarize_enabled: bool = False
 
     # --- embeddings (rag) --------------------------------------------------
     embedder: Literal["minilm", "hashing"] = "minilm"

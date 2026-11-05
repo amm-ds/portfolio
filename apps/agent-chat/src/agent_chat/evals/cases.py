@@ -1,4 +1,4 @@
-"""The eval suite: 12 cases across answer correctness, tool choice, and refusal.
+"""The eval suite: 13 cases across answers, tools, memory, and refusal.
 
 Each case carries a ``script`` — what the fake model does step by step — so
 CI runs the suite with zero network. Run the same cases against a real model
@@ -22,6 +22,7 @@ class EvalCase(BaseModel):
     prompt: str
     kind: EvalKind
     script: list[FakeStep]
+    follow_up: str | None = None
     expected_keywords: list[str] = []
     expected_tools: list[str] = []
     expect_citations: bool = False
@@ -188,6 +189,31 @@ CASES: tuple[EvalCase, ...] = (
         ],
         expected_keywords=["sent"],
         expected_tools=["send_message"],
+    ),
+    # --- persistent memory (two independent runs, one user notebook) --------
+    EvalCase(
+        name="memory-recall-second-turn",
+        prompt="Remember that my favorite editor is Neovim.",
+        follow_up="What is my favorite editor?",
+        kind="answer",
+        script=[
+            FakeStep(tool_call=("remember", {"fact": "My favorite editor is Neovim."})),
+            _final_answer("I will remember that."),
+            FakeStep(tool_call=("recall", {"query": "favorite editor"})),
+            FakeStep(
+                tool_call=(
+                    _FINAL,
+                    {
+                        "text": "Your favorite editor is Neovim.",
+                        "citations": [],
+                        "uncertainty": "low",
+                    },
+                ),
+                expect="My favorite editor is Neovim.",
+            ),
+        ],
+        expected_keywords=["Neovim"],
+        expected_tools=["remember", "recall"],
     ),
     # --- refusal behavior ---------------------------------------------------
     EvalCase(

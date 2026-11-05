@@ -36,6 +36,7 @@ def settings(tmp_path: Path) -> Settings:
     """Every test runs on SQLite files under tmp_path."""
     return Settings(
         database_url=f"sqlite:///{tmp_path}/agent_chat.db",
+        memory_data_dir=tmp_path / "memory",
         embedder="hashing",
     )
 

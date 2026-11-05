@@ -30,12 +30,15 @@ flowchart LR
     TS["tools/ + toolsets/<br/>core · web (opt-in) · messaging"]
     CAP["capabilities/ + skills/<br/>disk folders, deferred loading"]
     RAG["rag/ — chunk, embed,<br/>retrieve, ingest CLI"]
-    MEM["memory.py — Conversation store"]
+    MEM["memory/conversations.py<br/>Conversation store"]
+    NOTE["memory/notebook.py + tools.py<br/>per-user remember / recall"]
+    HIST["memory/history.py<br/>trim / summarize on overflow"]
     MODELS["models.py — provider factory<br/>Ollama · hosted · fallback"]
   end
 
   LLM["Model provider<br/>Ollama (default) or hosted<br/>OpenAI-compatible"]
   DB[("Postgres 16 + pgvector<br/>or SQLite fallback")]
+  FILES[("memory_data_dir<br/>one JSON file per user")]
 
   UI -- "POST /chat (SSE)" --> MID --> CHAT
   CHAT --> AGENT
@@ -46,6 +49,8 @@ flowchart LR
   AGENT --> CAP
   AGENT --> RAG
   AGENT --> MEM
+  AGENT --> NOTE --> FILES
+  AGENT --> HIST
   AGENT --> MODELS --> LLM
   RAG --> DB
   MEM --> DB
@@ -55,10 +60,10 @@ flowchart LR
 ```
 
 - **`agent_chat.agent`** — the only assembly point. `build_agent` wires the
-  model, `BASE_INSTRUCTIONS`, the structured `Answer` output type, the named
-  toolsets, the deferred skills, and the per-run `UsageLimits` into one
-  pydantic-ai `Agent`. Nothing else in the file moves when you adapt the
-  template.
+  model, `BASE_INSTRUCTIONS`, the structured `Answer` output type, named
+  toolsets, deferred skills, the history processor, and per-run `UsageLimits`
+  into one pydantic-ai `Agent`. Nothing else in the file moves when you adapt
+  the template.
 - **`agent_chat.api`** — the HTTP surface. `create_app` builds `AppState`
   (agent, stores, approval hub) once, from settings or explicit overrides so
   tests inject fakes without monkeypatching. Every response carries an
@@ -69,8 +74,11 @@ flowchart LR
   `DenyAll` (audit paths) shipped, and an SSE-backed hub wired in the API.
 - **`agent_chat.rag`** — chunking, the `Embedder` protocol, the `VectorStore`
   protocol (pgvector or SQLite), the bound `retrieve` tool, and the ingest CLI.
-- **`agent_chat.memory`** — whole pydantic-ai `Conversation` values persisted
-  as JSON (Postgres primary, SQLite fallback).
+- **`agent_chat.memory`** — three separate boundaries: `conversations.py`
+  persists whole pydantic-ai `Conversation` values (Postgres primary, SQLite
+  fallback); `notebook.py` + `tools.py` provide per-user durable facts through
+  on-demand `remember`/`recall`; `history.py` bounds model history with a free
+  sliding window or opt-in summarize-on-overflow. No whole-notebook injection.
 - **`web/`** — a Vite + React chat UI that consumes the SSE stream and the
   conversations API. The canonical wire contract is
   `src/agent_chat/api/events.py` (see below); the web decoder in
@@ -80,15 +88,18 @@ flowchart LR
 
 ### 1. Chat request → SSE stream
 
-1. The client posts `{"message": "...", "conversation_id": "..."}` to
-   `POST /chat` (1–8000 chars). An unknown `conversation_id` is a 404.
+1. The client posts `{"message": "...", "conversation_id": "...", "user_id": "local"}`
+   to `POST /chat` (message 1–8000 chars; the ids are optional). An unknown
+   `conversation_id` is a 404. The user id scopes notebook access.
 2. The route creates an `asyncio.Queue` and binds a per-run approval gate to it
    (`state.approval_hub.gate(queue.put_nowait)`), so approval events raised
    inside a tool call reach the client while the run is parked waiting.
 3. A producer task runs the agent via `agent.run_stream_events(...)` with the
-   (optional) prior conversation, per-run usage limits, and the deps carrying
-   the gate. A route generator drains the queue, so the SSE response starts
-   immediately and stays ordered.
+   (optional) prior conversation, per-run usage limits, and deps carrying the
+   gate, shared notebook, and user id. Before each model request, the history
+   capability trims (or summarizes overflow) without writing notebook content
+   into the prompt. A route generator drains the queue, so the SSE response
+   starts immediately and stays ordered.
 4. Agent stream events are mapped to client-facing events
    (`api/routes_chat.py::_map_event`): tool calls → `tool_call_start` /
    `tool_call_end` (results capped at 500 chars), text deltas → `text_delta`,
@@ -155,6 +166,24 @@ the `VectorStore` / `ConversationStore` protocols.
 | `data` | `TEXT` | the full `Conversation` (messages + usage) as JSON |
 | `updated_at` | `VARCHAR(40)` | ISO 8601 UTC, microsecond precision |
 
+### `memory_data_dir/<user_id>.json` — personal notebook
+
+One file per validated user id, with `version: 1` and a `notes` array. Each note
+has a stable content-derived `id`, a concise `fact` (1–4000 chars), and a UTC
+`created_at`. Writes use atomic file replacement; exact normalized repeats are
+idempotent. `recall` reads the user's file, scores case-folded literal terms,
+and returns only the best five matches by default (caller bound 1–10). Neither
+the notebook nor its file listing is automatically injected into a prompt.
+
+### Model-visible history policy
+
+`ProcessHistory` keeps the last `history_max_turns` user turns (default ten),
+including tool calls/results. The default trim makes no model call. With
+`history_summarize_enabled`, only overflow turns go through a separate model
+request and are replaced by a delimited summary. The whole-Conversation store
+persists the bounded result; use an append-only conversation/audit store when a
+complete transcript is required.
+
 ### `rag_chunks` — retrieval
 
 | column | type | notes |
@@ -191,10 +220,13 @@ after a swap.
 | `rag/embeddings.py` | `Embedder` protocol + MiniLM/hashing | to swap the embedder |
 | `rag/store.py` | `VectorStore` protocol + pgvector/SQLite | to swap the backend |
 | `rag/` (rest) | chunking, ingest CLI, `retrieve` tool | rarely |
-| `memory.py` | `ConversationStore` protocol + impls | rarely |
+| `memory/conversations.py` | `ConversationStore` protocol + Postgres/SQLite impls | rarely |
+| `memory/notebook.py` | `NotebookStore` + durable per-user JSON notes | to swap memory backend |
+| `memory/tools.py` | bounded `remember` / `recall` tools | to change memory policy |
+| `memory/history.py` | sliding-window trim + optional overflow summary | to tune context policy |
 | `approvals.py` | `ApprovalGate` protocol + test doubles | to change HITL policy |
 | `api/` | HTTP surface, SSE schema, approval hub | rarely |
-| `evals/` | 12-case suite + deterministic graders | to add cases |
+| `evals/` | 13-case suite + deterministic graders | to add cases |
 | `testing.py` | scripted fake model for tests/CI | almost never |
 
 See `specs/decisions/` for why the seams sit where they do, `specs/operations.md`

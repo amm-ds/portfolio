@@ -17,7 +17,7 @@ demo** — typed tools, disk-loaded skills, cited retrieval, a human approval
 gate for consequential actions, and per-run budgets, all behind one FastAPI
 surface that streams every step as typed SSE events. The first edit is a
 string; the seams (provider, store, embedder, approvals) are protocols with
-documented swap points. Eighty-three tests and a 12-case eval suite run fully
+documented swap points. Ninety-five tests and a 13-case eval suite run fully
 offline; the same graders score your real deployment.
 
 [App source, specs, and adaptation guide on GitHub →](https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat)
@@ -47,17 +47,18 @@ Around it, lift-out modules with protocol seams:
 |---|---|---|
 | `config.py` | every knob, env prefix `AGENT_CHAT_` | — |
 | `models.py` | provider factory: local Ollama default, hosted OpenAI-compatible, `FallbackModel` chain | new provider = one branch |
-| `tools/` + `toolsets/` | typed functions (docstring = the model-facing schema) in named groups: core, web (opt-in network), messaging | add a function + one registry line |
+| `tools/` + `toolsets/` | typed functions (docstring = the model-facing schema) in named groups: core, web (opt-in network), messaging, memory | add a function + one registry line |
 | `skills/` + `capabilities/` | domain playbooks as disk folders; the model sees a one-line description until it loads the skill | add a folder |
 | `rag/` | paragraph-first chunking, embedder and vector-store protocols, `retrieve` tool, ingest CLI | new embedder or store = one adapter |
 | `approvals.py` | the `ApprovalGate` protocol the agent depends on | test doubles ship in the package |
-| `memory.py` | whole conversations persisted as JSON | Postgres or SQLite by URL |
+| `memory/` | persisted conversations, per-user on-demand notebooks, bounded history | Postgres/SQLite by URL; `NotebookStore` for personal facts |
 | `api/` | FastAPI: SSE chat, approvals, conversation CRUD, ingest, health/ready, request-id middleware, structured errors | rarely touched |
-| `evals/` | 12 cases with deterministic graders — no LLM in the judge | add cases as your domain grows |
+| `evals/` | 13 cases with deterministic graders — no LLM in the judge | add cases as your domain grows |
 
 The web UI is a Vite + React chat: conversation sidebar, streamed deltas,
 tool-call cards, and an approve/deny card for the consequential `send_message`
-tool. Restyling is overriding one block of CSS variables.
+tool. Restyling is overriding one block of CSS variables. See the
+[chat surface and transport guide](agent-chat-ui.md) for the UI anatomy.
 
 ## The agent loop
 

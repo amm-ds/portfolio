@@ -161,8 +161,8 @@ directory is read too).
 ## Tests and evals as ops checks
 
 ```bash
-uv run pytest -q                                       # 83 tests, fully offline
-uv run python -m agent_chat.evals.runner               # 12 cases vs the fake model
+uv run pytest -q                                       # 95 tests, fully offline
+uv run python -m agent_chat.evals.runner               # 13 cases vs the fake model
 uv run python -m agent_chat.evals.runner --model real  # same graders vs your deployment
 ```
 

@@ -35,7 +35,7 @@ An in-band gate over the same SSE stream, default-deny on any uncertainty:
   path anywhere.
 - **Test doubles ship in the package.** `AutoApproval` (always yes — evals,
   REPL, scripts) and `DenyAll` (refusal/audit paths) implement the same
-  protocol, which is why the 12-case eval suite can grade the approval flow
+  protocol, which is why the 13-case eval suite can grade the approval flow
   deterministically.
 - **Concurrency is isolated by construction.** The gate is per run and bound
   to that run's queue, so two chats awaiting approval at once never see each

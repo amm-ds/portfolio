@@ -18,7 +18,7 @@ from agent_chat.api.events import ApprovalRequestEvent, ApprovalResponseEvent
 from agent_chat.approvals import ApprovalGate
 from agent_chat.config import Settings
 from agent_chat.deps import ChatDeps
-from agent_chat.memory import ConversationStore
+from agent_chat.memory import ConversationStore, NotebookStore
 from agent_chat.rag.embeddings import Embedder
 from agent_chat.rag.store import VectorStore
 from agent_chat.schemas import Answer
@@ -31,6 +31,7 @@ class AppState:
     settings: Settings
     agent: Agent[ChatDeps, Answer]
     conversation_store: ConversationStore
+    notebook: NotebookStore
     vector_store: VectorStore
     embedder: Embedder
     approval_hub: "ApprovalHub"

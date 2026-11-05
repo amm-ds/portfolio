@@ -8,7 +8,13 @@ from pydantic_ai.toolsets import AbstractToolset, FunctionToolset
 from agent_chat.agent import build_agent
 from agent_chat.config import Settings
 from agent_chat.testing import scripted_model
-from agent_chat.toolsets import TOOLSETS, core_toolset, messaging_toolset, web_toolset
+from agent_chat.toolsets import (
+    TOOLSETS,
+    core_toolset,
+    memory_toolset,
+    messaging_toolset,
+    web_toolset,
+)
 
 
 def _names(toolsets: Iterable[AbstractToolset[Any]]) -> set[str]:
@@ -45,8 +51,11 @@ class TestToolsets:
     def test_messaging_carries_the_gated_tool(self) -> None:
         assert _names([messaging_toolset()]) == {"send_message"}
 
+    def test_memory_has_remember_and_recall(self) -> None:
+        assert _names([memory_toolset()]) == {"remember", "recall"}
+
     def test_registry_names_match_builders(self) -> None:
-        assert set(TOOLSETS) == {"core", "web", "messaging"}
+        assert set(TOOLSETS) == {"core", "web", "messaging", "memory"}
 
 
 class TestAgentAssembly:

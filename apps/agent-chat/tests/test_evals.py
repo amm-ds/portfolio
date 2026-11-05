@@ -1,4 +1,4 @@
-"""Eval-suite smoke: the full 12-case suite passes against the fake model."""
+"""Eval-suite smoke: the full 13-case suite passes against the fake model."""
 
 from pathlib import Path
 
@@ -9,7 +9,7 @@ from agent_chat.evals.runner import run_evals, write_report
 
 def test_full_suite_passes_against_fake(settings: Settings) -> None:
     report = run_evals(settings=settings)
-    assert len(report.cases) == len(CASES) == 12
+    assert len(report.cases) == len(CASES) == 13
     failures = [
         f"{case.name}:{grader}"
         for case in report.cases

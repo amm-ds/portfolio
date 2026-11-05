@@ -23,7 +23,12 @@ from agent_chat.api.routes_chat import router as chat_router
 from agent_chat.api.routes_conversations import router as conversations_router
 from agent_chat.api.state import ApprovalHub, AppState
 from agent_chat.config import Settings
-from agent_chat.memory import ConversationStore, build_conversation_store
+from agent_chat.memory import (
+    ConversationStore,
+    FileNotebook,
+    NotebookStore,
+    build_conversation_store,
+)
 from agent_chat.models import build_model
 from agent_chat.rag.embeddings import Embedder, build_embedder
 from agent_chat.rag.store import VectorStore, build_vector_store
@@ -63,6 +68,7 @@ def create_app(
     settings: Settings | None = None,
     model: Model | None = None,
     conversation_store: ConversationStore | None = None,
+    notebook: NotebookStore | None = None,
     vector_store: VectorStore | None = None,
     embedder: Embedder | None = None,
 ) -> FastAPI:
@@ -74,6 +80,7 @@ def create_app(
         resolved_settings, resolved_embedder.dim
     )
     resolved_conversation_store = conversation_store or build_conversation_store(resolved_settings)
+    resolved_notebook = notebook or FileNotebook(resolved_settings.memory_data_dir)
     state = AppState(
         settings=resolved_settings,
         agent=build_agent(
@@ -83,6 +90,7 @@ def create_app(
             embedder=resolved_embedder,
         ),
         conversation_store=resolved_conversation_store,
+        notebook=resolved_notebook,
         vector_store=resolved_vector_store,
         embedder=resolved_embedder,
         approval_hub=ApprovalHub(timeout_s=resolved_settings.approval_timeout_s),
