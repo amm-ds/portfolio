@@ -1,74 +1,94 @@
 /**
- * Chat event contract shared with the agent-chat backend.
+ * Chat event contract shared with the agent-chat backend (the source of
+ * truth: src/agent_chat/api/events.py).
  *
  * Wire format: Server-Sent Events, one JSON object per `data:` payload, e.g.
  *
  *     data: {"type":"text_delta","delta":"Let me "}
  *
- *     data: {"type":"tool_call","tool_call":{"id":"tc_1","name":"search_docs","args":{"q":"uptime"},"status":"running"}}
+ *     data: {"type":"tool_call_start","call_id":"fake_call_1","name":"search_docs","args":{"q":"uptime"}}
  *
- * `tool_call` may arrive again with the same `id` and a later `status`
- * ("done"/"error") plus `result`; clients merge updates by id.
- * `approval_response` is sent client → server inside the /chat request body
- * (see client.ts) and echoed back on the wire so a single event fold drives
- * the UI.
+ * The stream ends with the sentinel `data: [DONE]` (handled in client.ts).
+ * A tool call opens with `tool_call_start` and closes with the matching
+ * `tool_call_end` (same `call_id`). `approval_request` parks the run: the
+ * client answers with POST /approvals/{approval_id} and the server then emits
+ * `approval_response` on the same stream as the run resumes. `usage` rides on
+ * the `done` event, and `error` carries `{code, message}`.
  *
  * Unknown event types decode to null (forward-compatible skip); a payload
  * that claims a known type but violates its shape throws ChatEventError.
  */
 
-export type ToolCallStatus = "running" | "done" | "error";
-
-export interface ToolCall {
-  id: string;
+export interface ToolCallStart {
+  type: "tool_call_start";
+  call_id: string;
   name: string;
   args: Record<string, unknown>;
-  status: ToolCallStatus;
-  /** Present when status is "done" (serialized result) or "error" (message). */
-  result?: string;
+}
+
+export interface ToolCallEnd {
+  type: "tool_call_end";
+  call_id: string;
+  name: string;
+  result: string;
 }
 
 export interface ApprovalRequest {
-  id: string;
+  type: "approval_request";
+  approval_id: string;
   tool: string;
-  args: Record<string, unknown>;
   /** Human-readable why this tool needs confirmation. */
-  reason?: string;
+  summary: string;
 }
 
 export interface ApprovalResponse {
-  id: string;
+  type: "approval_response";
+  approval_id: string;
   approved: boolean;
-  /** Optional operator note recorded with the decision. */
-  note?: string;
 }
 
 export interface Usage {
-  tokens: number;
-  cost: number;
+  input_tokens: number;
+  output_tokens: number;
+  requests: number;
 }
 
 export interface Citation {
   source: string;
-  /** Optional locator inside the source (page, section, row). */
-  locator?: string;
-  snippet?: string;
+  /** The exact words the claim rests on. */
+  quote: string;
+}
+
+export type Uncertainty = "low" | "medium" | "high";
+
+export interface Answer {
+  text: string;
+  citations: Citation[];
+  /** The model's own calibration. */
+  uncertainty: Uncertainty;
 }
 
 export interface Done {
-  answer: string;
-  citations: Citation[];
-  /** Set when the agent flags low confidence or missing evidence. */
-  uncertainty?: string;
+  type: "done";
+  answer: Answer;
+  usage: Usage;
+  conversation_id: string;
+}
+
+export interface ErrorEvent {
+  type: "error";
+  code: string;
+  message: string;
 }
 
 export type ChatEvent =
   | { type: "text_delta"; delta: string }
-  | { type: "tool_call"; tool_call: ToolCall }
-  | { type: "approval_request"; approval: ApprovalRequest }
-  | { type: "approval_response"; approval: ApprovalResponse }
-  | { type: "usage"; usage: Usage }
-  | { type: "done"; done: Done };
+  | ToolCallStart
+  | ToolCallEnd
+  | ApprovalRequest
+  | ApprovalResponse
+  | Done
+  | ErrorEvent;
 
 export class ChatEventError extends Error {
   constructor(
@@ -92,11 +112,6 @@ function requireString(obj: Record<string, unknown>, key: string, ctx: string): 
   return value;
 }
 
-function optionalString(obj: Record<string, unknown>, key: string): string | undefined {
-  const value = obj[key];
-  return typeof value === "string" ? value : undefined;
-}
-
 function requireNumber(obj: Record<string, unknown>, key: string, ctx: string): number {
   const value = obj[key];
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -113,76 +128,42 @@ function requireArgs(obj: Record<string, unknown>, ctx: string): Record<string, 
   return value;
 }
 
-function decodeToolCall(value: unknown, ctx: string): ToolCall {
-  if (!isRecord(value)) throw new ChatEventError(`${ctx}: expected object "tool_call"`, String(value));
-  const status = requireString(value, "status", ctx);
-  if (status !== "running" && status !== "done" && status !== "error") {
-    throw new ChatEventError(`${ctx}: bad tool_call status "${status}"`, JSON.stringify(value));
-  }
-  const call: ToolCall = {
-    id: requireString(value, "id", ctx),
-    name: requireString(value, "name", ctx),
-    args: requireArgs(value, ctx),
-    status,
-  };
-  const result = optionalString(value, "result");
-  if (result !== undefined) call.result = result;
-  return call;
-}
-
-function decodeApprovalRequest(value: unknown, ctx: string): ApprovalRequest {
-  if (!isRecord(value)) throw new ChatEventError(`${ctx}: expected object "approval"`, String(value));
-  const approval: ApprovalRequest = {
-    id: requireString(value, "id", ctx),
-    tool: requireString(value, "tool", ctx),
-    args: requireArgs(value, ctx),
-  };
-  const reason = optionalString(value, "reason");
-  if (reason !== undefined) approval.reason = reason;
-  return approval;
-}
-
-function decodeApprovalResponse(value: unknown, ctx: string): ApprovalResponse {
-  if (!isRecord(value)) throw new ChatEventError(`${ctx}: expected object "approval"`, String(value));
-  if (typeof value.approved !== "boolean") {
-    throw new ChatEventError(`${ctx}: expected boolean "approved"`, JSON.stringify(value));
-  }
-  const response: ApprovalResponse = {
-    id: requireString(value, "id", ctx),
-    approved: value.approved,
-  };
-  const note = optionalString(value, "note");
-  if (note !== undefined) response.note = note;
-  return response;
-}
-
 function decodeUsage(value: unknown, ctx: string): Usage {
   if (!isRecord(value)) throw new ChatEventError(`${ctx}: expected object "usage"`, String(value));
   return {
-    tokens: requireNumber(value, "tokens", ctx),
-    cost: requireNumber(value, "cost", ctx),
+    input_tokens: requireNumber(value, "input_tokens", ctx),
+    output_tokens: requireNumber(value, "output_tokens", ctx),
+    requests: requireNumber(value, "requests", ctx),
   };
 }
 
-function decodeDone(value: unknown, ctx: string): Done {
-  if (!isRecord(value)) throw new ChatEventError(`${ctx}: expected object "done"`, String(value));
+function decodeAnswer(value: unknown, ctx: string): Answer {
+  if (!isRecord(value)) throw new ChatEventError(`${ctx}: expected object "answer"`, String(value));
   const rawCitations = value.citations;
-  const citations: Citation[] = Array.isArray(rawCitations) ? [] : [];
-  if (Array.isArray(rawCitations)) {
-    for (const [i, raw] of rawCitations.entries()) {
-      if (!isRecord(raw) || typeof raw.source !== "string") {
-        throw new ChatEventError(`${ctx}: citation ${i} needs a string "source"`, JSON.stringify(raw));
-      }
-      const citation: Citation = { source: raw.source };
-      if (typeof raw.locator === "string") citation.locator = raw.locator;
-      if (typeof raw.snippet === "string") citation.snippet = raw.snippet;
-      citations.push(citation);
-    }
+  const citations: Citation[] = [];
+  if (!Array.isArray(rawCitations)) {
+    throw new ChatEventError(`${ctx}: expected array "citations"`, JSON.stringify(value));
   }
-  const done: Done = { answer: requireString(value, "answer", ctx), citations };
-  const uncertainty = optionalString(value, "uncertainty");
-  if (uncertainty !== undefined) done.uncertainty = uncertainty;
-  return done;
+  for (const [i, raw] of rawCitations.entries()) {
+    if (!isRecord(raw) || typeof raw.source !== "string" || typeof raw.quote !== "string") {
+      throw new ChatEventError(`${ctx}: citation ${i} needs string "source" and "quote"`, JSON.stringify(raw));
+    }
+    citations.push({ source: raw.source, quote: raw.quote });
+  }
+  const uncertainty = value.uncertainty;
+  if (uncertainty !== "low" && uncertainty !== "medium" && uncertainty !== "high") {
+    throw new ChatEventError(`${ctx}: bad uncertainty`, JSON.stringify(value));
+  }
+  return { text: requireString(value, "text", ctx), citations, uncertainty };
+}
+
+function decodeDone(raw: Record<string, unknown>, ctx: string): Done {
+  return {
+    type: "done",
+    answer: decodeAnswer(raw.answer, ctx),
+    usage: decodeUsage(raw.usage, ctx),
+    conversation_id: requireString(raw, "conversation_id", ctx),
+  };
 }
 
 /** Parse one SSE `data` payload. Returns null for unknown types (skipped). */
@@ -200,16 +181,44 @@ export function parseChatEvent(payload: string): ChatEvent | null {
   switch (raw.type) {
     case "text_delta":
       return { type: "text_delta", delta: requireString(raw, "delta", ctx) };
-    case "tool_call":
-      return { type: "tool_call", tool_call: decodeToolCall(raw.tool_call, ctx) };
+    case "tool_call_start":
+      return {
+        type: "tool_call_start",
+        call_id: requireString(raw, "call_id", ctx),
+        name: requireString(raw, "name", ctx),
+        args: requireArgs(raw, ctx),
+      };
+    case "tool_call_end":
+      return {
+        type: "tool_call_end",
+        call_id: requireString(raw, "call_id", ctx),
+        name: requireString(raw, "name", ctx),
+        result: requireString(raw, "result", ctx),
+      };
     case "approval_request":
-      return { type: "approval_request", approval: decodeApprovalRequest(raw.approval, ctx) };
+      return {
+        type: "approval_request",
+        approval_id: requireString(raw, "approval_id", ctx),
+        tool: requireString(raw, "tool", ctx),
+        summary: requireString(raw, "summary", ctx),
+      };
     case "approval_response":
-      return { type: "approval_response", approval: decodeApprovalResponse(raw.approval, ctx) };
-    case "usage":
-      return { type: "usage", usage: decodeUsage(raw.usage, ctx) };
+      if (typeof raw.approved !== "boolean") {
+        throw new ChatEventError(`${ctx}: expected boolean "approved"`, JSON.stringify(raw));
+      }
+      return {
+        type: "approval_response",
+        approval_id: requireString(raw, "approval_id", ctx),
+        approved: raw.approved,
+      };
     case "done":
-      return { type: "done", done: decodeDone(raw.done, ctx) };
+      return decodeDone(raw, ctx);
+    case "error":
+      return {
+        type: "error",
+        code: requireString(raw, "code", ctx),
+        message: requireString(raw, "message", ctx),
+      };
     default:
       return null;
   }

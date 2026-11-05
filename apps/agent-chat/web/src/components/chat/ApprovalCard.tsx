@@ -19,10 +19,7 @@ export function ApprovalCard({ approval, locked, onRespond }: Props) {
         <span className="approval-tool">{approval.tool}</span>
         <span className="approval-state">{approval.status}</span>
       </div>
-      {approval.reason && <p className="approval-reason">{approval.reason}</p>}
-      <pre className="approval-args">
-        <code>{JSON.stringify(approval.args, null, 2)}</code>
-      </pre>
+      {approval.summary && <p className="approval-reason">{approval.summary}</p>}
       {pending ? (
         <div className="approval-actions">
           <button type="button" className="btn btn-approve" disabled={locked} onClick={() => onRespond(approval.id, true)}>
@@ -35,7 +32,6 @@ export function ApprovalCard({ approval, locked, onRespond }: Props) {
       ) : (
         <p className="approval-outcome">
           {approval.status === "approved" ? "approved — executed" : "rejected — skipped"}
-          {approval.note ? ` · ${approval.note}` : ""}
         </p>
       )}
     </div>

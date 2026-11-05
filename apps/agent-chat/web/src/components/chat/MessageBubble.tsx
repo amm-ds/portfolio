@@ -46,9 +46,9 @@ export function MessageBubble({
           <div className="citations">
             <span className="citations-label">sources</span>
             {citations.map((c, i) => (
-              <span key={i} className="citation" title={c.snippet}>
+              <span key={i} className="citation" title={c.quote}>
                 {c.source}
-                {c.locator ? ` · ${c.locator}` : ""}
+                {c.quote ? ` · “${c.quote}”` : ""}
               </span>
             ))}
           </div>

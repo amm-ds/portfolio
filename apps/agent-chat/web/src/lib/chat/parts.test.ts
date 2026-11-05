@@ -5,24 +5,16 @@ import { deriveSteps, reduceEvents } from "./parts";
 const scripted: ChatEvent[] = [
   { type: "text_delta", delta: "I'll check the docs, " },
   { type: "text_delta", delta: "then the metrics." },
-  {
-    type: "tool_call",
-    tool_call: { id: "tc_1", name: "search_docs", args: { q: "uptime" }, status: "running" },
-  },
-  {
-    type: "tool_call",
-    tool_call: { id: "tc_1", name: "search_docs", args: { q: "uptime" }, status: "done", result: "3 hits" },
-  },
-  {
-    type: "approval_request",
-    approval: { id: "ap_1", tool: "restart_service", args: { service: "api" }, reason: "production impact" },
-  },
-  { type: "approval_response", approval: { id: "ap_1", approved: true } },
+  { type: "tool_call_start", call_id: "tc_1", name: "search_docs", args: { q: "uptime" } },
+  { type: "tool_call_end", call_id: "tc_1", name: "search_docs", result: "3 hits" },
+  { type: "approval_request", approval_id: "ap_1", tool: "restart_service", summary: "production impact" },
+  { type: "approval_response", approval_id: "ap_1", approved: true },
   { type: "text_delta", delta: "Approved — restarting." },
-  { type: "usage", usage: { tokens: 512, cost: 0.01 } },
   {
     type: "done",
-    done: { answer: "done", citations: [] },
+    answer: { text: "done", citations: [], uncertainty: "low" },
+    usage: { input_tokens: 400, output_tokens: 112, requests: 3 },
+    conversation_id: "conv_1",
   },
 ];
 
@@ -32,7 +24,7 @@ describe("reduceEvents", () => {
     expect(parts[0]).toEqual({ kind: "text", text: "I'll check the docs, then the metrics." });
   });
 
-  it("merges tool_call updates by id, keeping the original args", () => {
+  it("opens a tool part on start and closes it on end, keeping the args", () => {
     const parts = reduceEvents(scripted);
     const tool = parts.find((p) => p.kind === "tool_call");
     expect(tool).toMatchObject({
@@ -43,10 +35,12 @@ describe("reduceEvents", () => {
   it("folds the approval decision into the approval part", () => {
     const parts = reduceEvents(scripted);
     const approval = parts.find((p) => p.kind === "approval");
-    expect(approval).toMatchObject({ approval: { id: "ap_1", status: "approved" } });
+    expect(approval).toMatchObject({
+      approval: { id: "ap_1", tool: "restart_service", summary: "production impact", status: "approved" },
+    });
   });
 
-  it("ignores usage and done events", () => {
+  it("ignores done events", () => {
     expect(reduceEvents(scripted).filter((p) => p.kind === "text")).toHaveLength(2);
   });
 });
@@ -67,7 +61,7 @@ describe("deriveSteps", () => {
     const steps = deriveSteps(
       reduceEvents([
         { type: "text_delta", delta: "plan" },
-        { type: "tool_call", tool_call: { id: "t", name: "query", args: {}, status: "running" } },
+        { type: "tool_call_start", call_id: "t", name: "query", args: {} },
       ]),
     );
     expect(steps[1]).toMatchObject({ kind: "tool", status: "running" });

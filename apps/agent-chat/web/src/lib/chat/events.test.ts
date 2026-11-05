@@ -9,50 +9,65 @@ describe("parseChatEvent", () => {
     });
   });
 
-  it("parses a running tool_call and its terminal update", () => {
-    const running = parseChatEvent(
-      '{"type":"tool_call","tool_call":{"id":"tc_1","name":"search_docs","args":{"q":"uptime"},"status":"running"}}',
+  it("parses the tool_call_start / tool_call_end pair", () => {
+    const start = parseChatEvent(
+      '{"type":"tool_call_start","call_id":"fake_call_1","name":"search_docs","args":{"q":"uptime"}}',
     );
-    expect(running).toEqual({
-      type: "tool_call",
-      tool_call: { id: "tc_1", name: "search_docs", args: { q: "uptime" }, status: "running" },
+    expect(start).toEqual({
+      type: "tool_call_start",
+      call_id: "fake_call_1",
+      name: "search_docs",
+      args: { q: "uptime" },
     });
-    const done = parseChatEvent(
-      '{"type":"tool_call","tool_call":{"id":"tc_1","name":"search_docs","args":{"q":"uptime"},"status":"done","result":"3 hits"}}',
+    const end = parseChatEvent(
+      '{"type":"tool_call_end","call_id":"fake_call_1","name":"search_docs","result":"3 hits"}',
     );
-    expect(done).toMatchObject({ type: "tool_call", tool_call: { id: "tc_1", status: "done", result: "3 hits" } });
+    expect(end).toEqual({
+      type: "tool_call_end",
+      call_id: "fake_call_1",
+      name: "search_docs",
+      result: "3 hits",
+    });
   });
 
   it("parses approval_request / approval_response", () => {
     expect(
       parseChatEvent(
-        '{"type":"approval_request","approval":{"id":"ap_1","tool":"send_email","args":{"to":"a@b.c"},"reason":"external side effect"}}',
+        '{"type":"approval_request","approval_id":"ap_1","tool":"send_message","summary":"posts to #ops"}',
       ),
     ).toEqual({
       type: "approval_request",
-      approval: { id: "ap_1", tool: "send_email", args: { to: "a@b.c" }, reason: "external side effect" },
+      approval_id: "ap_1",
+      tool: "send_message",
+      summary: "posts to #ops",
     });
     expect(
-      parseChatEvent('{"type":"approval_response","approval":{"id":"ap_1","approved":false,"note":"no"}}'),
-    ).toEqual({ type: "approval_response", approval: { id: "ap_1", approved: false, note: "no" } });
+      parseChatEvent('{"type":"approval_response","approval_id":"ap_1","approved":false}'),
+    ).toEqual({ type: "approval_response", approval_id: "ap_1", approved: false });
   });
 
-  it("parses usage and done with citations and uncertainty", () => {
-    expect(parseChatEvent('{"type":"usage","usage":{"tokens":1234,"cost":0.03}}')).toEqual({
-      type: "usage",
-      usage: { tokens: 1234, cost: 0.03 },
-    });
+  it("parses done with the typed answer, usage, and conversation id", () => {
     expect(
       parseChatEvent(
-        '{"type":"done","done":{"answer":"final","citations":[{"source":"runbook.md","locator":"p. 2"}],"uncertainty":"single source"}}',
+        '{"type":"done","answer":{"text":"final","citations":[{"source":"runbook.md","quote":"restart when error rate > 1%"}],"uncertainty":"low"},"usage":{"input_tokens":12,"output_tokens":6,"requests":2},"conversation_id":"conv_1"}',
       ),
     ).toEqual({
       type: "done",
-      done: {
-        answer: "final",
-        citations: [{ source: "runbook.md", locator: "p. 2" }],
-        uncertainty: "single source",
+      answer: {
+        text: "final",
+        citations: [{ source: "runbook.md", quote: "restart when error rate > 1%" }],
+        uncertainty: "low",
       },
+      usage: { input_tokens: 12, output_tokens: 6, requests: 2 },
+      conversation_id: "conv_1",
+    });
+  });
+
+  it("parses error with code and message", () => {
+    expect(parseChatEvent('{"type":"error","code":"assertion_error","message":"boom"}')).toEqual({
+      type: "error",
+      code: "assertion_error",
+      message: "boom",
     });
   });
 
@@ -63,10 +78,35 @@ describe("parseChatEvent", () => {
   it("throws on malformed JSON and bad shapes", () => {
     expect(() => parseChatEvent("not json")).toThrow(ChatEventError);
     expect(() => parseChatEvent('{"type":"text_delta"}')).toThrow(/delta/);
-    expect(() => parseChatEvent('{"type":"tool_call","tool_call":{"id":"x","name":"y","args":{},"status":"weird"}}')).toThrow(/status/);
-    expect(() => parseChatEvent('{"type":"usage","usage":{"tokens":"many","cost":1}}')).toThrow(/tokens/);
-    expect(() => parseChatEvent('{"type":"done","done":{"answer":"x","citations":[{"locator":"p1"}]}}')).toThrow(/source/);
-    expect(() => parseChatEvent('{}')).toThrow(/type/);
+    expect(() =>
+      parseChatEvent('{"type":"tool_call_start","call_id":"x","name":"y"}'),
+    ).toThrow(/args/);
+    expect(() =>
+      parseChatEvent('{"type":"tool_call_end","call_id":"x","name":"y"}'),
+    ).toThrow(/result/);
+    expect(() =>
+      parseChatEvent('{"type":"approval_request","approval_id":"a","tool":"t"}'),
+    ).toThrow(/summary/);
+    expect(() =>
+      parseChatEvent('{"type":"approval_response","approval_id":"a","approved":"yes"}'),
+    ).toThrow(/approved/);
+    expect(() =>
+      parseChatEvent(
+        '{"type":"done","answer":{"text":"x","citations":[],"uncertainty":"low"},"usage":{"input_tokens":"many","output_tokens":1,"requests":1},"conversation_id":"c"}',
+      ),
+    ).toThrow(/input_tokens/);
+    expect(() =>
+      parseChatEvent(
+        '{"type":"done","answer":{"text":"x","citations":[{"source":"s"}],"uncertainty":"low"},"usage":{"input_tokens":1,"output_tokens":1,"requests":1},"conversation_id":"c"}',
+      ),
+    ).toThrow(/quote/);
+    expect(() =>
+      parseChatEvent(
+        '{"type":"done","answer":{"text":"x","citations":[],"uncertainty":"certain"},"usage":{"input_tokens":1,"output_tokens":1,"requests":1},"conversation_id":"c"}',
+      ),
+    ).toThrow(/uncertainty/);
+    expect(() => parseChatEvent('{"type":"error","code":"c"}')).toThrow(/message/);
+    expect(() => parseChatEvent("{}")).toThrow(/type/);
   });
 });
 

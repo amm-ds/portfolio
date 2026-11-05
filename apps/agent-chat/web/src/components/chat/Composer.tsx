@@ -27,7 +27,8 @@ export function Composer({ phase, usage, health, budget = DEFAULT_BUDGET, onSend
     textareaRef.current?.focus();
   };
 
-  const ratio = usage ? Math.min(usage.tokens / budget, 1) : 0;
+  const ratio = usage ? Math.min((usage.input_tokens + usage.output_tokens) / budget, 1) : 0;
+  const totalTokens = usage ? usage.input_tokens + usage.output_tokens : 0;
 
   return (
     <div className="composer">
@@ -40,10 +41,10 @@ export function Composer({ phase, usage, health, budget = DEFAULT_BUDGET, onSend
           {health?.model ?? "no model"}
           {health?.provider ? `@${health.provider}` : ""}
         </span>
-        <span className="composer-meter" aria-label={usage ? `token usage ${usage.tokens} of ${budget}` : "no usage yet"}>
+        <span className="composer-meter" aria-label={usage ? `token usage ${totalTokens} of ${budget}` : "no usage yet"}>
           <span className="composer-meter-bar" style={{ width: `${Math.round(ratio * 100)}%` }} />
           <span className="composer-meter-text">
-            {usage ? `${usage.tokens.toLocaleString()} tok · $${usage.cost.toFixed(4)}` : phase === "awaiting_approval" ? "awaiting approval…" : "idle"}
+            {usage ? `${totalTokens.toLocaleString()} tok · ${usage.requests} req` : phase === "awaiting_approval" ? "awaiting approval…" : "idle"}
           </span>
         </span>
       </div>

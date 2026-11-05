@@ -1,18 +1,21 @@
 /**
  * Chat state container: conversations, the active run's event log (folded to
- * parts for rendering), usage, health, and the approval resume cycle.
+ * parts for rendering), usage, health, and the approval cycle.
  *
- * Approval flow: the backend ends the SSE stream after `approval_request`;
- * the hook flips to "awaiting_approval", then `respondApproval` re-posts
- * /chat with the decision and keeps folding events into the same run.
+ * Approval flow (mirrors the backend, routes_chat.py): the run's SSE stream
+ * stays OPEN while parked on `approval_request` — the hook flips to
+ * "awaiting_approval", then `respondApproval` POSTs the decision to
+ * /approvals/{id}; the server emits `approval_response` on the same stream and
+ * the run resumes. There is no reconnect or resume token.
  *
- * Assistant turns commit as { content, parts, citations?, uncertainty? } so
- * tool cards and sources stay visible after the run ends; turns loaded from
- * the backend history (content only) render as plain markdown.
+ * The backend persists each run itself and returns its conversation id in the
+ * `done` event, so "+ new" is a purely local action: the conversation comes
+ * into existence with the first completed run. Turns loaded from history
+ * (content only) render as plain markdown.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ApprovalResponse, Citation, ChatEvent, Usage } from "./events";
-import type { ChatApi, ChatMessage, ConversationMeta, HealthInfo } from "./client";
+import type { Citation, ChatEvent, Usage } from "./events";
+import type { ChatApi, ConversationMeta, HealthInfo } from "./client";
 import { reduceEvents } from "./parts";
 import type { Part } from "./parts";
 
@@ -52,9 +55,6 @@ const initialState: ChatState = {
   error: null,
 };
 
-const toWire = (messages: DisplayMessage[]): ChatMessage[] =>
-  messages.map(({ role, content }) => ({ role, content }));
-
 export function useChat(api: ChatApi) {
   const [state, setState] = useState<ChatState>(initialState);
   const abortRef = useRef<AbortController | null>(null);
@@ -69,57 +69,61 @@ export function useChat(api: ChatApi) {
   }, []);
 
   const startRun = useCallback(
-    async (history: DisplayMessage[], approvalResponse?: ApprovalResponse) => {
+    async (history: DisplayMessage[]) => {
+      const message = [...history].reverse().find((m) => m.role === "user");
+      if (!message) return;
       const controller = new AbortController();
       abortRef.current = controller;
 
-      // Fold the operator decision in immediately so the approval card shows
-      // its state before the resumed stream starts (idempotent if echoed).
-      const events: ChatEvent[] = approvalResponse
-        ? [...runEventsRef.current, { type: "approval_response", approval: approvalResponse }]
-        : [];
+      const events: ChatEvent[] = [];
       runEventsRef.current = events;
-      setState((s) => ({ ...s, phase: "streaming", error: null, events, parts: reduceEvents(events) }));
+      setState((s) => ({ ...s, phase: "streaming", error: null, events, parts: [] }));
 
       try {
         for await (const event of api.streamChat(
-          { conversation_id: activeIdRef.current ?? undefined, messages: toWire(history), approval_response: approvalResponse },
+          { message: message.content, conversation_id: activeIdRef.current ?? undefined },
           controller.signal,
         )) {
           events.push(event);
-          const patch =
-            event.type === "usage"
-              ? { events: [...events], parts: reduceEvents(events), usage: event.usage }
-              : { events: [...events], parts: reduceEvents(events) };
+          const parts = reduceEvents(events);
+          const patch: Partial<ChatState> = { events: [...events], parts };
+          if (event.type === "approval_request") {
+            // The stream stays open, parked until decideApproval is answered.
+            patch.phase = "awaiting_approval";
+          } else if (event.type === "approval_response") {
+            patch.phase = "streaming";
+          } else if (event.type === "done") {
+            patch.usage = event.usage;
+          } else if (event.type === "error") {
+            patch.error = `${event.code}: ${event.message}`;
+          }
           setState((s) => ({ ...s, ...patch }));
         }
         const done = events.find((e) => e.type === "done");
-        const pendingApproval = reduceEvents(events).some(
-          (p) => p.kind === "approval" && p.approval.status === "pending",
-        );
         if (done && done.type === "done") {
           // The polished answer supersedes the last streamed text fragment.
           const committed = reduceEvents(events);
-          if (done.done.answer !== "") {
+          if (done.answer.text !== "") {
             let lastText = -1;
             committed.forEach((p, i) => {
               if (p.kind === "text") lastText = i;
             });
-            const answerPart: Part = { kind: "text", text: done.done.answer };
+            const answerPart: Part = { kind: "text", text: done.answer.text };
             if (lastText === -1) committed.push(answerPart);
             else committed[lastText] = answerPart;
           }
           runEventsRef.current = [];
           setState((s) => ({
             ...s,
+            activeId: done.conversation_id,
             messages: [
               ...history,
               {
                 role: "assistant",
-                content: done.done.answer,
+                content: done.answer.text,
                 parts: committed,
-                citations: done.done.citations.length > 0 ? done.done.citations : undefined,
-                uncertainty: done.done.uncertainty,
+                citations: done.answer.citations.length > 0 ? done.answer.citations : undefined,
+                uncertainty: done.answer.uncertainty === "low" ? undefined : done.answer.uncertainty,
               },
             ],
             events: [],
@@ -127,6 +131,9 @@ export function useChat(api: ChatApi) {
             phase: "idle",
           }));
         } else {
+          const pendingApproval = reduceEvents(events).some(
+            (p) => p.kind === "approval" && p.approval.status === "pending",
+          );
           setState((s) => ({ ...s, phase: pendingApproval ? "awaiting_approval" : "idle" }));
         }
         void api.listConversations().then(
@@ -155,28 +162,33 @@ export function useChat(api: ChatApi) {
       const content = text.trim();
       if (content === "" || state.phase !== "idle") return;
 
-      // Ensure a conversation exists so the backend can persist against it.
-      let conversationId = activeIdRef.current;
-      if (conversationId === null) {
-        const meta = await api.createConversation(content.slice(0, 40));
-        conversationId = meta.id;
-        setState((s) => ({ ...s, conversations: [meta, ...s.conversations], activeId: meta.id }));
-      }
-
+      // No conversation pre-creation: the backend persists the run itself and
+      // returns the new conversation id in the done event.
       const history = [...historyRef.current, { role: "user", content } as DisplayMessage];
       runEventsRef.current = [];
-      setState((s) => ({ ...s, activeId: conversationId, messages: history, events: [], parts: [] }));
+      setState((s) => ({ ...s, messages: history, events: [], parts: [] }));
       void startRun(history);
     },
-    [api, startRun, state.phase],
+    [startRun, state.phase],
   );
 
   const respondApproval = useCallback(
     (id: string, approved: boolean) => {
       if (state.phase !== "awaiting_approval") return;
-      void startRun(historyRef.current, { id, approved });
+      // Fold the operator decision in immediately so the approval card shows
+      // its state before the echoed approval_response arrives (idempotent).
+      const events = [...runEventsRef.current, { type: "approval_response", approval_id: id, approved } as ChatEvent];
+      runEventsRef.current = events;
+      setState((s) => ({ ...s, phase: "streaming", events, parts: reduceEvents(events) }));
+      void api.decideApproval(id, approved).catch((error: unknown) => {
+        setState((s) => ({
+          ...s,
+          phase: "streaming",
+          error: error instanceof Error ? error.message : String(error),
+        }));
+      });
     },
-    [startRun, state.phase],
+    [api, state.phase],
   );
 
   const select = useCallback(
@@ -198,14 +210,12 @@ export function useChat(api: ChatApi) {
     [api, stop],
   );
 
-  const create = useCallback(async () => {
+  const create = useCallback(() => {
     stop();
-    const meta = await api.createConversation("new conversation");
     runEventsRef.current = [];
     setState((s) => ({
       ...s,
-      conversations: [meta, ...s.conversations],
-      activeId: meta.id,
+      activeId: null,
       messages: [],
       events: [],
       parts: [],
@@ -213,15 +223,7 @@ export function useChat(api: ChatApi) {
       phase: "idle",
       error: null,
     }));
-  }, [api, stop]);
-
-  const rename = useCallback(
-    async (id: string, title: string) => {
-      const meta = await api.renameConversation(id, title);
-      setState((s) => ({ ...s, conversations: s.conversations.map((c) => (c.id === id ? meta : c)) }));
-    },
-    [api],
-  );
+  }, [stop]);
 
   const remove = useCallback(
     async (id: string) => {
@@ -268,7 +270,6 @@ export function useChat(api: ChatApi) {
     stop,
     select,
     create,
-    rename,
     remove,
     respondApproval,
     awaitingApproval: state.phase === "awaiting_approval",

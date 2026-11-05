@@ -2,21 +2,29 @@
  * Message-parts reducer: raw chat events → renderable parts for one assistant
  * turn. Pure and fold-based so the UI can re-reduce from scratch at any point.
  */
-import type { ChatEvent, ToolCall } from "./events";
+import type { ChatEvent } from "./events";
+
+/** A tool call as the UI needs it: opened by tool_call_start, closed by the
+ * matching tool_call_end (same call_id). */
+export interface ToolCallState {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  status: "running" | "done";
+  result?: string;
+}
 
 /** An approval as the UI needs it: request + the decision once made. */
 export interface ApprovalState {
   id: string;
   tool: string;
-  args: Record<string, unknown>;
-  reason?: string;
+  summary: string;
   status: "pending" | "approved" | "rejected";
-  note?: string;
 }
 
 export type Part =
   | { kind: "text"; text: string }
-  | { kind: "tool_call"; call: ToolCall }
+  | { kind: "tool_call"; call: ToolCallState }
   | { kind: "approval"; approval: ApprovalState };
 
 export type StepKind = "plan" | "tool" | "critique" | "answer";
@@ -30,8 +38,8 @@ export interface Step {
 
 /**
  * Fold a stream of events into parts. Consecutive text deltas merge into one
- * text part; tool_call updates merge by id; the approval decision merges into
- * the matching approval part.
+ * text part; a tool_call_start opens a tool part that the matching
+ * tool_call_end closes; the approval decision merges into the approval part.
  */
 export function reduceEvents(events: readonly ChatEvent[]): Part[] {
   const parts: Part[] = [];
@@ -46,30 +54,38 @@ export function reduceEvents(events: readonly ChatEvent[]): Part[] {
         }
         break;
       }
-      case "tool_call": {
-        const index = parts.findIndex((p) => p.kind === "tool_call" && p.call.id === event.tool_call.id);
-        if (index === -1) {
-          parts.push({ kind: "tool_call", call: event.tool_call });
-        } else {
+      case "tool_call_start": {
+        parts.push({
+          kind: "tool_call",
+          call: { id: event.call_id, name: event.name, args: event.args, status: "running" },
+        });
+        break;
+      }
+      case "tool_call_end": {
+        const index = parts.findIndex((p) => p.kind === "tool_call" && p.call.id === event.call_id);
+        if (index !== -1) {
           const part = parts[index];
           if (part.kind === "tool_call") {
-            parts[index] = { kind: "tool_call", call: { ...part.call, ...event.tool_call } };
+            parts[index] = {
+              kind: "tool_call",
+              call: { ...part.call, status: "done", result: event.result },
+            };
           }
         }
         break;
       }
       case "approval_request": {
-        const index = parts.findIndex((p) => p.kind === "approval" && p.approval.id === event.approval.id);
+        const index = parts.findIndex((p) => p.kind === "approval" && p.approval.id === event.approval_id);
         if (index === -1) {
           parts.push({
             kind: "approval",
-            approval: { ...event.approval, status: "pending" },
+            approval: { id: event.approval_id, tool: event.tool, summary: event.summary, status: "pending" },
           });
         }
         break;
       }
       case "approval_response": {
-        const index = parts.findIndex((p) => p.kind === "approval" && p.approval.id === event.approval.id);
+        const index = parts.findIndex((p) => p.kind === "approval" && p.approval.id === event.approval_id);
         if (index !== -1) {
           const part = parts[index];
           if (part.kind === "approval") {
@@ -77,16 +93,15 @@ export function reduceEvents(events: readonly ChatEvent[]): Part[] {
               kind: "approval",
               approval: {
                 ...part.approval,
-                status: event.approval.approved ? "approved" : "rejected",
-                note: event.approval.note,
+                status: event.approved ? "approved" : "rejected",
               },
             };
           }
         }
         break;
       }
-      case "usage":
       case "done":
+      case "error":
         break;
     }
   }
@@ -113,7 +128,7 @@ export function deriveSteps(parts: readonly Part[]): Step[] {
       steps.push({
         kind: "tool",
         label: part.call.name,
-        status: part.call.status === "running" ? "running" : part.call.status,
+        status: part.call.status,
       });
       seenTool = true;
     } else if (part.kind === "approval") {

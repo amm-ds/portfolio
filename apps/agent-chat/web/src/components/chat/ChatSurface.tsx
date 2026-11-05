@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { ChatController } from "../../lib/chat/useChat";
 import { AgentSteps } from "./AgentSteps";
 import { Composer } from "./Composer";
@@ -6,22 +5,14 @@ import { MessageList } from "./MessageList";
 
 /** App shell: conversation sidebar + main chat pane. */
 export function ChatSurface({ chat }: { chat: ChatController }) {
-  const { state, send, stop, select, create, rename, remove, respondApproval } = chat;
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draftTitle, setDraftTitle] = useState("");
-
-  const commitRename = async (id: string) => {
-    const title = draftTitle.trim();
-    setEditingId(null);
-    if (title !== "") await rename(id, title);
-  };
+  const { state, send, stop, select, create, remove, respondApproval } = chat;
 
   return (
     <div className="chat-app">
       <aside className="chat-sidebar">
         <div className="sidebar-head">
           <span className="sidebar-title">conversations</span>
-          <button type="button" className="btn btn-new" onClick={() => void create()}>
+          <button type="button" className="btn btn-new" onClick={() => create()}>
             + new
           </button>
         </div>
@@ -29,50 +20,22 @@ export function ChatSurface({ chat }: { chat: ChatController }) {
           {state.conversations.length === 0 && <li className="conversation-empty">none yet</li>}
           {state.conversations.map((conv) => (
             <li key={conv.id} className={`conversation-item${conv.id === state.activeId ? " active" : ""}`}>
-              {editingId === conv.id ? (
-                <input
-                  className="conversation-rename"
-                  value={draftTitle}
-                  aria-label="rename conversation"
-                  ref={(el) => el?.focus()}
-                  onChange={(e) => setDraftTitle(e.target.value)}
-                  onBlur={() => void commitRename(conv.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") void commitRename(conv.id);
-                    if (e.key === "Escape") setEditingId(null);
-                  }}
-                />
-              ) : (
-                <>
-                  <button
-                    type="button"
-                    className="conversation-select"
-                    aria-current={conv.id === state.activeId ? "true" : undefined}
-                    onClick={() => void select(conv.id)}
-                  >
-                    {conv.title}
-                  </button>
-                  <button
-                    type="button"
-                    className="conversation-action"
-                    aria-label={`rename ${conv.title}`}
-                    onClick={() => {
-                      setEditingId(conv.id);
-                      setDraftTitle(conv.title);
-                    }}
-                  >
-                    ✎
-                  </button>
-                  <button
-                    type="button"
-                    className="conversation-action"
-                    aria-label={`delete ${conv.title}`}
-                    onClick={() => void remove(conv.id)}
-                  >
-                    ×
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                className="conversation-select"
+                aria-current={conv.id === state.activeId ? "true" : undefined}
+                onClick={() => void select(conv.id)}
+              >
+                {conv.title}
+              </button>
+              <button
+                type="button"
+                className="conversation-action"
+                aria-label={`delete ${conv.title}`}
+                onClick={() => void remove(conv.id)}
+              >
+                ×
+              </button>
             </li>
           ))}
         </ul>

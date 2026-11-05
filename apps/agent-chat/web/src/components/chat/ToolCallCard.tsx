@@ -1,18 +1,17 @@
-import type { ToolCall } from "../../lib/chat/events";
+import type { ToolCallState } from "../../lib/chat/parts";
 
-const STATUS_LABEL: Record<ToolCall["status"], string> = {
+const STATUS_LABEL: Record<ToolCallState["status"], string> = {
   running: "running",
   done: "done",
-  error: "error",
 };
 
 /** One tool invocation: status timeline + collapsible args JSON + result. */
-export function ToolCallCard({ call }: { call: ToolCall }) {
+export function ToolCallCard({ call }: { call: ToolCallState }) {
   return (
     <div className={`tool-card tool-card--${call.status}`}>
       <div className="tool-card-head">
         <span className={`tool-status tool-status--${call.status}`} aria-hidden="true">
-          {call.status === "running" ? "▸" : call.status === "done" ? "✓" : "✗"}
+          {call.status === "running" ? "▸" : "✓"}
         </span>
         <span className="tool-name">{call.name}</span>
         <span className="tool-state">{STATUS_LABEL[call.status]}</span>

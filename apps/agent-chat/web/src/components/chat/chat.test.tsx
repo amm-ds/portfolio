@@ -1,22 +1,22 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import type { ApprovalResponse, ChatEvent } from "../../lib/chat/events";
+import type { ChatEvent } from "../../lib/chat/events";
 import type { ChatApi, ChatRequest, Conversation, ConversationMeta, HealthInfo } from "../../lib/chat/client";
 import { useChat } from "../../lib/chat/useChat";
 import { ChatSurface } from "./ChatSurface";
 
-/** Stub transport replaying a two-leg scripted run (approval in the middle),
- *  mirroring the backend contract: the first stream ends after the
- *  approval_request; the resumed stream carries the rest. */
+/** Stub transport mirroring the backend's real flow: ONE stream parks after
+ *  approval_request and resumes in place when decideApproval POSTs the
+ *  decision — no second request, no reconnect. */
 class StubChatApi implements ChatApi {
   requests: ChatRequest[] = [];
-  private conversations = new Map<string, Conversation>();
-  private seq = 0;
+  decisions: { approvalId: string; approved: boolean }[] = [];
+  private resolveApproval: ((decision: { approvalId: string; approved: boolean }) => void) | null = null;
 
   constructor(
-    private leg1: ChatEvent[],
-    private leg2: ChatEvent[],
+    private head: ChatEvent[],
+    private tail: (decision: { approvalId: string; approved: boolean }) => ChatEvent[],
   ) {}
 
   async health(): Promise<HealthInfo> {
@@ -25,63 +25,61 @@ class StubChatApi implements ChatApi {
 
   async *streamChat(req: ChatRequest): AsyncIterable<ChatEvent> {
     this.requests.push(req);
-    const leg = req.approval_response ? this.leg2 : this.leg1;
-    for (const event of leg) {
+    for (const event of this.head) {
+      await new Promise((r) => setTimeout(r, 0));
+      yield event;
+    }
+    const decision = await new Promise<{ approvalId: string; approved: boolean }>((resolve) => {
+      this.resolveApproval = resolve;
+    });
+    this.decisions.push(decision);
+    for (const event of this.tail(decision)) {
       await new Promise((r) => setTimeout(r, 0));
       yield event;
     }
   }
 
+  async decideApproval(approvalId: string, approved: boolean): Promise<void> {
+    if (!this.resolveApproval) throw new Error("no pending approval");
+    this.resolveApproval({ approvalId, approved });
+  }
+
   async listConversations(): Promise<ConversationMeta[]> {
-    return [...this.conversations.values()].map(({ messages: _m, ...meta }) => meta);
+    return [];
   }
 
-  async createConversation(title?: string): Promise<ConversationMeta> {
-    const id = `c${++this.seq}`;
-    const now = new Date(0).toISOString();
-    const conv: Conversation = { id, title: title ?? "new conversation", created_at: now, updated_at: now, messages: [] };
-    this.conversations.set(id, conv);
-    const { messages: _m, ...meta } = conv;
-    return meta;
-  }
-
-  async getConversation(id: string): Promise<Conversation> {
-    return this.conversations.get(id) ?? Promise.reject(new Error("not found"));
-  }
-
-  async renameConversation(id: string, title: string): Promise<ConversationMeta> {
-    const conv = this.conversations.get(id)!;
-    conv.title = title;
-    const { messages: _m, ...meta } = conv;
-    return meta;
+  async getConversation(): Promise<Conversation> {
+    throw new Error("not found");
   }
 
   async deleteConversation(): Promise<void> {}
 }
 
-const leg1: ChatEvent[] = [
+const head: ChatEvent[] = [
   { type: "text_delta", delta: "Plan: check the runbook " },
   { type: "text_delta", delta: "and the metrics." },
-  { type: "tool_call", tool_call: { id: "t1", name: "search_docs", args: { q: "p99" }, status: "running" } },
-  {
-    type: "tool_call",
-    tool_call: { id: "t1", name: "search_docs", args: { q: "p99" }, status: "done", result: '{"hits": 2}' },
-  },
+  { type: "tool_call_start", call_id: "t1", name: "search_docs", args: { q: "p99" } },
+  { type: "tool_call_end", call_id: "t1", name: "search_docs", result: '{"hits": 2}' },
   {
     type: "approval_request",
-    approval: { id: "ap1", tool: "restart_service", args: { service: "api" }, reason: "production impact" },
+    approval_id: "ap1",
+    tool: "restart_service",
+    summary: "production impact",
   },
 ];
 
-const leg2: ChatEvent[] = [
+const tail = (decision: { approvalId: string; approved: boolean }): ChatEvent[] => [
+  { type: "approval_response", approval_id: decision.approvalId, approved: decision.approved },
   { type: "text_delta", delta: "Restarting now." },
-  { type: "usage", usage: { tokens: 812, cost: 0.02 } },
   {
     type: "done",
-    done: {
-      answer: "Restarted the api service; p99 recovered.",
-      citations: [{ source: "runbook/incident-triage.md", locator: "§ restart policy" }],
+    answer: {
+      text: "Restarted the api service; p99 recovered.",
+      citations: [{ source: "runbook/incident-triage.md", quote: "restart when error rate > 1%" }],
+      uncertainty: "low",
     },
+    usage: { input_tokens: 800, output_tokens: 12, requests: 3 },
+    conversation_id: "conv-1",
   },
 ];
 
@@ -92,7 +90,7 @@ function Harness({ api }: { api: ChatApi }) {
 
 describe("ChatSurface scripted conversation", () => {
   it("runs plan → tool call → approval → answer end to end", async () => {
-    const api = new StubChatApi(leg1, leg2);
+    const api = new StubChatApi(head, tail);
     const user = userEvent.setup();
     render(<Harness api={api} />);
 
@@ -111,13 +109,14 @@ describe("ChatSurface scripted conversation", () => {
     await screen.findByText("awaiting_approval"); // phase badge in the titlebar
     await user.click(screen.getByRole("button", { name: "approve" }));
 
-    // Resumed run commits the answer, citations, and usage.
+    // The resumed run commits the answer, citations, and usage.
     expect(await screen.findByText("Restarted the api service; p99 recovered.")).toBeInTheDocument();
-    expect(screen.getByText("runbook/incident-triage.md · § restart policy")).toBeInTheDocument();
+    expect(screen.getByText("runbook/incident-triage.md · “restart when error rate > 1%”")).toBeInTheDocument();
     expect(screen.getByText(/812 tok/)).toBeInTheDocument();
 
-    // The approval leg carried the operator's decision to the backend.
-    const approvalLeg = api.requests.find((r) => r.approval_response);
-    expect(approvalLeg?.approval_response).toEqual({ id: "ap1", approved: true } as ApprovalResponse);
+    // The decision went out on the approval leg; the run was ONE request.
+    expect(api.decisions).toEqual([{ approvalId: "ap1", approved: true }]);
+    expect(api.requests).toHaveLength(1);
+    expect(api.requests[0]).toEqual({ message: "why did p99 spike?" });
   }, 10_000);
 });
