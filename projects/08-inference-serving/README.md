@@ -37,6 +37,8 @@ uv run python -m inference_serving.cli prepare   # materialize data/prompts.json
 uv run python -m inference_serving.cli bench      # bounded run (<45 min target)
 uv run python -m inference_serving.cli bench --full  # all arms
 uv run python -m inference_serving.cli report     # offline figures + report.html
+# or the full DVC pipeline:
+uv run dvc repro
 ```
 
 `bench` needs a live Ollama with the models pulled; `report` is offline.

@@ -251,6 +251,8 @@ jobs:
           - { name: 09-agentic-workflows, path: projects/09-agentic-workflows, cov: "--cov=src" }
           - { name: 10-uplift-experimentation, path: projects/10-uplift-experimentation, cov: "--cov=src" }
           - { name: 11-data-engineering, path: projects/11-data-engineering, cov: "--cov=src" }
+          - { name: 12-tabular-ml-lifecycle, path: projects/12-tabular-ml-lifecycle, cov: "--cov=src" }
+          - { name: 13-model-serving, path: projects/13-model-serving, cov: "--cov=src" }
           - { name: showcase-api, path: apps/showcase-api, cov: "--cov=src" }
     name: tests · ${{ matrix.suite.name }}
     steps:

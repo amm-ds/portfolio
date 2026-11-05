@@ -1,11 +1,11 @@
 project_id: 13-model-serving
-headline: "The champion tabular MLP from experiment 12 ships as a small FastAPI service: native torch vs ONNX Runtime measured under the same seeded load — 1.7 ms p50 single-request, a ~950 req/s throughput knee, a measured 6.5 GB image whose venv is mostly torch and unused CUDA libraries, and about $0.000012 electricity per 1k predictions on a laptop."
+headline: "The champion tabular MLP from experiment 12 ships as a small FastAPI service: native torch vs ONNX Runtime measured under the same seeded load — 1.6 ms p50 single-request, a ~950 req/s throughput knee, a measured 6.5 GB image whose venv is mostly torch and unused CUDA libraries, and about $0.000012 electricity per 1k predictions on a laptop."
 data_note: "Champion MLP re-derived from experiment 12's committed recipe (UCI Bike Sharing hourly, sha256-pinned) — the identical frame hash reproduces the committed 25.4316 test MAE to the last digit before serving begins."
 limits: "Single laptop, no GPU, one uvicorn worker, one model: absolute numbers do not transfer, the paired native-vs-ONNX deltas and curve shapes do; localhost latency has no network term; the wattage behind the cost line is a declared assumption, not a measurement."
 short_version: |
   Experiment 12's champion MLP (25.4316 test MAE) is re-derived, exported to
   ONNX behind a hard parity gate (7.2e-07 max-abs), and served two ways from
-  one FastAPI schema. Seeded paired tests: 1.7 ms p50, ~950 req/s knee, ~56k
+  one FastAPI schema. Seeded paired tests: 1.6 ms p50, ~950 req/s knee, ~56k
   rows/s batched; image 6.5 GB, mostly unused CUDA.
 sections:
   - id: background
@@ -66,7 +66,8 @@ sections:
     text_md: |
       **The champion, re-derived from the committed recipe.** Experiment 12
       picked the tabular MLP by validation MAE on the UCI Bike Sharing
-      hourly series. It scored the model once on the last 8-week test
+      hourly series ([dataset card](https://amm-ds.github.io/portfolio/data-registry/bike-sharing/)).
+      It scored the model once on the last 8-week test
       window: 25.4316 MAE. This study does not import that project —
       workspace members are siblings, not deps. The tiny recipe is
       re-implemented here instead: the same pinned zip, the same cyclical
@@ -171,8 +172,8 @@ sections:
       The measured shape on this laptop: single-request p50 is about 2 ms for
       both backends; throughput climbs to a knee near 950 req/s around
       concurrency 4, then the co-located driver contends for the same CPU
-      and the curve reshuffles (p50 about 93 ms at 64 clients, p95 about
-      0.34 s). The batch curve is the standout: per-request latency
+      and the curve reshuffles (p50 about 63 ms at 64 clients, p95 about
+      0.21 s). The batch curve is the standout: per-request latency
       stays flat under saturation while throughput scales roughly linearly
       with batch size, reaching about 56k rows/s on both backends at size
       128. ONNX leads some saturated cells by up to 15% and ties elsewhere —
@@ -182,7 +183,7 @@ sections:
       and a later `chown -R` would have doubled the layer — an earlier cut
       did, and measured 12.8 GB against 6.5 GB after the fix.
 
-      **Business summary:** Paired, warmed, median-of-3 measurement: 1.7 ms p50
+      **Business summary:** Paired, warmed, median-of-3 measurement: 1.6 ms p50
       single-request, a ~950 req/s knee, batch endpoint to ~56k rows/s, and
       a container build whose two classic size bugs were found by measuring —
       kept in the record as evidence.
@@ -193,7 +194,7 @@ sections:
       to `reports/metrics.json`; the caveats are part of the results.
 
       - Gates: reproduction exact (25.4316 vs 25.4316); parity max-abs 7.2e-07 on 512 probe rows, tolerance 1e-4.
-      - Latency: p50 1.7 ms single-request on both backends; p95 under 6 ms through concurrency 4; p50 about 93 ms at 64 clients where the shared CPU saturates.
+      - Latency: p50 1.6 ms single-request on both backends; p95 under 6 ms through concurrency 4; p50 about 63 ms at 64 clients where the shared CPU saturates.
       - Throughput: knee near 950 req/s at concurrency 4 on both backends; ONNX up to 15% ahead at the saturated cells; zero errors across the 4,320 requests per backend in the committed benchmark.
       - Batch: ~56k rows/s at size 128 on both backends, flat per-request latency under saturation.
       - Footprint: fresh-process RSS 298 vs 318 MB; image 6.5 GB measured (145 MB base, 6.2 GB venv, 1 MB model), dominated by torch and the 3.3 GB CUDA stack a CPU service never loads.
@@ -205,7 +206,7 @@ sections:
       paired harness needs both backends in one process tree.
 
       **Business summary:** The shipped answer: gated artifact, honest
-      numbers (1.7 ms p50, ~950 req/s knee, ~56k rows/s batched, 6.5 GB image,
+      numbers (1.6 ms p50, ~950 req/s knee, ~56k rows/s batched, 6.5 GB image,
       ~$0.000012 per 1k predictions), and a backend choice made on
       deployability, not a noisy ~15% delta.
     figures: [footprint_cost_bars]
@@ -214,7 +215,7 @@ sections:
       ## Results summary
 
       Experiment 12's champion MLP serves for real: reproduction exact,
-      ONNX parity gated at 7.2e-07 max-abs, 1.7 ms p50 single-request latency,
+      ONNX parity gated at 7.2e-07 max-abs, 1.6 ms p50 single-request latency,
       ~950 req/s throughput knee, ~56k rows/s through the batch endpoint, a
       measured 6.5 GB image, and ~$0.000012 electricity per 1k predictions
       under declared assumptions. [full evaluation report](https://amm-ds.github.io/portfolio/projects/13-model-serving/)
@@ -222,7 +223,7 @@ sections:
       ```mermaid
       flowchart LR
         A["re-derive: 25.4316<br/>exact"] --> B["parity: 7.2e-07<br/>max-abs"]
-        B --> C["serve: 1.7 ms p50<br/>~950 req/s knee"]
+        B --> C["serve: 1.6 ms p50<br/>~950 req/s knee"]
         C --> D["ship: 6.5 GB image<br/>smoke-tested"]
       ```
 
@@ -271,14 +272,14 @@ sections:
 
       | cell | p50 | p95 | p99 | throughput |
       |---|---|---|---|---|
-      | concurrency 1 | 1.7 ms | 2.1 ms | 2.4 ms | 582 req/s |
-      | concurrency 4 | 3.9 ms | 5.5 ms | 6.0 ms | 939 req/s (knee) |
-      | concurrency 16 | 27.1 ms | 43.5 ms | 69.0 ms | 493 req/s |
-      | concurrency 64 | 93.0 ms | 340.3 ms | 489.5 ms | 452 req/s |
-      | batch 1 | 71.5 ms/req | — | — | 473 rows/s |
-      | batch 8 | 48.2 ms/req | — | — | 5,104 rows/s |
-      | batch 32 | 51.0 ms/req | — | — | 18,674 rows/s |
-      | batch 128 | 65.3 ms/req | — | — | 56,697 rows/s |
+      | concurrency 1 | 1.6 ms | 1.9 ms | 2.2 ms | 612 req/s |
+      | concurrency 4 | 3.9 ms | 4.7 ms | 5.7 ms | 970 req/s (knee) |
+      | concurrency 16 | 26.1 ms | 66.2 ms | 94.9 ms | 470 req/s |
+      | concurrency 64 | 63.1 ms | 209.8 ms | 290.9 ms | 715 req/s |
+      | batch 1 | 65.9 ms/req | — | — | 513 rows/s |
+      | batch 8 | 53.0 ms/req | — | — | 5,104 rows/s |
+      | batch 32 | 56.4 ms/req | — | — | 18,674 rows/s |
+      | batch 128 | 73.1 ms/req | — | — | 57,451 rows/s |
 
       Native tracks ONNX within noise at every cell (fresh-process RSS 298 vs
       318 MB). Reproduction: the derived test MAE equals experiment 12's committed

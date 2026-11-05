@@ -125,6 +125,14 @@ Key findings:
   fiber-optic internet churns at 41.9%). The outlier and NaN examples elsewhere
   in the project are synthetic CI fixtures, not real-telco EDA findings.
 
+## Limits
+
+Thresholds and their costs are selected and reported on the same holdout, so the
+601-cost operating point is optimistic. The bootstrap holds thresholds fixed
+and does not measure selection instability. The snapshot has no time axis;
+fresh, time-stamped data is required for independent policy and served-policy
+fairness validation.
+
 ## Reproduce
 
 **Prerequisites:** Python 3.12 via uv. On macOS, `brew install libomp` — the
@@ -156,6 +164,12 @@ artifacts). Tests (39, no network, synthetic fixtures only):
 ```bash
 uv run pytest projects/05-ml-pipeline-churn -q
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `import xgboost` or `import lightgbm` fails on macOS | the PyPI wheels link against Homebrew's OpenMP runtime | run `brew install libomp`, then `uv run pytest projects/05-ml-pipeline-churn -q`; Linux wheels bundle libgomp and need no extra package |
 
 ## What this demonstrates for a client
 

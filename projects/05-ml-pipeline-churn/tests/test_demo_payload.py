@@ -62,10 +62,15 @@ def payload(small_cfg: ChurnConfig, tiny_synthetic: pd.DataFrame) -> dict:
                 "significant_95": True,
             },
             "selected_opt": 0.4,
+            "calibrated_opt": 0.175,
         },
     }
     (small_cfg.reports_dir / "metrics.json").write_text(json.dumps(metrics))
     return build_demo_payload(small_cfg)
+
+
+def test_payload_uses_calibrated_threshold(payload: dict) -> None:
+    assert payload["model"]["threshold_selected"] == 0.175
 
 
 def test_payload_shape(payload: dict) -> None:

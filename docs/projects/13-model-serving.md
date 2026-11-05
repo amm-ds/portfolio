@@ -9,7 +9,7 @@
 
 > Experiment 12's champion MLP (25.4316 test MAE) is re-derived, exported to
 > ONNX behind a hard parity gate (7.2e-07 max-abs), and served two ways from
-> one FastAPI schema. Seeded paired tests: 1.7 ms p50, ~950 req/s knee, ~56k
+> one FastAPI schema. Seeded paired tests: 1.6 ms p50, ~950 req/s knee, ~56k
 > rows/s batched; image 6.5 GB, mostly unused CUDA.
 
 **TL;DR:** teams asking what serving a champion tabular model actually

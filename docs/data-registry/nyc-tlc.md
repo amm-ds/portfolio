@@ -5,7 +5,7 @@
   (CloudFront mirror linked from the TLC page; pattern verified October 2026)
 - **License/terms:** NYC TLC terms of use; free, anonymous download, no account.
 - **Used by:** Project 07 (Urban Mobility Demand Intelligence); Project 11
-  (Data Engineering Benchmark — the sha256-pinned January-2024 file
+  (DataFrame Engines Benchmark — the sha256-pinned January-2024 file
   `yellow_tripdata_2024-01.parquet` plus the zone lookup, fetched and
   re-verified by `projects/11-data-engineering`)
 - **Bounded slice (laptop-friendly):** 12 consecutive months of yellow-taxi

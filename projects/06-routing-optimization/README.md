@@ -7,7 +7,7 @@ benchmarked against published best-known solutions on the Solomon
 
 - **Domain:** combinatorial optimization
 - **Data:** Solomon VRPTW benchmark (CVRPLIB, 100-customer instances; real
-  academic benchmark, subset of 10 instances, ~1 MB)
+  academic benchmark, full set of 56 instances, ~1 MB)
 - **Status:** working showcase on the standard platform (flagships: 01 and 07)
 - **Runtime:** the hand-written heuristics solve all 56 instances in seconds;
   the full solve stage takes **~15 min** because the ALNS-hinted CP-SAT

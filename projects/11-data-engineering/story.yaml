@@ -407,8 +407,6 @@ roadmap:
     text: "Added the seeded 1M/3M/10M scalability study: pandas and sqlite grow linearly (slopes ~1.0), Polars and DuckDB sub-linearly (0.31-0.76)."
   - status: delivered
     text: "The gates earned their keep: parity caught pandas dropping the N/A borough; the repeat gate caught parallel-float rounding cliffs."
-  - status: deferred
-    text: "Bigger-than-RAM out-of-core track (cold page cache, spill-to-disk) — the current parquet reads are page-cache-bound."
 key_concepts:
   - "**Wall-time speedup** — one engine's median run time divided into another's; read per task, summarized as a geomean."
   - "**Peak RSS** — the high-water mark of resident memory; measured in a fresh process so earlier tasks cannot be charged to later ones."

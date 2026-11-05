@@ -361,6 +361,7 @@ def evaluate_core(cfg: ChurnConfig) -> Path:
     metrics["_meta"] = {
         "cost_delta_ci": summary["cost_delta_ci"],
         "selected_opt": summary["selected_opt"],
+        "calibrated_opt": summary["calibrated_opt"],
         "naive_opt": summary["naive_opt"],
         "slices": summary["slices"],
     }

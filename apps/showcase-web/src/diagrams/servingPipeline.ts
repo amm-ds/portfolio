@@ -40,7 +40,7 @@ export const SERVING_PIPELINE_SPEC = {
       kind: "tool",
       facts: [
         "Byte-identical seeded request streams — the comparison is paired.",
-        "1.7 ms p50 and ~950 req/s at the concurrency knee (committed harness).",
+        "1.6 ms p50 and ~950 req/s at the concurrency knee (committed harness).",
       ],
     },
     {

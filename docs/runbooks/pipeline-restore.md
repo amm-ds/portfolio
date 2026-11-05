@@ -12,7 +12,7 @@ uv run dvc repro  # downloads this project's pinned data and runs its stages
 ```
 
 Run `uv run dvc repro` separately inside each project you need to restore;
-there is no single root pipeline that reproduces all ten projects.
+there is no single root pipeline that reproduces all thirteen projects.
 
 ## If a stage fails
 

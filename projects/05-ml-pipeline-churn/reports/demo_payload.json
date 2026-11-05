@@ -7,7 +7,7 @@
     "roc_auc": 0.8316928879588726,
     "ece": 0.016433436691568028,
     "threshold_default": 0.5,
-    "threshold_selected": 0.15
+    "threshold_selected": 0.175
   },
   "cost_model": {
     "fp_cost": 1.0,

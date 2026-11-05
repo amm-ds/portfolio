@@ -2053,6 +2053,7 @@
       ]
     },
     "selected_opt": 0.15,
+    "calibrated_opt": 0.175,
     "naive_opt": 0.0,
     "slices": {
       "gender=Female": {

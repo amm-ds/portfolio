@@ -64,7 +64,8 @@ sections:
       departments), 2011-01-29 to 2016-06-19, 47,649,940 rows, 59.5% of
       them zero-demand days.
     - Sha256-pinned from the Nixtla `datasetsforecast` mirror of the
-      competition archive; cite Makridakis et al., IJF 2022.
+      competition archive; cite Makridakis et al., IJF 2022 and the
+      [dataset card](https://amm-ds.github.io/portfolio/data-registry/m5-nixtla-mirror/).
     - The hierarchy aggregates the bottom series bottom-up through 12
       levels — 42,840 nodes in total — and the evaluation weights every
       level equally, revenue-weighted within.

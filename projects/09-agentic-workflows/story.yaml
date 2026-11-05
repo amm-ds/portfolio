@@ -114,7 +114,8 @@ sections:
       climate, renewable energy, aviation, machine learning, and
       photosynthesis. The mix is deliberate: the handbook checks
       procedure-following and arithmetic on known ground truth, while
-      Wikipedia checks retrieval over text nobody curated for the test.
+      Wikipedia checks retrieval over text nobody curated for the test. Source
+      and license sit in the [Wikipedia dataset card](https://amm-ds.github.io/portfolio/data-registry/wikipedia/).
 
       The data-layout diagram below shows how the pieces fit. Tasks sit in
       versioned JSON files: 15 for tuning, 19 held out. Runs are recorded,

@@ -1,6 +1,6 @@
 project_id: 04-nlp-classification
 short_version: |
-  News sorter for AG News' four topics: a language model trained on all 120k articles scores 95% macro-F1 on a fresh holdout, vs 88% for a keyword model 40x faster and free; routing doubtful items to it keeps that quality while 3 of 4 items ride at keyword cost. License unknown.
+  News sorter for AG News' four topics: a language model trained on all 120k articles scores 95% macro-F1 on a fresh holdout, vs 88% for a keyword model 40x faster and free; routing doubtful items beats either bounded model at keyword cost for 3 of 4 items. License unknown.
 sections:
   - id: background
     text_md: |
@@ -11,7 +11,7 @@ sections:
       portion has 120k rows; license unknown. The transformer alone pays
       full price on obvious items; keywords are cheap but wrong on blurry
       ones — hence the router. The system diagram shows the confidence
-      router that keeps the first's quality at the second's price.
+      router that trades full-data quality for the keyword model's price.
 
       ```diagram 04-routing
       ```
@@ -21,8 +21,8 @@ sections:
       rung of that ladder earns its cost?
 
       **Business summary:** A keyword model sorts obvious news free and
-      fast; the transformer sorts the uncertain quarter; together they
-      match its 95-point fresh score while three of four items ride free.
+      fast; the transformer sorts the uncertain quarter; together they beat
+      either bounded model while three of four items ride free.
     figures: []
   - id: objectives
     text_md: |

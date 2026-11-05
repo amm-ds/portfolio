@@ -1,8 +1,8 @@
 # amm-ds — ML/AI Engineering Portfolio
 
 **I build reliable AI and ML systems that turn complex data into measurable
-business outcomes.** A growing set of reproducible case studies — each with
-a naive baseline, an honest delta, and the code to verify it.
+business outcomes.** Thirteen reproducible case studies — each with a naive
+baseline, an honest delta, and the code to verify it.
 
 ## Flagships
 

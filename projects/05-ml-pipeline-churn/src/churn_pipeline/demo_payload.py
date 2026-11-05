@@ -137,7 +137,7 @@ def build_demo_payload(cfg: ChurnConfig) -> dict[str, Any]:
             "roc_auc": run["roc_auc"],
             "ece": run["ece"],
             "threshold_default": 0.5,
-            "threshold_selected": metrics["_meta"]["selected_opt"],
+            "threshold_selected": metrics["_meta"]["calibrated_opt"],
         },
         "cost_model": {
             "fp_cost": cfg.fp_cost,

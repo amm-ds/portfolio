@@ -89,7 +89,8 @@ sections:
     injected anomalies: fully reproducible, but trivially separable, so
     it shows pipeline mechanics, not real precision. The NSL-KDD probe is
     a pinned network-flow test set whose 56.9% prevalence blocks any
-    comparison with rare telemetry. Labels are used for evaluation only.
+    comparison with rare telemetry. Labels are used for evaluation only. See the
+    [NAB dataset card](https://amm-ds.github.io/portfolio/data-registry/nab/).
 
     ```mermaid
     flowchart LR
