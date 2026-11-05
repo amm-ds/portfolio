@@ -80,6 +80,18 @@ describe("FlowDiagram", () => {
     expect(inspector).toHaveTextContent("whitelisted toolset");
   });
 
+  it("closes the inspector via its close button and clears the canvas selection", async () => {
+    render(<FlowDiagram spec={AGENT_LOOP_SPEC} />);
+    fireEvent.click(await screen.findByTestId("rf__node-plan"));
+    await screen.findByRole("complementary", { name: "Facts for Plan · typed steps + calls" });
+    fireEvent.click(screen.getByRole("button", { name: "Close inspector" }));
+    expect(
+      screen.queryByRole("complementary", { name: "Facts for Plan · typed steps + calls" }),
+    ).toBeNull();
+    // the node must not keep its selection ring, or re-clicking never re-fires
+    expect(document.querySelector(".react-flow__node.selected")).toBeNull();
+  });
+
   it("gives every node a focusable, labelled button and supports keyboard inspection", async () => {
     render(<FlowDiagram spec={ROUTING_SPEC} />);
     for (const specNode of ROUTING_SPEC.nodes) {

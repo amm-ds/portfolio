@@ -29,7 +29,7 @@ export const ROUTING_SPEC = {
     {
       id: "gate",
       label: "Confidence gate · τ = 0.50",
-      kind: "agent",
+      kind: "gate",
       facts: [
         "Raw TF-IDF maximum class probability drives the routing decision.",
         "At τ=0.50, 24.6% of items escalate; the routed system scores 0.9020 fresh macro-F1.",

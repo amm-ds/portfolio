@@ -7,7 +7,6 @@ import {
   Position,
   ReactFlow,
   ReactFlowProvider,
-  useNodesData,
   useNodesState,
   useReactFlow,
   type Edge,
@@ -22,6 +21,19 @@ import { DiagramFallback } from "./DiagramFallback";
 import type { FlowDiagramProps, FlowDiagramRegistryProps } from "./LazyFlowDiagram";
 
 const NODE_WIDTH = 196;
+/** Mermaid-logic shapes make a node's role readable before its label is:
+ *  stadium for terminals, cylinder for stores, subroutine for tools,
+ *  hexagon for APIs, rhombus for decision gates. */
+const KIND_SHAPES: Record<DiagramNodeKind, string> = {
+  source: "stadium",
+  output: "stadium",
+  data: "cylinder",
+  tool: "subroutine",
+  api: "hexagon",
+  gate: "rhombus",
+  model: "rect",
+  agent: "rect",
+};
 const EDGE_COLORS: Record<DiagramMessageKind, string> = {
   task: "var(--secondary)",
   result: "var(--accent)",
@@ -41,8 +53,18 @@ const DiagramNodeView = memo(function DiagramNodeView({
   sourcePosition,
   targetPosition,
 }: NodeProps<FlowNode>) {
+  const shape = KIND_SHAPES[data.kind];
   return (
-    <div className={`flow-node flow-node--${data.kind}`}>
+    <div className={`flow-node flow-node--${data.kind} flow-node--${shape}`}>
+      {shape === "cylinder" && (
+        <svg className="flow-node__cylinder" viewBox="0 0 196 82" preserveAspectRatio="none" aria-hidden="true">
+          <path
+            d="M8 14 C8 6 46 2 98 2 C150 2 188 6 188 14 L188 68 C188 76 150 80 98 80 C46 80 8 76 8 68 Z M8 14 C8 22 46 26 98 26 C150 26 188 22 188 14"
+            fill="var(--surface)"
+            stroke="currentColor"
+          />
+        </svg>
+      )}
       <Handle type="target" position={targetPosition ?? Position.Left} isConnectable={false} />
       <span className="flow-node__kind">{data.kind}</span>
       <span className="flow-node__label">{data.label}</span>
@@ -61,44 +83,54 @@ const ARIA_LABEL_CONFIG = {
 };
 
 function toFlow(spec: DiagramSpec): { nodes: FlowNode[]; edges: FlowEdge[] } {
+  // Parallel edges between the same pair draw on top of each other with a
+  // single edge type; alternate smoothstep/bezier per occurrence so call and
+  // result paths separate visually.
+  const pairCounts = new Map<string, number>();
+  const pairKey = (a: string, b: string) => [a, b].sort().join("→");
   return {
     nodes: spec.nodes.map((node) => ({
       id: node.id,
       type: "diagram",
       position: { x: 0, y: 0 },
       data: { label: node.label, kind: node.kind, facts: node.facts },
-      style: { width: NODE_WIDTH },
+      style: { width: node.kind === "gate" ? 236 : NODE_WIDTH },
       ariaRole: "button",
       deletable: false,
     })),
-    edges: spec.edges.map((edge) => ({
-      id: edge.id,
-      source: edge.source,
-      target: edge.target,
-      type: "smoothstep",
-      label: edge.label,
-      data: { kind: edge.kind },
-      className: `flow-edge flow-edge--${edge.kind}`,
-      style: {
-        stroke: EDGE_COLORS[edge.kind],
-        strokeWidth: 1.8,
-        strokeDasharray: edge.kind === "error" ? "7 4" : undefined,
-      },
-      markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLORS[edge.kind], width: 18, height: 18 },
-      labelStyle: { fill: "var(--text)", fontFamily: "var(--mono)", fontSize: 10 },
-      labelBgStyle: { fill: "var(--bg)", fillOpacity: 0.96 },
-      labelBgPadding: [6, 3],
-      labelBgBorderRadius: 4,
-      ariaLabel: `${edge.label ?? edge.kind}: ${edge.source} to ${edge.target}`,
-      focusable: false,
-    })),
+    edges: spec.edges.map((edge) => {
+      const key = pairKey(edge.source, edge.target);
+      const occurrence = pairCounts.get(key) ?? 0;
+      pairCounts.set(key, occurrence + 1);
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: occurrence % 2 === 0 ? "smoothstep" : "default",
+        label: edge.label,
+        data: { kind: edge.kind },
+        className: `flow-edge flow-edge--${edge.kind}`,
+        style: {
+          stroke: EDGE_COLORS[edge.kind],
+          strokeWidth: 1.8,
+          strokeDasharray: edge.kind === "error" ? "7 4" : undefined,
+        },
+        markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLORS[edge.kind], width: 18, height: 18 },
+        labelStyle: { fill: "var(--text)", fontFamily: "var(--mono)", fontSize: 10 },
+        labelBgStyle: { fill: "var(--bg)", fillOpacity: 0.96 },
+        labelBgPadding: [7, 4],
+        labelBgBorderRadius: 4,
+        ariaLabel: `${edge.label ?? edge.kind}: ${edge.source} to ${edge.target}`,
+        focusable: false,
+      };
+    }),
   };
 }
 
 /** Dagre positions use measured v12 node dimensions, never guessed heights. */
 function layoutMeasuredNodes(nodes: FlowNode[], spec: DiagramSpec): FlowNode[] {
   const graph = new dagre.graphlib.Graph();
-  graph.setGraph({ rankdir: spec.direction, nodesep: 42, ranksep: 72, marginx: 24, marginy: 24 });
+  graph.setGraph({ rankdir: spec.direction, nodesep: 56, ranksep: 96, marginx: 48, marginy: 48 });
   graph.setDefaultEdgeLabel(() => ({}));
   for (const node of nodes) {
     graph.setNode(node.id, {
@@ -125,12 +157,20 @@ function layoutMeasuredNodes(nodes: FlowNode[], spec: DiagramSpec): FlowNode[] {
 function FlowCanvas({ spec }: FlowDiagramProps) {
   const initial = useMemo(() => toFlow(spec), [spec]);
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(initial.nodes);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [laidOut, setLaidOut] = useState(false);
   const [ready, setReady] = useState(false);
-  const selectedNode = useNodesData<FlowNode>(selectedId ?? "");
+  // The inspector follows the nodes' own selection flag — one source of
+  // truth, so closing it cannot disagree with the canvas selection ring.
+  const selectedNode = nodes.find((node) => node.selected) ?? null;
   const { fitView } = useReactFlow();
   const instructionsId = useId();
+
+  const clearSelection = () =>
+    setNodes((current) =>
+      current.some((node) => node.selected)
+        ? current.map((node) => ({ ...node, selected: false }))
+        : current,
+    );
 
   useEffect(() => {
     if (laidOut || nodes.length === 0) return;
@@ -180,9 +220,12 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
             edges={initial.edges}
             nodeTypes={nodeTypes}
             onNodesChange={onNodesChange}
-            onNodeClick={(_, node) => setSelectedId(node.id)}
-            onSelectionChange={({ nodes: selected }) => setSelectedId(selected[0]?.id ?? null)}
-            onPaneClick={() => setSelectedId(null)}
+            onNodeClick={(_, node) =>
+              setNodes((current) =>
+                current.map((n) => ({ ...n, selected: n.id === node.id })),
+              )
+            }
+            onPaneClick={clearSelection}
             nodesDraggable={false}
             nodesConnectable={false}
             nodesFocusable
@@ -213,7 +256,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
                 <span className="flow-inspector__kind">{selectedNode.data.kind}</span>
                 <h3>{selectedNode.data.label}</h3>
               </div>
-              <button type="button" className="flow-inspector__close" onClick={() => setSelectedId(null)} aria-label="Close inspector">
+              <button type="button" className="flow-inspector__close" onClick={clearSelection} aria-label="Close inspector">
                 ×
               </button>
             </div>

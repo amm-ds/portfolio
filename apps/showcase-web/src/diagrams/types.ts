@@ -1,4 +1,4 @@
-export const DIAGRAM_NODE_KINDS = ["source", "agent", "model", "tool", "data", "api", "output"] as const;
+export const DIAGRAM_NODE_KINDS = ["source", "agent", "model", "tool", "data", "api", "gate", "output"] as const;
 export const DIAGRAM_MESSAGE_KINDS = ["task", "result", "error"] as const;
 
 export type DiagramNodeKind = (typeof DIAGRAM_NODE_KINDS)[number];

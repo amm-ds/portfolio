@@ -29,7 +29,7 @@ export const AGENT_LOOP_SPEC = {
     {
       id: "checkpoint",
       label: "Human checkpoint",
-      kind: "agent",
+      kind: "gate",
       facts: [
         "Consequential runs pause for approve, reject-with-feedback, or park/resume.",
         "data/checkpoint.json records pause, rejection feedback, and re-planning.",
