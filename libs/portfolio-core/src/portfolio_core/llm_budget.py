@@ -195,14 +195,14 @@ class SpendLedger:
     records: list[UsdRecord] = field(default_factory=list)
     _warned: set[float] = field(default_factory=set)
 
-    def record(self, model_name: str, usage: Any) -> UsdRecord:
+    def record(self, model_name: str, usage: Any, settings: Settings | None = None) -> UsdRecord:
         """Meter one usage object, enforce the cap, emit threshold log lines."""
         record = UsdRecord(
             model_name=model_name,
             input_tokens=_tokens(usage, "input_tokens"),
             output_tokens=_tokens(usage, "output_tokens"),
             reasoning_tokens=reasoning_tokens_of(usage),
-            spend_usd=usage_cost(usage, model_name),
+            spend_usd=usage_cost(usage, model_name, settings),
         )
         self.spend_usd += record.spend_usd
         self.records.append(record)
@@ -212,7 +212,7 @@ class SpendLedger:
             record.spend_usd,
             self.spend_usd,
             self.budget_usd,
-            model_rate_card(model_name).label,
+            model_rate_card(model_name, settings).label,
         )
         for fraction in sorted(self.warn_at):
             if fraction not in self._warned and self.spend_usd >= self.budget_usd * Decimal(
@@ -293,4 +293,4 @@ def meter_result(result: Any, model_name: str, settings: Settings | None = None)
     else:
         usage_fn = getattr(result, "usage", None)
         usage = usage_fn() if callable(usage_fn) else result
-    return get_ledger(settings).record(model_name, usage)
+    return get_ledger(settings).record(model_name, usage, settings)

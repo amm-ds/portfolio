@@ -900,6 +900,47 @@ def test_body_limit_rejects_oversized_body() -> None:
     assert r.status_code == 413
 
 
+def test_body_limit_returns_on_client_disconnect() -> None:
+    """A disconnect mid-body terminates middleware without calling the app."""
+    import asyncio
+
+    from showcase_api.middleware import BodyLimitMiddleware
+
+    called = False
+
+    async def downstream(scope, receive, send) -> None:  # type: ignore[no-untyped-def]
+        nonlocal called
+        called = True
+
+    messages = iter(
+        [
+            {"type": "http.request", "body": b"{", "more_body": True},
+            {"type": "http.disconnect"},
+        ]
+    )
+
+    async def receive():  # type: ignore[no-untyped-def]
+        return next(messages)
+
+    async def send(message) -> None:  # type: ignore[no-untyped-def]
+        pass
+
+    middleware = BodyLimitMiddleware(downstream)
+    asyncio.run(middleware({"type": "http", "headers": []}, receive, send))
+    assert called is False
+
+
+def test_rate_limit_overflow_does_not_log_client_ip(caplog) -> None:  # type: ignore[no-untyped-def]
+    import logging
+
+    limiter = RateLimiter(per_minute=60, burst=1, max_keys=1)
+    with caplog.at_level(logging.WARNING, logger="showcase_api.middleware"):
+        limiter.check("203.0.113.10")
+        limiter.check("203.0.113.11")
+    assert "203.0.113.10" not in caplog.text
+    assert "203.0.113.11" not in caplog.text
+
+
 def test_request_logging_emits_one_line(caplog) -> None:  # type: ignore[no-untyped-def]
     import logging
 
@@ -1159,6 +1200,70 @@ def test_http_errors_share_error_request_id_envelope() -> None:
     r2 = client.post("/projects/02-demand-forecasting/forecast", json={"series_id": "S1"})
     assert r2.status_code == 422
     assert r2.json()["request_id"] == r2.headers["X-Request-ID"]
+
+
+def _assert_routing_validator_returns_422(payload: dict, expected: str) -> None:
+    response = client.post("/projects/06-routing-optimization/solve", json=payload)
+    assert response.status_code == 422
+    detail = response.json()["details"][0]
+    assert expected in detail["ctx"]["error"]
+    assert "input" not in detail
+
+
+def test_routing_invalid_time_window_returns_422() -> None:
+    payload = _vrptw_payload(2)
+    payload["customers"][1]["ready_time"] = 100.0
+    payload["customers"][1]["due_time"] = 10.0
+    _assert_routing_validator_returns_422(payload, "due_time 10.0 < ready_time 100.0")
+
+
+def test_routing_duplicate_customer_ids_return_422() -> None:
+    payload = _vrptw_payload(2)
+    payload["customers"][1]["id"] = 0
+    _assert_routing_validator_returns_422(payload, "duplicate customer ids")
+
+
+def test_routing_nonconsecutive_customer_ids_return_422() -> None:
+    payload = _vrptw_payload(2)
+    payload["customers"][1]["id"] = 7
+    _assert_routing_validator_returns_422(payload, "consecutive range")
+
+
+def test_public_requests_reject_non_finite_numbers() -> None:
+    routing = _vrptw_payload(2)
+    routing["customers"][1]["x"] = float("nan")
+    cases = [
+        (
+            "/projects/02-demand-forecasting/forecast",
+            {"series_id": "S1", "features": {"lag_1": float("nan")}},
+        ),
+        (
+            "/projects/07-open-data-mobility/forecast",
+            {"zone_id": 1, "features": {"temperature": float("inf")}},
+        ),
+        (
+            "/projects/05-ml-pipeline-churn/score",
+            {"features": {"monthly_charges": float("nan")}},
+        ),
+        ("/projects/06-routing-optimization/solve", routing),
+    ]
+    for url, body in cases:
+        response = client.post(
+            url,
+            content=json.dumps(body, allow_nan=True),
+            headers={"content-type": "application/json"},
+        )
+        assert response.status_code == 422, (url, response.text)
+
+
+def test_validation_logs_exclude_raw_input(caplog, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import logging
+
+    monkeypatch.setenv("CONTACT_PHONE", "+34 600 000 000")
+    with caplog.at_level(logging.WARNING, logger="showcase_api.main"):
+        response = client.post("/contact/unlock", json={"value": "private-contact-value"})
+    assert response.status_code == 422
+    assert "private-contact-value" not in caplog.text
 
 
 # --- Live kill switch + daily budget -------------------------------------------

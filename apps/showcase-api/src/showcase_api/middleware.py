@@ -68,7 +68,7 @@ class RateLimiter:
         if len(self._buckets) >= self.max_keys and key not in self._buckets:
             stalest = min(self._buckets, key=lambda k: self._buckets[k][1])
             del self._buckets[stalest]
-            logger.warning("rate-limit store full (%d keys); evicted %r", self.max_keys, stalest)
+            logger.warning("rate-limit store full (%d keys); evicted stalest bucket", self.max_keys)
         tokens, last = self._buckets.get(key, (self.capacity, now))
         tokens = min(self.capacity, tokens + (now - last) * self.rate_per_second)
         if tokens >= 1.0:
@@ -127,8 +127,10 @@ class BodyLimitMiddleware:
         more = True
         while more:
             message = await receive()
+            if message["type"] == "http.disconnect":
+                return
             if message["type"] != "http.request":
-                continue  # disconnect etc. — pass through to the app
+                continue
             body.extend(message.get("body", b""))
             more = bool(message.get("more_body"))
             if len(body) > self.max_bytes:

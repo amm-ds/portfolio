@@ -228,6 +228,28 @@ class TestMeterResult:
         assert record.spend_usd == Decimal("2.000000")
         reset_ledger()
 
+    def test_honors_custom_prices_and_cap(self) -> None:
+        reset_ledger()
+        usage = fake_pydantic_usage(input_tokens=500_000, output_tokens=125_000)
+        settings = Settings(
+            LLM_COST_LIMIT_USD=3.0,
+            USD_PER_MTOK_INPUT=2.5,
+            USD_PER_MTOK_OUTPUT=8.0,
+        )
+        record = meter_result(usage, "kimi-for-coding", settings)
+        assert record.spend_usd == Decimal("2.250000")  # 0.5M*$2.5 + 0.125M*$8
+        assert get_ledger().spend_usd == Decimal("2.250000")
+
+        reset_ledger()
+        settings = Settings(
+            LLM_COST_LIMIT_USD=2.0,
+            USD_PER_MTOK_INPUT=2.5,
+            USD_PER_MTOK_OUTPUT=8.0,
+        )
+        with pytest.raises(BudgetExceededError, match="cap reached"):
+            meter_result(usage, "kimi-for-coding", settings)
+        reset_ledger()
+
     def test_meters_property_style_usage(self) -> None:
         """pydantic-ai 2.55 exposes AgentRunResult.usage as a property; a
         callable-only duck-type silently meters $0 (wave-16 regression)."""

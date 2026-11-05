@@ -23,6 +23,7 @@ env:
   # Same loky cap as CI: nested per-core joblib workers thrash on 2 vCPUs.
   LOKY_MAX_CPU_COUNT: "1"
 
+# Project-directory uv run calls use --no-sync to reuse the root-synced shared venv.
 jobs:
   # ---------------------------------------------------------------------
   # 1. Determinism: full-scale run-twice byte identity for 02's M5 track.
@@ -45,19 +46,19 @@ jobs:
       - name: "M5 track run-twice byte-identity (metrics + probabilistic)"
         working-directory: projects/02-demand-forecasting
         run: |
-          uv run python -m demand_forecasting.cli evaluate-m5
+          uv run --no-sync python -m demand_forecasting.cli evaluate-m5
           cp reports_m5/metrics.json /tmp/m5_run1.json
           cp reports_m5/probabilistic.json /tmp/m5_prob1.json
-          uv run python -m demand_forecasting.cli evaluate-m5
+          uv run --no-sync python -m demand_forecasting.cli evaluate-m5
           cmp reports_m5/metrics.json /tmp/m5_run1.json
           cmp reports_m5/probabilistic.json /tmp/m5_prob1.json
           echo "m5 metrics + probabilistic: BYTE_IDENTICAL across runs"
       - name: "M5 demo payload run-twice byte-identity"
         working-directory: projects/02-demand-forecasting
         run: |
-          uv run python -m demand_forecasting.cli demo-payload-m5
+          uv run --no-sync python -m demand_forecasting.cli demo-payload-m5
           cp reports_m5/demo_payload.json /tmp/demo_payload_run1.json
-          uv run python -m demand_forecasting.cli demo-payload-m5
+          uv run --no-sync python -m demand_forecasting.cli demo-payload-m5
           cmp reports_m5/demo_payload.json /tmp/demo_payload_run1.json
           echo "m5 demo payload: BYTE_IDENTICAL across runs"
       - name: Upload regenerated M5 reports
@@ -97,6 +98,8 @@ jobs:
           - { name: 09-agentic-workflows, path: projects/09-agentic-workflows, cov: "--cov=src" }
           - { name: 10-uplift-experimentation, path: projects/10-uplift-experimentation, cov: "--cov=src" }
           - { name: 11-data-engineering, path: projects/11-data-engineering, cov: "--cov=src" }
+          - { name: 12-tabular-ml-lifecycle, path: projects/12-tabular-ml-lifecycle, cov: "--cov=src" }
+          - { name: 13-model-serving, path: projects/13-model-serving, cov: "--cov=src" }
           - { name: showcase-api, path: apps/showcase-api, cov: "--cov=src" }
     name: tests · ${{ matrix.suite.name }}
     steps:
@@ -112,7 +115,7 @@ jobs:
       - name: Pytest (${{ matrix.suite.name }})
         working-directory: ${{ matrix.suite.path }}
         run: >-
-          uv run pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900 --durations=30"
+          uv run --no-sync pytest -o addopts="--import-mode=importlib -q -n 2 --timeout=900 --durations=30"
           ${{ matrix.suite.cov }}
           ${{
             matrix.suite.unit_args == 'unit-only'
@@ -240,15 +243,15 @@ jobs:
         run: uv sync --all-packages --dev --locked
       - name: "08 offline — regenerate serving report from committed bench runs"
         working-directory: projects/08-inference-serving
-        run: uv run python -m inference_serving.cli report
+        run: uv run --no-sync python -m inference_serving.cli report
       - name: "09 offline — regrade committed run records (keyword judges)"
         working-directory: projects/09-agentic-workflows
         # The committed reports/metrics.json is the product of BOTH grading
         # passes (tuning suite, then --heldout adds detail.heldout) — verified
         # to reproduce byte-identically from the committed records.
         run: |
-          uv run python -m agentic_workflows.cli evaluate
-          uv run python -m agentic_workflows.cli evaluate --heldout
+          uv run --no-sync python -m agentic_workflows.cli evaluate
+          uv run --no-sync python -m agentic_workflows.cli evaluate --heldout
       - name: Upload regenerated reports
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
@@ -295,7 +298,7 @@ jobs:
             git ls-files -z reports | xargs -0 -r git rm --cached -q --
           fi
           rm -rf reports
-          uv run dvc repro -f
+          uv run --no-sync dvc repro -f
           test -n "$(find reports -type f -print -quit)"
           echo "weekly pipeline smoke completed: projects/$P"
       - name: Upload weekly regenerated reports
@@ -352,7 +355,7 @@ jobs:
             git ls-files -z reports | xargs -0 -r git rm --cached -q --
           fi
           rm -rf reports
-          uv run dvc repro -f
+          uv run --no-sync dvc repro -f
           test -s reports/metrics.json
           test -s reports/figures/green_transfer.json
           echo "07 heavy pipeline smoke completed"
@@ -360,12 +363,12 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         working-directory: projects/01-rag-agent
         run: |
-          uv run python -m rag_agent.cli prepare-corpus
-          uv run python -m rag_agent.cli build-index
+          uv run --no-sync python -m rag_agent.cli prepare-corpus
+          uv run --no-sync python -m rag_agent.cli build-index
       - name: "01 retrieval-only eval (offline; LLM phases stay manual)"
         if: steps.gate.outputs.run == 'true'
         working-directory: projects/01-rag-agent
-        run: uv run python -m rag_agent.cli evaluate --offline
+        run: uv run --no-sync python -m rag_agent.cli evaluate --offline
 
   # ---------------------------------------------------------------------
   # 8. Failure notification: one summary issue per failed nightly.
@@ -378,6 +381,7 @@ jobs:
       contents: read
       issues: write
     steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Ensure nightly label exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

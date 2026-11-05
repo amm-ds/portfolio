@@ -23,13 +23,14 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from portfolio_core.demo import DemoManifest, load_demo_index, to_registry_entry
 from portfolio_core.logging import get_logger, setup_logging
 from portfolio_core.manifest import load_index
 from portfolio_core.story import ProjectStory, load_story
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from routing_optimization.schemas import Problem, RoutePlan, TwoOptTuning
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -55,6 +56,10 @@ _PID_RE = r"^\d{2}-[a-z0-9-]+$"
 
 setup_logging("INFO")
 app = FastAPI(title="amm-ds portfolio showcase", version=__version__)
+
+
+class FiniteInput(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
 
 
 def _request_id(request: Request) -> str:
@@ -102,9 +107,14 @@ async def validation_exception_handler(
     """422s keep the field errors under ``details`` but share the error/request_id
     envelope; pydantic messages only, no internals."""
     rid = _request_id(request)
-    logger.warning("%s %s -> 422 rid=%s: %s", request.method, request.url.path, rid, exc.errors())
+    errors = [
+        {key: value for key, value in error.items() if key != "input"} for error in exc.errors()
+    ]
+    details = jsonable_encoder(errors, custom_encoder={ValueError: str})
+    summary = [(error.get("loc"), error.get("type")) for error in errors]
+    logger.warning("%s %s -> 422 rid=%s: %s", request.method, request.url.path, rid, summary)
     return JSONResponse(
-        {"error": "request validation failed", "request_id": rid, "details": exc.errors()},
+        {"error": "request validation failed", "request_id": rid, "details": details},
         status_code=422,
     )
 
@@ -483,7 +493,7 @@ _MOBILITY_ID = "07-open-data-mobility"
 _SERVING_DIR = _project_dir(_MOBILITY_ID) / "reports" / "models" / "serving"
 
 
-class ForecastRequest(BaseModel):
+class ForecastRequest(FiniteInput):
     zone_id: int = Field(ge=1)
     features: dict[str, float] = Field(min_length=1, max_length=64)
     # Per-service bundle selection: "yellow" (default, the root bundle) or
@@ -605,7 +615,7 @@ _DEMAND_ID = "02-demand-forecasting"
 _DEMAND_SERVING_DIR = _project_dir(_DEMAND_ID) / "reports" / "models" / "serving"
 
 
-class DemandForecastRequest(BaseModel):
+class DemandForecastRequest(FiniteInput):
     series_id: str = Field(min_length=1, max_length=128)
     features: dict[str, float] = Field(min_length=1, max_length=256)
 
@@ -702,7 +712,7 @@ _CHURN_SEMAPHORE = threading.BoundedSemaphore(4)
 _CHURN_BUSY_DETAIL = "scoring capacity busy (4 concurrent scores max) — retry shortly"
 
 
-class ChurnScoreRequest(BaseModel):
+class ChurnScoreRequest(FiniteInput):
     # String values are allowed: feature_names include categoricals such as
     # contract / internet_service.
     features: dict[str, float | str] = Field(min_length=1, max_length=256)

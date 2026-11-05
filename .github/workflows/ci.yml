@@ -23,6 +23,7 @@ jobs:
       web: ${{ steps.filter.outputs.web }}
       docs: ${{ steps.filter.outputs.docs }}
       deployment: ${{ steps.filter.outputs.deployment }}
+      agent_chat: ${{ steps.filter.outputs.agent_chat }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
         with:
@@ -41,6 +42,8 @@ jobs:
               - '.github/workflows/ci.yml'
             web:
               - 'apps/showcase-web/**'
+            agent_chat:
+              - 'apps/agent-chat/**'
             docs:
               - 'docs/**'
               - 'mkdocs.yml'
@@ -140,11 +143,9 @@ jobs:
           uvx pip-audit --requirement /tmp/requirements.txt --strict
 
   eslint:
-    # NON-BLOCKING this wave (continue-on-error); becomes a required gate in a
-    # later wave. Minimal flat config: jsx-a11y recommended.
+    # Blocking JSX accessibility lint; minimal flat config: jsx-a11y recommended.
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
@@ -157,6 +158,32 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npm run lint
+
+  agent-chat:
+    needs: changes
+    if: needs.changes.outputs.agent_chat == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
+        with:
+          enable-cache: true
+          cache-dependency-path: apps/agent-chat/uv.lock
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install isolated workspace
+        working-directory: apps/agent-chat
+        run: uv sync --dev --locked
+      - name: Ruff
+        working-directory: apps/agent-chat
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Mypy
+        working-directory: apps/agent-chat
+        run: uv run mypy src tests
+      - name: Pytest
+        working-directory: apps/agent-chat
+        run: uv run pytest -q
 
   a11y-axe:
     # NON-BLOCKING this wave (continue-on-error). Runs the axe-core check

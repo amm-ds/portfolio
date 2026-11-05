@@ -9,7 +9,7 @@ from collections import Counter
 from typing import Literal
 
 from portfolio_core.schemas import PortfolioBaseModel
-from pydantic import Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 _EPS = 1e-9
 
@@ -21,6 +21,8 @@ AlnsInit = Literal["uniform", "biased"]
 
 class Customer(PortfolioBaseModel):
     """One VRPTW customer; customer 0 is the depot with zero demand."""
+
+    model_config = ConfigDict(allow_inf_nan=False)
 
     id: int = Field(ge=0)
     x: float
@@ -48,6 +50,8 @@ class Customer(PortfolioBaseModel):
 
 class Problem(PortfolioBaseModel):
     """A parsed VRPTW instance: customers (depot first) plus fleet parameters."""
+
+    model_config = ConfigDict(allow_inf_nan=False)
 
     name: str = Field(min_length=1)
     customers: list[Customer] = Field(min_length=1)
