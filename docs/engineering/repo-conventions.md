@@ -67,7 +67,8 @@ conclusions`. Renderer behavior depends on the ids — keep them stable.
   `uv run mkdocs build --strict` if the layout changes).
 - `scripts/check_docs.py` is the docs gate: relative markdown links must
   resolve to a file/heading anchor (README.md, `projects/*/README.md`,
-  `docs/**`), fenced code blocks need a language tag, and `/glossary#slug`
+  `docs/**`), except that git-ignored DVC outputs may be absent until their
+  pipeline regenerates them. Fenced code blocks need a language tag, and `/glossary#slug`
   anchors referenced from `apps/showcase-web/src` must exist in
   `glossary.json`. It runs in CI (gate job) and through
   `uv run python scripts/lint_ci.py`; fix what it finds — do not relax it.
