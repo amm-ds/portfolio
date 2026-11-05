@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
@@ -157,14 +157,25 @@ function collectNumbers(data: unknown, out: number[] = []): number[] {
 
 const metricsCache = new Map<string, number[]>();
 
+/** Numbers a spec's facts may cite: the project's committed metrics when the
+ *  project git-tracks them, otherwise its committed README (11/12 keep
+ *  metrics as DVC outs, absent from a fresh CI checkout — READMEs carry the
+ *  same printed numbers). */
 function metricsNumbers(project: string): number[] {
   let numbers = metricsCache.get(project);
   if (!numbers) {
-    const file = path.resolve(process.cwd(), "../../projects", project, "reports", "metrics.json");
-    // Python-written metrics may carry NaN/Infinity tokens (invalid strict
-    // JSON); they carry no fact-checkable numbers, so neutralize them.
-    const raw = readFileSync(file, "utf8").replace(/\bNaN\b/g, "null").replace(/\bInfinity\b/g, "null");
-    numbers = collectNumbers(JSON.parse(raw));
+    const base = path.resolve(process.cwd(), "../../projects", project);
+    const metricsFile = path.join(base, "reports", "metrics.json");
+    let raw: string;
+    if (existsSync(metricsFile)) {
+      // Python-written metrics may carry NaN/Infinity tokens (invalid strict
+      // JSON); they carry no fact-checkable numbers, so neutralize them.
+      raw = readFileSync(metricsFile, "utf8").replace(/\bNaN\b/g, "null").replace(/\bInfinity\b/g, "null");
+      numbers = collectNumbers(JSON.parse(raw));
+    } else {
+      raw = readFileSync(path.join(base, "README.md"), "utf8");
+      numbers = collectNumbers(raw);
+    }
     metricsCache.set(project, numbers);
   }
   return numbers;
@@ -183,7 +194,7 @@ describe("diagram spec facts trace to committed evidence", () => {
       const nodesWithDigits = spec.nodes.filter((node) => node.facts.some((fact) => /\d/.test(fact)));
       expect(nodesWithDigits.length).toBeGreaterThan(0);
     });
-    it(`${spec.id} prints a number committed in projects/${project}/reports/metrics.json`, () => {
+    it(`${spec.id} prints a number committed in the project's metrics or README`, () => {
       const facts = factNumbers(spec);
       expect(facts.length).toBeGreaterThan(0);
       const metrics = metricsNumbers(project);
