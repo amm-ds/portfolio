@@ -269,6 +269,51 @@ sections:
       - A production build would strip the unused CUDA stack and torch from
         the ONNX-only image; that variant is deliberately not built here.
 
+      ## Exact numbers
+
+      ONNX backend, median of 3 repeats; 300 requests per concurrency level (20
+      warm-up excluded) and 60 per batch size; zero errors in every cell.
+
+      | cell | p50 | p95 | p99 | throughput |
+      |---|---|---|---|---|
+      | concurrency 1 | 1.7 ms | 2.1 ms | 2.4 ms | 582 req/s |
+      | concurrency 4 | 3.9 ms | 5.5 ms | 6.0 ms | 939 req/s (knee) |
+      | concurrency 16 | 27.1 ms | 43.5 ms | 69.0 ms | 493 req/s |
+      | concurrency 64 | 93.0 ms | 340.3 ms | 489.5 ms | 452 req/s |
+      | batch 1 | 71.5 ms/req | — | — | 473 rows/s |
+      | batch 8 | 48.2 ms/req | — | — | 5,104 rows/s |
+      | batch 32 | 51.0 ms/req | — | — | 18,674 rows/s |
+      | batch 128 | 65.3 ms/req | — | — | 56,697 rows/s |
+
+      Native tracks ONNX within noise at every cell (fresh-process RSS 298 vs
+      318 MB). Reproduction: the derived test MAE equals experiment 12's committed
+      value to the last digit (25.43163249606178, abs diff 0.0). Parity: 7.15e-07
+      max-abs on the standardized network output over 512 seeded probe rows, inside
+      the 1e-4 gate. Image: 6.47 GB (145 MB base, 6.2 GB venv, 1 MB model). Cost:
+      $1.15e-05 per 1k predictions at the concurrency-16 knee, at the declared
+      65 W and $0.30 per kWh.
+
+      ## Protocol
+
+      Both backends run as real subprocess services behind the same FastAPI app,
+      and both saw byte-identical request streams from a seeded probe grid
+      (seed 42) — the saturated-cell deltas are paired, not incidental. Warm-up is
+      excluded, repeats are median-of-3, and fresh-process RSS is probed three
+      times per backend. Concurrency sweep 1/4/16/64, batch sizes 1/8/32/128; the
+      benchmark stage itself runs in 25.1 s.
+
+      ## Limits
+
+      - One laptop, shared CPU: absolute numbers move about ±30% with machine load
+        (the knee was observed between 690 and 950 req/s across runs) — the shape,
+        the concurrency-4 knee and the batch amortization, is the durable finding.
+      - No TLS, auth, multi-worker or GPU path; the paired harness needs both
+        backends, so the torch-free slim image is future work.
+      - The 3.3 GB NVIDIA stack inside the image is never loaded by this CPU
+        service — measured, documented, not yet removed.
+      - The electricity-cost framing depends on the declared 65 W and $0.30 per
+        kWh; re-derive on your hardware before quoting the number.
+
       **Business summary:** A champion model, served, measured, and containerized
       end to end — gates first, honest numbers second, and the limits written
       down next to every claim.

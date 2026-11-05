@@ -319,6 +319,49 @@ sections:
       - One city, two seasons, holiday effects as binary flags: transfer is
         plausible, not measured.
 
+      ## Exact numbers
+
+      Test window: the final 8 weeks of the 2011-2012 hourly series (1,344 rows),
+      scored once per candidate. MAE/RMSE in rentals/hour.
+
+      | candidate | val MAE | test MAE | test RMSE | test MAPE |
+      |---|---|---|---|---|
+      | seasonal-naive floor | 88.65 | 83.20 | 134.02 | 153.2% |
+      | ridge | 68.87 | 51.09 | 77.78 | 86.4% |
+      | random forest | 39.50 | 26.32 | 45.67 | 25.7% |
+      | lightgbm_hpo | 34.40 | 25.37 | 40.21 | 27.4% |
+      | mlp (champion) | 34.22 | 25.43 | 39.32 | 33.7% |
+
+      Champion-vs-floor MAE gap: 57.77 rentals/hour, 95% paired bootstrap CI
+      [52.49, 63.07] over 2,000 resamples — the interval excludes zero. LightGBM
+      HPO: 50/50 Optuna trials inside the 240 s budget, best validation MAE 34.397.
+      MLP ablation (validation/test MAE): early stopping is the load-bearing
+      control — every es=off row runs to the 150-epoch cap and scores worse
+      (27.37 vs 24.96 test MAE); the best validation row is dropout-off + es-on
+      (32.13/24.96), about 2 rentals inside noise, so the pre-registered config
+      stands.
+
+      ## Protocol
+
+      Time-based split: the final 8 weeks are the test window (scored once), the 8
+      weeks before it are validation (model selection, the HPO objective, early
+      stopping, the ablation), everything earlier is training; lag features read
+      only the past. The UCI zip is sha256-gated; the 165 real missing hours are
+      bounded by a 2% DQ gate, and lags are positional. Train stage 50.8 s plus
+      evaluate 0.5 s on a 16-core arm64 laptop (torch pinned to one thread);
+      seed 42 throughout.
+
+      ## Limits
+
+      - Model selection, early stopping and the ablation choice used validation
+        only; the test window is scored once per candidate.
+      - MAPE denominators are floored at 1 rental; near-zero hours inflate MAPE
+        even when the absolute error is small — read MAE first.
+      - Two seasons, one city, one system: transfer to other fleets or regimes is
+        plausible, not measured.
+      - The MLP vs LightGBM test-MAE gap (25.43 vs 25.37) sits inside noise; the
+        champion label is a validation artifact, not a neural-net victory.
+
       **Business summary:** The full record — one sha256-pinned series, one
       seeded ladder, one scored-once window — with the limits stated next to
       the numbers they qualify, and every artifact one `dvc repro` away.
