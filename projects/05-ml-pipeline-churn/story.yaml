@@ -311,15 +311,12 @@ sections:
       **Pipeline** (one fitted sklearn Pipeline owns all preprocessing):
 
             ```mermaid
-      flowchart LR
-          A["raw CRM row"] --> B["OutlierCapper"]
-          B --> C["MissingValueIndicator"]
-          C --> D["impute + scale"]
-          E["contract"] --> F["one-hot encode"]
-          D --> G["ColumnTransformer"]
-          F --> G
-          G --> H["classifier"]
-          H --> I["predict_proba"]
+      flowchart TB
+        A["raw CRM row"] --> B["OutlierCapper"] --> C["MissingValueIndicator"] --> D["impute + scale"]
+        E["contract"] --> F["one-hot encode"]
+        D --> G["ColumnTransformer"]
+        F --> G
+        G --> H["classifier"] --> I["predict_proba"]
       ```
 
       ## Protocol

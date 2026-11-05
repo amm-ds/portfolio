@@ -330,10 +330,20 @@ sections:
       **cold read**, the same task in a fresh interpreter.
 
       ```mermaid
-      flowchart LR
-        A["read parquet"] --> B["read csv"] --> C["group-by"] --> D["join"]
-        D --> E["window"] --> F["filter"] --> G["strings"] --> H["sort"]
-        H --> I["write parquet"] --> J["partitioned read"]
+      flowchart TB
+        subgraph READS["reads + aggregates"]
+          direction LR
+          A["read parquet"] --> B["read csv"] --> C["group-by"] --> D["join"]
+        end
+        subgraph XFORMS["transforms"]
+          direction LR
+          E["window"] --> F["filter"] --> G["strings"] --> H["sort"]
+        end
+        subgraph WRITES["writes"]
+          direction LR
+          I["write parquet"] --> J["partitioned read"]
+        end
+        READS --> XFORMS --> WRITES
       ```
 
       **Headline table** (median wall time, seconds; x = speedup vs pandas;

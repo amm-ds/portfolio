@@ -444,7 +444,7 @@ sections:
       A --> B["Score later span once"]
       B --> C["Episode dedup"]
       C --> E["24 h per-series cap"]
-      E --> F["Tune operating point on train only<br/>must clear +0.05 and transfer"]
+      E --> F["Tune operating point on train only<br/>clear +0.05 and transfer"]
       F --> G["Budgeted page stream<br/>the deployed artifact"]
     ```
 

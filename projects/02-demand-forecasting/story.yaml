@@ -36,11 +36,11 @@ sections:
     buy? The candidate funnel gives the answer in one picture.
 
     ```mermaid
-    graph LR
+    flowchart LR
       N["seasonal_naive floor"] --> G["global LightGBM + Tweedie arm"]
       G --> PL["pooled fits: per store, per store x category, per department"]
       PL --> ETS["per-series AutoETS"]
-      ETS --> SC{"Stability screen: mean + 1.0 x std, selection origins only"}
+      ETS --> SC["Stability screen:<br/>mean + 1.0 x std, selection origins only"]
       SC --> BL["convex_ensemble: 3 members, simplex weights"]
       BL --> R["Official WRMSSE + bias + per-level + zero-day, scored once"]
     ```

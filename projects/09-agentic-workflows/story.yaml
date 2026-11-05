@@ -101,7 +101,7 @@ sections:
       The task schema diagram shows what every suite task declares.
 
       ```mermaid
-      flowchart LR
+      flowchart TB
           subgraph TASK["one task record - versioned JSON"]
               direction LR
               ID["id + category"] --- Q["question + pinned answer"] --- TOOLS["expected tool set"] --- BUD["budgets: 60 s, 8 steps, $0.25"]
@@ -199,7 +199,7 @@ sections:
       exists.
 
       ```mermaid
-      flowchart LR
+      flowchart TB
           subgraph SUITE["suite shape - 34 tasks"]
               direction LR
               T15["15 tuning t01-t15"] --- H13["13 held-out answers"] --- P6["6 should-fail probes"]

@@ -8,32 +8,22 @@ sections:
     path: bounded corpus, CPU-only retrieval, cited draft, claim verification.
 
     ```mermaid
-    graph LR
-      subgraph Corpus["Pinned corpus"]
-        W["Wikipedia snapshot<br/>5 topics, 593 articles"]
-        D["Dataset contract<br/>sha256-pinned"]
+    flowchart TB
+      subgraph CR["pinned corpus to ranked passages, CPU only"]
+        direction LR
+        W["Wikipedia snapshot<br/>5 topics, 593 articles"] --> D["Dataset contract<br/>sha256-pinned"]
+        D --> E["MiniLM embeddings"]
+        E --> F["FAISS exact index"]
+        F --> R["Cross-encoder rerank"]
       end
-      subgraph Retrieval["Retrieval, CPU only"]
-        E["MiniLM embeddings"]
-        F["FAISS exact index"]
-        R["Cross-encoder rerank"]
+      subgraph ANS["answer layer"]
+        direction LR
+        G["Hosted or local model<br/>drafts with citations"] --> V["Claim verifier<br/>0.6 support floor"] --> O["Cited answer<br/>or abstention"]
       end
-      subgraph Answer["Answer layer"]
-        G["Hosted or local model<br/>drafts with citations"]
-        V["Claim verifier<br/>0.6 support floor"]
-        O["Cited answer<br/>or abstention"]
-      end
-      W --> D
-      D --> E
-      E --> F
-      F -->|"top 15 passages"| R
-      R -->|"top 3 passages"| G
-      G --> V
-      V -->|"all claims supported"| O
-      V -->|"claim fails"| O
+      CR -->|"top 15 passages, then top 3"| ANS
     ```
 
-    Trace the path from the left: the corpus is pinned before anything
+    Trace the path from the top: the corpus is pinned before anything
     runs, CPU retrieval narrows 593 articles to three passages, a model
     drafts with citations, and the verifier cuts or refuses anything under
     the 0.6 support floor.
@@ -55,7 +45,7 @@ sections:
     ```mermaid
     graph LR
       Q["Question arrives"] --> D{"Relevant passage<br/>in the corpus?"}
-      D -->|"no - outside the corpus"| Z["Calibrated refusal"]
+      D -->|"no: outside the corpus"| Z["Calibrated refusal"]
       D -->|"yes"| A["Draft with citations"]
       A --> V{"Every claim supported<br/>at the 0.6 floor?"}
       V -->|"yes"| S["Structured answer:<br/>summary, citations, confidence"]
@@ -362,7 +352,7 @@ sections:
         A["Agent draft"] --> J["Rubric + RAGAS judges"]
       end
       subgraph Verify["Verify loop, per claim"]
-        SP{"Support at or above 0.6<br/>vs cited chunk?"}
+        SP{"0.6 support floor<br/>vs cited chunk?"}
         SP -->|"yes: keep claim"| OUT["Audited answer"]
         SP -->|"no: remove text"| AB{"Answer coherent?"}
         AB -->|"yes"| RD["Re-draft, max 2 repairs"]
