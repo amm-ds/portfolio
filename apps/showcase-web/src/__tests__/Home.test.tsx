@@ -161,14 +161,14 @@ describe("Home (terminal-centered)", () => {
     expect(rule).not.toContain("text-shadow");
   });
 
-  it("centers the availability band with a 3rem bottom margin before the footer", () => {
+  it("centers the availability band with a 4rem bottom margin before the footer", () => {
     renderHome();
     const status = document.querySelector(".home-status")!;
     expect(status).not.toBeNull();
     const css = readStylesCss();
     const rule = css.match(/\.home-status \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("justify-content: center;");
-    expect(rule).toContain("margin: 1.75rem 0 3rem;");
+    expect(rule).toContain("margin: 1.75rem 0 4rem;");
     expect(rule).toContain("text-align: center;");
   });
 
@@ -215,16 +215,16 @@ describe("Home (terminal-centered)", () => {
 describe("Home hero layout", () => {
   it("widens the hero and terminal, caps the hero height, and covers it with a static full-size grid", () => {
     const css = readStylesCss();
-    // 940 → 1160px hero, 780 → 1120px terminal (wide enough for the one-line focus output)
-    expect(css).toContain("max-width: 1160px;");
-    expect(css).not.toContain("max-width: 940px;");
-    expect(css).toContain("max-width: 1120px;");
-    expect(css).not.toContain("max-width: 780px;");
-    expect(css).not.toContain("max-width: 1020px;");
+    // 1160 → 1280px hero, 1120 → 1200px terminal (wide enough for the one-line focus output)
+    expect(css).toContain("max-width: 1280px;");
+    expect(css).not.toContain("max-width: 1160px;");
+    expect(css).toContain("max-width: 1200px;");
+    expect(css).not.toContain("max-width: 1120px;");
+    expect(css).not.toContain("max-width: 1160px;");
     // the stage is capped low so "where to go" sits close under the terminal
     expect(css).toContain("min-height: min(68vh, 720px);");
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
-    expect(heroRule).toContain("max-width: 1160px;");
+    expect(heroRule).toContain("max-width: 1280px;");
     expect(heroRule).toContain("min-height: min(68vh, 720px);");
     // the grid layer has an explicit inset and no grow-in of any kind
     const gridRule = css.match(/\.hero::before \{[\s\S]*?\n\}/)![0];
