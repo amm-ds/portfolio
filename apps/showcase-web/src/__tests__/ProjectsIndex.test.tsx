@@ -179,6 +179,7 @@ describe("ProjectsIndex", () => {
       ["Machine learning", "#machine-learning"],
       ["Optimization", "#optimization"],
       ["Data engineering", "#data-engineering"],
+      ["apps", "#apps"],
     ]);
   });
 
@@ -559,7 +560,7 @@ describe("ProjectsIndex", () => {
     // heading outline: the two major h2s plus one h3 per topic row, no numbers
     expect(
       screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
-    ).toEqual(["live demos", "experiments"]);
+    ).toEqual(["live demos", "experiments", "apps"]);
     expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
     // all thirteen snapshot projects render as cards
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(13));
@@ -662,6 +663,34 @@ describe("ProjectsIndex", () => {
     expect(experiment.achieves).toContain("Cutting decision cost 42%");
     expect(experiment.resultChip).toBeNull();
     expect(experiment.resultSlot).not.toBeNull();
+  });
+
+  it("renders the apps block with the template card, screenshot and external links", async () => {
+    vi.stubGlobal("fetch", projectsOnlyFetch());
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { level: 2, name: "apps" })).toBeInTheDocument(),
+    );
+    const block = document.getElementById("apps")!;
+    expect(block.textContent).toMatch(/complete applications, built like client work/i);
+    const card = block.querySelector(".app-card")!;
+    expect(card).not.toBeNull();
+    expect(card.querySelector("img")!.getAttribute("src")).toBe("/apps/agent-chat-approval.png");
+    const links = [...card.querySelectorAll("a")].map((a) => [
+      a.textContent,
+      a.getAttribute("href"),
+    ]);
+    expect(links).toEqual([
+      ["[code]", "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat"],
+      ["[article]", "https://amm-ds.github.io/portfolio/apps/chatbot-agent/"],
+      ["[specs]", "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat/specs"],
+    ]);
+    expect(card.textContent).toContain("pydantic-ai");
+    expect(card.textContent).toContain("pgvector");
   });
 
   it("links the glossary from the experiments section description", async () => {

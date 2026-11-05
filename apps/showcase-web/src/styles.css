@@ -786,6 +786,85 @@ select:focus-visible,
   margin: 0.9rem 0;
 }
 
+/* app cards — the apps block on the projects index: screenshot on top, the
+   house two-block body below */
+.apps-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-card);
+  margin: 0 0 2rem;
+}
+
+@media (min-width: 960px) {
+  .apps-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.app-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.app-card__shot {
+  width: 100%;
+  display: block;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.app-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
+.app-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+.app-card__summary {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.app-card__cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+}
+
+@media (min-width: 640px) {
+  .app-card__cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.app-card__block {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.app-card__stack,
+.app-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+/* app cards — end */
+
 .chip {
   font-size: 0.76rem;
   background: var(--bg);

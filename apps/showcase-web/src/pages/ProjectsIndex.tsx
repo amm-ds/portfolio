@@ -12,6 +12,7 @@ import { ProjectCard } from "../components/ProjectCard";
 import { StudyCard } from "../components/StudyCard";
 import { cardTags } from "../lib/cardCopy";
 import { DEMOS, DEMOS_INTRO, chipLabel, demoDoes } from "../lib/demos";
+import { APPS, APPS_INTRO, type AppEntry } from "../lib/apps";
 
 export interface TopicGroup {
   topic: string;
@@ -120,6 +121,50 @@ interface DemoCardData {
  * kinds share one tag vocabulary. */
 function demoTags(projectId: string | undefined): string[] {
   return cardTags(projectId ?? "", []).slice(0, 4);
+}
+
+/** App card for the apps block: screenshot on top, the house two-block body
+ * (what it is / what an adopter gets), stack chips, and external links. */
+function AppCard({ app }: { app: AppEntry }) {
+  return (
+    <article className="app-card" aria-label={app.title}>
+      <img className="app-card__shot" src={app.screenshot} alt={`${app.title} — interface screenshot`} loading="lazy" />
+      <div className="app-card__body">
+        <h3 className="app-card__title">{app.title}</h3>
+        <p className="app-card__summary">{app.summary}</p>
+        <div className="app-card__cols">
+          <div>
+            <span className="study-block-label">what it is</span>
+            <p className="app-card__block">{app.does}</p>
+          </div>
+          <div>
+            <span className="study-block-label">what you get</span>
+            <p className="app-card__block">{app.achieves}</p>
+          </div>
+        </div>
+        <div className="chips app-card__stack">
+          {app.stack.map((s) => (
+            <span key={s} className="chip">
+              {s}
+            </span>
+          ))}
+        </div>
+        <div className="meta-links app-card__links">
+          {app.links.map((link) =>
+            link.href.startsWith("/") ? (
+              <Link key={link.label} className="chip-link" to={link.href}>
+                {link.label}
+              </Link>
+            ) : (
+              <a key={link.label} className="chip-link" href={link.href} target="_blank" rel="noopener noreferrer">
+                {link.label}
+              </a>
+            ),
+          )}
+        </div>
+      </div>
+    </article>
+  );
 }
 
 /** Results chip for a demo card, from the registry's headline metric
@@ -292,6 +337,7 @@ export function ProjectsIndex() {
             {row.name}
           </a>
         ))}
+        <a href="#apps">apps</a>
       </nav>
       {snapshot && (
         <div className="state-box error" role="alert">
@@ -334,6 +380,15 @@ export function ProjectsIndex() {
           </div>
         </div>
       )}
+      <div className="apps-block" id="apps">
+        <h2 className="section-title section-title--major">apps</h2>
+        <p className="section-intro">{APPS_INTRO}</p>
+        <div className="apps-grid">
+          {APPS.map((app) => (
+            <AppCard key={app.id} app={app} />
+          ))}
+        </div>
+      </div>
     </>
   );
 }
