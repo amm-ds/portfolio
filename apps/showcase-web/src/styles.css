@@ -2926,6 +2926,84 @@ button:disabled {
   color: var(--danger);
 }
 
+/* custom edges: muted by default; the neighborhood (hover/selection) lights
+   the node's connections and fades the rest; a click pins an edge's label */
+.flow-edge {
+  --edge-color: var(--muted);
+}
+
+.flow-edge--task {
+  --edge-color: var(--secondary);
+}
+
+.flow-edge--result {
+  --edge-color: var(--accent);
+}
+
+.flow-edge--error {
+  --edge-color: var(--danger);
+}
+
+.flow-edge__path {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  opacity: 0.85;
+  transition: stroke 0.12s ease, stroke-width 0.12s ease, opacity 0.12s ease;
+}
+
+.flow-edge.is-lit .flow-edge__path {
+  stroke: var(--edge-color);
+  stroke-width: 2.4;
+  opacity: 1;
+}
+
+.flow-edge.is-dim .flow-edge__path {
+  opacity: 0.22;
+}
+
+.flow-edge.is-pinned .flow-edge__path {
+  stroke: var(--edge-color);
+  stroke-width: 2.6;
+  opacity: 1;
+  filter: drop-shadow(0 0 4px var(--edge-color));
+}
+
+.flow-edge__label-host {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.flow-edge__label {
+  display: inline-block;
+  max-width: 144px;
+  padding: 1px 7px;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.flow-edge.is-lit .flow-edge__label,
+.flow-edge.is-pinned .flow-edge__label {
+  border-color: var(--edge-color);
+}
+
+/* dimmed nodes during neighborhood focus */
+.react-flow__node.is-dim {
+  opacity: 0.35;
+  transition: opacity 0.12s ease;
+}
+
+.react-flow__node {
+  transition: opacity 0.12s ease;
+}
+
 .flow-diagram-fallback {
   max-height: 520px;
   overflow: auto;

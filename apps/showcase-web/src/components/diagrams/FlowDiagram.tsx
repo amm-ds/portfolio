@@ -2,14 +2,17 @@ import { memo, useEffect, useId, useMemo, useState } from "react";
 import dagre from "@dagrejs/dagre";
 import {
   Controls,
+  getSmoothStepPath,
   Handle,
   MarkerType,
   Position,
   ReactFlow,
   ReactFlowProvider,
+  useEdgesState,
   useNodesState,
   useReactFlow,
   type Edge,
+  type EdgeProps,
   type Node,
   type NodeProps,
   type NodeTypes,
@@ -46,7 +49,14 @@ type FlowNodeData = {
   facts: readonly string[];
 };
 type FlowNode = Node<FlowNodeData, "diagram">;
-type FlowEdge = Edge<{ kind: DiagramMessageKind }>;
+type FlowEdgeData = {
+  kind: DiagramMessageKind;
+  label?: string;
+  /** Vertical shift of the mid segment — parallel call/result pairs bend
+   *  apart instead of drawing on top of each other. */
+  offset: number;
+};
+type FlowEdge = Edge<FlowEdgeData>;
 
 const DiagramNodeView = memo(function DiagramNodeView({
   data,
@@ -74,7 +84,51 @@ const DiagramNodeView = memo(function DiagramNodeView({
   );
 });
 
+/** Custom edge: smooth-step with per-pair curvature and a solid label chip
+ *  sitting on the path. Legibility states (muted/lit/dim) are driven by
+ *  class names computed in FlowCanvas from hover/selection. */
+const DiagramEdgeView = memo(function DiagramEdgeView({
+  id,
+  sourceX,
+  sourceY,
+  targetX,
+  targetY,
+  sourcePosition,
+  targetPosition,
+  data,
+  markerEnd,
+}: EdgeProps<FlowEdge>) {
+  const [path, labelX, labelY] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    sourcePosition,
+    targetX,
+    targetY,
+    targetPosition,
+    borderRadius: 10,
+    offset: data?.offset ?? 0,
+  });
+  const label = data?.label;
+  return (
+    <>
+      <path id={id} d={path} fill="none" className="flow-edge__path" markerEnd={markerEnd} />
+      {label ? (
+        <foreignObject
+          x={labelX - 72}
+          y={labelY - 11}
+          width={144}
+          height={22}
+          className="flow-edge__label-host"
+        >
+          <div className="flow-edge__label">{label}</div>
+        </foreignObject>
+      ) : null}
+    </>
+  );
+});
+
 const nodeTypes: NodeTypes = { diagram: DiagramNodeView };
+const edgeTypes = { diagram: DiagramEdgeView };
 const NODE_A11Y_DESCRIPTION = "Press enter or space to inspect a node. Press escape to close the inspector.";
 const ARIA_LABEL_CONFIG = {
   "node.a11yDescription.default": NODE_A11Y_DESCRIPTION,
@@ -83,9 +137,8 @@ const ARIA_LABEL_CONFIG = {
 };
 
 function toFlow(spec: DiagramSpec): { nodes: FlowNode[]; edges: FlowEdge[] } {
-  // Parallel edges between the same pair draw on top of each other with a
-  // single edge type; alternate smoothstep/bezier per occurrence so call and
-  // result paths separate visually.
+  // Parallel edges between the same pair draw on top of each other at offset
+  // 0; bend the mid segment alternately so call and result paths separate.
   const pairCounts = new Map<string, number>();
   const pairKey = (a: string, b: string) => [a, b].sort().join("→");
   return {
@@ -106,25 +159,31 @@ function toFlow(spec: DiagramSpec): { nodes: FlowNode[]; edges: FlowEdge[] } {
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        type: occurrence % 2 === 0 ? "smoothstep" : "default",
-        label: edge.label,
-        data: { kind: edge.kind },
+        type: "diagram",
+        data: {
+          kind: edge.kind,
+          label: edge.label,
+          offset: occurrence === 0 ? 0 : occurrence % 2 === 1 ? 26 : -26,
+        },
         className: `flow-edge flow-edge--${edge.kind}`,
         style: {
-          stroke: EDGE_COLORS[edge.kind],
-          strokeWidth: 1.8,
           strokeDasharray: edge.kind === "error" ? "7 4" : undefined,
         },
-        markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLORS[edge.kind], width: 18, height: 18 },
-        labelStyle: { fill: "var(--text)", fontFamily: "var(--mono)", fontSize: 10 },
-        labelBgStyle: { fill: "var(--bg)", fillOpacity: 0.96 },
-        labelBgPadding: [7, 4],
-        labelBgBorderRadius: 4,
+        markerEnd: { type: MarkerType.ArrowClosed, color: EDGE_COLORS[edge.kind], width: 22, height: 22 },
         ariaLabel: `${edge.label ?? edge.kind}: ${edge.source} to ${edge.target}`,
-        focusable: false,
+        focusable: true,
       };
     }),
   };
+}
+
+/** True when nodeId sits at either end of any edge touching focusId. */
+function touchesNode(edges: FlowEdge[], nodeId: string, focusId: string): boolean {
+  return edges.some(
+    (edge) =>
+      (edge.source === focusId && edge.target === nodeId) ||
+      (edge.target === focusId && edge.source === nodeId),
+  );
 }
 
 /** Dagre positions use measured v12 node dimensions, never guessed heights. */
@@ -157,20 +216,66 @@ function layoutMeasuredNodes(nodes: FlowNode[], spec: DiagramSpec): FlowNode[] {
 function FlowCanvas({ spec }: FlowDiagramProps) {
   const initial = useMemo(() => toFlow(spec), [spec]);
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(initial.nodes);
+  const [edges] = useEdgesState<FlowEdge>(initial.edges);
   const [laidOut, setLaidOut] = useState(false);
   const [ready, setReady] = useState(false);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [pinnedEdgeId, setPinnedEdgeId] = useState<string | null>(null);
   // The inspector follows the nodes' own selection flag — one source of
   // truth, so closing it cannot disagree with the canvas selection ring.
   const selectedNode = nodes.find((node) => node.selected) ?? null;
   const { fitView } = useReactFlow();
   const instructionsId = useId();
 
-  const clearSelection = () =>
+  const clearSelection = () => {
+    setPinnedEdgeId(null);
     setNodes((current) =>
       current.some((node) => node.selected)
         ? current.map((node) => ({ ...node, selected: false }))
         : current,
     );
+  };
+
+  // Neighborhood focus: hover or selection lights the node's connections and
+  // fades the rest, so dense loops read one relationship at a time.
+  const focusId = hoveredId ?? selectedNode?.id ?? null;
+  const connected = useMemo(() => {
+    if (!focusId) return null;
+    const ids = new Set<string>();
+    for (const edge of edges) {
+      if (edge.source === focusId || edge.target === focusId) ids.add(edge.id);
+    }
+    return ids;
+  }, [edges, focusId]);
+
+  const styledEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        const lit = connected ? connected.has(edge.id) : false;
+        const pinned = edge.id === pinnedEdgeId;
+        return {
+          ...edge,
+          className:
+            `flow-edge flow-edge--${edge.data?.kind ?? "task"}` +
+            (connected ? (lit ? " is-lit" : " is-dim") : "") +
+            (pinned ? " is-pinned" : ""),
+          selected: pinned,
+        };
+      }),
+    [edges, connected, pinnedEdgeId],
+  );
+
+  const styledNodes = useMemo(
+    () =>
+      nodes.map((node) => ({
+        ...node,
+        className:
+          connected && focusId && node.id !== focusId && !touchesNode(edges, node.id, focusId)
+            ? "is-dim"
+            : undefined,
+      })),
+    [nodes, edges, connected, focusId],
+  );
 
   useEffect(() => {
     if (laidOut || nodes.length === 0) return;
@@ -202,7 +307,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
       <div className="flow-diagram__heading">
         <span className="flow-diagram__title">{spec.title}</span>
         <span className="flow-diagram__hint" id={instructionsId}>
-          Select a node for committed facts · scroll to zoom
+          Hover a node to trace its connections · select for committed facts
         </span>
       </div>
       <div className={`flow-diagram__body${selectedNode ? " has-inspector" : ""}`}>
@@ -216,20 +321,26 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
             </div>
           )}
           <ReactFlow<FlowNode, FlowEdge>
-            nodes={nodes}
-            edges={initial.edges}
+            nodes={styledNodes}
+            edges={styledEdges}
             nodeTypes={nodeTypes}
+            edgeTypes={edgeTypes}
             onNodesChange={onNodesChange}
             onNodeClick={(_, node) =>
               setNodes((current) =>
                 current.map((n) => ({ ...n, selected: n.id === node.id })),
               )
             }
+            onNodeMouseEnter={(_, node) => setHoveredId(node.id)}
+            onNodeMouseLeave={() => setHoveredId(null)}
+            onEdgeClick={(_, edge) =>
+              setPinnedEdgeId((current) => (current === edge.id ? null : edge.id))
+            }
             onPaneClick={clearSelection}
             nodesDraggable={false}
             nodesConnectable={false}
             nodesFocusable
-            edgesFocusable={false}
+            edgesFocusable
             edgesReconnectable={false}
             elementsSelectable
             deleteKeyCode={null}
