@@ -60,7 +60,7 @@ sections:
       ```mermaid
       flowchart LR
           subgraph SUITE["fixed task suite"]
-              P["8 prompts + keyword checklists<br/>enforced Answer schema"]
+              P["8 prompts, keyword checklists<br/>enforced Answer schema"]
           end
           subgraph DRIVER["async load driver"]
               SEM["semaphore: concurrency 1/2/4/8<br/>cooldown between cells"]
@@ -72,7 +72,7 @@ sections:
           DRIVER --> OAI
           OAI --> R["per-request record<br/>latency, TTFT, tok/s, quality"]
           R --> C["cell aggregates<br/>40 requests"]
-          C --> REP["metrics.json + report.html + figures"]
+          C --> REP["metrics.json, report.html,<br/>figures"]
       ```
 
       **Business summary:** Five serving setups, 760 requests, zero failures
@@ -112,8 +112,8 @@ sections:
 
       ```mermaid
       flowchart LR
-          MQ["one cell: model x quant x rung<br/>40 requests"] --> MM["recorded per cell:<br/>p50/p95/p99 + TTFT, tok/s,<br/>quality, failures"]
-          MM --> RR["rules: label packaging confound,<br/>one-runner quants,<br/>cost from tok/s"]
+          MQ["one cell: model/quant/rung<br/>40 requests"] --> MM["per cell: p50/p95/p99, TTFT<br/>tok/s, quality, failures"]
+          MM --> RR["rules: label packaging confound<br/>one-runner quants, tok/s cost"]
           RR --> VERDICT["verdict from recorded trade-offs"]
       ```
 
@@ -144,13 +144,13 @@ sections:
               K["keyword checklist each"]
               S["Answer schema: sentence,<br/>confidence, citation"]
           end
-          subgraph ENV["request envelope, identical every call"]
+          subgraph ENV["request envelope<br/>identical every call"]
               E1["temperature 0, bounded tokens,<br/>reasoning off"]
-              E2["model tag + concurrency rung"]
+              E2["model tag<br/>+ concurrency rung"]
           end
           subgraph SCORE["scoring"]
               A["Answer pydantic model"]
-              P["one parser scores every arm"]
+              P["parser scores<br/>every arm"]
           end
           PROMPT --> ENV
           ENV -->|POST /v1/chat/completions| SCORE
@@ -366,12 +366,12 @@ sections:
             ```mermaid
       flowchart LR
           subgraph RAW["committed raw inputs"]
-              BR["data/bench_run.json - 760 requests, 19 cells"]
-              PR["data/prompts.json - 8 prompts + checklists"]
+              BR["data/bench_run.json<br/>760 requests, 19 cells"]
+              PR["data/prompts.json<br/>8 prompts + checklists"]
           end
-          subgraph OFFLINE["offline re-aggregation - no re-run"]
+          subgraph OFFLINE["offline re-aggregation<br/>no re-run"]
               RP["report stage"]
-              AG["percentiles + tok/s re-derived per cell"]
+              AG["percentiles + tok/s<br/>re-derived per cell"]
           end
           subgraph PUB["published evidence"]
               MJ["reports/metrics.json"]

@@ -16,7 +16,7 @@ sections:
       ```mermaid
       flowchart LR
         subgraph ONE["one dataset"]
-          D["NYC TLC yellow taxi<br/>January 2024 - 2.96M trips"]
+          D["NYC TLC yellow taxi<br/>January 2024, 2.96M trips"]
         end
         subgraph FOUR["four engines"]
           P["pandas 2.x"]
@@ -25,10 +25,10 @@ sections:
           SQ["sqlite3 stdlib"]
         end
         subgraph TEN["ten tasks, one contract"]
-          T["read / group-by / join /<br/>window / filter / strings / sort"]
+          T["read, group-by, join<br/>window, filter, strings, sort"]
         end
         D --> P & PL & DK & SQ
-        P & PL & DK & SQ --> T --> C["canonical result<br/>compared, then timed"]
+        P & PL & DK & SQ --> T --> C["canonical result<br/>compared + timed"]
       ```
 
       The point is not a winner; it is a measured map — which tasks are
@@ -65,13 +65,13 @@ sections:
 
       ```mermaid
       flowchart LR
-        subgraph GATE["before any stopwatch"]
-          R["canonical rows<br/>pandas vs Polars vs DuckDB vs sqlite"]
+        subgraph GATE["determinism gate"]
+          R["canonical rows<br/>pandas Polars DuckDB sqlite"]
         end
-        subgraph TIME["then measure"]
-          M["median of 5 warm runs, untraced"]
+        subgraph TIME["measurement"]
+          M["median, 5 warm runs<br/>untraced"]
           C["cold fresh-process read (IO)"]
-          X["peak RSS in a fresh process"]
+          X["peak RSS<br/>fresh process"]
         end
         R --> M
         R --> C
@@ -98,11 +98,11 @@ sections:
       ```mermaid
       flowchart LR
         RAW["raw parquet (20 cols)<br/>sha256-pinned"] --> CUT["8-column working<br/>projection"]
-        ZONES["zone lookup CSV<br/>sha-pinned"] --> LOOKUP["LocationID to borough"]
+        ZONES["zone lookup CSV<br/>sha256-pinned"] --> LOOKUP["LocationID to borough"]
         CUT --> PQ["trips.parquet"]
         CUT --> CSV["trips.csv - 157 MB"]
         CUT --> PART["31 per-day parquet<br/>files, hive layout"]
-        LOOKUP --> JOIN["the join task's<br/>lookup table"]
+        LOOKUP --> JOIN["join task's<br/>lookup table"]
       ```
 
       The tasks need eight columns — pickup time, both zone ids, passengers,
@@ -143,8 +143,8 @@ sections:
 
       ```mermaid
       flowchart LR
-        M["2.96M trips<br/>about 95,600 a day"] --> SHAPE["quiet 4am<br/>two evening peaks"]
-        FARE["fares skewed:<br/>typical near 16 dollars"] --> TAIL["a long tail past 200 dollars<br/>feeds the filtered scan"]
+        M["2.96M trips<br/>~95,600 daily"] --> SHAPE["quiet 4am<br/>two evening peaks"]
+        FARE["fares skewed:<br/>typical near $16"] --> TAIL["long tail past $200<br/>feeds filtered scan"]
       ```
 
       The engine ladder follows, rung by rung.
@@ -208,17 +208,17 @@ sections:
 
       ```mermaid
       flowchart LR
-        subgraph CELL["one task x one engine"]
+        subgraph CELL["one task, one engine"]
           R1["repeat 1..5 (warm, untraced)<br/>median wall time"]
           T1["one tracemalloc pass (untimed)<br/>Python-side allocation peak"]
-          P1["fresh-process probe<br/>peak RSS / cold read"]
+          P1["fresh-process probe<br/>peak RSS, cold read"]
         end
         subgraph GATE["determinism gate"]
           G["canonical rows match:<br/>counts exact, floats 1e-5"]
         end
         R1 --> G
         T1 --> G
-        P1 --> G --> N["the committed cell"]
+        P1 --> G --> N["committed cell"]
       ```
 
       Two findings came from the gate itself, before any figure was drawn.

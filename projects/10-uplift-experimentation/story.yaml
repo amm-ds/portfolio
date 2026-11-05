@@ -57,10 +57,10 @@ sections:
       ```mermaid
       flowchart LR
           C{"send cost and budget"} -->|"cheap, no cap"| E["mail everyone: $16,103"]
-          C -->|"capped or costly"| T["rank by uplift: +69% at 25%"]
-          E --> V["profit at the stated cost"]
+          C -->|"capped or costly"| T["rank by uplift<br/>+69% at 25%"]
+          E --> V["profit at stated cost"]
           T --> V
-          V --> R["revalidate on a fresh<br/>holdout per campaign"]
+          V --> R["revalidate on fresh<br/>holdout per campaign"]
       ```
 
       Read the targeting-decision diagram as a route map: cheap, uncapped
@@ -105,17 +105,17 @@ sections:
       ```mermaid
       flowchart LR
           subgraph ANCHOR["anchor: randomized assignment"]
-              A["Mens / Womens / control<br/>21,307 / 21,387 / 21,306"]
+              A["Mens, Womens, control<br/>21,307/21,387/21,306"]
           end
-          subgraph SCORES["scores - out of fold only"]
+          subgraph SCORES["scores, out-of-fold only"]
               direction LR
               S1["response model"] --- S2["T-learner"] --- S3["X-learner"]
           end
           subgraph JUDGE["judging"]
-              P["profit = conversions x $114<br/>- sends x cost"] --> B["1,000 paired bootstraps,<br/>same resample every policy"]
+              P["profit: conversions x $114<br/>- sends x cost"] --> B["1,000 paired bootstraps,<br/>same resample every policy"]
           end
           ANCHOR --> SCORES --> JUDGE
-          JUDGE --> V["verdict at $0.01-$0.50 per email"]
+          JUDGE --> V["verdict: $0.01-$0.50<br/>per email"]
       ```
 
       Treat the measurement contract diagram as a pipeline. The randomized
@@ -161,7 +161,7 @@ sections:
           end
           subgraph MAP["column roles"]
               direction LR
-              M["treatment, conversion<br/>visit, spend"] --- X["log_history, recency<br/>mens, womens, newbie, channel, zip"]
+              M["treatment, conversion<br/>visit, spend"] --- X["log_history, recency, mens<br/>womens, newbie, channel, zip"]
           end
           RAW --> T
           RAW --> F

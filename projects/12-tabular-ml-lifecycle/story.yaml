@@ -21,7 +21,7 @@ sections:
       ```mermaid
       flowchart LR
         subgraph LIFECYCLE["one pipeline, six stages"]
-          A["sha256-pinned<br/>ingest + DQ gates"] --> B["time split:<br/>train | val | test"]
+          A["sha256-pinned<br/>ingest + DQ gates"] --> B["time split:<br/>train, val, test"]
           B --> C["leakage-safe<br/>features + selection"]
           C --> D["seeded ladder:<br/>naive to PyTorch MLP"]
           D --> E["scored-once test<br/>+ bootstrap CI"]
@@ -57,8 +57,8 @@ sections:
       ```mermaid
       flowchart LR
         F["floor: same hour<br/>last week"] --> Q1{"beat it, CI<br/>excludes zero?"}
-        T["trees + linear<br/>(sklearn Pipelines)"] --> Q2{"does the hand-written<br/>PyTorch MLP keep up?"}
-        Q1 --> R["residual slices:<br/>where is it still wrong?"]
+        T["trees + linear<br/>(sklearn Pipelines)"] --> Q2{"hand-written PyTorch MLP<br/>keeps up?"}
+        Q1 --> R["residual slices:<br/>where still wrong?"]
         Q2 --> R
       ```
 
@@ -82,7 +82,7 @@ sections:
       ```mermaid
       flowchart LR
         SRC["UCI zip (sha256 gate)<br/>+ synthetic twin"] --> DQ["26 DQ checks:<br/>nulls, ranges, grid gaps"]
-        DQ --> SP["time split:<br/>train 14,523 | val 1,344 | test 1,344"]
+        DQ --> SP["time split: train 14,523<br/>val 1,344, test 1,344"]
         SP --> TR["train: fit + select"]
         SP --> VA["validation: HPO, early<br/>stopping, champion pick"]
         SP --> TE["test: scored once"]
@@ -189,12 +189,12 @@ sections:
 
       ```mermaid
       flowchart LR
-        subgraph TEST["frozen test window — 1,344 rows, one pass"]
+        subgraph TEST["frozen test window<br/>1,344 rows, one pass"]
           S["score all 5 candidates"]
           B["2,000 paired resamples:<br/>MAE(floor) − MAE(champion)"]
         end
         S --> B --> C["95% CI<br/>52.5 to 63.1"]
-        C --> W["watch items:<br/>positional lags near outages,<br/>floored MAPE"]
+        C --> W["watch items:<br/>positional lags, floored MAPE"]
       ```
 
       The results, caveats attached rather than buried:

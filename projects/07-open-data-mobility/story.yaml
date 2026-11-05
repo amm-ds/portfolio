@@ -57,21 +57,21 @@ sections:
       ```mermaid
       flowchart LR
           subgraph SRC["public sources"]
-              TLC["TLC yellow taxis 2024, 41.2M trips"]
+              TLC["TLC yellow taxis 2024<br/>41.2M trips"]
               WX["NOAA Central Park weather"]
           end
           subgraph PREP["prepared panel"]
               J["join + data-quality gates"]
-              Z["zero-filled grid, 265 zones x 8,784 hours"]
+              Z["zero-filled grid<br/>265 zones, 8,784 hours"]
           end
           subgraph FIT["forecast"]
               F["lag, calendar, weather features"]
-              G["tuned GBM, mean + p90 twin"]
+              G["tuned GBM<br/>mean + p90 twin"]
           end
           TLC --> J
           WX --> J
           J --> Z --> F --> G
-          G --> S["served three-file bundle, showcase API"]
+          G --> S["served three-file bundle<br/>showcase API"]
       ```
 
       **Business summary:** Last quarter of 2024: the model beat the
@@ -113,14 +113,14 @@ sections:
       flowchart LR
           subgraph TRAIN["train side"]
               T["Jan-Sep 2024 features"]
-              V["embargoed validation, all tuning here"]
+              V["embargoed validation<br/>all tuning here"]
           end
           subgraph TEST["test side, scored once"]
               Q["Oct-Dec 2024, 584,855 zone-hours"]
           end
           subgraph JUDGE["judging"]
-              M["four error readings vs yesterday rule"]
-              C["p90 band vs 90 percent coverage"]
+              M["four error readings<br/>vs yesterday rule"]
+              C["p90 band<br/>vs 90 percent coverage"]
           end
           T --> V
           V -->|frozen winner| Q
@@ -159,10 +159,10 @@ sections:
 
       ```mermaid
       flowchart LR
-          A["TLC: 12 monthly Parquet, 41.2M trips"] --> J["row checks + zone lookup join"]
+          A["TLC: 12 monthly Parquet<br/>41.2M trips"] --> J["row checks<br/>+ zone lookup join"]
           W["NOAA: Central Park weather"] --> J
-          J --> G["zero-filled grid, 265 x 8,784 zone-hours"]
-          G --> P["partitioned panel, reused after download"]
+          J --> G["zero-filled grid<br/>265 zones, 8,784 hours"]
+          G --> P["partitioned panel<br/>reused after download"]
       ```
 
       **Business summary:** Two public feeds — 41.2M taxi trips plus Central

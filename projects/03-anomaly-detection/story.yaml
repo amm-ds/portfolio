@@ -23,7 +23,7 @@ sections:
       NAB --> FE
       SYN --> FE
       SC --> TH["Top-2% train threshold"]
-      TH --> B["Dedup + 24 h page cap"]
+      TH --> B["Dedup + page cap<br/>24 h"]
       B --> RR["Event-aware scoring<br/>16 of 17 windows"]
     ```
 
@@ -108,7 +108,7 @@ sections:
     flowchart LR
       N1["NAB: 12 series"] --> N2{"Windows in scored span?"}
       N2 -->|"9 evaluable"| N3["16 of 17 touched"]
-      N2 -->|"3 all in train"| N4["Excluded, not misses"]
+      N2 -->|"3 all-train"| N4["Excluded, not misses"]
       N3 --> H["Headline metrics"]
       H --> S1["Synthetic: mechanics only"]
       S1 --> K1["NSL-KDD: contract probe"]
@@ -444,8 +444,8 @@ sections:
       A --> B["Score later span once"]
       B --> C["Episode dedup"]
       C --> E["24 h per-series cap"]
-      E --> F["Tune operating point on train only<br/>clear +0.05 and transfer"]
-      F --> G["Budgeted page stream<br/>the deployed artifact"]
+      E --> F["Tune operating point<br/>train-only, clear +0.05"]
+      F --> G["Budgeted page stream<br/>deployed artifact"]
     ```
 
     **Business summary:** The committed recipe: rank-average ensemble of

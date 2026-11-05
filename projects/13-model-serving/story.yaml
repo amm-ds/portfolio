@@ -85,7 +85,7 @@ sections:
       ```mermaid
       flowchart LR
         subgraph CONTRACT["feature contract (15 features)"]
-          H["hour → embedding index"] --> N["temp, hum, windspeed,<br/>weathersit, cyclical,<br/>binary, 3 lags"]
+          H["hour → embedding index"] --> N["temp, hum, windspeed, weathersit<br/>cyclical, binary, 3 lags"]
         end
         R["recipe vendored<br/>from exp. 12"] --> CONTRACT
         CONTRACT --> G["gates:<br/>reproduction + parity"]

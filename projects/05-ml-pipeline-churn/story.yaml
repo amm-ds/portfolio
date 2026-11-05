@@ -22,8 +22,8 @@ sections:
           CUT -->|"below"| SKIP["no contact"]
         end
         subgraph BILL["1,409-row holdout"]
-          LIST --> COST["601 cost units<br/>FP x 1 + FN x 5"]
-          ALL["contact everyone: 1,035"] --> DELTA["saving -41.9%<br/>95% interval -485 to -343"]
+          LIST --> COST["601 cost units<br/>FP 1, FN 5"]
+          ALL["contact everyone: 1,035"] --> DELTA["saving -41.9%, 95% CI<br/>-485 to -343"]
           COST --> DELTA
         end
       ```
@@ -187,16 +187,16 @@ sections:
 
       ```mermaid
       flowchart LR
-        subgraph HOLDOUT["one frozen holdout - 1,409 rows"]
+        subgraph HOLDOUT["frozen holdout<br/>1,409 rows"]
           S["score every candidate"]
           G["41-point threshold grid"]
           A["cost-optimal threshold"]
         end
         subgraph EVIDENCE["headline evidence"]
-          I["2,000 paired resamples:<br/>95% interval -485 to -343"]
+          I["2,000 paired resamples, 95%<br/>CI -485 to -343"]
         end
         S --> G --> A --> I
-        I --> W["two watch items:<br/>same-holdout optimism,<br/>served-policy fairness"]
+        I --> W["two watch items<br/>same-holdout optimism, served-policy fairness"]
       ```
 
       The optimism is structural, not a bug to fix here: the interval is

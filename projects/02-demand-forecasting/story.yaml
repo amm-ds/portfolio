@@ -14,11 +14,11 @@ sections:
 
     ```mermaid
     graph LR
-      P["M5 full panel: 30,490 series x 1,969 days"] --> F["Leakage-safe features"]
-      F --> C["8 candidates: naive floor, global + pooled LightGBM, AutoETS"]
-      C --> S["Stability screen on 2 selection origins"]
+      P["M5 panel: 30,490 series<br/>x 1,969 days"] --> F["Leakage-safe features"]
+      F --> C["8 candidates<br/>naive, LightGBM, AutoETS"]
+      C --> S["Stability screen<br/>2 selection origins"]
       S --> E["Convex ensemble"]
-      E --> T["Scored once on the final 28 days, official WRMSSE"]
+      E --> T["Final 28 days<br/>scored once, official WRMSSE"]
     ```
 
     One pipeline carries the full panel from raw sales to a single blended
@@ -37,12 +37,12 @@ sections:
 
     ```mermaid
     flowchart LR
-      N["seasonal_naive floor"] --> G["global LightGBM + Tweedie arm"]
-      G --> PL["pooled fits: per store, per store x category, per department"]
+      N["seasonal_naive floor"] --> G["global LightGBM<br/>+ Tweedie arm"]
+      G --> PL["pooled fits<br/>store, storecat, dept"]
       PL --> ETS["per-series AutoETS"]
-      ETS --> SC["Stability screen:<br/>mean + 1.0 x std, selection origins only"]
-      SC --> BL["convex_ensemble: 3 members, simplex weights"]
-      BL --> R["Official WRMSSE + bias + per-level + zero-day, scored once"]
+      ETS --> SC["Stability screen:<br/>mean + 1.0 std"]
+      SC --> BL["convex_ensemble<br/>3 members, simplex weights"]
+      BL --> R["WRMSSE, bias, per-level<br/>zero-day, scored once"]
     ```
 
     Read the funnel top to bottom: every candidate, from the floor to the
@@ -80,7 +80,7 @@ sections:
 
     ```mermaid
     graph LR
-      S["Choose on the past: origins 2016-05-08 + 2016-05-15 (ensemble screen)"] --> T["Score once: origin 2016-05-22, the competition window, 28 days"] --> C["Committed headlines: official WRMSSE, bias, per level"]
+      S["Choose on past:<br/>origins 2016-05-08 + 2016-05-15"] --> T["Score once: origin 2016-05-22<br/>competition window, 28 days"] --> C["Committed headlines:<br/>WRMSSE, bias, per level"]
     ```
 
     Read the contract as three stops. Two selection origins choose the
@@ -138,11 +138,11 @@ sections:
 
     ```mermaid
     graph LR
-      P["6 pool candidates"] --> Q["per-origin official WRMSSE on the 2 selection origins"]
-      Q --> R["rank by mean + 1.0 x population std"]
-      R --> M["best three: pool_storecat, pool_store, pool_dept"]
-      M --> W["simplex grid, step 0.05, minimising the same screen"]
-      W --> E["convex_ensemble: weights 0.60 / 0.10 / 0.30"]
+      P["6 pool candidates"] --> Q["per-origin WRMSSE<br/>2 selection origins"]
+      Q --> R["rank by mean<br/>+ 1.0 population std"]
+      R --> M["best three:<br/>pool_storecat, pool_store, pool_dept"]
+      M --> W["simplex grid, step 0.05<br/>minimise same screen"]
+      W --> E["convex_ensemble<br/>weights 0.60/0.10/0.30"]
     ```
 
     Every fit is seeded or closed-form, and the pooled arms visit their
@@ -183,10 +183,10 @@ sections:
 
     ```mermaid
     graph LR
-      F["Bottom forecasts: 30,490 series"] --> A["Aggregate bottom-up through 12 levels"]
-      A --> N["Per-node RMSSE vs its train volatility"]
-      N --> W["Revenue weights, equal total per level"]
-      W --> O["Official WRMSSE + per-level + zero-day report, scored once"]
+      F["Bottom forecasts: 30,490 series"] --> A["Aggregate bottom-up<br/>through 12 levels"]
+      A --> N["Per-node RMSSE<br/>vs train volatility"]
+      N --> W["Revenue weights<br/>equal total per level"]
+      W --> O["WRMSSE + per-level<br/>+ zero-day, scored once"]
     ```
 
     Follow the aggregation: the tree does the adding up, the metric does
@@ -324,8 +324,8 @@ sections:
     ```mermaid
     graph LR
       Q{"Full-panel, hierarchical M5 demand?"}
-      Q -->|"yes"| E["Convex ensemble of pooled fits"]
-      E --> X["Weekly reforecast; floors and scored-once windows;<br/>no savings claim without a cost check"]
+      Q -->|"yes"| E["Convex ensemble<br/>of pooled fits"]
+      E --> X["Weekly reforecast<br/>floors + scored-once windows"]
     ```
 
     **Business summary:** The full-panel ensemble lands at 0.6161 against

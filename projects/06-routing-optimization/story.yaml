@@ -14,10 +14,10 @@ sections:
 
       ```mermaid
       flowchart LR
-        subgraph DAY["one Solomon problem - 100 customers"]
+        subgraph DAY["one Solomon problem<br/>100 customers"]
           I["depot + 100 customers<br/>windows + capacity"]
         end
-        subgraph PLAN["a plan"]
+        subgraph PLAN["plan"]
           R["route list"] --> V["machine-checked validator"] --> D["distance + truck count"]
         end
         I --> R
@@ -55,10 +55,10 @@ sections:
 
       ```mermaid
       flowchart LR
-        subgraph RULES["the contract"]
+        subgraph RULES["contract"]
           R["serve once, in capacity,<br/>meet windows, fixed seed"]
         end
-        subgraph CHECK["before any number is reported"]
+        subgraph CHECK["reporting gate"]
           V["RoutePlan validator<br/>+ route simulation"]
         end
         subgraph SCORE["scoring"]
@@ -202,7 +202,7 @@ sections:
           PLAN["search plan, ~1 s"]
           CERT["exact solver:<br/>certifies small cases"]
         end
-        V["all 8 solvers x 56 instances,<br/>seed 42 - feasible plans only"] --> GAP --> PLAN
+        V["8 solvers, 56 instances<br/>feasible plans, seed 42"] --> GAP --> PLAN
         V --> VEH --> PLAN
         V --> CERT
       ```

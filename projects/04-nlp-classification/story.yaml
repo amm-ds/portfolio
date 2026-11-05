@@ -53,13 +53,13 @@ sections:
 
       ```mermaid
       flowchart LR
-        subgraph Ladder["The ladder, cheapest first"]
+        subgraph Ladder["Ladder, cheapest first"]
           F1["Floor: majority class"] --> F2["Floor: random, seeded"]
           F2 --> R3["TF-IDF + logistic regression"]
           R3 --> R4["Compact transformer, sample"]
-          R4 --> R5["Same model, all 120k rows"]
+          R4 --> R5["Same model, 120k rows"]
         end
-        subgraph Judge["One judge for every rung"]
+        subgraph Judge["One judge, every rung"]
           M["Accuracy and macro-F1<br/>every topic counts equally"]
           H["Test-set role disclosed"]
         end
@@ -188,8 +188,8 @@ sections:
       flowchart LR
         A["Incoming item"] --> K["Keyword model<br/>scores + confidence"]
         K --> Q{"Confidence at or<br/>above 0.50?"}
-        Q -->|"yes: 75.4% of items"| CHEAP["Keyword speed, zero cost"]
-        Q -->|"no: 24.6% escalated"| TR["Transformer sorts it"]
+        Q -->|"yes: 75.4% share"| CHEAP["Keyword speed, zero cost"]
+        Q -->|"no: 24.6% escalated"| TR["Transformer resolves"]
         CHEAP --> OUT["Routed macro-F1 0.9020<br/>beats either model alone"]
         TR --> OUT
         HV["High-value traffic"] --> FD["Full-data model<br/>0.9529 fresh macro-F1"]

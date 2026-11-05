@@ -44,10 +44,10 @@ sections:
 
     ```mermaid
     graph LR
-      Q["Question arrives"] --> D{"Relevant passage<br/>in the corpus?"}
-      D -->|"no: outside the corpus"| Z["Calibrated refusal"]
+      Q["Question arrives"] --> D{"Relevant passage<br/>in corpus?"}
+      D -->|"no: outside corpus"| Z["Calibrated refusal"]
       D -->|"yes"| A["Draft with citations"]
-      A --> V{"Every claim supported<br/>at the 0.6 floor?"}
+      A --> V{"All claims at<br/>0.6 support floor?"}
       V -->|"yes"| S["Structured answer:<br/>summary, citations, confidence"]
       V -->|"no"| T["Bounded retries"]
       T --> V
@@ -103,7 +103,7 @@ sections:
       subgraph Artifacts["Pinned artifacts"]
         CJ["corpus.jsonl + indexes<br/>593 articles, sha256"]
       end
-      WP --> B --> CJ --> EV["Scored evaluation<br/>65 tuning + 15 sealed"]
+      WP --> B --> CJ --> EV["Scored evaluation<br/>65 tuning, 15 sealed"]
     ```
 
     The lineage runs from sources to scores: a bounded scan feeds a
@@ -214,7 +214,7 @@ sections:
 
     ```mermaid
     graph LR
-      subgraph Tuning["Tuning pass - 65 questions"]
+      subgraph Tuning["Tuning pass, 65 questions"]
         J["Three judges:<br/>rubric, RAGAS, claims"]
       end
       subgraph Floors["Floors"]
