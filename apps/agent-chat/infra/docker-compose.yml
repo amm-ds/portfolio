@@ -1,0 +1,56 @@
+# The agent-chat stack: Postgres 16 + pgvector, the API, and a one-shot
+# ingest service. Build context is the package root (this file lives in infra/).
+#
+#   docker compose up --build                     # api on http://localhost:8000
+#   docker compose --profile tools run --rm ingest  # one-shot: index ./docs
+#
+# The API reaches a local Ollama at host.docker.internal:11434 by default;
+# override AGENT_CHAT_OLLAMA_BASE_URL (or switch AGENT_CHAT_PROVIDER=hosted).
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: agent_chat
+      POSTGRES_PASSWORD: agent_chat
+      POSTGRES_DB: agent_chat
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agent_chat -d agent_chat"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    environment:
+      AGENT_CHAT_DATABASE_URL: postgresql+asyncpg://agent_chat:agent_chat@db:5432/agent_chat
+      AGENT_CHAT_EMBEDDER: hashing
+      AGENT_CHAT_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      # AGENT_CHAT_API_KEY: change-me   # uncomment to require X-API-Key
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  ingest:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    profiles: ["tools"]          # never starts with `up`; run explicitly
+    command: ["agent-chat-ingest", "/data/docs"]
+    environment:
+      AGENT_CHAT_DATABASE_URL: postgresql+asyncpg://agent_chat:agent_chat@db:5432/agent_chat
+      AGENT_CHAT_EMBEDDER: hashing
+    volumes:
+      - ../docs:/data/docs:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

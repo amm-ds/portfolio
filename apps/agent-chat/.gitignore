@@ -1,0 +1,11 @@
+# agent-chat template — local environment
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.env
+*.db
+reports/
+dist/

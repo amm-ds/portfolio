@@ -1,0 +1,14 @@
+# Docker build context is the package root (apps/agent-chat) — this file sits
+# at the context root next to pyproject.toml so the builder sees it.
+.venv/
+**/__pycache__/
+**/*.pyc
+.git/
+.env
+*.db
+reports/
+docs/
+tests/
+infra/
+.dockerignore
+Dockerfile
