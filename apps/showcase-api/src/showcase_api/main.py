@@ -19,15 +19,12 @@ import threading
 import time
 import uuid
 from collections.abc import AsyncIterator, Callable
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import TimeoutError as FutureTimeout
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from portfolio_core.demo import DemoManifest, load_demo_index, to_registry_entry
 from portfolio_core.logging import get_logger, setup_logging
 from portfolio_core.manifest import load_index
@@ -38,18 +35,21 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from showcase_api import __version__, serving
 from showcase_api.contact import router as contact_router
+from showcase_api.live import _LIVE_GUARD, _run_bounded_with_timeout
+from showcase_api.live import LiveGuard as LiveGuard  # Test-facing re-export.
 from showcase_api.middleware import (
     BodyLimitMiddleware,
     RateLimitMiddleware,
     RequestIdMiddleware,
     RequestLoggingMiddleware,
 )
+from showcase_api.spa import WEB_DIST, _index_html
+from showcase_api.spa import router as spa_router
 
 logger = get_logger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 PROJECTS_ROOT = REPO_ROOT / "projects"
-WEB_DIST = REPO_ROOT / "apps" / "showcase-web" / "dist"
 
 _PID_RE = r"^\d{2}-[a-z0-9-]+$"
 
@@ -464,109 +464,6 @@ def report(pid: str) -> str:
         if candidate.exists():
             return candidate.read_text()
     raise HTTPException(status_code=404, detail=f"no report yet for {pid} — run its pipeline")
-
-
-# --- Live-call guard + wall-clock cap ----------------------------------------
-# The live POST endpoints (/forecast, /score, /solve) run real model inference
-# on request. Two production guardrails, both fail closed:
-#
-# - Kill switch: LIVE_KILL_SWITCH=1 in the env, or the file /tmp/live_disabled
-#   exists → every live call gets a fast 503 pointing at the precomputed demo
-#   replay. Cheap circuit breaker during incidents.
-# - Daily budget: a global in-process counter (UTC day) capped by
-#   DAILY_LIVE_BUDGET (default 1000). At 80% a WARNING is logged once per day;
-#   past the budget every call gets 503 until the day rolls over.
-
-# Spec'd operator kill-switch flag: touching this file disables the live POST
-# endpoints (503 + replay hint) until it is removed.
-_LIVE_DISABLE_FLAG = Path("/tmp/live_disabled")  # noqa: S108
-_LIVE_TIMEOUT_S = 10.0  # wall-clock cap for the live POSTs (/forecast, /score, /solve)
-_LIVE_BUDGET_DEFAULT = 1000
-_LIVE_REPLAY_HINT = "precomputed demo replay remains available"
-
-
-class LiveGuard:
-    """Kill-switch + daily call budget for the live POST endpoints."""
-
-    def __init__(self, budget: int = _LIVE_BUDGET_DEFAULT, kill_switch: bool = False):
-        self.budget = budget
-        self.kill_switch = kill_switch
-        self._lock = threading.Lock()
-        self._day = ""
-        self._count = 0
-        self._alerted = False
-
-    @classmethod
-    def from_env(cls) -> "LiveGuard":
-        raw = os.environ.get("DAILY_LIVE_BUDGET", "")
-        budget = int(raw) if raw else _LIVE_BUDGET_DEFAULT
-        return cls(budget=budget, kill_switch=os.environ.get("LIVE_KILL_SWITCH") == "1")
-
-    def disabled(self) -> bool:
-        return self.kill_switch or _LIVE_DISABLE_FLAG.exists()
-
-    def gate(self) -> None:
-        """Raise 503 when live calls are disabled or the daily budget is spent."""
-        if self.disabled():
-            raise LiveCallBlocked("live inference temporarily disabled")
-        today = datetime.now(UTC).date().isoformat()
-        with self._lock:
-            if today != self._day:
-                self._day, self._count, self._alerted = today, 0, False
-            self._count += 1
-            count = self._count
-        if count > self.budget:
-            logger.warning("live daily budget exhausted: %d/%d calls", count, self.budget)
-            raise LiveCallBlocked("daily live-call budget exhausted")
-        if not self._alerted and count >= 0.8 * self.budget:
-            self._alerted = True
-            logger.warning("live daily budget at 80%%: %d/%d calls today", count, self.budget)
-
-
-class LiveCallBlocked(HTTPException):
-    """503 raised by the live-call guard; the handler surfaces ``hint`` so the
-    client knows the precomputed demo replay still works."""
-
-    def __init__(self, detail: str):
-        super().__init__(status_code=503, detail=detail)
-        self.hint = _LIVE_REPLAY_HINT
-
-
-_LIVE_GUARD = LiveGuard.from_env()
-
-
-def _run_with_timeout[T](fn: Callable[[], T], seconds: float = _LIVE_TIMEOUT_S) -> T:
-    """Run CPU-bound inference work on a worker thread with a wall-clock cap.
-
-    On timeout the worker is abandoned (it cannot be killed mid-predict) and
-    the caller gets a 504. Bounded callers release their capacity in the worker
-    itself, so an abandoned worker continues to occupy its slot until it exits.
-    """
-    pool = ThreadPoolExecutor(max_workers=1)
-    try:
-        return pool.submit(fn).result(timeout=seconds)
-    except FutureTimeout as e:
-        raise HTTPException(
-            status_code=504, detail=f"request exceeded the {seconds:.0f}s wall-clock cap"
-        ) from e
-    finally:
-        pool.shutdown(wait=False)
-
-
-def _run_bounded_with_timeout[T](
-    fn: Callable[[], T], semaphore: threading.BoundedSemaphore, busy_detail: str
-) -> T:
-    """Run at capacity or fail fast; the worker owns and releases its slot."""
-    if not semaphore.acquire(blocking=False):
-        raise HTTPException(status_code=503, detail=busy_detail)
-
-    def _worker() -> T:
-        try:
-            return fn()
-        finally:
-            semaphore.release()
-
-    return _run_with_timeout(_worker)
 
 
 # Shared cap for both forecast endpoints; abandoned timed-out workers still count.
@@ -1063,80 +960,5 @@ if _RAG_CHAT_ENABLED:
         return EventSourceResponse(gen())
 
 
-def _index_html() -> str:
-    """The built SPA shell, read per request: rebuilds replace hashed asset
-    names, so a cached copy at import time would point at deleted files."""
-    return (WEB_DIST / "index.html").read_text()
-
-
-# --- SPA catch-all + route manifest -------------------------------------------
-# The catch-all serves the React build for known client-side routes and returns
-# a real JSON 404 (with request_id) for everything else. Known SPA routes come
-# from route_manifest.json — generated by scripts/gen_route_manifest.py
-# (App.tsx routes + project ids + demo ids) and committed at build/CI time.
-
-_MANIFEST_FILE = Path(__file__).with_name("route_manifest.json")
-
-
-def _pattern_match(pattern: str, path: str) -> bool:
-    """Exact match where each ``*`` pattern segment matches one non-empty path
-    segment (mirrors React Router's single-``:param`` semantics)."""
-    if pattern == "/":
-        return path.strip("/") == ""
-    pp = [s for s in pattern.split("/") if s]
-    sp = [s for s in path.split("/") if s]
-    return len(pp) == len(sp) and all(p == "*" or p == s for p, s in zip(pp, sp, strict=True))
-
-
-def _spa_patterns() -> list[str]:
-    """Known SPA routes from the generated manifest.
-
-    Fallback when the manifest file is missing/stale-broken (e.g. an editable
-    install without the committed artifact): derive the same routes from the
-    projects root plus the static routes hardcoded in App.tsx, and warn.
-    """
-    try:
-        data = json.loads(_MANIFEST_FILE.read_text())
-        return [str(p) for p in data["spa_routes"]]
-    except (OSError, KeyError, ValueError) as e:
-        logger.warning("route manifest unavailable (%s); deriving SPA routes", e)
-        patterns = ["/", "/projects", "/experiments", "/services", "/contact", "/about"]
-        try:
-            patterns += [f"/projects/{m.id}" for m in load_index(PROJECTS_ROOT)]
-            patterns += [f"/demos/{m.id}" for m in load_demo_index(PROJECTS_ROOT)]
-        except OSError:
-            pass
-        return patterns
-
-
-_SPA_PATTERNS = _spa_patterns()
-
-
-@app.get("/{full_path:path}", include_in_schema=False)
-def spa(full_path: str) -> Response:
-    """Serve the React build: hashed assets as-is, known SPA routes →
-    index.html, anything else → real JSON 404.
-
-    Registered last, so API routes above always win. Paths are resolved and
-    confined to WEB_DIST — dot segments fall back to index.html instead of
-    escaping the build directory (path traversal). Without a web build every
-    unknown GET is a structured 404.
-    """
-    path = "/" + full_path if not full_path.startswith("/") else full_path
-    if WEB_DIST.exists():
-        if full_path:
-            candidate = (WEB_DIST / full_path).resolve()
-            if candidate.is_relative_to(WEB_DIST.resolve()) and candidate.is_file():
-                # Vite content-hashes everything under /assets/ → immutable;
-                # any other file (favicon, manifests) must be revalidated.
-                cache = (
-                    "public, max-age=31536000, immutable"
-                    if full_path.startswith("assets/")
-                    else "no-cache"
-                )
-                return FileResponse(candidate, headers={"Cache-Control": cache})
-        if any(_pattern_match(p, path) for p in _SPA_PATTERNS):
-            return HTMLResponse(_index_html(), headers={"Cache-Control": "no-cache"})
-    elif any(_pattern_match(p, path) for p in _SPA_PATTERNS):
-        raise HTTPException(status_code=404, detail="web build not found")
-    raise HTTPException(status_code=404, detail=f"unknown path: {path}")
+# Keep the catch-all last so every API route above wins.
+app.include_router(spa_router)

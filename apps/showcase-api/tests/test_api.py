@@ -990,7 +990,7 @@ def test_solve_timeout_retains_slot_until_worker_finishes(monkeypatch) -> None: 
 
     timeout_after_worker_starts.thread = None
     monkeypatch.setattr(main, "_solve_routing_inner", slow_solve)
-    monkeypatch.setattr(main, "_run_with_timeout", timeout_after_worker_starts)
+    monkeypatch.setattr("showcase_api.live._run_with_timeout", timeout_after_worker_starts)
     problem = Problem.model_validate(_vrptw_payload(1))
 
     with pytest.raises(HTTPException, match="timed out"):
@@ -1018,7 +1018,7 @@ def test_forecast_workers_share_a_bounded_capacity(monkeypatch) -> None:  # type
     responses = []
     errors = []
     monkeypatch.setattr(main, "_FORECAST_SEMAPHORE", semaphore)
-    monkeypatch.setattr(main, "_run_with_timeout", lambda fn: fn())
+    monkeypatch.setattr("showcase_api.live._run_with_timeout", lambda fn: fn())
 
     class BlockingRegressor:
         def predict(self, _row):  # type: ignore[no-untyped-def]
@@ -1075,17 +1075,18 @@ def test_forecast_workers_share_a_bounded_capacity(monkeypatch) -> None:  # type
 @pytest.fixture()
 def fake_web_dist(tmp_path: Path, monkeypatch):  # type: ignore[no-untyped-def]
     """A minimal web build in tmp: index.html + one hashed asset. Patches the
-    WEB_DIST the catch-all reads, and an SPA manifest with one static route,
+    WEB_DIST the HTML routes read, and an SPA manifest with one static route,
     one wildcard route, one project deep link, and one demo deep link."""
-    from showcase_api import main
+    from showcase_api import main, spa
 
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
     (dist / "index.html").write_text("<html>spa shell</html>")
     (dist / "assets" / "app-a1b2c3.js").write_text("console.log(1)")
     monkeypatch.setattr(main, "WEB_DIST", dist)
+    monkeypatch.setattr(spa, "WEB_DIST", dist)
     monkeypatch.setattr(
-        main, "_SPA_PATTERNS", ["/", "/projects", "/projects/*", "/demos/churn-sandbox"]
+        spa, "_SPA_PATTERNS", ["/", "/projects", "/projects/*", "/demos/churn-sandbox"]
     )
     return dist
 
@@ -1192,7 +1193,7 @@ def test_kill_switch_file_flag_returns_503(
     _patch_guard(monkeypatch)
     flag = tmp_path / "live_disabled"
     flag.write_text("")
-    monkeypatch.setattr("showcase_api.main._LIVE_DISABLE_FLAG", flag)
+    monkeypatch.setattr("showcase_api.live._LIVE_DISABLE_FLAG", flag)
     r = client.post(
         "/projects/05-ml-pipeline-churn/score",
         json={"features": {"tenure_months": 1.0}},
