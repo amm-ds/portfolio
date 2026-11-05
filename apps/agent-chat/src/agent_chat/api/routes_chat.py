@@ -88,7 +88,9 @@ def _map_event(event: object) -> list[ChatEvent]:
         return [
             ToolCallEndEvent(
                 call_id=result.tool_call_id,
-                name=result.tool_name,
+                # a tool result always names its tool; the None type is a
+                # pydantic-ai artifact, never observed on the wire
+                name=result.tool_name or "tool",
                 result=_content_str(result.content),
             )
         ]
