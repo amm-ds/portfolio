@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildInquiryMailto, Contact } from "../pages/Contact";
@@ -148,7 +148,7 @@ describe("Contact page", () => {
     expect(services.getAttribute("href")).toBe("/services");
     // the steps lay out horizontally (like the services process timeline) and
     // wrap on smaller screens
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     expect(css).toContain(
       ".start-timeline {\n  list-style: none;\n  margin: 1.75rem 0 1.5rem;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));",
     );
@@ -169,7 +169,7 @@ describe("Contact page", () => {
     expect(row).not.toBeNull();
     expect(row.tagName).toBe("P");
     expect(row.classList.contains("accent-card")).toBe(false);
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const rule = css.match(/\.footer-links \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("text-align: center;");
     expect(rule).not.toContain("background");
@@ -231,7 +231,7 @@ describe("Contact inquiry form", () => {
   });
 
   it("constrains the message box resize and keeps the form and channel cards full width", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const textareaRule = css.match(/\.form-field textarea \{\n  resize: vertical;[\s\S]*?\n\}/)![0];
     expect(textareaRule).toContain("resize: vertical;");
     expect(textareaRule).toContain("max-width: 100%;");

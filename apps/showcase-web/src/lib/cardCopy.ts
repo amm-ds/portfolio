@@ -48,7 +48,7 @@ export const CARD_ACHIEVES: Record<string, string> = {
   "03-anomaly-detection":
     "IsolationForest catches **16 of 17** labelled incident windows but fires 1,609 raw alerts; deduplication plus a one-page-per-day cap cuts the stream to **80 pages** at modest recall cost.",
   "04-nlp-classification":
-    "The language model scores **95% macro-F1** on a fresh holdout vs **88%** for the keyword model; routing doubtful items to it keeps that quality while **3 of 4 items** ride at keyword cost.",
+    "The language model scores **95% macro-F1** on a fresh holdout vs **88%** for the keyword model; routing doubtful items beats either bounded model at keyword cost for **3 of 4 items**.",
   "05-ml-pipeline-churn":
     "Cutting decision cost **42%** vs contacting everyone (**601 vs 1,035**; 95% bootstrap CI −485 to −343); the cutoff must be re-derived when a missed churner's price changes.",
   "06-routing-optimization":

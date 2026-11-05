@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -11,7 +11,7 @@ import {
   TOPIC_ROWS,
 } from "../pages/ProjectsIndex";
 
-const stylesCss = readFileSync("src/styles.css", "utf8");
+const stylesCss = readStylesCss();
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -184,7 +184,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("renders the page opening exactly like /services and /about — services-hero, kicker, big title, intro", async () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     // the hero block carries the shared 2rem h1 + the 800px drop (no
     // page-specific title rules remain)
     expect(css.match(/\.services-hero h1 \{[\s\S]*?\n\}/)![0]).toContain("font-size: 2rem;");
@@ -681,7 +681,7 @@ describe("ProjectsIndex", () => {
     expect(card).not.toBeNull();
     expect(card.querySelector("img")!.getAttribute("src")).toBe("/apps/agent-chat-approval.png");
     // compact app cards: capped screenshot height (house rule)
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const shotRule = css.match(/\.app-card__shot \{[\s\S]*?\n\}/)![0];
     expect(shotRule).toContain("height: 180px;");
     expect(shotRule).toContain("object-fit: cover;");
@@ -716,7 +716,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("makes demos and experiments the two big sections and demotes topic rows to plain group labels", async () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     // registry unreachable → the static snapshot renders the rows
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
     // big section titles with extra weight
@@ -770,7 +770,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("restyles the page index to terminal path labels: mono, accent label, muted items behind / markers, larger type", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const linkRule = css.match(/\.page-index a \{[\s\S]*?\n\}/)![0];
     expect(linkRule).toContain("color: var(--text);");
     const beforeRule = css.match(/\.page-index a::before \{[\s\S]*?\n\}/)![0];
@@ -789,7 +789,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("splits the card body into two equal white text columns under one uniform small-label style", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const colsRule = css.match(/\.study-cols \{[\s\S]*?\n\}/)![0];
     expect(colsRule).toContain("display: grid;");
     expect(colsRule).toContain("repeat(auto-fit, minmax(0, 1fr));");
@@ -843,7 +843,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("renders the results as one shared GREEN chip design on demo and experiment cards", async () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     // ONE rule paints the results chip green on both card kinds — with enough
     // specificity to beat the blue tag treatment below it
     const chipRule = css.match(/\.study-card \.chip\.study-result-chip \{[\s\S]*?\n\}/)![0];
@@ -887,7 +887,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("paints card subtitles blue, stacked and one step below the old 1rem scale", async () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const subRule = css.match(/\.study-sub \{[\s\S]*?\n\}/)![0];
     expect(subRule).toContain("color: var(--secondary);");
     // below the old 1rem subtitle scale, clearly smaller than the 1.6rem
@@ -913,7 +913,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("paints all card tags blue — no per-tag hue rotation remains", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const chipRule = css.match(/\.study-card \.chip,\n\.offering-card \.chip \{[\s\S]*?\n\}/)![0];
     expect(chipRule).toContain("color: #7dd3fc;");
     expect(chipRule).toContain("background: rgba(56, 189, 248, 0.08);");
@@ -960,7 +960,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("left-aligns the tags row exactly with the card's outer padding — no indent", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const chipsRule = css.match(/\.study-card \.chips \{[\s\S]*?\n\}/)![0];
     expect(chipsRule).toContain("margin: 0.9rem 0 0;");
     expect(chipsRule).toContain("padding-left: 0;");

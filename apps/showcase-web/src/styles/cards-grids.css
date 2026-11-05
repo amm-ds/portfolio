@@ -1,0 +1,324 @@
+/* --- Demos (projects page, above the experiments rows) --- */
+
+/* full-width grid, same shape as the experiment card grid below */
+.demo-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-card);
+  margin-bottom: 1rem;
+  align-items: stretch;
+}
+
+/* 2 columns on medium screens and up, matching .project-grid */
+@media (min-width: 720px) {
+  .demo-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* --- Shared study card (demo + experiment cards render one design) --- */
+
+.study-card {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.study-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.study-card h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+/* metadata fields on a study card: stacked label-over-value pairs (topics /
+   data on experiment cards, use case / domain on demo cards) */
+.study-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0 0 0.7rem;
+}
+
+.study-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+/* one uniform small-label style for every card field label — the stacked
+   metadata labels (topics / data) and the content-block labels
+   (description / results) are the same mono uppercase muted tag */
+.study-meta-label,
+.study-block-label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.study-block-label {
+  display: block;
+  margin: 0 0 0.3rem;
+}
+
+/* field value: blue, one step below the old 1rem subtitle scale */
+.study-sub {
+  color: var(--secondary);
+  font-size: 0.85rem;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* labeled card blocks — experiment cards render "description" and "results"
+   side by side, demo cards keep only the "description" block */
+.study-block {
+  margin: 0.7rem 0 0;
+}
+
+.study-block-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin: 0 0 0.3rem;
+}
+
+/* headline metric value inside a demo card's results chip */
+.study-metric {
+  font-family: var(--mono);
+  color: var(--accent);
+}
+
+/* the measured result as a tag/chip — the demo registry's headline metric and
+   the experiment's live key number share this ONE green chip design on both
+   card kinds; the extra specificity beats the blue tag rule above so only the
+   results chip goes green, never the plain tags */
+.study-card .chip.study-result-chip {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  background: rgba(45, 212, 191, 0.08);
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+/* card body: the content blocks side by side — left "description", right
+   "results" on experiment cards; demo cards carry only the description
+   block, so their single block spans the full width */
+.study-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin: 0.6rem 0 0;
+}
+
+.study-does,
+.study-achieves {
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0;
+}
+
+/* results chip slot; hidden while a live metric has not loaded yet (the slot
+   renders empty until CardKeyNumber serves a number) */
+.study-result {
+  margin: 0.75rem 0 0;
+}
+
+.study-result:empty {
+  display: none;
+}
+
+.topic-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-section);
+}
+
+/* topic rows are jumped to from the page index — keep the target clear of
+   the sticky nav */
+.topic-row {
+  scroll-margin-top: 4rem;
+}
+
+.section-title::before {
+  content: "> ";
+  color: var(--accent);
+  text-shadow: none;
+}
+
+/* the two big page sections (live demos, experiments) carry extra weight */
+.section-title--major {
+  font-size: 1.6rem;
+  margin: 2.75rem 0 0.6rem;
+}
+
+/* offering-domain groups inside experiments: stepped-up mono labels in
+   white like the major sections — clearly larger than the card metadata,
+   still below the 1.6rem section titles — with a colored "/" path marker */
+.row-label {
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  color: var(--text);
+  margin: 1.5rem 0 0.15rem;
+  letter-spacing: 0.02em;
+}
+
+/* the "/" marker reads as a path segment, in the accent color like the
+   "> " prompt marker on the major sections */
+.row-label::before {
+  content: "/";
+  color: var(--accent);
+}
+
+.row-desc {
+  margin: 0 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* --- Project grid / cards --- */
+
+.project-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-card);
+  align-items: stretch;
+}
+
+/* 2 columns on medium screens and up; rows keep cards inside their section */
+@media (min-width: 720px) {
+  .project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* chips are the trailing element of a study card — the tags row starts flush
+   at the card's outer padding edge: no left margin or padding on the row, so
+   the first tag left-aligns exactly with the title and metadata above it */
+.study-card .chips {
+  margin: 0.9rem 0 0;
+  padding-left: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.9rem 0;
+}
+
+/* app cards — the apps block on the projects index: screenshot on top, the
+   house two-block body below */
+.apps-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--gap-card);
+  margin: 0 0 2rem;
+}
+
+@media (min-width: 960px) {
+  .apps-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.app-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.app-card__shot {
+  width: 100%;
+  display: block;
+  height: 180px;
+  object-fit: cover;
+  object-position: center top;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.app-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 1rem 1rem;
+}
+
+.app-card__title {
+  margin: 0;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+
+.app-card__summary {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.app-card__cols {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.7rem;
+}
+
+@media (min-width: 640px) {
+  .app-card__cols {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.app-card__block {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.app-card__stack,
+.app-card__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+/* app cards — end */
+
+.chip {
+  font-size: 0.76rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  color: var(--muted);
+}
+
+/* card tags are blue only (sky hue, faint tinted background) — study cards
+   and offering cards share one tag style; no per-tag hue rotation */
+.study-card .chip,
+.offering-card .chip {
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+

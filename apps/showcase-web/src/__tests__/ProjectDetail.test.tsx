@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { ProjectDetail } from "../pages/ProjectDetail";
 
 const PROJECT = {
@@ -196,7 +196,7 @@ describe("ProjectDetail story handling", () => {
   });
 
   it("leads the detail header at full width — no reading column, more margin on the action row", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     expect(css.match(/\.detail-header \.detail-lead \{[\s\S]*?\n\}/)![0]).toContain(
       "max-width: none;",
     );

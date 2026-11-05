@@ -1,0 +1,282 @@
+/* --- Nav --- */
+
+.nav {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.nav-inner {
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.nav-brand {
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.nav-brand::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+/* the ".dev" brand suffix renders in the accent color */
+.nav-brand-accent {
+  color: var(--accent);
+}
+
+.nav-links {
+  display: flex;
+  gap: 1.25rem;
+  margin-left: auto;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nav-links a {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.nav-links a.github {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.25rem 0.75rem;
+}
+
+.nav-links a.github:hover {
+  border-color: var(--accent);
+}
+
+/* --- Hero (terminal window + faint grid texture) --- */
+
+.hero {
+  position: relative;
+  padding: 3rem 0 0.15rem;
+  max-width: 1160px;
+  /* moderate stage for the terminal — tall enough to breathe, capped so the
+     "where to go" block sits close under the terminal panel */
+  min-height: min(68vh, 720px);
+  margin-inline: auto;
+  text-align: center;
+  isolation: isolate;
+}
+
+/* full-bleed faint grid behind the whole hero block (title → terminal),
+   spanning the viewport until 'where to go'. Full-size from first paint —
+   the layer statically covers the whole hero (top/bottom/left/right inset),
+   never grows, scales or animates. */
+.hero::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100vw;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+/* centerpiece terminal: bigger than body text, centered under the hero copy;
+   wide enough that the `focus` line renders on one line at desktop width */
+.hero-terminal {
+  max-width: 1120px;
+  margin: 2.75rem auto 0;
+  text-align: left;
+}
+
+.hero-terminal .terminal {
+  font-size: 1.02rem;
+  box-shadow: 0 18px 48px rgba(2, 6, 23, 0.65);
+}
+
+.terminal {
+  background: #0b1120;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(2, 6, 23, 0.55);
+  overflow: hidden;
+  font-size: 0.92rem;
+}
+
+.terminal-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.9rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.terminal-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin-right: 0.5rem;
+}
+
+.terminal-dots span {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.terminal-dots span:nth-child(1) {
+  background: #f87171;
+}
+
+.terminal-dots span:nth-child(2) {
+  background: #fbbf24;
+}
+
+.terminal-dots span:nth-child(3) {
+  background: var(--ok);
+}
+
+.terminal-body {
+  padding: 1rem 1.1rem 1.25rem;
+  min-height: 200px;
+}
+
+.terminal-body .cmd {
+  color: var(--text);
+  margin: 0 0 0.15rem;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.terminal-body .cmd::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.terminal-body .out {
+  color: var(--muted);
+  margin: 0 0 1rem;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.terminal-body .out:last-child {
+  margin-bottom: 0;
+}
+
+.terminal-body .cmd-partial::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.terminal-body .cmd-partial {
+  color: var(--text);
+  margin: 0;
+  min-height: 1.6em;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: blink 1.05s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.hero-sub {
+  color: var(--muted);
+  max-width: 760px;
+  margin: 1.5rem auto 0.75rem;
+}
+
+/* the subtitle line under the h1 carries the white (--text) register; the
+   longer intro sentence below it renders in the grey muted token */
+.hero-kicker {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.home-status {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  margin: 1.75rem 0 3rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+  text-align: center;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 50%;
+  background: var(--ok);
+  align-self: center;
+  animation: status-pulse 2s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.home-status .status-note {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot {
+    animation: none;
+  }
+}
+
+/* --- Section headings: prompt-prefixed --- */
+
+/* every page's section title shares the projects-page look: 1.6rem white
+   behind the green "> " marker, no glow (offerings, process, how I work,
+   how engagements start, live demos…) */
+.section-title {
+  font-size: 1.6rem;
+  margin: 2.25rem 0 0.9rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  color: var(--text);
+  text-shadow: none;
+}
+
+/* pages that open straight after a hero/stage keep a tighter top gap */
+.section-title--tight {
+  margin-top: 0.25rem;
+}
+

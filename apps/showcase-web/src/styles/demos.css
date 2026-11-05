@@ -1,0 +1,740 @@
+/* --- Live-demo banner on the project detail page: prominent panel between
+   the detail header and the case study. --- */
+
+.demo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.5rem;
+  padding: 1.1rem 1.35rem;
+  margin: 0 0 1.5rem;
+}
+
+.demo-banner-label {
+  margin: 0 0 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.demo-banner-line {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  max-width: 46rem;
+}
+
+/* primary-button link, matches the global <button> surface */
+.demo-banner-cta {
+  display: inline-block;
+  background: var(--accent);
+  color: #042f2e;
+  border-radius: var(--radius);
+  padding: 0.65rem 1.4rem;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  min-height: 44px;
+  line-height: 1.6;
+}
+
+.demo-banner-cta:hover {
+  filter: brightness(1.08);
+  text-decoration: none;
+}
+
+.chip-link.demo-cta {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* --- Interactive demos (workbench chrome + churn sandbox) --- */
+
+.demo-back {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.demo-back:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.demo-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.7rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+.demo-hook {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.demo-experiment-strip {
+  display: inline-block;
+  margin: 0;
+  padding: 0.3rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.demo-experiment-strip a {
+  color: var(--accent);
+}
+
+/* controls row */
+
+.demo-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.demo-control label {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--secondary);
+}
+
+.demo-control input[type="range"] {
+  width: 260px;
+  accent-color: var(--accent);
+}
+
+.demo-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+button.chip.demo-preset {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--secondary);
+  font-weight: 400;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+button.chip.demo-preset:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* readout chips + charts */
+
+.demo-readouts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem 0;
+}
+
+.demo-readout.good {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.demo-readout.bad {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.demo-chart {
+  padding: 0.5rem 0.5rem 0.75rem;
+}
+
+.demo-chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.demo-axis-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  fill: var(--muted);
+}
+
+.demo-star {
+  font-size: 16px;
+  fill: var(--accent);
+}
+
+.demo-hint {
+  margin: 0.5rem 1rem 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* stacked outcome bar */
+
+.demo-outcome-legend {
+  list-style: none;
+  margin: 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+}
+
+.demo-outcome-legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.demo-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* scorer form */
+
+.demo-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin: 0.75rem 1rem 0.5rem;
+}
+
+.demo-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--secondary);
+}
+
+.demo-form input,
+.demo-form select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  padding: 0.4rem 0.55rem;
+  min-height: 44px;
+}
+
+.demo-form button {
+  align-self: end;
+}
+
+.demo-score-result {
+  margin: 0.75rem 1rem 0;
+}
+
+.demo-prob-bar {
+  height: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.demo-prob-bar span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.demo-prob-line {
+  margin: 0.4rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.demo-alarm {
+  margin: 0.25rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.demo-alarm.alarm {
+  color: var(--accent);
+}
+
+.demo-alarm.calm {
+  color: var(--muted);
+}
+
+.demo-score-note {
+  margin: 0.75rem 1rem 0;
+  font-size: 0.85rem;
+}
+
+/* --- Demo workbench: dashboard layout, page scroll allowed --------------------
+   Root sizes to content (height: auto, min-height just under the viewport):
+   rows hold their natural height, the chart row and controls rail are pinned
+   to a fixed 400px, and the page scrolls when the workbench exceeds the
+   viewport — so panels get real dimensions instead of shrinking to fit. */
+
+.wb-root {
+  display: grid;
+  /* the controls rail sits right of the chart; the main row absorbs free
+     viewport height (minmax floor 400px) so big screens don't leave dead
+     space below the workbench; content taller than the viewport overflows
+     the 1fr row and scrolls the page */
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-rows: auto auto auto auto auto auto auto;
+  grid-template-areas:
+    "header header"
+    "more more"
+    "kpi kpi"
+    "notice notice"
+    "canvas controls"
+    "under under"
+    "secondary secondary";
+  gap: 0.5rem;
+  height: auto;
+  min-height: calc(100dvh - 58px - 1rem);
+}
+
+.wb-header {
+  grid-area: header;
+}
+
+.wb-kpi-band {
+  grid-area: kpi;
+}
+
+.wb-notice-strip {
+  grid-area: notice;
+}
+
+/* children (.wb-canvas-slot / .wb-controls) become direct grid items */
+.wb-main {
+  display: contents;
+}
+
+.wb-canvas-slot {
+  grid-area: canvas;
+}
+
+.wb-controls {
+  grid-area: controls;
+}
+
+.wb-secondary {
+  grid-area: secondary;
+}
+
+.wb-under {
+  grid-area: under;
+  min-height: 0;
+}
+
+.wb-evidence {
+  grid-area: more;
+}
+
+.wb-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem 2rem;
+}
+
+.wb-heading {
+  flex: 1 1 480px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* small, unobtrusive way back — always above the title, never beside it */
+.wb-back {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.wb-back:hover {
+  color: var(--accent);
+}
+
+.wb-heading .demo-title {
+  margin: 0;
+  font-size: 1.6rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+.wb-heading .demo-hook {
+  margin: 0;
+  color: var(--muted);
+  max-width: 720px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  /* full hook renders untrimmed — no one-line ellipsis cut */
+}
+
+/* "how to interpret" moved into the evidence drawer — see .wb-evidence-about */
+
+.wb-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+  padding-top: 0.25rem;
+}
+
+button.chip.wb-scenario,
+button.chip.wb-reset {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--secondary);
+  font-weight: 400;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+button.chip.wb-scenario:hover,
+button.chip.wb-reset:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.chip.wb-scenario.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+/* KPI band: equal-width dynamic tiles across the top */
+
+.wb-kpi-band {
+  display: flex;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.wb-kpi-band .wb-kpi {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* notice strip: two dynamic tiles side by side under the KPI band */
+
+.wb-notice-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.wb-notice-strip .wb-notice {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+/* main row: dominant chart + fixed right-hand controls column */
+
+.wb-main {
+  /* display is set to contents in the .wb-root grid block above so the
+     canvas and controls become direct grid items (controls spans two rows) */
+  min-height: 0;
+}
+
+.wb-canvas-slot {
+  min-width: 0;
+  align-self: start;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* the canvas figure card grows to fill the row; the chart svg fills the card */
+.wb-canvas-slot .figure-card {
+  /* definite 460px card: the measured viewBox cannot feed back into layout
+     (an auto-height chain grew the row without bound), and the chart never
+     resizes because the controls rail grew */
+  flex: none;
+  height: 100%;
+  min-height: 460px;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* the chart region holds ONLY the chart (readouts/hint are siblings), so an
+   absolutely-filled chart can never overlay them; the absolute fill also
+   breaks the auto-height feedback loop (measured viewBox → intrinsic height
+   → layout → re-measure) that grew the row without bound */
+.wb-canvas-slot .demo-chart {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  /* dragging the cursor must never select chart text (Safari) */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.wb-canvas-slot .demo-chart > div {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+}
+
+/* the canvas commentary band keeps its padding; the paragraph renders in
+   full — no clamping — so the footer grows to fit the text */
+.wb-canvas-slot .figure-card-band {
+  padding: 0.45rem 0.85rem;
+}
+
+.wb-canvas-slot .figure-card-band .figure-comment {
+  margin: 0;
+}
+
+.wb-canvas-slot .demo-readouts {
+  margin-bottom: 0.35rem;
+}
+
+.wb-canvas-slot .demo-chart svg {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.wb-controls {
+  min-width: 0;
+  align-self: start;
+  /* natural height, top-aligned: the rail grows below the chart when its
+     content needs more room — the chart never resizes because of it. The
+     fr row only absorbs free viewport space (big screens fill via the
+     chart), never rail content. */
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 1.1rem;
+}
+
+/* slim the rail title so slider + presets + scorer fit the chart row */
+.wb-controls > .wb-rail-title {
+  padding-bottom: 0.25rem;
+  line-height: 1.25;
+}
+
+/* a control group = small-caps label above a box holding only the input(s);
+   groups split the rail height in a ~55 / 110 / 195 ratio (slider / presets /
+   scorer) so the rail content totals ≈ the 400px chart card */
+.wb-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-height: 0;
+}
+
+.wb-group-slider,
+.wb-group-threshold {
+  flex: 0 0 auto;
+}
+
+.wb-group-presets {
+  flex: 0 0 auto;
+}
+
+.wb-group-scorer {
+  flex: 1 1 auto;
+}
+
+/* group labels sit above the box, styled like the panel headers */
+.wb-control-group > .wb-rail-title {
+  flex-shrink: 0;
+  padding-bottom: 0.2rem;
+  line-height: 1.25;
+}
+
+/* each control box spans the full rail width and fills its group */
+.wb-control-group .demo-control {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: visible;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.45rem 0.7rem;
+  min-width: 0;
+  gap: 0.3rem;
+}
+
+/* slider boxes: tight vertical padding so tracks center in short boxes */
+.wb-group-slider .demo-control,
+.wb-group-threshold .demo-control {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+/* slider row: track + live multiplier badge at the end */
+.wb-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 100%;
+}
+
+.wb-controls .demo-control .wb-value-badge {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* preset chips stay on one line each — long labels ellipsis instead of
+   wrapping, so the presets card stays compact */
+.wb-controls .demo-control .chip {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  padding: 0.15rem 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.wb-controls .demo-presets {
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* forecast workbench: series picker + chip rows (models / horizon).
+   The churn presets stay columnar; these groups lay their chips out in
+   wrapping rows, and an active chip takes the accent border. */
+.wb-group-models .demo-presets,
+.wb-group-horizon .demo-presets,
+.wb-group-series .demo-presets {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.wb-group-models .demo-control .chip,
+.wb-group-horizon .demo-control .chip {
+  display: inline-block;
+}
+
+button.chip.demo-preset.fwb-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fwb-store {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.fwb-store + .fwb-store {
+  margin-top: 0.35rem;
+}
+
+/* scrollable store-grouped series list: caps the rail (and with it the
+   chart) at the churn demo's proportions — the prev/next/surprise controls
+   stay pinned above, only the store list scrolls. Thin terminal-style
+   scrollbar to match the workbench aesthetic. */
+.fwb-store-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 15rem;
+  overflow-y: auto;
+  padding-right: 0.3rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.fwb-store-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fwb-store-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.fwb-store-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.fwb-store-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* the series group absorbs free rail space so the selector never leaves a
+   gap when the list is short — the chart and rail size exactly like the
+   churn sandbox (rail-measured, 460px floor) */
+.wb-group-series {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.fwb-store-tag {
+  font-size: 0.66rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+.fwb-badge {
+  margin-left: 0.35rem;
+  font-size: 0.62rem;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.fwb-badge-intermittent {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.fwb-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 0.3rem;
+  vertical-align: baseline;
+}
+

@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChannelCards, isEmailOrPhone } from "../components/ChannelCards";
@@ -164,7 +165,7 @@ describe("ChannelCards", () => {
   });
 
   it("keeps the unlock gate inside the phone card's own bounds — all cards share one geometry", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     // the slimmed gate lets every card share the same height again (grid
     // default stretch) — the form stays inside the phone card's own track
     const gridRule = css.match(/\.channel-grid \{[\s\S]*?\n\}/)![0];

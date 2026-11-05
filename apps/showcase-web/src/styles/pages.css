@@ -1,0 +1,1408 @@
+/* --- States --- */
+
+.state-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--secondary);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  color: var(--muted);
+  margin: 1rem 0;
+}
+
+/* links inside prose/state blocks must not rely on color alone (axe
+   link-in-text-block) */
+.state-box a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.state-box.error {
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+
+/* demo error-boundary fallback: reload + way out */
+.demo-error-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.demo-error-actions button {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.demo-error-actions button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.demo-error-actions a {
+  color: var(--accent);
+}
+
+.not-found-code {
+  font-family: var(--mono);
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+
+.loading {
+  color: var(--muted);
+  padding: 2rem 0;
+  font-family: var(--mono);
+}
+
+.loading::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+button {
+  background: var(--accent);
+  color: #042f2e;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.65rem 1.4rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  min-height: 44px;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* --- Services --- */
+
+.services-hero {
+  max-width: none;
+  margin-bottom: 1rem;
+}
+
+.services-hero .kicker {
+  font-family: var(--mono);
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin: 0 0 0.5rem;
+}
+
+.services-hero h1 {
+  margin: 0 0 0.75rem;
+  font-size: 2rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+.services-hero p {
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+/* offerings grid: 2 columns × 4 rows of wider full-width cards on desktop,
+   a single column below 640px */
+.offerings-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  max-width: none;
+  margin-inline: 0;
+}
+
+@media (min-width: 640px) {
+  .offerings-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.offering-card {
+  padding: 1.6rem 1.75rem;
+}
+
+.offering-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.offering-card h3::before {
+  content: "[+] ";
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.offering-card .offering-blurb {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.offering-card h4 {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--secondary);
+  margin: 0 0 0.4rem;
+}
+
+.offering-card ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.offering-card li {
+  margin-bottom: 0.25rem;
+}
+
+.process-timeline {
+  list-style: none;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: 1.5rem;
+  row-gap: 2.25rem;
+}
+
+/* connecting line across the row; step nodes sit on it */
+.process-timeline li {
+  position: relative;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--border);
+}
+
+.process-timeline .step-num {
+  position: absolute;
+  top: -0.75rem;
+  left: 0;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 0.05rem 0.4rem;
+}
+
+@media (max-width: 1099px) {
+  .process-timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 719px) {
+  .process-timeline {
+    grid-template-columns: 1fr;
+  }
+}
+
+.process-timeline h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.process-timeline p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.engagement-table {
+  font-size: 0.92rem;
+}
+
+.engagement-table td:last-child {
+  color: var(--muted);
+}
+
+.pricing-note {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-family: var(--mono);
+}
+
+/* "how engagements start" on /contact: the same horizontal roadmap language
+   as the services process-timeline — numbered step chips straddling a
+   connecting line across the row; wraps on smaller screens */
+.start-timeline {
+  list-style: none;
+  margin: 1.75rem 0 1.5rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 1.5rem;
+  row-gap: 2.25rem;
+}
+
+/* connecting line across the row; step nodes sit on it */
+.start-timeline li {
+  position: relative;
+  padding-top: 1.15rem;
+  padding-left: 0;
+  border-top: 1px solid var(--border);
+}
+
+.start-timeline .step-num {
+  position: absolute;
+  top: -0.75rem;
+  left: 0;
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  padding: 0.05rem 0.4rem;
+}
+
+@media (max-width: 1099px) {
+  .start-timeline {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 719px) {
+  .start-timeline {
+    grid-template-columns: 1fr;
+  }
+}
+
+.start-timeline h3 {
+  margin: 0 0 0.25rem;
+  font-size: 0.95rem;
+}
+
+.start-timeline p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* free-first-call promise — the same discovery terms as the Services page */
+.free-call-card {
+  margin: 0 0 1.25rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.free-call-card h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+.free-call-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* contact channels: one card per channel, the whole card is the link */
+.channel-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  margin: 0 0 1rem;
+  /* the slimmed phone gate keeps every card on one geometry — all four
+     cards share the same height */
+  align-items: stretch;
+}
+
+@media (min-width: 640px) {
+  .channel-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.channel-card {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  color: inherit;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.channel-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.channel-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.channel-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.channel-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.channel-name {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.channel-address {
+  font-size: 0.8rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* the phone card renders locked: a small in-card gate instead of the tel
+   link — no hover lift, content top-aligned so the form reads naturally;
+   min-width 0 keeps the gate inside the card's own grid track at every
+   breakpoint (the input row shrinks rather than pushing the card wider) */
+.channel-card--locked {
+  align-items: flex-start;
+  cursor: default;
+  min-width: 0;
+}
+
+.channel-card--locked:hover {
+  border-color: var(--border);
+  transform: none;
+}
+
+.channel-lock-note {
+  margin: 0 0 0.3rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.channel-unlock {
+  margin: 0 0 0.25rem;
+}
+
+/* slim full-width gate row: phone spans the whole grid line below the
+   linked channels, with an inline form */
+.channel-card--slim {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 1.1rem;
+}
+
+.channel-card--slim .channel-text {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.9rem;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.channel-card--slim .channel-lock-note {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.channel-card--slim .channel-unlock {
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+}
+
+.channel-unlock-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+
+.channel-unlock-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.channel-unlock-row input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+}
+
+.channel-unlock-row input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.channel-unlock-row input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.channel-unlock-row button {
+  flex-shrink: 0;
+  /* the site's accent button, sized down for the inline gate */
+  min-height: 0;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.82rem;
+}
+
+.channel-unlock-note {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+/* --- Contact form: fields validate inline; submit composes a mailto. --- */
+
+.contact-form {
+  margin: 0 0 1.5rem;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.form-field {
+  margin-bottom: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.form-field label {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.form-field input,
+.form-field textarea {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.55rem 0.75rem;
+  width: 100%;
+}
+
+.form-field input:focus-visible,
+.form-field textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* the message box grows vertically only, within the card bounds */
+.form-field textarea {
+  resize: vertical;
+  max-width: 100%;
+  max-height: 10rem;
+}
+
+.form-field [aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+.form-error {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-top: 0.25rem;
+}
+
+.form-note {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  max-width: 26rem;
+}
+
+.form-sent {
+  margin-top: 0.75rem;
+  color: var(--ok);
+}
+
+.cloud-plain {
+  max-width: none;
+}
+
+.cloud-plain > p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.cloud-plain strong {
+  color: var(--text);
+}
+
+.providers-grid {
+  max-width: none;
+}
+
+/* --- Footer: two-zone single bar — brand + copyright left, links right --- */
+
+.footer {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 1rem 1.25rem;
+}
+
+.footer-bar {
+  margin: 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--mono);
+}
+
+/* the brand mirrors the header's nav-brand treatment: "> " prefix in the
+   accent, name in the default text color, ".dev" suffix accent */
+.footer-name {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.footer-name::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.footer-accent {
+  color: var(--accent);
+}
+
+.footer-copy {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.footer-nav {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.footer-nav a {
+  color: var(--muted);
+}
+
+.footer-nav a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.footer-email {
+  color: var(--secondary) !important;
+}
+
+@media (max-width: 800px) {
+  .story-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .story-layout > * {
+    min-width: 0;
+  }
+  .rail {
+    position: static;
+    border-left: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .rail a {
+    border-left: none;
+    padding: 0.15rem 0;
+  }
+  .rail a.active {
+    border-bottom: 2px solid var(--accent);
+  }
+  .services-hero h1,
+  .detail-header h1 {
+    font-size: 1.6rem;
+  }
+}
+
+/* --- Native plotly figures --- */
+
+/* Restored verbatim from 01a7d77: without these the host div collapses and
+   the IntersectionObserver gate in PlotlyFigure never fires (figures stuck
+   at "loading…"). */
+.plotly-wrap {
+  position: relative;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.plotly-host {
+  width: 100%;
+  /* pre-render height: the IntersectionObserver gate needs a visible box, and
+     the skeleton (position:absolute) contributes none. Plotly sets an
+     explicit height on render (>= MIN_SCALED_HEIGHT), so this never distorts
+     the final figure. */
+  min-height: 360px;
+}
+
+/* Dark-theme adaptation: PlotlyFigure re-skins figures to the site palette
+   (transparent paper, light text), so the frame stays transparent — a white
+   background would swallow the light axis text. */
+.plotly-wrap {
+  background: transparent;
+  padding: 0.5rem;
+}
+
+/* --- Figure cards: chart + commentary band as one integrated tile --- */
+
+.figure-card {
+  margin-bottom: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+/* the chart region merges into the card: strip the standalone frame's
+   border, radius, padding and margins so it sits flush above the band */
+.figure-card .figure-frame {
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.figure-card .plotly-wrap,
+.figure-card .frame-wrap {
+  border: none;
+  border-radius: 0;
+}
+
+.figure-card .plotly-wrap {
+  /* breathing room at the top/sides; flush against the band below */
+  padding: 0.5rem 0.5rem 0;
+}
+
+.figure-card-band {
+  /* attached commentary plate: slightly darker tone, divided by a hairline */
+  padding: 0.75rem 1rem 0.9rem;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+}
+
+.figure-id {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.figure-id::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.figure-comment {
+  margin: 0.35rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--text);
+  opacity: 0.92;
+}
+
+/* --- Case study layout: prose and figures share the full-width container --- */
+
+.story-cols {
+  display: block;
+}
+
+.story-figs {
+  /* figures may grow wide but stay centered on large screens */
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+@media (min-width: 1024px) {
+  .story-cols {
+    display: block;
+  }
+  /* prose shares the figures' full-width container (owner request) */
+  .story-figs {
+    margin-top: 1.5rem;
+  }
+  /* spacing between figures belongs to the card, not the bare frame */
+  .story-figs > .figure-frame {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* subtle thematic break between markdown blocks */
+.md-break {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.6rem 0;
+}
+
+/* Subsection headings inside story prose (## → h3, ### → h4). */
+.md-heading {
+  color: var(--text);
+  font-size: 1.02rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  margin: 1.5rem 0 0.5rem;
+}
+.md-heading:first-child {
+  margin-top: 0;
+}
+
+/* --- Home presentation sections --- */
+
+/* the shared h1-scale breakpoint: same 800px drop as .services-hero h1 and
+   .detail-header h1. This block must stay BELOW the base rules in source
+   order (equal specificity — the media query only wins if it comes later) */
+@media (max-width: 800px) {
+  .services-hero h1,
+  .detail-header h1 {
+    font-size: 1.6rem;
+  }
+}
+
+/* small anchor index under the page opening: "index: > live demos · …" —
+   mono; the "index" label and each item's "> " marker carry the green accent
+   — the anchor text itself renders in the muted link color and lights up on
+   hover */
+.page-index {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1.1rem;
+  margin: 1rem 0 2.25rem;
+  font-family: var(--mono);
+  font-size: 1.05rem;
+}
+
+.page-index .page-index-label {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.85rem;
+}
+
+.page-index a {
+  color: var(--text);
+}
+
+.page-index a::before {
+  content: "/";
+  color: var(--accent);
+}
+
+.page-index a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.hero h1 {
+  font-size: 2.4rem;
+  line-height: 1.2;
+  margin: 0 0 1rem;
+  /* white headline; only the Data/ML/AI words carry the accent (hero-accent) */
+  color: var(--text);
+}
+
+.hero-accent {
+  color: var(--accent);
+}
+
+/* bottom row on /contact: plain centered text links — no card, no border,
+   no background */
+.footer-links {
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  text-align: center;
+  margin: 2.5rem 0 0;
+}
+
+.footer-links a {
+  color: var(--accent);
+}
+
+/* --- Frameworks --- */
+
+.section-intro {
+  color: var(--muted);
+  margin: -0.4rem 0 1.4rem;
+  font-size: 0.95rem;
+}
+
+.frameworks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.framework-tile {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  min-height: 44px;
+}
+
+.framework-tile:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+
+.framework-tile img {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.framework-letters {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 1px solid var(--secondary);
+  border-radius: 5px;
+  color: var(--secondary);
+  font-size: 0.68rem;
+}
+
+.framework-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-status {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--ok);
+  margin: 0 0 0.5rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Mermaid diagrams: centered, generously sized, readable (audit: diagrams
+   must be "visible big and centered, related to the text"). */
+.mermaid-wrap {
+  margin: 1.6rem 0;
+  width: 100%;
+  overflow-x: auto;
+}
+.mermaid-wrap .mermaid {
+  width: 100%;
+  min-width: 100%;
+  text-align: center;
+}
+.mermaid-wrap .mermaid svg {
+  max-width: 100%;
+  height: auto;
+  min-height: 220px;
+}
+
+/* center the rendered diagram inside the (possibly scrollable) wrap */
+.mermaid-host {
+  display: flex;
+  justify-content: center;
+}
+
+/* React Flow pilot: lazy, read-only canvas + evidence inspector. */
+.flow-diagram {
+  position: relative;
+  margin: 1.6rem 0;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+}
+
+.flow-diagram--loading {
+  min-height: 520px;
+}
+
+.flow-diagram__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  padding: 0.8rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.flow-diagram__title {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.flow-diagram__zoom-hint {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.flow-diagram__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.flow-diagram__body.has-inspector {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.flow-diagram__canvas {
+  position: relative;
+  min-width: 0;
+  height: 520px;
+  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.16) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.flow-diagram__canvas .frame-skeleton {
+  z-index: 5;
+}
+
+.flow-diagram .react-flow__node {
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.flow-diagram .react-flow__node:focus-visible {
+  outline: 3px solid var(--secondary);
+  outline-offset: 4px;
+}
+
+.flow-node {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-height: 82px;
+  padding: 0.7rem 0.8rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-left-width: 4px;
+  border-radius: 8px;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.2);
+}
+
+/* mermaid-logic shapes: the silhouette reads the node's role before its
+   label does — stadium terminals, cylinder store, subroutine tool, hexagon
+   api, rhombus decision gate */
+.flow-node--stadium {
+  align-items: center;
+  justify-content: center;
+  min-height: 74px;
+  padding: 0.6rem 1.6rem;
+  border-left-width: 1px;
+  border-radius: 999px;
+  text-align: center;
+}
+
+.flow-node--cylinder {
+  position: relative;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.flow-node__cylinder {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--secondary);
+}
+
+.flow-node--cylinder > *:not(.flow-node__cylinder) {
+  position: relative;
+  z-index: 1;
+}
+
+.flow-node--subroutine {
+  border-left: 6px double #a78bfa;
+  border-right: 6px double #a78bfa;
+  border-radius: 2px;
+}
+
+.flow-node--hexagon {
+  clip-path: polygon(16% 0, 84% 0, 100% 50%, 84% 100%, 16% 100%, 0 50%);
+  border: 0;
+  border-radius: 0;
+  padding: 0.7rem 2rem;
+  background: var(--surface);
+  box-shadow: none;
+  /* clip-path removes the painted border — paint it as a filter outline */
+  filter: drop-shadow(0 0 0 var(--accent)) drop-shadow(0 7px 10px rgba(0, 0, 0, 0.35));
+}
+
+.flow-node--rhombus {
+  min-height: 96px;
+  padding: 0.7rem 2.6rem;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  border: 0;
+  border-radius: 0;
+  background: var(--surface);
+  box-shadow: none;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  filter: drop-shadow(0 0 0 var(--secondary)) drop-shadow(0 7px 10px rgba(0, 0, 0, 0.35));
+}
+
+.flow-node--rhombus .flow-node__label {
+  max-width: 130px;
+}
+
+.flow-node--source,
+.flow-node--data {
+  border-color: var(--secondary);
+}
+
+.flow-node--tool {
+  border-color: #a78bfa;
+}
+
+.flow-node--model {
+  border-color: var(--ok);
+}
+
+.flow-node--output {
+  border-color: var(--muted);
+}
+
+.flow-node__kind,
+.flow-inspector__kind {
+  color: var(--muted);
+  font-size: 0.58rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.flow-node__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.flow-node__preview {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(300px, 80vw);
+  padding: 0.45rem 0.6rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+}
+
+.react-flow__node.selected .flow-node {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 2px var(--accent-glow), 0 7px 18px rgba(0, 0, 0, 0.25);
+}
+
+.flow-diagram .react-flow__handle {
+  width: 6px;
+  height: 6px;
+  background: var(--border);
+  border: 0;
+  pointer-events: none;
+}
+
+.flow-diagram .react-flow__edge-textbg {
+  stroke: var(--border);
+  stroke-width: 0.5;
+}
+
+.flow-diagram .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.flow-diagram .react-flow__controls-button {
+  width: 30px;
+  height: 30px;
+  color: var(--text);
+  background: var(--surface);
+  border-bottom-color: var(--border);
+}
+
+.flow-diagram .react-flow__controls-button:hover {
+  background: var(--surface-hover);
+}
+
+.flow-diagram .react-flow__controls-button svg {
+  fill: currentColor;
+  max-width: 12px;
+  max-height: 12px;
+}
+
+.flow-diagram .react-flow__attribution {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.flow-diagram .react-flow__attribution a {
+  color: var(--muted);
+}
+
+.flow-inspector {
+  min-width: 0;
+  padding: 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.flow-inspector__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.flow-inspector h3 {
+  margin: 0.35rem 0 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.flow-inspector__close {
+  flex: 0 0 32px;
+  min-height: 32px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.flow-inspector__source {
+  margin: 0.8rem 0;
+  color: var(--accent);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.flow-inspector ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.flow-inspector li {
+  margin-bottom: 0.75rem;
+}
+
+.flow-inspector li::marker {
+  color: var(--accent);
+}
+
+.flow-diagram__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 0.64rem;
+}
+
+.flow-legend--task {
+  color: var(--secondary);
+}
+
+.flow-legend--result {
+  color: var(--accent);
+}
+
+.flow-legend--error {
+  color: var(--danger);
+}
+
+/* custom edges: muted by default; the neighborhood (hover/selection) lights
+   the node's connections and fades the rest; a click pins an edge's label */
+.flow-edge {
+  --edge-color: var(--muted);
+}
+
+.flow-edge--task {
+  --edge-color: var(--secondary);
+}
+
+.flow-edge--result {
+  --edge-color: var(--accent);
+}
+
+.flow-edge--error {
+  --edge-color: var(--danger);
+}
+
+.flow-edge__path {
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  opacity: 0.85;
+  transition: stroke 0.12s ease, stroke-width 0.12s ease, opacity 0.12s ease;
+}
+
+.flow-edge.is-lit .flow-edge__path {
+  stroke: var(--edge-color);
+  stroke-width: 2.4;
+  opacity: 1;
+}
+
+.flow-edge.is-dim .flow-edge__path {
+  opacity: 0.22;
+}
+
+.flow-edge.is-pinned .flow-edge__path {
+  stroke: var(--edge-color);
+  stroke-width: 2.6;
+  opacity: 1;
+  filter: drop-shadow(0 0 4px var(--edge-color));
+}
+
+.flow-edge__label-host {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.flow-edge__label {
+  display: inline-block;
+  max-width: 144px;
+  padding: 1px 7px;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.flow-edge.is-lit .flow-edge__label,
+.flow-edge.is-pinned .flow-edge__label {
+  border-color: var(--edge-color);
+}
+
+/* dimmed nodes during neighborhood focus */
+.react-flow__node.is-dim {
+  opacity: 0.35;
+  transition: opacity 0.12s ease;
+}
+
+.react-flow__node {
+  transition: opacity 0.12s ease;
+}
+
+.flow-diagram-fallback {
+  max-height: 520px;
+  overflow: auto;
+}
+
+@media (max-width: 800px) {
+  .flow-diagram__body.has-inspector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow-inspector {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+}
+

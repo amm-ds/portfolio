@@ -39,7 +39,7 @@ describe("churn-sandbox payload contract (real committed JSON)", () => {
     expect(payload.model.name).toBe("selected_model_calibrated");
     expect(payload.model.threshold_default).toBe(0.5);
     // the served operating threshold the demo seeds its cursor with
-    expect(payload.model.threshold_selected).toBe(0.15);
+    expect(payload.model.threshold_selected).toBe(0.175);
     expect(payload.model.roc_auc).toBeCloseTo(0.8317, 3);
     expect(payload.roc_auc).toBe(payload.model.roc_auc);
     expect(payload.model.ece).toBeCloseTo(0.0164, 3);

@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { LanguagesAvailability } from "../components/LanguagesAvailability";
@@ -74,7 +74,7 @@ describe("LanguagesAvailability — the three shared fact cards", () => {
       /Languages:|Timezone:|Replies:/,
     );
     // centered terminal type in the same grey as body text — no bold
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const cardRule = css.match(/\.languages-card,\n\.timezone-card,\n\.replies-card \{[\s\S]*?\n\}/)![0];
     expect(cardRule).toContain("text-align: center;");
     expect(cardRule).toContain("font-family: var(--mono);");
@@ -85,7 +85,7 @@ describe("LanguagesAvailability — the three shared fact cards", () => {
   });
 
   it("lays the three cards out one per row on mobile and three columns from 640px up", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const gridRule = css.match(/\.facts-grid \{[\s\S]*?\n\}/)![0];
     expect(gridRule).toContain("grid-template-columns: 1fr;");
     const threeCol = css.match(

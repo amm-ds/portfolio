@@ -1,0 +1,282 @@
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-hover: #273549;
+  --border: #334155;
+  --accent: #2dd4bf;
+  --secondary: #38bdf8;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --danger: #f87171;
+  --ok: #34d399;
+  --accent-glow: rgba(45, 212, 191, 0.25);
+  --radius: 10px;
+  /* one spacing scale: card grids and cards-inside-a-section stack at the
+     card gap; page/flow sections separate at the section gap */
+  --gap-card: 1.25rem;
+  --gap-section: 2.5rem;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, Inter, sans-serif;
+  font-family: var(--sans);
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  /* full-bleed hero grid uses a 100vw pseudo — clip, never scroll, sideways */
+  overflow-x: clip;
+}
+
+/* Mono accent typeface: headings, nav, buttons, metric values, chips, labels. */
+h1,
+h2,
+h3,
+h4,
+.nav,
+button,
+.chip,
+.section-title,
+.metrics-table,
+.story-metrics-table,
+.status-line,
+.rail,
+.terminal,
+.engagement-table th {
+  font-family: var(--mono);
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: var(--secondary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  color: var(--accent);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-main {
+  flex: 1;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+/* fluid shell used by every route: no page-level cap; one ~3rem token of
+   extra bottom padding so pages breathe before the footer bar */
+.app-main--fluid {
+  max-width: none;
+  /* Dashboard demos flow below the 58px sticky nav (footer is not rendered on
+     /demos/* routes); content taller than the viewport scrolls the page, which
+     the workbench uses for bigger chart/panel sizes. */
+  min-height: calc(100dvh - 58px);
+  padding: 0.5rem 1.25rem 3.5rem;
+}
+
+
+
+/* --- Home "where to go" trio --- */
+
+.go-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.go-card {
+  display: block;
+  color: inherit;
+  padding: 1.1rem 1.25rem;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.go-card:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.go-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+.go-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* --- Roadmap block: visual timeline --- */
+
+.roadmap {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.roadmap-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.roadmap-title {
+  margin: 0;
+  font-size: 1.15rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+.roadmap-title::before {
+  content: "> ";
+  color: var(--accent);
+  text-shadow: none;
+}
+
+
+.roadmap-track {
+  position: relative;
+  display: flex;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* horizontal progress line behind the dots */
+.roadmap-track::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: calc(100% / (2 * var(--n, 4)));
+  right: calc(100% / (2 * var(--n, 4)));
+  height: 2px;
+  background: var(--border);
+}
+
+.roadmap-node {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  text-align: center;
+}
+
+.roadmap-dot {
+  position: relative;
+  z-index: 1;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  background: var(--surface);
+}
+
+.roadmap-node.delivered .roadmap-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.roadmap-node.deferred .roadmap-dot {
+  border-color: var(--danger);
+}
+
+.roadmap-label {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--text);
+  opacity: 0.85;
+}
+
+/* narrow screens: the timeline wraps into a vertical list */
+@media (max-width: 640px) {
+  .roadmap-track {
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .roadmap-track::before {
+    top: 10px;
+    bottom: 10px;
+    left: 5px;
+    right: auto;
+    width: 2px;
+    height: auto;
+  }
+
+  .roadmap-node {
+    flex-direction: row;
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+/* --- Shared utilities --- */
+
+.accent-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.table-scroll {
+  display: block;
+  overflow-x: auto;
+}
+
+.table-scroll > table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Visible keyboard focus everywhere interactive. 2px accent ring, offset 2px;
+   accent on --bg computes to ~9.6:1, well above the 3:1 non-text minimum. */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+

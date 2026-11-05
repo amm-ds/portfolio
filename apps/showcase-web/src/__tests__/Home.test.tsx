@@ -1,5 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AVAILABILITY } from "../config";
@@ -115,7 +115,7 @@ describe("Home (terminal-centered)", () => {
     expect(sub.textContent).toBe(
       "I design, build and evaluate ML systems end to end, and I keep the code, metrics and case studies public and auditable.",
     );
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const rule = css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0];
     // the hero centers text and the sentence block centers within it
     expect(css.match(/\.hero \{[\s\S]*?\n\}/)![0]).toContain("text-align: center;");
@@ -123,7 +123,7 @@ describe("Home (terminal-centered)", () => {
   });
 
   it("where-to-go sits tight under the hero stage", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
     expect(heroRule).toContain("padding: 3rem 0 0.15rem;");
     // the hero no longer stretches to 88vh — the dead space above the
@@ -139,7 +139,7 @@ describe("Home (terminal-centered)", () => {
     expect(kicker.textContent).toBe(
       "Applied AI, predictive analytics and ML engineering — from experiment to production",
     );
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const rule = css.match(/\.hero-kicker \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("color: var(--text);");
     expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
@@ -151,7 +151,7 @@ describe("Home (terminal-centered)", () => {
     expect(accents).toEqual(["Data", "ML", "AI"]);
     const h1 = document.querySelector(".hero h1")!;
     expect(h1.textContent).toContain("Data Scientist, ML & AI Consultant");
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const rule = css.match(/\.hero h1 \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("color: var(--text);");
     expect(css.match(/\.hero-accent \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
@@ -165,7 +165,7 @@ describe("Home (terminal-centered)", () => {
     renderHome();
     const status = document.querySelector(".home-status")!;
     expect(status).not.toBeNull();
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const rule = css.match(/\.home-status \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("justify-content: center;");
     expect(rule).toContain("margin: 1.75rem 0 3rem;");
@@ -214,7 +214,7 @@ describe("Home (terminal-centered)", () => {
 
 describe("Home hero layout", () => {
   it("widens the hero and terminal, caps the hero height, and covers it with a static full-size grid", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     // 940 → 1160px hero, 780 → 1120px terminal (wide enough for the one-line focus output)
     expect(css).toContain("max-width: 1160px;");
     expect(css).not.toContain("max-width: 940px;");

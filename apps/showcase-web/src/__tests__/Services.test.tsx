@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -127,7 +128,7 @@ describe("Services page (wave 8)", () => {
   });
 
   it("lays the offerings out full width as 2 columns × 4 rows — 2 columns from 640px up, 1 below", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const gridRule = css.match(/\.offerings-grid \{[\s\S]*?\n\}/)![0];
     expect(gridRule).toContain("display: grid;");
     expect(gridRule).toContain("grid-template-columns: 1fr;");
@@ -158,7 +159,7 @@ describe("Services page (wave 8)", () => {
         expect(c.className).toBe("chip");
       }
     }
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const rule = css.match(/\.study-card \.chip,\n\.offering-card \.chip \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("color: #7dd3fc;");
     expect(rule).toContain("background: rgba(56, 189, 248, 0.08);");
@@ -281,7 +282,7 @@ describe("Services page (wave 8)", () => {
   });
 
   it("ships a horizontal process timeline (5-up, 2-up, 1-up) with a numbered revisions step", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     expect(css).toContain(".process-timeline {\n  list-style: none;\n  margin: 1.75rem 0 0;\n  padding: 0;\n  display: grid;\n  grid-template-columns: repeat(5, minmax(0, 1fr));");
     expect(css).toContain("row-gap: 2.25rem;");
     expect(css).toContain("padding-top: 1.15rem;");

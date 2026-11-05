@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { cleanup, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { StorySectionData } from "../api";
@@ -257,7 +257,7 @@ describe("StorySection subtitles", () => {
 
 describe("StorySection h2 title styling", () => {
   it("paints a green title behind a green > marker with a blue section number, no glow", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const h2Rule = css.match(/\.story-section h2 \{[\s\S]*?\n\}/)![0];
     expect(h2Rule).toContain("color: var(--accent);");
     expect(h2Rule).not.toContain("text-shadow");

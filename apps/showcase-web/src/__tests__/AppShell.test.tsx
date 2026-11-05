@@ -1,5 +1,5 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
@@ -33,7 +33,7 @@ describe("Nav brand split", () => {
     expect(brand.textContent!.replace(accent.textContent!, "")).toBe(SITE_NAME_ROOT);
     // the config split concatenates back to the full site name
     expect(`${SITE_NAME_ROOT}${SITE_NAME_SUFFIX}`).toBe(SITE_NAME);
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     expect(css.match(/\.nav-brand-accent \{[\s\S]*?\n\}/)![0]).toContain(
       "color: var(--accent);",
     );
@@ -91,7 +91,7 @@ describe("App shell (temporary smoke)", () => {
   });
 
   it("pads the page content one token above the footer", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     // every route renders .app-main--fluid (App.tsx), so its bottom padding is
     // the space before the footer bar: 0.5rem base + one ~3rem token = 3.5rem
     const fluidRule = css.match(/\.app-main--fluid \{[\s\S]*?\n\}/)![0];

@@ -1,0 +1,906 @@
+/* --- forecast workbench bottom cards (secondary band) --- */
+
+/* compact readout chips inside the secondary cards: tighter padding than
+   the canvas-slot readouts */
+.wb-secondary .figure-card .demo-readouts {
+  padding: 0.4rem 0.6rem 0;
+}
+
+/* three chips must share one row even at 128px-wide cards */
+.wb-secondary .figure-card .demo-readouts .chip {
+  padding: 0.05rem 0.35rem;
+  font-size: 0.68rem;
+}
+
+/* tabular numerals on every mono readout in the secondary cards */
+.wb-secondary .demo-readout,
+.wb-secondary .figure-comment {
+  font-variant-numeric: tabular-nums;
+}
+
+/* model verdict: one horizontal bar per active candidate — window WAPE@h on
+   a shared scale, model-tinted (the seasonal naive is the grey reference),
+   value label at the bar end, best bar crowned, right-aligned peak-day MAE
+   mini column */
+.fwb-verdict {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* breathing room for the full candidate list: all six rows + committed
+     chip + scale label fit the 280px secondary band with margins, and the
+     bars never touch the panel edges */
+  gap: 0.4rem;
+  padding: 0.5rem 0.9rem 0.55rem;
+}
+
+/* every row shares one column grid so the bars and the peak/bias columns line up */
+.fwb-verdict-row {
+  display: grid;
+  grid-template-columns: minmax(0, 92px) minmax(0, 1fr) 30px 44px;
+  gap: 0.4rem;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+}
+
+.fwb-verdict-name {
+  min-width: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fwb-verdict-item.best .fwb-verdict-name {
+  color: var(--accent);
+}
+
+.fwb-verdict-crown {
+  margin-left: 0.4rem;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 0 0.3rem;
+}
+
+.fwb-bar-track {
+  position: relative;
+  display: block;
+  height: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.fwb-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 2px;
+  opacity: 0.8;
+}
+
+.fwb-verdict-item.best .fwb-bar-fill {
+  opacity: 1;
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.fwb-bar-value {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.66rem;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.fwb-verdict-peak {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.fwb-verdict-bias {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* footer line under the bars: the committed pooled chip (full scored horizon
+   only) on the left and the fixed common-scale axis label on the right */
+.fwb-verdict-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin: 0.05rem 0 0;
+}
+
+.fwb-verdict-committed {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* fixed common-scale axis label: the maximum window WAPE@h across every
+   payload candidate — printed so a bar's width can be read against a scale
+   that never depends on the selected subset */
+.fwb-verdict-scale {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* scorer card: header row (label + submit) on top of a 2×2 field grid; the
+   result block sits directly under the header, above the fields */
+.wb-controls .wb-scorer {
+  padding: 0.6rem 0.7rem;
+}
+
+.wb-controls .wb-scorer .demo-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 0.4rem;
+  margin: 0;
+}
+
+.wb-controls .wb-scorer .demo-form label {
+  gap: 0.15rem;
+  font-size: 0.68rem;
+  line-height: 1.25;
+}
+
+.wb-controls .wb-scorer .demo-form input,
+.wb-controls .wb-scorer .demo-form select {
+  padding: 0.25rem 0.4rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+}
+
+/* bottom row: the score result sits above the full-width score-live button */
+.wb-controls .wb-scorer .wb-scorer-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin-top: 0.3rem;
+}
+
+.wb-controls .wb-scorer .wb-scorer-foot .demo-score-result {
+  margin: 0;
+}
+
+.wb-controls .wb-scorer .wb-scorer-foot button {
+  width: 100%;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.8rem;
+  min-height: 44px;
+}
+
+.wb-controls .wb-scorer .demo-prob-bar {
+  height: 8px;
+}
+
+.wb-controls .wb-scorer .demo-prob-line {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+}
+
+.wb-controls .wb-scorer .demo-alarm {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+}
+
+.wb-controls .wb-scorer .demo-hint {
+  margin: 0.25rem 0 0;
+}
+
+/* filled slider track: --fill (inline style, 0–100%) paints the accent part.
+   No side padding on the input — the thumb center must reach both track ends.
+   The input itself is a 44px-high hit area (WCAG 2.5.5 target size); the
+   track stays 6px tall and is centered inside it. */
+.wb-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.wb-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  margin-top: 19px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent) 0 var(--fill), var(--border) var(--fill) 100%);
+}
+
+.wb-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -5px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+}
+
+.wb-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.wb-slider::-moz-range-progress {
+  background: var(--accent);
+  height: 6px;
+  border-radius: 3px;
+}
+
+/* KPI tiles + notice */
+
+.wb-rail-title {
+  margin: 0;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.45rem;
+}
+
+.wb-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+}
+
+.wb-kpi-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.wb-kpi-value {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.wb-kpi-sub {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.wb-kpi-good .wb-kpi-value {
+  color: var(--accent);
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+.wb-kpi-bad .wb-kpi-value {
+  color: var(--danger);
+}
+
+.wb-notice {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.wb-notice-mark {
+  color: var(--accent);
+}
+
+/* secondary band: permanent row of three panels between the main row and the
+   evidence drawer — 280px tall, panels fill it, nothing scrolls */
+
+.wb-secondary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+  height: 280px;
+  min-height: 0;
+}
+
+.wb-secondary-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.wb-secondary-panel .wb-rail-title {
+  flex-shrink: 0;
+}
+
+/* secondary panels reuse the figure-card chrome: flex column so the viz
+   fills the remaining space and the footer band pins to the bottom */
+.wb-secondary .figure-card {
+  flex: 1 1 auto;
+  margin-bottom: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.wb-secondary .figure-card .demo-chart {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0.35rem 0.5rem 0.4rem;
+}
+
+.wb-secondary .figure-card-band {
+  padding: 0.4rem 0.7rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.wb-secondary .figure-card-band .figure-comment {
+  margin: 0;
+  font-size: 0.78rem;
+}
+
+/* cost-composition chart fills its figure-card cell (svg keeps aspect) */
+.wb-secondary .cost-composition {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.wb-secondary .cost-composition svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* container-measured svg panels (outcomes stack, contract burden) fill the
+   box left over after the footer commentary band */
+.wb-secondary .wb-panel-viz {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* evidence drawer */
+
+.wb-evidence {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.wb-evidence summary {
+  cursor: pointer;
+  padding: 0.5rem 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.wb-evidence summary::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+.wb-evidence summary:hover {
+  color: var(--accent);
+}
+
+.wb-evidence-body {
+  padding: 0 1.1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* linked experiment always on top, full width */
+.wb-evidence-linked {
+  margin: 0.6rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--secondary);
+}
+
+.wb-evidence-linked a {
+  color: var(--accent);
+}
+
+/* CAPS labels for the drawer's sections */
+.wb-evidence-tag {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--secondary);
+}
+
+/* "how to interpret": full width under the linked experiment */
+.wb-evidence-about {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--secondary);
+}
+
+.wb-evidence-about .wb-evidence-tag {
+  margin-bottom: 0.5rem;
+}
+
+/* result blocks nested inside the shared evidence panel keep their
+   separators; the last one closes flush with the panel */
+.wb-evidence-results .wb-result-block {
+  border-bottom-color: var(--border);
+}
+
+.wb-evidence-results .wb-result-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.wb-result-block .wb-evidence-tag {
+  margin-bottom: 0.15rem;
+}
+
+.wb-evidence-about p {
+  margin: 0 0 0.4rem;
+}
+
+.wb-evidence-about p:last-child {
+  margin-bottom: 0;
+}
+
+/* the two content columns (models used | metrics results) */
+.wb-evidence-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.wb-evidence-chrome {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.wb-evidence-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.wb-evidence-line {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.wb-evidence-line a {
+  color: var(--accent);
+}
+
+/* calibration reference moved into the drawer: compact fixed-height figure */
+.wb-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.wb-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.wb-endpoint {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  flex-wrap: wrap;
+}
+
+.wb-method {
+  font-weight: 700;
+  font-size: 0.7rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--secondary);
+}
+
+.wb-method-post {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.wb-endpoint-label {
+  color: var(--muted);
+}
+
+.wb-endpoint-cost {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+/* narrow screens: the dashboard reflows and the page may scroll */
+
+@media (max-width: 900px) {
+  .wb-root {
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "header"
+      "more"
+      "kpi"
+      "notice"
+      "canvas"
+      "controls"
+      "under"
+      "secondary";
+  }
+
+  .wb-kpi-band {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wb-canvas-slot {
+    overflow: visible;
+  }
+
+  .wb-canvas-slot .demo-chart svg {
+    height: auto;
+    min-height: 240px;
+  }
+
+  .wb-controls {
+    overflow-y: visible;
+  }
+
+  .wb-secondary {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .wb-evidence-cols {
+    grid-template-columns: 1fr;
+  }
+
+  .wb-evidence-body {
+    grid-template-columns: 1fr;
+  }
+
+  .wb-secondary .figure-card {
+    overflow: visible;
+  }
+
+  .fwb-verdict-foot {
+    flex-wrap: wrap;
+  }
+
+  .fwb-verdict-scale {
+    white-space: normal;
+  }
+}
+
+/* --- result tags: small mono chips for metric values in the drawer --- */
+
+.wb-tag {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.wb-metric-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.wb-result-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.wb-result-block:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* dynamic values in the notice tiles stand out */
+.wb-notice-strip strong,
+.wb-evidence-body strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* --- Fluid project-detail pages (/projects/:id): full-width case study --- */
+
+/* story container (was implicitly capped by .app-main's 1100px) */
+.app-main--fluid .story-cols,
+.app-main--fluid .story-section {
+  max-width: none;
+  width: 100%;
+}
+
+/* --- Evaluation report view (/projects/:id/report): the routed report page
+   spans the FULL page width like every other page. The API-served HTML ships
+   its own reading column (body max-width: 1400px); the view strips that cap
+   for this view only by injecting one override style into the frame's markup
+   (see ReportView) — the standalone report and its template stay untouched */
+
+.report-view {
+  width: 100%;
+}
+
+.report-view .report-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  /* fallback height until the frame's own content height is applied on load */
+  min-height: calc(100dvh - 58px - 4rem);
+  background: var(--bg);
+}
+
+/* figure column: drop the 1200px cap and the centering so charts span wide */
+.app-main--fluid .story-figs {
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* live score result: panel in the controls rail, directly below the scorer
+   box — the chart keeps its fixed size; only the rail grows */
+.wb-score-result {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+}
+
+.wb-score-result .demo-prob-bar {
+  width: 100%;
+}
+
+.wb-score-result .demo-prob-line,
+.wb-score-result .demo-alarm,
+.wb-score-result .demo-hint {
+  margin: 0;
+}
+
+.wb-more summary {
+  font-size: 0.85rem;
+}
+
+
+/* --- About page: contact channel cards, practices cards, experience timeline --- */
+
+/* contact facts reuse the contact page's channel-card pattern — four cards
+   (phone, email, GitHub, LinkedIn) in one row */
+.services-hero .channel-grid {
+  margin: 1.25rem 0 0.75rem;
+}
+
+/* languages & timezone — two shared cards (Contact + About) in one row on
+   desktop, stacked on mobile; values only, in the same grey as body text */
+.facts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.9rem;
+  margin: 0 0 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .facts-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.languages-card,
+.timezone-card,
+.replies-card {
+  margin: 0;
+  padding: 0.9rem 1.1rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.9rem;
+}
+
+.languages-card .languages-line,
+.timezone-card .languages-line,
+.replies-card .languages-line {
+  margin: 0;
+  color: var(--muted);
+}
+
+.services-hero .facts-grid {
+  margin: 0 0 1.25rem;
+}
+
+.languages-line {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* the timezone globe and the replies bubble sit on the text baseline,
+   flag-sized like the language emojis */
+.fact-symbol {
+  margin-right: 0.45rem;
+}
+
+.languages-line + .languages-line {
+  margin-top: 0.4rem;
+}
+
+/* the Senyera sits on the text baseline, flag-sized beside the language
+   names — rounded like the other chips */
+.flag-senyera {
+  display: inline-block;
+  width: 18px;
+  height: 12px;
+  margin-right: 0.3rem;
+  vertical-align: -1px;
+  border-radius: 2px;
+}
+
+/* "how I work" opens the page as importance cards — the same geometry as the
+   services offering cards */
+.practices-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .practices-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .practices-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.practice-card {
+  padding: 1.6rem 1.75rem;
+}
+
+.practice-card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.practice-card h3::before {
+  content: "[+] ";
+  color: var(--accent);
+  font-weight: 400;
+}
+
+.practice-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* experience: roadmap-style vertical timeline — period (mono, accent) → role
+   → achievement bullets, connected by the site's dot/line language; the list
+   is width-constrained but left-aligned with the page text, items keep their
+   dot/line alignment inside it */
+.timeline {
+  list-style: none;
+  max-width: 720px;
+  margin: 1.75rem 0 0;
+  padding: 0 0 0 1.5rem;
+  position: relative;
+}
+
+/* the connecting line — its left offset equals the dots' center x (dot left
+   edge at 1.5rem − 1.32rem = 0.18rem + half the 0.6rem dot width = 0.48rem),
+   and it runs from the first dot's center to the last dot's center (0.7rem =
+   0.4rem dot top + half the dot height) */
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 0.48rem;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  width: 1px;
+  background: var(--border);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.75rem;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+/* the dot on the line */
+.timeline-item::before {
+  content: "";
+  position: absolute;
+  left: -1.32rem;
+  top: 0.4rem;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.timeline-period {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  margin: 0 0 0.2rem;
+}
+
+.timeline-item h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.timeline-item ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.timeline-item li {
+  margin-bottom: 0.25rem;
+}
+

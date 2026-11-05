@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -93,7 +93,7 @@ describe("About page", () => {
     expect(cards[3].getAttribute("target")).toBe("_blank");
     // the CSS carries the 3-column row from 640px up (matching the facts
     // cards below), single column below
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const threeCol = css.match(
       /@media \(min-width: 640px\) \{\s*\.channel-grid \{[\s\S]*?\n  \}/,
     )![0];
@@ -141,7 +141,7 @@ describe("About page", () => {
   });
 
   it("connects the timeline with the site's dot/line language, left-aligned with the line through the dot centers", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     // last rem value of a shorthand (the list writes `padding: 0 0 0 1.5rem;`)
     const rem = (rule: string, prop: string) =>
       Number(
@@ -184,7 +184,7 @@ describe("About page", () => {
     expect(document.querySelector(".education-card")).toBeNull();
     expect(screen.queryByRole("heading", { name: /education/i })).toBeNull();
     expect(screen.queryByText(/Master in Big Data|Business & IT|financial markets|MITx/i)).toBeNull();
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     expect(css).not.toContain(".education-card");
   });
 
@@ -244,7 +244,7 @@ describe("About page", () => {
   });
 
   it("gives the practice cards the services card geometry (bigger padding)", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const practiceRule = css.match(/\.practice-card \{[\s\S]*?\n\}/)![0];
     expect(practiceRule).toContain("padding: 1.6rem 1.75rem;");
     const offeringRule = css.match(/\.offering-card \{[\s\S]*?\n\}/)![0];

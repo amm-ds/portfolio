@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { render, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
@@ -321,7 +321,7 @@ describe("renderMarkdown wrapped lists and thematic breaks", () => {
 });
 
 describe("prose density (wave 10)", () => {
-  const css = readFileSync("src/styles.css", "utf8");
+  const css = readStylesCss();
 
   it("keeps the story prose as wide as the figures (no 70ch cap on .story-main)", () => {
     expect(css).not.toMatch(/\.story-main\s*\{[^}]*max-width:\s*70ch/);

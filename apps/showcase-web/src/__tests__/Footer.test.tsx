@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
@@ -49,7 +49,7 @@ describe("Footer", () => {
   });
 
   it("lays the bar out with space-between and baseline alignment, wrapping on mobile", () => {
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     const barRule = css.match(/\.footer-bar \{[\s\S]*?\n\}/)![0];
     expect(barRule).toContain("display: flex;");
     expect(barRule).toContain("justify-content: space-between;");

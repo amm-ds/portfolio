@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
+import { readStylesCss } from "./helpers/css";
 import { App } from "../App";
 import { ReportView } from "../pages/ReportView";
 
@@ -63,7 +63,7 @@ describe("ReportView", () => {
     expect(doc).toContain("max-width:none");
     expect(doc.match(/<style>/g)!.length).toBe(2);
     // the view spans the full page width like every other page
-    const css = readFileSync("src/styles.css", "utf8");
+    const css = readStylesCss();
     expect(css.match(/\.report-view \{[\s\S]*?\n\}/)![0]).toContain("width: 100%;");
     expect(css.match(/\.report-view \.report-frame \{[\s\S]*?\n\}/)![0]).toContain(
       "width: 100%;",

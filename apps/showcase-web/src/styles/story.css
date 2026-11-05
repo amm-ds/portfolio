@@ -1,0 +1,544 @@
+/* --- Project detail / case study --- */
+
+.detail-header h1 {
+  margin: 0 0 0.35rem;
+  font-size: 2rem;
+  text-shadow: 0 0 14px var(--accent-glow);
+}
+
+/* the story's short_version, leaded under the title once the story loads —
+   full width like the rest of the detail header, no reading column */
+.detail-header .detail-lead {
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+  max-width: none;
+}
+
+.detail-header .domain {
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+/* header blocks breathe uniformly: title → lead → domain → chips → meta links */
+.detail-header .chips {
+  margin: 0 0 0.5rem;
+}
+
+.detail-header .meta-links {
+  margin: 0.5rem 0 1.25rem;
+}
+
+.meta-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.25rem 0 0.5rem;
+  font-size: 0.88rem;
+  font-family: var(--mono);
+}
+
+.chip-link {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.2rem 0.65rem;
+  color: var(--accent);
+  line-height: 1.4;
+}
+
+.chip-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  text-decoration: none;
+}
+
+.story-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.rail {
+  position: sticky;
+  top: 4.5rem;
+  font-size: 0.82rem;
+  border-left: 1px solid var(--border);
+}
+
+/* the rail is a labelled index, not bare links */
+.rail-label {
+  display: block;
+  padding: 0 0 0.35rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.rail a {
+  display: block;
+  padding: 0.3rem 0 0.3rem 0.9rem;
+  margin-left: -1px;
+  border-left: 2px solid transparent;
+  color: var(--muted);
+}
+
+.rail a:hover {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.rail a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+
+.rail .rail-num {
+  /* --border computed to 1.7:1 on --bg (axe serious color-contrast); --muted
+     is a still-quiet 6.9:1 and keeps the number visually secondary. */
+  color: var(--muted);
+  margin-right: 0.45rem;
+}
+
+.rail a.active .rail-num {
+  color: var(--secondary);
+}
+
+.story-section {
+  scroll-margin-top: 4rem;
+  margin-bottom: var(--gap-section);
+}
+
+/* the key-concepts and glossary cards belong to the Background section that
+   precedes them: business summary ↔ key concepts ↔ glossary then stack at
+   the card gap (the section's own bottom margin steps aside), while the
+   section gap stays reserved for space between sections */
+.story-section:has(+ .glossary-card) {
+  margin-bottom: 0;
+}
+
+/* green title behind the "> " prompt marker, with the section number in the
+   rail's blue family — the heading and the left-rail index read identically;
+   no glow */
+.story-section h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+  color: var(--accent);
+}
+
+.story-section h2::before {
+  content: "> ";
+  color: var(--accent);
+  text-shadow: none;
+}
+
+/* the section number (real markup from CaseStudy's map index — the same
+   two-digit numbering the rail renders) */
+.story-section h2 .sec-num {
+  color: var(--secondary);
+  margin-right: 0.6rem;
+}
+
+/* one-line label under each section h2 (src/lib/sectionMeta.ts) — blue like
+   the other small labels */
+.story-section .section-subtitle {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--secondary);
+  margin: -0.2rem 0 0.9rem;
+}
+
+.story-section .prose {
+  line-height: 1.62;
+}
+
+.story-section .prose p,
+.story-section .prose ul,
+.story-section .prose ol {
+  color: var(--text);
+  opacity: 0.92;
+}
+
+.story-section .prose p {
+  margin: 0 0 1.05em;
+}
+
+.story-section .prose ul,
+.story-section .prose ol {
+  margin: 0 0 1.1em;
+  padding-left: 1.5rem;
+}
+
+/* breathing room between list items; accent-tinted markers for skimmability */
+.story-section .prose li {
+  margin-bottom: 0.4rem;
+}
+
+.story-section .prose li::marker {
+  color: var(--accent);
+}
+
+/* extra air when a paragraph introduces a list, table, code block or diagram */
+.story-section .prose p + ul,
+.story-section .prose p + ol,
+.story-section .prose p + .table-scroll,
+.story-section .prose p + .mermaid-wrap,
+.story-section .prose p + .code-block {
+  margin-top: 1.3rem;
+}
+
+/* --- Business-summary card: trailing "**Business summary:** ..." --- */
+
+.bi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin: 0 0 var(--gap-card);
+}
+
+.bi-card .bi-label {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin: 0 0 0.5rem;
+}
+
+.bi-card .bi-body {
+  color: var(--text);
+  opacity: 0.92;
+  line-height: 1.62;
+}
+
+.bi-card .bi-body p {
+  margin: 0;
+}
+
+.bi-card .bi-body p + p {
+  margin-top: 0.85em;
+}
+
+/* --- Collapsed conclusions block: native <details> after the section h2 --- */
+
+.story-details {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.1rem;
+}
+
+.story-details > summary {
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.story-details > summary:hover {
+  color: var(--accent);
+}
+
+.story-details[open] > summary {
+  margin-bottom: 0.9rem;
+  color: var(--accent);
+}
+
+/* Inline links inside prose/intro text need a non-color cue (axe
+   link-in-text-block): underline every bare anchor; glossary terms keep
+   their dotted style. */
+.story-section .prose a:not(.glossary-term),
+.section-intro a:not(.glossary-term),
+.bi-card a:not(.glossary-term),
+.glossary-card-hint a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+/* --- Glossary: auto-linked terms in prose + per-project card + /glossary page --- */
+
+a.glossary-term {
+  color: var(--accent);
+  text-decoration: underline dotted;
+  text-underline-offset: 0.18em;
+}
+
+a.glossary-term:hover,
+a.glossary-term:focus-visible {
+  text-decoration-style: solid;
+}
+
+/* Per-project glossary card at the end of the Background section: the
+   definitions that used to appear as hover popups now live here. Stacks at
+   the card gap like every other card. */
+.glossary-card {
+  margin: var(--gap-card) 0;
+  padding: 1rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--radius);
+}
+
+.glossary-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.7rem;
+}
+
+.glossary-card-label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.glossary-card-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.glossary-card-hint a {
+  color: var(--accent);
+}
+
+.glossary-card-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.glossary-card-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 10rem) 1fr;
+  gap: 0.9rem;
+  align-items: baseline;
+}
+
+.glossary-card-row dt {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.glossary-card-row dt a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.glossary-card-row dt a:hover,
+.glossary-card-row dt a:focus-visible {
+  text-decoration: underline;
+}
+
+.glossary-card-row dd {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .glossary-card-row {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+}
+
+/* tiny divider between the core and experiment-specific term groups */
+.glossary-card-group-label {
+  margin: 0.15rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.glossary-card-group-label ~ .glossary-card-group-label {
+  margin-top: 0.5rem;
+}
+
+/* Key concepts card: same accent-left card as the glossary card; each item
+   is an authored `**Term** — sentence` markdown line. */
+.key-concepts-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.key-concepts-list li {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.key-concepts-list li::marker {
+  color: var(--accent);
+}
+
+.key-concepts-list li p {
+  margin: 0;
+}
+
+.glossary-page {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+.glossary-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.glossary-entry {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: 0.9rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px dashed var(--border);
+}
+
+.glossary-entry:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.glossary-term-name {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--accent);
+  scroll-margin-top: 4rem;
+}
+
+.glossary-def {
+  margin: 0;
+}
+
+.glossary-def p {
+  margin: 0 0 0.45rem;
+  color: var(--text);
+}
+
+.glossary-example {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.glossary-example-label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--secondary);
+}
+
+@media (max-width: 640px) {
+  .glossary-entry {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+/* --- DataTable: shared table pattern (DataTable component + prose tables) --- */
+
+.data-table {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: 0.92rem;
+  margin: 0 0 1rem;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.6rem 0.9rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.data-table th {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(45, 212, 191, 0.06);
+}
+
+.data-table td {
+  color: var(--text);
+  opacity: 0.92;
+}
+
+.data-table tbody tr:last-child td,
+.data-table tbody tr:last-child th {
+  border-bottom: none;
+}
+
+/* --- Story metrics table (per-section results, replaces callout chips) --- */
+
+.story-metrics-table {
+  font-size: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.story-metrics-table th,
+.story-metrics-table td {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* run + metric columns read left, numeric columns right */
+.story-metrics-table th:nth-child(-n + 2),
+.story-metrics-table td:nth-child(-n + 2) {
+  text-align: left;
+}
+
+.story-metrics-table .value {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.story-metrics-table .delta.improved {
+  color: var(--ok);
+}
+
+.story-metrics-table .delta.regressed {
+  color: var(--danger);
+}
+
+/* --- Metrics table --- */
+
+.metrics-table {
+  font-size: 0.9rem;
+}
+
+.metrics-table th,
+.metrics-table td {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.metrics-table th:first-child,
+.metrics-table td:first-child {
+  text-align: left;
+}
+
