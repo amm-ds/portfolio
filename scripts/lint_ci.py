@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Validate CI workflow files and Makefile consistency (catches the class of bug
-that broke ci.yml in wave 13 — unquoted colons in step names — before push).
+"""Validate CI workflow files, Makefile consistency, and the documentation
+gate (catches the class of bug that broke ci.yml in wave 13 — unquoted colons
+in step names — before push).
 
 Run: uv run python scripts/lint_ci.py
 """
@@ -12,6 +13,10 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "scripts"))
+
+import check_docs  # noqa: E402
+
 errors: list[str] = []
 
 
@@ -40,6 +45,7 @@ def check_makefile() -> None:
 if __name__ == "__main__":
     check_workflows()
     check_makefile()
+    errors.extend(check_docs.collect_errors())
     if errors:
         for e in errors:
             print("ERROR:", e)

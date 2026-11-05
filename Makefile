@@ -55,7 +55,7 @@ exp-run: ## queue a params experiment: make exp-run P=02-demand-forecasting PARA
 exp-show: ## show experiments: make exp-show P=02-demand-forecasting
 	cd projects/$(P) && uv run dvc exp show
 
-lint-ci: ## Validate workflow YAML + Makefile consistency
+lint-ci: ## Validate workflow YAML + Makefile + docs gate
 	uv run python scripts/lint_ci.py
 
 lint-story: ## Plain-language lint over projects/*/story.yaml

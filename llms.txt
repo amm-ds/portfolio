@@ -1,0 +1,74 @@
+# amm-ds / portfolio
+
+> Reproducible ML/AI engineering portfolio: 13 end-to-end case studies under
+> `projects/`, a FastAPI + React showcase (`apps/`), shared libraries
+> (`libs/`), and an mkdocs site (`docs/`). Every public number traces to a
+> committed artifact (`reports/metrics.json`) and re-runs from a clean clone
+> via DVC pipelines.
+
+## What this repository is
+
+- Public portfolio + freelancing site. Owner: github.com/amm-ds.
+- Each `projects/NN-*/` is one experiment: `portfolio.yaml` (registry card),
+  `story.yaml` (case-study article), `src/`, `tests/`, `reports/` (committed
+  metrics/figures), `DESIGN.md` (requirements/options/decision record),
+  `dvc.yaml` (pipeline). Python 3.12, single uv workspace.
+- `apps/showcase-api` (FastAPI) serves `/projects`, `/demos`, stories,
+  figures, live demo endpoints, `POST /contact/unlock`.
+  `apps/showcase-web` (Vite + React + TS) is the terminal-style SPA.
+  `apps/agent-chat` is a lift-out-able pydantic-ai chatbot template with its
+  own uv workspace, specs, and ADRs.
+
+## Entry points for agents
+
+- [AGENTS.md](AGENTS.md) — agent-facing quick reference (layout, gates, dev servers).
+- [docs/engineering/repo-conventions.md](docs/engineering/repo-conventions.md) — the rules every change follows.
+- [docs/engineering/code-quality-guidelines.md](docs/engineering/code-quality-guidelines.md) — review bar (ponytail, thermo-nuclear, pstack).
+- [README.md](README.md) — project table with pinned results, stack, live endpoints.
+
+## Docs surface (published at https://amm-ds.github.io/portfolio/)
+
+- [docs/index.md](docs/index.md) — site home; [docs/projects/](docs/projects/index.md) — the 13 case studies.
+- [docs/architecture/platform.md](docs/architecture/platform.md) — reference architecture.
+- [docs/architecture/adr/](docs/architecture/adr/index.md) — architecture decision records 0001–0007 (explanation, Diátaxis).
+- [docs/runbooks/](docs/runbooks/pipeline-restore.md) — drift response, LLM cost incident, pipeline restore (how-to, Diátaxis).
+- [docs/data-registry/](docs/data-registry/index.md) — dataset cards with pinned URLs + checksums (reference, Diátaxis).
+- [docs/engineering-playbook.md](docs/engineering-playbook.md) — review culture.
+- [deploy/DEPLOYMENT-REPORT.md](deploy/DEPLOYMENT-REPORT.md) and [deploy/DEPLOY.md](deploy/DEPLOY.md) — deployment options and cutover checklist.
+
+## How to run the gates
+
+```bash
+uv run ruff check . && uv run ruff format --check . && uv run mypy libs projects apps
+uv run pytest -q
+uv run python scripts/lint_ci.py           # workflow YAML + Makefile + docs gate
+uv run python scripts/check_docs.py        # markdown links, fenced-code languages, glossary anchors
+uv run python scripts/lint_story_language.py
+uv run python scripts/check_short_copy.py --check
+uv run python scripts/check_demo_contract.py
+uv run python scripts/gen_static_registry.py --check
+uv run python scripts/gen_story_short.py --check
+uv run python scripts/gen_route_manifest.py --check
+cd apps/showcase-web && npm ci && npm test && npm run lint && npm run build
+uv run mkdocs build --strict
+```
+
+Agents do not run `uv sync`/`uv lock` or git mutations — the session owner does.
+
+## Conventions that bite
+
+- Truth in copy: numbers must exist in a committed artifact; never restate
+  `story.yaml: short_version` by hand — regenerate with
+  `scripts/gen_story_short.py` and let `check_short_copy.py --check` prove it.
+- Generated registries (`staticRegistry.ts`, `storyShort.ts`,
+  `route-manifest.json`, sitemap) are rebuilt by their scripts, never edited.
+- Generated figures/tables in READMEs carry a `<!-- RESULTS:FILLED -->`-style
+  marker — do not hand-edit generated blocks.
+- The showcase API enumerates projects at startup — restart it after adding
+  or renaming a project.
+- Project READMEs follow one skeleton (What it is / Why / Quickstart /
+  Results / Limits / Reproduce) and carry a `## Common errors` block with the
+  first failure a new runner actually hits; see repo-conventions.md §Documentation.
+- Docs filing follows Diátaxis: runbooks = how-to, ADRs = explanation,
+  data-registry = reference. Copy rule: executable commands over
+  click-directives; one concept per page; code samples first.

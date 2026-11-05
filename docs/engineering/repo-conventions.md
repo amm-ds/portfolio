@@ -45,6 +45,32 @@ conclusions`. Renderer behavior depends on the ids — keep them stable.
   `docs/data-registry/` linked from `registry/README.md` and
   `docs/data-registry/index.md`.
 
+## Documentation
+
+- `llms.txt` at the repository root maps the repo for AI agents (layout,
+  entry points, gates, conventions); `docs/llms.txt` maps the published site.
+  Keep both under ~120 lines; mkdocs copies `docs/llms.txt` into the build as
+  a static file (no wiring needed — verify `site/llms.txt` after
+  `uv run mkdocs build --strict` if the layout changes).
+- `scripts/check_docs.py` is the docs gate: relative markdown links must
+  resolve to a file/heading anchor (README.md, `projects/*/README.md`,
+  `docs/**`), fenced code blocks need a language tag, and `/glossary#slug`
+  anchors referenced from `apps/showcase-web/src` must exist in
+  `glossary.json`. It runs in CI (gate job) and through
+  `uv run python scripts/lint_ci.py`; fix what it finds — do not relax it.
+- Project READMEs follow one skeleton: What it is / Why / Quickstart /
+  Results / Limits / Reproduce (heading wording may vary — map equivalents;
+  rename only when a section is genuinely missing).
+- Every project README carries a `## Common errors` block: the one failure a
+  new runner actually hits, as a `| symptom | cause | fix |` row with
+  executable fix commands (the agent-chat template's `specs/operations.md` is
+  the model). If the equivalent already exists in the file, skip and say so.
+- Diátaxis filing: runbooks are how-to, ADRs (and audits) are explanation,
+  the data registry is reference; the ADR index is
+  `docs/architecture/adr/index.md`.
+- Copy rule: executable commands over click-directives — a reader must be
+  able to run what the docs say; one concept per page; code samples first.
+
 ## Commits
 
 Imperative summary + body; one logical change per commit. Agents do not run

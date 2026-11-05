@@ -123,6 +123,11 @@ jobs:
             if (gz > 250 * 1024) fail = true;
           }
           if (fail) { console.error('bundle budget exceeded (250 KB gzip)'); process.exit(1); }"
+      - name: Docs gate (links, code fences, glossary anchors)
+        # Relative markdown links must resolve to a file/anchor, fenced code
+        # blocks need a language tag, /glossary#slug anchors must exist.
+        if: needs.changes.outputs.python == 'true' || needs.changes.outputs.docs == 'true'
+        run: uv run python scripts/check_docs.py
       - name: Docs build (strict)
         if: needs.changes.outputs.docs == 'true'
         run: uv run mkdocs build --strict

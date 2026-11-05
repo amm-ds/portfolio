@@ -64,7 +64,7 @@ Supporting (kept minimal per project): `polars`, `numpy`, `typer`, `optuna`, `se
 
 ## 4. Monorepo Architecture
 
-```
+```text
 amm-ds/portfolio
 ├── .github/
 │   ├── workflows/
@@ -119,7 +119,7 @@ amm-ds/portfolio
 1. **uv workspace** — root `pyproject.toml` declares `[tool.uv.workspace] members = ["libs/*", "projects/*"]`; shared deps pinned once; `torch` only where needed (02, 04).
 2. **`libs/` is mandatory and load-bearing.** Six projects duplicating config/schema/eval code would read mid-level. `portfolio-core` (contracts, config, plotting themes, synthetic generators) and `portfolio-eval` (metrics protocols, eval report builders, RAG faithfulness checks) are the platform.
 3. **Identical internal layout per project:**
-   ```
+   ```text
    projects/0X-name/
    ├── pyproject.toml
    ├── README.md              # problem, design summary, results, reproduce block

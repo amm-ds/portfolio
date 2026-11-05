@@ -1,0 +1,68 @@
+# amm-ds — ML/AI Engineering Portfolio (site map)
+
+> Published documentation for https://amm-ds.github.io/portfolio/ — one
+> reproducible case study per project, the platform's engineering record, and
+> the services page. Filed by Diátaxis: tutorials (how-this-was-built),
+> how-to (runbooks), reference (data registry, ADR index), explanation
+> (ADRs, audits).
+
+## Start here
+
+- [index.md](index.md) — home: flagships (07 mobility, 01 RAG) with pinned measured results.
+- [projects/index.md](projects/index.md) — the 13 case studies at a glance; each page links problem → design record → evaluation artifacts.
+
+## Projects (case studies)
+
+Each `projects/NN-*.md` is one experiment rendered from its `story.yaml`
+(background → objectives → data → EDA → training → evaluation → results →
+conclusions), with the honest delta vs the naive baseline:
+
+- [01 RAG & Agentic AI Assistant](projects/01-rag-agent.md) — cited answers from a pinned 593-article corpus; retrieval recall@5 0.831; auditable, not unattended-trustworthy.
+- [02 Demand Forecasting](projects/02-demand-forecasting.md) — Walmart M5 full panel: 30,490 series, official hierarchical WRMSSE 0.6161 vs 0.8929 naive.
+- [03 Anomaly Detection over Telemetry](projects/03-anomaly-detection.md) — NAB at a 2% alert budget; page the alert stream, not the detector score.
+- [04 NLP Classification](projects/04-nlp-classification.md) — AG News 120k fine-tune, 0.9460 macro-F1; keyword routing keeps 3 of 4 items cheap.
+- [05 Churn Modeling](projects/05-ml-pipeline-churn.md) — sklearn pipelines, cost-aware HPO; decision cost −41.9% with a bootstrap CI.
+- [06 Routing Optimization](projects/06-routing-optimization.md) — hand-written ALNS within 4.23% of best-known on 56 Solomon VRPTW instances.
+- [07 Urban Mobility Demand Intelligence](projects/07-open-data-mobility.md) — 41.2M trips, zone-hour forecasting −28.3% vs persistence; live drift observatory.
+- [08 LLM Inference & Serving](projects/08-inference-serving.md) — five local serving setups, latency percentiles vs concurrency, GGUF-vs-MLX panel.
+- [09 Agentic Workflows](projects/09-agentic-workflows.md) — plan-act-review loop, fixed tools and budgets; 15/15 tuning tasks, sealed held-out set.
+- [10 Uplift & Experimentation](projects/10-uplift-experimentation.md) — Hillstrom RCT: T/X-learner uplift, CUPED, Qini and profit curves.
+- [11 DataFrame Engines Benchmark](projects/11-data-engineering.md) — ten tasks × pandas/Polars/DuckDB/sqlite behind a parity gate; Polars ×19.2.
+- [12 Tabular ML & Deep Learning Lifecycle](projects/12-tabular-ml-lifecycle.md) — seeded ladder to a hand-written PyTorch MLP; 25.4 test MAE, bootstrap CIs.
+- [13 Model API Serving & Docker](projects/13-model-serving.md) — ONNX behind a parity gate, FastAPI service, load harness, measured image.
+
+## Engineering record
+
+- [engineering-playbook.md](engineering-playbook.md) — review culture and the PR bar.
+- [site/how-this-was-built.md](site/how-this-was-built.md) — the tools-and-process story, first person.
+- [audits/](audits/pre-publish-2026-10-14.md) — pre-publish review, external-audit response, productization gap report, 2026-11 production assessments.
+
+## Architecture (explanation + reference)
+
+- [architecture/platform.md](architecture/platform.md) — the reference architecture.
+- [architecture/adr/index.md](architecture/adr/index.md) — ADR index: eight decision records with one-line takeaways.
+
+## Operations (how-to)
+
+- [runbooks/drift-response.md](runbooks/drift-response.md) — what to do when the drift observatory fires.
+- [runbooks/llm-cost-incident.md](runbooks/llm-cost-incident.md) — capping a runaway LLM bill.
+- [runbooks/pipeline-restore.md](runbooks/pipeline-restore.md) — restoring a DVC pipeline from a clean clone.
+
+## Data (reference)
+
+- [data-registry/index.md](data-registry/index.md) — every dataset with pinned URLs, checksums, and license notes.
+
+## Apps
+
+- [apps/chatbot-agent.md](apps/chatbot-agent.md) — the lift-out-able agent-chat template (pydantic-ai + FastAPI + pgvector) and its specs.
+
+## Services
+
+- [site/services.md](site/services.md) — freelance offerings (AI/LLM systems, ML, optimization, data engineering, MLOps, dashboards, full-stack).
+- [site/about.md](site/about.md) — who is behind this. [site/contact.md](site/contact.md) — how to start an engagement.
+
+## Repo source of truth
+
+The site renders `docs/` in the GitHub repository; the runnable code, tests,
+and reproduction commands live at https://github.com/amm-ds/portfolio (root
+`llms.txt` there maps the repo for agents).
