@@ -182,3 +182,17 @@ to a node outside the subgraph (also triggered by chains like
 silently became vertical poles (up to 1931px tall). The two-row wins
 (01 background, 09 objectives/eda, 11 conclusions) work because their
 subgraphs connect subgraph-to-subgraph only.
+
+## Phase 2 outcome — React Flow pilot (2026-11-05)
+
+Shipped: `@xyflow/react` v12 viewer behind a new ` ```diagram <spec-id> ` fence
+(lazy chunk, ~209 kB, main bundle unchanged). Pilots live on 09-agentic-workflows
+(agent loop with budgets in the inspector) and 04-nlp-classification (routing
+topology with τ, escalation rate, fresh macro-F1). Mermaid keeps its lane for
+docs-style flows; Plotly keeps all data figures.
+
+Follow-up candidates from the pilot: 02's routing architecture, 11's benchmark
+harness flow, 13's serving topology (React Flow); deployment-architecture pages
+(D2, only if a Go build step is ever accepted); 03's sensor graphs (Cytoscape,
+when a network-analysis story exists). Polish item: auto-height canvases for
+single-rank topologies.

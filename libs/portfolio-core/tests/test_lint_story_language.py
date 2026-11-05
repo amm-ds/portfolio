@@ -269,6 +269,20 @@ def test_block_style_figures_are_counted(tmp_path):
     assert not any(f.rule == "figure-cap" for f in findings)
 
 
+def test_react_flow_diagram_counts_as_a_visual(tmp_path):
+    body = (
+        "project_id: 99-test\n"
+        "sections:\n"
+        "  - id: background\n"
+        "    text_md: |\n"
+        "      ```diagram 04-routing\n"
+        "      ```\n\n"
+        "      **Business summary:** the interactive routing topology.\n"
+    )
+    findings = _lint(tmp_path, body)
+    assert not any(f.rule == "no-visual" for f in findings)
+
+
 def test_changelog_in_conclusions_requires_revision_notes_heading(tmp_path):
     body = (
         "project_id: 99-test\n"

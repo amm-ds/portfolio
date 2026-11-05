@@ -1,6 +1,7 @@
 import { createElement, Fragment, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { MermaidDiagram } from "../components/MermaidDiagram";
+import { LazyFlowDiagram } from "../components/diagrams/LazyFlowDiagram";
 import { glossaryEntries } from "./glossary";
 
 // Minimal, safe markdown → React renderer. Supports what story.yaml prose
@@ -266,6 +267,10 @@ function renderBlock(lines: string[], keyPrefix: string, state: GlossaryLinkStat
 function renderCodeBlock(code: string, lang: string, keyPrefix: string): ReactNode {
   if (lang === "mermaid") {
     return <MermaidDiagram key={keyPrefix} code={code} />;
+  }
+  const diagram = /^diagram\s+(\S+)$/.exec(lang);
+  if (diagram) {
+    return <LazyFlowDiagram key={keyPrefix} specId={diagram[1]} />;
   }
   return (
     <pre key={keyPrefix} className="code-block">

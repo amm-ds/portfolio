@@ -128,8 +128,8 @@ Figures (in `reports/figures/`, `.html` + `.json` per figure):
 `suite_summary` (outcomes by split: tuning × 4 graders, held-out answers,
 should-fail probes), `tool_usage_matrix` (captured calls per task × tool),
 `node_waterfall` (latency stacked per graph visit), `cost_latency_bars`
-(tokens, cost, latency per task). The workflow graph itself is a mermaid
-diagram in `story.yaml` and the docs page. Every record's `tool_calls` trace
+(tokens, cost, latency per task). The workflow graph is interactive React Flow
+in `story.yaml` and mermaid on the docs page. Every record's `tool_calls` trace
 shows each tool invocation with args, latency, result size, and success.
 
 ## Cost

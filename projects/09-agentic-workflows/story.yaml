@@ -36,30 +36,7 @@ sections:
       the $2.00 suite cap. Data: a synthetic 12-document handbook plus
       read-only retrieval over 3,589 Wikipedia chunks (CC BY-SA).
 
-      ```mermaid
-      flowchart LR
-          subgraph GRAPH["typed agent graph - pydantic-graph"]
-              PL["Plan node - typed plan: steps + tool calls"]
-              AP{"consequential run?"}
-              HP["human checkpoint - approve, reject, or park"]
-              EX["Execute node - bounded retries"]
-              CR["Critique node - audits tools vs plan"]
-              RES["WorkflowResult - typed answer"]
-              FAIL["failure End - typed message"]
-          end
-          TR["StepTrace ledger<br/>every transition recorded"]
-          PL --> AP
-          AP -->|yes| HP
-          AP -->|no| EX
-          HP -->|approve| EX
-          HP -->|reject + feedback| PL
-          HP -->|park / resume| HP
-          EX -->|repair, within cap| EX
-          EX --> CR
-          CR -->|revise once| EX
-          CR -->|pass| RES
-          EX -->|retries exhausted| FAIL
-          EX --> TR
+      ```diagram 09-agent-loop
       ```
 
       Follow the workflow graph from Plan to ledger: Plan types the

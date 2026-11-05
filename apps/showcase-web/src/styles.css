@@ -2522,6 +2522,278 @@ button:disabled {
   justify-content: center;
 }
 
+/* React Flow pilot: lazy, read-only canvas + evidence inspector. */
+.flow-diagram {
+  position: relative;
+  margin: 1.6rem 0;
+  overflow: hidden;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+}
+
+.flow-diagram--loading {
+  min-height: 520px;
+}
+
+.flow-diagram__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  padding: 0.8rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.flow-diagram__title {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.flow-diagram__hint {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.flow-diagram__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.flow-diagram__body.has-inspector {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.flow-diagram__canvas {
+  position: relative;
+  min-width: 0;
+  height: 520px;
+  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.16) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.flow-diagram__canvas .frame-skeleton {
+  z-index: 5;
+}
+
+.flow-diagram .react-flow__node {
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.flow-diagram .react-flow__node:focus-visible {
+  outline: 3px solid var(--secondary);
+  outline-offset: 4px;
+}
+
+.flow-node {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  min-height: 82px;
+  padding: 0.7rem 0.8rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-left-width: 4px;
+  border-radius: 8px;
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.2);
+}
+
+.flow-node--source,
+.flow-node--data {
+  border-color: var(--secondary);
+}
+
+.flow-node--tool {
+  border-color: #a78bfa;
+}
+
+.flow-node--model {
+  border-color: var(--ok);
+}
+
+.flow-node--output {
+  border-color: var(--muted);
+}
+
+.flow-node__kind,
+.flow-inspector__kind {
+  color: var(--muted);
+  font-size: 0.58rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.flow-node__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.flow-node__action {
+  margin-top: auto;
+  color: var(--accent);
+  font-size: 0.56rem;
+}
+
+.react-flow__node.selected .flow-node {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 2px var(--accent-glow), 0 7px 18px rgba(0, 0, 0, 0.25);
+}
+
+.flow-diagram .react-flow__handle {
+  width: 6px;
+  height: 6px;
+  background: var(--border);
+  border: 0;
+  pointer-events: none;
+}
+
+.flow-diagram .react-flow__edge-textbg {
+  stroke: var(--border);
+  stroke-width: 0.5;
+}
+
+.flow-diagram .react-flow__controls {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.flow-diagram .react-flow__controls-button {
+  width: 30px;
+  height: 30px;
+  color: var(--text);
+  background: var(--surface);
+  border-bottom-color: var(--border);
+}
+
+.flow-diagram .react-flow__controls-button:hover {
+  background: var(--surface-hover);
+}
+
+.flow-diagram .react-flow__controls-button svg {
+  fill: currentColor;
+  max-width: 12px;
+  max-height: 12px;
+}
+
+.flow-diagram .react-flow__attribution {
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.flow-diagram .react-flow__attribution a {
+  color: var(--muted);
+}
+
+.flow-inspector {
+  min-width: 0;
+  padding: 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.flow-inspector__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.flow-inspector h3 {
+  margin: 0.35rem 0 0;
+  color: var(--text);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.flow-inspector__close {
+  flex: 0 0 32px;
+  min-height: 32px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.flow-inspector__source {
+  margin: 0.8rem 0;
+  color: var(--accent);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.flow-inspector ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.flow-inspector li {
+  margin-bottom: 0.75rem;
+}
+
+.flow-inspector li::marker {
+  color: var(--accent);
+}
+
+.flow-diagram__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 0.64rem;
+}
+
+.flow-legend--task {
+  color: var(--secondary);
+}
+
+.flow-legend--result {
+  color: var(--accent);
+}
+
+.flow-legend--error {
+  color: var(--danger);
+}
+
+.flow-diagram-fallback {
+  max-height: 520px;
+  overflow: auto;
+}
+
+@media (max-width: 800px) {
+  .flow-diagram__body.has-inspector {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow-inspector {
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+
+  .flow-diagram__canvas {
+    height: 460px;
+  }
+}
+
 /* --- Live-demo banner on the project detail page: prominent panel between
    the detail header and the case study. --- */
 

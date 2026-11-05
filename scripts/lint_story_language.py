@@ -25,8 +25,8 @@ Checks (per story.yaml):
           in that subsection only
   ERROR   bare "pp" for percentage points — write "pp." (a bare "pp" reads as
           "pages"); "pp." is a protected token for sentence splitting
-  WARNING section with no figure and no mermaid diagram — every section should
-          carry a visual (story template: at least one per section)
+  WARNING section with no figure and no mermaid/React Flow diagram — every
+          section should carry a visual (story template: at least one per section)
   WARNING glossary term (apps/showcase-web/src/lib/glossary.json) used in
           section prose but never in a position the renderer auto-links
           (all its occurrences are inside code spans/fenced blocks, which
@@ -556,15 +556,15 @@ def _check_figures(
                     f"{len(figs)} figure cards; the showcase renders at most 3 per section",
                 )
             )
-        has_mermaid = re.search(r"^\s*```mermaid", text, re.MULTILINE) is not None
-        if not figs and not has_mermaid:
+        has_diagram = re.search(r"^\s*```(?:mermaid|diagram)\b", text, re.MULTILINE) is not None
+        if not figs and not has_diagram:
             warnings.append(
                 Finding(
                     "WARNING",
                     project,
                     f"section {sid}",
                     "no-visual",
-                    "section has no figure card and no mermaid diagram",
+                    "section has no figure card and no diagram",
                 )
             )
 

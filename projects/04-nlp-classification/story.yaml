@@ -13,22 +13,7 @@ sections:
       ones — hence the router. The system diagram shows the confidence
       router that keeps the first's quality at the second's price.
 
-      ```mermaid
-      flowchart LR
-        subgraph In["Input"]
-          A["AG News item"]
-        end
-        subgraph Cheap["Keyword path - free"]
-          K["TF-IDF + logistic regression"]
-        end
-        subgraph Expert["Transformer path"]
-          T["DistilBERT, all 120k rows"]
-        end
-        A --> C{"Keyword confidence<br/>at or above threshold?"}
-        C -->|"yes: about 3 of 4 items"| K
-        C -->|"no: the uncertain quarter"| T
-        K --> O["Sorted item"]
-        T --> O
+      ```diagram 04-routing
       ```
 
       Follow the arrows: about three of four items exit on the free
