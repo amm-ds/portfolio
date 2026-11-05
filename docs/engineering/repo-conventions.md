@@ -45,6 +45,19 @@ conclusions`. Renderer behavior depends on the ids — keep them stable.
   `docs/data-registry/` linked from `registry/README.md` and
   `docs/data-registry/index.md`.
 
+## Metrics storage
+
+- **Headline `reports/metrics.json` belongs in git.** Small, human-diffable
+  evidence files (a few KB) must be readable on a fresh CI checkout without
+  a `dvc pull`. Any test or check that cites a number must be able to read it
+  from the repo directly.
+- **Large derived data stays DVC-tracked** (prepared panels, parquet
+  payloads, model binaries). DVC-outs are allowed to be absent locally until
+  `dvc repro` regenerates them.
+- Exceptions: projects 11 and 12 keep their metrics as DVC outs for now —
+  checks read those projects' committed `README.md` instead (same printed
+  numbers). New projects follow the git-first convention above.
+
 ## Documentation
 
 - `llms.txt` at the repository root maps the repo for AI agents (layout,
