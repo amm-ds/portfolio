@@ -680,6 +680,11 @@ describe("ProjectsIndex", () => {
     const card = block.querySelector(".app-card")!;
     expect(card).not.toBeNull();
     expect(card.querySelector("img")!.getAttribute("src")).toBe("/apps/agent-chat-approval.png");
+    // compact app cards: capped screenshot height (house rule)
+    const css = readFileSync("src/styles.css", "utf8");
+    const shotRule = css.match(/\.app-card__shot \{[\s\S]*?\n\}/)![0];
+    expect(shotRule).toContain("height: 180px;");
+    expect(shotRule).toContain("object-fit: cover;");
     const links = [...card.querySelectorAll("a")].map((a) => [
       a.textContent,
       a.getAttribute("href"),
