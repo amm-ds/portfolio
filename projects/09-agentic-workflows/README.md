@@ -149,6 +149,13 @@ ran entirely on local Ollama: $0.00 metered of the $2.00 suite cap, with the
 hosted credentials blanked for the process so no hosted quota could be
 touched.
 
+## Limits
+
+Ready for supervised pilots, not unattended use: the one held-out miss is a
+failure-message wording gap, and the hosted-tuned 60 s latency budget is
+provider-sensitive — 7 of 9 local Ollama tasks exceed it. Suite cost
+measurements are cloud-equivalent metered rates, not invoices.
+
 ## Reproduce
 
 ```bash
@@ -194,3 +201,9 @@ network, no dependency on 01's data; one skip-marked integration test loads
 ```bash
 uv run pytest projects/09-agentic-workflows/tests
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `run-all` fails at the first LLM call | no provider configured — `LLM_BASE_URL`/`LLM_API_KEY`/`LLM_MODEL` unset and no local model (ADR-0004, no runtime mock) | hosted: set the three variables in the repo-root `.env`; local: `ollama pull qwen3.6:35b-a3b-q4_K_M`. Tasks t15/h02 additionally need 01's retrieval index — materialize it with `uv run dvc repro projects/01-rag-agent` |

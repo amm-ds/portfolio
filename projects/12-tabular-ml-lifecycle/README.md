@@ -24,7 +24,7 @@ the 8 weeks before it are validation, everything earlier is training.
 
 Everything from raw frame to metric follows one contract:
 
-```
+```text
 raw zip ──▶ sha256 gate ──▶ hour.csv ──▶ DQ gates (26 checks)
       ──▶ time split: train | validation 8wk | test 8wk (scored once)
       ──▶ features: cyclical hour/weekday/month, calendar binaries,
@@ -97,6 +97,13 @@ Key findings:
   choice used it; MAPE denominators are floored at 1 rental; one city, two
   seasons — transfer is plausible, not measured.
 
+## Limits
+
+The remaining error concentrates at rush hour and in bad weather (residual
+slices), the champion is not refit on train+validation before serving, and
+transfer to another city's system is unverified — both listed under Roadmap
+below. Probabilistic forecasts and calendar-event features are deferred.
+
 ## Reproduce
 
 **Prerequisites:** Python 3.12 via uv. On macOS, `brew install libomp` — the
@@ -119,6 +126,12 @@ sampler, LightGBM (`deterministic=True, num_threads=1`), the random forest
 ```bash
 uv run pytest projects/12-tabular-ml-lifecycle -q
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `import lightgbm` (or the LightGBM fit) fails on macOS; MLP inference mysteriously slow | the LightGBM wheel links brew's OpenMP — covered in **Prerequisites** above — and torch's default thread pool can block on the libomp it bundles (full mechanism in [DESIGN.md § Platform notes](DESIGN.md#platform-notes)) | `brew install libomp`; the thread pinning (`torch.set_num_threads(1)`, single-threaded LightGBM/RF) is already in the code — read the platform note before touching it |
 
 ## What this demonstrates for a client
 

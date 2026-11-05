@@ -184,7 +184,7 @@ That residual is a labeling-ambiguity floor, not a data-scale problem — the
 multi-label extension in the roadmap is the honest answer.
 
 Classifier serving economics — size, latency, throughput, and token cost —
-are measured in the [Serving economics](#serving-economics) table above;
+are measured in the [Serving economics](#serving-economics-probe-hardware-numbers-not-the-headline) table above;
 LLM-serving stacks (llama.cpp vs MLX on Apple Silicon) are benchmarked in
 [08 · LLM Inference & Serving](../08-inference-serving/README.md).
 
@@ -296,6 +296,14 @@ Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 
 Human-readable report: [`reports/report.html`](reports/report.html).
 
+## Limits
+
+Validation→test non-transfer is documented, and the remaining error is a
+labeling-ambiguity floor (Business/Sci-Tech), not a data-scale problem — more
+rows do not fix it; the multi-label extension in the roadmap is the honest
+answer. AG News terms are research-purposes only (see the
+[dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/)).
+
 ## Reproduce
 
 ```bash
@@ -338,6 +346,12 @@ Tests run fully offline (synthetic in-memory fixtures, mocked loader/tokenizer):
 ```bash
 uv run pytest projects/04-nlp-classification -q
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `train-nn --full-data` crawls for hours | the device ladder auto-falls back to CPU (`CUDA → MPS → CPU`), where the full 120k run is an overnight job | train on an accelerator, or scope a bounded CPU evidence run: `uv run python -m nlp_classification.cli train-nn --full-data --subset 20000 --force-cpu` |
 
 ## What this demonstrates for a client
 

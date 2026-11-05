@@ -47,6 +47,22 @@ The raw full-grid record behind the committed aggregates is versioned at
 force-added like the 02 sidecar), so the published percentiles can be
 re-aggregated with `report` without re-running hours of local inference.
 
+## Results
+
+Author run, one laptop (Apple Silicon): 19 cells / 760 requests / 0 failures.
+**MLX ≈ 2.9× GGUF tok/s** on the same models; a 4-bit mixture-of-experts model
+answers in 0.81 s per request at about $0.12 per 1M output tokens
+(electricity only). Aggregates in `reports/metrics.json`; the re-aggregable
+record in `data/bench_run.json`.
+
+## Limits
+
+Numbers are hardware-specific — one machine, one Ollama build — so the
+reusable asset is the harness for re-measuring any stack on target hardware,
+not the constants. 4-bit quantization costs serving headroom, not
+structured-output validity; no MLX build exists for qwen3.6 (recorded as a
+data point, not forced).
+
 ## Tests
 
 Offline only: percentile/tok-s math from fixture records, output validation,
@@ -57,6 +73,12 @@ full request→SSE-parse→aggregate→BenchRun path.
 ```bash
 uv run pytest projects/08-inference-serving/tests
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `bench` fails with a connection error or "model not found" | it drives a live Ollama — the daemon must run and the cell models must be pulled | start Ollama, then `ollama pull qwen3.6:35b-a3b-q4_K_M`, `ollama pull gemma4:31b`, `ollama pull gpt-oss:20b` (`--full` adds the remaining arms); `report` stays offline |
 
 ## Cost
 

@@ -88,7 +88,7 @@ Serving (showcase API): `uv run python -m mobility.cli build-serving-artifact`
 persists the tuned GBM pair + zone reference to `reports/models/serving/`
 (contract: SERVING.md). Live endpoint verified:
 
-```
+```text
 POST /projects/07-open-data-mobility/forecast {"zone_id": 132, "features": {...}}
 → {"zone_id":132,"borough":"Queens","zone":"JFK Airport","prediction":223.827,"p90":251.811,"service":"yellow"}
 ```
@@ -185,6 +185,13 @@ pipeline peak ≈ 1.8 GB), the complete zone×hour grid reindex, temporal-split
 discipline (TimeSeriesCV with 24 h embargo for NN early stopping), and the
 pipeline diagram.
 
+## Limits
+
+Sparse N/A-borough zones under-cover at 84.7% (vs 90.8% overall), weather
+contributes ≈ 0 to point MAE — its value is the directional elasticity
+signal, not forecast accuracy — and causal weather claims are deferred to a
+different study contract.
+
 ## Reproduce
 
 ```bash
@@ -205,6 +212,12 @@ uv run pytest . -q
 
 First run downloads ~1.5 GB (12 monthly Parquet files + zone lookup + NOAA;
 checksum-pinned in `data/raw/checksums.json`, verified loudly on every run).
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| a stage above `download` fails on a missing raw parquet | stages do not fetch — `data/raw/` must be materialized first | run `uv run python -m mobility.cli download` (or `cli all`, which starts with it); on a tight-RAM machine close memory hogs — the bounded 12-month yellow slice is the supported configuration |
 
 ## What this demonstrates for a client
 

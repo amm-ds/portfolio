@@ -70,6 +70,22 @@ from the context.
   probe grid) — the comparison is paired.
 - Fresh-process RSS probed per backend; nearest-rank percentiles.
 
+## Results
+
+Author run, one laptop (no GPU, one uvicorn worker): the reproduction gate is
+exact (**25.4316 vs 25.4316**) and the ONNX parity max-abs is **7.15e-07** on
+512 seeded probe rows (tolerance 1e-4). Single-request **p50 1.6 ms** with a
+**~950 req/s** knee near concurrency 4 and zero errors in every measured
+cell; the batch endpoint reaches **~56k rows/s** at size 128. Full record in
+`reports/metrics.json`.
+
+## Limits
+
+Numbers come from one machine with no GPU and a single worker — the paired
+harness is the reusable asset, not the constants. The image measures
+**6.47 GB**, of which ~3.3 GB is unused CUDA; the per-prediction electricity
+cost is a declared-assumption estimate (65 W, $0.30/kWh), not a metered bill.
+
 ## Tests
 
 Offline, synthetic data only, deterministic; no network, no daemon:
@@ -81,6 +97,12 @@ uv run pytest
 Parity gate (native vs ONNX on the probe grid), schema 422s, batch == per-row,
 harness statistics against fixtures, training-path determinism, and
 lint-level Dockerfile/compose contract checks.
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `docker compose ... up --build` cannot connect / `cli serve` dies on bind | the Docker daemon is down, or port 8137 is already taken | start the daemon (`open -a Docker` on macOS); free the port (`lsof -nP -iTCP:8137 -sTCP:LISTEN`) or move the service — `serve --port 8138` and `docker run -p 8138:8000`; `cli docker`/`benchmark` record an honest not-measured note when no daemon answers |
 
 ## Cost
 

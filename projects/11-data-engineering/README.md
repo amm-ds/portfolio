@@ -147,6 +147,14 @@ Figures (`reports/figures/`, JSON + HTML for the showcase API):
 - `normalized_heatmap` — each task scaled to its fastest engine; the
   write_parquet × sqlite cell is an honest n/a gap.
 
+## Limits
+
+sqlite is the honest classical baseline, not a competitor — correct on every
+SQL task but ~29× slower than pandas end-to-end because the file→database
+conversion is timed, not hidden. Speedups are this machine's map, not a
+universal constant; the out-of-core cold-cache track and further engines are
+deferred (roadmap below).
+
 ## Reproduce
 
 ```bash
@@ -163,6 +171,12 @@ Tests (offline, synthetic track only):
 ```bash
 uv run pytest -q            # or with the CI flags: -n 2 --timeout=900
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `evaluate` (or `--scalability`/`build-report`) fails on a missing prepared file | the prepared layout (`data/prepared/`, ~157 MB CSV + hive partitions) is derived, not committed | run `uv run python -m data_engineering.cli fetch-data` first (sha256-pinned download + derive, re-verified on every run), or `uv run dvc repro` |
 
 ## What this demonstrates for a client
 

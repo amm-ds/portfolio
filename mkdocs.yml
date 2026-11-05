@@ -59,6 +59,7 @@ nav:
   - Architecture:
       - Reference architecture: architecture/platform.md
       - ADRs:
+          - architecture/adr/index.md
           - ADR-0001 uv workspace: architecture/adr/0001-uv-workspace-monorepo.md
           - ADR-0002 pydantic contracts: architecture/adr/0002-pydantic-contracts-everywhere.md
           - ADR-0003 DVC pipelines: architecture/adr/0003-dvc-pipeline-reproducibility.md

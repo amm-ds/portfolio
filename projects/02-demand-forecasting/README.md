@@ -193,6 +193,13 @@ the test origin for a deterministic 48-series curated catalog, feeding the
 presented surface; the UCI/synthetic tracks' files likewise remain for the
 test-suite and regenerate with `cli all --data-source uci` / `cli all`.
 
+## Limits
+
+The headline is one scored-once competition window on one (full-scale) panel —
+no claim of transfer to other hierarchies or calendars. The seasonal-naive
+floor still wins the quiet days, and the wave-32 catalog refits exist to serve
+the demo, not to generalize beyond the committed window.
+
 ## Reproduce
 
 ```bash
@@ -210,6 +217,12 @@ full-panel drift guards:
 ```bash
 uv run pytest projects/02-demand-forecasting -q
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `evaluate-m5-full` runs for hours | the full-panel headline is a **~12.9 h** overnight run by design | scope a re-run with `--series-cap 2000` (~90 min catalog pass), or use the offline pytest suite above for a smoke check |
 
 ## What this demonstrates for a client
 

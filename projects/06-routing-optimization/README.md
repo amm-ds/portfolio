@@ -255,6 +255,14 @@ Figures (`reports/figures/`, HTML + JSON for the showcase API):
   (`docs/projects/06-routing-optimization.md`).
 - `runtime` — grouped bar, solver runtime per instance (log scale).
 
+## Limits
+
+Best-known references are not proven optima (except the explicitly certified
+small cases), and the search trades fleet for distance: +3.73 mean vehicles
+vs best-known. The hinted CP-SAT cross-check could not improve any incumbent,
+so the ladder is honest about what it certifies (feasibility) and what it
+does not (optimality).
+
 ## Reproduce
 
 ```bash
@@ -273,6 +281,12 @@ Tests (offline, hypothesis property tests included):
 ```bash
 uv run pytest projects/06-routing-optimization -q
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `solve` or `evaluate` reports no instances | the Solomon archive has not been downloaded — `solve`/`evaluate` do not fetch | run `uv run python -m routing_optimization.cli download` first (checksum-pinned, idempotent), or use `cli all` which downloads as its first step |
 
 ## What this demonstrates for a client
 

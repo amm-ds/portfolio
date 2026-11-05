@@ -17,7 +17,7 @@ fully offline in CI.
 
 ## What runs
 
-```
+```text
 prepare   fetch Hillstrom (sha256-pinned) → DQ gates → two-arm frame (+ three-arm
           frame for the multi-arm read) + EDA
 train     5-fold cross-fitting → out-of-fold scores per policy:
@@ -186,6 +186,13 @@ is noisy, and the X-learner's second stage adds variance without signal here
 - Dataset identity: `data/dataset_contract.json` ·
   [dataset card](../../docs/data-registry/hillstrom.md)
 
+## Limits
+
+At $0.01 per email, mailing everyone beats uplift targeting (paired CI below
+zero) — targeting pays only when sending is costly (break-even ≈ $0.30). The
+multi-arm read is model-estimated, not a randomized three-arm fact, and the
+Qini-curve-area ranking is not established (spans zero).
+
 ## Reproduce
 
 ```bash
@@ -195,3 +202,9 @@ uv run python -m uplift_experimentation.cli all
 
 Deterministic under `seed: 42`; tests are offline (fixture slices, no
 network).
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `prepare` (or `cli all`) fails fetching Hillstrom | the sha256-pinned CSV downloads once from the registry source — it is not committed | run once with network (`uv run python -m uplift_experimentation.cli prepare` or `uv run dvc repro`); everything downstream, and the tests, run offline |

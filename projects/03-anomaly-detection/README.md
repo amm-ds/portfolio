@@ -382,6 +382,14 @@ the committed detector stands**:
   remains the cheapest load cut, and the drift-trigger recalibration stays the
   open item.
 
+## Limits
+
+Three of the 12 pinned NAB series have every labelled window inside the train
+split and are excluded from aggregates, not scored as failures. No detector
+family wins the sweep (PR-AUC 0.515–0.574), the residual-feature fix failed to
+transfer to real data, and the tuned operating point is validated on six
+windows — evidence for an operating point, not a universal constant.
+
 ## Reproduce
 
 ```bash
@@ -407,6 +415,12 @@ Tests (offline, synthetic fixtures only, ~6 s, 94% package coverage):
 ```bash
 uv run pytest projects/03-anomaly-detection -q
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `cli nab`, `nab-sweep`, `nab-tune`, or `nab-refine` fails fetching | the NAB real track downloads its checksum-pinned subset on first run (`data/nab/` is a stage out, not committed data) | run once with network — `uv run python -m anomaly_detection.cli nab` — or restore via `uv run dvc repro projects/03-anomaly-detection`; offline work stays on the synthetic track + tests |
 
 ## What this demonstrates for a client
 

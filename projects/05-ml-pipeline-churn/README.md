@@ -28,7 +28,7 @@ Pipeline** — no preprocessing happens outside the estimator, so the persisted
 artifact is safe to score on equally messy raw data and cannot leak between
 train and holdout.
 
-```
+```text
 raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSearchCV(C)
                                                               │
         ColumnTransformer                                     │

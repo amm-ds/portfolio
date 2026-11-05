@@ -204,6 +204,13 @@ minutes of wall clock.
 | Per-query latency histogram | [reports/figures/latency_histogram.html](reports/figures/latency_histogram.html) |
 | Full HTML report | [reports/report.html](reports/report.html) |
 
+## Limits
+
+Answers are auditable, not trustworthy unattended: the hosted pass kept
+unsupported claims on 18 of 65 questions, and the sealed held-out set drops
+retrieval recall to 0.600. Local-model repair is weak — the local A/B gains
+come mainly through abstention (detail under **Roadmap → Deferred** below).
+
 ## Reproduce
 
 ```bash
@@ -284,6 +291,12 @@ uv run ruff format --check projects/01-rag-agent
 uv run mypy projects/01-rag-agent
 uv run pytest projects/01-rag-agent -q
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `evaluate --ragas --verify`, `evaluate --heldout`, or `chat` prints the setup guidance and exits | no model provider answers — there is no runtime mock | pull the default local model (`ollama pull qwen3.6:35b-a3b-q4_K_M`) or set `LLM_BASE_URL`/`LLM_API_KEY` in `.env`; `evaluate --offline` is the CI-safe path |
 
 ## What this demonstrates for a client
 
