@@ -71,6 +71,27 @@ describe("FlowDiagram", () => {
     expect(screen.getByRole("button", { name: /fit view/i })).toBeInTheDocument();
   });
 
+  it("removes fact-selection prompts and hugs a single-rank canvas", async () => {
+    render(<FlowDiagram spec={ROUTING_SPEC} />);
+    await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
+    expect(screen.getByText("Scroll to zoom")).toBeInTheDocument();
+    expect(screen.queryByText(/select for/i)).toBeNull();
+    expect(document.querySelector(".flow-node__action")).toBeNull();
+    expect(document.querySelector(".flow-diagram__hint")).toBeNull();
+    expect(document.querySelector(".flow-diagram__canvas")).toHaveStyle({ height: "240px" });
+  });
+
+  it("previews the hovered node's first fact and hides it behind the inspector", async () => {
+    render(<FlowDiagram spec={AGENT_LOOP_SPEC} />);
+    const node = await screen.findByTestId("rf__node-plan");
+    fireEvent.mouseEnter(node);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent(AGENT_LOOP_SPEC.nodes[1].facts[0]);
+
+    fireEvent.click(node);
+    await screen.findByRole("complementary", { name: "Facts for Plan · typed steps + calls" });
+    await waitFor(() => expect(screen.queryByRole("tooltip")).toBeNull());
+  });
+
   it("opens the inspector with the clicked node's committed facts", async () => {
     render(<FlowDiagram spec={AGENT_LOOP_SPEC} />);
     const node = await screen.findByTestId("rf__node-plan");

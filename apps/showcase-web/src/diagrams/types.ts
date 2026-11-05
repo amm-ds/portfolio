@@ -24,8 +24,7 @@ export interface DiagramSpec {
   id: string;
   title: string;
   direction: DiagramDirection;
-  /** Canvas height in px — sized to the graph so small topologies do not
-   *  sit in a tall empty frame (default 360). */
+  /** Upper cap in px for the measured, auto-sized canvas (maximum 560). */
   canvasHeight?: number;
   nodes: readonly DiagramSpecNode[];
   edges: readonly DiagramSpecEdge[];

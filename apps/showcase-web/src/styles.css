@@ -2637,7 +2637,7 @@ button:disabled {
   letter-spacing: 0.04em;
 }
 
-.flow-diagram__hint {
+.flow-diagram__zoom-hint {
   color: var(--muted);
   font-size: 0.68rem;
 }
@@ -2722,10 +2722,6 @@ button:disabled {
   z-index: 1;
 }
 
-.flow-node--cylinder .flow-node__action {
-  color: var(--secondary);
-}
-
 .flow-node--subroutine {
   border-left: 6px double #a78bfa;
   border-right: 6px double #a78bfa;
@@ -2792,10 +2788,21 @@ button:disabled {
   line-height: 1.45;
 }
 
-.flow-node__action {
-  margin-top: auto;
-  color: var(--accent);
-  font-size: 0.56rem;
+.flow-node__preview {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(300px, 80vw);
+  padding: 0.45rem 0.6rem;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  font-size: 0.66rem;
+  line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
 }
 
 .react-flow__node.selected .flow-node {
@@ -3022,9 +3029,6 @@ button:disabled {
     border-left: 0;
   }
 
-  .flow-diagram__canvas {
-    height: 460px;
-  }
 }
 
 /* --- Live-demo banner on the project detail page: prominent panel between

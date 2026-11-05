@@ -1,10 +1,13 @@
-import { memo, useEffect, useId, useMemo, useState } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import dagre from "@dagrejs/dagre";
 import {
   Controls,
+  getNodesBounds,
   getSmoothStepPath,
+  getViewportForBounds,
   Handle,
   MarkerType,
+  NodeToolbar,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -47,6 +50,7 @@ type FlowNodeData = {
   label: string;
   kind: DiagramNodeKind;
   facts: readonly string[];
+  preview?: string;
 };
 type FlowNode = Node<FlowNodeData, "diagram">;
 type FlowEdgeData = {
@@ -66,6 +70,11 @@ const DiagramNodeView = memo(function DiagramNodeView({
   const shape = KIND_SHAPES[data.kind];
   return (
     <div className={`flow-node flow-node--${data.kind} flow-node--${shape}`}>
+      {data.preview && (
+        <NodeToolbar isVisible position={Position.Top} offset={8} className="flow-node__preview" role="tooltip">
+          {data.preview}
+        </NodeToolbar>
+      )}
       {shape === "cylinder" && (
         <svg className="flow-node__cylinder" viewBox="0 0 196 82" preserveAspectRatio="none" aria-hidden="true">
           <path
@@ -78,7 +87,6 @@ const DiagramNodeView = memo(function DiagramNodeView({
       <Handle type="target" position={targetPosition ?? Position.Left} isConnectable={false} />
       <span className="flow-node__kind">{data.kind}</span>
       <span className="flow-node__label">{data.label}</span>
-      <span className="flow-node__action">select for facts →</span>
       <Handle type="source" position={sourcePosition ?? Position.Right} isConnectable={false} />
     </div>
   );
@@ -213,18 +221,36 @@ function layoutMeasuredNodes(nodes: FlowNode[], spec: DiagramSpec): FlowNode[] {
   });
 }
 
+const MIN_CANVAS_HEIGHT = 240;
+const MAX_CANVAS_HEIGHT = 560;
+const MIN_ZOOM = 0.1;
+const FIT_PADDING = 0.12;
+
+function canvasHeightCap(spec: DiagramSpec): number {
+  return Math.min(spec.canvasHeight ?? MAX_CANVAS_HEIGHT, MAX_CANVAS_HEIGHT);
+}
+
+function autoCanvasHeight(boundsHeight: number, fittedZoom: number, spec: DiagramSpec): number {
+  return Math.min(
+    canvasHeightCap(spec),
+    Math.max(MIN_CANVAS_HEIGHT, Math.min(MAX_CANVAS_HEIGHT, boundsHeight * fittedZoom + 64)),
+  );
+}
+
 function FlowCanvas({ spec }: FlowDiagramProps) {
   const initial = useMemo(() => toFlow(spec), [spec]);
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>(initial.nodes);
   const [edges] = useEdgesState<FlowEdge>(initial.edges);
   const [laidOut, setLaidOut] = useState(false);
   const [ready, setReady] = useState(false);
+  const [canvasHeight, setCanvasHeight] = useState(() => canvasHeightCap(spec));
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [pinnedEdgeId, setPinnedEdgeId] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLDivElement>(null);
   // The inspector follows the nodes' own selection flag — one source of
   // truth, so closing it cannot disagree with the canvas selection ring.
   const selectedNode = nodes.find((node) => node.selected) ?? null;
-  const { fitView } = useReactFlow();
+  const { setViewport } = useReactFlow();
   const instructionsId = useId();
 
   const clearSelection = () => {
@@ -267,14 +293,19 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
 
   const styledNodes = useMemo(
     () =>
-      nodes.map((node) => ({
-        ...node,
-        className:
-          connected && focusId && node.id !== focusId && !touchesNode(edges, node.id, focusId)
-            ? "is-dim"
-            : undefined,
-      })),
-    [nodes, edges, connected, focusId],
+      nodes.map((node) => {
+        const preview = !selectedNode && hoveredId === node.id ? node.data.facts[0] : undefined;
+        return {
+          ...node,
+          data: { ...node.data, preview },
+          zIndex: preview ? 10 : node.zIndex,
+          className:
+            connected && focusId && node.id !== focusId && !touchesNode(edges, node.id, focusId)
+              ? "is-dim"
+              : undefined,
+        };
+      }),
+    [nodes, edges, connected, focusId, hoveredId, selectedNode],
   );
 
   useEffect(() => {
@@ -285,36 +316,46 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
   }, [laidOut, nodes, setNodes, spec]);
 
   useEffect(() => {
-    if (!laidOut) return;
+    if (!laidOut || ready) return;
     let cancelled = false;
-    // Let the positioned nodes commit and the canvas settle before fitting:
-    // a macrotask timeout alone can fire before the layout pass paints,
-    // leaving the viewport zoomed at the origin while the graph sits
-    // bottom-right. Re-fit whenever nodes change (idempotent).
+    // Fit once, after the positioned nodes commit. Selection and hover updates
+    // re-run this effect's dependencies but the ready guard prevents a re-fit.
     const raf = requestAnimationFrame(() => {
-      if (cancelled) return;
-      void fitView({ padding: 0.2, maxZoom: 1, duration: 0 });
+      const canvas = canvasRef.current;
+      if (cancelled || !canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) return;
+
+      const bounds = getNodesBounds(nodes, { nodeOrigin: [0, 0] });
+      const firstViewport = getViewportForBounds(
+        bounds,
+        canvas.clientWidth,
+        canvas.clientHeight,
+        MIN_ZOOM,
+        1,
+        FIT_PADDING,
+      );
+      const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, spec);
+      // Recenter against the auto-height canvas without changing the fitted zoom.
+      const viewport = getViewportForBounds(bounds, canvas.clientWidth, nextHeight, MIN_ZOOM, 1, FIT_PADDING);
+      setCanvasHeight(autoCanvasHeight(bounds.height, viewport.zoom, spec));
+      void setViewport(viewport, { duration: 0 });
       setReady(true);
     });
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
     };
-  }, [fitView, laidOut, nodes]);
+  }, [laidOut, nodes, ready, setViewport, spec]);
 
   return (
     <section className="flow-diagram" aria-label={spec.title}>
       <div className="flow-diagram__heading">
         <span className="flow-diagram__title">{spec.title}</span>
-        <span className="flow-diagram__hint" id={instructionsId}>
-          Hover a node to trace its connections · select for committed facts
+        <span className="flow-diagram__zoom-hint" id={instructionsId}>
+          Scroll to zoom
         </span>
       </div>
       <div className={`flow-diagram__body${selectedNode ? " has-inspector" : ""}`}>
-        <div
-          className="flow-diagram__canvas"
-          style={{ height: spec.canvasHeight ?? 360 }}
-        >
+        <div ref={canvasRef} className="flow-diagram__canvas" style={{ height: canvasHeight }}>
           {!ready && (
             <div className="frame-skeleton" aria-hidden="true">
               <span>rendering diagram…</span>
@@ -348,11 +389,9 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
             panOnDrag
             zoomOnScroll
             zoomOnPinch
-            minZoom={0.25}
+            minZoom={MIN_ZOOM}
             maxZoom={1.75}
             onlyRenderVisibleElements={false}
-            fitView
-            fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
             aria-label={`${spec.title} interactive diagram`}
             aria-describedby={instructionsId}
             ariaLabelConfig={ARIA_LABEL_CONFIG}
@@ -395,7 +434,7 @@ export function FlowDiagram({ spec }: FlowDiagramProps) {
 
   return (
     <ReactFlowProvider>
-      <FlowCanvas spec={spec} />
+      <FlowCanvas key={spec.id} spec={spec} />
     </ReactFlowProvider>
   );
 }
