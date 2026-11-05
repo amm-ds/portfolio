@@ -67,7 +67,7 @@
 .hero {
   position: relative;
   padding: 3rem 0 0.15rem;
-  max-width: 1160px;
+  max-width: 1280px;
   /* moderate stage for the terminal — tall enough to breathe, capped so the
      "where to go" block sits close under the terminal panel */
   min-height: min(68vh, 720px);
@@ -97,7 +97,7 @@
 /* centerpiece terminal: bigger than body text, centered under the hero copy;
    wide enough that the `focus` line renders on one line at desktop width */
 .hero-terminal {
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 2.75rem auto 0;
   text-align: left;
 }
@@ -226,7 +226,7 @@
   font-family: var(--mono);
   font-size: 0.9rem;
   color: var(--text);
-  margin: 1.75rem 0 3rem;
+  margin: 1.75rem 0 4rem;
   display: flex;
   align-items: baseline;
   justify-content: center;
