@@ -166,19 +166,28 @@ function metricsNumbers(project: string): number[] {
   if (!numbers) {
     const base = path.resolve(process.cwd(), "../../projects", project);
     const metricsFile = path.join(base, "reports", "metrics.json");
-    let raw: string;
     if (existsSync(metricsFile)) {
       // Python-written metrics may carry NaN/Infinity tokens (invalid strict
       // JSON); they carry no fact-checkable numbers, so neutralize them.
-      raw = readFileSync(metricsFile, "utf8").replace(/\bNaN\b/g, "null").replace(/\bInfinity\b/g, "null");
+      const raw = readFileSync(metricsFile, "utf8").replace(/\bNaN\b/g, "null").replace(/\bInfinity\b/g, "null");
       numbers = collectNumbers(JSON.parse(raw));
     } else {
-      raw = readFileSync(path.join(base, "README.md"), "utf8");
-      numbers = collectNumbers(raw);
+      numbers = collectNumbersFromText(readFileSync(path.join(base, "README.md"), "utf8"));
     }
     metricsCache.set(project, numbers);
   }
   return numbers;
+}
+
+/** Every numeric token in prose, for matching printed facts against
+ *  committed README text (thousands separators stripped). */
+function collectNumbersFromText(text: string): number[] {
+  const out: number[] = [];
+  for (const match of text.matchAll(/-?\d[\d,]*(?:\.\d+)?/g)) {
+    const value = Number(match[0].replace(/,/g, ""));
+    if (Number.isFinite(value)) out.push(value);
+  }
+  return out;
 }
 
 function matchesPrintedPrecision(metric: number, value: number, decimals: number): boolean {
