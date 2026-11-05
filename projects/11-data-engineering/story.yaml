@@ -13,22 +13,7 @@ sections:
       a seeded fallback track for CI, and numbers you can re-run from the
       README.
 
-      ```mermaid
-      flowchart LR
-        subgraph ONE["one dataset"]
-          D["NYC TLC yellow taxi<br/>January 2024, 2.96M trips"]
-        end
-        subgraph FOUR["four engines"]
-          P["pandas 2.x"]
-          PL["Polars lazy"]
-          DK["DuckDB SQL"]
-          SQ["sqlite3 stdlib"]
-        end
-        subgraph TEN["ten tasks, one contract"]
-          T["read, group-by, join<br/>window, filter, strings, sort"]
-        end
-        D --> P & PL & DK & SQ
-        P & PL & DK & SQ --> T --> C["canonical result<br/>compared + timed"]
+      ```diagram 11-engine-benchmark
       ```
 
       The point is not a winner; it is a measured map — which tasks are

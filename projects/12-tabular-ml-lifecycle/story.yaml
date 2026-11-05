@@ -18,14 +18,7 @@ sections:
       how much better than "same hour last week" can a model get, and how
       sure can we be?
 
-      ```mermaid
-      flowchart LR
-        subgraph LIFECYCLE["one pipeline, six stages"]
-          A["sha256-pinned<br/>ingest + DQ gates"] --> B["time split:<br/>train, val, test"]
-          B --> C["leakage-safe<br/>features + selection"]
-          C --> D["seeded ladder:<br/>naive to PyTorch MLP"]
-          D --> E["scored-once test<br/>+ bootstrap CI"]
-        end
+      ```diagram 12-lifecycle-pipeline
       ```
 
       Every number below traces to a committed artifact under `reports/`.

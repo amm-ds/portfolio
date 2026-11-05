@@ -12,13 +12,7 @@ sections:
     seasonal-naive floor's 0.8929: −31.0% on the same scale the M5 contest
     reports.
 
-    ```mermaid
-    graph LR
-      P["M5 panel: 30,490 series<br/>x 1,969 days"] --> F["Leakage-safe features"]
-      F --> C["8 candidates<br/>naive, LightGBM, AutoETS"]
-      C --> S["Stability screen<br/>2 selection origins"]
-      S --> E["Convex ensemble"]
-      E --> T["Final 28 days<br/>scored once, official WRMSSE"]
+    ```diagram 02-m5-pipeline
     ```
 
     One pipeline carries the full panel from raw sales to a single blended

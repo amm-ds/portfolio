@@ -12,20 +12,7 @@ sections:
       outcome at 601 versus 1,035 for contacting everyone, a 41.9% cut;
       95% bootstrap interval −485 to −343.
 
-      ```mermaid
-      flowchart LR
-        subgraph CYCLE["one retention cycle"]
-          CRM["raw CRM row<br/>21 columns"] --> PIPE["one fitted pipeline<br/>caps, flags, imputes, encodes"]
-          PIPE --> SCORE["churn probability"]
-          SCORE --> CUT{"threshold 0.175"}
-          CUT -->|"above"| LIST["contact list"]
-          CUT -->|"below"| SKIP["no contact"]
-        end
-        subgraph BILL["1,409-row holdout"]
-          LIST --> COST["601 cost units<br/>FP 1, FN 5"]
-          ALL["contact everyone: 1,035"] --> DELTA["saving -41.9%, 95% CI<br/>-485 to -343"]
-          COST --> DELTA
-        end
+      ```diagram 05-churn-cycle
       ```
 
       The cost asymmetry is the point: a false alarm spends one retention

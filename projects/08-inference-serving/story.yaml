@@ -57,22 +57,7 @@ sections:
       Every request leaves a record row, so numbers can be re-derived.
       Which setups enter, under what rules? Objectives sets the field.
 
-      ```mermaid
-      flowchart LR
-          subgraph SUITE["fixed task suite"]
-              P["8 prompts, keyword checklists<br/>enforced Answer schema"]
-          end
-          subgraph DRIVER["async load driver"]
-              SEM["semaphore: concurrency 1/2/4/8<br/>cooldown between cells"]
-          end
-          subgraph ENDPOINT["local Ollama 0.40.4"]
-              OAI["chat completions + json_schema<br/>runner auto-selected"]
-          end
-          SUITE -->|streaming httpx| DRIVER
-          DRIVER --> OAI
-          OAI --> R["per-request record<br/>latency, TTFT, tok/s, quality"]
-          R --> C["cell aggregates<br/>40 requests"]
-          C --> REP["metrics.json, report.html,<br/>figures"]
+      ```diagram 08-serving-benchmark
       ```
 
       **Business summary:** Five serving setups, 760 requests, zero failures

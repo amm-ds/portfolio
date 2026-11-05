@@ -54,24 +54,7 @@ sections:
       Read it as a promise that every box is replayable — and the bars
       for "good enough" come first.
 
-      ```mermaid
-      flowchart LR
-          subgraph SRC["public sources"]
-              TLC["TLC yellow taxis 2024<br/>41.2M trips"]
-              WX["NOAA Central Park weather"]
-          end
-          subgraph PREP["prepared panel"]
-              J["join + data-quality gates"]
-              Z["zero-filled grid<br/>265 zones, 8,784 hours"]
-          end
-          subgraph FIT["forecast"]
-              F["lag, calendar, weather features"]
-              G["tuned GBM<br/>mean + p90 twin"]
-          end
-          TLC --> J
-          WX --> J
-          J --> Z --> F --> G
-          G --> S["served three-file bundle<br/>showcase API"]
+      ```diagram 07-mobility-pipeline
       ```
 
       **Business summary:** Last quarter of 2024: the model beat the

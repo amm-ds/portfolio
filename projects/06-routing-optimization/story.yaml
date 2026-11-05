@@ -287,16 +287,7 @@ sections:
 
       **Ladder definition** (seeded, deterministic):
 
-            ```mermaid
-      flowchart LR
-          A["randomized"] --> B["nearest_neighbor"]
-          B --> C["clarke_wright"]
-          C --> D["two_opt"]
-          D --> E["two_opt_tuned (HPO)"]
-          E --> F["alns"]
-          E --> G["alns_fleet"]
-          F --> H["hinted CP-SAT"]
-          F --> I["unhinted CP-SAT"]
+      ```diagram 06-solver-ladder
       ```
 
       - `randomized` / `nearest_neighbor`: feasible floor; greedy insertion.

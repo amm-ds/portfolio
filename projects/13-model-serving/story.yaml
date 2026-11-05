@@ -19,12 +19,7 @@ sections:
       computes the same function, stand up a service, load-test it, bake it
       into an image, and write down what that costs.
 
-      ```mermaid
-      flowchart LR
-        A["re-derive champion<br/>(recipe + seed)"] --> B["export ONNX<br/>+ parity gate"]
-        B --> C["serve: native vs onnx<br/>one schema, two backends"]
-        C --> D["load-test:<br/>seeded, paired, warmed"]
-        D --> E["container:<br/>build, measure, smoke"]
+      ```diagram 13-serving-pipeline
       ```
 
       Everything below traces to a committed artifact under `reports/` or

@@ -7,23 +7,10 @@ sections:
     shows a source passage for every claim.** The architecture diagram traces the
     path: bounded corpus, CPU-only retrieval, cited draft, claim verification.
 
-    ```mermaid
-    flowchart TB
-      subgraph CR["pinned corpus to ranked passages, CPU only"]
-        direction LR
-        W["Wikipedia snapshot<br/>5 topics, 593 articles"] --> D["Dataset contract<br/>sha256-pinned"]
-        D --> E["MiniLM embeddings"]
-        E --> F["FAISS exact index"]
-        F --> R["Cross-encoder rerank"]
-      end
-      subgraph ANS["answer layer"]
-        direction LR
-        G["Hosted or local model<br/>drafts with citations"] --> V["Claim verifier<br/>0.6 support floor"] --> O["Cited answer<br/>or abstention"]
-      end
-      CR -->|"top 15 passages, then top 3"| ANS
+    ```diagram 01-rag-pipeline
     ```
 
-    Trace the path from the top: the corpus is pinned before anything
+    Trace the path left to right: the corpus is pinned before anything
     runs, CPU retrieval narrows 593 articles to three passages, a model
     drafts with citations, and the verifier cuts or refuses anything under
     the 0.6 support floor.

@@ -102,20 +102,7 @@ sections:
 
       The measurement contract diagram fixes how policies are judged.
 
-      ```mermaid
-      flowchart LR
-          subgraph ANCHOR["anchor: randomized assignment"]
-              A["Mens, Womens, control<br/>21,307/21,387/21,306"]
-          end
-          subgraph SCORES["scores, out-of-fold only"]
-              direction LR
-              S1["response model"] --- S2["T-learner"] --- S3["X-learner"]
-          end
-          subgraph JUDGE["judging"]
-              P["profit: conversions x $114<br/>- sends x cost"] --> B["1,000 paired bootstraps,<br/>same resample every policy"]
-          end
-          ANCHOR --> SCORES --> JUDGE
-          JUDGE --> V["verdict: $0.01-$0.50<br/>per email"]
+      ```diagram 10-uplift-judging
       ```
 
       Treat the measurement contract diagram as a pipeline. The randomized

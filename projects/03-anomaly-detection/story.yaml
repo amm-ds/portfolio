@@ -11,20 +11,7 @@ sections:
     is 0.527; event-aware range-F1 is 0.157. The system diagram shows
     the fix: page the deduplicated stream, not the raw score.
 
-    ```mermaid
-    flowchart LR
-      subgraph Sense["Telemetry input"]
-        NAB["NAB: 9 evaluable series"]
-        SYN["Synthetic stream"]
-      end
-      subgraph Detect["Fixed 2% budget"]
-        FE["Rolling features"] --> SC["IsolationForest scores"]
-      end
-      NAB --> FE
-      SYN --> FE
-      SC --> TH["Top-2% train threshold"]
-      TH --> B["Dedup + page cap<br/>24 h"]
-      B --> RR["Event-aware scoring<br/>16 of 17 windows"]
+    ```diagram 03-detection-pipeline
     ```
 
     Trace the path: the detector scores every minute against a
