@@ -9,9 +9,9 @@ export function BusinessImplication({
   label?: "Business summary" | "In plain terms";
 }) {
   return (
-    <aside className="bi-card" aria-label={label}>
+    <div className="bi-card">
       <p className="bi-label">{label}</p>
       <div className="bi-body">{children}</div>
-    </aside>
+    </div>
   );
 }

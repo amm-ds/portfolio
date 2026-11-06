@@ -28,8 +28,11 @@ export function StudyCard({
   achievesLabel,
   result,
   tags,
+  headingLevel = 4,
 }: {
   title: string;
+  /** Semantic title level; cards nested under experiment rows use h4. */
+  headingLevel?: 3 | 4;
   /** Metadata fields, stacked label-over-value (replaces the old inline
    * "a · b" subtitle). */
   meta?: StudyMetaItem[];
@@ -48,9 +51,10 @@ export function StudyCard({
   /** Exactly four short tags (blue). */
   tags: string[];
 }) {
+  const Title = headingLevel === 3 ? "h3" : "h4";
   return (
     <>
-      <h3>{title}</h3>
+      <Title>{title}</Title>
       {meta && meta.length > 0 && (
         <div className="study-meta">
           {meta.map((m) => (

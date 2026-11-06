@@ -1,5 +1,4 @@
 import { Component, type ReactNode } from "react";
-import { Link } from "react-router-dom";
 
 interface Props {
   children: ReactNode;
@@ -32,7 +31,7 @@ export class TopLevelErrorBoundary extends Component<Props, State> {
             <button type="button" onClick={() => window.location.reload()}>
               Reload the page
             </button>{" "}
-            or <Link to="/">go back home</Link>.
+            or <a href="/">go back home</a>.
           </p>
         </div>
       </main>

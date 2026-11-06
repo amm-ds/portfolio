@@ -135,7 +135,7 @@ describe("StorySection business-summary card", () => {
     render(<StorySection projectId="05-ml-pipeline-churn" section={WITH_BI} metrics={null} />);
     const card = document.querySelector(".bi-card");
     expect(card).not.toBeNull();
-    expect(card?.getAttribute("aria-label")).toBe("Business summary");
+    expect(document.querySelector("aside.bi-card")).toBeNull();
     expect(card?.querySelector(".bi-label")?.textContent).toBe("Business summary");
     expect(card?.textContent).toContain("retention budget is a cost-minimization");
   });
@@ -194,7 +194,7 @@ describe("StorySection **In plain terms:** marker", () => {
     );
     const card = document.querySelector(".bi-card");
     expect(card).not.toBeNull();
-    expect(card?.getAttribute("aria-label")).toBe("In plain terms");
+    expect(document.querySelector("aside.bi-card")).toBeNull();
     expect(card?.querySelector(".bi-label")?.textContent).toBe("In plain terms");
     expect(card?.textContent).toContain("the model flags the customers most likely to leave");
     // the marker itself is stripped from the plain prose

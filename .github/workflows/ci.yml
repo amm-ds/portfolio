@@ -42,6 +42,7 @@ jobs:
               - '.github/workflows/ci.yml'
             web:
               - 'apps/showcase-web/**'
+              - 'scripts/axe_check.mjs'
             agent_chat:
               - 'apps/agent-chat/**'
               - '.github/workflows/ci.yml'
@@ -187,12 +188,10 @@ jobs:
         run: uv run pytest -q
 
   a11y-axe:
-    # NON-BLOCKING this wave (continue-on-error). Runs the axe-core check
-    # (scripts/axe_check.mjs) against a preview build with chromium installed,
-    # and uploads reports/axe.json for inspection.
+    # Blocking axe + HTTP smoke at desktop/tablet/mobile widths; uploads the
+    # full report for inspection on failure.
     needs: changes
     if: needs.changes.outputs.web == 'true'
-    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
@@ -225,6 +224,7 @@ jobs:
           done
           AXE_BASE_URL=http://127.0.0.1:4321 node ../../scripts/axe_check.mjs
       - name: Upload axe report
+        if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v6.0.0
         with:
           name: axe-report

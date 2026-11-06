@@ -150,6 +150,38 @@ describe("ProjectDetail story handling", () => {
     expect(screen.queryByRole("navigation", { name: "Case study sections" })).toBeNull();
   });
 
+  it("shows a retryable case-study error when /story returns 500", async () => {
+    mockFetch((path) => {
+      if (path.endsWith("/projects")) return jsonResponse([PROJECT]);
+      if (path.endsWith("/story")) return jsonResponse({ detail: "server error" }, 500);
+      return jsonResponse({ detail: "not found" }, 404);
+    });
+
+    renderDetail();
+    await screen.findByText(/the case study could not be loaded/i);
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(screen.queryByText(/no metrics yet/i)).toBeNull();
+    expect(screen.queryByText(/no figures yet/i)).toBeNull();
+  });
+
+  it("keeps metric and figure 500s distinct from missing artifacts", async () => {
+    mockFetch((path) => {
+      if (path.endsWith("/projects")) return jsonResponse([PROJECT]);
+      if (path.endsWith("/story")) return jsonResponse({ detail: "no story" }, 404);
+      if (path.endsWith("/metrics") || path.endsWith("/figures")) {
+        return jsonResponse({ detail: "server error" }, 500);
+      }
+      return jsonResponse({ detail: "not found" }, 404);
+    });
+
+    renderDetail();
+    await screen.findByText(/metrics could not be loaded/i);
+    await screen.findByText(/figures could not be loaded/i);
+    expect(screen.queryByText(/no metrics yet/i)).toBeNull();
+    expect(screen.queryByText(/no figures yet/i)).toBeNull();
+    expect(screen.getAllByRole("button", { name: "Retry" })).toHaveLength(2);
+  });
+
   it("shows an unknown-project state for ids not in the index", async () => {
     mockFetch((path) => {
       if (path.endsWith("/projects")) return Promise.resolve(jsonResponse([PROJECT]));
@@ -164,6 +196,15 @@ describe("ProjectDetail story handling", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText(/unknown project/i)).toBeInTheDocument());
+  });
+
+  it("shows a retryable metadata error instead of an unknown project on API failure", async () => {
+    mockFetch(() => jsonResponse({ detail: "server error" }, 500));
+
+    renderDetail();
+    await screen.findByText(/project could not be loaded/i);
+    expect(screen.queryByRole("heading", { name: "Unknown project" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
   it("links the full evaluation report to the in-app report route when the report exists", async () => {

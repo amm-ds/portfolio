@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  ApiError,
   getDemoManifest,
   getDemoRegistry,
   getFigures,
@@ -62,12 +63,19 @@ export function ProjectDetail() {
   const [notFound, setNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [story, setStory] = useState<ProjectStoryData | null>(null);
-  const [storyLoading, setStoryLoading] = useState(true);
+  const [storyStatus, setStoryStatus] = useState<"loading" | "ready" | "missing" | "error">(
+    "loading",
+  );
   const [metrics, setMetrics] = useState<Metrics | null>(null);
-  const [figures, setFigures] = useState<string[]>([]);
+  const [metricsStatus, setMetricsStatus] = useState<"loading" | "ready" | "missing" | "error">(
+    "loading",
+  );
+  const [figures, setFigures] = useState<string[] | null>(null);
+  const [figuresStatus, setFiguresStatus] = useState<"loading" | "ready" | "error">("loading");
   const [demoHref, setDemoHref] = useState<string | null>(null);
   const [demoLine, setDemoLine] = useState<string | null>(null);
   const [reportOk, setReportOk] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   usePageMeta({
     title: detail?.title ?? "Unknown project",
@@ -123,9 +131,11 @@ export function ProjectDetail() {
     setDetail(null);
     setNotFound(false);
     setStory(null);
-    setStoryLoading(true);
+    setStoryStatus("loading");
     setMetrics(null);
-    setFigures([]);
+    setMetricsStatus("loading");
+    setFigures(null);
+    setFiguresStatus("loading");
     setError(null);
 
     getProjects()
@@ -149,34 +159,51 @@ export function ProjectDetail() {
       .then((s) => {
         if (cancelled) return;
         setStory(s);
-        setStoryLoading(false);
+        setStoryStatus(s === null ? "missing" : "ready");
       })
       .catch(() => {
         if (cancelled) return;
         setStory(null);
-        setStoryLoading(false);
+        setStoryStatus("error");
       });
 
     getMetrics(id)
-      .then((m) => !cancelled && setMetrics(m))
-      .catch(() => !cancelled && setMetrics(null));
+      .then((m) => {
+        if (cancelled) return;
+        setMetrics(m);
+        setMetricsStatus(m === null ? "missing" : "ready");
+      })
+      .catch(() => !cancelled && setMetricsStatus("error"));
 
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   // Figures list only feeds the raw-artifacts fallback (stories reference figures directly).
   useEffect(() => {
-    if (storyLoading || story !== null) return;
+    if (storyStatus !== "missing") return;
     let cancelled = false;
+    setFiguresStatus("loading");
     getFigures(id)
-      .then((f) => !cancelled && setFigures(f))
-      .catch(() => !cancelled && setFigures([]));
+      .then((f) => {
+        if (cancelled) return;
+        setFigures(f);
+        setFiguresStatus("ready");
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        if (e instanceof ApiError && e.status === 404) {
+          setFigures([]);
+          setFiguresStatus("ready");
+        } else {
+          setFiguresStatus("error");
+        }
+      });
     return () => {
       cancelled = true;
     };
-  }, [id, story, storyLoading]);
+  }, [id, storyStatus]);
 
   if (notFound) {
     return (
@@ -193,11 +220,28 @@ export function ProjectDetail() {
     );
   }
 
+  const retryButton = (
+    <button type="button" onClick={() => setAttempt((n) => n + 1)}>
+      Retry
+    </button>
+  );
+
+  if (error) {
+    return (
+      <div className="state-box error" role="alert">
+        <h1>Project could not be loaded</h1>
+        <p>{error}</p>
+        <p>
+          {retryButton} <Link to="/projects">← all experiments</Link>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <ExperimentCrumbs projectId={id} projects={projects} />
-      {error && <div className="state-box error">{error}</div>}
-      {detail === null && !error ? (
+      {detail === null ? (
         <p className="loading">loading project…</p>
       ) : detail ? (
         <header className="detail-header">
@@ -252,14 +296,31 @@ export function ProjectDetail() {
         </aside>
       )}
 
-      {storyLoading ? (
+      {storyStatus === "loading" ? (
         <p className="loading">loading case study…</p>
-      ) : story ? (
-        <CaseStudy projectId={id} story={story} metrics={metrics} />
+      ) : storyStatus === "error" ? (
+        <div className="state-box error" role="alert">
+          The case study could not be loaded. {retryButton}
+        </div>
+      ) : storyStatus === "ready" && story ? (
+        <>
+          {metricsStatus === "error" && (
+            <div className="state-box error" role="alert">
+              Metrics could not be loaded. {retryButton}
+            </div>
+          )}
+          <CaseStudy projectId={id} story={story} metrics={metrics} />
+        </>
       ) : (
         <>
           <h2 className="section-title">metrics</h2>
-          {metrics === null ? (
+          {metricsStatus === "loading" ? (
+            <p className="loading">loading metrics…</p>
+          ) : metricsStatus === "error" ? (
+            <div className="state-box error" role="alert">
+              Metrics could not be loaded. {retryButton}
+            </div>
+          ) : metrics === null ? (
             <div className="state-box">
               No metrics yet for this project —{" "}
               <a href={REPO_URL} target="_blank" rel="noreferrer">
@@ -272,7 +333,13 @@ export function ProjectDetail() {
           )}
 
           <h2 className="section-title">figures</h2>
-          {figures.length === 0 ? (
+          {figuresStatus === "error" ? (
+            <div className="state-box error" role="alert">
+              Figures could not be loaded. {retryButton}
+            </div>
+          ) : figuresStatus === "loading" || figures === null ? (
+            <p className="loading">loading figures…</p>
+          ) : figures.length === 0 ? (
             <div className="state-box">
               No figures yet for this project —{" "}
               <a href={REPO_URL} target="_blank" rel="noreferrer">

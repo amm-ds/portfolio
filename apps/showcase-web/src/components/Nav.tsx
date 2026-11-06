@@ -3,7 +3,7 @@ import { REPO_URL, SITE_NAME_ROOT, SITE_NAME_SUFFIX } from "../config";
 
 export function Nav() {
   return (
-    <div className="nav">
+    <header className="nav">
       <div className="nav-inner">
         <NavLink to="/" className="nav-brand">
           {SITE_NAME_ROOT}
@@ -22,6 +22,6 @@ export function Nav() {
           </a>
         </nav>
       </div>
-    </div>
+    </header>
   );
 }

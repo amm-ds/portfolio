@@ -197,6 +197,7 @@ function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
   const body = (
     <StudyCard
       title={data.title}
+      headingLevel={3}
       meta={meta}
       doesLabel="description"
       does={demoDoes(data)}
@@ -217,21 +218,29 @@ function DemoCard({ data, domain }: { data: DemoCardData; domain?: string }) {
 
 /** Demos block rendered above the experiments rows — one of the two big page
  * sections. Cards come from the demo registry (`GET /demos`) and render in a
- * full-width grid like the experiment cards below; on any fetch failure the
- * static `DEMOS` list is rendered instead (it doubles as the loading state).
+ * full-width grid like the experiment cards below; a failed request is labelled
+ * and falls back to the static `DEMOS` snapshot, never to a successful empty list.
  * The linked experiment's domain joins the use case in the metadata. */
 function DemosSection({ projects }: { projects: Project[] | null }) {
   const [entries, setEntries] = useState<DemoRegistryEntry[] | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+    setEntries(null);
+    setStatus("loading");
     getDemoRegistry()
-      .then((list) => !cancelled && setEntries(list))
-      .catch(() => !cancelled && setEntries(null));
+      .then((list) => {
+        if (cancelled) return;
+        setEntries(list);
+        setStatus("ready");
+      })
+      .catch(() => !cancelled && setStatus("error"));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [attempt]);
 
   const domainOf = (projectId: string | undefined) =>
     projects?.find((p) => p.id === projectId)?.domain;
@@ -240,7 +249,24 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
     <section className="demos" id="demos" aria-label="Live demos">
       <h2 className="section-title section-title--major">live demos</h2>
       <p className="section-intro">{DEMOS_INTRO}</p>
-      {entries === null ? (
+      {status === "loading" && <p className="loading">loading demos…</p>}
+      {status === "error" && (
+        <div className="state-box error" role="alert">
+          The live demo registry is unreachable — showing the last published snapshot.{" "}
+          <button type="button" onClick={() => setAttempt((n) => n + 1)}>
+            Retry demos
+          </button>
+        </div>
+      )}
+      {status === "ready" && entries?.length === 0 ? (
+        <div className="state-box">No demos published yet — check back soon.</div>
+      ) : status === "ready" ? (
+        <div className="demo-grid">
+          {entries?.map((d) => (
+            <DemoCard key={d.id} data={d} domain={domainOf(d.project)} />
+          ))}
+        </div>
+      ) : status === "error" ? (
         <div className="demo-grid">
           {DEMOS.map((d) => (
             <DemoCard
@@ -258,13 +284,7 @@ function DemosSection({ projects }: { projects: Project[] | null }) {
             />
           ))}
         </div>
-      ) : (
-        <div className="demo-grid">
-          {entries.map((d) => (
-            <DemoCard key={d.id} data={d} domain={domainOf(d.project)} />
-          ))}
-        </div>
-      )}
+      ) : null}
     </section>
   );
 }

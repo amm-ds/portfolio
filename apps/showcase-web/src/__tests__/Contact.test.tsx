@@ -208,13 +208,14 @@ describe("Contact inquiry form", () => {
     ).toBeTruthy();
   });
 
-  it("shows inline validation errors for empty required fields", () => {
+  it("announces inline errors and focuses the first empty required field", () => {
     renderContact();
     fireEvent.click(screen.getByRole("button", { name: /send inquiry/i }));
-    expect(screen.getByText("name is required")).toBeInTheDocument();
-    expect(screen.getByText("email is required")).toBeInTheDocument();
-    expect(screen.getByText("message is required")).toBeInTheDocument();
+    expect(screen.getByText("name is required")).toHaveAttribute("role", "alert");
+    expect(screen.getByText("email is required")).toHaveAttribute("role", "alert");
+    expect(screen.getByText("message is required")).toHaveAttribute("role", "alert");
     expect(screen.getByLabelText(/name/)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByLabelText(/name/)).toHaveFocus();
     expect(screen.getByLabelText(/message/)).toHaveAttribute("aria-invalid", "true");
     // organization is optional — no error for it
     expect(screen.queryByText(/organization is required/i)).toBeNull();
@@ -223,11 +224,18 @@ describe("Contact inquiry form", () => {
   it("rejects an invalid email address and a too-short message", () => {
     renderContact();
     const form = within(document.querySelector(".contact-form")!);
+    fireEvent.change(form.getByLabelText(/name/), { target: { value: FIELDS.name } });
     fireEvent.change(form.getByLabelText(/email/), { target: { value: "not-an-email" } });
     fireEvent.change(form.getByLabelText(/message/), { target: { value: "too short" } });
     fireEvent.click(screen.getByRole("button", { name: /send inquiry/i }));
     expect(screen.getByText("enter a valid email address")).toBeInTheDocument();
     expect(screen.getByText("message must be at least 10 characters")).toBeInTheDocument();
+    expect(form.getByLabelText(/email/)).toHaveFocus();
+  });
+
+  it("keeps the free-call heading sequential with the page title", () => {
+    renderContact();
+    expect(screen.getByRole("heading", { level: 2, name: "first call is free" })).toBeVisible();
   });
 
   it("constrains the message box resize and keeps the form and channel cards full width", () => {

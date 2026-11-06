@@ -25,7 +25,8 @@ function injectFullWidthOverride(html: string): string {
 export function ReportView() {
   const { id = "" } = useParams();
   const [html, setHtml] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [status, setStatus] = useState<"loading" | "missing" | "error">("loading");
+  const [attempt, setAttempt] = useState(0);
 
   usePageMeta({
     title: "Evaluation report",
@@ -36,20 +37,26 @@ export function ReportView() {
   useEffect(() => {
     let cancelled = false;
     setHtml(null);
-    setFailed(false);
+    setStatus("loading");
     fetch(`/projects/${id}/report`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`report probe failed: ${res.status}`);
+      .then(async (res) => {
+        if (res.status === 404) {
+          if (!cancelled) setStatus("missing");
+          return null;
+        }
+        if (!res.ok) throw new Error(`report request failed: ${res.status}`);
         return res.text();
       })
-      .then((text) => !cancelled && setHtml(injectFullWidthOverride(text)))
-      .catch(() => !cancelled && setFailed(true));
+      .then((text) => {
+        if (!cancelled && text !== null) setHtml(injectFullWidthOverride(text));
+      })
+      .catch(() => !cancelled && setStatus("error"));
     return () => {
       cancelled = true;
     };
-  }, [id]);
+  }, [id, attempt]);
 
-  if (failed) {
+  if (status === "missing") {
     return (
       <div className="state-box">
         <h1>Report unavailable</h1>
@@ -58,6 +65,20 @@ export function ReportView() {
           pipeline to generate one.
         </p>
         <p>
+          <Link to={`/projects/${id}`}>← back to the case study</Link>
+        </p>
+      </div>
+    );
+  }
+  if (status === "error") {
+    return (
+      <div className="state-box error" role="alert">
+        <h1>Report could not be loaded</h1>
+        <p>The evaluation report request failed. Check the API and try again.</p>
+        <p>
+          <button type="button" onClick={() => setAttempt((n) => n + 1)}>
+            Retry
+          </button>{" "}
           <Link to={`/projects/${id}`}>← back to the case study</Link>
         </p>
       </div>

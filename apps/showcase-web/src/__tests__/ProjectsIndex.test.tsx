@@ -239,7 +239,7 @@ describe("ProjectsIndex", () => {
 
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
-        (c) => c.querySelector("h3")?.textContent === title,
+        (c) => c.querySelector("h4")?.textContent === title,
       )!;
     const rowOf = (el: Element): Element => {
       let cur: Element | null = el;
@@ -383,6 +383,8 @@ describe("ProjectsIndex", () => {
     const demos = document.querySelector(".demos")!;
     const demoCards = demos.querySelectorAll(".demo-card");
     expect(demoCards).toHaveLength(2);
+    expect(screen.getByRole("alert")).toHaveTextContent(/live demo registry is unreachable/i);
+    expect(screen.getByRole("button", { name: "Retry demos" })).toBeInTheDocument();
     expect(demos.querySelectorAll(".demo-grid")).toHaveLength(1);
     expect(demoCards[0].textContent).toContain("churn threshold sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
@@ -424,7 +426,7 @@ describe("ProjectsIndex", () => {
     expect(document.querySelectorAll(".project-card .study-achieves")).toHaveLength(7);
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
-        (c) => c.querySelector("h3")?.textContent === title,
+        (c) => c.querySelector("h4")?.textContent === title,
       )!;
     const rag = cardOf("RAG Agent");
     expect(rag.querySelector(".study-does")!.textContent).toContain(
@@ -515,7 +517,7 @@ describe("ProjectsIndex", () => {
     ).toBe(true);
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
-        (c) => c.querySelector("h3")?.textContent === title,
+        (c) => c.querySelector("h4")?.textContent === title,
       )!;
     expect(cardOf("Routing").querySelector(".study-achieves")?.textContent).toContain(
       "within 4.2% of best-known",
@@ -542,6 +544,22 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText(/no projects published yet/i)).toBeInTheDocument());
+  });
+
+  it("shows a successful empty demo registry without rendering the static snapshot", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse([]))),
+    );
+    render(
+      <MemoryRouter>
+        <ProjectsIndex />
+      </MemoryRouter>,
+    );
+
+    await screen.findByText(/no demos published yet/i);
+    expect(document.querySelector(".demo-card")).toBeNull();
+    expect(screen.queryByText(/live demo registry is unreachable/i)).toBeNull();
   });
 
   it("renders the experiment cards from the static snapshot when the registry is unreachable", async () => {
@@ -610,7 +628,7 @@ describe("ProjectsIndex", () => {
     );
     const structureOf = (card: Element) => ({
       shared: card.classList.contains("study-card"),
-      title: card.querySelector("h3")?.textContent ?? null,
+      title: card.querySelector("h3, h4")?.textContent ?? null,
       meta: [...card.querySelectorAll(".study-meta-item")].map((m) => [
         m.querySelector(".study-meta-label")?.textContent,
         m.querySelector(".study-sub")?.textContent,
@@ -626,9 +644,12 @@ describe("ProjectsIndex", () => {
     const demo = structureOf(document.querySelector(".demo-card")!);
     const experiment = structureOf(
       [...document.querySelectorAll(".project-card")].find(
-        (c) => c.querySelector("h3")?.textContent === "Churn",
+        (c) => c.querySelector("h4")?.textContent === "Churn",
       )!,
     );
+    expect(screen.getByRole("heading", { level: 3, name: "churn threshold sandbox" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 4, name: "Churn" })).toBeInTheDocument();
     // identical layout: shared class, title, stacked metadata, does block, four tags
     for (const s of [demo, experiment]) {
       expect(s.shared).toBe(true);
@@ -829,7 +850,7 @@ describe("ProjectsIndex", () => {
       expect(document.querySelectorAll(".project-card")).toHaveLength(7),
     ).then(() => {
       const rag = [...document.querySelectorAll(".project-card")].find(
-        (c) => c.querySelector("h3")?.textContent === "RAG Agent",
+        (c) => c.querySelector("h4")?.textContent === "RAG Agent",
       )!;
       const metaLabels = [...rag.querySelectorAll(".study-meta-label")].map(
         (el) => el.textContent,
@@ -938,7 +959,7 @@ describe("ProjectsIndex", () => {
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(7));
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
-        (c) => c.querySelector("h3")?.textContent === title,
+        (c) => c.querySelector("h4")?.textContent === title,
       )!;
     const rag = cardOf("RAG Agent");
     // the authored **bold** key facts render as <strong> inside the muted

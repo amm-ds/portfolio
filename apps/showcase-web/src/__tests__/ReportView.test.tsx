@@ -89,6 +89,21 @@ describe("ReportView", () => {
     expect(document.querySelector(".report-frame")).toBeNull();
   });
 
+  it("shows a retryable error for a 500 instead of claiming the report is unpublished", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("server error", { status: 500 }))
+      .mockImplementationOnce(() => Promise.resolve(htmlResponse()));
+    vi.stubGlobal("fetch", fetchMock);
+    renderReport();
+
+    await screen.findByText(/report could not be loaded/i);
+    expect(screen.queryByText(/no evaluation report has been published/i)).toBeNull();
+    screen.getByRole("button", { name: "Retry" }).click();
+    expect(await screen.findByTitle("Evaluation report: 01-rag-agent")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("is routed inside the App shell at /projects/:id/report, full width with the footer kept", async () => {
     vi.stubGlobal(
       "fetch",

@@ -86,11 +86,16 @@ export function Contact() {
     setSent(false);
   };
 
-  const onSubmit = (ev: FormEvent) => {
+  const onSubmit = (ev: FormEvent<HTMLFormElement>) => {
     ev.preventDefault();
     const nextErrors = validateInquiry(fields);
     setErrors(nextErrors);
-    if (Object.values(nextErrors).some(Boolean)) return;
+    const firstInvalid = (["name", "email", "message"] as const).find((key) => nextErrors[key]);
+    if (firstInvalid) {
+      const field = ev.currentTarget.elements.namedItem(firstInvalid);
+      if (field instanceof HTMLElement) field.focus();
+      return;
+    }
     window.location.href = buildInquiryMailto(fields);
     setSent(true);
   };
@@ -121,7 +126,7 @@ export function Contact() {
             {...fieldProps("name")}
           />
           {errors.name && (
-            <p className="form-error" id="contact-name-error">
+            <p className="form-error" role="alert" id="contact-name-error">
               {errors.name}
             </p>
           )}
@@ -138,7 +143,7 @@ export function Contact() {
             {...fieldProps("email")}
           />
           {errors.email && (
-            <p className="form-error" id="contact-email-error">
+            <p className="form-error" role="alert" id="contact-email-error">
               {errors.email}
             </p>
           )}
@@ -165,7 +170,7 @@ export function Contact() {
             {...fieldProps("message")}
           />
           {errors.message && (
-            <p className="form-error" id="contact-message-error">
+            <p className="form-error" role="alert" id="contact-message-error">
               {errors.message}
             </p>
           )}
@@ -187,7 +192,7 @@ export function Contact() {
 
       <ChannelCards />
       <Card className="free-call-card">
-        <h3>first call is free</h3>
+        <h2>first call is free</h2>
         <p>
           The discovery call (free, 30–45 min) covers the problem, the data reality, the
           constraints and what &quot;done&quot; must look like. You get a written summary with

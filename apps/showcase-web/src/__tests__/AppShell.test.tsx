@@ -22,6 +22,7 @@ describe("Nav brand split", () => {
         <App />
       </MemoryRouter>,
     );
+    expect(screen.getByRole("banner")).toHaveClass("nav");
     const brand = document.querySelector(".nav-brand")!;
     expect(brand).not.toBeNull();
     // the accessible/read text is unchanged
@@ -78,6 +79,49 @@ describe("App shell (temporary smoke)", () => {
     await waitFor(() => expect(live.textContent).toContain("Page not found"));
   });
 
+  it("scrolls to a glossary hash target after the lazy route mounts", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      value: scrollIntoView,
+      configurable: true,
+    });
+    render(
+      <MemoryRouter initialEntries={["/glossary#baseline"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(document.getElementById("baseline")).not.toBeNull());
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(window.scrollTo)).not.toHaveBeenCalled();
+  });
+
+  it("scrolls to the demos hash instead of resetting ordinary anchor navigation to top", async () => {
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      value: scrollIntoView,
+      configurable: true,
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    render(
+      <MemoryRouter initialEntries={["/projects#demos"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => expect(scrollIntoView).toHaveBeenCalledTimes(1));
+    expect(document.getElementById("demos")).not.toBeNull();
+    expect(vi.mocked(window.scrollTo)).not.toHaveBeenCalled();
+  });
+
   it("shows the styled skeleton while a lazy route chunk loads", async () => {
     render(
       <MemoryRouter initialEntries={["/services"]}>
@@ -87,6 +131,13 @@ describe("App shell (temporary smoke)", () => {
     expect(document.querySelector(".route-skeleton")).not.toBeNull();
     await waitFor(() =>
       expect(document.querySelector(".route-skeleton")).toBeNull(),
+    );
+  });
+
+  it("disables route skeleton and cursor animations for reduced motion", () => {
+    const css = readStylesCss();
+    expect(css).toContain(
+      "@media (prefers-reduced-motion: reduce) {\n  .cursor,\n  .route-skeleton-line,\n  .status-dot {\n    animation: none !important;",
     );
   });
 

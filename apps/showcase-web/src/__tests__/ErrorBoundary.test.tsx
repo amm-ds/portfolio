@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { DemoErrorBoundary } from "../demos/ErrorBoundary";
+import { TopLevelErrorBoundary } from "../components/TopLevelErrorBoundary";
 
 /** Test-only component that always throws during render. */
 function Thrower(): never {
@@ -39,5 +40,19 @@ describe("DemoErrorBoundary", () => {
     );
     // the crashed child is replaced by the fallback, not rendered
     expect(screen.queryByText("demo body")).toBeNull();
+  });
+});
+
+describe("TopLevelErrorBoundary", () => {
+  it("renders a plain home anchor when a child crashes without a router", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    render(
+      <TopLevelErrorBoundary>
+        <Thrower />
+      </TopLevelErrorBoundary>,
+    );
+
+    expect(screen.getByText("Something went wrong.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "go back home" })).toHaveAttribute("href", "/");
   });
 });

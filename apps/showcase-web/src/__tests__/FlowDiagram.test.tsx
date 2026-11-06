@@ -74,11 +74,29 @@ describe("FlowDiagram", () => {
   it("removes fact-selection prompts and hugs a single-rank canvas", async () => {
     render(<FlowDiagram spec={ROUTING_SPEC} />);
     await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
-    expect(screen.getByText("Scroll to zoom")).toBeInTheDocument();
+    expect(screen.getByText("Scroll or pinch to zoom · drag to pan")).toBeInTheDocument();
     expect(screen.queryByText(/select for/i)).toBeNull();
     expect(document.querySelector(".flow-node__action")).toBeNull();
     expect(document.querySelector(".flow-diagram__hint")).toBeNull();
     expect(document.querySelector(".flow-diagram__canvas")).toHaveStyle({ height: "240px" });
+  });
+
+  it("opens narrow canvases at a readable zoom while keeping every node reachable", async () => {
+    Object.defineProperty(HTMLElement.prototype, "clientWidth", {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.classList.contains("flow-diagram__canvas") ? 390 : 1000;
+      },
+    });
+    render(<FlowDiagram spec={AGENT_LOOP_SPEC} />);
+    await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
+
+    const viewport = document.querySelector<HTMLElement>(".react-flow__viewport")!;
+    expect(viewport.style.transform).toContain("scale(0.65)");
+    expect(document.querySelectorAll(".react-flow__node")).toHaveLength(AGENT_LOOP_SPEC.nodes.length);
+    for (const node of AGENT_LOOP_SPEC.nodes) {
+      expect(screen.getByTestId(`rf__node-${node.id}`)).toHaveAttribute("tabindex", "0");
+    }
   });
 
   it("previews the hovered node's first fact and hides it behind the inspector", async () => {

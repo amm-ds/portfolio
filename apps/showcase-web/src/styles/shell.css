@@ -256,8 +256,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cursor,
+  .route-skeleton-line,
   .status-dot {
-    animation: none;
+    animation: none !important;
   }
 }
 

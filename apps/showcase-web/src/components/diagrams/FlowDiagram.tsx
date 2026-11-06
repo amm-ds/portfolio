@@ -224,6 +224,8 @@ function layoutMeasuredNodes(nodes: FlowNode[], spec: DiagramSpec): FlowNode[] {
 const MIN_CANVAS_HEIGHT = 240;
 const MAX_CANVAS_HEIGHT = 560;
 const MIN_ZOOM = 0.1;
+const MOBILE_INITIAL_ZOOM = 0.65;
+const MOBILE_BREAKPOINT = 640;
 const FIT_PADDING = 0.12;
 
 function canvasHeightCap(spec: DiagramSpec): number {
@@ -325,17 +327,28 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
       if (cancelled || !canvas || canvas.clientWidth === 0 || canvas.clientHeight === 0) return;
 
       const bounds = getNodesBounds(nodes, { nodeOrigin: [0, 0] });
+      // A fitted horizontal graph is unreadable on a phone. Keep its existing
+      // layout, but open at a readable zoom and let touch users pan across it.
+      const mobile = canvas.clientWidth <= MOBILE_BREAKPOINT;
+      const minInitialZoom = mobile ? MOBILE_INITIAL_ZOOM : MIN_ZOOM;
       const firstViewport = getViewportForBounds(
         bounds,
         canvas.clientWidth,
         canvas.clientHeight,
-        MIN_ZOOM,
+        minInitialZoom,
         1,
         FIT_PADDING,
       );
       const nextHeight = autoCanvasHeight(bounds.height, firstViewport.zoom, spec);
-      // Recenter against the auto-height canvas without changing the fitted zoom.
-      const viewport = getViewportForBounds(bounds, canvas.clientWidth, nextHeight, MIN_ZOOM, 1, FIT_PADDING);
+      // Recenter against the auto-height canvas without changing the initial zoom.
+      const viewport = getViewportForBounds(
+        bounds,
+        canvas.clientWidth,
+        nextHeight,
+        minInitialZoom,
+        1,
+        FIT_PADDING,
+      );
       setCanvasHeight(autoCanvasHeight(bounds.height, viewport.zoom, spec));
       void setViewport(viewport, { duration: 0 });
       setReady(true);
@@ -351,7 +364,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
       <div className="flow-diagram__heading">
         <span className="flow-diagram__title">{spec.title}</span>
         <span className="flow-diagram__zoom-hint" id={instructionsId}>
-          Scroll to zoom
+          Scroll or pinch to zoom · drag to pan
         </span>
       </div>
       <div className={`flow-diagram__body${selectedNode ? " has-inspector" : ""}`}>
@@ -381,6 +394,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
             nodesDraggable={false}
             nodesConnectable={false}
             nodesFocusable
+            autoPanOnNodeFocus
             edgesFocusable
             edgesReconnectable={false}
             elementsSelectable
