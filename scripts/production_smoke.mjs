@@ -37,10 +37,10 @@ try {
     timeout: 60_000,
   });
   assert(reportResponse?.status() === 200, "report page did not return 200");
-  const reportFrame = page.frames().find((frame) => frame !== page.mainFrame());
-  assert(reportFrame, "evaluation report iframe was not mounted");
-  await reportFrame.waitForSelector(".plotly-graph-div", { timeout: 45_000 });
-  console.log("production report: Plotly executed inside sandboxed srcDoc");
+  // The API owns /projects/:id/report and serves raw HTML directly (not the
+  // React ReportView route). Validate that real production path.
+  await page.waitForSelector(".plotly-graph-div", { timeout: 45_000 });
+  console.log("production report: Plotly executed with route-scoped CSP");
 
   const figureResponse = await page.goto(
     `${BASE_URL}/projects/01-rag-agent/figures/retrieval_funnel`,
