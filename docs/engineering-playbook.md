@@ -1,20 +1,23 @@
 # Engineering Playbook
 
-How this repository is run — standards, review culture, and the definition of
-done. Everything here is enforced by tooling, not by goodwill.
+How this repository is run: standards, review culture, and the definition of
+done. CI enforces the listed gates; review covers the judgment calls.
 
 ## Standards
 
-1. **Types.** mypy strict on `libs/*`; typed function signatures everywhere.
-   Pydantic models at every cross-module boundary (ADR-0002).
-2. **Lint / format.** ruff (`E,F,I,UP,B,SIM,RUF`), line length 100, enforced by
-   pre-commit and CI. Never argue with the formatter.
-3. **Tests.** pytest + hypothesis property tests on every validator. Coverage
-   gates: ≥80% on `libs/*` (hard gate in `make test` and the CI libs cell);
-   project and app suites run with coverage measured per package. A bug fix
-   without a regression test is not a fix.
-4. **Config.** Zero hardcoded constants in logic. Every knob is a field on a
-   pydantic `BaseModel` / `pydantic-settings` class with a documented default.
+1. **Types.** mypy strict on `libs/*`; type new and changed public function
+   signatures. Use Pydantic models for external data and cross-module contracts
+   where validation is needed (ADR-0002).
+2. **Lint / format.** ruff (`E,F,I,UP,B,SIM,RUF,S,C901`), line length 100,
+   enforced by pre-commit and CI. Never argue with the formatter.
+3. **Tests.** pytest covers behavior; use hypothesis property tests for
+   validators and parsers whose input space benefits from them. Coverage gates:
+   ≥80% on `libs/*` (hard gate in `make test` and the CI libs cell); project and
+   app suites run with coverage measured per package. A bug fix without a
+   regression test is not a fix.
+4. **Config.** Put user-facing and experiment knobs on a pydantic `BaseModel` /
+   `pydantic-settings` class with a documented default. Keep local constants
+   local when configuration would not earn its complexity.
 5. **Data.** No raw data in git. Dataset cards pin source, license, checksum,
    snapshot date. DQ gates halt pipelines loudly (non-zero exit + persisted
    `DQReport`).

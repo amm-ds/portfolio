@@ -5,7 +5,7 @@ modular agent you copy out of this repo and adapt. Built on pydantic-ai v2 +
 FastAPI + Postgres/pgvector, with deterministic tests (a scripted fake model —
 no network, no API keys) and a real eval suite behind the same graders.
 
-```
+```text
 src/agent_chat/
 ├── config.py         # every knob: providers, stores, history, budgets, embedder
 ├── models.py         # provider factory: Ollama default, hosted OpenAI-compatible, fallback chain

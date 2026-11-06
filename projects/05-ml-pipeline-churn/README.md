@@ -44,7 +44,7 @@ raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSear
   `MissingValueIndicator` appends `<col>_was_missing` flags **before**
   imputation, so "missing" itself can be learned as signal.
 - Model selection (`model.py` + `hpo.py`): `GridSearchCV` over
-  C ∈ {0.01, 0.1, 1, 10} keeps the wave-2 logistic row; **Optuna** (seeded TPE,
+  C ∈ {0.01, 0.1, 1, 10} keeps the baseline logistic row; **Optuna** (seeded TPE,
   ~25 trials, median pruning) then chooses among four arms — LogisticRegression
   (C log 1e-3..1e2, l1_ratio 0..1), HistGradientBoostingClassifier, and the
   sklearn-API **XGBClassifier / LGBMClassifier** — on a **cost-aware
@@ -56,7 +56,7 @@ raw frame ──▶ DQ gates ──▶ stratified 80/20 split ──▶ GridSear
 - Calibration: the selected model is compared raw vs **isotonic-calibrated**
   (calibration split carved from training only, disjoint from the fit data and
   the holdout) via ECE and the same business-cost curve.
-- Evaluation (`evaluate.py`): five `RunResult` rows — naive majority, wave-2
+- Evaluation (`evaluate.py`): five `RunResult` rows — naive majority, baseline
   logreg at 0.5 and at its cost-optimum, selected model and its calibrated
   variant at their cost-optima — plus a seeded paired bootstrap (2,000
   resamples) of the cost delta vs naive with a 95% CI, and EDA profile,
@@ -72,7 +72,7 @@ Full rationale and rejected alternatives: [DESIGN.md](DESIGN.md).
 ## Results (real run: IBM telco churn, 7,043 rows -> 1,409-row holdout)
 
 Holdout churn rate 26.5% - a different regime from the 8.8% synthetic track.
-Wave-2 grid search: **C=0.01**. **Cost-aware Optuna selected XGBoost**
+Grid search: **C=0.01**. **Cost-aware Optuna selected XGBoost**
 (25 trials x 4 arms: n_estimators 211, learning_rate 0.0309, max_depth 3,
 subsample 0.5187; best CV business cost 2,416). On the synthetic track the
 same search picked a logistic - the winner tracks the data.
@@ -130,8 +130,9 @@ Key findings:
 Thresholds and their costs are selected and reported on the same holdout, so the
 601-cost operating point is optimistic. The bootstrap holds thresholds fixed
 and does not measure selection instability. The snapshot has no time axis;
-fresh, time-stamped data is required for independent policy and served-policy
-fairness validation.
+fresh, time-stamped data is required for independent policy, served-policy
+fairness, drift, and seasonality validation. Wider boosting searches require a
+defined compute budget.
 
 ## Reproduce
 
@@ -189,19 +190,3 @@ uv run pytest projects/05-ml-pipeline-churn -q
   threshold selection and raw-versus-served fairness are labeled explicitly.
 - **Full reproducibility**: seeded real-data and synthetic-CI tracks, DVC
   stages, a dataset contract (SHA-256), and offline tests.
-
-## Roadmap
-
-- **Delivered:** real telco data behind DQ gates; cost-aware HPO selected
-  XGBoost; isotonic serving at t=0.175; client CSV onboarding.
-- **Delivered:** FN-cost sensitivity re-run (`cli sensitivity`, unblocked
-  after the monorepo DVC graph fixes documented in DESIGN.md): served cost
-  510 / 601 / 699 and t*=0.200 / 0.175 / 0.100 at FN=3/5/8, every paired-
-  bootstrap CI excluding zero; the production FN=5 variant reproduces the
-  committed baseline bit-for-bit (`matches_baseline` in
-  `reports/sensitivity.json`).
-- **Deferred:** frozen-threshold validation of cost and served-policy
-  fairness on fresh data, plus drift and seasonality analysis — the IBM
-  snapshot has no time axis, so a new time-stamped feed from the data owner
-  is the prerequisite; wider boosting searches only with a defined compute
-  budget.

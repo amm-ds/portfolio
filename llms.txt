@@ -57,13 +57,12 @@ Agents do not run `uv sync`/`uv lock` or git mutations — the session owner doe
 
 ## Conventions that bite
 
-- Truth in copy: numbers must exist in a committed artifact; never restate
-  `story.yaml: short_version` by hand — regenerate with
-  `scripts/gen_story_short.py` and let `check_short_copy.py --check` prove it.
+- Truth in copy: numbers must exist in a committed artifact. `story.yaml:
+  short_version` is the short-copy source; `gen_story_short.py` writes only
+  `storyShort.ts`, while `check_short_copy.py --check` verifies the check-only
+  README/docs surfaces.
 - Generated registries (`staticRegistry.ts`, `storyShort.ts`,
   `route-manifest.json`, sitemap) are rebuilt by their scripts, never edited.
-- Generated figures/tables in READMEs carry a `<!-- RESULTS:FILLED -->`-style
-  marker — do not hand-edit generated blocks.
 - The showcase API enumerates projects at startup — restart it after adding
   or renaming a project.
 - Project READMEs follow one skeleton (What it is / Why / Quickstart /

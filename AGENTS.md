@@ -27,6 +27,7 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy libs projects
 uv run pytest -q                      # or the affected suites
 cd apps/showcase-web && npm ci && npm test && npm run lint && npm run build
 uv run python scripts/lint_story_language.py
+uv run python scripts/check_docs.py
 uv run python scripts/check_short_copy.py --check
 uv run python scripts/check_demo_contract.py
 uv run python scripts/gen_static_registry.py --check

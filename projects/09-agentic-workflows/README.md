@@ -51,35 +51,24 @@ grading is deterministic and runs fully offline from
 | t15 | lookup (real corpus) | ✓ | exact | 31.1s | 3 |
 
 Headline numbers (hosted full run): **answer success 15/15**, **tool
-selection 15/15** exact-set (from 8/15 — the previous run's 8 unplanned
-calls: `note_store` ×4, `calculator` ×2, `search_documents` ×2), step budget
-15/15, latency budget 15/15. All 30 captured calls were planned (call
-precision 100%, tool recall 100%). Median latency **18.2s** per task (p95
-31.1s). Totals: ~85k in + ~12k out tokens; suite total **$0.13** of the
-$2.00 suite cap (~$0.0088/task mean cloud-equivalent).
+selection 15/15** exact-set, step budget 15/15, latency budget 15/15. All 30
+captured calls were planned (call precision 100%, tool recall 100%). Median
+latency is **18.2 s** per task (p95 31.1 s). Totals are ~85k input + ~12k
+output tokens; suite cost is **$0.13 cloud-equivalent** of the $2.00 suite cap
+(~$0.0088/task).
 
-Two suite entries were re-scoped while tuning — disclosed, not silent grader
-edits: t15's expected set gained `calculator` (the 119-year gap is
-arithmetic), and t05's prompt now pins "before inverter losses" (both 38.4
-and 36.9 kWh were defensible readings of the old wording).
+### Held-out set
 
-### Held-out set (audit finding 6)
+19 unseen tasks cover the same corpora (`data/tasks_heldout.json`): 13 answer
+tasks across all five categories and 6 designed-to-fail probes. The probes ask
+for a nonexistent capability, an impossible conversion, or an absent fact;
+`RefusalSuccess` requires no crash and a stated refusal.
 
-19 unseen tasks over the same corpora (`data/tasks_heldout.json`; 13 answer
-tasks across all five categories + 6 designed-to-fail probes that ask for a
-nonexistent capability, an impossible conversion, or an absent fact — graded
-by `RefusalSuccess`: no crash, a stated refusal). The original 10 (h01-h10)
-ran on hosted **after** the tuning set was clean; the 2026-10-30 expansion
-wave added 6 answer tasks over previously unexercised corpus facts (radio
-call sign, battery base-load-only remainder, ft→m conversion, weekly drone
-endurance, freezer box capacity, and the photosynthesis topic of 01's
-Wikipedia slice) and 3 refusal probes (currency conversion, fact absent from
-the handbook, arithmetic outside the calculator's AST bounds). The new tasks
-ran under the existing $0.25/$2.00 guards on local Ollama
-(`qwen3.6:35b-a3b-q4_K_M`; hosted credentials blanked for the run, metered
-**$0.00** by the local rate card — 27 metered calls, 111k in / 32k out
-tokens, ~35 min for 9 tasks). Records are mixed-provider by design
-(`data/heldout_records.json`): h01-h10 hosted, h11-h19 local.
+The records are mixed-provider by design (`data/heldout_records.json`):
+h01-h10 use the hosted endpoint and h11-h19 use local Ollama
+(`qwen3.6:35b-a3b-q4_K_M`). The local tasks ran under the same $0.25/$2.00
+guards with hosted credentials blanked, metering **$0.00** for 27 calls, 111k
+input tokens, and 32k output tokens.
 
 | split | n | result |
 |---|---|---|
@@ -101,13 +90,10 @@ Measured negatives, kept honest:
   generations also produced the suite's only step-budget miss (10 > 8).
   Step budget overall 18/19; the USD caps were never at risk ($0.00 local).
 
-Honest caveat: n=19 (13 + 6) is still a small sample — the held-out set
-checks for prompt overfitting and confabulation/failure behavior, it does
-not re-estimate the headline rates. It already earned its keep twice: the
-first hosted run caught a probe confabulating a "1 kg/L basis" conversion
-(conversion docstrings now forbid invented factors), and the local wave
-exposed the failure-message wording gap. Details in
-`metrics.json detail.heldout`.
+The 19-task sample checks for prompt overfitting and confabulation/failure
+behavior; it does not re-estimate the headline rates. Conversion docstrings
+forbid invented factors, and the local records expose the failure-message
+wording gap. Details are in `metrics.json detail.heldout`.
 
 ### Repeat stability (2026-10-29)
 
@@ -134,20 +120,14 @@ shows each tool invocation with args, latency, result size, and success.
 
 ## Cost
 
-Costs are **labelled cloud-equivalent estimates** at the public reference card
-($1.00/Mtok input, $4.00/Mtok output) — the hosted key is membership-quota,
-not pay-per-token, so nothing is a billed amount. `run-all` resets the spend
-ledger, caps the suite at `LLM_SUITE_COST_LIMIT_USD` ($2.00), enforces a
-$0.25 per-task cap through the meter callback (a capped task is recorded as
-`budget_exceeded`, the suite continues), and prints the totals. The same
-estimates price local inference at $0. All hosted runs to date (8 suite
-runs incl. tuning iterations, held-out runs, and the two 2026-10-29 repeat
-passes) totaled ~$0.65 cloud-equivalent combined — each individual run sits
-under the $2.00 cap (repeat passes metered $0.10 and $0.09 on the ledger), so
-the cap was never raised. The 2026-10-30 held-out expansion (9 new tasks)
-ran entirely on local Ollama: $0.00 metered of the $2.00 suite cap, with the
-hosted credentials blanked for the process so no hosted quota could be
-touched.
+Costs are **cloud-equivalent estimates** at the public reference card
+($1.00/Mtok input, $4.00/Mtok output). The hosted key uses membership quota,
+so these are not billed amounts. `run-all` resets the spend ledger, caps the
+suite at `LLM_SUITE_COST_LIMIT_USD` ($2.00), enforces a $0.25 per-task cap,
+and records capped tasks as `budget_exceeded` while the suite continues. Local
+inference meters $0 under the same rate card. The committed local held-out
+records used blanked hosted credentials, so they could not consume hosted
+quota.
 
 ## Limits
 

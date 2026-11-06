@@ -106,7 +106,7 @@ hierarchical objective, so both numbers matter.
 | ortools_cp_unhinted (10 s/instance) | no feasible plan on any of the 56 | — | — | — | 13.1 s |
 
 Runtimes are wall-clock on a shared machine (the heuristics are normally
-sub-10 ms; ALNS here ran on a quieter machine than the committed wave — the
+sub-10 ms; ALNS here ran on a quieter machine than the committed run — the
 load-insensitive statement is the ordering, not the seconds). Distances and
 gaps are seeded and deterministic. The unhinted arm's verdict is a status,
 not a gap: `UNKNOWN` on all 56 instances means CP-SAT produced no feasible
@@ -223,9 +223,8 @@ Why the improvement happens, in measured deltas:
 
 Honest caveats: `nearest_neighbor`, `randomized` and occasionally
 `clarke_wright` exceed the stated 25-vehicle fleet on tight R1/RC1 instances
-(e.g. CW needs 31 on R101) — reported, not hidden; distance stays valid and
-the vehicle count flags where a construction heuristic fragments. The
-hierarchical-objective roadmap item is delivered above (`alns_fleet`).
+(e.g. CW needs 31 on R101). Distance stays valid, and the vehicle count flags
+where a construction heuristic fragments.
 
 Figures (`reports/figures/`, HTML + JSON for the showcase API):
 
@@ -302,23 +301,5 @@ uv run pytest projects/06-routing-optimization -q
 - **Reproducibility:** pinned data snapshot (sha256 dataset card), DVC stages,
   deterministic seeded solvers, DQ gates that halt the pipeline.
 
-## Roadmap — delivered (retrospective)
-
-- ALNS behind the same `RoutePlan` contract (mean distance gap 13.63 % →
-  4.23 %, single digits on every family).
-- Full 56-instance benchmark with per-family reporting on both criteria:
-  distance gap and vehicle count vs the best-known references (intra-ladder:
-  ALNS 52/56 on distance, 38/56 vehicles-first; the fleet-first twin takes
-  4 and 5).
-- Hierarchical fleet-first objective — landed as `alns_fleet` (vehicles-first
-  search via a 10,000/vehicle penalty): +4.30 % mean gap, +3.66 mean
-  vehicles, 5/56 wins under the benchmark convention — the vehicle/distance
-  trade moves at under a tenth of a point of gap.
-- OR-Tools CP-SAT arms (verdict above): the hinted probe ties ALNS on the
-  100-customer benchmark within a 10 s budget at ~10× the runtime and
-  certifies small instances to optimality; the equal-budget unhinted
-  comparison ends UNKNOWN on all 56 — no feasible plan — so the independent-
-  solver question is answered with measured evidence rather than deferred.
-
-Deferred (engagement-dependent): larger Gehring–Homberger 200–1000
-customer instances; solver-as-a-service endpoint.
+Larger Gehring–Homberger 200–1000 customer instances and a solver-as-a-service
+endpoint remain engagement-dependent extensions.

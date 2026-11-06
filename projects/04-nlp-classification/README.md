@@ -55,15 +55,15 @@ platform's `classification_metrics` + weighted F1. Full numbers in
 | 2 | `random_uniform` | 0.2540 | 0.2533 | seeded uniform chance floor |
 | 3 | `baseline_tfidf_logreg` | 0.8720 | 0.8714 | TF-IDF (1–2g, 8k) + LogisticRegression |
 | 4 | `encoder_b` | 0.8980 | 0.8982 | roberta-base, default hypers, 2 epochs |
-| 5 | `distilbert` | **0.9020** | **0.9021** | DistilBERT, wave-2 default hypers |
+| 5 | `distilbert` | **0.9020** | **0.9021** | DistilBERT, default hypers |
 | 6 | `distilbert_tuned` | **0.9020** | **0.9021** | selection winner (see below) |
 | 7 | `distilbert_full_120k` | **0.9460** | **0.9460** | full 120k fine-tune on Apple-Silicon MPS |
 
 Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
-pp**, encoder_b **+64.5 pp**, bounded DistilBERT family **+64.9 pp**, full-data
-DistilBERT **+69.3 pp**. DistilBERT beats
-the TF-IDF baseline by **+3.1 pp** and its roberta-base challenger by **+0.4
-pp** — inside test noise (±1.9 pp), so read the two encoders as tied at this
+pp.**, encoder_b **+64.5 pp.**, bounded DistilBERT family **+64.9 pp.**, full-data
+DistilBERT **+69.3 pp.**. DistilBERT beats
+the TF-IDF baseline by **+3.1 pp.** and its roberta-base challenger by **+0.4
+pp.** — inside test noise (±1.9 pp.), so read the two encoders as tied at this
 data scale. `naive_majority` looks deceptively good on accuracy (0.25 =
 chance on a balanced test split) but collapses on macro-F1 (0.10) — exactly
 why the portfolio scores runs with macro-F1, not accuracy.
@@ -95,14 +95,14 @@ reproduce with `uv run python -m nlp_classification.latency_probe --n 200`.
 | `distilbert_full_120k` int8 (dynamic) | 132.3 | 13.2 | 77.6 | 0.0654 | 0.9635 | 0.9637 |
 
 Read the table as a routing decision: TF-IDF is ~40x faster and free of
-token-metered cost, at −7.4 pp macro-F1; the full DistilBERT buys that back
+token-metered cost, at −7.4 pp. macro-F1; the full DistilBERT buys that back
 for ~$0.065 per 1k items at ~110 pred/s on a laptop CPU. Dynamic int8
 (`torch.quantization.quantize_dynamic`, qnnpack on arm64) halves model size
 with zero measured quality loss but is **slower** here (13.2 vs 8.7 ms
 p50) — on Apple Silicon the int8 kernels lose to fp32 Accelerate at
 batch=1, so quantization buys memory and transfer, not speed.
 
-### Full-data path (GPU-track roadmap item — delivered on MPS)
+### Full-data path
 
 `train-nn --full-data` runs the real scaling route: the full 120k AG News
 train split (108k train / 12k val after the same stratified carve-out), gated
@@ -115,7 +115,7 @@ wall-clock estimate (~45–50 min/epoch on this CPU) unless `--force-cpu` /
 **The full run** (this machine, Apple Silicon MPS, torch 2.14.1, batch 32 —
 verified by an up-front memory probe at 256 MiB allocated — seed 42, 2
 epochs, val macro-F1 0.9433 → **0.9464**): **0.9460 test macro-F1** on the
-shared 1000-row split, **+4.4 pp over the 3.6k-row models**. Honest
+shared 1000-row split, **+4.4 pp. over the 3.6k-row models**. Honest
 measured wall-clock: **27.5 min for epoch 1 (1651 s), 18.0 min for epoch 2
 (1079 s)** — the training loop totalled ~46 min, the whole command ~47 min
 end-to-end — versus the ~50 s / 3.6k-row CPU epoch this path is gated on
@@ -146,7 +146,7 @@ a better headline — its peak 0.9477 vs the shipped 0.9464 is the validation
 split under a different LR schedule, inside run-to-run noise. Figure:
 `reports/figures/epochs_probe.*`.
 
-Scaling evidence — the controlled data-scale ladder (roadmap item, delivered):
+Scaling evidence uses a controlled data-scale ladder:
 all rungs use the same seeded stratified protocol and identical hypers; the
 MPS rungs vary **data size only**, and the 3.6k rung exists on both devices
 (same rows by construction) to separate the device component. Every rung is
@@ -158,20 +158,18 @@ holdout; per-rung wall-clock and device provenance live in
 |---|---|---|---|---|---|---|
 | 3.6k | `distilbert` (legacy bounded) | CPU | 0.8880 | 0.9021 | — | 0.8962 |
 | 3.6k | `distilbert_scale_4000` | MPS | 0.8849 | 0.9019 | — | 0.9067 |
-| 10.8k | `distilbert_scale_12000` | MPS | 0.9120 | 0.9170 | +1.5 pp | 0.9219 |
-| 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | +3.1 pp | 0.9428 |
-| 108k | `distilbert_full_120k` | MPS | 0.9464 | **0.9460** | +4.4 pp | 0.9529 |
+| 10.8k | `distilbert_scale_12000` | MPS | 0.9120 | 0.9170 | +1.5 pp. | 0.9219 |
+| 36k | `distilbert_scale_40000` | MPS | 0.9320 | 0.9331 | +3.1 pp. | 0.9428 |
+| 108k | `distilbert_full_120k` | MPS | 0.9464 | **0.9460** | +4.4 pp. | 0.9529 |
 
 - **Device component measured, not assumed:** the same-rows twins differ by
   0.0002 macro-F1 on the test split and 0.0105 on the fresh holdout (the MPS
   twin's best-restored epoch is 2, the CPU twin's is 1 — depth + fp noise,
-  still inside the ±1.9 pp CI). The bounded↔full gap is **not** a device
+  still inside the ±1.9 pp. CI). The bounded↔full gap is **not** a device
   artifact.
 - **Data component measured:** at fixed device each 3× step buys +1.5 / +1.6 /
-  +1.3 pp on the test split — a monotone, decelerating curve that reproduces
-  on the fresh holdout (+1.5 / +2.1 / +1.0 pp). The earlier CPU 18k evidence
-  run (0.9270, artifact since overwritten) lands exactly between the 10.8k
-  and 36k rungs, as its size predicts.
+  +1.3 pp. on the test split, a monotone, decelerating curve that reproduces
+  on the fresh holdout (+1.5 / +2.1 / +1.0 pp.).
 - MPS rung wall-clock measured end-to-end on this machine: 84 s / 292 s /
   995 s for the 3.6k / 10.8k / 36k rungs (batch 32, 2 epochs, shared-machine
   load inflates the largest — epoch time tracks load, as the full run did).
@@ -180,8 +178,8 @@ The dominant confusion pair is **stable across the measured runs**:
 Business → Sci/Tech, 24/250 at 3.6k → 15/250 at 20k → 14/250 at 120k — the
 same hybrid technology-business headlines (e.g. *"Amazon Snaps Up China's
 Largest Web Retailer…"*) still trip the model, just nearly half as often.
-That residual is a labeling-ambiguity floor, not a data-scale problem — the
-multi-label extension in the roadmap is the honest answer.
+That residual is a labeling-ambiguity floor, not a data-scale problem. Hybrid
+articles require a separate multi-label contract.
 
 Classifier serving economics — size, latency, throughput, and token cost —
 are measured in the [Serving economics](#serving-economics-probe-hardware-numbers-not-the-headline) table above;
@@ -198,20 +196,20 @@ from **0.8880** (defaults) to **0.8953** (best trial: lr 3.82e-5, warmup
 its trial's validation score bit-for-bit when retrained (`reports/hpo_study.json`).
 
 But validation gains did not transfer: on the shared test split the
-HPO-retrained model scored **0.9011** macro-F1 vs the wave-2 artifact's
-**0.9021**. The reported `distilbert_tuned` run is therefore the **wave-2
+HPO-retrained model scored **0.9011** macro-F1 vs the default artifact's
+**0.9021**. The reported `distilbert_tuned` run is therefore the **default
 artifact** (decision persisted in
 [`reports/selection.json`](reports/selection.json), margin +0.0010 — i.e.
 noise). **This choice uses test macro-F1, so the test split is not a clean
 final holdout for the tuned-versus-artifact comparison.** Lesson: at 1k test
-rows, a +0.7 pp validation improvement is inside sampling noise; HPO here is a
+rows, a +0.7 pp. validation improvement is inside sampling noise; HPO here is a
 *process* demonstration, not a guaranteed win.
 
 **Seed variance — is the HPO gain even real?** The `hpo-seeds` stage re-ran
 the study under 3 fixed sampler seeds (6 trials each, epochs 2–3 budget):
 best val macro-F1 0.8953 (seed 42), 0.8852 (seed 43), 0.8926 (seed 44) —
 **mean 0.8910 ± 0.0042**. Against 0.8880 for defaults, the mean HPO gain is
-~+0.3 pp, i.e. **smaller than the seed standard deviation**: at 400 validation
+~+0.3 pp., i.e. **smaller than the seed standard deviation**: at 400 validation
 rows, run-to-run HPO variance exceeds the effect being chased. (Seed 42's best
 matches the 12-trial study bit-for-bit — same RNG stream, determinism
 re-confirmed.) Full data in `reports/hpo_seeds.json` and
@@ -244,7 +242,7 @@ with data. Full table in [`reports/error_analysis.md`](reports/error_analysis.md
 per-class comparison vs the TF-IDF baseline in
 `reports/figures/per_class_f1_comparison.*`.
 
-**Misclassified examples** — selected model (`distilbert_tuned`, wave-2
+**Misclassified examples** — selected model (`distilbert_tuned`, default
 artifact per `reports/selection.json`) on the shared 1,000-row bounded
 test split; reproduced by running the committed artifact on the committed
 test split — the reproduced predictions bit-match `reports/metrics.json`
@@ -280,7 +278,7 @@ within noise, and the full-data model keeps its edge on untouched data
 (0.9529 fresh vs 0.9460 bounded). The controlled scale ladder removes the
 last confound — same-rows CPU/MPS twins at 3.6k bracket the device effect at
 ≤0.011 macro-F1, and the same-device rungs isolate a data-scale slope of
-+1.3–1.6 pp per 3× step on both the test split and the fresh holdout.
++1.3–1.6 pp. per 3× step on both the test split and the fresh holdout.
 Temperature scaling cuts ECE by 71% on the shared test split. Full-data and
 rung MPS timings are machine-specific.
 
@@ -299,10 +297,10 @@ Human-readable report: [`reports/report.html`](reports/report.html).
 ## Limits
 
 Validation→test non-transfer is documented, and the remaining error is a
-labeling-ambiguity floor (Business/Sci-Tech), not a data-scale problem — more
-rows do not fix it; the multi-label extension in the roadmap is the honest
-answer. AG News terms are research-purposes only (see the
-[dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/)).
+labeling-ambiguity floor (Business/Sci-Tech), not a data-scale problem. More
+rows do not fix it; hybrid articles need a separate multi-label contract with
+multi-hot labels and different metrics. AG News terms are research-purposes only
+(see the [dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/)).
 
 ## Reproduce
 
@@ -366,40 +364,3 @@ uv run pytest projects/04-nlp-classification -q
   experiments stay cheap and reviewable before anyone rents a GPU.
 - **Production-shaped reporting:** platform-standard metrics JSON, themed
   plotly figures, and an HTML report a stakeholder can open anywhere.
-
-## Roadmap
-
-Final forward intent — everything below is ready to execute against the
-existing pipeline:
-
-- **Full-dataset fine-tune — delivered:** the 120k AG News corpus trained
-  through `train-nn --full-data` on Apple Silicon MPS (see above): 0.9460
-  test macro-F1, +4.4 pp over the bounded models, ~18 min/epoch steady-state
-  on MPS (27.5 min for epoch 1 under shared machine load; ~46 min training
-  loop, ~47 min for the whole command).
-- **Fresh-holdout selection and cost-sensitive routing — delivered:**
-  `cli fresh-holdout` draws a 1,000-row holdout from the complement of the
-  bounded test split (disjoint by construction) and scores every persisted
-  artifact on it. Fresh data flips the tuned selection: the HPO-retrained
-  model beats the wave-2 artifact by +0.0069 macro-F1 (against the test
-  split's +0.0010 the other way) — both inside noise, i.e. the bounded
-  candidates are tied; the full-data model reads 0.9529 on the fresh holdout
-  versus 0.9460 bounded. The same run delivers confidence-routed serving:
-  TF-IDF where its max class probability ≥ τ, else the transformer. At
-  τ=0.50, 75.4% of items stay on TF-IDF economics and routed macro-F1 is
-  0.9020 — above either constituent alone (0.8785 / 0.8962). Artifacts:
-  `reports/fresh_holdout.json`; DVC stage `fresh_holdout`.
-- **Controlled data-scale comparisons — delivered:** the bounded-vs-full
-  confound is closed by a controlled ladder. `train-nn --full-data --subset N`
-  trains seeded per-class stratified rungs (3.6k / 10.8k / 36k) on one device
-  with identical hypers — subset 4000 reproduces the bounded rows exactly,
-  giving same-rows CPU/MPS twins. Measured: device effect ≤0.011 macro-F1
-  (twins at 3.6k); data effect at fixed device +1.5 / +1.6 / +1.3 pp per 3×
-  step on the test split, reproducing on the fresh holdout (+1.5 / +2.1 /
-  +1.0 pp). Rung artifacts: `reports/models/distilbert_scale_<N>.pt`,
-  `reports/history_scale_<N>.json`, `reports/scale_meta_<N>.json`; scored as
-  `distilbert_scale_<N>` rows by `evaluate` and `fresh-holdout`; figure
-  `reports/figures/scale_ladder.*`.
-- **Multi-label extension** for hybrid Business/Sci-Tech articles — the
-  dominant observed error mode — deferred deliberately: it is a different
-  problem contract (multi-hot labels, different metrics), not a tuning knob.

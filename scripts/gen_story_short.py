@@ -5,7 +5,9 @@ Reads projects/*/story.yaml through the same ``portfolio_core.story`` loader
 the showcase API uses and writes apps/showcase-web/src/lib/storyShort.ts —
 the generated map lib/impact.ts reads so card summaries and og: descriptions
 (served via summaryLine) come from the single plain-text source each story
-declares (card/README/docs/SEO/social copy).
+declares. This script writes only storyShort.ts. The root README project index,
+docs project index, and docs opening blockquotes are check-only surfaces:
+scripts/check_short_copy.py verifies their copied text but never writes it.
 
 Deterministic: projects by id, no timestamps — a re-run without source
 changes produces no diff. Strict in two ways: a story that fails full
@@ -36,8 +38,9 @@ OUT = ROOT / "apps" / "showcase-web" / "src" / "lib" / "storyShort.ts"
 HEADER = """// GENERATED — do not edit.
 // Map of project id → story.yaml `short_version`, baked by
 // scripts/gen_story_short.py (same loader the showcase API uses). This is the
-// single plain-text source for card/README/docs/SEO/social short copy
+// single plain-text source for card/SEO/social short copy
 // (portfolio_core.story.ProjectStory.short_version); lib/impact.ts reads it.
+// README/docs copies are checked by scripts/check_short_copy.py, not written here.
 // Re-run that script after changing any story.yaml; a re-run without changes
 // produces byte-identical output.
 """

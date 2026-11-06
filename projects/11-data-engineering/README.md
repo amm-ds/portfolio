@@ -193,7 +193,7 @@ uv run pytest -q            # or with the CI flags: -n 2 --timeout=900
 - **Reproducibility:** sha256-pinned data, seeded synthetic tracks running
   the full protocol in seconds, determinism gates that fail loudly.
 
-## Roadmap — delivered (retrospective)
+## Current capabilities
 
 - Ten-task contract on pandas / Polars / DuckDB / sqlite3 with
   canonical-result parity as a hard gate (geomean ×19.2 / ×14.9 vs pandas).

@@ -1,8 +1,9 @@
 // GENERATED — do not edit.
 // Map of project id → story.yaml `short_version`, baked by
 // scripts/gen_story_short.py (same loader the showcase API uses). This is the
-// single plain-text source for card/README/docs/SEO/social short copy
+// single plain-text source for card/SEO/social short copy
 // (portfolio_core.story.ProjectStory.short_version); lib/impact.ts reads it.
+// README/docs copies are checked by scripts/check_short_copy.py, not written here.
 // Re-run that script after changing any story.yaml; a re-run without changes
 // produces byte-identical output.
 

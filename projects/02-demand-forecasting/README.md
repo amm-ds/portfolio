@@ -31,7 +31,7 @@ Summary:
   from the Nixtla `datasetsforecast` mirror of the competition archive (sha256
   pins in `data_m5/`, provenance in `data_m5/raw/PROVENANCE.md`). The hierarchy
   aggregates the bottom series bottom-up through 12 levels (42,840 nodes).
-- **Features** (`m5_track.py`): the committed wave-27 feature space — lags
+- **Features** (`m5_track.py`): the committed feature space — lags
   1/7/14/21/28, rolling means 7/28/56/84 and rolling stds 7/28 at lag 1,
   rolling mean 7/28 and std 7 at lag 7, an expanding mean, calendar
   day-of-week/day/month, and exogenous price/SNAP/event codes — all built with
@@ -42,7 +42,7 @@ Summary:
   committed config, seed 42); a Tweedie-loss twin; three pooled-global fits
   (one per store, per store×category cell, per department); per-series AutoETS
   (statsforecast); and a stability-screened convex ensemble of the pool.
-- **Selection** (`m5_full.py`): the wave-30 screen — best three of the pool by
+- **Selection** (`m5_full.py`): the stability screen — best three of the pool by
   mean + 1.0×population std of the per-origin official WRMSSE over the
   selection origins; simplex-grid weights (step 0.05) minimising the same
   screen; computed exactly from the forecast-level blend re-aggregated through
@@ -67,7 +67,7 @@ zero-demand days) — scored under the official hierarchical WRMSSE over all
 window), each training on ≥ 1,096 days and scoring the next **28 days** (the
 M5 evaluation horizon). Candidates: per-series statistical floor
 (`seasonal_naive`), a global **LightGBM** and a **Tweedie-loss** twin
-(mlforecast 1.1.0 recursive over the committed wave-27 feature space: lags
+(mlforecast 1.1.0 recursive over the committed feature space: lags
 1/7/14/21/28, rolling means 7/28/56/84 and stds 7/28 at lag 1, rolling mean
 7/28 and std 7 at lag 7, expanding mean, calendar day-of-week/day/month,
 exogenous price/SNAP/event codes), three **pooled-global** LightGBM variants —
@@ -185,7 +185,7 @@ official WRMSSE, bottom WAPE, bias, stability, zero-day accuracy, per-level
 WRMSSE + the ensemble screen/members/weights), `evaluation_metadata.json`
 (protocol, checksums, seeds, package pins, runtime), `report.html`
 (self-contained interactive report), `figures/` (per-level, sample-series, and
-ranked-candidate charts), and the wave-32 catalog pair
+ranked-candidate charts), and the catalog pair
 (`catalog_forecasts.parquet` + `catalog_meta.json`: every candidate re-fit at
 the test origin for a deterministic 48-series curated catalog, feeding the
 `forecast-workbench` demo via `demo_payload.json`, schema v4). The subset-era
@@ -197,7 +197,7 @@ test-suite and regenerate with `cli all --data-source uci` / `cli all`.
 
 The headline is one scored-once competition window on one (full-scale) panel —
 no claim of transfer to other hierarchies or calendars. The seasonal-naive
-floor still wins the quiet days, and the wave-32 catalog refits exist to serve
+floor still wins the quiet days, and the catalog refits exist to serve
 the demo, not to generalize beyond the committed window.
 
 ## Reproduce
@@ -243,15 +243,3 @@ uv run pytest projects/02-demand-forecasting -q
 - **Reproducibility**: seeded data, checksum-pinned inputs, closed-form or
   seeded fits, dvc stages, offline tests — results regenerate byte-for-byte on
   any machine with the repo.
-
-## Roadmap
-
-Delivered: the **full-panel M5 headline track** (protocol `m5_full_v1`) — the
-committed checksum-pinned Walmart M5 panel (30,490 series × 1,969 days), the
-official hierarchical WRMSSE over 42,840 revenue-weighted nodes, 8 candidates
-from the seasonal-naive floor through global and pooled LightGBM arms to
-per-series AutoETS, a stability-screened convex ensemble chosen on selection
-origins only, bias/stability/per-level/zero-day metrics alongside the
-headline, the self-contained report and story figures, and the
-`forecast-workbench` demo payload (`cli demo-payload-m5-full`, schema v4)
-served by the showcase API.

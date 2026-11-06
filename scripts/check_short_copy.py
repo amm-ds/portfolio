@@ -5,8 +5,7 @@ The story's ``short_version`` is the single plain-text source for short copy
 (scripts/gen_story_short.py bakes it into apps/showcase-web/src/lib/storyShort.ts).
 This checker fails while any consumer surface drifts from it:
 
-- README.md — Projects table, per-project "Highlights" cell
-- README.md — "Selected results" table, per-project row
+- README.md — the single Projects table, per-project "Highlights" cell
 - docs/projects/index.md — per-project "Impact in one line" cell
 - docs/projects/<id>.md — the opening blockquote
 
@@ -79,19 +78,6 @@ def readme_highlights_row(readme: str, project_id: str) -> Surface | None:
     return None
 
 
-def readme_results_row(readme: str, project_id: str) -> Surface | None:
-    """The Selected-results row keyed by the project number ("| 01 ...")."""
-    num = project_id.split("-", 1)[0]
-    in_results = False
-    for line in readme.splitlines():
-        if line.startswith("## "):
-            in_results = line.strip() == "## Selected results"
-            continue
-        if in_results and re.match(rf"\|\s*{num}\s+", line):
-            return Surface(f"README.md selected-results row ({project_id})", line)
-    return None
-
-
 def docs_index_row(index: str, project_id: str) -> Surface | None:
     num = project_id.split("-", 1)[0]
     for line in index.splitlines():
@@ -121,7 +107,6 @@ def collect(sv: dict[str, str]) -> list[tuple[str, Surface | None]]:
         page_path = DOCS_PROJECTS_DIR / f"{pid}.md"
         page = page_path.read_text(encoding="utf-8") if page_path.exists() else None
         surfaces.append((pid, readme_highlights_row(readme, pid)))
-        surfaces.append((pid, readme_results_row(readme, pid)))
         surfaces.append((pid, docs_index_row(index, pid)))
         surfaces.append(
             (pid, docs_opening_blockquote(page, pid) if page is not None else None),

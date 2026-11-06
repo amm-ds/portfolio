@@ -1,8 +1,10 @@
 # Code Quality Guidelines
 
-This repository is reviewed against three public skill frameworks, vendored
-under [`skills/`](skills/) and distilled here. Agents and contributors apply
-them to every non-trivial change.
+This repository distills two vendored public skill guides,
+[Ponytail](skills/ponytail/SKILL.md) and
+[Thermo-Nuclear Code Quality Review](skills/thermo-nuclear-code-quality-review/SKILL.md),
+plus the external pstack principles. Agents and contributors apply them to every
+non-trivial change.
 
 ## 1. Ponytail — the smallest complete change
 
@@ -45,8 +47,9 @@ visible path to something dramatically simpler left untaken".
 - **File size:** a change must not push a file from under 1,000 lines to over
   1,000 lines without a compelling reason — extract first.
 - **No spaghetti growth:** new ad-hoc conditionals or special cases bolted
-  onto unrelated flows are a design problem, not a nit. Push the logic into a
-  dedicated abstraction.
+  onto unrelated flows are a design problem, not a nit. Extract a dedicated
+  abstraction only when the seam is earned; otherwise keep the smallest local
+  correction.
 - **Code judo:** prefer the reframing that deletes whole branches, helpers or
   layers over the refactor that rearranges the same complexity.
 - **Canonical layer:** feature logic lives in the right package/module; reuse
@@ -73,9 +76,9 @@ modularity → legibility. Few high-conviction findings over many cosmetic nits.
 | fix-root-causes | Fix where the system first went wrong; a guard is a fix only for legitimate state. |
 | test-behavior-not-implementation | Assert what users observe, so tests survive internal refactors. |
 | explain-the-number | Before trusting a measured number: find what limits it and rule out that it measured something else. |
-| encode-lessons-in-structure | Prefer a lint, script or check over a paragraph of advice. |
+| encode-lessons-in-structure | When a repeated rule warrants enforcement, prefer a lint, script or check over another paragraph of advice. |
 
-## Repo-specific enforcement
+## Repo-specific gates
 
 Every quality pass ends with the gates it touched green:
 
@@ -83,6 +86,7 @@ Every quality pass ends with the gates it touched green:
 - Tests: `uv run pytest -q` (or the affected suites)
 - Web: `cd apps/showcase-web && npm test && npm run lint && npm run build`
 - Content: `uv run python scripts/lint_story_language.py`,
+  `uv run python scripts/check_docs.py`,
   `uv run python scripts/check_short_copy.py --check`,
   `uv run python scripts/check_demo_contract.py`,
   `uv run python scripts/gen_static_registry.py --check`,

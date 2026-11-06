@@ -185,12 +185,26 @@ README = """# {title}
 - Design: [DESIGN.md](DESIGN.md)
 - Story: [story.yaml](story.yaml) (served at `/projects/{dirname}/story`)
 
+## Results
+
+<current metrics with units, baseline, and evaluation split; link committed evidence>
+
+## Limits
+
+<where the current artifact should not be trusted>
+
 ## Reproduce
 
 ```bash
 uv run python -m {pkg}.cli prepare
 uv run python -m {pkg}.cli evaluate
 ```
+
+## Common errors
+
+| symptom | cause | fix |
+|---|---|---|
+| `<cmd>` fails | <likely setup cause> | `<fix command>` |
 """
 
 MODEL_CARD = """# Model Card — {title}

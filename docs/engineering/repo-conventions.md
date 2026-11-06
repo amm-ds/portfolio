@@ -11,10 +11,10 @@ Every experiment's `story.yaml` carries eight sections in a fixed order:
 conclusions`. Renderer behavior depends on the ids — keep them stable.
 
 - `short_version` (≤280 chars) is the single plain-text source for the
-  project card, README rows, docs openings, and social text. Never restate
-  its numbers by hand — run
-  `uv run python scripts/gen_story_short.py` and let
-  `scripts/check_short_copy.py --check` prove the surfaces match.
+  project card, README rows, docs openings, and social text. Run
+  `uv run python scripts/gen_story_short.py` to regenerate only `storyShort.ts`;
+  `scripts/check_short_copy.py --check` verifies the check-only README/docs
+  surfaces without writing them.
 - Roadmaps are finalized: `status: delivered` milestones only, 4–7 items.
 - `key_concepts` render as a card in Background; `figure_captions` (≤3
   figures per section) render as figure footers.
@@ -66,12 +66,21 @@ conclusions`. Renderer behavior depends on the ids — keep them stable.
   a static file (no wiring needed — verify `site/llms.txt` after
   `uv run mkdocs build --strict` if the layout changes).
 - `scripts/check_docs.py` is the docs gate: relative markdown links must
-  resolve to a file/heading anchor (README.md, `projects/*/README.md`,
-  `docs/**`), except that git-ignored DVC outputs may be absent until their
-  pipeline regenerates them. Fenced code blocks need a language tag, and `/glossary#slug`
-  anchors referenced from `apps/showcase-web/src` must exist in
-  `glossary.json`. It runs in CI (gate job) and through
-  `uv run python scripts/lint_ci.py`; fix what it finds — do not relax it.
+  resolve to a file/heading anchor on first-party Markdown surfaces, except
+  that git-ignored DVC outputs may be absent until their pipeline regenerates
+  them. Fenced code blocks need a language tag, and `/glossary#slug` anchors
+  referenced from `apps/showcase-web/src` must exist in `glossary.json`. It
+  runs in CI (gate job) and through `uv run python scripts/lint_ci.py`; fix
+  what it finds, do not relax it.
+- Documentation has three distinct jobs: README is the current operational and
+  evidence snapshot, `story.yaml` is the case study, and DESIGN.md holds history
+  and alternatives. Use short openings, put reproduction near the top, keep one
+  idea per paragraph, and write active, present-tense, evidence-led prose.
+  Metrics include units, baseline, and split. Remove wave/changelog prose from
+  public READMEs and preserve useful history in DESIGN.md changelogs.
+- Avoid em-dash clause joining by default, not dashes themselves. Preserve
+  numeric ranges, math, arrows, YAML front matter, and table delimiters. Never
+  manually edit generated copy; use its generator and `--check` mode.
 - Project READMEs follow one skeleton: What it is / Why / Quickstart /
   Results / Limits / Reproduce (heading wording may vary — map equivalents;
   rename only when a section is genuinely missing).

@@ -3,9 +3,13 @@
 an existing file or heading anchor, except for git-ignored DVC outputs that
 pipelines regenerate; fenced code blocks must carry a language tag;
 /glossary#slug anchors referenced from apps/showcase-web/src must exist in the
-glossary data.
+glossary data. Public READMEs describe current snapshots, not wave changelogs.
 
-Surfaces: README.md, projects/*/README.md, docs/**/*.md.
+Surfaces: AGENTS.md, README.md, projects/*/README.md, apps/**/README.md,
+libs/**/README.md, registry/README.md, deploy/**/*.md, and first-party
+docs/**/*.md. Vendored skills, dependencies, and generated third-party content
+are excluded. No readability scoring or blanket punctuation rules apply to
+command-heavy documentation.
 
 Run: uv run python scripts/check_docs.py
 """
@@ -20,11 +24,55 @@ from urllib.parse import unquote
 
 REPO = Path(__file__).resolve().parents[1]
 
-DOC_FILES = [
-    REPO / "README.md",
-    *sorted((REPO / "projects").glob("*/README.md")),
-    *sorted((REPO / "docs").rglob("*.md")),
-]
+EXCLUDED_PARTS = {
+    ".venv",
+    "build",
+    "dist",
+    "node_modules",
+    "site",
+    "third_party",
+    "vendor",
+    "vendored",
+    "venv",
+}
+PUBLIC_CHANGELOG_RE = re.compile(
+    r"\b(?:run and wave record|revision and wave record|changelog)\b"
+    r"|\bwave\s*-?\s*\d+\b",
+    re.IGNORECASE,
+)
+
+
+def _first_party(path: Path, repo: Path) -> bool:
+    rel = path.relative_to(repo)
+    if any(part in EXCLUDED_PARTS for part in rel.parts):
+        return False
+    return rel.parts[:3] != ("docs", "engineering", "skills")
+
+
+def _rglob(repo: Path, directory: str, pattern: str) -> list[Path]:
+    return [
+        path
+        for path in sorted((repo / directory).rglob(pattern))
+        if path.is_file() and _first_party(path, repo)
+    ]
+
+
+def doc_files(repo: Path = REPO) -> list[Path]:
+    """Return the first-party instruction and documentation surfaces."""
+    files = [
+        repo / "AGENTS.md",
+        repo / "README.md",
+        *sorted((repo / "projects").glob("*/README.md")),
+        *_rglob(repo, "apps", "README.md"),
+        *_rglob(repo, "libs", "README.md"),
+        repo / "registry" / "README.md",
+        *_rglob(repo, "deploy", "*.md"),
+        *_rglob(repo, "docs", "*.md"),
+    ]
+    return sorted({path for path in files if path.is_file()})
+
+
+DOC_FILES = doc_files()
 
 LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 SKIP_SCHEME_RE = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|//)", re.IGNORECASE)
@@ -66,7 +114,7 @@ def fenced_spans(text: str) -> list[tuple[int, int]]:
         if start is None:
             if line.lstrip().startswith("```"):
                 start = i
-        elif line.rstrip().startswith("```"):
+        elif line.strip().startswith("```"):
             spans.append((start, i))
             start = None
     if start is not None:
@@ -96,10 +144,10 @@ def dvc_out(target: Path) -> bool:
     return False
 
 
-def check_links() -> list[str]:
+def check_links(files: list[Path] | None = None) -> list[str]:
     problems: list[str] = []
     anchor_cache: dict[Path, set[str]] = {}
-    for f in DOC_FILES:
+    for f in DOC_FILES if files is None else files:
         rel = f.relative_to(REPO)
         lines = f.read_text().splitlines()
         code = fenced_spans("\n".join(lines))
@@ -131,9 +179,9 @@ def check_links() -> list[str]:
     return problems
 
 
-def check_code_fences() -> list[str]:
+def check_code_fences(files: list[Path] | None = None) -> list[str]:
     problems: list[str] = []
-    for f in DOC_FILES:
+    for f in DOC_FILES if files is None else files:
         rel = f.relative_to(REPO)
         in_fence = False
         for lineno, line in enumerate(f.read_text().splitlines(), 1):
@@ -141,8 +189,31 @@ def check_code_fences() -> list[str]:
                 in_fence = True
                 if not line.lstrip()[3:].strip():
                     problems.append(f"{rel}:{lineno}: fenced block missing a language tag")
-            elif in_fence and line.rstrip().startswith("```"):
+            elif in_fence and line.strip().startswith("```"):
                 in_fence = False
+    return problems
+
+
+def check_current_snapshots(files: list[Path] | None = None) -> list[str]:
+    """Keep wave/changelog history out of root and project READMEs."""
+    problems: list[str] = []
+    for f in DOC_FILES if files is None else files:
+        rel = f.relative_to(REPO)
+        if rel != Path("README.md") and not (
+            len(rel.parts) == 3 and rel.parts[0] == "projects" and rel.name == "README.md"
+        ):
+            continue
+        lines = f.read_text().splitlines()
+        code = fenced_spans("\n".join(lines))
+        for lineno, line in enumerate(lines, 1):
+            if any(a <= lineno <= b for a, b in code):
+                continue
+            match = PUBLIC_CHANGELOG_RE.search(line)
+            if match:
+                problems.append(
+                    f"{rel}:{lineno}: '{match.group(0)}' is development history; "
+                    "move it to DESIGN.md and keep the README current"
+                )
     return problems
 
 
@@ -170,7 +241,12 @@ def check_glossary_anchors() -> list[str]:
 
 
 def collect_errors() -> list[str]:
-    return [*check_links(), *check_code_fences(), *check_glossary_anchors()]
+    return [
+        *check_links(),
+        *check_code_fences(),
+        *check_current_snapshots(),
+        *check_glossary_anchors(),
+    ]
 
 
 if __name__ == "__main__":

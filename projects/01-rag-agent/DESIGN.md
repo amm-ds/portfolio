@@ -262,6 +262,20 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 0.6.0 (2026-10-18) — sealed 15-question held-out evaluation: 8 single-hop,
+  2 multi-hop, and 5 unanswerable questions, gated for support, absent terms,
+  and Jaccard separation before one verify-on hosted pass. Held-out recall@5 /
+  recall@10 measured 0.600 / 0.667 against 0.831 / 0.846 on tuning; refusal was
+  5/5, rubric faithfulness 0.62 [0.45, 0.79] on 10 answerable questions, and
+  cost $0.25 cloud-equivalent. Details remain in `metrics.json → detail.heldout`.
+- 0.5.0 (2026-10-17) — hosted 65-question evaluation and per-phase cost meter:
+  44 correct / 18 unsupported / 2 retrieval-miss / 1 format, RAGAS faithfulness
+  0.685 [0.605, 0.760], and $3.58 cloud-equivalent across agent, RAGAS, verify,
+  and judge calls. The local 30-question verify A/B reduced unsupported-claim
+  share from 60% to 47%, mainly through support-floor abstention; RAGAS
+  faithfulness moved 0.651 → 0.606 with overlapping CIs and answer relevancy
+  0.879 → 0.720. Verification stayed enabled without claiming a resolved
+  faithfulness gain. Per-run token and USD guards stop runaway calls cleanly.
 - 0.4.0 (2026-10-16) — wave 14: verify-then-answer loop (`rag_agent.verify`):
   batched per-claim entailment of the drafted summary against full cited-chunk
   text (provider judge, keyword fallback), budget-capped repair of unsupported

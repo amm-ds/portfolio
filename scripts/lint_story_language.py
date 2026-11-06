@@ -34,13 +34,6 @@ Checks (per story.yaml):
   WARNING section word budget (main sections) and main-thread total budget
           (all main sections combined; conclusions is collapsed <details>)
   WARNING Flesch reading ease below FLESCH_MIN in a main section
-  WARNING glossary term (apps/showcase-web/src/lib/glossary.json) used in
-          section prose but never in a position the renderer auto-links
-          (all its occurrences are inside code spans/fenced blocks, which
-          lib/markdown.tsx never links) — its first use stays unlinked
-  WARNING section word budget (main sections) and main-thread total budget
-          (all main sections combined; conclusions is collapsed <details>)
-  WARNING Flesch reading ease below FLESCH_MIN in a main section
 
 Reading ease is the Flesch formula (206.835 - 1.015*W/S - 84.6*Sy/W) over
 markdown-stripped prose, with sentences split on protected tokens (decimals,
