@@ -60,14 +60,19 @@ describe("AgentChatArticle", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "Chatbot agent — production template",
     );
-    expect(indexHrefs()).toHaveLength(8);
-    expect(screen.getByRole("heading", { name: "architecture & pipeline" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "human approval" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "evaluation" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "App article sections" }).querySelectorAll("a")).toHaveLength(8);
+    expect(screen.getByRole("heading", { name: /Architecture$/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Evaluation$/ })).toBeInTheDocument();
     expect(document.querySelectorAll(".app-screenshot img")).toHaveLength(3);
     expect(document.querySelector('img[src="/apps/agent-chat-memory.png"]')).not.toBeNull();
     expect(document.querySelectorAll(".app-spec-card")).toHaveLength(4);
-    expect(screen.getByText(/13-case offline suite/)).toBeInTheDocument();
+    expect(document.querySelectorAll("pre.code-block")).toHaveLength(5);
+    expect(screen.getAllByText("In plain terms")).toHaveLength(8);
+    const video = document.querySelector("video")!;
+    expect(video).toHaveAttribute("controls");
+    expect(video).toHaveAttribute("preload", "metadata");
+    expect(video.querySelector('source[src="/apps/agent-chat-demo.webm"]')).not.toBeNull();
+    expect(screen.getByText(/13-case suite/)).toBeInTheDocument();
     expect(screen.getByText(/single-agent chassis/)).toBeInTheDocument();
   });
 });

@@ -1425,24 +1425,68 @@ button:disabled {
 
 }
 
-/* Native app articles: spec cards and evidence screenshots. */
+/* Native app articles: spec cards, compact media, and video. */
 .app-spec-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--gap-card);
 }
 
 .app-spec-card h3 {
-  margin-top: 0;
+  margin: 0.15rem 0 0.45rem;
   color: var(--accent);
   font-family: var(--mono);
+  font-size: 1.05rem;
+}
+
+.app-spec-card p {
+  margin-bottom: 0.85rem;
 }
 
 .app-spec-card a {
   color: var(--accent);
 }
 
+.app-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.app-media-grid--single {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 680px;
+}
+
 .app-screenshot {
+  margin: 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.app-screenshot a {
+  display: block;
+}
+
+.app-screenshot img {
+  display: block;
+  width: 100%;
+  height: 230px;
+  object-fit: cover;
+  object-position: top;
+}
+
+.app-screenshot figcaption {
+  padding: 0.65rem 0.85rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.app-video {
   margin: 1.25rem 0;
   overflow: hidden;
   background: var(--surface);
@@ -1450,16 +1494,21 @@ button:disabled {
   border-radius: var(--radius);
 }
 
-.app-screenshot img {
+.app-video video {
   display: block;
   width: 100%;
-  height: auto;
+  max-height: 560px;
+  background: var(--bg);
 }
 
-.app-screenshot figcaption {
-  padding: 0.7rem 1rem;
-  color: var(--muted);
-  border-top: 1px solid var(--border);
-  font-size: 0.85rem;
+.app-video .prose {
+  padding: 0 1rem;
+}
+
+@media (max-width: 720px) {
+  .app-spec-grid,
+  .app-media-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 

@@ -1,0 +1,13 @@
+WEBVTT
+
+00:00.000 --> 00:08.000
+A user asks a question. The assistant streams an answer with tool calls and cited evidence.
+
+00:08.000 --> 00:18.000
+A consequential send_message action pauses the run and asks the operator for approval.
+
+00:18.000 --> 00:28.000
+The operator approves. The action completes and the structured answer resumes.
+
+00:28.000 --> 00:40.000
+In a later conversation, the agent recalls a durable fact from the user's notebook.
