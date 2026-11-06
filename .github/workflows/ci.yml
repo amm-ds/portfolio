@@ -44,6 +44,7 @@ jobs:
               - 'apps/showcase-web/**'
             agent_chat:
               - 'apps/agent-chat/**'
+              - '.github/workflows/ci.yml'
             docs:
               - 'docs/**'
               - 'mkdocs.yml'
