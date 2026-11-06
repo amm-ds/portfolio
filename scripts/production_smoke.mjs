@@ -27,7 +27,10 @@ try {
   });
   page.on("pageerror", (error) => errors.push(`${page.url()}: ${error.message}`));
   page.on("requestfailed", (request) => {
-    errors.push(`${request.url()}: ${request.failure()?.errorText ?? "request failed"}`);
+    const failure = request.failure()?.errorText ?? "request failed";
+    // Navigating from a report to the next route cancels its remaining CDN
+    // requests. That is expected; CSP console violations stay captured above.
+    if (failure !== "net::ERR_ABORTED") errors.push(`${request.url()}: ${failure}`);
   });
   page.on("response", (response) => {
     if (response.url().includes("/docs")) {
