@@ -298,7 +298,7 @@ sections:
       **Pipeline** (one fitted sklearn Pipeline owns all preprocessing):
 
             ```mermaid
-      flowchart TB
+      flowchart LR
         A["raw CRM row"] --> B["OutlierCapper"] --> C["MissingValueIndicator"] --> D["impute + scale"]
         E["contract"] --> F["one-hot encode"]
         D --> G["ColumnTransformer"]

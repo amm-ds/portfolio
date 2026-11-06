@@ -315,7 +315,7 @@ sections:
       **cold read**, the same task in a fresh interpreter.
 
       ```mermaid
-      flowchart TB
+      flowchart LR
         subgraph READS["reads + aggregates"]
           direction LR
           A["read parquet"] --> B["read csv"] --> C["group-by"] --> D["join"]

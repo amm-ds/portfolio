@@ -63,9 +63,12 @@ sections:
           V --> R["revalidate on fresh<br/>holdout per campaign"]
       ```
 
-      Read the targeting-decision diagram as a route map: cheap, uncapped
-      sends go to everyone; capped or costly sends rank by uplift; every
-      new campaign revalidates on a fresh holdout first.
+      Both diagrams frame the same decision: targeting rules vary with cost,
+      while randomized assignment, out-of-fold scoring, and paired bootstraps
+      keep the verdict honest.
+
+      ```diagram 10-uplift-judging
+      ```
 
       Is the +69% edge real? Objectives sets the judging rules.
 
@@ -100,16 +103,16 @@ sections:
       - Stress-test the verdict against send cost: $0.01 per email is one
         channel's price in 2008, not a law of nature.
 
-      The measurement contract diagram fixes how policies are judged.
-
-      ```diagram 10-uplift-judging
+      ```mermaid
+      flowchart LR
+        R["randomized customers"] --> S["out-of-fold scores"]
+        S --> P["profit + paired CI"] --> V["verdict + cost limits"]
       ```
 
-      Treat the measurement contract diagram as a pipeline. The randomized
-      anchor feeds three scorers, all fit out of fold so no model grades
-      its own homework. The judging box turns scores into profit and
-      attaches 1,000 paired bootstraps. The verdict node states the
-      send-cost range the conclusion covers.
+      The checklist applies the measurement architecture shown in Background:
+      the randomized anchor feeds three scorers, all fit out of fold so no
+      model grades its own homework. Profit judging attaches 1,000 paired
+      bootstraps, and the verdict records the send-cost range it covers.
 
       What data carries this contract? The snapshot holds
       the answer.

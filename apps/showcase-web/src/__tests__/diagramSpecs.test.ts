@@ -46,6 +46,41 @@ describe("diagram spec registry and schema", () => {
   });
 });
 
+describe("case-study diagram placement and orientation", () => {
+  const projectsBySpec: Record<string, string> = {
+    "01-rag-pipeline": "01-rag-agent",
+    "02-m5-pipeline": "02-demand-forecasting",
+    "03-detection-pipeline": "03-anomaly-detection",
+    "04-routing": "04-nlp-classification",
+    "05-churn-cycle": "05-ml-pipeline-churn",
+    "06-solver-ladder": "06-routing-optimization",
+    "07-mobility-pipeline": "07-open-data-mobility",
+    "08-serving-benchmark": "08-inference-serving",
+    "09-agent-loop": "09-agentic-workflows",
+    "10-uplift-judging": "10-uplift-experimentation",
+    "11-engine-benchmark": "11-data-engineering",
+    "12-lifecycle-pipeline": "12-tabular-ml-lifecycle",
+    "13-serving-pipeline": "13-model-serving",
+  };
+
+  it("places every React Flow architecture diagram in Background", () => {
+    const failures: string[] = [];
+    for (const [specId, project] of Object.entries(projectsBySpec)) {
+      const story = readFileSync(path.resolve(process.cwd(), "../../projects", project, "story.yaml"), "utf8");
+      const background = /^[ \t]*- id: background\n([\s\S]*?)(?=^[ \t]*- id: )/m.exec(story)?.[1] ?? "";
+      if (!background.includes(`\`\`\`diagram ${specId}`)) failures.push(`${project}: ${specId}`);
+    }
+    expect(failures).toEqual([]);
+  });
+
+  it("keeps every Mermaid flowchart horizontal", () => {
+    for (const project of Object.values(projectsBySpec)) {
+      const story = readFileSync(path.resolve(process.cwd(), "../../projects", project, "story.yaml"), "utf8");
+      expect(story).not.toMatch(/flowchart (?:TB|TD|BT|RL)/);
+    }
+  });
+});
+
 // --- Render smoke over every registered spec ---------------------------------
 // jsdom has no layout, so v12 measurement is stubbed the same way the
 // FlowDiagram interaction tests do it: stable node dimensions let dagre run

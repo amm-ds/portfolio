@@ -1,6 +1,7 @@
 import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import dagre from "@dagrejs/dagre";
 import {
+  BaseEdge,
   Controls,
   EdgeLabelRenderer,
   getNodesBounds,
@@ -157,7 +158,7 @@ const DiagramEdgeView = memo(function DiagramEdgeView({
   const label = data?.label;
   return (
     <>
-      <path id={id} d={path} fill="none" className="flow-edge__path" markerEnd={markerEnd} />
+      <BaseEdge id={id} path={path} className="flow-edge__path" markerEnd={markerEnd} />
       {label ? (
         <EdgeLabelRenderer>
           <div

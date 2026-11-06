@@ -23,10 +23,12 @@ sections:
         I --> R
       ```
 
-      The day-plan diagram shows the shape of one problem — inputs, route
-      list, and the machine-checked validator every plan must pass before
-      its distance counts. The acceptance contract is fixed before any
-      solver runs; the objectives section states it.
+      The diagrams fix one contract: inputs and route lists feed machine
+      validation; every architecture rung, from seeded construction to bounded
+      exact search, returns to that same validator.
+
+      ```diagram 06-solver-ladder
+      ```
 
       **Business summary:** Across 56 real benchmark days, the search lands
       within about 4% of the best published plans in a second per day, at
@@ -277,6 +279,13 @@ sections:
       - Published references are beatable: the search undercuts 8 best-known plans
         (best RC202 −3.85%) — a moving literature target, not a certificate.
 
+      ```mermaid
+      flowchart LR
+        F["randomized floor<br/>316.95% gap"] --> A["tuned ALNS<br/>4.23% gap"]
+        A --> V["56/56 feasible<br/>~1.1 s per problem"]
+        V --> L["limits: +3.73 vehicles<br/>exact search not faster"]
+      ```
+
       ## Exact numbers
 
       Headline: mean gap 4.23%, 95% CI 3.1–5.3 points — deterministic given the
@@ -286,9 +295,6 @@ sections:
       not proven optima.
 
       **Ladder definition** (seeded, deterministic):
-
-      ```diagram 06-solver-ladder
-      ```
 
       - `randomized` / `nearest_neighbor`: feasible floor; greedy insertion.
       - `clarke_wright`: savings merges gated on capacity and windows.
