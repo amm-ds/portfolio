@@ -2,29 +2,15 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePageMeta } from "../seo";
 
-/** The API serves the project's full evaluation report as a standalone HTML
- * document at /projects/{id}/report. Its embedded stylesheet ships a
- * constrained reading column (body max-width: 1400px, auto margins) — right
- * for a printed artifact, wrong for an in-app page. The in-app report view
- * injects ONE override style into the fetched markup so the report spans the
- * full page width like every other page; this view only — the standalone
- * report, its template and its pipeline stay untouched. */
-const FULL_WIDTH_OVERRIDE =
-  "<style>body{max-width:none;margin:0;padding:1.25rem 1.5rem;}</style>";
-
-function injectFullWidthOverride(html: string): string {
-  if (html.includes("</head>")) return html.replace("</head>", `${FULL_WIDTH_OVERRIDE}</head>`);
-  return FULL_WIDTH_OVERRIDE + html;
-}
-
 /** Routed evaluation-report page (/projects/:id/report): renders the
- * API-served HTML report inside a same-origin frame so the report's own
- * themed markup is sandboxed from the app shell (the same pattern
+ * API-served full-width HTML report inside a same-origin frame so the
+ * report's themed markup is sandboxed from the app shell (the same pattern
  * FigureFrame uses for HTML figures). The frame is sized to the report's
- * content height on load. */
+ * content height on load. The API also supplies the escaped HTML-source
+ * details inside the document, so direct and framed routes share one contract. */
 export function ReportView() {
   const { id = "" } = useParams();
-  const [html, setHtml] = useState<string | null>(null);
+  const [sourceHtml, setSourceHtml] = useState<string | null>(null);
   const [status, setStatus] = useState<"loading" | "missing" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
 
@@ -36,7 +22,7 @@ export function ReportView() {
 
   useEffect(() => {
     let cancelled = false;
-    setHtml(null);
+    setSourceHtml(null);
     setStatus("loading");
     fetch(`/projects/${id}/report`)
       .then(async (res) => {
@@ -48,7 +34,7 @@ export function ReportView() {
         return res.text();
       })
       .then((text) => {
-        if (!cancelled && text !== null) setHtml(injectFullWidthOverride(text));
+        if (!cancelled && text !== null) setSourceHtml(text);
       })
       .catch(() => !cancelled && setStatus("error"));
     return () => {
@@ -84,14 +70,14 @@ export function ReportView() {
       </div>
     );
   }
-  if (html === null) return <p className="loading">loading report…</p>;
+  if (sourceHtml === null) return <p className="loading">loading report…</p>;
   return (
     <div className="report-view">
       <iframe
         className="report-frame"
         title={`Evaluation report: ${id}`}
         sandbox="allow-scripts allow-same-origin"
-        srcDoc={html}
+        srcDoc={sourceHtml}
         onLoad={(e) => {
           // same-origin frame: fit the frame to the report's content height
           const frame = e.currentTarget;

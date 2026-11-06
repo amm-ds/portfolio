@@ -302,6 +302,9 @@ def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[n
     (tmp_path / "01-demo" / "reports" / "report.html").write_text("<html>report</html>")
     r = client.get("/projects/01-demo/report")
     assert r.status_code == 200 and "report" in r.text
+    assert "max-width:none" in r.text
+    assert "HTML source" in r.text
+    assert "&lt;html&gt;report&lt;/html&gt;" in r.text
 
 
 def test_report_head_probe_has_no_body_and_preserves_404(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -319,7 +322,7 @@ def test_report_head_probe_has_no_body_and_preserves_404(tmp_path: Path, monkeyp
     found = client.head("/projects/01-demo/report")
     assert found.status_code == 200
     assert found.content == b""
-    assert client.get("/projects/01-demo/report").text == "<html>report</html>"
+    assert "<html>report</html>" in client.get("/projects/01-demo/report").text
 
 
 def test_report_endpoint_prefers_m5_full_then_m5_then_uci_then_reports(

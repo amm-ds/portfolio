@@ -1425,3 +1425,41 @@ button:disabled {
 
 }
 
+/* Native app articles: spec cards and evidence screenshots. */
+.app-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: var(--gap-card);
+}
+
+.app-spec-card h3 {
+  margin-top: 0;
+  color: var(--accent);
+  font-family: var(--mono);
+}
+
+.app-spec-card a {
+  color: var(--accent);
+}
+
+.app-screenshot {
+  margin: 1.25rem 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.app-screenshot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.app-screenshot figcaption {
+  padding: 0.7rem 1rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+

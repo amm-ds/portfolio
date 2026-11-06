@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
+import { PageIndex } from "../components/PageIndex";
 import { ChannelCards, channelMailtoHref, EMAIL_RE } from "../components/ChannelCards";
 import { LanguagesAvailability } from "../components/LanguagesAvailability";
 import { usePageMeta } from "../seo";
@@ -112,8 +113,15 @@ export function Contact() {
         <h1>Get in touch</h1>
         <p className="contact-status">{AVAILABILITY.status}</p>
       </section>
+      <PageIndex
+        items={[
+          { id: "inquiry", label: "inquiry" },
+          { id: "free-call", label: "free discovery call" },
+          { id: "engagement-start", label: "how engagements start" },
+        ]}
+      />
 
-      <form className="contact-form" onSubmit={onSubmit} noValidate>
+      <form className="contact-form" id="inquiry" onSubmit={onSubmit} noValidate>
         <div className="form-field">
           <label htmlFor="contact-name">name *</label>
           <input
@@ -191,7 +199,7 @@ export function Contact() {
       </form>
 
       <ChannelCards />
-      <Card className="free-call-card">
+      <Card className="free-call-card" id="free-call">
         <h2>first call is free</h2>
         <p>
           The discovery call (free, 30–45 min) covers the problem, the data reality, the
@@ -201,7 +209,7 @@ export function Contact() {
       </Card>
       <LanguagesAvailability />
 
-      <h2 className="section-title">how engagements start</h2>
+      <h2 className="section-title" id="engagement-start">how engagements start</h2>
       <ol className="start-timeline">
         {START_STEPS.map((s, i) => (
           <li key={s.title}>

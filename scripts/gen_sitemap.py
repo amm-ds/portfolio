@@ -23,6 +23,7 @@ DEFAULT_SITE_URL = "https://alejandromerida.dev"
 
 STATIC_ROUTES = [
     "/",
+    "/apps/agent-chat",
     "/experiments",
     "/services",
     "/about",

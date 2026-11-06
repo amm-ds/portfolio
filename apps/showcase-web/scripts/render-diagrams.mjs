@@ -54,7 +54,11 @@ function extractMermaidBlocks(raw) {
   for (const m of raw.matchAll(/```mermaid\\n([\s\S]*?)\\n```/g)) {
     blocks.push(unescapeYamlDoubleQuoted(m[1]));
   }
-  // (b) block scalars: fence on its own line
+  // (b) native TS template literals: the opening fence can follow `const X =`.
+  for (const m of raw.matchAll(/```mermaid\n([\s\S]*?)\n```/g)) {
+    blocks.push(m[1]);
+  }
+  // (c) YAML block scalars: fence on its own line
   const lines = raw.split("\n");
   for (let i = 0; i < lines.length; i += 1) {
     const open = lines[i].match(/^(\s*)```mermaid\s*$/);
@@ -96,7 +100,21 @@ for (const project of projectDirs) {
   }
 }
 
-console.log(`extracted ${entries.length} unique mermaid diagrams from ${projectDirs.length} projects`);
+// Native app articles use the same fenced-code contract and static fallback.
+const appArticle = (
+  await readFile(path.join(webRoot, "src", "pages", "AgentChatArticle.tsx"), "utf8")
+).replaceAll("\\`", "`");
+for (const code of extractMermaidBlocks(appArticle)) {
+  if (seen.has(code)) continue;
+  seen.add(code);
+  entries.push({
+    project: "apps/agent-chat",
+    code,
+    hash: createHash("sha1").update(code).digest("hex"),
+  });
+}
+
+console.log(`extracted ${entries.length} unique mermaid diagrams from ${projectDirs.length} projects + app articles`);
 
 // --- Render each block in headless Chromium via the standalone mermaid dist.
 await mkdir(outDir, { recursive: true });

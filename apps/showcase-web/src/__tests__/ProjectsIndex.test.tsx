@@ -144,6 +144,16 @@ describe("groupByRow", () => {
     expect(rowAnchor("APIs & model serving")).toBe("apis-model-serving");
     expect(rowAnchor("Machine learning")).toBe("machine-learning");
   });
+
+  it("uses compact, larger card titles with a green terminal prompt", () => {
+    expect(stylesCss.match(/\.project-card \{[\s\S]*?\n\}/)![0]).toContain("padding-top: 0.85rem;");
+    const title = stylesCss.match(/\.project-card h4 \{[\s\S]*?\n\}/)![0];
+    expect(title).toContain("font-size: 1.2rem;");
+    expect(title).toContain("margin: 0 0 0.45rem;");
+    const prompt = stylesCss.match(/\.project-card h4::before \{[\s\S]*?\n\}/)![0];
+    expect(prompt).toContain('content: "> ";');
+    expect(prompt).toContain("color: var(--accent);");
+  });
 });
 
 describe("ProjectsIndex", () => {
@@ -716,7 +726,7 @@ describe("ProjectsIndex", () => {
     ]);
     expect(links).toEqual([
       ["[code]", "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat"],
-      ["[article]", "https://amm-ds.github.io/portfolio/apps/chatbot-agent/"],
+      ["[article]", "/apps/agent-chat"],
       ["[specs]", "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat/specs"],
     ]);
     expect(card.textContent).toContain("pydantic-ai");

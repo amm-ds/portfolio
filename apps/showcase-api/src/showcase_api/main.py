@@ -20,6 +20,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Callable
 from functools import lru_cache
+from html import escape
 from pathlib import Path
 from typing import Any, Literal
 
@@ -614,6 +615,30 @@ def _report_file(pid: str) -> Path:
     raise HTTPException(status_code=404, detail=f"no report yet for {pid} — run its pipeline")
 
 
+def _report_document(pid: str) -> str:
+    """Full-width report plus an escaped, collapsed view of its original HTML."""
+    source = _report_file(pid).read_text()
+    style = (
+        "<style>body{max-width:none;margin:0;padding:1.25rem 1.5rem;}"
+        ".report-source{margin-top:1rem;padding:.85rem 1.1rem;background:#1e293b;"
+        "border:1px solid #334155;border-radius:10px}.report-source summary{cursor:pointer;"
+        "color:#2dd4bf;font-family:monospace}.report-source pre{max-height:32rem;overflow:auto;"
+        "white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem}</style>"
+    )
+    details = (
+        '<details class="report-source"><summary>HTML source</summary><pre>'
+        f"{escape(source)}</pre></details>"
+    )
+    document = (
+        source.replace("</head>", f"{style}</head>") if "</head>" in source else style + source
+    )
+    return (
+        document.replace("</body>", f"{details}</body>")
+        if "</body>" in document
+        else document + details
+    )
+
+
 # Register HEAD before GET so Starlette's implicit GET/HEAD pairing cannot make
 # availability probes read the full report body.
 @app.head("/projects/{pid}/report")
@@ -625,7 +650,7 @@ def report_availability(pid: str) -> Response:
 
 @app.get("/projects/{pid}/report", response_class=HTMLResponse)
 def report(pid: str) -> str:
-    """The project's full evaluation report (HTML).
+    """The project's full-width evaluation report and its original HTML source.
 
     Track-aware resolution, most-recent headline first: 02-demand-forecasting
     ships the full-panel M5 headline in ``reports_m5_full/`` (canonical), the
@@ -633,7 +658,7 @@ def report(pid: str) -> str:
     ``reports_uci/``, and the synthetic CI track in ``reports/``. Everywhere
     else ``reports/report.html`` is it.
     """
-    return _report_file(pid).read_text()
+    return _report_document(pid)
 
 
 # Shared cap for both forecast endpoints; abandoned timed-out workers still count.

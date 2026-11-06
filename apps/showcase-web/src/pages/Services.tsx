@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
+import { PageIndex } from "../components/PageIndex";
 import { DataTable } from "../components/DataTable";
 import { FRAMEWORKS, PROVIDERS, FrameworkTile } from "../components/Frameworks";
 import { usePageMeta } from "../seo";
@@ -193,8 +194,17 @@ export function Services() {
           stated limits.
         </p>
       </section>
+      <PageIndex
+        items={[
+          { id: "offerings", label: "offerings" },
+          { id: "frameworks", label: "frameworks" },
+          { id: "cloud-deployment", label: "cloud & deployment" },
+          { id: "process", label: "process" },
+          { id: "engagement-models", label: "engagement models" },
+        ]}
+      />
 
-      <h2 className="section-title">offerings</h2>
+      <h2 className="section-title" id="offerings">offerings</h2>
       <div className="offerings-grid">
         {OFFERINGS.map((o) => (
           <Card key={o.title} className="offering-card">
@@ -232,7 +242,7 @@ export function Services() {
         ))}
       </div>
 
-      <h2 className="section-title">cloud & deployment</h2>
+      <h2 className="section-title" id="cloud-deployment">cloud & deployment</h2>
       <div className="cloud-plain">
         <p>
           <strong>Cloud-agnostic by design.</strong> Delivery runs on the client's platform —
@@ -247,7 +257,7 @@ export function Services() {
         </div>
       </div>
 
-      <h2 className="section-title">process</h2>
+      <h2 className="section-title" id="process">process</h2>
       <ol className="process-timeline">
         {PROCESS.map((p) => (
           <li key={p.title}>
@@ -258,7 +268,7 @@ export function Services() {
         ))}
       </ol>
 
-      <h2 className="section-title">engagement models</h2>
+      <h2 className="section-title" id="engagement-models">engagement models</h2>
       <p className="section-intro">
         Every engagement includes structured revision rounds after delivery — feedback,
         re-evaluation and updated reports are part of the scope, not an extra.

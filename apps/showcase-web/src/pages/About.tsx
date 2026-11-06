@@ -1,4 +1,5 @@
 import { Card } from "../components/Card";
+import { PageIndex } from "../components/PageIndex";
 import { ChannelCards } from "../components/ChannelCards";
 import { LanguagesAvailability } from "../components/LanguagesAvailability";
 import { usePageMeta } from "../seo";
@@ -124,8 +125,14 @@ export function About() {
         <ChannelCards />
         <LanguagesAvailability />
       </section>
+      <PageIndex
+        items={[
+          { id: "how-i-work", label: "how I work" },
+          { id: "experience", label: "experience" },
+        ]}
+      />
 
-      <h2 className="section-title">how I work</h2>
+      <h2 className="section-title" id="how-i-work">how I work</h2>
       <p className="section-intro">
         Nine practices shape every engagement — each one is something you receive, stated up
         front.
@@ -139,7 +146,7 @@ export function About() {
         ))}
       </div>
 
-      <h2 className="section-title">experience</h2>
+      <h2 className="section-title" id="experience">experience</h2>
       <ol className="timeline">
         {ROLES.map((r) => (
           <li key={r.dates} className="timeline-item">

@@ -11,6 +11,7 @@ import {
   type ProjectHeadline,
 } from "../api";
 import { ProjectCard } from "../components/ProjectCard";
+import { PageIndex } from "../components/PageIndex";
 import { StudyCard } from "../components/StudyCard";
 import { cardTags } from "../lib/cardCopy";
 import { DEMOS, DEMOS_INTRO, chipLabel, demoDoes } from "../lib/demos";
@@ -356,16 +357,13 @@ export function ProjectsIndex() {
           doubles as a template for taking a project from data to production.
         </p>
       </section>
-      <nav className="page-index" aria-label="On this page">
-        <span className="page-index-label">index</span>
-        <a href="#demos">live demos</a>
-        {rows.map((row) => (
-          <a key={row.name} href={`#${rowAnchor(row.name)}`}>
-            {row.name}
-          </a>
-        ))}
-        <a href="#apps">apps</a>
-      </nav>
+      <PageIndex
+        items={[
+          { id: "demos", label: "live demos" },
+          ...rows.map((row) => ({ id: rowAnchor(row.name), label: row.name })),
+          { id: "apps", label: "apps" },
+        ]}
+      />
       {snapshot && (
         <div className="state-box error" role="alert">
           The live registry is unreachable — showing the last published snapshot.{" "}

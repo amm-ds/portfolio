@@ -19,6 +19,9 @@ const ProjectDetail = lazy(() =>
 const ReportView = lazy(() =>
   import("./pages/ReportView").then((m) => ({ default: m.ReportView })),
 );
+const AgentChatArticle = lazy(() =>
+  import("./pages/AgentChatArticle").then((m) => ({ default: m.AgentChatArticle })),
+);
 const Services = lazy(() =>
   import("./pages/Services").then((m) => ({ default: m.Services })),
 );
@@ -141,6 +144,7 @@ export function App() {
             <Route path="/experiments" element={<ProjectsIndex />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/projects/:id/report" element={<ReportView />} />
+            <Route path="/apps/agent-chat" element={<AgentChatArticle />} />
             <Route
               path="/demos/churn-sandbox"
               element={

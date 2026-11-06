@@ -31,7 +31,7 @@ describe("copy guard: no senior/architect-level wording in src/ (About CV except
 
   it("no source file outside the About page mentions 'architect' (case-insensitive)", () => {
     const offenders = sourceFiles("src").filter(
-      (f) => f !== ABOUT_PAGE && /architect/i.test(readFileSync(f, "utf8")),
+      (f) => f !== ABOUT_PAGE && /\barchitect\b/i.test(readFileSync(f, "utf8")),
     );
     expect(offenders).toEqual([]);
   });

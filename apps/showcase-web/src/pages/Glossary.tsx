@@ -1,11 +1,12 @@
 import type { GlossaryEntry } from "../lib/glossary";
 import { glossaryByGroup, glossaryEntries } from "../lib/glossary";
 import { Terminal } from "../components/Terminal";
+import { PageIndex } from "../components/PageIndex";
 import { usePageMeta } from "../seo";
 
 function GlossaryGroup({ label, entries }: { label: string; entries: GlossaryEntry[] }) {
   return (
-    <section aria-label={label}>
+    <section aria-label={label} id={label.replaceAll(" ", "-")}>
       <h2 className="section-title">{label}</h2>
       <Terminal title={`glossary — ${label}`}>
         <dl className="glossary-list">
@@ -52,6 +53,12 @@ export function Glossary() {
         The evaluation terms the case studies use, defined in plain language.
         Terms are linked from story prose at their first occurrence.
       </p>
+      <PageIndex
+        items={[
+          { id: "core-keywords", label: "core keywords" },
+          { id: "experiment-specific", label: "experiment-specific" },
+        ]}
+      />
       <GlossaryGroup label="core keywords" entries={core} />
       <GlossaryGroup label="experiment-specific" entries={experiment} />
     </div>

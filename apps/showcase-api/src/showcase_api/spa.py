@@ -55,7 +55,15 @@ def _spa_patterns() -> list[str]:
         return [str(p) for p in data["spa_routes"]]
     except (OSError, KeyError, ValueError) as e:
         logger.warning("route manifest unavailable (%s); deriving SPA routes", e)
-        patterns = ["/", "/projects", "/experiments", "/services", "/contact", "/about"]
+        patterns = [
+            "/",
+            "/projects",
+            "/experiments",
+            "/services",
+            "/contact",
+            "/about",
+            "/apps/agent-chat",
+        ]
         try:
             patterns += [f"/projects/{m.id}" for m in load_index(PROJECTS_ROOT)]
             patterns += [f"/demos/{m.id}" for m in load_demo_index(PROJECTS_ROOT)]

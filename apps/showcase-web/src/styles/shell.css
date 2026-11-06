@@ -269,6 +269,7 @@
    behind the green "> " marker, no glow (offerings, process, how I work,
    how engagements start, live demos…) */
 .section-title {
+  scroll-margin-top: 4rem;
   font-size: 1.6rem;
   margin: 2.25rem 0 0.9rem;
   border-bottom: 1px solid var(--border);

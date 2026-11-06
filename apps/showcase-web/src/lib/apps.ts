@@ -28,7 +28,7 @@ export const APPS: AppEntry[] = [
     screenshot: "/apps/agent-chat-approval.png",
     links: [
       { label: "[code]", href: "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat" },
-      { label: "[article]", href: "https://amm-ds.github.io/portfolio/apps/chatbot-agent/" },
+      { label: "[article]", href: "/apps/agent-chat" },
       { label: "[specs]", href: "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat/specs" },
     ],
   },

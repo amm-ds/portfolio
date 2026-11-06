@@ -34,7 +34,7 @@ afterEach(() => {
 });
 
 describe("ReportView", () => {
-  it("renders the API-served report full width — the reading column is removed for this view only", async () => {
+  it("renders the API-served report unchanged in a full-width shell", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn((input: RequestInfo | URL) => {
@@ -59,10 +59,10 @@ describe("ReportView", () => {
     // the report markup is preserved verbatim…
     expect(doc).toContain("<h1>Evaluation report</h1>");
     expect(doc).toContain("max-width: 1400px");
-    // …plus exactly ONE injected override style that removes the reading
-    // column for this view
-    expect(doc).toContain("max-width:none");
-    expect(doc.match(/<style>/g)!.length).toBe(2);
+    expect(doc).toBe(REPORT_HTML);
+    // Full-width/source decoration belongs to the API document, not a second
+    // React-side injection that direct API routes would bypass.
+    expect(document.querySelector(".report-source")).toBeNull();
     // the view spans the full page width like every other page
     const css = readStylesCss();
     expect(css.match(/\.report-view \{[\s\S]*?\n\}/)![0]).toContain("width: 100%;");

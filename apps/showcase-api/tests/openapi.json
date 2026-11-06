@@ -1089,7 +1089,7 @@
     },
     "/projects/{pid}/report": {
       "get": {
-        "description": "The project's full evaluation report (HTML).\n\nTrack-aware resolution, most-recent headline first: 02-demand-forecasting\nships the full-panel M5 headline in ``reports_m5_full/`` (canonical), the\nsubset-era M5 track in ``reports_m5/``, the UCI sparse track in\n``reports_uci/``, and the synthetic CI track in ``reports/``. Everywhere\nelse ``reports/report.html`` is it.",
+        "description": "The project's full-width evaluation report and its original HTML source.\n\nTrack-aware resolution, most-recent headline first: 02-demand-forecasting\nships the full-panel M5 headline in ``reports_m5_full/`` (canonical), the\nsubset-era M5 track in ``reports_m5/``, the UCI sparse track in\n``reports_uci/``, and the synthetic CI track in ``reports/``. Everywhere\nelse ``reports/report.html`` is it.",
         "operationId": "report_projects__pid__report_get",
         "parameters": [
           {
