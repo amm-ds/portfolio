@@ -50,9 +50,11 @@ try {
     timeout: 60_000,
   });
   assert(reportResponse?.status() === 200, "report page did not return 200");
+  const reportCsp = reportResponse?.headers()["content-security-policy"] ?? "";
+  assert(reportCsp.includes("script-src 'self' 'unsafe-inline'"), "report lost its inline bootstrap exception");
   // The API owns /projects/:id/report and serves raw HTML directly (not the
-  // React ReportView route). Validate that real production path.
-  await page.waitForSelector(".plotly-graph-div", { timeout: 45_000 });
+  // React ReportView route). Require rendered SVG, not just the placeholder div.
+  await page.waitForSelector(".plotly-graph-div .main-svg", { timeout: 45_000 });
   console.log("production report: Plotly executed with route-scoped CSP");
 
   const figureResponse = await page.goto(
@@ -65,7 +67,9 @@ try {
     figureStatus === 200,
     `standalone figure returned ${figureStatus ?? "no response"}: ${figureBody.slice(0, 200)}`,
   );
-  await page.waitForSelector(".plotly-graph-div", { timeout: 45_000 });
+  const figureCsp = figureResponse?.headers()["content-security-policy"] ?? "";
+  assert(figureCsp.includes("script-src 'self' 'unsafe-inline'"), "figure lost its inline bootstrap exception");
+  await page.waitForSelector(".plotly-graph-div .main-svg", { timeout: 45_000 });
   console.log("production figure: Plotly executed with route-scoped CSP");
 
   const docsResponse = await page.goto(`${BASE_URL}/docs`, {
@@ -73,8 +77,10 @@ try {
     timeout: 60_000,
   });
   assert(docsResponse?.status() === 200, "FastAPI docs did not return 200");
+  const docsCsp = docsResponse?.headers()["content-security-policy"] ?? "";
+  assert(docsCsp.includes("script-src 'self' 'unsafe-inline'"), "docs lost their inline bootstrap exception");
   try {
-    await page.waitForSelector(".swagger-ui", { timeout: 45_000 });
+    await page.waitForSelector(".swagger-ui .information-container", { timeout: 45_000 });
   } catch (error) {
     const diagnostics = await page.evaluate(() => ({
       body: document.body.innerText.slice(0, 300),
