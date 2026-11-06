@@ -1,8 +1,8 @@
 """Showcase API — serves project results, served-model inference, and the RAG demo.
 
 Nothing here contains training logic; it reads the artifacts projects produce
-(reports/metrics.json, reports/figures/*.html, reports/models/serving/*) and
-delegates chat to Project 01's agent. The /rag/chat routes register only when
+(reports/metrics.json, reports/figures/*.{json,html}, reports/models/serving/*)
+and delegates chat to Project 01's agent. The /rag/chat routes register only when
 RAG_CHAT_ENABLED=1 (they are an LLM cost proxy; locally RAG_CHAT_ENABLED=1)
 and fail closed with a 503 when the package or the retrieval index is absent
 — the standard production image deliberately omits both, see the Dockerfile
@@ -19,6 +19,7 @@ import threading
 import time
 import uuid
 from collections.abc import AsyncIterator, Callable
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
@@ -433,16 +434,40 @@ def figure_json(pid: str, name: str, request: Request) -> Any:
 
 @app.get("/projects/{pid}/figures/{name}")
 def figure(pid: str, name: str, request: Request) -> Response:
-    """Interactive figure HTML, cached 1 h (stale-while-revalidate 24 h) + ETag."""
+    """Interactive figure HTML, cached 1 h (stale-while-revalidate 24 h) + ETag.
+
+    HTML is a regenerable artifact and some projects commit only its Plotly
+    JSON source. Render that source on demand so fresh clones and production
+    images expose the same standalone figures as a pipeline-run workspace.
+    """
     f = _figure_file(pid, name, "html")
-    if f is None:
+    if f is not None:
+        return _cached_file_response(request, f, media_type="text/html")
+    source = _figure_file(pid, name, "json")
+    if source is None:
         raise HTTPException(status_code=404, detail=f"no figure {name!r} for {pid}")
-    return _cached_file_response(request, f, media_type="text/html")
+    content = _render_figure_html(str(source), source.stat().st_mtime_ns)
+    return _cached_content_response(request, content, media_type="text/html")
+
+
+@lru_cache(maxsize=256)
+def _render_figure_html(path: str, mtime_ns: int) -> bytes:
+    """Render once per artifact version; Plotly otherwise generates random IDs."""
+    del mtime_ns  # Cache key only: the path supplies the current contents.
+    from plotly import io as pio
+
+    html: str = pio.to_html(
+        pio.from_json(Path(path).read_text()), include_plotlyjs="cdn", full_html=True
+    )
+    return html.encode()
 
 
 def _cached_file_response(request: Request, path: Path, media_type: str) -> Response:
     """200 with CDN cache headers + content ETag, or 304 on If-None-Match."""
-    content = path.read_bytes()
+    return _cached_content_response(request, path.read_bytes(), media_type)
+
+
+def _cached_content_response(request: Request, content: bytes, media_type: str) -> Response:
     etag = _content_etag(content)
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers={"ETag": etag})

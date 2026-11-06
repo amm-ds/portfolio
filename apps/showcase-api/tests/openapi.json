@@ -952,7 +952,7 @@
     },
     "/projects/{pid}/figures/{name}": {
       "get": {
-        "description": "Interactive figure HTML, cached 1 h (stale-while-revalidate 24 h) + ETag.",
+        "description": "Interactive figure HTML, cached 1 h (stale-while-revalidate 24 h) + ETag.\n\nHTML is a regenerable artifact and some projects commit only its Plotly\nJSON source. Render that source on demand so fresh clones and production\nimages expose the same standalone figures as a pipeline-run workspace.",
         "operationId": "figure_projects__pid__figures__name__get",
         "parameters": [
           {

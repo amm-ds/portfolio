@@ -208,6 +208,30 @@ def test_figures_served_per_track(tmp_path: Path, monkeypatch) -> None:  # type:
     assert client.get("/projects/01-demo/figures/uci:missing").status_code == 404
 
 
+def test_figure_html_rendered_from_committed_json(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """Fresh clones and production images need no generated HTML artifacts."""
+    from showcase_api import main
+
+    figs = tmp_path / "01-demo" / "reports" / "figures"
+    figs.mkdir(parents=True)
+    (figs / "bars.json").write_text(
+        json.dumps({"data": [{"type": "bar", "x": ["baseline"], "y": [1]}], "layout": {}})
+    )
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    response = client.get("/projects/01-demo/figures/bars")
+    assert response.status_code == 200
+    assert 'class="plotly-graph-div"' in response.text
+    assert "https://cdn.plot.ly/" in response.text
+    assert "baseline" in response.text
+    etag = response.headers["etag"]
+    assert (
+        client.get("/projects/01-demo/figures/bars", headers={"If-None-Match": etag}).status_code
+        == 304
+    )
+    assert client.get("/projects/01-demo/figures/missing").status_code == 404
+
+
 def test_chat_gated_off_by_default() -> None:
     """RAG chat is an LLM cost proxy: routes must not exist unless explicitly enabled."""
     r = client.post("/rag/chat", json={"question": "hi"})
