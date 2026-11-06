@@ -46,7 +46,12 @@ try {
     `${BASE_URL}/projects/01-rag-agent/figures/retrieval_funnel`,
     { waitUntil: "networkidle", timeout: 60_000 },
   );
-  assert(figureResponse?.status() === 200, "standalone figure did not return 200");
+  const figureStatus = figureResponse?.status();
+  const figureBody = figureResponse ? await figureResponse.text() : "";
+  assert(
+    figureStatus === 200,
+    `standalone figure returned ${figureStatus ?? "no response"}: ${figureBody.slice(0, 200)}`,
+  );
   await page.waitForSelector(".plotly-graph-div", { timeout: 45_000 });
   console.log("production figure: Plotly executed with route-scoped CSP");
 
