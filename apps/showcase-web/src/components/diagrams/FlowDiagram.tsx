@@ -2,6 +2,7 @@ import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import dagre from "@dagrejs/dagre";
 import {
   Controls,
+  EdgeLabelRenderer,
   getNodesBounds,
   getSmoothStepPath,
   getViewportForBounds,
@@ -92,11 +93,39 @@ const DiagramNodeView = memo(function DiagramNodeView({
   );
 });
 
-/** Custom edge: smooth-step with per-pair curvature and a solid label chip
- *  sitting on the path. Legibility states (muted/lit/dim) are driven by
- *  class names computed in FlowCanvas from hover/selection. */
+function selfLoopGeometry(
+  sourceX: number,
+  sourceY: number,
+  targetX: number,
+  targetY: number,
+  sourcePosition: Position,
+): [string, number, number] {
+  const horizontal = sourcePosition === Position.Left || sourcePosition === Position.Right;
+  if (horizontal) {
+    const direction = sourcePosition === Position.Right ? 1 : -1;
+    const archY = Math.min(sourceY, targetY) - 88;
+    return [
+      `M ${sourceX} ${sourceY} C ${sourceX + 64 * direction} ${archY}, ${targetX - 64 * direction} ${archY}, ${targetX} ${targetY}`,
+      (sourceX + targetX) / 2,
+      archY - 8,
+    ];
+  }
+  const direction = sourcePosition === Position.Bottom ? 1 : -1;
+  const archX = Math.max(sourceX, targetX) + 88;
+  return [
+    `M ${sourceX} ${sourceY} C ${archX} ${sourceY + 64 * direction}, ${archX} ${targetY - 64 * direction}, ${targetX} ${targetY}`,
+    archX + 8,
+    (sourceY + targetY) / 2,
+  ];
+}
+
+/** Custom edge: separated smooth-step paths, explicit self-loops, and HTML
+ *  labels above the node layer. Legibility states (muted/lit/dim) are driven
+ *  by class names computed in FlowCanvas from hover/selection. */
 const DiagramEdgeView = memo(function DiagramEdgeView({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
@@ -106,30 +135,38 @@ const DiagramEdgeView = memo(function DiagramEdgeView({
   data,
   markerEnd,
 }: EdgeProps<FlowEdge>) {
-  const [path, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 10,
-    offset: data?.offset ?? 0,
-  });
+  const [path, baseLabelX, baseLabelY] =
+    source === target
+      ? selfLoopGeometry(sourceX, sourceY, targetX, targetY, sourcePosition)
+      : getSmoothStepPath({
+          sourceX,
+          sourceY,
+          sourcePosition,
+          targetX,
+          targetY,
+          targetPosition,
+          borderRadius: 14,
+          offset: data?.offset ?? 0,
+        });
+  // getSmoothStepPath bends reciprocal edges but keeps their label anchors
+  // together. Move each label with its path so call/repair text stays apart.
+  const horizontal = sourcePosition === Position.Left || sourcePosition === Position.Right;
+  const labelShift = data?.offset ?? 0;
+  const labelX = baseLabelX + (horizontal ? 0 : labelShift);
+  const labelY = baseLabelY + (horizontal ? labelShift : 0);
   const label = data?.label;
   return (
     <>
       <path id={id} d={path} fill="none" className="flow-edge__path" markerEnd={markerEnd} />
       {label ? (
-        <foreignObject
-          x={labelX - 72}
-          y={labelY - 11}
-          width={144}
-          height={22}
-          className="flow-edge__label-host"
-        >
-          <div className="flow-edge__label">{label}</div>
-        </foreignObject>
+        <EdgeLabelRenderer>
+          <div
+            className="flow-edge__label"
+            style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
+          >
+            {label}
+          </div>
+        </EdgeLabelRenderer>
       ) : null}
     </>
   );
@@ -197,7 +234,13 @@ function touchesNode(edges: FlowEdge[], nodeId: string, focusId: string): boolea
 /** Dagre positions use measured v12 node dimensions, never guessed heights. */
 function layoutMeasuredNodes(nodes: FlowNode[], spec: DiagramSpec): FlowNode[] {
   const graph = new dagre.graphlib.Graph();
-  graph.setGraph({ rankdir: spec.direction, nodesep: 56, ranksep: 96, marginx: 48, marginy: 48 });
+  graph.setGraph({
+    rankdir: spec.direction,
+    nodesep: 80,
+    ranksep: 128,
+    marginx: 64,
+    marginy: 112,
+  });
   graph.setDefaultEdgeLabel(() => ({}));
   for (const node of nodes) {
     graph.setNode(node.id, {

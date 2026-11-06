@@ -14,9 +14,11 @@
   max-width: 74ch;
 }
 
-/* Comfortable reading measure for prose only; figures and reports stay fluid. */
+/* Prose, takeaway cards, and figures share the section's full-width container. */
 .story-main {
-  max-width: 74ch;
+  width: 100%;
+  max-width: none;
+  font-size: 1.03rem;
 }
 
 .detail-header .domain {

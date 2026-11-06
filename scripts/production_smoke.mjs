@@ -25,6 +25,9 @@ try {
     }
   });
   page.on("pageerror", (error) => errors.push(`${page.url()}: ${error.message}`));
+  page.on("requestfailed", (request) => {
+    errors.push(`${request.url()}: ${request.failure()?.errorText ?? "request failed"}`);
+  });
 
   const home = await page.goto(`${BASE_URL}/`, { waitUntil: "networkidle", timeout: 60_000 });
   assert(home?.status() === 200, "SPA root did not return 200");
@@ -60,7 +63,20 @@ try {
     timeout: 60_000,
   });
   assert(docsResponse?.status() === 200, "FastAPI docs did not return 200");
-  await page.waitForSelector(".swagger-ui", { timeout: 45_000 });
+  try {
+    await page.waitForSelector(".swagger-ui", { timeout: 45_000 });
+  } catch (error) {
+    const diagnostics = await page.evaluate(() => ({
+      body: document.body.innerText.slice(0, 300),
+      scripts: [...document.scripts].map((script) => script.src || "inline"),
+      resources: performance
+        .getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter((name) => name.includes("/docs") || name.includes("cdn.")),
+    }));
+    console.error("Swagger diagnostics:", JSON.stringify({ ...diagnostics, errors }));
+    throw error;
+  }
   console.log("production docs: Swagger UI executed");
 
   assert(errors.length === 0, `CSP/browser errors:\n${errors.join("\n")}`);

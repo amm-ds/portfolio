@@ -1338,9 +1338,9 @@ button:disabled {
 }
 
 .flow-edge__path {
-  stroke: var(--muted);
-  stroke-width: 1.5;
-  opacity: 0.85;
+  stroke: var(--edge-color);
+  stroke-width: 1.7;
+  opacity: 0.78;
   transition: stroke 0.12s ease, stroke-width 0.12s ease, opacity 0.12s ease;
 }
 
@@ -1361,24 +1361,23 @@ button:disabled {
   filter: drop-shadow(0 0 4px var(--edge-color));
 }
 
-.flow-edge__label-host {
-  overflow: visible;
-  pointer-events: none;
-}
-
 .flow-edge__label {
-  display: inline-block;
-  max-width: 144px;
-  padding: 1px 7px;
+  position: absolute;
+  width: max-content;
+  max-width: 260px;
+  padding: 2px 8px;
   font-family: var(--mono);
   font-size: 0.75rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  white-space: normal;
+  text-align: center;
+  overflow: visible;
   color: var(--text);
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
 

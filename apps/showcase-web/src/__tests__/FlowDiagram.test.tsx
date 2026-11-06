@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FlowDiagram } from "../components/diagrams/FlowDiagram";
-import { AGENT_LOOP_SPEC, ROUTING_SPEC } from "../diagrams";
+import { AGENT_LOOP_SPEC, RAG_PIPELINE_SPEC, ROUTING_SPEC } from "../diagrams";
 
 class ResizeObserverMock {
   constructor(private callback: ResizeObserverCallback) {}
@@ -146,5 +146,27 @@ describe("FlowDiagram", () => {
     fireEvent.keyDown(gate, { key: "Enter" });
     await waitFor(() => expect(screen.getByRole("complementary", { name: /Facts for Confidence gate/ })).toBeInTheDocument());
     expect(screen.getByText(/24.6% of items escalate/)).toBeInTheDocument();
+  });
+
+  it("draws every agent connection with explicit, distinct self-loops", async () => {
+    render(<FlowDiagram spec={AGENT_LOOP_SPEC} />);
+    await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
+
+    const paths = [...document.querySelectorAll(".flow-edge__path")].map((path) => path.getAttribute("d"));
+    expect(paths).toHaveLength(AGENT_LOOP_SPEC.edges.length);
+    expect(new Set(paths).size).toBe(AGENT_LOOP_SPEC.edges.length);
+    expect(screen.getByText("park / resume")).toBeInTheDocument();
+    expect(screen.getByText("repair within cap")).toBeInTheDocument();
+  });
+
+  it("separates reciprocal edge labels instead of clipping or stacking them", async () => {
+    render(<FlowDiagram spec={RAG_PIPELINE_SPEC} />);
+    await waitFor(() => expect(document.querySelector(".frame-skeleton")).toBeNull());
+
+    const forward = screen.getByText("draft + citations");
+    const repair = screen.getByText("repair ≤ 2");
+    expect(forward.style.transform).not.toBe(repair.style.transform);
+    expect(document.querySelectorAll(".flow-edge__label")).toHaveLength(RAG_PIPELINE_SPEC.edges.length);
+    expect(document.querySelector(".flow-edge__label-host")).toBeNull();
   });
 });

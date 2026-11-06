@@ -323,8 +323,10 @@ describe("renderMarkdown wrapped lists and thematic breaks", () => {
 describe("prose density (wave 10)", () => {
   const css = readStylesCss();
 
-  it("caps prose at 74ch while figures and reports stay fluid", () => {
-    expect(css).toMatch(/\.story-main\s*\{[^}]*max-width:\s*74ch/);
+  it("spans prose and business cards full width with slightly larger body text", () => {
+    expect(css).toMatch(/\.story-main\s*\{[^}]*width:\s*100%/);
+    expect(css).toMatch(/\.story-main\s*\{[^}]*max-width:\s*none/);
+    expect(css).toMatch(/\.story-main\s*\{[^}]*font-size:\s*1\.03rem/);
     expect(css).toMatch(/\.detail-header \.detail-lead\s*\{[^}]*max-width:\s*74ch/);
     // section padding/typography rhythm untouched
     expect(css).toContain(".story-section .prose {\n  line-height: 1.62;\n}");
