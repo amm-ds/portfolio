@@ -22,6 +22,17 @@ def test_health() -> None:
     assert r.headers["Cache-Control"] == "no-store"
 
 
+def test_swagger_ui_uses_same_origin_assets() -> None:
+    docs = client.get("/docs")
+    assert docs.status_code == 200
+    assert 'src="/docs-assets/swagger-ui-bundle.js"' in docs.text
+    assert 'href="/docs-assets/swagger-ui.css"' in docs.text
+    assert "cdn.jsdelivr.net" not in docs.text
+    assert client.get("/docs-assets/swagger-ui-bundle.js").status_code == 200
+    assert client.get("/docs-assets/swagger-ui.css").status_code == 200
+    assert client.get("/docs-assets/not-allowed.js").status_code == 404
+
+
 def test_health_readiness_reflects_missing_artifacts(
     tmp_path: Path,
     monkeypatch,  # type: ignore[no-untyped-def]

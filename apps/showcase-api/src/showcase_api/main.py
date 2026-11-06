@@ -26,7 +26,8 @@ from typing import Any, Literal
 from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from portfolio_core.demo import DemoManifest, load_demo_index, to_registry_entry
 from portfolio_core.logging import get_logger, setup_logging
 from portfolio_core.manifest import load_index
@@ -52,11 +53,34 @@ logger = get_logger(__name__)
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 PROJECTS_ROOT = REPO_ROOT / "projects"
+_DOCS_ASSETS = Path(__file__).with_name("static")
 
 _PID_RE = r"^\d{2}-[a-z0-9-]+$"
 
 setup_logging("INFO")
-app = FastAPI(title="amm-ds portfolio showcase", version=__version__)
+app = FastAPI(title="amm-ds portfolio showcase", version=__version__, docs_url=None)
+
+
+@app.get("/docs", include_in_schema=False)
+def swagger_ui() -> HTMLResponse:
+    """Swagger UI with same-origin assets; no runtime CDN availability required."""
+    return get_swagger_ui_html(
+        openapi_url="/openapi.json",
+        title=f"{app.title} - Swagger UI",
+        swagger_js_url="/docs-assets/swagger-ui-bundle.js",
+        swagger_css_url="/docs-assets/swagger-ui.css",
+        swagger_favicon_url="/favicon.svg",
+    )
+
+
+@app.get("/docs-assets/{asset}", include_in_schema=False)
+def swagger_ui_asset(asset: str) -> FileResponse:
+    if asset not in {"swagger-ui-bundle.js", "swagger-ui.css"}:
+        raise HTTPException(status_code=404, detail="unknown documentation asset")
+    return FileResponse(
+        _DOCS_ASSETS / asset,
+        headers={"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"},
+    )
 
 
 class FiniteInput(BaseModel):
