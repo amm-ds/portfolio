@@ -1425,11 +1425,39 @@ button:disabled {
 
 }
 
-/* Native app articles: spec cards, compact media, and video. */
+/* Native app articles: code widgets, spec cards, compact media, and video. */
+.code-block {
+  display: block;
+  margin: 1rem 0 1.25rem;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--secondary);
+  border-radius: var(--radius);
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  tab-size: 2;
+}
+
+.code-block code {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  font-size: inherit;
+}
+
 .app-spec-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--gap-card);
+}
+
+.app-spec-card {
+  padding: 1.25rem 1.4rem;
 }
 
 .app-spec-card h3 {
@@ -1474,9 +1502,10 @@ button:disabled {
 .app-screenshot img {
   display: block;
   width: 100%;
-  height: 230px;
-  object-fit: cover;
-  object-position: top;
+  height: 360px;
+  object-fit: contain;
+  object-position: center;
+  background: var(--bg);
 }
 
 .app-screenshot figcaption {
@@ -1509,6 +1538,10 @@ button:disabled {
   .app-spec-grid,
   .app-media-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app-screenshot img {
+    height: 260px;
   }
 }
 

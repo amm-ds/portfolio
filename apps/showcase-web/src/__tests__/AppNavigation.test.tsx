@@ -1,6 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
+import { readStylesCss } from "./helpers/css";
 import { About } from "../pages/About";
 import { AgentChatArticle } from "../pages/AgentChatArticle";
 import { Contact } from "../pages/Contact";
@@ -74,5 +75,13 @@ describe("AgentChatArticle", () => {
     expect(video.querySelector('source[src="/apps/agent-chat-demo.webm"]')).not.toBeNull();
     expect(screen.getByText(/13-case suite/)).toBeInTheDocument();
     expect(screen.getByText(/single-agent chassis/)).toBeInTheDocument();
+  });
+
+  it("styles code as padded terminal cards and keeps spec text and images contained", () => {
+    const css = readStylesCss();
+    expect(css.match(/\.code-block \{\n  display: block;[\s\S]*?\n\}/)![0]).toContain("padding: 1rem 1.25rem;");
+    expect(css.match(/\.app-spec-card \{[\s\S]*?\n\}/)![0]).toContain("padding: 1.25rem 1.4rem;");
+    expect(css.match(/\.app-screenshot img \{[\s\S]*?\n\}/)![0]).toContain("height: 360px;");
+    expect(css.match(/\.app-screenshot img \{[\s\S]*?\n\}/)![0]).toContain("object-fit: contain;");
   });
 });
