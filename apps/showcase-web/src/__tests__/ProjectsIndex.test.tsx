@@ -459,13 +459,13 @@ describe("ProjectsIndex", () => {
     expect([...mobility.querySelectorAll(".chip")].map((el) => el.textContent)).toHaveLength(4);
   });
 
-  it("renders a live key number from metrics (first non-baseline run)", async () => {
+  it("renders a headline from one compact index fetch, never per-card metrics", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([ALL_PROJECTS[0]]));
-      if (url.endsWith("/metrics")) {
+      if (url.endsWith("/projects/headlines")) {
         return Promise.resolve(
-          jsonResponse({ naive_last: { mae: 100 }, tuned: { mae: 72.34567 } }),
+          jsonResponse({ "01-rag-agent": { metric: "mae", value: 72.34567 } }),
         );
       }
       return Promise.resolve(jsonResponse({}, 404));
@@ -477,12 +477,16 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() => expect(screen.getByText("mae: 72.3457")).toBeInTheDocument());
+    const paths = fetchMock.mock.calls.map(([input]) => String(input));
+    expect(paths.filter((path) => path.endsWith("/projects/headlines"))).toHaveLength(1);
+    expect(paths.some((path) => path.endsWith("/metrics"))).toBe(false);
   });
 
   it("renders no results chip when metrics are missing", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([ALL_PROJECTS[0]]));
+      if (url.endsWith("/projects/headlines")) return Promise.resolve(jsonResponse({}));
       return Promise.resolve(jsonResponse({ detail: "no" }, 404));
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -563,7 +567,7 @@ describe("ProjectsIndex", () => {
   });
 
   it("renders the experiment cards from the static snapshot when the registry is unreachable", async () => {
-    // fetch rejects for every endpoint (projects, demos, per-card metrics…)
+    // fetch rejects for every endpoint (projects, headlines, demos…)
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("down")));
     render(
       <MemoryRouter>
@@ -878,9 +882,9 @@ describe("ProjectsIndex", () => {
       const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
       if (url.endsWith("/demos")) return Promise.resolve(jsonResponse([CHURN_DEMO_ENTRY]));
       if (url.endsWith("/projects")) return Promise.resolve(jsonResponse([ALL_PROJECTS[4]]));
-      if (url.endsWith("/metrics")) {
+      if (url.endsWith("/projects/headlines")) {
         return Promise.resolve(
-          jsonResponse({ naive_last: { mae: 100 }, tuned: { mae: 72.34567 } }),
+          jsonResponse({ "05-ml-pipeline-churn": { metric: "mae", value: 72.34567 } }),
         );
       }
       return Promise.resolve(jsonResponse({}, 404));
@@ -914,6 +918,8 @@ describe("ProjectsIndex", () => {
     // below the old 1rem subtitle scale, clearly smaller than the 1.6rem
     // section titles
     expect(subRule).toContain("font-size: 0.85rem;");
+    expect(subRule).toContain("text-transform: none;");
+    expect(subRule).toContain("letter-spacing: 0.03em;");
     expect(css.match(/\.section-title--major \{[\s\S]*?\n\}/)![0]).toContain("font-size: 1.6rem;");
     // the inline "·"-separated subtitle is gone — two stacked label-over-value
     // lines carry topics/data instead

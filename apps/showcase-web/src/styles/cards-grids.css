@@ -77,8 +77,8 @@
   color: var(--secondary);
   font-size: 0.85rem;
   font-family: var(--mono);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  text-transform: none;
+  letter-spacing: 0.03em;
 }
 
 /* labeled card blocks — experiment cards render "description" and "results"

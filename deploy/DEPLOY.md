@@ -187,7 +187,9 @@ from committed metadata and validates real 02/05/07 inference responses; use
 
 For interactive artifacts, verify that only report/figure/docs routes relax
 `script-src`, then open one HTML report and one iframe figure in a browser and
-confirm that the charts execute without CSP console errors:
+confirm that the charts execute without CSP console errors. The same CI job
+runs a lab Web Vitals smoke against the production shell (LCP 2.5 s, INP
+200 ms, CLS 0.1); field monitoring remains a separate, optional decision.
 
 ```bash
 curl -fsS -o /dev/null -D - "$BASE/projects/01-rag-agent/report" | grep -i content-security-policy

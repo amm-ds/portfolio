@@ -128,7 +128,7 @@ describe("Home (terminal-centered)", () => {
     expect(heroRule).toContain("padding: 3rem 0 0.15rem;");
     // the hero no longer stretches to 88vh — the dead space above the
     // where-to-go block is gone
-    expect(heroRule).toContain("min-height: min(68vh, 720px);");
+    expect(heroRule).toContain("min-height: min(52vh, 560px);");
     expect(css).toContain(".section-title--tight");
     expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.25rem;");
   });
@@ -222,10 +222,10 @@ describe("Home hero layout", () => {
     expect(css).not.toContain("max-width: 1120px;");
     expect(css).not.toContain("max-width: 1160px;");
     // the stage is capped low so "where to go" sits close under the terminal
-    expect(css).toContain("min-height: min(68vh, 720px);");
+    expect(css).toContain("min-height: min(52vh, 560px);");
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
     expect(heroRule).toContain("max-width: 1280px;");
-    expect(heroRule).toContain("min-height: min(68vh, 720px);");
+    expect(heroRule).toContain("min-height: min(52vh, 560px);");
     // the grid layer has an explicit inset and no grow-in of any kind
     const gridRule = css.match(/\.hero::before \{[\s\S]*?\n\}/)![0];
     expect(gridRule).toContain("inset: 0;");

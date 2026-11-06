@@ -70,7 +70,7 @@
   max-width: 1280px;
   /* moderate stage for the terminal — tall enough to breathe, capped so the
      "where to go" block sits close under the terminal panel */
-  min-height: min(68vh, 720px);
+  min-height: min(52vh, 560px);
   margin-inline: auto;
   text-align: center;
   isolation: isolate;

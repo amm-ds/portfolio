@@ -3,10 +3,12 @@ import { Link } from "react-router-dom";
 import { usePageMeta } from "../seo";
 import {
   getDemoRegistry,
+  getProjectHeadlines,
   getProjects,
   STATIC_PROJECTS,
   type DemoRegistryEntry,
   type Project,
+  type ProjectHeadline,
 } from "../api";
 import { ProjectCard } from "../components/ProjectCard";
 import { StudyCard } from "../components/StudyCard";
@@ -306,6 +308,7 @@ export function ProjectsIndex() {
       "Interactive ML demos and reproducible experiment case studies — forecasting, churn, RAG, optimization and serving.",
   });
   const [projects, setProjects] = useState<Project[] | null>(null);
+  const [headlines, setHeadlines] = useState<Record<string, ProjectHeadline>>({});
   const [error, setError] = useState<string | null>(null);
   const [snapshot, setSnapshot] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -313,8 +316,12 @@ export function ProjectsIndex() {
   useEffect(() => {
     let cancelled = false;
     setProjects(null);
+    setHeadlines({});
     setError(null);
     setSnapshot(false);
+    getProjectHeadlines()
+      .then((index) => !cancelled && setHeadlines(index))
+      .catch(() => undefined);
     getProjects()
       .then((list) => !cancelled && setProjects([...list].sort((a, b) => a.order - b.order)))
       .catch(() => {
@@ -392,7 +399,9 @@ export function ProjectsIndex() {
                 {row.description && <p className="row-desc">{row.description}</p>}
                 <div className="project-grid">
                   {row.topics.flatMap((t) =>
-                    t.projects.map((p) => <ProjectCard key={p.id} project={p} />),
+                    t.projects.map((p) => (
+                      <ProjectCard key={p.id} project={p} headline={headlines[p.id]} />
+                    )),
                   )}
                 </div>
               </section>

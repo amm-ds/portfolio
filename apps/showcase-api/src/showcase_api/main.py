@@ -214,8 +214,8 @@ def _readiness() -> bool:
 
 
 # --- Startup-computed indexes (served with ETag) ------------------------------
-# The /projects and /demos payloads are read from disk once per projects root
-# and then served from memory with an ETag; If-None-Match gets a 304. The
+# The /projects, /projects/headlines and /demos payloads are read from disk once
+# per projects root and served from memory with an ETag; If-None-Match gets a 304. The
 # cache key is the projects-root *path*, so tests that monkeypatch
 # PROJECTS_ROOT to a tmp dir still see fresh data.
 
@@ -286,6 +286,83 @@ def projects(request: Request) -> Response:
     return _etag_response(request, etag, body)
 
 
+def _metrics_file(d: Path) -> Path | None:
+    """Canonical metrics path, including 02's full-panel and UCI fallbacks."""
+    return next(
+        (
+            f
+            for f in (
+                d / "reports_m5_full" / "metrics.json",
+                d / "reports_uci" / "metrics.json",
+                d / "reports" / "metrics.json",
+            )
+            if f.exists()
+        ),
+        None,
+    )
+
+
+def _first_numeric_metric(run: Any) -> dict[str, str | float | int] | None:
+    if not isinstance(run, dict):
+        return None
+    for metric, value in run.items():
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return {"metric": metric, "value": value}
+    return None
+
+
+def _headline_metric(data: Any) -> dict[str, str | float | int] | None:
+    """Mirror the web's pickHeadlineMetric: champion, then non-baselines."""
+    if not isinstance(data, dict):
+        return None
+    meta = data.get("_meta")
+    champion = meta.get("champion") if isinstance(meta, dict) else None
+    if isinstance(champion, str):
+        headline = _first_numeric_metric(data.get(champion))
+        if headline is not None:
+            return headline
+    runs = [run for run in data if not run.startswith("_")]
+    ordered = [
+        *[
+            run
+            for run in runs
+            if not re.search(r"naive|random|lag|majority|persistence", run, re.IGNORECASE)
+        ],
+        *[
+            run
+            for run in runs
+            if re.search(r"naive|random|lag|majority|persistence", run, re.IGNORECASE)
+        ],
+    ]
+    return next(
+        (headline for run in ordered if (headline := _first_numeric_metric(data[run])) is not None),
+        None,
+    )
+
+
+def _project_headlines() -> dict[str, dict[str, str | float | int]]:
+    """Compact per-project card headlines, omitting unavailable metrics."""
+    headlines: dict[str, dict[str, str | float | int]] = {}
+    for manifest in load_index(PROJECTS_ROOT):
+        f = _metrics_file(PROJECTS_ROOT / manifest.id)
+        if f is None:
+            continue
+        try:
+            headline = _headline_metric(json.loads(f.read_text()))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            continue
+        if headline is not None:
+            headlines[manifest.id] = headline
+    return headlines
+
+
+@app.get("/projects/headlines")
+def project_headlines(request: Request) -> Response:
+    """Compact headline-metric index for project cards, cached with an ETag."""
+    etag, body = _cached_payload(PROJECTS_ROOT, "headlines", _project_headlines)
+    return _etag_response(request, etag, body)
+
+
 @app.get("/projects/{pid}/metrics")
 def metrics(pid: str) -> dict[str, Any]:
     # 02-demand-forecasting's canonical numbers are the full-panel M5 run
@@ -294,12 +371,8 @@ def metrics(pid: str) -> dict[str, Any]:
     # anchor reachable via track-prefixed figure names, not /metrics.
     # Everywhere else reports/ is it.
     d = _project_dir(pid)
-    f = d / "reports_m5_full" / "metrics.json"
-    if not f.exists():
-        f = d / "reports_uci" / "metrics.json"
-    if not f.exists():
-        f = d / "reports" / "metrics.json"
-    if not f.exists():
+    f = _metrics_file(d)
+    if f is None:
         raise HTTPException(status_code=404, detail=f"no metrics yet for {pid} — run its pipeline")
     data: dict[str, Any] = json.loads(f.read_text())
     return data
@@ -478,6 +551,29 @@ def demo_payload(demo_id: str, request: Request) -> Response:
     )
 
 
+def _report_file(pid: str) -> Path:
+    """Resolve the canonical report without reading its HTML body."""
+    d = _project_dir(pid)
+    for candidate in (
+        d / "reports_m5_full" / "report.html",
+        d / "reports_m5" / "report.html",
+        d / "reports_uci" / "report.html",
+        d / "reports" / "report.html",
+    ):
+        if candidate.exists():
+            return candidate
+    raise HTTPException(status_code=404, detail=f"no report yet for {pid} — run its pipeline")
+
+
+# Register HEAD before GET so Starlette's implicit GET/HEAD pairing cannot make
+# availability probes read the full report body.
+@app.head("/projects/{pid}/report")
+def report_availability(pid: str) -> Response:
+    """Bodyless report availability probe; preserves GET's 404 behavior."""
+    _report_file(pid)
+    return Response(status_code=200)
+
+
 @app.get("/projects/{pid}/report", response_class=HTMLResponse)
 def report(pid: str) -> str:
     """The project's full evaluation report (HTML).
@@ -488,16 +584,7 @@ def report(pid: str) -> str:
     ``reports_uci/``, and the synthetic CI track in ``reports/``. Everywhere
     else ``reports/report.html`` is it.
     """
-    d = _project_dir(pid)
-    for candidate in (
-        d / "reports_m5_full" / "report.html",
-        d / "reports_m5" / "report.html",
-        d / "reports_uci" / "report.html",
-        d / "reports" / "report.html",
-    ):
-        if candidate.exists():
-            return candidate.read_text()
-    raise HTTPException(status_code=404, detail=f"no report yet for {pid} — run its pipeline")
+    return _report_file(pid).read_text()
 
 
 # Shared cap for both forecast endpoints; abandoned timed-out workers still count.

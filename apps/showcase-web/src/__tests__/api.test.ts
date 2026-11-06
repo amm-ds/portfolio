@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { getMetrics, getProjects } from "../api";
+import { getMetrics, getProjectHeadlines, getProjects } from "../api";
 
 describe("getProjects", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -32,6 +32,21 @@ describe("getProjects", () => {
       vi.fn().mockResolvedValue(new Response("nope", { status: 500 })),
     );
     await expect(getProjects()).rejects.toThrow("500");
+  });
+});
+
+describe("getProjectHeadlines", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("fetches the compact headline index", async () => {
+    const payload = { "01-rag-agent": { metric: "faithfulness", value: 0.83 } };
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify(payload), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getProjectHeadlines()).resolves.toEqual(payload);
+    expect(fetchMock).toHaveBeenCalledWith("/projects/headlines");
   });
 });
 

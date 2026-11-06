@@ -99,16 +99,18 @@ export function PlotlyFigure({
   const [rendered, setRendered] = useState(false);
   const elRef = useRef<HTMLDivElement>(null);
   const plotlyRef = useRef<typeof PlotlyStatic | null>(null);
-  // Latest-ref pattern: the fetch effect runs per (pid, name), never per
-  // callback identity, so an inline host callback cannot trigger refetches.
+  // Latest-ref pattern: the fetch effect runs per (pid, name, inView), never
+  // per callback identity, so an inline host callback cannot trigger refetches.
   const onPayloadRef = useRef(onPayload);
   onPayloadRef.current = onPayload;
 
+  // Figure data and the Plotly chunk share the same viewport gate.
   useEffect(() => {
     let cancelled = false;
     setPayload(null);
     setFailed(false);
     setRendered(false);
+    if (!inView) return;
     fetch(`/projects/${pid}/figures/${name}.json`)
       .then((res) => {
         if (res.status === 404) return null;
@@ -134,7 +136,7 @@ export function PlotlyFigure({
     return () => {
       cancelled = true;
     };
-  }, [pid, name]);
+  }, [pid, name, inView]);
 
   // Gate the (heavy) plotly chunk on viewport proximity; load immediately
   // when IntersectionObserver is unavailable.

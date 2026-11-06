@@ -46,7 +46,7 @@ describe("Services page (wave 8)", () => {
     });
   });
 
-  it("each offering has an outcome line, exactly 4 tags and exactly 4 deliverables — no evidence links", () => {
+  it("each offering has an outcome, 4 tags, 4 deliverables and one evidence link", () => {
     renderServices();
     expect(screen.getByText(/answer from your documents, cite every claim/)).toBeInTheDocument();
     const cards = [...document.querySelectorAll(".offering-card")];
@@ -60,9 +60,11 @@ describe("Services page (wave 8)", () => {
       // deliverables: exactly four on every card, adapted to the offering
       const items = [...card.querySelectorAll("li")].map((el) => el.textContent);
       expect(items, card.querySelector("h3")!.textContent).toHaveLength(4);
-      // leaner cards: no evidence/proof/demo links anywhere
+      // one restrained evidence path per offering, not another sales block
       expect(card.querySelector("h4")?.textContent).toBe("deliverables");
-      expect(card.querySelectorAll("a")).toHaveLength(0);
+      const evidence = card.querySelector("a.case-study-link");
+      expect(evidence?.textContent).toBe("related case study →");
+      expect(evidence?.getAttribute("href")).toMatch(/^\/projects(?:#|\/)/);
       expect(card.textContent).not.toMatch(/proof:|live demo:/i);
       expect(card.textContent).not.toMatch(/how success is measured/i);
     }
@@ -307,6 +309,14 @@ describe("Services page (wave 8)", () => {
     expect(screen.getByText("Revisions").closest("li")!.textContent).toMatch(/^05/);
     // engagement models mention the revision rounds
     expect(screen.getAllByText(/includes structured revision rounds/i).length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("wraps framework and provider names instead of truncating them", () => {
+    const css = readStylesCss();
+    const nameRule = css.match(/\.framework-name \{[\s\S]*?\n\}/)![0];
+    expect(nameRule).toContain("overflow-wrap: anywhere;");
+    expect(nameRule).not.toContain("text-overflow");
+    expect(css.match(/\.frameworks-grid \{[\s\S]*?\n\}/)![0]).toContain("minmax(160px, 1fr)");
   });
 
   it("degrades a framework logo to a letter tile on image error", () => {

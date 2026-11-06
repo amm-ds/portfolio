@@ -890,6 +890,23 @@
         "summary": "Forecast Mobility"
       }
     },
+    "/projects/headlines": {
+      "get": {
+        "description": "Compact headline-metric index for project cards, cached with an ETag.",
+        "operationId": "project_headlines_projects_headlines_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Project Headlines"
+      }
+    },
     "/projects/{pid}/figures": {
       "get": {
         "operationId": "figures_projects__pid__figures_get",
@@ -1108,6 +1125,42 @@
           }
         },
         "summary": "Report"
+      },
+      "head": {
+        "description": "Bodyless report availability probe; preserves GET's 404 behavior.",
+        "operationId": "report_availability_projects__pid__report_head",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pid",
+            "required": true,
+            "schema": {
+              "title": "Pid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report Availability"
       }
     },
     "/projects/{pid}/story": {

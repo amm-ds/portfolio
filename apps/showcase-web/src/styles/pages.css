@@ -112,6 +112,7 @@ button:disabled {
 .services-hero p {
   color: var(--muted);
   font-size: 1.05rem;
+  max-width: 74ch;
 }
 
 /* offerings grid: 2 columns × 4 rows of wider full-width cards on desktop,
@@ -170,6 +171,14 @@ button:disabled {
 
 .offering-card li {
   margin-bottom: 0.25rem;
+}
+
+.case-study-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--accent);
 }
 
 .process-timeline {
@@ -896,7 +905,7 @@ button:disabled {
 
 .frameworks-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 0.75rem;
 }
 
@@ -939,9 +948,8 @@ button:disabled {
 }
 
 .framework-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .contact-status {

@@ -21,10 +21,12 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function mockFetch(handler: (path: string) => Response | Promise<Response>) {
-  vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
+function mockFetch(
+  handler: (path: string, init?: RequestInit) => Response | Promise<Response>,
+) {
+  vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    return Promise.resolve(handler(url));
+    return Promise.resolve(handler(url, init));
   }));
 }
 
@@ -234,12 +236,15 @@ describe("ProjectDetail story handling", () => {
     expect(link.getAttribute("href")).toBe("/projects/02-demand-forecasting/report");
     expect(link.getAttribute("target")).toBeNull();
     expect(link.classList.contains("chip-link")).toBe(true);
+    expect(fetch).toHaveBeenCalledWith("/projects/02-demand-forecasting/report", {
+      method: "HEAD",
+    });
   });
 
-  it("leads the detail header at full width — no reading column, more margin on the action row", () => {
+  it("caps the detail lead at 74ch and keeps the header action row spacing", () => {
     const css = readStylesCss();
     expect(css.match(/\.detail-header \.detail-lead \{[\s\S]*?\n\}/)![0]).toContain(
-      "max-width: none;",
+      "max-width: 74ch;",
     );
     expect(css.match(/\.detail-header \.meta-links \{[\s\S]*?\n\}/)![0]).toContain(
       "margin: 0.5rem 0 1.25rem;",

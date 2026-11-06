@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Card } from "../components/Card";
 import { DataTable } from "../components/DataTable";
 import { FRAMEWORKS, PROVIDERS, FrameworkTile } from "../components/Frameworks";
@@ -9,6 +10,17 @@ interface Offering {
   elements: string[];
   deliverables: string[];
 }
+
+const CASE_STUDIES: Record<string, string> = {
+  "Agentic AI & LLM systems": "/projects/01-rag-agent",
+  "Machine learning & deep learning": "/projects/12-tabular-ml-lifecycle",
+  Optimization: "/projects/06-routing-optimization",
+  "Data engineering": "/projects/11-data-engineering",
+  MLOps: "/projects/07-open-data-mobility",
+  "Interactive dashboards": "/projects#demos",
+  "Full-stack engineering": "/projects#apps",
+  "APIs & model serving": "/projects/13-model-serving",
+};
 
 /** Offering tags are plain capability wording — blue chips, no framework or
  * library names (the frameworks section carries the stack, which adapts to
@@ -201,6 +213,9 @@ export function Services() {
                 <li key={d}>{d}</li>
               ))}
             </ul>
+            <Link className="case-study-link" to={CASE_STUDIES[o.title]}>
+              related case study →
+            </Link>
           </Card>
         ))}
       </div>

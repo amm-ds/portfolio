@@ -40,15 +40,14 @@ interface Detail {
 
 // --- Evaluation-report probe ---------------------------------------------------
 // The API serves the full HTML report at /projects/{id}/report and 404s when the
-// pipeline has not produced one. Probe once per id (module-level cache, promise
-// deduped) and show the link only when it would 200. GET rather than HEAD: the
-// FastAPI route answers GET only; the body is never consumed.
+// pipeline has not produced one. Probe availability with a bodyless HEAD once
+// per id (module-level cache, promise deduped); GET remains for the report page.
 const reportProbeCache = new Map<string, Promise<boolean>>();
 
 function hasReport(projectId: string): Promise<boolean> {
   let probe = reportProbeCache.get(projectId);
   if (!probe) {
-    probe = fetch(`/projects/${projectId}/report`)
+    probe = fetch(`/projects/${projectId}/report`, { method: "HEAD" })
       .then((res) => res.ok)
       .catch(() => false);
     reportProbeCache.set(projectId, probe);

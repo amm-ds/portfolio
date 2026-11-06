@@ -40,7 +40,11 @@ describe("PlotlyFigure", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<PlotlyFigure pid="01-rag-agent" name="retrieval_funnel" caption="fig :: results · 1/1 — Results" />);
 
-    expect(fetchMock).toHaveBeenCalledWith("/projects/01-rag-agent/figures/retrieval_funnel.json");
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/projects/01-rag-agent/figures/retrieval_funnel.json",
+      ),
+    );
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
     // the labeled skeleton retires once the plot is painted
     expect(screen.queryByTestId("figure-skeleton")).toBeNull();
@@ -104,8 +108,9 @@ describe("PlotlyFigure", () => {
     expect(skeleton).toHaveTextContent("rendering figure…");
   });
 
-  it("defers the plotly import until the host nears the viewport", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(PAYLOAD)));
+  it("defers both figure JSON and Plotly until the host nears the viewport", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(PAYLOAD));
+    vi.stubGlobal("fetch", fetchMock);
     // jsdom has no IntersectionObserver: stub a controllable one
     let ioCallback: ((entries: { isIntersecting: boolean }[]) => void) | null = null;
     class MockIO {
@@ -117,17 +122,17 @@ describe("PlotlyFigure", () => {
     }
     vi.stubGlobal("IntersectionObserver", MockIO);
     render(<PlotlyFigure pid="p" name="gated" />);
-    // payload arrives, but the plot must not render before intersection
-    await waitFor(() => expect(fetch).toHaveBeenCalled());
     await act(() => new Promise((r) => setTimeout(r, 20)));
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(mocks.react).not.toHaveBeenCalled();
     expect(screen.getByTestId("figure-skeleton")).toHaveTextContent("> gated");
     expect(screen.getByText("rendering figure…")).toBeInTheDocument();
-    // host enters the viewport → render proceeds, skeleton retires
+    // host enters the viewport → one fetch, then render and skeleton retirement
     act(() => {
       ioCallback!([{ isIntersecting: true }]);
     });
     await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByTestId("figure-skeleton")).toBeNull());
   });
 

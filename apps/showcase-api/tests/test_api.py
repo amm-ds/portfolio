@@ -104,6 +104,44 @@ def test_projects_index(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no
     assert body[0]["id"] == "01-demo"
 
 
+def test_project_headlines_are_compact_and_match_card_selection(
+    tmp_path: Path, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    """Champions win; otherwise the first numeric non-baseline metric wins."""
+    from showcase_api import main
+
+    for pid in ("01-demo", "02-demo", "03-demo"):
+        project = tmp_path / pid
+        project.mkdir()
+        (project / "portfolio.yaml").write_text(
+            f"id: {pid}\ntitle: Demo\ndomain: x\ntopic: T\ntechniques: [t]\n"
+            f"data: s\norder: {pid[:2]}\n"
+        )
+    (tmp_path / "01-demo" / "reports").mkdir()
+    (tmp_path / "01-demo" / "reports" / "metrics.json").write_text(
+        json.dumps(
+            {
+                "_meta": {"champion": "challenger"},
+                "naive_last": {"mae": 100},
+                "tuned": {"mae": 72},
+                "challenger": {"rmse": 0.25, "mae": 70},
+            }
+        )
+    )
+    (tmp_path / "02-demo" / "reports").mkdir()
+    (tmp_path / "02-demo" / "reports" / "metrics.json").write_text(
+        json.dumps({"naive_last": {"mae": 100}, "tuned": {"mae": 72.34567}})
+    )
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/projects/headlines")
+    assert r.status_code == 200
+    assert r.json() == {
+        "01-demo": {"metric": "rmse", "value": 0.25},
+        "02-demo": {"metric": "mae", "value": 72.34567},
+    }
+
+
 def test_metrics_404_for_unknown(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from showcase_api import main
 
@@ -229,6 +267,24 @@ def test_report_endpoint(tmp_path: Path, monkeypatch) -> None:  # type: ignore[n
     (tmp_path / "01-demo" / "reports" / "report.html").write_text("<html>report</html>")
     r = client.get("/projects/01-demo/report")
     assert r.status_code == 200 and "report" in r.text
+
+
+def test_report_head_probe_has_no_body_and_preserves_404(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api import main
+
+    (tmp_path / "01-demo").mkdir(parents=True)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+    missing = client.head("/projects/01-demo/report")
+    assert missing.status_code == 404
+    assert missing.content == b""
+
+    reports = tmp_path / "01-demo" / "reports"
+    reports.mkdir()
+    (reports / "report.html").write_text("<html>report</html>")
+    found = client.head("/projects/01-demo/report")
+    assert found.status_code == 200
+    assert found.content == b""
+    assert client.get("/projects/01-demo/report").text == "<html>report</html>"
 
 
 def test_report_endpoint_prefers_m5_full_then_m5_then_uci_then_reports(
@@ -1174,14 +1230,14 @@ def test_figures_cache_headers_and_etag(tmp_path: Path, monkeypatch) -> None:  #
         assert client.get(url, headers={"If-None-Match": etag}).status_code == 304
 
 
-def test_projects_and_demos_indexes_have_etag(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+def test_startup_indexes_have_etag(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
     """Startup-computed indexes: same ETag across calls, 304 on If-None-Match."""
     from showcase_api import main
 
     _write_demo_project(tmp_path)
     monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
 
-    for url in ("/projects", "/demos"):
+    for url in ("/projects", "/projects/headlines", "/demos"):
         r = client.get(url)
         assert r.status_code == 200
         etag = r.headers["ETag"]

@@ -5,12 +5,14 @@ import { Footer } from "./components/Footer";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
 import { usePageMeta } from "./seo";
 import { Home } from "./pages/Home";
-import { ProjectsIndex } from "./pages/ProjectsIndex";
 import { NotFound } from "./pages/NotFound";
 import { DemoErrorBoundary } from "./demos/ErrorBoundary";
 
-// Route-level code splitting: each page/demo below ships as its own chunk so
-// the initial bundle only carries Home + the projects index.
+// Route-level code splitting: each secondary page/demo below ships as its own
+// chunk so the initial bundle only carries Home and the shell.
+const ProjectsIndex = lazy(() =>
+  import("./pages/ProjectsIndex").then((m) => ({ default: m.ProjectsIndex })),
+);
 const ProjectDetail = lazy(() =>
   import("./pages/ProjectDetail").then((m) => ({ default: m.ProjectDetail })),
 );

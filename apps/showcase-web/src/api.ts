@@ -37,6 +37,16 @@ export function getProjects(): Promise<Project[]> {
   return getJson<Project[]>("/projects");
 }
 
+export interface ProjectHeadline {
+  metric: string;
+  value: number;
+}
+
+/** Compact card headlines, selected by the API from each project's metrics. */
+export function getProjectHeadlines(): Promise<Record<string, ProjectHeadline>> {
+  return getJson<Record<string, ProjectHeadline>>("/projects/headlines");
+}
+
 /** 404 means "pipeline not run yet" — callers treat it as empty. */
 export async function getMetrics(projectId: string): Promise<Metrics | null> {
   try {

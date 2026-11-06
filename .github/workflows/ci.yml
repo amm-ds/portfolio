@@ -59,6 +59,7 @@ jobs:
               - 'apps/showcase-web/public/robots.txt'
               - 'apps/showcase-web/public/sitemap.xml'
               - 'scripts/production_smoke.mjs'
+              - 'scripts/web_vitals_check.mjs'
               - '.github/workflows/ci.yml'
 
   gate:
@@ -171,7 +172,7 @@ jobs:
       - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
         with:
           enable-cache: true
-          cache-dependency-path: apps/agent-chat/uv.lock
+          cache-dependency-glob: apps/agent-chat/uv.lock
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
@@ -434,3 +435,4 @@ jobs:
             if [ "$i" = "60" ]; then docker logs caddy; exit 1; fi
           done
           BASE_URL=https://localhost:8443 node scripts/production_smoke.mjs
+          BASE_URL=https://localhost:8443 node scripts/web_vitals_check.mjs
