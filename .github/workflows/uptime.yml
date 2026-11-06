@@ -1,0 +1,72 @@
+name: uptime
+
+on:
+  schedule:
+    # Every 15 minutes, offset from the top-of-the-hour herd. Disabled until
+    # UPTIME_ENABLED=1 is set after the public DNS cutover.
+    - cron: "7,22,37,52 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  probe:
+    if: vars.UPTIME_ENABLED == '1'
+    runs-on: ubuntu-latest
+    env:
+      BASE_URL: ${{ vars.PUBLIC_BASE_URL || 'https://alejandromerida.dev' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - id: health
+        name: Public health and readiness
+        continue-on-error: true
+        run: |
+          curl -fsS --max-time 20 "$BASE_URL/health" >/dev/null
+          curl -fsS --max-time 20 "$BASE_URL/ready" >/dev/null
+      - id: tls
+        name: TLS certificate has at least 14 days remaining
+        continue-on-error: true
+        run: |
+          python3 - <<'PY'
+          import os
+          import socket
+          import ssl
+          from datetime import datetime, timedelta, timezone
+          from urllib.parse import urlparse
+
+          host = urlparse(os.environ["BASE_URL"]).hostname
+          assert host, f"invalid BASE_URL: {os.environ['BASE_URL']}"
+          context = ssl.create_default_context()
+          with socket.create_connection((host, 443), timeout=20) as sock:
+              with context.wrap_socket(sock, server_hostname=host) as tls:
+                  expires = tls.getpeercert()["notAfter"]
+          expiry = datetime.strptime(expires, "%b %d %H:%M:%S %Y %Z").replace(
+              tzinfo=timezone.utc
+          )
+          remaining = expiry - datetime.now(timezone.utc)
+          print(f"TLS certificate for {host} expires in {remaining.days} days")
+          assert remaining >= timedelta(days=14), "TLS certificate expires within 14 days"
+          PY
+      - name: Ensure uptime label exists
+        if: always() && (steps.health.outcome == 'failure' || steps.tls.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh label create uptime --color d73a49 --description "Public health or TLS probe failure" || true
+      - name: Open one issue on failure
+        if: always() && (steps.health.outcome == 'failure' || steps.tls.outcome == 'failure')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          open_count=$(gh issue list --label uptime --state open --json number --jq 'length')
+          if [ "$open_count" -eq 0 ]; then
+            gh issue create \
+              --title "Public uptime/TLS probe failed" \
+              --label uptime \
+              --body "The scheduled public health/readiness or TLS check failed. See ${RUN_URL}. This issue is opened only when no open uptime issue already exists."
+          fi
+      - name: Preserve failed job status
+        if: always() && (steps.health.outcome == 'failure' || steps.tls.outcome == 'failure')
+        run: exit 1

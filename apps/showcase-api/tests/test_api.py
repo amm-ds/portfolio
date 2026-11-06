@@ -1428,3 +1428,123 @@ def test_indexes_serialize_compact_no_spaces() -> None:
     d = client.get("/demos")
     assert d.status_code == 200
     assert ": " not in d.text.split('"hero"')[0]
+
+
+# --- Wave 3: artifact loading and contract hardening ---------------------------
+
+
+def test_cached_artifacts_loads_once_during_concurrent_cold_load(
+    tmp_path: Path, monkeypatch
+) -> None:  # type: ignore[no-untyped-def]
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    from showcase_api import serving
+
+    key = tmp_path / "serving"
+    artifacts = {"model": {"model": object()}, "meta": {}}
+    calls = 0
+    calls_lock = threading.Lock()
+    barrier = threading.Barrier(8)
+
+    def slow_load(_path: Path, _extra_json: tuple[str, ...] = ()) -> dict:
+        nonlocal calls
+        with calls_lock:
+            calls += 1
+        time.sleep(0.05)
+        return artifacts
+
+    def load(_: int):  # type: ignore[no-untyped-def]
+        barrier.wait()
+        return serving.cached_artifacts(key)
+
+    monkeypatch.setattr(serving, "load_artifacts", slow_load)
+    serving._cache.pop(key, None)
+    try:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = list(pool.map(load, range(8)))
+    finally:
+        serving._cache.pop(key, None)
+    assert calls == 1
+    assert all(result is artifacts for result in results)
+
+
+def test_readiness_covers_green_mobility_bundle(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    for name in ("model.joblib", "meta.json", "zones.json"):
+        (tmp_path / name).write_text("{}")
+    monkeypatch.setattr(main, "_SERVING_DIR", tmp_path)
+    assert main._readiness() is False
+
+    green = tmp_path / "green"
+    green.mkdir()
+    for name in ("model.joblib", "meta.json", "zones.json"):
+        (green / name).write_text("{}")
+    assert main._readiness() is True
+
+
+@pytest.mark.parametrize("path", ["/tmp/demo.json", "../demo.json", "reports/../../demo.json"])
+def test_payload_ref_rejects_absolute_and_parent_paths(path: str) -> None:
+    from portfolio_core.demo import PayloadRef
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        PayloadRef(path=path, required_keys=["demo"])
+
+
+def test_demo_payload_409_when_json_is_not_an_object(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _write_demo_project(tmp_path)
+    payload_file = tmp_path / "05-ml-pipeline-churn" / "reports" / "demo_payload.json"
+    payload_file.write_text(json.dumps(["demo", "thresholds", "overall"]))
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 409
+    assert "top-level JSON object" in r.json()["error"]
+
+
+def test_demo_payload_409_when_json_is_malformed(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _write_demo_project(tmp_path)
+    payload_file = tmp_path / "05-ml-pipeline-churn" / "reports" / "demo_payload.json"
+    payload_file.write_text('{"demo":')
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 409
+    assert "not valid JSON" in r.json()["error"]
+
+
+def test_demo_payload_resolved_path_stays_inside_project(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    _write_demo_project(tmp_path)
+    payload_file = tmp_path / "05-ml-pipeline-churn" / "reports" / "demo_payload.json"
+    payload_file.unlink()
+    outside = tmp_path / "outside.json"
+    outside.write_text(json.dumps(_DEMO_PAYLOAD))
+    payload_file.symlink_to(outside)
+    monkeypatch.setattr(main, "PROJECTS_ROOT", tmp_path)
+
+    r = client.get("/demos/churn-sandbox/payload")
+    assert r.status_code == 409
+    assert "escapes the project dir" in r.json()["error"]
+
+
+def test_demo_contract_checker_rejects_resolved_path_escape(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.syspath_prepend(str(main.REPO_ROOT / "scripts"))
+    import check_demo_contract
+
+    _write_demo_project(tmp_path)
+    payload_file = tmp_path / "05-ml-pipeline-churn" / "reports" / "demo_payload.json"
+    payload_file.unlink()
+    outside = tmp_path / "outside.json"
+    outside.write_text(json.dumps(_DEMO_PAYLOAD))
+    payload_file.symlink_to(outside)
+    checker_errors: list[str] = []
+    monkeypatch.setattr(check_demo_contract, "errors", checker_errors)
+
+    check_demo_contract.check_demo(tmp_path)
+    assert any("escapes the project dir" in error for error in checker_errors)
+
+
+def test_openapi_schema_matches_committed_golden() -> None:
+    golden = Path(__file__).with_name("openapi.json")
+    assert app.openapi() == json.loads(golden.read_text())

@@ -41,7 +41,11 @@ def check_demo(projects_root: Path) -> None:
             # phase re-declares the payload. Report, don't fail.
             print(f"INCOMPLETE: {m.id} ({m.project}) — no payload declared")
             continue
-        payload_path = project_dir / m.payload.path
+        project_dir = project_dir.resolve()
+        payload_path = (project_dir / m.payload.path).resolve()
+        if payload_path != project_dir and project_dir not in payload_path.parents:
+            errors.append(f"{m.id}: payload path escapes the project dir: {m.payload.path}")
+            continue
         if not payload_path.exists():
             errors.append(
                 f"{m.id}: payload file missing at {payload_path} "

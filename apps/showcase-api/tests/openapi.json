@@ -1,0 +1,1171 @@
+{
+  "components": {
+    "schemas": {
+      "ChurnDecision": {
+        "properties": {
+          "alarm": {
+            "title": "Alarm",
+            "type": "boolean"
+          },
+          "expected_cost_note": {
+            "title": "Expected Cost Note",
+            "type": "string"
+          },
+          "threshold": {
+            "title": "Threshold",
+            "type": "number"
+          }
+        },
+        "required": [
+          "alarm",
+          "threshold",
+          "expected_cost_note"
+        ],
+        "title": "ChurnDecision",
+        "type": "object"
+      },
+      "ChurnScoreRequest": {
+        "properties": {
+          "features": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "maxProperties": 256,
+            "minProperties": 1,
+            "title": "Features",
+            "type": "object"
+          }
+        },
+        "required": [
+          "features"
+        ],
+        "title": "ChurnScoreRequest",
+        "type": "object"
+      },
+      "ChurnScoreResponse": {
+        "properties": {
+          "churn_probability": {
+            "title": "Churn Probability",
+            "type": "number"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/ChurnDecision"
+          }
+        },
+        "required": [
+          "churn_probability",
+          "decision"
+        ],
+        "title": "ChurnScoreResponse",
+        "type": "object"
+      },
+      "ContactUnlockRequest": {
+        "description": "What the visitor shares to reveal the phone line: an email address or a\nphone number. Validated for shape only \u2014 the value is never stored.",
+        "properties": {
+          "value": {
+            "maxLength": 120,
+            "minLength": 3,
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "ContactUnlockRequest",
+        "type": "object"
+      },
+      "Customer": {
+        "additionalProperties": false,
+        "description": "One VRPTW customer; customer 0 is the depot with zero demand.",
+        "properties": {
+          "demand": {
+            "minimum": 0.0,
+            "title": "Demand",
+            "type": "number"
+          },
+          "due_time": {
+            "description": "Latest service start.",
+            "minimum": 0.0,
+            "title": "Due Time",
+            "type": "number"
+          },
+          "id": {
+            "minimum": 0.0,
+            "title": "Id",
+            "type": "integer"
+          },
+          "ready_time": {
+            "description": "Earliest service start; the vehicle waits if early.",
+            "minimum": 0.0,
+            "title": "Ready Time",
+            "type": "number"
+          },
+          "service_time": {
+            "minimum": 0.0,
+            "title": "Service Time",
+            "type": "number"
+          },
+          "x": {
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "x",
+          "y",
+          "demand",
+          "ready_time",
+          "due_time",
+          "service_time"
+        ],
+        "title": "Customer",
+        "type": "object"
+      },
+      "DemandForecastRequest": {
+        "properties": {
+          "features": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "maxProperties": 256,
+            "minProperties": 1,
+            "title": "Features",
+            "type": "object"
+          },
+          "series_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Series Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "series_id",
+          "features"
+        ],
+        "title": "DemandForecastRequest",
+        "type": "object"
+      },
+      "DemandForecastResponse": {
+        "properties": {
+          "forecast": {
+            "title": "Forecast",
+            "type": "number"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "forecast",
+          "model"
+        ],
+        "title": "DemandForecastResponse",
+        "type": "object"
+      },
+      "ForecastRequest": {
+        "properties": {
+          "features": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "maxProperties": 64,
+            "minProperties": 1,
+            "title": "Features",
+            "type": "object"
+          },
+          "service": {
+            "default": "yellow",
+            "enum": [
+              "yellow",
+              "green"
+            ],
+            "title": "Service",
+            "type": "string"
+          },
+          "zone_id": {
+            "minimum": 1.0,
+            "title": "Zone Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "zone_id",
+          "features"
+        ],
+        "title": "ForecastRequest",
+        "type": "object"
+      },
+      "ForecastResponse": {
+        "properties": {
+          "borough": {
+            "title": "Borough",
+            "type": "string"
+          },
+          "p90": {
+            "title": "P90",
+            "type": "number"
+          },
+          "prediction": {
+            "title": "Prediction",
+            "type": "number"
+          },
+          "service": {
+            "enum": [
+              "yellow",
+              "green"
+            ],
+            "title": "Service",
+            "type": "string"
+          },
+          "zone": {
+            "title": "Zone",
+            "type": "string"
+          },
+          "zone_id": {
+            "title": "Zone Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "zone_id",
+          "borough",
+          "zone",
+          "prediction",
+          "p90",
+          "service"
+        ],
+        "title": "ForecastResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Problem": {
+        "additionalProperties": false,
+        "description": "A parsed VRPTW instance: customers (depot first) plus fleet parameters.",
+        "properties": {
+          "customers": {
+            "items": {
+              "$ref": "#/components/schemas/Customer"
+            },
+            "minItems": 1,
+            "title": "Customers",
+            "type": "array"
+          },
+          "max_vehicles": {
+            "default": 25,
+            "description": "Fleet size stated by the instance file.",
+            "minimum": 1.0,
+            "title": "Max Vehicles",
+            "type": "integer"
+          },
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "vehicle_capacity": {
+            "exclusiveMinimum": 0.0,
+            "title": "Vehicle Capacity",
+            "type": "number"
+          }
+        },
+        "required": [
+          "name",
+          "customers",
+          "vehicle_capacity"
+        ],
+        "title": "Problem",
+        "type": "object"
+      },
+      "ProjectStory": {
+        "additionalProperties": false,
+        "description": "The full case study for one project.",
+        "properties": {
+          "data_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One sentence: real/synthetic, size, license.",
+            "title": "Data Note"
+          },
+          "figure_captions": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Programmatically-linked commentary for figures, keyed by figure id (as listed in sections' `figures:`). Rendered as a footer under each chart in the showcase app \u2014 the chart itself stays clean (short descriptive title), the 'so what' lives here. Convention: caption every rendered figure, 1-2 plain-language sentences, numbers exact.",
+            "title": "Figure Captions",
+            "type": "object"
+          },
+          "headline": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One sentence: the result plus its uncertainty.",
+            "title": "Headline"
+          },
+          "key_concepts": {
+            "description": "The ideas that arose in this project, shown as a card in the Background section so readers meet the vocabulary before the sections that use it. 4-7 items, each '**Term** \u2014 one plain sentence on what it means here.'",
+            "items": {
+              "type": "string"
+            },
+            "title": "Key Concepts",
+            "type": "array"
+          },
+          "limits": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "One sentence: what the story does not show.",
+            "title": "Limits"
+          },
+          "project_id": {
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "roadmap": {
+            "description": "Finalized roadmap: delivered/deferred/remaining, no history.",
+            "items": {
+              "$ref": "#/components/schemas/RoadmapItem"
+            },
+            "title": "Roadmap",
+            "type": "array"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/StorySection"
+            },
+            "minItems": 1,
+            "title": "Sections",
+            "type": "array"
+          },
+          "short_version": {
+            "description": "Required. The single plain-text source for card/README/docs/SEO/social copy: one short paragraph (\u2264 280 chars) stating what was built, the headline measured result with its uncertainty, and the data used. Everything short-form derives from this \u2014 no parallel hand-written summaries.",
+            "maxLength": 280,
+            "minLength": 1,
+            "title": "Short Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "short_version",
+          "sections"
+        ],
+        "title": "ProjectStory",
+        "type": "object"
+      },
+      "RoadmapItem": {
+        "additionalProperties": false,
+        "description": "One roadmap entry. Status drives the case-study roadmap visual:\ndelivered (done, with results elsewhere in the story), remaining\n(genuinely open forward work), or deferred (consciously parked, with\nthe reason in the text).",
+        "properties": {
+          "status": {
+            "pattern": "^(delivered|remaining|deferred)$",
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "text"
+        ],
+        "title": "RoadmapItem",
+        "type": "object"
+      },
+      "SolveResponse": {
+        "additionalProperties": false,
+        "description": "The RoutePlan pydantic JSON plus serving metadata.",
+        "properties": {
+          "instance": {
+            "minLength": 1,
+            "title": "Instance",
+            "type": "string"
+          },
+          "n_vehicles": {
+            "minimum": 1.0,
+            "title": "N Vehicles",
+            "type": "integer"
+          },
+          "routes": {
+            "items": {
+              "items": {
+                "type": "integer"
+              },
+              "type": "array"
+            },
+            "minItems": 1,
+            "title": "Routes",
+            "type": "array"
+          },
+          "runtime_s": {
+            "title": "Runtime S",
+            "type": "number"
+          },
+          "solver": {
+            "minLength": 1,
+            "title": "Solver",
+            "type": "string"
+          },
+          "total_distance": {
+            "minimum": 0.0,
+            "title": "Total Distance",
+            "type": "number"
+          }
+        },
+        "required": [
+          "instance",
+          "solver",
+          "routes",
+          "total_distance",
+          "n_vehicles",
+          "runtime_s"
+        ],
+        "title": "SolveResponse",
+        "type": "object"
+      },
+      "StorySection": {
+        "additionalProperties": false,
+        "description": "One section of the case study.\n\n``figures`` references names served by ``GET /projects/{id}/figures/{name}``\n(no extension). ``metrics_keys`` optionally references run names in\n``reports/metrics.json`` the UI should highlight in this section.",
+        "properties": {
+          "figures": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Figures",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metrics_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Metrics Keys",
+            "type": "array"
+          },
+          "text_md": {
+            "description": "Client-readable markdown prose.",
+            "minLength": 1,
+            "title": "Text Md",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "description": "Empty \u2192 filled from the canonical section title.",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text_md"
+        ],
+        "title": "StorySection",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "amm-ds portfolio showcase",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/contact/unlock": {
+      "post": {
+        "description": "Return the phone number once the visitor shares a valid email or phone\nnumber. Keeps the number out of page source and bundles without pretending\nto be a security boundary \u2014 any deliberate caller receives it.",
+        "operationId": "unlock_contact_phone_contact_unlock_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContactUnlockRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Unlock Contact Phone Contact Unlock Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Unlock Contact Phone"
+      }
+    },
+    "/demos": {
+      "get": {
+        "description": "Registry entries for the frontend demos index (sorted by group, id),\ncomputed once at startup and served with ETag.",
+        "operationId": "demos_index_demos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Demos Index"
+      }
+    },
+    "/demos/{demo_id}/manifest": {
+      "get": {
+        "description": "The demo's manifest as JSON (scenarios, live endpoints, payload ref).",
+        "operationId": "demo_manifest_demos__demo_id__manifest_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "demo_id",
+            "required": true,
+            "schema": {
+              "title": "Demo Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Demo Manifest Demos  Demo Id  Manifest Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Demo Manifest"
+      }
+    },
+    "/demos/{demo_id}/payload": {
+      "get": {
+        "description": "The demo's committed payload JSON, cached 1 h by clients/CDN\n(stale-while-revalidate 24 h) behind an ETag.\n\n404 when the demo is unknown or its payload file hasn't been built yet;\n409 when the payload violates the manifest contract (unsafe path, non-object\nJSON, missing required keys, or a schema_version mismatch).",
+        "operationId": "demo_payload_demos__demo_id__payload_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "demo_id",
+            "required": true,
+            "schema": {
+              "title": "Demo Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Demo Payload"
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Cheap liveness response; ``ready`` is retained for existing clients.\n\n``ready`` is True when every demo payload file and every served-model\nbundle the live endpoints need is present on disk. ``sha`` identifies the\nbuild (``BUILD_SHA`` env, ``dev`` locally). Never cached.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/projects": {
+      "get": {
+        "description": "Project index JSON \u2014 unless a browser navigates here directly (refresh /\ndeep link), in which case serve the SPA and let the client-side router\nrender the projects page. API clients (curl, fetch with an explicit JSON\naccept) get the payload, computed once at startup and served with ETag.",
+        "operationId": "projects_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Projects"
+      }
+    },
+    "/projects/02-demand-forecasting/forecast": {
+      "post": {
+        "description": "Per-series demand forecast from the persisted tuned pipeline.",
+        "operationId": "forecast_demand_projects_02_demand_forecasting_forecast_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DemandForecastRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemandForecastResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forecast Demand"
+      }
+    },
+    "/projects/05-ml-pipeline-churn/score": {
+      "post": {
+        "description": "Churn probability + cost-threshold alarm from the persisted pipeline.\n\nGuarded like the forecast endpoints: 4 concurrent scores max (fast 503\nbeyond that) and the shared 10 s wall-clock cap.",
+        "operationId": "score_churn_projects_05_ml_pipeline_churn_score_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChurnScoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChurnScoreResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Score Churn"
+      }
+    },
+    "/projects/06-routing-optimization/solve": {
+      "post": {
+        "description": "Solve a VRPTW instance with the tuned 2-opt portfolio (fixed seed 42).\n\nGuarded to n_customers <= 200, 2 concurrent solves, and a 10 s wall-clock\ncap; with the tuned config (max_iterations 50) the worst-case runtime on a\n200-customer R2-scale instance stays well under 30 s.",
+        "operationId": "solve_routing_projects_06_routing_optimization_solve_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Problem"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SolveResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Solve Routing"
+      }
+    },
+    "/projects/07-open-data-mobility/forecast": {
+      "post": {
+        "description": "Zone-hour demand forecast from the persisted GBM pair (+p90 band).\n\n``service`` selects the per-service bundle: \"yellow\" (default, unchanged\nbehavior) or \"green\" (retrained green-taxi bundle, same contract).",
+        "operationId": "forecast_mobility_projects_07_open_data_mobility_forecast_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForecastRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ForecastResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forecast Mobility"
+      }
+    },
+    "/projects/{pid}/figures": {
+      "get": {
+        "operationId": "figures_projects__pid__figures_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pid",
+            "required": true,
+            "schema": {
+              "title": "Pid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "title": "Response Figures Projects  Pid  Figures Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Figures"
+      }
+    },
+    "/projects/{pid}/figures/{name}": {
+      "get": {
+        "description": "Interactive figure HTML, cached 1 h (stale-while-revalidate 24 h) + ETag.",
+        "operationId": "figure_projects__pid__figures__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pid",
+            "required": true,
+            "schema": {
+              "title": "Pid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Figure"
+      }
+    },
+    "/projects/{pid}/figures/{name}.json": {
+      "get": {
+        "description": "Plotly JSON payload (same content the React app could render natively).\n\nCached 1 h by clients/CDN (stale-while-revalidate 24 h) behind an ETag.",
+        "operationId": "figure_json_projects__pid__figures__name__json_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pid",
+            "required": true,
+            "schema": {
+              "title": "Pid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Figure Json Projects  Pid  Figures  Name  Json Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Figure Json"
+      }
+    },
+    "/projects/{pid}/metrics": {
+      "get": {
+        "operationId": "metrics_projects__pid__metrics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pid",
+            "required": true,
+            "schema": {
+              "title": "Pid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Metrics Projects  Pid  Metrics Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Metrics"
+      }
+    },
+    "/projects/{pid}/report": {
+      "get": {
+        "description": "The project's full evaluation report (HTML).\n\nTrack-aware resolution, most-recent headline first: 02-demand-forecasting\nships the full-panel M5 headline in ``reports_m5_full/`` (canonical), the\nsubset-era M5 track in ``reports_m5/``, the UCI sparse track in\n``reports_uci/``, and the synthetic CI track in ``reports/``. Everywhere\nelse ``reports/report.html`` is it.",
+        "operationId": "report_projects__pid__report_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pid",
+            "required": true,
+            "schema": {
+              "title": "Pid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Report"
+      }
+    },
+    "/projects/{pid}/story": {
+      "get": {
+        "description": "The project's case study (common 8-section showcase framework).",
+        "operationId": "story_projects__pid__story_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pid",
+            "required": true,
+            "schema": {
+              "title": "Pid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectStory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Story"
+      }
+    },
+    "/ready": {
+      "get": {
+        "description": "Readiness probe: unlike liveness, unready artifacts produce a 503.",
+        "operationId": "readiness_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Readiness"
+      }
+    }
+  }
+}

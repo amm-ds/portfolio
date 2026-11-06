@@ -54,6 +54,7 @@ describe("ReportView", () => {
       "Evaluation report: 01-rag-agent",
     )) as HTMLIFrameElement;
     expect(frame.classList.contains("report-frame")).toBe(true);
+    expect(frame).toHaveAttribute("sandbox", "allow-scripts allow-same-origin");
     const doc = frame.getAttribute("srcdoc")!;
     // the report markup is preserved verbatim…
     expect(doc).toContain("<h1>Evaluation report</h1>");

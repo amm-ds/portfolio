@@ -185,6 +185,22 @@ Also inspect HSTS, CSP, `nosniff`, `Referrer-Policy`, and
 from committed metadata and validates real 02/05/07 inference responses; use
 `apps/showcase-api/SERVING.md` for equivalent curl contracts.
 
+For interactive artifacts, verify that only report/figure/docs routes relax
+`script-src`, then open one HTML report and one iframe figure in a browser and
+confirm that the charts execute without CSP console errors:
+
+```bash
+curl -fsS -o /dev/null -D - "$BASE/projects/01-rag-agent/report" | grep -i content-security-policy
+curl -fsS -o /dev/null -D - "$BASE/" | grep -i content-security-policy
+```
+
+The uptime workflow checks `/health`, `/ready`, and TLS expiry every 15 minutes
+and opens at most one issue per ongoing outage. It is deliberately disabled
+until the public DNS cutover is complete. Then set the repository variables
+`PUBLIC_BASE_URL=https://alejandromerida.dev` and `UPTIME_ENABLED=1`; use
+`UPTIME_ENABLED=0` to pause probes. No probe runs or creates issues while the
+flag is unset.
+
 ## Recreate and rollback
 
 Updates and rollbacks recreate the single API container and can cause a brief

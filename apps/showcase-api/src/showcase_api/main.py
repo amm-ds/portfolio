@@ -190,9 +190,10 @@ def readiness() -> JSONResponse:
 app.include_router(contact_router)
 
 
-def _serving_ready(serving_dir: Path) -> bool:
-    """A serving bundle is loadable when its model.joblib + meta.json exist."""
-    return (serving_dir / "model.joblib").is_file() and (serving_dir / "meta.json").is_file()
+def _serving_ready(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> bool:
+    """A serving bundle is ready when its required artifact files exist."""
+    names = ("model.joblib", "meta.json", *extra_json)
+    return all((serving_dir / name).is_file() for name in names)
 
 
 def _readiness() -> bool:
@@ -200,7 +201,16 @@ def _readiness() -> bool:
     for m in _demo_manifests(PROJECTS_ROOT):
         if m.payload is not None and not (PROJECTS_ROOT / m.project / m.payload.path).is_file():
             return False
-    return all(_serving_ready(d) for d in (_DEMAND_SERVING_DIR, _CHURN_SERVING_DIR, _SERVING_DIR))
+    try:
+        mobility_ready = all(
+            _serving_ready(_service_dir(service), ("zones.json",))
+            for service in ("yellow", "green")
+        )
+    except (HTTPException, OSError, ValueError):
+        return False
+    return mobility_ready and all(
+        _serving_ready(d) for d in (_DEMAND_SERVING_DIR, _CHURN_SERVING_DIR)
+    )
 
 
 # --- Startup-computed indexes (served with ETag) ------------------------------
@@ -412,8 +422,8 @@ def demo_payload(demo_id: str, request: Request) -> Response:
     (stale-while-revalidate 24 h) behind an ETag.
 
     404 when the demo is unknown or its payload file hasn't been built yet;
-    409 when the payload violates the manifest contract (missing required keys
-    or a schema_version mismatch).
+    409 when the payload violates the manifest contract (unsafe path, non-object
+    JSON, missing required keys, or a schema_version mismatch).
     """
     m = _demo_or_404(demo_id)
     if m.payload is None:
@@ -421,14 +431,28 @@ def demo_payload(demo_id: str, request: Request) -> Response:
             status_code=404,
             detail=f"demo {demo_id} declares no payload yet — the manifest is a placeholder",
         )
-    f = PROJECTS_ROOT / m.project / m.payload.path
-    if not f.exists():
+    project_dir = (PROJECTS_ROOT / m.project).resolve()
+    f = (project_dir / m.payload.path).resolve()
+    if f != project_dir and project_dir not in f.parents:
+        raise HTTPException(
+            status_code=409, detail=f"payload path for {demo_id} escapes the project dir"
+        )
+    if not f.is_file():
         raise HTTPException(
             status_code=404,
             detail=f"demo payload not built for {m.project} — run its demo-payload "
             f"stage to write {m.payload.path}",
         )
-    data: dict[str, Any] = json.loads(f.read_text())
+    try:
+        data: Any = json.loads(f.read_text())
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise HTTPException(
+            status_code=409, detail=f"payload for {demo_id} is not valid JSON"
+        ) from None
+    if not isinstance(data, dict):
+        raise HTTPException(
+            status_code=409, detail=f"payload for {demo_id} must be a top-level JSON object"
+        )
     missing = [k for k in m.payload.required_keys if k not in data]
     if missing:
         raise HTTPException(

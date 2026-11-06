@@ -12,6 +12,7 @@ dirs in tests never collide with the real ones.
 """
 
 import json
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,8 @@ from typing import Any
 Artifacts = dict[str, Any] | None
 
 _cache: dict[Path, Artifacts] = {}
+_locks: dict[Path, threading.Lock] = {}
+_locks_guard = threading.Lock()
 
 
 def load_artifacts(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> Artifacts:
@@ -47,8 +50,12 @@ def load_artifacts(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> Artif
 
 
 def cached_artifacts(serving_dir: Path, extra_json: tuple[str, ...] = ()) -> Artifacts:
-    """Lazy per-directory cache around :func:`load_artifacts`."""
+    """Lazy per-directory cache; concurrent cold loads share one lock."""
     key = Path(serving_dir)
     if key not in _cache:
-        _cache[key] = load_artifacts(key, extra_json)
+        with _locks_guard:
+            lock = _locks.setdefault(key, threading.Lock())
+        with lock:
+            if key not in _cache:
+                _cache[key] = load_artifacts(key, extra_json)
     return _cache[key]

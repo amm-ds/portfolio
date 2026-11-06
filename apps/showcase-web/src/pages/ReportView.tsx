@@ -90,6 +90,7 @@ export function ReportView() {
       <iframe
         className="report-frame"
         title={`Evaluation report: ${id}`}
+        sandbox="allow-scripts allow-same-origin"
         srcDoc={html}
         onLoad={(e) => {
           // same-origin frame: fit the frame to the report's content height

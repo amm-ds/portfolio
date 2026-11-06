@@ -26,7 +26,7 @@
         # img-src data: covers plotly data-URI images. The remaining directives
         # pin down the edges default-src leaves open: no <base> hijacking, no
         # form posts off-origin, no framing, no plugins.
-        Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+        Content-Security-Policy "default-src 'self'; script-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
         # Full process isolation from cross-origin popups/windows (defense in
         # depth next to frame-ancestors 'none' / X-Frame-Options DENY).
         Cross-Origin-Opener-Policy "same-origin"
@@ -36,6 +36,15 @@
         Permissions-Policy "geolocation=(), camera=(), microphone=()"
         -Server
     }
+
+    # Trusted generated reports/figures execute their own inline bootstrap and
+    # load pinned-major renderer assets. This exception is route-scoped: the SPA
+    # keeps the stricter same-origin script policy above. The report SPA route
+    # needs the same exception because its sandboxed srcDoc inherits parent CSP.
+    header /projects/*/report Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.plot.ly https://cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+    header /projects/*/figures/* Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.plot.ly https://cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+    header /docs* Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+    header /redoc* Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
 
     reverse_proxy api:8000
 }

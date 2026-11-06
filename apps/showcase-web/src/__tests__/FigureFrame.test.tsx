@@ -9,6 +9,7 @@ describe("FigureFrame", () => {
     render(<FigureFrame projectId="01-rag-agent" name="retrieval_funnel" />);
     const iframe = screen.getByTitle("Figure: retrieval_funnel");
     expect(iframe).toHaveAttribute("src", "/projects/01-rag-agent/figures/retrieval_funnel");
+    expect(iframe).toHaveAttribute("sandbox", "allow-scripts allow-same-origin");
     expect(screen.getByText("> retrieval_funnel")).toBeInTheDocument();
   });
 

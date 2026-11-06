@@ -43,6 +43,7 @@ export function FigureFrame({
         <iframe
           src={figureUrl(projectId, name)}
           title={`Figure: ${name}`}
+          sandbox="allow-scripts allow-same-origin"
           loading="lazy"
           onLoad={() => setLoaded(true)}
         />

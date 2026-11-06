@@ -55,6 +55,14 @@ class PayloadRef(PortfolioBaseModel):
     schema_version: int = 1
     required_keys: list[str] = Field(min_length=1)
 
+    @field_validator("path")
+    @classmethod
+    def _project_relative_path(cls, v: str) -> str:
+        path = Path(v)
+        if path.is_absolute() or ".." in path.parts:
+            raise ValueError("payload path must stay relative to the project dir")
+        return v
+
 
 class DemoManifest(PortfolioBaseModel):
     """One demo declared by ``projects/<pid>/demo.yaml`` or a file in

@@ -58,6 +58,7 @@ jobs:
               - 'apps/showcase-web/index.html'
               - 'apps/showcase-web/public/robots.txt'
               - 'apps/showcase-web/public/sitemap.xml'
+              - 'scripts/production_smoke.mjs'
               - '.github/workflows/ci.yml'
 
   gate:
@@ -215,8 +216,11 @@ jobs:
         # The vite dev server proxies /projects + /demos to the API, so axe
         # exercises the real render path (not only the API-down fallback).
         run: |
+          # Stop both servers before setup-uv's post-job cache pruning; leaving
+          # uvicorn/vite alive held the cache and timed out the cleanup.
+          trap 'pkill -f "uvicorn showcase_api.main:app" || true; pkill -f "vite.*4321" || true' EXIT
           uv sync --all-packages --dev --locked
-          (cd apps/showcase-api 2>/dev/null || cd ../showcase-api; uv run uvicorn showcase_api.main:app --host 127.0.0.1 --port 8000) &
+          (cd apps/showcase-api 2>/dev/null || cd ../showcase-api; uv run --no-sync uvicorn showcase_api.main:app --host 127.0.0.1 --port 8000) &
           npm run dev -- --port 4321 --strictPort &
           for i in $(seq 1 60); do
             curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1 && curl -fsS http://127.0.0.1:4321/ >/dev/null 2>&1 && break
@@ -330,12 +334,22 @@ jobs:
             caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
       - name: Build showcase image
         run: docker build --build-arg VITE_BUILD_SHA="$GITHUB_SHA" -t amm-ds-portfolio .
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          cache: npm
+          cache-dependency-path: apps/showcase-web/package-lock.json
+      - name: Install browser smoke dependencies
+        working-directory: apps/showcase-web
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
       - name: Smoke test
         # Verifies the SPA plus real responses from all three artifact-backed
         # serving endpoints, using each committed metadata example as input.
         run: |
-          trap "docker rm -f showcase" EXIT
-          docker run -d --name showcase -p 8000:8000 \
+          trap "docker rm -f showcase caddy; docker network rm showcase-net" EXIT
+          docker network create showcase-net
+          docker run -d --name showcase --network showcase-net --network-alias api -p 8000:8000 \
             -e BUILD_SHA="$GITHUB_SHA" -e IP_HASH_SALT=ci-smoke-salt amm-ds-portfolio
           # poll readiness (cold joblib loads on a 2-vCPU runner can exceed a
           # fixed sleep; a previous run flaked here)
@@ -409,3 +423,14 @@ jobs:
           assert isinstance(mobility["p90"], (int, float))
           print("02/05/07 serving responses valid")
           PY
+          # Real proxy + browser proof: SPA stays strict while report/figure/docs
+          # scripts execute under their route-scoped CSP (not merely curl 200s).
+          docker run -d --name caddy --network showcase-net -p 8443:443 \
+            -e DOMAIN=localhost -e ACME_EMAIL=ci@example.com \
+            -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" caddy:2-alpine
+          for i in $(seq 1 60); do
+            if curl -kfsS https://localhost:8443/ready >/dev/null 2>&1; then break; fi
+            sleep 1
+            if [ "$i" = "60" ]; then docker logs caddy; exit 1; fi
+          done
+          BASE_URL=https://localhost:8443 node scripts/production_smoke.mjs
