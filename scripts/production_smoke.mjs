@@ -9,6 +9,7 @@ const require = createRequire(path.join(ROOT, "apps", "showcase-web", "package.j
 const { chromium } = require("playwright");
 const BASE_URL = (process.env.BASE_URL ?? "https://localhost:8443").replace(/\/$/, "");
 const errors = [];
+const docResponses = [];
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -27,6 +28,15 @@ try {
   page.on("pageerror", (error) => errors.push(`${page.url()}: ${error.message}`));
   page.on("requestfailed", (request) => {
     errors.push(`${request.url()}: ${request.failure()?.errorText ?? "request failed"}`);
+  });
+  page.on("response", (response) => {
+    if (response.url().includes("/docs")) {
+      docResponses.push({
+        url: response.url(),
+        status: response.status(),
+        contentType: response.headers()["content-type"] ?? "",
+      });
+    }
   });
 
   const home = await page.goto(`${BASE_URL}/`, { waitUntil: "networkidle", timeout: 60_000 });
@@ -74,7 +84,10 @@ try {
         .map((entry) => entry.name)
         .filter((name) => name.includes("/docs") || name.includes("cdn.")),
     }));
-    console.error("Swagger diagnostics:", JSON.stringify({ ...diagnostics, errors }));
+    console.error(
+      "Swagger diagnostics:",
+      JSON.stringify({ ...diagnostics, docResponses, errors: errors.map((error) => error.slice(0, 500)) }),
+    );
     throw error;
   }
   console.log("production docs: Swagger UI executed");
