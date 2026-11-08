@@ -1,5 +1,21 @@
 # Deployment Report — alejandromerida.dev
 
+**2026-11-08 — CUTOVER COMPLETE.** The supported single-origin topology
+(DEPLOY.md) is live: `https://alejandromerida.dev` serves tag `191a4ce`
+(full SHA `191a4ce5470f88401637652e0d23ff1a4c8dd911`) from the Hetzner CX23
+`ubuntu-4gb-nbg1-1` (2.31.119.56), DNS `A` record DNS-only, Caddy-provisioned
+TLS, uptime workflow enabled. Server-specific operations live in
+[`HETZNER.md`](HETZNER.md). The tier evaluation below is retained as history.
+
+Cutover record: image built on the host from the pushed tree; smoke suite
+(DEPLOY.md) passed end to end including a live `/score` POST; three latent
+bugs surfaced only under a real boot and were fixed in `bd60eed`, `db4fc13`,
+`191a4ce` (see HETZNER.md history). Memory footprint on the 4GB shared box:
+api ~223MB of a 1G limit, caddy ~25MB of 256M, ≥2.9GB available for the OS
+and the co-tenant project.
+
+---
+
 **Date:** 2026-11-04 · **Status:** dated alternatives evaluation, not the supported runbook.
 
 Use [`DEPLOY.md`](DEPLOY.md) for the current single-origin deployment contract.
