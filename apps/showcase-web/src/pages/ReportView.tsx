@@ -1,18 +1,57 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { usePageMeta } from "../seo";
+import { injectReportThemeBridge } from "../theme/reportBridge";
+import { THEME_STORAGE_KEY, type Theme } from "../theme/useTheme";
+
+/** The active display theme, read from the app shell (`<html data-theme>`,
+ * the attribute `applyTheme` writes) and re-read whenever that attribute
+ * changes. Reads the DOM attribute rather than a `useTheme` instance so it
+ * stays correct no matter which mounted switcher toggled the theme. */
+function useActiveTheme(): Theme {
+  const read = (): Theme => {
+    const attr = document.documentElement.getAttribute("data-theme");
+    if (attr === "light" || attr === "dark") return attr;
+    try {
+      return window.localStorage.getItem(THEME_STORAGE_KEY) === "light" ? "light" : "dark";
+    } catch {
+      return "dark";
+    }
+  };
+  const [theme, setTheme] = useState<Theme>(read);
+  useEffect(() => {
+    const observer = new MutationObserver(() => setTheme(read()));
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return theme;
+}
 
 /** Routed evaluation-report page (/projects/:id/report): renders the
  * API-served full-width HTML report inside a same-origin frame so the
  * report's themed markup is sandboxed from the app shell (the same pattern
  * FigureFrame uses for HTML figures). The frame is sized to the report's
- * content height on load. The API also supplies the escaped HTML-source
- * details inside the document, so direct and framed routes share one contract. */
+ * content height on load. The active theme is injected into the frame as a
+ * small bridge (root `data-theme` stamp plus, for light mode, light-surface
+ * overrides) rather than by mutating the committed report source, and the
+ * bridge is re-injected whenever the theme changes. The API also supplies
+ * the escaped HTML-source details inside the document, so direct and framed
+ * routes share one contract. */
 export function ReportView() {
   const { id = "" } = useParams();
   const [sourceHtml, setSourceHtml] = useState<string | null>(null);
   const [status, setStatus] = useState<"loading" | "missing" | "error">("loading");
   const [attempt, setAttempt] = useState(0);
+  const theme = useActiveTheme();
+
+  const framedHtml = useMemo(
+    () => (sourceHtml === null ? null : injectReportThemeBridge(sourceHtml, theme)),
+    [sourceHtml, theme],
+  );
 
   usePageMeta({
     title: "Evaluation report",
@@ -70,14 +109,14 @@ export function ReportView() {
       </div>
     );
   }
-  if (sourceHtml === null) return <p className="loading">loading report…</p>;
+  if (framedHtml === null) return <p className="loading">loading report…</p>;
   return (
     <div className="report-view">
       <iframe
         className="report-frame"
         title={`Evaluation report: ${id}`}
         sandbox="allow-scripts allow-same-origin"
-        srcDoc={sourceHtml}
+        srcDoc={framedHtml}
         onLoad={(e) => {
           // same-origin frame: fit the frame to the report's content height
           const frame = e.currentTarget;

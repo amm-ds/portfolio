@@ -32,6 +32,10 @@ const ROUTES = [
   "/projects",
   "/projects/04-nlp-classification",
   "/projects/05-ml-pipeline-churn",
+  "/projects/09-agentic-workflows",
+  "/projects/01-rag-agent/report",
+  "/apps/agent-chat",
+  "/apps/document-intelligence",
   "/glossary",
   "/contact",
   "/demos/churn-sandbox",
@@ -46,50 +50,83 @@ const REPORT_PATH = path.join(ROOT, "reports", "axe.json");
 
 async function main() {
   const browser = await chromium.launch();
+  const themes = [
+    { name: "dark", storageValue: "dark" },
+    { name: "light", storageValue: "light" },
+  ];
   try {
-    // AxeBuilder requires a page from an explicit context (browser.newPage()
-    // is not supported).
-    const context = await browser.newContext();
-    const page = await context.newPage();
     const results = [];
 
-    for (const viewport of VIEWPORTS) {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      for (const route of ROUTES) {
-        const url = `${BASE_URL}${route}`;
-        const response = await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
-        const httpStatus = response?.status() ?? null;
-        // Let lazy charts/figures settle before scanning.
-        await page.waitForTimeout(500);
-
-        const analysis = await new AxeBuilder({ page }).analyze();
-        const failing = analysis.violations;
-        results.push({
-          route,
-          viewport: viewport.name,
-          url,
-          httpStatus,
-          passes: analysis.passes.length,
-          violationCount: analysis.violations.length,
-          failingViolations: failing.map((v) => ({
-            id: v.id,
-            impact: v.impact,
-            help: v.help,
-            helpUrl: v.helpUrl,
-            nodes: v.nodes.map((n) => n.target),
-          })),
-          violations: analysis.violations.map((v) => ({
-            id: v.id,
-            impact: v.impact,
-            help: v.help,
-            helpUrl: v.helpUrl,
-            nodes: v.nodes.map((n) => ({ target: n.target, failureSummary: n.failureSummary })),
-          })),
+    for (const theme of themes) {
+      for (const viewport of VIEWPORTS) {
+        // A fresh context per theme/viewport isolates storage and gives AxeBuilder
+        // the explicit context it requires.
+        const context = await browser.newContext({
+          viewport: { width: viewport.width, height: viewport.height },
         });
-        console.log(
-          `[axe] ${viewport.name} ${route} — http ${httpStatus}, ${analysis.passes.length} passes, ` +
-            `${analysis.violations.length} violations`,
+        await context.addInitScript(
+          ([key, value]) => window.localStorage.setItem(key, value),
+          ["portfolio-theme", theme.storageValue],
         );
+        const page = await context.newPage();
+        try {
+          for (const route of ROUTES) {
+            const url = `${BASE_URL}${route}`;
+            let httpStatus = null;
+            if (route.endsWith("/report")) {
+              // In dev, /projects/* is proxied to the API for direct navigations.
+              // Open the SPA case study first, then navigate client-side so the
+              // routed ReportView frame (not the raw API HTML) is scanned.
+              const parentRoute = route.slice(0, -"/report".length);
+              const parentResponse = await page.goto(`${BASE_URL}${parentRoute}`, {
+                waitUntil: "networkidle",
+                timeout: 30_000,
+              });
+              httpStatus = parentResponse?.status() ?? null;
+              const reportLink = page.locator(`a[href="${route}"]`).first();
+              await reportLink.waitFor({ state: "visible", timeout: 30_000 });
+              await reportLink.click();
+              await page.locator(".report-frame").waitFor({ state: "attached", timeout: 30_000 });
+            } else {
+              const response = await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
+              httpStatus = response?.status() ?? null;
+            }
+            // Let lazy charts/figures settle before scanning.
+            await page.waitForTimeout(500);
+
+            const analysis = await new AxeBuilder({ page }).analyze();
+            const failing = analysis.violations;
+            results.push({
+              theme: theme.name,
+              route,
+              viewport: viewport.name,
+              url,
+              httpStatus,
+              passes: analysis.passes.length,
+              violationCount: analysis.violations.length,
+              failingViolations: failing.map((v) => ({
+                id: v.id,
+                impact: v.impact,
+                help: v.help,
+                helpUrl: v.helpUrl,
+                nodes: v.nodes.map((n) => n.target),
+              })),
+              violations: analysis.violations.map((v) => ({
+                id: v.id,
+                impact: v.impact,
+                help: v.help,
+                helpUrl: v.helpUrl,
+                nodes: v.nodes.map((n) => ({ target: n.target, failureSummary: n.failureSummary })),
+              })),
+            });
+            console.log(
+              `[axe] ${theme.name} ${viewport.name} ${route} — http ${httpStatus}, ` +
+                `${analysis.passes.length} passes, ${analysis.violations.length} violations`,
+            );
+          }
+        } finally {
+          await context.close();
+        }
       }
     }
 
@@ -99,12 +136,15 @@ async function main() {
 
     const httpFailures = results
       .filter((r) => r.httpStatus !== 200)
-      .map((r) => `${r.viewport} ${r.route}: HTTP ${r.httpStatus ?? "no response"}`);
+      .map(
+        (r) =>
+          `${r.theme} ${r.viewport} ${r.route}: HTTP ${r.httpStatus ?? "no response"}`,
+      );
     const failures = [
       ...httpFailures,
       ...results.flatMap((r) =>
         r.failingViolations.map(
-          (v) => `${r.viewport} ${r.route}: [${v.impact}] ${v.id} — ${v.help}`,
+          (v) => `${r.theme} ${r.viewport} ${r.route}: [${v.impact}] ${v.id} — ${v.help}`,
         ),
       ),
     ];
@@ -113,7 +153,7 @@ async function main() {
       for (const f of failures) console.error(`  ${f}`);
       process.exitCode = 1;
     } else {
-      console.log("[axe] OK — no violations at desktop, tablet, or mobile widths");
+      console.log("[axe] OK — no violations in dark or light at desktop, tablet, or mobile widths");
     }
   } finally {
     await browser.close();

@@ -40,6 +40,17 @@ describe("diagram spec registry and schema", () => {
     expect(JSON.stringify(ROUTING_SPEC)).toContain("$0.0656 (~$0.07) per 1,000 items");
   });
 
+  it("registers the app architecture specs with their committed evidence", () => {
+    const agentChat = getDiagramSpec("app-agent-chat-architecture");
+    const docIntel = getDiagramSpec("app-document-intelligence-architecture");
+    expect(agentChat?.title).toContain("chat agent");
+    expect(docIntel?.title).toContain("document intelligence");
+    expect(JSON.stringify(agentChat)).toContain("108/108 grader assertions");
+    expect(JSON.stringify(agentChat)).toContain("default 120 s");
+    expect(JSON.stringify(docIntel)).toContain("evidence resolvability is 1.00");
+    expect(JSON.stringify(docIntel)).toContain("entity F1 0.68");
+  });
+
   it("identifies unknown ids without exposing registry properties", () => {
     expect(getDiagramSpec("not-registered")).toBeUndefined();
     expect(getDiagramSpec("__proto__")).toBeUndefined();

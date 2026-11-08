@@ -1,26 +1,12 @@
 import type { ReactNode } from "react";
-import { BusinessImplication } from "../components/BusinessImplication";
+import { AppArticleSection, AppScreenshot as Screenshot } from "../components/AppArticle";
 import { Card } from "../components/Card";
+import { LazyFlowDiagram } from "../components/diagrams/LazyFlowDiagram";
 import { useScrollSpy } from "../hooks/useScrollSpy";
 import { renderMarkdown } from "../lib/markdown";
 import { usePageMeta } from "../seo";
 
 const REPO = "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat";
-
-const ARCHITECTURE = `\`\`\`mermaid
-flowchart LR
-  UI["React + TypeScript chat"] -->|"POST /chat · SSE"| API["FastAPI surface"]
-  API --> AGENT["pydantic-ai agent<br/>typed Answer + budgets"]
-  AGENT --> TOOLS["typed tools + skills"]
-  AGENT --> RAG["retrieval + memory"]
-  TOOLS --> AGENT
-  RAG --> AGENT
-  RAG --> DB[("Postgres + pgvector<br/>or SQLite")]
-  AGENT --> GATE{"consequential action?"}
-  GATE -->|"approval required"| HUMAN["approve / deny<br/>timeout = deny"]
-  GATE -->|"safe output"| OUT["typed SSE response"]
-  HUMAN --> OUT
-\`\`\``;
 
 const APPROVAL_FLOW = `\`\`\`mermaid
 flowchart LR
@@ -43,17 +29,17 @@ async def send_message(ctx: RunContext[ChatDeps], subject: str, body: str) -> st
 \`\`\``;
 
 const PROVIDER_SNIPPET = `\`\`\`bash
-export AGENT_CHAT_PROVIDER=hosted
-export AGENT_CHAT_HOSTED_BASE_URL=https://api.example.com/v1
-export AGENT_CHAT_HOSTED_API_KEY=<secret>
-export AGENT_CHAT_HOSTED_MODEL=<model>
+export AGENT_CHAT_PROVIDER=kimi
+export AGENT_CHAT_KIMI_BASE_URL=https://api.kimi.com/coding/v1
+export AGENT_CHAT_KIMI_API_KEY=<secret>
+export AGENT_CHAT_KIMI_MODEL=kimi-for-coding
 # No agent, tool, API, or UI changes are required.
 \`\`\``;
 
 const SSE_SNIPPET = `\`\`\`json
-{"type":"approval_request","approval_id":"ap_42","tool":"send_message","summary":"Weekly report"}
-{"type":"approval_response","approval_id":"ap_42","approved":true}
-{"type":"done","answer":{"text":"…","citations":[],"uncertainty":"low"},"usage":{"input_tokens":842,"output_tokens":117,"requests":3},"conversation_id":"conv_7"}
+{"type":"approval_request","approval_id":"9f2c71ab05d3","tool":"send_message","summary":"Weekly report"}
+{"type":"approval_response","approval_id":"9f2c71ab05d3","approved":true}
+{"type":"done","answer":{"text":"…","citations":[],"uncertainty":"low"},"usage":{"input_tokens":842,"output_tokens":117,"requests":3},"conversation_id":"0192f8d4-a7b2-7c1e-8f3a-2d9c6b1a4e55"}
 \`\`\``;
 
 const EVAL_SNIPPET = `\`\`\`bash
@@ -89,7 +75,7 @@ const SPECS = [
   },
   {
     title: "decision records",
-    text: "Five ADRs covering the agent, approval, memory, retrieval, and frontend choices and their limits.",
+    text: "Six ADRs covering the agent, approval, session memory, retrieval, and frontend choices and their limits.",
     href: `${REPO}/specs/decisions`,
   },
 ];
@@ -105,43 +91,14 @@ const SECTIONS = [
   { id: "adapt", title: "Adapt & limits" },
 ] as const;
 
-function ArticleSection({
-  id,
-  index,
-  subtitle,
-  takeaway,
-  children,
-}: {
+function ArticleSection(props: {
   id: string;
   index: number;
   subtitle: string;
   takeaway: string;
   children: ReactNode;
 }) {
-  return (
-    <section id={id} className="story-section">
-      <h2>
-        <span className="sec-num">{String(index).padStart(2, "0")}</span>
-        {SECTIONS[index - 1].title}
-      </h2>
-      <p className="section-subtitle">{subtitle}</p>
-      <div className="story-main">
-        {children}
-        <BusinessImplication label="In plain terms">{takeaway}</BusinessImplication>
-      </div>
-    </section>
-  );
-}
-
-function Screenshot({ name, alt, caption }: { name: string; alt: string; caption: string }) {
-  return (
-    <figure className="app-screenshot">
-      <a href={`/apps/${name}`} target="_blank" rel="noopener noreferrer" aria-label={`Open full image: ${alt}`}>
-        <img src={`/apps/${name}`} alt={alt} loading="lazy" />
-      </a>
-      <figcaption>{caption}</figcaption>
-    </figure>
-  );
+  return <AppArticleSection {...props} title={SECTIONS[props.index - 1].title} />;
 }
 
 export function AgentChatArticle() {
@@ -163,7 +120,11 @@ export function AgentChatArticle() {
           skills, pgvector retrieval, durable memory, human approval for consequential actions,
           and a streaming chat UI.
         </p>
-        <p className="domain">Agentic AI · FastAPI · Postgres + pgvector · React + TypeScript</p>
+        <div className="chips" aria-label="Technology stack">
+          {["Agentic AI", "FastAPI", "Postgres + pgvector", "React + TypeScript"].map((tech) => (
+            <span key={tech} className="chip">{tech}</span>
+          ))}
+        </div>
         <div className="meta-links">
           <a className="chip-link" href={REPO} target="_blank" rel="noopener noreferrer">[source]</a>
           <a className="chip-link" href={`${REPO}/specs`} target="_blank" rel="noopener noreferrer">[specs]</a>
@@ -204,6 +165,13 @@ export function AgentChatArticle() {
                 <li>FastAPI streaming, request IDs, structured errors, and health/readiness endpoints.</li>
                 <li>React conversation UI with tool traces, citations, and approval cards.</li>
               </ul>
+              <p>
+                <strong>The handoff boundary is deliberate.</strong> The repository includes the
+                application chassis, local and containerized startup, sample tools and documents,
+                and executable contracts. The adopter supplies the domain corpus, credentials,
+                identity provider, production SLOs, retention policy, and model acceptance threshold.
+                A successful demo is the starting point for validation, not proof of unattended readiness.
+              </p>
             </div>
           </ArticleSection>
 
@@ -227,6 +195,12 @@ export function AgentChatArticle() {
                 and uncertainty. Request and token budgets stop runaway loops; output-validation
                 retries are separate from provider fallback.
               </p>
+              <p>
+                This single-agent shape fits support copilots, internal knowledge assistants, and
+                operator-approved workflows with a bounded tool inventory. Choose durable execution
+                or explicit multi-agent orchestration instead when work spans hours, independent
+                workers, or separately owned failure domains; do not hide that complexity in a larger prompt.
+              </p>
             </div>
           </ArticleSection>
 
@@ -236,17 +210,32 @@ export function AgentChatArticle() {
             subtitle="provider, retrieval, memory, and approval boundaries stay independent"
             takeaway="Change the model, database, or domain without rewriting the application."
           >
-            {renderMarkdown(ARCHITECTURE)}
+            <LazyFlowDiagram specId="app-agent-chat-architecture" />
             <div className="prose">
               <p>
                 Retrieval returns source-addressed passages. The model sees only relevant tools
                 and deferred skill descriptions, then produces the structured output. Provider
-                selection lives in one factory and supports local Ollama, hosted OpenAI-compatible
-                APIs, and optional fallback chains.
+                selection lives in one factory and supports Kimi, local Ollama, generic
+                OpenAI-compatible APIs, and optional fallback chains.
               </p>
+              <ul>
+                <li><strong>Owned execution:</strong> the API creates one bounded <code>UseThreadExecutor</code> for synchronous agent callbacks and closes it during FastAPI lifespan shutdown, alongside the stores.</li>
+                <li><strong>Different failure policies:</strong> fallback handles provider API failures; <code>model_retries</code> handles output-validation failures. Neither is a substitute for the other.</li>
+                <li><strong>Isolated runs:</strong> each browser session owns its conversations, notebook, and approval decisions; one session cannot read or settle another session's state.</li>
+              </ul>
             </div>
             {renderMarkdown(PROVIDER_SNIPPET)}
             {renderMarkdown(APPROVAL_FLOW)}
+            <div className="prose">
+              <p>
+                Pydantic AI also provides <a href="https://ai.pydantic.dev/deferred-tools/" target="_blank" rel="noopener noreferrer">native deferred tools</a>:
+                a run can return <code>DeferredToolRequests</code> and later resume from saved history
+                with <code>DeferredToolResults</code>. That model is a better fit for long-running or
+                cross-process work. This template keeps its explicit gate because the interactive UI
+                needs approval events on the same continuous SSE stream while the current run waits;
+                the trade-off is that pending approvals live in the API process, not a durable workflow store.
+              </p>
+            </div>
           </ArticleSection>
 
           <ArticleSection
@@ -257,18 +246,18 @@ export function AgentChatArticle() {
           >
             <div className="app-media-grid">
               <Screenshot
-                name="agent-chat-ui.png"
+                name="agent-chat-ui-v3.png"
                 alt="Agent chat interface with conversation sidebar, streamed response, tool calls and citations"
                 caption="Streamed answer, tool calls, and citations in the main workspace."
               />
               <Screenshot
-                name="agent-chat-approval.png"
+                name="agent-chat-approval-v3.png"
                 alt="Agent chat waiting for an operator to approve or deny a send_message action"
                 caption="The run pauses for an explicit approve/deny decision."
               />
             </div>
             <div className="app-video">
-              <video controls preload="metadata" playsInline poster="/apps/agent-chat-ui.png">
+              <video controls preload="metadata" playsInline poster="/apps/agent-chat-ui-v3.png">
                 <source src="/apps/agent-chat-demo.webm" type="video/webm" />
                 <source src="/apps/agent-chat-demo.mp4" type="video/mp4" />
                 <track
@@ -286,34 +275,64 @@ export function AgentChatArticle() {
                   a consequential action pauses for approval, and a later conversation recalls a
                   stored fact. The clip uses the same public UI and typed SSE contract shown below.
                 </p>
+                <p>
+                  The WebM and MP4 come from the same clean 44.8-second browser recording against
+                  <code>kimi-for-coding</code>, with fresh conversations rather than mock transport.
+                  The recorder now waits for a new run's final usage and validates the complete memory
+                  acknowledgement and recall before publishing. Versioned screenshots and matching
+                  scene captions keep the evidence reproducible and prevent stale cached results.
+                </p>
               </div>
             </div>
             {renderMarkdown(SSE_SNIPPET)}
+            <div className="prose">
+              <p>
+                <code>GET /health</code> reports liveness plus the configured provider and primary
+                model; <code>GET /ready</code> separately probes both stores. Every HTTP response
+                carries <code>X-Request-ID</code>, ordinary errors use a structured envelope containing
+                that id, and streaming failures become typed <code>error</code> events before the stream closes.
+              </p>
+              <p>
+                The API retains the typed <code>uncertainty</code> field for schema and evaluation
+                compatibility, but the chat surface intentionally does not display it. A model-generated
+                label is not calibrated evidence; citations, tool results, and measured eval behavior
+                communicate reliability more honestly.
+              </p>
+            </div>
           </ArticleSection>
 
           <ArticleSection
             id="memory"
             index={5}
-            subtitle="durable facts without turning every prompt into a transcript"
-            takeaway="Remember useful facts while keeping model context bounded and inspectable."
+            subtitle="session-scoped facts without turning every prompt into a transcript"
+            takeaway="New chats in one browser session share bounded memory; other sessions cannot read or change it."
           >
             <div className="prose">
               <p>
-                Three boundaries have separate responsibilities: conversations persist the bounded
-                run, per-user notebooks store durable facts on demand, and history processing trims
-                or summarizes only overflow. Postgres is primary; SQLite supports local development.
+                Conversation history belongs to one <code>conversation_id</code>. Notebook facts
+                belong to an anonymous UUID in <code>sessionStorage</code>: new conversations and
+                reloads in the same tab share them, while closing the tab starts a fresh namespace.
+                No account or user-management UI is required.
               </p>
+              <ul>
+                <li><strong>Per conversation:</strong> the last 10 user turns remain by default, including tool legs. Overflow can be summarized; recent turns stay verbatim.</li>
+                <li><strong>Per browser session:</strong> the notebook persists concise facts with atomic replacement. Stable keys such as <code>preferred_cloud</code> upsert changed preferences instead of accumulating paraphrase duplicates.</li>
+                <li><strong>Bounded and untrusted:</strong> recall returns five notes by default, hard-bounded at ten. It never injects the whole notebook or treats recalled text as instructions.</li>
+                <li><strong>Isolated by default:</strong> conversations, memory, and approval decisions from another session return 404.</li>
+              </ul>
               <p>
-                Recall ranks selected notes and returns at most five by default, hard-bounded at ten.
-                There is no whole-notebook injection. Recalled text remains untrusted user content,
-                not a secret store or authorization boundary.
+                The session header is an isolation label, not authentication or secure deletion.
+                Production deployments must derive tenant identity from the authenticated principal,
+                use transactional stores for concurrent writers, and schedule retention cleanup for
+                old notebook files and conversation rows. An append-only transcript remains a separate
+                choice when audit obligations include trimmed turns.
               </p>
             </div>
             <div className="app-media-grid app-media-grid--single">
               <Screenshot
-                name="agent-chat-memory.png"
-                alt="Agent chat memory view showing a user notebook with durable facts"
-                caption="Durable facts load on demand rather than filling every prompt."
+                name="agent-chat-memory-v3.png"
+                alt="Agent chat recalling one cloud preference in the current browser session"
+                caption="One complete fact is recalled in a new conversation within the same browser session."
               />
             </div>
           </ArticleSection>
@@ -322,23 +341,38 @@ export function AgentChatArticle() {
             id="evaluation"
             index={6}
             subtitle="deterministic graders offline, the same suite against a real provider"
-            takeaway="CI proves tool choice, grounding, refusal, and approval behavior without paying for an LLM judge."
+            takeaway="All three Kimi repetitions pass: 108/108 assertions across 16 cases, including exact side effects, citations, memory, and refusals."
           >
             <div className="prose">
               <p>
-                A 13-case suite uses scripted fake models for deterministic CI. Exact tool-set
+                A 16-case suite uses scripted fake models for deterministic CI. Exact tool-set
                 assertions replace subjective judging; refusal probes cover prompt leaks,
-                unsupported requests, and financial actions. A separate fact is written in one
-                run and recalled in a fresh run.
+                unsupported requests, and financial actions. A complete memory acknowledgement is
+                graded separately from recall in a fresh conversation.
               </p>
             </div>
             {renderMarkdown(EVAL_SNIPPET)}
             <div className="prose">
               <p>
                 The real-model path runs the same cases and graders against the configured provider.
-                The runner writes a Markdown report with per-case verdicts and total assertions.
+                The runner writes a Markdown report with model identity, per-case verdicts, and failure diagnostics.
               </p>
               <p>
+                <strong>Measured result with <code>kimi-for-coding</code>: 108/108 assertions passed in each of three repetitions.</strong>{" "}
+                The release gate covers exact tools and message text, denied side effects, verbatim
+                evidence citations, cross-conversation memory, graceful refusals, and zero unnecessary
+                tool calls. Grounded citation repair selects only exact retrieved text; it cannot invent
+                a source or quote.
+              </p>
+              <ul>
+                <li>Run provider-specific regression gates after model, prompt, tool, or retrieval changes.</li>
+                <li>Review the failed answers before deciding whether to fix the system or refine an incorrect expectation.</li>
+                <li>Keep consequential actions supervised until the deployed provider meets an explicit acceptance threshold.</li>
+              </ul>
+              <p>
+                <a href={`${REPO}/reports/evals-kimi-for-coding.md`} target="_blank" rel="noopener noreferrer">
+                  read the measured report →
+                </a>{" · "}
                 <a href={`${REPO}/src/agent_chat/evals`} target="_blank" rel="noopener noreferrer">
                   inspect eval cases and graders →
                 </a>
@@ -362,6 +396,16 @@ export function AgentChatArticle() {
                 </Card>
               ))}
             </div>
+            <div className="prose">
+              <p><strong>Production handoff checklist</strong></p>
+              <ul>
+                <li>Put an authenticated gateway in front of chat and mutations; derive tenant identity from its principal and never expose privileged keys through <code>VITE_*</code> assets.</li>
+                <li>Keep provider credentials, database URLs, and API keys in the host secret manager; keep FastAPI and Postgres on a private network behind TLS.</li>
+                <li>Disable SSE response buffering and caching at the proxy, and set read timeouts that cover provider latency plus the human approval window.</li>
+                <li>Use readiness for rollout gates, automated and tested Postgres backups for recovery, and request-id-correlated logs and traces for diagnosis.</li>
+                <li>Retain the previous image and a compatible database snapshot so application rollback does not depend on rebuilding the model or vector store.</li>
+              </ul>
+            </div>
           </ArticleSection>
 
           <ArticleSection
@@ -379,6 +423,20 @@ export function AgentChatArticle() {
             </div>
             {renderMarkdown(SKILL_SNIPPET)}
             <div className="prose">
+              <p>
+                MCP is an optional integration choice, not a prerequisite: attach an MCP toolset
+                behind the same tool boundary when an existing server is useful, and apply the same
+                approval and refusal policies to consequential operations. Adding more tools does not
+                remove the need for scoped credentials and provider-specific evals.
+              </p>
+              <p>
+                Pydantic AI emits OpenTelemetry traces for agent runs, model requests, and tool calls;
+                follow the official <a href="https://ai.pydantic.dev/observability/" target="_blank" rel="noopener noreferrer">observability guidance</a> to
+                instrument the deployed stack. For sensitive deployments, use content exclusion so
+                prompts, completions, tool arguments, and tool results stay out of telemetry while
+                structural timing and usage data remain available. Raw HTTP capture needs a separate
+                privacy review and should stay off for sensitive traffic.
+              </p>
               <p>
                 <strong>Limits:</strong> this is a single-agent chassis, not multi-agent
                 orchestration. It does not ship your domain corpus, credentials, production SLOs,

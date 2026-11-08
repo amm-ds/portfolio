@@ -63,6 +63,8 @@ def _spa_patterns() -> list[str]:
             "/contact",
             "/about",
             "/apps/agent-chat",
+            "/apps/document-intelligence",
+            "/apps/document-review",
         ]
         try:
             patterns += [f"/projects/{m.id}" for m in load_index(PROJECTS_ROOT)]

@@ -266,6 +266,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "chunk_size_sweep",
       "eda_corpus_composition",
       "failure_taxonomy",
+      "kimi_generation_comparison",
       "latency_histogram",
       "model_comparison",
       "retrieval_funnel",
@@ -357,6 +358,7 @@ export const STATIC_STORIES: StaticStorySummary[] = [
       "eda_class_balance",
       "epochs_probe",
       "hpo_history",
+      "llm_cascade_comparison",
       "per_class_f1_comparison",
       "scale_ladder",
       "training_curve"
@@ -650,13 +652,13 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
     "id": "forecast-workbench",
     "project": "02-demand-forecasting",
     "status": "live",
-    "title": "demand forecast workbench"
+    "title": "Demand Forecast Workbench"
   },
   {
     "group": "retain customers",
     "hero": {
       "ci": "paired bootstrap CI [−485, −343]",
-      "label": "decision cost per 1,400 customers",
+      "label": "decision cost per 1,409 holdout customers",
       "value": "$601 vs $1,035 naive"
     },
     "hook": "Move the alarm threshold and the missed-churner cost — watch the optimal cutoff and the saved budget change on a real churn model.",
@@ -664,6 +666,6 @@ export const STATIC_DEMO_REGISTRY: StaticDemoRegistryEntry[] = [
     "id": "churn-sandbox",
     "project": "05-ml-pipeline-churn",
     "status": "live",
-    "title": "churn threshold sandbox"
+    "title": "Churn Threshold Sandbox"
   }
 ];

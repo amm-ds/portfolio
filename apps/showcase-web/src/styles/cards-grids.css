@@ -20,10 +20,10 @@
 
 .study-card {
   display: block;
+  overflow: hidden;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 1.25rem;
   color: inherit;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
@@ -34,25 +34,31 @@
   transform: translateY(-2px);
 }
 
+.study-card__title {
+  margin: 0;
+  padding: 0.8rem 1.25rem;
+  border-bottom: 1px solid var(--chip-blue-border-soft);
+  background: var(--chip-blue-bg-strong);
+}
+
+.study-card__content {
+  padding: 1.1rem 1.25rem 1.25rem;
+}
+
 .study-card h3 {
-  margin: 0 0 0.25rem;
   font-size: 1.05rem;
   color: var(--text);
 }
 
-/* Experiment titles lead the card: compact top space and a terminal prompt. */
-.project-card {
-  padding-top: 0.85rem;
-}
-
 .project-card h4 {
-  margin: 0 0 0.45rem;
   font-size: 1.2rem;
   line-height: 1.35;
   color: var(--text);
 }
 
-.project-card h4::before {
+.study-card h3::before,
+.study-card h4::before,
+.app-card__title::before {
   content: "> ";
   color: var(--accent);
 }
@@ -62,36 +68,38 @@
 .study-meta {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  margin: 0 0 0.7rem;
+  gap: 0.6rem;
+  margin: 0 0 0.85rem;
 }
 
 .study-meta-item {
   display: flex;
   flex-direction: column;
-  gap: 0.05rem;
+  gap: 0.3rem;
 }
 
-/* one uniform small-label style for every card field label — the stacked
-   metadata labels (topics / data) and the content-block labels
-   (description / results) are the same mono uppercase muted tag */
+/* Shared field titles read as quiet terminal tabs: translucent blue, compact,
+   and with enough separation to keep dense card content scannable. */
 .study-meta-label,
 .study-block-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.22rem 0.45rem;
+  border: 1px solid var(--chip-blue-border-soft);
+  border-radius: 3px;
+  background: var(--chip-blue-bg-strong);
   font-family: var(--mono);
   font-size: 0.72rem;
+  line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted);
+  color: var(--chip-blue-text);
 }
 
-.study-block-label {
-  display: block;
-  margin: 0 0 0.3rem;
-}
-
-/* field value: blue, one step below the old 1rem subtitle scale */
+/* metadata values are terminal green; field labels and technique tags stay blue. */
 .study-sub {
-  color: var(--secondary);
+  color: var(--accent);
   font-size: 0.85rem;
   font-family: var(--mono);
   text-transform: none;
@@ -101,17 +109,11 @@
 /* labeled card blocks — experiment cards render "description" and "results"
    side by side, demo cards keep only the "description" block */
 .study-block {
-  margin: 0.7rem 0 0;
+  margin: 0.85rem 0 0;
 }
 
 .study-block-label {
-  display: block;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin: 0 0 0.3rem;
+  margin: 0 0 0.45rem;
 }
 
 /* headline metric value inside a demo card's results chip */
@@ -128,8 +130,8 @@
   font-family: var(--mono);
   font-size: 0.82rem;
   color: var(--accent);
-  background: rgba(45, 212, 191, 0.08);
-  border-color: rgba(45, 212, 191, 0.35);
+  background: var(--chip-green-bg);
+  border-color: var(--chip-green-border);
 }
 
 /* card body: the content blocks side by side — left "description", right
@@ -255,12 +257,39 @@
 }
 
 .app-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.app-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.app-card__title--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The title is a stretched link: the whole card opens the article, while the
+   code/spec links remain independent interactive elements above the overlay. */
+.app-card__title--link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.app-card__links {
+  position: relative;
+  z-index: 1;
 }
 
 .app-card__shot {
@@ -334,8 +363,8 @@
    and offering cards share one tag style; no per-tag hue rotation */
 .study-card .chip,
 .offering-card .chip {
-  color: #7dd3fc;
-  background: rgba(56, 189, 248, 0.08);
-  border-color: rgba(56, 189, 248, 0.35);
+  color: var(--chip-blue-text);
+  background: var(--chip-blue-bg);
+  border-color: var(--chip-blue-border);
 }
 

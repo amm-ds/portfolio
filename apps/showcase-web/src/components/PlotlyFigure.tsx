@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type PlotlyStatic from "plotly.js-dist-min";
 import { asRecord } from "../lib/records";
+import { useTheme, type Theme } from "../theme/useTheme";
+import { LIGHT_TRACE_COLOR_MAP } from "../theme/plotlyTraceColors";
 import { FigureFrame } from "./FigureFrame";
 
 export interface PlotlyPayload {
@@ -11,11 +13,35 @@ export interface PlotlyPayload {
 const DEFAULT_HEIGHT = 560;
 const MIN_SCALED_HEIGHT = 360;
 const MAX_SCALED_HEIGHT = 1100;
-const TEXT_COLOR = "#e2e8f0";
-const AXIS_LINE_COLOR = "rgba(148,163,184,0.3)";
-const GRID_COLOR = "rgba(148,163,184,0.15)";
 const TRANSPARENT = "rgba(0,0,0,0)";
 const RESIZE_DEBOUNCE_MS = 150;
+
+export interface PlotlyThemePalette {
+  textColor: string;
+  axisLineColor: string;
+  gridColor: string;
+  /** Authored dark-palette trace hex → light-surface equivalent. Empty in
+   * dark (figures are authored for the dark surface, so nothing to remap).
+   * Keys are lowercase; lookup lowercases the payload color, so authored
+   * case variants match too. Exact-string matches only — anything the table
+   * doesn't know (plotly defaults, rgba() washes) stays as authored. */
+  traceColorMap: Record<string, string>;
+}
+
+export const PLOTLY_THEME_PALETTES: Record<Theme, PlotlyThemePalette> = {
+  dark: {
+    textColor: "#e2e8f0",
+    axisLineColor: "rgba(148,163,184,0.3)",
+    gridColor: "rgba(148,163,184,0.15)",
+    traceColorMap: {},
+  },
+  light: {
+    textColor: "#172433",
+    axisLineColor: "rgba(78,98,118,0.48)",
+    gridColor: "rgba(78,98,118,0.22)",
+    traceColorMap: LIGHT_TRACE_COLOR_MAP,
+  },
+};
 
 /** Scale the authored layout height to the measured container width (1000px design width). */
 export function scaledHeight(layoutHeight: unknown, containerWidth: number): number {
@@ -27,54 +53,194 @@ export function scaledHeight(layoutHeight: unknown, containerWidth: number): num
   return Math.min(MAX_SCALED_HEIGHT, Math.max(MIN_SCALED_HEIGHT, scaled));
 }
 
-/** Axis defaults for the dark theme; every payload value wins over its default. */
-function axisLayout(rawAxis: unknown): Record<string, unknown> {
+/** Chrome color precedence across themes. Committed figures bake dark-surface
+ * chrome (near-white tick labels, dark grid) at both layout and template
+ * level. Dark mode preserves that authored look — payload wins. Light mode
+ * forces the readable palette color, keeping the payload's non-color props
+ * (size, family). */
+function chromeColor(payloadColor: unknown, paletteColor: string, theme: Theme): unknown {
+  if (theme === "light") return paletteColor;
+  return payloadColor ?? paletteColor;
+}
+
+/** Axis defaults for the requested theme; dark keeps the authored payload,
+ * light forces the readable palette (see chromeColor). */
+function axisLayout(
+  rawAxis: unknown,
+  palette: PlotlyThemePalette,
+  theme: Theme,
+): Record<string, unknown> {
   const ax = asRecord(rawAxis);
   const { tickfont, title, linecolor, zerolinecolor, gridcolor, ...rest } = ax;
   const t = asRecord(title);
   const { font: titleFont, ...titleRest } = t;
+  const rawTick = asRecord(tickfont);
+  const rawTitleFont = asRecord(titleFont);
   return {
     ...rest,
-    tickfont: { color: TEXT_COLOR, ...asRecord(tickfont) },
-    title: { ...titleRest, font: { color: TEXT_COLOR, ...asRecord(titleFont) } },
-    linecolor: linecolor ?? AXIS_LINE_COLOR,
-    zerolinecolor: zerolinecolor ?? AXIS_LINE_COLOR,
-    gridcolor: gridcolor ?? GRID_COLOR,
+    tickfont: { ...rawTick, color: chromeColor(rawTick.color, palette.textColor, theme) },
+    title: {
+      ...titleRest,
+      font: { ...rawTitleFont, color: chromeColor(rawTitleFont.color, palette.textColor, theme) },
+    },
+    linecolor: chromeColor(linecolor, palette.axisLineColor, theme),
+    zerolinecolor: chromeColor(zerolinecolor, palette.axisLineColor, theme),
+    gridcolor: chromeColor(gridcolor, palette.gridColor, theme),
   };
 }
 
+/** Remap a template's colorway for the light surface. Most committed figures
+ * leave trace colors implicit and carry the palette as template.layout.colorway
+ * (some exporters nest it directly on the template); without this those traces
+ * keep the dark palette in light mode. Dark (empty map) and colorway-less
+ * templates return unchanged. */
+function reskinTemplate(
+  template: unknown,
+  traceColorMap: Record<string, string>,
+): unknown {
+  if (Object.keys(traceColorMap).length === 0) return template;
+  const tpl = asRecord(template);
+  const nested = asRecord(tpl.layout);
+  if (Array.isArray(nested.colorway)) {
+    return {
+      ...tpl,
+      layout: { ...nested, colorway: remapColorList(nested.colorway, traceColorMap) },
+    };
+  }
+  if (Array.isArray(tpl.colorway)) {
+    return { ...tpl, colorway: remapColorList(tpl.colorway, traceColorMap) };
+  }
+  return template;
+}
+
+function remapColorList(colors: unknown[], map: Record<string, string>): unknown[] {
+  return colors.map((color) =>
+    typeof color === "string" ? (map[color.toLowerCase()] ?? color) : color,
+  );
+}
+
+/** Title chrome: light forces the readable text color — including inline
+ * `color:#…` spans authored into the title text for the dark surface — and
+ * dark passes the authored title through (payload font color wins today). */
+const INLINE_TEXT_COLOR_RE = /color\s*:\s*'?#[0-9a-fA-F]{3,8}'?/gi;
+
+function titleLayout(
+  rawTitle: unknown,
+  palette: PlotlyThemePalette,
+  theme: Theme,
+): Record<string, unknown> {
+  const t = asRecord(rawTitle);
+  const { font: titleFont, text, ...rest } = t;
+  const rawTitleFont = asRecord(titleFont);
+  const forcedText =
+    theme === "light" && typeof text === "string"
+      ? text.replace(INLINE_TEXT_COLOR_RE, "color:#475569")
+      : text;
+  return {
+    ...rest,
+    ...(text !== undefined ? { text: forcedText } : {}),
+    font: { ...rawTitleFont, color: chromeColor(rawTitleFont.color, palette.textColor, theme) },
+  };
+}
+
+const AXIS_KEY_RE = /^[xy]axis\d*$/;
+
 /**
- * Re-skin a plotly layout for the site theme: transparent backgrounds, light
+ * Re-skin a plotly layout for the site theme: transparent backgrounds, readable
  * text/axis defaults, height scaled to the container. The raw layout is never
- * mutated and any payload value overrides its default.
+ * mutated. Dark mode preserves the authored chrome (payload wins); light mode
+ * forces the readable palette over the dark-authored chrome (see chromeColor).
  */
-export function buildLayout(raw: Record<string, unknown>, containerWidth: number): Record<string, unknown> {
-  const { font, legend, xaxis, yaxis, width: _width, height, ...rest } = raw;
+export function buildLayout(
+  raw: Record<string, unknown>,
+  containerWidth: number,
+  theme: Theme = "dark",
+): Record<string, unknown> {
+  const palette = PLOTLY_THEME_PALETTES[theme];
+  const { font, legend, xaxis, yaxis, template, width: _width, height, ...rest } = raw;
+  // Light mode also themes the subplot axes (xaxis2…, yaxis2…) and the title,
+  // which carry the same baked dark chrome; dark passes everything else
+  // through untouched to preserve the authored look.
+  if (theme === "light") {
+    for (const key of Object.keys(rest)) {
+      if (AXIS_KEY_RE.test(key)) {
+        rest[key] = axisLayout(rest[key], palette, theme);
+      } else if (key === "title") {
+        rest[key] = titleLayout(rest[key], palette, theme);
+      }
+    }
+  }
   const rawFont = asRecord(font);
   const rawLegend = asRecord(legend);
-  const { font: legendFont, bgcolor, ...legendRest } = rawLegend;
+  const { font: legendFont, ...legendRest } = rawLegend;
+  const rawLegendFont = asRecord(legendFont);
+  const legendBg = chromeColor(rawLegend.bgcolor, TRANSPARENT, theme);
   return {
     ...rest,
     autosize: true,
     paper_bgcolor: TRANSPARENT,
     plot_bgcolor: TRANSPARENT,
     height: scaledHeight(height, containerWidth),
-    font: { color: TEXT_COLOR, ...rawFont },
+    font: { ...rawFont, color: chromeColor(rawFont.color, palette.textColor, theme) },
     legend: {
       ...legendRest,
-      bgcolor: bgcolor ?? TRANSPARENT,
-      font: { color: TEXT_COLOR, ...asRecord(legendFont) },
+      bgcolor: legendBg,
+      font: { ...rawLegendFont, color: chromeColor(rawLegendFont.color, palette.textColor, theme) },
     },
-    xaxis: axisLayout(xaxis),
-    yaxis: axisLayout(yaxis),
+    xaxis: axisLayout(xaxis, palette, theme),
+    yaxis: axisLayout(yaxis, palette, theme),
+    template: reskinTemplate(template, palette.traceColorMap),
   };
+}
+
+/** Remap one authored trace color for the light surface: string colors match
+ * the table exactly (case-insensitively), color arrays remap entry by entry,
+ * and anything the table doesn't know passes through untouched. */
+function reskinTraceColor(color: unknown, map: Record<string, string>): unknown {
+  if (typeof color === "string") return map[color.toLowerCase()] ?? color;
+  if (Array.isArray(color)) return color.map((entry) => reskinTraceColor(entry, map));
+  return color;
+}
+
+/** Copy one trace with its authored colors remapped. The input trace is never
+ * mutated; untouched fields (data arrays, other styling) keep their original
+ * references — only the color-bearing containers are copied. */
+function reskinTrace(trace: unknown, map: Record<string, string>): unknown {
+  if (typeof trace !== "object" || trace === null) return trace;
+  const t = trace as Record<string, unknown>;
+  const out: Record<string, unknown> = { ...t };
+  if (typeof t.line === "object" && t.line !== null && "color" in t.line) {
+    out.line = { ...t.line, color: reskinTraceColor(t.line.color, map) };
+  }
+  if (typeof t.marker === "object" && t.marker !== null) {
+    const marker = t.marker as Record<string, unknown>;
+    const m: Record<string, unknown> = { ...marker };
+    if ("color" in marker) m.color = reskinTraceColor(marker.color, map);
+    if ("colors" in marker) m.colors = reskinTraceColor(marker.colors, map);
+    out.marker = m;
+  }
+  if ("fillcolor" in t) out.fillcolor = reskinTraceColor(t.fillcolor, map);
+  return out;
+}
+
+/**
+ * Re-skin figure trace colors for the site theme: figures are authored with
+ * the dark palette, whose accents wash out on the light surface. Only colors
+ * in the theme's table are remapped and the payload is never mutated — dark
+ * returns the input unchanged (identity).
+ */
+export function reskinTraces(data: unknown[], theme: Theme): unknown[] {
+  const map = PLOTLY_THEME_PALETTES[theme].traceColorMap;
+  if (Object.keys(map).length === 0) return data;
+  return data.map((trace) => reskinTrace(trace, map));
 }
 
 /**
  * Native plotly rendering of a figure JSON payload: full container width,
- * height scaled from the authored layout, re-skinned to the dark theme, with
- * automatic fallback to the HTML iframe (FigureFrame) when the JSON payload
- * is unavailable (404).
+ * height scaled from the authored layout, re-skinned to the active theme
+ * (chrome always, trace colors on the light surface), with automatic
+ * fallback to the HTML iframe (FigureFrame) when the JSON payload is
+ * unavailable (404).
  */
 export function PlotlyFigure({
   pid,
@@ -95,6 +261,7 @@ export function PlotlyFigure({
   const [payload, setPayload] = useState<PlotlyPayload | null>(null);
   const [failed, setFailed] = useState(false);
   const [inView, setInView] = useState(false);
+  const { theme } = useTheme();
   /** Plotly has painted into the host — the skeleton can retire. */
   const [rendered, setRendered] = useState(false);
   const elRef = useRef<HTMLDivElement>(null);
@@ -174,8 +341,8 @@ export function PlotlyFigure({
         if (disposed) return;
         await plotlyRef.current.react(
           el,
-          payload.data,
-          buildLayout(payload.layout, el.clientWidth),
+          reskinTraces(payload.data, theme),
+          buildLayout(payload.layout, el.clientWidth, theme),
           { responsive: true, displayModeBar: false },
         );
         // The plot is painted — swap the skeleton out (only if still mounted:
@@ -206,7 +373,7 @@ export function PlotlyFigure({
       // Plotly may still be loading; purge only once it rendered into `el`.
       plotlyRef.current?.purge(el);
     };
-  }, [payload, inView]);
+  }, [payload, inView, theme]);
 
   if (failed) {
     return <FigureFrame projectId={pid} name={name} caption={caption} />;

@@ -6,7 +6,7 @@ export function BusinessImplication({
   label = "Business summary",
 }: {
   children: ReactNode;
-  label?: "Business summary" | "In plain terms";
+  label?: "Business summary" | "In plain terms" | "tl;dr";
 }) {
   return (
     <div className="bi-card">

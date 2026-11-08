@@ -11,10 +11,10 @@ import { getDemoManifest } from "../../api";
 import { usePageMeta } from "../../seo";
 import { ScorerCard } from "./ScorerCard";
 
-const C_TEAL = "#2dd4bf";
-const C_PINK = "#f472b6";
-const C_AMBER = "#fbbf24";
-const C_GRAY = "#64748b";
+const C_TEAL = "var(--chart-teal)";
+const C_PINK = "var(--chart-pink)";
+const C_AMBER = "var(--chart-amber)";
+const C_GRAY = "var(--chart-gray)";
 
 /** A customer pinned on the cost curve: label (short form) + scored probability. */
 interface CustomerMarker {
@@ -94,8 +94,8 @@ function OptimalityText({
   );
 }
 
-/** Live score result: rendered in the full-width strip below the main row —
- * outside the scorer box, in the space reserved below it. */
+/** Live score result: rendered in the controls rail, directly below the
+ * scorer box it answers. */
 function ScoreResultPanel({
   probability,
   cursorT,
@@ -124,17 +124,19 @@ function ScoreResultPanel({
   );
 }
 
-/** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
+/** Minimal manifest so the workbench renders before/if the manifest fetch fails.
+ * Mirrors projects/05-ml-pipeline-churn/demo.yaml — keep hook/hero/scenarios
+ * in sync (the payload itself is pinned by the contract tests). */
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "churn-sandbox",
-  title: "churn threshold sandbox",
+  title: "Churn Threshold Sandbox",
   hook: "Move the alarm threshold and the missed-churner cost — watch the optimal cutoff and the saved budget change on a real churn model.",
   project: "05-ml-pipeline-churn",
   group: "retain customers",
   skills: ["classification economics", "calibration", "decision science"],
   modes: ["browser", "live"],
   hero: {
-    label: "decision cost per 1,400 customers",
+    label: "decision cost per 1,409 holdout customers",
     value: "$601 vs $1,035 naive",
     ci: "paired bootstrap CI [−485, −343]",
   },
@@ -177,10 +179,12 @@ function CostCurvePanel({
   const cursorCost = costs[cursorIdx];
   const defaultCost = costs[defaultIdx];
   const delta = cursorCost - defaultCost;
+  // committed default, kept in the payload so copy can never drift from data
+  const tDefault = model.threshold_default;
   const cursorRow = overall[cursorIdx];
 
   const markers: LineMarker[] = [
-    { xIndex: defaultIdx, label: "default 0.5", style: "dashed" },
+    { xIndex: defaultIdx, label: `default ${tDefault.toFixed(2)}`, style: "dashed" },
     { xIndex: selectedIdx, style: "star" },
   ];
   if (customer) {
@@ -204,9 +208,9 @@ function CostCurvePanel({
       <div className="demo-readouts">
         <span className="chip demo-readout">threshold t = {cursorT.toFixed(2)}</span>
         <span className="chip demo-readout">cost at t: {Math.round(cursorCost)}</span>
-        <span className="chip demo-readout">cost at 0.5: {Math.round(defaultCost)}</span>
+        <span className="chip demo-readout">cost at {tDefault.toFixed(2)}: {Math.round(defaultCost)}</span>
         <span className={`chip demo-readout ${delta < 0 ? "good" : "bad"}`}>
-          {delta < 0 ? "saves" : "costs"} {Math.abs(Math.round(delta))} vs 0.5
+          {delta < 0 ? "saves" : "costs"} {Math.abs(Math.round(delta))} vs {tDefault.toFixed(2)}
         </span>
         <span className="chip demo-readout">
           contact {cursorRow.fp + cursorRow.tp} of {payload.holdout_n}
@@ -271,7 +275,7 @@ function OutcomesPanel({ row, holdoutN }: { row: ConfusionRow; holdoutN: number 
                 y={0}
                 width={Math.max(w, 0).toFixed(1)}
                 height={H}
-                fill={s.color}
+                style={{ fill: s.color }}
               >
                 <title>{`${s.label}: ${s.value}`}</title>
               </rect>
@@ -570,10 +574,10 @@ function ChurnSandboxWorkbench({
             sub={`at threshold ${cursorT.toFixed(2)} · FP·1 + FN·${fnRatio}`}
           />
           <KpiTile
-            label="saves vs 0.5"
+            label={`saves vs ${payload.model.threshold_default.toFixed(2)}`}
             value={
               Math.round(saved) === 0
-                ? "even with 0.5"
+                ? `even with ${payload.model.threshold_default.toFixed(2)}`
                 : `${saved < 0 ? "saves" : "costs"} ${Math.abs(Math.round(saved))}`
             }
             sub={`paired bootstrap CI${delta_ci.significant_95 ? " · 95% significant" : " · not significant"}`}

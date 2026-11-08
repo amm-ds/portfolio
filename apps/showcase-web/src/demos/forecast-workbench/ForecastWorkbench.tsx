@@ -15,10 +15,12 @@ const NAIVE = "seasonal_naive";
 /** Every demo chip, in display order — the workbench opens with all of them. */
 const ALL_MODEL_KEYS = MODELS.map((m) => m.key).join(",");
 
-/** Minimal manifest so the workbench renders before/if the manifest fetch fails. */
+/** Minimal manifest so the workbench renders before/if the manifest fetch fails.
+ * Mirrors projects/02-demand-forecasting/demo.yaml — keep hook/hero/scenarios
+ * in sync (the payload itself is pinned by the contract tests). */
 const FALLBACK_MANIFEST: DemoManifest = {
   id: "forecast-workbench",
-  title: "demand forecast workbench",
+  title: "Demand Forecast Workbench",
   hook: "Pick one of 48 committed M5 store-product series, overlay all 8 candidates from the seasonal naive to the screened ensemble on the scored-once competition window — curves, model spread and per-series WAPE respond.",
   project: "02-demand-forecasting",
   group: "plan operations",
@@ -147,7 +149,7 @@ function Workbench({
   const seriesId = payload.catalog.some((e) => e.series_id === values.series)
     ? String(values.series)
     : firstSeries;
-  const h = HORIZONS.includes(Number(values.horizon)) ? Number(values.horizon) : 7;
+  const h = HORIZONS.includes(Number(values.horizon)) ? Number(values.horizon) : 28;
   const modelsOn = String(values.models)
     .split(",")
     .filter((m) => MODELS.some((mm) => mm.key === m));
@@ -195,13 +197,7 @@ function Workbench({
   return (
     <DemoWorkbench
       manifest={manifest}
-      state={{
-        ...state,
-        reset: () => {
-          state.reset();
-          setValue("series", firstSeries);
-        },
-      }}
+      state={state}
       controls={
         <>
           <div className="wb-control-group wb-group-series">

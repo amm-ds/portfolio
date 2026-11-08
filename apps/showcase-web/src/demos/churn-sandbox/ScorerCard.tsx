@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ApiError, scoreChurn } from "../../api";
 import type { ChurnPayload } from "../types";
 
 type ScoreState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "ok"; probability: number }
+  | { status: "ok" }
   | { status: "unavailable" }
   | { status: "error" };
 
@@ -28,17 +28,23 @@ export function ScorerCard({
 }) {
   const d = payload.feature_domains;
   const [score, setScore] = useState<ScoreState>({ status: "idle" });
+  // Monotonic request sequence: a slower in-flight response must not
+  // overwrite the state of a newer click.
+  const requestSeq = useRef(0);
 
   const set = (key: string, value: number | string) => setForm({ ...form, [key]: value });
 
   const scoreLive = () => {
+    const seq = ++requestSeq.current;
     setScore({ status: "loading" });
     scoreChurn(payload.project, form)
       .then((r) => {
-        setScore({ status: "ok", probability: r.churn_probability });
+        if (seq !== requestSeq.current) return; // stale response
+        setScore({ status: "ok" });
         onScore(r.churn_probability);
       })
       .catch((e) => {
+        if (seq !== requestSeq.current) return; // stale response
         if (e instanceof ApiError && e.status === 503) {
           setScore({ status: "unavailable" });
         } else {

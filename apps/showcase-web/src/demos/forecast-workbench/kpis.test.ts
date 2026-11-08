@@ -62,7 +62,7 @@ describe("verdictText", () => {
     const win = windowOf({ seasonal_naive: [10, 20, 10, 40], lgbm: [0, 0, 0, 0] });
     const text = verdictText(win, "lgbm", 4);
     expect(text).toContain("still wins this series");
-    expect(text).toContain("pooled gap excludes zero");
+    expect(text).toContain("pooled point estimate is what generalises");
   });
   it("degrades to a prompt when no model is selected", () => {
     const win = windowOf({});

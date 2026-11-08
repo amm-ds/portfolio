@@ -129,7 +129,7 @@ export function ErrorCompositionPanel({
                   y={py(naiveErr[i] ?? 0)}
                   width={barW + 2}
                   height={Math.max(base - py(naiveErr[i] ?? 0), 0)}
-                  fill={C_GRAY}
+                  style={{ fill: C_GRAY }}
                   opacity={0.3}
                 >
                   <title>{`week ${i + 1} naive: ${(naiveErr[i] ?? 0).toFixed(1)}`}</title>
@@ -139,7 +139,7 @@ export function ErrorCompositionPanel({
                   y={py(modelErr[i] ?? 0)}
                   width={barW}
                   height={Math.max(base - py(modelErr[i] ?? 0), 0)}
-                  fill={MODEL_COLORS[modelKey] ?? C_GRAY}
+                  style={{ fill: MODEL_COLORS[modelKey] ?? C_GRAY }}
                   opacity={0.85}
                 >
                   <title>{`week ${i + 1} ${MODEL_LABELS[modelKey]}: ${(modelErr[i] ?? 0).toFixed(1)}`}</title>
@@ -252,7 +252,7 @@ export function ModelSpreadPanel({
           </>
         ) : (
           <>
-            The {keys.length} visible models disagree by {meanSpread.toFixed(1)} rentals/day on
+            The {keys.length} visible models disagree by {meanSpread.toFixed(1)} units/day on
             average — widest on {shortDate(forecastDates, widestDay)} at {spread[widestDay].toFixed(1)}
             — and {MODEL_LABELS[leader.key]} lands closest to the actuals across the window. The band
             is the selection's min/max, not a calibrated interval.
@@ -315,7 +315,7 @@ export function ModelSpreadPanel({
                 y={py(v)}
                 width={barW}
                 height={Math.max(base - py(v), 0)}
-                fill={MODEL_COLORS[onlyKey] ?? C_GRAY}
+                style={{ fill: MODEL_COLORS[onlyKey] ?? C_GRAY }}
                 opacity={0.85}
               >
                 <title>{`day +${i + 1}: |err| ${v.toFixed(1)}`}</title>

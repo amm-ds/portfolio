@@ -32,7 +32,7 @@ function projectsOnlyFetch(): ReturnType<typeof vi.fn> {
 /** One registry entry, shaped per the fixed /demos contract. */
 const CHURN_DEMO_ENTRY = {
   id: "churn-sandbox",
-  title: "churn threshold sandbox",
+  title: "Churn Threshold Sandbox",
   hook: "Move the alarm threshold and the missed-churner cost — watch the saved budget change.",
   group: "retain customers",
   href: "/demos/churn-sandbox",
@@ -145,12 +145,19 @@ describe("groupByRow", () => {
     expect(rowAnchor("Machine learning")).toBe("machine-learning");
   });
 
-  it("uses compact, larger card titles with a green terminal prompt", () => {
-    expect(stylesCss.match(/\.project-card \{[\s\S]*?\n\}/)![0]).toContain("padding-top: 0.85rem;");
+  it("uses full-width translucent title bands with a green terminal prompt", () => {
+    const band = stylesCss.match(/\.study-card__title \{[\s\S]*?\n\}/)![0];
+    expect(band).toContain("margin: 0;");
+    expect(band).toContain("padding: 0.8rem 1.25rem;");
+    expect(band).toContain("background: var(--chip-blue-bg-strong);");
+    expect(band).toContain("border-bottom: 1px solid var(--chip-blue-border-soft);");
+    expect(stylesCss.match(/\.study-card__content \{[\s\S]*?\n\}/)![0]).toContain(
+      "padding: 1.1rem 1.25rem 1.25rem;",
+    );
     const title = stylesCss.match(/\.project-card h4 \{[\s\S]*?\n\}/)![0];
     expect(title).toContain("font-size: 1.2rem;");
-    expect(title).toContain("margin: 0 0 0.45rem;");
-    const prompt = stylesCss.match(/\.project-card h4::before \{[\s\S]*?\n\}/)![0];
+    expect(title).not.toContain("margin:");
+    const prompt = stylesCss.match(/\.study-card h3::before,[\s\S]*?\.app-card__title::before \{[\s\S]*?\n\}/)![0];
     expect(prompt).toContain('content: "> ";');
     expect(prompt).toContain("color: var(--accent);");
   });
@@ -184,12 +191,12 @@ describe("ProjectsIndex", () => {
       a.getAttribute("href"),
     ]);
     expect(anchors).toEqual([
+      ["apps", "#apps"],
       ["live demos", "#demos"],
       ["Agentic AI & LLM systems", "#agentic-ai-llm-systems"],
       ["Machine learning", "#machine-learning"],
       ["Optimization", "#optimization"],
       ["Data engineering", "#data-engineering"],
-      ["apps", "#apps"],
     ]);
   });
 
@@ -320,7 +327,7 @@ describe("ProjectsIndex", () => {
     expect(demoCards).toHaveLength(1);
     expect(demos.querySelector(".demo-group")).toBeNull();
     expect(demos.querySelectorAll(".demo-grid")).toHaveLength(1);
-    expect(demoCards[0].textContent).toContain("churn threshold sandbox");
+    expect(demoCards[0].textContent).toContain("Churn Threshold Sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     // the card link's accessible name is its visible text (no aria-label
     // override — axe label-content-name-mismatch)
@@ -396,10 +403,10 @@ describe("ProjectsIndex", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/live demo registry is unreachable/i);
     expect(screen.getByRole("button", { name: "Retry demos" })).toBeInTheDocument();
     expect(demos.querySelectorAll(".demo-grid")).toHaveLength(1);
-    expect(demoCards[0].textContent).toContain("churn threshold sandbox");
+    expect(demoCards[0].textContent).toContain("Churn Threshold Sandbox");
     expect(demoCards[0].querySelector(".demo-status")).toBeNull();
     expect(demoCards[0].getAttribute("href")).toBe("/demos/churn-sandbox");
-    expect(demoCards[1].textContent).toContain("demand forecast workbench");
+    expect(demoCards[1].textContent).toContain("Demand Forecast Workbench");
     expect(demoCards[1].getAttribute("href")).toBe("/demos/forecast-workbench");
     // both static fallback cards carry the same structure: the labeled
     // "description" block only, plus the results chip with the headline
@@ -589,10 +596,10 @@ describe("ProjectsIndex", () => {
         screen.getByText(/the live registry is unreachable — showing the last published snapshot/i),
       ).toBeInTheDocument(),
     );
-    // heading outline: the two major h2s plus one h3 per topic row, no numbers
+    // heading outline: apps first, then live demos and experiment rows
     expect(
       screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent),
-    ).toEqual(["live demos", "experiments", "apps"]);
+    ).toEqual(["apps", "live demos", "experiments"]);
     expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
     // all thirteen snapshot projects render as cards
     await waitFor(() => expect(document.querySelectorAll(".project-card")).toHaveLength(13));
@@ -653,7 +660,7 @@ describe("ProjectsIndex", () => {
       resultChip: card.querySelector(".study-result-chip")?.textContent ?? null,
       metric: card.querySelector(".study-metric")?.textContent ?? null,
       resultSlot: card.querySelector(".study-result"),
-      chips: card.querySelectorAll(":scope > .chips .chip").length,
+      chips: card.querySelectorAll(".study-card__content > .chips .chip").length,
     });
     const demo = structureOf(document.querySelector(".demo-card")!);
     const experiment = structureOf(
@@ -661,7 +668,7 @@ describe("ProjectsIndex", () => {
         (c) => c.querySelector("h4")?.textContent === "Churn",
       )!,
     );
-    expect(screen.getByRole("heading", { level: 3, name: "churn threshold sandbox" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Churn Threshold Sandbox" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 3, name: "Machine learning" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 4, name: "Churn" })).toBeInTheDocument();
     // identical layout: shared class, title, stacked metadata, does block, four tags
@@ -700,7 +707,7 @@ describe("ProjectsIndex", () => {
     expect(experiment.resultSlot).not.toBeNull();
   });
 
-  it("renders the apps block with the template card, screenshot and external links", async () => {
+  it("renders both app template cards with screenshots and external links", async () => {
     vi.stubGlobal("fetch", projectsOnlyFetch());
     render(
       <MemoryRouter>
@@ -712,9 +719,10 @@ describe("ProjectsIndex", () => {
     );
     const block = document.getElementById("apps")!;
     expect(block.textContent).toMatch(/complete applications, built like client work/i);
-    const card = block.querySelector(".app-card")!;
-    expect(card).not.toBeNull();
-    expect(card.querySelector("img")!.getAttribute("src")).toBe("/apps/agent-chat-approval.png");
+    const cards = block.querySelectorAll(".app-card");
+    expect(cards).toHaveLength(2);
+    const card = cards[0];
+    expect(card.querySelector("img")!.getAttribute("src")).toBe("/apps/agent-chat-approval-v3.png");
     // compact app cards: capped screenshot height (house rule)
     const css = readStylesCss();
     const shotRule = css.match(/\.app-card__shot \{[\s\S]*?\n\}/)![0];
@@ -725,12 +733,16 @@ describe("ProjectsIndex", () => {
       a.getAttribute("href"),
     ]);
     expect(links).toEqual([
+      ["Chatbot Agent — Production Template", "/apps/agent-chat"],
       ["[code]", "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat"],
-      ["[article]", "/apps/agent-chat"],
       ["[specs]", "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat/specs"],
     ]);
+    expect(css.match(/\.app-card__title--link::after \{[\s\S]*?\n\}/)![0]).toContain("position: absolute;");
     expect(card.textContent).toContain("pydantic-ai");
     expect(card.textContent).toContain("pgvector");
+    expect(card.querySelector(".study-result-chip")!.textContent).toBe("108/108 Kimi eval ×3");
+    expect(cards[1].querySelector("img")!.getAttribute("src")).toBe("/apps/document-intelligence-summary.png");
+    expect(cards[1].querySelector(".study-result-chip")!.textContent).toBe("page-level · 4 AI modes");
   });
 
   it("links the glossary from the experiments section description", async () => {
@@ -823,32 +835,27 @@ describe("ProjectsIndex", () => {
     expect(indexRule).toContain("font-size: 1.05rem;");
   });
 
-  it("splits the card body into two equal white text columns under one uniform small-label style", () => {
+  it("splits the card body into two equal white text columns under translucent blue field titles", () => {
     const css = readStylesCss();
     const colsRule = css.match(/\.study-cols \{[\s\S]*?\n\}/)![0];
     expect(colsRule).toContain("display: grid;");
     expect(colsRule).toContain("repeat(auto-fit, minmax(0, 1fr));");
     expect(colsRule).toContain("gap: 0.9rem;");
-    // both blocks render in the default text color (--text); the small
-    // section labels above them stay muted
     const doesRule = css.match(/\.study-does,\n\.study-achieves \{[\s\S]*?\n\}/)![0];
     expect(doesRule).toContain("color: var(--text);");
     expect(doesRule).not.toContain("text-transform");
-    // all four card labels (topics / data / description / results) share ONE
-    // uniform small-label rule — mono, uppercase, muted grey
+    // topics / data / description / results share one padded title-tab rule
     const labelRule = css.match(/\.study-meta-label,\n\.study-block-label \{[\s\S]*?\n\}/)![0];
     expect(labelRule).toContain("font-family: var(--mono);");
     expect(labelRule).toContain("font-size: 0.72rem;");
     expect(labelRule).toContain("text-transform: uppercase;");
     expect(labelRule).toContain("letter-spacing: 0.08em;");
-    expect(labelRule).toContain("color: var(--muted);");
-    // the metadata label has no standalone rule anymore; the block-label rule
-    // only adds block spacing on top of the shared label style
-    expect(css).not.toMatch(/\.study-meta-label \{[^,]*\}/);
-    // the standalone block-label rule only adds block spacing on top of the
-    // shared label style (the combined selector above ends with a comma)
-    const blockLabelRule = css.match(/\.study-block-label \{\n  display: block;[\s\S]*?\n\}/)![0];
-    expect(blockLabelRule).toContain("margin: 0 0 0.3rem;");
+    expect(labelRule).toContain("color: var(--chip-blue-text);");
+    expect(labelRule).toContain("background: var(--chip-blue-bg-strong);");
+    expect(labelRule).toContain("border: 1px solid var(--chip-blue-border-soft);");
+    expect(labelRule).toContain("padding: 0.22rem 0.45rem;");
+    const blockLabelRule = css.match(/\.study-block-label \{\n  margin:[\s\S]*?\n\}/)![0];
+    expect(blockLabelRule).toContain("margin: 0 0 0.45rem;");
     expect(blockLabelRule).not.toContain("font-family");
     // the old single description line is gone
     expect(css).not.toContain(".study-built");
@@ -883,8 +890,8 @@ describe("ProjectsIndex", () => {
     // specificity to beat the blue tag treatment below it
     const chipRule = css.match(/\.study-card \.chip\.study-result-chip \{[\s\S]*?\n\}/)![0];
     expect(chipRule).toContain("color: var(--accent);");
-    expect(chipRule).toContain("background: rgba(45, 212, 191, 0.08);");
-    expect(chipRule).toContain("border-color: rgba(45, 212, 191, 0.35);");
+    expect(chipRule).toContain("background: var(--chip-green-bg);");
+    expect(chipRule).toContain("border-color: var(--chip-green-border);");
     expect(chipRule).toContain("font-family: var(--mono);");
     // the slot hides entirely while a live metric has not loaded
     expect(css.match(/\.study-result:empty \{[\s\S]*?\n\}/)![0]).toContain("display: none;");
@@ -921,10 +928,10 @@ describe("ProjectsIndex", () => {
     }
   });
 
-  it("paints card subtitles blue, stacked and one step below the old 1rem scale", async () => {
+  it("paints card metadata green, stacked and one step below the old 1rem scale", async () => {
     const css = readStylesCss();
     const subRule = css.match(/\.study-sub \{[\s\S]*?\n\}/)![0];
-    expect(subRule).toContain("color: var(--secondary);");
+    expect(subRule).toContain("color: var(--accent);");
     // below the old 1rem subtitle scale, clearly smaller than the 1.6rem
     // section titles
     expect(subRule).toContain("font-size: 0.85rem;");
@@ -952,8 +959,8 @@ describe("ProjectsIndex", () => {
   it("paints all card tags blue — no per-tag hue rotation remains", () => {
     const css = readStylesCss();
     const chipRule = css.match(/\.study-card \.chip,\n\.offering-card \.chip \{[\s\S]*?\n\}/)![0];
-    expect(chipRule).toContain("color: #7dd3fc;");
-    expect(chipRule).toContain("background: rgba(56, 189, 248, 0.08);");
+    expect(chipRule).toContain("color: var(--chip-blue-text);");
+    expect(chipRule).toContain("background: var(--chip-blue-bg);");
     for (const hue of ["teal", "sky", "violet", "amber"]) {
       expect(css).not.toContain(`.chip--${hue}`);
     }
@@ -1005,5 +1012,18 @@ describe("ProjectsIndex", () => {
     // …and the chip grids share one card gap (the spacing scale token)
     expect(css).toContain("gap: var(--gap-card);");
     expect(css.match(/\.demo-grid \{[\s\S]*?\n\}/)![0]).toContain("gap: var(--gap-card);");
+  });
+
+  it("keeps the baked story summaries in lockstep with the baked projects", async () => {
+    // STATIC_STORIES is generated alongside STATIC_PROJECTS; consuming it
+    // here keeps the generator output honest (one story per project).
+    const { STATIC_PROJECTS, STATIC_STORIES } = await import("../lib/staticRegistry");
+    expect(STATIC_STORIES.map((s) => s.project_id).sort()).toEqual(
+      STATIC_PROJECTS.map((p) => p.id).sort(),
+    );
+    for (const story of STATIC_STORIES) {
+      expect(story.section_ids.length).toBeGreaterThan(0);
+      expect(story.has_roadmap).toBe(true);
+    }
   });
 });

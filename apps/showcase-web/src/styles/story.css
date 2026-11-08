@@ -11,7 +11,7 @@
 .detail-header .detail-lead {
   color: var(--muted);
   margin: 0 0 0.5rem;
-  max-width: 74ch;
+  max-width: none;
 }
 
 /* Prose, takeaway cards, and figures share the section's full-width container. */
@@ -22,13 +22,30 @@
 }
 
 .detail-header .domain {
-  color: var(--muted);
-  margin: 0 0 0.5rem;
+  display: inline-block;
+  width: fit-content;
+  margin: 0 0 0.65rem;
+  padding: 0.22rem 0.45rem;
+  border: 1px solid var(--chip-domain-border);
+  border-radius: 3px;
+  background: var(--chip-domain-bg);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  letter-spacing: 0.03em;
 }
 
 /* header blocks breathe uniformly: title → lead → domain → chips → meta links */
 .detail-header .chips {
   margin: 0 0 0.5rem;
+}
+
+/* Stack labels use the same sky-blue treatment as the project-card tags. */
+.detail-header .chips .chip {
+  color: var(--chip-blue-text);
+  background: var(--chip-blue-bg);
+  border-color: var(--chip-blue-border);
 }
 
 .detail-header .meta-links {
@@ -487,7 +504,7 @@ a.glossary-term:focus-visible {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--accent);
-  background: rgba(45, 212, 191, 0.06);
+  background: var(--table-head-bg);
 }
 
 .data-table td {

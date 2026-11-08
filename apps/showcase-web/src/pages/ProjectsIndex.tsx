@@ -132,8 +132,10 @@ function AppCard({ app }: { app: AppEntry }) {
   return (
     <article className="app-card" aria-label={app.title}>
       <img className="app-card__shot" src={app.screenshot} alt={`${app.title} — interface screenshot`} loading="lazy" />
+      <h3 className="app-card__title study-card__title">
+        <Link className="app-card__title--link" to={app.href}>{app.title}</Link>
+      </h3>
       <div className="app-card__body">
-        <h3 className="app-card__title">{app.title}</h3>
         <p className="app-card__summary">{app.summary}</p>
         <div className="app-card__cols">
           <div>
@@ -145,6 +147,9 @@ function AppCard({ app }: { app: AppEntry }) {
             <p className="app-card__block">{app.achieves}</p>
           </div>
         </div>
+        <p className="study-result">
+          <span className="chip study-result-chip">{app.result}</span>
+        </p>
         <div className="chips app-card__stack">
           {app.stack.map((s) => (
             <span key={s} className="chip">
@@ -359,9 +364,9 @@ export function ProjectsIndex() {
       </section>
       <PageIndex
         items={[
+          { id: "apps", label: "apps" },
           { id: "demos", label: "live demos" },
           ...rows.map((row) => ({ id: rowAnchor(row.name), label: row.name })),
-          { id: "apps", label: "apps" },
         ]}
       />
       {snapshot && (
@@ -377,6 +382,15 @@ export function ProjectsIndex() {
       {projects !== null && projects.length === 0 && (
         <div className="state-box">No projects published yet — check back soon.</div>
       )}
+      <div className="apps-block" id="apps">
+        <h2 className="section-title section-title--major">apps</h2>
+        <p className="section-intro">{APPS_INTRO}</p>
+        <div className="apps-grid">
+          {APPS.map((app) => (
+            <AppCard key={app.id} app={app} />
+          ))}
+        </div>
+      </div>
       <DemosSection projects={projects} />
       {projects !== null && projects.length > 0 && (
         <div className="experiments-block" id="experiments">
@@ -407,15 +421,6 @@ export function ProjectsIndex() {
           </div>
         </div>
       )}
-      <div className="apps-block" id="apps">
-        <h2 className="section-title section-title--major">apps</h2>
-        <p className="section-intro">{APPS_INTRO}</p>
-        <div className="apps-grid">
-          {APPS.map((app) => (
-            <AppCard key={app.id} app={app} />
-          ))}
-        </div>
-      </div>
     </>
   );
 }

@@ -109,7 +109,6 @@ export function DemoWorkbench({
   controls,
   notice,
   secondary,
-  under,
   evidence,
   about,
 }: {
@@ -127,9 +126,6 @@ export function DemoWorkbench({
   notice?: ReactNode;
   /** Secondary panels; always-visible band between the main row and the drawer. */
   secondary?: ReactNode;
-  /** Optional full-width strip directly under the main row (below canvas +
-   * controls), e.g. a horizontal scorer form. */
-  under?: ReactNode;
   /** Extra content for the evidence drawer (method, caveats…). Demos can pass
    * two `.wb-evidence-col` blocks to lay it out in two columns. */
   evidence?: ReactNode;
@@ -163,10 +159,9 @@ export function DemoWorkbench({
           <h1 className="demo-title">{manifest.title}</h1>
           <p className="demo-hook">{manifest.hook}</p>
           {manifest.hero && (
-            <p className="demo-experiment-strip wb-hero">
-              <span className="wb-hero-label">{manifest.hero.label}</span> —{" "}
-              <strong>{manifest.hero.value}</strong>
-              {manifest.hero.ci && <span className="wb-hero-ci"> · {manifest.hero.ci}</span>}
+            <p className="demo-experiment-strip">
+              <span>{manifest.hero.label}</span> — <strong>{manifest.hero.value}</strong>
+              {manifest.hero.ci && <span> · {manifest.hero.ci}</span>}
             </p>
           )}
         </div>
@@ -210,7 +205,6 @@ export function DemoWorkbench({
         </aside>
       </div>
 
-      {under !== undefined && <div className="wb-under">{under}</div>}
 
       {secondary !== undefined && <div className="wb-secondary">{secondary}</div>}
     </div>

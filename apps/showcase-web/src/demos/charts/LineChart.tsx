@@ -30,7 +30,7 @@ export interface BandFill {
 /** Format an axis tick; defaults to integers. */
 export type TickFormat = (value: number) => string;
 
-const C_CURSOR = "#f472b6";
+const C_CURSOR = "var(--chart-cursor)";
 
 /**
  * Generic multi-series SVG line chart on a numeric x domain (typically a
@@ -55,7 +55,6 @@ export function LineChart({
   formatX,
   formatY,
   ariaLabel,
-  children,
 }: {
   width?: number;
   height?: number;
@@ -75,7 +74,6 @@ export function LineChart({
   formatX?: TickFormat;
   formatY?: TickFormat;
   ariaLabel: string;
-  children?: React.ReactNode;
 }) {
   const fmtX = formatX ?? ((v: number) => v.toFixed(2));
   const fmtY = formatY ?? ((v: number) => String(Math.round(v)));
@@ -224,7 +222,12 @@ export function LineChart({
       </clipPath>
       <g clipPath={`url(#${clipId})`}>
       {bandPath && (
-        <path d={bandPath} fill={band!.color} fillOpacity={band!.opacity ?? 0.15} stroke="none" />
+        <path
+          d={bandPath}
+          style={{ fill: band!.color }}
+          fillOpacity={band!.opacity ?? 0.15}
+          stroke="none"
+        />
       )}
 
       {series.map((s) => {
@@ -250,7 +253,7 @@ export function LineChart({
               .map((t, i) => `${px(t).toFixed(1)},${py(s.values[a + i]).toFixed(1)}`)
               .join(" ")}
             fill="none"
-            stroke={s.color}
+            style={{ stroke: s.color }}
             strokeWidth={s.width ?? 2}
             strokeOpacity={s.opacity ?? 1}
             strokeDasharray={s.dashed ? "4 4" : undefined}
@@ -283,7 +286,7 @@ export function LineChart({
               y1={pad.t}
               x2={px(mx)}
               y2={height - pad.b}
-              stroke={m.color ?? "var(--muted)"}
+              style={{ stroke: m.color ?? "var(--muted)" }}
               strokeDasharray={dashed ? "4 4" : undefined}
             />
             {m.label && (
@@ -306,14 +309,18 @@ export function LineChart({
             y1={pad.t}
             x2={px(cursorX)}
             y2={height - pad.b}
-            stroke={C_CURSOR}
+            style={{ stroke: C_CURSOR }}
             strokeWidth={1.5}
           />
-          <circle cx={px(cursorX)} cy={py(series[0].values[cursor])} r={5} fill={C_CURSOR} />
+          <circle
+            cx={px(cursorX)}
+            cy={py(series[0].values[cursor])}
+            r={5}
+            style={{ fill: C_CURSOR }}
+          />
         </g>
       )}
 
-      {children}
       </svg>
     </div>
   );

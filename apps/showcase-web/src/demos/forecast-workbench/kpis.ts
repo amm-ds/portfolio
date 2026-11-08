@@ -74,5 +74,5 @@ export function verdictText(
   }
   return delta < 0
     ? `At h = ${h} this model beats the seasonal naive by ${pct.toFixed(1)}% WAPE on this series — the pooled committed gap is what generalises.`
-    : `At h = ${h} the seasonal naive still wins this series by ${pct.toFixed(1)}% WAPE — per-series losses are real even when the pooled gap excludes zero.`;
+    : `At h = ${h} the seasonal naive still wins this series by ${pct.toFixed(1)}% WAPE — per-series losses are real; the pooled point estimate is what generalises.`;
 }

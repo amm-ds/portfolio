@@ -27,7 +27,7 @@ const OVERALL = [
 /** Manifest fixture mirroring projects/05-ml-pipeline-churn/demo.yaml. */
 const MANIFEST = {
   id: "churn-sandbox",
-  title: "churn threshold sandbox",
+  title: "Churn Threshold Sandbox",
   hook: "Move the alarm threshold and the missed-churner cost — watch the saved budget change.",
   project: "05-ml-pipeline-churn",
   group: "retain customers",
@@ -56,7 +56,7 @@ const MANIFEST = {
 /** Registry entry for the demo CTA tests (fixed /demos contract). */
 const CHURN_DEMO_ENTRY = {
   id: "churn-sandbox",
-  title: "churn threshold sandbox",
+  title: "Churn Threshold Sandbox",
   hook: "Move the alarm threshold — watch the saved budget change.",
   group: "retain customers",
   href: "/demos/churn-sandbox",
@@ -218,14 +218,14 @@ describe("ChurnSandbox", () => {
     expect(screen.getByText("loading demo…")).toBeInTheDocument();
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { level: 1, name: "churn threshold sandbox" }),
+        screen.getByRole("heading", { level: 1, name: "Churn Threshold Sandbox" }),
       ).toBeInTheDocument(),
     );
     // cursor defaults to the committed threshold (0.3) at fn_cost = 5
     expect(screen.getByText("threshold t = 0.30")).toBeInTheDocument();
     expect(screen.getByText("cost at t: 335")).toBeInTheDocument();
-    expect(screen.getByText("cost at 0.5: 365")).toBeInTheDocument();
-    expect(screen.getByText("saves 30 vs 0.5")).toBeInTheDocument();
+    expect(screen.getByText("cost at 0.50: 365")).toBeInTheDocument();
+    expect(screen.getByText("saves 30 vs 0.50")).toBeInTheDocument();
     // TP 75 + FP 210 contacts at t = 0.3
     expect(screen.getByText("contact 285 of 1000")).toBeInTheDocument();
     // decision outcomes per 1,000 (holdout n = 1,000 → raw counts)
@@ -249,8 +249,8 @@ describe("ChurnSandbox", () => {
     // fn_ratio 5 → 1: cost = fp + fn; at t = 0.3 → 210 + 25 = 235 vs 0.5 → 140 + 45 = 185
     fireEvent.change(screen.getByLabelText(/FP\/FN cost ratio/i), { target: { value: "1" } });
     expect(screen.getByText("cost at t: 235")).toBeInTheDocument();
-    expect(screen.getByText("cost at 0.5: 185")).toBeInTheDocument();
-    expect(screen.getByText("costs 50 vs 0.5")).toBeInTheDocument();
+    expect(screen.getByText("cost at 0.50: 185")).toBeInTheDocument();
+    expect(screen.getByText("costs 50 vs 0.50")).toBeInTheDocument();
   });
 
   it("drives the filled slider track through the inline --fill style", async () => {
@@ -411,8 +411,8 @@ describe("ChurnSandbox", () => {
     // preset chip fills the form; score live calls the serving endpoint
     fireEvent.click(screen.getByRole("button", { name: "at-risk fiber customer" }));
     fireEvent.click(screen.getByRole("button", { name: "score live" }));
-    // the result renders in the full-width strip below the main row, outside
-    // the scorer box (the preset chip remounts the card via key={presetKey})
+    // the result renders in the controls rail, below the scorer box (the
+    // preset chip remounts the card via key={presetKey})
     await waitFor(() => {
       const strip = document.querySelector(".wb-score-result")!;
       expect(strip).not.toBeNull();
@@ -572,7 +572,7 @@ describe("churn sandbox routing & links", () => {
     );
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { level: 1, name: "churn threshold sandbox" }),
+        screen.getByRole("heading", { level: 1, name: "Churn Threshold Sandbox" }),
       ).toBeInTheDocument(),
     );
     // shell chrome: back link, linked experiment, footer band — the experiment

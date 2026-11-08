@@ -241,10 +241,10 @@ describe("ProjectDetail story handling", () => {
     });
   });
 
-  it("caps the detail lead at 74ch and keeps the header action row spacing", () => {
+  it("keeps the detail lead full width and preserves the header action row spacing", () => {
     const css = readStylesCss();
     expect(css.match(/\.detail-header \.detail-lead \{[\s\S]*?\n\}/)![0]).toContain(
-      "max-width: 74ch;",
+      "max-width: none;",
     );
     expect(css.match(/\.detail-header \.meta-links \{[\s\S]*?\n\}/)![0]).toContain(
       "margin: 0.5rem 0 1.25rem;",

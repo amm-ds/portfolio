@@ -38,7 +38,7 @@
 /* every row shares one column grid so the bars and the peak/bias columns line up */
 .fwb-verdict-row {
   display: grid;
-  grid-template-columns: minmax(0, 92px) minmax(0, 1fr) 30px 44px;
+  grid-template-columns: minmax(0, 92px) minmax(0, 1fr) 44px 44px;
   gap: 0.4rem;
   align-items: center;
   font-family: var(--mono);
@@ -72,8 +72,8 @@
   position: relative;
   display: block;
   height: 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: var(--input-bg);
+  border: 1px solid var(--border-soft);
   border-radius: 3px;
 }
 
@@ -142,7 +142,7 @@
 }
 
 /* scorer card: header row (label + submit) on top of a 2×2 field grid; the
-   result block sits directly under the header, above the fields */
+   live result renders below the scorer, in .wb-score-result */
 .wb-controls .wb-scorer {
   padding: 0.6rem 0.7rem;
 }
@@ -176,33 +176,11 @@
   margin-top: 0.3rem;
 }
 
-.wb-controls .wb-scorer .wb-scorer-foot .demo-score-result {
-  margin: 0;
-}
-
 .wb-controls .wb-scorer .wb-scorer-foot button {
   width: 100%;
   padding: 0.35rem 0.8rem;
   font-size: 0.8rem;
   min-height: 44px;
-}
-
-.wb-controls .wb-scorer .demo-prob-bar {
-  height: 8px;
-}
-
-.wb-controls .wb-scorer .demo-prob-line {
-  margin: 0.25rem 0 0;
-  font-size: 0.78rem;
-}
-
-.wb-controls .wb-scorer .demo-alarm {
-  margin: 0.15rem 0 0;
-  font-size: 0.78rem;
-}
-
-.wb-controls .wb-scorer .demo-hint {
-  margin: 0.25rem 0 0;
 }
 
 /* filled slider track: --fill (inline style, 0–100%) paints the accent part.
@@ -310,7 +288,7 @@
   color: var(--text);
   border-left: 3px solid var(--accent);
   border-radius: 0 var(--radius) var(--radius) 0;
-  background: rgba(45, 212, 191, 0.06);
+  background: var(--notice-bg);
 }
 
 .wb-notice-mark {
@@ -569,7 +547,6 @@
       "notice"
       "canvas"
       "controls"
-      "under"
       "secondary";
   }
 
@@ -698,7 +675,7 @@
   flex-direction: column;
   gap: 0.3rem;
   padding: 0.55rem 0.8rem;
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-left: 3px solid var(--accent);
   border-radius: 8px;

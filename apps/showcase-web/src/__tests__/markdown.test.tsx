@@ -194,8 +194,34 @@ describe("renderMarkdown fenced code", () => {
     const { container } = render(<>{renderMarkdown(md)}</>);
     const pre = container.querySelector("pre.code-block")!;
     expect(pre).not.toBeNull();
+    expect(pre).toHaveAttribute("role", "region");
+    expect(pre).toHaveAttribute("aria-label", "python code block: print('hi')");
+    expect(pre).toHaveAttribute("tabindex", "0");
     expect(pre.querySelector("code")?.textContent).toBe("print('hi')");
     expect(container.querySelector(".mermaid-wrap")).toBeNull();
+  });
+
+  it("gives same-language code landmarks distinct labels from their content", () => {
+    const first = "```bash\nexport AGENT_CHAT_PROVIDER=kimi\n```";
+    const second = "```bash\ncd apps/agent-chat\n```";
+    const { container } = render(<>{renderMarkdown(first)}{renderMarkdown(second)}</>);
+    const labels = [...container.querySelectorAll("pre.code-block")].map((pre) =>
+      pre.getAttribute("aria-label"),
+    );
+    expect(labels).toEqual([
+      "bash code block: export AGENT_CHAT_PROVIDER=kimi",
+      "bash code block: cd apps/agent-chat",
+    ]);
+    expect(new Set(labels).size).toBe(2);
+  });
+
+  it("highlights Python as IDE spans without executing or injecting markup", () => {
+    const md = "```python\nprint('<script>alert(1)</script>')\n```";
+    const { container } = render(<>{renderMarkdown(md)}</>);
+    const code = container.querySelector("pre.code-block--python code.hljs")!;
+    expect(code.textContent).toBe("print('<script>alert(1)</script>')");
+    expect(code.querySelector("script")).toBeNull();
+    expect(code.innerHTML).toContain("hljs-");
   });
 
   it("renders a fence without a language as pre/code", () => {
@@ -327,7 +353,7 @@ describe("prose density (wave 10)", () => {
     expect(css).toMatch(/\.story-main\s*\{[^}]*width:\s*100%/);
     expect(css).toMatch(/\.story-main\s*\{[^}]*max-width:\s*none/);
     expect(css).toMatch(/\.story-main\s*\{[^}]*font-size:\s*1\.03rem/);
-    expect(css).toMatch(/\.detail-header \.detail-lead\s*\{[^}]*max-width:\s*74ch/);
+    expect(css).toMatch(/\.detail-header \.detail-lead\s*\{[^}]*max-width:\s*none/);
     // section padding/typography rhythm untouched
     expect(css).toContain(".story-section .prose {\n  line-height: 1.62;\n}");
   });

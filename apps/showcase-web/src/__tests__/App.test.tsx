@@ -24,6 +24,26 @@ describe("App routing", () => {
     expect(document.querySelector(".project-grid")).toBeNull();
   });
 
+  it("serves the workbench at its new path and redirects the legacy article path", async () => {
+    for (const path of ["/apps/document-intelligence", "/apps/document-review"]) {
+      cleanup();
+      render(
+        <MemoryRouter initialEntries={[path]}>
+          <App />
+        </MemoryRouter>,
+      );
+      await waitFor(() =>
+        expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+          "AI Document Intelligence Workbench",
+        ),
+      );
+      expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
+        "href",
+        "https://alejandromerida.dev/apps/document-intelligence",
+      );
+    }
+  });
+
   it("renders the Projects index at both /projects and /experiments", async () => {
     vi.stubGlobal(
       "fetch",

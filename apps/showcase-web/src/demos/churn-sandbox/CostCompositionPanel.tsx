@@ -3,9 +3,9 @@ import { useMeasuredSize } from "../charts/useMeasuredSize";
 import { DemoFigure } from "../workbench";
 import { fnCostSeries, fpCostSeries } from "./kpis";
 
-const C_FP = "#fbbf24";
-const C_FN = "#f472b6";
-const C_CURSOR = "#f472b6";
+const C_FP = "var(--chart-amber)";
+const C_FN = "var(--chart-pink)";
+const C_CURSOR = "var(--chart-cursor)";
 
 /**
  * Why the main cost curve has its shape: the two stacked components of total
@@ -96,8 +96,8 @@ export function CostCompositionPanel({
           ))}
 
           {/* stacked components: FP (amber) on the bottom, FN (pink) on top */}
-          <path data-layer="fp" d={fpArea} fill={C_FP} fillOpacity={0.55} stroke="none" />
-          <path data-layer="fn" d={fnArea} fill={C_FN} fillOpacity={0.55} stroke="none" />
+          <path data-layer="fp" d={fpArea} style={{ fill: C_FP }} fillOpacity={0.55} stroke="none" />
+          <path data-layer="fn" d={fnArea} style={{ fill: C_FN }} fillOpacity={0.55} stroke="none" />
 
           {/* cursor threshold marker */}
           <line
@@ -106,7 +106,7 @@ export function CostCompositionPanel({
             y1={pad.t}
             x2={cursorX}
             y2={base}
-            stroke={C_CURSOR}
+            style={{ stroke: C_CURSOR }}
             strokeWidth={1.5}
           />
         </svg>

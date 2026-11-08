@@ -1,16 +1,16 @@
 import type { LineSeries } from "../charts/LineChart";
 import type { ForecastWindow } from "../types";
 
-export const C_TEAL = "#2dd4bf";
-export const C_TEAL_LIGHT = "#5eead4";
-export const C_PINK = "#f472b6";
-export const C_AMBER = "#fbbf24";
-export const C_GRAY = "#64748b";
-export const C_LILAC = "#a78bfa";
-export const C_VIOLET = "#c4b5fd";
-export const C_SKY = "#38bdf8";
-export const C_GREEN = "#4ade80";
-export const C_HIST = "#94a3b8";
+export const C_TEAL = "var(--chart-teal)";
+export const C_TEAL_LIGHT = "var(--chart-teal-light)";
+export const C_PINK = "var(--chart-pink)";
+export const C_AMBER = "var(--chart-amber)";
+export const C_GRAY = "var(--chart-gray)";
+export const C_LILAC = "var(--chart-lilac)";
+export const C_VIOLET = "var(--chart-violet)";
+export const C_SKY = "var(--chart-sky)";
+export const C_GREEN = "var(--chart-green)";
+export const C_HIST = "var(--chart-history)";
 
 /** The 8 full-panel candidates: naive dashed grey, AutoETS thin, the global
  * LightGBM arms in teal hues, the three pooled fits in cool distinct hues,

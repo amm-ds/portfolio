@@ -1,6 +1,8 @@
+import { AGENT_CHAT_ARCHITECTURE_SPEC } from "./agentChatArchitecture";
 import { AGENT_LOOP_SPEC } from "./agentLoop";
 import { CHURN_CYCLE_SPEC } from "./churnCycle";
 import { DETECTION_PIPELINE_SPEC } from "./detectionPipeline";
+import { DOCUMENT_INTELLIGENCE_ARCHITECTURE_SPEC } from "./documentIntelligenceArchitecture";
 import { ENGINE_BENCHMARK_SPEC } from "./engineBenchmark";
 import { LIFECYCLE_PIPELINE_SPEC } from "./lifecyclePipeline";
 import { M5_PIPELINE_SPEC } from "./m5Pipeline";
@@ -27,6 +29,8 @@ export const DIAGRAM_SPECS = {
   "11-engine-benchmark": ENGINE_BENCHMARK_SPEC,
   "12-lifecycle-pipeline": LIFECYCLE_PIPELINE_SPEC,
   "13-serving-pipeline": SERVING_PIPELINE_SPEC,
+  "app-agent-chat-architecture": AGENT_CHAT_ARCHITECTURE_SPEC,
+  "app-document-intelligence-architecture": DOCUMENT_INTELLIGENCE_ARCHITECTURE_SPEC,
 } as const satisfies Record<string, DiagramSpec>;
 
 export type DiagramSpecId = keyof typeof DIAGRAM_SPECS;
@@ -37,9 +41,11 @@ export function getDiagramSpec(specId: string): DiagramSpec | undefined {
 }
 
 export {
+  AGENT_CHAT_ARCHITECTURE_SPEC,
   AGENT_LOOP_SPEC,
   CHURN_CYCLE_SPEC,
   DETECTION_PIPELINE_SPEC,
+  DOCUMENT_INTELLIGENCE_ARCHITECTURE_SPEC,
   ENGINE_BENCHMARK_SPEC,
   LIFECYCLE_PIPELINE_SPEC,
   M5_PIPELINE_SPEC,

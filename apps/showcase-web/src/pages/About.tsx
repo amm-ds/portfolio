@@ -122,15 +122,15 @@ export function About() {
           I design, build and evaluate ML systems end to end, and I keep the code, metrics
           and case studies public and auditable.
         </p>
+        <PageIndex
+          items={[
+            { id: "how-i-work", label: "how I work" },
+            { id: "experience", label: "experience" },
+          ]}
+        />
         <ChannelCards />
         <LanguagesAvailability />
       </section>
-      <PageIndex
-        items={[
-          { id: "how-i-work", label: "how I work" },
-          { id: "experience", label: "experience" },
-        ]}
-      />
 
       <h2 className="section-title" id="how-i-work">how I work</h2>
       <p className="section-intro">

@@ -69,7 +69,7 @@
 
 button {
   background: var(--accent);
-  color: #042f2e;
+  color: var(--accent-ink);
   border: none;
   border-radius: var(--radius);
   padding: 0.65rem 1.4rem;
@@ -466,7 +466,7 @@ button:disabled {
   font-family: var(--sans);
   font-size: 0.88rem;
   color: var(--text);
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.45rem 0.65rem;
@@ -524,7 +524,7 @@ button:disabled {
   font-family: var(--sans);
   font-size: 0.95rem;
   color: var(--text);
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.55rem 0.75rem;
@@ -752,10 +752,10 @@ button:disabled {
 }
 
 .figure-card-band {
-  /* attached commentary plate: slightly darker tone, divided by a hairline */
+  /* attached commentary plate: slightly deeper tone, divided by a hairline */
   padding: 0.75rem 1rem 0.9rem;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
+  background: var(--figure-band-bg);
+  border-top: 1px solid var(--border-soft);
 }
 
 .figure-id {
@@ -1038,7 +1038,7 @@ button:disabled {
   position: relative;
   min-width: 0;
   height: 520px;
-  background-image: radial-gradient(circle, rgba(148, 163, 184, 0.16) 1px, transparent 1px);
+  background-image: radial-gradient(circle, var(--flow-canvas-dot) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 
@@ -1068,7 +1068,7 @@ button:disabled {
   border: 1px solid var(--accent);
   border-left-width: 4px;
   border-radius: 8px;
-  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-node);
 }
 
 /* mermaid-logic shapes: the silhouette reads the node's role before its
@@ -1106,8 +1106,8 @@ button:disabled {
 }
 
 .flow-node--subroutine {
-  border-left: 6px double #a78bfa;
-  border-right: 6px double #a78bfa;
+  border-left: 6px double var(--flow-violet);
+  border-right: 6px double var(--flow-violet);
   border-radius: 2px;
 }
 
@@ -1119,7 +1119,7 @@ button:disabled {
   background: var(--surface);
   box-shadow: none;
   /* clip-path removes the painted border — paint it as a filter outline */
-  filter: drop-shadow(0 0 0 var(--accent)) drop-shadow(0 7px 10px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 0 0 var(--accent)) drop-shadow(0 7px 10px var(--shadow-shape));
 }
 
 .flow-node--rhombus {
@@ -1133,7 +1133,7 @@ button:disabled {
   align-items: center;
   justify-content: center;
   text-align: center;
-  filter: drop-shadow(0 0 0 var(--secondary)) drop-shadow(0 7px 10px rgba(0, 0, 0, 0.35));
+  filter: drop-shadow(0 0 0 var(--secondary)) drop-shadow(0 7px 10px var(--shadow-shape));
 }
 
 .flow-node--rhombus .flow-node__label {
@@ -1146,7 +1146,7 @@ button:disabled {
 }
 
 .flow-node--tool {
-  border-color: #a78bfa;
+  border-color: var(--flow-violet);
 }
 
 .flow-node--model {
@@ -1180,7 +1180,7 @@ button:disabled {
   background: var(--surface);
   border: 1px solid var(--accent);
   border-radius: 6px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-float);
   font-size: 0.75rem;
   line-height: 1.45;
   text-align: left;
@@ -1190,7 +1190,7 @@ button:disabled {
 
 .react-flow__node.selected .flow-node {
   border-color: var(--secondary);
-  box-shadow: 0 0 0 2px var(--accent-glow), 0 7px 18px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 0 2px var(--accent-glow), var(--shadow-node-active);
 }
 
 .flow-diagram .react-flow__handle {
@@ -1232,7 +1232,7 @@ button:disabled {
 }
 
 .flow-diagram .react-flow__attribution {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--attribution-bg);
 }
 
 .flow-diagram .react-flow__attribution a {
@@ -1376,7 +1376,7 @@ button:disabled {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
   pointer-events: none;
   transition: border-color 0.12s ease, color 0.12s ease;
 }
@@ -1448,6 +1448,26 @@ button:disabled {
   background: transparent;
   border: 0;
   font-size: inherit;
+}
+
+.code-block .hljs-keyword,
+.code-block .hljs-built_in {
+  color: var(--code-keyword);
+}
+
+.code-block .hljs-string,
+.code-block .hljs-title {
+  color: var(--accent);
+}
+
+.code-block .hljs-number,
+.code-block .hljs-attr,
+.code-block .hljs-attribute {
+  color: var(--secondary);
+}
+
+.code-block .hljs-comment {
+  color: var(--muted);
 }
 
 .app-spec-grid {

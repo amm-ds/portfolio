@@ -39,7 +39,9 @@ export interface DemoManifest {
   hero: HeroMetric | null;
   scenarios: Scenario[];
   live_endpoints: LiveEndpoint[];
-  payload: PayloadRef;
+  /** A demo mid-rebuild may declare no payload yet: the manifest still
+   * serves and the payload route 404s until a payload block lands. */
+  payload: PayloadRef | null;
 }
 
 /** Fixed registry-entry contract (`GET /demos`). */
@@ -157,8 +159,8 @@ export interface ForecastWorkbenchPayload {
   project: string;
   protocol: string;
   /** Committed headline block (reports_m5_full metrics) verbatim. Panel-wide
-   * where the committed run persisted panel stats; catalog-scoped rows are
-   * labelled in `_scope`. */
+   * where the committed run persisted panel stats; `_scope` records which
+   * rows are catalog-scoped (carried for evidence/tests, not rendered). */
   groups: {
     headline: {
       metric: string;

@@ -5,6 +5,7 @@ import { readStylesCss } from "./helpers/css";
 import { About } from "../pages/About";
 import { AgentChatArticle } from "../pages/AgentChatArticle";
 import { Contact } from "../pages/Contact";
+import { DocumentIntelligenceArticle } from "../pages/DocumentIntelligenceArticle";
 import { Glossary } from "../pages/Glossary";
 import { Services } from "../pages/Services";
 
@@ -65,16 +66,34 @@ describe("AgentChatArticle", () => {
     expect(screen.getByRole("heading", { name: /Architecture$/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Evaluation$/ })).toBeInTheDocument();
     expect(document.querySelectorAll(".app-screenshot img")).toHaveLength(3);
-    expect(document.querySelector('img[src="/apps/agent-chat-memory.png"]')).not.toBeNull();
+    expect(document.querySelector('img[src="/apps/agent-chat-memory-v3.png"]')).not.toBeNull();
     expect(document.querySelectorAll(".app-spec-card")).toHaveLength(4);
     expect(document.querySelectorAll("pre.code-block")).toHaveLength(5);
-    expect(screen.getAllByText("In plain terms")).toHaveLength(8);
+    expect(screen.getAllByText("tl;dr")).toHaveLength(8);
     const video = document.querySelector("video")!;
     expect(video).toHaveAttribute("controls");
     expect(video).toHaveAttribute("preload", "metadata");
+    expect(video).toHaveAttribute("poster", "/apps/agent-chat-ui-v3.png");
     expect(video.querySelector('source[src="/apps/agent-chat-demo.webm"]')).not.toBeNull();
-    expect(screen.getByText(/13-case suite/)).toBeInTheDocument();
+    expect(video.querySelector('source[src="/apps/agent-chat-demo.mp4"]')).not.toBeNull();
+    expect(screen.getByText(/16-case suite/)).toBeInTheDocument();
+    expect(screen.getByText(/last 10 user turns/)).toBeInTheDocument();
+    expect(document.body.textContent).toContain("sessionStorage");
+    expect(document.body.textContent).toContain("preferred_cloud");
+    expect(screen.getByText(/authenticated principal/)).toBeInTheDocument();
     expect(screen.getByText(/single-agent chassis/)).toBeInTheDocument();
+    expect(document.body.textContent).toContain("108/108 assertions passed in each of three repetitions.");
+    expect(document.body.textContent).toContain("UseThreadExecutor");
+    expect(document.body.textContent).toContain("reports liveness plus the configured provider");
+    expect(document.body.textContent).toContain("content exclusion");
+    expect(screen.getByRole("link", { name: "native deferred tools" })).toHaveAttribute(
+      "href",
+      "https://ai.pydantic.dev/deferred-tools/",
+    );
+    expect(screen.getByRole("link", { name: "observability guidance" })).toHaveAttribute(
+      "href",
+      "https://ai.pydantic.dev/observability/",
+    );
   });
 
   it("styles code as padded terminal cards and keeps spec text and images contained", () => {
@@ -83,5 +102,36 @@ describe("AgentChatArticle", () => {
     expect(css.match(/\.app-spec-card \{[\s\S]*?\n\}/)![0]).toContain("padding: 1.25rem 1.4rem;");
     expect(css.match(/\.app-screenshot img \{[\s\S]*?\n\}/)![0]).toContain("height: 360px;");
     expect(css.match(/\.app-screenshot img \{[\s\S]*?\n\}/)![0]).toContain("object-fit: contain;");
+    expect(css.match(/\.detail-header \.chips \.chip \{[\s\S]*?\n\}/)![0]).toContain(
+      "color: var(--chip-blue-text);",
+    );
+    expect(css.match(/\.detail-header \.domain \{[\s\S]*?\n\}/)![0]).toContain("color: var(--accent);");
+  });
+});
+
+describe("DocumentIntelligenceArticle", () => {
+  it("presents the application, evidence boundary, evaluation, and specs", () => {
+    render(<MemoryRouter><DocumentIntelligenceArticle /></MemoryRouter>);
+
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "AI Document Intelligence Workbench",
+    );
+    expect(screen.getByRole("navigation", { name: "App article sections" }).querySelectorAll("a")).toHaveLength(8);
+    expect(screen.getByRole("heading", { name: /Evidence & performance$/ })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Evaluation$/ })).toBeInTheDocument();
+    expect(document.querySelectorAll(".app-screenshot img")).toHaveLength(2);
+    expect(document.querySelector('img[src="/apps/document-intelligence-summary.png"]')).not.toBeNull();
+    expect(document.querySelector('img[src="/apps/document-intelligence-qa.png"]')).not.toBeNull();
+    expect(document.querySelector('link[rel="canonical"]')).toHaveAttribute(
+      "href",
+      "https://alejandromerida.dev/apps/document-intelligence",
+    );
+    expect(document.title).toContain("AI Document Intelligence Workbench");
+    expect(document.querySelectorAll(".app-spec-card")).toHaveLength(4);
+    expect(document.querySelectorAll("pre.code-block")).toHaveLength(4);
+    expect(screen.getAllByText("tl;dr")).toHaveLength(8);
+    expect(document.body.textContent).toContain("page-level scorecards");
+    expect(document.body.textContent).toContain("per-page misses");
+    expect(document.body.textContent).toContain("Offline fixtures verify the application path");
   });
 });

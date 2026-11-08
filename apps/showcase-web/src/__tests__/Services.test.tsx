@@ -163,9 +163,9 @@ describe("Services page (wave 8)", () => {
     }
     const css = readStylesCss();
     const rule = css.match(/\.study-card \.chip,\n\.offering-card \.chip \{[\s\S]*?\n\}/)![0];
-    expect(rule).toContain("color: #7dd3fc;");
-    expect(rule).toContain("background: rgba(56, 189, 248, 0.08);");
-    expect(rule).toContain("border-color: rgba(56, 189, 248, 0.35);");
+    expect(rule).toContain("color: var(--chip-blue-text);");
+    expect(rule).toContain("background: var(--chip-blue-bg);");
+    expect(rule).toContain("border-color: var(--chip-blue-border);");
     // no hue modifier classes remain in the stylesheet
     for (const hue of ["teal", "sky", "violet", "amber"]) {
       expect(css).not.toContain(`.chip--${hue}`);

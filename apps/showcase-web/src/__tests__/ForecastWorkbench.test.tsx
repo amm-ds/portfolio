@@ -171,7 +171,7 @@ const PAYLOAD: ForecastWorkbenchPayload = {
 
 const MANIFEST = {
   id: "forecast-workbench",
-  title: "demand forecast workbench",
+  title: "Demand Forecast Workbench",
   hook: "Pick a committed M5 store-product series and compare the candidates on the scored-once competition window.",
   project: "02-demand-forecasting",
   group: "plan operations",
@@ -221,7 +221,9 @@ afterEach(() => {
 });
 
 const lgbmPolylines = () =>
-  Array.from(document.querySelectorAll('.demo-chart polyline[stroke="#2dd4bf"]'));
+  Array.from(document.querySelectorAll(".demo-chart polyline")).filter(
+    (el) => (el as SVGPolylineElement).style.stroke === "var(--chart-teal)",
+  );
 
 const peaksAt = (card: Element) =>
   Array.from(card.querySelectorAll(".fwb-verdict-peak")).map((e) => e.textContent);
@@ -247,7 +249,7 @@ describe("ForecastWorkbench", () => {
     expect(screen.getByText("loading demo…")).toBeInTheDocument();
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { level: 1, name: "demand forecast workbench" }),
+        screen.getByRole("heading", { level: 1, name: "Demand Forecast Workbench" }),
       ).toBeInTheDocument(),
     );
     expect(
@@ -373,7 +375,7 @@ describe("ForecastWorkbench", () => {
     );
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { level: 1, name: "demand forecast workbench" }),
+        screen.getByRole("heading", { level: 1, name: "Demand Forecast Workbench" }),
       ).toBeInTheDocument(),
     );
     expect(screen.getByRole("link", { name: "← back to demos" })).toHaveAttribute(
@@ -556,7 +558,7 @@ describe("ForecastWorkbench", () => {
       i.querySelector(".fwb-verdict-name")!.textContent!.includes("seasonal naive"),
     )!;
     expect((naiveItem.querySelector(".fwb-bar-fill") as HTMLElement).style.backgroundColor).toBe(
-      "rgb(100, 116, 139)",
+      "var(--chart-gray)",
     );
     // the best bar carries the crown
     expect(verdictCard().querySelector(".fwb-verdict-item.best .fwb-verdict-crown")).not.toBeNull();

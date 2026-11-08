@@ -1,5 +1,10 @@
+/* eslint-disable jsx-a11y/no-noninteractive-tabindex -- Focusable code regions allow keyboard scrolling. */
 import { createElement, Fragment, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import hljs from "highlight.js/lib/core";
+import bash from "highlight.js/lib/languages/bash";
+import json from "highlight.js/lib/languages/json";
+import python from "highlight.js/lib/languages/python";
 import { MermaidDiagram } from "../components/MermaidDiagram";
 import { LazyFlowDiagram } from "../components/diagrams/LazyFlowDiagram";
 import { glossaryEntries } from "./glossary";
@@ -11,7 +16,21 @@ import { glossaryEntries } from "./glossary";
 // items), pipe tables, ATX headings (## → h3, ### → h4, capped so the outline
 // never jumps above the section h2), thematic breaks (---/***/___), and fenced
 // code blocks (```lang; ```mermaid renders as a diagram). Everything is
-// rendered as React text nodes — no HTML injection surface.
+// rendered as React text nodes — no HTML injection surface. highlight.js
+// returns its own sanitized span markup for these three opt-in grammars.
+hljs.registerLanguage("python", python);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("bash", bash);
+
+const CODE_LANGUAGES: Record<string, string> = {
+  py: "python",
+  python: "python",
+  json: "json",
+  bash: "bash",
+  sh: "bash",
+  shell: "bash",
+  zsh: "bash",
+};
 
 const INLINE_RE =
   /(`[^`\n]+`|\*\*[^*]+\*\*|\*[^*\n]+\*|\[[^\]\n]+\]\((?:https?:\/\/|mailto:)[^)\s]+\))/gi;
@@ -272,9 +291,23 @@ function renderCodeBlock(code: string, lang: string, keyPrefix: string): ReactNo
   if (diagram) {
     return <LazyFlowDiagram key={keyPrefix} specId={diagram[1]} />;
   }
+  const language = CODE_LANGUAGES[lang];
+  const html = language ? hljs.highlight(code, { language }).value : null;
+  const firstLine = code.trim().split("\n")[0].trim().slice(0, 60);
+  const label = `${language ?? "plain text"} code block${firstLine ? `: ${firstLine}` : ""}`;
   return (
-    <pre key={keyPrefix} className="code-block">
-      <code>{code}</code>
+    <pre
+      key={keyPrefix}
+      className={`code-block code-block--${language ?? "text"}`}
+      role="region"
+      aria-label={label}
+      tabIndex={0}
+    >
+      {html ? (
+        <code className="hljs" dangerouslySetInnerHTML={{ __html: html }} />
+      ) : (
+        <code>{code}</code>
+      )}
     </pre>
   );
 }

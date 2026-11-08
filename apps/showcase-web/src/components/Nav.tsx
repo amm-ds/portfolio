@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { REPO_URL, SITE_NAME_ROOT, SITE_NAME_SUFFIX } from "../config";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 export function Nav() {
   return (
@@ -17,6 +18,7 @@ export function Nav() {
           <NavLink to="/services">Services</NavLink>
           <NavLink to="/about">About</NavLink>
           <NavLink to="/contact">Contact</NavLink>
+          <ThemeSwitcher />
           <a className="github" href={REPO_URL} target="_blank" rel="noreferrer">
             GitHub
           </a>

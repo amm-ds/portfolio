@@ -14,8 +14,8 @@ import {
 } from "../api";
 import { CaseStudy } from "../components/CaseStudy";
 import { ExperimentCrumbs, ExperimentNav } from "../components/ExperimentNav";
-import { FigureFrame } from "../components/FigureFrame";
 import { MetricsTable } from "../components/MetricsTable";
+import { PlotlyFigure } from "../components/PlotlyFigure";
 import { DOCS_URL, REPO_URL } from "../config";
 import { summaryLine } from "../lib/impact";
 import { usePageMeta } from "../seo";
@@ -349,7 +349,7 @@ export function ProjectDetail() {
           ) : (
             <div className="figure-list">
               {figures.map((name) => (
-                <FigureFrame key={name} projectId={id} name={name} />
+                <PlotlyFigure key={name} pid={id} name={name} caption={`fig :: ${name}`} />
               ))}
             </div>
           )}

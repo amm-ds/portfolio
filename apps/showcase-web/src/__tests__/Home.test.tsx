@@ -122,7 +122,7 @@ describe("Home (terminal-centered)", () => {
     expect(rule).toContain("margin: 1.5rem auto 0.75rem;");
   });
 
-  it("where-to-go sits tight under the hero stage", () => {
+  it("where-to-go keeps a small breathing gap under the hero stage", () => {
     const css = readStylesCss();
     const heroRule = css.match(/\.hero \{[\s\S]*?\n\}/)![0];
     expect(heroRule).toContain("padding: 3rem 0 0.15rem;");
@@ -130,7 +130,7 @@ describe("Home (terminal-centered)", () => {
     // where-to-go block is gone
     expect(heroRule).toContain("min-height: min(52vh, 560px);");
     expect(css).toContain(".section-title--tight");
-    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.25rem;");
+    expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.8rem;");
   });
 
   it("renders the subtitle in white (--text) and the intro sentence in grey (--muted)", () => {

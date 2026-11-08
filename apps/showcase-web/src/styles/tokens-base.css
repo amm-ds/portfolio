@@ -1,15 +1,12 @@
+/* --- Design tokens ---
+   One token set, two themes. The dark terminal palette is the default
+   (:root plus :root[data-theme="dark"]); the light theme re-declares every
+   color under :root[data-theme="light"] (set by src/theme/useTheme.ts and
+   the pre-hydration script in index.html). Structural values — spacing,
+   type stacks, radius — never change per theme and live in the plain
+   :root block. */
+
 :root {
-  --bg: #0f172a;
-  --surface: #1e293b;
-  --surface-hover: #273549;
-  --border: #334155;
-  --accent: #2dd4bf;
-  --secondary: #38bdf8;
-  --text: #e2e8f0;
-  --muted: #94a3b8;
-  --danger: #f87171;
-  --ok: #34d399;
-  --accent-glow: rgba(45, 212, 191, 0.25);
   --radius: 10px;
   /* one spacing scale: card grids and cards-inside-a-section stack at the
      card gap; page/flow sections separate at the section gap */
@@ -18,7 +15,137 @@
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, Inter, sans-serif;
   font-family: var(--sans);
+}
+
+/* Dark palette (default) — the site's original terminal look. */
+:root,
+:root[data-theme="dark"] {
   color-scheme: dark;
+  /* base palette */
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-hover: #273549;
+  --border: #334155;
+  --border-soft: #334155;
+  --accent: #2dd4bf;
+  --accent-bright: #2dd4bf;
+  --accent-ink: #042f2e;
+  --accent-glow: rgba(45, 212, 191, 0.25);
+  --secondary: #38bdf8;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --dim: #94a3b8;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  --ok: #34d399;
+  /* hardcoded surfaces, now semantic */
+  --terminal-bg: #0b1120;
+  --terminal-shadow: 0 12px 32px rgba(2, 6, 23, 0.55);
+  --terminal-shadow-hero: 0 18px 48px rgba(2, 6, 23, 0.65);
+  --hero-grid-line: rgba(148, 163, 184, 0.05);
+  --flow-canvas-dot: rgba(148, 163, 184, 0.16);
+  --code-bg: #0f172a;
+  --figure-band-bg: #0f172a;
+  --input-bg: #0f172a;
+  --table-head-bg: rgba(45, 212, 191, 0.06);
+  --notice-bg: rgba(45, 212, 191, 0.06);
+  --attribution-bg: rgba(15, 23, 42, 0.8);
+  /* chips: blue tags/labels, green result + domain chips */
+  --chip-blue-text: #7dd3fc;
+  --chip-blue-bg: rgba(56, 189, 248, 0.08);
+  --chip-blue-bg-strong: rgba(56, 189, 248, 0.1);
+  --chip-blue-border: rgba(56, 189, 248, 0.35);
+  --chip-blue-border-soft: rgba(56, 189, 248, 0.18);
+  --chip-green-bg: rgba(45, 212, 191, 0.08);
+  --chip-green-border: rgba(45, 212, 191, 0.35);
+  --chip-domain-bg: rgba(46, 204, 113, 0.07);
+  --chip-domain-border: rgba(46, 204, 113, 0.24);
+  /* shadows: terminal, flow nodes, floating labels */
+  --shadow-node: 0 7px 18px rgba(0, 0, 0, 0.2);
+  --shadow-node-active: 0 7px 18px rgba(0, 0, 0, 0.25);
+  --shadow-float: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --shadow-chip: 0 2px 8px rgba(0, 0, 0, 0.35);
+  /* drop-shadow color for clip-path flow nodes (hexagon / rhombus) */
+  --shadow-shape: rgba(0, 0, 0, 0.35);
+  /* syntax highlighting + flow-node accents */
+  --code-keyword: #f472b6;
+  --flow-violet: #a78bfa;
+  /* chart series palette — mirrors the hardcoded demo-chart constants;
+     consumed by the Plotly/SVG/React Flow theme layer */
+  --chart-teal: #2dd4bf;
+  --chart-teal-light: #5eead4;
+  --chart-pink: #f472b6;
+  --chart-amber: #fbbf24;
+  --chart-gray: #94a3b8;
+  --chart-lilac: #a78bfa;
+  --chart-violet: #c4b5fd;
+  --chart-sky: #38bdf8;
+  --chart-green: #4ade80;
+  --chart-history: #64748b;
+  --chart-cursor: #f472b6;
+}
+
+/* Light palette — high-contrast daylight surfaces; the site's green/blue
+   logic carries over with darker, contrast-safe accents (AA on white). */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f5f8fc;
+  --surface: #ffffff;
+  --surface-hover: #f4f7fb;
+  --border: #b8c6d6;
+  --border-soft: #d6dee8;
+  --accent: #0b625b;
+  --accent-bright: #0a5750;
+  --accent-ink: #ffffff;
+  --accent-glow: rgba(11, 98, 91, 0.16);
+  --secondary: #0369a1;
+  --text: #172433;
+  --muted: #4e6276;
+  --dim: #536578;
+  --danger: #b4233a;
+  --warning: #92400e;
+  --ok: #047857;
+  --terminal-bg: #e7edf5;
+  --terminal-shadow: 0 12px 32px rgba(23, 36, 51, 0.16);
+  --terminal-shadow-hero: 0 18px 48px rgba(23, 36, 51, 0.2);
+  --hero-grid-line: rgba(78, 98, 118, 0.12);
+  --flow-canvas-dot: rgba(78, 98, 118, 0.28);
+  --code-bg: #e7edf5;
+  --figure-band-bg: #e7edf5;
+  --input-bg: #f0f4fa;
+  --table-head-bg: rgba(15, 118, 110, 0.07);
+  --notice-bg: rgba(15, 118, 110, 0.07);
+  --attribution-bg: rgba(245, 248, 252, 0.9);
+  --chip-blue-text: #0369a1;
+  --chip-blue-bg: rgba(3, 105, 161, 0.08);
+  --chip-blue-bg-strong: rgba(3, 105, 161, 0.1);
+  --chip-blue-border: rgba(3, 105, 161, 0.38);
+  --chip-blue-border-soft: rgba(3, 105, 161, 0.22);
+  --chip-green-bg: rgba(15, 118, 110, 0.08);
+  --chip-green-border: rgba(15, 118, 110, 0.38);
+  --chip-domain-bg: rgba(4, 120, 87, 0.08);
+  --chip-domain-border: rgba(4, 120, 87, 0.3);
+  --shadow-node: 0 7px 18px rgba(23, 36, 51, 0.14);
+  --shadow-node-active: 0 7px 18px rgba(23, 36, 51, 0.18);
+  --shadow-float: 0 6px 18px rgba(23, 36, 51, 0.2);
+  --shadow-chip: 0 2px 8px rgba(23, 36, 51, 0.14);
+  /* drop-shadow color for clip-path flow nodes (hexagon / rhombus) */
+  --shadow-shape: rgba(23, 36, 51, 0.18);
+  --code-keyword: #be185d;
+  --flow-violet: #7c3aed;
+  /* chart series — darker than the dark theme so lines/markers stay
+     contrast-safe on the light paper */
+  --chart-teal: #0f766e;
+  --chart-teal-light: #0d9488;
+  --chart-pink: #be185d;
+  --chart-amber: #b45309;
+  --chart-gray: #64748b;
+  --chart-lilac: #7c3aed;
+  --chart-violet: #6d28d9;
+  --chart-sky: #0369a1;
+  --chart-green: #15803d;
+  --chart-history: #64748b;
+  --chart-cursor: #be185d;
 }
 
 html {
@@ -74,7 +201,7 @@ a:hover {
 code {
   font-family: var(--mono);
   font-size: 0.9em;
-  background: var(--bg);
+  background: var(--code-bg);
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.05rem 0.35rem;

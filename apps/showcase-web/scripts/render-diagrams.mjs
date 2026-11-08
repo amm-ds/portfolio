@@ -1,14 +1,13 @@
-// Pre-render every ```mermaid block found in projects/*/story.yaml to a
-// static SVG in public/diagrams/<sha1(code)>.svg, so the site never depends
-// on runtime mermaid.render (which fails in Safari). Run locally:
+// Pre-render every ```mermaid block found in projects/*/story.yaml to
+// dark and light static SVGs in public/diagrams/<sha1(code)>.<theme>.svg, so
+// the site never depends on runtime mermaid.render (which fails in Safari). Run locally:
 //
 //   node apps/showcase-web/scripts/render-diagrams.mjs
 //
-// playwright is borrowed from a sibling checkout (not a dependency of this
-// app): set PLAYWRIGHT_MODULE to override the default path below.
+// Playwright is a declared development dependency of this app.
 import { createRequire } from "node:module";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,18 +19,16 @@ const outDir = path.join(webRoot, "public", "diagrams");
 const mermaidDist = path.join(webRoot, "node_modules", "mermaid", "dist", "mermaid.min.js");
 const themeFile = path.join(webRoot, "src", "components", "mermaid-theme.ts");
 
-const require = createRequire(
-  process.env.PLAYWRIGHT_MODULE ??
-    "/Users/alejandro/work/crypto_market_dashboard/node_modules/playwright",
-);
+const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 
-// --- MERMAID_THEME: read the shared theme file and eval its object literal.
+// --- MERMAID_THEMES: read the shared theme map and eval its object literal.
 // Strips TS `as const` annotations; keeps script and component in lockstep.
 const themeSource = await readFile(themeFile, "utf8");
-const themeMatch = themeSource.match(/export const MERMAID_THEME = (\{[\s\S]*?\n\});/);
-if (!themeMatch) throw new Error(`could not parse MERMAID_THEME from ${themeFile}`);
-const MERMAID_THEME = eval(`(${themeMatch[1].replace(/ as const/g, "")})`);
+const themeMatch = themeSource.match(/export const MERMAID_THEMES = (\{[\s\S]*?\n\}\s*as const);/);
+if (!themeMatch) throw new Error(`could not parse MERMAID_THEMES from ${themeFile}`);
+const MERMAID_THEMES = eval(`(${themeMatch[1].replace(/ as const/g, "")})`);
+const DIAGRAM_THEMES = ["dark", "light"];
 
 // --- Extract mermaid blocks from raw story.yaml text. Two encodings appear
 // in the corpus:
@@ -101,71 +98,97 @@ for (const project of projectDirs) {
 }
 
 // Native app articles use the same fenced-code contract and static fallback.
-const appArticle = (
-  await readFile(path.join(webRoot, "src", "pages", "AgentChatArticle.tsx"), "utf8")
-).replaceAll("\\`", "`");
-for (const code of extractMermaidBlocks(appArticle)) {
-  if (seen.has(code)) continue;
-  seen.add(code);
-  entries.push({
-    project: "apps/agent-chat",
-    code,
-    hash: createHash("sha1").update(code).digest("hex"),
-  });
+const appArticles = ["AgentChatArticle.tsx", "DocumentIntelligenceArticle.tsx"];
+for (const article of appArticles) {
+  const source = (
+    await readFile(path.join(webRoot, "src", "pages", article), "utf8")
+  ).replaceAll("\\`", "`");
+  for (const code of extractMermaidBlocks(source)) {
+    if (seen.has(code)) continue;
+    seen.add(code);
+    entries.push({
+      project: `apps/${article.replace("Article.tsx", "").replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()}`,
+      code,
+      hash: createHash("sha1").update(code).digest("hex"),
+    });
+  }
 }
 
 console.log(`extracted ${entries.length} unique mermaid diagrams from ${projectDirs.length} projects + app articles`);
 
-// --- Render each block in headless Chromium via the standalone mermaid dist.
+// --- Report generated files whose source fence no longer exists. Pruning is
+// explicit so a normal render never deletes artifacts as a side effect.
 await mkdir(outDir, { recursive: true });
+const expectedFiles = new Set(
+  entries.flatMap((entry) => DIAGRAM_THEMES.map((theme) => `${entry.hash}.${theme}.svg`)),
+);
+const staleFiles = (await readdir(outDir))
+  .filter((file) => file.endsWith(".svg") && !expectedFiles.has(file))
+  .sort();
+if (staleFiles.length > 0) {
+  console.log(`stale SVGs: ${staleFiles.join(", ")}`);
+  if (process.argv.includes("--prune")) {
+    await Promise.all(staleFiles.map((file) => unlink(path.join(outDir, file))));
+    console.log(`pruned ${staleFiles.length} stale SVGs`);
+  } else {
+    console.log("rerun with --prune to delete only these stale SVGs");
+  }
+}
+
+// --- Render each block in both supported themes via headless Chromium and the
+// standalone mermaid dist.
 const browser = await chromium.launch();
 try {
   const page = await browser.newPage();
   await page.goto("about:blank");
   await page.addScriptTag({ path: mermaidDist });
-  await page.evaluate((theme) => {
-    window.mermaid.initialize(theme);
-  }, MERMAID_THEME);
 
   const failures = [];
+  let rendered = 0;
   let totalBytes = 0;
-  for (const [i, entry] of entries.entries()) {
-    let svg;
-    try {
-      svg = await page.evaluate(
-        async ({ id, code }) => {
-          const { svg } = await window.mermaid.render(id, code);
-          return svg;
-        },
-        { id: `mmd-${i}`, code: entry.code },
+  for (const theme of DIAGRAM_THEMES) {
+    await page.evaluate((config) => {
+      window.mermaid.initialize(config);
+    }, MERMAID_THEMES[theme]);
+    for (const [i, entry] of entries.entries()) {
+      let svg;
+      try {
+        svg = await page.evaluate(
+          async ({ id, code }) => {
+            const { svg } = await window.mermaid.render(id, code);
+            return svg;
+          },
+          { id: `mmd-${i}-${theme}`, code: entry.code },
+        );
+      } catch (err) {
+        failures.push({ entry, theme, err });
+        console.error(`FAIL ${entry.project} ${entry.hash}.${theme}: ${err.message}`);
+        continue;
+      }
+      const file = path.join(outDir, `${entry.hash}.${theme}.svg`);
+      let skipped = false;
+      try {
+        skipped = (await readFile(file, "utf8")) === svg;
+      } catch {
+        skipped = false;
+      }
+      if (!skipped) await writeFile(file, svg, "utf8");
+      rendered += 1;
+      totalBytes += Buffer.byteLength(svg);
+      console.log(
+        `${entry.project}  ${entry.hash}.${theme}  ${Buffer.byteLength(svg)} bytes${skipped ? "  (unchanged)" : ""}`,
       );
-    } catch (err) {
-      failures.push({ entry, err });
-      console.error(`FAIL ${entry.project} ${entry.hash}: ${err.message}`);
-      continue;
     }
-    const file = path.join(outDir, `${entry.hash}.svg`);
-    let skipped = false;
-    try {
-      skipped = (await readFile(file, "utf8")) === svg;
-    } catch {
-      skipped = false;
-    }
-    if (!skipped) await writeFile(file, svg, "utf8");
-    totalBytes += Buffer.byteLength(svg);
-    console.log(
-      `${entry.project}  ${entry.hash}  ${Buffer.byteLength(svg)} bytes${skipped ? "  (unchanged)" : ""}`,
-    );
   }
 
   if (failures.length > 0) {
-    console.error(`\n${failures.length} diagram(s) failed to render:`);
-    for (const { entry, err } of failures) {
-      console.error(`--- ${entry.project} ${entry.hash}\n${entry.code}\n>>> ${err.message}`);
+    console.error(`\n${failures.length} diagram theme variant(s) failed to render:`);
+    for (const { entry, theme, err } of failures) {
+      console.error(`--- ${entry.project} ${entry.hash}.${theme}\n${entry.code}\n>>> ${err.message}`);
     }
     process.exitCode = 1;
   } else {
-    console.log(`\nrendered ${entries.length} diagrams, ${totalBytes} total bytes -> ${outDir}`);
+    console.log(`\nrendered ${rendered} diagram variants, ${totalBytes} total bytes -> ${outDir}`);
   }
 } finally {
   await browser.close();

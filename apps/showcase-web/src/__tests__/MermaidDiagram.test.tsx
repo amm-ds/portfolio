@@ -1,6 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MermaidDiagram } from "../components/MermaidDiagram";
+import { resetThemeStoreForTests } from "../theme/useTheme";
 
 const mocks = vi.hoisted(() => ({
   initialize: vi.fn(),
@@ -11,8 +12,18 @@ vi.mock("mermaid", () => ({
   default: { initialize: mocks.initialize, render: mocks.render },
 }));
 
+beforeEach(() => {
+  window.localStorage.clear();
+  delete document.documentElement.dataset.theme;
+  resetThemeStoreForTests();
+});
+
 afterEach(() => {
+  resetThemeStoreForTests();
   cleanup();
+  vi.unstubAllGlobals();
+  window.localStorage.clear();
+  delete document.documentElement.dataset.theme;
   mocks.initialize.mockReset();
   mocks.render.mockReset();
 });
@@ -26,6 +37,11 @@ describe("MermaidDiagram", () => {
       expect(document.querySelector('.mermaid-host svg[data-mock="direct"]')).not.toBeNull(),
     );
     expect(mocks.initialize).toHaveBeenCalledTimes(1);
+    expect(mocks.initialize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        themeVariables: expect.objectContaining({ primaryColor: "#1e293b" }),
+      }),
+    );
     expect(mocks.render).toHaveBeenCalledWith(
       expect.stringMatching(/^mmd-\d+$/),
       "graph TD; A-->B;",
@@ -59,6 +75,39 @@ describe("MermaidDiagram", () => {
       expect(document.querySelector('.mermaid-host svg[data-mock="runtime"]')).not.toBeNull(),
     );
     expect(mocks.render).toHaveBeenCalled();
-    vi.unstubAllGlobals();
+  });
+
+  it("loads the pre-rendered SVG variant matching the persisted light theme", async () => {
+    window.localStorage.setItem("portfolio-theme", "light");
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('<svg data-mock="light-static"></svg>', {
+        status: 200,
+        headers: { "content-type": "image/svg+xml" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    render(<MermaidDiagram code="graph TD; A-->B;" />);
+
+    await waitFor(() =>
+      expect(document.querySelector('.mermaid-host svg[data-mock="light-static"]')).not.toBeNull(),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/\.light\.svg$/));
+    expect(mocks.render).not.toHaveBeenCalled();
+  });
+
+  it("initializes the runtime renderer with the light palette when the static variant is unavailable", async () => {
+    window.localStorage.setItem("portfolio-theme", "light");
+    mocks.render.mockResolvedValue({ svg: '<svg data-mock="light-runtime"></svg>' });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("missing static variant")));
+    render(<MermaidDiagram code="graph TD; A-->B;" />);
+
+    await waitFor(() =>
+      expect(document.querySelector('.mermaid-host svg[data-mock="light-runtime"]')).not.toBeNull(),
+    );
+    expect(mocks.initialize).toHaveBeenCalledWith(
+      expect.objectContaining({
+        themeVariables: expect.objectContaining({ primaryColor: "#ffffff" }),
+      }),
+    );
   });
 });

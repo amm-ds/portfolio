@@ -54,45 +54,47 @@ export function StudyCard({
   const Title = headingLevel === 3 ? "h3" : "h4";
   return (
     <>
-      <Title>{title}</Title>
-      {meta && meta.length > 0 && (
-        <div className="study-meta">
-          {meta.map((m) => (
-            <div className="study-meta-item" key={`${m.label}:${m.value}`}>
-              <span className="study-meta-label">{m.label}</span>
-              <span className="study-sub">{m.value}</span>
-            </div>
+      <Title className="study-card__title">{title}</Title>
+      <div className="study-card__content">
+        {meta && meta.length > 0 && (
+          <div className="study-meta">
+            {meta.map((m) => (
+              <div className="study-meta-item" key={`${m.label}:${m.value}`}>
+                <span className="study-meta-label">{m.label}</span>
+                <span className="study-sub">{m.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {(does || achieves) && (
+          <div className="study-cols">
+            {does && (
+              <div className="study-block">
+                {doesLabel && <span className="study-block-label">{doesLabel}</span>}
+                <p className="study-does">{renderInlineMarkdown(does)}</p>
+              </div>
+            )}
+            {achieves && (
+              <div className="study-block">
+                {achievesLabel && <span className="study-block-label">{achievesLabel}</span>}
+                <p className="study-achieves">
+                  {typeof achieves === "string" ? renderInlineMarkdown(achieves) : achieves}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+        {/* the result chip lives in the caller's slot content (CardKeyNumber
+            renders nothing until a live metric loads, so an empty slot must
+            stay hidden via .study-result:empty) */}
+        {result && <p className="study-result">{result}</p>}
+        <div className="chips">
+          {tags.map((t) => (
+            <span key={t} className="chip">
+              {t}
+            </span>
           ))}
         </div>
-      )}
-      {(does || achieves) && (
-        <div className="study-cols">
-          {does && (
-            <div className="study-block">
-              {doesLabel && <span className="study-block-label">{doesLabel}</span>}
-              <p className="study-does">{renderInlineMarkdown(does)}</p>
-            </div>
-          )}
-          {achieves && (
-            <div className="study-block">
-              {achievesLabel && <span className="study-block-label">{achievesLabel}</span>}
-              <p className="study-achieves">
-                {typeof achieves === "string" ? renderInlineMarkdown(achieves) : achieves}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-      {/* the result chip lives in the caller's slot content (CardKeyNumber
-          renders nothing until a live metric loads, so an empty slot must
-          stay hidden via .study-result:empty) */}
-      {result && <p className="study-result">{result}</p>}
-      <div className="chips">
-        {tags.map((t) => (
-          <span key={t} className="chip">
-            {t}
-          </span>
-        ))}
       </div>
     </>
   );

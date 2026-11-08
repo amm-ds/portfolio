@@ -1,19 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { MERMAID_THEME } from "./mermaid-theme";
+import { useTheme, type Theme } from "../theme/useTheme";
+import { MERMAID_THEMES } from "./mermaid-theme";
 
-let initialized = false;
+let initializedTheme: Theme | null = null;
 let diagramCounter = 0;
 // mermaid.render mutates shared temp DOM internally and is not safely
 // reentrant: concurrent renders (multiple diagrams on one page) throw
 // intermittently in Safari. Serialize every render through this queue.
 let renderQueue: Promise<unknown> = Promise.resolve();
 
-function renderQueued(id: string, code: string): Promise<{ svg: string }> {
+function renderQueued(id: string, code: string, theme: Theme): Promise<{ svg: string }> {
   const run = async (): Promise<{ svg: string }> => {
     const mermaid = (await import("mermaid")).default;
-    if (!initialized) {
-      mermaid.initialize(MERMAID_THEME);
-      initialized = true;
+    if (initializedTheme !== theme) {
+      mermaid.initialize(MERMAID_THEMES[theme]);
+      initializedTheme = theme;
     }
     return mermaid.render(id, code);
   };
@@ -62,19 +63,23 @@ function sha1Hex(input: string): string {
  */
 export function MermaidDiagram({ code }: { code: string }) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
+    setFailed(false);
+    setReady(false);
+    if (hostRef.current) hostRef.current.innerHTML = "";
     (async () => {
       // Pre-rendered SVG path: static file hashed by the exact source the
-      // runtime renderer would receive. Any non-200 (or fetch error, e.g.
-      // relative URL in tests) falls through to runtime rendering. The
-      // SPA fallback serves index.html with 200 for unknown paths, so the
-      // payload must actually be SVG before we accept it.
+      // runtime renderer would receive, with one variant per site theme. Any
+      // non-200 (or fetch error, e.g. relative URL in tests) falls through to
+      // runtime rendering. The SPA fallback serves index.html with 200 for
+      // unknown paths, so the payload must actually be SVG before we accept it.
       try {
-        const res = await fetch(`/diagrams/${sha1Hex(code)}.svg`);
+        const res = await fetch(`/diagrams/${sha1Hex(code)}.${theme}.svg`);
         const contentType = res.headers.get("content-type") ?? "";
         if (res.ok && contentType.includes("image/svg")) {
           const svg = await res.text();
@@ -90,7 +95,7 @@ export function MermaidDiagram({ code }: { code: string }) {
       // chunk still warming) should not dump raw source on the page
       for (let attempt = 0; attempt < 2; attempt += 1) {
         try {
-          const { svg } = await renderQueued(`mmd-${diagramCounter++}`, code);
+          const { svg } = await renderQueued(`mmd-${diagramCounter++}`, code, theme);
           if (cancelled || !hostRef.current) return;
           hostRef.current.innerHTML = svg;
           setReady(true);
@@ -104,7 +109,7 @@ export function MermaidDiagram({ code }: { code: string }) {
     return () => {
       cancelled = true;
     };
-  }, [code]);
+  }, [code, theme]);
 
   if (failed) {
     return (

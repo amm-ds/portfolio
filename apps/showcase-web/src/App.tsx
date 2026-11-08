@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Nav } from "./components/Nav";
 import { Footer } from "./components/Footer";
 import { RouteAnnouncer } from "./components/RouteAnnouncer";
@@ -21,6 +21,9 @@ const ReportView = lazy(() =>
 );
 const AgentChatArticle = lazy(() =>
   import("./pages/AgentChatArticle").then((m) => ({ default: m.AgentChatArticle })),
+);
+const DocumentIntelligenceArticle = lazy(() =>
+  import("./pages/DocumentIntelligenceArticle").then((m) => ({ default: m.DocumentIntelligenceArticle })),
 );
 const Services = lazy(() =>
   import("./pages/Services").then((m) => ({ default: m.Services })),
@@ -145,6 +148,8 @@ export function App() {
             <Route path="/projects/:id" element={<ProjectDetail />} />
             <Route path="/projects/:id/report" element={<ReportView />} />
             <Route path="/apps/agent-chat" element={<AgentChatArticle />} />
+            <Route path="/apps/document-intelligence" element={<DocumentIntelligenceArticle />} />
+            <Route path="/apps/document-review" element={<Navigate to="/apps/document-intelligence" replace />} />
             <Route
               path="/demos/churn-sandbox"
               element={
