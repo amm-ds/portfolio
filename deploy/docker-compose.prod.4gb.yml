@@ -1,0 +1,25 @@
+# Memory/CPU override for a shared 4GB VPS (one more lightweight project on
+# the same host). Apply AFTER the base compose file:
+#
+#   docker compose -f deploy/docker-compose.prod.yml \
+#                  -f deploy/docker-compose.prod.4gb.yml ... up -d
+#
+# These values are limits (not reservations): the API serves committed static
+# artifacts and typically sits in the low hundreds of MB, so 1G leaves real
+# headroom for the OS and the co-tenant project. Caddy terminates TLS and
+# proxies; 256M is generous. Verify coexistence after deploy with
+# `docker stats` and the co-tenant's health endpoint (see deploy/HETZNER.md).
+services:
+  api:
+    deploy:
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 1G
+
+  caddy:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M

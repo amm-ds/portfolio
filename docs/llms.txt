@@ -40,7 +40,7 @@ conclusions), with the honest delta vs the naive baseline:
 ## Architecture (explanation + reference)
 
 - [architecture/platform.md](architecture/platform.md) — the reference architecture.
-- [architecture/adr/index.md](architecture/adr/index.md) — ADR index: eight decision records with one-line takeaways.
+- [architecture/adr/index.md](architecture/adr/index.md) — ADR index: platform and agent-chat decision records with one-line takeaways.
 
 ## Operations (how-to)
 
@@ -55,6 +55,7 @@ conclusions), with the honest delta vs the naive baseline:
 ## Apps
 
 - [apps/chatbot-agent.md](apps/chatbot-agent.md) — the lift-out-able agent-chat template (pydantic-ai + FastAPI + pgvector) and its specs.
+- [apps/document-intelligence.md](apps/document-intelligence.md) — page-level PDF analysis: one AI call per page produces cited summaries, typed entities, and topics, plus page-scoped cited chat with bounded history, parser-resolved evidence, and JSON/Markdown reports.
 
 ## Services
 
@@ -65,4 +66,6 @@ conclusions), with the honest delta vs the naive baseline:
 
 The site renders `docs/` in the GitHub repository; the runnable code, tests,
 and reproduction commands live at https://github.com/amm-ds/portfolio (root
-`llms.txt` there maps the repo for agents).
+`llms.txt` there maps the repo for agents). Install the root Python workspace
+with `uv sync --all-packages --dev` after dependency changes; standalone apps
+under `apps/` document their own isolated setup commands.

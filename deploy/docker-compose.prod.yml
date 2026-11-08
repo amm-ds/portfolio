@@ -13,6 +13,8 @@ services:
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-30}
       # Kill switch: chat routes are absent unless this is exactly "1".
       RAG_CHAT_ENABLED: ${RAG_CHAT_ENABLED:-}
+      DAILY_LIVE_BUDGET: ${DAILY_LIVE_BUDGET:-10.0}
+      LIVE_KILL_SWITCH: ${LIVE_KILL_SWITCH:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen3:32b}
       # Optional external provider (takes priority over Ollama when set).

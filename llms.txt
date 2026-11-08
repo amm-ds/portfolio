@@ -17,7 +17,11 @@
   figures, live demo endpoints, `POST /contact/unlock`.
   `apps/showcase-web` (Vite + React + TS) is the terminal-style SPA.
   `apps/agent-chat` is a lift-out-able pydantic-ai chatbot template with its
-  own uv workspace, specs, and ADRs.
+  own uv workspace, specs, and ADRs. `apps/document-intelligence` is an independent
+  page-level PDF analysis workbench: one AI call per page produces cited
+  summaries, typed entities, and topics, plus page-scoped cited chat, with
+  parser-resolved evidence, a FastAPI + leased worker, Postgres, a React
+  workbench, and page-level offline/live evaluation.
 
 ## Entry points for agents
 
@@ -39,6 +43,7 @@
 ## How to run the gates
 
 ```bash
+uv sync --all-packages --dev          # after dependency changes
 uv run ruff check . && uv run ruff format --check . && uv run mypy libs projects apps
 uv run pytest -q
 uv run python scripts/lint_ci.py           # workflow YAML + Makefile + docs gate

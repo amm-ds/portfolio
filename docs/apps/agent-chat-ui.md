@@ -38,9 +38,9 @@ An assistant turn is a list of **message parts**, produced by
 `done.answer.text` supersedes the last streamed text fragment, so the committed
 answer is the validated structured output rather than a possibly incomplete
 delta. Citations render below that answer with source and exact quote;
-non-low uncertainty is visible. Turns loaded later from the conversations API
-render their stored text as plain Markdown; the live event cards belong to the
-run that produced them.
+self-reported uncertainty is not displayed. Turns loaded later from the
+conversations API render their stored text as plain Markdown; the live event
+cards belong to the run that produced them.
 
 ## Tool-call cards and the agent-step timeline
 
@@ -90,10 +90,12 @@ fake model, not a browser mock.
 
 ![Memory recall in the live UI: a stored Neovim preference is selectively recalled in a later turn.](../assets/apps/agent-chat-memory.png){ width="100%" }
 
-The current browser does not send `user_id`, so the backend uses its `local`
-default. A multi-user deployment must derive notebook identity from the
-authenticated server-side principal rather than adding a user-controlled tool
-argument or trusting a browser tenant id.
+The browser generates an anonymous UUID in `sessionStorage` and sends it as
+`X-Agent-Chat-Session`. New conversations and reloads in the same tab share that
+namespace; closing the tab starts a fresh one. The header is an isolation label,
+not authentication or secure deletion. A multi-user deployment must derive
+tenant identity from the authenticated server-side principal and schedule
+retention cleanup for old notebooks and conversation rows.
 
 ## Composer and budget meter
 
@@ -114,13 +116,12 @@ and stops at `data: [DONE]`. Unknown event types decode to `null` and are skippe
 for forward compatibility; malformed payloads for known types raise
 `ChatEventError`.
 
-`POST /chat` accepts:
+`POST /chat` requires `X-Agent-Chat-Session: <uuid>` and accepts:
 
 ```json
 {
   "message": "What is my favorite editor?",
-  "conversation_id": "optional-existing-thread",
-  "user_id": "local"
+  "conversation_id": "optional-existing-thread"
 }
 ```
 

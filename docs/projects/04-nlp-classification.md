@@ -3,15 +3,16 @@
 **Domain:** Deep learning NLP · **Data:** AG News (real, HuggingFace `fancyzhx/ag_news`) ·
 **Status:** Working showcase
 
-> News sorter for AG News' four topics: a language model trained on all 120k
-> articles scores 95% macro-F1 on a fresh holdout, vs 88% for a keyword model
-> 40x faster and free; routing doubtful items beats either bounded model at
-> keyword cost for 3 of 4 items. License unknown.
+> AG News sorter: the selected transformer + selective LLM cascade lifts fresh
+> macro-F1 from 0.9529432 to 0.9539265 and accuracy from 0.953 to 0.954,
+> reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671
+> cloud-equivalent. License unknown.
 >
 > Newsrooms, aggregators, and compliance teams routing a continuous stream of
 > headlines need topic triage that keyword rules break on at the first
-> unfamiliar wording. A full-data DistilBERT fine-tune on a laptop GPU
-> reaches **0.9460 test macro-F1**, ~7.5 pp above the strong TF-IDF baseline.
+> unfamiliar wording. A full-data DistilBERT fine-tune supplies the baseline;
+> the selected cascade reviews only its low-confidence rows rather than sending
+> every item to an LLM.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/04-nlp-classification)
 
@@ -41,6 +42,23 @@ experiments; bold = headline.*
 | `distilbert_tuned` (bounded 3.6k) | 0.9020 | 0.9021 |
 | `distilbert_fulldata_20k` | 0.9270 | 0.9270 |
 | `distilbert_full_120k` | **0.9460** | **0.9460** |
+
+**Final selected policy — transformer + selective LLM cascade.** At τ=0.6,
+only lower-confidence transformer rows go to `kimi-for-coding`, batched eight
+rows per call. The threshold is fitted on validation only; test and fresh are
+scored once, and the fresh 1,000 are disjoint from bounded test.
+
+| Split | Transformer macro-F1 → cascade | Accuracy → cascade | Reviews |
+|---|---:|---:|---:|
+| Validation | 0.9601531 → 0.9602051 | 0.960 → 0.960 | 6 |
+| Bounded test | 0.9460236 → 0.9490153 | 0.946 → 0.949 | 16 |
+| Fresh holdout | 0.9529432 → 0.9539265 | 0.953 → 0.954 | 22 |
+
+The 44 total reviews take 96.933 s and an estimated $0.023671 cloud-equivalent
+across validation, test, and fresh. This is a small selective-review gain over
+the full-data transformer, not a proposal to send every item to an LLM. The
+keyword-first router remains the cheaper 0.9020-fresh-macro-F1 baseline. Exact
+artifact: `projects/04-nlp-classification/reports/llm_cascade.json`.
 
 The older bounded numbers are historical rungs of one scaling ladder
 (0.9021 → 0.9270 → 0.9460, +4.4 pp from bounded to full data). HPO improved
@@ -145,11 +163,14 @@ interactive figures in `reports/figures/`.
   the showcase API
 - `projects/04-nlp-classification/reports/report.html` — standalone themed
   evaluation report
+- `projects/04-nlp-classification/reports/llm_cascade.json` — selected cascade,
+  split metrics, provenance, review counts, latency, and cost
 
 ## Reproduce
 
 ```bash
 uv run python -m nlp_classification.cli all   # prepare → baseline → train-nn → hpo → tuned → encoder-b → evaluate
+uv run python -m nlp_classification.cli llm-cascade  # provider-backed selective review
 ```
 
 Bounded data contract: 4,000 train / 1,000 test, stratified, seeded for the

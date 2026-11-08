@@ -1,4 +1,4 @@
-.PHONY: setup lint lint-ci lint-story typecheck test test-fast demo docs docs-serve dvc-repro docker-build docker-up new-project clean metrics-show registry-update exp-run exp-show release-verify
+.PHONY: setup lint lint-ci lint-story typecheck test test-fast demo docs docs-serve docker-build docker-up new-project clean metrics-show registry-update exp-run exp-show release-verify
 
 PYTEST := uv run pytest
 
@@ -25,9 +25,6 @@ docs: ## Build mkdocs site
 
 docs-serve: ## Serve docs locally
 	uv run mkdocs serve
-
-dvc-repro: ## Reproduce all DVC pipelines (downloads real data)
-	dvc repro
 
 docker-build: ## Build the showcase image
 	docker build -t amm-ds-portfolio .

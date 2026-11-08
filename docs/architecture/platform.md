@@ -40,13 +40,17 @@ flowchart LR
 | Projects | `projects/0X-*` | domain logic, DVC stages, CLIs (`typer`) | duplicate contracts — reuse libs |
 | Showcase | `apps/showcase-api` + `apps/showcase-web` | serve results and demos (FastAPI + React/TS) | contain training logic |
 
-Dependency direction is strictly: projects → libs; apps → libs; nothing → projects.
+Dependency direction is: projects → libs; apps → libs; nothing → projects except
+for these documented, deliberate integrations:
 
-Pragmatic exception (documented, not accidental): `apps/showcase-api` lazily imports two
-project packages at runtime to *serve* them — `rag_agent` for `/rag/chat` and `mobility`
-for `/projects/07-*/forecast`. Both degrade to a clear 503 when the project artifacts are
-absent, so the API never hard-depends on project state; the imports are runtime-only and
-never in `libs/`.
+- `apps/showcase-api` lazily imports `rag_agent` for `/rag/chat` and `mobility`
+  for `/projects/07-*/forecast`, and serves the committed artifacts of Projects
+  02, 05, and 06. Absent artifacts degrade to a clear 503.
+- Project 09 reuses Project 01's read-only Wikipedia index for its cross-project
+  retrieval arm. It is a declared project dependency, not an import hidden in `libs/`.
+- `apps/agent-chat` and `apps/document-intelligence` are independent uv workspaces,
+  not root members; they share patterns with the monorepo without relative
+  imports and run isolated backend/frontend gates in CI.
 
 ## Key contracts (extension points)
 

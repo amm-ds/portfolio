@@ -1,6 +1,11 @@
 # Deployment Report — alejandromerida.dev
 
-**Date:** 2026-11-04 · **Status:** decision document (nothing deployed yet)
+**Date:** 2026-11-04 · **Status:** dated alternatives evaluation, not the supported runbook.
+
+Use [`DEPLOY.md`](DEPLOY.md) for the current single-origin deployment contract.
+The split-origin tiers below are options under evaluation; their configuration
+and cost claims are point-in-time notes, not instructions to run production.
+
 **Blocker for every tier:** `alejandromerida.dev` is registered (Cloudflare
 NS) but publishes **zero DNS records**. Step one is the registrar/Cloudflare
 step: apex + `www` → the chosen origin, plus `api` if Tier 2.

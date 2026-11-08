@@ -39,10 +39,10 @@ Thirteen projects, all working showcases on the same platform.
 
 | # | Project | Domain | Data | Highlights |
 |---|---|---|---|---|
-| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | A question-answering assistant that answers only from a pinned 593-article Wikipedia corpus and cites every claim. Retrieval finds the right passage 83% of the time, but 18 of 65 hosted answers kept unsupported claims—answers are auditable, yet not trustworthy unattended.<br>Stack: pydantic-ai agent, 65-q golden set, provider A/B (local qwen3.6 vs hosted kimi, recall@5 0.831, per-phase cost metering) |
+| 01 | [RAG & Agentic AI Assistant](projects/01-rag-agent/) | Agentic AI | Wikipedia (real) | A cited QA assistant over 593 pinned Wikipedia articles. Selected kimi-for-coding scores 46/65 correct with 17 unsupported-claim outcomes; sealed recall@5 falls from 0.831 to 0.600. Auditable, not unattended-ready.<br>Stack: pydantic-ai agent, 65-q tuning + 15-q sealed sets, selected kimi-for-coding, recall@5 0.831, per-phase cost metering |
 | 02 | [Hierarchical Demand Forecasting](projects/02-demand-forecasting/) | Time series | Walmart M5 full panel (real) | Walmart M5 at full scale: 30,490 series scored once on the competition window under the official 42,840-node hierarchical WRMSSE. A stability-screened ensemble of pooled LightGBM fits reaches 0.6161 vs the naive floor's 0.8929 (−31.0%) — in the competition winner's ballpark.<br>Stack: rolling origins scored once, global + pooled LightGBM, Tweedie arm, AutoETS, stability-screened convex ensemble |
 | 03 | [Anomaly Detection over Telemetry](projects/03-anomaly-detection/) | Unsupervised ML | NAB (real) + seeded synthetic CI path | On NAB at a fixed 2% alert budget, IsolationForest catches 16 of 17 incident windows but fires 1,609 alerts. A one-page-per-day cap cuts that to 80 pages; a rank-average ensemble halves the load again at higher recall — page the alert stream, not the detector score.<br>Stack: event-based metrics (PR-AUC, range-F1), detector HPO, threshold sweeps |
-| 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News 120k (real) | News sorter for AG News' four topics: a language model trained on all 120k articles scores 95% macro-F1 on a fresh holdout, vs 88% for a keyword model 40x faster and free; routing doubtful items beats either bounded model at keyword cost for 3 of 4 items. License unknown.<br>Stack: hand-written fine-tuning loop, macro-F1 0.946, calibration analysis |
+| 04 | [NLP Classification with Transformers](projects/04-nlp-classification/) | Deep learning NLP | AG News 120k (real) | AG News sorter: the selected transformer + selective LLM cascade lifts fresh macro-F1 from 0.9529432 to 0.9539265 and accuracy from 0.953 to 0.954, reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License unknown.<br>Stack: hand-written fine-tuning loop, selective LLM cascade (τ=0.6), calibration analysis |
 | 05 | [Churn Modeling, sklearn Pipelines](projects/05-ml-pipeline-churn/) | Classical ML | IBM telco churn (real) + synthetic | A churn scorer on real IBM telco data (7,043 customers): serving the calibrated model at a 0.175 threshold cuts decision cost 42% (601 vs 1,035 for contacting everyone; 95% bootstrap interval -485 to -343). The cutoff must be re-derived when a missed churner's price changes.<br>Stack: pipeline-embedded preprocessing, cost-aware HPO, fairness slices |
 | 06 | [Routing Optimization (VRPTW)](projects/06-routing-optimization/) | Combinatorial optimization | CVRPLIB Solomon (real benchmark) | Routing planner for the 56 standard Solomon 100-customer problems with time windows. A hand-written search returns feasible plans within 4.2% of best-known routes in ~1 second each, using 3.7 more vehicles than best-known on average; an exact solver certifies small cases only.<br>Stack: hand-written ALNS vs best-known solutions, dual distance + vehicle gap |
 | 07 | [Urban Mobility Demand Intelligence](projects/07-open-data-mobility/) | Data engineering + ML | NYC TLC + NOAA (real, GB-scale) | Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi trips and public weather: on a strict Oct-Dec holdout the model was 28% more accurate than same-hour-yesterday; its 90% upper band reached 91% coverage (sparse zones excepted).<br>Stack: lazy Polars ETL, zone-demand forecasting, weather elasticity, choropleths |
@@ -55,6 +55,19 @@ Thirteen projects, all working showcases on the same platform.
 
 Flagships (01, 07) are complete end-to-end; the rest are working showcases
 built on the same platform, designed for deepening.
+
+## Production app templates
+
+Standalone applications include the source, UI, infrastructure, specifications,
+and executable checks needed to adapt them to another domain:
+
+- [Agent Chat](apps/agent-chat/) — typed tools and skills, provider-agnostic
+  Pydantic AI, cited retrieval, session memory, human approvals, and streaming
+  React chat.
+- [AI Document Intelligence Workbench](apps/document-intelligence/) — page-level
+  PDF analysis: one AI call per page produces cited summaries, typed entities,
+  and topics, plus page-scoped cited chat with bounded history. Parser-resolved
+  evidence, page-by-page progress, and JSON/Markdown reports.
 
 ## Engineering practices
 
@@ -98,7 +111,7 @@ readiness. The docs site is always live: https://amm-ds.github.io/portfolio/
 ```bash
 git clone https://github.com/amm-ds/portfolio.git && cd portfolio
 make setup     # uv sync + pre-commit
-cd projects/02-demand-forecasting && uv run dvc repro  # or choose another project
+cd projects/05-ml-pipeline-churn && uv run dvc repro  # or choose another project
 ```
 
 …or open in GitHub Codespaces (`.devcontainer/`) — the environment builds itself.

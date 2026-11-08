@@ -4,7 +4,8 @@ Audit date: 2026-11-05. Method: every ```mermaid block in `projects/*/story.yaml
 (66 blocks, all block-scalar encoded) rendered with the site's own pipeline
 (headless Chromium + `mermaid/dist/mermaid.min.js` + `MERMAID_THEME` from
 `apps/showcase-web/src/components/mermaid-theme.ts` — the same input
-`scripts/render-diagrams.mjs` and the runtime fallback use). Renders inspected
+`apps/showcase-web/scripts/render-diagrams.mjs` and the runtime fallback use).
+Renders inspected
 as PNG at natural size in `/tmp/diagram-audit/png/`.
 
 Readability basis: pre-rendered SVGs scale to the story prose column
@@ -158,21 +159,17 @@ interactive React Flow treatment would add material value.
 
 ## SVG regeneration evidence
 
-- `node scripts/render-diagrams.mjs` (run twice; second run all-unchanged → deterministic).
-- 9 SVGs written for the 9 edited sources (new sha1 hashes), e.g.
-  `6d1fb9c8…` (01 background), `5d7e5c66…` (02 objectives), `7551c4f5…`
-  (05 conclusions), `928d250c…` (09 eda), `63a63610…` (11 conclusions).
-- **Pre-existing drift (not caused by this audit):** 15 diagrams of
-  11/12/13 had no current-hash SVG on disk — the tracked files for those
-  hashes were missing, so those diagrams were silently using the runtime
-  fallback (broken in Safari per the renderer's own header comment). The
-  regen backfilled all 15 (`c07c8372…`, `eb4983e2…`, … `8cb2ef4a…`); they
-  are deterministic outputs of unchanged sources. Additionally 8 tracked
-  SVGs (`2efcb437…`, `343ae1d1…`, `397e24b2…`, `3b4e7583…`, `43056f12…`,
-  `46d866f2…`, `8797af82…`, `f04cca32…`) hash sources that no longer exist —
-  stale artifacts the renderer never deletes; safe to clean up separately.
-- Old-hash SVGs of the 9 edited diagrams remain on disk/tracked (renderer
-  does not GC); harmless dead files, likewise a separate cleanup.
+- At the audit, `node apps/showcase-web/scripts/render-diagrams.mjs` was run
+  twice; the second run was all-unchanged, proving deterministic output.
+- 9 SVGs were written for the 9 edited sources, and 15 missing current-hash
+  SVGs for 11/12/13 were backfilled. The old hashes recorded here were valid
+  at that audit date; later story edits changed the expected set again.
+- **Cleanup follow-up (2026-11-07):** the renderer now resolves Playwright
+  from `apps/showcase-web`'s declared development dependencies, reports stale
+  hashes, and prunes them only with the explicit `--prune` flag. A fresh run
+  found 57 current diagrams and removed exactly seven orphan SVGs:
+  `0fc7cba7…`, `195dccbe…`, `35f825ee…`, `63a63610…`, `e45e591c…`,
+  `f2b5eae2…`, and `f9f83318…`. No active diagram or app media was deleted.
 
 ## Renderer limitation worth encoding (lesson)
 

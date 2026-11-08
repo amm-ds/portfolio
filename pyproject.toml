@@ -62,10 +62,10 @@ strict = false
 warn_return_any = true
 warn_unused_configs = true
 # Test modules share basenames across packages (pytest importlib mode handles
-# it at runtime); type-check source only. The agent-chat template is a
-# standalone package with its own lockfile, venv, and strict mypy run — its
-# deps (pgvector, …) are not in the root venv, so the root sweep excludes it.
-exclude = ["tests/", "apps/agent-chat/"]
+# it at runtime); type-check source only. Standalone application templates have
+# their own lockfiles, venvs, and strict mypy runs; their isolated dependencies
+# are not in the root venv, so the root sweep excludes them.
+exclude = ["tests/", "apps/agent-chat/", "apps/document-intelligence/"]
 
 [[tool.mypy.overrides]]
 module = ["portfolio_core.*", "portfolio_eval.*"]

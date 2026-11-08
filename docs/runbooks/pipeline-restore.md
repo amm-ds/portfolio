@@ -7,7 +7,7 @@
 ```bash
 git clone https://github.com/amm-ds/portfolio.git && cd portfolio
 make setup        # uv sync --all-packages --dev + pre-commit
-cd projects/02-demand-forecasting
+cd projects/05-ml-pipeline-churn
 uv run dvc repro  # downloads this project's pinned data and runs its stages
 ```
 
@@ -29,7 +29,9 @@ there is no single root pipeline that reproduces all thirteen projects.
 
 ## Verify success
 
-- Each project leaves `reports/metrics.json` + figures under `reports/figures/`.
+- Each project leaves its documented canonical metrics and figures. Not every
+  result is `reports/metrics.json`: Projects 02, 03, and 04 also use sidecars
+  and manual stages, so follow each project's README/DVC comments.
 - From the repository root, `make test` is green.
 - `make docker-up` → `http://localhost:8000/health` returns 200 with
   `"ready":true`, and the showcase UI renders project results.

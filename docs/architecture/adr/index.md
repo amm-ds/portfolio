@@ -3,8 +3,8 @@
 Every platform-level choice carries an ADR (context → options → decision →
 consequences). The platform ADRs live here; the lift-out-able agent-chat
 template keeps its own decision records under
-`apps/agent-chat/specs/decisions/` (linked cross-repo below). All are
-Accepted; none has been superseded or deprecated to date.
+`apps/agent-chat/specs/decisions/` (linked cross-repo below). Platform ADR
+0006 amends part of ADR-0004, and agent-chat ADR-0006 amends ADR-0005.
 
 ## Platform ADRs
 
@@ -31,3 +31,5 @@ questions in
 | [0002 — Postgres + pgvector for storage and retrieval](https://github.com/amm-ds/portfolio/blob/main/apps/agent-chat/specs/decisions/0002-postgres-pgvector.md) | One database for conversations and retrieval chunks; SQLite covers docker-free dev and CI without a migration framework. | Accepted |
 | [0003 — skills as disk folders](https://github.com/amm-ds/portfolio/blob/main/apps/agent-chat/specs/decisions/0003-skills-disk-folders-capabilities.md) | Markdown-authored skill folders with progressive disclosure — adding a playbook is adding a folder, no framework code. | Accepted |
 | [0004 — in-band approval gate](https://github.com/amm-ds/portfolio/blob/main/apps/agent-chat/specs/decisions/0004-in-band-approval-gate.md) | Consequential tools ask in-band and default to deny on timeout — no out-of-band channel, no approve-by-default. | Accepted |
+| [0005 — Harness-style memory and bounded history](https://github.com/amm-ds/portfolio/blob/main/apps/agent-chat/specs/decisions/0005-memory-harness.md) | On-demand notebook recall plus sliding-window history keeps model context bounded and inspectable. | Accepted; identity amended by ADR-0006 |
+| [0006 — anonymous browser-session identity](https://github.com/amm-ds/portfolio/blob/main/apps/agent-chat/specs/decisions/0006-browser-session-identity.md) | A sessionStorage UUID scopes conversations, notebooks, and approvals without account infrastructure. | Accepted; amends ADR-0005 |

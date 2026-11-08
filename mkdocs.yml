@@ -75,6 +75,9 @@ nav:
       - External audit response (2026-10-15): audits/2026-10-15-external-audit-response.md
   - Projects:
       - projects/index.md
+  - Apps:
+      - Agent Chat: apps/chatbot-agent.md
+      - AI Document Intelligence Workbench: apps/document-intelligence.md
   - Data registry:
       - data-registry/index.md
   - Runbooks:

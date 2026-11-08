@@ -2,17 +2,16 @@
 
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship — complete
 
-> A question-answering assistant that answers only from a pinned 593-article
-> Wikipedia corpus and cites every claim. Retrieval finds the right passage
-> 83% of the time, but 18 of 65 hosted answers kept unsupported claims—answers
-> are auditable, yet not trustworthy unattended.
+> A cited QA assistant over 593 pinned Wikipedia articles. Selected
+> kimi-for-coding scores 46/65 correct with 17 unsupported-claim outcomes;
+> sealed recall@5 falls from 0.831 to 0.600. Auditable, not unattended-ready.
 >
 > Teams routing questions at a knowledge base need answers they can audit —
 > every claim traced to a source, every unsupported claim dropped or refused.
 > This agent answers only from retrieved evidence with per-claim citations:
-> retrieval recall@5 0.83 vs 0.03 random, and the verify loop cut unsupported
-> claims from 60% to 47% of answers locally, holding at 28% (18/65) on the
-> hosted run, where RAGAS faithfulness reaches 0.685 [0.61, 0.76].
+> retrieval recall@5 0.83 vs 0.03 random; selected `kimi-for-coding` reaches
+> RAGAS faithfulness 0.7337 [0.6562, 0.8131], but 17/65 tuning answers still
+> retain unsupported claims.
 >
 > [Case study source and interactive figures on GitHub →](https://github.com/amm-ds/portfolio/tree/main/projects/01-rag-agent)
 
@@ -66,7 +65,7 @@ the agent abstains.
    rubric-judge runs, a verify-then-answer A/B, per-query latency and
    estimated cost — all written to `reports/`.
 
-## Key results (2026-10-17, provider A/B)
+## Key results (selected `kimi-for-coding`)
 
 **Golden set: 65 graded questions** — 44 single-hop, 11 multi-hop, 10
 unanswerable (expected behavior: abstain). Retrieval is provider-independent
@@ -79,64 +78,42 @@ holds full recall at −65% context cost.
 
 ![Chunk size, not model size, sets retrieval recall — 200-token chunks hold full recall@5 at 65% lower context cost](../assets/projects/01-rag-agent/chunk_size_sweep.png){ width="100%" }
 
-**Provider A/B** — the same pipeline on local `qwen3.6:35b-a3b-q4_K_M`
-(30-q subset — local inference wall-clock) and hosted `kimi-for-coding`
-(full 65 q). Hosted costs below are **cloud-equivalent estimates** at the
-public kimi-k2.8 reference card ($1/Mtok in, $4/Mtok out, cached reads 30%):
-the key is membership quota, so these are rate-card equivalents, **never
-billed amounts**.
+**Selected provider** — hosted `kimi-for-coding` wins the 65-question
+comparison. Costs are **cloud-equivalent estimates** at the public kimi-k2.8
+reference card ($1/Mtok in, $4/Mtok out, cached reads 30%): the key is
+membership quota, so these are rate-card equivalents, **never billed amounts**.
 
-| Metric | Local qwen3.6-q4 (n=30) | Hosted kimi-for-coding (n=65) |
-|---|---|---|
-| Failure taxonomy | 15 correct / 14 unsupported-claim / 1 format-failure | 44 correct / 18 unsupported-claim / 2 retrieval-miss / 1 format-failure |
-| RAGAS faithfulness (95% CI) | 0.606 | **0.685 [0.605, 0.760]** |
-| RAGAS answer relevancy | 0.720 | **0.878 [0.820, 0.918]** |
-| RAGAS context precision / recall | 1.000 / 0.978 | 0.760 [0.667, 0.849] / 0.978 [0.954, 0.995] |
-| Rubric-judge faithfulness | 0.441 [0.29, 0.61] | 0.550 [0.483, 0.611] |
-| Refusal accuracy (unanswerable) | 0.857 [0.57, 1.00] | 0.900 [0.70, 1.00] |
-| False-abstention rate | 0.174 | 0.036 |
-| Verify overhead | 33 repair calls | 39 repair calls (125 verify calls: verdicts + repairs + re-checks) |
-| Agent latency p50 / p95 | 61 s / 245 s (load-contended local) | **23 s / 175 s** (p95 = one runaway tool-loop question cut off by the per-run token guard) |
-| Cost | $0 API (cloud-equivalent ≈ $0.0068/query) | **$3.58 cloud-equivalent, metered per phase** (see below) |
-
-![The verify-then-answer loop cuts unsupported claims from 60% to 47% of answers locally and keeps them bounded on the hosted run](../assets/projects/01-rag-agent/failure_taxonomy.png){ width="100%" }
-
-Per-phase meter, hosted full run (`reports/cost_telemetry.json`, 922 calls,
-3.79M of 4.76M input tokens prompt-cache reads = **79.6% cached share**):
-agent $1.79 / RAGAS $1.13 / verify $0.47 / judge $0.19. The USD cap is
-enforced per run by the platform spend ledger: a first pass tripped it at
-$3.04 mid-run and the CLI stopped cleanly; the re-run completed under a
-logged, raised cap (`.env` untouched). The lone hosted format-failure is the
-token-guard trip on the runaway question, not schema noise — the wave-15
-output-retry recovered the run's one schema-invalid draft (1 retry).
+| Metric | Selected `kimi-for-coding` (n=65) |
+|---|---|
+| Failure taxonomy | 46 correct / 17 unsupported-claim / 2 retrieval-miss / 0 format-failure |
+| Rubric faithfulness / answer relevance | **0.6209 / 0.6458** (incumbent 0.5504 / 0.5573) |
+| Rubric context recall | 0.9636 |
+| RAGAS faithfulness (95% CI) | **0.7337 [0.6562, 0.8131]** |
+| RAGAS answer relevancy | **0.8602** (small regression from 0.8775) |
+| RAGAS context precision / recall | 0.7609 / 0.9826 |
+| Refusal accuracy / false abstention / cite-when-expected | 1.0 / 0.0545 / 0.9636 |
+| Answer latency p50 / p95 | 25.888 s / 108.836 s |
+| Answer-generation cost | $0.000906/query before judge/verify costs |
 
 Takeaway: retrieval is solid (recall@5 0.831 vs 0.031 random), so
-**generation grounding is the bottleneck** — and grounding tracks the
-provider (hosted faithfulness +0.08 over local; directional: 30 vs 65
-questions). The verify loop stays worth its repair calls on high-stakes
-corpora: unsupported-claim share fell from 60% → 47% locally and stays
-bounded hosted, at 39 repair calls and 2 support-floor abstentions over 64
-verified answers. Figures: corpus composition, chunk-size sweep with random
-and lexical (word-match) baselines, embedding model comparison, retrieval
-funnel, HPO frontier (chosen
-config starred), latency histogram, failure taxonomy (all in
-`projects/01-rag-agent/reports/figures/`).
+**generation grounding is the bottleneck**. The selected provider improves
+rubric faithfulness, answer relevance, and RAGAS faithfulness; the small RAGAS
+answer-relevancy regression remains explicit. Judge and verify costs are
+additional, and no replacement total tuning-suite cost is claimed. Figures and
+run records are in `projects/01-rag-agent/reports/`.
 
 ### Held-out confirmation
 
-All numbers above come from the 65 tuning questions. A sealed 15-question
-held-out set — written fresh after tuning froze (8 single-hop, 2 multi-hop,
-5 unanswerable), each question gated programmatically (relevant chunk in
-the production top-10 for answerable; `absent_terms` verified against the
-whole corpus for unanswerable; a Jaccard check against the 65) — is scored
-separately by `evaluate --heldout` (retrieval metrics + one verify-on agent
-pass, no RAGAS) and reported under `metrics.json → detail.heldout`.
-Hosted `kimi-for-coding`: retrieval recall@5 **0.600** / MRR@5 0.567 vs a
-0.022 random floor, faithfulness 0.62 [0.45, 0.79], taxonomy 10 correct / 4
-unsupported-claim / 1 retrieval-miss, refusal accuracy 1.00 (5/5) with zero
-false abstentions — at **$0.25 cloud-equivalent** (66 calls, 47% cached) for
-the whole pass. The recall gap vs the tuning set (0.831 → 0.600) is the
-overfitting signal the held-out set exists to catch.
+All tuning numbers above come from the 65 tuning questions. A sealed
+15-question held-out set — written fresh after tuning froze (8 single-hop, 2
+multi-hop, 5 unanswerable), gated for corpus support, absent terms, and Jaccard
+separation — is scored separately by `evaluate --heldout` without RAGAS and
+reported under `metrics.json → detail.heldout`. Selected `kimi-for-coding`
+reaches recall@5 **0.600**, recall@10 0.667, and MRR@5 0.567 (random 0.022).
+On the 10 answerable questions, rubric faithfulness is 0.64, answer relevance
+0.595, and context recall 0.9; all 5 required refusals succeed. The pass meters
+**61 calls and $0.240699 cloud-equivalent**, with p50 28.025 s and p95 52.176 s.
+The recall gap is a warning against generalizing from one Wikipedia slice.
 
 ## Links
 

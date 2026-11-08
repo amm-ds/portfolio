@@ -15,6 +15,15 @@ app (`apps/showcase-web`), shared libraries (`libs/`), and an mkdocs site
   figures, live demo endpoints, `POST /contact/unlock`.
 - `apps/showcase-web` — Vite + React + TypeScript; terminal-like design
   system in `src/styles.css`; shared components in `src/components/`.
+- `apps/agent-chat` — independent uv workspace: Pydantic AI agent, FastAPI
+  backend, React chat UI, Postgres/pgvector, browser-session memory, typed
+  evals, specs, and clean demo media. Run its gates from `apps/agent-chat`.
+- `apps/document-intelligence` — independent uv workspace: page-level PDF
+  analysis workbench — one AI call per page produces cited summaries, typed
+  entities, and topics, plus page-scoped cited chat with bounded history; exact
+  parser-resolved evidence, leased worker, Postgres records, React workbench,
+  fixtures, and page-level offline/live eval. Run its backend and `web/` gates
+  from this directory.
 - `scripts/` — repo gates and generators (registry, story short copy, route
   manifest, demo contract, story language lint, README figures).
 - `registry/` + `docs/data-registry/` — dataset manifests and cards.

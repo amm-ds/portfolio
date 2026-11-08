@@ -17,8 +17,10 @@ demo** — typed tools, disk-loaded skills, cited retrieval, a human approval
 gate for consequential actions, and per-run budgets, all behind one FastAPI
 surface that streams every step as typed SSE events. The first edit is a
 string; the seams (provider, store, embedder, approvals) are protocols with
-documented swap points. Ninety-five tests and a 13-case eval suite run fully
-offline; the same graders score your real deployment.
+documented swap points. The offline suite and a 16-case eval suite run fully
+offline; the same graders score your real deployment. The measured Kimi
+release gate passes **108/108 assertions in each of three repetitions**; see the
+[committed report](https://github.com/amm-ds/portfolio/blob/main/apps/agent-chat/reports/evals-kimi-for-coding.md).
 
 [App source, specs, and adaptation guide on GitHub →](https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat)
 
@@ -51,9 +53,9 @@ Around it, lift-out modules with protocol seams:
 | `skills/` + `capabilities/` | domain playbooks as disk folders; the model sees a one-line description until it loads the skill | add a folder |
 | `rag/` | paragraph-first chunking, embedder and vector-store protocols, `retrieve` tool, ingest CLI | new embedder or store = one adapter |
 | `approvals.py` | the `ApprovalGate` protocol the agent depends on | test doubles ship in the package |
-| `memory/` | persisted conversations, per-user on-demand notebooks, bounded history | Postgres/SQLite by URL; `NotebookStore` for personal facts |
+| `memory/` | persisted conversations, browser-session notebooks, bounded history | Postgres/SQLite by URL; `NotebookStore` for session facts |
 | `api/` | FastAPI: SSE chat, approvals, conversation CRUD, ingest, health/ready, request-id middleware, structured errors | rarely touched |
-| `evals/` | 13 cases with deterministic graders — no LLM in the judge | add cases as your domain grows |
+| `evals/` | 16 cases with deterministic graders — no LLM in the judge | add cases as your domain grows |
 
 The web UI is a Vite + React chat: conversation sidebar, streamed deltas,
 tool-call cards, and an approve/deny card for the consequential `send_message`

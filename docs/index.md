@@ -13,9 +13,9 @@ baseline, an honest delta, and the code to verify it.
   the first genuinely unseen one (2025-01, in-window at −5.0%), with none
   regressed.
 - **[RAG & agentic assistant](projects/01-rag-agent.md)** — answers only from
-  retrieved evidence with per-claim citations; a verify-then-answer loop
-  cut unsupported claims from 60% to 47% locally, and a sealed held-out set
-  publishes the generalization gap (recall 0.831 → 0.600) instead of hiding it.
+  retrieved evidence with per-claim citations; selected `kimi-for-coding`
+  improves rubric faithfulness to 0.6209 while 17/65 tuning answers still keep
+  unsupported claims, and sealed recall falls from 0.831 to 0.600.
 
 ## Measured results, three of them
 
@@ -51,7 +51,7 @@ navigation on the left.
 ```bash
 make setup          # uv sync + pre-commit
 make test           # ruff + mypy + pytest with coverage gates
-(cd projects/02-demand-forecasting && uv run dvc repro)  # reproduce one project
+(cd projects/05-ml-pipeline-churn && uv run dvc repro)  # reproduce one project
 make docs-serve     # docs at http://127.0.0.1:8000
 make docker-up      # showcase app (FastAPI + React) at http://localhost:8000 —
                     # real committed artifacts: forecast/score/solve and stories.
