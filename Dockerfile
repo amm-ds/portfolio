@@ -88,4 +88,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
 # Trust proxy headers only from explicitly allowed IPs (loopback by default).
 # The isolated prod compose network uses "*" because only Caddy can reach the
 # unpublished API port; restrict it to the proxy IP for any other topology.
-CMD ["sh", "-c", "exec uvicorn showcase_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips ${FORWARDED_ALLOW_IPS:-127.0.0.1}"]
+# The expansion must stay quoted: an unquoted "*" glob-expands against the
+# container's working directory and lands as bogus uvicorn arguments.
+CMD ["sh", "-c", "exec uvicorn showcase_api.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips \"${FORWARDED_ALLOW_IPS:-127.0.0.1}\""]
