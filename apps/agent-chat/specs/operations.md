@@ -44,6 +44,18 @@ export AGENT_CHAT_PROVIDER=hosted \
        AGENT_CHAT_HOSTED_MODEL=...
 ```
 
+Kimi uses the same OpenAI-compatible model seam:
+
+```bash
+export AGENT_CHAT_PROVIDER=kimi \
+       AGENT_CHAT_KIMI_BASE_URL=https://api.kimi.com/coding/v1 \
+       AGENT_CHAT_KIMI_API_KEY=... \
+       AGENT_CHAT_KIMI_MODEL=k3-256k
+```
+
+Use a membership-permitted model such as `kimi-for-coding` or `k3.1-pro` when
+needed; keep the API key out of shell history, logs, browser assets, and Git.
+
 ## Ingest
 
 Three equivalent ways to load the knowledge base (markdown/txt only):
@@ -76,7 +88,7 @@ changes), and after switching from SQLite to Postgres (different store).
 
 ## Health checks
 
-- `GET /health` — liveness; answers without touching anything.
+- `GET /health` — liveness plus the configured provider and primary model.
 - `GET /ready` — readiness; pings the conversation store and the vector
   store, 503 with the failing probe (`database not reachable` / `vector store
   not reachable`) until both answer.
@@ -87,6 +99,24 @@ changes), and after switching from SQLite to Postgres (different store).
 ```bash
 curl -fsS localhost:8000/health && curl -fsS localhost:8000/ready
 ```
+
+## Browser sessions
+
+The UI creates one canonical UUID in `sessionStorage` under
+`agent-chat:session-id` and sends it as `X-Agent-Chat-Session` on chat,
+approvals, and conversation list/get/delete. New conversations and reloads in
+the same tab share it; closing the tab starts a fresh namespace. API clients
+must send the same header themselves — it is not part of the `/chat` JSON body.
+
+Session id scopes conversation continuation, notebook recall, and approval
+resolution. Another session receives 404 for those resources. The conversation
+stores add the `session_id` column/index idempotently at startup; rows from the
+old schema stay in the `legacy` namespace instead of leaking into new sessions.
+
+This is anonymous isolation, **not authentication or secure deletion**. A public
+production gateway must establish the authenticated tenant identity itself.
+Old notebook files and conversation rows remain on disk after a tab closes;
+configure retention cleanup and backups appropriate to the stored data.
 
 ## Logs
 
@@ -116,6 +146,27 @@ For the local SQLite dev file, copy `agent_chat.db` while the API is stopped
 simple honest path at this scale). Conversations are self-contained JSON rows;
 the vector store can always be rebuilt with a re-ingest.
 
+Compose stores notebooks in the named `agent_chat_memory` volume at
+`/data/agent_chat_memory`. Back it up before image replacement or retention
+cleanup, and restore only into a fresh namespace:
+
+```bash
+# backup (from infra/)
+docker compose exec api sh -c \
+  'tar -czf /tmp/agent_chat_memory.tar.gz -C /data agent_chat_memory'
+docker compose cp api:/tmp/agent_chat_memory.tar.gz ./agent_chat_memory-backup.tar.gz
+
+# restore into a clean volume (existing notes are replaced)
+docker compose cp ./agent_chat_memory-backup.tar.gz api:/tmp/restore.tar.gz
+docker compose exec api sh -c \
+  'rm -rf /data/agent_chat_memory && mkdir -p /data/agent_chat_memory && \
+   tar -xzf /tmp/restore.tar.gz -C /data agent_chat_memory'
+```
+
+Anonymous sessions are not authentication or secure deletion. Schedule retention
+for both this volume and the `conversations` table; closing a browser tab only
+makes old state unreachable from that tab.
+
 ## Environment reference
 
 Every knob, prefix `AGENT_CHAT_` (pydantic-settings; `.env` in the working
@@ -123,7 +174,7 @@ directory is read too).
 
 | variable | default | meaning |
 |---|---|---|
-| `PROVIDER` | `ollama` | `ollama` or `hosted` |
+| `PROVIDER` | `ollama` | `ollama`, `hosted`, or `kimi` |
 | `OLLAMA_BASE_URL` | `http://localhost:11434` | local Ollama base (compose overrides with `host.docker.internal:11434`) |
 | `OLLAMA_MODEL` | `qwen3:8b` | primary local model |
 | `OLLAMA_FALLBACK_MODEL` | `""` | secondary local model; set to enable a `FallbackModel` chain |
@@ -131,17 +182,32 @@ directory is read too).
 | `HOSTED_API_KEY` | `""` | key for the hosted provider |
 | `HOSTED_MODEL` | `""` | primary hosted model |
 | `HOSTED_FALLBACK_MODEL` | `""` | secondary hosted model |
+| `KIMI_BASE_URL` | `https://api.kimi.com/coding/v1` | Kimi Code OpenAI-compatible endpoint |
+| `KIMI_API_KEY` | `""` | Kimi key; keep in a secret manager, never browser assets |
+| `KIMI_MODEL` | `k3-256k` | primary Kimi model; `kimi-for-coding`/`k3.1-pro` also available by tier |
+| `KIMI_FALLBACK_MODEL` | `""` | secondary Kimi model for provider-API failover |
 | `MODEL_RETRIES` | `2` | pydantic-ai retries on output-validation failure |
+| `EXECUTOR_WORKERS` | `4` | bounded sync-callback executor; created by the API and closed on shutdown |
 | `USAGE_REQUEST_LIMIT` | `30` | per-run request budget (0 = unlimited) |
 | `USAGE_INPUT_TOKENS_LIMIT` | `100000` | per-run input-token budget (0 = unlimited) |
 | `USAGE_OUTPUT_TOKENS_LIMIT` | `20000` | per-run output-token budget (0 = unlimited) |
 | `DATABASE_URL` | `sqlite:///./agent_chat.db` | `postgres*` selects Postgres/pgvector, otherwise SQLite |
+| `MEMORY_DATA_DIR` | `./agent_chat_memory` | one JSON notebook per browser session; use a transactional store for concurrent writers |
+| `HISTORY_MAX_TURNS` | `10` | model-visible user turns, including tool legs |
+| `HISTORY_SUMMARIZE_ENABLED` | `false` | summarize only overflow; recent turns remain verbatim |
 | `EMBEDDER` | `minilm` | `minilm` (semantic, needs the `embeddings` extra) or `hashing` (lexical, zero deps) |
 | `EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | local sentence-transformers model name |
 | `API_KEY` | `""` | set to require `X-API-Key` on chat/mutations (compared with `hmac.compare_digest`) |
 | `APPROVAL_TIMEOUT_S` | `120` | seconds to await a human decision; timeout = deny |
 | `FETCH_URL_ENABLED` | `false` | attach the opt-in network tool (`fetch_url`) |
 | `SKILLS_DIR` | package `skills/` | where skill folders are loaded from |
+
+For the web dev proxy, `VITE_API_PROXY_TARGET` selects the API origin;
+`VITE_MOCK=1` replaces it with the scripted transport. `VITE_API_BASE` is the
+production browser client's explicit API origin. Never compile privileged keys
+into public `VITE_*` assets; use an authenticated gateway instead. The full
+static-build, SSE proxy, rollout, and secret-boundary contract is in the root
+README's **Deployment topology** section.
 
 ## Common failures
 
@@ -161,8 +227,8 @@ directory is read too).
 ## Tests and evals as ops checks
 
 ```bash
-uv run pytest -q                                       # 95 tests, fully offline
-uv run python -m agent_chat.evals.runner               # 13 cases vs the fake model
+uv run pytest -q                                       # backend, fully offline
+uv run python -m agent_chat.evals.runner               # 16 cases vs the fake model
 uv run python -m agent_chat.evals.runner --model real  # same graders vs your deployment
 ```
 

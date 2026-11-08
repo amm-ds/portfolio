@@ -31,14 +31,14 @@ flowchart LR
     CAP["capabilities/ + skills/<br/>disk folders, deferred loading"]
     RAG["rag/ — chunk, embed,<br/>retrieve, ingest CLI"]
     MEM["memory/conversations.py<br/>Conversation store"]
-    NOTE["memory/notebook.py + tools.py<br/>per-user remember / recall"]
+    NOTE["memory/notebook.py + tools.py<br/>browser-session remember / recall"]
     HIST["memory/history.py<br/>trim / summarize on overflow"]
-    MODELS["models.py — provider factory<br/>Ollama · hosted · fallback"]
+    MODELS["models.py — provider factory<br/>Ollama · hosted · Kimi · fallback"]
   end
 
-  LLM["Model provider<br/>Ollama (default) or hosted<br/>OpenAI-compatible"]
+  LLM["Model provider<br/>Ollama, hosted, or Kimi<br/>OpenAI-compatible"]
   DB[("Postgres 16 + pgvector<br/>or SQLite fallback")]
-  FILES[("memory_data_dir<br/>one JSON file per user")]
+  FILES[("memory_data_dir<br/>one JSON file per browser session")]
 
   UI -- "POST /chat (SSE)" --> MID --> CHAT
   CHAT --> AGENT
@@ -76,7 +76,7 @@ flowchart LR
   protocol (pgvector or SQLite), the bound `retrieve` tool, and the ingest CLI.
 - **`agent_chat.memory`** — three separate boundaries: `conversations.py`
   persists whole pydantic-ai `Conversation` values (Postgres primary, SQLite
-  fallback); `notebook.py` + `tools.py` provide per-user durable facts through
+  fallback); `notebook.py` + `tools.py` provide browser-session facts through
   on-demand `remember`/`recall`; `history.py` bounds model history with a free
   sliding window or opt-in summarize-on-overflow. No whole-notebook injection.
 - **`web/`** — a Vite + React chat UI that consumes the SSE stream and the
@@ -88,18 +88,21 @@ flowchart LR
 
 ### 1. Chat request → SSE stream
 
-1. The client posts `{"message": "...", "conversation_id": "...", "user_id": "local"}`
-   to `POST /chat` (message 1–8000 chars; the ids are optional). An unknown
-   `conversation_id` is a 404. The user id scopes notebook access.
+1. The client posts `{"message": "...", "conversation_id": "..."}` to
+   `POST /chat` with `X-Agent-Chat-Session: <uuid>` (message 1–8000 chars;
+   conversation id optional). An unknown or other-session conversation is a
+   404. The session id scopes notebook access and every conversation query.
 2. The route creates an `asyncio.Queue` and binds a per-run approval gate to it
-   (`state.approval_hub.gate(queue.put_nowait)`), so approval events raised
-   inside a tool call reach the client while the run is parked waiting.
+   (`state.approval_hub.gate(session_id, queue.put_nowait)`), so approval events
+   raised inside a tool call reach the client while the run is parked waiting.
 3. A producer task runs the agent via `agent.run_stream_events(...)` with the
-   (optional) prior conversation, per-run usage limits, and deps carrying the
-   gate, shared notebook, and user id. Before each model request, the history
-   capability trims (or summarizes overflow) without writing notebook content
-   into the prompt. A route generator drains the queue, so the SSE response
-   starts immediately and stays ordered.
+   (optional) session-owned prior conversation, per-run usage limits, and deps
+   carrying the gate, shared notebook, and session id. Before each model request,
+   the history capability trims (or summarizes overflow) without writing notebook
+   content into the prompt. Synchronous agent callbacks use one bounded
+   `UseThreadExecutor` capability (`executor_workers`, default four), created by
+   the app factory and shut down with the lifespan. A route generator drains
+   the queue, so the SSE response starts immediately and stays ordered.
 4. Agent stream events are mapped to client-facing events
    (`api/routes_chat.py::_map_event`): tool calls → `tool_call_start` /
    `tool_call_end` (results capped at 500 chars), text deltas → `text_delta`,
@@ -121,18 +124,18 @@ acts on the world goes through the same gate:
    registers an `asyncio.Future` in the app-wide `ApprovalHub`, and emits
    `approval_request` on the run's own queue. The run parks on
    `asyncio.wait_for(future, timeout_s)`.
-3. A human answers with `POST /approvals/{approval_id}` and body
-   `{"approved": true}`. `ApprovalHub.resolve` settles the future via
-   `call_soon_threadsafe` — safe from any thread — and returns false for
-   unknown or already-settled ids (404).
+3. A human answers with `POST /approvals/{approval_id}`, the same session
+   header, and body `{"approved": true}`. `ApprovalHub.resolve` settles the
+   future via `call_soon_threadsafe` — safe from any thread — and returns false
+   for unknown, other-session, or already-settled ids (404).
 4. The gate emits `approval_response` on the same stream, and the tool proceeds
    (recording a `SentMessage` in deps) or reports the denial as its result.
 5. **No answer within `AGENT_CHAT_APPROVAL_TIMEOUT_S` (default 120 s) =
    denied.** Default-deny is the contract; implementations must never raise
    for a missing answer.
 
-Each run gets its own gate bound to its own queue, so concurrent chats never
-cross approval streams.
+Each run gets its own gate bound to its own queue and session, so concurrent
+chats never cross approval streams or decisions.
 
 ## The wire contract (SSE)
 
@@ -162,18 +165,23 @@ the `VectorStore` / `ConversationStore` protocols.
 | column | type | notes |
 |---|---|---|
 | `conversation_id` | `VARCHAR(64)` PK | pydantic-ai conversation id |
+| `session_id` | `VARCHAR(64)` | anonymous browser-session owner; indexed with `updated_at` |
 | `title` | `VARCHAR(200)` | first 60 chars of the opening message |
 | `data` | `TEXT` | the full `Conversation` (messages + usage) as JSON |
 | `updated_at` | `VARCHAR(40)` | ISO 8601 UTC, microsecond precision |
 
-### `memory_data_dir/<user_id>.json` — personal notebook
+Startup adds the session column/index idempotently. Pre-session rows remain in
+the `legacy` namespace. Every save/get/list/delete filters by session.
 
-One file per validated user id, with `version: 1` and a `notes` array. Each note
-has a stable content-derived `id`, a concise `fact` (1–4000 chars), and a UTC
-`created_at`. Writes use atomic file replacement; exact normalized repeats are
-idempotent. `recall` reads the user's file, scores case-folded literal terms,
-and returns only the best five matches by default (caller bound 1–10). Neither
-the notebook nor its file listing is automatically injected into a prompt.
+### `memory_data_dir/<session_id>.json` — browser-session notebook
+
+One file per validated session id, with `version: 2` and a `notes` array. Each
+note has a stable id, concise `fact` (1–4000 chars), UTC `created_at`, optional
+`key`, and optional `updated_at`. A stable key such as `preferred_cloud` upserts
+the fact and prevents paraphrase duplicates; exact unkeyed repeats are
+idempotent. Version-1 files remain readable. `recall` scores case-folded
+literal terms over key and fact, returning five matches by default (bound 1–10).
+Neither the notebook nor its file listing is automatically injected into a prompt.
 
 ### Model-visible history policy
 
@@ -216,17 +224,17 @@ after a swap.
 | `skills/` | skill folders (`SKILL.md` + `resources/`) | often |
 | `capabilities/loader.py` | folders → deferred capabilities | rarely |
 | `config.py` | every env knob, prefix `AGENT_CHAT_` | for budgets/flags |
-| `models.py` | provider factory (Ollama / hosted / fallback) | to swap providers |
+| `models.py` | provider factory (Ollama / hosted / Kimi / fallback) | to swap providers |
 | `rag/embeddings.py` | `Embedder` protocol + MiniLM/hashing | to swap the embedder |
 | `rag/store.py` | `VectorStore` protocol + pgvector/SQLite | to swap the backend |
 | `rag/` (rest) | chunking, ingest CLI, `retrieve` tool | rarely |
-| `memory/conversations.py` | `ConversationStore` protocol + Postgres/SQLite impls | rarely |
-| `memory/notebook.py` | `NotebookStore` + durable per-user JSON notes | to swap memory backend |
+| `memory/conversations.py` | session-scoped `ConversationStore` + Postgres/SQLite impls | rarely |
+| `memory/notebook.py` | `NotebookStore` + durable browser-session JSON notes | to swap memory backend |
 | `memory/tools.py` | bounded `remember` / `recall` tools | to change memory policy |
 | `memory/history.py` | sliding-window trim + optional overflow summary | to tune context policy |
 | `approvals.py` | `ApprovalGate` protocol + test doubles | to change HITL policy |
-| `api/` | HTTP surface, SSE schema, approval hub | rarely |
-| `evals/` | 13-case suite + deterministic graders | to add cases |
+| `api/` | HTTP surface, SSE schema, session dependency, approval hub | rarely |
+| `evals/` | 16-case suite + deterministic graders | to add cases |
 | `testing.py` | scripted fake model for tests/CI | almost never |
 
 See `specs/decisions/` for why the seams sit where they do, `specs/operations.md`

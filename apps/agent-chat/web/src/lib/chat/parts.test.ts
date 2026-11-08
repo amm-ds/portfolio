@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ChatEvent } from "./events";
-import { deriveSteps, reduceEvents } from "./parts";
+import { commitFinalAnswer, deriveSteps, reduceEvents } from "./parts";
 
 const scripted: ChatEvent[] = [
   { type: "text_delta", delta: "I'll check the docs, " },
@@ -38,6 +38,22 @@ describe("reduceEvents", () => {
     expect(approval).toMatchObject({
       approval: { id: "ap_1", tool: "restart_service", summary: "production impact", status: "approved" },
     });
+  });
+
+  it("replaces all trailing answer fragments while preserving tools and earlier text", () => {
+    const streamed = reduceEvents(scripted);
+    const committed = commitFinalAnswer(
+      [...streamed, { kind: "text", text: "ed, your preferred cloud is GCP." }],
+      "Remembered, your preferred cloud is GCP.",
+    );
+
+    expect(committed[0]).toMatchObject({ kind: "text", text: "I'll check the docs, then the metrics." });
+    expect(committed.some((part) => part.kind === "tool_call")).toBe(true);
+    expect(committed[committed.length - 1]).toEqual({
+      kind: "text",
+      text: "Remembered, your preferred cloud is GCP.",
+    });
+    expect(committed).not.toContainEqual({ kind: "text", text: "ed, your preferred cloud is GCP." });
   });
 
   it("ignores done events", () => {

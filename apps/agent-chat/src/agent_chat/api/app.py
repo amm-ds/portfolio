@@ -8,6 +8,7 @@ agent_chat.api.app:create_app``.
 
 import logging
 from collections.abc import AsyncIterator
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
@@ -81,6 +82,10 @@ def create_app(
     )
     resolved_conversation_store = conversation_store or build_conversation_store(resolved_settings)
     resolved_notebook = notebook or FileNotebook(resolved_settings.memory_data_dir)
+    executor = ThreadPoolExecutor(
+        max_workers=resolved_settings.executor_workers,
+        thread_name_prefix="agent-chat-worker",
+    )
     state = AppState(
         settings=resolved_settings,
         agent=build_agent(
@@ -88,6 +93,7 @@ def create_app(
             settings=resolved_settings,
             vector_store=resolved_vector_store,
             embedder=resolved_embedder,
+            executor=executor,
         ),
         conversation_store=resolved_conversation_store,
         notebook=resolved_notebook,
@@ -98,11 +104,14 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-        await state.conversation_store.init()
-        await state.vector_store.init()
-        yield
-        await state.conversation_store.close()
-        await state.vector_store.close()
+        try:
+            await state.conversation_store.init()
+            await state.vector_store.init()
+            yield
+        finally:
+            await state.conversation_store.close()
+            await state.vector_store.close()
+            executor.shutdown(wait=True)
 
     app = FastAPI(title="agent-chat", version="0.1.0", lifespan=lifespan)
     app.state.agent_chat = state

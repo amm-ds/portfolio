@@ -44,6 +44,7 @@ EventSink = Callable[[ApprovalRequestEvent | ApprovalResponseEvent], None]
 class _PendingApproval:
     loop: asyncio.AbstractEventLoop
     future: asyncio.Future[bool]
+    session_id: str
 
 
 @dataclass
@@ -53,20 +54,22 @@ class ApprovalHub:
     timeout_s: float
     _pending: dict[str, _PendingApproval] = field(default_factory=dict)
 
-    def gate(self, sink: EventSink) -> ApprovalGate:
+    def gate(self, session_id: str, sink: EventSink) -> ApprovalGate:
         """An ``ApprovalGate`` for one chat run, emitting into that run's sink."""
-        return _SseApprovalGate(hub=self, sink=sink)
+        return _SseApprovalGate(hub=self, session_id=session_id, sink=sink)
 
-    def resolve(self, approval_id: str, approved: bool) -> bool:
-        """Answer a pending request (thread-safe). False when unknown/settled."""
+    def resolve(self, approval_id: str, session_id: str, approved: bool) -> bool:
+        """Resolve only an approval owned by this session; never cross sessions."""
         pending = self._pending.get(approval_id)
-        if pending is None or pending.future.done():
+        if pending is None or pending.session_id != session_id or pending.future.done():
             return False
         pending.loop.call_soon_threadsafe(pending.future.set_result, approved)
         return True
 
-    def _register(self, approval_id: str, future: asyncio.Future[bool]) -> None:
-        self._pending[approval_id] = _PendingApproval(asyncio.get_running_loop(), future)
+    def _register(self, approval_id: str, future: asyncio.Future[bool], session_id: str) -> None:
+        self._pending[approval_id] = _PendingApproval(
+            asyncio.get_running_loop(), future, session_id
+        )
 
     def _deregister(self, approval_id: str) -> None:
         self._pending.pop(approval_id, None)
@@ -77,12 +80,13 @@ class _SseApprovalGate:
     """Binds the hub's pending registry to one run's event sink."""
 
     hub: ApprovalHub
+    session_id: str
     sink: EventSink
 
     async def request(self, tool: str, summary: str) -> bool:
         approval_id = uuid4().hex[:12]
         future: asyncio.Future[bool] = asyncio.get_running_loop().create_future()
-        self.hub._register(approval_id, future)
+        self.hub._register(approval_id, future, self.session_id)
         self.sink(ApprovalRequestEvent(approval_id=approval_id, tool=tool, summary=summary))
         try:
             approved = await asyncio.wait_for(future, timeout=self.hub.timeout_s)

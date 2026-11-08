@@ -3,7 +3,7 @@
 from fastapi.testclient import TestClient
 
 from agent_chat.testing import FakeStep
-from tests import fakes
+from tests import OTHER_SESSION_HEADERS, fakes
 
 
 def _final(text: str) -> FakeStep:
@@ -51,3 +51,25 @@ class TestConversationsCrud:
         assert client.get("/conversations").json() == {"conversations": []}
         again = client.delete(f"/conversations/{conversation_id}")
         assert again.status_code == 404
+
+    def test_other_session_cannot_list_read_or_delete(self, client: TestClient) -> None:
+        fakes.queue.append(_final("private to this session"))
+        client.post("/chat", json={"message": "session-owned"}).raise_for_status()
+        conversation_id = client.get("/conversations").json()["conversations"][0]["conversation_id"]
+
+        assert client.get("/conversations", headers=OTHER_SESSION_HEADERS).json() == {
+            "conversations": []
+        }
+        assert (
+            client.get(
+                f"/conversations/{conversation_id}", headers=OTHER_SESSION_HEADERS
+            ).status_code
+            == 404
+        )
+        assert (
+            client.delete(
+                f"/conversations/{conversation_id}", headers=OTHER_SESSION_HEADERS
+            ).status_code
+            == 404
+        )
+        assert client.get(f"/conversations/{conversation_id}").status_code == 200

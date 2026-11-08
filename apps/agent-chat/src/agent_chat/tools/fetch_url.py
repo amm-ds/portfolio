@@ -7,8 +7,11 @@ loop is never blocked by the socket.
 """
 
 import asyncio
+import ipaddress
 import re
+import socket
 from urllib.error import URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
 from pydantic import BaseModel, Field
@@ -25,11 +28,36 @@ class FetchedPage(BaseModel):
     fetched_at: str  # ISO 8601 UTC
 
 
+def _validate_public_url(url: str) -> None:
+    """Reject non-HTTP targets, credentials, and private/reserved addresses."""
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise ValueError("only http(s) URLs are supported")
+    if parsed.username or parsed.password:
+        raise ValueError("URLs with credentials are not allowed")
+    try:
+        addresses = socket.getaddrinfo(parsed.hostname, parsed.port or 443)
+    except socket.gaierror as exc:
+        raise ValueError(f"could not resolve {parsed.hostname}") from exc
+    for address_info in addresses:
+        ip = ipaddress.ip_address(address_info[4][0])
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+        ):
+            raise ValueError("private and reserved addresses are not allowed")
+
+
 def _read_title(url: str) -> str:
-    # S310: schemes are guarded in fetch_url before this runs; the tool is opt-in.
+    _validate_public_url(url)
     request = Request(url, headers={"User-Agent": "agent-chat/0.1 (+template)"})  # noqa: S310
     try:
         with urlopen(request, timeout=10) as response:  # noqa: S310 - opt-in tool, capped read
+            _validate_public_url(response.geturl())
             raw = response.read(_MAX_BYTES)
     except URLError as exc:
         raise ValueError(f"could not fetch {url}: {exc.reason}") from exc

@@ -16,7 +16,12 @@ export function MessageList({ messages, liveParts, awaitingApproval, onRespondAp
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    const latest = el?.querySelector<HTMLElement>(".bubble:last-of-type");
+    // Keep the newest complete bubble in view; absolute-bottom scrolling can
+    // leave its first lines clipped when a run emits several parts at once.
+    if (latest && typeof latest.scrollIntoView === "function") {
+      latest.scrollIntoView({ block: "nearest" });
+    }
   }, [messages, liveParts]);
 
   return (
@@ -36,7 +41,6 @@ export function MessageList({ messages, liveParts, awaitingApproval, onRespondAp
           content={message.content}
           parts={message.parts}
           citations={message.citations}
-          uncertainty={message.uncertainty}
           locked={!awaitingApproval}
           onRespondApproval={onRespondApproval}
         />

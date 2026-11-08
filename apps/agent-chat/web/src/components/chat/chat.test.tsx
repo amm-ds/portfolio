@@ -76,7 +76,7 @@ const tail = (decision: { approvalId: string; approved: boolean }): ChatEvent[] 
     answer: {
       text: "Restarted the api service; p99 recovered.",
       citations: [{ source: "runbook/incident-triage.md", quote: "restart when error rate > 1%" }],
-      uncertainty: "low",
+      uncertainty: "medium",
     },
     usage: { input_tokens: 800, output_tokens: 12, requests: 3 },
     conversation_id: "conv-1",
@@ -113,6 +113,7 @@ describe("ChatSurface scripted conversation", () => {
     expect(await screen.findByText("Restarted the api service; p99 recovered.")).toBeInTheDocument();
     expect(screen.getByText("runbook/incident-triage.md · “restart when error rate > 1%”")).toBeInTheDocument();
     expect(screen.getByText(/812 tok/)).toBeInTheDocument();
+    expect(screen.queryByText(/uncertainty:/)).not.toBeInTheDocument();
 
     // The decision went out on the approval leg; the run was ONE request.
     expect(api.decisions).toEqual([{ approvalId: "ap1", approved: true }]);

@@ -8,6 +8,7 @@ the run.
 
 import asyncio
 import json
+import logging
 from collections.abc import AsyncIterator
 from contextlib import suppress
 
@@ -36,11 +37,13 @@ from agent_chat.api.events import (
     encode_sse,
 )
 from agent_chat.api.security import require_api_key
+from agent_chat.api.session import require_session_id
 from agent_chat.api.state import AppState
 from agent_chat.deps import ChatDeps
 from agent_chat.schemas import Answer
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 _RESULT_SNIPPET_LIMIT = 500
 
@@ -48,7 +51,6 @@ _RESULT_SNIPPET_LIMIT = 500
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=8000)
     conversation_id: str | None = None
-    user_id: str = Field(default="local", pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 
 class ApprovalDecisionRequest(BaseModel):
@@ -114,10 +116,11 @@ async def _save_result(
     *,
     fallback_conversation_id: str | None,
     title: str,
+    session_id: str,
 ) -> str:
     """Persist the run's conversation; returns its id for the done event."""
     conversation: Conversation = result.conversation
-    await state.conversation_store.save(conversation, title=title)
+    await state.conversation_store.save(conversation, title=title, session_id=session_id)
     return conversation.conversation_id or fallback_conversation_id or ""
 
 
@@ -126,13 +129,14 @@ async def chat(
     request: Request,
     body: ChatRequest,
     _: None = Depends(require_api_key),
+    session_id: str = Depends(require_session_id),
 ) -> Response:
     """Run one user message; stream typed events (see ``api.events``)."""
     state: AppState = request.app.state.agent_chat
 
     conversation: Conversation | None = None
     if body.conversation_id is not None:
-        stored = await state.conversation_store.get(body.conversation_id)
+        stored = await state.conversation_store.get(body.conversation_id, session_id=session_id)
         if stored is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -141,8 +145,8 @@ async def chat(
         conversation = stored.conversation
 
     queue: asyncio.Queue[ChatEvent | None] = asyncio.Queue()
-    gate = state.approval_hub.gate(queue.put_nowait)
-    deps = ChatDeps(approvals=gate, memory=state.notebook, user_id=body.user_id)
+    gate = state.approval_hub.gate(session_id, queue.put_nowait)
+    deps = ChatDeps(approvals=gate, memory=state.notebook, session_id=session_id)
     usage_limits = build_usage_limits(state.settings)
     title = body.message[:60]
 
@@ -162,6 +166,7 @@ async def chat(
                             result,
                             fallback_conversation_id=body.conversation_id,
                             title=title,
+                            session_id=session_id,
                         )
                         usage = result.usage
                         await queue.put(
@@ -179,14 +184,22 @@ async def chat(
                         for mapped in _map_event(event):
                             await queue.put(mapped)
         except Exception as exc:  # broad: every failure shape becomes an error event
+            logger.exception("agent run failed")
             await queue.put(
-                ErrorEvent(code=_error_code(exc), message=str(exc) or type(exc).__name__)
+                ErrorEvent(
+                    code=_error_code(exc),
+                    message="The agent run failed. Check server logs for details.",
+                )
             )
         finally:
             await queue.put(None)
 
+    async def produce_with_timeout() -> None:
+        async with asyncio.timeout(state.settings.run_timeout_s):
+            await produce()
+
     async def generate() -> AsyncIterator[str]:
-        task = asyncio.create_task(produce())
+        task = asyncio.create_task(produce_with_timeout())
         try:
             while (item := await queue.get()) is not None:
                 yield encode_sse(item)
@@ -205,10 +218,11 @@ async def decide_approval(
     body: ApprovalDecisionRequest,
     request: Request,
     _: None = Depends(require_api_key),
+    session_id: str = Depends(require_session_id),
 ) -> dict[str, bool]:
-    """Answer a pending approval_request (see the chat stream)."""
+    """Answer a pending approval_request owned by this browser session."""
     state: AppState = request.app.state.agent_chat
-    if not state.approval_hub.resolve(approval_id, body.approved):
+    if not state.approval_hub.resolve(approval_id, session_id, body.approved):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"no pending approval {approval_id!r}",

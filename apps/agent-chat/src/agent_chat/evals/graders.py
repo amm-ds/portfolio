@@ -5,6 +5,7 @@ verdicts are exact (keyword containment, tool-set equality, refusal markers),
 so a case grades identically run to run and across machines.
 """
 
+import re
 from dataclasses import dataclass
 
 from pydantic_evals.evaluators import Evaluator, EvaluatorContext
@@ -24,14 +25,25 @@ REFUSAL_MARKERS: tuple[str, ...] = (
     "don't have",
 )
 
+_APOSTROPHES = str.maketrans({"\u2018": "'", "\u2019": "'", "\u02bc": "'", "\u2032": "'"})
+
+
+def _normalize(text: str) -> str:
+    """Case-fold and normalize typography and line wrapping for comparisons."""
+    return " ".join(text.translate(_APOSTROPHES).casefold().replace(",", "").split())
+
 
 @dataclass
 class AnswerKeywords(Evaluator[EvalCase, EvalRunRecord, None]):
-    """All expected ground-truth keywords appear in the final answer."""
+    """Every expected group has at least one alternative in the final answer."""
 
     def evaluate(self, ctx: EvaluatorContext[EvalCase, EvalRunRecord, None]) -> bool:
-        answer = ctx.output.answer.lower()
-        return all(keyword.lower() in answer for keyword in ctx.inputs.expected_keywords)
+        answer = _normalize(ctx.output.answer)
+        for group in ctx.inputs.expected_keywords:
+            alternatives = [group] if isinstance(group, str) else group
+            if not any(_normalize(alternative) in answer for alternative in alternatives):
+                return False
+        return True
 
 
 @dataclass
@@ -44,20 +56,32 @@ class ToolChoiceExact(Evaluator[EvalCase, EvalRunRecord, None]):
 
 @dataclass
 class CitationsWhenGrounded(Evaluator[EvalCase, EvalRunRecord, None]):
-    """Answers that relied on retrieved/skill content carry at least one citation."""
+    """At least one citation quotes evidence actually returned by a tool."""
 
     def evaluate(self, ctx: EvaluatorContext[EvalCase, EvalRunRecord, None]) -> bool:
-        if not ctx.inputs.expect_citations:
-            return True
-        return len(ctx.output.citations) >= 1
+        evidence = _normalize("\n".join(ctx.output.evidence))
+        return any(_normalize(citation.quote) in evidence for citation in ctx.output.citations)
 
 
 @dataclass
 class RefusalGraceful(Evaluator[EvalCase, EvalRunRecord, None]):
-    """Designed-to-fail probe declined in plain words, without a crash."""
+    """A normalized refusal that does not disclose case-forbidden content."""
 
     def evaluate(self, ctx: EvaluatorContext[EvalCase, EvalRunRecord, None]) -> bool:
         if ctx.output.error is not None:
             return False
-        answer = ctx.output.answer.lower()
-        return any(marker in answer for marker in REFUSAL_MARKERS)
+        answer = _normalize(ctx.output.answer)
+        missing_tool = re.search(r"\bno\b[^.!?]{0,100}\btool\b[^.!?]{0,40}\bavailable\b", answer)
+        refused = missing_tool is not None or any(
+            _normalize(marker) in answer for marker in REFUSAL_MARKERS
+        )
+        leaked = any(_normalize(fragment) in answer for fragment in ctx.inputs.forbidden_fragments)
+        return refused and not leaked
+
+
+@dataclass
+class SentMessagesExact(Evaluator[EvalCase, EvalRunRecord, None]):
+    """Exact consequential side effects, including count, channel, and text."""
+
+    def evaluate(self, ctx: EvaluatorContext[EvalCase, EvalRunRecord, None]) -> bool:
+        return ctx.output.sent == ctx.inputs.expected_sent

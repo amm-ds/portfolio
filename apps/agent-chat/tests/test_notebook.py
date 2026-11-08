@@ -1,4 +1,4 @@
-"""Personal notebooks: durable per-user facts with bounded on-demand recall."""
+"""Browser-session notebooks: durable facts with bounded on-demand recall."""
 
 from pathlib import Path
 
@@ -59,8 +59,32 @@ class TestFileNotebook:
 
         assert len(notes) == 2
 
-    async def test_unsafe_user_id_is_rejected(self, tmp_path: Path) -> None:
+    async def test_unsafe_session_id_is_rejected(self, tmp_path: Path) -> None:
         notebook = FileNotebook(tmp_path)
-        for user_id in ["../alice", "alice/bob", "", "."]:
-            with pytest.raises(ValueError, match="user_id"):
-                await notebook.remember(user_id, "must not escape the data dir")
+        for session_id in ["../alice", "alice/bob", "", "."]:
+            with pytest.raises(ValueError, match="session_id"):
+                await notebook.remember(session_id, "must not escape the data dir")
+
+    async def test_keyed_preference_update_replaces_paraphrase(self, tmp_path: Path) -> None:
+        notebook = FileNotebook(tmp_path)
+        first = await notebook.remember("alice", "my preferred cloud is GCP", key="preferred_cloud")
+        updated = await notebook.remember(
+            "alice", "User's preferred cloud is GCP.", key="preferred_cloud"
+        )
+
+        assert updated.id == first.id
+        assert updated.created_at == first.created_at
+        assert updated.updated_at is not None
+        notes = await notebook.recall("alice", "preferred_cloud")
+        assert [note.fact for note in notes] == ["User's preferred cloud is GCP."]
+
+    async def test_key_is_validated_and_v1_notebooks_remain_readable(self, tmp_path: Path) -> None:
+        notebook = FileNotebook(tmp_path)
+        with pytest.raises(ValueError, match="key"):
+            await notebook.remember("alice", "fact", key="not a key")
+        notebook.path_for("alice").write_text(
+            '{"version": 1, "notes": [{"id": "old", "fact": "Legacy fact",'
+            ' "created_at": "2026-01-01T00:00:00+00:00"}]}',
+            encoding="utf-8",
+        )
+        assert [note.id for note in await notebook.recall("alice", "legacy")] == ["old"]

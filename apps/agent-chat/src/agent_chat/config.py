@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     )
 
     # --- model provider ---------------------------------------------------
-    provider: Literal["ollama", "hosted"] = "ollama"
+    provider: Literal["ollama", "hosted", "kimi"] = "ollama"
     ollama_base_url: str = "http://localhost:11434"
     ollama_model: str = "qwen3:8b"
     ollama_fallback_model: str = ""
@@ -37,7 +37,12 @@ class Settings(BaseSettings):
     hosted_api_key: str = ""
     hosted_model: str = ""
     hosted_fallback_model: str = ""
+    kimi_base_url: str = "https://api.kimi.com/coding/v1"
+    kimi_api_key: str = ""
+    kimi_model: str = "k3-256k"
+    kimi_fallback_model: str = ""
     model_retries: int = 2
+    executor_workers: int = Field(default=4, ge=1)
 
     # --- usage budgets (per run; 0 = unlimited) ----------------------------
     usage_request_limit: int = 30
@@ -59,6 +64,8 @@ class Settings(BaseSettings):
     # --- api ---------------------------------------------------------------
     api_key: str = ""
     approval_timeout_s: float = 120.0
+    run_timeout_s: float = Field(default=90.0, gt=0)
+    ingest_roots: list[Path] = Field(default_factory=lambda: [Path("docs")])
     fetch_url_enabled: bool = False
 
     # --- skills ------------------------------------------------------------

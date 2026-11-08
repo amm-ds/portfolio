@@ -43,17 +43,17 @@ class StoredConversation:
 
 
 class ConversationStore(Protocol):
-    """Save and reload conversations by ``conversation_id``."""
+    """Save and reload conversations within one anonymous browser session."""
 
     async def init(self) -> None: ...
 
-    async def save(self, conversation: Conversation, *, title: str) -> None: ...
+    async def save(self, conversation: Conversation, *, title: str, session_id: str) -> None: ...
 
-    async def get(self, conversation_id: str) -> StoredConversation | None: ...
+    async def get(self, conversation_id: str, *, session_id: str) -> StoredConversation | None: ...
 
-    async def list(self) -> list[ConversationMeta]: ...
+    async def list(self, *, session_id: str) -> list[ConversationMeta]: ...
 
-    async def delete(self, conversation_id: str) -> bool: ...
+    async def delete(self, conversation_id: str, *, session_id: str) -> bool: ...
 
     async def ping(self) -> bool: ...
 
@@ -88,6 +88,7 @@ class ConversationRow(_Base):
     __tablename__ = "conversations"
 
     conversation_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    session_id: Mapped[str] = mapped_column(String(64), default="legacy")
     title: Mapped[str] = mapped_column(String(200))
     data: Mapped[str] = mapped_column(Text)
     updated_at: Mapped[str] = mapped_column(String(40))
@@ -96,14 +97,23 @@ class ConversationRow(_Base):
 _DDL = (
     "CREATE TABLE IF NOT EXISTS conversations ("
     "conversation_id VARCHAR(64) PRIMARY KEY, "
+    "session_id VARCHAR(64) NOT NULL DEFAULT 'legacy', "
     "title VARCHAR(200) NOT NULL, "
     "data TEXT NOT NULL, "
     "updated_at VARCHAR(40) NOT NULL)"
 )
+_ADD_SESSION_DDL = (
+    "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS "
+    "session_id VARCHAR(64) NOT NULL DEFAULT 'legacy'"
+)
+_SESSION_INDEX_DDL = (
+    "CREATE INDEX IF NOT EXISTS ix_conversations_session_updated "
+    "ON conversations(session_id, updated_at)"
+)
 
 
 class PostgresConversationStore:
-    """SQLAlchemy-async conversation store."""
+    """SQLAlchemy-async conversation store with session-scoped queries."""
 
     def __init__(self, database_url: str) -> None:
         self._engine: AsyncEngine = create_async_engine(database_url)
@@ -112,13 +122,16 @@ class PostgresConversationStore:
     async def init(self) -> None:
         async with self._engine.begin() as conn:
             await conn.execute(text(_DDL))
+            await conn.execute(text(_ADD_SESSION_DDL))
+            await conn.execute(text(_SESSION_INDEX_DDL))
 
-    async def save(self, conversation: Conversation, *, title: str) -> None:
+    async def save(self, conversation: Conversation, *, title: str, session_id: str) -> None:
         meta = _meta_from(conversation, title=title)
         async with self._session() as session:
             await session.merge(
                 ConversationRow(
                     conversation_id=meta.conversation_id,
+                    session_id=session_id,
                     title=meta.title,
                     data=_dump(conversation),
                     updated_at=meta.updated_at,
@@ -126,9 +139,16 @@ class PostgresConversationStore:
             )
             await session.commit()
 
-    async def get(self, conversation_id: str) -> StoredConversation | None:
+    async def get(self, conversation_id: str, *, session_id: str) -> StoredConversation | None:
         async with self._session() as session:
-            row = await session.get(ConversationRow, conversation_id)
+            row = (
+                await session.execute(
+                    select(ConversationRow).where(
+                        ConversationRow.conversation_id == conversation_id,
+                        ConversationRow.session_id == session_id,
+                    )
+                )
+            ).scalar_one_or_none()
         if row is None:
             return None
         conversation = _load(row.data)
@@ -140,12 +160,14 @@ class PostgresConversationStore:
         )
         return StoredConversation(meta=meta, conversation=conversation)
 
-    async def list(self) -> list[ConversationMeta]:
+    async def list(self, *, session_id: str) -> list[ConversationMeta]:
         async with self._session() as session:
             rows = (
                 (
                     await session.execute(
-                        select(ConversationRow).order_by(ConversationRow.updated_at.desc())
+                        select(ConversationRow)
+                        .where(ConversationRow.session_id == session_id)
+                        .order_by(ConversationRow.updated_at.desc())
                     )
                 )
                 .scalars()
@@ -161,9 +183,16 @@ class PostgresConversationStore:
             for row in rows
         ]
 
-    async def delete(self, conversation_id: str) -> bool:
+    async def delete(self, conversation_id: str, *, session_id: str) -> bool:
         async with self._session() as session:
-            row = await session.get(ConversationRow, conversation_id)
+            row = (
+                await session.execute(
+                    select(ConversationRow).where(
+                        ConversationRow.conversation_id == conversation_id,
+                        ConversationRow.session_id == session_id,
+                    )
+                )
+            ).scalar_one_or_none()
             if row is None:
                 return False
             await session.delete(row)
@@ -194,31 +223,48 @@ class SQLiteConversationStore:
         self._conn = sqlite3.connect(path, check_same_thread=False)
         with self._lock:
             self._conn.execute(_DDL)
+            columns = {
+                str(row[1]) for row in self._conn.execute("PRAGMA table_info(conversations)")
+            }
+            if "session_id" not in columns:
+                self._conn.execute(
+                    "ALTER TABLE conversations ADD COLUMN "
+                    "session_id VARCHAR(64) NOT NULL DEFAULT 'legacy'"
+                )
+            self._conn.execute(_SESSION_INDEX_DDL)
             self._conn.commit()
 
     async def init(self) -> None:
-        """The table is created in ``__init__``; nothing further to prepare."""
+        """The table and additive migration run in ``__init__``."""
 
-    async def save(self, conversation: Conversation, *, title: str) -> None:
+    async def save(self, conversation: Conversation, *, title: str, session_id: str) -> None:
         meta = _meta_from(conversation, title=title)
 
         def _upsert() -> None:
             with self._lock:
                 self._conn.execute(
                     "INSERT OR REPLACE INTO conversations "
-                    "(conversation_id, title, data, updated_at) VALUES (?, ?, ?, ?)",
-                    (meta.conversation_id, meta.title, _dump(conversation), meta.updated_at),
+                    "(conversation_id, session_id, title, data, updated_at) "
+                    "VALUES (?, ?, ?, ?, ?)",
+                    (
+                        meta.conversation_id,
+                        session_id,
+                        meta.title,
+                        _dump(conversation),
+                        meta.updated_at,
+                    ),
                 )
                 self._conn.commit()
 
         await asyncio.to_thread(_upsert)
 
-    async def get(self, conversation_id: str) -> StoredConversation | None:
+    async def get(self, conversation_id: str, *, session_id: str) -> StoredConversation | None:
         def _fetch() -> tuple[str, str, str] | None:
             with self._lock:
                 row = self._conn.execute(
-                    "SELECT title, data, updated_at FROM conversations WHERE conversation_id = ?",
-                    (conversation_id,),
+                    "SELECT title, data, updated_at FROM conversations "
+                    "WHERE conversation_id = ? AND session_id = ?",
+                    (conversation_id, session_id),
                 ).fetchone()
             return row if row is None else (str(row[0]), str(row[1]), str(row[2]))
 
@@ -235,12 +281,13 @@ class SQLiteConversationStore:
         )
         return StoredConversation(meta=meta, conversation=conversation)
 
-    async def list(self) -> list[ConversationMeta]:
+    async def list(self, *, session_id: str) -> list[ConversationMeta]:
         def _fetchall() -> Sequence[tuple[str, str, str]]:
             with self._lock:
                 return self._conn.execute(
                     "SELECT conversation_id, title, updated_at FROM conversations "
-                    "ORDER BY updated_at DESC"
+                    "WHERE session_id = ? ORDER BY updated_at DESC",
+                    (session_id,),
                 ).fetchall()
 
         rows = await asyncio.to_thread(_fetchall)
@@ -254,11 +301,12 @@ class SQLiteConversationStore:
             for row in rows
         ]
 
-    async def delete(self, conversation_id: str) -> bool:
+    async def delete(self, conversation_id: str, *, session_id: str) -> bool:
         def _delete() -> int:
             with self._lock:
                 cursor = self._conn.execute(
-                    "DELETE FROM conversations WHERE conversation_id = ?", (conversation_id,)
+                    "DELETE FROM conversations WHERE conversation_id = ? AND session_id = ?",
+                    (conversation_id, session_id),
                 )
                 self._conn.commit()
             return cursor.rowcount

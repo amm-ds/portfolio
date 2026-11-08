@@ -16,7 +16,7 @@ from agent_chat.config import Settings
 from agent_chat.memory import SQLiteConversationStore, build_conversation_store
 from agent_chat.rag.embeddings import HashingEmbedder
 from agent_chat.rag.store import SQLiteVectorStore, build_vector_store
-from tests import fakes
+from tests import SESSION_HEADERS, fakes
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
@@ -35,8 +35,11 @@ def anyio_backend() -> str:
 def settings(tmp_path: Path) -> Settings:
     """Every test runs on SQLite files under tmp_path."""
     return Settings(
+        provider="ollama",
+        ollama_model="qwen3:8b",
         database_url=f"sqlite:///{tmp_path}/agent_chat.db",
         memory_data_dir=tmp_path / "memory",
+        ingest_roots=[tmp_path],
         embedder="hashing",
     )
 
@@ -89,4 +92,5 @@ def client(settings: Settings) -> Iterator[TestClient]:
     fakes.queue.clear()  # each test scripts exactly its own steps
     app = create_app(settings=settings, model=fakes.app_model(), embedder=HashingEmbedder())
     with TestClient(app) as test_client:
+        test_client.headers.update(SESSION_HEADERS)
         yield test_client

@@ -10,7 +10,6 @@ interface Props {
   content: string;
   parts?: Part[];
   citations?: Citation[];
-  uncertainty?: string;
   locked?: boolean;
   onRespondApproval?: (id: string, approved: boolean) => void;
 }
@@ -20,7 +19,6 @@ export function MessageBubble({
   content,
   parts,
   citations,
-  uncertainty,
   locked = false,
   onRespondApproval,
 }: Props) {
@@ -53,7 +51,6 @@ export function MessageBubble({
             ))}
           </div>
         )}
-        {uncertainty && <p className="uncertainty">⚠ {uncertainty}</p>}
       </div>
     </div>
   );

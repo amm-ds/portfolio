@@ -11,11 +11,11 @@ from agent_chat.schemas import SentMessage
 class ChatDeps:
     """Threaded through every run as ``RunContext[ChatDeps]``.
 
-    ``approvals`` gates consequential tools; ``memory`` + ``user_id`` scope the
-    persistent notebook; ``sent`` records what the agent actually posted.
+    ``approvals`` gates consequential tools; ``memory`` + ``session_id`` scope
+    the browser-session notebook; ``sent`` records what the agent posted.
     """
 
     approvals: ApprovalGate
     memory: NotebookStore | None = None
-    user_id: str = "local"
+    session_id: str = "local"
     sent: list[SentMessage] = field(default_factory=list)

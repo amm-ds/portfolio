@@ -20,7 +20,7 @@ def _final(text: str, *, expect: str | None = None, reject: str | None = None) -
 
 async def test_fact_recall_in_later_run_contains_only_matching_note(tmp_path: Path) -> None:
     notebook = FileNotebook(tmp_path)
-    deps = ChatDeps(approvals=AutoApproval(), memory=notebook, user_id="alice")
+    deps = ChatDeps(approvals=AutoApproval(), memory=notebook, session_id="alice")
     model = scripted_model(
         [
             FakeStep(tool_call=("remember", {"fact": "My favorite editor is Neovim."})),

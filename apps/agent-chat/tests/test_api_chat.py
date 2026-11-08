@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from agent_chat.config import Settings
 from agent_chat.testing import FakeStep
-from tests import fakes
+from tests import OTHER_SESSION_HEADERS, SESSION_HEADERS, fakes
 
 
 def _final(text: str, uncertainty: str = "low") -> FakeStep:
@@ -140,7 +140,7 @@ class TestChatStream:
         thread = _stream_chat(client, sink, "boom")
         error = _next_event(sink, "error")
         assert error["code"] == "assertion_error"
-        assert "exhausted" in error["message"]
+        assert error["message"] == "The agent run failed. Check server logs for details."
         thread.join(timeout=10)
 
     def test_validation_error_envelope(self, client: TestClient) -> None:
@@ -167,6 +167,7 @@ class TestApprovals:
 
         # a second client (same app) answers from another thread/loop
         other = TestClient(client.app)
+        other.headers.update(SESSION_HEADERS)
         answer = other.post(f"/approvals/{request['approval_id']}", json={"approved": True})
         assert answer.status_code == 200
 
@@ -191,6 +192,7 @@ class TestApprovals:
 
         request = _next_event(sink, "approval_request")
         other = TestClient(client.app)
+        other.headers.update(SESSION_HEADERS)
         answer = other.post(f"/approvals/{request['approval_id']}", json={"approved": False})
         assert answer.status_code == 200
 
@@ -212,6 +214,7 @@ class TestApprovals:
         )
         app = create_app(settings=settings, model=fakes.app_model(), embedder=HashingEmbedder())
         with TestClient(app) as client:
+            client.headers.update(SESSION_HEADERS)
             fakes.queue.append(
                 FakeStep(tool_call=("send_message", {"channel": "ops", "text": "hi"}))
             )
@@ -228,4 +231,45 @@ class TestApprovals:
 
     def test_unknown_approval_is_404(self, client: TestClient) -> None:
         response = client.post("/approvals/does-not-exist", json={"approved": True})
+        assert response.status_code == 404
+
+    def test_other_session_cannot_resolve_approval(self, client: TestClient) -> None:
+        fakes.queue.append(FakeStep(tool_call=("send_message", {"channel": "ops", "text": "hi"})))
+        fakes.queue.append(_final("Approved by the owning session."))
+        sink: thread_queue.Queue[dict[str, Any]] = thread_queue.Queue()
+        thread = _stream_chat(client, sink, "announce")
+        request = _next_event(sink, "approval_request")
+
+        denied = client.post(
+            f"/approvals/{request['approval_id']}",
+            json={"approved": True},
+            headers=OTHER_SESSION_HEADERS,
+        )
+        assert denied.status_code == 404
+        approved = client.post(f"/approvals/{request['approval_id']}", json={"approved": True})
+        assert approved.status_code == 200
+        thread.join(timeout=10)
+
+    def test_session_header_is_required_and_validated(self, client: TestClient) -> None:
+        del client.headers["x-agent-chat-session"]
+        missing = client.post("/chat", json={"message": "hi"})
+        assert missing.status_code == 400
+        assert missing.json()["error"]["request_id"]
+
+        invalid = client.post(
+            "/chat", json={"message": "hi"}, headers={"x-agent-chat-session": "invalid"}
+        )
+        assert invalid.status_code == 422
+        assert invalid.json()["error"]["code"] == "http_422"
+
+    def test_other_session_cannot_continue_conversation(self, client: TestClient) -> None:
+        fakes.queue.append(_final("first answer"))
+        client.post("/chat", json={"message": "first question"}).raise_for_status()
+        conversation_id = client.get("/conversations").json()["conversations"][0]["conversation_id"]
+
+        response = client.post(
+            "/chat",
+            json={"message": "second question", "conversation_id": conversation_id},
+            headers=OTHER_SESSION_HEADERS,
+        )
         assert response.status_code == 404

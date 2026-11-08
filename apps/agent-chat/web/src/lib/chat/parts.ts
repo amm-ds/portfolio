@@ -108,6 +108,15 @@ export function reduceEvents(events: readonly ChatEvent[]): Part[] {
   return parts;
 }
 
+/** Commit the atomic structured answer without retaining trailing stream fragments. */
+export function commitFinalAnswer(parts: readonly Part[], text: string): Part[] {
+  let lastNonText = -1;
+  parts.forEach((part, index) => {
+    if (part.kind !== "text") lastNonText = index;
+  });
+  return [...parts.slice(0, lastNonText + 1), { kind: "text", text }];
+}
+
 function preview(text: string, max = 48): string {
   const flat = text.replace(/\s+/g, " ").trim();
   return flat.length <= max ? flat : `${flat.slice(0, max - 1)}…`;

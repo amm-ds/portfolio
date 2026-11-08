@@ -6,6 +6,7 @@ import pytest
 from pydantic_ai import Capability
 
 from agent_chat.capabilities.loader import (
+    _search_resources,
     build_skill_capability,
     load_skills,
     parse_skill,
@@ -54,6 +55,23 @@ class TestHandbookQa:
         capability: Capability[ChatDeps] = build_skill_capability(skill)
         assert capability.id == "handbook"
         assert "handbook" in (capability.description or "")
+
+    async def test_search_returns_relevant_sla_paragraph_beyond_prefix(self) -> None:
+        body = (SKILLS_DIR / "handbook" / "resources" / "handbook.md").read_text(encoding="utf-8")
+        search = _search_resources("handbook", {"handbook": body})
+        hits = await search("severity-1 first response and update cadence")
+
+        assert "within 1 hour" in hits[0]
+        assert "30 minutes" in hits[0]
+        assert "first 400" not in hits[0]
+
+    async def test_search_uses_matching_paragraphs_not_unrelated_prefix(self) -> None:
+        body = (SKILLS_DIR / "handbook" / "resources" / "handbook.md").read_text(encoding="utf-8")
+        search = _search_resources("handbook", {"handbook": body})
+        hits = await search("refund policy")
+
+        assert "full refund within 30 days" in hits[0]
+        assert "within 1 hour" not in hits[0]
 
 
 class TestSummarize:

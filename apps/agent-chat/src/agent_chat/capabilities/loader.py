@@ -66,6 +66,27 @@ def _tokens(text: str) -> list[str]:
     return [t for t in _WORD_RE.findall(text.lower()) if t not in _STOPWORDS]
 
 
+def _excerpt_for_terms(body: str, terms: list[str], *, limit: int = 600) -> str:
+    """Return complete query-relevant paragraphs, never an arbitrary prefix."""
+    if len(body) <= limit:
+        return body
+    paragraphs = [part.strip() for part in re.split(r"\n\s*\n", body) if part.strip()]
+    matches = [
+        paragraph for paragraph in paragraphs if any(term in paragraph.lower() for term in terms)
+    ]
+    if not matches:
+        return body[:400].rsplit(" ", 1)[0] + "…"
+    matches.sort(key=lambda paragraph: -sum(term in paragraph.lower() for term in terms))
+    excerpts: list[str] = []
+    remaining = limit
+    for paragraph in matches[:2]:
+        if remaining <= 0:
+            break
+        excerpts.append(paragraph[:remaining])
+        remaining -= len(paragraph) + 2
+    return "\n\n".join(excerpts).rsplit(" ", 1)[0] + "…"
+
+
 def _search_resources(skill_name: str, resources: dict[str, str]) -> Callable[..., Any]:
     """Deterministic keyword-overlap search over a skill's resource documents."""
 
@@ -91,9 +112,7 @@ def _search_resources(skill_name: str, resources: dict[str, str]) -> Callable[..
         scored.sort(key=lambda pair: (-pair[0], pair[1]))
         hits = []
         for _, title in scored[:k]:
-            body = resources[title]
-            excerpt = body if len(body) <= 400 else body[:400].rsplit(" ", 1)[0] + "…"
-            hits.append(f"{title} — {excerpt}")
+            hits.append(f"{title} — {_excerpt_for_terms(resources[title], terms)}")
         return hits
 
     search_resource.__name__ = f"search_{skill_name.replace('-', '_')}"

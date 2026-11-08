@@ -1,5 +1,7 @@
 """The assembled agent: structured output, budgets, retries, gates, skills."""
 
+from concurrent.futures import ThreadPoolExecutor
+
 import pytest
 from pydantic_ai import UsageLimitExceeded
 
@@ -140,11 +142,73 @@ class TestSkillsOnTheAgent:
     async def test_deferred_skill_end_to_end(self) -> None:
         model = scripted_model(
             [
-                FakeStep(tool_call=("load_capability", {"capability_id": "handbook"})),
+                FakeStep(tool_call=("load_capability", {"id": "handbook"})),
                 FakeStep(tool_call=("search_handbook", {"query": "refund"}), expect="refund"),
-                _final("30 days."),
+                FakeStep(
+                    tool_call=(
+                        "final_result",
+                        {
+                            "text": "30 days.",
+                            "citations": [{"source": "handbook", "quote": "refund"}],
+                            "uncertainty": "low",
+                        },
+                    )
+                ),
             ]
         )
         agent = build_agent(model=model, settings=Settings(embedder="hashing"))
         result = await agent.run("refund window?", deps=ChatDeps(approvals=AutoApproval()))
         assert result.output.text == "30 days."
+
+    async def test_grounded_answer_without_citation_gets_exact_evidence(self) -> None:
+        model = scripted_model(
+            [
+                FakeStep(tool_call=("load_capability", {"id": "handbook"})),
+                FakeStep(tool_call=("search_handbook", {"query": "refund"}), expect="refund"),
+                _final("Customers have a 30-day refund window."),
+            ]
+        )
+        agent = build_agent(model=model, settings=Settings(embedder="hashing", model_retries=0))
+        result = await agent.run("refund window?", deps=ChatDeps(approvals=AutoApproval()))
+        assert result.output.citations[0].source == "handbook"
+        assert "30 days" in result.output.citations[0].quote
+
+    async def test_invalid_grounded_citation_is_replaced_with_exact_evidence(self) -> None:
+        model = scripted_model(
+            [
+                FakeStep(tool_call=("load_capability", {"id": "handbook"})),
+                FakeStep(tool_call=("search_handbook", {"query": "refund"}), expect="refund"),
+                FakeStep(
+                    tool_call=(
+                        "final_result",
+                        {
+                            "text": "Customers have a 30-day refund window.",
+                            "citations": [{"source": "handbook", "quote": "invented"}],
+                            "uncertainty": "low",
+                        },
+                    )
+                ),
+            ]
+        )
+        agent = build_agent(model=model, settings=Settings(embedder="hashing", model_retries=0))
+        result = await agent.run("refund window?", deps=ChatDeps(approvals=AutoApproval()))
+        assert result.output.citations[0].quote != "invented"
+        assert "30 days" in result.output.citations[0].quote
+
+
+class TestExecutorCapability:
+    async def test_optional_bounded_executor_runs_sync_tools(self) -> None:
+        model = scripted_model(
+            [
+                FakeStep(tool_call=("calculator", {"expr": "2 + 2"})),
+                _final("4"),
+            ]
+        )
+        with ThreadPoolExecutor(max_workers=1, thread_name_prefix="agent-chat-test") as executor:
+            agent = build_agent(
+                model=model,
+                settings=Settings(embedder="hashing"),
+                executor=executor,
+            )
+            result = await agent.run("2 + 2", deps=ChatDeps(approvals=AutoApproval()))
+        assert result.output.text == "4"

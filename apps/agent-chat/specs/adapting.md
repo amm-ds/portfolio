@@ -71,11 +71,14 @@ instead and let the `retrieve` tool serve them.
 ## 4. Swap the model provider
 
 Configuration first: `AGENT_CHAT_PROVIDER=hosted` plus
-`HOSTED_BASE_URL` / `HOSTED_API_KEY` / `HOSTED_MODEL`. Code only when the
-provider is not OpenAI-compatible: add a branch in
-`src/agent_chat/models.py`. Set `*_FALLBACK_MODEL` to chain a failover that
-triggers on provider API errors (see `specs/decisions/0001`). The agent,
-tools, and API never change.
+`HOSTED_BASE_URL` / `HOSTED_API_KEY` / `HOSTED_MODEL`, or
+`AGENT_CHAT_PROVIDER=kimi` plus `KIMI_API_KEY` / `KIMI_MODEL` (the Kimi Code
+endpoint has a safe default). Code only when the provider is not
+OpenAI-compatible: add a branch in `src/agent_chat/models.py`. Set
+`*_FALLBACK_MODEL` to chain a failover that triggers on provider API errors
+(see `specs/decisions/0001`). The agent, tools, and API never change. For a
+customer product, evaluate the pay-as-you-go Kimi Platform through `hosted`;
+the named `kimi` preset is for Kimi Code's coding-membership endpoint.
 
 ## 5. Swap the embedder
 
@@ -86,22 +89,27 @@ store's `VECTOR(dim)` column — so after any embedder change: clear
 `rag_chunks` and re-ingest. Hosted embedding services work the same way
 (batch the `embed` calls; keep the protocol).
 
-## 6. Add persistent user memory
+## 6. Add browser-session memory
 
-The default is already wired: `remember` writes an explicit user fact and
-`recall` retrieves only relevant notes in a later run or process. Set
-`AGENT_CHAT_MEMORY_DATA_DIR` to durable storage. Notes live one user per file;
-no notebook content is automatically injected. Keep `remember` limited to facts
-the user explicitly asks to store, and treat recalled text as untrusted context.
+The default is already wired: `remember` writes an explicit fact and `recall`
+retrieves relevant notes in a later run or process. Set
+`AGENT_CHAT_MEMORY_DATA_DIR` to durable storage. Notes live one anonymous
+browser session per file; no notebook content is automatically injected. Give
+preferences a stable key such as `preferred_cloud` so updates replace the old
+fact rather than adding a paraphrase. Exact unkeyed repeats remain idempotent.
+Treat recalled text as untrusted context.
 
-For a real multi-user deployment, replace the request's default `user_id="local"`
-with the authenticated principal in `api/routes_chat.py`; do not accept tenant
-identity from model arguments. To change storage or ranking, implement
-`NotebookStore` (`remember` + bounded `recall`) in `memory/notebook.py` or a new
-adapter, then pass it as `create_app(notebook=...)`. Preserve user isolation and
-result limits. An indexed/semantic backend belongs behind this seam, not in the
-model tool. The file implementation is durable across restarts but is not a
-cross-process compare-and-swap store; use transactions for concurrent writers.
+The UI generates the session UUID in `sessionStorage`; `+ new` preserves it and
+closing the tab starts a new namespace. Chat, conversations, and approvals all
+require the matching `X-Agent-Chat-Session` header. For a real multi-user
+deployment, derive tenant identity from the authenticated principal instead of
+trusting an anonymous header, and implement retention cleanup for old rows and
+files. To change storage or ranking, implement `NotebookStore` (`remember` +
+bounded `recall`) in `memory/notebook.py` or a new adapter, then pass it as
+`create_app(notebook=...)`. Preserve tenant isolation and result limits. An
+indexed/semantic backend belongs behind this seam, not in the model tool. The
+file implementation is durable across restarts but is not a cross-process
+compare-and-swap store; use transactions for concurrent writers.
 
 Tune conversation context independently: `AGENT_CHAT_HISTORY_MAX_TURNS` sets the
 free sliding window (default ten). `AGENT_CHAT_HISTORY_SUMMARIZE_ENABLED=true`
@@ -110,6 +118,13 @@ and determinism matter more than retaining compressed context. The template
 persists the processed bounded Conversation; add an append-only transcript if
 your audit requirements include trimmed turns. Add a fake-model eval like
 `memory-recall-second-turn` for every new memory behavior.
+
+Tune synchronous callback execution with `AGENT_CHAT_EXECUTOR_WORKERS` (default
+four). The API owns one bounded `UseThreadExecutor` capability and closes it on
+shutdown. This is for agent callbacks; storage modules keep their explicit
+`asyncio.to_thread` boundaries. For the static UI build, private API/Postgres
+topology, SSE proxy settings, rollout checks, and secret handling, follow the
+root README's **Deployment topology** and `specs/operations.md`.
 
 ## 7. Restyle the web UI
 
@@ -142,7 +157,7 @@ restyling does not touch it.
 
 ## Ship checklist
 
-- [ ] `uv run pytest -q` — 95 tests green (all offline)
+- [ ] `uv run pytest -q` — complete offline suite green
 - [ ] `uv run ruff check . && uv run ruff format --check .` and `uv run mypy src tests`
 - [ ] `uv run python -m agent_chat.evals.runner` (fake) and
       `uv run python -m agent_chat.evals.runner --model real`; read
@@ -151,8 +166,11 @@ restyling does not touch it.
 - [ ] New domain tools that act on the world go through the approval gate
 - [ ] `docker compose up --build`, ingest your own `docs/`, and click through
       a chat plus one approval in the web UI
-- [ ] `AGENT_CHAT_API_KEY` set for anything beyond localhost; notebook `user_id`
-      derived from the authenticated principal rather than the request body
+- [ ] `AGENT_CHAT_API_KEY` set for anything beyond localhost; tenant identity
+      derived from the authenticated principal, with retention cleanup scheduled
+      for old notebook files and conversation rows
+- [ ] Two browser sessions verified: same-tab recall works, cross-session
+      conversations, memory, and approvals return 404
 - [ ] `AGENT_CHAT_EMBEDDER=minilm` (with re-ingest) for semantic retrieval in
       real deployments; `hashing` is for CI and first boots only
 - [ ] Your identity in `BASE_INSTRUCTIONS` and your domain limits written

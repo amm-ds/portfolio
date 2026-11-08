@@ -65,6 +65,10 @@ class TestFetchUrl:
         assert page.title == "Example Domain"
         assert page.url == "https://example.com"
 
+    async def test_private_address_is_rejected(self) -> None:
+        with pytest.raises(ValueError, match="private and reserved addresses"):
+            await fetch_url("http://127.0.0.1/admin")
+
 
 class TestSendMessageGate:
     def _ctx(self, deps: ChatDeps) -> RunContext[ChatDeps]:

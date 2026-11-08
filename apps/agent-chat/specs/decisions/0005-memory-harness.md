@@ -1,6 +1,6 @@
 # ADR-0005: Harness-style personal memory and bounded history
 
-- **Status:** Accepted
+- **Status:** Accepted; identity model amended by ADR-0006
 - **Date:** 2026-11-05
 
 ## Context
@@ -19,23 +19,24 @@ cost, latency, and another failure mode.
 
 ## Decision
 
-**Use the Harness Memory pattern with automatic injection disabled.** A
-`FileNotebook` stores one `<user_id>.json` file under
+**Use the Harness Memory pattern with automatic injection disabled.** As
+amended by ADR-0006, a `FileNotebook` stores one `<session_id>.json` file under
 `AGENT_CHAT_MEMORY_DATA_DIR` (default `./agent_chat_memory`). The JSON contains
-a schema version and notes with a stable id, concise fact, and UTC timestamp.
-Whitespace-normalized exact repeats are idempotent. User ids are validated as
-safe filename components and come from server-side deps, never tool arguments.
-The API currently accepts `user_id` on `/chat` and defaults it to `local`;
-authenticated deployments must derive it from the authenticated principal
-instead of trusting the request body.
+a schema version and notes with a stable id, concise fact, UTC timestamps, and
+an optional stable key. Session ids are validated safe filename components and
+come from server-side deps, never tool arguments. The browser supplies an
+anonymous session header; authenticated deployments must derive tenant identity
+from the authenticated principal instead.
 
-`remember` appends an explicit durable user fact. `recall` performs case-folded
-literal term scoring and returns at most the requested 1–10 matching notes
-(default five), best score and newest first. Only those matches enter the tool
-result. There is no notebook excerpt, file listing, or whole-store content in
-instructions or prompts. Notes remain untrusted user context, not instructions.
-This is the equivalent of Harness Memory's `inject_memory=False` policy with a
-smaller two-tool surface and a one-file store.
+`remember` stores an explicit durable fact. Reusing a stable key upserts the
+fact to avoid paraphrase duplicates; whitespace-normalized exact unkeyed repeats
+are idempotent. `recall` performs case-folded literal term scoring over key and
+fact and returns at most the requested 1–10 matching notes (default five), best
+score and newest first. Only those matches enter the tool result. There is no
+notebook excerpt, file listing, or whole-store content in instructions or
+prompts. Notes remain untrusted user context, not instructions. This is the
+equivalent of Harness Memory's `inject_memory=False` policy with a smaller
+two-tool surface and a one-file store.
 
 **Trim by default; summarize only on overflow.** A pydantic-ai
 `ProcessHistory` capability retains the last
@@ -63,7 +64,7 @@ audit log; durable personal facts belong in the notebook.
   matching is required, preserving tenant scope and result bounds.
 - Atomic file replacement prevents partial files. The file backend serializes
   writers within one instance but does not provide cross-process compare-and-swap;
-  use a transactional store before allowing concurrent writers for one user.
+  use a transactional store before allowing concurrent writers for one session.
 - Summarization adds one model request only when a request overflows the window.
   It can omit details and spends tokens, so it is opt-in. Trimming can remove
   context either way; `remember` is for facts that must survive that loss.

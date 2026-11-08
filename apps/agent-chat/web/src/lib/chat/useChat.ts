@@ -16,7 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Citation, ChatEvent, Usage } from "./events";
 import type { ChatApi, ConversationMeta, HealthInfo } from "./client";
-import { reduceEvents } from "./parts";
+import { commitFinalAnswer, reduceEvents } from "./parts";
 import type { Part } from "./parts";
 
 export type RunPhase = "idle" | "streaming" | "awaiting_approval";
@@ -26,7 +26,6 @@ export interface DisplayMessage {
   content: string;
   parts?: Part[];
   citations?: Citation[];
-  uncertainty?: string;
 }
 
 export interface ChatState {
@@ -77,7 +76,8 @@ export function useChat(api: ChatApi) {
 
       const events: ChatEvent[] = [];
       runEventsRef.current = events;
-      setState((s) => ({ ...s, phase: "streaming", error: null, events, parts: [] }));
+      // Clear the previous run's usage so observers cannot mistake it for completion.
+      setState((s) => ({ ...s, phase: "streaming", usage: null, error: null, events, parts: [] }));
 
       try {
         for await (const event of api.streamChat(
@@ -101,17 +101,12 @@ export function useChat(api: ChatApi) {
         }
         const done = events.find((e) => e.type === "done");
         if (done && done.type === "done") {
-          // The polished answer supersedes the last streamed text fragment.
-          const committed = reduceEvents(events);
-          if (done.answer.text !== "") {
-            let lastText = -1;
-            committed.forEach((p, i) => {
-              if (p.kind === "text") lastText = i;
-            });
-            const answerPart: Part = { kind: "text", text: done.answer.text };
-            if (lastText === -1) committed.push(answerPart);
-            else committed[lastText] = answerPart;
-          }
+          // The atomic answer supersedes every trailing streamed fragment;
+          // tool/approval parts and earlier plan/critique text remain intact.
+          const streamed = reduceEvents(events);
+          const committed = done.answer.text === ""
+            ? streamed
+            : commitFinalAnswer(streamed, done.answer.text);
           runEventsRef.current = [];
           setState((s) => ({
             ...s,
@@ -123,7 +118,6 @@ export function useChat(api: ChatApi) {
                 content: done.answer.text,
                 parts: committed,
                 citations: done.answer.citations.length > 0 ? done.answer.citations : undefined,
-                uncertainty: done.answer.uncertainty === "low" ? undefined : done.answer.uncertainty,
               },
             ],
             events: [],

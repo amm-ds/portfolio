@@ -12,14 +12,26 @@ from agent_chat.api.app import create_app
 from agent_chat.config import Settings
 from agent_chat.rag.embeddings import HashingEmbedder
 from agent_chat.testing import FakeStep
-from tests import fakes
+from tests import SESSION_HEADERS, fakes
 
 
 class TestHealth:
     def test_health(self, client: TestClient) -> None:
         response = client.get("/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        assert response.json() == {"status": "ok", "provider": "ollama", "model": "qwen3:8b"}
+
+    def test_kimi_health_reports_selected_model(self, tmp_path: Path) -> None:
+        settings = Settings(
+            provider="kimi",
+            kimi_model="k3-256k",
+            database_url=f"sqlite:///{tmp_path}/kimi.db",
+            embedder="hashing",
+        )
+        app = create_app(settings=settings, model=fakes.app_model(), embedder=HashingEmbedder())
+        with TestClient(app) as kimi_client:
+            response = kimi_client.get("/health")
+        assert response.json() == {"status": "ok", "provider": "kimi", "model": "k3-256k"}
 
     def test_ready(self, client: TestClient) -> None:
         response = client.get("/ready")
@@ -47,6 +59,11 @@ class TestIngestEndpoint:
         response = client.post("/ingest", json={"paths": [str(empty)]})
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "http_400"
+
+    def test_ingest_outside_configured_roots_is_403(self, client: TestClient) -> None:
+        response = client.post("/ingest", json={"paths": ["/etc"]})
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "http_403"
 
 
 class TestApiKey:
@@ -91,7 +108,7 @@ class TestApiKey:
                     "POST",
                     "/chat",
                     json={"message": "hi"},
-                    headers={"X-API-Key": "s3cret"},
+                    headers={"X-API-Key": "s3cret", **SESSION_HEADERS},
                 ) as response:
                     assert response.status_code == 200
                     for line in response.iter_lines():

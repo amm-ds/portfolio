@@ -313,6 +313,10 @@ summary:focus-visible,
   max-width: 420px;
 }
 
+.bubble {
+  scroll-margin-block: 0.75rem;
+}
+
 .bubble-role {
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -534,7 +538,7 @@ summary:focus-visible,
   color: var(--muted);
 }
 
-/* --- Citations / uncertainty --- */
+/* --- Citations --- */
 
 .citations {
   display: flex;
@@ -559,12 +563,6 @@ summary:focus-visible,
   padding: 0.05rem 0.5rem;
   color: var(--secondary);
   background: rgba(56, 189, 248, 0.08);
-}
-
-.uncertainty {
-  margin: 0.5rem 0 0;
-  color: #fbbf24;
-  font-size: 0.8rem;
 }
 
 /* --- Composer --- */

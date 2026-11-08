@@ -158,20 +158,28 @@ function flattenMessages(conversation: unknown): ChatMessage[] {
 export interface HttpChatApiOptions {
   /** Sent as X-API-Key when set (matches AGENT_CHAT_API_KEY on the server). */
   apiKey?: string;
+  /** Identifies the browser tab's isolated conversation scope. */
+  sessionId: string;
 }
 
 export class HttpChatApi implements ChatApi {
   private readonly apiKey?: string;
+  private readonly sessionId: string;
 
   constructor(
     private readonly baseUrl: string = "",
-    options: HttpChatApiOptions = {},
+    options: HttpChatApiOptions,
   ) {
     this.apiKey = options.apiKey || undefined;
+    this.sessionId = options.sessionId;
   }
 
   private headers(extra?: Record<string, string>): Record<string, string> {
     return { ...extra, ...(this.apiKey ? { "x-api-key": this.apiKey } : {}) };
+  }
+
+  private sessionHeaders(extra?: Record<string, string>): Record<string, string> {
+    return this.headers({ ...extra, "x-agent-chat-session": this.sessionId });
   }
 
   async health(): Promise<HealthInfo> {
@@ -183,7 +191,7 @@ export class HttpChatApi implements ChatApi {
   async *streamChat(req: ChatRequest, signal?: AbortSignal): AsyncIterable<ChatEvent> {
     const res = await fetch(`${this.baseUrl}/chat`, {
       method: "POST",
-      headers: this.headers({ "content-type": "application/json", accept: "text/event-stream" }),
+      headers: this.sessionHeaders({ "content-type": "application/json", accept: "text/event-stream" }),
       body: JSON.stringify({ message: req.message, ...(req.conversation_id ? { conversation_id: req.conversation_id } : {}) }),
       signal,
     });
@@ -203,7 +211,7 @@ export class HttpChatApi implements ChatApi {
   async decideApproval(approvalId: string, approved: boolean, signal?: AbortSignal): Promise<void> {
     const res = await fetch(`${this.baseUrl}/approvals/${encodeURIComponent(approvalId)}`, {
       method: "POST",
-      headers: this.headers({ "content-type": "application/json" }),
+      headers: this.sessionHeaders({ "content-type": "application/json" }),
       body: JSON.stringify({ approved }),
       signal,
     });
@@ -211,7 +219,7 @@ export class HttpChatApi implements ChatApi {
   }
 
   async listConversations(): Promise<ConversationMeta[]> {
-    const res = await fetch(`${this.baseUrl}/conversations`, { headers: this.headers() });
+    const res = await fetch(`${this.baseUrl}/conversations`, { headers: this.sessionHeaders() });
     if (!res.ok) await raiseForStatus(res, "GET /conversations");
     const body = (await res.json()) as { conversations?: unknown };
     if (!isRecord(body) || !Array.isArray(body.conversations)) {
@@ -233,7 +241,7 @@ export class HttpChatApi implements ChatApi {
 
   async getConversation(id: string): Promise<Conversation> {
     const res = await fetch(`${this.baseUrl}/conversations/${encodeURIComponent(id)}`, {
-      headers: this.headers(),
+      headers: this.sessionHeaders(),
     });
     if (!res.ok) await raiseForStatus(res, `GET /conversations/${id}`);
     const body = (await res.json()) as { meta?: unknown; conversation?: unknown };
@@ -252,7 +260,7 @@ export class HttpChatApi implements ChatApi {
   async deleteConversation(id: string): Promise<void> {
     const res = await fetch(`${this.baseUrl}/conversations/${encodeURIComponent(id)}`, {
       method: "DELETE",
-      headers: this.headers(),
+      headers: this.sessionHeaders(),
     });
     if (!res.ok) await raiseForStatus(res, `DELETE /conversations/${id}`);
   }

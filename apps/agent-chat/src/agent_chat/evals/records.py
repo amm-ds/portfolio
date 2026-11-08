@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel
 
-from agent_chat.schemas import Citation
+from agent_chat.schemas import Citation, SentMessage
 
 
 class EvalRunRecord(BaseModel):
@@ -14,4 +14,6 @@ class EvalRunRecord(BaseModel):
     answer: str
     citations: list[Citation]
     tools_used: list[str]
+    evidence: list[str] = []
+    sent: list[SentMessage] = []
     error: str | None = None

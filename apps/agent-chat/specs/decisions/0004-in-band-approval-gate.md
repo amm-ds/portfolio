@@ -35,17 +35,19 @@ An in-band gate over the same SSE stream, default-deny on any uncertainty:
   path anywhere.
 - **Test doubles ship in the package.** `AutoApproval` (always yes — evals,
   REPL, scripts) and `DenyAll` (refusal/audit paths) implement the same
-  protocol, which is why the 13-case eval suite can grade the approval flow
+  protocol, which is why the 16-case eval suite can grade the approval flow
   deterministically.
 - **Concurrency is isolated by construction.** The gate is per run and bound
-  to that run's queue, so two chats awaiting approval at once never see each
-  other's requests.
+  to that run's queue and browser session, so two chats awaiting approval at
+  once never see or settle each other's requests.
 
-**Upgrade path.** pydantic-ai's `ApprovalRequiredToolset` gives native
-approval flows once the version pinned by the template supports them
-stably. The migration is local by design: implement the toolset's transport
-against the same `POST /approvals/{id}` endpoint, swap it in `build_agent`
-where the gate is wired today, and keep the `ApprovalGate` protocol for
+**Native alternative and upgrade path.** The pinned pydantic-ai line includes
+`ApprovalRequiredToolset`, whose deferred flow ends a run for approval and
+resumes it with tool results. The custom gate remains because it keeps one
+continuous SSE stream open and renders the decision inside the active run,
+rather than introducing a second run/resume transport. A later migration can
+implement the toolset's transport against the same `POST /approvals/{id}`
+endpoint, swap it in `build_agent`, and keep the `ApprovalGate` protocol for
 non-API surfaces (evals, scripts) that have no HTTP request to ride on.
 
 ## Consequences

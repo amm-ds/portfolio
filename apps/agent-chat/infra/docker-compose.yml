@@ -5,7 +5,7 @@
 #   docker compose --profile tools run --rm ingest  # one-shot: index ./docs
 #
 # The API reaches a local Ollama at host.docker.internal:11434 by default;
-# override AGENT_CHAT_OLLAMA_BASE_URL (or switch AGENT_CHAT_PROVIDER=hosted).
+# override AGENT_CHAT_OLLAMA_BASE_URL or switch AGENT_CHAT_PROVIDER=hosted/kimi.
 
 services:
   db:
@@ -30,12 +30,20 @@ services:
       AGENT_CHAT_DATABASE_URL: postgresql+asyncpg://agent_chat:agent_chat@db:5432/agent_chat
       AGENT_CHAT_EMBEDDER: hashing
       AGENT_CHAT_OLLAMA_BASE_URL: http://host.docker.internal:11434
+      AGENT_CHAT_MEMORY_DATA_DIR: /data/agent_chat_memory
+      AGENT_CHAT_PROVIDER: ${AGENT_CHAT_PROVIDER:-ollama}
+      AGENT_CHAT_KIMI_BASE_URL: ${AGENT_CHAT_KIMI_BASE_URL:-https://api.kimi.com/coding/v1}
+      AGENT_CHAT_KIMI_API_KEY: ${AGENT_CHAT_KIMI_API_KEY:-}
+      AGENT_CHAT_KIMI_MODEL: ${AGENT_CHAT_KIMI_MODEL:-k3-256k}
+      AGENT_CHAT_KIMI_FALLBACK_MODEL: ${AGENT_CHAT_KIMI_FALLBACK_MODEL:-}
       # AGENT_CHAT_API_KEY: change-me   # uncomment to require X-API-Key
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - agent_chat_memory:/data/agent_chat_memory
 
   ingest:
     build:
@@ -54,3 +62,4 @@ services:
 
 volumes:
   pgdata:
+  agent_chat_memory:

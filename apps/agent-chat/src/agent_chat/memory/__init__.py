@@ -2,7 +2,7 @@
 
 ``conversations`` stores whole pydantic-ai ``Conversation`` values. ``notebook``
 implements the pydantic-ai Harness Memory pattern with on-demand recall: one
-JSON notebook per user, no automatic notebook injection. ``history`` provides
+JSON notebook per browser session, no automatic notebook injection. ``history`` provides
 sliding-window trimming and optional summarize-on-overflow processors.
 """
 
