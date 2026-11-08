@@ -1,0 +1,87 @@
+# Local production-shaped stack. Development identity and the review password
+# are intentional zero-config defaults for localhost only. For anything beyond
+# localhost set DOCUMENT_INTELLIGENCE_IDENTITY_MODE=gateway,
+# DOCUMENT_INTELLIGENCE_ENVIRONMENT=production, a gateway shared secret, and a
+# real database password (see specs/operations.md); the app fails closed when
+# production runs with development identity or an empty gateway secret.
+name: document-intelligence
+services:
+  db:
+    # Pinned by digest (multi-arch index): tag-only pulls are mutable, and
+    # postgres:16 is a floating minor. Bump deliberately, not casually.
+    image: postgres:16@sha256:f9a7b9ebf6f56201f949db745e47bc423c0f0f8294bafe991cc10bf74b029657
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: review
+      POSTGRES_PASSWORD: ${DOCUMENT_INTELLIGENCE_POSTGRES_PASSWORD:-review}
+      POSTGRES_DB: review
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U review -d review"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  migrate:
+    build: &build
+      context: ..
+      dockerfile: infra/Dockerfile
+    command: ["alembic", "upgrade", "head"]
+    environment: &environment
+      DOCUMENT_INTELLIGENCE_DATABASE_URL: postgresql+psycopg://review:${DOCUMENT_INTELLIGENCE_POSTGRES_PASSWORD:-review}@db:5432/review
+      DOCUMENT_INTELLIGENCE_REPOSITORY_BACKEND: postgres
+      DOCUMENT_INTELLIGENCE_ANALYZER_BACKEND: ${DOCUMENT_INTELLIGENCE_ANALYZER_BACKEND:-fixture}
+      DOCUMENT_INTELLIGENCE_MODEL_API_KEY: ${DOCUMENT_INTELLIGENCE_MODEL_API_KEY:-}
+      DOCUMENT_INTELLIGENCE_MODEL_BASE_URL: ${DOCUMENT_INTELLIGENCE_MODEL_BASE_URL:-https://api.moonshot.ai/v1}
+      DOCUMENT_INTELLIGENCE_MODEL_NAME: ${DOCUMENT_INTELLIGENCE_MODEL_NAME:-kimi-k2.5}
+      DOCUMENT_INTELLIGENCE_IDENTITY_MODE: ${DOCUMENT_INTELLIGENCE_IDENTITY_MODE:-development}
+      DOCUMENT_INTELLIGENCE_ENVIRONMENT: ${DOCUMENT_INTELLIGENCE_ENVIRONMENT:-development}
+      DOCUMENT_INTELLIGENCE_GATEWAY_SHARED_SECRET: ${DOCUMENT_INTELLIGENCE_GATEWAY_SHARED_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    build: *build
+    restart: unless-stopped
+    environment: *environment
+    ports:
+      # Bound to localhost on purpose: this stack is local/staging only, never
+      # publish the API on a host interface without a gateway in front of it.
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - blobs:/data/blobs
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "/app/.venv/bin/python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=4)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  worker:
+    build: *build
+    command: ["document-intelligence-worker"]
+    restart: unless-stopped
+    environment: *environment
+    volumes:
+      - blobs:/data/blobs
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # Liveness is Docker's job (the worker is PID 1; on exit the container
+      # stops and restarts). This check only proves the venv can still import
+      # the worker module — it says nothing about job progress.
+      test: ["CMD-SHELL", "/app/.venv/bin/python -c \"import document_intelligence.worker\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  pgdata:
+  blobs:

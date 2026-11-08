@@ -10,6 +10,18 @@ A future hybrid split may put the static SPA on Cloudflare Pages and the API on
 a VPS. That is not the current deployment contract: do not follow this guide as
 if the two origins had already been separated.
 
+## Document intelligence app
+
+The `apps/document-intelligence` stack (Postgres, API, worker, and a one-shot
+migrate in its `infra/docker-compose.yml`) is a local/staging environment and
+is not part of the supported topology above: the showcase API keeps no
+database, and that app's compose file binds its API to `127.0.0.1:8001` and
+defaults to development identity on purpose. A future public path would
+require a terminating gateway in front of the API
+(`DOCUMENT_INTELLIGENCE_IDENTITY_MODE=gateway`), the shared secret injected
+from a secret manager, TLS termination, and rate limiting at the gateway (the
+app has no limiter of its own). Nothing in this guide provisions that path.
+
 ## Prerequisites
 
 - A VPS with Docker Engine and the Compose plugin.

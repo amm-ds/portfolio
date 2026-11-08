@@ -1,0 +1,1596 @@
+{
+  "analysis_schema": "page-analysis-v1",
+  "analyzer": "deterministic-page-analysis-v1",
+  "cases": [
+    {
+      "analysis_latency_ms": 0.41933299507945776,
+      "answer_correct": 1,
+      "answer_count": 2,
+      "answer_reference_citations": 1,
+      "answers": [
+        {
+          "answer_correct": 0,
+          "answer_reference_citation": 0,
+          "answer_token_f1": 0.4,
+          "error": false,
+          "page": 1,
+          "predicted": {
+            "answer": "QUARTERLY RESEARCH REPORT",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  61.25,
+                  217.9099884033203,
+                  74.98999786376953
+                ],
+                "page": 1,
+                "quote": "QUARTERLY RESEARCH REPORT",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "Which organization produced the report?"
+        },
+        {
+          "answer_correct": 1,
+          "answer_reference_citation": 1,
+          "answer_token_f1": 1.0,
+          "error": false,
+          "page": 2,
+          "predicted": {
+            "answer": "The research program improved forecasting quality.",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  109.25,
+                  282.969970703125,
+                  122.98999786376953
+                ],
+                "page": 2,
+                "quote": "The research program improved forecasting quality.",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "What did the research program improve?"
+        }
+      ],
+      "case_id": "analysis-multipage",
+      "errors": [],
+      "evidence_count": 12,
+      "evidence_resolved": 12,
+      "input_characters": 777,
+      "latency_ms": 0.6450830260291696,
+      "misses": [
+        "page 1: entity misses (f1=0.80)",
+        "page 1: topic misses (f1=0.00)",
+        "page 1: question missed: Which organization produced the report?",
+        "page 2: uncovered key points",
+        "page 2: unsupported key-point citations",
+        "page 2: topic misses (f1=0.50)"
+      ],
+      "output_characters": 2771,
+      "predicted_analysis": {
+        "pages": [
+          {
+            "entities": [
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    85.25,
+                    222.36997985839844,
+                    98.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "ORGANIZATION: Northstar Research",
+                  "resolved": true
+                },
+                "name": "Northstar Research",
+                "text": "Northstar Research",
+                "type": "organization"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    109.25,
+                    149.0399932861328,
+                    122.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "PERIOD: 2025-03-31",
+                  "resolved": true
+                },
+                "name": "2025-03-31",
+                "text": "2025-03-31",
+                "type": "date"
+              }
+            ],
+            "error": null,
+            "image_count": 0,
+            "issues": [],
+            "page": 1,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        61.25,
+                        217.9099884033203,
+                        74.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "QUARTERLY RESEARCH REPORT",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "QUARTERLY RESEARCH REPORT"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        222.36997985839844,
+                        98.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "ORGANIZATION: Northstar Research",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "ORGANIZATION: Northstar Research"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        109.25,
+                        149.0399932861328,
+                        122.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "PERIOD: 2025-03-31",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "PERIOD: 2025-03-31"
+                }
+              ],
+              "summary": "QUARTERLY RESEARCH REPORT"
+            },
+            "table_count": 0,
+            "text_chars": 106,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      61.25,
+                      217.9099884033203,
+                      74.98999786376953
+                    ],
+                    "page": 1,
+                    "quote": "QUARTERLY RESEARCH REPORT",
+                    "resolved": true
+                  }
+                ],
+                "label": "page content",
+                "rationale": "The page contains extractable text summarized above."
+              }
+            ]
+          },
+          {
+            "entities": [],
+            "error": null,
+            "image_count": 0,
+            "issues": [],
+            "page": 2,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        61.25,
+                        101.77999877929688,
+                        74.98999786376953
+                      ],
+                      "page": 2,
+                      "quote": "FINDINGS",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "FINDINGS"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        265.7499694824219,
+                        98.98999786376953
+                      ],
+                      "page": 2,
+                      "quote": "Revenue stabilized across all observed regions.",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "Revenue stabilized across all observed regions."
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        109.25,
+                        282.969970703125,
+                        122.98999786376953
+                      ],
+                      "page": 2,
+                      "quote": "The research program improved forecasting quality.",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "The research program improved forecasting quality."
+                }
+              ],
+              "summary": "FINDINGS"
+            },
+            "table_count": 0,
+            "text_chars": 147,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      85.25,
+                      265.7499694824219,
+                      98.98999786376953
+                    ],
+                    "page": 2,
+                    "quote": "Revenue stabilized across all observed regions.",
+                    "resolved": true
+                  }
+                ],
+                "label": "financial performance",
+                "rationale": "The page explicitly discusses financial performance."
+              }
+            ]
+          }
+        ],
+        "schema_version": "page-analysis-v1"
+      },
+      "qa_latency_ms": 0.2257500309497118,
+      "reference_pages": [
+        {
+          "entities": {
+            "entity_f1": 0.8,
+            "entity_name_matches": 2,
+            "entity_precision": 1.0,
+            "entity_predicted": 2,
+            "entity_recall": 0.6666666666666666,
+            "entity_reference": 3,
+            "entity_true_positive": 2,
+            "entity_type_accuracy": 1.0,
+            "entity_type_correct": 2
+          },
+          "missed": true,
+          "page": 1,
+          "summary": {
+            "summary_covered": 3,
+            "summary_reference_citations": 3,
+            "summary_reference_count": 3,
+            "summary_token_f1": 0.6273504273504273
+          },
+          "topics": {
+            "topic_f1": 0.0,
+            "topic_precision": 0.0,
+            "topic_predicted": 1,
+            "topic_recall": 0.0,
+            "topic_reference": 2,
+            "topic_true_positive": 0
+          }
+        },
+        {
+          "entities": {
+            "entity_f1": 0.0,
+            "entity_name_matches": 0,
+            "entity_precision": 0.0,
+            "entity_predicted": 0,
+            "entity_recall": 0.0,
+            "entity_reference": 0,
+            "entity_true_positive": 0,
+            "entity_type_accuracy": 0.0,
+            "entity_type_correct": 0
+          },
+          "missed": true,
+          "page": 2,
+          "summary": {
+            "summary_covered": 2,
+            "summary_reference_citations": 2,
+            "summary_reference_count": 3,
+            "summary_token_f1": 0.75
+          },
+          "topics": {
+            "topic_f1": 0.5,
+            "topic_precision": 1.0,
+            "topic_predicted": 1,
+            "topic_recall": 0.3333333333333333,
+            "topic_reference": 3,
+            "topic_true_positive": 1
+          }
+        }
+      ],
+      "unsupported_citations": 0
+    },
+    {
+      "analysis_latency_ms": 0.2114999806508422,
+      "answer_correct": 1,
+      "answer_count": 1,
+      "answer_reference_citations": 1,
+      "answers": [
+        {
+          "answer_correct": 1,
+          "answer_reference_citation": 1,
+          "answer_token_f1": 0.6666666666666666,
+          "error": false,
+          "page": 1,
+          "predicted": {
+            "answer": "SKILLS: Python; SQL; FastAPI",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  133.25,
+                  191.2999725341797,
+                  146.99000549316406
+                ],
+                "page": 1,
+                "quote": "SKILLS: Python; SQL; FastAPI",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "Which skills are listed?"
+        }
+      ],
+      "case_id": "prompt-injection",
+      "errors": [],
+      "evidence_count": 7,
+      "evidence_resolved": 7,
+      "input_characters": 326,
+      "latency_ms": 0.268207979388535,
+      "misses": [
+        "page 1: uncovered key points",
+        "page 1: unsupported key-point citations",
+        "page 1: entity misses (f1=0.57)",
+        "page 1: topic misses (f1=0.50)"
+      ],
+      "output_characters": 1558,
+      "predicted_analysis": {
+        "pages": [
+          {
+            "entities": [
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    85.25,
+                    193.48997497558594,
+                    98.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "NAME: Prompt Safety Example",
+                  "resolved": true
+                },
+                "name": "Prompt Safety Example",
+                "text": "Prompt Safety Example",
+                "type": "person"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    109.25,
+                    194.03997802734375,
+                    122.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "ORGANIZATION: Example Lab",
+                  "resolved": true
+                },
+                "name": "Example Lab",
+                "text": "Example Lab",
+                "type": "organization"
+              }
+            ],
+            "error": null,
+            "image_count": 0,
+            "issues": [],
+            "page": 1,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        61.25,
+                        152.88999938964844,
+                        74.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "CURRICULUM VITAE",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "CURRICULUM VITAE"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        193.48997497558594,
+                        98.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "NAME: Prompt Safety Example",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "NAME: Prompt Safety Example"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        109.25,
+                        194.03997802734375,
+                        122.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "ORGANIZATION: Example Lab",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "ORGANIZATION: Example Lab"
+                }
+              ],
+              "summary": "CURRICULUM VITAE"
+            },
+            "table_count": 0,
+            "text_chars": 159,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      133.25,
+                      191.2999725341797,
+                      146.99000549316406
+                    ],
+                    "page": 1,
+                    "quote": "SKILLS: Python; SQL; FastAPI",
+                    "resolved": true
+                  }
+                ],
+                "label": "software engineering",
+                "rationale": "The page explicitly discusses software engineering."
+              }
+            ]
+          }
+        ],
+        "schema_version": "page-analysis-v1"
+      },
+      "qa_latency_ms": 0.05670799873769283,
+      "reference_pages": [
+        {
+          "entities": {
+            "entity_f1": 0.5714285714285715,
+            "entity_name_matches": 2,
+            "entity_precision": 1.0,
+            "entity_predicted": 2,
+            "entity_recall": 0.4,
+            "entity_reference": 5,
+            "entity_true_positive": 2,
+            "entity_type_accuracy": 1.0,
+            "entity_type_correct": 2
+          },
+          "missed": true,
+          "page": 1,
+          "summary": {
+            "summary_covered": 0,
+            "summary_reference_citations": 0,
+            "summary_reference_count": 3,
+            "summary_token_f1": 0.2871794871794872
+          },
+          "topics": {
+            "topic_f1": 0.5,
+            "topic_precision": 1.0,
+            "topic_predicted": 1,
+            "topic_recall": 0.3333333333333333,
+            "topic_reference": 3,
+            "topic_true_positive": 1
+          }
+        }
+      ],
+      "unsupported_citations": 0
+    },
+    {
+      "analysis_latency_ms": 0.2549169585108757,
+      "answer_correct": 1,
+      "answer_count": 1,
+      "answer_reference_citations": 1,
+      "answers": [
+        {
+          "answer_correct": 1,
+          "answer_reference_citation": 1,
+          "answer_token_f1": 0.6666666666666666,
+          "error": false,
+          "page": 1,
+          "predicted": {
+            "answer": "SKILLS: Python; SQL; FastAPI",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  157.25,
+                  191.2999725341797,
+                  170.99000549316406
+                ],
+                "page": 1,
+                "quote": "SKILLS: Python; SQL; FastAPI",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "Which programming and API skills are listed?"
+        }
+      ],
+      "case_id": "cv",
+      "errors": [],
+      "evidence_count": 8,
+      "evidence_resolved": 8,
+      "input_characters": 340,
+      "latency_ms": 0.31587493140250444,
+      "misses": [
+        "page 1: uncovered key points",
+        "page 1: unsupported key-point citations",
+        "page 1: entity misses (f1=0.60)",
+        "page 1: topic misses (f1=0.50)"
+      ],
+      "output_characters": 1706,
+      "predicted_analysis": {
+        "pages": [
+          {
+            "entities": [
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    85.25,
+                    147.91998291015625,
+                    98.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "NAME: Ada Example",
+                  "resolved": true
+                },
+                "name": "Ada Example",
+                "text": "Ada Example",
+                "type": "person"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    109.25,
+                    173.08998107910156,
+                    122.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "EMAIL: ada@example.test",
+                  "resolved": true
+                },
+                "name": "ada@example.test",
+                "text": "ada@example.test",
+                "type": "email"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    133.25,
+                    199.0299835205078,
+                    146.99000549316406
+                  ],
+                  "page": 1,
+                  "quote": "ORGANIZATION: Example Corp",
+                  "resolved": true
+                },
+                "name": "Example Corp",
+                "text": "Example Corp",
+                "type": "organization"
+              }
+            ],
+            "error": null,
+            "image_count": 0,
+            "issues": [],
+            "page": 1,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        61.25,
+                        152.88999938964844,
+                        74.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "CURRICULUM VITAE",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "CURRICULUM VITAE"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        147.91998291015625,
+                        98.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "NAME: Ada Example",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "NAME: Ada Example"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        109.25,
+                        173.08998107910156,
+                        122.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "EMAIL: ada@example.test",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "EMAIL: ada@example.test"
+                }
+              ],
+              "summary": "CURRICULUM VITAE"
+            },
+            "table_count": 0,
+            "text_chars": 164,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      157.25,
+                      191.2999725341797,
+                      170.99000549316406
+                    ],
+                    "page": 1,
+                    "quote": "SKILLS: Python; SQL; FastAPI",
+                    "resolved": true
+                  }
+                ],
+                "label": "software engineering",
+                "rationale": "The page explicitly discusses software engineering."
+              }
+            ]
+          }
+        ],
+        "schema_version": "page-analysis-v1"
+      },
+      "qa_latency_ms": 0.06095797289162874,
+      "reference_pages": [
+        {
+          "entities": {
+            "entity_f1": 0.6,
+            "entity_name_matches": 3,
+            "entity_precision": 1.0,
+            "entity_predicted": 3,
+            "entity_recall": 0.42857142857142855,
+            "entity_reference": 7,
+            "entity_true_positive": 3,
+            "entity_type_accuracy": 1.0,
+            "entity_type_correct": 3
+          },
+          "missed": true,
+          "page": 1,
+          "summary": {
+            "summary_covered": 0,
+            "summary_reference_citations": 0,
+            "summary_reference_count": 3,
+            "summary_token_f1": 0.27505827505827507
+          },
+          "topics": {
+            "topic_f1": 0.5,
+            "topic_precision": 1.0,
+            "topic_predicted": 1,
+            "topic_recall": 0.3333333333333333,
+            "topic_reference": 3,
+            "topic_true_positive": 1
+          }
+        }
+      ],
+      "unsupported_citations": 0
+    },
+    {
+      "analysis_latency_ms": 0.1974579645320773,
+      "answer_correct": 1,
+      "answer_count": 1,
+      "answer_reference_citations": 1,
+      "answers": [
+        {
+          "answer_correct": 1,
+          "answer_reference_citation": 1,
+          "answer_token_f1": 1.0,
+          "error": false,
+          "page": 1,
+          "predicted": {
+            "answer": "Revenue stabilized across regions.",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  157.25,
+                  209.05996704101562,
+                  170.99000549316406
+                ],
+                "page": 1,
+                "quote": "Revenue stabilized across regions.",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "What happened to revenue across regions?"
+        }
+      ],
+      "case_id": "report",
+      "errors": [],
+      "evidence_count": 7,
+      "evidence_resolved": 7,
+      "input_characters": 316,
+      "latency_ms": 0.2507909666746855,
+      "misses": [
+        "page 1: uncovered key points",
+        "page 1: unsupported key-point citations",
+        "page 1: topic misses (f1=0.67)"
+      ],
+      "output_characters": 1561,
+      "predicted_analysis": {
+        "pages": [
+          {
+            "entities": [
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    85.25,
+                    149.0399932861328,
+                    98.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "PERIOD: 2025-03-31",
+                  "resolved": true
+                },
+                "name": "2025-03-31",
+                "text": "2025-03-31",
+                "type": "date"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    109.25,
+                    222.36997985839844,
+                    122.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "ORGANIZATION: Northstar Research",
+                  "resolved": true
+                },
+                "name": "Northstar Research",
+                "text": "Northstar Research",
+                "type": "organization"
+              }
+            ],
+            "error": null,
+            "image_count": 0,
+            "issues": [],
+            "page": 1,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        61.25,
+                        159.5699920654297,
+                        74.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "QUARTERLY REPORT",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "QUARTERLY REPORT"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        149.0399932861328,
+                        98.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "PERIOD: 2025-03-31",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "PERIOD: 2025-03-31"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        109.25,
+                        222.36997985839844,
+                        122.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "ORGANIZATION: Northstar Research",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "ORGANIZATION: Northstar Research"
+                }
+              ],
+              "summary": "QUARTERLY REPORT"
+            },
+            "table_count": 0,
+            "text_chars": 153,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      157.25,
+                      209.05996704101562,
+                      170.99000549316406
+                    ],
+                    "page": 1,
+                    "quote": "Revenue stabilized across regions.",
+                    "resolved": true
+                  }
+                ],
+                "label": "financial performance",
+                "rationale": "The page explicitly discusses financial performance."
+              }
+            ]
+          }
+        ],
+        "schema_version": "page-analysis-v1"
+      },
+      "qa_latency_ms": 0.053333002142608166,
+      "reference_pages": [
+        {
+          "entities": {
+            "entity_f1": 1.0,
+            "entity_name_matches": 2,
+            "entity_precision": 1.0,
+            "entity_predicted": 2,
+            "entity_recall": 1.0,
+            "entity_reference": 2,
+            "entity_true_positive": 2,
+            "entity_type_accuracy": 1.0,
+            "entity_type_correct": 2
+          },
+          "missed": true,
+          "page": 1,
+          "summary": {
+            "summary_covered": 1,
+            "summary_reference_citations": 1,
+            "summary_reference_count": 3,
+            "summary_token_f1": 0.27380952380952384
+          },
+          "topics": {
+            "topic_f1": 0.6666666666666666,
+            "topic_precision": 1.0,
+            "topic_predicted": 1,
+            "topic_recall": 0.5,
+            "topic_reference": 2,
+            "topic_true_positive": 1
+          }
+        }
+      ],
+      "unsupported_citations": 0
+    },
+    {
+      "analysis_latency_ms": 0.2918329555541277,
+      "answer_correct": 1,
+      "answer_count": 1,
+      "answer_reference_citations": 1,
+      "answers": [
+        {
+          "answer_correct": 1,
+          "answer_reference_citation": 1,
+          "answer_token_f1": 0.9473684210526316,
+          "error": false,
+          "page": 1,
+          "predicted": {
+            "answer": "The agreement renews at the end of its term.",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  205.25,
+                  253.53994750976562,
+                  218.99000549316406
+                ],
+                "page": 1,
+                "quote": "The agreement renews at the end of its term.",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "Does the agreement renew at the end of its term?"
+        }
+      ],
+      "case_id": "contract",
+      "errors": [],
+      "evidence_count": 9,
+      "evidence_resolved": 9,
+      "input_characters": 352,
+      "latency_ms": 0.3591659478843212,
+      "misses": [
+        "page 1: uncovered key points",
+        "page 1: unsupported key-point citations",
+        "page 1: topic misses (f1=0.40)"
+      ],
+      "output_characters": 1994,
+      "predicted_analysis": {
+        "pages": [
+          {
+            "entities": [
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    85.25,
+                    202.37997436523438,
+                    98.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "CLIENT: Northstar Manufacturing",
+                  "resolved": true
+                },
+                "name": "Northstar Manufacturing",
+                "text": "Northstar Manufacturing",
+                "type": "organization"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    109.25,
+                    213.49996948242188,
+                    122.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "PROVIDER: Acme Components Ltd",
+                  "resolved": true
+                },
+                "name": "Acme Components Ltd",
+                "text": "Acme Components Ltd",
+                "type": "organization"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    133.25,
+                    165.70997619628906,
+                    146.99000549316406
+                  ],
+                  "page": 1,
+                  "quote": "EFFECTIVE: 2025-01-15",
+                  "resolved": true
+                },
+                "name": "2025-01-15",
+                "text": "2025-01-15",
+                "type": "date"
+              },
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    181.25,
+                    191.24998474121094,
+                    194.99000549316406
+                  ],
+                  "page": 1,
+                  "quote": "GOVERNING_LAW: New York",
+                  "resolved": true
+                },
+                "name": "New York",
+                "text": "New York",
+                "type": "location"
+              }
+            ],
+            "error": null,
+            "image_count": 0,
+            "issues": [],
+            "page": 1,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        61.25,
+                        162.89999389648438,
+                        74.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "SERVICES CONTRACT",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "SERVICES CONTRACT"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        202.37997436523438,
+                        98.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "CLIENT: Northstar Manufacturing",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "CLIENT: Northstar Manufacturing"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        109.25,
+                        213.49996948242188,
+                        122.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "PROVIDER: Acme Components Ltd",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "PROVIDER: Acme Components Ltd"
+                }
+              ],
+              "summary": "SERVICES CONTRACT"
+            },
+            "table_count": 0,
+            "text_chars": 170,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      181.25,
+                      191.24998474121094,
+                      194.99000549316406
+                    ],
+                    "page": 1,
+                    "quote": "GOVERNING_LAW: New York",
+                    "resolved": true
+                  }
+                ],
+                "label": "legal terms",
+                "rationale": "The page explicitly discusses legal terms."
+              }
+            ]
+          }
+        ],
+        "schema_version": "page-analysis-v1"
+      },
+      "qa_latency_ms": 0.06733299233019352,
+      "reference_pages": [
+        {
+          "entities": {
+            "entity_f1": 1.0,
+            "entity_name_matches": 4,
+            "entity_precision": 1.0,
+            "entity_predicted": 4,
+            "entity_recall": 1.0,
+            "entity_reference": 4,
+            "entity_true_positive": 4,
+            "entity_type_accuracy": 1.0,
+            "entity_type_correct": 4
+          },
+          "missed": true,
+          "page": 1,
+          "summary": {
+            "summary_covered": 0,
+            "summary_reference_citations": 0,
+            "summary_reference_count": 3,
+            "summary_token_f1": 0.19166666666666665
+          },
+          "topics": {
+            "topic_f1": 0.4,
+            "topic_precision": 1.0,
+            "topic_predicted": 1,
+            "topic_recall": 0.25,
+            "topic_reference": 4,
+            "topic_true_positive": 1
+          }
+        }
+      ],
+      "unsupported_citations": 0
+    },
+    {
+      "analysis_latency_ms": 0.14699995517730713,
+      "answer_correct": 1,
+      "answer_count": 1,
+      "answer_reference_citations": 1,
+      "answers": [
+        {
+          "answer_correct": 1,
+          "answer_reference_citation": 1,
+          "answer_token_f1": 0.923076923076923,
+          "error": false,
+          "page": 1,
+          "predicted": {
+            "answer": "The final inspection passed without exceptions.",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  109.25,
+                  262.9899597167969,
+                  122.98999786376953
+                ],
+                "page": 1,
+                "quote": "The final inspection passed without exceptions.",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "Did the final inspection pass?"
+        }
+      ],
+      "case_id": "unlabeled",
+      "errors": [],
+      "evidence_count": 6,
+      "evidence_resolved": 6,
+      "input_characters": 212,
+      "latency_ms": 0.2022079424932599,
+      "misses": [
+        "page 1: entity misses (f1=0.00)"
+      ],
+      "output_characters": 1511,
+      "predicted_analysis": {
+        "pages": [
+          {
+            "entities": [],
+            "error": null,
+            "image_count": 0,
+            "issues": [],
+            "page": 1,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        61.25,
+                        119.56999206542969,
+                        74.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "FIELD NOTES",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "FIELD NOTES"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        254.63995361328125,
+                        98.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "The sensor was calibrated before installation.",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "The sensor was calibrated before installation."
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        109.25,
+                        262.9899597167969,
+                        122.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "The final inspection passed without exceptions.",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "The final inspection passed without exceptions."
+                }
+              ],
+              "summary": "FIELD NOTES"
+            },
+            "table_count": 0,
+            "text_chars": 104,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      85.25,
+                      254.63995361328125,
+                      98.98999786376953
+                    ],
+                    "page": 1,
+                    "quote": "The sensor was calibrated before installation.",
+                    "resolved": true
+                  }
+                ],
+                "label": "sensor operations",
+                "rationale": "The page explicitly discusses sensor operations."
+              },
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      109.25,
+                      262.9899597167969,
+                      122.98999786376953
+                    ],
+                    "page": 1,
+                    "quote": "The final inspection passed without exceptions.",
+                    "resolved": true
+                  }
+                ],
+                "label": "quality assurance",
+                "rationale": "The page explicitly discusses quality assurance."
+              }
+            ]
+          }
+        ],
+        "schema_version": "page-analysis-v1"
+      },
+      "qa_latency_ms": 0.05520798731595278,
+      "reference_pages": [
+        {
+          "entities": {
+            "entity_f1": 0.0,
+            "entity_name_matches": 0,
+            "entity_precision": 0.0,
+            "entity_predicted": 0,
+            "entity_recall": 0.0,
+            "entity_reference": 1,
+            "entity_true_positive": 0,
+            "entity_type_accuracy": 0.0,
+            "entity_type_correct": 0
+          },
+          "missed": true,
+          "page": 1,
+          "summary": {
+            "summary_covered": 2,
+            "summary_reference_citations": 2,
+            "summary_reference_count": 2,
+            "summary_token_f1": 1.0
+          },
+          "topics": {
+            "topic_f1": 1.0,
+            "topic_precision": 1.0,
+            "topic_predicted": 2,
+            "topic_recall": 1.0,
+            "topic_reference": 2,
+            "topic_true_positive": 2
+          }
+        }
+      ],
+      "unsupported_citations": 0
+    },
+    {
+      "analysis_latency_ms": 0.24545902851969004,
+      "answer_correct": 1,
+      "answer_count": 1,
+      "answer_reference_citations": 1,
+      "answers": [
+        {
+          "answer_correct": 1,
+          "answer_reference_citation": 1,
+          "answer_token_f1": 0.888888888888889,
+          "error": false,
+          "page": 1,
+          "predicted": {
+            "answer": "All items passed inspection.",
+            "citations": [
+              {
+                "bbox": [
+                  54.0,
+                  379.25,
+                  177.37997436523438,
+                  392.989990234375
+                ],
+                "page": 1,
+                "quote": "All items passed inspection.",
+                "resolved": true
+              }
+            ]
+          },
+          "question": "Did all items pass inspection?"
+        }
+      ],
+      "case_id": "tables-images",
+      "errors": [],
+      "evidence_count": 6,
+      "evidence_resolved": 6,
+      "input_characters": 492,
+      "latency_ms": 0.3183759981766343,
+      "misses": [
+        "page 1: uncovered key points",
+        "page 1: unsupported key-point citations",
+        "page 1: topic misses (f1=0.00)"
+      ],
+      "output_characters": 1329,
+      "predicted_analysis": {
+        "pages": [
+          {
+            "entities": [
+              {
+                "evidence": {
+                  "bbox": [
+                    54.0,
+                    85.25,
+                    206.25997924804688,
+                    98.98999786376953
+                  ],
+                  "page": 1,
+                  "quote": "ORGANIZATION: Northstar Depot",
+                  "resolved": true
+                },
+                "name": "Northstar Depot",
+                "text": "Northstar Depot",
+                "type": "organization"
+              }
+            ],
+            "error": null,
+            "image_count": 1,
+            "issues": [],
+            "page": 1,
+            "status": "completed",
+            "summary": {
+              "key_points": [
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        60.17499923706055,
+                        167.06900024414062,
+                        75.28900146484375
+                      ],
+                      "page": 1,
+                      "quote": "INVENTORY REPORT",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "INVENTORY REPORT"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        54.0,
+                        85.25,
+                        206.25997924804688,
+                        98.98999786376953
+                      ],
+                      "page": 1,
+                      "quote": "ORGANIZATION: Northstar Depot",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "ORGANIZATION: Northstar Depot"
+                },
+                {
+                  "evidence": [
+                    {
+                      "bbox": [
+                        62.0,
+                        138.3249969482422,
+                        83.5009994506836,
+                        150.6909942626953
+                      ],
+                      "page": 1,
+                      "quote": "ITEM",
+                      "resolved": true
+                    }
+                  ],
+                  "text": "ITEM"
+                }
+              ],
+              "summary": "INVENTORY REPORT"
+            },
+            "table_count": 1,
+            "text_chars": 150,
+            "topics": [
+              {
+                "evidence": [
+                  {
+                    "bbox": [
+                      54.0,
+                      379.25,
+                      177.37997436523438,
+                      392.989990234375
+                    ],
+                    "page": 1,
+                    "quote": "All items passed inspection.",
+                    "resolved": true
+                  }
+                ],
+                "label": "quality assurance",
+                "rationale": "The page explicitly discusses quality assurance."
+              }
+            ]
+          }
+        ],
+        "schema_version": "page-analysis-v1"
+      },
+      "qa_latency_ms": 0.07291696965694427,
+      "reference_pages": [
+        {
+          "entities": {
+            "entity_f1": 1.0,
+            "entity_name_matches": 1,
+            "entity_precision": 1.0,
+            "entity_predicted": 1,
+            "entity_recall": 1.0,
+            "entity_reference": 1,
+            "entity_true_positive": 1,
+            "entity_type_accuracy": 1.0,
+            "entity_type_correct": 1
+          },
+          "missed": true,
+          "page": 1,
+          "summary": {
+            "summary_covered": 0,
+            "summary_reference_citations": 0,
+            "summary_reference_count": 2,
+            "summary_token_f1": 0.1
+          },
+          "topics": {
+            "topic_f1": 0.0,
+            "topic_precision": 0.0,
+            "topic_predicted": 1,
+            "topic_recall": 0.0,
+            "topic_reference": 2,
+            "topic_true_positive": 0
+          }
+        }
+      ],
+      "unsupported_citations": 0
+    }
+  ],
+  "chat_adapter": "DeterministicPageChat",
+  "cost_estimate": {
+    "estimated_input_tokens": 704,
+    "estimated_output_tokens": 3108,
+    "input_cost_per_million_usd": 0.0,
+    "note": "Character/4 estimate, not provider metering; configure current prices.",
+    "output_cost_per_million_usd": 0.0,
+    "usd": 0.0
+  },
+  "dataset": {
+    "count": 7,
+    "revision": "2026-11-08.1",
+    "source": "committed synthetic born-digital mixed documents"
+  },
+  "generated_at": "2026-11-08T12:53:35.702220+00:00",
+  "latency_ms": {
+    "analysis_p50": 0.24545902851969004,
+    "p50": 0.31587493140250444,
+    "p95": 0.6450830260291696,
+    "p99": 0.6450830260291696,
+    "qa_p50": 0.06095797289162874
+  },
+  "live_results": "pending",
+  "methods": {
+    "answers": "Per reference page: normalized token F1 between predicted and reference answer; correctness threshold 0.55. Citation support is scored separately by exact source resolution on the same page.",
+    "entities": "Per reference page: case-insensitive normalized exact match on (text, name, type); precision/recall/F1 use all predicted and reference entities on that page. Type accuracy is measured on text+name matches.",
+    "misses": "A reference page is a miss when any key point is uncovered or unsupported, entity/topic F1 is below 1.0, a question is wrong or unsupported, citations fail to resolve, validation error issues exist, the page failed, or table/image counts differ from expectations. analysis_miss_rate is misses over reference pages; page_failure_rate is failed pages over analyzed pages.",
+    "similarity_threshold": 0.55,
+    "summary": "Per reference page: best-match normalized token F1 between each reference key point and predicted key-point text on that page; coverage threshold 0.55. Citation support is scored separately by exact source resolution on the same page.",
+    "topics": "Per reference page: case-insensitive normalized exact match of predicted topic labels against the canonical label or its declared aliases."
+  },
+  "metrics": {
+    "analysis_miss_rate": 1.0,
+    "cases_with_errors": 0,
+    "entity_f1": 0.7567567567567568,
+    "entity_precision": 1.0,
+    "entity_recall": 0.6086956521739131,
+    "entity_type_accuracy": 1.0,
+    "evidence_resolvability": 1.0,
+    "page_failure_rate": 0.0,
+    "provider_errors": 0,
+    "qa_answer_accuracy": 0.875,
+    "qa_answer_token_f1": 0.8115834457939721,
+    "qa_reference_citation_rate": 0.875,
+    "reference_pages": 8,
+    "summary_key_point_coverage": 0.36363636363636365,
+    "summary_key_point_token_f1": 0.4381330475080475,
+    "summary_reference_citation_rate": 0.36363636363636365,
+    "topic_f1": 0.4666666666666666,
+    "topic_precision": 0.7777777777777778,
+    "topic_recall": 0.3333333333333333,
+    "unsupported_citation_rate": 0.0
+  },
+  "mode": "offline_deterministic",
+  "prompt_sha256_16": "15574f74a27a201f",
+  "quality_note": "Deterministic functional verification; not AI accuracy.",
+  "schema_version": "page-analysis-eval-report-v1"
+}

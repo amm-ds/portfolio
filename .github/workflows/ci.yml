@@ -24,6 +24,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       deployment: ${{ steps.filter.outputs.deployment }}
       agent_chat: ${{ steps.filter.outputs.agent_chat }}
+      document_intelligence: ${{ steps.filter.outputs.document_intelligence }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
         with:
@@ -45,6 +46,9 @@ jobs:
               - 'scripts/axe_check.mjs'
             agent_chat:
               - 'apps/agent-chat/**'
+              - '.github/workflows/ci.yml'
+            document_intelligence:
+              - 'apps/document-intelligence/**'
               - '.github/workflows/ci.yml'
             docs:
               - 'docs/**'
@@ -176,6 +180,11 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/agent-chat/web/package-lock.json
       - name: Install isolated workspace
         working-directory: apps/agent-chat
         run: uv sync --dev --locked
@@ -188,6 +197,75 @@ jobs:
       - name: Pytest
         working-directory: apps/agent-chat
         run: uv run pytest -q
+      - name: Web — install, unit tests, lint, build
+        working-directory: apps/agent-chat/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+          npm run lint
+          npm run build
+      - name: Web — mock-transport E2E
+        working-directory: apps/agent-chat/web
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+
+  document-intelligence:
+    needs: changes
+    if: needs.changes.outputs.document_intelligence == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: apps/document-intelligence/uv.lock
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/document-intelligence/web/package-lock.json
+      - name: Install isolated workspace
+        working-directory: apps/document-intelligence
+        run: uv sync --dev --locked
+      - name: Ruff
+        working-directory: apps/document-intelligence
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Mypy
+        working-directory: apps/document-intelligence
+        run: uv run mypy src tests scripts migrations
+      - name: Pytest
+        working-directory: apps/document-intelligence
+        run: uv run pytest -q
+      - name: Offline evaluation harness
+        working-directory: apps/document-intelligence
+        run: uv run document-intelligence-eval --output reports/ci-metrics.json
+      - name: Dependency audit
+        # This standalone workspace is excluded from the root uv.lock, so the
+        # root gate's audit never sees it; export this lockfile's runtime
+        # requirements and audit them with pip-audit (uv has no audit
+        # subcommand — same pattern as the root gate).
+        working-directory: apps/document-intelligence
+        run: |
+          uv export --frozen --no-dev -o /tmp/document-intelligence-requirements.txt
+          uvx pip-audit --requirement /tmp/document-intelligence-requirements.txt --strict
+      - name: Compose + Postgres end-to-end smoke
+        working-directory: apps/document-intelligence
+        run: |
+          docker compose -f infra/docker-compose.yml config --quiet
+          trap 'docker compose -f infra/docker-compose.yml down --remove-orphans' EXIT
+          docker compose -f infra/docker-compose.yml up --build -d
+          uv run python scripts/smoke_compose.py
+      - name: Web — install, unit tests, lint, build
+        working-directory: apps/document-intelligence/web
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+          npm run lint
+          npm run build
 
   a11y-axe:
     # Blocking axe + HTTP smoke at desktop/tablet/mobile widths; uploads the
