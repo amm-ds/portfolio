@@ -77,8 +77,9 @@ they score lower on the Q4 test window. Selecting on that test result would be
 test-set selection. The challengers run in a torch-free subprocess because
 their OpenMP runtime conflicts with torch on macOS.
 
-Permutation importance ranks `lag_168` (0.80), `lag_24` (0.64), `lag_1` (0.55),
-and `hour` (0.32) first. Weather contributes approximately zero to point MAE;
+Permutation importance (committed figure `reports/figures/gbm_feature_importance.json`)
+ranks `lag_1` (3.31 mean MAE increase), `lag_168` (2.58), and `lag_24` (2.48)
+first, with `hour` at 1.12. Weather contributes approximately zero to point MAE;
 its useful evidence is the directional elasticity analysis below.
 
 ### Green-taxi transfer and serving

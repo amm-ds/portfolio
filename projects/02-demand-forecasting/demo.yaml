@@ -1,5 +1,5 @@
 id: forecast-workbench
-title: demand forecast workbench
+title: Demand Forecast Workbench
 hook: Pick one of 48 committed M5 store-product series, overlay all 8 candidates
   from the seasonal naive to the screened ensemble on the scored-once
   competition window — curves, model spread and per-series WAPE respond.

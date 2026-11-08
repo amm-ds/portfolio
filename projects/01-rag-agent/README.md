@@ -5,10 +5,10 @@ Wikipedia corpus. `pydantic-ai` restricts corpus access to retrieval tools and
 returns structured, cited answers. Retrieval combines MiniLM embeddings, FAISS,
 and cross-encoder reranking.
 
-The default provider is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
+The runtime default is local Ollama (`qwen3.6:35b-a3b-q4_K_M`); any
 OpenAI-compatible endpoint uses the same path. There is no runtime mock.
-Quality evidence covers a 65-question tuning set and a sealed 15-question
-held-out set.
+**`kimi-for-coding` is the selected provider for the reported evaluation**,
+which covers a 65-question tuning set and a sealed 15-question held-out set.
 
 - Design record and history: [DESIGN.md](DESIGN.md)
 - Evidence: `reports/metrics.json`, `reports/cost_telemetry.json`,
@@ -62,65 +62,72 @@ below 0.6. Provider selection, verification, and judging follow
 ## Results
 
 Retrieval is provider-independent. On the 65-question tuning set, recall@5 is
-**0.831 versus 0.031 for the random floor**. The hosted generation pass keeps
-unsupported claims on **18 of 65 answers**, so citations make answers auditable
-but not safe for unattended use.
+**0.831 versus 0.031 for the random floor**. The selected provider is hosted
+**`kimi-for-coding`**: 46 answers are correct, but 17 retain unsupported claims,
+so citations make answers auditable but not safe for unattended use.
 
-| metric | local qwen3.6-q4, 30-question LLM subset | hosted `kimi-for-coding`, 65 questions |
-|---|---:|---:|
-| failure taxonomy | 15 correct / 14 unsupported / 1 format | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format |
-| RAGAS faithfulness (95% CI) | 0.606 | **0.685 [0.605, 0.760]** |
-| RAGAS answer relevancy | 0.720 | **0.878 [0.820, 0.918]** |
-| RAGAS context precision / recall | 1.000 / 0.978 | 0.760 [0.667, 0.849] / 0.978 [0.954, 0.995] |
-| rubric-judge faithfulness | 0.441 [0.29, 0.61] | 0.550 [0.483, 0.611] |
-| refusal accuracy | 0.857 [0.57, 1.00] | 0.900 [0.70, 1.00] |
-| false-abstention rate | 0.174 | 0.036 |
-| cite-when-expected | 0.957 | 0.964 |
-| verify overhead | 33 repair calls | 39 repair calls in 125 verify calls |
-| agent latency p50 / p95 | 61 s / 245 s, load-contended | **23 s / 175 s** |
-| cost | $0 API | **$3.58 cloud-equivalent** |
+| metric | selected `kimi-for-coding`, 65 tuning questions |
+|---|---:|
+| failure taxonomy | 46 correct / 17 unsupported / 2 retrieval-miss / 0 format |
+| rubric faithfulness | **0.6209** (incumbent 0.5504) |
+| rubric answer relevance | **0.6458** (incumbent 0.5573) |
+| rubric context recall | 0.9636 |
+| RAGAS faithfulness (95% CI) | **0.7337 [0.6562, 0.8131]** |
+| RAGAS answer relevancy | **0.8602** (small regression from 0.8775) |
+| RAGAS context precision / recall | 0.7609 / 0.9826 |
+| refusal accuracy | 1.0 |
+| false-abstention rate | 0.0545 |
+| cite-when-expected | 0.9636 |
+| answer latency p50 / p95 | 25.888 s / 108.836 s |
+| answer-generation cost | $0.000906/query before judge/verify costs |
 
-The provider comparison is directional because its question counts and judge
-models differ. Retrieval is stronger than generation grounding in both passes.
+The provider comparison improves rubric faithfulness, answer relevance, and
+RAGAS faithfulness, but the RAGAS answer-relevancy regression is real and stays
+in the headline table. Retrieval remains stronger than generation grounding.
 
 ### Sealed held-out set
 
 The held-out set contains 15 fresh questions: 8 single-hop, 2 multi-hop, and 5
 unanswerable. Programmatic gates check corpus support, absent terms, and
-Jaccard separation from the tuning set before scoring. The hosted pass uses
-verification and the rubric judge, without RAGAS.
+Jaccard separation from the tuning set before scoring. The selected hosted pass
+uses verification and the rubric judge, without RAGAS.
 
-| metric | held-out, n=15 | tuning set, n=65 |
-|---|---:|---:|
-| retrieval recall@5 / recall@10 | 0.600 / 0.667 | 0.831 / 0.846 |
-| retrieval MRR@5, random floor | 0.567 (0.022) | 0.808 (0.018) |
-| rubric-judge faithfulness (95% CI) | 0.62 [0.45, 0.79], 10 answerable | 0.550 [0.483, 0.611] |
-| failure taxonomy | 10 correct / 4 unsupported / 1 retrieval-miss | 44 / 18 / 2 / 1 |
-| refusal accuracy | 1.00 (5/5 unanswerable) | 0.900 [0.70, 1.00] |
-| latency p50 / p95 | 24.7 s / 36.6 s | 23 s / 175 s |
-| cost | $0.25 cloud-equivalent | $3.58 cloud-equivalent |
+| metric | sealed held-out result |
+|---|---:|
+| retrieval recall@5 / recall@10 | 0.600 / 0.667 |
+| retrieval MRR@5 (random floor) | 0.567 (0.022) |
+| rubric faithfulness, 10 answerable | 0.64 |
+| rubric answer relevance, 10 answerable | 0.595 |
+| rubric context recall, 10 answerable | 0.9 |
+| required refusals | 5/5 |
+| latency p50 / p95 | 28.025 s / 52.176 s |
+| whole-pass meter | 61 calls / $0.240699 cloud-equivalent |
 
-Held-out retrieval is harder than tuning-set retrieval. All five unanswerable
-questions produce abstentions with zero false abstentions.
+Held-out retrieval is harder than tuning-set retrieval. The sealed set is one
+small slice, not evidence of broad-corpus or unattended readiness.
 
 ### Cost and budget operation
 
 Costs use the public reference rate card ($1/Mtok input, $4/Mtok output, cached
 reads at 30%). They are cloud-equivalent estimates, not billed amounts. Only
-successful calls are metered.
+successful calls are metered. Tuning cost is reported as answer generation per
+query before judging and verification; no replacement end-to-end tuning-suite
+total is claimed.
 
-| phase | calls | input tokens | output tokens | cached share | cloud-equivalent spend |
-|---|---:|---:|---:|---:|---:|
-| agent | 64 | 3.72M | 103K | 90.0% | $1.79 |
-| RAGAS | 605 | 713K | 167K | 50.4% | $1.13 |
-| verify | 125 | 220K | 75K | 35.7% | $0.47 |
-| judge | 128 | 106K | 22K | 1.5% | $0.19 |
-| **total** | **922** | **4.76M** | **367K** | **79.6%** | **$3.58** |
+The sealed 15-question pass meters:
+
+| phase | calls | cloud-equivalent spend |
+|---|---:|---:|
+| agent | 14 | $0.144457 |
+| judge | 28 | $0.037550 |
+| verify | 19 | $0.058692 |
+| RAGAS | 0 | $0.000000 |
+| **total** | **61** | **$0.240699** |
 
 `LLM_COST_LIMIT_USD` caps each run through the platform spend ledger. A cap
 violation stops the CLI with setup guidance; it does not silently select a
 fallback judge. `LLM_TOTAL_TOKENS_LIMIT` separately stops runaway tool loops.
-Exact telemetry is in `reports/cost_telemetry.json`.
+Exact telemetry is in `reports/metrics.json → detail.heldout.meter`.
 
 ## Figures
 
@@ -132,11 +139,12 @@ Exact telemetry is in `reports/cost_telemetry.json`.
 | retrieval funnel | [reports/figures/retrieval_funnel.html](reports/figures/retrieval_funnel.html) |
 | retrieval HPO frontier | [reports/figures/retrieval_hpo_frontier.html](reports/figures/retrieval_hpo_frontier.html) |
 | per-query latency | [reports/figures/latency_histogram.html](reports/figures/latency_histogram.html) |
+| selected-provider comparison | [reports/figures/kimi_generation_comparison.json](reports/figures/kimi_generation_comparison.json) |
 | full report | [reports/report.html](reports/report.html) |
 
 ## Limits
 
-Answers are not trustworthy unattended: the hosted tuning pass retains 18
+Answers are not trustworthy unattended: the selected tuning pass retains 17
 unsupported-claim outcomes and held-out recall@5 falls to 0.600. Local repair
 is weak, and local verification gains come mainly through abstention. Broader
 corpus quality and always-on public chat remain unproven; `RAG_CHAT_ENABLED=1`

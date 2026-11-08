@@ -30,3 +30,18 @@ stages:
       - reports/figures
     metrics:
       - reports/metrics.json
+
+  evaluate_kimi:
+    cmd: uv run python -m agentic_workflows.cli run-all --records-path data/kimi_run_records.json && uv run python -m agentic_workflows.cli run-all --heldout --records-path data/kimi_heldout_records.json && uv run python -m agentic_workflows.cli evaluate --records-path data/kimi_run_records.json --reports-dir reports/kimi-for-coding && uv run python -m agentic_workflows.cli evaluate --heldout --records-path data/kimi_heldout_records.json --reports-dir reports/kimi-for-coding && uv run python -m agentic_workflows.cli compare-challenger
+    deps:
+      - data/tasks.json
+      - data/tasks_heldout.json
+      - src/agentic_workflows
+      - params.yaml
+    outs:
+      - data/kimi_run_records.json
+      - data/kimi_heldout_records.json
+      - reports/kimi-for-coding
+      - reports/figures/kimi_workflow_comparison.json
+    metrics:
+      - reports/kimi_comparison.json

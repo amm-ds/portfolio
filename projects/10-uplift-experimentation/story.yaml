@@ -216,6 +216,29 @@ sections:
       effect, combined propensity-weighted. Base learners: gradient
       boosting on pre-treatment features only.
 
+      **Cross-fitting core — every row is scored by a model that never saw it.**
+      Fold-specific seeds vary the fit; the final guard forbids missing scores.
+
+      ```python
+      kfold = KFold(n_splits=folds, shuffle=True, random_state=seed)
+      scores = {name: np.full(len(y), np.nan) for name in SCORE_POLICIES}
+      for fold, (train_idx, test_idx) in enumerate(kfold.split(X)):
+          fold_scores = fit_policy_scores(
+              X.iloc[train_idx],
+              treatment[train_idx],
+              y[train_idx],
+              seed + 10 * fold,
+              X_score=X.iloc[test_idx],
+          )
+          for name, values in fold_scores.items():
+              scores[name][test_idx] = values
+      out = pd.DataFrame(scores)
+      if out.isnull().any().any():
+          raise ValueError("cross-fitting left un-scored rows")
+      return out
+      ```
+
+      Excerpt from [models.py](https://github.com/amm-ds/portfolio/blob/main/projects/10-uplift-experimentation/src/uplift_experimentation/models.py).
       The anchor read is solid: Mens conversion 1.25% vs 0.57% control, an
       average treatment effect of +0.68 percentage points (SE 0.09); power
       is ample (sizing in conclusions). The CUPED adjustment

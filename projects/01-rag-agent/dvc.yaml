@@ -49,3 +49,16 @@ stages:
       - reports/figures
     metrics:
       - reports/metrics.json
+
+  evaluate_kimi:
+    cmd: uv run python -m rag_agent.cli evaluate --ragas --reports-dir reports/kimi-for-coding && uv run python -m rag_agent.cli compare-challenger
+    deps:
+      - data/index
+      - data/raw
+      - src
+      - params.yaml
+    outs:
+      - reports/kimi-for-coding
+      - reports/figures/kimi_generation_comparison.json
+    metrics:
+      - reports/kimi_comparison.json

@@ -257,6 +257,32 @@ sections:
       ends typed — a WorkflowResult or a failure message. The rejected
       alternative was one big prompt; typed states make the run auditable.
 
+      **Checkpoint resume — approval is a typed state transition, not a prompt
+      instruction.** The persisted state drives the next graph entry point:
+
+      ```python
+      state = checkpoint.state
+      if decision.approved:
+          graph = build_workflow_graph(ExecuteNode)
+          return await graph.run(
+              state=state,
+              deps=WorkflowDeps(model=resolved_model, notebook=Notebook()),
+              inputs=ExecuteNode(),
+          )
+
+      state.critique_feedback = decision.feedback or (
+          "The reviewer rejected the plan without comments; reconsider the approach."
+      )
+      state.steps_taken.append("checkpoint: rejected → re-plan")
+      graph = build_workflow_graph(PlanNode)
+      return await graph.run(
+          state=state,
+          deps=WorkflowDeps(model=resolved_model, notebook=Notebook()),
+          inputs=PlanNode(),
+      )
+      ```
+
+      Excerpt from [hitl.py](https://github.com/amm-ds/portfolio/blob/main/projects/09-agentic-workflows/src/agentic_workflows/hitl.py).
       Tool descriptions are behavioral contracts: the locked-down calculator
       rejects non-arithmetic work, conversion uses fixed factors, document
       retrieval fails loudly if project 01's index is absent, and the
@@ -375,7 +401,7 @@ sections:
         segment ballooning, which would mean one slow node; instead,
         retries appear as separate labelled visits, so a retrying task
         shows as several small segments rather than one stretched bar —
-        and even the widest task, t15, finishes at 31.1 s.
+        and even the p95 task, t15, finishes at 31.1 s.
       - **Cost:** ~$0.13 of the $2.00 suite cap, about $0.0088 per task at
         the labelled cloud rate card — an estimate, not a bill.
       - **Stability:** two hosted repeat passes kept 15/15 answers and exact
@@ -446,8 +472,8 @@ sections:
 
       **Cost basis:** cloud-equivalent estimates at the public reference card
       ($1.00/Mtok input, $4.00/Mtok output); the hosted key is membership-quota,
-      not billed. All hosted runs to date (8 suite runs, including repeats) total
-      ~$0.65 combined; each ran under the $2.00 cap.
+      not billed. Every hosted run stayed under the $2.00 suite cap;
+      per-run usage is recorded in reports/.
 
       ## Protocol
 

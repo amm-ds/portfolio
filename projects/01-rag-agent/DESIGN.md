@@ -221,7 +221,7 @@ the original envelope targets and their first measured values:
 | RAGAS answer_relevancy (n=10) | ≥ 0.70 | **0.904** — superseded |
 | RAGAS context_recall (n=10) | ≥ 0.70 | **0.952** — superseded |
 | p95 end-to-end query latency | report plainly | **245 s** local (p50 61 s) — compute-bound, $0 API |
-| Cost per query | $0 API (local) | **$0** local; hosted 65-q run metered at $3.58 cloud-equivalent across four phases |
+| Cost per query | $0 API (local) | **$0** local; selected hosted answer generation $0.000906/query before judge/verify costs |
 | Corpus size | 500–600 articles | 593 articles / 3,589 chunks @200 |
 | Random-retrieval baseline (seeded floor) | reported for contrast | recall@5 0.038/0.000/0.000, MRR@5 0.038/0.000/0.000 → Δ recall@5 up to +0.92 |
 
@@ -262,6 +262,13 @@ downloaded, `EmbeddingModelError` halts the pipeline with an actionable message.
 
 ## 6. Changelog
 
+- 0.7.0 (2026-11-07) — selected `kimi-for-coding` after the provider comparison:
+  46 correct / 17 unsupported / 2 retrieval-miss / no format failures across 65
+  tuning questions; rubric faithfulness 0.6209, RAGAS faithfulness 0.7337, and
+  answer relevancy 0.8602 (down from 0.8775, disclosed in the article). Sealed
+  held-out measured faithfulness 0.64 with 5/5 refusals, 61 calls, and $0.240699
+  cloud-equivalent. Selection and held-out details live in `kimi_comparison.json`
+  and `metrics.json → detail.heldout`.
 - 0.6.0 (2026-10-18) — sealed 15-question held-out evaluation: 8 single-hop,
   2 multi-hop, and 5 unanswerable questions, gated for support, absent terms,
   and Jaccard separation before one verify-on hosted pass. Held-out recall@5 /

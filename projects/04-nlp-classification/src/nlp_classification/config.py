@@ -120,9 +120,9 @@ class NLPConfig(PortfolioBaseModel):
         "bounded test split in the full AG News test partition (no retraining).",
     )
     cascade_taus: list[float] = Field(
-        default_factory=lambda: [0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0],
-        description="TF-IDF confidence cutoffs swept by the routing experiment; an item "
-        "below the cutoff is escalated to the transformer.",
+        default_factory=lambda: [0.5, 0.6, 0.7, 0.8, 0.9],
+        description="Transformer-confidence cutoffs swept by the LLM-review cascade; "
+        "the 0.90 ceiling bounds provider reviews and prevents an unbounded full-corpus sweep.",
     )
 
     # Locations (relative to the project working directory)

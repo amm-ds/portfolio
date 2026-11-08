@@ -284,6 +284,19 @@ def evaluate() -> None:
     typer.echo(f"report written to reports/report.html in {time.perf_counter() - started:.1f}s")
 
 
+@app.command(name="llm-cascade")
+def llm_cascade_cmd() -> None:
+    """Fit validation-only selective review, then score test/fresh once."""
+    from nlp_classification.llm_cascade import run_cascade
+
+    result = run_cascade(_cfg())
+    test = result["bounded test"]
+    typer.echo(
+        f"selected={result['selected']} (tau={result['threshold']}) | "
+        f"test macro-F1 {test['baseline_f1_macro']:.4f} → {test['cascade_f1_macro']:.4f}"
+    )
+
+
 @app.command(name="fresh-holdout")
 def fresh_holdout_cmd() -> None:
     """Score persisted artifacts on a fresh holdout; run the routing sweep.

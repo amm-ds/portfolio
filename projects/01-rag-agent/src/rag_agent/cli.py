@@ -141,6 +141,14 @@ def evaluate(
             "--no-verify reproduces the pre-wave-14 baseline answer path.",
         ),
     ] = None,
+    reports_dir: Annotated[
+        Path | None,
+        typer.Option(
+            "--reports-dir",
+            help="Optional separate output directory for a challenger run; "
+            "the committed incumbent artifacts stay untouched.",
+        ),
+    ] = None,
 ) -> None:
     """Run retrieval HPO + RAG eval + ops, writing reports/.
 
@@ -149,6 +157,8 @@ def evaluate(
     report, and --ragas to add the RAGAS metric set.
     """
     config = load_config()
+    if reports_dir is not None:
+        config.reports_dir = reports_dir
     if heldout:
         if offline:
             raise typer.BadParameter("--heldout needs a provider and cannot combine with --offline")
@@ -194,6 +204,27 @@ def evaluate(
         typer.secho(f"error: {exc}", fg=typer.colors.RED, err=True)
         raise typer.Exit(code=2) from exc
     typer.echo(f"evaluation written: {config.reports_dir / 'report.html'}")
+
+
+@app.command()
+def compare_challenger(
+    challenger_dir: Annotated[
+        Path,
+        typer.Option(
+            "--challenger-dir",
+            help="Separate reports directory written by a hosted challenger run.",
+        ),
+    ] = Path("reports/kimi-for-coding"),
+) -> None:
+    """Compare a challenger with the committed incumbent, without model calls."""
+    from rag_agent.challenger import compare_challenger as compare
+
+    config = load_config()
+    result = compare(config, challenger_dir)
+    typer.echo(
+        f"selected={result['selected']}; comparison written: "
+        f"{config.reports_dir / 'kimi_comparison.json'}"
+    )
 
 
 @app.command()

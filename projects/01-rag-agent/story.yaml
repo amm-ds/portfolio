@@ -1,5 +1,5 @@
 project_id: 01-rag-agent
-short_version: "A question-answering assistant that answers only from a pinned 593-article Wikipedia corpus and cites every claim. Retrieval finds the right passage 83% of the time, but 18 of 65 hosted answers kept unsupported claims—answers are auditable, yet not trustworthy unattended."
+short_version: "A cited QA assistant over 593 pinned Wikipedia articles. Selected kimi-for-coding scores 46/65 correct with 17 unsupported-claim outcomes; sealed recall@5 falls from 0.831 to 0.600. Auditable, not unattended-ready."
 sections:
 - id: background
   text_md: |
@@ -16,12 +16,12 @@ sections:
     the 0.6 support floor.
 
     On 65 graded questions, recall@5 (relevant article in the top five) is
-    0.831 against 0.677 for word-match search — yet 18 of 65 hosted answers
+    0.831 against 0.677 for word-match search — yet 17 of 65 hosted answers
     kept unsupported claims, and a sealed 15-question set drops retrieval to
     0.600. The system is auditable, not yet trustworthy unattended.
 
     **Business summary:** Ask questions, get cited answers from 593 pinned
-    Wikipedia articles — the right article is found 83% of the time, yet 18 of
+    Wikipedia articles — the right article is found 83% of the time, yet 17 of
     65 hosted answers kept unsupported claims.
   figures: []
 - id: objectives
@@ -171,7 +171,7 @@ sections:
     - The chunk-size sweep figure settles chunking: 200-, 400-, and 800-token
       chunks tie at recall@5 0.831, and 200 tokens needs only ≈800 input
       tokens per query for the top-3 context — the larger sizes cost roughly
-      2–5× the tokens for no recall gain, so 200 tokens stays.
+      2–4× the tokens for no recall gain, so 200 tokens stays.
     - The model comparison figure settles the embedding model: the 80 MB
       MiniLM matches BGE-small at recall@5 0.831 and edges it on MRR@5 (mean
       reciprocal rank of the first relevant hit), 0.808 vs 0.805. A bigger
@@ -181,9 +181,31 @@ sections:
       ones. At 593 articles, exact search is cheap enough that no
       approximate index is needed.
 
+    **Retrieval core — wide candidate recall first, cross-encoder precision
+    second.** The reranker reorders the fan-out; it never replaces the search.
+
+    ```python
+    def search(self, query: str, top_k: int | None = None) -> list[Citation]:
+        k = top_k or self.config.top_k
+        n_candidates = min(len(self.chunks), k * self.config.rerank_multiplier)
+        vector = self._embed_query(query)
+        _, ids = self.index.search(vector, n_candidates)
+        candidates = [self.chunks[int(i)] for i in ids[0] if int(i) >= 0]
+
+        if self.rerank_fn is not None and len(candidates) > k:
+            scores = np.asarray(
+                self.rerank_fn(query, [c.text for c in candidates]), dtype=np.float32
+            )
+            order = np.argsort(-scores)
+            candidates = [candidates[int(i)] for i in order]
+
+        return [self._to_citation(c) for c in candidates[:k]]
+    ```
+
+    Excerpt from [index.py](https://github.com/amm-ds/portfolio/blob/main/projects/01-rag-agent/src/rag_agent/index.py).
     Against the seeded floors the margin is real: recall@5 0.831 vs 0.677
     word-match and 0.031 random. Generation, not retrieval, is the bottleneck
-    — the hosted pass classified 18 of 65 answers as keeping unsupported
+    — the hosted pass classified 17 of 65 answers as keeping unsupported
     claims. Full run records live in the conclusions.
 
     The retrieval numbers are strong — do they survive grading whole answers?
@@ -221,21 +243,31 @@ sections:
     how easy the task is; the sealed set is written after tuning froze and
     scored once, so it cannot be overfit; the meters keep a pass affordable.
 
-    Results under this contract: the hosted 65-question pass kept 18 unsupported
-    answers out of 65, with refusal accuracy 0.900 and cite-when-expected 0.964.
-    The sealed set warns against over-reading: recall@5 falls to 0.600 and
-    rubric-judge faithfulness to 0.62. Answers take p50 23 s hosted, p95 175 s
-    — one runaway tool loop, not normal use; the latency figure shows the tail.
-    One full hosted pass meters $3.58 cloud-equivalent. The local model scored
-    lower on every axis in a 30-question comparison; the counts and judges
-    differ, so no firm claim is made.
+    Results under this contract select hosted `kimi-for-coding`. Rubric
+    faithfulness rises from 0.5504 to 0.6209 and answer relevance from 0.5573
+    to 0.6458, with context recall unchanged at 0.9636. RAGAS faithfulness is
+    0.7337 [0.6562, 0.8131], but answer relevancy regresses slightly from
+    0.8775 to 0.8602; context precision and recall are 0.7609 and 0.9826.
+    The selected pass has 46 correct, 17 unsupported-claim, 2 retrieval-miss,
+    and 0 format-failure outcomes; refusal accuracy is 1.0, false-abstention
+    0.0545, and cite-when-expected 0.9636. Answer generation costs
+    $0.000906/query before judge and verify costs, at p50 25.888 s and p95
+    108.836 s. No replacement total tuning-suite cost is claimed.
+
+    The sealed set warns against over-reading: recall@5 falls to 0.600,
+    recall@10 is 0.667, and MRR@5 is 0.567 against a 0.022 random floor. On
+    10 answerable questions, rubric faithfulness is 0.64, answer relevance
+    0.595, and context recall 0.9; 4 of 5 required refusals succeed (refusal
+    accuracy 0.8, CI [0.4, 1.0]). The sealed
+    pass meters 61 calls and $0.240699 cloud-equivalent, with p50 28.025 s and
+    p95 52.176 s.
 
     What do numbers that survive this gate allow us to claim?
 
-    **Business summary:** Grading 65 questions under the measurement contract:
-    refusal accuracy 0.900, p50 latency 23 s, $3.58 per hosted pass; the
-    sealed 15-question set drops recall to 0.600.
-  figures: [latency_histogram]
+    **Business summary:** Selected `kimi-for-coding` improves faithfulness but
+    still leaves 17 unsupported-claim outcomes in 65 tuning answers; sealed
+    recall drops to 0.600, and RAGAS answer relevancy regresses to 0.8602.
+  figures: [latency_histogram, kimi_generation_comparison]
   metrics_keys:
   - retrieval_chunks_200
   - retrieval_random_chunks_200
@@ -249,8 +281,7 @@ sections:
   text_md: |
     **These numbers do not show broad-corpus readiness.** The corpus is one
     Wikipedia slice, and the sealed drop to 0.600 recall@5 says the tuning
-    headline will not carry over to noisier collections. The
-    hosted-versus-local gap is a hint, not a controlled comparison.
+    headline will not carry over to noisier collections.
 
     Two figures carry the reading. The HPO frontier figure plots recall@k
     against estimated input tokens per query; start at the starred point —
@@ -258,8 +289,8 @@ sections:
     ≈800 input tokens per query. Everything up and left of it is weaker or
     pricier, and nothing on the frontier buys grounding; the starred point,
     not the frontier's right edge, is the committed configuration. The failure
-    taxonomy figure shows the bill: 44 correct, 18 unsupported-claim, 2
-    retrieval-miss, and 1 format failure out of 65 hosted answers.
+    taxonomy figure shows the bill: 46 correct, 17 unsupported-claim, 2
+    retrieval-miss, and 0 format failures out of 65 selected-provider answers.
     Unsupported claims outnumber every other failure combined — grounding,
     not retrieval volume, is the debt to pay.
 
@@ -271,9 +302,9 @@ sections:
 
     What exactly survives into the record?
 
-    **Business summary:** Of 65 hosted answers, 44 are correct, 18 keep
-    unsupported claims, 2 miss retrieval, 1 fails format — and the accuracy
-    claim stops at this corpus.
+    **Business summary:** Of 65 selected-provider answers, 46 are correct, 17
+    keep unsupported claims, 2 miss retrieval, and 0 fail format — and the
+    accuracy claim stops at this corpus.
   figures: [retrieval_hpo_frontier, failure_taxonomy]
   metrics_keys:
   - retrieval_chunks_200
@@ -288,21 +319,22 @@ sections:
     On 65 tuning questions, the committed setup — 200-token chunks, MiniLM
     embeddings, cross-encoder rerank — reaches recall@5 0.831 and MRR@5 0.808
     against a 0.677 word-match floor; the sealed 15-question pass drops to
-    0.600. The hosted pass kept unsupported claims in 18 of 65 answers; RAGAS
-    faithfulness 0.685 [0.605, 0.760], refusal accuracy 0.900 [0.70, 1.0]. The
-    corpus is 593 Wikipedia articles capped at 12,000 characters. See the
+    0.600. Selected `kimi-for-coding` records 46 correct and 17
+    unsupported-claim outcomes, RAGAS faithfulness 0.7337 [0.6562, 0.8131],
+    and refusal accuracy 1.0. The corpus is 593 Wikipedia articles capped at
+    12,000 characters. See the
     [full evaluation report](https://amm-ds.github.io/portfolio/projects/01-rag-agent/).
 
     ## What the experiment taught
 
     - Retrieval was the solved half: chunk size, embedding model, and reranking
       were settled by measurement — no bigger model was needed.
-    - Generation was the bottleneck: 18 of 65 hosted answers kept unsupported
-      claims, and verification bounded the harm rather than removing it.
+    - Generation was the bottleneck: 17 of 65 selected-provider answers kept
+      unsupported claims, and verification bounded the harm rather than removing it.
+    - Provider selection was not a clean sweep: rubric faithfulness and answer
+      relevance improved, while RAGAS answer relevancy regressed 0.8775 → 0.8602.
     - The sealed set earned its keep: tuning headlines (recall@5 0.831) did not
       repeat on fresh questions (0.600).
-    - Small local-model gains sat inside judge noise; abstention, not repair,
-      carried the verify gains.
     - The reusable deliverable is the measurement contract itself: seeded floors,
       three judges, a sealed set, and cost meters.
 
@@ -316,22 +348,27 @@ sections:
     | lexical word match | 0.677 | 0.754 | 0.500 |
     | seeded random | 0.031 | 0.046 | 0.018 |
 
-    | Verify-on provider pass | Failure taxonomy | RAGAS faithfulness |
-    |---|---|---|
-    | local qwen3.6-q4, 30-question subset | 15 correct / 14 unsupported / 1 format | 0.606 |
-    | hosted kimi-for-coding, all 65 | 44 correct / 18 unsupported / 2 retrieval-miss / 1 format | 0.685 [0.605, 0.760] |
+    | Generation metric | Incumbent | Selected `kimi-for-coding` |
+    |---|---:|---:|
+    | rubric faithfulness | 0.5504 | **0.6209** |
+    | rubric answer relevance | 0.5573 | **0.6458** |
+    | rubric context recall | 0.9636 | 0.9636 |
+    | RAGAS faithfulness | — | **0.7337 [0.6562, 0.8131]** |
+    | RAGAS answer relevancy | 0.8775 | **0.8602** |
+    | RAGAS context precision / recall | — | 0.7609 / 0.9826 |
 
+    - Selected tuning taxonomy: 46 correct / 17 unsupported / 2 retrieval-miss /
+      0 format failures. Refusal accuracy 1.0, false-abstention 0.0545,
+      cite-when-expected 0.9636.
+    - Selected tuning operations: p50 25.888 s, p95 108.836 s; answer generation
+      $0.000906/query before judge/verify costs. No total tuning-suite cost is
+      claimed.
     - Sealed held-out pass (15 questions: 8 single-hop, 2 multi-hop, 5
-      unanswerable; hosted pass dated 2026-10-18): recall@5 0.600, recall@10
-      0.667, MRR@5 0.567 (random floor 0.022); rubric-judge faithfulness 0.62
-      [0.45, 0.79] (n=10 answerable); 5/5 correct refusals; 66 calls, $0.25
-      cloud-equivalent, 47% cached.
-    - Hosted RAGAS, tuning pass: relevancy 0.878, context precision 0.760;
-      refusal accuracy 0.900 [0.70, 1.0], cite-when-expected 0.964 [0.909,
-      1.000], false-abstention rate 0.036 [0.00, 0.09].
-    - Hosted tuning pass: p50 23 s, p95 175 s per answer; $3.58 cloud-equivalent
-      over 922 calls (agent 64 / RAGAS 605 / verify 125 / judge 128), 79.6% of
-      input tokens cached.
+      unanswerable): recall@5 0.600, recall@10 0.667, MRR@5 0.567 (random
+      0.022); on 10 answerable questions, rubric faithfulness 0.64, answer
+      relevance 0.595, context recall 0.9; 4/5 required refusals (accuracy 0.8,
+      CI [0.4, 1.0]); 61 calls and $0.240699 cloud-equivalent; p50 28.025 s,
+      p95 52.176 s.
 
     ```mermaid
     graph LR
@@ -375,8 +412,9 @@ sections:
       calls need a cost budget.
 
     **Business summary:** Final state: recall@5 0.831 on tuning questions,
-    0.600 sealed; 18 of 65 hosted answers kept unsupported claims — retrieval
-    is solved, grounding is not; the measurement contract is the deliverable.
+    0.600 sealed; 17 of 65 selected-provider answers kept unsupported claims —
+    retrieval is solved, grounding is not; the measurement contract is the
+    deliverable.
   figures: []
 key_concepts:
   - "**Seeded floors** — every headline is scored against random and word-match rankings, so it can never restate how easy the task is."
@@ -384,7 +422,7 @@ key_concepts:
   - "**Claim support floor** — each drafted claim must be backed by its cited passage at 0.6 or better, or it is cut, repaired at most twice, or the answer abstains."
   - "**Three separate judges** — rubric taxonomy, RAGAS, and per-claim verification catch different failure modes, so no single score speaks for answer quality."
   - "**Cloud-equivalent cost metering** — a public rate card turns token use into dollars and puts a hard cap on every pass."
-  - "**Auditable is not trustworthy** — every answer traces to a readable passage, yet 18 of 65 still kept unsupported claims; verification bounds the harm, it does not remove it."
+  - "**Auditable is not trustworthy** — every answer traces to a readable passage, yet 17 of 65 still kept unsupported claims; verification bounds the harm, it does not remove it."
 roadmap:
 - status: delivered
   text: "Built the pinned 593-article corpus with sha256 contract and data-registry citation."
@@ -400,7 +438,8 @@ figure_captions:
   eda_corpus_composition: "The bounded Wikipedia corpus: articles per topic and word-length distribution across all 593 articles. Coverage is near-balanced; the long tail is truncated at 12,000 characters."
   retrieval_funnel: "Across 65 golden questions, 975 embedding candidates narrow to 195 reranked passages; 54 questions retain a relevant article in the final top-3. Reranking improves rank quality, not recall@5."
   chunk_size_sweep: "Retrieval recall for 200/400/800-token chunks against seeded-random and lexical floors on the 65-question set. All three sizes tie at recall@5 0.831; 200 tokens minimizes context cost."
-  latency_histogram: "Per-answer latency for the hosted 65-question run: p50 23 s and p95 175 s. The tail is driven by a runaway tool loop stopped by the token guard."
+  latency_histogram: "Per-answer latency for the selected hosted 65-question run: p50 25.888 s and p95 108.836 s."
+  kimi_generation_comparison: "Selected kimi-for-coding versus the incumbent on 65 tuning questions. Rubric faithfulness and answer relevance improve, RAGAS faithfulness reaches 0.7337, and RAGAS answer relevancy regresses from 0.8775 to 0.8602."
   model_comparison: "MiniLM and BGE-small tie at recall@5 0.831 on the 65-question set; MiniLM has slightly higher MRR@5 (0.808 vs 0.805). The smaller CPU model is therefore the measured default here."
   retrieval_hpo_frontier: "Recall@k against estimated input tokens per query across chunk sizes and top-k values. The starred 200-token/top-3/rerank-on configuration reaches recall@5 0.831 at ≈800 input tokens."
-  failure_taxonomy: "Hosted 65-question outcomes under the rubric-judge taxonomy: 44 correct, 18 unsupported-claim, 2 retrieval-miss, and 1 format failure. Grounding, not retrieval volume, is the main remaining failure mode."
+  failure_taxonomy: "Selected hosted 65-question outcomes under the rubric-judge taxonomy: 46 correct, 17 unsupported-claim, 2 retrieval-miss, and 0 format failures. Grounding, not retrieval volume, is the main remaining failure mode."

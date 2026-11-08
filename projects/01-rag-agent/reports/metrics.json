@@ -86,18 +86,18 @@
     "mrr@5": 0.7915384615384616
   },
   "rag_agent": {
-    "faithfulness": 0.5504,
-    "answer_relevance": 0.5573,
+    "faithfulness": 0.6209,
+    "answer_relevance": 0.6458,
     "context_recall": 0.9636,
-    "p50_latency_s": 23.03429316697293,
-    "p95_latency_s": 175.4487925840076,
-    "est_cost_usd_per_query": 0.001083237375
+    "p50_latency_s": 25.88848974998109,
+    "p95_latency_s": 108.8364559590118,
+    "est_cost_usd_per_query": 0.0009063399230769231
   },
   "ragas": {
-    "faithfulness": 0.6848,
-    "answer_relevancy": 0.8775,
-    "context_precision": 0.7603,
-    "context_recall": 0.978
+    "faithfulness": 0.7337,
+    "answer_relevancy": 0.8602,
+    "context_precision": 0.7609,
+    "context_recall": 0.9826
   },
   "detail": {
     "n_questions": 65,
@@ -113,7 +113,6 @@
         "random_mrr@5": 0.01846153846153846,
         "delta_mrr@5_vs_random": 0.7892307692307693,
         "lexical_recall@5": 0.676923076923077,
-        "lexical_recall@10": 0.7538461538461538,
         "lexical_mrr@5": 0.49974358974358973,
         "delta_recall@5_vs_lexical": 0.15384615384615385
       },
@@ -126,7 +125,6 @@
         "random_mrr@5": 0.0,
         "delta_mrr@5_vs_random": 0.7915384615384616,
         "lexical_recall@5": 0.6615384615384615,
-        "lexical_recall@10": 0.7538461538461538,
         "lexical_mrr@5": 0.5471794871794873,
         "delta_recall@5_vs_lexical": 0.1692307692307693
       },
@@ -139,7 +137,6 @@
         "random_mrr@5": 0.003076923076923077,
         "delta_mrr@5_vs_random": 0.7884615384615385,
         "lexical_recall@5": 0.6461538461538462,
-        "lexical_recall@10": 0.7384615384615385,
         "lexical_mrr@5": 0.493076923076923,
         "delta_recall@5_vs_lexical": 0.18461538461538463
       }
@@ -229,35 +226,35 @@
     },
     "rag": {
       "n_questions": 55,
-      "faithfulness": 0.5504,
-      "answer_relevance": 0.5573,
+      "faithfulness": 0.6209,
+      "answer_relevance": 0.6458,
       "context_recall": 0.9636
     },
     "ragas": {
-      "faithfulness": 0.6848,
-      "answer_relevancy": 0.8775,
-      "context_precision": 0.7603,
-      "context_recall": 0.978
+      "faithfulness": 0.7337,
+      "answer_relevancy": 0.8602,
+      "context_precision": 0.7609,
+      "context_recall": 0.9826
     },
     "verify": {
       "enabled": true,
       "min_support": 0.6,
       "max_repair_calls": 2,
-      "n_answers_verified": 64,
-      "n_verify_abstentions": 2,
-      "n_verify_skipped": 9,
-      "total_repair_calls": 39,
-      "mean_support_fraction": 0.9487,
-      "mean_verify_latency_s": 21.795,
-      "verify_latency_share_of_answer": 0.5279
+      "n_answers_verified": 65,
+      "n_verify_abstentions": 3,
+      "n_verify_skipped": 10,
+      "total_repair_calls": 33,
+      "mean_support_fraction": 0.9549,
+      "mean_verify_latency_s": 20.264,
+      "verify_latency_share_of_answer": 0.5442
     },
     "ops": {
       "backend": "env:kimi-for-coding",
-      "p50_latency_s": 23.03429316697293,
-      "p95_latency_s": 175.4487925840076,
-      "est_cost_usd_per_query": 0.001083237375,
-      "avg_input_tokens": 58112.390625,
-      "avg_output_tokens": 1604.890625
+      "p50_latency_s": 25.88848974998109,
+      "p95_latency_s": 108.8364559590118,
+      "est_cost_usd_per_query": 0.0009063399230769231,
+      "avg_input_tokens": 27043.707692307693,
+      "avg_output_tokens": 1310.0615384615385
     },
     "heldout": {
       "n_questions": 15,
@@ -277,40 +274,41 @@
       },
       "rag": {
         "n_questions": 10,
-        "faithfulness": 0.62,
-        "answer_relevance": 0.75,
+        "faithfulness": 0.64,
+        "answer_relevance": 0.595,
         "context_recall": 0.9
       },
       "faithfulness": {
-        "mean": 0.62,
+        "mean": 0.6399999999999999,
         "ci95": [
-          0.45,
-          0.79
+          0.485,
+          0.785
         ]
       },
       "taxonomy": {
         "counts": {
-          "correct": 10,
+          "correct": 11,
           "retrieval-miss": 1,
-          "unsupported-claim": 4
+          "unsupported-claim": 2,
+          "format-failure": 1
         },
-        "correct_share": 0.6666666666666666,
+        "correct_share": 0.7333333333333333,
         "correct_share_ci95": [
-          0.4,
-          0.8667
+          0.4667,
+          0.9333
         ]
       },
       "abstention": {
         "n_unanswerable": 5,
         "n_answerable": 10,
-        "refusal_accuracy": 1.0,
+        "refusal_accuracy": 0.8,
         "refusal_accuracy_ci95": [
-          1.0,
+          0.4,
           1.0
         ],
-        "cite_when_expected": 0.9,
+        "cite_when_expected": 1.0,
         "cite_when_expected_ci95": [
-          0.7,
+          1.0,
           1.0
         ],
         "false_abstention_rate": 0.0,
@@ -323,18 +321,18 @@
         "enabled": true,
         "min_support": 0.6,
         "max_repair_calls": 2,
-        "n_answers_verified": 15,
+        "n_answers_verified": 14,
         "n_verify_abstentions": 0,
-        "n_verify_skipped": 5,
-        "total_repair_calls": 7,
-        "mean_support_fraction": 0.9556,
-        "mean_verify_latency_s": 13.227,
-        "verify_latency_share_of_answer": 0.5347
+        "n_verify_skipped": 4,
+        "total_repair_calls": 5,
+        "mean_support_fraction": 0.9812,
+        "mean_verify_latency_s": 16.097,
+        "verify_latency_share_of_answer": 0.2488
       },
       "ops": {
         "backend": "env:kimi-for-coding",
-        "p50_latency_s": 24.683182374981698,
-        "p95_latency_s": 36.597132625000086
+        "p50_latency_s": 28.02486087498255,
+        "p95_latency_s": 52.17561695794575
       },
       "meter": {
         "active": true,
@@ -342,25 +340,25 @@
         "cost_basis": "cloud-equivalent estimate at the kimi-k2.8-preview reference card ($1.00/Mtok input, $4.00/Mtok output, cached reads 30%); the hosted key is membership-quota, not pay-per-token \u2014 never a billed amount",
         "phases": {
           "agent": {
-            "calls": 15,
-            "input_tokens": 130199,
-            "output_tokens": 17365,
-            "cached_input_tokens": 80384,
-            "spend_usd": 0.14339
+            "calls": 14,
+            "input_tokens": 169185,
+            "output_tokens": 14785,
+            "cached_input_tokens": 119808,
+            "spend_usd": 0.144457
           },
           "judge": {
-            "calls": 30,
-            "input_tokens": 23165,
-            "output_tokens": 4763,
+            "calls": 28,
+            "input_tokens": 20406,
+            "output_tokens": 4286,
             "cached_input_tokens": 0,
-            "spend_usd": 0.042217
+            "spend_usd": 0.03755
           },
           "verify": {
-            "calls": 21,
-            "input_tokens": 29581,
-            "output_tokens": 10719,
-            "cached_input_tokens": 6400,
-            "spend_usd": 0.067976
+            "calls": 19,
+            "input_tokens": 27109,
+            "output_tokens": 9195,
+            "cached_input_tokens": 7424,
+            "spend_usd": 0.058692
           },
           "ragas": {
             "calls": 0,
@@ -371,13 +369,13 @@
           }
         },
         "total": {
-          "calls": 66,
-          "input_tokens": 182945,
-          "output_tokens": 32847,
-          "cached_input_tokens": 86784,
-          "spend_usd": 0.253583
+          "calls": 61,
+          "input_tokens": 216700,
+          "output_tokens": 28266,
+          "cached_input_tokens": 127232,
+          "spend_usd": 0.240699
         },
-        "ledger_spend_usd": 0.253583,
+        "ledger_spend_usd": 0.240699,
         "budget_usd": 3.0
       },
       "traces_path": "reports/question_traces_heldout.json",
@@ -393,9 +391,9 @@
     "abstention": {
       "n_unanswerable": 10,
       "n_answerable": 55,
-      "refusal_accuracy": 0.9,
+      "refusal_accuracy": 1.0,
       "refusal_accuracy_ci95": [
-        0.7,
+        1.0,
         1.0
       ],
       "cite_when_expected": 0.9636363636363636,
@@ -403,25 +401,25 @@
         0.9091,
         1.0
       ],
-      "false_abstention_rate": 0.03636363636363636,
+      "false_abstention_rate": 0.05454545454545454,
       "false_abstention_rate_ci95": [
         0.0,
-        0.0909
+        0.1273
       ]
     },
     "rag_ci": {
       "faithfulness": {
-        "mean": 0.5503636363636364,
+        "mean": 0.6209090909090909,
         "ci95": [
-          0.4831,
-          0.6111
+          0.5555,
+          0.6836
         ]
       },
       "answer_relevance": {
-        "mean": 0.5572727272727273,
+        "mean": 0.6458181818181818,
         "ci95": [
-          0.5064,
-          0.6173
+          0.5809,
+          0.7113
         ]
       },
       "context_recall": {
@@ -433,38 +431,37 @@
       }
     },
     "taxonomy": {
-      "correct": 44,
-      "unsupported-claim": 18,
-      "format-failure": 1,
+      "correct": 46,
+      "unsupported-claim": 17,
       "retrieval-miss": 2
     },
     "ragas_ci": {
       "faithfulness": {
-        "mean": 0.6848,
+        "mean": 0.7337,
         "ci95": [
-          0.6052,
-          0.7602
+          0.6562,
+          0.8131
         ]
       },
       "answer_relevancy": {
-        "mean": 0.8775,
+        "mean": 0.8602,
         "ci95": [
-          0.8203,
-          0.918
+          0.7968,
+          0.9126
         ]
       },
       "context_precision": {
-        "mean": 0.7603,
+        "mean": 0.7609,
         "ci95": [
-          0.6671,
-          0.8487
+          0.6545,
+          0.8498
         ]
       },
       "context_recall": {
-        "mean": 0.978,
+        "mean": 0.9826,
         "ci95": [
-          0.9544,
-          0.9953
+          0.962,
+          0.9979
         ]
       }
     }

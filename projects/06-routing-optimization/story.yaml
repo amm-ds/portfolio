@@ -47,8 +47,9 @@ sections:
       - Distance and truck count stay together: the field ranks a smaller
         fleet ahead of a shorter distance.
       - The search is fully repeatable: fixed seed, no hidden state.
-      - The full 56-problem ladder, tuning included, finishes in about
-        90 seconds.
+      - The 56-problem heuristic ladder, tuning included, finishes in
+        about 130 seconds; the hinted CP-SAT rung adds about eleven
+        minutes (see reports/metrics.json runtimes).
       - Bad tuning results stay in the report.
 
       The contract diagram shows how the clauses chain: the rules feed one
@@ -81,8 +82,8 @@ sections:
       data section pins them.
 
       **Business summary:** The bar: legal plans only, checked by code;
-      distance and truck count side by side; the whole ladder with tuning
-      inside about 90 seconds.
+      distance and truck count side by side; the heuristic ladder with
+      tuning inside about two minutes.
     figures: []
   - id: data
     text_md: |
@@ -168,6 +169,29 @@ sections:
       - **The exact solver plays a different role.** Given the search's plan as a head start, a state-of-the-art exact solver ties on all 56 at about ten times the runtime — and from scratch, at the same ten-second budget, it finds no feasible plan on any of them. Only small cases carry proofs: a 25-customer C101 is certified optimal in 2.9 s, a 5-customer case in 0.1 s.
       - **Tuning's honest negatives.** Randomized restarts never pay (the search keeps k=1); tuning 2-opt moves the mean gap only 13.75% → 13.63%; move budgets saturate at about twenty accepted moves.
 
+      **Search core — repair every destroyed plan, then anneal the acceptance.**
+      Feasibility is preserved before distance is even compared.
+
+      ```python
+      def _sa_accept(delta: float, temp: float, rng: random.Random) -> bool:
+          return delta <= _EPS or rng.random() < math.exp(-delta / max(temp, 1e-9))
+
+      di = _weighted_index(weights_d, rng)
+      removed, reduced = destroy_ops[di](current, destroy_q)
+      repaired = _regret2_repair(problem, dist, reduced, removed)
+      if repaired is not None:
+          new_dist = _total_distance(dist, repaired)
+          new_obj = objective(repaired, new_dist)
+          temp = temp0 * (temp_end / temp0) ** (it / max(max_iterations - 1, 1))
+          if _sa_accept(new_obj - current_obj, temp, rng):
+              current, current_dist = repaired, new_dist
+              current_obj = new_obj
+              if new_obj < best_obj - _EPS:
+                  best = [list(r) for r in repaired]
+                  best_dist, best_obj = new_dist, new_obj
+      ```
+
+      Excerpt from [solver.py](https://github.com/amm-ds/portfolio/blob/main/projects/06-routing-optimization/src/routing_optimization/solver.py).
       The figures read at three zooms: the solver-profile figure shows
       distance per instance — the spread is the ladder; the gap figure
       re-plots it as percent above best-known, where ALNS hugs zero; the
@@ -260,8 +284,9 @@ sections:
       machine-checked plans on all 56 Solomon 100-customer instances at a
       4.23% mean distance gap to best-known (95% CI 3.1–5.3 points) and a
       +3.73 mean vehicle delta, winning distance on 52 of 56 instances at
-      ~1.1 s per problem. Seeded and deterministic at seed 42, the whole
-      eight-solver ladder with tuning runs in about 90 seconds.
+      ~1.1 s per problem. Seeded and deterministic at seed 42, the seven
+      heuristic rungs with tuning run in about 130 seconds; the full
+      eight-solver ladder with hinted CP-SAT takes about 13 minutes.
       [full evaluation report](https://amm-ds.github.io/portfolio/projects/06-routing-optimization/)
 
       ## What the experiment taught

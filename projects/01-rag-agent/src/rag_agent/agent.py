@@ -38,6 +38,10 @@ Rules you must always follow:
    question; lower it when evidence is partial or contradictory.
 5. If retrieval yields no relevant evidence, say so in `summary`, cite the
    closest passages found, and set confidence below 0.3.
+6. Lead with the direct answer to the question; omit generic background and
+   do not add facts the user did not request.
+7. A citation supports only claims present in that exact excerpt. Never attach
+   a topically related citation to an unsupported claim.
 """
 
 

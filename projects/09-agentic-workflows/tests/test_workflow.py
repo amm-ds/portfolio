@@ -6,9 +6,10 @@ import json
 from typing import TYPE_CHECKING, Any
 
 from agentic_workflows.schemas import WorkflowResult, WorkflowState
-from agentic_workflows.workflow import build_workflow_graph, run_workflow
+from agentic_workflows.workflow import _execute_usage_limits, build_workflow_graph, run_workflow
 from pydantic_ai.messages import ModelResponse, TextPart
 from pydantic_ai.models.function import FunctionModel
+from pydantic_ai.usage import UsageLimits
 
 if TYPE_CHECKING:
     from conftest import ScriptedModelFactory
@@ -127,3 +128,16 @@ class TestToolCallTracking:
 
         result = run_workflow("water?", model=FunctionModel(responder))
         assert result.tools_used == ["search_handbook"]
+
+
+def test_execute_usage_limits_cap_requests_and_preserve_token_budgets() -> None:
+    assert _execute_usage_limits(None).request_limit == 8
+    limits = UsageLimits(request_limit=20, input_tokens_limit=100, output_tokens_limit=50)
+    capped = _execute_usage_limits(limits)
+    assert capped.request_limit == 8
+    assert capped.input_tokens_limit == 100
+    assert capped.output_tokens_limit == 50
+
+
+def test_execute_usage_limits_respect_a_smaller_existing_cap() -> None:
+    assert _execute_usage_limits(UsageLimits(request_limit=3)).request_limit == 3

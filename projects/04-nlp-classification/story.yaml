@@ -1,28 +1,28 @@
 project_id: 04-nlp-classification
 short_version: |
-  News sorter for AG News' four topics: a language model trained on all 120k articles scores 95% macro-F1 on a fresh holdout, vs 88% for a keyword model 40x faster and free; routing doubtful items beats either bounded model at keyword cost for 3 of 4 items. License unknown.
+  AG News sorter: the selected transformer + selective LLM cascade lifts fresh macro-F1 from 0.9529432 to 0.9539265 and accuracy from 0.953 to 0.954, reviewing 22 of 1,000 fresh items. Full evaluation: $0.023671 cloud-equivalent. License unknown.
 sections:
   - id: background
     text_md: |
-      **Sorting news into four topics, a compact model trained on all 120k
-      articles scores 95 of 100 on a fresh holdout; a keyword model scores
-      88 while classifying about 40× faster at zero token cost.** AG News
-      supplies 127,600 real headline-plus-description items; the training
-      portion has 120k rows; license unknown. The transformer alone pays
-      full price on obvious items; keywords are cheap but wrong on blurry
-      ones — hence the router. The system diagram shows the confidence
-      router that trades full-data quality for the keyword model's price.
+      **The selected system sorts news into four topics. It scores 0.9539265
+      fresh macro-F1 and reviews only 22 of 1,000 fresh items.** A full-data
+      transformer makes the first prediction. An LLM reviews only the
+      low-confidence rows. AG News supplies 127,600 real news items; the
+      training portion has 120k rows, and its license is unknown. The keyword
+      model is about 40× faster and free of token cost, but scores 0.8785 fresh.
+      The full-data transformer scores 0.9529432 before selective review.
+
+      The original routing diagram shows the cheaper baseline. About three of
+      four items exit on the free keyword path. The uncertain quarter rides the
+      bounded transformer. The final policy starts from the strongest
+      transformer instead.
 
       ```diagram 04-routing
       ```
 
-      Follow the arrows: about three of four items exit on the free
-      keyword path; the uncertain quarter rides the transformer. Which
-      rung of that ladder earns its cost?
-
-      **Business summary:** A keyword model sorts obvious news free and
-      fast; the transformer sorts the uncertain quarter; together they beat
-      either bounded model while three of four items ride free.
+      **Business summary:** Keep the keyword router as the low-cost baseline.
+      Select the full-data transformer plus τ=0.6 selective review for the best
+      measured quality. Do not send every item to an LLM.
     figures: []
   - id: objectives
     text_md: |
@@ -154,11 +154,32 @@ sections:
       and widens: keyword 0.8785, bounded 0.8962, full-data 0.9529 — the
       advantage is not a selection artifact.
 
-      - **Data, not device, moved the score.** Rung for rung at identical settings, each tripling of rows buys +1.5, +1.6, and +1.3 macro-F1 points on the test split — a slope that repeats on the fresh holdout (+1.5 / +2.1 / +1.0). A twin rung on the other device, same rows, lands within 0.011 macro-F1: device did not move the score.
+      - **Data, not device, moved the score.** Rung for rung at identical settings, each tripling of rows buys +1.5, +1.6, and +1.3 macro-F1 points on the test split — a slope that repeats on the fresh holdout (+1.5 / +2.1 / +1.0). A twin rung on the other device, same rows, lands within 0.011 macro-F1 on the fresh holdout: device did not move the score.
       - **Tuning changed little.** A seeded search lifted validation macro-F1 from 0.8880 to 0.8953, but the retrained candidate did not carry the gain to test; three seeds average 0.8910 ± 0.0042, inside seed noise. The default recipe is the strong one here.
       - **Calibration was nearly free.** One temperature fitted on validation cuts test calibration error — ECE, expected calibration error — from 0.0467 to 0.0133 (−71%) without changing a single prediction.
-      - **Errors concentrate where topics blur.** The dominant confusion is Business predicted as Sci/Tech: 24 of 250 bounded test items, falling to 15 of 250 at 20k rows and 14 of 250 at full data. Hybrid headlines remain the open problem.
+      - **Errors concentrate where topics blur.** The dominant confusion is Business predicted as Sci/Tech: 24 of 250 bounded test items, falling to 15 of 250 at the pre-ladder 20k run and 14 of 250 at full data (recorded in DESIGN.md). Hybrid headlines remain the open problem.
 
+      **Calibration core — fit one temperature on validation NLL.** The
+      classifier's logits and labels stay fixed; only confidence is scaled.
+
+      ```python
+      logits, labels = collect_logits(model, val_ds, device, batch_size)
+      temperature = nn.Parameter(torch.ones(1))
+      optimizer = torch.optim.LBFGS([temperature], max_iter=max_iter)
+
+      def closure() -> torch.Tensor:
+          optimizer.zero_grad()
+          loss = nn.functional.cross_entropy(
+              logits / temperature.clamp(min=1e-2), labels
+          )
+          loss.backward()
+          return loss
+
+      optimizer.step(closure)
+      return float(temperature.clamp(min=1e-2).item())
+      ```
+
+      Excerpt from [calibration.py](https://github.com/amm-ds/portfolio/blob/main/projects/04-nlp-classification/src/nlp_classification/calibration.py).
       Three figures back the reading. The training-curve figure tracks
       validation plateauing within two epochs while training loss keeps
       falling — read the widening gap as memorization, not progress. The
@@ -180,95 +201,94 @@ sections:
   - id: evaluation
     text_md: |
       For a feed operator these numbers are an operating policy, not a
-      leaderboard. The decision-flow diagram turns them into a policy:
-      every item hits the keyword model first, and the only question is
-      confidence.
+      leaderboard. The selected policy starts with the full-data transformer
+      and sends only rows below τ=0.6 to cost-bounded LLM review in batches of
+      eight. It is selective review, not LLM classification of every item.
 
       ```mermaid
       flowchart LR
-        A["Incoming item"] --> K["Keyword model<br/>scores + confidence"]
-        K --> Q{"Confidence at or<br/>above 0.50?"}
-        Q -->|"yes: 75.4% share"| CHEAP["Keyword speed, zero cost"]
-        Q -->|"no: 24.6% escalated"| TR["Transformer resolves"]
-        CHEAP --> OUT["Routed macro-F1 0.9020<br/>beats either model alone"]
-        TR --> OUT
-        HV["High-value traffic"] --> FD["Full-data model<br/>0.9529 fresh macro-F1"]
+        A["Incoming item"] --> TR["Full-data transformer<br/>prediction + confidence"]
+        TR --> Q{"Confidence below<br/>τ=0.6?"}
+        Q -->|"no"| KEEP["Keep transformer label"]
+        Q -->|"yes"| LLM["Kimi review<br/>8 rows per call"]
+        KEEP --> OUT["Selected cascade"]
+        LLM --> OUT
       ```
 
-      Read the diagram through its gate. Below τ=0.50, items escalate —
-      24.6% of them — and the transformer sorts those. High-value traffic
-      skips the gate entirely and pays for the full-data model. The price
-      of each path, measured on one machine at batch size 1:
+      Validation fitting selects τ=0.6 using validation alone. Test and fresh
+      holdout are then each scored once. Macro-F1 moves 0.9601531 → 0.9602051
+      on validation with 6 reviews, 0.9460236 → 0.9490153 on bounded test with
+      16, and 0.9529432 → 0.9539265 on the disjoint fresh 1,000 with 22.
+      Accuracy stays 0.960 on validation and moves 0.946 → 0.949 on test and
+      0.953 → 0.954 on fresh. The fresh items have zero overlap with bounded
+      test; neither test nor fresh labels or examples tune the router.
 
-      - **Keyword path:** ~4,478 items per second at zero token cost.
-      - **Transformer path:** ~111 per second at about $0.066 per 1,000 items; the full-data model is priced the same and scores higher.
-      - **Eight-bit quantization:** halves memory (255.5 → 132.3 MB) with no measured quality loss on its train sample, but it is slower at batch size 1 — it buys memory, not speed.
+      Across validation, test, and fresh there are **44 total reviews**,
+      **96.933 s total review latency**, and **$0.023671 estimated
+      cloud-equivalent** cost. The comparison figure shows a small, consistent
+      macro-F1 gain rather than a new classification paradigm.
 
-      On the fresh holdout, escalating items below τ=0.50 yields 0.9020
-      macro-F1. It beats either model alone (0.8785 / 0.8962). 75.4% of
-      items stay on keyword economics; raising τ escalates more without
-      improving quality. Where a mis-sort is expensive, the full-data
-      model's 7-point fresh edge over the keyword baseline justifies the
-      price.
+      The existing baselines remain useful. Keyword-first routing reaches
+      0.9020 fresh macro-F1 while 75.4% of items ride at keyword speed; the
+      full-data transformer reaches 0.9529432 fresh. The selected cascade adds
+      only 22 fresh reviews to that stronger baseline. On one machine, the
+      keyword path runs at ~4,478 items/s and the transformer at ~111 items/s;
+      those probe figures do not price the hosted review pass.
 
-      Where do the remaining errors sit?
-
-      **Business summary:** Route by keyword confidence: 75.4% of items
-      sort free at 0.9020 macro-F1, better than either model alone;
-      reserve the full-data model for items where a mistake is expensive.
-    figures: []
+      **Business summary:** Select the τ=0.6 transformer + selective LLM
+      cascade: fresh macro-F1 0.9539265 and accuracy 0.954 with 22 reviews,
+      while retaining the keyword router as the cheaper, lower-quality option.
+    figures: [llm_cascade_comparison]
   - id: results
     text_md: |
-      **The bounded scores are selection-biased; the figures show where
-      that matters.** The confusion-matrix figure comes from the
-      test-selected bounded model: scan the off-diagonal cells and one
-      pair dominates — Business predicted as Sci/Tech, 24 of 250 bounded
-      test items. The per-class comparison figure shows the same story as
-      gaps: the residual advantage over the TF-IDF baseline concentrates
-      in Business and Sci/Tech, the two topics whose headlines genuinely
-      blur. The scale-ladder figure traces the monotone data slope on the
-      bounded test split; its lone CPU marker sits 0.0002 macro-F1 from
-      its same-rows MPS twin, so device is not the confound. The fresh
-      holdout repairs the headline bias — 0.9529 versus 0.9460 — but not
-      every secondary number.
+      **The bounded scores are selection-biased. The figures show why this
+      matters.** The confusion matrix uses the bounded transformer, not the
+      final cascade. One error pair dominates: Business predicted as Sci/Tech,
+      24 of 250 bounded test items. The per-class figure shows the same two
+      blurred topics. The scale figure shows the gain from more training rows.
+      Its same-rows CPU/MPS twins sit 0.0002 macro-F1 apart, so device is not
+      the cause. The selected cascade reaches 0.9490153 bounded-test and
+      0.9539265 fresh macro-F1. Fresh data does not repair every secondary
+      baseline number.
 
       What this does not show, stated plain:
 
-      - **Production breadth:** the reading is per-item, English-only, on four clean topics; production taxonomies with overlapping or multi-label items are a different problem.
-      - **Measurement limits:** quantized quality is measured on a training sample, not test data; all speeds come from one machine at batch size 1.
-      - **Tuning headroom:** tuning ties the default within noise; a larger budget might separate them, unproven here.
+      - **Production breadth:** the task is English-only and has four clean topics. Overlapping or multi-label production topics need a different contract.
+      - **Measurement limits:** the cascade gain is small and covers 44 reviews on fixed splits. Quantized quality uses a training sample. Transformer speeds use one machine at batch size 1.
+      - **Tuning headroom:** transformer tuning ties the default within noise. A larger budget might separate candidates, but that is unproven.
 
-      None of these caveats sits in a footnote; they bound the claim. The
-      exact tables and run identities sit in the conclusions.
+      These caveats bound the claim. The exact tables and run identities sit in
+      the conclusions.
 
-      **Business summary:** Errors cluster where Business and Sci/Tech
-      blur; the ladder confirms data, not device, drives the score;
-      bounded numbers hold only where fresh data backs them.
+      **Business summary:** The cascade adds a small fresh gain over the
+      full-data transformer. Business/Sci-Tech ambiguity and the bounded
+      evaluation remain the limits.
     figures: [confusion_matrix_selected, per_class_f1_comparison, scale_ladder]
   - id: conclusions
     text_md: |
       ## Results summary
 
-      On a fresh 1,000-article holdout that model selection never touched,
-      DistilBERT trained on all 120k of AG News' 127,600 four-topic items
-      scores 0.9529 macro-F1 (0.9530 accuracy); TF-IDF + logistic
-      regression scores 0.8785. A confidence router escalating the 24.6%
-      of items below τ=0.50 reaches 0.9020 macro-F1 while 75.4% ride at
-      keyword speed (4,477.8 items/s, zero token cost). Seeded tuning
-      averages 0.8910 ± 0.0042 over three seeds — inside noise.
+      On the fresh 1,000-article holdout, the selected full-data transformer +
+      selective LLM cascade lifts macro-F1 from **0.9529432 to 0.9539265** and
+      accuracy from **0.953 to 0.954**, reviewing 22 rows below τ=0.6. Bounded
+      test improves from 0.9460236 to 0.9490153 macro-F1 and 0.946 to 0.949
+      accuracy with 16 reviews. All 44 reviews across validation, test, and
+      fresh take 96.933 s and an estimated $0.023671 cloud-equivalent. TF-IDF +
+      logistic regression remains the 0.8785-fresh-macro-F1 baseline; the older
+      keyword-first router reaches 0.9020 with 75.4% of items at keyword speed.
       [full evaluation report](https://amm-ds.github.io/portfolio/projects/04-nlp-classification/)
 
       ## What the experiment taught
 
-      - Data, not device or tuning, moved the score: each tripling of rows bought
-        about +1.5 macro-F1, and the same-rows device twin sat 0.0002 away.
+      - Data, not device or tuning, moved the transformer score: each tripling
+        of rows bought about +1.5 macro-F1, and the same-rows device twin sat
+        0.0002 away.
       - Tuning was a null result: the best validation candidate did not transfer
         to test, and three seeds averaged 0.8910 ± 0.0042 — inside noise.
-      - The fresh holdout flipped a selection read: the HPO-retrained candidate
-        leads 0.9031 to 0.8962 where the test split had them tied — both margins
-        inside noise.
-      - Confidence routing bought transformer-beating quality at keyword cost:
-        0.9020 macro-F1 with 75.4% of items free.
+      - Selective LLM review bought a small, consistent macro-F1 gain over the
+        full-data transformer without sending every item to the LLM.
+      - Validation-only threshold fitting and disjoint, scored-once test/fresh
+        evaluation keep the cascade comparison leakage-free.
       - Calibration was nearly free: one temperature cut ECE 71% without changing
         a single prediction.
 
@@ -299,12 +319,26 @@ sections:
       | `encoder_b` (roberta-base) | 0.9070 | 0.9074 |
       | `distilbert_full_120k` | 0.9530 | 0.9529 |
 
+      Selected cascade (`reports/llm_cascade.json`; τ=0.6, eight rows per review
+      call, `selected=cascade`):
+
+      | split | transformer → cascade macro-F1 | transformer → cascade accuracy | reviews |
+      |---|---:|---:|---:|
+      | validation | 0.9601531 → 0.9602051 | 0.960 → 0.960 | 6 |
+      | bounded test | 0.9460236 → 0.9490153 | 0.946 → 0.949 | 16 |
+      | fresh holdout | 0.9529432 → 0.9539265 | 0.953 → 0.954 | 22 |
+
+      Total: 44 reviews, 96.933 s review latency, $0.023671 estimated
+      cloud-equivalent. The threshold is fitted on validation only; test and
+      fresh are scored once, with no fresh/bounded overlap and no test/fresh
+      labels or examples used for tuning.
+
       At fixed device and hypers each 3× data step buys +1.5, +1.6, and +1.3
       macro-F1 points on the test split — a monotone, decelerating curve that
       reproduces on the fresh holdout (+1.5 / +2.1 / +1.0 points). The same-rows
       device twins differ by 0.0002 macro-F1 on the test split — device is not the
       confound. Error floor: the dominant Business → Sci/Tech confusion falls
-      24/250 → 15/250 → 14/250 across the 3.6k / 20k / full runs.
+      24/250 → 15/250 → 14/250 across the 3.6k / pre-ladder 20k / full runs (DESIGN.md).
 
       Confidence-routed serving (fresh holdout; TF-IDF max-probability router,
       escalate below τ to the served transformer):
@@ -340,6 +374,9 @@ sections:
         input + $4 per 1M output tokens. Router: raw (uncalibrated) TF-IDF max
         class probability, escalate below τ; the transformer leg is the served
         bounded model.
+      - Selected cascade: fit τ on validation only, review rows below τ=0.6 in
+        batches of eight, then score test and fresh once. Fresh is disjoint from
+        bounded test; no test/fresh labels or examples enter tuning or prompts.
 
       ## Limits
 
@@ -348,6 +385,8 @@ sections:
       - The reading is per-item, English-only, on four clean topics;
         multi-label Business/Sci-Tech routing needs a different label and
         metric contract.
+      - The cascade gains are small and bounded to these fixed splits; they do
+        not justify sending every item to an LLM or establish production breadth.
       - Quantized-model quality is measured on a training sample, not test
         data; all serving speeds come from one machine at batch size 1.
       - Tuning ties the default within seed noise at this scale; a larger
@@ -356,16 +395,18 @@ sections:
 
       ```mermaid
       flowchart LR
-        A["Bulk feed"] --> R["Keyword-first router"]
-        R --> H["Routed 0.9020 macro-F1<br/>75.4% sorted cheap"]
-        H --> B["High-value feed"]
-        B --> F["Full-data transformer<br/>0.9529 fresh macro-F1"]
-        F --> L["Bounded-test numbers<br/>secondary only"]
+        A["Bulk feed"] --> F["Full-data transformer"]
+        F --> Q{"Confidence below τ=0.6?"}
+        Q -->|"no"| K["Keep transformer label"]
+        Q -->|"yes"| R["Selective LLM review<br/>8 rows per call"]
+        K --> C["Selected cascade<br/>0.9539265 fresh macro-F1"]
+        R --> C
       ```
 
-      **Business summary:** Ship the keyword-first router: 0.9020 macro-F1
-      with 75.4% of items at zero token cost, and the full-data model on
-      high-value traffic at 0.9529 fresh macro-F1.
+      **Business summary:** Select the full-data transformer + selective LLM
+      cascade: 0.9539265 fresh macro-F1 and 0.954 accuracy with 22 fresh
+      reviews. Keep the keyword-first router as the cheaper baseline, not the
+      quality leader.
     figures: []
     metrics_keys: [distilbert_full_120k]
 roadmap:
@@ -376,7 +417,7 @@ roadmap:
   - status: delivered
     text: "Confirmed the null tuning result and the 71% one-temperature calibration cut."
   - status: delivered
-    text: "Shipped the fresh-holdout check and confidence-routed serving at 0.9020 macro-F1."
+    text: "Selected the validation-fitted τ=0.6 selective LLM cascade: 0.9539265 fresh macro-F1 with 22 reviews."
   - status: delivered
     text: "Ran the controlled data-scale ladder: device effect ≤0.011 F1, data +1.3–1.6 points per 3×."
 key_concepts:
@@ -384,13 +425,15 @@ key_concepts:
 - "**Model ladder** — cheapest-first rungs judged by one metric pair; a rung that fails to beat the rung below it donates its extra cost."
 - "**Scale ladder** — the identical seeded protocol repeated at 3.6k / 10.8k / 36k rows, leaving data size as the only varying factor."
 - "**Fresh holdout** — 1,000 articles from the selection's unused complement, giving the one unbiased headline reading."
-- "**Keyword-first router** — the cheap model scores every item first and only the uncertain quarter escalates to the transformer."
+- "**Keyword-first router** — the cheaper baseline scores every item with keywords and escalates the uncertain quarter to the bounded transformer."
+- "**Selective LLM cascade** — the full-data transformer keeps confident predictions and only rows below validation-fitted τ=0.6 receive batched LLM review."
 - "**Calibration (ECE)** — one temperature fitted on validation cut calibration error 71% without changing a single prediction."
 figure_captions:
   eda_class_balance: The bounded splits are uniformly 25% per class and train texts cluster at 20–50 words. Class priors and the 128-token cap do not explain the bounded differences.
   training_curve: Full-120k train/validation loss and validation macro-F1. Validation quality plateaus within two epochs while training loss keeps falling.
   epochs_probe: The four-epoch full-data probe peaks at validation macro-F1 0.9477 in epoch 3 (+0.0003, then −0.0003). The plateau and rising validation loss indicate overfitting, not a better headline.
   hpo_history: Seeded 12-trial Optuna validation macro-F1 and running best. Best validation 0.8953 did not transfer to test and sits inside seed noise.
+  llm_cascade_comparison: Full-data transformer versus the selected τ=0.6 selective LLM cascade on validation, bounded test, and disjoint fresh holdout. Fresh macro-F1 rises from 0.9529432 to 0.9539265 with 22 reviews.
   confusion_matrix_selected: Confusion matrix for the test-selected bounded model on the 1,000-row test sample. Business → Sci/Tech remains the dominant off-diagonal pair.
   per_class_f1_comparison: Per-class F1 for the test-selected bounded model and TF-IDF baseline. The residual gap concentrates in Business/Sci-Tech.
   scale_ladder: Controlled data-scale ladder on the bounded 1,000-row test split. The MPS rungs (3.6k/10.8k/36k/108k train rows, identical hypers) trace a monotone data-scale slope of +1.3–1.6 points per 3× step; the lone CPU marker is the legacy bounded model, whose same-rows MPS twin sits 0.0002 F1 away — device is not the confound.

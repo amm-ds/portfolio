@@ -122,8 +122,9 @@ Key findings:
 - Permutation importance on the selected model ranks `tenure_months`,
   `monthly_charges`, and `contract` first - matching the real-telco EDA splits
   (churners: ~74 vs ~61 mean monthly charges, ~18 vs ~38 months tenure;
-  fiber-optic internet churns at 41.9%). The outlier and NaN examples elsewhere
-  in the project are synthetic CI fixtures, not real-telco EDA findings.
+  fiber-optic internet churns at 41.9%, senior citizens at 41.7%). The outlier
+  and NaN examples elsewhere in the project are synthetic CI fixtures, not
+  real-telco EDA findings.
 
 ## Limits
 

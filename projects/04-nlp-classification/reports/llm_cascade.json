@@ -1,0 +1,45 @@
+{
+  "threshold": 0.6,
+  "challenger_model": "kimi-for-coding",
+  "provenance": {
+    "routing_fit": "validation only; no test or fresh-holdout labels or examples used for tuning",
+    "fresh_holdout": {
+      "n_total_test_partition": 7600,
+      "n_bounded_test": 1000,
+      "bounded_test_seed": 43,
+      "n_complement": 6600,
+      "n_fresh": 1000,
+      "fresh_seed": 45,
+      "overlap_with_bounded": 0,
+      "draw": "seeded per-class stratified, disjoint from the bounded test split by construction (complement of the identical recomputed draw)"
+    }
+  },
+  "validation": {
+    "baseline_f1_macro": 0.9601530812383795,
+    "cascade_f1_macro": 0.9602051402099453,
+    "baseline_accuracy": 0.96,
+    "cascade_accuracy": 0.96,
+    "n_reviews": 6
+  },
+  "bounded test": {
+    "baseline_f1_macro": 0.9460236394680519,
+    "cascade_f1_macro": 0.9490152547958665,
+    "baseline_accuracy": 0.946,
+    "cascade_accuracy": 0.949,
+    "n_reviews": 16
+  },
+  "fresh holdout": {
+    "baseline_f1_macro": 0.9529432473490507,
+    "cascade_f1_macro": 0.9539264554684488,
+    "baseline_accuracy": 0.953,
+    "cascade_accuracy": 0.954,
+    "n_reviews": 22
+  },
+  "selected": "cascade",
+  "ops": {
+    "input_tokens": 9807,
+    "output_tokens": 3466,
+    "review_latency_s": 96.933,
+    "est_cost_usd": 0.023671
+  }
+}

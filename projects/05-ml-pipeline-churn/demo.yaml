@@ -1,12 +1,12 @@
 id: churn-sandbox
-title: churn threshold sandbox
+title: Churn Threshold Sandbox
 hook: Move the alarm threshold and the missed-churner cost — watch the optimal cutoff and the saved budget change on a real churn model.
 project: 05-ml-pipeline-churn
 group: retain customers
 skills: [classification economics, calibration, decision science]
 modes: [browser, live]
 hero:
-  label: decision cost per 1,400 customers
+  label: decision cost per 1,409 holdout customers
   value: "$601 vs $1,035 naive"
   ci: paired bootstrap CI [−485, −343]
 scenarios:

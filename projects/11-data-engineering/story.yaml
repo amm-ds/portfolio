@@ -152,6 +152,36 @@ sections:
       using it on file-shaped data) and then runs plain SQL, window
       functions included.
 
+      **Execution core — idiomatic engines, identical logical work.** Polars
+      collects its lazy plan; DuckDB scans parquet directly with bound paths.
+      Both return through the same canonical-row parity contract.
+
+      ```python
+      # Polars: build the plan, execute at the boundary
+      out = (
+          ad.scan_parquet(str(bundle.trips_parquet))
+          .group_by(pl.col("tpep_pickup_datetime").dt.date().alias("day"))
+          .agg(
+              pl.len().alias("trips"),
+              pl.sum("fare_amount").alias("total_fare"),
+              pl.mean("trip_distance").alias("mean_distance"),
+              pl.mean("passenger_count").alias("mean_passengers"),
+          )
+      )
+      result = canonical_rows(ad.to_polars(out.collect()))
+
+      # DuckDB: the same aggregation as parameterized SQL
+      frame = ad.query(
+          "SELECT CAST(tpep_pickup_datetime AS DATE) AS day, count(*) AS trips,"
+          " sum(fare_amount) AS total_fare, avg(trip_distance) AS mean_distance,"
+          " avg(passenger_count) AS mean_passengers"
+          " FROM read_parquet($1) GROUP BY 1",
+          (str(bundle.trips_parquet),),
+      )
+      result = canonical_rows(frame)
+      ```
+
+      Excerpt from [tasks.py](https://github.com/amm-ds/portfolio/blob/main/projects/11-data-engineering/src/data_engineering/tasks.py).
       The speedup figure tells the shape of the map before any detail does.
       Polars finishes the ten-task ladder in 0.16 s of median work against
       pandas's 2.99 s (geomean x19.2); DuckDB totals 0.22 s (geomean

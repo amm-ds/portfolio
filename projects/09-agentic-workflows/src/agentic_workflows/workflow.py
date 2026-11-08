@@ -23,8 +23,8 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
-from typing import Any, Literal
+from dataclasses import dataclass, field, replace
+from typing import Any, Literal, cast
 
 from portfolio_core.llm import (
     build_model,
@@ -35,6 +35,7 @@ from portfolio_core.logging import get_logger
 from pydantic_ai import Agent
 from pydantic_ai.messages import ModelResponse, ToolCallPart
 from pydantic_ai.models import Model
+from pydantic_ai.usage import UsageLimits
 from pydantic_graph import BaseNode, End, Graph, GraphBuilder, GraphRunContext
 
 from agentic_workflows.config import get_settings
@@ -77,7 +78,9 @@ calculator, for conversions — and note_store ONLY when the task explicitly
 asks to record or remember something. If the task asks for something the
 tools cannot do (a capability that does not exist, a conversion across
 dimensions), do not invent a factor or a result — state plainly that it
-cannot be done and why. Then reply with the structured output:
+cannot be done and why. A search that returns no relevant evidence is final:
+do not repeat or rephrase it; state that the source does not cover the request.
+Then reply with the structured output:
 findings (facts with their numbers), a draft answer that cites the numbers,
 and your self_confidence.
 """
@@ -181,6 +184,13 @@ async def run_agent_with_retries(
     raise last_error
 
 
+def _execute_usage_limits(limits: Any | None) -> UsageLimits:
+    """Cap one execute run at eight model requests, preserving token budgets."""
+    if limits is None:
+        return UsageLimits(request_limit=8)
+    return cast(UsageLimits, replace(limits, request_limit=min(limits.request_limit or 8, 8)))
+
+
 def _record_step(
     state: WorkflowState,
     node: Literal["plan", "execute", "critique"],
@@ -261,7 +271,7 @@ class ExecuteNode(BaseNode[WorkflowState, WorkflowDeps, WorkflowResult]):
                 agent,
                 prompt,
                 deps=ctx.deps.notebook,
-                usage_limits=ctx.deps.usage_limits,
+                usage_limits=_execute_usage_limits(ctx.deps.usage_limits),
             )
         except Exception as exc:  # broad: execute failure recoverable via repair loop
             # This visit's calls so far still belong to the record.

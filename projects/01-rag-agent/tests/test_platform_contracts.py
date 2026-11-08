@@ -47,6 +47,21 @@ def test_build_model_mock_helper_and_provider() -> None:
     assert build_model() is not None
 
 
+def test_hosted_model_settings_disable_thinking_and_drop_temperature() -> None:
+    from portfolio_core.llm import hosted_model_settings, neutralize_hosted_model_settings
+    from pydantic_ai.settings import ModelSettings
+
+    assert hosted_model_settings() == ModelSettings(extra_body={"thinking": {"type": "disabled"}})
+    neutralized = neutralize_hosted_model_settings(
+        ModelSettings(temperature=0.2, extra_body={"custom": True})
+    )
+    assert "temperature" not in neutralized
+    assert neutralized["extra_body"] == {
+        "custom": True,
+        "thinking": {"type": "disabled"},
+    }
+
+
 def test_compare_runs_ranks_best_first() -> None:
     runs = [
         RunResult(name="b", metrics=[MetricResult(name="acc", value=0.8)]),

@@ -100,6 +100,13 @@ def run_all(
         bool,
         typer.Option("--heldout", help="Run the held-out suite instead of the tuning suite."),
     ] = False,
+    records_path: Annotated[
+        Path | None,
+        typer.Option(
+            "--records-path",
+            help="Optional separate records file; the incumbent stays untouched.",
+        ),
+    ] = None,
 ) -> None:
     """Run stage: execute suite tasks (live model) → data/*_records.json."""
     cfg = load_config(Path(config))
@@ -121,11 +128,11 @@ def run_all(
     elif limit is not None:
         tasks = tasks[:limit]
     records = evals.run_suite(cfg, tasks=tasks)
-    records_path = cfg.heldout_records_path if heldout else cfg.records_path
-    evals.write_records(records, records_path)
+    output_path = records_path or (cfg.heldout_records_path if heldout else cfg.records_path)
+    evals.write_records(records, output_path)
     ok = sum(1 for record in records if record.status == "ok")
     over = sum(1 for record in records if record.status == "budget_exceeded")
-    typer.echo(f"run-all complete: {ok}/{len(records)} tasks ok → {records_path}")
+    typer.echo(f"run-all complete: {ok}/{len(records)} tasks ok → {output_path}")
     if over:
         typer.echo(f"budget: {over} task(s) stopped at a budget cap (see records)")
     ledger = get_ledger(get_settings())
@@ -145,13 +152,26 @@ def evaluate(
         bool,
         typer.Option("--heldout", help="Grade held-out records into detail.heldout instead."),
     ] = False,
+    records_path: Annotated[
+        Path | None,
+        typer.Option("--records-path", help="Optional separate records file to grade."),
+    ] = None,
+    reports_dir: Annotated[
+        Path | None,
+        typer.Option("--reports-dir", help="Optional separate challenger output directory."),
+    ] = None,
 ) -> None:
     """Evaluate stage: grade run records (offline) → reports/metrics.json + figures."""
     cfg = load_config(Path(config))
+    if reports_dir is not None:
+        cfg.reports_dir = reports_dir
+    selected_records_path = records_path or (
+        cfg.heldout_records_path if heldout else cfg.records_path
+    )
     if heldout:
-        if not cfg.heldout_records_path.exists():
+        if not selected_records_path.exists():
             raise typer.BadParameter(
-                f"no held-out records at {cfg.heldout_records_path}; "
+                f"no held-out records at {selected_records_path}; "
                 "run `run-all --heldout` first (needs a live LLM)"
             )
         tasks = (
@@ -159,7 +179,7 @@ def evaluate(
             if cfg.heldout_tasks_path.exists()
             else list(evals.HELDOUT_SUITE)
         )
-        records = evals.load_records(cfg.heldout_records_path)
+        records = evals.load_records(selected_records_path)
         detail = evals.write_heldout_metrics(records, tasks, cfg)
         typer.echo(
             f"held-out evaluation: answer success {detail['answer_success']:.0%}, "
@@ -168,19 +188,41 @@ def evaluate(
             f"({detail['n_should_fail']} probes) → {cfg.reports_dir / 'metrics.json'}"
         )
         return
-    if not cfg.records_path.exists():
+    if not selected_records_path.exists():
         raise typer.BadParameter(
-            f"no run records at {cfg.records_path}; run `run-all` first (needs a live LLM)"
+            f"no run records at {selected_records_path}; run `run-all` first (needs a live LLM)"
         )
     suite_tasks: list[EvalTask] | None = (
         evals.parse_tasks(cfg.tasks_path.read_text(encoding="utf-8"))
         if cfg.tasks_path.exists()
         else None
     )
-    records = evals.load_records(cfg.records_path)
+    records = evals.load_records(selected_records_path)
     report = evals.evaluate_records(records, tasks=suite_tasks)
     evals.build_report(report, cfg)
     typer.echo(f"evaluation written: {cfg.reports_dir / 'report.html'}")
+
+
+@app.command()
+def compare_challenger(
+    config: str = "params.yaml",
+    challenger_dir: Annotated[
+        Path,
+        typer.Option(
+            "--challenger-dir",
+            help="Separate reports directory written by a hosted challenger run.",
+        ),
+    ] = Path("reports/kimi-for-coding"),
+) -> None:
+    """Compare a challenger with the committed incumbent, without model calls."""
+    from agentic_workflows.challenger import compare_challenger as compare
+
+    cfg = load_config(Path(config))
+    result = compare(cfg, challenger_dir)
+    typer.echo(
+        f"selected={result['selected']}; comparison written: "
+        f"{cfg.reports_dir / 'kimi_comparison.json'}"
+    )
 
 
 @checkpoint_app.command("request")

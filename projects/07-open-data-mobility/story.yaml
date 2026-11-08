@@ -206,12 +206,35 @@ sections:
       absolute error (5.178 vs 4.676) and wins only the percentage
       metric.
 
+      **Serving selection — validation ranks candidates, artifacts gate deployment.**
+      The holdout has no vote, and an incomplete challenger cannot serve.
+
+      ```python
+      best: tuple[str, str, str] | None = None
+      best_mae = float("inf")
+      for kind, (run, stem, p90_stem) in _ARMS.items():
+          result = hpo_result(cfg, kind)
+          mean_ok = (cfg.models_dir / f"{stem}.joblib").exists()
+          p90_ok = (cfg.models_dir / f"{p90_stem}.joblib").exists()
+          if result is None or not (mean_ok and p90_ok):
+              continue
+          mae = float(result["best_val_mae"])
+          if mae < best_mae:
+              best_mae = mae
+              best = (run, stem, p90_stem)
+      if best is None:
+          raise FileNotFoundError("no servable arm — run tune + train-baselines first")
+      return best
+      ```
+
+      Excerpt from [serving.py](https://github.com/amm-ds/portfolio/blob/main/projects/07-open-data-mobility/src/mobility/serving.py).
       The p90 band is calibrated where data is dense — 90.8% coverage
       overall, Manhattan 91.4%, Staten Island 98.5% — but only 84.7% in
-      sparse zones, so those zones are flagged. Feature importance agrees
-      with the calendar shape: last week's hour (0.80) beats yesterday's
-      hour (0.64), last hour (0.55), and hour of day (0.32); weather adds
-      about zero to point accuracy, so it stays a side read rather than a
+      sparse zones, so those zones are flagged. Permutation importance agrees
+      with the calendar shape: the last hour dominates (3.31 mean MAE
+      increase), ahead of last week's hour (2.58) and yesterday's hour (2.48);
+      hour of day adds 1.12 and weather approximately zero, so weather stays a
+      side read rather than a
       selling point. The next question is what that error is worth at
       dispatch time.
 
@@ -330,7 +353,7 @@ sections:
       not point accuracy.
 
       Weather ratios (rain vs dry, test window): sparse N/A 0.89×, Queens 0.92×,
-      Staten Island 0.93× (outer-borough drops of 7–10%), Manhattan 0.97×, Bronx
+      Staten Island 0.93× (outer-borough drops of 7–11%), Manhattan 0.97×, Bronx
       1.03×, EWR 1.08×.
 
       Drift observatory (persisted model, ±15% tolerance):

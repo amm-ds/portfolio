@@ -224,6 +224,33 @@ sections:
           GR -.-> NOTE["no MLX MoE build:<br/>recorded, not forced"]
       ```
 
+      **Benchmark core — bound concurrency at the client, measure the whole cell.**
+      The semaphore limits work in flight; wall time includes every request.
+
+      ```python
+      semaphore = asyncio.Semaphore(concurrency)
+      rng = random.Random(seed)
+      jobs = [(p, rep) for rep in range(cfg.repeats) for p in PROMPTS]
+      rng.shuffle(jobs)
+
+      async def guarded(prompt: BenchPrompt, rep: int) -> RequestRecord:
+          async with semaphore:
+              return await chat_once(
+                  client, cfg, model, prompt, rep,
+                  reasoning_effort=reasoning_effort, notes=notes,
+              )
+
+      start = time.perf_counter()
+      records = list(await asyncio.gather(*(guarded(p, rep) for p, rep in jobs)))
+      wall_time_s = time.perf_counter() - start
+      cell = build_cell(
+          records, model=model, engine=engine,
+          concurrency=concurrency, wall_time_s=wall_time_s,
+      )
+      return cell, records
+      ```
+
+      Excerpt from [bench.py](https://github.com/amm-ds/portfolio/blob/main/projects/08-inference-serving/src/inference_serving/bench.py).
       Each strength below is paired with its limit:
 
       - **Latency:** the 4-bit MoE answers in 0.81 s (p95) with one request

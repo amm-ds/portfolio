@@ -99,6 +99,22 @@ stages:
     metrics:
       - reports/metrics.json
 
+  # Manual selective-review stage (run explicitly via `dvc repro llm_cascade`).
+  # Threshold fitting uses validation only; test/fresh are scored once.
+  llm_cascade:
+    cmd: uv run python -m nlp_classification.cli llm-cascade
+    deps:
+      - src/nlp_classification
+      - params.yaml
+      - data/val
+      - data/test
+      - data/label_names.json
+      - reports/models/distilbert_fulldata.pt
+    outs:
+      - reports/figures/llm_cascade_comparison.json
+    metrics:
+      - reports/llm_cascade.json
+
   # Manual stage (run explicitly via `dvc repro fresh_holdout` or the CLI).
   # Roadmap experiment over the persisted artifacts — no retraining: scores
   # them on a fresh holdout drawn from the complement of the bounded test

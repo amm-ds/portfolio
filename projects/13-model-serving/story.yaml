@@ -154,6 +154,28 @@ sections:
       compose healthcheck and the harness both gate on `/ready`, so "the
       model is warmed" is a measured state, not a hope.
 
+      **Readiness core — warm the real backend before accepting traffic.**
+      Startup fails on non-finite output; readiness flips only after inference.
+
+      ```python
+      def warmup(self, n: int = 16) -> None:
+          hour = np.arange(n, dtype=np.int64) % self._hour_cardinality
+          zeros = np.zeros((n, len(self.numeric_cols)), dtype=np.float32)
+          scaled = self._predict_scaled(
+              hour, ((zeros.astype(np.float64) - self.x_mean) / self.x_std)
+          )
+          if not np.all(np.isfinite(scaled)):
+              raise RuntimeError(f"{self.backend} warm-up produced non-finite output")
+          self.ready = True
+
+      @asynccontextmanager
+      async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
+          loader: ModelLoader = app.state.loader
+          loader.warmup()
+          yield
+      ```
+
+      Excerpts from [model.py](https://github.com/amm-ds/portfolio/blob/main/projects/13-model-serving/src/model_serving/service/model.py) and [app.py](https://github.com/amm-ds/portfolio/blob/main/projects/13-model-serving/src/model_serving/service/app.py).
       **Business summary:** The ONNX export is gated to be the same function
       as the native model, and one small FastAPI service serves either backend
       behind the exact feature-contract schema with readiness, request ids,
@@ -163,7 +185,7 @@ sections:
     text_md: |
       **The paired load-test, then the container.** The hand-written async
       driver starts the real service as a subprocess per backend, waits for
-      `/ready`, fires a warm-up batch no cell counts, then sweeps
+      `/ready`, fires a warm-up batch that no cell counts, then sweeps
       concurrency 1/4/16/64 at 300 requests per cell, three repeats,
       reporting medians. Payloads are the parity probe grid, so both backends
       see byte-identical streams. The batch endpoint gets its own curve at
@@ -195,10 +217,17 @@ sections:
 
       - Gates: reproduction exact (25.4316 vs 25.4316); parity max-abs 7.2e-07 on 512 probe rows, tolerance 1e-4.
       - Latency: p50 1.6 ms single-request on both backends; p95 under 6 ms through concurrency 4; p50 about 63 ms at 64 clients where the shared CPU saturates.
-      - Throughput: knee near 950 req/s at concurrency 4 on both backends; ONNX up to 15% ahead at the saturated cells; zero errors across the 4,320 requests per backend in the committed benchmark.
+      - Throughput: peak near 970 req/s at concurrency 4 on both backends
+        (median 933 native / 970 ONNX); throughput sags at 16 clients under
+        queueing, then recovers as the batching kicks in; ONNX up to 15%
+        ahead at the saturated cells; zero errors across the 4,320 requests
+        per backend in the committed benchmark.
       - Batch: ~56k rows/s at size 128 on both backends, flat per-request latency under saturation.
       - Footprint: fresh-process RSS 298 vs 318 MB; image 6.5 GB measured (145 MB base, 6.2 GB venv, 1 MB model), dominated by torch and the 3.3 GB CUDA stack a CPU service never loads.
-      - Cost: about $0.000012 per 1k predictions at the measured knee, 65 W and $0.30 per kWh declared.
+      - Cost: about $0.000012 per 1k predictions at the committed
+        concurrency-16 basis (median-of-repeats throughput on this host,
+        65 W and $0.30 per kWh declared); the throughput peak itself sits
+        at concurrency 4.
       - Container: compose smoke passes — the api serves a real prediction to the one-shot smoke service behind a healthcheck-gated dependency.
 
       What was skipped: TLS/auth (out of scope for a study), multi-worker or
@@ -286,7 +315,7 @@ sections:
       value to the last digit (25.43163249606178, abs diff 0.0). Parity: 7.15e-07
       max-abs on the standardized network output over 512 seeded probe rows, inside
       the 1e-4 gate. Image: 6.47 GB (145 MB base, 6.2 GB venv, 1 MB model). Cost:
-      $1.15e-05 per 1k predictions at the concurrency-16 knee, at the declared
+      $1.15e-05 per 1k predictions at the committed concurrency-16 basis, at the declared
       65 W and $0.30 per kWh.
 
       ## Protocol
@@ -301,7 +330,8 @@ sections:
       ## Limits
 
       - One laptop, shared CPU: absolute numbers move about ±30% with machine load
-        (the knee was observed between 690 and 950 req/s across runs) — the shape,
+        (the committed concurrency-4 medians span 933–970 req/s across the two
+        backends) — the shape,
         the concurrency-4 knee and the batch amortization, is the durable finding.
       - No TLS, auth, multi-worker or GPU path; the paired harness needs both
         backends, so the torch-free slim image is future work.
@@ -336,4 +366,4 @@ figure_captions:
   latency_concurrency_lines: Per-request latency vs concurrency for both backends — median of 3 repeats, shaded band = repeat min/max on the p95. Single-request p50 is ~2 ms; the curve bends where one shared CPU saturates.
   batch_throughput_curve: The batch endpoint under saturation — throughput scales ~linearly with batch size while per-request latency stays flat (queue-dominated). ~56k rows/s at size 128 on both backends.
   backend_comparison_slope: Paired p50 latency per concurrency cell, native on the left, ONNX on the right; the x-label is the ONNX/native ratio. Gaps inside ~20% read as scheduling noise on a shared CPU.
-  footprint_cost_bars: "Three honest footprints: fresh-process RSS (298 vs 318 MB), the measured 6.5 GB image broken into base, venv, and model, and the electricity cost per 1k predictions at the measured knee (65 W, $0.30 per kWh, declared)."
+  footprint_cost_bars: "Three honest footprints: fresh-process RSS (298 vs 318 MB), the measured 6.5 GB image broken into base, venv, and model, and the electricity cost per 1k predictions at the committed concurrency-16 basis (65 W, $0.30 per kWh, declared)."

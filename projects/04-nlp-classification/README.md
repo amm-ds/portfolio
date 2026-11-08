@@ -59,6 +59,30 @@ platform's `classification_metrics` + weighted F1. Full numbers in
 | 6 | `distilbert_tuned` | **0.9020** | **0.9021** | selection winner (see below) |
 | 7 | `distilbert_full_120k` | **0.9460** | **0.9460** | full 120k fine-tune on Apple-Silicon MPS |
 
+### Final selected policy: transformer + selective LLM cascade
+
+The selected serving policy keeps the full-data transformer prediction at
+confidence **τ=0.6** and sends only lower-confidence rows to `kimi-for-coding`
+in **8-row batches**. It does not send every item to an LLM. Exact results from
+[`reports/llm_cascade.json`](reports/llm_cascade.json):
+
+| split | transformer macro-F1 → cascade | accuracy → cascade | reviews |
+|---|---:|---:|---:|
+| validation | 0.9601531 → 0.9602051 | 0.960 → 0.960 | 6 |
+| bounded test | 0.9460236 → 0.9490153 | 0.946 → 0.949 | 16 |
+| fresh 1,000, disjoint | 0.9529432 → 0.9539265 | 0.953 → 0.954 | 22 |
+
+The 44 reviews across validation, test, and fresh holdout take **96.933 s** total
+review latency and an estimated **$0.023671 cloud-equivalent**. The threshold is
+fitted on validation only; test and fresh are each scored once, and the 1,000
+fresh items are disjoint from the bounded test split by construction. No test or
+fresh labels or examples tune the router.
+
+The earlier keyword-first router remains the cheaper, lower-quality baseline:
+0.9020 fresh macro-F1 with 75.4% of items on the keyword path. The full-data
+transformer reaches 0.9529432 fresh; the selected cascade buys a small further
+gain with 22 reviews, not a claim that LLM review should replace classification.
+
 Macro-F1 ladder vs. the better naive floor (`random_uniform`): TF-IDF **+61.8
 pp.**, encoder_b **+64.5 pp.**, bounded DistilBERT family **+64.9 pp.**, full-data
 DistilBERT **+69.3 pp.**. DistilBERT beats
@@ -232,7 +256,7 @@ early stopping):
 Early stopping fired after epoch 2 (patience 1); best epoch-1 weights were
 restored and saved to `reports/models/distilbert.pt`.
 
-**Error analysis.** The dominant confusion of the selected model is
+**Error analysis.** The dominant confusion of the selected bounded transformer is
 **Business → Sci/Tech (24 of 250 Business rows)**; the full-data model shows
 the **same pair (14 of 250)** — e.g. *"Amazon Snaps Up China's Largest Web
 Retailer…"* and *"PeopleSoft customers reassured…"* — stories about
@@ -242,7 +266,7 @@ with data. Full table in [`reports/error_analysis.md`](reports/error_analysis.md
 per-class comparison vs the TF-IDF baseline in
 `reports/figures/per_class_f1_comparison.*`.
 
-**Misclassified examples** — selected model (`distilbert_tuned`, default
+**Misclassified examples** — selected bounded transformer (`distilbert_tuned`, default
 artifact per `reports/selection.json`) on the shared 1,000-row bounded
 test split; reproduced by running the committed artifact on the committed
 test split — the reproduced predictions bit-match `reports/metrics.json`
@@ -289,8 +313,8 @@ Figures (interactive HTML + showcase-API JSON in `reports/figures/`):
 - `hpo_importance.{html,json}` — fANOVA parameter importance over the study
 - `training_curve.{html,json}` — train/val loss + val macro-F1 per epoch
 - `scale_ladder.{html,json}` — controlled data-scale ladder: test macro-F1 vs train rows, by device
-- `confusion_matrix_selected.{html,json}` — selected model, counts
-- `per_class_f1_comparison.{html,json}` — selected model vs TF-IDF baseline, per class
+- `confusion_matrix_selected.{html,json}` — selected bounded transformer, counts
+- `per_class_f1_comparison.{html,json}` — selected bounded transformer vs TF-IDF baseline, per class
 
 Human-readable report: [`reports/report.html`](reports/report.html).
 
@@ -299,8 +323,10 @@ Human-readable report: [`reports/report.html`](reports/report.html).
 Validation→test non-transfer is documented, and the remaining error is a
 labeling-ambiguity floor (Business/Sci-Tech), not a data-scale problem. More
 rows do not fix it; hybrid articles need a separate multi-label contract with
-multi-hot labels and different metrics. AG News terms are research-purposes only
-(see the [dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/)).
+multi-hot labels and different metrics. The cascade's gains are small and
+measured on these fixed splits; they do not establish production breadth or
+justify reviewing every row with an LLM. AG News terms are research-purposes
+only (see the [dataset card](https://amm-ds.github.io/portfolio/data-registry/ag-news/)).
 
 ## Reproduce
 
@@ -317,6 +343,9 @@ uv run python -m nlp_classification.cli evaluate         # full ladder (incl. sc
 
 # fresh-holdout selection reading + confidence-routed serving (no retraining):
 uv run python -m nlp_classification.cli fresh-holdout      # -> reports/fresh_holdout.json (~1 min)
+
+# selected selective-review cascade (provider-backed; not run by the offline gates):
+uv run python -m nlp_classification.cli llm-cascade       # -> reports/llm_cascade.json
 
 # full-data path (accelerator-gated; auto = CUDA → MPS → CPU):
 uv run python -m nlp_classification.cli train-nn --full-data            # full 120k on MPS (~47 min measured)

@@ -140,6 +140,30 @@ sections:
       W --> E["convex_ensemble<br/>weights 0.60/0.10/0.30"]
     ```
 
+    **Selection core — blend first, score the hierarchy, penalize instability.**
+    The important detail is that member metrics are never averaged: bottom
+    forecasts combine first, then the hierarchy scores the blend.
+
+    ```python
+    def _screen(vals: np.ndarray) -> float:
+        vals = np.asarray(vals, dtype=float)
+        return float(np.mean(vals) + ENSEMBLE_STABILITY_LAMBDA * np.std(vals))
+
+    def _blend_wrmsse_per_origin(
+        member_preds: list[np.ndarray],
+        weights_w: np.ndarray,
+        origin_ctx: dict[int, dict[str, Any]],
+    ) -> np.ndarray:
+        out = np.empty(len(origin_ctx))
+        for k, o in enumerate(origin_ctx):
+            combo = np.zeros_like(member_preds[0][k])
+            for wi, p in zip(weights_w, member_preds, strict=True):
+                combo += wi * p[k]
+            out[k] = origin_ctx[o]["wrmsse_fn"](combo)
+        return out
+    ```
+
+    Excerpt from [m5_full.py](https://github.com/amm-ds/portfolio/blob/main/projects/02-demand-forecasting/src/demand_forecasting/m5_full.py).
     Every fit is seeded or closed-form, and the pooled arms visit their
     groups in a fixed order, so a re-run rebuilds the same bytes.
     Selection never reads the test origin: the screen and the weight grid
@@ -173,7 +197,7 @@ sections:
 
     That is the competition's own ruler, so the fair comparison is the one
     the contest reports: improvement over its benchmark. The winner
-    improved −22.4% over the best benchmark
+    improved 22.4% over the best benchmark
     ([Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013)).
 
     ```mermaid
@@ -227,7 +251,8 @@ sections:
     development window the swap won its quadrant (erratic win-rate 0.845
     against the floor, vs the blend's 0.839) but cost too much everywhere
     else: pooled WRMSSE 0.621 against the blend's 0.601, twice the noise
-    band. The adoption gate rejected it, the committed champion stands, and
+    band (capped-window run, recorded in DESIGN.md). The adoption gate
+    rejected it, the committed champion stands, and
     the full-panel re-run is scheduled — a designed negative result, not a
     hidden one.
 

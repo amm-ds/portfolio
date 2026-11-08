@@ -145,6 +145,27 @@ sections:
       - **The cutoff is not a constant.** Re-scoring under different missed-churner prices moves the served threshold — 0.200 when a churner costs 3, 0.175 when 5, 0.100 when 8 — and every variant's interval still excludes zero. Calibration's edge is itself price-dependent: it helps at five (619 → 601) and slightly hurts at eight (691 → 699).
       - **The strongest signal hides the weakest slice.** The raw model recalls month-to-month churners at 0.976 but misses 19 of 36 one-year and all 9 two-year churners; gender recall is near-uniform (0.902 versus 0.906). The permutation-importance figure ranks contract, tenure and charges on top — and long-contract churners are exactly who the raw policy loses.
 
+      **Decision core — the threshold minimizes a priced confusion matrix.**
+      Accuracy never enters the objective; the business asymmetry does.
+
+      ```python
+      def business_cost(y_true, proba, threshold, fp_cost, fn_cost) -> float:
+          y_pred = (proba >= threshold).astype(int)
+          _tn, fp, fn, _tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
+          return fp_cost * float(fp) + fn_cost * float(fn)
+
+      def cost_curve(cfg, y_true, proba):
+          costs = np.array(
+              [
+                  business_cost(y_true, proba, t, cfg.fp_cost, cfg.fn_cost)
+                  for t in cfg.threshold_grid
+              ],
+              dtype=float,
+          )
+          return costs, float(cfg.threshold_grid[int(np.argmin(costs))])
+      ```
+
+      Excerpt from [evaluate.py](https://github.com/amm-ds/portfolio/blob/main/projects/05-ml-pipeline-churn/src/churn_pipeline/evaluate.py).
       Read the figures at face value: the calibration figure overlays the
       raw and isotonic reliability curves — the straighter line wins; the
       cost-curve figure is read by its minimum, 601 versus the naive flat

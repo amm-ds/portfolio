@@ -147,7 +147,7 @@ sections:
         forest at 39.5 — close, so most learnable signal is
         linear-ish around the lags.
       - **Boosting with a budget:** a seeded Optuna study (50 trials,
-        50_RUN finished within 240 s, MAE objective on
+        50/50 finished within 240 s, MAE objective on
         validation, median pruning) selects LightGBM at 34.4 — the
         validation leader among the fast models.
       - **The hand-written loop:** the PyTorch MLP embeds the raw hour
@@ -163,6 +163,27 @@ sections:
         MAE; dropout and weight decay sit within noise on this window, and
         the dot plot in the results says so plainly.
 
+      **Overfitting control — checkpoint on validation, restore the best state.**
+      Patience stops the loop; it never decides which weights ship.
+
+      ```python
+      if val_mae < best_val:
+          best_val = val_mae
+          self.history.best_epoch = epoch + 1
+          best_state = {
+              k: v.clone() for k, v in self.model.state_dict().items()
+          }
+          patience_left = mlp.patience
+      elif early_stopping:
+          patience_left -= 1
+          if patience_left <= 0:
+              break
+
+      if best_state is not None and early_stopping:
+          self.model.load_state_dict(best_state)
+      ```
+
+      Excerpt from [mlp.py](https://github.com/amm-ds/portfolio/blob/main/projects/12-tabular-ml-lifecycle/src/tabular_ml_lifecycle/mlp.py).
       The evaluation section freezes this ladder and scores it once.
 
       **Business summary:** Validation selects the tabular MLP (PyTorch) at

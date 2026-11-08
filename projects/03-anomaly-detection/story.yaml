@@ -159,9 +159,27 @@ sections:
     telemetry-flags figure shows the budget's synthetic flags tracking the
     simultaneous CPU+latency spikes ground truth marks.
 
+    **Fusion core — normalize ranks, not incompatible raw scores.** Each
+    detector contributes the same scale before the average is taken.
+
+    ```python
+    def _ranks(scores: np.ndarray) -> np.ndarray:
+        order = np.argsort(scores, kind="stable")
+        out = np.empty(len(scores), dtype=float)
+        out[order] = np.arange(len(scores), dtype=float)
+        return out / max(len(scores) - 1, 1)
+
+    members = [fit_detector(d, x_fit, config) for d in BASE_DETECTORS]
+
+    def score_ensemble(x: np.ndarray) -> np.ndarray:
+        return np.mean([_ranks(member(x)) for member in members], axis=0)
+    ```
+
+    Excerpt from [nab_sweep.py](https://github.com/amm-ds/portfolio/blob/main/projects/03-anomaly-detection/src/anomaly_detection/nab_sweep.py).
+
     **Finding 2 — budgeting the page stream fixes load without
     retraining.** Episode dedup plus the 24 h cap cuts pages twenty- to
-    thirty-fold across all eight cells. Range-F1 rises in each. The headline
+    thirty-three-fold across all eight cells. Range-F1 rises in each. The headline
     cell drops 1,609 → 80 pages. Range recall falls 0.729 → 0.562.
     Range-F1 rises 0.157 → 0.315. On the like-for-like rolling cells the
     ensemble posts 35 pages at range-F1 0.533 against IsolationForest's
@@ -209,8 +227,8 @@ sections:
     curves lift above that floor; tuned OCSVM leads average precision at
     0.136. A ranking is not a page policy. Question two: what does the
     fixed operating point cost? The threshold-sweep figure marks the 2%
-    point on synthetic data: 120 flags, precision and recall both near
-    15%, seventeen hits on anomalous minutes — point load, not seventeen
+    point on synthetic data: 115 flags, precision and recall both about
+    15% (14.8%), seventeen hits on anomalous minutes — point load, not seventeen
     incidents. Question three: can the threshold adapt to drift? The
     streaming-simulation figure says no for now: synthetic-calibrated
     median/IQR triggers fire on 31 of 120 real NAB chunks, too twitchy
@@ -469,7 +487,7 @@ figure_captions:
   telemetry_flags: "Synthetic test-window flags at the fixed 2% alert budget, compared with ground-truth anomalous minutes. The flags track simultaneous CPU+latency spikes; this is not a NAB result."
   hpo_importance: "One-Class SVM tuning on synthetic train-only validation: gamma carries 99% of importance, moving from the failing `scale` default to 0.0131 (best validation PR-AUC 0.126)."
   pr_curves: "Pointwise precision-recall curves on the synthetic test window, with the 1.9% prevalence floor. Tuned OCSVM leads AP at 0.136; these curves do not measure event-window recall."
-  threshold_sweep: "Synthetic precision and recall across alert budgets, with the fixed 2% point marked: 120 flags, about 15% recall and 14% precision, including 17 hits on anomalous minutes. This is point-level load, not 17 incidents."
+  threshold_sweep: "Synthetic precision and recall across alert budgets, with the fixed 2% point marked: 115 flags, about 15% precision and recall (14.8%), including 17 hits on anomalous minutes. This is point-level load, not 17 incidents."
   adaptive_stream: "Adaptive versus fixed thresholds in streaming simulation. Synthetic-calibrated median/IQR drift detection fires on 31 of 120 real NAB chunks, so it remains too twitchy for the headline operating point."
   nab_timelines: "Six representative NAB test windows: amber bands are labelled events and pink crosses are IsolationForest alerts. These panels contain 897 alerts; nyc_taxi misses one window while the other five series touch theirs."
   nab_timeline_nyc_taxi: "The NAB nyc_taxi test window downsampled to every second minute: 3 of 4 labelled windows touched, range recall 0.750, pointwise PR-AUC 0.462, and 179 alerts emitted. The miss remains visible rather than averaged away."
