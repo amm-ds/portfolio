@@ -47,12 +47,7 @@ sections:
         regularization ablation.
       - Uncertainty on the headline: paired bootstrap CIs on the gap to the floor.
 
-      ```mermaid
-      flowchart LR
-        F["floor: same hour<br/>last week"] --> Q1{"beat it, CI<br/>excludes zero?"}
-        T["trees + linear<br/>(sklearn Pipelines)"] --> Q2{"hand-written PyTorch MLP<br/>keeps up?"}
-        Q1 --> R["residual slices:<br/>where still wrong?"]
-        Q2 --> R
+      ```diagram auto-12-tabular-ml-lifecycle-1
       ```
 
       The data that answers these questions comes next.
@@ -72,13 +67,7 @@ sections:
       The seeded synthetic twin regenerates the same schema offline and is the
       CI path: tests never touch the network.
 
-      ```mermaid
-      flowchart LR
-        SRC["UCI zip (sha256 gate)<br/>+ synthetic twin"] --> DQ["26 DQ checks:<br/>nulls, ranges, grid gaps"]
-        DQ --> SP["time split: train 14,523<br/>val 1,344, test 1,344"]
-        SP --> TR["train: fit + select"]
-        SP --> VA["validation: HPO, early<br/>stopping, champion pick"]
-        SP --> TE["test: scored once"]
+      ```diagram auto-12-tabular-ml-lifecycle-2
       ```
 
       Two data facts shaped the pipeline. First, `casual` and `registered`
@@ -201,14 +190,7 @@ sections:
       resampled paired, so the interval prices hour-to-hour noise rather than
       data volume.
 
-      ```mermaid
-      flowchart LR
-        subgraph TEST["frozen test window<br/>1,344 rows, one pass"]
-          S["score all 5 candidates"]
-          B["2,000 paired resamples:<br/>MAE(floor) − MAE(champion)"]
-        end
-        S --> B --> C["95% CI<br/>52.5 to 63.1"]
-        C --> W["watch items:<br/>positional lags, floored MAPE"]
+      ```diagram auto-12-tabular-ml-lifecycle-3
       ```
 
       The results, caveats attached rather than buried:

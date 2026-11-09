@@ -457,7 +457,7 @@ function FlowCanvas({ spec }: FlowDiagramProps) {
             <Controls position="bottom-right" showInteractive={false} />
           </ReactFlow>
         </div>
-        {selectedNode && (
+        {selectedNode && selectedNode.data.facts.length > 0 && (
           <aside className="flow-inspector" aria-live="polite" aria-label={`Facts for ${selectedNode.data.label}`}>
             <div className="flow-inspector__header">
               <div>

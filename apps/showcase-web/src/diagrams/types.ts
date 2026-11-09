@@ -44,8 +44,8 @@ export function diagramSpecErrors(spec: DiagramSpec): string[] {
     if (nodeIds.has(node.id)) errors.push(`duplicate node id: ${node.id}`);
     nodeIds.add(node.id);
     if (!DIAGRAM_NODE_KINDS.includes(node.kind)) errors.push(`invalid node kind: ${node.id}`);
-    if (node.facts.length === 0 || node.facts.some((fact) => !fact.trim())) {
-      errors.push(`node facts are required: ${node.id}`);
+    if (node.facts.some((fact) => !fact.trim())) {
+      errors.push(`node facts must be non-blank: ${node.id}`);
     }
   }
 

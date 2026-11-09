@@ -36,19 +36,7 @@ sections:
     common shortcut — tuning the alert threshold until the test labels
     look good — stays out by design.
 
-    ```mermaid
-    flowchart LR
-      subgraph Splits["Past-only splits"]
-        A["Train first 70%"] --> B["Tune last 20%"] --> C["Score later span"]
-      end
-      subgraph Point["Frozen point, fair floor"]
-        D["Top-2% threshold"] --> F["Seeded random floor"]
-      end
-      subgraph Metrics["Two metric families"]
-        H["Pointwise ROC-AUC, PR-AUC"] --> I["Event-aware range-F1"]
-      end
-      C --> D
-      F --> H
+    ```diagram auto-03-anomaly-detection-1
     ```
 
     Read the left gate first: training takes the first 70% of each
@@ -92,14 +80,7 @@ sections:
     comparison with rare telemetry. Labels are used for evaluation only. See the
     [NAB dataset card](https://amm-ds.github.io/portfolio/data-registry/nab/).
 
-    ```mermaid
-    flowchart LR
-      N1["NAB: 12 series"] --> N2{"Windows in scored span?"}
-      N2 -->|"9 evaluable"| N3["16 of 17 touched"]
-      N2 -->|"3 all-train"| N4["Excluded, not misses"]
-      N3 --> H["Headline metrics"]
-      H --> S1["Synthetic: mechanics only"]
-      S1 --> K1["NSL-KDD: contract probe"]
+    ```diagram auto-03-anomaly-detection-2
     ```
 
     The data-lineage diagram shows the three sources and what each is
@@ -442,16 +423,7 @@ sections:
       revisit coarser contexts or train-side selection — under the same
       adoption gate.
 
-    ```mermaid
-    flowchart LR
-      Q["New telemetry series"] --> D{"Same contract?<br/>univariate, labelled windows"}
-      D -->|"yes"| A["Fit on first 70%<br/>fixed top-2% threshold"]
-      D -->|"multivariate or unlabelled"| X["Out of scope<br/>no claim made"]
-      A --> B["Score later span once"]
-      B --> C["Episode dedup"]
-      C --> E["24 h per-series cap"]
-      E --> F["Tune operating point<br/>train-only, clear +0.05"]
-      F --> G["Budgeted page stream<br/>deployed artifact"]
+    ```diagram auto-03-anomaly-detection-3
     ```
 
     **Business summary:** The committed recipe: rank-average ensemble of

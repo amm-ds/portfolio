@@ -51,20 +51,7 @@ sections:
       The ladder diagram fixes the rungs and the one judge every rung
       faces.
 
-      ```mermaid
-      flowchart LR
-        subgraph Ladder["Ladder, cheapest first"]
-          F1["Floor: majority class"] --> F2["Floor: random, seeded"]
-          F2 --> R3["TF-IDF + logistic regression"]
-          R3 --> R4["Compact transformer, sample"]
-          R4 --> R5["Same model, 120k rows"]
-        end
-        subgraph Judge["One judge, every rung"]
-          M["Accuracy and macro-F1<br/>every topic counts equally"]
-          H["Test-set role disclosed"]
-        end
-        R5 --> M
-        M --> H
+      ```diagram auto-04-nlp-classification-1
       ```
 
       Five rungs, cheapest first, each judged by the same accuracy and
@@ -97,13 +84,7 @@ sections:
 
       The data-lineage diagram shows each split and its role.
 
-      ```mermaid
-      flowchart LR
-        B["Full portion<br/>108k / 12k"] --> C["Seeded sample<br/>3,600 / 400"]
-        C --> T["Shared test set<br/>1,000 items"]
-        T --> S["Model selection<br/>biased by design"]
-        C -->|"6,600 complement"| F["Fresh holdout<br/>1,000 items"]
-        F --> U["Unbiased headline"]
+      ```diagram auto-04-nlp-classification-2
       ```
 
       The lineage splits two ways: the full portion and the seeded sample
@@ -205,14 +186,7 @@ sections:
       and sends only rows below τ=0.6 to cost-bounded LLM review in batches of
       eight. It is selective review, not LLM classification of every item.
 
-      ```mermaid
-      flowchart LR
-        A["Incoming item"] --> TR["Full-data transformer<br/>prediction + confidence"]
-        TR --> Q{"Confidence below<br/>τ=0.6?"}
-        Q -->|"no"| KEEP["Keep transformer label"]
-        Q -->|"yes"| LLM["Kimi review<br/>8 rows per call"]
-        KEEP --> OUT["Selected cascade"]
-        LLM --> OUT
+      ```diagram auto-04-nlp-classification-3
       ```
 
       Validation fitting selects τ=0.6 using validation alone. Test and fresh
@@ -393,14 +367,7 @@ sections:
         budget might separate them, and this project does not show that it
         would not.
 
-      ```mermaid
-      flowchart LR
-        A["Bulk feed"] --> F["Full-data transformer"]
-        F --> Q{"Confidence below τ=0.6?"}
-        Q -->|"no"| K["Keep transformer label"]
-        Q -->|"yes"| R["Selective LLM review<br/>8 rows per call"]
-        K --> C["Selected cascade<br/>0.9539265 fresh macro-F1"]
-        R --> C
+      ```diagram auto-04-nlp-classification-4
       ```
 
       **Business summary:** Select the full-data transformer + selective LLM

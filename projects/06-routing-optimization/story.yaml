@@ -12,15 +12,7 @@ sections:
       search lands within 4.23% of the best published distance, in about a
       second per problem, using 3.73 more trucks than best-known on average.
 
-      ```mermaid
-      flowchart LR
-        subgraph DAY["one Solomon problem<br/>100 customers"]
-          I["depot + 100 customers<br/>windows + capacity"]
-        end
-        subgraph PLAN["plan"]
-          R["route list"] --> V["machine-checked validator"] --> D["distance + truck count"]
-        end
-        I --> R
+      ```diagram auto-06-routing-optimization-1
       ```
 
       The diagrams fix one contract: inputs and route lists feed machine
@@ -56,21 +48,7 @@ sections:
       code check — the RoutePlan validator plus a route simulation — and
       the two scored criteria then land on the benchmark convention.
 
-      ```mermaid
-      flowchart LR
-        subgraph RULES["contract"]
-          R["serve once, in capacity,<br/>meet windows, fixed seed"]
-        end
-        subgraph CHECK["reporting gate"]
-          V["RoutePlan validator<br/>+ route simulation"]
-        end
-        subgraph SCORE["scoring"]
-          GAP["gap to best-known"]
-          VEH["vehicle delta"]
-        end
-        RULES --> V
-        V --> GAP --> C["convention:<br/>fewer trucks first"]
-        V --> VEH --> C
+      ```diagram auto-06-routing-optimization-2
       ```
 
       The convention needed stating because the tempting alternative,
@@ -107,12 +85,7 @@ sections:
       per-family view returns in the results. The lineage diagram traces
       how sources become the reference table.
 
-      ```mermaid
-      flowchart LR
-        CVR["CVRPLIB snapshot:<br/>56 instances, pinned"] --> DQ["DQ gates:<br/>nulls, bad ranges"] --> FAM["six families"]
-        REG["curated registry"] --> TAB["merged table:<br/>distance + trucks"]
-        SUP["local supplement:<br/>42 cases"] --> TAB
-        FAM --> TAB
+      ```diagram auto-06-routing-optimization-3
       ```
 
       On the snapshot side, the data-quality gates reject nulls and
@@ -218,19 +191,7 @@ sections:
       plan, and a separate branch has the exact solver certifying small
       cases.
 
-      ```mermaid
-      flowchart LR
-        subgraph METRICS["two criteria, always together"]
-          GAP["gap to best-known"]
-          VEH["vehicle delta"]
-        end
-        subgraph SHIP["what ships"]
-          PLAN["search plan, ~1 s"]
-          CERT["exact solver:<br/>certifies small cases"]
-        end
-        V["8 solvers, 56 instances<br/>feasible plans, seed 42"] --> GAP --> PLAN
-        V --> VEH --> PLAN
-        V --> CERT
+      ```diagram auto-06-routing-optimization-4
       ```
 
       The contract buys three guarantees:
@@ -304,11 +265,7 @@ sections:
       - Published references are beatable: the search undercuts 8 best-known plans
         (best RC202 −3.85%) — a moving literature target, not a certificate.
 
-      ```mermaid
-      flowchart LR
-        F["randomized floor<br/>316.95% gap"] --> A["tuned ALNS<br/>4.23% gap"]
-        A --> V["56/56 feasible<br/>~1.1 s per problem"]
-        V --> L["limits: +3.73 vehicles<br/>exact search not faster"]
+      ```diagram auto-06-routing-optimization-5
       ```
 
       ## Exact numbers

@@ -5,7 +5,6 @@ import hljs from "highlight.js/lib/core";
 import bash from "highlight.js/lib/languages/bash";
 import json from "highlight.js/lib/languages/json";
 import python from "highlight.js/lib/languages/python";
-import { MermaidDiagram } from "../components/MermaidDiagram";
 import { LazyFlowDiagram } from "../components/diagrams/LazyFlowDiagram";
 import { glossaryEntries } from "./glossary";
 
@@ -15,9 +14,10 @@ import { glossaryEntries } from "./glossary";
 // N. / N) lists (with GFM-style indented continuation lines for wrapped
 // items), pipe tables, ATX headings (## → h3, ### → h4, capped so the outline
 // never jumps above the section h2), thematic breaks (---/***/___), and fenced
-// code blocks (```lang; ```mermaid renders as a diagram). Everything is
-// rendered as React text nodes — no HTML injection surface. highlight.js
-// returns its own sanitized span markup for these three opt-in grammars.
+// code blocks (```lang; ```diagram <spec-id> renders a React Flow diagram).
+// Everything is rendered as React text nodes — no HTML injection surface.
+// highlight.js returns its own sanitized span markup for these three opt-in
+// grammars.
 hljs.registerLanguage("python", python);
 hljs.registerLanguage("json", json);
 hljs.registerLanguage("bash", bash);
@@ -284,9 +284,6 @@ function renderBlock(lines: string[], keyPrefix: string, state: GlossaryLinkStat
 }
 
 function renderCodeBlock(code: string, lang: string, keyPrefix: string): ReactNode {
-  if (lang === "mermaid") {
-    return <MermaidDiagram key={keyPrefix} code={code} />;
-  }
   const diagram = /^diagram\s+(\S+)$/.exec(lang);
   if (diagram) {
     return <LazyFlowDiagram key={keyPrefix} specId={diagram[1]} />;

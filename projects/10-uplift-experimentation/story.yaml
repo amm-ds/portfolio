@@ -54,13 +54,7 @@ sections:
       only under a budget or a higher send cost. Data: the real Hillstrom
       MineThatData campaign, March 2008, checksum-pinned.
 
-      ```mermaid
-      flowchart LR
-          C{"send cost and budget"} -->|"cheap, no cap"| E["mail everyone: $16,103"]
-          C -->|"capped or costly"| T["rank by uplift<br/>+69% at 25%"]
-          E --> V["profit at stated cost"]
-          T --> V
-          V --> R["revalidate on fresh<br/>holdout per campaign"]
+      ```diagram auto-10-uplift-experimentation-1
       ```
 
       Both diagrams frame the same decision: targeting rules vary with cost,
@@ -103,10 +97,7 @@ sections:
       - Stress-test the verdict against send cost: $0.01 per email is one
         channel's price in 2008, not a law of nature.
 
-      ```mermaid
-      flowchart LR
-        R["randomized customers"] --> S["out-of-fold scores"]
-        S --> P["profit + paired CI"] --> V["verdict + cost limits"]
+      ```diagram auto-10-uplift-experimentation-2
       ```
 
       The checklist applies the measurement architecture shown in Background:
@@ -140,23 +131,7 @@ sections:
       zip — may touch the models. That last rule is leakage control:
       anything recorded after the send would let a model cheat.
 
-      ```mermaid
-      flowchart LR
-          subgraph RAW["pinned snapshot"]
-              H["64,000 customers<br/>sha256-gated"]
-          end
-          subgraph FRAMES["analysis frames"]
-              direction LR
-              T["two-arm read<br/>Mens + control, 42,613"] --- F["three-arm frame<br/>per-arm reads"]
-          end
-          subgraph MAP["column roles"]
-              direction LR
-              M["treatment, conversion<br/>visit, spend"] --- X["log_history, recency, mens<br/>womens, newbie, channel, zip"]
-          end
-          RAW --> T
-          RAW --> F
-          T --> MAP
-          F --> MAP
+      ```diagram auto-10-uplift-experimentation-3
       ```
 
       The lineage diagram shows how the snapshot becomes analysis frames.
@@ -463,13 +438,7 @@ sections:
         per-order margin, contact-fatigue data, randomized arm assignment,
         and richer pre-treatment covariates the 2008 file does not carry.
 
-      ```mermaid
-      flowchart LR
-          S{"next send decision"} -->|"costly or budgeted"| T["rank by T-learner<br/>+69% vs random"]
-          S -->|"sends at $0.01"| E["mail everyone<br/>$16,103 profit"]
-          T --> V["revalidate each campaign"]
-          E --> V
-          V --> R["evidence upgrade:<br/>fresh randomized holdout"]
+      ```diagram auto-10-uplift-experimentation-4
       ```
 
       **Business summary:** Rank by measured lift only when sends are

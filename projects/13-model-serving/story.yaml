@@ -42,11 +42,7 @@ sections:
       curves, and memory must come from warmed, seeded, paired runs — never
       from eyeballing a few requests.
 
-      ```mermaid
-      flowchart LR
-        A["gate 1: rebuild champion<br/>from committed recipe"] --> B["gate 2: ONNX == native<br/>on probe grid"]
-        B --> C["paired load-test:<br/>same bytes, both backends"]
-        C --> D["container build:<br/>measured, smoke-tested"]
+      ```diagram auto-13-model-serving-1
       ```
 
       Success has four parts:
@@ -78,13 +74,7 @@ sections:
       out lands on the same test MAE, digit for digit. The copy is exact,
       not near.
 
-      ```mermaid
-      flowchart LR
-        subgraph CONTRACT["feature contract (15 features)"]
-          H["hour → embedding index"] --> N["temp, hum, windspeed, weathersit<br/>cyclical, binary, 3 lags"]
-        end
-        R["recipe vendored<br/>from exp. 12"] --> CONTRACT
-        CONTRACT --> G["gates:<br/>reproduction + parity"]
+      ```diagram auto-13-model-serving-2
       ```
 
       The serving surface mirrors that contract exactly: raw hour feeds the
@@ -116,11 +106,7 @@ sections:
       hours, bad weather codes, missing fields all take the standard 422
       shape, so the failure mode is a clean rejection, not a bad prediction.
 
-      ```mermaid
-      flowchart LR
-        G["seeded grid<br/>512 rows"] --> P["parity: native vs ONNX<br/>7.2e-07 max-abs"]
-        G --> L["later: benchmark<br/>payload stream"]
-        P --> OK["gate passed<br/>before any serving"]
+      ```diagram auto-13-model-serving-3
       ```
 
       **Business summary:** One seeded probe grid anchors both gates and the
@@ -139,14 +125,7 @@ sections:
       after warm-up rows flow through the backend — a request id on every
       response, and structured error envelopes instead of stack traces.
 
-      ```mermaid
-      flowchart LR
-        REQ["POST /predict<br/>15-field contract row"] --> V["pydantic bounds<br/>(422 on malformed)"]
-        V --> B{"backend flag"}
-        B --> N["native: state_dict<br/>+ arch json"]
-        B --> O["onnx: warmed<br/>Runtime session"]
-        N --> R["prediction +<br/>request_id"]
-        O --> R
+      ```diagram auto-13-model-serving-4
       ```
 
       A flag — `--backend native|onnx` — is the only difference between the
@@ -249,11 +228,7 @@ sections:
       measured 6.5 GB image, and ~$0.000012 electricity per 1k predictions
       under declared assumptions. [full evaluation report](https://amm-ds.github.io/portfolio/projects/13-model-serving/)
 
-      ```mermaid
-      flowchart LR
-        A["re-derive: 25.4316<br/>exact"] --> B["parity: 7.2e-07<br/>max-abs"]
-        B --> C["serve: 1.6 ms p50<br/>~950 req/s knee"]
-        C --> D["ship: 6.5 GB image<br/>smoke-tested"]
+      ```diagram auto-13-model-serving-5
       ```
 
       ## What the experiment taught

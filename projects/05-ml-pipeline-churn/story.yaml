@@ -45,11 +45,7 @@ sections:
       candidates, all answering on the same 1,409-row holdout under a
       41-point threshold grid, where the cheapest expected bill wins.
 
-      ```mermaid
-      flowchart LR
-        CM["cost model:<br/>FP 1, FN 5"] --> CD["candidates:<br/>naive, logistic, boosting"]
-        CD --> G["41-point threshold grid"] --> A["argmin of<br/>expected bill"]
-        A --> S["served policy:<br/>saving + interval"] --> Q["stability vs<br/>FN price"]
+      ```diagram auto-05-ml-pipeline-churn-1
       ```
 
       The chain ends with two outputs: the served policy's saving with
@@ -79,11 +75,7 @@ sections:
       bounds, values inside allowed ranges, churn strictly binary — and
       only then split.
 
-      ```mermaid
-      flowchart LR
-        SRC["IBM mirror +<br/>synthetic twin"] --> DQ["contract gates:<br/>nulls, ranges, binary churn"]
-        DQ --> SP["stratified 80/20,<br/>seed 42"] --> TR["train 5,634:<br/>fit + calibrate"]
-        SP --> HO["holdout 1,409:<br/>scored once"]
+      ```diagram auto-05-ml-pipeline-churn-2
       ```
 
       The split is stratified 80/20 at seed 42: 5,634 training rows and the
@@ -193,18 +185,7 @@ sections:
       The evaluation-contract diagram lays out the chain — scoring, grid,
       argmin, interval — then the two watch items hanging off the end.
 
-      ```mermaid
-      flowchart LR
-        subgraph HOLDOUT["frozen holdout<br/>1,409 rows"]
-          S["score every candidate"]
-          G["41-point threshold grid"]
-          A["cost-optimal threshold"]
-        end
-        subgraph EVIDENCE["headline evidence"]
-          I["2,000 paired resamples, 95%<br/>CI -485 to -343"]
-        end
-        S --> G --> A --> I
-        I --> W["two watch items<br/>same-holdout optimism, served-policy fairness"]
+      ```diagram auto-05-ml-pipeline-churn-3
       ```
 
       The optimism is structural, not a bug to fix here: the interval is
@@ -318,14 +299,8 @@ sections:
 
       **Pipeline** (one fitted sklearn Pipeline owns all preprocessing):
 
-            ```mermaid
-      flowchart LR
-        A["raw CRM row"] --> B["OutlierCapper"] --> C["MissingValueIndicator"] --> D["impute + scale"]
-        E["contract"] --> F["one-hot encode"]
-        D --> G["ColumnTransformer"]
-        F --> G
-        G --> H["classifier"] --> I["predict_proba"]
-      ```
+            ```diagram auto-05-ml-pipeline-churn-4
+            ```
 
       ## Protocol
 

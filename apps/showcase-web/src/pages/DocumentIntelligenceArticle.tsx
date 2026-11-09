@@ -46,15 +46,6 @@ elif _resolve(quote, page)[1]:
 # Incoming model coordinates are discarded; PyMuPDF-owned geometry wins.
 \`\`\``;
 
-const CHAT_FLOW = `\`\`\`mermaid
-flowchart LR
-  QUESTION["page-scoped question"] --> ASK["tool-free chat"]
-  PAGE["parsed page text<br/>+ bounded history"] --> ASK
-  ASK --> CITES{"every exact quote<br/>resolves uniquely?"}
-  CITES -->|"no"| FAIL["answer rejected"]
-  CITES -->|"yes"| ANSWER["cited answer<br/>+ source highlights"]
-\`\`\``;
-
 const EVAL_SNIPPET = `\`\`\`bash
 cd apps/document-intelligence
 uv run document-intelligence-eval --output reports/offline-metrics.json
@@ -213,7 +204,7 @@ export function DocumentIntelligenceArticle() {
                 discuss nothing else.
               </p>
             </div>
-            {renderMarkdown(CHAT_FLOW)}
+            <LazyFlowDiagram specId="auto-app-document-intelligence-1" />
           </AppArticleSection>
 
           <AppArticleSection

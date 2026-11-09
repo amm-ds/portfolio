@@ -8,16 +8,6 @@ import { usePageMeta } from "../seo";
 
 const REPO = "https://github.com/amm-ds/portfolio/tree/main/apps/agent-chat";
 
-const APPROVAL_FLOW = `\`\`\`mermaid
-flowchart LR
-  TOOL["send_message tool"] --> REQ["approval_request<br/>on the run's SSE stream"]
-  REQ --> WAIT{"operator decision"}
-  WAIT -->|"approve"| SEND["message sent<br/>result recorded"]
-  WAIT -->|"deny or 120 s timeout"| STOP["default-deny<br/>no side effect"]
-  SEND --> OUT["structured Answer"]
-  STOP --> OUT
-\`\`\``;
-
 const TOOL_SNIPPET = `\`\`\`python
 async def send_message(ctx: RunContext[ChatDeps], subject: str, body: str) -> str:
     """Send a team message. CONSEQUENTIAL: requires human approval."""
@@ -225,7 +215,7 @@ export function AgentChatArticle() {
               </ul>
             </div>
             {renderMarkdown(PROVIDER_SNIPPET)}
-            {renderMarkdown(APPROVAL_FLOW)}
+            <LazyFlowDiagram specId="auto-app-agent-chat-1" />
             <div className="prose">
               <p>
                 Pydantic AI also provides <a href="https://ai.pydantic.dev/deferred-tools/" target="_blank" rel="noopener noreferrer">native deferred tools</a>:

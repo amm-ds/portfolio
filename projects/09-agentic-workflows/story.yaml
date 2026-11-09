@@ -77,18 +77,7 @@ sections:
 
       The task schema diagram shows what every suite task declares.
 
-      ```mermaid
-      flowchart LR
-          subgraph TASK["one task record<br/>versioned JSON"]
-              direction LR
-              ID["id + category"] --- Q["question + pinned answer"] --- TOOLS["expected tool set"] --- BUD["budgets: 60 s<br/>8 steps, $0.25"]
-          end
-          subgraph CHECKS["graded by code<br/>no AI judge"]
-              direction LR
-              A["AnswerSuccess"] --- T["ToolSelection"] --- S["StepBudget + LatencyBudget"] --- R["RefusalSuccess"]
-          end
-          TASK --> CHECKS
-          CHECKS --> SCORE["per-task grades in metrics.json"]
+      ```diagram auto-09-agentic-workflows-1
       ```
 
       The schema has two boxes: the first is the task record
@@ -124,19 +113,7 @@ sections:
       Details: a locked-down calculator, fixed conversion tables, keyword
       and vector search, and a per-run notebook.
 
-      ```mermaid
-      flowchart LR
-          subgraph CORPORA["two fixed corpora"]
-              direction LR
-              HB["handbook: 12 synthetic docs"] --- WK["Wikipedia: 3,589 chunks"]
-          end
-          subgraph TASKS["versioned task files"]
-              direction LR
-              T15["15 tuning tasks<br/>t01 to t15"] --- H19["19 held-out: 13 answer<br/>+ 6 probes"]
-          end
-          CORPORA --> TASKS
-          TASKS --> RUN["recorded run: plans, calls,<br/>answers, tokens"]
-          RUN --> GRADE["offline grading -<br/>no new model calls"]
+      ```diagram auto-09-agentic-workflows-2
       ```
 
       The layout runs from corpora to grades: the two corpora feed the
@@ -176,24 +153,7 @@ sections:
       The grading diagram shows what every task faces before a verdict
       exists.
 
-      ```mermaid
-      flowchart LR
-          subgraph SUITE["suite shape<br/>34 tasks"]
-              direction LR
-              T15["15 tuning t01-t15"] --- H13["13 held-out answers"] --- P6["6 should-fail probes"]
-          end
-          subgraph PROBE["one probe<br/>under grader"]
-              Q["impossible ask"] --> D{"agent's move"}
-              D -->|refusal, ok status| OK["RefusalSuccess pass"]
-              D -->|fabrication or crash| BAD["RefusalSuccess fail"]
-          end
-          subgraph BENCH["four graders, every task<br/>no AI judge"]
-              direction LR
-              A["answers"] --- TO["exact tool sets"] --- S["step count"] --- L["time budget"]
-          end
-          SUITE --> BENCH
-          PROBE --> BENCH
-          BENCH --> M["metrics.json<br/>identical verdict every rerun"]
+      ```diagram auto-09-agentic-workflows-3
       ```
 
       The suite shape puts the probes inside the held-out split, so
@@ -230,24 +190,7 @@ sections:
       Consequential runs pause at a typed approval gate; the approval-gate
       diagram below shows its three exits.
 
-      ```mermaid
-      flowchart LR
-          subgraph GATE["typed human checkpoint"]
-              P["Plan: steps<br/>+ intended calls"]
-              H{"approve, reject, park"}
-          end
-          EX["Execute:<br/>tools run here only"]
-          CR["Critique:<br/>tools used vs plan"]
-          OUT["WorkflowResult or failure End"]
-          P --> H
-          H -->|reject + feedback| P
-          H -->|park / resume| H
-          H -->|approve| EX
-          EX -->|repair, within cap| EX
-          EX --> CR
-          CR -->|revise once| EX
-          CR -->|pass| OUT
-          EX -->|retries exhausted| OUT
+      ```diagram auto-09-agentic-workflows-4
       ```
 
       Read the gate as a state machine: Plan hands a typed plan to the
@@ -334,12 +277,7 @@ sections:
 
       The capture-and-grade diagram shows the pipeline.
 
-      ```mermaid
-      flowchart LR
-          RUN["one live run<br/>plans, calls, answers, tokens"] --> CAP["run_records.json - captured once"]
-          CAP --> GR["offline graders<br/>deterministic, no provider"]
-          GR --> V["verdicts<br/>re-checkable for free"]
-          CAP -.-> AUD["reviewer audits<br/>exact record behind grades"]
+      ```diagram auto-09-agentic-workflows-5
       ```
 
       Follow the pipeline: the run is captured once as JSON, the graders
@@ -477,12 +415,7 @@ sections:
 
       ## Protocol
 
-      ```mermaid
-      flowchart LR
-          I["graded inputs: run records<br/>captured once, pinned answers"]
-          G["deterministic graders: answer<br/>exact tools, steps+time, refusal"]
-          O["outputs: metrics.json rates<br/>figures, report.html"]
-          I --> G --> O
+      ```diagram auto-09-agentic-workflows-6
       ```
 
       - A run is captured once as `data/run_records.json` — plans, tool calls,

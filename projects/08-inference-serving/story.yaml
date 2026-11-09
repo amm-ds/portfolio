@@ -95,11 +95,7 @@ sections:
       the last node is the verdict drawn from recorded trade-offs. So
       the next question is what exactly gets sent to the endpoint.
 
-      ```mermaid
-      flowchart LR
-          MQ["one cell: model/quant/rung<br/>40 requests"] --> MM["per cell: p50/p95/p99, TTFT<br/>tok/s, quality, failures"]
-          MM --> RR["rules: label packaging confound<br/>one-runner quants, tok/s cost"]
-          RR --> VERDICT["verdict from recorded trade-offs"]
+      ```diagram auto-08-inference-serving-1
       ```
 
       **Business summary:** Targets: latency, throughput, quality, and
@@ -122,24 +118,7 @@ sections:
       and the scoring step, where a single Answer pydantic model parses
       every response.
 
-      ```mermaid
-      flowchart LR
-          subgraph PROMPT["prompt record"]
-              Q["8 general-knowledge questions"]
-              K["keyword checklist each"]
-              S["Answer schema: sentence,<br/>confidence, citation"]
-          end
-          subgraph ENV["request envelope<br/>identical every call"]
-              E1["temperature 0, bounded tokens,<br/>reasoning off"]
-              E2["model tag<br/>+ concurrency rung"]
-          end
-          subgraph SCORE["scoring"]
-              A["Answer pydantic model"]
-              P["parser scores<br/>every arm"]
-          end
-          PROMPT --> ENV
-          ENV -->|POST /v1/chat/completions| SCORE
-          SCORE --> OUT["schema-valid + keyword rates"]
+      ```diagram auto-08-inference-serving-2
       ```
 
       The choices are there for a reason:
@@ -216,12 +195,7 @@ sections:
       tok/s by model and concurrency. Its lines run flat-to-declining as
       load rises, with the MoE about 7× above the dense 32B.
 
-      ```mermaid
-      flowchart LR
-          SETUP["five serving setups"] --> RUN["runner auto-selected"]
-          RUN --> GR["rungs 1/2/4/8<br/>40 requests"]
-          GR --> OUT["latency, tok/s,<br/>quality, cost"]
-          GR -.-> NOTE["no MLX MoE build:<br/>recorded, not forced"]
+      ```diagram auto-08-inference-serving-3
       ```
 
       **Benchmark core — bound concurrency at the client, measure the whole cell.**
@@ -375,27 +349,8 @@ sections:
       grid). The evidence-lineage diagram below shows how the raw record flows to
       the published aggregates without re-running anything.
 
-            ```mermaid
-      flowchart LR
-          subgraph RAW["committed raw inputs"]
-              BR["data/bench_run.json<br/>760 requests, 19 cells"]
-              PR["data/prompts.json<br/>8 prompts + checklists"]
-          end
-          subgraph OFFLINE["offline re-aggregation<br/>no re-run"]
-              RP["report stage"]
-              AG["percentiles + tok/s<br/>re-derived per cell"]
-          end
-          subgraph PUB["published evidence"]
-              MJ["reports/metrics.json"]
-              FIG["reports/figures"]
-              HTML["reports/report.html"]
-          end
-          RAW --> RP
-          RP --> AG
-          AG --> MJ
-          AG --> FIG
-          AG --> HTML
-      ```
+            ```diagram auto-08-inference-serving-4
+            ```
 
       | model | architecture | quant | runner |
       |---|---|---|---|

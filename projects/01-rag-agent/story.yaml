@@ -1,5 +1,5 @@
 project_id: 01-rag-agent
-short_version: "A cited QA assistant over 593 pinned Wikipedia articles. Selected kimi-for-coding scores 46/65 correct with 17 unsupported-claim outcomes; sealed recall@5 falls from 0.831 to 0.600. Auditable, not unattended-ready."
+short_version: "A cited QA assistant over 593 pinned Wikipedia articles. Tuning set (65 questions): selected kimi-for-coding scores 46 correct, 17 unsupported-claim outcomes. Sealed held-out (15 questions): 11 of 15 correct; recall@5 falls 0.831 → 0.600. Auditable, not unattended-ready."
 sections:
 - id: background
   text_md: |
@@ -29,18 +29,7 @@ sections:
     **The product must answer with evidence, or refuse honestly — never guess.**
     The decision flow below is the contract every question follows.
 
-    ```mermaid
-    graph LR
-      Q["Question arrives"] --> D{"Relevant passage<br/>in corpus?"}
-      D -->|"no: outside corpus"| Z["Calibrated refusal"]
-      D -->|"yes"| A["Draft with citations"]
-      A --> V{"All claims at<br/>0.6 support floor?"}
-      V -->|"yes"| S["Structured answer:<br/>summary, citations, confidence"]
-      V -->|"no"| T["Bounded retries"]
-      T --> V
-      V -->|"fails after retries"| Z
-      S --> M["Metered: at or under<br/>0.01 USD per query"]
-      Z --> M
+    ```diagram auto-01-rag-agent-1
     ```
 
     Follow the chain from question to meter: a question first meets the
@@ -79,18 +68,7 @@ sections:
     diagram shows how sources become scored files; DVC tracks every step, and
     a checksum pins it.
 
-    ```mermaid
-    graph LR
-      subgraph Sources["Sources"]
-        WP["Wikipedia dump scan<br/>5 topics, anchors"]
-      end
-      subgraph Build["Bounded build"]
-        B["120 per topic max<br/>12,000-char cap"]
-      end
-      subgraph Artifacts["Pinned artifacts"]
-        CJ["corpus.jsonl + indexes<br/>593 articles, sha256"]
-      end
-      WP --> B --> CJ --> EV["Scored evaluation<br/>65 tuning, 15 sealed"]
+    ```diagram auto-01-rag-agent-2
     ```
 
     The lineage runs from sources to scores: a bounded scan feeds a
@@ -221,18 +199,7 @@ sections:
     every number must pass: two seeded floors, three judges, a sealed set, and
     per-phase cost metering under a hard cap.
 
-    ```mermaid
-    graph LR
-      subgraph Tuning["Tuning pass, 65 questions"]
-        J["Three judges:<br/>rubric, RAGAS, claims"]
-      end
-      subgraph Floors["Floors"]
-        F["Seeded random<br/>+ word-match"]
-      end
-      subgraph Gate["Gate and meters"]
-        G["Sealed set, scored once<br/>cost + latency cap"]
-      end
-      J --> F --> G --> R["Reported numbers"]
+    ```diagram auto-01-rag-agent-3
     ```
 
     Treat this contract as the checklist every number survives. The three
@@ -370,22 +337,7 @@ sections:
       CI [0.4, 1.0]); 61 calls and $0.240699 cloud-equivalent; p50 28.025 s,
       p95 52.176 s.
 
-    ```mermaid
-    graph LR
-      subgraph Draft["Hosted answer pass"]
-        A["Agent draft"] --> J["Rubric + RAGAS judges"]
-      end
-      subgraph Verify["Verify loop, per claim"]
-        SP{"0.6 support floor<br/>vs cited chunk?"}
-        SP -->|"yes: keep claim"| OUT["Audited answer"]
-        SP -->|"no: remove text"| AB{"Answer coherent?"}
-        AB -->|"yes"| RD["Re-draft, max 2 repairs"]
-        AB -->|"no"| REF["Abstain"]
-        RD --> SP
-      end
-      A --> SP
-      S15["Sealed 15-question set,<br/>scored once"] --> OUT
-      REF --> OUT
+    ```diagram auto-01-rag-agent-4
     ```
 
     ## Protocol

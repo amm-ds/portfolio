@@ -29,14 +29,7 @@ sections:
     simple seasonal rule — and how much complexity does that win actually
     buy? The candidate funnel gives the answer in one picture.
 
-    ```mermaid
-    flowchart LR
-      N["seasonal_naive floor"] --> G["global LightGBM<br/>+ Tweedie arm"]
-      G --> PL["pooled fits<br/>store, storecat, dept"]
-      PL --> ETS["per-series AutoETS"]
-      ETS --> SC["Stability screen:<br/>mean + 1.0 std"]
-      SC --> BL["convex_ensemble<br/>3 members, simplex weights"]
-      BL --> R["WRMSSE, bias, per-level<br/>zero-day, scored once"]
+    ```diagram auto-02-demand-forecasting-1
     ```
 
     Read the funnel top to bottom: every candidate, from the floor to the
@@ -73,9 +66,7 @@ sections:
     The evaluation contract diagram fixes the split discipline: choose on
     the past, score once on the future.
 
-    ```mermaid
-    graph LR
-      S["Choose on past:<br/>origins 2016-05-08 + 2016-05-15"] --> T["Score once: origin 2016-05-22<br/>competition window, 28 days"] --> C["Committed headlines:<br/>WRMSSE, bias, per level"]
+    ```diagram auto-02-demand-forecasting-2
     ```
 
     Read the contract as three stops. Two selection origins choose the
@@ -131,13 +122,7 @@ sections:
     - Per-series `AutoETS` closes the list; the convex ensemble is built
       from the pool.
 
-    ```mermaid
-    graph LR
-      P["6 pool candidates"] --> Q["per-origin WRMSSE<br/>2 selection origins"]
-      Q --> R["rank by mean<br/>+ 1.0 population std"]
-      R --> M["best three:<br/>pool_storecat, pool_store, pool_dept"]
-      M --> W["simplex grid, step 0.05<br/>minimise same screen"]
-      W --> E["convex_ensemble<br/>weights 0.60/0.10/0.30"]
+    ```diagram auto-02-demand-forecasting-3
     ```
 
     **Selection core — blend first, score the hierarchy, penalize instability.**
@@ -200,12 +185,7 @@ sections:
     improved 22.4% over the best benchmark
     ([Makridakis et al., IJF 2022](https://doi.org/10.1016/j.ijforecast.2021.11.013)).
 
-    ```mermaid
-    graph LR
-      F["Bottom forecasts: 30,490 series"] --> A["Aggregate bottom-up<br/>through 12 levels"]
-      A --> N["Per-node RMSSE<br/>vs train volatility"]
-      N --> W["Revenue weights<br/>equal total per level"]
-      W --> O["WRMSSE + per-level<br/>+ zero-day, scored once"]
+    ```diagram auto-02-demand-forecasting-4
     ```
 
     Follow the aggregation: the tree does the adding up, the metric does
@@ -341,11 +321,7 @@ sections:
     - Stockouts, promotions, and returns are unmodeled — no savings or
       safety-stock claim.
 
-    ```mermaid
-    graph LR
-      Q{"Full-panel, hierarchical M5 demand?"}
-      Q -->|"yes"| E["Convex ensemble<br/>of pooled fits"]
-      E --> X["Weekly reforecast<br/>floors + scored-once windows"]
+    ```diagram auto-02-demand-forecasting-5
     ```
 
     **Business summary:** The full-panel ensemble lands at 0.6161 against

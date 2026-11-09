@@ -1,9 +1,9 @@
 project_id: 07-open-data-mobility
 short_version: >-
   Next-hour NYC taxi demand by zone, built on 41.2M real 2024 yellow-taxi
-  trips and public weather: on a strict Oct-Dec holdout the model was 28%
-  more accurate than same-hour-yesterday; its 90% upper band reached 91%
-  coverage (sparse zones excepted).
+  trips and public weather: on a strict Oct–Dec test holdout the served tuned
+  GBM cuts error 28.3% below same-hour-yesterday (4.68 vs 6.52 MAE); its 90%
+  band reached 91% coverage (sparse zones excepted).
 figure_captions:
   hour_borough_heatmap: >-
     Full-year mean pickups by hour and borough. Manhattan peaks at 103.7
@@ -92,23 +92,7 @@ sections:
       back. With the bars fixed, the next question is where the data
       comes from.
 
-      ```mermaid
-      flowchart LR
-          subgraph TRAIN["train side"]
-              T["Jan-Sep 2024 features"]
-              V["embargoed validation<br/>all tuning here"]
-          end
-          subgraph TEST["test side, scored once"]
-              Q["Oct-Dec 2024, 584,855 zone-hours"]
-          end
-          subgraph JUDGE["judging"]
-              M["four error readings<br/>vs yesterday rule"]
-              C["p90 band<br/>vs 90 percent coverage"]
-          end
-          T --> V
-          V -->|frozen winner| Q
-          Q --> M
-          Q --> C
+      ```diagram auto-07-open-data-mobility-1
       ```
 
       **Business summary:** The bars were set in advance: a fifth less error
@@ -140,12 +124,7 @@ sections:
       city, one year. With the panel built, the next question is what
       it actually looks like — and what trap it hides.
 
-      ```mermaid
-      flowchart LR
-          A["TLC: 12 monthly Parquet<br/>41.2M trips"] --> J["row checks<br/>+ zone lookup join"]
-          W["NOAA: Central Park weather"] --> J
-          J --> G["zero-filled grid<br/>265 zones, 8,784 hours"]
-          G --> P["partitioned panel<br/>reused after download"]
+      ```diagram auto-07-open-data-mobility-2
       ```
 
       **Business summary:** Two public feeds — 41.2M taxi trips plus Central
@@ -403,16 +382,7 @@ sections:
         design — they need a different study contract (randomized weather
         shocks; a multi-hour forecasting setup).
 
-      ```mermaid
-      flowchart LR
-          Q["new zone-hour batch"] --> D{"zone class"}
-          D -->|"dense"| B["serve gbm_tuned<br/>mean + p90"]
-          D -->|"sparse, flagged"| M["manual watch<br/>band at 84.7%"]
-          D -->|"new service"| R["retrain on 2 months<br/>own history"]
-          B --> O["drift observatory<br/>monthly, ±15% tolerance"]
-          M --> O
-          R --> O
-          O --> X["regression opens<br/>response runbook"]
+      ```diagram auto-07-open-data-mobility-3
       ```
 
       **Business summary:** A tuned booster serves next-hour yellow-taxi
