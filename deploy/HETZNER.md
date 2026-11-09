@@ -51,6 +51,15 @@ docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.prod.4
 docker stats --no-stream   # co-tenant headroom check
 ```
 
+Gotchas learned on this box:
+- `git pull` REPLACES tracked files via rename, so a bind-mounted file inside a
+  long-running container (the Caddyfile) keeps serving the OLD inode. After any
+  Caddyfile change: `docker compose ... up -d --force-recreate caddy`.
+- Image builds fill disk fast (7.4 GB images + build cache). If a build fails
+  with `no space left`, run `docker builder prune -af` (frees the build cache,
+  keeps images) before retrying; keep only the current and previous image tags.
+- The env file is root:amm 640 — readable by the deploy user, not by others.
+
 Rollback: DEPLOY.md, using the recorded previous tag (keep the last image until the
 new one passes smoke).
 
