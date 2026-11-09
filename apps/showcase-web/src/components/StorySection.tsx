@@ -79,9 +79,9 @@ export function StorySection({
   figureCaptions?: Record<string, string>;
   /** Shared glossary-linked slug set, threaded page-wide by the case study. */
   linkedTerms?: Set<string>;
-  /** One-based section position — rendered as the blue number in the h2,
-   *  matching the left-rail index (`rail-num`) so the heading and the rail
-   *  read identically. */
+  /** One-based section position — rendered as the blue number in the h2.
+   *  The left rail marks items with a slash instead, so the heading number
+   *  is the only numbered index in the story layout. */
   index?: number;
 }) {
   const [proseMd, implication, implicationLabel] = splitBusinessImplication(section.text_md);

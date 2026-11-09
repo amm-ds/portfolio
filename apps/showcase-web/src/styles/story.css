@@ -122,9 +122,11 @@
 
 .rail .rail-num {
   /* --border computed to 1.7:1 on --bg (axe serious color-contrast); --muted
-     is a still-quiet 6.9:1 and keeps the number visually secondary. */
+     is a still-quiet 6.9:1 and keeps the marker visually secondary. The
+     slash is much narrower than the old two-digit numbers, so it carries a
+     smaller right margin. */
   color: var(--muted);
-  margin-right: 0.45rem;
+  margin-right: 0.3rem;
 }
 
 .rail a.active .rail-num {
@@ -145,8 +147,8 @@
 }
 
 /* green title behind the "> " prompt marker, with the section number in the
-   rail's blue family — the heading and the left-rail index read identically;
-   no glow */
+   rail's blue family; the left rail itself marks items with a slash, so the
+   heading number is the only numbered index; no glow */
 .story-section h2 {
   font-size: 1.25rem;
   margin: 0 0 0.75rem;
@@ -159,8 +161,8 @@
   text-shadow: none;
 }
 
-/* the section number (real markup from CaseStudy's map index — the same
-   two-digit numbering the rail renders) */
+/* the section number (real markup from CaseStudy's map index — the rail no
+   longer numbers its items, so this blue number stands alone) */
 .story-section h2 .sec-num {
   color: var(--secondary);
   margin-right: 0.6rem;

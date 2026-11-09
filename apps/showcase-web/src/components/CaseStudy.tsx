@@ -49,14 +49,14 @@ export function CaseStudy({
     <div className="story-layout">
         <nav className="rail" aria-label="Case study sections">
           <span className="rail-label">index</span>
-          {story.sections.map((s, i) => (
+          {story.sections.map((s) => (
             <a
               key={s.id}
               href={`#sec-${s.id}`}
               className={active === `sec-${s.id}` ? "active" : ""}
               aria-current={active === `sec-${s.id}` ? "location" : undefined}
             >
-              <span className="rail-num">{String(i + 1).padStart(2, "0")}</span>
+              <span className="rail-num">/</span>
               {s.title.toLowerCase()}
             </a>
           ))}
