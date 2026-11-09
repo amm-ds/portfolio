@@ -429,7 +429,7 @@ jobs:
           trap "docker rm -f showcase caddy; docker network rm showcase-net" EXIT
           docker network create showcase-net
           docker run -d --name showcase --network showcase-net --network-alias api -p 8000:8000 \
-            -e BUILD_SHA="$GITHUB_SHA" -e IP_HASH_SALT=ci-smoke-salt amm-ds-portfolio
+            -e BUILD_SHA="$GITHUB_SHA" -e IP_HASH_SALT=ci-smoke-salt -e ENABLE_API_DOCS=1 amm-ds-portfolio
           # poll readiness (cold joblib loads on a 2-vCPU runner can exceed a
           # fixed sleep; a previous run flaked here)
           for i in $(seq 1 60); do

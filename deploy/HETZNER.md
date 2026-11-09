@@ -54,10 +54,36 @@ docker stats --no-stream   # co-tenant headroom check
 Rollback: DEPLOY.md, using the recorded previous tag (keep the last image until the
 new one passes smoke).
 
+### Pull-based alternative (GHCR)
+
+On every `v*` tag push, CI builds the same image (same build args as above)
+and publishes `ghcr.io/amm-ds/portfolio:<tag>` plus `:latest`
+(`.github/workflows/release-image.yml`). To release a tagged version without
+building on the box, keep the compose flow but point `IMAGE` at the registry
+and skip the `docker build`:
+
+```bash
+ssh <deploy-user>@<deploy-host>
+cd /opt/amm-ds-portfolio
+git fetch --tags && git checkout <tag>
+set -a; . /etc/amm-ds-portfolio.env; set +a
+export IMAGE=ghcr.io/amm-ds/portfolio TAG=<tag> BUILD_SHA="$(git rev-parse HEAD)"
+echo "<PAT with read:packages>" | docker login ghcr.io -u <github-user> --password-stdin
+docker compose -f deploy/docker-compose.prod.yml -f deploy/docker-compose.prod.4gb.yml \
+  --env-file /etc/amm-ds-portfolio.env up -d
+# same smoke test + co-tenant checks as the server-build path
+```
+
+The human-driven boundary is unchanged: CI only publishes the image —
+pulling, restarting, smoke-testing, and rollback stay with the operator, and
+untagged releases keep following the server-build path above.
+
 ## Plan B — build off-box
 
 If an on-server build ever OOMs (swap makes it unlikely): build in CI, then
 `docker save amm-ds-portfolio:<tag> | gzip | ssh <deploy-host> 'gunzip | docker load'`.
+For `v*` releases the simpler variant is to pull the CI-published GHCR image
+instead of shipping bytes over SSH (see the Release section above).
 
 ## What is NOT deployed here
 

@@ -1,0 +1,36 @@
+name: release-image
+
+# Publish the production image to GHCR on version tags. Human-driven boundary
+# (DEPLOY.md): CI only builds and pushes the image — pulling, restarting,
+# smoke-testing, and rollback stay with the operator on the host.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/amm-ds/portfolio
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+      - name: Build image
+        # Same build-arg contract as the DEPLOY.md server build, with the
+        # production site URL compiled in.
+        run: >-
+          docker build
+          --build-arg VITE_SITE_URL=https://alejandromerida.dev
+          --build-arg VITE_BUILD_SHA="${{ github.sha }}"
+          -t "${IMAGE}:${{ github.ref_name }}"
+          -t "${IMAGE}:latest"
+          .
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Push image
+        run: docker push --all-tags "${IMAGE}"

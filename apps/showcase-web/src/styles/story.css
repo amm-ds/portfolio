@@ -209,7 +209,7 @@
 .story-section .prose p + ul,
 .story-section .prose p + ol,
 .story-section .prose p + .table-scroll,
-.story-section .prose p + .mermaid-wrap,
+.story-section .prose p + .flow-diagram,
 .story-section .prose p + .code-block {
   margin-top: 1.3rem;
 }

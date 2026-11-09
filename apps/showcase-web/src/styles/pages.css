@@ -323,6 +323,13 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* direct-line prose link is an inline anchor inside a sentence (axe
+   link-in-text-block): give it the same non-color cue as story prose links */
+.direct-contact-card p a {
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 /* contact channels: one card per channel, the whole card is the link */
 .channel-grid {
   display: grid;
@@ -961,30 +968,6 @@ button:disabled {
 
 .muted {
   color: var(--muted);
-}
-
-/* Mermaid diagrams: centered, generously sized, readable (audit: diagrams
-   must be "visible big and centered, related to the text"). */
-.mermaid-wrap {
-  margin: 1.6rem 0;
-  width: 100%;
-  overflow-x: auto;
-}
-.mermaid-wrap .mermaid {
-  width: 100%;
-  min-width: 100%;
-  text-align: center;
-}
-.mermaid-wrap .mermaid svg {
-  max-width: 100%;
-  height: auto;
-  min-height: 220px;
-}
-
-/* center the rendered diagram inside the (possibly scrollable) wrap */
-.mermaid-host {
-  display: flex;
-  justify-content: center;
 }
 
 /* React Flow pilot: lazy, read-only canvas + evidence inspector. */

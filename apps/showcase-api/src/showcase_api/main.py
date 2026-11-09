@@ -59,29 +59,44 @@ _DOCS_ASSETS = Path(__file__).with_name("static")
 _PID_RE = r"^\d{2}-[a-z0-9-]+$"
 
 setup_logging("INFO")
-app = FastAPI(title="amm-ds portfolio showcase", version=__version__, docs_url=None)
+
+# Interactive API docs (/docs, /redoc, /openapi.json) are an enumeration
+# surface — they register only when explicitly enabled (fail closed), the
+# same pattern as the RAG chat routes below. Local dev and CI set
+# ENABLE_API_DOCS=1 (the API test suite enables it in tests/conftest.py);
+# production compose sets it empty.
+_API_DOCS_ENABLED = os.environ.get("ENABLE_API_DOCS") == "1"
+
+app = FastAPI(
+    title="amm-ds portfolio showcase",
+    version=__version__,
+    openapi_url="/openapi.json" if _API_DOCS_ENABLED else None,
+    docs_url=None,  # the custom same-origin Swagger UI below replaces the default
+    redoc_url="/redoc" if _API_DOCS_ENABLED else None,
+)
 
 
-@app.get("/docs", include_in_schema=False)
-def swagger_ui() -> HTMLResponse:
-    """Swagger UI with same-origin assets; no runtime CDN availability required."""
-    return get_swagger_ui_html(
-        openapi_url="/openapi.json",
-        title=f"{app.title} - Swagger UI",
-        swagger_js_url="/docs-assets/swagger-ui-bundle.js",
-        swagger_css_url="/docs-assets/swagger-ui.css",
-        swagger_favicon_url="/favicon.svg",
-    )
+if _API_DOCS_ENABLED:
 
+    @app.get("/docs", include_in_schema=False)
+    def swagger_ui() -> HTMLResponse:
+        """Swagger UI with same-origin assets; no runtime CDN availability required."""
+        return get_swagger_ui_html(
+            openapi_url="/openapi.json",
+            title=f"{app.title} - Swagger UI",
+            swagger_js_url="/docs-assets/swagger-ui-bundle.js",
+            swagger_css_url="/docs-assets/swagger-ui.css",
+            swagger_favicon_url="/favicon.svg",
+        )
 
-@app.get("/docs-assets/{asset}", include_in_schema=False)
-def swagger_ui_asset(asset: str) -> FileResponse:
-    if asset not in {"swagger-ui-bundle.js", "swagger-ui.css"}:
-        raise HTTPException(status_code=404, detail="unknown documentation asset")
-    return FileResponse(
-        _DOCS_ASSETS / asset,
-        headers={"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"},
-    )
+    @app.get("/docs-assets/{asset}", include_in_schema=False)
+    def swagger_ui_asset(asset: str) -> FileResponse:
+        if asset not in {"swagger-ui-bundle.js", "swagger-ui.css"}:
+            raise HTTPException(status_code=404, detail="unknown documentation asset")
+        return FileResponse(
+            _DOCS_ASSETS / asset,
+            headers={"Cache-Control": "public, max-age=3600, stale-while-revalidate=86400"},
+        )
 
 
 class FiniteInput(BaseModel):

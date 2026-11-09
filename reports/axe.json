@@ -7,7 +7,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 37,
+      "passes": 39,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -73,7 +73,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/apps/agent-chat",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 46,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -84,7 +84,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/apps/document-intelligence",
       "httpStatus": 200,
-      "passes": 40,
+      "passes": 43,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -106,7 +106,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/contact",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -139,7 +139,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 37,
+      "passes": 39,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -205,7 +205,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/apps/agent-chat",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 46,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -216,7 +216,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/apps/document-intelligence",
       "httpStatus": 200,
-      "passes": 40,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -238,7 +238,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/contact",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -271,7 +271,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 37,
+      "passes": 39,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -337,7 +337,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/apps/agent-chat",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 46,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -348,7 +348,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/apps/document-intelligence",
       "httpStatus": 200,
-      "passes": 41,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -370,7 +370,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/contact",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -403,7 +403,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 37,
+      "passes": 39,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -469,7 +469,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/apps/agent-chat",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 46,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -480,7 +480,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/apps/document-intelligence",
       "httpStatus": 200,
-      "passes": 40,
+      "passes": 43,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -502,7 +502,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/contact",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -535,7 +535,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 37,
+      "passes": 39,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -601,7 +601,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/apps/agent-chat",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 46,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -612,7 +612,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/apps/document-intelligence",
       "httpStatus": 200,
-      "passes": 40,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -634,7 +634,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/contact",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -667,7 +667,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 37,
+      "passes": 39,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -733,7 +733,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/apps/agent-chat",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 46,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -744,7 +744,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/apps/document-intelligence",
       "httpStatus": 200,
-      "passes": 41,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -766,7 +766,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/contact",
       "httpStatus": 200,
-      "passes": 43,
+      "passes": 44,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []

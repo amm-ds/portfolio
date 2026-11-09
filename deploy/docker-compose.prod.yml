@@ -13,6 +13,9 @@ services:
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-30}
       # Kill switch: chat routes are absent unless this is exactly "1".
       RAG_CHAT_ENABLED: ${RAG_CHAT_ENABLED:-}
+      # Kill switch: /docs, /redoc and /openapi.json are absent unless this is
+      # exactly "1" (fail closed — audit L-9). Empty disables API docs.
+      ENABLE_API_DOCS: ${ENABLE_API_DOCS:-}
       # Per-call count budget (integer; the guard parses with int()).
       DAILY_LIVE_BUDGET: ${DAILY_LIVE_BUDGET:-10}
       LIVE_KILL_SWITCH: ${LIVE_KILL_SWITCH:-}

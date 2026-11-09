@@ -38,8 +38,9 @@ code {{ background: #1e293b; padding: 0.1rem 0.35rem; border-radius: 4px; }}
 .mermaid {{ background: #f8fafc; border-radius: 8px; padding: 1rem; margin: 1rem 0;
            overflow-x: auto; }}
 </style>
-<script type="module">
-import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.js";
+<script src="{mermaid_url}"
+        integrity="{mermaid_integrity}" crossorigin="anonymous"></script>
+<script>
 mermaid.initialize({{ startOnLoad: true, theme: "neutral" }});
 </script>
 </head><body>
@@ -49,6 +50,16 @@ mermaid.initialize({{ startOnLoad: true, theme: "neutral" }});
 """
 
 _MERMAID_FENCE_RE = re.compile(r"```mermaid\n(.*?)```", re.DOTALL)
+
+# Pinned CDN script (audit L-5): exact version + SRI, same shape scripts/
+# pin_report_cdn.py rewrites committed reports to. mermaid@11 floats otherwise,
+# and the old dist/mermaid.esm.min.js path 404s in every published 11.x — the
+# classic dist/mermaid.min.js sets globalThis.mermaid in one SRI-covered file.
+MERMAID_URL = "https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.min.js"
+MERMAID_INTEGRITY = (
+    "sha512-vVGqEG+fvZZAmwA11LG1aLNuXQnraqZPVkL17zv1/0qDtAmoPl70hXI6oZZI4IL57"
+    "LgjerTteCCpTs1pKIWLmw=="
+)
 
 
 @dataclass
@@ -106,7 +117,14 @@ class EvalReport:
     def write(self, path: str | Path) -> Path:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(_HTML.format(title=self.title, sections="\n".join(self.sections)))
+        p.write_text(
+            _HTML.format(
+                title=self.title,
+                sections="\n".join(self.sections),
+                mermaid_url=MERMAID_URL,
+                mermaid_integrity=MERMAID_INTEGRITY,
+            )
+        )
         return p
 
 

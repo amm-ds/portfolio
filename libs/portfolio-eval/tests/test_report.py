@@ -43,7 +43,12 @@ def test_eval_report_mermaid_embedding(tmp_path: Path) -> None:
     body = r.write(tmp_path / "report.html").read_text()
     assert '<pre class="mermaid">' in body
     assert "A[&quot;ingest&quot;] --&gt; B[&quot;embed&quot;]" in body  # escaped, no raw HTML
-    assert "mermaid.esm.min.js" in body
+    # CDN script is pinned to an exact version with SRI (audit L-5): the old
+    # floating mermaid@11 esm.min.js import 404s in every published 11.x.
+    assert "mermaid@11.17.2/dist/mermaid.min.js" in body
+    assert 'integrity="sha512-' in body
+    assert 'crossorigin="anonymous"' in body
+    assert "mermaid.esm.min.js" not in body
 
 
 def test_runs_from_metrics_skips_detail_blocks(tmp_path: Path) -> None:

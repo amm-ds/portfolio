@@ -82,6 +82,7 @@ its metadata stage.
 | `DAILY_LIVE_BUDGET` | `1000` | Per-process, per-UTC-day cap on the live POST inference calls (`/forecast`, `/score`, `/solve`). At 80% a WARNING logs once per day; past the cap the endpoints answer 503 (with the demo-replay hint) until the day rolls over. |
 | `LIVE_KILL_SWITCH` | unset | Circuit breaker: exactly `1` makes every live POST endpoint answer 503 immediately ("live inference temporarily disabled" + demo-replay hint). Recreate the container with the variable emptied to restore. |
 | `RAG_CHAT_ENABLED` | unset | Kill switch. Only exactly `1` registers `/rag/chat` and `/rag/chat/stream`; unset/empty disables them. |
+| `ENABLE_API_DOCS` | unset | Kill switch. Only exactly `1` registers `/docs`, `/redoc`, and `/openapi.json`; unset/empty disables them — API docs are disabled in production. |
 | `LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` | unset | Optional OpenAI-compatible provider. Without it, Project 01 uses Ollama. |
 | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | host gateway / `qwen3:32b` | Optional local-provider connection for the opt-in RAG path. |
 | `LLM_TIMEOUT` | `60` | Provider request timeout in seconds. |
