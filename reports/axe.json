@@ -7,7 +7,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 39,
+      "passes": 37,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -139,7 +139,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 39,
+      "passes": 37,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -271,7 +271,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 39,
+      "passes": 37,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -403,7 +403,7 @@
       "viewport": "desktop",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 39,
+      "passes": 37,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -535,7 +535,7 @@
       "viewport": "tablet",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 39,
+      "passes": 37,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []
@@ -667,7 +667,7 @@
       "viewport": "mobile",
       "url": "http://127.0.0.1:4321/",
       "httpStatus": 200,
-      "passes": 39,
+      "passes": 37,
       "violationCount": 0,
       "failingViolations": [],
       "violations": []

@@ -4,7 +4,8 @@ export interface PageIndexItem {
 }
 
 /** Shared section index for multi-section content pages: the `index` label
- * sits on its own line, then one `/section` link per line. */
+ * sits on its own line, then one `/label` link per line (the display label,
+ * not the id — ids stay as href targets). */
 export function PageIndex({ items }: { items: readonly PageIndexItem[] }) {
   return (
     <nav className="page-index" aria-label="On this page">
@@ -15,7 +16,7 @@ export function PageIndex({ items }: { items: readonly PageIndexItem[] }) {
             <span className="page-index-slash" aria-hidden="true">
               /
             </span>
-            {item.id}
+            {item.label}
           </a>
         ))}
       </span>

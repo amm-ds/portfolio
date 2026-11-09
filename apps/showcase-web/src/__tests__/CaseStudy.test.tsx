@@ -48,8 +48,8 @@ describe("CaseStudy section rail", () => {
     expect(document.querySelector(".rail-label")!.textContent).toBe("index");
     expect(screen.getByRole("heading", { name: /Background/ })).not.toBeNull();
 
-    const background = screen.getByRole("link", { name: "/ background" });
-    const results = screen.getByRole("link", { name: "/ results" });
+    const background = screen.getByRole("link", { name: "/01 background" });
+    const results = screen.getByRole("link", { name: "/02 results" });
     expect(background).not.toHaveAttribute("aria-current");
     act(() => {
       callback!(

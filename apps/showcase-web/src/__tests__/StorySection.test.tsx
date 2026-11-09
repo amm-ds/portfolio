@@ -259,7 +259,7 @@ describe("StorySection h2 title styling", () => {
   it("paints a green title behind a green > marker with a blue section number, no glow", () => {
     const css = readStylesCss();
     const h2Rule = css.match(/\.story-section h2 \{[\s\S]*?\n\}/)![0];
-    expect(h2Rule).toContain("color: var(--accent);");
+    expect(h2Rule).toContain("color: var(--accent-bright);");
     expect(h2Rule).not.toContain("text-shadow");
     // the heading and the left-rail index share one numbering: the number is
     // real markup (.sec-num), not a generated-content trick
@@ -273,7 +273,7 @@ describe("StorySection h2 title styling", () => {
     // the "> " prompt marker stays green with no glow of its own
     const beforeRule = h2BeforeRules[0];
     expect(beforeRule).toContain('content: "> ";');
-    expect(beforeRule).toContain("color: var(--accent);");
+    expect(beforeRule).toContain("color: var(--accent-bright);");
     expect(beforeRule).not.toContain("accent-glow");
     // the number renders in the rail's blue family
     const numRule = css.match(/\.story-section h2 \.sec-num \{[\s\S]*?\n\}/)![0];
@@ -284,7 +284,7 @@ describe("StorySection h2 title styling", () => {
       (m) => m[0],
     );
     expect(otherColorRules).toHaveLength(1);
-    expect(otherColorRules[0]).toContain("var(--accent)");
+    expect(otherColorRules[0]).toContain("var(--accent-bright)");
   });
 
   it("renders the h2 as the numbered section title — the same number the rail shows", () => {

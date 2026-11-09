@@ -108,7 +108,7 @@
 
 .figure-caption::before {
   content: "> ";
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 a.figure-caption {
@@ -116,7 +116,7 @@ a.figure-caption {
 }
 
 a.figure-caption:hover {
-  color: var(--accent);
+  color: var(--accent-bright);
   text-decoration: none;
 }
 
@@ -135,7 +135,7 @@ a.figure-caption:hover {
 }
 
 .figure-data summary:hover {
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .figure-data summary:focus-visible {

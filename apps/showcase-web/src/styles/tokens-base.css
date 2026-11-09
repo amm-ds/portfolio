@@ -94,12 +94,14 @@
   --surface-hover: #f4f7fb;
   --border: #b8c6d6;
   --border-soft: #d6dee8;
-  /* teal-600: closer to the dark theme's #2dd4bf than the old #0b625b while
-     keeping ~3:1 contrast on the light surface for headings/borders/markers */
-  --accent: #0d9488;
-  --accent-bright: #0f766e;
-  --accent-ink: #ffffff;
-  --accent-glow: rgba(13, 148, 136, 0.2);
+  /* --accent is teal-500 (closest to the dark theme's #2dd4bf) and paints
+     marks/borders/glows; ALL accent text uses --accent-bright (teal-700,
+     5.2:1) so contrast holds at any size — the dark theme's accent-bright
+     equals its accent, so text rules are theme-agnostic */
+  --accent: #14b8a6;
+  --accent-bright: #0b625b;
+  --accent-ink: #042f2e;
+  --accent-glow: rgba(20, 184, 166, 0.1);
   --secondary: #0369a1;
   --text: #172433;
   --muted: #4e6276;
@@ -207,7 +209,7 @@ code {
   border: 1px solid var(--border);
   border-radius: 4px;
   padding: 0.05rem 0.35rem;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 #root {
@@ -261,7 +263,7 @@ code {
 .go-card h3 {
   margin: 0 0 0.4rem;
   font-size: 0.95rem;
-  color: var(--accent);
+  color: var(--accent-bright);
 }
 
 .go-card p {

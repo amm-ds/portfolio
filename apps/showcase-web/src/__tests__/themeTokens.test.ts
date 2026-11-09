@@ -36,8 +36,8 @@ describe("theme tokens", () => {
       "--text: #172433;",
       "--muted: #4e6276;",
       "--dim: #536578;",
-      "--accent: #0d9488;",
-      "--accent-bright: #0f766e;",
+      "--accent: #14b8a6;",
+      "--accent-bright: #0b625b;",
       "--secondary: #0369a1;",
       "--danger: #b4233a;",
       "--warning: #92400e;",
@@ -171,7 +171,7 @@ describe("nav theme switcher styles", () => {
     expect(active).toContain("background: var(--accent-glow);");
 
     const hover = block(shell, ".theme-switcher__option:hover:not(:disabled) {");
-    expect(hover).toContain("color: var(--accent);");
+    expect(hover).toContain("color: var(--accent-bright);");
     expect(hover).toContain("border-color: var(--accent);");
   });
 

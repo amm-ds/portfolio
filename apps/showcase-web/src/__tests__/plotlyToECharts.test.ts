@@ -244,7 +244,7 @@ describe("plotlyToECharts over the committed churn figures", () => {
 
   it("renders subplot headers as extra title entries", () => {
     const option = asOpt(plotlyToECharts(loadFigure("eda_churn_profile"), "dark"));
-    const texts = (option.title ?? []).map((t) => t.text);
+    const texts = (option.title ?? []).map((t) => String(t.text).replace(/\n+/g, " "));
     expect(texts[0]).toContain("Churn profile");
     expect(texts).toContain("Churn rate by contract");
     expect(texts).toContain("Monthly charges distribution");
@@ -282,6 +282,33 @@ describe("plotlyToECharts over the committed churn figures", () => {
     // legend starts inside the clamped right band and has room for its text
     expect(opt.legend.left).toBeGreaterThan(390 - 190);
     expect(opt.legend.left).toBeLessThan(390);
+  });
+
+  it("encodes the axis-label polish invariants on every figure", () => {
+    for (const name of FIGURE_NAMES) {
+      const option = asOpt(plotlyToECharts(loadFigure(name), "dark", 390));
+      for (const axis of [...option.xAxis, ...option.yAxis]) {
+        // dense ticks thin instead of colliding; ticks use the site mono stack
+        expect(axis.axisLabel.hideOverlap).toBe(true);
+        expect(String(axis.axisLabel.fontFamily)).toContain("JetBrains Mono");
+        // named axes carry clearance derived from the label stack
+        if (axis.name) {
+          expect(axis.nameGap).toBeGreaterThan(20);
+          expect(String(axis.name).length).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it("rotates category x labels only when the slot cannot fit them", () => {
+    // fairness: 7 short-ish slice labels on a half-width grid at 390px → rotated
+    const fairness = asOpt(plotlyToECharts(loadFigure("fairness_slices"), "dark", 390));
+    const catX = fairness.xAxis.filter((a) => a.type === "category");
+    expect(catX.length).toBeGreaterThan(0);
+    for (const a of catX) expect(a.axisLabel.rotate).toBe(30);
+    // permutation importance has NO category x axis → nothing rotated there
+    const perm = asOpt(plotlyToECharts(loadFigure("permutation_importance"), "dark", 390));
+    expect(perm.xAxis.every((a) => a.axisLabel.rotate === undefined)).toBe(true);
   });
 });
 
