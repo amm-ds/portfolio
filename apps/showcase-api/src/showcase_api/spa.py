@@ -9,6 +9,8 @@ from portfolio_core.demo import load_demo_index
 from portfolio_core.logging import get_logger
 from portfolio_core.manifest import load_index
 
+from showcase_api.spa_heads import inject_head
+
 logger = get_logger("showcase_api.main")
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -76,6 +78,19 @@ def _spa_patterns() -> list[str]:
 
 _SPA_PATTERNS = _spa_patterns()
 
+# Per-route rendered shells. Invalidated on process start (and in tests): a
+# rebuild changes hashed asset names, and the heads come from the same
+# registry the API indexes at startup, so restart-on-deploy is the freshness
+# boundary — same trade-off as the API's startup indexes.
+_HEAD_CACHE: dict[str, str] = {}
+
+
+def _route_index_html(path: str) -> str:
+    """index.html with this route's head tags and <noscript> body."""
+    if path not in _HEAD_CACHE:
+        _HEAD_CACHE[path] = inject_head(_index_html(), path)
+    return _HEAD_CACHE[path]
+
 
 @router.get("/{full_path:path}", include_in_schema=False)
 def spa(full_path: str) -> Response:
@@ -101,7 +116,7 @@ def spa(full_path: str) -> Response:
                 )
                 return FileResponse(candidate, headers={"Cache-Control": cache})
         if any(_pattern_match(p, path) for p in _SPA_PATTERNS):
-            return HTMLResponse(_index_html(), headers={"Cache-Control": "no-cache"})
+            return HTMLResponse(_route_index_html(path), headers={"Cache-Control": "no-cache"})
     elif any(_pattern_match(p, path) for p in _SPA_PATTERNS):
         raise HTTPException(status_code=404, detail="web build not found")
     raise HTTPException(status_code=404, detail=f"unknown path: {path}")

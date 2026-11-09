@@ -40,31 +40,44 @@ describe("usePageMeta", () => {
     unmount();
   });
 
-  it("emits robots noindex when requested", () => {
-    const { unmount } = renderHook(() =>
-      usePageMeta({ title: "Draft", description: "hidden", noindex: true }),
+  it("emits robots noindex when requested and removes it otherwise", () => {
+    const { rerender } = renderHook(
+      ({ noindex }: { noindex: boolean }) =>
+        usePageMeta({ title: "Draft", description: "hidden", noindex }),
+      { initialProps: { noindex: true } },
     );
     expect(metaContent("name", "robots")).toBe("noindex");
-    unmount();
+    rerender({ noindex: false });
+    expect(metaContent("name", "robots")).toBeNull();
   });
 
-  it("cleans up on change and unmount", () => {
+  it("updates tags in place on change and leaves the last route's values after unmount", () => {
     document.title = "original";
     const { rerender, unmount } = renderHook(
       ({ title }: { title: string }) => usePageMeta({ title, description: `${title} desc` }),
       { initialProps: { title: "First" } },
     );
+    const descriptionEl = document.head.querySelector('meta[name="description"]');
+    const ogTitleEl = document.head.querySelector('meta[property="og:title"]');
+    const canonicalEl = document.head.querySelector('link[rel="canonical"]');
     expect(document.title).toBe("First · alejandromerida.dev");
     expect(metaContent("name", "description")).toBe("First desc");
 
     rerender({ title: "Second" });
+    // same elements updated in place — no remove/re-add between routes
+    expect(document.head.querySelector('meta[name="description"]')).toBe(descriptionEl);
+    expect(document.head.querySelector('meta[property="og:title"]')).toBe(ogTitleEl);
+    expect(document.head.querySelector('link[rel="canonical"]')).toBe(canonicalEl);
     expect(document.title).toBe("Second · alejandromerida.dev");
     expect(metaContent("name", "description")).toBe("Second desc");
 
+    // unmounting leaves the head valid: the next route overwrites it in place
     unmount();
-    expect(document.title).toBe("original");
-    expect(metaContent("name", "description")).toBeNull();
-    expect(metaContent("property", "og:title")).toBeNull();
-    expect(document.head.querySelector('link[rel="canonical"]')).toBeNull();
+    expect(document.title).toBe("Second · alejandromerida.dev");
+    expect(metaContent("name", "description")).toBe("Second desc");
+    expect(metaContent("property", "og:title")).toBe(
+      "Second · alejandromerida.dev",
+    );
+    expect(document.head.querySelector('link[rel="canonical"]')).toBe(canonicalEl);
   });
 });

@@ -30,20 +30,20 @@ function resolveCanonical(canonical: string | undefined): string {
 /**
  * Sets document.title and per-route meta tags (description, canonical,
  * og:title/og:description/og:url, robots noindex) via direct DOM manipulation.
- * Dependency-free; everything it touches is removed on unmount/change.
+ * Existing tags are updated in place — created only when absent — so route
+ * changes never remove and re-add them; the head keeps valid values between
+ * routes instead of flickering back to the shell defaults. The last route's
+ * values stay in the head after unmount (there is no next route to describe).
  */
 export function usePageMeta({ title, description, canonical, noindex }: PageMetaProps): void {
   useEffect(() => {
-    const previousTitle = document.title;
     const fullTitle = title.endsWith(SITE_TITLE_SUFFIX) ? title : `${title} · ${SITE_TITLE_SUFFIX}`;
     document.title = fullTitle;
 
-    const owned: Element[] = [];
-    owned.push(upsertMeta("name", "description", description));
-    owned.push(upsertMeta("property", "og:title", fullTitle));
-    owned.push(upsertMeta("property", "og:description", description));
-    owned.push(upsertMeta("property", "og:url", resolveCanonical(canonical)));
-    if (noindex) owned.push(upsertMeta("name", "robots", "noindex"));
+    upsertMeta("name", "description", description);
+    upsertMeta("property", "og:title", fullTitle);
+    upsertMeta("property", "og:description", description);
+    upsertMeta("property", "og:url", resolveCanonical(canonical));
 
     let canonicalLink = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonicalLink) {
@@ -52,11 +52,11 @@ export function usePageMeta({ title, description, canonical, noindex }: PageMeta
       document.head.appendChild(canonicalLink);
     }
     canonicalLink.setAttribute("href", resolveCanonical(canonical));
-    owned.push(canonicalLink);
 
-    return () => {
-      document.title = previousTitle;
-      for (const el of owned) el.remove();
-    };
+    if (noindex) {
+      upsertMeta("name", "robots", "noindex");
+    } else {
+      document.head.querySelector('meta[name="robots"]')?.remove();
+    }
   }, [title, description, canonical, noindex]);
 }

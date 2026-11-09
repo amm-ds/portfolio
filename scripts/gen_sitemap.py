@@ -25,7 +25,7 @@ STATIC_ROUTES = [
     "/",
     "/apps/agent-chat",
     "/apps/document-intelligence",
-    "/experiments",
+    "/projects",
     "/services",
     "/about",
     "/contact",

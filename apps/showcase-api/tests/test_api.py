@@ -1220,6 +1220,7 @@ def fake_web_dist(tmp_path: Path, monkeypatch):  # type: ignore[no-untyped-def]
     (dist / "assets" / "app-a1b2c3.js").write_text("console.log(1)")
     monkeypatch.setattr(main, "WEB_DIST", dist)
     monkeypatch.setattr(spa, "WEB_DIST", dist)
+    monkeypatch.setattr(spa, "_HEAD_CACHE", {})  # shells rendered against other dists
     monkeypatch.setattr(
         spa, "_SPA_PATTERNS", ["/", "/projects", "/projects/*", "/demos/churn-sandbox"]
     )
@@ -1249,6 +1250,133 @@ def test_spa_hashed_assets_immutable_else_no_cache(fake_web_dist) -> None:  # ty
     r = client.get("/assets/app-a1b2c3.js")
     assert r.status_code == 200
     assert r.headers["Cache-Control"] == "public, max-age=31536000, immutable"
+
+
+# --- Wave B: route-specific server-rendered heads -------------------------------
+
+# The tag shapes the vite build's index.html emits today (multiline meta
+# included); inject_head substitutes these exact instances per route.
+_HEADED_INDEX = """<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="canonical" href="https://example.test/" />
+    <meta
+      name="description"
+      content="default description"
+    />
+    <meta property="og:title" content="default title" />
+    <meta
+      property="og:description"
+      content="default og description"
+    />
+    <meta property="og:url" content="https://example.test/" />
+    <meta property="og:image" content="https://example.test/social-card.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <title>default title</title>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+"""
+
+
+def _write_headed_project(root: Path, pid: str = "01-demo", title: str = "Demo") -> Path:
+    project = root / pid
+    project.mkdir(parents=True)
+    (project / "portfolio.yaml").write_text(
+        f"id: {pid}\ntitle: {title}\ndomain: Agents\ntopic: T\ntechniques: [t]\ndata: s\norder: 1\n"
+    )
+    (project / "story.yaml").write_text(
+        f"project_id: {pid}\n"
+        "short_version: Demo short copy.\n"
+        "sections:\n"
+        "  - id: background\n"
+        "    text_md: Why.\n"
+    )
+    return project
+
+
+@pytest.fixture()
+def headed_web_dist(tmp_path: Path, monkeypatch):  # type: ignore[no-untyped-def]
+    """Like fake_web_dist, but with the real index.html tag shapes and a tmp
+    projects registry, so per-route head substitution can be asserted."""
+    from showcase_api import spa, spa_heads
+
+    projects_root = tmp_path / "projects-root"
+    _write_headed_project(projects_root)
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text(_HEADED_INDEX)
+    monkeypatch.setattr(spa, "WEB_DIST", dist)
+    monkeypatch.setattr(spa, "_HEAD_CACHE", {})  # shells rendered against other dists
+    monkeypatch.setattr(
+        spa, "_SPA_PATTERNS", ["/", "/projects", "/projects/*", "/projects/*/report", "/services"]
+    )
+    monkeypatch.setattr(spa_heads, "PROJECTS_ROOT", projects_root)
+    monkeypatch.setattr(spa_heads, "_PROJECT_HEADS", None)
+    return projects_root
+
+
+def test_spa_project_route_serves_project_head(headed_web_dist) -> None:  # type: ignore[no-untyped-def]
+    """/projects/<id> carries the project title in <title>/og:title, the full
+    path in canonical/og:url, the story short_version as description, and a
+    <noscript> body with the project name."""
+    r = client.get("/projects/01-demo")
+    assert r.status_code == 200
+    assert "<title>Demo · alejandromerida.dev</title>" in r.text
+    assert '<meta property="og:title" content="Demo · alejandromerida.dev" />' in r.text
+    assert '<link rel="canonical" href="https://example.test/projects/01-demo" />' in r.text
+    assert '<meta property="og:url" content="https://example.test/projects/01-demo" />' in r.text
+    assert 'name="description"\n      content="Demo short copy."' in r.text
+    assert 'property="og:description"\n      content="Demo short copy."' in r.text
+    assert "<h1>Demo</h1>" in r.text
+    assert "<p>Demo short copy.</p>" in r.text
+    # the global social card stays untouched
+    assert '<meta property="og:image" content="https://example.test/social-card.png" />' in r.text
+    assert '<meta name="twitter:card" content="summary_large_image" />' in r.text
+
+
+def test_spa_project_head_falls_back_without_story(headed_web_dist) -> None:  # type: ignore[no-untyped-def]
+    project = headed_web_dist / "02-no-story"
+    project.mkdir()
+    (project / "portfolio.yaml").write_text(
+        "id: 02-no-story\ntitle: No Story\ndomain: Forecasting\ntopic: T\n"
+        "techniques: [t]\ndata: s\norder: 2\n"
+    )
+    r = client.get("/projects/02-no-story")
+    assert r.status_code == 200
+    assert "<title>No Story · alejandromerida.dev</title>" in r.text
+    assert "a reproducible Forecasting case study" in r.text
+    assert "<h1>No Story</h1>" in r.text
+
+
+def test_spa_static_route_head(headed_web_dist) -> None:  # type: ignore[no-untyped-def]
+    r = client.get("/services")
+    assert r.status_code == 200
+    assert "<title>Services · alejandromerida.dev</title>" in r.text
+    assert '<link rel="canonical" href="https://example.test/services" />' in r.text
+    assert "Freelance ML/AI engineering offerings" in r.text
+    assert "<h1>Services</h1>" in r.text
+
+
+def test_spa_unknown_project_keeps_default_shell(headed_web_dist) -> None:  # type: ignore[no-untyped-def]
+    """A wildcard-matched path with no such project serves the shell as-is."""
+    r = client.get("/projects/99-nope")
+    assert r.status_code == 200
+    assert "<title>default title</title>" in r.text
+    assert "<noscript>" not in r.text
+
+
+def test_route_head_canonicals_for_legacy_and_report_paths(headed_web_dist) -> None:  # type: ignore[no-untyped-def]
+    from showcase_api.spa_heads import route_head
+
+    assert route_head("/experiments") is not None
+    assert route_head("/experiments").canonical_path == "/projects"
+    assert route_head("/apps/document-review").canonical_path == "/apps/document-intelligence"
+    assert route_head("/projects/01-demo/report").canonical_path == "/projects/01-demo"
+    assert route_head("/projects/99-nope") is None
+    assert route_head("/") is None  # home keeps the baked shell defaults
 
 
 def test_figures_cache_headers_and_etag(tmp_path: Path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
