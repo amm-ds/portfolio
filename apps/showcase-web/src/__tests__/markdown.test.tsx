@@ -1,15 +1,8 @@
 import { readStylesCss } from "./helpers/css";
-import { render, waitFor } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { renderMarkdown } from "../lib/markdown";
-
-vi.mock("mermaid", () => ({
-  default: {
-    initialize: vi.fn(),
-    render: vi.fn(async () => ({ svg: '<svg data-mock="mermaid-svg"></svg>' })),
-  },
-}));
 
 function renderToText(md: string): string {
   const { container } = render(<>{renderMarkdown(md)}</>);
@@ -180,13 +173,11 @@ describe("renderMarkdown tables", () => {
 });
 
 describe("renderMarkdown fenced code", () => {
-  it("renders a ```mermaid fence via MermaidDiagram into a wrapped svg", async () => {
+  it("renders a ```mermaid fence as the plain code fallback (mermaid pipeline removed)", () => {
     const md = "```mermaid\ngraph TD; A-->B;\n```";
     const { container } = render(<>{renderMarkdown(md)}</>);
-    expect(container.querySelector(".mermaid-wrap")).not.toBeNull();
-    await waitFor(() =>
-      expect(container.querySelector('.mermaid-host svg[data-mock="mermaid-svg"]')).not.toBeNull(),
-    );
+    expect(container.querySelector("pre.code-block code")?.textContent).toBe("graph TD; A-->B;");
+    expect(container.querySelector("pre.code-block")).toHaveAttribute("aria-label", "plain text code block: graph TD; A-->B;");
   });
 
   it("renders other languages as styled pre/code", () => {
