@@ -40,7 +40,7 @@ describe("Contact page", () => {
 
   it("leads with the email-primary direct card — mailto, discovery-call CTA, engagement strip", () => {
     renderContact();
-    const direct = document.querySelector(".direct-contact-card")!;
+    const direct = document.querySelector(".direct-card")!;
     expect(direct).not.toBeNull();
     // the primary card sits above the inquiry form
     const form = document.querySelector(".contact-form")!;
@@ -69,7 +69,7 @@ describe("Contact page", () => {
 
   it("keeps GitHub below the main contact cards", () => {
     renderContact();
-    const direct = document.querySelector(".direct-contact-card")!;
+    const direct = document.querySelector(".direct-card")!;
     const githubFooter = screen.getByRole("link", { name: "github" });
     expect(
       direct.compareDocumentPosition(githubFooter) & Node.DOCUMENT_POSITION_FOLLOWING,

@@ -28,8 +28,15 @@ export function useMeasuredSize<T extends HTMLElement>(): {
         const next: MeasuredSize = { w: Math.round(r.width), h: Math.round(r.height) };
         // Bail on identical sizes: Safari re-fires the observer during scroll
         // (scrollbar overlay shifts the content box) and an unconditional
-        // setState storms renders into an error boundary.
-        setSize((prev) => (prev && prev.w === next.w && prev.h === next.h ? prev : next));
+        // setState storms renders into an error boundary. The 2px hysteresis
+        // also breaks sub-pixel oscillation loops (300.4 -> 300 vs 300.6 ->
+        // 301 ping-ponging re-renders and growing flex parents on real
+        // devices).
+        setSize((prev) =>
+          prev && Math.abs(prev.w - next.w) < 2 && Math.abs(prev.h - next.h) < 2
+            ? prev
+            : next,
+        );
       } catch {
         // never let an observer callback reach the error boundary
       }

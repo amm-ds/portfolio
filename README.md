@@ -124,9 +124,9 @@ provider (see [.env.example](.env.example)).
 
 ## Services & engagement
 
-Freelance ML/AI engineering across five offerings — agentic AI & LLM
-systems, machine learning, optimization, APIs & model serving, and data
-engineering. Fixed-scope pilots,
+Freelance ML/AI engineering across eight offerings — agentic AI & LLM
+systems, machine learning, optimization, data engineering, MLOps,
+interactive dashboards, full-stack engineering, and APIs & model serving. Fixed-scope pilots,
 retainers, advisory. Full details:
 [Services](docs/site/services.md) · every project above is a live case study
 (background → objectives → data → EDA → training → evaluation → results →

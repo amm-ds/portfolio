@@ -89,6 +89,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* extra air between the hero terminal and the where-to-go cards */
+.home-where-to-go {
+  margin-top: 3.5rem;
+}
+
 /* --- Services --- */
 
 .services-hero {
@@ -323,9 +328,31 @@ button:disabled {
   font-size: 0.9rem;
 }
 
+/* direct line: same card geometry as the channel grid (surface, border,
+   radius, padding) so the section reads as one system; the label/lede/strip
+   spacing mirrors the house card rhythm */
+.direct-card {
+  margin: 0 0 0.9rem;
+  padding: 0.95rem 1.1rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.direct-card-lede {
+  margin: 0.5rem 0 0.65rem;
+}
+
+.direct-card-strip {
+  margin: 0.75rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* direct-line prose link is an inline anchor inside a sentence (axe
    link-in-text-block): give it the same non-color cue as story prose links */
-.direct-contact-card p a {
+.direct-card-mail {
   text-decoration: underline;
   text-underline-offset: 0.18em;
 }
@@ -935,9 +962,27 @@ button:disabled {
   border-color: var(--accent);
 }
 
-.framework-tile img {
-  width: 22px;
-  height: 22px;
+/* colored brand icons sit on a light chip so dark marks (ollama, optuna…)
+   stay visible on the dark tiles — and remain readable in light mode; the
+   white-only pydantic-ai mark uses the dark chip instead */
+.framework-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  background: #f2f6fa;
+  border-radius: 6px;
+}
+
+.framework-icon--dark {
+  background: #1c2942;
+}
+
+.framework-icon img {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
 }
 

@@ -6,12 +6,15 @@ export interface Framework {
   /** Local SVG under /logos (self-hosted, see public/logos/README.md);
    *  absent → render the letter tile directly. */
   logo?: string;
+  /** Icon backdrop: colored brand icons sit on a light chip; white-only marks
+   * (pydantic-ai) need the dark chip to stay visible. */
+  logoBg?: "light" | "dark";
   letters: string;
 }
 
 export const FRAMEWORKS: Framework[] = [
   { name: "pydantic", url: "https://pydantic.dev", logo: "/logos/pydantic.svg", letters: "Pd" },
-  { name: "pydantic-ai", url: "https://ai.pydantic.dev", logo: "/logos/pydantic-ai.svg", letters: "PA" },
+  { name: "pydantic-ai", url: "https://ai.pydantic.dev", logo: "/logos/pydantic-ai.svg", logoBg: "dark", letters: "PA" },
   { name: "Ollama", url: "https://ollama.com", logo: "/logos/ollama.svg", letters: "Ol" },
   { name: "scikit-learn", url: "https://scikit-learn.org", logo: "/logos/scikitlearn.svg", letters: "Sk" },
   { name: "PyTorch", url: "https://pytorch.org", logo: "/logos/pytorch.svg", letters: "Pt" },
@@ -43,14 +46,18 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
       aria-label={fw.name}
     >
       {src && !imgFailed ? (
-        <img
-          src={src}
-          alt={`${fw.name} logo`}
-          width={22}
-          height={22}
-          loading="lazy"
-          onError={() => setImgFailed(true)}
-        />
+        <span
+          className={`framework-icon${fw.logoBg === "dark" ? " framework-icon--dark" : ""}`}
+        >
+          <img
+            src={src}
+            alt={`${fw.name} logo`}
+            width={18}
+            height={18}
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        </span>
       ) : (
         <span className="framework-letters">{fw.letters}</span>
       )}
@@ -66,7 +73,7 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
  * keep their local copies because their brand icons were removed from Simple
  * Icons (no CC0 source); RAGAS / pydantic-ai never had entries. */
 export const PROVIDERS: Framework[] = [
-  { name: "AWS", url: "https://aws.amazon.com", logo: "/logos/aws.svg", letters: "Aw" },
+  { name: "AWS", url: "https://aws.amazon.com", logo: "/logos/aws.svg", logoBg: "dark", letters: "Aw" },
   { name: "Microsoft Azure", url: "https://azure.microsoft.com", logo: "/logos/azure.svg", letters: "Az" },
   { name: "Google Cloud", url: "https://cloud.google.com", logo: "/logos/googlecloud.svg", letters: "Gc" },
   { name: "Docker", url: "https://docker.com", logo: "/logos/docker.svg", letters: "Dk" },

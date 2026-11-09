@@ -611,9 +611,13 @@
      layout and the card grows without bound; the max-height makes the flex
      chain definite again (desktop geometry), and the scroll is the safety
      for genuinely tall content */
+  /* definite viewport-derived height instead of auto+max-height: no
+     auto-height means the measured-SVG feedback loop has nothing to feed,
+     and contain:layout stops inner chart measurement from propagating */
   .wb-secondary .figure-card {
     overflow: auto;
-    max-height: 360px;
+    height: min(42dvh, 360px);
+    contain: layout;
   }
 
   /* tighter chrome inside the clamped cards */

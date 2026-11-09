@@ -6,8 +6,7 @@ problem framing to production systems with the engineering artifacts
 
 ## Offerings
 
-Five offerings — the same categories the projects index groups its rows by —
-each backed by public, reproducible case studies —
+Eight offerings, each backed by public, reproducible case studies —
 measured against named naive baselines, with no revenue promises:
 
 1. **Agentic AI & LLM systems** — assistants and agents that cite their
@@ -31,7 +30,24 @@ measured against named naive baselines, with no revenue promises:
    checksum-pinned rebuildable datasets, documented registry entries.
    *Evidence: the NYC mobility pipeline over 41.2M trips (07), the DataFrame
    engines benchmark (11), and the demand forecast pipeline (02).*
-5. **APIs & model serving** — versioned inference endpoints with explicit
+6. **MLOps** — a setup where bad models and broken pipelines cannot ship
+   silently: CI evaluation gates, Docker + uv environments, clean-clone
+   reruns, runbooks and handover docs. *Evidence: the inference serving
+   benchmark (08) and the churn pipeline's CI-evaluated registry (05).*
+7. **Interactive dashboards** — decision tools over live endpoints and
+   committed payloads, not screenshots: demo frontends, precomputed payload
+   contracts, parity tests pinning every shown number, keyboard-navigable
+   axe-checked components. *Evidence: the forecast workbench and churn
+   sandbox demos in this repo's showcase app.*
+8. **Full-stack engineering** — working product slices that run from a
+   clean clone: typed API services with contract tests, React frontends,
+   one-command uv + Docker environments, deployment manifests. *Evidence: the
+   served demand API (07) and the showcase app itself.*
+
+Success is stated per offering on the Services page — on the eval harness,
+the backtest metrics, the benchmark gap, or the pinned payload contracts —
+never on demo impressions.
+8. **APIs & model serving** — versioned inference endpoints with explicit
    contracts and measured latency/throughput on target hardware, with the
    typed API, web UI and deployment around them wired into one product slice.
    *Evidence: the inference serving benchmark (08), the model-serving

@@ -62,22 +62,18 @@ describe("Home (terminal-centered)", () => {
     expect(explore).toHaveAttribute("href", "/projects");
   });
 
-  it("keeps the reproducibility strip directly below the hero as credibility support", () => {
+  it("goes straight from the hero to where-to-go, with no project links", () => {
     renderHome();
-    const strip = screen.getByText(/naive baselines · honest metrics · auditable claims/i);
-    expect(strip).toBeInTheDocument();
-    expect(strip.textContent).toMatch(/every number re-runs from the repository/i);
-    // the strip sits between the hero and the where-to-go section, and the
-    // home page links to sections only — never to individual projects
+    expect(
+      screen.queryByText(/naive baselines · honest metrics · auditable claims/i),
+    ).toBeNull();
+    // the home page links to sections only — never to individual projects
+    expect(screen.queryByRole("link", { name: /01-rag-agent/ })).toBeNull();
     const hero = document.querySelector(".hero")!;
     const whereTo = document.querySelector(".go-grid")!;
     expect(
-      hero.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
+      hero.compareDocumentPosition(whereTo) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(
-      strip.compareDocumentPosition(whereTo) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-    expect(screen.queryByRole("link", { name: /01-rag-agent/ })).toBeNull();
   });
 
   it("has no demo CTAs, proof tiles or featured-demo cards", () => {

@@ -119,12 +119,7 @@ export function Home() {
         <HeroTerminal />
       </section>
 
-      <p className="section-intro" style={{ textAlign: "center", margin: "0.25rem auto 0" }}>
-        naive baselines · honest metrics · auditable claims — every number re-runs from the
-        repository
-      </p>
-
-      <h2 className="section-title section-title--tight">where to go</h2>
+      <h2 className="section-title section-title--tight home-where-to-go">where to go</h2>
       <div className="go-grid">
         {GO_LINKS.map((g) => (
           <Link key={g.to} to={g.to} className="go-card accent-card">
