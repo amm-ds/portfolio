@@ -41,7 +41,8 @@ describe("shared page indexes", () => {
 
   it("indexes inquiry, the free call, and engagement start", () => {
     render(<MemoryRouter><Contact /></MemoryRouter>);
-    expect(indexHrefs()).toEqual(["#inquiry", "#free-call", "#engagement-start"]);
+    expect(indexHrefs()).toEqual(["#direct", "#inquiry", "#free-call", "#engagement-start"]);
+    expect(document.getElementById("direct")).not.toBeNull();
     expect(document.getElementById("inquiry")).not.toBeNull();
     expect(document.getElementById("free-call")).not.toBeNull();
     expect(document.getElementById("engagement-start")).not.toBeNull();

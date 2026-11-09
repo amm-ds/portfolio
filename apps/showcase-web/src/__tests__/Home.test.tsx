@@ -36,11 +36,48 @@ function renderHome() {
 }
 
 describe("Home (terminal-centered)", () => {
-  it("leads with the Data Scientist, ML & AI Consultant title", () => {
+  it("leads with the AI & ML engineering positioning headline", () => {
     renderHome();
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(h1.textContent).toBe("Data Scientist, ML & AI Consultant");
-    expect(screen.getByText(/from experiment to production/i)).toBeInTheDocument();
+    expect(h1.textContent).toBe("AI & ML engineering for real operational problems.");
+    // the old kicker wording is gone from the hero
+    expect(screen.queryByText(/from experiment to production/i)).toBeNull();
+  });
+
+  it("positions with the audit copy: sub, three capability bullets, two CTAs", () => {
+    renderHome();
+    const sub = document.querySelector(".hero-sub")!;
+    expect(sub.textContent).toBe(
+      "I design and build predictive systems, intelligent applications and data platforms — from first experiment to reliable production deployment.",
+    );
+    const points = [...document.querySelectorAll(".hero-points li")].map((el) => el.textContent);
+    expect(points).toEqual([
+      "Predictive analytics & forecasting",
+      "Applied AI, RAG & agentic systems",
+      "ML engineering & production infrastructure",
+    ]);
+    const cta = screen.getByRole("link", { name: /Discuss a project/i });
+    expect(cta).toHaveAttribute("href", "/contact");
+    const explore = screen.getByRole("link", { name: /Explore the work/i });
+    expect(explore).toHaveAttribute("href", "/projects");
+  });
+
+  it("keeps the reproducibility strip directly below the hero as credibility support", () => {
+    renderHome();
+    const strip = screen.getByText(/naive baselines · honest metrics · auditable claims/i);
+    expect(strip).toBeInTheDocument();
+    expect(strip.textContent).toMatch(/every number re-runs from the repository/i);
+    // the strip sits between the hero and the where-to-go section, and the
+    // home page links to sections only — never to individual projects
+    const hero = document.querySelector(".hero")!;
+    const whereTo = document.querySelector(".go-grid")!;
+    expect(
+      hero.compareDocumentPosition(strip) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      strip.compareDocumentPosition(whereTo) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /01-rag-agent/ })).toBeNull();
   });
 
   it("has no demo CTAs, proof tiles or featured-demo cards", () => {
@@ -109,17 +146,18 @@ describe("Home (terminal-centered)", () => {
     }
   });
 
-  it("hero intro is the exact public-and-auditable sentence, centered", () => {
+  it("hero intro is the exact positioning sentence, centered, in grey (--muted)", () => {
     renderHome();
     const sub = document.querySelector(".hero-sub")!;
     expect(sub.textContent).toBe(
-      "I design, build and evaluate ML systems end to end, and I keep the code, metrics and case studies public and auditable.",
+      "I design and build predictive systems, intelligent applications and data platforms — from first experiment to reliable production deployment.",
     );
     const css = readStylesCss();
     const rule = css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0];
     // the hero centers text and the sentence block centers within it
     expect(css.match(/\.hero \{[\s\S]*?\n\}/)![0]).toContain("text-align: center;");
     expect(rule).toContain("margin: 1.5rem auto 0.75rem;");
+    expect(rule).toContain("color: var(--muted);");
   });
 
   it("where-to-go keeps a small breathing gap under the hero stage", () => {
@@ -133,24 +171,23 @@ describe("Home (terminal-centered)", () => {
     expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.8rem;");
   });
 
-  it("renders the subtitle in white (--text) and the intro sentence in grey (--muted)", () => {
+  it("renders the capability bullets in the hero and keeps the intro sentence in grey (--muted)", () => {
     renderHome();
-    const kicker = document.querySelector(".hero-kicker")!;
-    expect(kicker.textContent).toBe(
-      "Applied AI, predictive analytics and ML engineering — from experiment to production",
-    );
-    const css = readStylesCss();
-    const rule = css.match(/\.hero-kicker \{[\s\S]*?\n\}/)![0];
-    expect(rule).toContain("color: var(--text);");
-    expect(css.match(/\.hero-sub \{[\s\S]*?\n\}/)![0]).toContain("color: var(--muted);");
+    const points = document.querySelector(".hero-points")!;
+    expect(points).not.toBeNull();
+    expect(points.textContent).toContain("Predictive analytics & forecasting");
+    expect(points.textContent).toContain("Applied AI, RAG & agentic systems");
+    expect(points.textContent).toContain("ML engineering & production infrastructure");
+    // the retired kicker line is gone from the hero
+    expect(document.querySelector(".hero-kicker")).toBeNull();
   });
 
-  it("paints only the Data/ML/AI words green — h1 base white, accent spans, no gradient", () => {
+  it("paints only the AI/ML words green — h1 base white, accent spans, no gradient", () => {
     renderHome();
     const accents = [...document.querySelectorAll(".hero-accent")].map((e) => e.textContent);
-    expect(accents).toEqual(["Data", "ML", "AI"]);
+    expect(accents).toEqual(["AI", "ML"]);
     const h1 = document.querySelector(".hero h1")!;
-    expect(h1.textContent).toContain("Data Scientist, ML & AI Consultant");
+    expect(h1.textContent).toContain("AI & ML engineering for real operational problems.");
     const css = readStylesCss();
     const rule = css.match(/\.hero h1 \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("color: var(--text);");

@@ -2,9 +2,10 @@
 
 **Domain:** Agentic AI / LLM · **Data:** Wikipedia (HF, real) · **Status:** Flagship — complete
 
-> A cited QA assistant over 593 pinned Wikipedia articles. Selected
-> kimi-for-coding scores 46/65 correct with 17 unsupported-claim outcomes;
-> sealed recall@5 falls from 0.831 to 0.600. Auditable, not unattended-ready.
+> A cited QA assistant over 593 pinned Wikipedia articles. Tuning set (65
+> questions): selected kimi-for-coding scores 46 correct, 17
+> unsupported-claim outcomes. Sealed held-out (15 questions): 11 of 15
+> correct; recall@5 falls 0.831 → 0.600. Auditable, not unattended-ready.
 >
 > Teams routing questions at a knowledge base need answers they can audit —
 > every claim traced to a source, every unsupported claim dropped or refused.

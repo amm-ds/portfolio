@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { readStylesCss } from "./helpers/css";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildInquiryMailto, Contact } from "../pages/Contact";
+import { buildDiscoveryMailto, buildInquiryMailto, Contact } from "../pages/Contact";
 import {
   AVAILABILITY,
   CONTACT_EMAIL,
@@ -38,6 +38,50 @@ describe("Contact page", () => {
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Get in touch");
   });
 
+  it("leads with the email-primary direct card — mailto, discovery-call CTA, engagement strip", () => {
+    renderContact();
+    const direct = document.querySelector(".direct-contact-card")!;
+    expect(direct).not.toBeNull();
+    // the primary card sits above the inquiry form
+    const form = document.querySelector(".contact-form")!;
+    expect(direct.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // email is the primary channel on the card — every email link is a mailto
+    const emailLinks = within(direct as HTMLElement).getAllByRole("link", {
+      name: new RegExp(CONTACT_EMAIL, "i"),
+    });
+    expect(emailLinks.length).toBeGreaterThanOrEqual(1);
+    for (const link of emailLinks) {
+      expect(link.getAttribute("href")).toContain(`mailto:${CONTACT_EMAIL}`);
+    }
+    // the discovery-call CTA is a prefilled mailto asking for context/timeline
+    const cta = screen.getByRole("link", { name: /book a free discovery call/i });
+    const href = cta.getAttribute("href") ?? "";
+    expect(href.startsWith(`mailto:${CONTACT_EMAIL}?`)).toBe(true);
+    const params = new URLSearchParams(href.slice(`mailto:${CONTACT_EMAIL}?`.length));
+    expect(params.get("subject")).toBe("Discovery call — <project>");
+    const body = params.get("body") ?? "";
+    expect(body).toContain("Problem / context:");
+    expect(body).toContain("Data available:");
+    expect(body).toContain("Timeline:");
+    // one-line engagement-types strip on the primary card
+    expect(direct.textContent).toContain("advisory · build · audit");
+  });
+
+  it("keeps GitHub below the main contact cards", () => {
+    renderContact();
+    const direct = document.querySelector(".direct-contact-card")!;
+    const githubFooter = screen.getByRole("link", { name: "github" });
+    expect(
+      direct.compareDocumentPosition(githubFooter) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // the channel grid (with the GitHub card) also renders below the form
+    const channels = document.querySelector(".channel-grid")!;
+    expect(
+      document.querySelector(".contact-form")!.compareDocumentPosition(channels) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("states the reply window exactly once, from config, on the shared timezone card", () => {
     renderContact();
     const matches = screen.getAllByText(
@@ -68,7 +112,10 @@ describe("Contact page", () => {
 
   it("prefills the Email channel card mailto with the subject and body scaffold", () => {
     renderContact();
-    const email = screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") });
+    const grid = document.querySelector(".channel-grid")!;
+    const email = within(grid as HTMLElement).getByRole("link", {
+      name: new RegExp(CONTACT_EMAIL, "i"),
+    });
     const href = email.getAttribute("href") ?? "";
     expect(href.startsWith(`mailto:${CONTACT_EMAIL}?`)).toBe(true);
     const params = new URLSearchParams(href.slice(`mailto:${CONTACT_EMAIL}?`.length));
@@ -111,7 +158,10 @@ describe("Contact page", () => {
     expect(linkedin.getAttribute("href")).toBe(LINKEDIN_URL);
     expect(linkedin.getAttribute("rel")).toBe("noopener noreferrer");
     expect(linkedin.textContent).toContain("linkedin/in/alejandro-mérida-maroto");
-    const email = screen.getByRole("link", { name: new RegExp(CONTACT_EMAIL, "i") });
+    const grid2 = document.querySelector(".channel-grid")!;
+    const email = within(grid2 as HTMLElement).getByRole("link", {
+      name: new RegExp(CONTACT_EMAIL, "i"),
+    });
     expect(email.classList.contains("channel-card")).toBe(true);
     expect(email.getAttribute("href")).toContain(`mailto:${CONTACT_EMAIL}`);
     expect(email.getAttribute("target")).toBeNull();
@@ -286,6 +336,17 @@ describe("Contact inquiry form", () => {
     // confirmation note: the mail client opens with the message pre-filled
     expect(screen.getByRole("status").textContent).toMatch(/mail client/i);
     vi.unstubAllGlobals();
+  });
+});
+
+describe("buildDiscoveryMailto", () => {
+  it("prefills the discovery-call subject and a context/timeline body", () => {
+    const params = new URLSearchParams(buildDiscoveryMailto().split("?")[1]);
+    expect(params.get("subject")).toBe("Discovery call — <project>");
+    const body = params.get("body") ?? "";
+    expect(body).toContain("Problem / context:");
+    expect(body).toContain("Data available:");
+    expect(body).toContain("Timeline:");
   });
 });
 

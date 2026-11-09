@@ -157,9 +157,15 @@ describe("groupByRow", () => {
     const title = stylesCss.match(/\.project-card h4 \{[\s\S]*?\n\}/)![0];
     expect(title).toContain("font-size: 1.2rem;");
     expect(title).not.toContain("margin:");
-    const prompt = stylesCss.match(/\.study-card h3::before,[\s\S]*?\.app-card__title::before \{[\s\S]*?\n\}/)![0];
+    const prompt = stylesCss.match(/\.study-card h3::before,[\s\S]*?\n\}/)![0];
     expect(prompt).toContain('content: "> ";');
     expect(prompt).toContain("color: var(--accent);");
+    // app-card titles carry the same marker on the title link (house
+    // .section-title::before visual: green "> ", no glow)
+    const appPrompt = stylesCss.match(/\.app-card__title--link::before \{[\s\S]*?\n\}/)![0];
+    expect(appPrompt).toContain('content: "> ";');
+    expect(appPrompt).toContain("color: var(--accent);");
+    expect(appPrompt).toContain("text-shadow: none;");
   });
 });
 
@@ -450,7 +456,7 @@ describe("ProjectsIndex", () => {
       "Built a question-answering agent",
     );
     expect(rag.querySelector(".study-achieves")!.textContent).toContain(
-      "right passage 83% of the time",
+      "the right passage is found 83% of the time",
     );
     // two stacked metadata lines: topics/domain over data/source
     const metaItems = rag.querySelectorAll(".study-meta-item");
@@ -544,7 +550,7 @@ describe("ProjectsIndex", () => {
       "within 4.2% of best-known",
     );
     expect(cardOf("Churn").querySelector(".study-achieves")?.textContent).toContain(
-      "Cutting decision cost 42%",
+      "cutting decision cost 42% vs contacting everyone (601 vs 1,035; 95% bootstrap CI −485 to −343)",
     );
     // single-source copy: no separate impact line remains on cards
     expect(document.querySelectorAll(".project-card .impact")).toHaveLength(0);
@@ -702,7 +708,9 @@ describe("ProjectsIndex", () => {
     ]);
     expect(experiment.labels).toEqual(["description", "results"]);
     expect(experiment.does).toContain("Scores churn on IBM telco data");
-    expect(experiment.achieves).toContain("Cutting decision cost 42%");
+    expect(experiment.achieves).toContain(
+      "cutting decision cost 42% vs contacting everyone (601 vs 1,035; 95% bootstrap CI −485 to −343)",
+    );
     expect(experiment.resultChip).toBeNull();
     expect(experiment.resultSlot).not.toBeNull();
   });
@@ -990,12 +998,12 @@ describe("ProjectsIndex", () => {
     const doesStrong = rag.querySelector(".study-does strong")!;
     expect(doesStrong.textContent).toBe("593-article");
     const achievesStrong = rag.querySelector(".study-achieves strong")!;
-    expect(achievesStrong.textContent).toBe("83% of the time");
+    expect(achievesStrong.textContent).toBe("65-question tuning set");
     expect(rag.querySelector(".study-does")!.textContent).toContain(
       "a pinned 593-article Wikipedia corpus",
     );
     expect(rag.querySelector(".study-achieves")!.textContent).toContain(
-      "right passage 83% of the time",
+      "the right passage is found 83% of the time",
     );
     // every card's copy renders — no raw ** markers leak into the DOM
     for (const el of document.querySelectorAll(".study-does, .study-achieves")) {

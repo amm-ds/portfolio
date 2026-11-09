@@ -16,30 +16,31 @@ function renderServices() {
 }
 
 describe("Services page (wave 8)", () => {
-  it("renders the hero and exactly 8 generic offering cards (one per service line)", () => {
+  it("renders the hero and exactly 5 offering cards — the canonical categories", () => {
     renderServices();
     expect(screen.getByText("> services")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
       "ML/AI engineering, end to end",
     );
     const offerings = document.querySelectorAll(".offering-card");
-    expect(offerings).toHaveLength(8);
+    expect(offerings).toHaveLength(5);
     const titles = [...document.querySelectorAll(".offering-card h3")].map(
       (el) => el.textContent,
     );
+    // the same five category names the projects index groups its rows by
     expect(titles).toEqual([
       "Agentic AI & LLM systems",
-      "Machine learning & deep learning",
+      "Machine learning",
       "Optimization",
       "Data engineering",
-      "MLOps",
-      "Interactive dashboards",
-      "Full-stack engineering",
       "APIs & model serving",
     ]);
     // no anomaly-specific or otherwise vertical-specific offering card
     expect(titles).not.toContain("Anomaly detection");
     expect(titles).not.toContain("Predictive analytics");
+    expect(titles).not.toContain("MLOps");
+    expect(titles).not.toContain("Interactive dashboards");
+    expect(titles).not.toContain("Full-stack engineering");
     // offering cards use the shared Card surface
     document.querySelectorAll(".offering-card").forEach((el) => {
       expect(el.classList.contains("accent-card")).toBe(true);
@@ -50,7 +51,7 @@ describe("Services page (wave 8)", () => {
     renderServices();
     expect(screen.getByText(/answer from your documents, cite every claim/)).toBeInTheDocument();
     const cards = [...document.querySelectorAll(".offering-card")];
-    expect(cards).toHaveLength(8);
+    expect(cards).toHaveLength(5);
     for (const card of cards) {
       const chips = [...card.querySelectorAll(".chip")].map((el) => el.textContent);
       expect(chips, card.querySelector("h3")!.textContent).toHaveLength(4);
@@ -75,9 +76,6 @@ describe("Services page (wave 8)", () => {
       "training pipeline with leakage-proof cross-validation",
       "solver tuned against named benchmark instances",
       "versioned, checksummed datasets in a documented registry",
-      "CI eval gates that block unevaluated model changes",
-      "deployed dashboard reading only committed, versioned payloads",
-      "typed API and web UI wired into one deployable slice",
       "versioned endpoint with an explicit contract",
     ]);
     // the full tag vocabulary covers every offering — capability wording only
@@ -99,24 +97,12 @@ describe("Services page (wave 8)", () => {
       "Gap reports",
       "Pipeline orchestration",
       "DQ gates",
-      "Checksum pinning",
       "Data registry",
       "CI eval gates",
-      "Reproducible environments",
-      "Clean-clone runs",
-      "Drift checks",
-      "Interactive charting",
-      "Live endpoints",
-      "Pinned payloads",
-      "Parity tests",
-      "API/UI integration",
-      "Composable deployments",
-      "Reverse-proxy deploys",
-      "Contract tests",
       "OpenAPI contracts",
-      "Rate limits",
       "Latency budgets",
-      "Throughput reports",
+      "Contract tests",
+      "Parity tests",
     ]) {
       expect(chipTexts).toContain(chip);
     }
@@ -129,7 +115,7 @@ describe("Services page (wave 8)", () => {
     }
   });
 
-  it("lays the offerings out full width as 2 columns × 4 rows — 2 columns from 640px up, 1 below", () => {
+  it("lays the offerings out full width as 2 columns — 2 columns from 640px up, 1 below", () => {
     const css = readStylesCss();
     const gridRule = css.match(/\.offerings-grid \{[\s\S]*?\n\}/)![0];
     expect(gridRule).toContain("display: grid;");
@@ -152,7 +138,7 @@ describe("Services page (wave 8)", () => {
   it("paints all offering tags blue — the hue rotation is gone entirely", () => {
     renderServices();
     const cards = [...document.querySelectorAll(".offering-card")];
-    expect(cards).toHaveLength(8);
+    expect(cards).toHaveLength(5);
     for (const card of cards) {
       const chips = [...card.querySelectorAll(".chip")];
       expect(chips).toHaveLength(4);
@@ -176,15 +162,14 @@ describe("Services page (wave 8)", () => {
 
   it("keeps every offering description generic — architect/full-stack expertise, no model-type specifics", () => {
     renderServices();
-    // the ML card no longer names forecasting/churn models and is renamed
-    expect(
-      screen.getByRole("heading", { name: "Machine learning & deep learning" }),
-    ).toBeInTheDocument();
+    // the ML card no longer names forecasting/churn models and carries the
+    // canonical category name
+    expect(screen.getByRole("heading", { name: "Machine learning" })).toBeInTheDocument();
+    expect(screen.queryByText("Machine learning & deep learning")).toBeNull();
     expect(screen.queryByText(/forecasting, classification and churn/i)).toBeNull();
-    expect(screen.queryByText(/^Machine learning$/)).toBeNull();
     // every card reads as delivery expertise in its own vertical
     const blurbs = [...document.querySelectorAll(".offering-blurb")].map((el) => el.textContent!);
-    expect(blurbs).toHaveLength(8);
+    expect(blurbs).toHaveLength(5);
     for (const blurb of blurbs) {
       expect(blurb.length).toBeGreaterThan(60);
     }
@@ -243,17 +228,24 @@ describe("Services page (wave 8)", () => {
     expect(table.classList.contains("table-scroll")).toBe(true);
   });
 
-  it("serves AWS and Azure from local SVGs (no CC0 CDN source) with documented provenance", () => {
+  it("serves every provider icon from local SVGs (production CSP blocks CDNs) with documented provenance", () => {
     renderServices();
     const providerSection = document.querySelector(".providers-grid")!;
     const awsImg = providerSection.querySelector('[alt="AWS logo"]')!;
     const azureImg = providerSection.querySelector('[alt="Microsoft Azure logo"]')!;
     expect(awsImg.getAttribute("src")).toBe("/logos/aws.svg");
     expect(azureImg.getAttribute("src")).toBe("/logos/azure.svg");
-    // Google Cloud still has a Simple Icons entry and stays on the CDN
+    // Google Cloud and Docker moved off the CDN too — every icon is self-hosted
     const gcImg = providerSection.querySelector('[alt="Google Cloud logo"]')!;
-    expect(gcImg.getAttribute("src")).toBe("https://cdn.simpleicons.org/googlecloud");
-    // every local logo file exists and carries a source/license note
+    expect(gcImg.getAttribute("src")).toBe("/logos/googlecloud.svg");
+    const dockerImg = providerSection.querySelector('[alt="Docker logo"]')!;
+    expect(dockerImg.getAttribute("src")).toBe("/logos/docker.svg");
+    // every Simple Icons download is a real, non-empty SVG
+    for (const f of ["googlecloud", "docker"]) {
+      const svg = readFileSync(`public/logos/${f}.svg`, "utf8");
+      expect(svg).toContain("<svg");
+    }
+    // every documented local logo file exists and carries a source/license note
     for (const f of ["aws", "azure", "ragas", "pydantic-ai"]) {
       const svg = readFileSync(`public/logos/${f}.svg`, "utf8");
       expect(svg).toContain("<svg");

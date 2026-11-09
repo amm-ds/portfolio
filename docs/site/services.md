@@ -6,13 +6,14 @@ problem framing to production systems with the engineering artifacts
 
 ## Offerings
 
-Seven generic offerings, each backed by public, reproducible case studies —
+Five offerings — the same categories the projects index groups its rows by —
+each backed by public, reproducible case studies —
 measured against named naive baselines, with no revenue promises:
 
-1. **AI/LLM systems** — assistants and agents that cite their sources and
-   stay inside their budgets: FastAPI services, retrieval pipelines,
-   structured output, eval harnesses, cost/latency budgets with fallback
-   chains. *Evidence: the verified-claim RAG agent (01) and the graded agentic
+1. **Agentic AI & LLM systems** — assistants and agents that cite their
+   sources and stay inside their budgets: retrieval pipelines, structured
+   output, eval harnesses, cost/latency budgets with fallback chains.
+   *Evidence: the verified-claim RAG agent (01) and the graded agentic
    workflow suite (09).*
 2. **Machine learning** — models evaluated the way the business will judge
    them: leakage-proof backtests, calibrated uncertainty bands, business-cost
@@ -25,23 +26,16 @@ measured against named naive baselines, with no revenue promises:
    *Evidence: the vehicle routing benchmark — 4.23% above published
    best-known across 56 Solomon cases (06).*
 4. **Data engineering** — pipelines that turn raw operational dumps into
-   versioned, tested, analysis-ready datasets: Polars/DVC pipelines, DQ gates
-   in CI, checksum-pinned rebuildable datasets, documented registry entries.
-   *Evidence: the NYC mobility pipeline over 41.2M trips (07) and the demand
-   forecast pipeline (02).*
-5. **MLOps** — a setup where bad models and broken pipelines cannot ship
-   silently: CI evaluation gates, Docker + uv environments, clean-clone
-   reruns, runbooks and handover docs. *Evidence: the inference serving
-   benchmark (08) and the churn pipeline's CI-evaluated registry (05).*
-6. **Interactive dashboards** — decision tools over live endpoints and
-   committed payloads, not screenshots: demo frontends, precomputed payload
-   contracts, parity tests pinning every shown number, keyboard-navigable
-   axe-checked components. *Evidence: the forecast workbench and churn
-   sandbox demos in this repo's showcase app.*
-7. **Full-stack product engineering** — working product slices that run from a
-   clean clone: typed API services with contract tests, React frontends,
-   one-command uv + Docker environments, deployment manifests. *Evidence: the
-   served demand API (07) and the showcase app itself.*
+   versioned, tested, analysis-ready datasets, plus the eval gates and drift
+   checks that keep shipped models honest: data-quality gates in CI,
+   checksum-pinned rebuildable datasets, documented registry entries.
+   *Evidence: the NYC mobility pipeline over 41.2M trips (07), the DataFrame
+   engines benchmark (11), and the demand forecast pipeline (02).*
+5. **APIs & model serving** — versioned inference endpoints with explicit
+   contracts and measured latency/throughput on target hardware, with the
+   typed API, web UI and deployment around them wired into one product slice.
+   *Evidence: the inference serving benchmark (08), the model-serving
+   deployment (13), and the served demand API (07).*
 
 Success is stated per offering on the Services page — on the eval harness,
 the backtest metrics, the benchmark gap, or the pinned payload contracts —
@@ -54,9 +48,9 @@ models, and the framework logo grid — is a component of the showcase app:
 
 - **Source:** [apps/showcase-web/src/pages/Services.tsx](https://github.com/amm-ds/portfolio/blob/main/apps/showcase-web/src/pages/Services.tsx)
   (also the framework/provider logo tiles: [Frameworks.tsx](https://github.com/amm-ds/portfolio/blob/main/apps/showcase-web/src/components/Frameworks.tsx))
-- **Interactive rendering:** run the app locally — `make docker-up` →
-  http://localhost:8000/services. A public deployment is not live yet; the
-  exact single-container build/run flow and its status are tracked in
+- **Interactive rendering:** the live site — https://alejandromerida.dev/services
+  (local run: `make docker-up` → http://localhost:8000/services). The exact
+  single-container build/run flow and its status are tracked in
   [deploy/DEPLOY.md](https://github.com/amm-ds/portfolio/blob/main/deploy/DEPLOY.md).
 
 The frameworks behind the work (shown with logos on that page): pydantic,

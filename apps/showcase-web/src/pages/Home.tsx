@@ -74,7 +74,7 @@ export function Home() {
   usePageMeta({
     title: "Data Scientist, ML & AI Consultant",
     description:
-      "Applied AI, predictive analytics and ML engineering — reproducible experiments with measured baselines, published code, and honest case studies.",
+      "AI & ML engineering for real operational problems — predictive systems, intelligent applications and data platforms, from first experiment to reliable production deployment.",
   });
 
   return (
@@ -82,18 +82,47 @@ export function Home() {
       <PersonJsonLd />
       <section className="hero">
         <h1>
-          <span className="hero-accent">Data</span> Scientist, <span className="hero-accent">ML</span> &amp;{" "}
-          <span className="hero-accent">AI</span> Consultant
+          <span className="hero-accent">AI</span> &amp; <span className="hero-accent">ML</span>{" "}
+          engineering for real operational problems.
         </h1>
-        <p className="hero-kicker">
-          Applied AI, predictive analytics and ML engineering — from experiment to production
-        </p>
         <p className="hero-sub">
-          I design, build and evaluate ML systems end to end, and I keep the code, metrics and
-          case studies public and auditable.
+          I design and build predictive systems, intelligent applications and data platforms —
+          from first experiment to reliable production deployment.
+        </p>
+        <ul
+          className="hero-points"
+          style={{
+            listStyle: "none",
+            margin: "1rem 0 0",
+            padding: 0,
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            gap: "0.35rem 1.15rem",
+            fontFamily: "var(--mono)",
+            fontSize: "0.92rem",
+            color: "var(--text)",
+          }}
+        >
+          <li>Predictive analytics &amp; forecasting</li>
+          <li>Applied AI, RAG &amp; agentic systems</li>
+          <li>ML engineering &amp; production infrastructure</li>
+        </ul>
+        <p className="meta-links" style={{ justifyContent: "center", margin: "1.1rem 0 0" }}>
+          <Link className="chip-link" to="/contact">
+            Discuss a project →
+          </Link>
+          <Link className="chip-link" to="/projects">
+            Explore the work →
+          </Link>
         </p>
         <HeroTerminal />
       </section>
+
+      <p className="section-intro" style={{ textAlign: "center", margin: "0.25rem auto 0" }}>
+        naive baselines · honest metrics · auditable claims — every number re-runs from the
+        repository
+      </p>
 
       <h2 className="section-title section-title--tight">where to go</h2>
       <div className="go-grid">
