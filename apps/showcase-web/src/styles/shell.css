@@ -139,7 +139,7 @@
   background-image:
     linear-gradient(var(--hero-grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--hero-grid-line) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-size: 42px 42px;
 }
 
 /* centerpiece terminal: bigger than body text, centered under the hero copy;

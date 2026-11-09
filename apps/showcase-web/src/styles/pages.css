@@ -89,6 +89,30 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* the live terminal overlays a hidden full-script sizer: the panel is
+   full-size from first paint and the typing never moves layout */
+.hero-terminal-stage {
+  position: relative;
+}
+
+.hero-terminal-sizer {
+  visibility: hidden;
+}
+
+.hero-terminal-live {
+  position: absolute;
+  inset: 0;
+}
+
+/* capability line as house chips */
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 1.1rem 0 0;
+}
+
 /* extra air between the hero terminal and the where-to-go cards */
 .home-where-to-go {
   margin-top: 3.5rem;
@@ -873,11 +897,12 @@ button:disabled {
    mono; the "index" label and each item's "> " marker carry the green accent
    — the anchor text itself renders in the muted link color and lights up on
    hover */
+/* the index label sits on its own line, then one /section link per line */
 .page-index {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 1.1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
   margin: 1rem 0 2.25rem;
   font-family: var(--mono);
   font-size: 1.05rem;
@@ -888,14 +913,26 @@ button:disabled {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.page-index .page-index-links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
 }
 
 .page-index a {
   color: var(--text);
 }
 
-.page-index a::before {
-  content: "/";
+.page-index a:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.page-index-slash {
   color: var(--accent);
 }
 

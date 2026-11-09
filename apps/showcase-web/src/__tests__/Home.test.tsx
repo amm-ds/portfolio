@@ -50,7 +50,7 @@ describe("Home (terminal-centered)", () => {
     expect(sub.textContent).toBe(
       "I design and build predictive systems, intelligent applications and data platforms — from first experiment to reliable production deployment.",
     );
-    const points = [...document.querySelectorAll(".hero-points li")].map((el) => el.textContent);
+    const points = [...document.querySelectorAll(".hero-tags .chip")].map((el) => el.textContent);
     expect(points).toEqual([
       "Predictive analytics & forecasting",
       "Applied AI, RAG & agentic systems",
@@ -88,28 +88,28 @@ describe("Home (terminal-centered)", () => {
 
   it("types the script and carries the full message as the terminal's accessible name", () => {
     renderHome();
-    expect(screen.getByText("alejandro@alejandromerida.dev: ~")).toBeInTheDocument();
-    expect(screen.getByText("data scientist · ml & ai consultant")).toBeInTheDocument();
+    expect(screen.getAllByText("alejandro@alejandromerida.dev: ~").length).toBe(2);
+    expect(screen.getAllByText("data scientist · ml & ai consultant").length).toBeGreaterThanOrEqual(2);
     expect(
-      screen.getByText(
+      screen.getAllByText(
         "artificial intelligence · machine learning · optimization · data engineering · mlops · full-stack engineering",
-      ),
-    ).toBeInTheDocument();
+      ).length,
+    ).toBeGreaterThanOrEqual(2);
     expect(
-      screen.getByText(
+      screen.getAllByText(
         "python · typescript/react · pytorch · lightgbm · scikit-learn · pydantic-ai · ollama · docker · dvc · uv",
-      ),
-    ).toBeInTheDocument();
+      ).length,
+    ).toBeGreaterThanOrEqual(2);
     // mlx is off the stack list; ollama stays
     expect(screen.queryByText(/mlx/i)).toBeNull();
-    const stackLine = screen.getByText(/typescript\/react/);
+    const stackLine = screen.getAllByText(/typescript\/react/)[0];
     expect(stackLine.textContent).toContain("ollama");
     expect(stackLine.textContent).not.toContain("mlx");
     expect(
-      screen.getByText(
+      screen.getAllByText(
         "reproducible pipelines · honest baselines · production-grade code · results quality & performance first",
-      ),
-    ).toBeInTheDocument();
+      ).length,
+    ).toBeGreaterThanOrEqual(2);
     // the retired principles are gone from the page
     expect(screen.queryByText(/models propose/i)).toBeNull();
     expect(screen.queryByText(/small, reversible changes/i)).toBeNull();
@@ -120,6 +120,22 @@ describe("Home (terminal-centered)", () => {
     expect(term.getAttribute("aria-label")).toContain("data scientist · ml & ai consultant");
     // animated copy is aria-hidden
     expect(term.firstElementChild!.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  it("keeps the terminal layout static while typing (sizer reserves the full height)", () => {
+    renderHome();
+    const sizer = document.querySelector(".hero-terminal-sizer")!;
+    const live = document.querySelector(".hero-terminal-live")!;
+    expect(sizer).not.toBeNull();
+    expect(live).not.toBeNull();
+    // the sizer holds the whole script from first paint…
+    expect(sizer.textContent).toContain("whoami");
+    expect(sizer.textContent).toContain("focus");
+    // …and the live copy overlays it absolutely (never affects layout)
+    // the static sizing is a CSS concern (hero-terminal-live/sizer in pages.css)
+    // the live pane overlays the sizer inside a positioned stage
+    expect(document.querySelector(".hero-terminal-stage")).not.toBeNull();
+    expect(sizer.compareDocumentPosition(live) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("CTA points to /contact", () => {
@@ -167,13 +183,15 @@ describe("Home (terminal-centered)", () => {
     expect(css.match(/\.section-title--tight \{[\s\S]*?\n\}/)![0]).toContain("margin-top: 0.8rem;");
   });
 
-  it("renders the capability bullets in the hero and keeps the intro sentence in grey (--muted)", () => {
+  it("renders the capabilities as tags in the hero and keeps the intro sentence in grey (--muted)", () => {
     renderHome();
-    const points = document.querySelector(".hero-points")!;
-    expect(points).not.toBeNull();
-    expect(points.textContent).toContain("Predictive analytics & forecasting");
-    expect(points.textContent).toContain("Applied AI, RAG & agentic systems");
-    expect(points.textContent).toContain("ML engineering & production infrastructure");
+    const tags = document.querySelector(".hero-tags")!;
+    expect(tags).not.toBeNull();
+    expect(tags.textContent).toContain("Predictive analytics & forecasting");
+    expect(tags.textContent).toContain("Applied AI, RAG & agentic systems");
+    expect(tags.textContent).toContain("ML engineering & production infrastructure");
+    // capabilities render as house chips
+    expect(tags.querySelectorAll(".chip")).toHaveLength(3);
     // the retired kicker line is gone from the hero
     expect(document.querySelector(".hero-kicker")).toBeNull();
   });

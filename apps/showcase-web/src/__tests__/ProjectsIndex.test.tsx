@@ -197,12 +197,12 @@ describe("ProjectsIndex", () => {
       a.getAttribute("href"),
     ]);
     expect(anchors).toEqual([
-      ["apps", "#apps"],
-      ["live demos", "#demos"],
-      ["Agentic AI & LLM systems", "#agentic-ai-llm-systems"],
-      ["Machine learning", "#machine-learning"],
-      ["Optimization", "#optimization"],
-      ["Data engineering", "#data-engineering"],
+      ["/apps", "#apps"],
+      ["/demos", "#demos"],
+      ["/agentic-ai-llm-systems", "#agentic-ai-llm-systems"],
+      ["/machine-learning", "#machine-learning"],
+      ["/optimization", "#optimization"],
+      ["/data-engineering", "#data-engineering"],
     ]);
   });
 
@@ -256,9 +256,16 @@ describe("ProjectsIndex", () => {
     expect(
       experimentsBlock.querySelector(":scope > .section-title")!.textContent,
     ).toBe("experiments");
-    // row heading plus the on-page index anchor both carry the names
-    expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getAllByText("Data engineering").length).toBeGreaterThanOrEqual(2);
+    // row headings carry the display names; the index shows the path form
+    expect(screen.getByText("Machine learning")).toBeInTheDocument();
+    expect(screen.getByText("Data engineering")).toBeInTheDocument();
+    const indexNav = screen.getByRole("navigation", { name: "On this page" });
+    expect(indexNav.querySelector('a[href="#machine-learning"]')!.textContent).toBe(
+      "/machine-learning",
+    );
+    expect(indexNav.querySelector('a[href="#data-engineering"]')!.textContent).toBe(
+      "/data-engineering",
+    );
 
     const cardOf = (title: string) =>
       [...document.querySelectorAll(".project-card")].find(
@@ -319,7 +326,7 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2),
+      expect(screen.getByRole("heading", { level: 2, name: "live demos" })).toBeInTheDocument(),
     );
     // prominent section with numbered title + subtitle
     expect(
@@ -401,7 +408,7 @@ describe("ProjectsIndex", () => {
       </MemoryRouter>,
     );
     await waitFor(() =>
-      expect(screen.getAllByText("Machine learning").length).toBeGreaterThanOrEqual(2),
+      expect(screen.getByRole("heading", { level: 2, name: "live demos" })).toBeInTheDocument(),
     );
     const demos = document.querySelector(".demos")!;
     const demoCards = demos.querySelectorAll(".demo-card");
@@ -828,19 +835,22 @@ describe("ProjectsIndex", () => {
     const css = readStylesCss();
     const linkRule = css.match(/\.page-index a \{[\s\S]*?\n\}/)![0];
     expect(linkRule).toContain("color: var(--text);");
-    const beforeRule = css.match(/\.page-index a::before \{[\s\S]*?\n\}/)![0];
-    expect(beforeRule).toContain('content: "/";');
-    // only the "/" marker is green; the item text stays muted
-    expect(beforeRule).toContain("color: var(--accent);");
+    // the "/" marker is its own accent span inside each link; the item text
+    // stays muted until hover
+    const slashRule = css.match(/\.page-index-slash \{[\s\S]*?\n\}/)![0];
+    expect(slashRule).toContain("color: var(--accent);");
     const hoverRule = css.match(/\.page-index a:hover \{[\s\S]*?\n\}/)![0];
     expect(hoverRule).toContain("color: var(--accent);");
+    // the index stacks: label line, then one /link per line
+    const baseRule = css.match(/\.page-index \{[\s\S]*?\n\}/)![0];
+    expect(baseRule).toContain("flex-direction: column;");
+    expect(css).toContain(".page-index .page-index-links {");
     // the "index" label keeps the accent; the row is sized up
     expect(css.match(/\.page-index \.page-index-label \{[\s\S]*?\n\}/)![0]).toContain(
       "color: var(--accent);",
     );
-    const indexRule = css.match(/\.page-index \{[\s\S]*?\n\}/)![0];
-    expect(indexRule).toContain("font-family: var(--mono);");
-    expect(indexRule).toContain("font-size: 1.05rem;");
+    expect(baseRule).toContain("font-family: var(--mono);");
+    expect(baseRule).toContain("font-size: 1.05rem;");
   });
 
   it("splits the card body into two equal white text columns under translucent blue field titles", () => {
