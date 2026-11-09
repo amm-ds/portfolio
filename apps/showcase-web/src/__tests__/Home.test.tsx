@@ -39,7 +39,7 @@ describe("Home (terminal-centered)", () => {
   it("leads with the AI & ML engineering positioning headline", () => {
     renderHome();
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(h1.textContent).toBe("AI & ML engineering for real operational problems.");
+    expect(h1.textContent).toBe("Data Scientist, ML & AI Consultant");
     // the old kicker wording is gone from the hero
     expect(screen.queryByText(/from experiment to production/i)).toBeNull();
   });
@@ -178,12 +178,12 @@ describe("Home (terminal-centered)", () => {
     expect(document.querySelector(".hero-kicker")).toBeNull();
   });
 
-  it("paints only the AI/ML words green — h1 base white, accent spans, no gradient", () => {
+  it("paints only the Data/ML/AI words green — h1 base white, accent spans, no gradient", () => {
     renderHome();
     const accents = [...document.querySelectorAll(".hero-accent")].map((e) => e.textContent);
-    expect(accents).toEqual(["AI", "ML"]);
+    expect(accents).toEqual(["Data", "ML", "AI"]);
     const h1 = document.querySelector(".hero h1")!;
-    expect(h1.textContent).toContain("AI & ML engineering for real operational problems.");
+    expect(h1.textContent).toContain("Data Scientist, ML & AI Consultant");
     const css = readStylesCss();
     const rule = css.match(/\.hero h1 \{[\s\S]*?\n\}/)![0];
     expect(rule).toContain("color: var(--text);");

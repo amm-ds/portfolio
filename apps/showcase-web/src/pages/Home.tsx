@@ -74,7 +74,7 @@ export function Home() {
   usePageMeta({
     title: "Data Scientist, ML & AI Consultant",
     description:
-      "AI & ML engineering for real operational problems — predictive systems, intelligent applications and data platforms, from first experiment to reliable production deployment.",
+      "Applied AI, predictive analytics and ML engineering — reproducible experiments with measured baselines, published code, and honest case studies.",
   });
 
   return (
@@ -82,8 +82,8 @@ export function Home() {
       <PersonJsonLd />
       <section className="hero">
         <h1>
-          <span className="hero-accent">AI</span> &amp; <span className="hero-accent">ML</span>{" "}
-          engineering for real operational problems.
+          <span className="hero-accent">Data</span> Scientist, <span className="hero-accent">ML</span>{" "}
+          &amp; <span className="hero-accent">AI</span> Consultant
         </h1>
         <p className="hero-sub">
           I design and build predictive systems, intelligent applications and data platforms —
