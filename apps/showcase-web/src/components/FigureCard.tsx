@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { asRecord } from "../lib/records";
 import { EChartsFigure } from "./EChartsFigure";
-import { PlotlyFigure, type PlotlyPayload } from "./PlotlyFigure";
-
-/**
- * Pilot switch: story figures of this project render through the Apache
- * ECharts pilot (SVG renderer); every other project keeps plotly. The pilot
- * component falls back to plotly per-figure whenever the payload is outside
- * its supported subset, so this switch can never break a figure.
- */
-const ECHARTS_PILOT_PID = "05-ml-pipeline-churn";
+import type { PlotlyPayload } from "./PlotlyFigure";
 
 /** Axis title text: plotly allows `{title: {text}}` or the shorthand `{title: "..."}`. */
 function axisTitle(axis: unknown): string | null {
@@ -61,12 +53,12 @@ function summarizeTraces(data: unknown[]): TraceSummary[] {
 type DataStatus = { state: "loading" } | { state: "ok"; payload: PlotlyPayload } | { state: "unavailable" };
 
 /**
- * Generic figure card: one bordered tile holding a chart (native plotly or,
- * for the churn pilot, ECharts; iframe fallback inside the figure component)
- * on top and a commentary band at the bottom — a small mono id line
- * (`fig :: {name}`) plus an optional caption paragraph from the story's
- * `figure_captions`. Usable by any page/project; when no caption exists yet
- * the band falls back to the id line alone.
+ * Generic figure card: one bordered tile holding a chart (ECharts with a
+ * per-figure plotly fallback inside the figure component; iframe fallback
+ * inside PlotlyFigure) on top and a commentary band at the bottom — a small
+ * mono id line (`fig :: {name}`) plus an optional caption paragraph from the
+ * story's `figure_captions`. Usable by any page/project; when no caption
+ * exists yet the band falls back to the id line alone.
  *
  * The band ends with a collapsed `view data table` disclosure — a compact
  * per-series table parsed from the same plotly JSON payload, as a
@@ -87,16 +79,10 @@ export function FigureCard({
   const yTitle = data.state === "ok" ? axisTitle(asRecord(data.payload.layout).yaxis) : null;
   const onPayload = (p: PlotlyPayload | null) =>
     setData(p ? { state: "ok", payload: p } : { state: "unavailable" });
-  const figure =
-    pid === ECHARTS_PILOT_PID ? (
-      <EChartsFigure pid={pid} name={name} onPayload={onPayload} />
-    ) : (
-      <PlotlyFigure pid={pid} name={name} onPayload={onPayload} />
-    );
 
   return (
     <div className="figure-card">
-      {figure}
+      <EChartsFigure pid={pid} name={name} onPayload={onPayload} />
       <footer className="figure-card-band">
         <span className="figure-id">fig :: {name}</span>
         {caption && <p className="figure-comment">{caption}</p>}

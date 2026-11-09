@@ -41,7 +41,7 @@ interface Opt {
   grid: Array<Record<string, any>>;
   legend: Record<string, any>;
   visualMap: Record<string, any>;
-  title?: Array<Record<string, any>>;
+  title: Array<Record<string, any>>;
   tooltip: Record<string, any>;
 }
 
@@ -164,7 +164,7 @@ describe("plotlyToECharts over the committed churn figures", () => {
     expect(option.series[heatmapIdx].data).toHaveLength(41 * 19);
     expect(option.visualMap).toBeDefined();
     expect(option.visualMap.type).toBe("continuous");
-    expect(option.visualMap.seriesIndex).toBe(heatmapIdx);
+    expect(option.visualMap.seriesIndex).toContain(heatmapIdx);
     expect(option.visualMap.min).toBeLessThan(option.visualMap.max);
     expect(option.visualMap.inRange.color[0]).toContain("rgb(");
   });
@@ -251,13 +251,78 @@ describe("plotlyToECharts over the committed churn figures", () => {
     expect(texts).toContain("Tenure distribution");
   });
 
-  it("scales grids and bar widths to the container width", () => {
-    const full = asOpt(plotlyToECharts(loadFigure("bootstrap_ci"), "dark", 1000));
-    const half = asOpt(plotlyToECharts(loadFigure("bootstrap_ci"), "dark", 500));
-    expect(half.grid[0].width).toBeCloseTo(full.grid[0].width / 2, 0);
+  it("scales grids and bar widths down with the container (px bands clamp the shrink)", () => {
+    const full = asOpt(plotlyToECharts(loadFigure("bootstrap_ci"), "dark", 1440));
+    const small = asOpt(plotlyToECharts(loadFigure("bootstrap_ci"), "dark", 500));
+    expect(small.grid[0].width).toBeLessThan(full.grid[0].width);
+    expect(small.grid[0].width).toBeGreaterThan(40);
     const fullBar = full.series.find((s) => s.type === "bar")!;
-    const halfBar = half.series.find((s) => s.type === "bar")!;
-    expect(halfBar.barWidth).toBeCloseTo(fullBar.barWidth / 2, 0);
+    const smallBar = small.series.find((s) => s.type === "bar")!;
+    expect(smallBar.barWidth).toBeLessThan(fullBar.barWidth);
+    expect(smallBar.barWidth).toBeGreaterThan(0);
+  });
+
+  it("reserves a top band so titles never touch the plot, and centers subplot titles over their grid", () => {
+    // eda has a global title + three subplot headers
+    const opt = asOpt(plotlyToECharts(loadFigure("eda_churn_profile"), "dark", 1000));
+    const main = opt.title[0];
+    expect(main.top).toBeGreaterThanOrEqual(4);
+    // every subplot header sits above its grid and is centered on it
+    for (const sub of opt.title.slice(1)) {
+      const g = opt.grid[opt.title.indexOf(sub) - 1];
+      expect(sub.top + (sub.textStyle?.fontSize ?? 16)).toBeLessThanOrEqual(g.top);
+      expect(Math.abs(sub.left - (g.left + g.width / 2))).toBeLessThanOrEqual(2);
+    }
+    // the global title is horizontally centered on the canvas
+    expect(Math.abs(main.left - 500)).toBeLessThanOrEqual(2);
+  });
+
+  it("keeps the legend inside the reserved right band at mobile widths", () => {
+    const opt = asOpt(plotlyToECharts(loadFigure("calibration_curve"), "dark", 390));
+    // legend starts inside the clamped right band and has room for its text
+    expect(opt.legend.left).toBeGreaterThan(390 - 190);
+    expect(opt.legend.left).toBeLessThan(390);
+  });
+});
+
+describe("funnel support (projects/01 retrieval_funnel)", () => {
+  const FUNNEL_DIR = resolve(process.cwd(), "../../projects/01-rag-agent/reports/figures");
+
+  it("converts the committed funnel payload", () => {
+    const payload = JSON.parse(
+      readFileSync(resolve(FUNNEL_DIR, "retrieval_funnel.json"), "utf8"),
+    ) as PlotlyPayload;
+    expect(supportsECharts(payload)).toBe(true);
+    const option = asOpt(plotlyToECharts(payload, "dark", 1000));
+    const funnel = option.series.find((s) => s.type === "funnel")!;
+    expect(funnel).toBeDefined();
+    expect(funnel.sort).toBe("none");
+    // stages map to named, colorway-colored items with the authored values
+    expect(funnel.data.map((d: { name: string }) => d.name)).toEqual([
+      "embedding candidates (top-15)",
+      "after rerank (top-3)",
+      "relevant article in top-k",
+    ]);
+    expect(funnel.data.map((d: { value: number }) => d.value)).toEqual([975, 195, 54]);
+    // not cartesian: no grids/axes are emitted
+    expect(option.grid).toHaveLength(0);
+    expect(option.xAxis).toHaveLength(0);
+    expect(option.yAxis).toHaveLength(0);
+    // percent-initial formatting is anchored on the first stage
+    const label = funnel.label.formatter as (p: { name: string; value: number }) => string;
+    expect(label({ name: "s", value: 195 })).toBe("s: 195 · 20.0%");
+    expect(label({ name: "s", value: 975 })).toBe("s: 975 · 100.0%");
+  });
+});
+
+describe("choropleth fallback (projects/07)", () => {
+  const MAPS_DIR = resolve(process.cwd(), "../../projects/07-open-data-mobility/reports/figures");
+
+  it("rejects the committed choropleth payloads (plotly fallback)", () => {
+    for (const name of ["zone_demand_map", "zone_residual_map"]) {
+      const payload = JSON.parse(readFileSync(resolve(MAPS_DIR, `${name}.json`), "utf8")) as PlotlyPayload;
+      expect(supportsECharts(payload)).toBe(false);
+    }
   });
 });
 
@@ -271,28 +336,62 @@ describe("supportsECharts", () => {
     ).toBe(false);
   });
 
-  it("rejects non-linear axis types", () => {
+  it("rejects axis types outside value/log/category", () => {
     expect(
       supportsECharts({
         data: [{ type: "scatter", mode: "markers", x: [1, 10, 100], y: [1, 2, 3] }],
-        layout: { xaxis: { type: "log" } },
+        layout: { xaxis: { type: "date" } },
       }),
     ).toBe(false);
   });
 
-  it("rejects unsupported marker symbols, shapes and histnorms", () => {
+  it("accepts log axes and renders them as echarts log axes", () => {
+    const payload: PlotlyPayload = {
+      data: [{ type: "scatter", mode: "markers", x: [1, 10, 100], y: [1, 2, 3] }],
+      layout: { xaxis: { type: "log" } },
+    };
+    expect(supportsECharts(payload)).toBe(true);
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    expect(option.xAxis[0].type).toBe("log");
+    // log axes never pin a zero baseline
+    expect(option.xAxis[0].min).toBeUndefined();
+  });
+
+  it("accepts fill bands (tonexty) as a silent polygon between the pair", () => {
+    const payload: PlotlyPayload = {
+      data: [
+        { type: "scatter", mode: "lines", x: [0, 1, 2], y: [2, 3, 2], fill: "tonexty", fillcolor: "rgba(45,212,191,0.2)" },
+        { type: "scatter", mode: "lines", x: [0, 1, 2], y: [1, 1.5, 1] },
+      ],
+      layout: { height: 560 },
+    };
+    expect(supportsECharts(payload)).toBe(true);
+    const option = asOpt(plotlyToECharts(payload, "dark"));
+    const band = option.series.find((s) => s.type === "custom" && s.renderItem && s.z === 1)!;
+    expect(band).toBeDefined();
+    expect(band.silent).toBe(true);
+    expect(typeof band.renderItem).toBe("function");
+  });
+
+  it("rejects unsupported marker symbols and histnorms (rect shapes are supported)", () => {
     expect(
       supportsECharts({
         data: [{ type: "scatter", mode: "markers", x: [1], y: [1], marker: { symbol: "bowtie" } }],
         layout: {},
       }),
     ).toBe(false);
-    expect(
-      supportsECharts({
-        data: [{ type: "scatter", mode: "lines", x: [0, 1], y: [0, 1] }],
-        layout: { shapes: [{ type: "rect", x0: 0, x1: 1, y0: 0, y1: 1 }] },
-      }),
-    ).toBe(false);
+    const withRect: PlotlyPayload = {
+      data: [{ type: "scatter", mode: "lines", x: [0, 1], y: [0, 1] }],
+      layout: {
+        height: 560,
+        shapes: [{ type: "rect", xref: "x", yref: "y", x0: 0.2, x1: 0.8, y0: 0.2, y1: 0.8, fillcolor: "rgba(148,163,184,0.2)" }],
+      },
+    };
+    expect(supportsECharts(withRect)).toBe(true);
+    const option = asOpt(plotlyToECharts(withRect, "dark"));
+    const layer = option.series.find((s) => s.markArea)!;
+    expect(layer.markArea.data[0][0].xAxis).toBe(0.2);
+    expect(layer.markArea.data[0][1].yAxis).toBe(0.8);
     expect(
       supportsECharts({
         data: [{ type: "histogram", x: [1, 2, 3], histnorm: "percent" }],

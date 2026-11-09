@@ -10,6 +10,7 @@ import type { ComposeOption } from "echarts/core";
 import type {
   BarSeriesOption,
   CustomSeriesOption,
+  FunnelSeriesOption,
   HeatmapSeriesOption,
   LineSeriesOption,
   ScatterSeriesOption,
@@ -17,6 +18,7 @@ import type {
 import type {
   GridComponentOption,
   LegendComponentOption,
+  MarkAreaComponentOption,
   TitleComponentOption,
   TooltipComponentOption,
   VisualMapComponentOption,
@@ -24,8 +26,8 @@ import type {
 
 /**
  * Apache ECharts pilot: convert committed plotly figure payloads (the subset
- * the 05-ml-pipeline-churn figures actually use — scatter/line, bar,
- * histogram, heatmap on linear or category axes, line shapes and text
+ * the committed figures use — scatter/line, bar, histogram, heatmap, funnel
+ * on linear/log or category axes, line/rect shapes, fill bands and text
  * annotations) into a ready-to-setOption ECharts option. Anything outside
  * that subset throws so the caller can render plotly instead
  * (see `supportsECharts`). The payload is never mutated.
@@ -37,11 +39,13 @@ import type {
 export type EChartsOption = ComposeOption<
   | BarSeriesOption
   | CustomSeriesOption
+  | FunnelSeriesOption
   | HeatmapSeriesOption
   | LineSeriesOption
   | ScatterSeriesOption
   | GridComponentOption
   | LegendComponentOption
+  | MarkAreaComponentOption
   | TitleComponentOption
   | TooltipComponentOption
   | VisualMapComponentOption
@@ -81,6 +85,9 @@ const SYMBOL_MAP: Record<string, string> = {
   diamond: "diamond",
   "triangle-up": "triangle",
   star: STAR_SYMBOL,
+  x: "path://M0.22 0.22 L0.42 0.42 L0.5 0.34 L0.58 0.42 L0.78 0.22 L0.86 0.3 L0.66 0.5 " +
+    "L0.86 0.7 L0.78 0.78 L0.58 0.58 L0.5 0.66 L0.42 0.58 L0.22 0.78 L0.14 0.7 L0.34 0.5 " +
+    "L0.14 0.3 Z",
 };
 
 function fail(message: string): never {
@@ -125,6 +132,8 @@ function toNumberArray(v: unknown, what: string): number[] {
   if (v === undefined || v === null) return [];
   if (Array.isArray(v)) {
     return v.map((e) => {
+      // nulls mark missing bars/points: they become NaN and render as gaps
+      if (e === null || e === undefined) return NaN;
       const n = num(e);
       if (n === undefined) fail(`${what} holds a non-numeric value`);
       return n;
@@ -133,6 +142,15 @@ function toNumberArray(v: unknown, what: string): number[] {
   const rec = asRecord(v);
   if ("bdata" in rec) return decodeBdata(rec);
   fail(`${what} is not an array`);
+}
+
+const DATE_LIKE_RE = /^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2}(\.\d+)?)?)?$/;
+
+/** plotly's `2014-02-26 13:45:00.000000` strings → epoch ms (undefined if not a date). */
+function parsePlotlyDate(v: unknown): number | undefined {
+  if (typeof v !== "string" || !DATE_LIKE_RE.test(v)) return undefined;
+  const ms = Date.parse(v.replace(" ", "T"));
+  return Number.isFinite(ms) ? ms : undefined;
 }
 
 function toValueArray(v: unknown, what: string): (number | string)[] {
@@ -162,6 +180,21 @@ function stripTags(text: string): string {
   return text.replace(TAG_RE, "").trim();
 }
 
+/** Sample a plotly colorscale ([[pos, color], ...]) at fraction t ∈ [0,1]
+ *  (nearest-up sampling — the committed scales have fine stops). */
+function colorFromScale(scale: unknown[], t: number): string | undefined {
+  if (scale.length === 0) return undefined;
+  const clamped = Math.min(1, Math.max(0, t));
+  for (let i = 1; i < scale.length; i++) {
+    const cur = scale[i] as unknown[];
+    if (clamped <= Number(cur[0]) || i === scale.length - 1) {
+      return typeof cur[1] === "string" ? cur[1] : undefined;
+    }
+  }
+  const first = scale[0] as unknown[];
+  return typeof first[1] === "string" ? first[1] : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Axis / grid bookkeeping
 // ---------------------------------------------------------------------------
@@ -175,7 +208,7 @@ interface AxisInfo {
   arrayIndex: number;
   /** Position of the grid this axis belongs to inside the grid array. */
   gridIndex: number;
-  type: "value" | "category";
+  type: "value" | "category" | "log" | "time";
   categories: string[];
   built: Record<string, unknown> | null;
 }
@@ -183,6 +216,8 @@ interface AxisInfo {
 interface GridInfo {
   xIndex: number;
   yIndex: number;
+  xDomain: number[];
+  yDomain: number[];
   left: number;
   top: number;
   width: number;
@@ -268,7 +303,8 @@ interface ErrorBarPlan {
   horizontal: boolean;
   category: (number | string)[];
   center: number[];
-  err: number[];
+  errLo: number[];
+  errHi: number[];
   color: string;
 }
 
@@ -303,6 +339,16 @@ interface ShapeLine {
   width: number;
 }
 
+interface RectArea {
+  gridIndex: number;
+  x0: number;
+  x1: number;
+  y0: number;
+  y1: number;
+  color: string;
+  opacity: number;
+}
+
 /**
  * One silent invisible series per grid carries the annotation labels (and
  * the grid's line shapes as markLine). Its points also feed the axis
@@ -313,6 +359,7 @@ function annotationLayer(
   yIdx: number,
   points: AnnotationPoint[],
   shapes: ShapeLine[],
+  rects: RectArea[],
 ): SeriesDraft {
   const data = points.map((p) => ({
     value: [p.x, p.y],
@@ -343,10 +390,25 @@ function annotationLayer(
       silent: true,
       symbol: "none",
       animation: false,
+      label: { show: false },
       data: shapes.map((s) => {
         const item: Record<string, unknown> = s.vertical ? { xAxis: s.value } : { yAxis: s.value };
         item.lineStyle = { color: s.color, width: s.width, type: "solid" };
         return item;
+      }),
+    };
+  }
+  if (rects.length > 0) {
+    layer.markArea = {
+      silent: true,
+      animation: false,
+      label: { show: false },
+      data: rects.map((r) => {
+        const pair = [
+          { xAxis: r.x0, yAxis: r.y0, itemStyle: { color: r.color, opacity: r.opacity } },
+          { xAxis: r.x1, yAxis: r.y1 },
+        ];
+        return pair;
       }),
     };
   }
@@ -390,8 +452,6 @@ export function plotlyToECharts(
   const width = containerWidth > 0 ? containerWidth : DESIGN_WIDTH;
   const scale = width / designW;
   const height = scaledHeight(layout.height, width);
-  const innerW = designW - margin.l - margin.r;
-  const innerH = height / scale - margin.t - margin.b;
 
   // --- discover the axes declared in the layout ---------------------------
   const axisByKey = new Map<string, AxisInfo>();
@@ -407,7 +467,8 @@ export function plotlyToECharts(
       declared !== null &&
       declared !== "linear" &&
       declared !== "-" &&
-      declared !== "category"
+      declared !== "category" &&
+      declared !== "log"
     ) {
       fail(`unsupported ${key}.type "${String(declared)}"`);
     }
@@ -418,7 +479,7 @@ export function plotlyToECharts(
       raw,
       arrayIndex: -1,
       gridIndex: -1,
-      type: declared === "category" ? "category" : "value",
+      type: declared === "category" ? "category" : declared === "log" ? "log" : "value",
       categories: [],
       built: null,
     });
@@ -442,7 +503,8 @@ export function plotlyToECharts(
     return info;
   };
 
-  // --- grids: one per (xIdx, yIdx) pair, positioned from axis domains -----
+  // --- grids: one per (xIdx, yIdx) pair; rects are computed in a finalize
+  // step once the margin bands (titles/legend presence) are known ----------
   const grids: GridInfo[] = [];
   const gridKeys: string[] = [];
   const gridIndexFor = (xIdx: number, yIdx: number): number => {
@@ -455,14 +517,7 @@ export function plotlyToECharts(
     const yDomain = Array.isArray(yd) && yd.length === 2 ? (yd.map(Number) as number[]) : [0, 1];
     const idx = grids.length;
     gridKeys.push(key);
-    grids.push({
-      xIndex: xIdx,
-      yIndex: yIdx,
-      left: (margin.l + xDomain[0] * innerW) * scale,
-      top: (margin.t + (1 - yDomain[1]) * innerH) * scale,
-      width: (xDomain[1] - xDomain[0]) * innerW * scale,
-      height: (yDomain[1] - yDomain[0]) * innerH * scale,
-    });
+    grids.push({ xIndex: xIdx, yIndex: yIdx, xDomain, yDomain, left: 0, top: 0, width: 0, height: 0 });
     return idx;
   };
 
@@ -475,8 +530,9 @@ export function plotlyToECharts(
   const exactX = new Set<number>();
   const exactY = new Set<number>();
   const namedSeries: string[] = [];
+  /** value axes that carry outside bar labels ("0.616 (−31%)"): headroom */
+  const labelHeadroomAxes = new Set<string>();
   let heatmapVisual: { min: number; max: number; colors: string[] } | null = null;
-  let heatmapCount = 0;
 
   const traceColor = (i: number, explicit: unknown): string => {
     const raw =
@@ -487,10 +543,16 @@ export function plotlyToECharts(
           : "#2dd4bf";
     return remapColor(raw, theme);
   };
-  const xAdd = (idx: number, v: number | undefined) =>
+  const xAdd = (idx: number, v: number | undefined) => {
+    // log axes can't use linear extents or non-positive values: leave them
+    // to echarts' own log autoscale
+    if (axisAt(true, idx).type === "log") return;
     xExtents.set(idx, extentAdd(xExtents.get(idx) ?? null, v));
-  const yAdd = (idx: number, v: number | undefined) =>
+  };
+  const yAdd = (idx: number, v: number | undefined) => {
+    if (axisAt(false, idx).type === "log") return;
     yExtents.set(idx, extentAdd(yExtents.get(idx) ?? null, v));
+  };
   const registerCategory = (info: AxisInfo, label: string) => {
     if (!info.categories.includes(label)) info.categories.push(label);
   };
@@ -498,45 +560,141 @@ export function plotlyToECharts(
   for (let i = 0; i < data.length; i++) {
     const t = asRecord(data[i]);
     const type = typeof t.type === "string" ? t.type : "scatter";
-    if (type !== "scatter" && type !== "bar" && type !== "histogram" && type !== "heatmap") {
+    if (
+      type !== "scatter" &&
+      type !== "bar" &&
+      type !== "histogram" &&
+      type !== "heatmap" &&
+      type !== "funnel"
+    ) {
       fail(`unsupported trace type "${type}"`);
     }
     const xIdx = axisRefIndex(t.xaxis, "x");
     const yIdx = axisRefIndex(t.yaxis, "y");
-    const gridIndex = gridIndexFor(xIdx, yIdx);
+    // funnels are not cartesian: no grid, no axis extents
+    const gridIndex = type === "funnel" ? -1 : gridIndexFor(xIdx, yIdx);
     const name = typeof t.name === "string" && t.name !== "" ? t.name : undefined;
     if (name && !namedSeries.includes(name)) namedSeries.push(name);
     const marker = asRecord(t.marker);
     const line = asRecord(t.line);
 
+    if (type === "funnel") {
+      const stages = toValueArray(t.y, "funnel.stages");
+      const vals = toNumberArray(t.x, "funnel.values");
+      const n = Math.max(stages.length, vals.length);
+      if (n === 0) fail("funnel without stage data");
+      const first = vals[0] ?? 1;
+      const textinfo = typeof t.textinfo === "string" ? t.textinfo : "value+percent initial";
+      const showValue = textinfo.includes("value");
+      const showPct = textinfo.includes("percent");
+      const color = traceColor(i, Array.isArray(marker.color) ? undefined : marker.color);
+      const items = stages.map((label, k) => ({
+        name: String(label),
+        value: vals.length > 0 ? vals[Math.min(k, vals.length - 1)] : 0,
+        itemStyle: { color },
+      }));
+      series.push({
+        type: "funnel",
+        name,
+        xIdx: 0,
+        yIdx: 0,
+        data: items,
+        // plotly keeps authored stage order and proportional widths
+        sort: "none",
+        left: "28%",
+        width: "58%",
+        top: "12%",
+        bottom: "7%",
+        gap: 4,
+        minSize: "8%",
+        label: {
+          show: true,
+          position: "left",
+          fontSize: 12,
+          color: baseColor,
+          formatter: (p: { name: string; value: number }) => {
+            const bits: string[] = [];
+            if (showValue) bits.push(String(p.value));
+            if (showPct) bits.push(`${(((p.value ?? 0) / first) * 100).toFixed(1)}%`);
+            return `${p.name}: ${bits.join(" · ")}`;
+          },
+        },
+        itemStyle: { borderWidth: 0 },
+        z: 2,
+      });
+      continue;
+    }
+
     if (type === "scatter") {
       const xs = toValueArray(t.x, "scatter.x");
       const ys = toValueArray(t.y, "scatter.y");
       const n = Math.max(xs.length, ys.length);
-      if (n === 0) fail("scatter trace without x/y data");
       const mode = typeof t.mode === "string" ? t.mode : "lines";
+      if (n === 0) {
+        // degenerate empty trace: render nothing rather than fail the figure
+        series.push({ type: mode.includes("lines") ? "line" : "scatter", name, gridIndex, xIdx, yIdx, data: [] });
+        continue;
+      }
       if (!SCATTER_MODE_RE.test(mode)) fail(`unsupported scatter mode "${mode}"`);
       const hasLines = mode.includes("lines");
       const hasMarkers = mode.includes("markers") || (!hasLines && !mode.includes("text"));
       const hasText = mode.includes("text");
       const lineColor = traceColor(i, line.color);
       const markerColor = traceColor(i, typeof marker.color === "string" ? marker.color : line.color);
+      // numeric marker.color rides a colorscale (e.g. points colored by a
+      // third variable): map each value through the scale to an item color
+      const mcArr = Array.isArray(marker.color) ? marker.color : null;
+      const mcScale = Array.isArray(marker.colorscale) ? marker.colorscale : null;
+      const numericMc =
+        mcArr !== null && mcScale !== null && mcArr.length > 0 && mcArr.every((c) => typeof c === "number" || c === null);
+      let mcMin = Infinity;
+      let mcMax = -Infinity;
+      if (numericMc) {
+        for (const c of mcArr as unknown[]) {
+          if (typeof c === "number") {
+            mcMin = Math.min(mcMin, c);
+            mcMax = Math.max(mcMax, c);
+          }
+        }
+      }
       const xInfo = axisAt(true, xIdx);
       const points: unknown[] = [];
       for (let k = 0; k < n; k++) {
         const xv = xs.length > 0 ? xs[Math.min(k, xs.length - 1)] : k;
         const yv = ys.length > 0 ? ys[Math.min(k, ys.length - 1)] : k;
+        let xOut: number | string = k;
         if (typeof xv === "string") {
-          xInfo.type = "category";
-          registerCategory(xInfo, xv);
+          const ms = parsePlotlyDate(xv);
+          if (ms !== undefined && xInfo.type !== "category") {
+            // date strings ride an echarts time axis (converted to epoch ms)
+            xInfo.type = "time";
+            xOut = ms;
+          } else if (ms !== undefined && xInfo.type === "time") {
+            xOut = ms;
+          } else if (xInfo.type === "time") {
+            fail("scatter.x mixes dates and categories");
+          } else {
+            xInfo.type = "category";
+            registerCategory(xInfo, xv.replace(BR_RE, "\n"));
+            xOut = xv.replace(BR_RE, "\n");
+          }
         } else {
+          xOut = xv;
           xAdd(xIdx, xv);
         }
         const yn = typeof yv === "string" ? fail("scatter.y holds categories") : yv;
         yAdd(yIdx, yn);
         const item: Record<string, unknown> = {
-          value: [xv, Number.isFinite(yn) ? yn : null],
+          value: [xOut, Number.isFinite(yn) ? yn : null],
         };
+        if (numericMc) {
+          const mv = (mcArr as unknown[])[Math.min(k, (mcArr as unknown[]).length - 1)];
+          if (typeof mv === "number" && Number.isFinite(mv)) {
+            const t = (mv - mcMin) / (mcMax - mcMin || 1);
+            const sampled = colorFromScale(mcScale as unknown[], t);
+            if (sampled) item.itemStyle = { color: remapColor(sampled, theme) };
+          }
+        }
         if (hasText && Array.isArray(t.text) && typeof t.text[k] === "string") {
           item.label = {
             show: true,
@@ -560,9 +718,11 @@ export function plotlyToECharts(
         draft.z = 3;
       }
       if (hasMarkers) {
-        const symbol = typeof marker.symbol === "string" ? SYMBOL_MAP[marker.symbol] : undefined;
-        if (marker.symbol !== undefined && !symbol) {
-          fail(`unsupported marker.symbol "${String(marker.symbol)}"`);
+        const rawSymbol = typeof marker.symbol === "string" ? marker.symbol : undefined;
+        const hollow = rawSymbol?.endsWith("-open") ?? false;
+        const symbol = rawSymbol ? SYMBOL_MAP[hollow ? rawSymbol.slice(0, -5) : rawSymbol] : undefined;
+        if (rawSymbol !== undefined && !symbol) {
+          fail(`unsupported marker.symbol "${rawSymbol}"`);
         }
         draft.symbol = symbol ?? "circle";
         if (Array.isArray(marker.size)) {
@@ -572,19 +732,56 @@ export function plotlyToECharts(
         } else {
           draft.symbolSize = num(marker.size) ?? 6;
         }
-        draft.itemStyle = { color: markerColor };
+        // "x-open"-style hollow markers draw as an outlined symbol
+        draft.itemStyle = hollow
+          ? { color: "rgba(0,0,0,0)", borderColor: markerColor, borderWidth: 2 }
+          : { color: markerColor };
         // markers on the data edge stay fully painted (plotly parity)
         draft.clip = false;
       } else if (hasText) {
         draft.itemStyle = { color: lineColor };
       }
+      // fill between this trace and the next (plotly `fill: "tonexty"`,
+      // e.g. confidence bands): rendered as a silent polygon layer later
+      if (t.fill === "tonexty") {
+        draft.__bandToNext = true;
+        if (typeof t.fillcolor === "string") draft.__bandFill = remapColor(t.fillcolor, theme);
+      } else if (t.fill === "tozeroy") {
+        draft.areaStyle = { opacity: 0.25 };
+      }
       series.push(draft);
+      // error bars ride the same custom series the bars use; plotly's
+      // `arrayminus` makes the whisker asymmetric when present
+      for (const key of ["error_x", "error_y"] as const) {
+        const err = asRecord(t[key]);
+        if (Object.keys(err).length === 0 || err.array === undefined) continue;
+        const hi = toNumberArray(err.array, `${key}.array`);
+        const lo =
+          err.arrayminus !== undefined
+            ? toNumberArray(err.arrayminus, `${key}.arrayminus`)
+            : [...hi];
+        errorBars.push({
+          gridIndex,
+          xIdx,
+          yIdx,
+          horizontal: key === "error_x",
+          category: xs as (number | string)[],
+          center: ys as number[],
+          errLo: lo,
+          errHi: hi,
+          color: markerColor,
+        });
+      }
     } else if (type === "bar") {
       const horizontal = t.orientation === "h";
       const cat = toValueArray(horizontal ? t.y : t.x, "bar.category");
       const vals = toNumberArray(horizontal ? t.x : t.y, "bar.values");
       const n = Math.max(cat.length, vals.length);
-      if (n === 0) fail("bar trace without x/y data");
+      if (n === 0) {
+        // degenerate empty trace: render nothing rather than fail the figure
+        series.push({ type: "bar", name, gridIndex, xIdx, yIdx, data: [] });
+        continue;
+      }
       const catAxis = horizontal ? axisAt(false, yIdx) : axisAt(true, xIdx);
       const valAxis = horizontal ? axisAt(true, xIdx) : axisAt(false, yIdx);
       const isCategory = cat.some((c) => typeof c === "string");
@@ -599,22 +796,37 @@ export function plotlyToECharts(
         : [num(t.width)].filter((w): w is number => w !== undefined);
 
       const dataItems: unknown[] = [];
+      const texts = Array.isArray(t.text) ? t.text : null;
+      const textInside = t.textposition === "inside";
       for (let k = 0; k < n; k++) {
         const catV = cat.length > 0 ? cat[Math.min(k, cat.length - 1)] : k;
         const val = vals.length > 0 ? vals[Math.min(k, vals.length - 1)] : 0;
         if (catAxis.type === "category") {
-          registerCategory(catAxis, String(catV));
+          registerCategory(catAxis, String(catV).replace(BR_RE, "\n"));
         } else {
           (horizontal ? yAdd : xAdd)(horizontal ? yIdx : xIdx, Number(catV));
         }
-        (horizontal ? xAdd : yAdd)(horizontal ? xIdx : yIdx, val);
-        (horizontal ? xAdd : yAdd)(horizontal ? xIdx : yIdx, 0); // bar baseline pins zero
-        const catLabel = catAxis.type === "category" ? String(catV) : Number(catV);
+        if (Number.isFinite(val)) {
+          (horizontal ? xAdd : yAdd)(horizontal ? xIdx : yIdx, val);
+          (horizontal ? xAdd : yAdd)(horizontal ? xIdx : yIdx, 0); // bar baseline pins zero
+        }
+        const catLabel =
+          catAxis.type === "category" ? String(catV).replace(BR_RE, "\n") : Number(catV);
         const item: Record<string, unknown> = {
-          value: horizontal ? [val, catLabel] : [catLabel, val],
+          value: horizontal ? [Number.isFinite(val) ? val : null, catLabel] : [catLabel, Number.isFinite(val) ? val : null],
         };
         if (perColors) {
           item.itemStyle = { color: perColors[k % perColors.length], opacity: opacity ?? 1 };
+        }
+        if (texts && typeof texts[k] === "string" && texts[k] !== "") {
+          item.label = {
+            show: true,
+            formatter: texts[k],
+            position: textInside ? (horizontal ? "inside" : "inside") : horizontal ? "right" : "top",
+            color: textInside ? "#0f172a" : baseColor,
+            fontSize: num(asRecord(t.textfont).size) ?? 12,
+          };
+          if (!textInside) labelHeadroomAxes.add(horizontal ? `x:${xIdx}` : `y:${yIdx}`);
         }
         dataItems.push(item);
       }
@@ -645,7 +857,11 @@ export function plotlyToECharts(
         const err = asRecord(t[key]);
         if (Object.keys(err).length === 0) continue;
         if (err.array === undefined) continue; // scalar "value" form unsupported → skip
-        const errs = toNumberArray(err.array, `${key}.array`);
+        const hi = toNumberArray(err.array, `${key}.array`);
+        const lo =
+          err.arrayminus !== undefined
+            ? toNumberArray(err.arrayminus, `${key}.arrayminus`)
+            : [...hi];
         errorBars.push({
           gridIndex,
           xIdx,
@@ -653,13 +869,14 @@ export function plotlyToECharts(
           horizontal: key === "error_x",
           category: cat,
           center: vals,
-          err: errs,
+          errLo: lo,
+          errHi: hi,
           color,
         });
       }
     } else if (type === "histogram") {
       if (t.orientation === "h") fail("horizontal histogram unsupported");
-      const values = toNumberArray(t.x, "histogram.x");
+      const values = toNumberArray(t.x, "histogram.x").filter((v) => Number.isFinite(v));
       if (values.length === 0) fail("histogram without x data");
       const histnorm = typeof t.histnorm === "string" ? t.histnorm : "";
       if (histnorm !== "" && histnorm !== "probability density") {
@@ -681,15 +898,31 @@ export function plotlyToECharts(
       exactY.add(yIdx);
       yAdd(yIdx, 0);
     } else {
-      // heatmap
-      const xs = toNumberArray(t.x, "heatmap.x");
-      const ys = toNumberArray(t.y, "heatmap.y");
-      const zRaw = t.z;
-      if (!Array.isArray(zRaw) || zRaw.length === 0 || !Array.isArray(zRaw[0])) {
-        fail("heatmap.z is not a 2D array");
+      // heatmap (correlation/confusion matrices carry category labels)
+      const xsRaw = toValueArray(t.x, "heatmap.x");
+      const ysRaw = toValueArray(t.y, "heatmap.y");
+      let z: unknown[][];
+      if (Array.isArray(t.z) && t.z.length > 0 && Array.isArray(t.z[0])) {
+        z = t.z as unknown[][];
+      } else {
+        // typed-array serialization: flat bdata + explicit shape (plotly
+        // writes shape as a "rows, cols" string)
+        const rec = asRecord(t.z);
+        const shapeRaw = rec.shape;
+        const shape = Array.isArray(shapeRaw)
+          ? shapeRaw.map(Number)
+          : typeof shapeRaw === "string"
+            ? shapeRaw.split(",").map((s) => Number(s.trim()))
+            : [];
+        if (!("bdata" in rec) || shape.length !== 2 || shape.some((n) => !Number.isFinite(n))) {
+          fail("heatmap.z is not a 2D array");
+        }
+        const flat = decodeBdata(rec);
+        const [rows, cols] = shape;
+        if (flat.length !== rows * cols) fail("heatmap.z shape does not match bdata");
+        z = Array.from({ length: rows }, (_, j) => flat.slice(j * cols, (j + 1) * cols));
       }
-      const z = zRaw as unknown[][];
-      if (z.length !== ys.length || z.some((row) => !Array.isArray(row) || row.length !== xs.length)) {
+      if (z.length !== ysRaw.length || z.some((row) => !Array.isArray(row) || row.length !== xsRaw.length)) {
         fail("heatmap.z shape does not match x/y");
       }
       if (t.colorscale !== undefined && !Array.isArray(t.colorscale)) {
@@ -701,24 +934,82 @@ export function plotlyToECharts(
             return typeof s[1] === "string" ? s[1] : fail("unsupported colorscale stop");
           })
         : ["#2dd4bf", "#f472b6"];
+      const xInfoH = axisAt(true, xIdx);
+      const yInfoH = axisAt(false, yIdx);
+      const xCat = xsRaw.some((v) => typeof v === "string");
+      const yCat = ysRaw.some((v) => typeof v === "string");
+      if (xCat) xInfoH.type = "category";
+      if (yCat) yInfoH.type = "category";
       const items: unknown[] = [];
       let zMin = Infinity;
       let zMax = -Infinity;
-      for (let j = 0; j < ys.length; j++) {
-        for (let k = 0; k < xs.length; k++) {
-          const zv = num(z[j][k]);
+      for (let j = 0; j < ysRaw.length; j++) {
+        const yv = ysRaw[j];
+        for (let k = 0; k < xsRaw.length; k++) {
+          const xv = xsRaw[k];
+          const zRaw = z[j][k];
+          // holes (null / NaN cells) render as empty matrix slots
+          if (zRaw === null || zRaw === undefined || (typeof zRaw === "number" && !Number.isFinite(zRaw))) {
+            continue;
+          }
+          const zv = num(zRaw);
           if (zv === undefined) fail("heatmap.z holds a non-numeric value");
-          xAdd(xIdx, xs[k]);
-          yAdd(yIdx, ys[j]);
+          if (typeof xv === "string") registerCategory(xInfoH, xv.replace(BR_RE, "\n"));
+          else xAdd(xIdx, xv);
+          if (typeof yv === "string") registerCategory(yInfoH, yv.replace(BR_RE, "\n"));
+          else yAdd(yIdx, yv);
           zMin = Math.min(zMin, zv);
           zMax = Math.max(zMax, zv);
-          items.push({ value: [xs[k], ys[j], zv] });
+          items.push({
+            value: [
+              typeof xv === "string" ? xv.replace(BR_RE, "\n") : xv,
+              typeof yv === "string" ? yv.replace(BR_RE, "\n") : yv,
+              zv,
+            ],
+          });
         }
       }
       series.push({ type: "heatmap", name, gridIndex, xIdx, yIdx, data: items, z: 1 });
       heatmapVisual = { min: zMin, max: zMax, colors };
-      heatmapCount += 1;
     }
+  }
+
+  // --- confidence bands (plotly `fill: "tonexty"`): silent polygon between
+  // the flagged trace and the next one on the same grid ----------------------
+  for (let s = 0; s < series.length; s++) {
+    const draft = series[s];
+    if (draft.__bandToNext !== true) continue;
+    const fillRaw = draft.__bandFill;
+    const lower = series[s + 1];
+    delete draft.__bandToNext;
+    delete draft.__bandFill;
+    if (!lower || lower.gridIndex !== draft.gridIndex) continue;
+    if (draft.type !== "line" && draft.type !== "scatter") continue;
+    if (lower.type !== "line" && lower.type !== "scatter") continue;
+    const upperPts = (draft.data as Array<{ value: unknown[] }>).map((d) => d.value);
+    const lowerPts = (lower.data as Array<{ value: unknown[] }>).map((d) => d.value);
+    const fill = typeof fillRaw === "string" ? fillRaw : String((draft.lineStyle as Record<string, unknown> | undefined)?.color ?? "#38bdf8");
+    const bandOpacity = typeof fillRaw === "string" ? 1 : 0.22;
+    series.push({
+      type: "custom",
+      gridIndex: draft.gridIndex,
+      xIdx: draft.xIdx,
+      yIdx: draft.yIdx,
+      data: [{ value: 0 }],
+      silent: true,
+      z: 1,
+      renderItem: (_params: unknown, api: { coord: (v: unknown[]) => number[] }) => {
+        const pts = [
+          ...upperPts.map((p) => api.coord(p)),
+          ...[...lowerPts].reverse().map((p) => api.coord(p)),
+        ];
+        return {
+          type: "polygon",
+          shape: { points: pts },
+          style: { fill, opacity: bandOpacity },
+        };
+      },
+    } as SeriesDraft);
   }
 
   // --- histogram binning: shared edges per x-axis, like plotly's autobin ---
@@ -763,12 +1054,14 @@ export function plotlyToECharts(
   for (const plan of errorBars) {
     const items: unknown[] = [];
     for (let k = 0; k < plan.center.length; k++) {
-      const err = plan.err[Math.min(k, plan.err.length - 1)];
-      if (!Number.isFinite(plan.center[k]) || !Number.isFinite(err)) continue;
+      const kHi = Math.min(k, plan.errHi.length - 1);
+      const kLo = Math.min(k, plan.errLo.length - 1);
+      if (!Number.isFinite(plan.center[k])) continue;
+      if (!Number.isFinite(plan.errHi[kHi]) && !Number.isFinite(plan.errLo[kLo])) continue;
       items.push({
         value: plan.horizontal
-          ? [plan.center[k], plan.category[Math.min(k, plan.category.length - 1)], err]
-          : [plan.category[Math.min(k, plan.category.length - 1)], plan.center[k], err],
+          ? [plan.center[k], plan.category[Math.min(k, plan.category.length - 1)], plan.errLo[kLo], plan.errHi[kHi]]
+          : [plan.category[Math.min(k, plan.category.length - 1)], plan.center[k], plan.errLo[kLo], plan.errHi[kHi]],
       });
     }
     if (items.length === 0) continue;
@@ -786,7 +1079,7 @@ export function plotlyToECharts(
         if (plan.horizontal) {
           const mid = api.coord([api.value(0), api.value(1)]);
           const lo = api.coord([api.value(0) - api.value(2), api.value(1)]);
-          const hi = api.coord([api.value(0) + api.value(2), api.value(1)]);
+          const hi = api.coord([api.value(0) + api.value(3), api.value(1)]);
           return {
             type: "group",
             children: [
@@ -798,7 +1091,7 @@ export function plotlyToECharts(
         }
         const mid = api.coord([api.value(0), api.value(1)]);
         const lo = api.coord([api.value(0), api.value(1) - api.value(2)]);
-        const hi = api.coord([api.value(0), api.value(1) + api.value(2)]);
+        const hi = api.coord([api.value(0), api.value(1) + api.value(3)]);
         return {
           type: "group",
           children: [
@@ -813,7 +1106,8 @@ export function plotlyToECharts(
 
   // --- annotations ------------------------------------------------------------
   const annotations = Array.isArray(layout.annotations) ? layout.annotations : [];
-  const subplotTitles: Record<string, unknown>[] = [];
+  // subplot headers, keyed by grid; positioned after the margin bands exist
+  const subTitleByGrid = new Map<number, { text: string; color: string; fontSize: number }>();
   const annPointsByGrid = new Map<number, AnnotationPoint[]>();
   for (const raw of annotations) {
     const a = asRecord(raw);
@@ -827,24 +1121,49 @@ export function plotlyToECharts(
     const yref = typeof a.yref === "string" ? a.yref : "y";
     const xanchor = typeof a.xanchor === "string" ? a.xanchor : "center";
     if (xref === "paper" && yref === "paper" && a.showarrow === false) {
-      // subplot header positioned in paper (domain) coordinates, just inside
-      // the top of its grid — the way plotly anchors y=1, yanchor=bottom
-      subplotTitles.push({
+      // subplot header: map the paper point onto the grid whose domain
+      // rect contains it (stacked subplots share x domains, so the y
+      // coordinate is the discriminator)
+      const ax = num(a.x) ?? 0.5;
+      const ay = num(a.y) ?? 1;
+      let bestGrid = 0;
+      let bestDist = Infinity;
+      for (let g = 0; g < grids.length; g++) {
+        const gd = grids[g];
+        const cx = (gd.xDomain[0] + gd.xDomain[1]) / 2;
+        const cy = (gd.yDomain[0] + gd.yDomain[1]) / 2;
+        const inside =
+          ax >= gd.xDomain[0] - 0.02 &&
+          ax <= gd.xDomain[1] + 0.02 &&
+          1 - ay >= gd.yDomain[0] - 0.05 &&
+          1 - ay <= gd.yDomain[1] + 0.05;
+        const d = Math.abs(cx - ax) + Math.abs(cy - (1 - ay));
+        if (inside) {
+          bestGrid = g;
+          bestDist = -1;
+          break;
+        }
+        if (d < bestDist) {
+          bestDist = d;
+          bestGrid = g;
+        }
+      }
+      void bestDist;
+      subTitleByGrid.set(bestGrid, {
         text,
-        left: Math.round((margin.l + (num(a.x) ?? 0.5) * innerW) * scale),
-        top: Math.round((margin.t + (1 - (num(a.y) ?? 1)) * innerH) * scale + 4),
-        textStyle: {
-          color: chromeColor(font.color, palette.textColor, theme),
-          fontSize,
-          fontWeight: "normal",
-        },
+        color: chromeColor(font.color, palette.textColor, theme),
+        fontSize,
       });
       continue;
     }
-    const xIdx = xref.startsWith("x") ? axisRefIndex(xref, "x") : null;
+    const xIdx = xref.startsWith("x") && xref !== "paper" ? axisRefIndex(xref, "x") : null;
     const yIdx = yref.startsWith("y") && yref !== "paper" ? axisRefIndex(yref, "y") : null;
-    const yIsDomain = yref.endsWith(" domain");
-    const xVal = num(a.x);
+    // "y domain" fractions and plain "paper" heights both resolve against the y extent
+    const yIsFraction = yref.endsWith(" domain") || yref === "paper";
+    let xVal = num(a.x);
+    if (typeof a.x === "string" && xIdx !== null && axisAt(true, xIdx).type === "time") {
+      xVal = parsePlotlyDate(a.x);
+    }
     if (xIdx === null || xVal === undefined) continue;
     const gridIndex = gridIndexFor(xIdx, yIdx ?? xIdx);
     xAdd(xIdx, xVal);
@@ -856,7 +1175,7 @@ export function plotlyToECharts(
       fontSize,
       position: xanchor === "right" ? "right" : "top",
     };
-    if (yIsDomain) {
+    if (yIsFraction) {
       point.yFraction = { index: yIdx ?? 0, frac: num(a.y) ?? 1 };
     } else {
       const yVal = num(a.y);
@@ -871,8 +1190,65 @@ export function plotlyToECharts(
   // --- shapes -------------------------------------------------------------------
   const shapes = Array.isArray(layout.shapes) ? layout.shapes : [];
   const shapeLines: ShapeLine[] = [];
+  const shapeRects: RectArea[] = [];
+  // shapes tolerate paper refs: a vertical line's y ref and a horizontal
+  // line's x ref don't matter (markLine spans the whole grid anyway)
+  const shapeAxisRef = (v: unknown, axis: "x" | "y"): number =>
+    typeof v === "string" && v === "paper" ? 0 : axisRefIndex(v, axis);
+  // date-string bounds on a time axis → epoch ms
+  const shapeValue = (v: unknown, idx: number, isX: boolean): number | undefined => {
+    if (typeof v === "string") {
+      const info = axisAt(isX, idx);
+      if (info.type === "time") return parsePlotlyDate(v);
+      return undefined;
+    }
+    return num(v);
+  };
   for (const raw of shapes) {
     const s = asRecord(raw);
+    const xIdx = shapeAxisRef(s.xref, "x");
+    const yIdx = shapeAxisRef(s.yref, "y");
+    const gridIndex = gridIndexFor(xIdx, yIdx);
+    const xDomainRef = typeof s.xref === "string" && s.xref.endsWith(" domain");
+    const yDomainRef = typeof s.yref === "string" && s.yref.endsWith(" domain");
+    if (s.type === "rect") {
+      // highlight region (e.g. anomaly windows, CI bands): becomes markArea
+      const fillRaw = typeof s.fillcolor === "string" ? s.fillcolor : "rgba(148,163,184,0.2)";
+      const opacity = num(s.opacity) ?? 1;
+      const xExt = xExtents.get(xIdx);
+      const yExt = yExtents.get(yIdx);
+      const resolve = (
+        v: number | undefined,
+        ext: { min: number; max: number } | null | undefined,
+        frac: boolean,
+      ) => {
+        if (v === undefined) return undefined;
+        if (!frac) return v;
+        const e = ext ?? { min: 0, max: 1 };
+        return e.min + v * (e.max - e.min);
+      };
+      const rx0 = resolve(shapeValue(s.x0, xIdx, true), xExt, xDomainRef);
+      const rx1 = resolve(shapeValue(s.x1, xIdx, true), xExt, xDomainRef);
+      const ry0 = resolve(shapeValue(s.y0, yIdx, false), yExt, yDomainRef);
+      const ry1 = resolve(shapeValue(s.y1, yIdx, false), yExt, yDomainRef);
+      if (rx0 === undefined || rx1 === undefined || ry0 === undefined || ry1 === undefined) {
+        fail("unsupported rect shape bounds");
+      }
+      shapeRects.push({
+        gridIndex,
+        x0: Math.min(rx0, rx1),
+        x1: Math.max(rx0, rx1),
+        y0: Math.min(ry0, ry1),
+        y1: Math.max(ry0, ry1),
+        color: remapColor(fillRaw, theme),
+        opacity,
+      });
+      xAdd(xIdx, rx0);
+      xAdd(xIdx, rx1);
+      yAdd(yIdx, ry0);
+      yAdd(yIdx, ry1);
+      continue;
+    }
     if (s.type !== "line") fail(`unsupported shape type "${String(s.type)}"`);
     const lineStyle = asRecord(s.line);
     const color = remapColor(
@@ -880,13 +1256,10 @@ export function plotlyToECharts(
       theme,
     );
     const width = num(lineStyle.width) ?? 2;
-    const xIdx = axisRefIndex(s.xref, "x");
-    const yIdx = axisRefIndex(s.yref, "y");
-    const gridIndex = gridIndexFor(xIdx, yIdx);
-    const x0 = num(s.x0);
-    const x1 = num(s.x1);
-    const y0 = num(s.y0);
-    const y1 = num(s.y1);
+    const x0 = shapeValue(s.x0, xIdx, true);
+    const x1 = shapeValue(s.x1, xIdx, true);
+    const y0 = shapeValue(s.y0, yIdx, false);
+    const y1 = shapeValue(s.y1, yIdx, false);
     if (x0 !== undefined && x0 === x1) {
       shapeLines.push({ gridIndex, vertical: true, value: x0, color, width });
       xAdd(xIdx, x0);
@@ -903,52 +1276,229 @@ export function plotlyToECharts(
   const yInfos = [...axisByKey.values()].filter((i) => !i.isX).sort((a, b) => a.index - b.index);
   xInfos.forEach((info, i) => {
     info.arrayIndex = i;
-    info.gridIndex = gridIndexFor(info.index, info.index);
   });
   yInfos.forEach((info, i) => {
     info.arrayIndex = i;
-    info.gridIndex = gridIndexFor(info.index, info.index);
   });
+  // explicit ticktext/tickvals define the category labels (lollipop ranks):
+  // integer positions 0..n-1 index into the label list
+  for (const info of [...xInfos, ...yInfos]) {
+    const tickText = info.raw.ticktext;
+    const tickVals = info.raw.tickvals;
+    const indexed =
+      Array.isArray(tickText) &&
+      tickText.length > 0 &&
+      tickText.every((v) => typeof v === "string") &&
+      Array.isArray(tickVals) &&
+      tickVals.length === tickText.length &&
+      tickVals.every((v, i) => num(v) === i);
+    if (indexed) {
+      info.type = "category";
+      info.categories = tickText.map((v) => String(v).replace(BR_RE, "\n"));
+    }
+  }
+  // heatmap cells need category axes in echarts: register every distinct
+  // coordinate as a category (stringified) so value pairs resolve by label
+  for (const draft of series) {
+    if (draft.type !== "heatmap") continue;
+    const xh = axisAt(true, draft.xIdx);
+    const yh = axisAt(false, draft.yIdx);
+    xh.type = "category";
+    yh.type = "category";
+    for (const item of draft.data as Array<{ value: unknown[] }>) {
+      const [xv, yv] = item.value as [unknown, unknown];
+      const xs = String(xv);
+      const ys = String(yv);
+      if (!xh.categories.includes(xs)) xh.categories.push(xs);
+      if (!yh.categories.includes(ys)) yh.categories.push(ys);
+      item.value = [xs, ys, item.value[2]];
+    }
+  }
+  const axisTitleText = (info: AxisInfo): string | null => {
+    const t = info.raw.title;
+    if (typeof t === "string") return t;
+    const inner = asRecord(t).text;
+    return typeof inner === "string" ? inner : null;
+  };
 
-  const buildAxis = (info: AxisInfo): Record<string, unknown> => {
+  // --- axis ↔ grid wiring ---------------------------------------------------------
+  // ECharts requires a series' xAxis and yAxis to belong to the SAME grid, so
+  // each axis joins the first in-use grid carrying its index (the diagonal
+  // pairings plotly's anchor model implies are dropped when unused).
+  const usedGrids = new Set<number>();
+  for (const d of series) if (d.gridIndex !== undefined) usedGrids.add(d.gridIndex);
+  for (const g of annPointsByGrid.keys()) usedGrids.add(g);
+  for (const s of shapeLines) usedGrids.add(s.gridIndex);
+  for (const r of shapeRects) usedGrids.add(r.gridIndex);
+  for (const g of subTitleByGrid.keys()) usedGrids.add(g);
+  for (const info of xInfos) {
+    info.gridIndex = grids.findIndex((g, gi) => usedGrids.has(gi) && g.xIndex === info.index);
+  }
+  for (const info of yInfos) {
+    info.gridIndex = grids.findIndex((g, gi) => usedGrids.has(gi) && g.yIndex === info.index);
+  }
+  // drop unused grids, remap indices, and build one axis instance PER GRID:
+  // echarts pairs axes with grids 1:1, so a plotly axis shared by (or paired
+  // across) several grids becomes one instance per grid
+  const remap = new Map<number, number>();
+  const keptGrids: GridInfo[] = [];
+  grids.forEach((g, gi) => {
+    if (usedGrids.has(gi)) {
+      remap.set(gi, keptGrids.length);
+      keptGrids.push(g);
+    }
+  });
+  grids.length = 0;
+  grids.push(...keptGrids);
+  const remapGrid = (gi: number) => (gi === -1 ? -1 : (remap.get(gi) ?? 0));
+  for (const d of series) if (d.gridIndex !== undefined) d.gridIndex = remapGrid(d.gridIndex);
+  {
+    const rebuilt = new Map<number, AnnotationPoint[]>();
+    for (const [g, pts] of annPointsByGrid) rebuilt.set(remapGrid(g), pts);
+    annPointsByGrid.clear();
+    for (const [g, pts] of rebuilt) annPointsByGrid.set(g, pts);
+    const subRebuilt = new Map<number, { text: string; color: string; fontSize: number }>();
+    for (const [g, t] of subTitleByGrid) subRebuilt.set(remapGrid(g), t);
+    subTitleByGrid.clear();
+    for (const [g, t] of subRebuilt) subTitleByGrid.set(g, t);
+    for (const s of shapeLines) s.gridIndex = remapGrid(s.gridIndex);
+    for (const r of shapeRects) r.gridIndex = remapGrid(r.gridIndex);
+  }
+  const xInstances = grids.map((g) => ({ info: axisAt(true, g.xIndex), gridIndex: grids.indexOf(g) }));
+  const yInstances = grids.map((g) => ({ info: axisAt(false, g.yIndex), gridIndex: grids.indexOf(g) }));
+
+  // --- margin bands ---------------------------------------------------------------
+  // Font sizes don't scale with the container, so the paper margins (which the
+  // authored figures size for a 1000px design) are clamped to px minimums:
+  // titles/legends/rotated labels must never be squeezed out or overlap the
+  // plot. top: global title block + subplot-header band; bottom: rotated
+  // category labels + axis names; left/right: tick widths, legend, colorbar.
+  const titleParts = (() => {
+    const t = asRecord(layout.title);
+    const text = typeof t.text === "string" ? t.text : null;
+    if (text === null) return null;
+    const parts = text.split(BR_RE).map(stripTags);
+    const titleFont = asRecord(t.font);
+    const subMatch = INLINE_COLOR_RE.exec(text);
+    const subColorRaw = subMatch ? `#${subMatch[1]}` : SUBTEXT_COLOR_DARK;
+    const size = num(titleFont.size) ?? 16;
+    const subSize = Math.min(13, size - 3.5);
+    // word-wrap the subtitle so it never clips at the card edge
+    const maxChars = Math.max(14, Math.floor((width * 0.92) / (subSize * 0.6)));
+    const rawSub = parts.slice(1).join(" ");
+    const lines: string[] = [];
+    let cur = "";
+    for (const word of rawSub.split(/\s+/)) {
+      if ((cur + " " + word).trim().length > maxChars) {
+        if (cur) lines.push(cur.trim());
+        cur = word;
+      } else {
+        cur = (cur + " " + word).trim();
+      }
+    }
+    if (cur) lines.push(cur.trim());
+    const subtext = lines.join("\n");
+    return {
+      text: parts[0],
+      subtext,
+      subLines: lines.length,
+      color: chromeColor(titleFont.color, palette.textColor, theme),
+      size,
+      subSize,
+      subColor:
+        theme === "light"
+          ? (LIGHT_TRACE_COLOR_MAP[subColorRaw.toLowerCase()] ?? SUBTEXT_COLOR_LIGHT)
+          : subColorRaw,
+    };
+  })();
+  const rawLegend = asRecord(layout.legend);
+  const showLegend = (layout.showlegend ?? tpl.showlegend ?? true) !== false && namedSeries.length > 0;
+  const legendOrient = rawLegend.orientation === "h" ? "horizontal" : "vertical";
+  const hasMainTitle = titleParts !== null;
+  const mainTitleBlock = hasMainTitle
+    ? titleParts.size + (titleParts.subtext ? (titleParts.subLines * (titleParts.subSize + 3)) : 0) + 8
+    : 0;
+  const subTitleBand =
+    subTitleByGrid.size > 0 ? Math.max(...[...subTitleByGrid.values()].map((s) => s.fontSize)) + 8 : 0;
+  const anyCategoryX = xInfos.some((i) => i.type === "category");
+  const anyCategoryY = yInfos.some((i) => i.type === "category");
+  const longestYCat = yInfos.reduce(
+    (m, i) => (i.type === "category" ? i.categories.reduce((a, c) => Math.max(a, c.length), m) : m),
+    0,
+  );
+  const anyXName = xInfos.some((i) => axisTitleText(i) !== null);
+  const anyYName = yInfos.some((i) => axisTitleText(i) !== null);
+  const topBand = Math.max(
+    margin.t * scale,
+    hasMainTitle || subTitleBand > 0 ? mainTitleBlock + subTitleBand + 8 : 0,
+  );
+  const bottomBand = Math.max(margin.b * scale, anyCategoryX ? 46 + (anyXName ? 14 : 0) : 26);
+  // horizontal y category labels (candidate names) need real width
+  const yCatBand = anyCategoryY
+    ? Math.min(Math.round(longestYCat * 5.8) + 14 + (anyYName ? 18 : 0), Math.round(width * 0.44))
+    : 0;
+  const leftBand = Math.max(margin.l * scale, 40 + (anyYName ? 16 : 0), yCatBand);
+  // the right band must actually fit the longest legend entry (~7.3px per
+  // character at the authored 12-13px font), capped so mobile keeps plot room
+  const longestName = namedSeries.reduce((m, n) => Math.max(m, n.length), 0);
+  const legendBand =
+    showLegend && legendOrient === "vertical"
+      ? Math.min(Math.max(122, longestName * 7.8 + 46), Math.round(width * 0.46))
+      : 0;
+  const rightBand = Math.max(margin.r * scale, legendBand, heatmapVisual ? 60 : 0);
+  const innerWpx = Math.max(40, width - leftBand - rightBand);
+  const innerHpx = Math.max(40, height - topBand - bottomBand);
+  for (const g of grids) {
+    g.left = leftBand + g.xDomain[0] * innerWpx;
+    g.top = topBand + (1 - g.yDomain[1]) * innerHpx;
+    g.width = (g.xDomain[1] - g.xDomain[0]) * innerWpx;
+    g.height = (g.yDomain[1] - g.yDomain[0]) * innerHpx;
+  }
+
+  const buildAxis = (info: AxisInfo, gridIndex: number, overlay: "none" | "right" | "top"): Record<string, unknown> => {
     const extents = info.isX ? xExtents : yExtents;
     const exactSet = info.isX ? exactX : exactY;
     const ext = extents.get(info.index) ?? null;
     const rawTick = asRecord(info.raw.tickfont);
     const titleFont = asRecord(asRecord(info.raw.title).font);
-    const titleText = (() => {
-      const t = info.raw.title;
-      if (typeof t === "string") return t;
-      const inner = asRecord(t).text;
-      return typeof inner === "string" ? inner : null;
-    })();
+    const titleText = axisTitleText(info);
     const axisLabel: Record<string, unknown> = {
       color: chromeColor(rawTick.color, palette.textColor, theme),
       fontSize: num(rawTick.size) ?? fontSize - 2,
     };
+    if (info.raw.showticklabels === false) axisLabel.show = false;
     if (info.type === "category") {
-      // long slice labels (e.g. "contract=month-to-month") get angled +
-      // downsized so they fit their subplot slot instead of colliding with
-      // the neighbor
-      axisLabel.rotate = 30;
-      axisLabel.fontSize = 10;
-      axisLabel.margin = 6;
+      if (info.isX) {
+        // long slice labels get angled + downsized so they fit their subplot
+        // slot instead of colliding with the neighbor
+        axisLabel.rotate = 30;
+        axisLabel.fontSize = 10;
+        axisLabel.margin = 6;
+      } else {
+        axisLabel.fontSize = 10;
+      }
     }
     const opt: Record<string, unknown> = {
       type: info.type,
-      gridIndex: info.gridIndex,
+      gridIndex,
       axisLine: { lineStyle: { color: chromeColor(info.raw.linecolor, palette.axisLineColor, theme) } },
       axisTick: { show: false },
+      position: overlay === "right" ? "right" : overlay === "top" ? "top" : undefined,
       splitLine: {
-        show: true,
+        show: overlay === "none",
         lineStyle: { color: chromeColor(info.raw.gridcolor, palette.gridColor, theme) },
       },
       axisLabel,
     };
-    if (info.type === "value" && ext && exactSet.has(info.index) && ext.min === 0) {
+    if (info.type === "time" || info.type === "log") {
+      // time/log ranges must come from the data alone (zero is meaningless)
+      opt.scale = true;
+    }
+    if (info.type === "value" && info.raw.type !== "log" && ext && exactSet.has(info.index) && ext.min === 0) {
       // bar/histogram baselines must sit at zero; the open end is left to
       // echarts' autoscale so its ticks land on nice numbers (plotly parity:
-      // setting an explicit data-derived max makes the raw extent a tick)
+      // setting an explicit data-derived max makes the raw extent a tick).
+      // log axes can't pin zero and compute their own range.
       opt.min = 0;
     }
     if (info.type === "category") {
@@ -957,13 +1507,27 @@ export function plotlyToECharts(
     if (titleText) {
       opt.name = titleText;
       opt.nameLocation = "middle";
-      opt.nameGap = info.isX ? 30 : 42;
+      opt.nameGap = info.isX ? (info.type === "category" ? 44 : 30) : 42;
       opt.nameTextStyle = { color: chromeColor(titleFont.color, palette.textColor, theme) };
     }
     return opt;
   };
-  for (const info of xInfos) info.built = buildAxis(info);
-  for (const info of yInfos) info.built = buildAxis(info);
+  // stacked subplots share one axis each; OVERLAID subplots (identical
+  // domain rect) are plotly's secondary-axis idiom — those instances move to
+  // the far side and drop their gridlines
+  const sameRect = (a: GridInfo, b: GridInfo) =>
+    Math.abs(a.xDomain[0] - b.xDomain[0]) < 0.01 &&
+    Math.abs(a.xDomain[1] - b.xDomain[1]) < 0.01 &&
+    Math.abs(a.yDomain[0] - b.yDomain[0]) < 0.01 &&
+    Math.abs(a.yDomain[1] - b.yDomain[1]) < 0.01;
+  const overlayOf = (g: number): "none" | "right" | "top" => {
+    const gi = grids[g];
+    const prior = grids.findIndex((o, oi) => oi < g && sameRect(gi, o));
+    if (prior === -1) return "none";
+    return gi.xIndex === grids[prior].xIndex ? "right" : "top";
+  };
+  const xAxisOptions = xInstances.map((inst, i) => buildAxis(inst.info, inst.gridIndex, overlayOf(i)));
+  const yAxisOptions = yInstances.map((inst, i) => buildAxis(inst.info, inst.gridIndex, overlayOf(i)));
 
   // resolve axis-fraction annotation y values against the final y extents
   for (const points of annPointsByGrid.values()) {
@@ -975,8 +1539,25 @@ export function plotlyToECharts(
     }
   }
 
+  // --- outside bar value labels must fit their slot (mobile) --------------------
+  for (const draft of series) {
+    if (draft.type !== "bar" || !Array.isArray(draft.data) || draft.data.length === 0) continue;
+    const g = grids[draft.gridIndex ?? 0];
+    if (!g) continue;
+    const n = draft.data.length;
+    for (const item of draft.data as Array<{ label?: { position?: string; show?: boolean; formatter?: string; fontSize?: number } }>) {
+      if (!item.label || item.label.show === false || !item.label.formatter) continue;
+      const estW = item.label.formatter.length * (item.label.fontSize ?? 12) * 0.62;
+      if (item.label.position === "right") {
+        if (g.height / n < estW * 0.92) item.label.show = false;
+      } else if (item.label.position === "top") {
+        if (g.width / n < estW * 0.92) item.label.show = false;
+      }
+    }
+  }
+
   // --- data-unit bar widths → px via the data span of the x-axis -------------
-  const plotWidthOf = (gridIndex: number): number => grids[gridIndex]?.width ?? innerW * scale;
+  const plotWidthOf = (gridIndex: number): number => grids[gridIndex]?.width ?? innerWpx;
   for (const draft of series) {
     const binWidth = draft.__binWidth;
     const barWidthData = draft.__barWidthData;
@@ -1000,7 +1581,8 @@ export function plotlyToECharts(
   // ECharts clips markers/labels/markLines sitting exactly on the autoscale
   // boundary (the annotation at x=0 IS the axis max), so each edge annotation
   // contributes a label-less invisible nudge point that pushes the axis ~7%
-  // past it — the breathing room plotly's autorange margin provides.
+  // past it — the breathing room plotly's autorange margin provides. Outside
+  // bar value labels get the same headroom above the tallest bar.
   const nudgePast = (ext: { min: number; max: number } | null | undefined, v: number): number | null => {
     if (!ext) return null;
     const span = ext.max - ext.min;
@@ -1010,11 +1592,25 @@ export function plotlyToECharts(
     const nearEdge = dir > 0 ? v >= ext.max - span * 0.02 : v <= ext.min + span * 0.02;
     return nearEdge ? v + dir * span * 0.07 : null;
   };
+  // grids that need bar-label headroom: axis index → the grid that owns it
+  const headroomByGrid = new Map<number, { isX: boolean; value: number }>();
+  for (const key of labelHeadroomAxes) {
+    const [axis, idxStr] = key.split(":");
+    const idx = Number(idxStr);
+    const ext = (axis === "x" ? xExtents : yExtents).get(idx);
+    if (!ext) continue;
+    const span = ext.max - ext.min || Math.abs(ext.max) || 1;
+    const value = ext.max + span * 0.16;
+    const gridIndex = grids.findIndex((g) => (axis === "x" ? g.xIndex : g.yIndex) === idx);
+    if (gridIndex >= 0) headroomByGrid.set(gridIndex, { isX: axis === "x", value });
+  }
   for (let g = 0; g < grids.length; g++) {
     const points = annPointsByGrid.get(g) ?? [];
     const lines = shapeLines.filter((s) => s.gridIndex === g);
-    if (points.length === 0 && lines.length === 0) continue;
-    const layer = annotationLayer(grids[g].xIndex, grids[g].yIndex, points, lines);
+    const rects = shapeRects.filter((s) => s.gridIndex === g);
+    const headroom = headroomByGrid.get(g);
+    if (points.length === 0 && lines.length === 0 && rects.length === 0 && !headroom) continue;
+    const layer = annotationLayer(grids[g].xIndex, grids[g].yIndex, points, lines, rects);
     const xExt = xExtents.get(grids[g].xIndex);
     const yExt = yExtents.get(grids[g].yIndex);
     const extras: unknown[] = [];
@@ -1032,57 +1628,68 @@ export function plotlyToECharts(
       // nudging the spanning axis would distort the bar scale
       pushNudge(s.vertical ? s.value : null, s.vertical ? null : s.value);
     }
+    if (headroom) pushNudge(headroom.isX ? headroom.value : null, headroom.isX ? null : headroom.value);
     layer.data = [...layer.data, ...extras];
     series.push(layer);
   }
 
   // --- titles -------------------------------------------------------------------------
-  const titleParts = (() => {
-    const t = asRecord(layout.title);
-    const text = typeof t.text === "string" ? t.text : null;
-    if (text === null) return null;
-    const parts = text.split(BR_RE).map(stripTags);
-    const titleFont = asRecord(t.font);
-    const subMatch = INLINE_COLOR_RE.exec(text);
-    const subColorRaw = subMatch ? `#${subMatch[1]}` : SUBTEXT_COLOR_DARK;
-    return {
-      text: parts[0],
-      subtext: parts.slice(1).join("\n"),
-      color: chromeColor(titleFont.color, palette.textColor, theme),
-      size: num(titleFont.size) ?? 16,
-      subColor:
-        theme === "light"
-          ? (LIGHT_TRACE_COLOR_MAP[subColorRaw.toLowerCase()] ?? SUBTEXT_COLOR_LIGHT)
-          : subColorRaw,
-    };
-  })();
+  // Main title centered on the canvas, occupying its own band; each subplot
+  // header centered over its grid rect, sitting in the reserved band above
+  // it so a series at its max can never touch it.
   const titles: Record<string, unknown>[] = [];
   if (titleParts) {
+    // shrink an over-long title block so it never clips at the card edge
+    const estW = Math.max(
+      titleParts.text.length * titleParts.size * 0.6,
+      titleParts.subtext.length * titleParts.subSize * 0.6,
+    );
+    const fit = estW > width * 0.94 ? (width * 0.94) / estW : 1;
     titles.push({
       text: titleParts.text,
       subtext: titleParts.subtext,
-      left: "center",
-      top: 6,
-      textStyle: { color: titleParts.color, fontSize: titleParts.size, fontWeight: "normal" },
-      subtextStyle: { color: titleParts.subColor, fontSize: Math.min(13, titleParts.size - 3.5) },
+      left: Math.round(width / 2),
+      top: Math.max(4, Math.round((topBand - mainTitleBlock - subTitleBand) / 2)),
+      textAlign: "center",
+      subtextAlign: "center",
+      textStyle: {
+        color: titleParts.color,
+        fontSize: Math.max(11, Math.round(titleParts.size * fit * 10) / 10),
+        fontWeight: "normal",
+      },
+      subtextStyle: {
+        color: titleParts.subColor,
+        fontSize: Math.max(9, Math.round(titleParts.subSize * fit * 10) / 10),
+      },
     });
   }
-  titles.push(...subplotTitles);
+  for (const [g, sub] of subTitleByGrid) {
+    const grid = grids[g];
+    if (!grid) continue;
+    titles.push({
+      text: sub.text,
+      left: Math.round(grid.left + grid.width / 2),
+      top: Math.round(grid.top - sub.fontSize - 7),
+      textAlign: "center",
+      textStyle: { color: sub.color, fontSize: sub.fontSize, fontWeight: "normal" },
+    });
+  }
 
   // --- legend ---------------------------------------------------------------------------
-  const rawLegend = asRecord(layout.legend);
-  const showLegend = (layout.showlegend ?? tpl.showlegend ?? true) !== false;
   const legendFont = asRecord(rawLegend.font);
   let legend: Record<string, unknown> | undefined;
-  if (showLegend && namedSeries.length > 0) {
-    const lx = num(rawLegend.x) ?? 1.02;
+  if (showLegend) {
     const ly = num(rawLegend.y) ?? 1;
+    const yanchor = typeof rawLegend.yanchor === "string" ? rawLegend.yanchor : "top";
+    const legendH = namedSeries.length * 21 + 8;
+    const top =
+      topBand + (1 - ly) * innerHpx - (yanchor === "middle" ? legendH / 2 : yanchor === "bottom" ? legendH : 0);
     legend = {
       show: true,
-      orient: rawLegend.orientation === "h" ? "horizontal" : "vertical",
+      orient: legendOrient,
       data: namedSeries,
-      left: Math.round((margin.l + lx * innerW) * scale),
-      top: Math.round((margin.t + (1 - ly) * innerH) * scale),
+      left: Math.round(width - rightBand + 6),
+      top: Math.round(Math.max(topBand, top)),
       textStyle: {
         color: chromeColor(legendFont.color, palette.textColor, theme),
         fontSize: num(legendFont.size) ?? 12,
@@ -1094,13 +1701,19 @@ export function plotlyToECharts(
   }
 
   // --- series axis indices + assemble ------------------------------------------------------
-  const xArrayIndex = (idx: number) => xInfos.find((i) => i.index === idx)?.arrayIndex ?? 0;
-  const yArrayIndex = (idx: number) => yInfos.find((i) => i.index === idx)?.arrayIndex ?? 0;
   for (const draft of series) {
-    draft.xAxisIndex = xArrayIndex(draft.xIdx);
-    draft.yAxisIndex = yArrayIndex(draft.yIdx);
+    if (draft.type === "funnel") continue; // not cartesian
+    draft.xAxisIndex = Math.max(
+      0,
+      xInstances.findIndex((inst) => inst.gridIndex === draft.gridIndex),
+    );
+    draft.yAxisIndex = Math.max(
+      0,
+      yInstances.findIndex((inst) => inst.gridIndex === draft.gridIndex),
+    );
   }
   const dataSeries = series.filter((s) => !s.silent);
+  const cartesianSeries = dataSeries.filter((s) => s.type !== "funnel");
   const option: Record<string, unknown> = {
     backgroundColor: "rgba(0,0,0,0)",
     textStyle: { fontFamily, color: baseColor, fontSize },
@@ -1112,12 +1725,12 @@ export function plotlyToECharts(
       height: Math.round(g.height),
       containLabel: false,
     })),
-    xAxis: xInfos.map((i) => i.built),
-    yAxis: yInfos.map((i) => i.built),
+    xAxis: xAxisOptions,
+    yAxis: yAxisOptions,
     series,
     tooltip: {
       confine: true,
-      trigger: heatmapCount > 0 && dataSeries.length - heatmapCount === 0 ? "item" : "axis",
+      trigger: cartesianSeries.length === 0 ? "item" : "axis",
       backgroundColor: HOVER_BG,
       borderColor: HOVER_BORDER,
       textStyle: { color: HOVER_TEXT, fontSize: 12, fontFamily },
@@ -1130,9 +1743,10 @@ export function plotlyToECharts(
       type: "continuous",
       min: heatmapVisual.min,
       max: heatmapVisual.max,
-      seriesIndex: series.findIndex((s) => s.type === "heatmap"),
+      // every cartesian heatmap series draws its colors from the visualMap
+      seriesIndex: series.map((s, i) => (s.type === "heatmap" ? i : -1)).filter((i) => i !== -1),
       orient: "vertical",
-      right: Math.round(margin.r * scale * 0.35),
+      right: 6,
       top: "middle",
       calculable: false,
       inRange: { color: heatmapVisual.colors },

@@ -37,12 +37,14 @@ function loadECharts() {
       charts.ScatterChart,
       charts.HeatmapChart,
       charts.CustomChart,
+      charts.FunnelChart,
       components.GridComponent,
       components.TooltipComponent,
       components.LegendComponent,
       components.VisualMapComponent,
       components.TitleComponent,
       components.MarkLineComponent,
+      components.MarkAreaComponent,
       renderers.SVGRenderer,
     ]);
     return { init: echarts.init as never };

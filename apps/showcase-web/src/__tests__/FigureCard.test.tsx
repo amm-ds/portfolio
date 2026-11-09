@@ -27,6 +27,7 @@ vi.mock("echarts/charts", () => ({
   ScatterChart: {},
   HeatmapChart: {},
   CustomChart: {},
+  FunnelChart: {},
 }));
 
 vi.mock("echarts/components", () => ({
@@ -36,6 +37,7 @@ vi.mock("echarts/components", () => ({
   VisualMapComponent: {},
   TitleComponent: {},
   MarkLineComponent: {},
+  MarkAreaComponent: {},
 }));
 
 vi.mock("echarts/renderers", () => ({
@@ -69,8 +71,8 @@ describe("FigureCard", () => {
   it("renders one container with the chart and a commentary band inside it", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } }),
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } })),
       ),
     );
     render(
@@ -80,7 +82,7 @@ describe("FigureCard", () => {
         caption="Retrieval recall@5 reaches 0.83 once claims are verified."
       />,
     );
-    await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
     // a single .figure-card holds both the chart and the band — one tile
     const cards = document.querySelectorAll(".figure-card");
     expect(cards).toHaveLength(1);
@@ -99,7 +101,9 @@ describe("FigureCard", () => {
   it("shows the labeled skeleton inside the card until the plot renders", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } })),
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(jsonResponse({ data: [{ type: "bar" }], layout: { height: 560 } })),
+      ),
     );
     render(
       <FigureCard
@@ -113,7 +117,7 @@ describe("FigureCard", () => {
     const skeleton = within(card).getByTestId("figure-skeleton");
     expect(skeleton).toHaveTextContent("> wape_horizon");
     expect(skeleton).toHaveTextContent("rendering figure…");
-    await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(within(card).queryByTestId("figure-skeleton")).toBeNull());
     expect(card.querySelector(".plotly-host")).not.toBeNull();
   });
@@ -147,7 +151,7 @@ describe("FigureCard", () => {
     expect(band.querySelector(".figure-id")!.textContent).toBe("fig :: pr_curve");
   });
 
-  it("routes the churn pilot project through EChartsFigure and others through PlotlyFigure", async () => {
+  it("routes every project through EChartsFigure (the per-figure plotly fallback stays inside)", async () => {
     mocks.init.mockReturnValue({ setOption: mocks.setOption, resize: vi.fn(), dispose: mocks.dispose });
     vi.stubGlobal(
       "fetch",
@@ -163,7 +167,7 @@ describe("FigureCard", () => {
     unmount();
 
     render(<FigureCard pid="01-rag-agent" name="plain_bar" />);
-    await waitFor(() => expect(mocks.react).toHaveBeenCalledTimes(1));
-    expect(mocks.init).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(mocks.init).toHaveBeenCalledTimes(2));
+    expect(mocks.react).not.toHaveBeenCalled();
   });
 });

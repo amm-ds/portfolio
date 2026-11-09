@@ -25,6 +25,7 @@ vi.mock("echarts/charts", () => ({
   ScatterChart: {},
   HeatmapChart: {},
   CustomChart: {},
+  FunnelChart: {},
 }));
 
 vi.mock("echarts/components", () => ({
@@ -34,6 +35,7 @@ vi.mock("echarts/components", () => ({
   VisualMapComponent: {},
   TitleComponent: {},
   MarkLineComponent: {},
+  MarkAreaComponent: {},
 }));
 
 vi.mock("echarts/renderers", () => ({
