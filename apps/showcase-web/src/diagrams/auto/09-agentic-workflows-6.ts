@@ -11,19 +11,19 @@ export const AUTO_09_AGENTIC_WORKFLOWS_6_SPEC = {
     {
       id: "i",
       label: "graded inputs: run records · captured once, pinned answers",
-      kind: "tool",
+      kind: "source",
       facts: [],
     },
     {
       id: "g",
       label: "deterministic graders: answer · exact tools, steps+time, refusal",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
     {
       id: "o",
       label: "outputs: metrics.json rates · figures, report.html",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],

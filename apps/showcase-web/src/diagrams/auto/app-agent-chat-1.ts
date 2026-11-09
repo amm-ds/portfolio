@@ -11,13 +11,13 @@ export const AUTO_APP_AGENT_CHAT_1_SPEC = {
     {
       id: "tool",
       label: "send_message tool",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "req",
       label: "approval_request · on the run's SSE stream",
-      kind: "tool",
+      kind: "source",
       facts: [],
     },
     {
@@ -29,19 +29,19 @@ export const AUTO_APP_AGENT_CHAT_1_SPEC = {
     {
       id: "send",
       label: "message sent · result recorded",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
     {
       id: "stop",
       label: "default-deny · no side effect",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
     {
       id: "out",
       label: "structured Answer",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],

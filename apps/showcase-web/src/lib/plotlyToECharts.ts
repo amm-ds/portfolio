@@ -57,6 +57,8 @@ const DEFAULT_MARGIN = { l: 80, r: 80, t: 100, b: 80 };
 const HOVER_BG = "#f8fafc";
 const HOVER_BORDER = "#334155";
 const HOVER_TEXT = "#0f172a";
+/** Site mono stack — tick labels harmonize with the terminal chrome. */
+const MONO_STACK = '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
 /** Dark-surface subtitle color authored into every committed title. */
 const SUBTEXT_COLOR_DARK = "#cbd5e1";
 /** Light-mode equivalent, matching PlotlyFigure's inline-color rewrite. */
@@ -178,6 +180,25 @@ function chromeColor(payloadColor: unknown, paletteColor: string, theme: Theme):
 
 function stripTags(text: string): string {
   return text.replace(TAG_RE, "").trim();
+}
+
+/** Greedy word-wrap at maxChars (long words pass through unsplit). */
+function wrapText(text: string, maxChars: number): string {
+  const lines: string[] = [];
+  for (const rawLine of text.split("\n")) {
+    let cur = "";
+    for (const word of rawLine.split(/\s+/)) {
+      if (!word) continue;
+      if ((cur + " " + word).trim().length > maxChars) {
+        if (cur) lines.push(cur.trim());
+        cur = word;
+      } else {
+        cur = (cur + " " + word).trim();
+      }
+    }
+    if (cur) lines.push(cur.trim());
+  }
+  return lines.join("\n");
 }
 
 /** Sample a plotly colorscale ([[pos, color], ...]) at fraction t ∈ [0,1]
@@ -1418,28 +1439,19 @@ export function plotlyToECharts(
   const mainTitleBlock = hasMainTitle
     ? titleParts.size + (titleParts.subtext ? (titleParts.subLines * (titleParts.subSize + 3)) : 0) + 8
     : 0;
-  const subTitleBand =
-    subTitleByGrid.size > 0 ? Math.max(...[...subTitleByGrid.values()].map((s) => s.fontSize)) + 8 : 0;
-  const anyCategoryX = xInfos.some((i) => i.type === "category");
   const anyCategoryY = yInfos.some((i) => i.type === "category");
   const longestYCat = yInfos.reduce(
     (m, i) => (i.type === "category" ? i.categories.reduce((a, c) => Math.max(a, c.length), m) : m),
     0,
   );
-  const anyXName = xInfos.some((i) => axisTitleText(i) !== null);
   const anyYName = yInfos.some((i) => axisTitleText(i) !== null);
-  const topBand = Math.max(
-    margin.t * scale,
-    hasMainTitle || subTitleBand > 0 ? mainTitleBlock + subTitleBand + 8 : 0,
-  );
-  const bottomBand = Math.max(margin.b * scale, anyCategoryX ? 46 + (anyXName ? 14 : 0) : 26);
   // horizontal y category labels (candidate names) need real width
   const yCatBand = anyCategoryY
-    ? Math.min(Math.round(longestYCat * 5.8) + 14 + (anyYName ? 18 : 0), Math.round(width * 0.44))
+    ? Math.min(Math.round(longestYCat * 6.0) + 14 + (anyYName ? 18 : 0), Math.round(width * 0.44))
     : 0;
   const leftBand = Math.max(margin.l * scale, 40 + (anyYName ? 16 : 0), yCatBand);
-  // the right band must actually fit the longest legend entry (~7.3px per
-  // character at the authored 12-13px font), capped so mobile keeps plot room
+  // the right band must actually fit the longest legend entry, capped so
+  // mobile keeps plot room
   const longestName = namedSeries.reduce((m, n) => Math.max(m, n.length), 0);
   const legendBand =
     showLegend && legendOrient === "vertical"
@@ -1447,6 +1459,43 @@ export function plotlyToECharts(
       : 0;
   const rightBand = Math.max(margin.r * scale, legendBand, heatmapVisual ? 60 : 0);
   const innerWpx = Math.max(40, width - leftBand - rightBand);
+  // subplot headers shrink + wrap to their grid width so neighboring titles
+  // can never collide, however narrow the canvas
+  const subMetrics = new Map<number, { text: string; fontSize: number; lines: number }>();
+  for (const [g, sub] of subTitleByGrid) {
+    const grid = grids[g];
+    const gridW = grid ? (grid.xDomain[1] - grid.xDomain[0]) * innerWpx : innerWpx;
+    const oneLineW = sub.text.length * sub.fontSize * 0.58;
+    const fontSize =
+      oneLineW > gridW ? Math.max(10, Math.floor(sub.fontSize * Math.min(1, gridW / oneLineW))) : sub.fontSize;
+    const maxChars = Math.max(6, Math.floor((gridW * 0.94) / (fontSize * 0.58)));
+    const text = sub.text.length > maxChars ? wrapText(sub.text, maxChars) : sub.text;
+    subMetrics.set(g, { text, fontSize, lines: text.split("\n").length });
+  }
+  const subTitleBand =
+    subMetrics.size > 0
+      ? Math.max(...[...subMetrics.values()].map((m) => m.lines * (m.fontSize + 3) + 6))
+      : 0;
+  const topBand = Math.max(
+    margin.t * scale,
+    hasMainTitle || subTitleBand > 0 ? mainTitleBlock + subTitleBand + 8 : 0,
+  );
+  // bottom band: rotated label depth + axis-name clearance, per category axis
+  const bottomBand = (() => {
+    let band = Math.max(margin.b * scale, 26);
+    for (const info of xInfos) {
+      if (info.type !== "category") continue;
+      const grid = grids.find((g) => g.xIndex === info.index);
+      const span = grid ? grid.xDomain[1] - grid.xDomain[0] : 1;
+      const n = Math.max(1, info.categories.length);
+      const longest = info.categories.reduce((m, c) => Math.max(m, c.length), 0);
+      const slot = (innerWpx * span) / n;
+      const rotated = slot < longest * 6.2 + 8;
+      const depth = rotated ? longest * 6.2 * 0.55 + 20 : 16;
+      band = Math.max(band, Math.round(depth + (axisTitleText(info) !== null ? 30 : 8)));
+    }
+    return band;
+  })();
   const innerHpx = Math.max(40, height - topBand - bottomBand);
   for (const g of grids) {
     g.left = leftBand + g.xDomain[0] * innerWpx;
@@ -1465,17 +1514,31 @@ export function plotlyToECharts(
     const axisLabel: Record<string, unknown> = {
       color: chromeColor(rawTick.color, palette.textColor, theme),
       fontSize: num(rawTick.size) ?? fontSize - 2,
+      fontFamily: MONO_STACK,
+      hideOverlap: true,
     };
     if (info.raw.showticklabels === false) axisLabel.show = false;
+    // axis name: wrap long titles so they never clip, and keep clearance from
+    // (possibly rotated) tick labels below/left
+    const gridW = grids[gridIndex]?.width ?? innerWpx;
+    const gridH = grids[gridIndex]?.height ?? innerHpx;
+    const nameFont = (axisLabel.fontSize as number) + 1;
+    let wrappedName: string | null = null;
+    if (titleText) {
+      const maxChars = Math.max(8, Math.floor(((info.isX ? gridW : gridH) * 0.8) / (nameFont * 0.62)));
+      wrappedName = wrapText(titleText.replace(BR_RE, "\n"), maxChars);
+    }
     if (info.type === "category") {
+      axisLabel.fontSize = 10;
       if (info.isX) {
-        // long slice labels get angled + downsized so they fit their subplot
-        // slot instead of colliding with the neighbor
-        axisLabel.rotate = 30;
-        axisLabel.fontSize = 10;
-        axisLabel.margin = 6;
-      } else {
-        axisLabel.fontSize = 10;
+        // rotate only when the longest label can't fit its slot horizontally
+        const longest = info.categories.reduce((m, c) => Math.max(m, c.length), 0);
+        const slot = gridW / Math.max(1, info.categories.length);
+        const estW = longest * 6.2 + 8;
+        if (slot < estW) {
+          axisLabel.rotate = 30;
+          axisLabel.margin = 6;
+        }
       }
     }
     const opt: Record<string, unknown> = {
@@ -1504,11 +1567,29 @@ export function plotlyToECharts(
     if (info.type === "category") {
       opt.data = info.categories;
     }
-    if (titleText) {
-      opt.name = titleText;
-      opt.nameLocation = "middle";
-      opt.nameGap = info.isX ? (info.type === "category" ? 44 : 30) : 42;
-      opt.nameTextStyle = { color: chromeColor(titleFont.color, palette.textColor, theme) };
+    if (wrappedName) {
+      // sub-120px grids can't host a y-axis name without it colliding with
+      // the neighbor subplot's chrome — the subplot title already names it
+      const narrowY = !info.isX && (grids[gridIndex]?.width ?? innerWpx) < 120;
+      if (!narrowY) {
+        opt.name = wrappedName;
+        opt.nameLocation = "middle";
+        // gap must clear the rotated-label stack below (x) or the label column
+        // plus padding (y)
+        const rotated = typeof axisLabel.rotate === "number";
+        const longestCat = info.type === "category"
+          ? info.categories.reduce((m, c) => Math.max(m, c.length), 0)
+          : 0;
+        const labelDepth = info.isX
+          ? info.type === "category" && rotated
+            ? longestCat * 6.2 * 0.55 + 18
+            : 16
+          : info.type === "category"
+            ? 14
+            : 16;
+        opt.nameGap = info.isX ? Math.round(26 + labelDepth) : Math.round(36 + labelDepth);
+        opt.nameTextStyle = { color: chromeColor(titleFont.color, palette.textColor, theme) };
+      }
     }
     return opt;
   };
@@ -1665,13 +1746,14 @@ export function plotlyToECharts(
   }
   for (const [g, sub] of subTitleByGrid) {
     const grid = grids[g];
-    if (!grid) continue;
+    const metrics = subMetrics.get(g);
+    if (!grid || !metrics) continue;
     titles.push({
-      text: sub.text,
+      text: metrics.text,
       left: Math.round(grid.left + grid.width / 2),
-      top: Math.round(grid.top - sub.fontSize - 7),
+      top: Math.round(grid.top - metrics.lines * (metrics.fontSize + 3) - 4),
       textAlign: "center",
-      textStyle: { color: sub.color, fontSize: sub.fontSize, fontWeight: "normal" },
+      textStyle: { color: sub.color, fontSize: metrics.fontSize, fontWeight: "normal" },
     });
   }
 

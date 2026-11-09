@@ -11,7 +11,7 @@ export const AUTO_03_ANOMALY_DETECTION_2_SPEC = {
     {
       id: "n1",
       label: "NAB: 12 series",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -23,31 +23,31 @@ export const AUTO_03_ANOMALY_DETECTION_2_SPEC = {
     {
       id: "n3",
       label: "16 of 17 touched",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "n4",
       label: "Excluded, not misses",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "h",
       label: "Headline metrics",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "s1",
       label: "Synthetic: mechanics only",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "k1",
       label: "NSL-KDD: contract probe",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
   ],

@@ -11,7 +11,7 @@ export const AUTO_07_OPEN_DATA_MOBILITY_3_SPEC = {
     {
       id: "q",
       label: "new zone-hour batch",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -23,31 +23,31 @@ export const AUTO_07_OPEN_DATA_MOBILITY_3_SPEC = {
     {
       id: "b",
       label: "serve gbm_tuned · mean + p90",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "m",
       label: "manual watch · band at 84.7%",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "r",
       label: "retrain on 2 months · own history",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "o",
       label: "drift observatory · monthly, ±15% tolerance",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "x",
       label: "regression opens · response runbook",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],

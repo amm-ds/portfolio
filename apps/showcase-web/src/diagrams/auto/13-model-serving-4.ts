@@ -11,13 +11,13 @@ export const AUTO_13_MODEL_SERVING_4_SPEC = {
     {
       id: "req",
       label: "POST /predict · 15-field contract row",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "v",
       label: "pydantic bounds · (422 on malformed)",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -29,19 +29,19 @@ export const AUTO_13_MODEL_SERVING_4_SPEC = {
     {
       id: "n",
       label: "native: state_dict · + arch json",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "o",
       label: "onnx: warmed · Runtime session",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "r",
       label: "prediction + · request_id",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
   ],

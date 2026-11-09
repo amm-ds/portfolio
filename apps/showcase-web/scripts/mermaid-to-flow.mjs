@@ -38,7 +38,7 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const APP_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REPO_ROOT = path.resolve(APP_ROOT, "../..");
@@ -59,13 +59,55 @@ const SECTION_TITLES = {
 
 // Hand-review overrides from the Wave D visual pass (playwright screenshots of
 // the converted corpus). Keyed by spec id; `labels` maps flat node ids to
-// replacement labels, `canvasHeight` pins the auto-sized canvas cap.
+// replacement labels, `canvasHeight` pins the auto-sized canvas cap, `kinds`
+// pins node kinds over keyword inference (post-kind-inference visual review,
+// round 2 — reasons inline).
 const SPEC_OVERRIDES = {
   // Self-loop graph: the auto-height fit under-computes dagre's rank margins
   // and the bottom rank (Critique / WorkflowResult) clipped.
   "auto-09-agentic-workflows-4": { canvasHeight: 480 },
   // Subgraph-annotated gate label wrapped into unreadable "·" shards.
-  "auto-01-rag-agent-4": { labels: { "verify-sp": "Verify loop: 0.6 support floor vs cited chunk?" } },
+  "auto-01-rag-agent-4": {
+    labels: { "verify-sp": "Verify loop: 0.6 support floor vs cited chunk?" },
+    // The sealed question set is evaluation DATA ("scored once" described the
+    // protocol, not a model step).
+    kinds: { s15: "data" },
+  },
+  // --- kind-inference review (playwright pass over the recolored corpus) ---
+  // "parquet" is the file format, not the step: reading/writing are tasks.
+  "auto-11-data-engineering-5": { kinds: { "reads-a": "task", "writes-i": "task" } },
+  // Flow origin, not a task.
+  "auto-03-anomaly-detection-3": { kinds: { q: "source" } },
+  // sklearn ColumnTransformer is a preprocessing step like its siblings.
+  "auto-05-ml-pipeline-churn-4": { kinds: { g: "task" } },
+  // The node id "score" is a metrics dump, not a model artifact.
+  "auto-09-agentic-workflows-1": { kinds: { score: "task" } },
+  // Stadium terminals: the question is the flow start, metering its end.
+  "auto-01-rag-agent-1": { kinds: { q: "source", m: "output" } },
+  // A pydantic schema and a parser are harness code, not models.
+  "auto-08-inference-serving-2": { kinds: { "score-a": "task", "score-p": "task" } },
+  // The holdout split is a dataset.
+  "auto-05-ml-pipeline-churn-2": { kinds: { ho: "data" } },
+  // External panel inputs: weather feed and the filled zone-hour grid.
+  "auto-07-open-data-mobility-2": { kinds: { w: "data", g: "data" } },
+  // A lookup CSV is a dataset (only "parquet" is a keyword).
+  "auto-11-data-engineering-2": { kinds: { zones: "data" } },
+  // Committed headline metrics are the result of the scoring pass.
+  "auto-02-demand-forecasting-2": { kinds: { c: "output" } },
+  // Split subsets are data; the unbiased headline is the result.
+  "auto-04-nlp-classification-2": {
+    kinds: { b: "data", c: "data", t: "data", f: "data", u: "output" },
+  },
+  // The load-test cell is a task; "model/quant/rung" is its config descriptor.
+  "auto-08-inference-serving-1": { kinds: { mq: "task" } },
+  // "transformer" is the sklearn kind here, not the verb; the cascade row is
+  // the cascade's result.
+  "auto-04-nlp-classification-4": { kinds: { f: "model", k: "model", c: "output" } },
+  // Terminal deny branch.
+  "auto-app-agent-chat-1": { kinds: { stop: "output" } },
+  // The page text is the context store, the question the start state, the
+  // cited answer the terminal.
+  "auto-app-document-intelligence-1": { kinds: { question: "source", page: "data", answer: "output" } },
 };
 
 const ARTICLE_SOURCES = [  {
@@ -95,6 +137,34 @@ const slug = (raw) => {
     .replace(/^-+|-+$/g, "");
   return s || "node";
 };
+
+// ---------------------------------------------------------------------------
+// Node-kind inference (rect nodes only — shapes pin their own kinds)
+// ---------------------------------------------------------------------------
+//
+// Keyword table, case-insensitive substring match on the node's label and id;
+// the FIRST matching category wins (order is the review priority: a store
+// mention outranks an action, an action outranks an endpoint, …). Anything
+// unmatched stays the generic "task". SPEC_OVERRIDES kinds win over all of
+// this — inference proposes, the visual pass disposes.
+const KIND_INFERENCE = [
+  ["data", ["storage", "db", "postgres", "parquet", "dataset", "queue", "cache", "embeddings", "vector", "corpus", "index", "blobs"]],
+  ["model", ["model", "llm", "bert", "gbm", "train", "fit", "inference", "predict", "score", "tune", "checkpoint"]],
+  ["api", ["api", "fastapi", "endpoint", "server", "rest", "http", "gateway", "serve"]],
+  ["gate", ["gate", "check", "decide", "decision", "approve", "validate", "verify", "adopt", "guard"]],
+  ["tool", ["parse", "scrape", "clean", "transform", "feature", "extract", "embed", "enrich"]],
+  ["source", ["start", "input", "upload", "source", "user", "ingest", "query", "request"]],
+  ["output", ["output", "result", "export", "report", "download", "response", "answer"]],
+  ["agent", ["agent", "loop", "planner", "executor", "orchestrate"]],
+];
+
+export function inferNodeKind(label, id = "") {
+  const haystack = `${label} ${id}`.toLowerCase();
+  for (const [kind, keywords] of KIND_INFERENCE) {
+    if (keywords.some((kw) => haystack.includes(kw))) return kind;
+  }
+  return "task";
+}
 
 // ---------------------------------------------------------------------------
 // Parsing
@@ -177,13 +247,22 @@ function parseMermaid(block, where) {
       const existing = nodes.get(rawId);
       if (label) existing.label = label;
       if (shape) existing.shape = shape;
+      // a fuller label may promote a previously-defaulted rect node — but a
+      // shape-pinned kind (gate/data/agent/terminal) is never re-inferred
+      if (existing.shape === "rect") {
+        existing.kind = inferNodeKind(existing.label, existing.id);
+      }
       return;
     }
     nodes.set(rawId, {
       id: rawId,
       label: label ?? rawId,
       shape: shape ?? "rect",
-      // Stadium nodes resolve to source/output once edges are known.
+      // Shapes pin the kind (mermaid-logic): rhombus = decision gate,
+      // cylinder = store, subroutine = agent loop, stadium = terminal.
+      // Plain rects default to a generic task and get promoted by keyword
+      // inference (see inferNodeKind) — tooling keywords like "parse" or
+      // "embed" still land on "tool", everything else stays "task".
       kind:
         shape === "rhombus"
           ? "gate"
@@ -193,7 +272,7 @@ function parseMermaid(block, where) {
               ? "agent"
               : shape === "stadium"
                 ? "stadium"
-                : "tool",
+                : inferNodeKind(label ?? rawId, rawId),
       subgraph: subgraphId ?? null,
     });
   };
@@ -362,10 +441,14 @@ function flatten(parsed) {
 function emitSpec(specId, title, parsed, origin) {
   const overrides = SPEC_OVERRIDES[specId] ?? {};
   const labelOverrides = overrides.labels ?? {};
+  const kindOverrides = overrides.kinds ?? {};
   const { nodes, edges } = flatten(parsed);
-  const finalNodes = nodes.map((n) =>
-    labelOverrides[n.id] ? { ...n, label: labelOverrides[n.id] } : n,
-  );
+  const finalNodes = nodes.map((n) => ({
+    ...n,
+    label: labelOverrides[n.id] ? labelOverrides[n.id] : n.label,
+    // explicit override kinds win over inference
+    kind: kindOverrides[n.id] ?? n.kind,
+  }));
   const canvasHeight = overrides.canvasHeight
     ? `  canvasHeight: ${overrides.canvasHeight},\n`
     : "";
@@ -567,4 +650,9 @@ function main() {
   console.log(`generated ${generated} spec(s) this run; ${registered} registered in src/diagrams/auto/index.ts`);
 }
 
-main();
+export { parseMermaid, emitSpec, scanStory, scanArticle, SPEC_OVERRIDES };
+
+const invokedDirectly =
+  typeof process.argv[1] === "string" &&
+  import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) main();

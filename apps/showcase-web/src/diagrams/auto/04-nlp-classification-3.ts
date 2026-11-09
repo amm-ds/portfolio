@@ -11,13 +11,13 @@ export const AUTO_04_NLP_CLASSIFICATION_3_SPEC = {
     {
       id: "a",
       label: "Incoming item",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "tr",
       label: "Full-data transformer · prediction + confidence",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
@@ -35,13 +35,13 @@ export const AUTO_04_NLP_CLASSIFICATION_3_SPEC = {
     {
       id: "llm",
       label: "Kimi review · 8 rows per call",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "out",
       label: "Selected cascade",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
   ],

@@ -11,7 +11,7 @@ export const AUTO_12_TABULAR_ML_LIFECYCLE_1_SPEC = {
     {
       id: "f",
       label: "floor: same hour · last week",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -23,7 +23,7 @@ export const AUTO_12_TABULAR_ML_LIFECYCLE_1_SPEC = {
     {
       id: "t",
       label: "trees + linear · (sklearn Pipelines)",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -35,7 +35,7 @@ export const AUTO_12_TABULAR_ML_LIFECYCLE_1_SPEC = {
     {
       id: "r",
       label: "residual slices: · where still wrong?",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
   ],

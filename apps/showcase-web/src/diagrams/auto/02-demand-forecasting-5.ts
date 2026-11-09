@@ -17,13 +17,13 @@ export const AUTO_02_DEMAND_FORECASTING_5_SPEC = {
     {
       id: "e",
       label: "Convex ensemble · of pooled fits",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
     {
       id: "x",
       label: "Weekly reforecast · floors + scored-once windows",
-      kind: "tool",
+      kind: "model",
       facts: [],
     },
   ],

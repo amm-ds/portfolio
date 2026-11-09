@@ -11,7 +11,7 @@ export const AUTO_01_RAG_AGENT_1_SPEC = {
     {
       id: "q",
       label: "Question arrives",
-      kind: "tool",
+      kind: "source",
       facts: [],
     },
     {
@@ -23,13 +23,13 @@ export const AUTO_01_RAG_AGENT_1_SPEC = {
     {
       id: "z",
       label: "Calibrated refusal",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "a",
       label: "Draft with citations",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
@@ -41,19 +41,19 @@ export const AUTO_01_RAG_AGENT_1_SPEC = {
     {
       id: "s",
       label: "Structured answer: · summary, citations, confidence",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
     {
       id: "t",
       label: "Bounded retries",
-      kind: "tool",
+      kind: "task",
       facts: [],
     },
     {
       id: "m",
       label: "Metered: at or under · 0.01 USD per query",
-      kind: "tool",
+      kind: "output",
       facts: [],
     },
   ],
