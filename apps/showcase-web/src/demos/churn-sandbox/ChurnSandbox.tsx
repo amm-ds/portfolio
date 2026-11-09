@@ -611,7 +611,7 @@ function ChurnSandboxWorkbench({
             <h3 className="wb-rail-title">decision outcomes</h3>
             <OutcomesPanel row={cursorRow} holdoutN={payload.holdout_n} />
           </div>
-          <div className="wb-secondary-panel">
+          <div className="wb-secondary-panel wb-secondary-panel--wide">
             <h3 className="wb-rail-title">alarm burden by contract</h3>
             <SlicesPanel slices={payload.slices.contract} cursorT={cursorT} />
           </div>

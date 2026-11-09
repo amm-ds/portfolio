@@ -57,8 +57,7 @@
 }
 
 .study-card h3::before,
-.study-card h4::before,
-.app-card__title::before {
+.study-card h4::before {
   content: "> ";
   color: var(--accent);
 }
@@ -276,6 +275,14 @@
   display: block;
   color: inherit;
   text-decoration: none;
+}
+
+/* house prompt marker on the title link — same visual as
+   .section-title::before: green "> ", no glow */
+.app-card__title--link::before {
+  content: "> ";
+  color: var(--accent);
+  text-shadow: none;
 }
 
 /* The title is a stretched link: the whole card opens the article, while the

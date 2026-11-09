@@ -333,7 +333,7 @@ function Workbench({
               forecastDates={originBlock.forecast_dates}
             />
           </div>
-          <div className="wb-secondary-panel">
+          <div className="wb-secondary-panel wb-secondary-panel--wide">
             <h3 className="wb-rail-title">model verdict</h3>
             <VerdictPanel
               entry={entry}

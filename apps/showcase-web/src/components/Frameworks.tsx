@@ -3,37 +3,36 @@ import { useState } from "react";
 export interface Framework {
   name: string;
   url: string;
-  /** simpleicons slug; absent → render the letter tile directly. */
-  slug?: string;
-  /** Local SVG under /logos (self-hosted, see public/logos/README.md); wins over slug. */
+  /** Local SVG under /logos (self-hosted, see public/logos/README.md);
+   *  absent → render the letter tile directly. */
   logo?: string;
   letters: string;
 }
 
 export const FRAMEWORKS: Framework[] = [
-  { name: "pydantic", url: "https://pydantic.dev", slug: "pydantic", letters: "Pd" },
+  { name: "pydantic", url: "https://pydantic.dev", logo: "/logos/pydantic.svg", letters: "Pd" },
   { name: "pydantic-ai", url: "https://ai.pydantic.dev", logo: "/logos/pydantic-ai.svg", letters: "PA" },
-  { name: "Ollama", url: "https://ollama.com", slug: "ollama", letters: "Ol" },
-  { name: "scikit-learn", url: "https://scikit-learn.org", slug: "scikitlearn", letters: "Sk" },
-  { name: "PyTorch", url: "https://pytorch.org", slug: "pytorch", letters: "Pt" },
-  { name: "Polars", url: "https://pola.rs", slug: "polars", letters: "Pl" },
+  { name: "Ollama", url: "https://ollama.com", logo: "/logos/ollama.svg", letters: "Ol" },
+  { name: "scikit-learn", url: "https://scikit-learn.org", logo: "/logos/scikitlearn.svg", letters: "Sk" },
+  { name: "PyTorch", url: "https://pytorch.org", logo: "/logos/pytorch.svg", letters: "Pt" },
+  { name: "Polars", url: "https://pola.rs", logo: "/logos/polars.svg", letters: "Pl" },
   { name: "DuckDB", url: "https://duckdb.org", logo: "/logos/duckdb.svg", letters: "Db" },
-  { name: "Plotly", url: "https://plotly.com", slug: "plotly", letters: "Py" },
-  { name: "DVC", url: "https://dvc.org", slug: "dvc", letters: "Dv" },
-  { name: "uv", url: "https://docs.astral.sh/uv", slug: "uv", letters: "uv" },
-  { name: "FastAPI", url: "https://fastapi.tiangolo.com", slug: "fastapi", letters: "Fa" },
-  { name: "React", url: "https://react.dev", slug: "react", letters: "Re" },
-  { name: "TypeScript", url: "https://typescriptlang.org", slug: "typescript", letters: "Ts" },
-  { name: "Optuna", url: "https://optuna.org", slug: "optuna", letters: "Op" },
+  { name: "Plotly", url: "https://plotly.com", logo: "/logos/plotly.svg", letters: "Py" },
+  { name: "DVC", url: "https://dvc.org", logo: "/logos/dvc.svg", letters: "Dv" },
+  { name: "uv", url: "https://docs.astral.sh/uv", logo: "/logos/uv.svg", letters: "uv" },
+  { name: "FastAPI", url: "https://fastapi.tiangolo.com", logo: "/logos/fastapi.svg", letters: "Fa" },
+  { name: "React", url: "https://react.dev", logo: "/logos/react.svg", letters: "Re" },
+  { name: "TypeScript", url: "https://typescriptlang.org", logo: "/logos/typescript.svg", letters: "Ts" },
+  { name: "Optuna", url: "https://optuna.org", logo: "/logos/optuna.svg", letters: "Op" },
   { name: "RAGAS", url: "https://ragas.io", logo: "/logos/ragas.svg", letters: "Ra" },
   { name: "pydantic-evals", url: "https://ai.pydantic.dev/evals/", letters: "Pe" },
-  { name: "Hugging Face", url: "https://huggingface.co", slug: "huggingface", letters: "Hf" },
+  { name: "Hugging Face", url: "https://huggingface.co", logo: "/logos/huggingface.svg", letters: "Hf" },
 ];
 
 /** One framework logo tile; degrades to a mono initial-letter tile if the image fails. */
 export function FrameworkTile({ fw }: { fw: Framework }) {
   const [imgFailed, setImgFailed] = useState(false);
-  const src = fw.logo ?? (fw.slug ? `https://cdn.simpleicons.org/${fw.slug}` : null);
+  const src = fw.logo ?? null;
   return (
     <a
       className="framework-tile"
@@ -60,14 +59,15 @@ export function FrameworkTile({ fw }: { fw: Framework }) {
   );
 }
 
-/** Deployment providers — same tile pattern as frameworks.
- * AWS and Azure are served from self-hosted SVGs: their brand icons were
- * removed from Simple Icons (no CC0-licensed source anymore), so local copies
- * with documented sources are used instead of hotlinking unofficial art
- * (see public/logos/README.md). */
+/** Deployment providers — same tile pattern as frameworks. Every icon is
+ * served from a self-hosted SVG under /logos (see public/logos/README.md):
+ * the production CSP blocks third-party CDNs, and the Simple Icons copies
+ * are CC0-licensed, so nothing hotlinks brand art anymore. AWS and Azure
+ * keep their local copies because their brand icons were removed from Simple
+ * Icons (no CC0 source); RAGAS / pydantic-ai never had entries. */
 export const PROVIDERS: Framework[] = [
   { name: "AWS", url: "https://aws.amazon.com", logo: "/logos/aws.svg", letters: "Aw" },
   { name: "Microsoft Azure", url: "https://azure.microsoft.com", logo: "/logos/azure.svg", letters: "Az" },
-  { name: "Google Cloud", url: "https://cloud.google.com", slug: "googlecloud", letters: "Gc" },
-  { name: "Docker", url: "https://docker.com", slug: "docker", letters: "Dk" },
+  { name: "Google Cloud", url: "https://cloud.google.com", logo: "/logos/googlecloud.svg", letters: "Gc" },
+  { name: "Docker", url: "https://docker.com", logo: "/logos/docker.svg", letters: "Dk" },
 ];

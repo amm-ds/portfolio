@@ -553,6 +553,38 @@
   .wb-kpi-band {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  /* compact KPI tiles: the same label/value/sub content in less height */
+  .wb-kpi-band .wb-kpi {
+    padding: 0.35rem 0.6rem;
+  }
+
+  .wb-kpi-band .wb-kpi-value {
+    font-size: 1.1rem;
+  }
+
+  /* the header stacks: full-width heading, then one wrapping chip row —
+     scenario buttons + reset, not a squeezed side column */
+  .wb-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wb-heading {
+    flex: none;
+  }
+
+  .wb-actions {
+    margin-left: 0;
+    padding-top: 0;
+  }
+
+  .wb-scenarios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
 
   .wb-canvas-slot {
@@ -571,6 +603,31 @@
   .wb-secondary {
     grid-template-columns: 1fr;
     height: auto;
+    gap: 0.7rem;
+  }
+
+  /* clamp each secondary panel: with the band height auto, the
+     container-measured svg charts feed their measured height back into
+     layout and the card grows without bound; the max-height makes the flex
+     chain definite again (desktop geometry), and the scroll is the safety
+     for genuinely tall content */
+  .wb-secondary .figure-card {
+    overflow: auto;
+    max-height: 360px;
+  }
+
+  /* tighter chrome inside the clamped cards */
+  .wb-secondary .figure-card-band {
+    padding: 0.35rem 0.6rem 0.45rem;
+  }
+
+  .wb-secondary .fwb-verdict {
+    padding: 0.45rem 0.7rem 0.5rem;
+    gap: 0.3rem;
+  }
+
+  .wb-secondary-panel {
+    gap: 0.3rem;
   }
 
   .wb-evidence-cols {
@@ -581,16 +638,25 @@
     grid-template-columns: 1fr;
   }
 
-  .wb-secondary .figure-card {
-    overflow: visible;
-  }
-
   .fwb-verdict-foot {
     flex-wrap: wrap;
   }
 
   .fwb-verdict-scale {
     white-space: normal;
+  }
+}
+
+/* narrow screens that still fit two panels: the band goes 2-column; panels
+   whose fixed-geometry rows need width (model verdict, alarm burden) span
+   the full band */
+@media (min-width: 390px) and (max-width: 900px) {
+  .wb-secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .wb-secondary-panel--wide {
+    grid-column: 1 / -1;
   }
 }
 
