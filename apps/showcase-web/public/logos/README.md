@@ -25,6 +25,7 @@ explicit `width`/`height` plus a `"{name} logo"` alt text.
 | `pytorch.svg` | PyTorch | `https://cdn.simpleicons.org/pytorch` (Simple Icons slug `pytorch`) | CC0 (Simple Icons); PyTorch is a trademark of The Linux Foundation. |
 | `polars.svg` | Polars | `https://cdn.simpleicons.org/polars` (Simple Icons slug `polars`) | CC0 (Simple Icons). |
 | `plotly.svg` | Plotly | `https://cdn.simpleicons.org/plotly` (Simple Icons slug `plotly`) | CC0 (Simple Icons). |
+| `apacheecharts.svg` | Apache ECharts | `https://cdn.simpleicons.org/apacheecharts` (Simple Icons slug `apacheecharts`) | CC0 (Simple Icons). |
 | `dvc.svg` | DVC | `https://cdn.simpleicons.org/dvc` (Simple Icons slug `dvc`) | CC0 (Simple Icons). |
 | `uv.svg` | uv | `https://cdn.simpleicons.org/uv` (Simple Icons slug `uv`) | CC0 (Simple Icons). |
 | `fastapi.svg` | FastAPI | `https://cdn.simpleicons.org/fastapi` (Simple Icons slug `fastapi`) | CC0 (Simple Icons). |

@@ -21,6 +21,7 @@ export const FRAMEWORKS: Framework[] = [
   { name: "Polars", url: "https://pola.rs", logo: "/logos/polars.svg", letters: "Pl" },
   { name: "DuckDB", url: "https://duckdb.org", logo: "/logos/duckdb.svg", letters: "Db" },
   { name: "Plotly", url: "https://plotly.com", logo: "/logos/plotly.svg", letters: "Py" },
+  { name: "Apache ECharts", url: "https://echarts.apache.org", logo: "/logos/apacheecharts.svg", letters: "Ec" },
   { name: "DVC", url: "https://dvc.org", logo: "/logos/dvc.svg", letters: "Dv" },
   { name: "uv", url: "https://docs.astral.sh/uv", logo: "/logos/uv.svg", letters: "uv" },
   { name: "FastAPI", url: "https://fastapi.tiangolo.com", logo: "/logos/fastapi.svg", letters: "Fa" },
