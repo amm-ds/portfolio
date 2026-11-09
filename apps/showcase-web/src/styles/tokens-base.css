@@ -94,14 +94,14 @@
   --surface-hover: #f4f7fb;
   --border: #b8c6d6;
   --border-soft: #d6dee8;
-  /* --accent is teal-500 (closest to the dark theme's #2dd4bf) and paints
-     marks/borders/glows; ALL accent text uses --accent-bright (teal-700,
-     5.2:1) so contrast holds at any size — the dark theme's accent-bright
-     equals its accent, so text rules are theme-agnostic */
-  --accent: #14b8a6;
-  --accent-bright: #0b625b;
-  --accent-ink: #042f2e;
-  --accent-glow: rgba(20, 184, 166, 0.1);
+  /* the original darker teal family (user preference after the brighter
+     experiments): marks --accent, text --accent-bright — deep enough to
+     survive the prose ~0.92 opacity blend at 4.5:1; the dark theme's
+     accent-bright equals its accent, so text rules are theme-agnostic */
+  --accent: #0b625b;
+  --accent-bright: #0a5750;
+  --accent-ink: #ffffff;
+  --accent-glow: rgba(11, 98, 91, 0.1);
   --secondary: #0369a1;
   --text: #172433;
   --muted: #4e6276;

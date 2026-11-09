@@ -134,7 +134,7 @@ conclusions, each with a naive baseline and the honest delta).
 
 ## Contact & availability
 
-- **Start an engagement:** email [amm.datascience@gmail.com](mailto:amm.datascience@gmail.com?subject=Project%20inquiry%20—%20context%20and%20timeline) —
+- **Start an engagement:** email [alejandromerida.dev@gmail.com](mailto:alejandromerida.dev@gmail.com?subject=Project%20inquiry%20—%20context%20and%20timeline) —
   discovery call first, written scope after (details on the
   [Contact page](https://alejandromerida.dev/contact/)).
 - GitHub: [@amm-ds](https://github.com/amm-ds)

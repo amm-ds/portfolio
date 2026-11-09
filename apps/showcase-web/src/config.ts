@@ -27,7 +27,7 @@ export const LINKEDIN_URL =
   "https://www.linkedin.com/in/alejandro-m%C3%A9rida-maroto-6a380615b/";
 
 /** Contact address placeholder — one place for contact copy. */
-export const CONTACT_EMAIL = env.VITE_CONTACT_EMAIL ?? "amm.datascience@gmail.com";
+export const CONTACT_EMAIL = env.VITE_CONTACT_EMAIL ?? "alejandromerida.dev@gmail.com";
 
 // Legacy alias kept for existing consumers (Footer and its tests).
 export const SITE_EMAIL = CONTACT_EMAIL;
