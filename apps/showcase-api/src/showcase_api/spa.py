@@ -42,7 +42,7 @@ def _pattern_match(pattern: str, path: str) -> bool:
         return path.strip("/") == ""
     pp = [s for s in pattern.split("/") if s]
     sp = [s for s in path.split("/") if s]
-    return len(pp) == len(sp) and all(p == "*" or p == s for p, s in zip(pp, sp, strict=True))
+    return len(pp) == len(sp) and all(p in ("*", s) for p, s in zip(pp, sp, strict=True))
 
 
 def _spa_patterns() -> list[str]:

@@ -1072,8 +1072,22 @@ class ChatRequest(BaseModel):
 
 
 _RAG_PROJECT = PROJECTS_ROOT / "01-rag-agent"
-_agent_cache: Any = None
-_agent_lock: Any = None
+
+
+class _AgentState:
+    """Lazily-built RAG agent + retriever, double-checked-locked per process.
+
+    A holder object instead of module globals: mutation goes through
+    attribute assignment (no ``global`` statement), and tests reset the
+    cache by swapping the one instance.
+    """
+
+    def __init__(self) -> None:
+        self.cache: Any = None
+        self.lock: Any = None
+
+
+_AGENT_STATE = _AgentState()
 
 # Public deployment: the chat endpoints are an LLM cost proxy — they register
 # only when explicitly enabled (fail closed). Locally: RAG_CHAT_ENABLED=1.
@@ -1086,16 +1100,16 @@ async def _load_agent() -> Any:
     Raises 503 when the package or the built index is unavailable (e.g. a
     fresh container before ``dvc repro`` / ``build-index`` has run).
     """
-    global _agent_cache, _agent_lock
-    if _agent_cache is not None:
-        return _agent_cache
-    if _agent_lock is None:
+    state = _AGENT_STATE
+    if state.cache is not None:
+        return state.cache
+    if state.lock is None:
         import anyio
 
-        _agent_lock = anyio.Lock()
-    async with _agent_lock:
-        if _agent_cache is not None:
-            return _agent_cache
+        state.lock = anyio.Lock()
+    async with state.lock:
+        if state.cache is not None:
+            return state.cache
         try:
             from rag_agent.agent import build_agent
             from rag_agent.config import RAGConfig
@@ -1131,8 +1145,8 @@ async def _load_agent() -> Any:
         except Exception as e:  # broad: any load failure → 503, chained
             logger.warning("retriever unavailable: %s", e)
             raise HTTPException(status_code=503, detail="retriever unavailable") from e
-        _agent_cache = (build_agent(cfg), retriever)
-        return _agent_cache
+        state.cache = (build_agent(cfg), retriever)
+        return state.cache
 
 
 if _RAG_CHAT_ENABLED:

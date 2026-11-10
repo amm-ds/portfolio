@@ -23,6 +23,7 @@ dev = [
     "02-demand-forecasting[nn]",
     "dvc>=3.55",
     "hypothesis>=6.119",
+    "import-linter>=2.16",
     "kaleido>=0.2",
     "mkdocs-material>=9.5",
     "mypy>=1.13",
@@ -41,7 +42,22 @@ line-length = 100
 extend-exclude = ["site", "apps/showcase-web/node_modules", "apps/showcase-web/dist"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "S", "C901"]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF", "S", "C901", "ASYNC", "PERF", "PLR1714", "PLW0603", "PLW1510", "PLW2901"]
+ignore = ["PERF401"]
+# PERF401 (loop-then-append vs comprehension/extend): every finding sits in a
+# cold path (report writers, validators, tests, benches) — style churn, not a
+# measured cost.
+# Adopted from the external audit's extended probe (2026-11): the real
+# findings live in ASYNC/PERF/PLW/RUF100 — all fixed. Deliberately NOT
+# adopted, with reasons:
+# - PLR2004 (magic-value comparisons): scientific code compares against
+#   thresholds everywhere; 700+ named constants would add noise, not safety.
+# - PLR0913/0915/0917/0911/0912 (arity/length limits): C901 already guards
+#   complexity; signature limits would churn evaluated-model APIs.
+# - PLC0415 (import-outside-top-level): lazy imports are the house pattern
+#   for CLI/evaluate paths (heavy deps load only when a command needs them).
+# - PLR0124 (comparison-with-itself): the dominant pattern here is the IEEE
+#   NaN idiom (`x != x`), which the rule cannot tell from a bug.
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
@@ -55,6 +71,88 @@ max-complexity = 15
 # trusted-artifact persistence: the UCI xlsx is a registry-pinned archive
 # parsed locally, not untrusted XML from the network.
 "**/demand_forecasting/uci.py" = ["S314"]
+# Process-wide singletons that are correct by design — idempotent init
+# guards and once-per-process caches whose mutation is the point. The one
+# design-level global (the RAG agent cache in showcase_api.main) was
+# refactored to a holder object instead of being ignored.
+"**/showcase_api/middleware.py" = ["PLW0603"]        # warn-once salt flag
+"**/showcase_api/spa_heads.py" = ["PLW0603"]         # per-process head cache
+"**/portfolio_core/llm_budget.py" = ["PLW0603"]      # process-wide cost ledger
+"**/portfolio_core/logging.py" = ["PLW0603"]         # idempotent logging config
+"**/rag_agent/metering.py" = ["PLW0603"]             # process-wide meter
+"**/demand_forecasting/temporal.py" = ["PLW0603"]    # once-only thread pinning
+"**/mobility/config.py" = ["PLW0603"]                # cached default config
+"**/mobility/evaluate.py" = ["PLW0603"]              # computed-once calibration scale
+
+[tool.importlinter]
+# Dependency direction, made permanent (external audit R2): the layering is
+# clean today; these contracts fail CI the day it stops being accidental.
+root_packages = [
+    "portfolio_core",
+    "portfolio_eval",
+    "rag_agent",
+    "demand_forecasting",
+    "anomaly_detection",
+    "nlp_classification",
+    "churn_pipeline",
+    "routing_optimization",
+    "mobility",
+    "inference_serving",
+    "agentic_workflows",
+    "uplift_experimentation",
+    "data_engineering",
+    "tabular_ml_lifecycle",
+    "model_serving",
+    "showcase_api",
+]
+
+[[tool.importlinter.contracts]]
+name = "projects are independent of each other"
+type = "independence"
+modules = [
+    "rag_agent",
+    "demand_forecasting",
+    "anomaly_detection",
+    "nlp_classification",
+    "churn_pipeline",
+    "routing_optimization",
+    "mobility",
+    "inference_serving",
+    "agentic_workflows",
+    "uplift_experimentation",
+    "data_engineering",
+    "tabular_ml_lifecycle",
+    "model_serving",
+]
+# Documented exception — 09's evaluation corpus is the committed Wikipedia
+# slice built by 01 (README: "read-only Wikipedia slice from 01"); it reads
+# the index through 01's own loaders. Decoupling (a local reader in 09) is
+# the follow-up; until then the exception is explicit, not accidental.
+ignore_imports = [
+    "agentic_workflows.documents -> rag_agent.index",
+    "agentic_workflows.documents -> rag_agent.config",
+]
+
+[[tool.importlinter.contracts]]
+name = "shared libs import nothing first-party"
+type = "forbidden"
+source_modules = ["portfolio_core", "portfolio_eval"]
+forbidden_modules = [
+    "rag_agent",
+    "demand_forecasting",
+    "anomaly_detection",
+    "nlp_classification",
+    "churn_pipeline",
+    "routing_optimization",
+    "mobility",
+    "inference_serving",
+    "agentic_workflows",
+    "uplift_experimentation",
+    "data_engineering",
+    "tabular_ml_lifecycle",
+    "model_serving",
+    "showcase_api",
+]
 
 [tool.mypy]
 python_version = "3.12"
